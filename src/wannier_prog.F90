@@ -51,23 +51,20 @@ program wannier
         case ('default')    ! continue from where last checkpoint was written
            write(stdout,'(/1x,a)',advance='no') 'Resuming a previous Wannier90 calculation '
            if (checkpoint.eq.'postdis') then 
-              write(stdout,'(a/)') 'from after disentanglement ...'
+              write(stdout,'(a/)') 'from wannierisation ...'
               goto 1001         ! go to wann_main
            elseif (checkpoint.eq.'postwann') then
-              write(stdout,'(a/)') 'from after wannierisation ...'
+              write(stdout,'(a/)') 'from plotting ...'
               goto 2002         ! go to plot_main
            else
               write(stdout,'(/a/)')
               call io_error('Value of checkpoint not recognised in wann_prog')
            endif
         case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
-           write(stdout,'(1x,a/)') 'Restarting Wannier90 from start of wannierisation ...'
-           goto 1001
-        case ('wann_continue') ! continue from wann_main, reading U and M from wannier_um.dat
-           write(stdout,'(1x,a/)') 'Continuing Wannier90 from wannierisation ...'
+           write(stdout,'(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
            goto 1001
         case ('plot')       ! continue from plot_main irrespective of value of last checkpoint 
-           write(stdout,'(1x,a/)') 'Restarting Wannier90 from start of plotting routines ...'
+           write(stdout,'(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
            goto 2002       
         case default
            call io_error('Value of restart not recognised in wann_prog')
@@ -94,6 +91,8 @@ program wannier
 
   time1=io_time()
   write(stdout,'(/1x,a25,f11.3,a)') 'Time to read overlaps    ',time1-time2,' (sec)'
+
+  have_disentangled = .false.
 
   if (disentanglement) then
 

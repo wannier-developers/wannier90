@@ -376,7 +376,7 @@ contains
     ! Rotate Hamiltonian into the basis of smooth bloch states 
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
- 
+
     do loop_kpt=1,num_kpts
        do j=1,num_wann
           do i=1,j

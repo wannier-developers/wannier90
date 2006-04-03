@@ -47,9 +47,10 @@ contains
     !===================================================================  
     use constants,  only : dp,cmplx_1,cmplx_0
     use io,         only : stdout,io_error,io_time,io_stopwatch
-    use parameters,     only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
+    use parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
                            nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
-                           num_print_cycles,num_dump_cycles,omega_invariant,param_read_um, param_write_um
+                           num_print_cycles,num_dump_cycles,omega_invariant, &
+                           param_read_um,param_write_um
 
     implicit none
 

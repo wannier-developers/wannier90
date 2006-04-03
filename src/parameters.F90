@@ -507,8 +507,7 @@ contains
  if (restart.ne.' ') disentanglement=.false.
 
  if ( (restart.ne.' ').and.(restart.ne.'default') & 
-      .and.(restart.ne.'wannierise').and.(restart.ne.'plot') &
-      .and.(restart.ne.'wann_continue') ) &
+      .and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
       call io_error('Error in input file: value of restart not recognised')
  
  if (disentanglement) allocate(ndimwin(num_kpts))
@@ -992,10 +991,9 @@ contains
     write(chk_unit) chkpt1                 ! Position of checkpoint
     write(chk_unit) have_disentangled      ! Whether a disentanglement has been performed
     if (have_disentangled) then
-       write(chk_unit) omega_invariant        ! Omega invariant
-       ! Write U_matrix_opt, M and eigval_opt
+       write(chk_unit) omega_invariant     ! Omega invariant
+       ! U_matrix_opt and eigval_opt
        write(chk_unit) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
-!       write(chk_unit) ((((m_matrix(i,j,nn,nkp),i=1,num_wann),j=1,num_wann),nn=1,nntot),nkp=1,num_kpts)
        write(chk_unit) ((eigval_opt(i,nkp),i=1,num_wann),nkp=1,num_kpts) 
     endif
 
@@ -1080,18 +1078,13 @@ contains
           allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating u_matrix_opt in param_read_chkpt')
        endif
-!       if (.not.allocated(m_matrix)) then
-!          allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-!          if (ierr/=0) call io_error('Error allocating m_matrix in param_read_chkpt')
-!       endif
        if (.not.allocated(eigval_opt)) then
           allocate(eigval_opt(num_wann,num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating eigval_opt in param_read_chkpt')
        endif
 
-       ! U matrix, M matrix, eigval_opt
+       ! U matrix and eigval_opt
        read(chk_unit,err=122) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
-!       read(chk_unit,err=123) ((((m_matrix(i,j,nn,nkp),i=1,num_wann),j=1,num_wann),nn=1,nntot),nkp=1,num_kpts)
        read(chk_unit,err=124) ((eigval_opt(i,nkp),i=1,num_wann),nkp=1,num_kpts)
        
     endif
