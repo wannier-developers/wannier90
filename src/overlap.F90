@@ -1,4 +1,4 @@
-!
+!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
 ! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,
 !            Nicola Marzari, Ivo Souza, David Vanderbilt
 !
