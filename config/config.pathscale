@@ -1,0 +1,10 @@
+#Pathscale
+#=========
+F90= pathf90
+FCOPTS = 
+##FCOPTS = -C -fullwarn 
+LDOPTS =  
+LIBS   = -lacml 
+
+
+

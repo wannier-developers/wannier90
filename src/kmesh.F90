@@ -1,0 +1,880 @@
+!
+! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,
+!            Nicola Marzari, Ivo Souza, David Vanderbilt
+!
+! This file is distributed under the terms of the
+! GNU General Public License. See the file `License'
+! in the root directory of the present distribution,
+! or http://www.gnu.org/copyleft/gpl.txt .
+!
+!----------------------------------------------------------------------
+
+
+module kmesh
+
+  use constants, only : dp
+  use parameters
+
+  implicit none
+
+  private
+
+  ! Definitions of system variables set in this module
+  ! nnh     ! the number of b-directions (bka)
+  ! nntot   ! total number of neighbours for each k-point
+  ! nnlist  ! list of neighbours for each k-point
+  ! neigh    
+  ! nncell  ! gives BZ of each neighbour of each k-point
+  ! wbtot
+  ! wb      ! weights associated with neighbours of each k-point
+  ! bk      ! the b-vectors that go from each k-point to its neighbours
+  ! bka     ! the b-directions (not considering inversion) from 
+  ! 1st k-point to its neighbours
+
+
+  public :: kmesh_get
+  public :: kmesh_write
+  public :: kmesh_dealloc
+
+
+
+
+  integer, parameter :: nsupcell=5
+  integer, parameter :: search_shells=12
+  integer :: lmn(3,(2*nsupcell+1)**3)
+
+
+
+contains 
+  !==================================================================!
+  subroutine kmesh_get()
+    !==================================================================!
+    !                                                                  !
+    !  Set up the framework for the kspace derivatives                 ! 
+    !                                                                  !
+    !===================================================================  
+    use io,      only : stdout,io_error
+    use utility, only : utility_compar
+
+    implicit none
+
+    ! Variables that are private
+
+    integer :: nlist,nkp,nkp2,l,m,n,ndnn,ndnnx,ndnntot
+    integer :: nnsh,nn,nnx,loop,i,j
+    integer :: ifound,counter,na,nap,loop_s,loop_b
+    integer :: ifpos,ifneg,ierr,multi(num_nnmax)
+    integer :: nnshell(num_kpts,num_nnmax)
+    
+
+    real(kind=dp) :: vkpp(3),vkpp2(3)
+    real(kind=dp) :: dist, dnn0,dnn1, bb1,bbn, ddelta
+    real(kind=dp) :: eta,eps                    ! eta = very large ; eps = very small
+    real(kind=dp) :: bweight(max_shells)
+    real(kind=dp) :: dnn(num_nnmax)
+    real(kind=dp) :: wb_local(num_nnmax)
+    real(kind=dp) :: bk_local(3,num_nnmax,num_kpts)
+
+    ! Integer arrays that are public
+
+    write(stdout,'(/1x,a)') '*---------------------------------- &
+         &K-MESH ----------------------------------*'  
+
+    ! Sort the cell neighbours so we loop in order of distance from the home shell
+    call kmesh_supercell_sort
+
+
+    ! find the distance between k-point 1 and its nearest-neighbour shells
+    ! if we have only one k-point, the n-neighbours are its periodic images
+    eta = 99999999.0_dp
+    eps = 0.000001_dp  
+
+    dnn0 = 0.d0  
+    dnn1 = eta  
+    ndnntot = 0  
+    do nlist = 1, num_nnmax  
+       do nkp = 1, num_kpts  
+          do loop=1,(2*nsupcell+1)**3
+             l=lmn(1,loop);m=lmn(2,loop);n=lmn(3,loop)
+             !
+             vkpp=kpt_cart(:,nkp)+matmul(lmn(:,loop),recip_lattice)
+             dist= sqrt( (kpt_cart(1,1)-vkpp(1))**2 &
+                  + (kpt_cart(2,1)-vkpp(2))**2 + (kpt_cart(3,1)-vkpp(3))**2 )
+             !
+             if ( (dist.gt.eps) .and. (dist.gt.dnn0 + eps) ) then
+                if(dist.lt.dnn1-eps) then
+                   dnn1=dist  ! found a closer shell
+                   counter=0
+                end if
+                if(dist.gt.(dnn1-eps) .and. dist.lt.(dnn1+eps)) then
+                   counter=counter+1 ! count the multiplicity of the shell
+                end if
+             end if
+          enddo
+       enddo
+       if (dnn1.lt.eta - eps) ndnntot = ndnntot + 1  
+       dnn(nlist) = dnn1  
+       multi(nlist)=counter
+       dnn0 = dnn1  
+       dnn1 = eta  
+    enddo
+
+    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+' 
+    write(stdout,'(1x,a)') '|                    Distance to Nearest-Neighbour Shells                    |'
+    write(stdout,'(1x,a)') '|                    ------------------------------------                    |'
+    write(stdout,'(1x,a)') '|          Shell             Distance (Ang^-1)          Multiplicity         |'
+    write(stdout,'(1x,a)') '|          -----             -----------------          ------------         |'
+    do ndnn = 1, ndnntot  
+       write(stdout,'(1x,a,11x,i3,17x,f10.6,19x,i4,12x,a)') '|',ndnn,dnn(ndnn),multi(ndnn),'|' 
+    enddo
+    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+' 
+
+
+    ! Get the shell weights to satisfy the B1 condition
+
+    if(num_shells==0) then
+       call kmesh_shell_automatic(multi,dnn,bweight)
+    elseif(num_shells>0) then
+       call kmesh_shell_fixed(multi,dnn,bweight)
+    end if
+
+    write(stdout,'(1x,a)',advance='no') '| The following shells are used: '
+    do ndnn=1,num_shells
+       if (ndnn.eq.num_shells) then
+          write(stdout,'(i3,1x)',advance='no') shell_list(ndnn)
+       else
+          write(stdout,'(i3,",")',advance='no') shell_list(ndnn)
+       endif
+    enddo
+    do l=1,11-num_shells
+       write(stdout,'(4x)',advance='no')
+    enddo
+    write(stdout,'("|")')
+
+    nntot=0
+    do loop_s=1,num_shells
+       nntot=nntot+multi(shell_list(loop_s))
+    end do
+
+    allocate(nnlist(num_kpts,nntot), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating nnlist in kmesh_get')
+    allocate(neigh(num_kpts,nntot/2), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating neigh in kmesh_get')
+    allocate(nncell(3,num_kpts,nntot), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating nncell in kmesh_get')
+                                                                                                                         
+    allocate(wb(num_kpts,nntot), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating wb in kmesh_get')
+    allocate(bka(3,nntot/2), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating bka in kmesh_get')
+    allocate(bk(3,num_kpts,nntot), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating bk in kmesh_get')
+
+    nnx=0
+    do loop_s=1,num_shells
+       do loop_b=1,multi(shell_list(loop_s))
+          nnx=nnx+1
+          wb_local(nnx)=bweight(loop_s)
+       end do
+    end do
+
+    ! Now build up the list of nearest-neighbour shells for each k-point.
+    ! nnlist(nkp,1...nnx) points to the nnx neighbours (ordered along increa
+    ! shells) of the k-point nkp. nncell(i,nkp,nnth) tells us in which BZ is
+    ! nnth nearest-neighbour of the k-point nkp. Construct the nnx b-vectors
+    ! go from k-point nkp to each neighbour bk(1:3,nkp,1...nnx).
+    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+' 
+    write(stdout,'(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
+    write(stdout,'(1x,a)') '|                        -----   --------------------                        |'
+    nnshell=0
+    do nkp = 1, num_kpts
+       nnx = 0
+       ok: do ndnnx = 1, num_shells
+          ndnn = shell_list(ndnnx)
+          do loop=1,(2*nsupcell+1)**3
+             l=lmn(1,loop);m=lmn(2,loop);n=lmn(3,loop)
+             vkpp2=matmul(lmn(:,loop),recip_lattice)
+             do nkp2 = 1, num_kpts
+                vkpp=vkpp2+kpt_cart(:,nkp2)
+                dist= sqrt( (kpt_cart(1,nkp)-vkpp(1))**2 &
+                     + (kpt_cart(2,nkp)-vkpp(2))**2 + (kpt_cart(3,nkp)-vkpp(3)) **2)
+                if ( (dist.ge.dnn(ndnn)*0.99999_dp) .and. (dist.le.dnn(ndnn)*1.00001_dp) ) then
+                   nnx = nnx + 1
+                   nnshell(nkp,ndnn) = nnshell(nkp,ndnn) + 1
+                   nnlist(nkp,nnx) = nkp2
+                   nncell(1,nkp,nnx) = l
+                   nncell(2,nkp,nnx) = m
+                   nncell(3,nkp,nnx) = n
+                   bk_local(:,nnx,nkp) = vkpp(:) - kpt_cart(:,nkp)
+                endif
+                !if we have the right number of neighbours we can exit
+                if(nnshell(nkp,ndnn)==multi(ndnn)) cycle ok
+             enddo
+          enddo
+          ! check to see if too few neighbours here
+       end do ok
+
+    end do
+
+    do ndnnx=1, num_shells
+       ndnn = shell_list(ndnnx)
+       write(stdout,'(1x,a,24x,i3,13x,i3,33x,a)') '|',ndnn,nnshell(1,ndnn),'|'
+    end do
+    write(stdout,'(1x,"+",76("-"),"+")') 
+
+
+    do nkp = 1, num_kpts  
+       nnx = 0  
+       do ndnnx = 1, num_shells  
+          ndnn = shell_list(ndnnx)  
+          do nnsh = 1, nnshell(nkp,ndnn)  
+             bb1 = 0.0_dp  
+             bbn = 0.0_dp  
+             nnx = nnx + 1  
+             do i = 1, 3  
+                bb1 = bb1 + bk_local(i,nnx,1) * bk_local(i,nnx,1)  
+                bbn = bbn + bk_local(i,nnx,nkp) * bk_local(i,nnx,nkp)  
+             enddo
+             if (abs(sqrt(bb1)-sqrt(bbn)).gt.eps) then  
+                write(stdout,'(1x,2f10.6)') bb1,bbn
+                call io_error('Non-symmetric k-point neighbours!')
+             endif
+          enddo
+       enddo
+    enddo
+
+
+    ! now check that the completeness relation is satisfied for every kpoint
+    ! We know it is true for kpt=1; but we check the rest to be safe.
+    ! Eq. B1 in Appendix  B PRB 56 12847 (1997)
+
+    do nkp = 1, num_kpts  
+       do i = 1, 3  
+          do j = 1, 3  
+             ddelta = 0.0_dp 
+             nnx = 0  
+             do ndnnx = 1, num_shells  
+                ndnn = shell_list(ndnnx)  
+                do nnsh = 1, nnshell(1,ndnn)  
+                   nnx = nnx + 1  
+                   ddelta = ddelta + wb_local(nnx) * bk_local(i,nnx,nkp) * bk_local(j,nnx,nkp)
+                enddo
+             enddo
+             if ( (i.eq.j) .and. (abs(ddelta-1.0_dp).gt.eps) ) then
+                write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
+                call io_error('Eq. (B1) not satisfied in kmesh_get (1)')  
+             endif
+             if ( (i.ne.j) .and. (abs(ddelta).gt.eps) ) then  
+                write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
+                call io_error('Eq. (B1) not satisfied in kmesh_get (2)')  
+             endif
+          enddo
+       enddo
+    enddo
+
+    write(stdout,'(1x,a)') '| Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |'  
+    write(stdout,'(1x,"+",76("-"),"+")') 
+
+    !
+    wbtot = 0.0_dp  
+    nnx = 0  
+    do ndnnx = 1, num_shells  
+       ndnn = shell_list(ndnnx)  
+       do nnsh = 1, nnshell(1,ndnn)  
+          nnx = nnx + 1  
+          wbtot = wbtot + wb_local(nnx)  
+       enddo
+    enddo
+
+
+    nnh = nntot / 2  
+    ! make list of bka vectors from neighbours of first k-point
+    ! delete any inverse vectors as you collect them
+    na = 0  
+    do nn = 1, nntot  
+       ifound = 0  
+       if (na.ne.0) then  
+          do nap = 1, na  
+             call utility_compar(bka(1,nap),bk_local(1,nn,1),ifpos,ifneg)  
+             if (ifneg.eq.1) ifound = 1  
+          enddo
+       endif
+       if (ifound.eq.0) then  
+          !         found new vector to add to set
+          na = na + 1  
+          bka(1,na) = bk_local(1,nn,1)  
+          bka(2,na) = bk_local(2,nn,1)  
+          bka(3,na) = bk_local(3,nn,1)  
+       endif
+    enddo
+    if (na.ne.nnh) call io_error('Did not find right number of bk directions')
+
+
+    write(stdout,'(1x,a)') '|                           b_k Vectors and Weights                          |'
+    write(stdout,'(1x,a)') '|                           -----------------------                          |'
+    write(stdout,'(1x,a)') '|            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |'
+    write(stdout,'(1x,a)') '|            ---        --------------------------------     --------        |'
+    do i = 1, nntot  
+       write (stdout,'(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') i,(bk_local(j,i,1),j=1,3),wb_local(i)
+    enddo
+    write(stdout,'(1x,"+",76("-"),"+")') 
+    write(stdout,'(1x,a)') '|                                b_k Directions                              |'
+    write(stdout,'(1x,a)') '|                                --------------                              |'
+    write(stdout,'(1x,a)') '|            No.           x           y           z                         |'
+    write(stdout,'(1x,a)') '|            ---        --------------------------------                     |'
+    do i = 1, nnh  
+       write(stdout,'(1x,"|",11x,i3,5x,3f12.6,21x,"|")') i,(bka(j,i),j=1,3)  
+    enddo
+    write(stdout,'(1x,"+",76("-"),"+")') 
+    write(stdout,*) ' '  
+
+
+    ! find index array
+    do nkp = 1, num_kpts  
+       do na = 1, nnh  
+          ! first, zero the index array so we can check it gets filled
+          neigh(nkp,na) = 0  
+          ! now search through list of neighbours of this k-point
+          do nn = 1, nntot  
+             call utility_compar(bka(1,na),bk_local(1,nn,nkp),ifpos,ifneg)  
+             if (ifpos.eq.1) neigh(nkp,na)=nn  
+          enddo
+          ! check found
+          if (neigh(nkp,na).eq.0) then  
+             write(stdout,*) ' nkp,na=',nkp,na  
+             call io_error('kmesh_get: failed to find neighbours for this kpoint')  
+          endif
+       enddo
+    enddo
+
+
+   !fill in the global arrays from the local ones
+
+   do loop=1,nntot
+      wb(:,loop)=wb_local(loop)
+   end do
+
+   do loop_s=1,num_kpts
+      do loop=1,nntot
+         bk(:,loop_s,loop)=bk_local(:,loop,loop_s)
+      end do
+   end do
+
+
+    return
+
+  end subroutine kmesh_get
+
+
+
+    !==================================================================!
+    subroutine kmesh_write()
+    !==================================================================!
+    !                                                                  !
+    ! Writes wannier.nnkp file                                         !
+    !                                                                  ! 
+    ! Note that the format is different to (and more compact than)     !
+    ! that used by the old f77 code.                                   !
+    !                                                                  !
+    ! The file consists of num_kpts blocks of data, one block for each !
+    ! k-point of the mesh. Each block consists of nntot+1 lines,       !
+    ! where nntot is the (integer) number of nearest neighbours        !
+    ! belonging to k-point nkp.                                        !
+    !                                                                  !
+    ! The first line in each block is just nntot.                      !
+    !                                                                  !
+    ! The second line consists of 5 integers. The first is the k-point !
+    ! nkp. The second to the fifth specify it's nearest neighbours     !
+    ! k+b: the second integer points to the k-point that is the        !
+    ! periodic image of k+b that we want; the last three integers give !
+    ! the G-vector, in reciprocal lattice units, that brings the       !
+    ! k-point specified by the second integer (which is in the first   !
+    ! BZ) to the actual k+b that we need.                              !
+    !                                                                  !
+    ! So wannier.nnkp specifies the nearest neighbours of each         !
+    ! k-point, and therefore provides the information required to      !
+    ! calculate the M_mn(k,b) matrix elements -- Marzari & Vanderbilt  !
+    ! PRB 56, 12847 (1997) Eq. (25) -- for each pair of band indices   !
+    ! m and n.                                                         !
+    !===================================================================  
+    use io,     only: io_file_unit,seedname,io_date
+
+    implicit none
+
+    integer           :: i,nkp,nn,nnkpout
+    character (len=9) :: cdate,ctime
+
+    nnkpout=io_file_unit()
+    open(unit=nnkpout,file=trim(seedname)//'.nnkp',form='formatted')
+
+    ! Date and time
+    call io_date(cdate,ctime)
+    write(nnkpout,'(4(a),/)') 'File written on ',cdate,' at ',ctime
+
+    ! Calc_only_A
+    write(nnkpout,'(a,l2,/)') 'calc_only_A  : ',calc_only_A
+
+    ! Real lattice
+    write(nnkpout,'(a)') 'begin real_lattice'
+    write(nnkpout,'(3(f11.6))') (real_lattice(1,i), i=1,3)
+    write(nnkpout,'(3(f11.6))') (real_lattice(2,i), i=1,3)
+    write(nnkpout,'(3(f11.6))') (real_lattice(3,i), i=1,3)
+    write(nnkpout,'(a/)') 'end real_lattice'
+
+    ! Reciprocal lattice
+    write(nnkpout,'(a)') 'begin recip_lattice'
+    write(nnkpout,'(3f11.6)') (recip_lattice(1,i), i=1,3)
+    write(nnkpout,'(3f11.6)') (recip_lattice(2,i), i=1,3)
+    write(nnkpout,'(3f11.6)') (recip_lattice(3,i), i=1,3)    
+    write(nnkpout,'(a/)') 'end recip_lattice'
+
+    ! K-points
+    write(nnkpout,'(a)') 'begin kpoints'
+    write(nnkpout,'(i6)') num_kpts
+    do nkp=1,num_kpts
+       write(nnkpout,'(3f10.5)') (kpt_latt(i,nkp), i=1,3)
+    enddo
+    write(nnkpout,'(a/)') 'end kpoints'
+
+    ! Projections
+    write(nnkpout,'(a)') 'begin projections'
+    if (allocated(proj_site)) then
+       write(nnkpout,'(i6)') num_wann
+       do i=1,num_wann
+          write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
+               proj_site(1,i),proj_site(2,i),proj_site(3,i), &
+               proj_l(i),proj_m(i),proj_radial(i)
+          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,2f7.2)') &
+               proj_z(1,i),proj_z(2,i),proj_z(3,i), &
+               proj_x(1,i),proj_x(2,i),proj_x(3,i), &
+               proj_zona(i),proj_box(i)
+       enddo
+    end if
+    write(nnkpout,'(a/)') 'end projections'
+
+    ! Nearest neighbour k-points
+    write(nnkpout,'(a)') 'begin nnkpts'
+    write(nnkpout,'(i4)') nntot
+    do nkp=1,num_kpts
+       do nn=1,nntot
+          write(nnkpout,'(2i6,3x,3i4)') & 
+               nkp,nnlist(nkp,nn),(nncell(i,nkp,nn),i=1,3)
+       end do
+    end do
+    write(nnkpout,'(a/)') 'end nnkpts'
+
+
+    close(nnkpout)
+
+    return
+
+  end subroutine kmesh_write
+
+
+
+    !==================================================================!
+    subroutine kmesh_dealloc()
+    !==================================================================!
+    !                                                                  !
+    !  Release Memory                                                  ! 
+    !                                                                  !
+    !===================================================================  
+    use io,   only : io_error
+    implicit none
+    integer :: ierr
+
+    ! Deallocate real arrays that are public
+
+    deallocate(bk, stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
+    deallocate(bka, stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
+    deallocate(wb, stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
+
+    ! Deallocate integer arrays that are public
+
+    deallocate(nncell, stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating nncell in kmesh_dealloc')
+    deallocate(neigh, stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
+    deallocate(nnlist, stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_dealloc')
+
+    return
+
+  end subroutine kmesh_dealloc
+
+
+    !==================================================================!
+  subroutine kmesh_supercell_sort
+    !==================================================================!
+    !                                                                  !
+    ! We look for kpoint neighbours in a large supercell of reciprocal !
+    ! unit cells. Done sequentially this is very slow.                 !
+    ! Here we order the cells by the distance from the origin          !
+    ! Doing the search in this order gives a dramatic speed up         !
+    !                                                                  !
+    !==================================================================!  
+    use io,   only : io_error
+    implicit none
+    integer :: counter,l,m,n,loop
+
+    integer :: lmn_cp( 3,(2*nsupcell+1)**3),indx(1)
+    real(kind=dp) :: pos(3)
+    real(kind=dp) :: dist((2*nsupcell+1)**3)
+    real(kind=dp) :: dist_cp((2*nsupcell+1)**3)
+
+    counter=1
+    lmn(:,counter)=0
+    dist(counter)=0.0_dp
+    do l = -nsupcell,  nsupcell 
+       do m = -nsupcell,   nsupcell
+          do n = -nsupcell,  nsupcell
+             if(l==0 .and. m==0 .and. n==0) cycle
+             counter=counter+1
+             lmn(1,counter)=l;lmn(2,counter)=m;lmn(3,counter)=n
+             pos=matmul(lmn(:,counter),recip_lattice)
+             dist(counter)=sqrt(dot_product(pos,pos))
+          end do
+       end do
+    end do
+
+    do loop=(2*nsupcell+1)**3,1,-1
+       indx=maxloc(dist)
+       dist_cp(loop)=dist(indx(1))
+       lmn_cp(:,loop)=lmn(:,indx(1))
+       dist(indx(1))=-1.0_dp
+    end do
+
+    lmn=lmn_cp
+    dist=dist_cp
+
+
+  end subroutine kmesh_supercell_sort
+
+
+
+    !==================================================================!
+    subroutine kmesh_get_bvectors(multi,kpt,shell_dist,bvector)
+    !==================================================================!
+    !                                                                  !
+    ! Returns the bvectors for a given shell and kpoint                ! 
+    !                                                                  !
+    !===================================================================  
+    use io,   only : io_error
+    implicit none
+
+    integer, intent(in) :: multi   ! the number of kpoints in the shell
+    integer, intent(in) :: kpt     ! which kpt is our 'origin'
+    real(kind=dp), intent(in) :: shell_dist ! the bvectors
+    real(kind=dp), intent(out) :: bvector(3,multi) ! the bvectors
+
+
+    integer :: loop,nkp2,num_bvec
+
+    real(kind=dp) :: dist,vkpp2(3),vkpp(3)
+    bvector=0.0_dp
+
+    num_bvec=0
+    ok:    do loop=1,(2*nsupcell+1)**3
+       vkpp2=matmul(lmn(:,loop),recip_lattice)
+       do nkp2 = 1, num_kpts
+          vkpp=vkpp2+kpt_cart(:,nkp2)
+          dist= sqrt( (kpt_cart(1,kpt)-vkpp(1))**2 &
+               + (kpt_cart(2,kpt)-vkpp(2))**2 + (kpt_cart(3,kpt)-vkpp(3)) **2)
+          if ( (dist.ge.shell_dist*0.99999_dp) .and. (dist.le.shell_dist*1.00001_dp) ) then
+             num_bvec = num_bvec + 1
+             bvector(:,num_bvec) = vkpp(:) - kpt_cart(:,kpt)
+          endif
+          !if we have the right number of neighbours we can exit
+          if(num_bvec==multi) cycle ok
+       enddo
+    enddo ok
+
+    if(num_bvec<multi) call io_error('kmesh_get_bvector: Not enough bvectors found')
+
+
+    return
+
+  end subroutine kmesh_get_bvectors
+
+
+    !==========================================================================!
+    subroutine kmesh_shell_automatic(multi,dnn,bweight)
+    !==========================================================================!
+    !                                                                          !
+    ! Find the correct set of shells to satisfy B1                             !
+    !  The stratagy is:                                                        !
+    !        Take the bvectors from the next shell                             !
+    !        Reject them if they are parallel to exisiting b vectors           !
+    !        Test to see if we satisfy B1, if not add another shell and repeat !
+    !                                                                          !
+    !==========================================================================!  
+    use io,   only : io_error,stdout
+    implicit none
+
+    integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
+    real(kind=dp), intent(in) :: dnn(search_shells) ! the bvectors
+    real(kind=dp), intent(out) :: bweight(max_shells)
+    real(kind=dp)       :: bvector(3,maxval(multi),max_shells) ! the bvectors
+
+    real(kind=dp), dimension(:),     allocatable :: singv
+    real(kind=dp), dimension(:,:),   allocatable :: amat,umat,vmat,smat
+    integer, parameter :: lwork=max_shells*10
+    real(kind=dp) :: work(lwork)
+    real(kind=dp), parameter :: target(6)=(/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp/)
+    logical :: b1sat,lpar
+    integer :: loop_i,loop_j,loop_bn,loop_b,loop_s,info,cur_shell
+    real(kind=dp) :: delta
+
+    integer :: loop,shell
+
+    bvector=0.0_dp;bweight=0.0_dp
+
+    write(stdout,'(1x,a)') '| The b-vectors are chosen automatically                                     |'
+
+    do shell=1,search_shells
+       cur_shell=num_shells+1
+
+       ! get the b vectors for the new shell
+       call kmesh_get_bvectors(multi(shell),1,dnn(shell),bvector(:,1:multi(shell),cur_shell))
+
+       if(iprint>=3) then
+          write(stdout,'(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:',shell,' Multiplicity:',multi(shell), '|'
+             do loop=1,multi(cur_shell)
+                write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,23x,a)') '| b-vector ',loop,':', bvector(:,loop,cur_shell) , '|'
+             end do
+       end if
+
+       ! We check that the new shell is not parrallel to an existing shell (cosine=1)
+       lpar=.false.
+       if(num_shells>0) then
+          do loop_bn=1,multi(shell)
+             do loop_s=1,num_shells
+                do loop_b=1,multi(shell_list(loop_s))
+                   delta=dot_product(bvector(:,loop_bn,cur_shell),bvector(:,loop_b,loop_s))/ &
+                        sqrt(dot_product(bvector(:,loop_bn,cur_shell),bvector(:,loop_bn,cur_shell))* &
+                        dot_product(bvector(:,loop_b,loop_s),bvector(:,loop_b,loop_s)))
+                   if(abs(abs(delta)-1.0_dp)<0.000001_dp) lpar=.true.
+                end do
+             end do
+          end do
+       end if
+
+       if(lpar) then
+          if(iprint>=3) then
+             write(stdout,'(1x,a)') '| This shell is linearly dependent on existing shells: Trying next shell     |'
+          end if
+          cycle
+       end if
+
+       num_shells=num_shells+1
+       shell_list(num_shells)=shell
+
+       allocate(amat(max_shells,num_shells))
+       allocate(umat(max_shells,max_shells))
+       allocate(vmat(num_shells,num_shells))
+       allocate(smat(num_shells,max_shells))
+       allocate(singv(num_shells))
+       amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
+
+       amat=0.0_dp
+       do loop_s=1,num_shells
+          do loop_b=1,multi(shell_list(loop_s))
+             amat(1,loop_s)=amat(1,loop_s)+bvector(1,loop_b,loop_s)*bvector(1,loop_b,loop_s)
+             amat(2,loop_s)=amat(2,loop_s)+bvector(2,loop_b,loop_s)*bvector(2,loop_b,loop_s)
+             amat(3,loop_s)=amat(3,loop_s)+bvector(3,loop_b,loop_s)*bvector(3,loop_b,loop_s)
+             amat(4,loop_s)=amat(4,loop_s)+bvector(1,loop_b,loop_s)*bvector(2,loop_b,loop_s)
+             amat(5,loop_s)=amat(5,loop_s)+bvector(2,loop_b,loop_s)*bvector(3,loop_b,loop_s)
+             amat(6,loop_s)=amat(6,loop_s)+bvector(3,loop_b,loop_s)*bvector(1,loop_b,loop_s)
+          end do
+       end do
+
+       info=0
+       call dgesvd('A','A',max_shells,num_shells,amat,max_shells,singv,umat,max_shells,vmat,num_shells,work,lwork,info)
+       if(info<0) then
+          write(stdout,'(1x,a,1x,I1,1x,a)') 'kmesh_shell_automatic: Argument',abs(info),'of dgesvd is incorrect'
+          call io_error('kmesh_shell_automatic: Problem with Singular Value Decomposition')
+       else if (info>0) then
+          call io_error('kmesh_shell_automatic: Singular Value Decomposition did not converge')
+       end if
+
+       if(any(abs(singv)<0.0000001_dp)) &
+            call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value')
+
+       smat=0.0_dp
+       do loop_s=1,num_shells
+          smat(loop_s,loop_s)=1/singv(loop_s)
+       end do
+
+       bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
+       if(iprint>=2) then
+          do loop_s=1,num_shells
+             write(stdout,'(1x,a,I2,a,f12.7,49x,a)') '| Shell: ',loop_s,' w_b ', bweight(loop_s),'|'
+          end do
+       end if
+
+       !check b1
+       b1sat=.true.
+       do loop_i=1,3
+          do loop_j=loop_i,3
+             delta=0.0_dp
+             do loop_s=1,num_shells
+                do loop_b=1,multi(shell_list(loop_s))
+                   delta=delta+bweight(loop_s)*bvector(loop_i,loop_b,loop_s)*bvector(loop_j,loop_b,loop_s)
+                end do
+             end do
+             if(loop_i==loop_j) then
+                if(abs(delta-1.0_dp)>0.001_dp) b1sat=.false.
+             end if
+             if(loop_i/=loop_j) then
+                if(abs(delta)>0.001_dp) b1sat=.false.
+             end if
+          end do
+       end do
+
+       if(.not.b1sat) then
+          if(iprint>=3) then
+             write(stdout,'(1x,a,24x,a1)') '| B1 condition is not satisfied: Adding another shell','|'
+          end if
+       end if
+
+       deallocate(amat)
+       deallocate(umat)
+       deallocate(vmat)
+       deallocate(smat)
+       deallocate(singv)
+
+       if(b1sat) exit
+
+    end do
+
+
+
+
+    return
+
+  end subroutine kmesh_shell_automatic
+
+
+    !==========================================================================!
+     subroutine kmesh_shell_fixed(multi,dnn,bweight)
+    !==========================================================================!
+    !                                                                          !
+    !  Find the B1 weights for a set of shells specified by the user           !
+    !                                                                          !
+    !==========================================================================!
+
+    use io,   only : io_error,stdout
+    implicit none
+
+    integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
+    real(kind=dp), intent(in) :: dnn(search_shells) ! the bvectors
+    real(kind=dp), intent(out) :: bweight(max_shells)
+    real(kind=dp)       :: bvector(3,maxval(multi),num_shells) ! the bvectors
+
+    real(kind=dp) :: singv(num_shells)
+    real(kind=dp) :: amat(max_shells,num_shells)
+    real(kind=dp) :: umat(max_shells,max_shells)
+    real(kind=dp) :: vmat(num_shells,num_shells)
+    real(kind=dp) :: smat(num_shells,max_shells)
+    integer, parameter :: lwork=max_shells*10
+    real(kind=dp) :: work(lwork)
+    real(kind=dp), parameter :: target(6)=(/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp/)
+    logical :: b1sat
+    integer :: loop_i,loop_j,loop_b,loop_s,info
+    real(kind=dp) :: delta
+
+    integer :: loop,shell
+
+    bvector=0.0_dp;bweight=0.0_dp
+    amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
+
+    write(stdout,'(1x,a)') '| The b-vectors are set in the win file                                      |'
+
+
+    do shell=1,num_shells
+       ! get the b vectors for this shell
+       call kmesh_get_bvectors(multi(shell_list(shell)),1,dnn(shell_list(shell)),&
+            bvector(:,1:multi(shell_list(shell)),shell))
+    end do
+
+    if(iprint>=3) then
+       do shell=1,num_shells
+          write(stdout,'(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:',shell,' Multiplicity:',multi(shell_list(shell)), '|'
+          do loop=1,multi(shell_list(shell))
+!             write(stdout,'(1x,a7,1x,I2,67x,a1)')  '| Shell:',shell,'|'
+             write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,23x,a)') '| b-vector ',loop,':', bvector(:,loop,shell) , '|'
+          end do
+       end do
+    end if
+
+    do loop_s=1,num_shells
+       do loop_b=1,multi(shell_list(loop_s))
+          amat(1,loop_s)=amat(1,loop_s)+bvector(1,loop_b,loop_s)*bvector(1,loop_b,loop_s)
+          amat(2,loop_s)=amat(2,loop_s)+bvector(2,loop_b,loop_s)*bvector(2,loop_b,loop_s)
+          amat(3,loop_s)=amat(3,loop_s)+bvector(3,loop_b,loop_s)*bvector(3,loop_b,loop_s)
+          amat(4,loop_s)=amat(4,loop_s)+bvector(1,loop_b,loop_s)*bvector(2,loop_b,loop_s)
+          amat(5,loop_s)=amat(5,loop_s)+bvector(2,loop_b,loop_s)*bvector(3,loop_b,loop_s)
+          amat(6,loop_s)=amat(6,loop_s)+bvector(3,loop_b,loop_s)*bvector(1,loop_b,loop_s)
+       end do
+    end do
+
+
+    info=0
+    call dgesvd('A','A',max_shells,num_shells,amat,max_shells,singv,umat,max_shells,vmat,num_shells,work,lwork,info)
+    if(info<0) then
+       write(stdout,'(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument',abs(info),'of dgesvd is incorrect'
+       call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition')
+    else if (info>0) then
+       call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge')
+    end if
+    
+    if(any(abs(singv)<0.0000001_dp)) &
+         call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value')
+    
+    smat=0.0_dp
+    do loop_s=1,num_shells
+       smat(loop_s,loop_s)=1/singv(loop_s)
+    end do
+
+    bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
+    if(iprint>=2) then
+       do loop_s=1,num_shells
+          write(stdout,'(1x,a,I2,a,f12.7,49x,a)') '| Shell: ',loop_s,' w_b ', bweight(loop_s),'|'
+       end do
+    end if
+
+
+    !check b1
+
+    b1sat=.true.
+    do loop_i=1,3
+       do loop_j=loop_i,3
+          delta=0.0_dp
+          do loop_s=1,num_shells
+             do loop_b=1,multi(shell_list(loop_s))
+                delta=delta+bweight(loop_s)*bvector(loop_i,loop_b,loop_s)*bvector(loop_j,loop_b,loop_s)
+             end do
+          end do
+          if(loop_i==loop_j) then
+             if(abs(delta-1.0_dp)>0.001_dp) b1sat=.false.  
+          end if
+          if(loop_i/=loop_j) then
+             if(abs(delta)>0.001_dp) b1sat=.false.
+          end if
+       end do
+    end do
+
+
+    if(.not.b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied')
+
+
+
+    return
+
+  end subroutine kmesh_shell_fixed
+
+
+end module kmesh

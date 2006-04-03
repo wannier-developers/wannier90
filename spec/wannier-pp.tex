@@ -1,0 +1,380 @@
+\chapter{Wannier as a post-processing tool} \label{ch:wann-pp}
+
+This is a description of the how to use the wannier code as a
+post-processing tool. 
+
+The code must be run twice. On the first pass the logical keyword
+\verb#postproc_setup# must be set to \verb#.true.# in the input file
+\verb#seedname.win#.  Running the code then generates the file
+\verb#seedname.nnkp# which provides the information required to 
+construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (MV\footnote{Marzari
+  and Vanderbilt, \textit{Phys.~Rev.~B} \textbf{56}, 12847 (1997)}
+Eq.~(25)) and $A_{mn}^{(\mathbf{k})}=\left\langle
+\psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections (MV
+Eq.~(62), SMV\footnote{Souza, Marzari and Vanderbilt,
+  \textit{Phys.~Rev.~B} \textbf{65}, 035109 (2001)} Eq.~(22)). 
+
+Once the overlaps and projection have been computed and written to
+files \verb#seedname.mmn# and \verb#seedname.amn#, respectively, set
+\verb#postproc_setup# to \verb#.false.# and run the code. Output is
+written to the file \verb#seedname.wout#.
+
+
+\section{nnkp file}
+
+OUTPUT, if $\verb#postproc_setup#=\verb#.true.#$
+
+The file \verb#seedname.nnkp# provides the information needed to
+determine the required overlap elements $M_{mn}^{(\mathbf{k,b})}$ (MV
+Eq.~(25)) and projections $A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV
+Eq.~(22)), ie, \verb#M_matrix_orig# and \verb#A_matrix#, described in
+Section~\ref{wannier_run}.
+
+Much of the information in \verb#seedname.nnkp# is arranged in blocks
+delimited by the strings \verb#begin block_name# \ldots
+\verb#end block_name#, as described below. 
+
+
+\subsection{Keywords}
+The first line of the file is a user comment, e.g., the date and time:
+
+\verb#File written on 12Feb2006 at 15:13:12#
+
+\noindent 
+The only logical keyword is \verb#calc_only_A#, eg,
+
+\verb#calc_only_A  :  F#
+
+
+\subsection{Real\_lattice block}
+\begin{verbatim}
+begin real_lattice
+ 2.250000   0.000000   0.000000
+ 0.000000   2.250000   0.000000
+ 0.000000   0.000000   2.250000
+end real_lattice
+\end{verbatim}
+
+The real lattice vectors in units of Angstrom.
+
+
+\subsection{Recip\_lattice block}
+\begin{verbatim}
+begin recip_lattice
+ 2.792527   0.000000   0.000000
+ 0.000000   2.792527   0.000000
+ 0.000000   0.000000   2.792527
+end recip_lattice
+\end{verbatim}
+
+The reciprocal lattice vectors in units of inverse Angstrom.
+
+
+\subsection{Kpoints block}
+\begin{verbatim}
+begin kpoints
+  8
+  0.00000   0.00000   0.00000
+  0.00000   0.50000   0.00000
+  .
+  .
+  .
+  0.50000   0.50000   0.50000
+end kpoints
+\end{verbatim}
+
+The first line in the block is the total number of k-points
+\verb#num_kpts#. The subsequent \verb#num_kpts# lines specify the
+k-points in crystallographic co-ordinates relative to the reciprocal
+lattice vectors.
+
+
+\subsection{Projections block}
+\begin{verbatim}
+begin projections
+   n_proj
+   center   l  mr  r   
+     z-axis   x-axis   zona   box-size   
+   center   l  mr  r   
+     z-axis   x-axis   zona   box-size   
+   .
+   .
+end projections
+\end{verbatim}
+
+\noindent
+Notes:
+
+\verb#n_proj#: integer; the number of projection centers, equal to the
+number of Wannier functions \verb#num_wann#.
+
+\verb#center#: three real numbers; projection function center
+in crystallographic co-ordinates relative to the direct lattice
+vectors.
+
+\verb#l  mr  r#: three integers; $l$ and $m_\mathrm{r}$ specify the
+angular part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and
+$\mathrm{r}$ specifies the radial part $R_{\mathrm{r}}(r)$ of the
+projection function (see Tables~\ref{tab:angular}, \ref{tab:hybrids}
+and \ref{tab:radial}). 
+
+\verb#z-axis#: three real numbers; default is
+\verb#0.0 0.0 1.0#; defines the axis from which the polar angle
+$\theta$ in spherical polar coordinates is measured.
+
+\verb#x-axis#: three real numbers; must be orthogonal to
+\verb#z-axis#; default is \verb#1.0 0.0 0.0# or a vector
+perpendicular to \verb#z-axis# if \verb#z-axis# is given; defines the
+axis from with the azimuthal angle $\varphi$ in spherical polar
+coordinates is measured.
+
+\verb#zona#: real number; the value of $\frac{Z}{a}$ associated
+with the radial part of the atomic orbital. Units are in reciprocal
+Angstrom.
+
+\verb#box-size#: real number; the linear dimension of the real-space
+box (or sphere) for calculating the overlap
+$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the
+localised projection function. Units are in Angstrom.
+
+
+
+\subsection{nnkpts block}
+\begin{verbatim}
+begin nnkpts
+  10
+  1   2   0  0  0
+  .
+  .
+end nnkpts
+\end{verbatim}
+
+First line: \verb#nntot#, the number of nearest neighbours belonging
+to each k-point of the Monkhorst-Pack mesh
+
+Subsequent lines: \verb#nntot#$\times$\verb#num_kpts#
+lines, ie, \verb#nntot# lines of data for each k-point of the mesh. 
+
+Each line of consists of 5 integers. The first is the
+k-point number \verb#nkp#. The second to the fifth specify it's nearest
+neighbours $\mathbf{k+b}$: the second integer points to the k-point
+that is the periodic image of the $\mathbf{k+b}$ that we want; the
+last three integers give the G-vector, in reciprocal lattice units,
+that brings the k-point specified by the second integer (which is in
+the first BZ) to the actual $\mathbf{k+b}$ that we need.
+
+
+
+\subsection{An example of projections}\label{sec:proj_example}
+
+As a concrete example: one wishes to have a set of four sp$^3$ projection
+orbitals on, say, a carbon atom at (0.5,0.5,0.5) in fractional
+co-ordinates relative to the direct lattice vectors. In this case
+\verb#seedname.win# will contain the following lines:
+
+\begin{verbatim}
+begin projections
+ C:l=-1
+end projections
+\end{verbatim}
+
+and \verb#seedname.nnkp#, generated on the first pass of
+\verb#wannier90# (with \verb#postproc_setup=T#), will contain: 
+
+\begin{verbatim}
+begin projections
+   4
+   0.50000    0.50000    0.50000    -1  1  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+   0.50000    0.50000    0.50000    -1  2  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+   0.50000    0.50000    0.50000    -1  3  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+   0.50000    0.50000    0.50000    -1  4  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+end projections
+\end{verbatim}
+
+where the first line tells us that in total four projections are
+specified, and the subsquent lines provide the projection center, the
+angular and radial parts of the orbital (see
+Section~\ref{sec:orbital-defs} for definitions), the $z$ and $x$ axes,
+and the diffusivity and cut-off radius for the projection orbital.
+
+\textsc{pwscf}, or any other \textit{ab initio} electronic structure
+code, then reads \verb#seedname.nnkp# file, calculates the projections
+and writes them to \verb#seedname.amn#. 
+
+
+\subsection{Things to add}
+
+\begin{itemize}
+\item List of states to exclude from the calculation
+  (\verb#exclude_bands#)
+\end{itemize}
+
+Notes:
+
+It would be desirable to be able to control which bands to include. One
+might perform a `nscf' calculation for 16 bands and want to
+\begin{enumerate}
+\item ignore the lowest $n$ bands (e.g., only look at conduction states)
+\item take the lowest $n$ bands (e.g., only look at valence states)
+\item ignore an isolated set of bands in the middle of the energy
+ range (e.g., the d orbitals in ZnTe)
+\end{enumerate}
+As calculating overlaps and projections is time consuming we want to
+cut out these states at the \verb#pw2wannier90# stage, not in
+\verb#wannier90#. 
+We can probably specify all this in \verb#seedname.win# and pass
+an explicit list of states to include (or exclude) in
+\verb#seedname.nnkp#.
+
+
+\section{Mmn file} 
+
+INPUT. 
+
+The file \verb#seedname.mmn# contains the overlaps
+$M_{mn}^{(\mathbf{k,b})}$.
+
+First line: a user comment, e.g., the date and time
+
+Second line: 3 integers: \verb#num_bands#, \verb#num_kpts#,
+\verb#nntot#
+
+Then: $\verb#num_kpts#\times\verb#nntot#$ blocks of data:
+ 
+First line of each block: 5 integers. The first specifies the
+$\mathbf{k}$ (i.e., gives the ordinal corresponding to its position in
+the list  of k-points in \verb#seedname.win#). The 2nd to 5th integers
+specify $\mathbf{k+b}$. The  2nd integer, in particular, points to the
+k-point on the list that is a  periodic image of $\mathbf{k+b}$, and
+in particular is the image that is actually mentioned in the list. The 
+last three integers specify the $\mathbf{G}$ vector, in  reciprocal
+lattice units, that brings the k-point specified by the fourth
+integer, and that thus lives inside the first BZ zone, to the actual
+$\mathbf{k+b}$ that we need.
+
+Subsequent $\verb#num_bands#\times\verb#num_bands#$ lines of each
+block: two real numbers per line. These are the real and imaginary
+parts, respectively, of the actual scalar product
+$M_{mn}^{(\mathbf{k,b})}$ for $m,n \in [1:\verb#num_bands#]$. The
+order of these elements is such that the first index $m$ is fastest.
+
+
+\section{Amn file}
+
+INPUT.
+
+The file \verb#seedname.amn# contains the projection
+$A_{mn}^{(\mathbf{k})}$.
+
+First line: a user comment, e.g., the date and time
+
+%Second line: a single integer, either 0 or 1. See below for explanation.
+
+Second line: 3 integers: \verb#num_bands#, \verb#num_kpts#, \verb#num_wann#
+
+                                     
+Subsequently
+$\verb#num_bands#\times\verb#num_wann#\times\verb#num_kpts#$ 
+lines: 3 integers and 2 real numbers on each line. The first 
+two integers are the band indices $m$ and $n$. The third integer specifies
+the $\mathbf{k}$ by giving the ordinal corresponding to its position
+in the list of $k$-points in the master input file. The real numbers
+are the real and imaginary parts, respectively, of the actual
+$A_{mn}^{(\mathbf{k})}$.
+
+%The flag in the second line of \verb#seedname.amn# is present in order
+%to give the \textit{ab initio} code some freedom to choose the shape
+%of the projections itself. There are two possibilities:
+%\begin{itemize}
+%\item If it is 0, then
+%\verb#wannier90# assumes that the projections in \verb#seedname.amn#
+%have been calculated as specified in \verb#seedname.nnkp# and proceeds
+%(if hybrid orbitals are required) to mix them in the correct manner to
+%obtain projections onto the desired orbitals specified in
+%\verb#seedname.win#
+%\item If it is 1, then \verb#wannier90# ignores the specification of
+%  the projection orbital shapes in \verb#seedname.win# and takes the
+%  \verb#seedname.amn# file `as is', i.e., does no mixing.
+%\end{itemize}
+
+%In terms of the example of Section~\ref{sec:proj_example}, let us
+%suppose that this flag is set to 0. Then 
+%\verb#seedname.amn# contains the overlaps of a wavefunction
+%$\psi_{m\mathbf{k}}$ with an atomic s and three p-orbitals
+%$\{\verb#s#,\verb#px#,\verb#py#,\verb#pz#\}$.
+%\verb#wannier90# will read 
+%\verb#seedname.amn# and calculate the projection
+%$A_{mn}^{(\mathbf{k})}$ of a $\psi_{m\mathbf{k}}$ onto
+%four sp$^3$ orbitals  $\{\phi_{n}\}$ (specified in \verb#seedname.win# by
+%\verb#l=-1#, or the string \verb#sp3#)
+%by linear mixing as follows:  
+
+%\begin{eqnarray}
+%A_{mn}^{(\mathbf{k})} & = & \langle\psi_{m\mathbf{k}}|\phi_{n}\rangle
+%                      \nonumber \\
+%                      & = &
+%                      \langle\psi_{m\mathbf{k}}|\verb#sp3-n#\rangle
+%                      \nonumber \\ 
+%                      & = &
+% \frac{1}{2}\left[\langle\psi_{m\mathbf{k}}|\verb#s#\rangle \pm
+% \langle\psi_{m\mathbf{k}}|\verb#px#\rangle \pm
+% \langle\psi_{m\mathbf{k}}|\verb#py#\rangle \pm
+% \langle\psi_{m\mathbf{k}}|\verb#pz#\rangle\right], \label{eq:Amn}
+%\end{eqnarray} 
+%
+%where the matrix elements on the right-hand side are taken from
+%\verb#seedname.amn#. Projections corresponding to four sp$^{3}$
+%orbitals \verb#sp3-1#, \verb#sp3-2#, \verb#sp3-3#, and \verb#sp3-4# --
+%see Section~\ref{sec:orbital-defs} -- are
+%obtained with appropriate choice of the signs in Eq.~(\ref{eq:Amn}): 
+%($+$,$+$,$+$), ($+$,$-$,$-$), ($-$,$+$,$-$) and
+%($-$,$-$,$+$).
+
+
+\section{eig file}
+
+INPUT. 
+
+Required if any of \verb#disentanglement#, \verb#plot_bands#,
+   \verb#plot_fermi_surface# or \verb#plot_dos# are \verb#.true.#
+
+The file \verb#seedname.eig# contains the Kohn-Sham eigenvalues
+     $\varepsilon_{n\mathbf{k}}$ (in eV) at each point in the
+     Monkhorst-Pack mesh.
+
+Each line consist of two integers and a real number. The first integer
+is the band index, the second integer gives the ordinal corresponding
+to the $k$-point in the list of $k$-points in the master input file,
+and the real number is the eigenvalue. 
+
+E.g.,
+
+\begin{verbatim}
+           1           1  -6.43858831271328
+           2           1   19.3977795287297
+           3           1   19.3977795287297
+           4           1   19.3977795287298
+\end{verbatim}
+
+
+\section{Interface with PWSCF}
+
+\begin{enumerate}
+\item Run an `scf' calculation with \verb#pw#
+\item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.true.# to
+  generate \verb#seedname.nnkp#
+\item Run \verb#pw2wannier90#. First it reads \verb#pw2wannier90.in#,
+  which defines \verb#prefix# and \verb#outdir# for the underlying `scf'
+  calculation, as well as the name of the file \verb#seedname.nnkp#,
+  and does a consistency check between the direct and reciprocal lattice
+  vectors read from \verb#seedname.nnkp# and those defined in the
+  files specified by \verb#prefix#. Then generate 
+  \verb#seedname.mmn#, \verb#seedname.amn#, \verb#seedname.eig#
+\item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.# to
+  disentangle and localise Wannier functions
+\end{enumerate}
+

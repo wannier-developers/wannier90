@@ -1,0 +1,12 @@
+
+#=================================================
+# For Linux with intel version 8 and mkl libraries
+# Edit for your own libs
+#=================================================
+F90 = ifort
+FCOPTS = -O2
+LDOPTS = -O2 -Vaxlib 
+LIBS   =  /opt/intel/mkl721/lib/32/libmkl_lapack.a \
+/opt/intel/mkl721/lib/32/libmkl_ia32.a -lguide -lpthread
+
+

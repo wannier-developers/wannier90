@@ -1,0 +1,84 @@
+\chapter{Files}
+
+
+\section{seedname.win}
+INPUT. The master input file; contains the specification of the system
+and any parameters for the run. 
+
+\subsection{Units}
+
+The following are the dimensional quantities that are
+specified in the master input file:
+
+\begin{itemize}
+\item Direct lattice vectors
+\item Energy windows
+\item Positions (of atomic or projection) centers in real space
+\item Positions of $\mathbf{k}$-points in reciprocal space
+\item \verb#zona# and \verb#box-size# (see Section~\ref{sec:proj})
+\end{itemize}
+
+Notes:
+
+\begin{itemize}
+\item The keyword \verb#length_unit# may be set to \verb#ang#
+  (default) or \verb#bohr#, in order to set the units in which the
+  direct  lattice vectors are given. 
+\item Energy is always in eV.
+\item Positions of $\mathbf{k}$-points are always in crystallographic
+  coordinates
+relative to the reciprocal lattice vectors.
+\item \verb#box-size# and \verb#zona# always in Angstrom and
+  reciprocal Angstrom, respectively
+\end{itemize}
+
+The reciprocal lattice vectors
+$\{\mathbf{B}_{1},\mathbf{B}_{2},\mathbf{B}_{3}\}$ are defined in
+terms
+of the direct lattice vectors
+$\{\mathbf{A}_{1},\mathbf{A}_{2},\mathbf{A}_{3}\}$ by the equation
+
+\begin{equation}
+\mathbf{B}_{1} = \frac{2\pi}{\Omega}\mathbf{A}_{2}\times\mathbf{A}_{3}
+\ \ \ \mathrm{etc.},
+\end{equation}
+
+where the cell volume is
+$\Omega=\mathbf{A}_{1}\cdot(\mathbf{A}_{2}\times\mathbf{A}_{3})$.
+
+\section{seedname.mmn}
+INPUT. See Chapter~\ref{ch:wann-pp}.
+
+\section{seedname.amn}
+INPUT. See Chapter~\ref{ch:wann-pp}.
+
+\section{seedname.eig}
+INPUT. See Chapter~\ref{ch:wann-pp}.
+
+\section{seedname.nnkp} \label{sec:old-nnkp}
+OUTPUT. See Chapter~\ref{ch:wann-pp}.
+
+\section{seedname.wout}
+OUTPUT. The master output file.
+
+
+\section{seedname.dat}
+INPUT/OUTPUT. Sufficient information to restart the calculation or enter the
+plotting phase.
+
+\section{WFNn.s}
+INPUT. If \verb#overlap#=\verb#TRUE# or \verb#wann_plot#=\verb#TRUE# or \verb#slice_plot#=\verb#TRUE# 
+. The orbitals from a first
+principles calculation, indexed by kpoint n and spin s on a real space
+grid. I can't imagine any code would output its wavefunctions
+automatically in real space. Therefore one would always need to do
+some coding and we would be able to specify the format of the files. A
+header of the file should contain; the number of grid points in each
+direction, the planewave cut-off energy, the total number of bands in
+the file.
+
+
+
+
+
+

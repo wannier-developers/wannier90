@@ -1,0 +1,55 @@
+\documentclass[11pt,twoside]{book}
+\title{Wannier Code}
+\author{\bf Version 1.0 \\     \\
+       Arash A. Mostofi (MIT)  \\ 
+               \&              \\
+Jonathan Yates (LBNL and UC Berkeley)} 
+\date{\today}
+
+%\usepackage{a4wide}
+\usepackage{graphicx}
+\usepackage{color}
+\def\red{\textcolor{red}}
+
+\parskip=2mm
+
+% Ensure that blank pages don't have numbers or heading on them 
+\makeatletter
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else
+ \hbox{}
+ \vspace*{\fill}
+ \thispagestyle{empty}
+ \newpage\fi\fi}
+\makeatother
+
+\newcommand{\cond}{\item[$\star$]}
+
+\begin{document}
+\maketitle
+
+%\tableofcontents
+
+%\listoftables
+
+%\listoffigures
+
+\include{overview}
+
+\include{parameters}
+
+\include{projections}
+
+\include{wannier}
+
+\include{wannier-pp}
+
+\include{files}
+
+\include{sample_input_files}
+
+\include{other_thoughts}
+
+
+
+\end{document} 
+

@@ -1,0 +1,27 @@
+\chapter{Other thoughts}
+
+We need a good user guide with a range of examples.
+
+We need a comprehensive set of test cases. Initially to check that the new
+and old codes give the same answers. Later on so we can check the code is
+working correctly when porting to new platforms and making new releases.
+
+A CVS (or subversion) repository would be very useful. Particularly when
+adding new features (ie one can have a release version and a development
+version). This would need to be on a networked machine and ideally one
+with a good back-up scheme.
+
+A mailing list (with web archive) would be nice. Could the pwscf crowd
+provide this for us?
+
+If the code is to released under the GPL, we have to be sure that all of
+the code complies with the GPL. At the moment it doesn't. For example
+there are a few routines cut and pasted from Numerical Recipes. (we can
+recode the same methods, but a cut and paste is not ok).
+
+The code will need LAPACK, BLAS and FFT libraries. While some systems
+package these with the compilers other don't (such as g95). We don't use
+very many routines from these libraries so we 
+might be able to package them in with the wannier code; for those that
+don't want the hassle 
+of making their own libraries. Pwscf does this.

@@ -1,0 +1,182 @@
+\chapter{Wannier as a library}
+
+This is a description of the interface between any external program and
+the wannier code. There are two subroutines: \verb#wannier_setup# and
+\verb#wannier_run#. Calling \verb#wannier_setup# will return
+information required to 
+construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (MV\footnote{Marzari
+  and Vanderbilt, \textit{Phys.~Rev.~B} \textbf{56}, 12847 (1997)}
+Eq.~(25)) and $A_{mn}^{(\mathbf{k})}=\left\langle
+\psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections (MV
+Eq.~(62), SMV\footnote{Souza, Marzari and Vanderbilt,
+  \textit{Phys.~Rev.~B} \textbf{65}, 035109 (2001)} Eq.~(22)). Once 
+the overlaps and projection have been computed, calling
+\verb#wannier_run# activates the main wannier code.
+
+%\section{Dependencies}
+%\begin{itemize}
+%\item Parameters
+%\item IO
+%\item Kmesh
+%\item Overlap
+%\item Wannierise
+%\end{itemize}
+
+\section{Subroutines}
+
+\subsection{wannier\_setup}
+
+{\noindent \bf \verb#wannier_setup(mp_grid,real_lattice,kpt_latt,#
+\verb#nntot,nnlist,nncell)#}
+
+
+\begin{itemize}
+\item \verb#integer, dimension(3), intent(in) :: mp_grid#\\ The
+  dimensions of the {Monkhorst-Pack} k-point grid.
+\item \verb#real(kind=dp), dimension(3,3), intent(in) :: real_lattice#\\
+  The lattice vectors in Cartesian co-ordinates in units of Angstrom.
+\item
+  \verb#real(kind=dp), dimension(3,num_kpts), intent(in) :: kpt_latt#\\
+  The positions of the k-points in fractional co-ordinates
+  relative to the reciprocal lattice vectors.
+\item \verb#integer, intent(out) :: nntot#\\ The
+  total number of nearest neighbours for each k-point. 
+\item \verb#integer, dimension(num_kpts,num_nnmax),#
+      \verb# intent(out) :: nnlist#\\
+      The list of nearest neighbours for each k-point.
+\item \verb#integer,dimension(3,num_kpts,num_nnmax),#
+      \verb# intent(out) :: nncell#\\ 
+      The vector, in fractional reciprocal lattice co-ordinates, that
+      brings the \verb#nn#$^{\mathrm{th}}$ nearest neighbour of
+      k-point \verb#nkp# to its periodic image that
+      is needed for computing the overlap 
+      $M_{mn}^{(\mathbf{k,b})}$.
+\end{itemize}
+
+Conditions:
+\begin{itemize}
+\cond $\verb#num_kpts# = \verb#mp_grid(1)# \times \verb#mp_grid(2)#
+\times \verb#mp_grid(3)#$.
+\cond $\verb#num_nnmax# = 12$
+\end{itemize}
+
+This subroutine returns the information required to determine the
+required overlap elements $M_{mn}^{(\mathbf{k,b})}$ (MV Eq.~(25)) and
+projections $A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV Eq.~(22)),
+ie, \verb#M_matrix_orig# and \verb#A_matrix#, described in
+Section~\ref{wannier_run}.
+
+For the avoidance of doubt, \verb#real_lattice(1,2)# is the
+$y-$component of the first lattice vector $\mathbf{A}_{1}$, etc.
+
+The list of nearest neighbours of a particular k-point \verb#nkp# is
+given by \verb#nnlist(nkp,1:nntot)#.  
+
+Additionally, the parameters \verb#nshells#, \verb#nwhich#, and
+\verb#insign# may be specified in the wannier input file.
+
+\subsection{wannier\_run} \label{wannier_run}
+
+{\noindent \bf \verb#wannier_run(mp_grid,real_lattice,kpt_latt,#
+\verb#num_bands,num_wann,num_kpts,#\\
+\verb#            nntot,num_atoms,atom_symbols,atoms_cart,M_matrix_orig,#\\
+\verb#            A_matrix,eigenvalues,U_matrix,U_matrix_opt,wann_centres,#\\
+\verb#            wann_spreads,omega_bits#)}
+
+\begin{itemize}
+\item \verb#integer, dimension(3), intent(in) :: mp_grid#\\ The
+  dimensions of the {Monkhorst-Pack} k-point grid.
+\item \verb#real(kind=dp), dimension(3,3),#
+      \verb# intent(in) :: real_lattice#\\ The lattice vectors in
+      Cartesian co-ordinates in units of Angstrom. 
+\item \verb#real(kind=dp), dimension(3,num_kpts),#
+      \verb# intent(in) :: kpt_latt#\\ The positions of the k-points in
+      fractional co-ordinates relative to the reciprocal lattice
+      vectors.
+\item \verb#integer, intent(in) :: num_bands#\\ The total number of
+      bands to be processed.
+\item \verb#integer, intent(in) :: num_wann#\\ The number of Wannier
+  functions to be extracted.
+%\item \verb#integer, intent(in) :: num_kpts#\\ The number of k-points on
+%  the {Monkhorst-Pack} grid.
+\item \verb#integer, intent(in) :: nntot#\\ The number of
+  nearest neighbours for each k-point.
+\item \verb#integer, intent(in) :: num_atoms#\\ The total number of atoms
+  in the system.
+\item \verb#character(len=2), dimension(num_atoms),#
+      \verb# intent(in) :: atom_symbols#\\ The elemental symbols of
+      the atoms.
+\item \verb#real(kind=dp), dimension(3,num_atoms),#
+      \verb#intent(in) :: atoms_cart#\\ The positions of the atoms in
+      Cartesian co-ordinates in Angstrom.
+\item \verb#complex(kind=dp),#
+      \verb# dimension(num_bands,num_bands,num_kpts,nntot),#\\
+      \verb#                  intent(in) :: M_matrix_orig#\\ 
+      The matrices of overlaps between neighbouring periodic parts of
+      the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{k,b})}$
+      (MV Eq.~(25)).
+\item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
+      \verb#                  intent(in) :: A_matrix# \\The matrices
+      describing the projection of \verb#num_wann# trial orbitals on
+      \verb#num_bands# Bloch states at each k-point,
+      $A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV Eq.~(22)).
+\item \verb#real(kind=dp), dimension(num_bands,num_kpts),#
+      \verb#intent(in) :: eigenvalues#\\ The
+      eigenvalues $\varepsilon_{n\mathbf{k}}$ corresponding to the
+      eigenstates, in eV.
+\item \verb#complex(kind=dp), dimension(num_wann,num_wann,num_kpts),#\\
+      \verb#                  intent(out) :: U_matrix#\\ The unitary
+      matrices at each k-point (MV Eq.~(59))
+\item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
+      \verb#                  optional, intent(out) :: U_matrix_opt#\\ The
+      unitary matrices that describe the optimal sub-space at each
+      k-point (see SMV Section~{\sc IIIa}).
+\item \verb#real(kind=dp), dimension(3,num_wann), optional,#\\
+      \verb#               intent(out) :: wann_centres#\\ 
+      The centres of the wannier
+      functions in Cartesian co-ordinates in Angstrom. 
+\item \verb#real(kind=dp), dimension(num_wann), optional,#\\
+      \verb#               intent(out) :: wann_spreads#\\ 
+      The spread of each wannier function in \AA$^{2}$.
+\item \verb#real(kind=dp), dimension(3), optional, intent(out) ::#
+      \verb# omega_bits#\\ 
+      The values of $\Omega$, $\Omega_{\mathrm{I}}$ and
+      $\tilde{\Omega}$ (MV Eq.~(13)). 
+\end{itemize}
+
+Conditions:
+\begin{itemize}
+\cond $\verb#num_wann# \le \verb#num_bands#$
+\cond $\verb#num_kpts# = \verb#mp_grid(1)# \times \verb#mp_grid(2)#
+\times \verb#mp_grid(3)#$.
+\end{itemize}
+
+If $\verb#num_bands# = \verb#num_wann#$ then \verb#U_matrix_opt# is
+redundant. 
+
+For the avoidance of doubt, \verb#real_lattice(1,2)# is the
+$y-$component of the first lattice 
+vector $\mathbf{A}_{1}$, etc.
+
+\begin{eqnarray*}
+\verb#M_matrix_orig(m,n,nkp,nn)# & = & \left\langle u_{m\mathbf{k}} |
+u_{n\mathbf{k+b}}\right\rangle\\
+\verb#A_matrix(m,n,nkp)# & = &
+\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle\\
+\verb#eigenvalues(n,nkp)# &=& \varepsilon_{n\mathbf{k}}
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+\mathbf{k} &=&\verb#kpt_latt(1:3,nkp)#\\
+\mathbf{k+b}&=& \verb#kpt_latt(1:3,nnlist(nkp,nn))# +
+\verb#nncell(1:3,nkp,nn)# 
+\end{eqnarray*}
+and
+$\left\{|g_{n}\rangle\right\}$ are a set of initial trial
+orbitals. These are
+typically atom- or bond-centred Gaussians that are modulated by
+appropriate spherical harmonics. 
+
+Additional parameters should be specified in the wannier input
+file.
+
