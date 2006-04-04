@@ -8,7 +8,7 @@ specified
 \item[{\bf --}] \verb#num_wann#
 \item[{\bf --}] \verb#unit_cell_cart#
 \item[{\bf --}] \verb#mp_grid#
-\item[{\bf --}] One of \verb#kpoint# and \verb#mp_grid_automatic#
+\item[{\bf --}] \verb#kpoint#
 \end{itemize}
 
 Other parameters have default values which will be used unless values
@@ -34,18 +34,17 @@ Keyword & Type & Description \\
 {\sc atoms\_cart }*   & P & Positions of atoms in Cartesian coordinates \\
 {\sc atoms\_frac }*   & R & Positions of atoms in lattice vectors \\
 {\sc mp\_grid }   & I & Dimensions of the Monkhorst-Pack grid \\
-{\sc mp\_grid\_automatic }**   & L & Determine the kpoint automatically \\
+%{\sc mp\_grid\_automatic }**   & L & Determine the kpoint automatically \\
 {\sc kpoints }**   & R & List of kpoints in the Monkhorst-Pack grid \\
-{\sc nshells }   & I & Number of shells in finite difference formula \\
-{\sc nwhich }   & I & Which shells to use in finite difference formula \\
+{\sc num\_shells }   & I & Number of shells in finite difference formula \\
+{\sc shell\_list }   & I & Which shells to use in finite difference formula \\
 {\sc postproc\_setup }   & L & To output the nnkp file \\
 {\sc cp\_pp }   & L & CP code post-processing \\
 {\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
 {\sc restart }   & C & Restart from checkpoint file \\
-{\sc wann\_continue }   & L & Restart minimisation from file \\
 {\sc iprint }   & I & Output verbosity level \\
-{\sc length\_unit }   & S & System of units for lengths \\
+{\sc length\_unit }   & S & System of units to output lengths \\
 {\sc devel\_flag }   & S & Flag for development use \\
 \hline
 \end{tabular}
@@ -70,14 +69,14 @@ physical value, L for a logical value and S for a text string.\\
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{Overlap Parameters} \\
+\multicolumn{3}{|c|}{Wavefunctions Parameters} \\
 \hline
 {\sc wvfn\_formated }   & L & Read the wavefunctions from a  (un)formatted file  \\
 {\sc spin }   & I & Which spin channel to read \\
 \hline
 \end{tabular}
 \caption
-{Parameter file keywords controlling the aspects of wavefunction overlap.  Argument types
+{Parameter file keywords controlling the aspects of wavefunctions.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords2}
@@ -126,21 +125,14 @@ Keyword & Type & Description \\
 \hline\hline
 \multicolumn{3}{|c|}{Wannierise Parameters} \\
 \hline
-{\sc wannierise }   & L &  Minimise the spread, $\Omega$ \\
 {\sc num\_iter }   & I & Number of iterations for the minimisation
 of $\Omega$ \\
 {\sc num\_cg\_steps }   & I & During the minimisation
 of $\Omega$ the number of Conjugate Gradient steps before resetting to
 Steepest Descents \\
-{\sc mix\_ratio }   & R &Mixing ratio during the minimisation of $\Omega$  \\
 {\sc conv\_tol }   & P &The convergence tolerance for finding $\Omega$  \\
 {\sc conv\_window }   & I & The number of iterations over which
 convergence of $\Omega$ is assessed \\
-{\sc coarse\_num\_iter }   & I & Number of initial coarse iterations
-during the minimisation
-of $\Omega$ \\
-{\sc coarse\_mix\_ratio }   & R & Mixing ratio for the initial, coarse
-steps during the minimisation of $\Omega$ \\
 {\sc num\_dump\_cycles }   & I & Control frequency of checkpointing \\
 {\sc num\_print\_cycles }   & I & Control frequency of printing \\
 {\sc guiding\_centres }   & L & Use guiding centres \\
@@ -213,7 +205,9 @@ Number of wannier functions to be found.
 
 No default
 
-\subsection[num\_bands]{\tt integer :: num\_bands}
+\subsection[num\_bands]{\tt integer :: num\_bands} 
+
+Total number of bands passed to the code.
 
 Default \verb#num_bands#=\verb#num_wann#
 
@@ -223,6 +217,7 @@ The cell lattice vectors may be specified in Cartesian coordinates.
 
 
 \noindent \verb#begin unit_cell_cart# \\
+\verb#[units]#
 $$
 \begin{array}{ccc}
 R_{1x} & R_{1y} & R_{1z} \\
@@ -235,7 +230,12 @@ $$
 Here $R_{1x}$ is the x-component of the first lattice vector,
 $R_{2y}$ is the y-component of the second lattice vector etc.
 
+\verb#[units]# specifies the units in which the lattice vectors are
+defined either \verb#bohr# or \verb#ang#. If not present, the default is \AA.
+
+
 There is no default
+
 
 
 \subsection[Ionic Positions]{Ionic Positions}
@@ -245,9 +245,11 @@ to the lattice vectors of the unit cell, or in absolute coordinates.
 Only one of \verb#atoms_cart# and \verb#atoms_frac# may be given an input
 file.
 
+
 \subsubsection{atoms\_cart}
- 
-\noindent \verb#begin atoms_cart#
+
+\noindent \verb#begin atoms_cart# \\
+\verb#[units]#
 $$
 \begin{array}{cccc}
 X  & R_{1i} & R_{1j} & R_{1k} \\
@@ -261,6 +263,9 @@ $$
 The first entry on a line is the atomic symbol. The next three entries
 are the atom's position in Cartesian coordinates in units specified by
 \verb#length_unit#.
+
+\verb#[units]# specifies the units in which the lattice vectors are
+defined either \verb#bohr# or \verb#ang#. If not present, the default is \AA.
 
 \subsubsection{atoms\_frac}
 
@@ -283,33 +288,35 @@ Dimensions of the Monkhorst-Pack mesh
 
 No default
 
-\subsection[mp\_grid\_automatic]{\tt logical :: mp\_grid\_automatic}
-\red{Not yet implemented}
 
-If
-$\verb#mp_grid_automatic#=\verb#TRUE#$
-then a "standard" Monkhorst-Pack grid over the interval (0,1] with dimensions \verb#mp_grid#
-will be used. The kpoints will be assumed to be numbered such that the
-loop over the x is fastest eg
+%
+%\subsection[mp\_grid\_automatic]{\tt logical :: mp\_grid\_automatic}
+%\red{Not yet implemented}
+%
+%If
+%$\verb#mp_grid_automatic#=\verb#TRUE#$
+%then a "standard" Monkhorst-Pack grid over the interval (0,1] with dimensions \verb#mp_grid#
+%will be used. The kpoints will be assumed to be numbered such that the
+%loop over the x is fastest eg
+%
+%$$
+%\begin{array}{cccc}
+%Kpoint 1 &  0.0 & 0.0& 0.0 \\
+%Kpoint 2 & 0.25 &0.0 & 0.0 \\
+%Kpoint 3 & 0.50 &0.0 & 0.0 \\
+%Kpoint 4 & 0.75 &0.0 & 0.0 \\
+%Kpoint 5 & 0.0  &0.25& 0.0 \\
+%\vdots
+%\end{array}
+%$$
+%
+%If $\verb#mp_grid_automatic#=\verb#TRUE#$ then a \verb#kpoint# block must not be present.
+%
 
-$$
-\begin{array}{cccc}
-Kpoint 1 &  0.0 & 0.0& 0.0 \\
-Kpoint 2 & 0.25 &0.0 & 0.0 \\
-Kpoint 3 & 0.50 &0.0 & 0.0 \\
-Kpoint 4 & 0.75 &0.0 & 0.0 \\
-Kpoint 5 & 0.0  &0.25& 0.0 \\
-\vdots
-\end{array}
-$$
-
-If $\verb#mp_grid_automatic#=\verb#TRUE#$ then a \verb#kpoint# block must not be present.
-
-
-{\it This keyword is helpful if one is using a dense MP mesh (eg
-  12x12x12) as it saves typing in a very long list of kpoints}
-
-The default for this keyword is \verb#FALSE#.
+%{\it This keyword is helpful if one is using a dense MP mesh (eg
+%  12x12x12) as it saves typing in a very long list of kpoints}
+%
+%The default for this keyword is \verb#FALSE#.
 
 \subsection[Kpoints]{Kpoints}
 Each line gives the coordinate of a k-point
@@ -330,47 +337,34 @@ $$
 $$
 \verb#end kpoints#
 
-If a kpoint list is specified then \verb#mp_grid_automatic# must be
-\verb#FALSE#.
+%If a kpoint list is specified then \verb#mp_grid_automatic# must be
+%\verb#FALSE#.
 
 There is no default
 
-
 \subsection{Shells}
 
-{\it Eventually these keywords will be replaced when we write a better
-  kmesh module. But for now we preserve the behavior of the f77 code}
+The Marzari-Vanderbilt scheme requires a finite difference expression for $\nabla_k$
+defined on a uniform Monkhorst-Pack mesh of kpoints. One choice (the 'B1' condition of MV)
+is to choose shells of kpoint neighbours to satisfy the equation
+\begin{equation}\nonumber
+\sum_s w_s \sum_i b_{i\alpha}^s b_{i\beta}^s = \delta_{\alpha\beta}
+\end{equation}
+'s' is sum over shells, 'i' is a sum over kpoints in that shell, $w_s$ is a weight factor for the shell s, ${\bf b}_{i}^s$
+is a vector connecting a kpoint to one of it nearest neighbours, $\alpha$ and $\beta$ are cartesian coordinates.
 
+\subsection[num\_shells]{\tt integer :: num\_shells}
 
+If \verb#num_shells#$>0$ the number of shells to include in the finite difference expression.
+If \verb#num_shells#$=0$ the code will choose the shells automatically. 
 
-\subsection[nshells]{\tt integer :: nshells}
+The default value is O.
 
-\subsection[nwhich]{\tt integer :: nwhich}
+\subsection[shell\_list]{\tt integer :: shell\_list(num\_shells)}
 
+If \verb#num_shells#$>0$ \verb#shell_list# is vector which lists the shells to include in the
+finite difference expression.
 
-From wannier.README
- NSHELLS, WHICHSHELLS(NSHELLS). One integer, plus a vector
-of integers, as many as specified by the first integer. This is helpful to
-deal with tricky geometries. The first integer tells how many shells of
-neighbours are used to take derivatives (1, in a cubic cell - 6
-neighbours in the first shell, by the way - but as many as 3, say, in
-an orthorhombic cell, where every shell has only two neighbours). The
-following vector WHICHSHELLS tells the code  which shells to take, once
-they are ordered by increasing llength. To clarify ideas, suppose we have an
-orthorhombic cell. Now, every shell has 2 k-points; if the orthorhombic
-cell is close to cubic, the lowest 3 shells will be one in the x
-direction, one in the y direction, and one in the z. But if one
-dimension is very different from the others, we might have to skip a
-few shells before getting the one we need. If NSHELLS is set to 0,
-than the code assumes the general 'trigonal' approach to calculating
-derivatives, i.e. using neighbouring k-points along the
-directions G\_1, G\_2, G\_3, and G\_1 + isign*G\_2, G\_2 + isign G\_3, and
-G\_3 + isign G\_1, where G\_i are the primitive vectors of the
-reciprocal lattice, and ISIGN (+1 or -1) is given in the following
-line (NOTE: other more complex combinations of G\_i's could be used).
-
-Is it sufficient to specify the bravais lattice? Should we also provide
-the option to specify nshells and whichshells instead.
 
 
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
@@ -389,14 +383,12 @@ The default value is \verb#FALSE#.
 \subsection[iprint]{\tt integer :: iprint}
 
 This indicates the level of verbosity of the output from 0,
-the bare minimum to 3, which corresponds to full debugging output. So at
-$\verb#iprint#=3$ we might output the spread after every iteration while
-at $\verb#iprint#=1$ we might output the spread once every hundred iterations.
+the bare minimum to 3, which corresponds to full debugging output.
 
 The default value of this parameter is 1.
 
 \subsection[length\_unit]{\tt character(len=20) :: length\_unit}
-The energy unit to be used for all input and output.
+The length unit to be used for output.
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -442,21 +434,15 @@ The valid options for this parameter are:
   check file was written  
 \item[{\bf --}]  \verb#wannierise#. Restart from the beginning of the
   wannierise routine 
+\item[{\bf --}]  \verb#wann_continue#. Restart from wannierise but read U and M from the $<$seedname$>\_$um.dat dump file.
 \item[{\bf --}]  \verb#plot#. Go directly to the plotting phase 
 
 
 \end{itemize}
 
-\subsection[wann\_continue]{\tt logical :: wann\_continue}
-
-If \verb#wann_continue#=\verb#TRUE# then the code will restart the minimisation
-of $\Omega$ from the $<$seedname$>$.dat file when it enters the wannierise routine.
-
-The default is \verb#FALSE#  
 
 
-
-\section{Overlaps}
+\section{Wavefunctions}
 
 
 
@@ -509,16 +495,16 @@ are included in the disentanglement procedure).
 
 \subsection[dis\_froz\_min]{\tt real(kind=dp) :: dis\_froz\_min}
 The lower bound of the inner energy window for the disentanglement
-procedure. If \verb#dis_froz_min# is specified then \verb#dis_froz_max#
-must also be given. If neither are given there are no frozen states.
+procedure. 
 
+If \verb#dis_froz_max# is given the default for 
+\verb#dis_froz_min# is \verb#dis_win_min#.
 
-No default
 
 \subsection[dis\_froz\_max]{\tt real(kind=dp) :: dis\_froz\_max}
 The upper bound of the inner energy window for the disentanglement
-procedure. If \verb#dis_froz_max# is specified then \verb#dis_froz_min#
-must also be given. If neither are given there are no frozen states.
+procedure. If \verb#dis_froz_max# is  not specified then 
+there are no frozen states.
 
 No default
 
@@ -565,23 +551,17 @@ The default value of this parameter is 3.
 \section{Wannerise}
 Minimise the non-invariant part of the spread functional.
 
-\subsection[wannierise]{\tt logical :: wannierise}
-If $\verb#wannierise#=\verb#TRUE#$ the the non-invariant part of the
-spread will be minimise (ie to obtain maximally localised Wannier functions.
-The default value of this parameter is $\verb#TRUE#$
-
-
 \subsection[num\_iter]{\tt integer :: num\_iter}
 
 Total number of iterations in the localization procedure.
 
-The default value is 1000.
+The default value is 100.
 
 \subsection[num\_cg\_steps]{\tt integer :: num\_cg\_steps}
 
 Number of conjugate gradient steps to take before resetting to steepest descents.
 
-The default value is 0.
+The default value is 5.
 
 
 
@@ -593,40 +573,14 @@ The default value is 1.0
 \subsection[conv\_tol]{\tt real(kind=dp) :: conv\_tol}
 \red{Not yet implemented}
 
-The minimisation is said to have converged if the change in
-the spread is less than \verb#conv_tol# for \verb#conv_window# iterations.
- If $ \verb#conv_tol#<0$ do not use a convergence criterion, simply run
- for $\verb#num_iter#$ steps. 
-
-
-The default value of this parameter is -1 (ie preserve the behavior of
-the f77 code)
-
 
 \subsection[conv\_window]{\tt integer :: conv\_window}
 \red{Not yet implemented}
-
-The minimisation is said to have converged if the change in
-the spread is less than \verb#conv_tol# for \verb#conv_window# iterations.
 
 \verb#conv_tol# for \verb#conv_window# iterations.
 
 The default value of this parameter is 5.
 
-
-\subsection[coarse\_num\_iter]{\tt integer :: coarse\_num\_iter}
-
-Number of initial coarse steps in the  localization
-procedure.
-
-The default value is 10.
-
-
-\subsection[coarse\_mix\_ratio]{\tt real(kind=dp) :: coarse\_mix\_ratio}
-The mixing parameter during the initial coarse steps in the localization
-procedure.
-
-The default value is 1.0
 
 \subsection[num\_dump\_cycles]{\tt integer :: num\_dump\_cycles}
 Write sufficient information to do a restart every
@@ -644,13 +598,14 @@ The default is 1.
 
 
 \subsection[guiding\_centres]{\tt logical :: guiding\_centres}
+\red{Not yet implemented}
 Use guiding centres during the minimisation, in order to avoid
 local minima.
 
 The default value of this parameter is FALSE
 
 \subsection[guiding\_centres\_iter]{\tt integer :: guiding\_centres\_iter}
-
+\red{Not yet implemented}
 If \verb#guiding_centres# is set to true the
 guiding centres are used only after \verb#guiding_centres_iter# minimization iterations
 have been completed.
@@ -666,7 +621,6 @@ The default value of this parameter is 50.
 
 \begin{itemize}
 \item[{\bf --}]  Plot the wannier orbitals			     
-\item[{\bf --}]  Plot the wannier functions along an arbitrary plane  
 \item[{\bf --}]  Plot the interpolated band structure 		     
 \item[{\bf --}]  Plot the Fermi surface 			     
 \item[{\bf --}]  Plot the density of states.
@@ -776,7 +730,7 @@ The default value for \verb#fermi_surface_num_points# is 50
 The Fermi energyi eV. Whilst this is not directly used by the Wannier 
 code is a useful parameter to set for Fermi surface plots as
 it will be written into the bxsf file.
-i
+
 The default value is 0.0eV
 
 

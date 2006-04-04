@@ -4,14 +4,12 @@
 \subsection{seedname.win}
 \begin{verbatim}
 num_wann          : 4 
-mp_grid           : 4 4 4
-mp_grid_automatic : true    ! NB not yet implemented
-num_iter          : 1000
-nshells           : 1       ! NB to be replaced
-nwhich            : 1       ! NB to be replaced
+mp_grid           : 4 4 4 
+num_iter          : 100
 postproc_setup    : true
 
 begin unit_cell_cart
+ang
 -1.61 0.00 1.61
  0.00 1.61 1.61
 -1.61 1.61 0.00
@@ -35,6 +33,18 @@ end kpoint_path
 begin projections
 C:l=0,l=1
 end projections
+
+begin kpoints
+0.00 0.00 0.00
+0.00 0.00 0.25
+0.00 0.50 0.50
+ .
+ .
+ .
+0.75 0.75 0.50
+0.75 0.75 0.75
+end kpoints
+
 \end{verbatim}
 
 \subsection{seedname.nnkp}
