@@ -4,6 +4,8 @@ default: wannier
 
 all: wannier
 
+spec: thespec
+
 wannier: 
 	(cd src ; make all)
 
@@ -12,7 +14,12 @@ debug: $(OBJS)
 
 
 clean:
-	(cd src ; make clean)	
+	touch make.sys ;\
+	cd src ; make clean ;\
+	cd ../spec ; make clean	
+
+thespec:
+	(cd spec ; make spec)
 
 dist:
 	@(tar cf - \
