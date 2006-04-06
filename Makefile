@@ -42,6 +42,7 @@ dist:
                 ./spec/*.tex \
                 ./spec/*.eps \
                 ./spec/*.fig \
+		./spec/Makefile \
 		./Makefile \
         | gzip -c > \
                 ./wannier90.tar.gz)
