@@ -3,7 +3,6 @@
     dis_win_min       = -8.0d0       
     dis_win_max       = 14.3d0
     dis_froz_min      = -8.0d0
-    length_unit       = bohr
     dis_froz_max      =  6.7d0
     num_iter          = 100
    dis_num_iter      =  50    !now a comment 
@@ -17,6 +16,7 @@ mp_grid : 2 2 2!dfsdfdfsdfsd2
 !end atoms_frac
 
 begin atoms_cart
+ Bohr
 G 0.0 0.0 0.0
 As 1.4200465   1.4200465   1.4200465 
 end atoms_cart
@@ -24,6 +24,7 @@ end atoms_cart
 
 
 begin unit_cell_cart
+ Bohr
 0.0000000  5.3670000  5.3670000 
  5.3670000  0.0000000  5.3670000  
  5.3670000  5.3670000  0.0000000
