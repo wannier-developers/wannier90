@@ -122,10 +122,15 @@ contains
     write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+' 
     write(stdout,'(1x,a)') '|                    Distance to Nearest-Neighbour Shells                    |'
     write(stdout,'(1x,a)') '|                    ------------------------------------                    |'
-    write(stdout,'(1x,a)') '|          Shell             Distance (Ang^-1)          Multiplicity         |'
-    write(stdout,'(1x,a)') '|          -----             -----------------          ------------         |'
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(1x,a)') '|          Shell             Distance (Ang^-1)          Multiplicity         |'
+       write(stdout,'(1x,a)') '|          -----             -----------------          ------------         |'
+    else
+       write(stdout,'(1x,a)') '|          Shell             Distance (Bohr^-1)         Multiplicity         |'
+       write(stdout,'(1x,a)') '|          -----             ------------------         ------------         |'
+    endif
     do ndnn = 1, ndnntot  
-       write(stdout,'(1x,a,11x,i3,17x,f10.6,19x,i4,12x,a)') '|',ndnn,dnn(ndnn),multi(ndnn),'|' 
+       write(stdout,'(1x,a,11x,i3,17x,f10.6,19x,i4,12x,a)') '|',ndnn,dnn(ndnn)/lenconfac,multi(ndnn),'|' 
     enddo
     write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+' 
 
@@ -310,20 +315,30 @@ contains
     if (na.ne.nnh) call io_error('Did not find right number of bk directions')
 
 
-    write(stdout,'(1x,a)') '|                           b_k Vectors and Weights                          |'
-    write(stdout,'(1x,a)') '|                           -----------------------                          |'
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
+       write(stdout,'(1x,a)') '|                  ----------------------------------------                  |'
+    else
+       write(stdout,'(1x,a)') '|                 b_k Vectors (Bohr^-1) and Weights (Bohr^2)                 |'
+       write(stdout,'(1x,a)') '|                 ------------------------------------------                 |'
+    endif
     write(stdout,'(1x,a)') '|            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |'
     write(stdout,'(1x,a)') '|            ---        --------------------------------     --------        |'
     do i = 1, nntot  
-       write (stdout,'(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') i,(bk_local(j,i,1),j=1,3),wb_local(i)
+       write (stdout,'(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') i,(bk_local(j,i,1)/lenconfac,j=1,3),wb_local(i)*lenconfac**2
     enddo
     write(stdout,'(1x,"+",76("-"),"+")') 
-    write(stdout,'(1x,a)') '|                                b_k Directions                              |'
-    write(stdout,'(1x,a)') '|                                --------------                              |'
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(1x,a)') '|                           b_k Directions (Ang^-1)                          |'
+       write(stdout,'(1x,a)') '|                           -----------------------                          |'
+    else
+       write(stdout,'(1x,a)') '|                           b_k Directions (Bohr^-1)                         |'
+       write(stdout,'(1x,a)') '|                           ------------------------                         |'
+    endif
     write(stdout,'(1x,a)') '|            No.           x           y           z                         |'
     write(stdout,'(1x,a)') '|            ---        --------------------------------                     |'
     do i = 1, nnh  
-       write(stdout,'(1x,"|",11x,i3,5x,3f12.6,21x,"|")') i,(bka(j,i),j=1,3)  
+       write(stdout,'(1x,"|",11x,i3,5x,3f12.6,21x,"|")') i,(bka(j,i)/lenconfac,j=1,3)  
     enddo
     write(stdout,'(1x,"+",76("-"),"+")') 
     write(stdout,*) ' '  
@@ -643,7 +658,8 @@ contains
        if(iprint>=3) then
           write(stdout,'(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:',shell,' Multiplicity:',multi(shell), '|'
              do loop=1,multi(cur_shell)
-                write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,23x,a)') '| b-vector ',loop,':', bvector(:,loop,cur_shell) , '|'
+                write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ',loop,':', &
+                     bvector(:,loop,cur_shell)/lenconfac,'('//trim(length_unit)//'^-1)','|'
              end do
        end if
 
@@ -711,7 +727,8 @@ contains
        bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
        if(iprint>=2) then
           do loop_s=1,num_shells
-             write(stdout,'(1x,a,I2,a,f12.7,49x,a)') '| Shell: ',loop_s,' w_b ', bweight(loop_s),'|'
+             write(stdout,'(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ',loop_s,&
+                  ' w_b ', bweight(loop_s)*lenconfac**2,'('//trim(length_unit)//'^2)','|'
           end do
        end if
 
@@ -805,7 +822,9 @@ contains
           write(stdout,'(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:',shell,' Multiplicity:',multi(shell_list(shell)), '|'
           do loop=1,multi(shell_list(shell))
 !             write(stdout,'(1x,a7,1x,I2,67x,a1)')  '| Shell:',shell,'|'
-             write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,23x,a)') '| b-vector ',loop,':', bvector(:,loop,shell) , '|'
+!             write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,23x,a)') '| b-vector ',loop,':', bvector(:,loop,shell) , '|'
+             write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ',loop,':', &
+                  bvector(:,loop,shell)/lenconfac,'('//trim(length_unit)//'^-1)','|'
           end do
        end do
     end if
@@ -842,7 +861,9 @@ contains
     bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
     if(iprint>=2) then
        do loop_s=1,num_shells
-          write(stdout,'(1x,a,I2,a,f12.7,49x,a)') '| Shell: ',loop_s,' w_b ', bweight(loop_s),'|'
+!          write(stdout,'(1x,a,I2,a,f12.7,49x,a)') '| Shell: ',loop_s,' w_b ', bweight(loop_s),'|'
+          write(stdout,'(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ',loop_s,&
+               ' w_b ', bweight(loop_s)*lenconfac**2,'('//trim(length_unit)//'^2)','|'
        end do
     end if
 

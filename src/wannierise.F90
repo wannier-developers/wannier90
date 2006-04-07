@@ -50,7 +50,7 @@ contains
     use parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
                            nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
                            num_print_cycles,num_dump_cycles,omega_invariant, &
-                           param_read_um,param_write_um
+                           param_read_um,param_write_um,length_unit,lenconfac
 
     implicit none
 
@@ -203,7 +203,11 @@ contains
     write(stdout,*)
     write(stdout,'(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
     write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
-    write(stdout,'(1x,a)') '| Iter  Delta Spread     RMS Gradient          Spread          Time  |<-- CONV'
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV'
+    else
+       write(stdout,'(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Bohr^2)     Time  |<-- CONV'
+    endif
     write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
     write(stdout,*)
 
@@ -225,16 +229,17 @@ contains
     write(stdout,'(1x,a78)') repeat('-',78) 
     write(stdout,'(1x,a)') 'Initial State'
     do loop_wann=1,num_wann
-       write(stdout,1000) loop_wann,(rave(ind,loop_wann),ind=1,3),&
-            r2ave(loop_wann) - rave2(loop_wann)
+       write(stdout,1000) loop_wann,(rave(ind,loop_wann)*lenconfac,ind=1,3),&
+            (r2ave(loop_wann) - rave2(loop_wann))*lenconfac**2
     end do
-    write(stdout,1001) (sum(rave(ind,:)),ind=1,3), sum(r2ave)-sum(rave2)
+    write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
     write(stdout,*)
     write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
-         iter,wann_spread%om_tot-old_spread%om_tot,sqrt(abs(gcnorm1)),wann_spread%om_tot,io_time(),'<-- CONV'
+         iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,sqrt(abs(gcnorm1))*lenconfac,&
+         wann_spread%om_tot*lenconfac**2,io_time(),'<-- CONV'
     write(stdout,'(8x,a,F15.7,a,F15.7,a,F15.7,a)') &
-         'O_D=',wann_spread%om_d,' O_OD=',wann_spread%om_od,&
-         ' O_TOT=',wann_spread%om_tot,' <-- SPRD'
+         'O_D=',wann_spread%om_d*lenconfac**2,' O_OD=',wann_spread%om_od*lenconfac**2,&
+         ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
     write(stdout,'(1x,a78)') repeat('-',78) 
 
     omega_invariant = wann_spread%om_i
@@ -265,7 +270,7 @@ contains
        enddo
 
        if ( lprint .and. iprint>2 ) &
-            write(stdout,*) ' LINE --> Iteration                       :',iter
+            write(stdout,*) ' LINE --> Iteration                     :',iter
 
        ! calculate CG coefficient
        if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
@@ -380,14 +385,14 @@ contains
 
        ! print line search information
        if ( lprint .and. iprint>2 ) then
-          write(stdout,*) ' LINE --> Spread at initial point         :',wann_spread%om_tot
-          write(stdout,*) ' LINE --> Spread at trial step            :',trial_spread%om_tot
-          write(stdout,*) ' LINE --> Gradient along search direction :',doda0
-          write(stdout,*) ' LINE --> ||SD gradient||^2               :',gcnorm1
-          write(stdout,*) ' LINE --> Trial step length               :',trial_step
-          write(stdout,*) ' LINE --> Optimal parabolic step length   :',alphamin
-          write(stdout,*) ' LINE --> Spread at predicted minimum     :',falphamin
-          write(stdout,*) ' LINE --> CG coefficient                  :',gcfac
+          write(stdout,*) ' LINE --> Spread at initial point       :',wann_spread%om_tot*lenconfac**2
+          write(stdout,*) ' LINE --> Spread at trial step          :',trial_spread%om_tot*lenconfac**2
+          write(stdout,*) ' LINE --> Slope along search direction  :',doda0*lenconfac**2
+          write(stdout,*) ' LINE --> ||SD gradient||^2             :',gcnorm1*lenconfac**2
+          write(stdout,*) ' LINE --> Trial step length             :',trial_step
+          write(stdout,*) ' LINE --> Optimal parabolic step length :',alphamin
+          write(stdout,*) ' LINE --> Spread at predicted minimum   :',falphamin*lenconfac**2
+          write(stdout,*) ' LINE --> CG coefficient                :',gcfac
        endif
 
        ! bisection loop to try to avoid uphill moves
@@ -412,7 +417,8 @@ contains
                 alphamin = alphamin * bis_factor
                 if ( lprint .and. iprint>2 ) then 
                    write(stdout,*) ' LINE --> Bisection iteration             :',bis_loop+1
-                   write(stdout,*) ' LINE --> Optimal step went uphill. Spread:',wann_spread%om_tot
+                   write(stdout,*) ' LINE --> Optimal step went uphill. Spread:',&
+                        wann_spread%om_tot*lenconfac**2
                    write(stdout,*) ' LINE --> Reducing optimal step length to :',alphamin
                 endif
              else
@@ -425,20 +431,21 @@ contains
        ! print the new centers and spreads
        if(lprint) then
           do loop_wann=1,num_wann
-             write(stdout,1000) loop_wann,(rave(ind,loop_wann),ind=1,3),&
-                  r2ave(loop_wann) - rave2(loop_wann)
+             write(stdout,1000) loop_wann,(rave(ind,loop_wann)*lenconfac,ind=1,3),&
+                  (r2ave(loop_wann) - rave2(loop_wann))*lenconfac**2
           end do
-          write(stdout,1001) (sum(rave(ind,:)),ind=1,3), sum(r2ave)-sum(rave2)
+          write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
           write(stdout,*)
           write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
-               iter,wann_spread%om_tot-old_spread%om_tot,sqrt(abs(gcnorm1)),wann_spread%om_tot,io_time(),'<-- CONV'
+               iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,sqrt(abs(gcnorm1))*lenconfac,&
+               wann_spread%om_tot*lenconfac**2,io_time(),'<-- CONV'
           write(stdout,'(8x,a,F15.7,a,F15.7,a,F15.7,a)') &
-               'O_D=',wann_spread%om_d,' O_OD=',wann_spread%om_od,&
-               ' O_TOT=',wann_spread%om_tot,' <-- SPRD'
+               'O_D=',wann_spread%om_d*lenconfac**2,' O_OD=',wann_spread%om_od*lenconfac**2,&
+               ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
           write(stdout,'(1x,a,E15.7,a,E15.7,a,E15.7,a)') &
-               'Delta: O_D=',wann_spread%om_d-old_spread%om_d,&
-               ' O_OD=',wann_spread%om_od-old_spread%om_od,&
-               ' O_TOT=',wann_spread%om_tot-old_spread%om_tot,' <-- DLTA'
+               'Delta: O_D=',(wann_spread%om_d-old_spread%om_d)*lenconfac**2,&
+               ' O_OD=',(wann_spread%om_od-old_spread%om_od)*lenconfac**2,&
+               ' O_TOT=',(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,' <-- DLTA'
           write(stdout,'(1x,a78)') repeat('-',78) 
        end if
 
@@ -454,15 +461,17 @@ contains
 
     write(stdout,'(1x,a)') 'Final State'
     do loop_wann=1,num_wann
-       write(stdout,1000) loop_wann,(rave(ind,loop_wann),ind=1,3),&
-            r2ave(loop_wann) - rave2(loop_wann)
+       write(stdout,1000) loop_wann,(rave(ind,loop_wann)*lenconfac,ind=1,3),&
+            (r2ave(loop_wann) - rave2(loop_wann))*lenconfac**2
     end do
-    write(stdout,1001) (sum(rave(ind,:)), ind = 1, 3), sum(r2ave)-sum(rave2)
+    write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
     write(stdout,*)
-    write(stdout,'(3x,a,f15.9)') '     Spreads (Ang)         Omega I      = ',wann_spread%om_i  
-    write(stdout,'(3x,a,f15.9)') '     =============         Omega D      = ',wann_spread%om_d  
-    write(stdout,'(3x,a,f15.9)') '                           Omega OD     = ',wann_spread%om_od  
-    write(stdout,'(3x,a,f15.9)') 'Final Spread (Ang)         Omega Total  = ',wann_spread%om_tot  
+!    write(stdout,'(3x,a,f15.9)') '     Spreads (Ang)         Omega I      = ',wann_spread%om_i  
+    write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)','       Omega I      = ',wann_spread%om_i*lenconfac**2
+    write(stdout,'(3x,a,f15.9)') '     ================       Omega D      = ',wann_spread%om_d*lenconfac**2
+    write(stdout,'(3x,a,f15.9)') '                            Omega OD     = ',wann_spread%om_od*lenconfac**2
+!    write(stdout,'(3x,a,f15.9)') 'Final Spread (Ang)         Omega Total  = ',wann_spread%om_tot*lenconfac  
+    write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)','       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
     if (lrguide) call phases (  csheet, sheet, rguide, irguide)
@@ -538,9 +547,9 @@ contains
        omt2 = omt2 / real(num_kpts,dp)  
        omt3 = omt3 / real(num_kpts,dp)  
        write ( stdout , * ) ' '  
-       write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',omt1,'(Ang)'
-       write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',omt2,'(Ang)'
-       write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',omt3,'(Ang)'
+       write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
+       write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
+       write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
        write ( stdout , * ) ' '  
     end if
 
@@ -1163,43 +1172,43 @@ contains
   end subroutine wann_spread_copy
 
 
-  subroutine wann_spread_write(wann_spread,old_spread)
-
-    use io, only : stdout
-    implicit none
-
-    type(localisation_vars),intent(in) :: wann_spread
-    type(localisation_vars),intent(in) :: old_spread
-
-    write ( stdout , * ) ' '  
-    write ( stdout, 1005) wann_spread%om_1,wann_spread%om_1-old_spread%om_1
-    write ( stdout, 1006) wann_spread%om_2,wann_spread%om_2-old_spread%om_2
-    write ( stdout, 1007) wann_spread%om_3,wann_spread%om_3-old_spread%om_3 
-    write ( stdout, 1008) wann_spread%om_2 + wann_spread%om_3,wann_spread%om_2-old_spread%om_2+&
-         wann_spread%om_3-old_spread%om_3  
-    write ( stdout , * ) ' '  
-
-    write ( stdout, 1010) wann_spread%om_i ,wann_spread%om_i-old_spread%om_i  
-    write ( stdout, 1011) wann_spread%om_d  ,wann_spread%om_d-old_spread%om_d
-    write ( stdout, 1012) wann_spread%om_od  ,wann_spread%om_od-old_spread%om_od 
-    write ( stdout, 1014) wann_spread%om_od+wann_spread%om_d  ,wann_spread%om_od-old_spread%om_od&
-         +wann_spread%om_d-old_spread%om_d 
-    write ( stdout , * ) ' '  
-    write ( stdout, 1013) wann_spread%om_tot  ,wann_spread%om_tot-old_spread%om_tot
-    write ( stdout , * ) ' '  
-
-1005 format(2x,'Omega 1    is   ',f18.12,3x,'Delta Omega 1    is  ',0pe16.8)  
-1006 format(2x,'Omega 2    is   ',f18.12,3x,'Delta Omega 2    is  ',0pe16.8)    
-1007 format(2x,'Omega 3    is   ',f18.12,3x,'Delta Omega 3    is  ',0pe16.8)  
-1008 format(2x,'Omega 2+3  is   ',f18.12,3x,'Delta Omega 2+3  is  ',0pe16.8)
-
-1010 format(2x,'Omega I    is   ',f18.12,3x,'Delta Omega I    is  ',0pe16.8)    
-1011 format(2x,'Omega D    is   ',f18.12,3x,'Delta Omega D    is  ',0pe16.8)  
-1012 format(2x,'Omega OD   is   ',f18.12,3x,'Delta Omega OD   is  ',0pe16.8)  
-1014 format(2x,'Omega D+OD is   ',f18.12,3x,'Delta Omega D+OD is  ',0pe16.8)  
-
-1013 format(2x,'Omega      is   ',f18.12,3x,'Delta Omega      is  ',0pe16.8)    
-
-  end subroutine wann_spread_write
+!!$  subroutine wann_spread_write(wann_spread,old_spread)
+!!$
+!!$    use io, only : stdout
+!!$    implicit none
+!!$
+!!$    type(localisation_vars),intent(in) :: wann_spread
+!!$    type(localisation_vars),intent(in) :: old_spread
+!!$
+!!$    write ( stdout , * ) ' '  
+!!$    write ( stdout, 1005) wann_spread%om_1,wann_spread%om_1-old_spread%om_1
+!!$    write ( stdout, 1006) wann_spread%om_2,wann_spread%om_2-old_spread%om_2
+!!$    write ( stdout, 1007) wann_spread%om_3,wann_spread%om_3-old_spread%om_3 
+!!$    write ( stdout, 1008) wann_spread%om_2 + wann_spread%om_3,wann_spread%om_2-old_spread%om_2+&
+!!$         wann_spread%om_3-old_spread%om_3  
+!!$    write ( stdout , * ) ' '  
+!!$
+!!$    write ( stdout, 1010) wann_spread%om_i ,wann_spread%om_i-old_spread%om_i  
+!!$    write ( stdout, 1011) wann_spread%om_d  ,wann_spread%om_d-old_spread%om_d
+!!$    write ( stdout, 1012) wann_spread%om_od  ,wann_spread%om_od-old_spread%om_od 
+!!$    write ( stdout, 1014) wann_spread%om_od+wann_spread%om_d  ,wann_spread%om_od-old_spread%om_od&
+!!$         +wann_spread%om_d-old_spread%om_d 
+!!$    write ( stdout , * ) ' '  
+!!$    write ( stdout, 1013) wann_spread%om_tot  ,wann_spread%om_tot-old_spread%om_tot
+!!$    write ( stdout , * ) ' '  
+!!$
+!!$1005 format(2x,'Omega 1    is   ',f18.12,3x,'Delta Omega 1    is  ',0pe16.8)  
+!!$1006 format(2x,'Omega 2    is   ',f18.12,3x,'Delta Omega 2    is  ',0pe16.8)    
+!!$1007 format(2x,'Omega 3    is   ',f18.12,3x,'Delta Omega 3    is  ',0pe16.8)  
+!!$1008 format(2x,'Omega 2+3  is   ',f18.12,3x,'Delta Omega 2+3  is  ',0pe16.8)
+!!$
+!!$1010 format(2x,'Omega I    is   ',f18.12,3x,'Delta Omega I    is  ',0pe16.8)    
+!!$1011 format(2x,'Omega D    is   ',f18.12,3x,'Delta Omega D    is  ',0pe16.8)  
+!!$1012 format(2x,'Omega OD   is   ',f18.12,3x,'Delta Omega OD   is  ',0pe16.8)  
+!!$1014 format(2x,'Omega D+OD is   ',f18.12,3x,'Delta Omega D+OD is  ',0pe16.8)  
+!!$
+!!$1013 format(2x,'Omega      is   ',f18.12,3x,'Delta Omega      is  ',0pe16.8)    
+!!$
+!!$  end subroutine wann_spread_write
 
 end module wannierise

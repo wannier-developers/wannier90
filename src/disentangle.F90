@@ -424,12 +424,16 @@ contains
     write(stdout,'(1x,a,f10.5,a,f10.5,a)') &
          '|                   Outer: ',dis_win_min,'  to ',dis_win_max,&
          '  (eV)                   |'
-    write(stdout,'(1x,a,f10.5,a,f10.5,a)') &
-         '|                   Inner: ',dis_froz_min,'  to ',dis_froz_max,&
-         '  (eV)                   |'
+    if (frozen_states) then
+       write(stdout,'(1x,a,f10.5,a,f10.5,a)') &
+            '|                   Inner: ',dis_froz_min,'  to ',dis_froz_max,&
+            '  (eV)                   |'
+    else
+       write(stdout,'(1x,a)') &
+            '|                   No frozen states were specified                          |'
+    endif
     write(stdout,'(1x,a)') &
          '+----------------------------------------------------------------------------+'
-
 
     do nkp = 1, num_kpts  
        ! Check which eigenvalues fall within the outer window
@@ -440,6 +444,7 @@ contains
           write(stdout,*) ' EIGENVALUE RANGE (eV): [',eigval(1,nkp),',',eigval(num_bands,nkp),']'
           call io_error('DISENTANGLE: The outer energy window contains no eigenvalues')
        endif
+
 
        ! Note: we assume that eigvals are ordered from the bottom up
        imin = 0  
@@ -462,6 +467,7 @@ contains
           call io_error('DISENTANGLE: Energy window contains fewer states than number of target WFs') 
        endif
 
+
        do i = 1, ndimwin(nkp)  
           lfrozen(i,nkp) = .false.  
        enddo
@@ -471,21 +477,23 @@ contains
        kifroz_max = -1
 
        ! (note that the above obeys kifroz_max-kifroz_min+1=kdimfroz=0, as we w
-       do i = imin, imax  
-          if (kifroz_min.eq.0) then  
-             if ( (eigval(i,nkp).ge.dis_froz_min).and.&
-                  (eigval(i,nkp).le.dis_froz_max) ) then
-                ! Relative to bottom of outer window
-                kifroz_min = i - imin + 1  
-                kifroz_max = i - imin + 1  
+       if (frozen_states) then
+          do i = imin, imax  
+             if (kifroz_min.eq.0) then 
+                if ( (eigval(i,nkp).ge.dis_froz_min).and.&
+                     (eigval(i,nkp).le.dis_froz_max) ) then
+                   ! Relative to bottom of outer window
+                   kifroz_min = i - imin + 1  
+                   kifroz_max = i - imin + 1  
+                endif
+             elseif (eigval(i,nkp).le.dis_froz_max) then  
+                kifroz_max = kifroz_max + 1  
+                ! DEBUG
+                ! if(kifroz_max.ne.i-imin+1) stop 'something wrong...'
+                ! ENDDEBUG
              endif
-          elseif (eigval(i,nkp).le.dis_froz_max) then  
-             kifroz_max = kifroz_max + 1  
-             ! DEBUG
-             ! if(kifroz_max.ne.i-imin+1) stop 'something wrong...'
-             ! ENDDEBUG
-          endif
-       enddo
+          enddo
+       endif
 
        ndimfroz(nkp) = kifroz_max - kifroz_min + 1  
 
@@ -498,7 +506,6 @@ contains
 402       format('BANDS: (eV)',10(F10.5,1X))  
           call io_error('DISENTANGLE: More states in the frozen window than target WFs')
        endif
-
 
        if (ndimfroz(nkp).gt.0) linner = .true.  
        ! DEBUG
@@ -1200,7 +1207,7 @@ contains
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
       write(stdout,'(1x,a)') &
-           '|Iteration     Omega_I(i-1)     Omega_I(i)     Delta (%)     Time     |<-- DIS'
+           '|  Iter     Omega_I(i-1)      Omega_I(i)      Delta (%)        Time   |<-- DIS'
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
 
@@ -1400,11 +1407,11 @@ contains
 
          womegai = womegai / real(num_kpts,dp)  
 
-         write(stdout,124) iter,womegai1,womegai,&
+         write(stdout,124) iter,womegai1*lenconfac**2,womegai*lenconfac**2,&
               100.0_dp*(womegai1-womegai)/womegai,io_time()
 
 
-124      format(5x,i6,1x,f14.8,2x,f14.8,3x,es13.6,2x,f8.2,4x,'<-- DIS')
+124      format(2x,i6,3x,f14.8,3x,f14.8,3x,es13.6,2x,f8.2,4x,'<-- DIS')
 
          ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
          do nkp = 1, num_kpts  
@@ -1448,7 +1455,8 @@ contains
       ! Write the final womegai. This should remain unchanged during the
       ! subsequent minimization of Omega_tilde in wannierise.f90
       ! We store it in the checkpoint file as a sanity check
-      write(stdout,'(/8x,a,f14.8)') 'Final Omega_I (Ang^2)',womegai
+      write(stdout,*) ' '
+      write(stdout,'(/8x,a,f14.8,a)') 'Final Omega_I ',womegai*lenconfac**2,' ('//trim(length_unit)//'^2)'
       omega_invariant=womegai
 
       ! DIAGONALIZE THE HAMILTONIAN WITHIN THE OPTIMIZED SUBSPACES

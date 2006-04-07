@@ -108,6 +108,7 @@ module parameters
   real(kind=dp), allocatable,    public, save ::bands_spec_points(:,:)
   real(kind=dp), allocatable,    public, save ::kpt_cart(:,:) !kpoints in cartesians
   logical,           public, save :: disentanglement
+  real(kind=dp),     public, save :: lenconfac
 
   ! kmesh parameters (set in kmesh)
 
@@ -124,7 +125,7 @@ module parameters
 
   ! disentangle parameters
   integer, public, save, allocatable :: ndimwin(:)
-
+  logical, public, save :: frozen_states
 
   ! a_matrix and m_matrix_orig can be calculated internally from bloch states
   ! or read in from an ab-initio grid
@@ -154,7 +155,7 @@ module parameters
   !private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
-  
+
 
   public :: param_read
   public :: param_write
@@ -169,13 +170,13 @@ contains
 
 
 
-    !==================================================================!
-     subroutine param_read ( )
-    !==================================================================!
-    !                                                                  !
-    ! Read parameters and calculate derived values                     !
-    !                                                                  !
-    !===================================================================  
+  !==================================================================!
+  subroutine param_read ( )
+  !==================================================================!
+  !                                                                  !
+  ! Read parameters and calculate derived values                     !
+  !                                                                  !
+  !===================================================================  
     use constants, only : bohr   
     use utility, only : utility_recip_lattice,utility_compute_metric
     use io,      only : io_error,io_file_unit,seedname
@@ -183,7 +184,7 @@ contains
 
     !local variables
     integer :: nkp,i,j,n,k,i_temp,i_temp2,unit,loop
-    logical :: found,found2,eig_found
+    logical :: found,found2,eig_found,lunits
     real(kind=dp), dimension(:,:), allocatable :: eigval_tmp
 
 
@@ -201,7 +202,11 @@ contains
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
 
     length_unit     =  'ang'         !
+    lenconfac=1.0_dp
     call param_get_keyword('length_unit',found,c_value=length_unit)
+    if (length_unit.ne.'ang' .and. length_unit.ne.'bohr') &
+         call io_error('Error: value of length_unit not recognised in param_read')
+    if (length_unit.eq.'bohr') lenconfac=1.0_dp/bohr
 
     wvfn_formatted  =  .false.       ! formatted or "binary" file
     call param_get_keyword('wvfn_formatted',found,l_value=wvfn_formatted)
@@ -218,7 +223,7 @@ contains
     endif
 
     num_bands       =   -1   
-     call param_get_keyword('num_bands',found,i_value=num_bands)
+    call param_get_keyword('num_bands',found,i_value=num_bands)
     if(.not.found) num_bands=num_wann
     if(found .and. num_bands<num_wann) then
        call io_error('Error: num_bands must be greater than or equal to num_wann')
@@ -242,6 +247,7 @@ contains
     elseif (any(mp_grid<1)) then
        call io_error('Error: mp_grid must be greater than zero')
     end if
+    num_kpts= mp_grid(1)*mp_grid(2)*mp_grid(3)
 
     automatic_mp_grid = .false.
     call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
@@ -254,45 +260,10 @@ contains
 
     calc_only_A = .false.
     call param_get_keyword('calc_only_A',found,l_value=calc_only_A)
-     
+
     restart = ' '
     call param_get_keyword('restart',found,c_value=restart)
 
-
-    !%%%%%%%%%%%%%%%%
-    ! Disentanglement
-    !%%%%%%%%%%%%%%%%
-
-    disentanglement=.false.
-    if(num_bands>num_wann) disentanglement=.true.
-
-    dis_win_min       = 0.0d0       
-    call param_get_keyword('dis_win_min',found,r_value=dis_win_min)
-
-    dis_win_max       = 0.0d0 ! 17.0d0
-    call param_get_keyword('dis_win_max',found,r_value=dis_win_max)
-
-    dis_froz_min      = 0.0d0
-    call param_get_keyword('dis_froz_min',found,r_value=dis_froz_min)
-
-    dis_froz_max      =  0.0_dp
-    call param_get_keyword('dis_froz_max',found,r_value=dis_froz_max)
-
-    dis_num_iter      = 50    ! 200
-    call param_get_keyword('dis_num_iter',found,i_value=dis_num_iter)
-    if (dis_num_iter<0) call io_error('Error: dis_num_iter must be positive')       
-
-    dis_mix_ratio     = 0.5d0
-    call param_get_keyword('dis_mix_ratio',found,r_value=dis_mix_ratio)
-    if (dis_mix_ratio<0.d0) call io_error('Error: dis_mix_ratio must be positive')
-
-    dis_conv_tol      = 0.0d0       
-    call param_get_keyword('dis_conv_tol',found,r_value=dis_conv_tol)
-    if (dis_conv_tol<0.d0) call io_error('Error: dis_conv_tol must be positive')
-
-    dis_conv_window=3   
-    call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
-    if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
 
     !%%%%%%%%%%%
     ! Wannierise
@@ -385,6 +356,84 @@ contains
     dos_plot_format           = 'gnuplot'
     call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
+    !%%%%%%%%%%%%%%%%
+    ! Disentanglement
+    !%%%%%%%%%%%%%%%%
+
+    disentanglement=.false.
+    if(num_bands>num_wann) disentanglement=.true.
+
+    ! Read the eigenvalues from wannier.eig
+    allocate(eigval(num_bands,num_kpts))
+
+    inquire(file=trim(seedname)//'.eig',exist=eig_found)
+    if(.not. eig_found) then
+       if ( disentanglement.and.(.not.postproc_setup) ) then
+          call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+       else if (bands_plot .or. dos_plot .or. fermi_surface_plot) then
+          call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+       end if
+    else
+       allocate(eigval_tmp(num_bands,num_kpts))
+       unit=io_file_unit()
+       open(unit=unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
+       do k=1,num_kpts
+          do n=1,num_bands
+             read(unit,*) i,j,eigval_tmp(i,j)
+             if ((i.ne.n).or.(j.ne.k)) then
+                call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
+             end if
+          enddo
+          do n=1,num_bands
+             !     eigval(n,k) = eigval_tmp(n + first_band - 1, k)
+             ! The way this is written, it only works if first_band=1
+             eigval(n,k) = eigval_tmp(n,k)
+          end do
+       end do
+       close(unit)
+       deallocate(eigval_tmp)
+    end if
+
+    dis_win_min       = minval(eigval)       
+    call param_get_keyword('dis_win_min',found,r_value=dis_win_min)
+
+    dis_win_max       = maxval(eigval)
+    call param_get_keyword('dis_win_max',found,r_value=dis_win_max)
+
+    if ( dis_win_max.lt.dis_win_min ) &
+         call io_error('Error: param_read: check disentanglement windows')
+
+    ! no default for dis_froz_max
+    frozen_states=.false.
+    call param_get_keyword('dis_froz_max',found,r_value=dis_froz_max)
+    if (found) then 
+       frozen_states=.true.
+       dis_froz_min = dis_win_min ! default value for the bottom of frozen window
+       call param_get_keyword('dis_froz_min',found2,r_value=dis_froz_min)
+       if ( dis_froz_max.lt.dis_froz_min ) &
+            call io_error('Error: param_read: check disentanglement frozen windows')
+    endif
+
+    dis_num_iter      = 50    ! 200
+    call param_get_keyword('dis_num_iter',found,i_value=dis_num_iter)
+    if (dis_num_iter<0) call io_error('Error: dis_num_iter must be positive')       
+
+    dis_mix_ratio     = 0.5d0
+    call param_get_keyword('dis_mix_ratio',found,r_value=dis_mix_ratio)
+    if (dis_mix_ratio<0.d0) call io_error('Error: dis_mix_ratio must be positive')
+
+    dis_conv_tol      = 0.0d0       
+    call param_get_keyword('dis_conv_tol',found,r_value=dis_conv_tol)
+    if (dis_conv_tol<0.d0) call io_error('Error: dis_conv_tol must be positive')
+
+    dis_conv_window=3   
+    call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
+    if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
+
+    !%%%%%%%%%%%%%%%%
+    !  Other Stuff
+    !%%%%%%%%%%%%%%%%
+
     num_nnmax                 = 12
     call param_get_keyword('num_nnmax',found,i_value=num_nnmax)
     if (num_nnmax<0) call io_error('Error: num_nnmax must be positive')       
@@ -404,12 +453,9 @@ contains
 
     insign=1
 
-    num_kpts= mp_grid(1)*mp_grid(2)*mp_grid(3)
-
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice)
-    !This is a hack. I must workout what is the sensile way to read and store this jry
+    !This is a hack. I must workout what is the sensible way to read and store this jry
     real_lattice=transpose(real_lattice)
-    if( index(length_unit,'bohr') > 0 )  real_lattice= real_lattice*bohr
 
     if(.not. found) call io_error('Error: Did not find the cell information in the input file')
 
@@ -435,20 +481,22 @@ contains
     ! Atoms
     num_atoms=0
     call param_get_block_length('atoms_frac',found,i_temp)
-    call param_get_block_length('atoms_cart',found2,i_temp2)
+    call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
     if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
     if (found .and. i_temp>0) then
+       lunits=.false.
        num_atoms=i_temp
     elseif (found2 .and. i_temp2>0) then
        num_atoms=i_temp2
+       if (lunits) num_atoms=num_atoms-1
     end if
     if(num_atoms>0) then
-       call param_get_atoms()
+       call param_get_atoms(lunits)
     end if
 
     call param_get_block_length('projections',found,i_temp)
     if (found) call param_get_projections
-      
+
     ! check to see that there are no unrecognised keywords
 
     if ( any(len_trim(in_data(:))>0 )) then
@@ -469,72 +517,36 @@ contains
     call param_uppercase()
 
 
-    ! As a hack read the eigenvalues from wannier.eig
-    allocate(eigval(num_bands,num_kpts))
+    deallocate(in_data)
 
-    inquire(file=trim(seedname)//'.eig',exist=eig_found)
-    if(.not. eig_found) then
-       if ( disentanglement.and.(.not.postproc_setup) ) then
-          call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-       else if (bands_plot .or. dos_plot .or. fermi_surface_plot) then
-          call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
-       end if
-    else
-       allocate(eigval_tmp(num_bands,num_kpts))
-       unit=io_file_unit()
-       open(unit=unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
-       do k=1,num_kpts
-          do n=1,num_bands
-             read(unit,*) i,j,eigval_tmp(i,j)
-             if ((i.ne.n).or.(j.ne.k)) then
-               call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
-             end if
-          enddo
-          do n=1,num_bands
-             !     eigval(n,k) = eigval_tmp(n + first_band - 1, k)
-             ! The way this is written, it only works if first_band=1
-             eigval(n,k) = eigval_tmp(n,k)
-          end do
-       end do
-       close(unit)
-       deallocate(eigval_tmp)
-    end if
+    ! Some checks 
+    if (restart.ne.' ') disentanglement=.false.
 
+    if ( (restart.ne.' ').and.(restart.ne.'default') & 
+         .and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
+         call io_error('Error in input file: value of restart not recognised')
 
- deallocate(in_data)
+    if (disentanglement) allocate(ndimwin(num_kpts))
 
- ! Some checks 
- if (restart.ne.' ') disentanglement=.false.
+    ! Initialise
+    omega_invariant = -999.0_dp
+    have_disentangled = .false.
 
- if ( (restart.ne.' ').and.(restart.ne.'default') & 
-      .and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
-      call io_error('Error in input file: value of restart not recognised')
- 
- if (disentanglement) allocate(ndimwin(num_kpts))
-
- if (disentanglement) then
-    if ( dis_win_max.le.dis_win_min ) &
-         call io_error('Error in input file: check disentanglement windows')
- endif
-
- ! Initialise
- omega_invariant = -999.0_dp
- have_disentangled = .false.
-
- return
+    return
 
 105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
 
   end subroutine param_read
 
 
+
   !===================================================================
   subroutine param_uppercase
-  !===================================================================
-  !                                                                  !
-  ! Convert a few things to uppercase to look nice in the output     !
-  !                                                                  !
-  !===================================================================  
+    !===================================================================
+    !                                                                  !
+    ! Convert a few things to uppercase to look nice in the output     !
+    !                                                                  !
+    !===================================================================  
 
     implicit none
 
@@ -554,6 +566,11 @@ contains
             bands_label(loop) = char(ic+ichar('Z')-ichar('z'))
     enddo
 
+    ! Length unit (ang --> Ang, bohr --> Bohr)
+    ic=ichar(length_unit(1:1))
+    if ((ic.ge.ichar('a')).and.(ic.le.ichar('z'))) &
+         length_unit(1:1) = char(ic+ichar('Z')-ichar('z'))
+
     return
 
   end subroutine param_uppercase
@@ -561,11 +578,11 @@ contains
 
   !===================================================================
   subroutine param_write
-  !==================================================================!
-  !                                                                  !
-  ! write parameters to stdout                                       !
-  !                                                                  !
-  !===================================================================  
+    !==================================================================!
+    !                                                                  !
+    ! write parameters to stdout                                       !
+    !                                                                  !
+    !===================================================================  
 
     implicit none
 
@@ -577,28 +594,45 @@ contains
     write(stdout,'(36x,a6)') 'SYSTEM' 
     write(stdout,'(36x,a6)') '------' 
     write(stdout,*)
-    write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
-    write(stdout,101) 'a_1',(real_lattice(1,I), i=1,3)
-    write(stdout,101) 'a_2',(real_lattice(2,I), i=1,3)
-    write(stdout,101) 'a_3',(real_lattice(3,I), i=1,3)
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
+    else
+       write(stdout,'(28x,a22)') 'Lattice Vectors (Bohr)' 
+    endif
+    write(stdout,101) 'a_1',(real_lattice(1,I)*lenconfac, i=1,3)
+    write(stdout,101) 'a_2',(real_lattice(2,I)*lenconfac, i=1,3)
+    write(stdout,101) 'a_3',(real_lattice(3,I)*lenconfac, i=1,3)
     write(stdout,*)   
-    write(stdout,'(19x,a17,3x,f11.5,2x,a7)') 'Unit Cell Volume:', &
-         cell_volume,'(Ang^3)'
+    write(stdout,'(19x,a17,3x,f11.5))',advance='no') &
+         'Unit Cell Volume:',cell_volume*lenconfac**3
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(2x,a7)') '(Ang^3)'
+    else
+       write(stdout,'(2x,a8)') '(Bohr^3)'
+    endif
     write(stdout,*)   
-    write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
-    write(stdout,101) 'b_1',(recip_lattice(1,I), i=1,3)
-    write(stdout,101) 'b_2',(recip_lattice(2,I), i=1,3)
-    write(stdout,101) 'b_3',(recip_lattice(3,I), i=1,3)
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
+    else
+       write(stdout,'(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
+    endif
+    write(stdout,101) 'b_1',(recip_lattice(1,I)/lenconfac, i=1,3)
+    write(stdout,101) 'b_2',(recip_lattice(2,I)/lenconfac, i=1,3)
+    write(stdout,101) 'b_3',(recip_lattice(3,I)/lenconfac, i=1,3)
     write(stdout,*)   ' '
     ! Atoms
     if(num_atoms>0) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
-       write(stdout,'(1x,a)') '|   Site       Fractional Coordinate               Cartesian Coordinate      |'
+       if (lenconfac.eq.1.0_dp) then
+          write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+       else
+          write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+       endif
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
              write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_label(nsp),nat,atoms_pos_frac(:,nat,nsp),&
-                  '|',atoms_pos_cart(:,nat,nsp),'|'
+                  '|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
           end do
        end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -613,7 +647,7 @@ contains
        write(stdout,'(32x,a)') '-----------'
        write(stdout,*) ' '
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       write(stdout,'(1x,a)') '|        Site         l mr r        z-axis            x-axis        diff box |'
+       write(stdout,'(1x,a)') '|    Frac. Coord.     l mr r        z-axis            x-axis        diff box |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_wann
           write(stdout,'(1x,a1,3(1x,f5.2),2x,i2,1x,i2,1x,i1,1x,3(1x,f5.2),1x,3(1x,f5.2),&
@@ -636,10 +670,14 @@ contains
     write(stdout,*) ' '
     if(iprint>1) then
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
-       write(stdout,'(1x,a)') '| k-point      Fractional Coordinate               Cartesian Coordinate      |'
+       if (lenconfac.eq.1.0_dp) then
+          write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
+       else
+          write(stdout,'(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
+       endif
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nkp=1,num_kpts
-          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpt_latt(:,nkp),'|',kpt_cart(:,nkp),'|'
+          write(stdout,'(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',nkp,kpt_latt(:,nkp),'|',kpt_cart(:,nkp)/lenconfac,'|'
        end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        write(stdout,*) ' '
@@ -650,7 +688,7 @@ contains
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',length_unit,'|'  
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
- 
+
     ! Wannierise
     write(stdout,*) ' '
     write(stdout,'(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
@@ -705,14 +743,14 @@ contains
              write(stdout,'(1x,a78)') '|     None defined                                                           |'
           else
              do loop=1,bands_num_spec_points,2
-                 write(stdout,'(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:',bands_label(loop),&
-                      (bands_spec_points(i,loop),i=1,3),'To:',bands_label(loop+1),(bands_spec_points(i,loop+1),i=1,3),'|'
-              end do
-           end if
-           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
-        end if
-        !
-    endif 
+                write(stdout,'(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:',bands_label(loop),&
+                     (bands_spec_points(i,loop),i=1,3),'To:',bands_label(loop+1),(bands_spec_points(i,loop+1),i=1,3),'|'
+             end do
+          end if
+          write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+       end if
+       !
+    endif
 
 
 101 format(20x,a3,2x,3F11.6)
@@ -785,8 +823,8 @@ contains
   end subroutine param_write_header
 
 
-    !==================================================================!
-    subroutine param_dealloc
+  !==================================================================!
+  subroutine param_dealloc
     !==================================================================!
     !                                                                  !
     ! release memory from allocated parameters                         !
@@ -802,15 +840,15 @@ contains
        if (ierr/=0) call io_error('Error in deallocating ndimwin in param_dealloc')
     end if
     deallocate ( eigval, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating eigval in param_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating eigval in param_dealloc')
     deallocate ( shell_list, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating shell_list in param_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating shell_list in param_dealloc')
     deallocate ( wtkpt , stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating wtkpt in param_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating wtkpt in param_dealloc')
     deallocate ( kpt_latt, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating kpt_latt in param_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating kpt_latt in param_dealloc')
     deallocate ( kpt_cart, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating kpt_cart in param_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating kpt_cart in param_dealloc')
     if ( allocated ( bands_label ) ) then
        deallocate (  bands_label, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating bands_label in param_dealloc')
@@ -875,11 +913,11 @@ contains
 
   !================================!
   subroutine param_write_um
-  !================================!
-  !                                !
-  ! Dump the U and M to *_um.dat   !
-  !                                !
-  !================================!
+    !================================!
+    !                                !
+    ! Dump the U and M to *_um.dat   !
+    !                                !
+    !================================!
 
 
     use io,        only : io_file_unit,io_error,seedname,io_date
@@ -908,11 +946,11 @@ contains
 
   !================================!
   subroutine param_read_um
-  !================================!
-  !                                !
-  ! Restore U and M from file      !
-  !                                !
-  !================================!
+    !================================!
+    !                                !
+    ! Restore U and M from file      !
+    !                                !
+    !================================!
 
     use io,        only : io_file_unit,io_error,seedname
     implicit none
@@ -957,9 +995,9 @@ contains
 
   !=================================================!
   subroutine param_write_chkpt(chkpt)
-  !=================================================!
-  ! Write checkpoint file                           !
-  !=================================================!
+    !=================================================!
+    ! Write checkpoint file                           !
+    !=================================================!
 
     use io, only : io_file_unit,io_date,seedname
 
@@ -1008,9 +1046,9 @@ contains
 
   !=======================================!
   subroutine param_read_chkpt
-  !=======================================!
-  ! Read checkpoint file                  !
-  !=======================================!
+    !=======================================!
+    ! Read checkpoint file                  !
+    !=======================================!
 
     use io,      only : io_error,io_file_unit,stdout,seedname
     use utility, only : utility_strip
@@ -1086,7 +1124,7 @@ contains
        ! U matrix and eigval_opt
        read(chk_unit,err=122) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
        read(chk_unit,err=124) ((eigval_opt(i,nkp),i=1,num_wann),nkp=1,num_kpts)
-       
+
     endif
 
     close(chk_unit)
@@ -1103,15 +1141,15 @@ contains
 
   end subroutine param_read_chkpt
 
- 
+
   !=======================================!
   subroutine param_in_file
-  !=======================================!
-  ! Load the *.win file into a character  !
-  ! array in_file, ignoring comments and  !
-  ! blank lines and converting everything !
-  ! to lowercase characters               !
-  !=======================================!
+    !=======================================!
+    ! Load the *.win file into a character  !
+    ! array in_file, ignoring comments and  !
+    ! blank lines and converting everything !
+    ! to lowercase characters               !
+    !=======================================!
 
     use io,        only : io_file_unit,io_error,seedname,stdout
     use utility,   only : utility_lowercase
@@ -1165,11 +1203,11 @@ contains
 
   !===========================================================================!
   subroutine param_get_keyword(keyword,found,c_value,l_value,i_value,r_value)
-  !===========================================================================!
-  !                                                                           !
-  !             Finds the value of the required keyword.                      !
-  !                                                                           !
-  !===========================================================================!
+    !===========================================================================!
+    !                                                                           !
+    !             Finds the value of the required keyword.                      !
+    !                                                                           !
+    !===========================================================================!
 
     use io,        only : io_error
 
@@ -1234,11 +1272,11 @@ contains
 
   !=========================================================================================!
   subroutine param_get_keyword_vector(keyword,found,length,c_value,l_value,i_value,r_value)
-  !=========================================================================================!
-  !                                                                                         !
-  !                  Finds the values of the required keyword vector                        !
-  !                                                                                         !
-  !=========================================================================================!
+    !=========================================================================================!
+    !                                                                                         !
+    !                  Finds the values of the required keyword vector                        !
+    !                                                                                         !
+    !=========================================================================================!
 
     use io,        only : io_error
 
@@ -1299,12 +1337,13 @@ contains
 
   !==============================================================================================!
   subroutine param_get_keyword_block(keyword,found,rows,columns,c_value,l_value,i_value,r_value)
-  !==============================================================================================!
-  !                                                                                              !
-  !                           Finds the values of the required data block                        !
-  !                                                                                              !
-  !==============================================================================================!
+    !==============================================================================================!
+    !                                                                                              !
+    !                           Finds the values of the required data block                        !
+    !                                                                                              !
+    !==============================================================================================!
 
+    use constants, only : bohr
     use io,        only : io_error
 
     implicit none
@@ -1318,8 +1357,8 @@ contains
     integer          ,optional, intent(inout) :: i_value(columns,rows)
     real(kind=dp)    ,optional, intent(inout) :: r_value(columns,rows)
 
-    integer           :: in,ins,ine,loop,i,line_e,line_s,counter
-    logical           :: found_e,found_s
+    integer           :: in,ins,ine,loop,i,line_e,line_s,counter,blen
+    logical           :: found_e,found_s,lconvert
     character(len=maxlen) :: dummy,end_st,start_st
 
     found_s=.false.
@@ -1367,18 +1406,45 @@ contains
        call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
     end if
 
-    if( line_e-line_s-1 /= rows) then
-       call io_error('Error: Wrong number of lines in block '//trim(keyword))
-    end if
+    ! number of lines of data in block
+    blen = line_e-line_s-1
+
+    !    if( blen /= rows) then
+    !       if ( index(trim(keyword),'unit_cell_cart').ne.0 ) then
+    !          if ( blen /= rows+1 ) call io_error('Error: Wrong number of lines in block '//trim(keyword))
+    !       else
+    !          call io_error('Error: Wrong number of lines in block '//trim(keyword))          
+    !       endif
+    !    endif
+
+    if ( (blen.ne.rows) .and. (blen.ne.rows+1) ) &
+         call io_error('Error: Wrong number of lines in block '//trim(keyword))          
+
+    if ( (blen.eq.rows+1) .and. (index(trim(keyword),'unit_cell_cart').eq.0) ) &
+         call io_error('Error: Wrong number of lines in block '//trim(keyword))          
+
 
     found=.true.
- 
+
+    lconvert=.false.
+    if (blen==rows+1) then
+       dummy=in_data(line_s+1)
+       if ( index(dummy,'ang').ne.0 ) then
+          lconvert=.false.
+       elseif ( index(dummy,'bohr').ne.0 ) then
+          lconvert=.true.
+       else
+          call io_error('Error: Units in block '//trim(keyword)//' not recognised')
+       endif
+       in_data(line_s)(1:maxlen) = ' '
+       line_s=line_s+1
+    endif
 
     r_value=1.0_dp
     counter=0
     do loop=line_s+1,line_e-1
-       counter=counter+1
        dummy=in_data(loop)
+       counter=counter+1
        if( present(c_value) ) read(dummy,*,err=240) (c_value(i,counter),i=1,columns)
        if( present(l_value) ) then
           ! I don't think we need this. Maybe read into a dummy charater
@@ -1387,6 +1453,12 @@ contains
        if( present(i_value) ) read(dummy,*,err=240) (i_value(i,counter),i=1,columns)
        if( present(r_value) ) read(dummy,*,err=240) (r_value(i,counter),i=1,columns)
     end do
+
+    if (lconvert) then
+       if (present(r_value)) then
+          r_value=r_value*bohr
+       endif
+    endif
 
     in_data(line_s:line_e)(1:maxlen) = ' '
 
@@ -1399,24 +1471,27 @@ contains
   end subroutine param_get_keyword_block
 
   !=====================================================!
-  subroutine param_get_block_length(keyword,found,rows)
-  !=====================================================!
-  !                                                     !
-  !       Finds the length of the data block            !
-  !                                                     !
-  !=====================================================!
+  subroutine param_get_block_length(keyword,found,rows,lunits)
+    !=====================================================!
+    !                                                     !
+    !       Finds the length of the data block            !
+    !                                                     !
+    !=====================================================!
 
     use io,        only : io_error
 
     implicit none
 
     character(*),      intent(in)  :: keyword
-    logical          , intent(out) :: found
-    integer,           intent(out)  :: rows
+    logical,           intent(out) :: found
+    integer,           intent(out) :: rows
+    logical, optional, intent(out) :: lunits
 
-    integer           :: in,ins,ine,loop,line_e,line_s
+    integer           :: i,in,ins,ine,loop,line_e,line_s
     logical           :: found_e,found_s
-    character(len=maxlen) :: end_st,start_st
+    character(len=maxlen) :: end_st,start_st,dummy
+    character(len=2)  :: atsym
+    real(kind=dp)     :: atpos(3)
 
     found_s=.false.
     found_e=.false.
@@ -1464,7 +1539,20 @@ contains
     end if
 
     rows=line_e-line_s-1
+
     found=.true.
+
+    if (present(lunits)) then
+       dummy=in_data(line_s+1)
+       !       write(stdout,*) dummy
+       !       write(stdout,*) trim(dummy)
+       read(dummy,*,end=555) atsym, (atpos(i),i=1,3)
+       lunits=.false.
+    endif
+
+    return
+
+555 lunits=.true.
 
     return
 
@@ -1472,17 +1560,19 @@ contains
 
 
   !===================================!
-  subroutine param_get_atoms
-  !===================================!
-  !                                   !
-  !   Fills the atom data block       !
-  !                                   !
-  !===================================!
+  subroutine param_get_atoms(lunits)
+    !===================================!
+    !                                   !
+    !   Fills the atom data block       !
+    !                                   !
+    !===================================!
 
+    use constants, only : bohr
     use utility,   only : utility_frac_to_cart,utility_cart_to_frac
     use io,        only : io_error
     implicit none
 
+    logical, intent(in) :: lunits
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
     real(kind=dp)     :: atoms_pos_cart_tmp(3,num_atoms)
@@ -1493,6 +1583,7 @@ contains
     character(len=maxlen) :: dummy,end_st,start_st
     character(len=2)  :: ctemp(num_atoms)
     character(len=2)  :: atoms_label_tmp(num_atoms)
+    logical           :: lconvert
 
     keyword="atoms_cart"
     frac=.false.
@@ -1544,10 +1635,24 @@ contains
        call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
     end if
 
+    lconvert=.false.
+    if (lunits) then
+       dummy=in_data(line_s+1)
+       if ( index(dummy,'ang').ne.0 ) then
+          lconvert=.false.
+       elseif ( index(dummy,'bohr').ne.0 ) then
+          lconvert=.true.
+       else
+          call io_error('Error: Units in block atoms_cart not recognised in param_get_atoms')
+       endif
+       in_data(line_s)(1:maxlen) = ' '
+       line_s=line_s+1
+    endif
+
     counter=0
     do loop=line_s+1,line_e-1
-       counter=counter+1
        dummy=in_data(loop)
+       counter=counter+1
        if(frac) then
           read(dummy,*,err=240) atoms_label_tmp(counter),(atoms_pos_frac_tmp(i,counter),i=1,3)
        else
@@ -1555,8 +1660,9 @@ contains
        end if
     end do
 
-    in_data(line_s:line_e)(1:maxlen) = ' '
+    if (lconvert) atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr
 
+    in_data(line_s:line_e)(1:maxlen) = ' '
 
 
 
@@ -1622,14 +1728,14 @@ contains
 
   !===================================!
   subroutine param_get_projections
-  !===================================!
-  !                                   !
-  !  Fills the projection data block  !
-  !                                   !
-  !===================================!
+    !===================================!
+    !                                   !
+    !  Fills the projection data block  !
+    !                                   !
+    !===================================!
 
     use utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
-                          utility_string_to_coord,utility_strip
+         utility_string_to_coord,utility_strip
     use io,        only : io_error
     implicit none
 
@@ -1711,7 +1817,7 @@ contains
     if(.not. found_e) then
        call io_error('param_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
     end if
-    
+
     if(line_e<=line_s) then
        call io_error('param_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
     end if
@@ -1733,7 +1839,7 @@ contains
             &definition: '//trim(dummy))
        sites=0
        ctemp=dummy(:pos1-1)
-      ! Read the atomic site
+       ! Read the atomic site
        if(index(ctemp,'c=')>0) then
           sites=-1
           ctemp=ctemp(3:)
@@ -1751,7 +1857,7 @@ contains
                 exit
              end if
              if(loop==num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp))
-           end do
+          end do
        end if
        !Now we know the sites for this line. Get the angular momentum states
        dummy=dummy(pos1+1:)
@@ -1920,7 +2026,7 @@ contains
                 end select
                 if (pos3==0) exit
                 ctemp3=ctemp3(pos3+1:)
-             enddo             
+             enddo
           endif
           if(pos2==0) exit
           ctemp2=ctemp2(pos2+1:)
@@ -2044,11 +2150,11 @@ contains
 
   !===================================!
   subroutine param_get_keyword_kpath
-  !===================================!
-  !                                   !
-  !  Fills the kpath data block       !
-  !                                   !
-  !===================================!
+    !===================================!
+    !                                   !
+    !  Fills the kpath data block       !
+    !                                   !
+    !===================================!
     use io,        only : io_error
 
     implicit none
