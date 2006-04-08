@@ -72,6 +72,9 @@ module parameters
   logical,           public, save :: calc_only_A
   character(len=20), public, save :: restart
   logical,           public, save :: write_r2mn
+  logical,           public, save :: guiding_centres
+  integer,           public, save :: num_guide_cycles
+  integer,           public, save :: num_no_guide_iter
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -295,6 +298,17 @@ contains
     call param_get_keyword('conv_window',found,i_value=conv_window)
     if (conv_window<0) call io_error('Error: conv_window must be positive')
 
+    guiding_centres=.false.
+    call param_get_keyword('guiding_centres',found,l_value=guiding_centres)
+
+    num_guide_cycles=1
+    call param_get_keyword('num_guide_cycles',found,i_value=num_guide_cycles)
+    if (num_guide_cycles<0) call io_error('Error: num_guide_cycles must be >= 0')
+
+    num_no_guide_iter=0
+    call param_get_keyword('num_no_guide_iter',found,i_value=num_no_guide_iter)
+    if (num_no_guide_iter<0) call io_error('Error: num_no_guide_iter must be >= 0')
+    
 
     !%%%%%%%%%
     ! Plotting

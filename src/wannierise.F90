@@ -51,7 +51,10 @@ contains
     use parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
-         param_read_um,param_write_um,length_unit,lenconfac,write_r2mn
+         param_read_um,param_write_um,length_unit,lenconfac, &
+         proj_site,real_lattice,write_r2mn,guiding_centres,&
+         num_guide_cycles,num_no_guide_iter
+    use utility,    only : utility_frac_to_cart
 
     implicit none
 
@@ -63,8 +66,11 @@ contains
 
     ! parameters from input file
 
-    logical :: lcg, lrguide
+    logical :: lcg
 
+    ! guiding centres
+    real(kind=dp), allocatable :: rguide (:,:)  
+    integer :: irguide
 
     ! local arrays used and passed in subroutines
     complex(kind=dp), allocatable :: csheet (:,:,:)
@@ -73,7 +79,6 @@ contains
     complex(kind=dp), allocatable :: cdodq3 (:,:,:)  
     real(kind=dp), allocatable    :: sheet (:,:,:)
     real(kind=dp), allocatable    :: rave (:,:), r2ave (:)  , rave2 (:)  
-    real(kind=dp), allocatable    :: rguide (:,:)  
 
 
     !local arrays not passed into subroutines
@@ -104,7 +109,7 @@ contains
     real(kind=dp) :: falphamin,eqa,eqb,eqc,delta,alphamin,r2ave_mn
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
     integer :: nkp,i,j,nn,nb,na,m,n,iter,ind,ierr,loop_wann,ncg,bis_loop
-    integer :: nw1,nw2,nkp2,ncgfix,nsdim,nrguide,irguide,info
+    integer :: nw1,nw2,nkp2,ncgfix,nsdim,info
     logical :: linput,select,lprint,ldump
     real(kind=dp) :: alphamin_quad,falphamin_quad,om_trial
 
@@ -116,11 +121,6 @@ contains
     real(kind=dp), parameter :: mono_thresh_omega = 1.0e-11_dp
     real(kind=dp), parameter :: mono_thresh_grad  = 1.0e-6_dp
     ! ===================================================!
-
-    linput = .false.
-    nrguide = 0
-    lrguide = .false.
-    lcg = .true.
 
     ! Allocate stuff
 
@@ -153,7 +153,7 @@ contains
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main')
     csheet=(0.d0,0.d0);cdodq1=(0.d0,0.d0);cdodq2=(0.d0,0.d0)
     cdodq3=(0.d0,0.d0);rave2=0.d0
-    sheet=0.d0;rave=0.d0; r2ave=0.d0; rguide=0.d0
+    sheet=0.d0;rave=0.d0; r2ave=0.d0
 
     ! sub vars not passed into other subs
     allocate( cwschur1 (num_wann), cwschur2 (10 * num_wann),stat=ierr  )
@@ -202,6 +202,10 @@ contains
     gcnorm1=0.d0
     gcnorm0=0.d0
 
+    ! initialise rguide to projection centres (Cartesians in units of Ang)
+    do n=1,num_wann
+       call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
+    enddo
 
     write(stdout,*)
     write(stdout,'(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
@@ -219,6 +223,12 @@ contains
 
     ! parameter for line minimisation
     trial_step = 2.0_dp
+
+    irguide=0
+    if (guiding_centres.and.(num_no_guide_iter.le.0)) then
+       call phases(csheet,sheet,rguide,irguide)
+       irguide=1
+    endif
 
     ! calculate initial centers and spread
     call omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
@@ -258,6 +268,12 @@ contains
        if ( (num_dump_cycles.gt.0) .and. (mod(iter,num_dump_cycles).eq.0) ) ldump=.true.
 
        if(lprint) write(stdout,'(1x,a,i6)') 'Cycle: ',iter
+
+       if ( guiding_centres.and.(iter.gt.num_no_guide_iter) & 
+            .and.(mod(iter,num_guide_cycles).eq.0) ) then
+          call phases(csheet,sheet,rguide,irguide)
+          irguide=1
+       endif
 
        ! calculate gradient of omega
        call domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
@@ -357,12 +373,10 @@ contains
     enddo
     ! end of the minimization loop
 
-
-
     deallocate(tmp_cdq,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating tmp_cdq in wann_main')
 
-    write(stdout,'(1x,a)') 'Final State'
+     write(stdout,'(1x,a)') 'Final State'
     do loop_wann=1,num_wann
        write(stdout,1000) loop_wann,(rave(ind,loop_wann)*lenconfac,ind=1,3),&
             (r2ave(loop_wann) - rave2(loop_wann))*lenconfac**2
@@ -381,7 +395,7 @@ contains
     write(stdout,'(1x,a78)') repeat('-',78) 
 
 
-    if (lrguide) call phases(csheet,sheet,rguide,irguide)
+    if (guiding_centres) call phases(csheet,sheet,rguide,irguide)
 
 
     ! unitarity is checked
@@ -799,12 +813,15 @@ contains
        !   smat(j,i) = sum_nn bka(j,nn) * bka(i,nn)
        !   svec(j)   = sum_nn bka(j,nn) * xx(nn)
        ! initialize smat and svec
-       do j = 1, 3  
-          do i = 1, 3  
-             smat (j, i) = 0.d0  
-          enddo
-          svec (j) = 0.d0  
-       enddo
+
+       smat=0.0_dp
+       svec=0.0_dp
+!       do j = 1, 3  
+!          do i = 1, 3  
+!             smat (j, i) = 0.d0  
+!          enddo
+!          svec (j) = 0.d0  
+!       enddo
 
        do nn = 1, nnh  
           if (nn.le.3) then  
@@ -860,12 +877,12 @@ contains
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
           do loop_wann = 1, num_wann  
-             !           sheet (loop_wann, nn, nkp) = 0.d0
+             ! sheet (loop_wann, nn, nkp) = 0.d0
              do j = 1, 3  
                 sheet (loop_wann, nn, nkp) = sheet (loop_wann, nn, nkp) + bk (j, nkp, nn) &
                      * rguide (j, loop_wann)
              enddo
-             !           csheet (loop_wann, nn, nkp) = exp (ci * sheet (loop_wann, nn, nkp) )  
+             ! csheet (loop_wann, nn, nkp) = exp (ci * sheet (loop_wann, nn, nkp) )  
           enddo
        enddo
     enddo
