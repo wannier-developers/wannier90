@@ -102,16 +102,13 @@ program wannier
 
      have_disentangled=.true.
 
-     call io_stopwatch('overlap_copy',1)
-     call overlap_copy
-     call io_stopwatch('overlap_copy',2)
-
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
 
   endif
 
   call param_write_chkpt('postdis')
+  call param_write_um
 
   time2=io_time()
 
@@ -126,7 +123,7 @@ program wannier
 
 2002 continue
 
-  if (bands_plot .or. fermi_surface_plot) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot) then
      call plot_main
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time2-time1,' (sec)'     

@@ -20,15 +20,17 @@ module disentangle
   private
 
   ! Variables local to this module
-  complex(kind=dp), allocatable, save :: clamp(:,:,:)
+  complex(kind=dp), allocatable :: clamp(:,:,:)
+  real(kind=dp),    allocatable :: eigval_opt(:,:)
 
   ! Determined in dis_windows
-  logical,              save :: linner                               
-  logical, allocatable, save :: lfrozen(:,:) 
-  integer, allocatable, save :: nfirstwin(:)
-  integer, allocatable, save :: ndimfroz(:)
-  integer, allocatable, save :: indxfroz(:,:)
-  integer, allocatable, save :: indxnfroz(:,:)
+  logical                :: linner                               
+  logical, allocatable   :: lfrozen(:,:) 
+  integer, allocatable   :: nfirstwin(:)
+  integer, allocatable   :: ndimfroz(:)
+  integer, allocatable   :: indxfroz(:,:)
+  integer, allocatable   :: indxnfroz(:,:)
+  
 
 
   public :: dis_main
@@ -67,6 +69,11 @@ contains
 
     write(stdout,'(/1x,a)') &
          '*------------------------------- DISENTANGLE --------------------------------*'
+
+    allocate(eigval_opt(num_bands,num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating eigval_opt in dis_main')
+    eigval_opt=eigval
+
 
     ! Set up energy windows
     call dis_windows()
@@ -184,6 +191,15 @@ contains
     enddo
 
 
+    lwindow=.false.
+    do nkp=1,num_kpts
+       do j=nfirstwin(nkp),nfirstwin(nkp)+ndimwin(nkp)-1
+          lwindow(j,nkp)=.true.
+       end do
+    end do
+
+
+
     ! Extract the optimally-connected num_wann-dimensional subspaces
     write(stdout,'(/1x,a)') &
          '                  Extraction of optimally-connected subspace                  '
@@ -272,9 +288,9 @@ contains
        ! out by the subroutine extract
        do j = 1, num_wann  
           do i = 1, num_wann  
-             u_matrix_opt(i,j,nkp) = cmplx_0
+             u_matrix(i,j,nkp) = cmplx_0
              do l = 1, num_wann  
-                u_matrix_opt(i,j,nkp) = u_matrix_opt(i,j,nkp) + cz(i,l) * cv(l,j) 
+                u_matrix(i,j,nkp) = u_matrix(i,j,nkp) + cz(i,l) * cv(l,j) 
              enddo
           enddo
        enddo
@@ -292,7 +308,7 @@ contains
                 do m = 1, num_wann  
                    do n = 1, num_wann  
                       cmtmp(i,j) = cmtmp(i,j) &
-                           + conjg(u_matrix_opt(m,i,nkp)) * u_matrix_opt(n,j,nkp2) &
+                           + conjg(u_matrix(m,i,nkp)) * u_matrix(n,j,nkp2) &
                            * m_matrix_orig(m,n,nn,nkp)
                    enddo
                 enddo
@@ -300,19 +316,31 @@ contains
           enddo
           do i = 1, num_wann  
              do j = 1, num_wann  
-                m_matrix_orig(i,j,nn,nkp) = cmtmp(i,j)  
+                m_matrix(i,j,nn,nkp) = cmtmp(i,j)  
              enddo
           enddo
        enddo
     enddo
 
-    eigval_opt=0.0_dp
-    ! Copy the eigenvalues in the optimal space to eigval_opt (for plotting etc)
-    do nkp=1,num_kpts
-       do i=1,num_wann
-          eigval_opt(i,nkp)=eigval(i,nkp)
+!    eigval_opt=0.0_dp
+!    ! Copy the eigenvalues in the optimal space to eigval_opt (for plotting etc)
+!    do nkp=1,num_kpts
+!       do i=1,num_wann
+!          eigval_opt(i,nkp)=eigval(i,nkp)
+!       enddo
+!    enddo
+
+    u_matrix_opt=cmplx_0
+
+    do nkp = 1, num_kpts  
+       do j = 1, num_wann  
+          do i = 1, ndimwin(nkp)  
+             u_matrix_opt(i,j,nkp)  = clamp(i,j,nkp) 
+          enddo
        enddo
     enddo
+
+
 
 
     ! Deallocate arrays for ZGESVD
@@ -351,6 +379,9 @@ contains
     deallocate(rphicmx,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating rphicmx in dis_main')
 
+    deallocate(eigval_opt,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating eigval_opt in dis_main')
+
 
     return
 
@@ -375,7 +406,7 @@ contains
     ! have been excluded forever, and marking (indexing) the rows and column
     ! that correspond to frozen states.
 
-    ! note - in windows eigval are shifted, so the lowest ones go
+    ! note - in windows eigval_opt are shifted, so the lowest ones go
     ! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above
     ! they are set to zero
 
@@ -396,7 +427,7 @@ contains
     !                     (equals 1 if it is the bottom of outer window)
     !     nfirstwin(nkp) index of lowest band inside outer window at nkp-th
     ! MODIFIED:
-    !     eigval(nb,nkp) At input it contains a large set of eigenvalues. At
+    !     eigval_opt(nb,nkp) At input it contains a large set of eigenvalues. At
     !                    it is slimmed down to contain only those inside the
     !                    energy window, stored in nb=1,...,ndimwin(nkp)
 
@@ -437,11 +468,11 @@ contains
 
     do nkp = 1, num_kpts  
        ! Check which eigenvalues fall within the outer window
-       if ( (eigval(1,nkp).gt.dis_win_max).or.&
-            (eigval(num_bands,nkp).lt.dis_win_min) ) then
+       if ( (eigval_opt(1,nkp).gt.dis_win_max).or.&
+            (eigval_opt(num_bands,nkp).lt.dis_win_min) ) then
           write(stdout,*) ' ERROR AT K-POINT: ', nkp  
           write(stdout,*) ' ENERGY WINDOW (eV):    [',dis_win_min,  ',', dis_win_max,     ']'
-          write(stdout,*) ' EIGENVALUE RANGE (eV): [',eigval(1,nkp),',',eigval(num_bands,nkp),']'
+          write(stdout,*) ' EIGENVALUE RANGE (eV): [',eigval_opt(1,nkp),',',eigval_opt(num_bands,nkp),']'
           call io_error('DISENTANGLE: The outer energy window contains no eigenvalues')
        endif
 
@@ -450,11 +481,11 @@ contains
        imin = 0  
        do i = 1, num_bands
           if (imin.eq.0) then  
-             if ( (eigval(i,nkp).ge.dis_win_min).and.&
-                  (eigval(i,nkp).le.dis_win_max) ) imin = i
+             if ( (eigval_opt(i,nkp).ge.dis_win_min).and.&
+                  (eigval_opt(i,nkp).le.dis_win_max) ) imin = i
              imax = i  
           endif
-          if (eigval(i,nkp).le.dis_win_max) imax = i  
+          if (eigval_opt(i,nkp).le.dis_win_max) imax = i  
        enddo
 
        ndimwin(nkp) = imax - imin + 1  
@@ -480,13 +511,13 @@ contains
        if (frozen_states) then
           do i = imin, imax  
              if (kifroz_min.eq.0) then 
-                if ( (eigval(i,nkp).ge.dis_froz_min).and.&
-                     (eigval(i,nkp).le.dis_froz_max) ) then
+                if ( (eigval_opt(i,nkp).ge.dis_froz_min).and.&
+                     (eigval_opt(i,nkp).le.dis_froz_max) ) then
                    ! Relative to bottom of outer window
                    kifroz_min = i - imin + 1  
                    kifroz_max = i - imin + 1  
                 endif
-             elseif (eigval(i,nkp).le.dis_froz_max) then  
+             elseif (eigval_opt(i,nkp).le.dis_froz_max) then  
                 kifroz_max = kifroz_max + 1  
                 ! DEBUG
                 ! if(kifroz_max.ne.i-imin+1) stop 'something wrong...'
@@ -502,7 +533,7 @@ contains
 401       format(' ERROR AT K-POINT ',i4,' THERE ARE ',i2, &
                ' BANDS INSIDE THE INNER WINDOW AND ONLY',i2, &
                ' TARGET BANDS')
-          write(stdout,402) (eigval(i,nkp),i = imin, imax)  
+          write(stdout,402) (eigval_opt(i,nkp),i = imin, imax)  
 402       format('BANDS: (eV)',10(F10.5,1X))  
           call io_error('DISENTANGLE: More states in the frozen window than target WFs')
        endif
@@ -549,11 +580,11 @@ contains
        ! Slim down eigval vector at present k
        do i = 1, ndimwin(nkp)  
           j = nfirstwin(nkp) + i - 1  
-          eigval(i,nkp) = eigval(j,nkp)  
+          eigval_opt(i,nkp) = eigval_opt(j,nkp)  
        enddo
 
        do i = ndimwin(nkp) + 1, num_bands
-          eigval(i,nkp) = 0.0_dp
+          eigval_opt(i,nkp) = 0.0_dp
        enddo
 
     enddo
@@ -1191,7 +1222,7 @@ contains
          write(stdout,'(a,/)') '  Original eigenvalues inside outer window:'  
          do nkp = 1, num_kpts  
             write(stdout,'(a,i3,3x,20(f9.5,1x))') '  K-point ', nkp,&
-                 ( eigval(i, nkp), i = 1, ndimwin (nkp) )
+                 ( eigval_opt(i, nkp), i = 1, ndimwin (nkp) )
          enddo
       endif
       ! ENDDEBUG
@@ -1466,7 +1497,7 @@ contains
                cham(i,j,nkp) = cmplx_0  
                do l = 1, ndimwin(nkp)  
                   cham(i,j,nkp) = cham(i,j,nkp) + conjg(clamp(l,i,nkp)) &
-                       * clamp(l,j,nkp) * eigval(l,nkp)
+                       * clamp(l,j,nkp) * eigval_opt(l,nkp)
                enddo
             enddo
          enddo
@@ -1493,7 +1524,7 @@ contains
 
          ! Store the energy eigenvalues of the optimal subspace (used in wann_ban
          do i = 1, num_wann  
-            eigval(i,nkp) = w(i)  
+            eigval_opt(i,nkp) = w(i)  
          enddo
 
          ! CALCULATE AMPLITUDES OF THE CORRESPONDING ENERGY EIGENVECTORS IN TERMS
@@ -1514,7 +1545,7 @@ contains
          write(stdout,'(/,a,/)') '  Eigenvalues inside optimal subspace:'  
          do nkp = 1, num_kpts  
             write(stdout,'(a,i3,2x,20(f9.5,1x))') '  K-point ', &
-                 nkp, (eigval(i,nkp), i = 1, num_wann)
+                 nkp, (eigval_opt(i,nkp), i = 1, num_wann)
          enddo
       endif
       ! ENDDEBUG
@@ -1544,7 +1575,7 @@ contains
                   cham(i,j,nkp) = cmplx_0  
                   do l = 1, ndimwin(nkp)  
                      cham(i,j,nkp) = cham(i,j,nkp) + conjg(camp(l,i,nkp)) &
-                          * camp(l,j,nkp) * eigval(l,nkp)
+                          * camp(l,j,nkp) * eigval_opt(l,nkp)
                   enddo
                enddo
             enddo

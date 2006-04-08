@@ -20,7 +20,6 @@ module overlap
   private
 
 !!$  public :: overlap_dis_read
-  public :: overlap_copy
   public :: overlap_read
   public :: overlap_dealloc
 
@@ -36,7 +35,7 @@ contains
     use parameters,     only : num_bands, num_wann, num_kpts, num_nnmax, &
                            nntot, nncell, nnlist,devel_flag, &
                            u_matrix, m_matrix, a_matrix, m_matrix_orig, &
-                           u_matrix_opt, eigval_opt, cp_pp, eigval
+                           u_matrix_opt, cp_pp
     use io,         only : io_file_unit, io_error, seedname
 
     implicit none
@@ -55,13 +54,6 @@ contains
     if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
     allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
-    allocate ( eigval_opt(num_wann,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating eigval_opt in overlap_read')
-    eigval_opt    = 0.0_dp
-
-    if(.not. disentanglement) then
-       eigval_opt=eigval
-    end if
 
     if (disentanglement) then
        allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
@@ -295,47 +287,13 @@ return
   end subroutine overlap_rotate
 
 
-  !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_copy( )
-  !%%%%%%%%%%%%%%%%%%%%%
-    
-    use parameters, only : num_bands,num_wann,num_kpts,num_nnmax,nntot,&
-                       u_matrix,m_matrix,u_matrix_opt,m_matrix_orig
-
-    implicit none
-
-    integer :: i,j,nkp,nn
-
-    u_matrix=cmplx_0
-    m_matrix=cmplx_0
-
-    do nkp=1,num_kpts
-       do j=1,num_wann
-          do i=1,num_wann
-             u_matrix(i,j,nkp) = u_matrix_opt(i,j,nkp)
-          enddo
-       enddo
-       do nn=1,nntot
-          do j=1,num_wann
-             do i=1,num_wann
-                m_matrix(i,j,nn,nkp)=m_matrix_orig(i,j,nn,nkp)
-             enddo
-          enddo
-       enddo
-    enddo
-
-
-    return
-
-  end subroutine overlap_copy
-
 
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_dealloc( )
   !%%%%%%%%%%%%%%%%%%%%%
 
     use parameters, only : u_matrix,m_matrix,m_matrix_orig,&
-                       a_matrix,u_matrix_opt,eigval_opt
+                       a_matrix,u_matrix_opt
     use io,     only : io_error
 
     implicit none
@@ -351,10 +309,6 @@ return
        if (ierr/=0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc')
     endif
 
-    if (allocated(eigval_opt)) then
-       deallocate ( eigval_opt, stat=ierr )
-       if (ierr/=0) call io_error('Error deallocating eigval_opt in overlap_dealloc')
-    endif
     deallocate ( m_matrix, stat=ierr )
     if (ierr/=0) call io_error('Error deallocating m_matrix in overlap_dealloc')
     deallocate ( u_matrix, stat=ierr )

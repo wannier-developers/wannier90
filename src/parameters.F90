@@ -23,7 +23,7 @@ module parameters
   character(len=20), public, save :: energy_unit
   character(len=20), public, save :: length_unit
   logical,           public, save :: wvfn_formatted
-  integer,           public, save :: first_band
+  integer,           public, save :: spin
   integer,           public, save :: num_bands
   integer,           public, save :: num_dump_cycles
   integer,           public, save :: num_print_cycles
@@ -125,6 +125,7 @@ module parameters
 
   ! disentangle parameters
   integer, public, save, allocatable :: ndimwin(:)
+  logical, public, save, allocatable :: lwindow(:,:)
   logical, public, save :: frozen_states
 
   ! a_matrix and m_matrix_orig can be calculated internally from bloch states
@@ -140,7 +141,6 @@ module parameters
   ! original bloch states
 
   complex(kind=dp), allocatable, save, public :: u_matrix_opt(:,:,:)
-  real(kind=dp),    allocatable, save, public :: eigval_opt(:,:)
 
   ! u_matrix gives the unitary rotations from the optimal subspace to the
   ! optimally smooth states. 
@@ -185,11 +185,9 @@ contains
     !local variables
     integer :: nkp,i,j,n,k,i_temp,i_temp2,unit,loop
     logical :: found,found2,eig_found,lunits
-    real(kind=dp), dimension(:,:), allocatable :: eigval_tmp
-
+    character(len=6) :: spin_str
 
     call param_in_file
-
 
     !%%%%%%%%%%%%%%%%
     !System variables
@@ -211,8 +209,17 @@ contains
     wvfn_formatted  =  .false.       ! formatted or "binary" file
     call param_get_keyword('wvfn_formatted',found,l_value=wvfn_formatted)
 
-    first_band      =   1
-    call param_get_keyword('first_band',found,i_value=first_band)
+    spin=1
+    call param_get_keyword('spin',found,c_value=spin_str)
+    if(found) then
+       if(index(spin_str,'up')>0) then
+          spin=1
+       elseif(index(spin_str,'down')>0) then
+          spin=2
+       else
+          call io_error('Error: unrecognised value of spin found: '//trim(spin_str))
+       end if
+    end if
 
     num_wann      =   -99
     call param_get_keyword('num_wann',found,i_value=num_wann)
@@ -269,13 +276,14 @@ contains
     ! Wannierise
     !%%%%%%%%%%%
 
-    num_iter          = 500    
+    num_iter          = 100    
     call param_get_keyword('num_iter',found,i_value=num_iter)
     if (num_iter<0) call io_error('Error: num_iter must be positive')       
 
     num_cg_steps      =   5
     call param_get_keyword('num_cg_steps',found,i_value=num_cg_steps)
     if (num_cg_steps<0) call io_error('Error: num_cg_steps must be positive')       
+
     conv_tol=0.0_dp
     call param_get_keyword('conv_tol',found,r_value=conv_tol)
     if (conv_tol<0.d0) call io_error('Error: conv_tol must be positive')
@@ -370,28 +378,21 @@ contains
     if(.not. eig_found) then
        if ( disentanglement.and.(.not.postproc_setup) ) then
           call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-       else if (bands_plot .or. dos_plot .or. fermi_surface_plot) then
+       else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) .and.(.not.postproc_setup) ) then
           call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
        end if
     else
-       allocate(eigval_tmp(num_bands,num_kpts))
        unit=io_file_unit()
        open(unit=unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
        do k=1,num_kpts
           do n=1,num_bands
-             read(unit,*) i,j,eigval_tmp(i,j)
+             read(unit,*) i,j,eigval(i,j)
              if ((i.ne.n).or.(j.ne.k)) then
                 call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
              end if
           enddo
-          do n=1,num_bands
-             !     eigval(n,k) = eigval_tmp(n + first_band - 1, k)
-             ! The way this is written, it only works if first_band=1
-             eigval(n,k) = eigval_tmp(n,k)
-          end do
        end do
        close(unit)
-       deallocate(eigval_tmp)
     end if
 
     dis_win_min       = minval(eigval)       
@@ -414,7 +415,7 @@ contains
             call io_error('Error: param_read: check disentanglement frozen windows')
     endif
 
-    dis_num_iter      = 50    ! 200
+    dis_num_iter      = 200
     call param_get_keyword('dis_num_iter',found,i_value=dis_num_iter)
     if (dis_num_iter<0) call io_error('Error: dis_num_iter must be positive')       
 
@@ -527,6 +528,7 @@ contains
          call io_error('Error in input file: value of restart not recognised')
 
     if (disentanglement) allocate(ndimwin(num_kpts))
+    if (disentanglement) allocate(lwindow(num_bands,num_kpts))
 
     ! Initialise
     omega_invariant = -999.0_dp
@@ -839,6 +841,10 @@ contains
        deallocate (  ndimwin, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating ndimwin in param_dealloc')
     end if
+    if ( allocated ( lwindow ) ) then
+       deallocate (  lwindow, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating lwindow in param_dealloc')
+    end if
     deallocate ( eigval, stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating eigval in param_dealloc')
     deallocate ( shell_list, stat=ierr  )
@@ -1030,9 +1036,10 @@ contains
     write(chk_unit) have_disentangled      ! Whether a disentanglement has been performed
     if (have_disentangled) then
        write(chk_unit) omega_invariant     ! Omega invariant
-       ! U_matrix_opt and eigval_opt
+       ! lwindow, ndimwin and U_matrix_opt 
+       write(chk_unit) ((lwindow(i,nkp),i=1,num_bands),nkp=1,num_kpts)
+       write(chk_unit) (ndimwin(nkp),nkp=1,num_kpts)
        write(chk_unit) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
-       write(chk_unit) ((eigval_opt(i,nkp),i=1,num_wann),nkp=1,num_kpts) 
     endif
 
     close(chk_unit)
@@ -1116,14 +1123,21 @@ contains
           allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating u_matrix_opt in param_read_chkpt')
        endif
-       if (.not.allocated(eigval_opt)) then
-          allocate(eigval_opt(num_wann,num_kpts),stat=ierr)
-          if (ierr/=0) call io_error('Error allocating eigval_opt in param_read_chkpt')
+
+       if (.not.allocated(lwindow)) then
+          allocate(lwindow(num_bands,num_kpts),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating lwindow in param_read_chkpt')
        endif
 
-       ! U matrix and eigval_opt
-       read(chk_unit,err=122) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
-       read(chk_unit,err=124) ((eigval_opt(i,nkp),i=1,num_wann),nkp=1,num_kpts)
+       if (.not.allocated(ndimwin)) then
+          allocate(ndimwin(num_kpts),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating ndimwin in param_read_chkpt')
+       endif
+
+       ! U matrix opt
+       read(chk_unit,err=122) ((lwindow(i,nkp),i=1,num_bands),nkp=1,num_kpts)
+       read(chk_unit,err=123) (ndimwin(nkp),nkp=1,num_kpts)
+       read(chk_unit,err=124) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
 
     endif
 
@@ -1134,10 +1148,9 @@ contains
     return
 
 121 call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt')
-122 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt')
-!!$ 123 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
-124 call io_error('Error reading eigval_opt from '//trim(seedname)//'.chk in param_read_chkpt')
-
+122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in param_read_chkpt')
+123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in param_read_chkpt')
+124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt')
 
   end subroutine param_read_chkpt
 
