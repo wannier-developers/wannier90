@@ -135,8 +135,12 @@ Steepest Descents \\
 convergence of $\Omega$ is assessed \\
 {\sc num\_dump\_cycles }   & I & Control frequency of checkpointing \\
 {\sc num\_print\_cycles }   & I & Control frequency of printing \\
+{\sc write\_r2mn }   & L & Write matrix elements of $r^2$ between
+Wannier functions to file \\
 {\sc guiding\_centres }   & L & Use guiding centres \\
-{\sc guiding\_centres\_iter }   & I & Frequency of guiding centres \\
+{\sc num\_guide\_cycles }   & I & Frequency of guiding centres \\
+{\sc num\_no\_guide\_iter }   & I & The number of iterations
+after which guiding centres are used\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -582,7 +586,13 @@ Write data to the $<$seedname$>$.wout file every
                                                                                                                               
 The default is 1.
                                                                                                                               
+\subsection[write\_r2mn]{\tt logical :: write\_r2mn}
 
+If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
+$<m|r^2|n>$ (where $m$ and $n$ refer to Wannier functions) are written
+to file \verb#seedname.r2mn# at the end of the wannierisation procedure.
+
+The default value of this parameter is \verb#FALSE#.
 
 
 \subsection[guiding\_centres]{\tt logical :: guiding\_centres}
@@ -590,16 +600,22 @@ The default is 1.
 Use guiding centres during the minimisation, in order to avoid
 local minima.
 
-The default value of this parameter is FALSE
+The default value of this parameter is \verb#FALSE#
 
-\subsection[guiding\_centres\_iter]{\tt integer :: guiding\_centres\_iter}
+\subsection[num\_guide\_cycles]{\tt integer :: num\_guide\_cycles}
 \red{Not yet implemented}
 If \verb#guiding_centres# is set to true the
-guiding centres are used only after \verb#guiding_centres_iter# minimization iterations
-have been completed.
+guiding centres are used only every \verb#num_guide_cycles#.
 
-The default value of this parameter is 50.
+The default value of this parameter is 1
 
+\subsection[num\_no\_guide\_iter]{\tt integer :: num\_no\_guide\_iter}
+\red{Not yet implemented}
+If \verb#guiding_centres# is set to true the
+guiding centres are used only after \verb#num_no_guide_iter#
+minimisation iterations have been completed.
+
+The default value of this parameter is 0
 
 
 
