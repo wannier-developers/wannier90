@@ -71,6 +71,7 @@ module parameters
   logical,           public, save :: cp_pp ! Car-Parinello post-proc flag
   logical,           public, save :: calc_only_A
   character(len=20), public, save :: restart
+  logical,           public, save :: write_r2mn
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -271,6 +272,8 @@ contains
     restart = ' '
     call param_get_keyword('restart',found,c_value=restart)
 
+    write_r2mn = .false.
+    call param_get_keyword('write_r2mn',found,l_value=write_r2mn)
 
     !%%%%%%%%%%%
     ! Wannierise

@@ -46,11 +46,12 @@ contains
     !                                                                  !
     !===================================================================  
     use constants,  only : dp,cmplx_1,cmplx_0
-    use io,         only : stdout,io_error,io_time,io_stopwatch
+    use io,         only : stdout,io_error,io_time,io_stopwatch,&
+         io_file_unit,seedname
     use parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
-                           nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
-                           num_print_cycles,num_dump_cycles,omega_invariant, &
-                           param_read_um,param_write_um,length_unit,lenconfac
+         nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
+         num_print_cycles,num_dump_cycles,omega_invariant, &
+         param_read_um,param_write_um,length_unit,lenconfac,write_r2mn
 
     implicit none
 
@@ -106,6 +107,8 @@ contains
     integer :: nw1,nw2,nkp2,ncgfix,nsdim,nrguide,irguide,info
     logical :: linput,select,lprint,ldump
     real(kind=dp) :: alphamin_quad,falphamin_quad,om_trial
+
+    integer :: r2mnunit
 
     ! == bisection parameters -- slightly experimental ==!
     integer, parameter       :: max_bis_iter = 3
@@ -199,7 +202,7 @@ contains
     gcnorm1=0.d0
     gcnorm0=0.d0
 
-    
+
     write(stdout,*)
     write(stdout,'(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
     write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
@@ -219,6 +222,7 @@ contains
 
     ! calculate initial centers and spread
     call omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+    omega_invariant = wann_spread%om_i
 
     ncg  = 0
     iter = 0
@@ -242,7 +246,6 @@ contains
          ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
     write(stdout,'(1x,a78)') repeat('-',78) 
 
-    omega_invariant = wann_spread%om_i
 
     ! main iteration loop
     do iter=1,num_iter
@@ -259,92 +262,11 @@ contains
        ! calculate gradient of omega
        call domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
 
-       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
-       gcnorm1=0.0_dp
-       do nkp = 1, num_kpts  
-          do n = 1, num_wann  
-             do m = 1, num_wann  
-                gcnorm1 = gcnorm1 + real(cdodq(m,n,nkp)*conjg(cdodq(m,n,nkp)),dp)
-             enddo
-          enddo
-       enddo
-
        if ( lprint .and. iprint>2 ) &
             write(stdout,*) ' LINE --> Iteration                     :',iter
 
-       ! calculate CG coefficient
-       if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
-          gcfac = 0.0_dp                 ! Steepest descents
-          ncg   = 0
-       else
-          if (gcnorm0.gt.epsilon(1.0_dp)) then
-             gcfac = gcnorm1/gcnorm0     ! Fletcher-Reeves CG coefficient
-             ! prevent CG coefficient from getting too large
-             if (gcfac.gt.3.0_dp) then
-                if ( lprint .and. iprint>2 ) &
-                     write(stdout,*) ' LINE --> CG coeff too large. Resetting CG:',gcfac
-                gcfac = 0.0_dp
-                ncg = 0
-             else
-                ncg = ncg + 1
-             endif
-          else
-             gcfac = 0.0_dp
-             ncg   = 0
-          endif
-       endif
-
-       ! save for next iteration
-       gcnorm0 = gcnorm1
-
-       ! calculate search direction
-       cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
-
-       ! calculate gradient along search direction - Tr[gradient . search direction]
-       doda0 = 0.0_dp
-       do nkp = 1, num_kpts  
-          do m = 1, num_wann  
-             do n = 1, num_wann  
-                doda0 = doda0 + real(cdq(m,n,nkp)*cdodq(n,m,nkp),dp)  
-             enddo
-          enddo
-       enddo
-       doda0 = doda0 / (4.0_dp*wbtot)
-
-       ! check if search direction is uphill
-       if (doda0.gt.0.0_dp) then
-          ! if doing a CG step then reset CG
-          if (ncg.gt.0) then
-             if ( lprint .and. iprint>2 ) &
-                  write(stdout,*) ' LINE --> Search direction uphill: resetting CG'
-             cdq(:,:,:) = cdodq(:,:,:)
-             ncg = 0
-             gcfac = 0.0_dp
-             ! re-calculate gradient along search direction
-             doda0 = 0.0_dp
-             do nkp = 1, num_kpts  
-                do m = 1, num_wann  
-                   do n = 1, num_wann  
-                      doda0 = doda0 + real(cdq(m,n,nkp)*cdodq(n,m,nkp),dp)  
-                   enddo
-                enddo
-             enddo
-             doda0 = doda0 / (4.0_dp*wbtot)
-             ! if search direction still uphill then reverse search direction
-             if (doda0.gt.0.0_dp) then
-                if ( lprint .and. iprint>2 ) &
-                     write(stdout,*) ' LINE --> Search direction still uphill: reversing'
-                cdq(:,:,:) = -cdq(:,:,:)
-                doda0 = -doda0
-             endif
-             ! if doing a SD step then reverse search direction
-          else
-             if ( lprint .and. iprint>2 ) &
-                  write(stdout,*) ' LINE --> Search direction uphill: reversing'
-             cdq(:,:,:) = -cdq(:,:,:)
-             doda0 = -doda0
-          endif
-       endif
+       ! calculate search direction (cdq)
+       call internal_search_direction()
 
        ! save search direction 
        cdqkeep(:,:,:) = cdq(:,:,:)
@@ -358,30 +280,8 @@ contains
        ! calculate spread at trial step
        call omega(csheet,sheet,rave,r2ave,rave2,trial_spread)
 
-       ! Calculate optimal parabolic step
-       fac = abs(trial_spread%om_tot - wann_spread%om_tot)
-       if ( fac.gt.tiny(1.0_dp) ) then
-          fac = 1.0_dp/fac
-          if ( trial_spread%om_tot .gt. wann_spread%om_tot ) then
-             shift =  1.0_dp
-          else
-             shift = -1.0_dp
-          endif
-       else
-          fac   = 1.0e5_dp
-          shift = fac*trial_spread%om_tot - fac*wann_spread%om_tot
-       endif
-       eqb = fac*doda0  
-       eqa = shift - eqb*trial_step
-       if ( abs(eqa/(fac*wann_spread%om_tot)) .gt. epsilon(1.0_DP) ) then
-          alphamin_quad = -eqb / (2.0_dp * eqa) * (trial_step**2)
-          falphamin_quad = wann_spread%om_tot &
-               - ( eqb*eqb / (4.0_dp * fac * eqa) ) * (trial_step**2)
-       endif
-
-       ! set line search coefficient
-       alphamin=alphamin_quad
-       falphamin=falphamin_quad
+       ! Calculate optimal step (alphamin)
+       call internal_optimal_step()
 
        ! print line search information
        if ( lprint .and. iprint>2 ) then
@@ -434,13 +334,16 @@ contains
              write(stdout,1000) loop_wann,(rave(ind,loop_wann)*lenconfac,ind=1,3),&
                   (r2ave(loop_wann) - rave2(loop_wann))*lenconfac**2
           end do
-          write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
+          write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), &
+               (sum(r2ave)-sum(rave2))*lenconfac**2
           write(stdout,*)
           write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
-               iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,sqrt(abs(gcnorm1))*lenconfac,&
+               iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,&
+               sqrt(abs(gcnorm1))*lenconfac,&
                wann_spread%om_tot*lenconfac**2,io_time(),'<-- CONV'
           write(stdout,'(8x,a,F15.7,a,F15.7,a,F15.7,a)') &
-               'O_D=',wann_spread%om_d*lenconfac**2,' O_OD=',wann_spread%om_od*lenconfac**2,&
+               'O_D=',wann_spread%om_d*lenconfac**2,&
+               ' O_OD=',wann_spread%om_od*lenconfac**2,&
                ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
           write(stdout,'(1x,a,E15.7,a,E15.7,a,E15.7,a)') &
                'Delta: O_D=',(wann_spread%om_d-old_spread%om_d)*lenconfac**2,&
@@ -464,22 +367,24 @@ contains
        write(stdout,1000) loop_wann,(rave(ind,loop_wann)*lenconfac,ind=1,3),&
             (r2ave(loop_wann) - rave2(loop_wann))*lenconfac**2
     end do
-    write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
+    write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3),&
+         (sum(r2ave)-sum(rave2))*lenconfac**2
     write(stdout,*)
-!    write(stdout,'(3x,a,f15.9)') '     Spreads (Ang)         Omega I      = ',wann_spread%om_i  
-    write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)','       Omega I      = ' &
-          ,wann_spread%om_i*lenconfac**2
-    write(stdout,'(3x,a,f15.9)') '     ================       Omega D      = ',wann_spread%om_d*lenconfac**2
-    write(stdout,'(3x,a,f15.9)') '                            Omega OD     = ',wann_spread%om_od*lenconfac**2
-!    write(stdout,'(3x,a,f15.9)') 'Final Spread (Ang)         Omega Total  = ',wann_spread%om_tot*lenconfac  
-    write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)','       Omega Total  = ' &
-	,wann_spread%om_tot*lenconfac**2  
+    write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)',&
+         '       Omega I      = ',wann_spread%om_i*lenconfac**2
+    write(stdout,'(3x,a,f15.9)') '     ================       Omega D      = ',&
+         wann_spread%om_d*lenconfac**2
+    write(stdout,'(3x,a,f15.9)') '                            Omega OD     = ',&
+         wann_spread%om_od*lenconfac**2
+    write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)',&
+         '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
-    if (lrguide) call phases (  csheet, sheet, rguide, irguide)
+
+    if (lrguide) call phases(csheet,sheet,rguide,irguide)
 
 
-    ! unitariety is checked
+    ! unitarity is checked
     do nkp = 1, num_kpts  
        do i = 1, num_wann  
           do j = 1, num_wann  
@@ -515,7 +420,6 @@ contains
        enddo
     enddo
 
-
     if(iprint>2) then
        ! singular value decomposition
        omt1 = 0.d0  
@@ -549,37 +453,17 @@ contains
        omt2 = omt2 / real(num_kpts,dp)  
        omt3 = omt3 / real(num_kpts,dp)  
        write ( stdout , * ) ' '  
-       write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
-       write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
-       write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
-       write ( stdout , * ) ' '  
+       write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
+            omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
+       write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
+            omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
+       write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
+            omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
+       write ( stdout , * ) ' '
     end if
-
-
     write ( stdout , * ) ' '  
 
-
-    ! note that here I use formulas analogue to Eq. 23, and not to the
-    ! shift-invariant Eq. 32 .
-    open (20, file = 'wannier.r2_mn', form = 'formatted', status = 'unknown')
-    do nw1 = 1, num_wann  
-       do nw2 = 1, num_wann  
-          r2ave_mn = 0.d0  
-          delta = 0.d0  
-          if (nw1.eq.nw2) delta = 1.d0  
-          do nkp = 1, num_kpts  
-             do nn = 1, nntot  
-                r2ave_mn = r2ave_mn + wb (nkp, nn) * &
-                     ( 2.d0 * delta - m_matrix(nw1,nw2,nn,nkp) - &
-                     conjg(m_matrix(nw2,nw1,nn,nkp)) )
-             enddo
-          enddo
-          r2ave_mn = r2ave_mn / real(num_kpts,dp)  
-          write (20, '(2i4,f20.12)') nw1, nw2, r2ave_mn  
-       enddo
-    enddo
-    close (20)  
-
+    if (write_r2mn) call internal_write_r2mn()
 
     call param_write_um
 
@@ -592,6 +476,7 @@ contains
     deallocate(  cr,stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating cr in wann_main') 
 
+    return
 
 1000 format(2x,'WF centre and spread', &
          &       i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )',f15.8)
@@ -603,13 +488,142 @@ contains
   contains
 
 
+
+    !===============================================!
+    subroutine internal_search_direction()
+      !===============================================!
+      !                                               !
+      ! Calculate the conjugate gradients search      !
+      ! direction using the Fletcher-Reeves formula:  !
+      !                                               !
+      !     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]    !
+      !                                               !
+      !===============================================!
+
+      implicit none
+
+      complex(kind=dp) :: zdotc
+
+      ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
+      gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
+
+      ! calculate cg_coefficient
+      if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
+         gcfac = 0.0_dp                 ! Steepest descents
+         ncg   = 0
+      else
+         if (gcnorm0.gt.epsilon(1.0_dp)) then
+            gcfac = gcnorm1/gcnorm0     ! Fletcher-Reeves CG coefficient
+            ! prevent CG coefficient from getting too large
+            if (gcfac.gt.3.0_dp) then
+               if ( lprint .and. iprint>2 ) &
+                    write(stdout,*) ' LINE --> CG coeff too large. Resetting CG:',gcfac
+               gcfac = 0.0_dp
+               ncg = 0
+            else
+               ncg = ncg + 1
+            endif
+         else
+            gcfac = 0.0_dp
+            ncg   = 0
+         endif
+      endif
+
+      ! save for next iteration
+      gcnorm0 = gcnorm1
+
+      ! calculate search direction
+      cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
+
+      ! calculate gradient along search direction - Tr[gradient . search direction]
+      ! NB gradient is anti-hermitian
+      doda0 = -real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdq,1),dp)
+
+      doda0 = doda0 / (4.0_dp*wbtot)
+
+      ! check search direction is not uphill
+      if (doda0.gt.0.0_dp) then
+         ! if doing a CG step then reset CG
+         if (ncg.gt.0) then
+            if ( lprint .and. iprint>2 ) &
+                 write(stdout,*) ' LINE --> Search direction uphill: resetting CG'
+            cdq(:,:,:) = cdodq(:,:,:)
+            ncg = 0
+            gcfac = 0.0_dp
+            ! re-calculate gradient along search direction
+            doda0 = -real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdq,1),dp)
+            doda0 = doda0 / (4.0_dp*wbtot)
+            ! if search direction still uphill then reverse search direction
+            if (doda0.gt.0.0_dp) then
+               if ( lprint .and. iprint>2 ) &
+                    write(stdout,*) ' LINE --> Search direction still uphill: reversing'
+               cdq(:,:,:) = -cdq(:,:,:)
+               doda0 = -doda0
+            endif
+            ! if doing a SD step then reverse search direction
+         else
+            if ( lprint .and. iprint>2 ) &
+                 write(stdout,*) ' LINE --> Search direction uphill: reversing'
+            cdq(:,:,:) = -cdq(:,:,:)
+            doda0 = -doda0
+         endif
+      endif
+
+      ! calculate search direction
+      cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
+
+      return
+
+    end subroutine internal_search_direction
+
+
+    !===============================================!
+    subroutine internal_optimal_step()
+      !===============================================!
+      !                                               !
+      ! Calculate the optimal step length based on a  !
+      ! parabolic line search                         !
+      !                                               !
+      !===============================================!
+
+      implicit none
+
+      fac = abs(trial_spread%om_tot - wann_spread%om_tot)
+      if ( fac.gt.tiny(1.0_dp) ) then
+         fac = 1.0_dp/fac
+         if ( trial_spread%om_tot .gt. wann_spread%om_tot ) then
+            shift =  1.0_dp
+         else
+            shift = -1.0_dp
+         endif
+      else
+         fac   = 1.0e5_dp
+         shift = fac*trial_spread%om_tot - fac*wann_spread%om_tot
+      endif
+      eqb = fac*doda0  
+      eqa = shift - eqb*trial_step
+      if ( abs(eqa/(fac*wann_spread%om_tot)) .gt. epsilon(1.0_DP) ) then
+         alphamin_quad = -eqb / (2.0_dp * eqa) * (trial_step**2)
+         falphamin_quad = wann_spread%om_tot &
+              - ( eqb*eqb / (4.0_dp * fac * eqa) ) * (trial_step**2)
+      endif
+
+      ! set line search coefficient
+      alphamin=alphamin_quad
+      falphamin=falphamin_quad
+
+      return
+
+    end subroutine internal_optimal_step
+
+
     !===============================================!
     subroutine internal_new_u_and_m()               
-    !===============================================!
-    !                                               !
-    ! Update U and M matrices after a trial step    !
-    !                                               !
-    !===============================================!
+      !===============================================!
+      !                                               !
+      ! Update U and M matrices after a trial step    !
+      !                                               !
+      !===============================================!
 
       implicit none
 
@@ -669,6 +683,47 @@ contains
 
     end subroutine internal_new_u_and_m
 
+    !========================================!
+    subroutine internal_write_r2mn()
+    !========================================!
+    !                                        !
+    ! Write seedname.r2mn file               !
+    !                                        !
+    !========================================!
+      use io, only: seedname,io_file_unit,io_error
+      
+      implicit none
+
+      integer :: r2mnunit,nw1,nw2,nkp,nn
+      real(kind=dp) :: r2ave_mn,delta
+
+      ! note that here I use formulas analogue to Eq. 23, and not to the
+      ! shift-invariant Eq. 32 .
+      r2mnunit=io_file_unit()
+      open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
+      do nw1 = 1, num_wann  
+         do nw2 = 1, num_wann  
+            r2ave_mn = 0.0_dp  
+            delta = 0.0_dp  
+            if (nw1.eq.nw2) delta = 1.0_dp  
+          do nkp = 1, num_kpts  
+             do nn = 1, nntot  
+                r2ave_mn = r2ave_mn + wb(nkp,nn) * &
+                     ( 2.d0 * delta - m_matrix(nw1,nw2,nn,nkp) - &
+                     conjg(m_matrix(nw2,nw1,nn,nkp)) )
+             enddo
+          enddo
+          r2ave_mn = r2ave_mn / real(num_kpts,dp)  
+          write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
+       enddo
+    enddo
+    close(r2mnunit)  
+    
+    return
+
+158 call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_main')
+    
+  end subroutine internal_write_r2mn
 
   end subroutine wann_main
 
@@ -861,7 +916,8 @@ contains
     !   Calculate the Wannier Function spread                          !
     !                                                                  !
     !===================================================================  
-    use parameters,     only : num_wann,m_matrix,nntot,wb,bk,num_kpts,iprint
+    use parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
+                           iprint,omega_invariant
     use io,         only : stdout,io_error,io_stopwatch
 
     implicit none
@@ -877,14 +933,13 @@ contains
     real(kind=dp) :: bim2,sum
     real(kind=dp) :: brn,sqim, bim (3), rtot (3)  
     integer :: loop_wann,ind,nkp,nn,i,m,n
-
+    logical, save :: first_pass=.true.
 
 
 
     rave  = 0.0_dp
     do loop_wann = 1, num_wann  
        do ind = 1, 3  
-          !        rave (ind, loop_wann) = 0.0_dp  
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
                 rave (ind, loop_wann) = rave (ind, loop_wann) + wb (nkp, nn) * bk (ind, &
@@ -892,30 +947,27 @@ contains
                      loop_wann, nn, nkp) ) ) - sheet (loop_wann, nn, nkp) )
              enddo
           enddo
-          !        rave (ind, loop_wann) = - rave (ind, loop_wann) / real(num_kpts,dp)  
        enddo
     enddo
     rave = -rave/real(num_kpts,dp)
 
     rave2 = 0.0_dp
     do loop_wann = 1, num_wann  
-       !     rave2 (loop_wann) = 0.0_dp  
        do ind = 1, 3  
           rave2 (loop_wann) = rave2 (loop_wann) + rave (ind, loop_wann) **2  
        enddo
     enddo
 
-    rtot=0.0_dp
-    do ind = 1, 3  
-       !     rtot (ind) = 0.0_dp  
-       do loop_wann = 1, num_wann  
-          rtot (ind) = rtot (ind) + rave (ind, loop_wann)  
-       enddo
-    enddo
+    ! aam: is this useful?
+!!$    rtot=0.0_dp
+!!$    do ind = 1, 3  
+!!$       do loop_wann = 1, num_wann  
+!!$          rtot (ind) = rtot (ind) + rave (ind, loop_wann)  
+!!$       enddo
+!!$    enddo
 
     r2ave = 0.0_dp
     do loop_wann = 1, num_wann  
-       !     r2ave (loop_wann) = 0.0_dp  
        do nkp = 1, num_kpts  
           do nn = 1, nntot  
              r2ave (loop_wann) = r2ave (loop_wann) + wb (nkp, nn) * (1.d0 - m_matrix (loop_wann, &
@@ -924,57 +976,57 @@ contains
                   - sheet (loop_wann, nn, nkp) ) **2)
           enddo
        enddo
-       !     r2ave (loop_wann) = r2ave (loop_wann) / real(num_kpts,dp)  
     enddo
     r2ave = r2ave/real(num_kpts,dp)
 
-    rave2=0.0_dp
-    do loop_wann = 1, num_wann  
-       !     rave2 (loop_wann) = 0.0_dp  
-       do i = 1, 3  
-          rave2 (loop_wann) = rave2 (loop_wann) + rave (i, loop_wann) * rave (i, loop_wann)  
-       enddo
-    enddo
+    ! aam: this already appears to be calculated above!
+!!$    rave2=0.0_dp
+!!$    do loop_wann = 1, num_wann  
+!!$       do i = 1, 3  
+!!$          rave2 (loop_wann) = rave2 (loop_wann) + rave (i, loop_wann) * rave (i, loop_wann)  
+!!$       enddo
+!!$    enddo
 
     wann_spread%om_1 = 0.0_dp  
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
           do loop_wann = 1, num_wann  
-             wann_spread%om_1 = wann_spread%om_1 + wb (nkp, nn) * (1.0_dp - m_matrix (loop_wann, loop_wann, nn, &
-                  nkp) * conjg (m_matrix (loop_wann, loop_wann, nn, nkp) ) )
+             wann_spread%om_1 = wann_spread%om_1 + wb(nkp,nn) * &
+                  ( 1.0_dp - m_matrix(loop_wann,loop_wann,nn,nkp) * &
+                  conjg(m_matrix(loop_wann,loop_wann,nn,nkp)) )
           enddo
        enddo
     enddo
     wann_spread%om_1 = wann_spread%om_1 / real(num_kpts,dp)  
-
+!!$
     wann_spread%om_2 = 0.0_dp  
     do loop_wann = 1, num_wann  
        sqim = 0.0_dp  
        do nkp = 1, num_kpts  
           do nn = 1, nntot  
-             sqim = sqim + wb (nkp, nn) * ( (aimag (log (csheet (loop_wann, nn, &
-                  nkp) * m_matrix (loop_wann, loop_wann, nn, nkp) ) ) - sheet (loop_wann, nn, nkp) ) ** &
-                  2)
+             sqim = sqim + wb(nkp,nn) * &
+                  ( (aimag(log(csheet(loop_wann,nn,nkp) * &
+                  m_matrix(loop_wann,loop_wann,nn,nkp))) - &
+                  sheet(loop_wann,nn,nkp))**2 )
           enddo
        enddo
        sqim = sqim / real(num_kpts,dp)  
        wann_spread%om_2 = wann_spread%om_2 + sqim  
     enddo
-
-
+!!$
     wann_spread%om_3 = 0.0_dp  
     do loop_wann = 1, num_wann  
        bim = 0.0_dp
        do ind = 1, 3  
-          !        bim (ind) = 0.0_dp  
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
-                bim (ind) = bim (ind) + wb (nkp, nn) * bk (ind, nkp, nn) * &
-                     (aimag (log (csheet (loop_wann, nn, nkp) * m_matrix (loop_wann, loop_wann, nn, nkp) &
-                     ) ) - sheet (loop_wann, nn, nkp) )
+                bim(ind) = bim(ind) &
+                     + wb(nkp,nn) * bk(ind,nkp,nn) &
+                     * ( aimag(log(csheet(loop_wann,nn,nkp) &
+                     * m_matrix(loop_wann,loop_wann,nn,nkp))) &
+                     - sheet(loop_wann,nn,nkp) )
              enddo
           enddo
-          !        bim (ind) = bim (ind) / real(num_kpts,dp)  
        enddo
        bim = bim/real(num_kpts,dp)
        bim2 = 0.0_dp  
@@ -984,26 +1036,30 @@ contains
        wann_spread%om_3 = wann_spread%om_3 - bim2  
     enddo
 
-
-
     !jry: Either the above (om1,2,3) or the following is redundant
     !     keep it in the code base for testing
 
-    ! this only needs to be calculated on the first pass
-    wann_spread%om_i = 0.0_dp  
-    do nkp = 1, num_kpts  
-       do nn = 1, nntot  
-          sum = 0.0_dp  
-          do m = 1, num_wann  
-             do n = 1, num_wann  
-                sum = sum + m_matrix (n, m, nn, nkp) * conjg (m_matrix (n, m, nn, nkp) )  
+    ! wann_spread%om_i only needs to be calculated on the first pass
+    ! on subsequent passes it may be set to omega_invariant
+    if (first_pass) then
+       wann_spread%om_i = 0.0_dp  
+       do nkp = 1, num_kpts  
+          do nn = 1, nntot  
+             sum = 0.0_dp  
+             do m = 1, num_wann  
+                do n = 1, num_wann  
+                   sum = sum + m_matrix(n,m,nn,nkp) * conjg(m_matrix(n,m,nn,nkp))
+                enddo
              enddo
+             wann_spread%om_i = wann_spread%om_i &
+                  + wb(nkp,nn) * (real(num_wann,dp) - sum)
           enddo
-          wann_spread%om_i = wann_spread%om_i + wb (nkp, nn) * (real(num_wann,dp) - sum)  
        enddo
-    enddo
-    wann_spread%om_i = wann_spread%om_i / real(num_kpts,dp)  
-
+       wann_spread%om_i = wann_spread%om_i / real(num_kpts,dp)  
+       first_pass=.false.
+    else 
+       wann_spread%om_i=omega_invariant
+    endif
 
     wann_spread%om_od = 0.0_dp  
     do nkp = 1, num_kpts  
@@ -1011,10 +1067,10 @@ contains
           sum = 0.0_dp  
           do m = 1, num_wann  
              do n = 1, num_wann  
-                sum = sum + wb (nkp, nn) * m_matrix (n, m, nn, nkp) * conjg (m_matrix (n, m, &
-                     nn, nkp) )
-                if (m.eq.n) sum = sum - wb (nkp, nn) * m_matrix (n, m, nn, nkp) * conjg &
-                     (m_matrix (n, m, nn, nkp) )
+                sum = sum + wb(nkp,nn) &
+                     * m_matrix(n,m,nn,nkp) * conjg(m_matrix(n,m,nn,nkp))
+                if (m.eq.n) sum = sum - wb(nkp,nn) &
+                     * m_matrix(n,m,nn,nkp) * conjg(m_matrix(n,m,nn,nkp))
              enddo
           enddo
           wann_spread%om_od = wann_spread%om_od+sum  
@@ -1029,17 +1085,18 @@ contains
           do n = 1, num_wann  
              brn = 0.0_dp  
              do ind = 1, 3  
-                brn = brn + bk (ind, nkp, nn) * rave (ind, n)  
+                brn = brn + bk(ind,nkp,nn) * rave(ind,n)  
              enddo
-             sum = sum + wb (nkp, nn) * (aimag (log (csheet (n, nn, nkp) &
-                  * m_matrix (n, n, nn, nkp) ) ) - sheet (n, nn, nkp) + brn) **2
+             sum = sum + wb(nkp,nn) &
+                  * ( aimag(log(csheet(n,nn,nkp) * m_matrix(n,n,nn,nkp))) &
+                  - sheet(n,nn,nkp) + brn )**2
           enddo
           wann_spread%om_d = wann_spread%om_d+sum  
        enddo
     enddo
 
     wann_spread%om_d = wann_spread%om_d / real(num_kpts,dp)  
-    wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d+wann_spread%om_od  
+    wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
 
 
     return  
