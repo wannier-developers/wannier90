@@ -53,9 +53,6 @@ contains
     integer :: nkp,nn,i,j,m,n,l
     integer :: nkp2,info,ierr
 
-    real(kind=dp), allocatable :: rphicmx(:,:)
-    real(kind=dp), allocatable :: rguide(:,:)
-
     complex(kind=dp) :: ctmp
     complex(kind=dp), allocatable :: cmtmp(:,:)
     complex(kind=dp), allocatable :: caa(:,:,:)
@@ -80,10 +77,6 @@ contains
 
 
     ! Allocate arrays
-    allocate(rphicmx(3,num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating rphicmx in dis_main')
-    allocate(rguide(3,num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating rguide in dis_main')
     allocate(clamp(num_bands,num_bands,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating clamp in dis_main')
     allocate(cmtmp(num_bands,num_bands),stat=ierr)
@@ -374,10 +367,6 @@ contains
     if (ierr/=0) call io_error('Error deallocating cmtmp in dis_main')
     deallocate(clamp,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating clamp in dis_main')
-    deallocate(rguide,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating rguide in dis_main')
-    deallocate(rphicmx,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating rphicmx in dis_main')
 
     deallocate(eigval_opt,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating eigval_opt in dis_main')

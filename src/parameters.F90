@@ -1453,7 +1453,7 @@ contains
        line_s=line_s+1
     endif
 
-    r_value=1.0_dp
+!    r_value=1.0_dp
     counter=0
     do loop=line_s+1,line_e-1
        dummy=in_data(loop)
