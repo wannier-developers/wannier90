@@ -72,7 +72,7 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{Wavefunctions Parameters} \\
 \hline
 {\sc wvfn\_formated }   & L & Read the wavefunctions from a  (un)formatted file  \\
-{\sc spin }   & I & Which spin channel to read \\
+{\sc spin }   & S & Which spin channel to read \\
 \hline
 \end{tabular}
 \caption
@@ -175,10 +175,10 @@ surface plot\\
 {\sc fermi\_energy }   & P & The Fermi energy \\
 {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
 surface plot \\
-{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
-{\sc slice\_coord }   & P & Coordinates of the slice \\
-{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
-{\sc slice\_plot\_format }   & S & File format of the slice plot \\
+%{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
+%{\sc slice\_coord }   & P & Coordinates of the slice \\
+%{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
+%{\sc slice\_plot\_format }   & S & File format of the slice plot \\
 {\sc dos\_plot }   & L & Plot the interpolated density of states \\
 {\sc dos\_num\_points }   & I & Number of points in the dos plot \\
 {\sc dos\_energy\_step }   & P & Size of the energy step in the dos plot \\
@@ -457,15 +457,11 @@ files should be used if transferability is required (ie for test cases).
 The default value of this parameter is $\verb#unformatted#$
 
 
-\subsection[spin]{\tt integer :: spin}
- Value 1 (spin up) or 2 (spin
-down). For bands from a spin polarised calculation determines which set
-of bands to read in.
+\subsection[spin]{\tt character(len=20) :: spin}
+For bands from a spin polarised calculation determines which set
+of bands to read in, either 'up' or 'down'.
 
-The default value of this parameter is 1.
-
-
-
+The default value of this parameter is 'up'.
 
 
 \section{Projection}
@@ -562,13 +558,6 @@ Number of conjugate gradient steps to take before resetting to steepest descents
 
 The default value is 5.
 
-
-
-\subsection[mix\_ratio]{\tt real(kind=dp) :: mix\_ratio}
-The mixing parameter to use for convergence.
-
-The default value is 1.0
-
 \subsection[conv\_tol]{\tt real(kind=dp) :: conv\_tol}
 \red{Not yet implemented}
 
@@ -619,7 +608,7 @@ The default value of this parameter is 50.
  Capabilities:
 
 \begin{itemize}
-\item[{\bf --}]  Plot the wannier orbitals			     
+\item[{\bf --}]  Plot the Wannier functions
 \item[{\bf --}]  Plot the interpolated band structure 		     
 \item[{\bf --}]  Plot the Fermi surface 			     
 \item[{\bf --}]  Plot the density of states.
@@ -627,7 +616,6 @@ The default value of this parameter is 50.
 
 
 \subsection[wannier\_plot]{\tt logical :: wannier\_plot}
-\red{Not yet implemented}
 
 If $\verb#wannier_plot#=\verb#TRUE#$ the code will write out the
 wannier functions in a super-cell \verb#wannier_plot_supercell# times
@@ -636,22 +624,21 @@ the original unit cell in a format specified by \verb#wannier_plot_format#
 The default value of this parameter is FALSE
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
-\red{Not yet implemented}
 
 Dimension of the ``super-unit-cell'' in which the Wannier Functions are plotted.
-     The super-unit-cell is \verb#wannier_plot_supercell# times the unit cell along all three
-     linear dimensions (the 'home' unit cell is kept approximately
-     in the middle)
+The super-unit-cell is \verb#wannier_plot_supercell# times the unit cell along all three
+linear dimensions (the 'home' unit cell is kept approximately
+in the middle)
 
+The default value is 2.
 
 \subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
-\red{Not yet implemented}
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] xcrysden
-\item[{\bf --}] gopenmol
-\item[{\bf --}] dan
+%\item[{\bf --}] gopenmol
+%\item[{\bf --}] dan
 \end{itemize}
 
 The default value for \verb#wannier_plot_format# is xcrysden.
@@ -747,56 +734,56 @@ The valid options for this parameter are:
 The default value for \verb#fermi_surface_plot_format# is bxsf.
 
 
-\subsection[slice\_plot]{\tt logical :: slice\_plot}
-\red{Not yet implemented}
-
-If $\verb#slice_plot#=\verb#TRUE#$ plot the wannier orbitals along
- slices in the super-unit-cell defined by \verb#slice_coord#.
-
-
+%\subsection[slice\_plot]{\tt logical :: slice\_plot}
+%\red{Not yet implemented}
+%
+%If $\verb#slice_plot#=\verb#TRUE#$ plot the wannier orbitals along
+% slices in the super-unit-cell defined by \verb#slice_coord#.
 
 
-The default value of this parameter is FALSE
-
-\subsection[slice\_coord]{slice\_coord}
-\red{Not yet implemented}
-
-\noindent \verb#begin slice_coord#
-$$
-\begin{array}{ccccccccc}
-O_x & O_y & O_x & X_x & X_y & X_z & Y_x & Y_y & Y_z \\
-\vdots
-\end{array}
-$$
-\verb#end slice_coord#
-
-Define the direction of the plotting slices. O is the origin. The slice
-is defined by the lines OX and OY.
-
-There is no default
-
-\subsection[slice\_num\_points]{\tt integer :: slice\_num\_points}
-\red{Not yet implemented}
-
-If $\verb#slice_plot#=\verb#TRUE#$ the number of points in the first
-direction of the slice. The number of points in the second direction
-will be chosen to give the same density of points.
-
-The default value for \verb#slice_num_points# is 50
 
 
-\subsection[slice\_plot\_format]{\tt character(len=20) :: slice\_plot\_format}
-\red{Not yet implemented}
-
-Format in which to plot the interpolated bandstructure
-
-The valid options for this parameter are:
-\begin{itemize}
-\item[{\bf --}] gnuplot
-\item[{\bf --}] plotmtv
-\end{itemize}
-
-The default value for \verb#slice_plot_format# is gnuplot.
+%The default value of this parameter is FALSE
+%
+%\subsection[slice\_coord]{slice\_coord}
+%\red{Not yet implemented}
+%
+%\noindent \verb#begin slice_coord#
+%$$
+%\begin{array}{ccccccccc}
+%O_x & O_y & O_x & X_x & X_y & X_z & Y_x & Y_y & Y_z \\
+%\vdots
+%\end{array}
+%$$
+%\verb#end slice_coord#
+%
+%Define the direction of the plotting slices. O is the origin. The slice
+%is defined by the lines OX and OY.
+%
+%There is no default
+%
+%\subsection[slice\_num\_points]{\tt integer :: slice\_num\_points}
+%\red{Not yet implemented}
+%
+%If $\verb#slice_plot#=\verb#TRUE#$ the number of points in the first
+%direction of the slice. The number of points in the second direction
+%will be chosen to give the same density of points.
+%
+%The default value for \verb#slice_num_points# is 50
+%
+%
+%\subsection[slice\_plot\_format]{\tt character(len=20) :: slice\_plot\_format}
+%\red{Not yet implemented}
+%
+%Format in which to plot the interpolated bandstructure
+%
+%The valid options for this parameter are:
+%\begin{itemize}
+%\item[{\bf --}] gnuplot
+%\item[{\bf --}] plotmtv
+%\end{itemize}
+%
+%The default value for \verb#slice_plot_format# is gnuplot.
 
 
 

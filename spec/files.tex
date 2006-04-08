@@ -68,19 +68,23 @@ OUTPUT. The master output file.
 INPUT/OUTPUT. Sufficient information to restart the calculation or enter the
 plotting phase.
 
-\section{WFNn.s}
-INPUT. If  \verb#wann_plot#=\verb#TRUE# 
-. 
+\section{UKNn.s}
+INPUT. Read if \verb#wannier_plot#=\verb#TRUE# and used to plot the Wannier functions. 
 
-The orbitals from a first
-principles calculation, indexed by kpoint n and spin s on a real space
-grid.
-The first line of the file should contain; the number of grid points in each
-direction and the total number of bands in
-the file.
+The periodic part of the bloch states represented on a regular real space grid,
+ indexed by kpoint n and spin s. 
+The first line of the file should contain 5 integers; the number of grid points in each
+direction (ngx, ngy and ngz), the kpoint number and the total number of bands in
+the file. The full file will be read by wannier90 as:
 
+\begin{verbatim}
+read(file_unit) ngx,ngy,ngz,ik,nbnd
+do loop_b=1,num_bands
+  read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+end do
+\end{verbatim}
 
-
+The file can be in formatted or unformatted style, this is controlled by the logical keyword \verb#wvfn_formatted#.
 
 
 
