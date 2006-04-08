@@ -632,7 +632,7 @@ contains
     integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
     real(kind=dp), intent(in) :: dnn(search_shells) ! the bvectors
     real(kind=dp), intent(out) :: bweight(max_shells)
-    real(kind=dp)       :: bvector(3,maxval(multi),max_shells) ! the bvectors
+    real(kind=dp), allocatable     :: bvector(:,:,:) ! the bvectors
 
     real(kind=dp), dimension(:),     allocatable :: singv
     real(kind=dp), dimension(:,:),   allocatable :: amat,umat,vmat,smat
@@ -645,6 +645,8 @@ contains
 
     integer :: loop,shell
 
+
+    allocate( bvector(3,maxval(multi),max_shells))
     bvector=0.0_dp;bweight=0.0_dp
 
     write(stdout,'(1x,a)') '| The b-vectors are chosen automatically                                     |'
@@ -789,7 +791,7 @@ contains
     integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
     real(kind=dp), intent(in) :: dnn(search_shells) ! the bvectors
     real(kind=dp), intent(out) :: bweight(max_shells)
-    real(kind=dp)       :: bvector(3,maxval(multi),num_shells) ! the bvectors
+    real(kind=dp), allocatable     :: bvector(:,:,:) 
 
     real(kind=dp) :: singv(num_shells)
     real(kind=dp) :: amat(max_shells,num_shells)
@@ -804,7 +806,7 @@ contains
     real(kind=dp) :: delta
 
     integer :: loop,shell
-
+    allocate( bvector(3,maxval(multi),num_shells) )
     bvector=0.0_dp;bweight=0.0_dp
     amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
 
