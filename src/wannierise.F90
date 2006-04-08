@@ -467,11 +467,13 @@ contains
     write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
     write(stdout,*)
 !    write(stdout,'(3x,a,f15.9)') '     Spreads (Ang)         Omega I      = ',wann_spread%om_i  
-    write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)','       Omega I      = ',wann_spread%om_i*lenconfac**2
+    write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)','       Omega I      = ' &
+          ,wann_spread%om_i*lenconfac**2
     write(stdout,'(3x,a,f15.9)') '     ================       Omega D      = ',wann_spread%om_d*lenconfac**2
     write(stdout,'(3x,a,f15.9)') '                            Omega OD     = ',wann_spread%om_od*lenconfac**2
 !    write(stdout,'(3x,a,f15.9)') 'Final Spread (Ang)         Omega Total  = ',wann_spread%om_tot*lenconfac  
-    write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)','       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
+    write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)','       Omega Total  = ' &
+	,wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
     if (lrguide) call phases (  csheet, sheet, rguide, irguide)
