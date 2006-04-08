@@ -300,11 +300,15 @@ return
 
     integer :: ierr
 
-    if (disentanglement) then
+    if (allocated(u_matrix_opt)) then
        deallocate( u_matrix_opt, stat=ierr )
        if (ierr/=0) call io_error('Error deallocating u_matrix_opt in overlap_dealloc')
+    end if
+    if (allocated( a_matrix) ) then
        deallocate( a_matrix, stat=ierr )
        if (ierr/=0) call io_error('Error deallocating a_matrix in overlap_dealloc')
+    end if
+    if (allocated( m_matrix_orig)) then
        deallocate( m_matrix_orig, stat=ierr )
        if (ierr/=0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc')
     endif
