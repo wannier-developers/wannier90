@@ -16,6 +16,7 @@ debug: $(OBJS)
 clean:
 	touch make.sys ;\
 	cd src ; make clean ;\
+	cd ../tests ; make clean ; \
 	cd ../spec ; make clean	
 
 thespec:
@@ -24,7 +25,6 @@ thespec:
 dist:
 	@(tar cf - \
 		./src/*.?90 \
-		./src/Makefile \
 		./tests/run_test.pl \
 		./tests/test*/wannier.win \
 		./tests/test*/des.dat \
@@ -42,14 +42,13 @@ dist:
                 ./spec/*.tex \
                 ./spec/*.eps \
                 ./spec/*.fig \
-		./spec/Makefile \
+		./*/Makefile \
 		./Makefile \
         | gzip -c > \
                 ./wannier90.tar.gz)
 
 test:   wannier
-	@(cd ./tests ;\
-		./run_test.pl)
+	(cd tests ; make test )
 
 dist-lite:
 	@(tar cf - \
