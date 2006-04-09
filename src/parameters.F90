@@ -518,6 +518,8 @@ contains
 
     call param_get_block_length('projections',found,i_temp)
     if (found) call param_get_projections
+    if (guiding_centres .and. .not. found) &
+       call io_error('param_read: Guiding centres requested, but no projection block found')
 
     ! check to see that there are no unrecognised keywords
 

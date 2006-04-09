@@ -203,9 +203,11 @@ contains
     gcnorm0=0.d0
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
-    do n=1,num_wann
-       call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
-    enddo
+    if( guiding_centres) then
+       do n=1,num_wann
+          call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
+        enddo
+    end if
 
     write(stdout,*)
     write(stdout,'(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
