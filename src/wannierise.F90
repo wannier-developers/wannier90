@@ -457,9 +457,9 @@ contains
              endif
 
              do nb = 1, num_wann  
-                omt1 = omt1 + wb (nkp, nn) * (1.d0 - singvd (nb) **2)  
-                omt2 = omt2 - wb (nkp, nn) * (2.d0 * log (singvd (nb) ) )  
-                omt3 = omt3 + wb (nkp, nn) * (acos (singvd (nb) ) **2)  
+                omt1 = omt1 + wb(nn) * (1.d0 - singvd (nb) **2)  
+                omt2 = omt2 - wb(nn) * (2.d0 * log (singvd (nb) ) )  
+                omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
                 !         write(*,'(i4,4x,f10.5,4x,3f10.5)')
                 !    &     nb,singvd(nb),omt1,omt2,omt3
              enddo
@@ -724,7 +724,7 @@ contains
             if (nw1.eq.nw2) delta = 1.0_dp  
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
-                r2ave_mn = r2ave_mn + wb(nkp,nn) * &
+                r2ave_mn = r2ave_mn + wb(nn) * &
                      ( 2.d0 * delta - m_matrix(nw1,nw2,nn,nkp) - &
                      conjg(m_matrix(nw2,nw1,nn,nkp)) )
              enddo
@@ -881,8 +881,8 @@ contains
           do loop_wann = 1, num_wann  
              ! sheet (loop_wann, nn, nkp) = 0.d0
              do j = 1, 3  
-                sheet (loop_wann, nn, nkp) = sheet (loop_wann, nn, nkp) + bk (j, nkp, nn) &
-                     * rguide (j, loop_wann)
+                sheet(loop_wann,nn,nkp) = sheet(loop_wann,nn,nkp) &
+                     + bk(j,nn,nkp) * rguide(j,loop_wann)
              enddo
              ! csheet (loop_wann, nn, nkp) = exp (ci * sheet (loop_wann, nn, nkp) )  
           enddo
@@ -903,7 +903,7 @@ contains
              !           rnkb (m, nn, nkp) = 0.0_dp  
              brn = 0.0_dp
              do ind = 1, 3  
-                brn = brn + bk (ind, nkp, nn) * rguide (ind, m)  
+                brn = brn + bk(ind,nn,nkp) * rguide(ind,m)  
              enddo
              rnkb (m, nn, nkp) = rnkb (m, nn, nkp) + brn  
           enddo
@@ -961,9 +961,11 @@ contains
        do ind = 1, 3  
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
-                rave (ind, loop_wann) = rave (ind, loop_wann) + wb (nkp, nn) * bk (ind, &
-                     nkp, nn) * (aimag (log (csheet (loop_wann, nn, nkp) * m_matrix (loop_wann, &
-                     loop_wann, nn, nkp) ) ) - sheet (loop_wann, nn, nkp) )
+                rave(ind,loop_wann) = rave(ind,loop_wann) &
+                     + wb(nn) * bk(ind,nn,nkp) &
+                     * ( aimag(log(csheet(loop_wann,nn,nkp) &
+                     * m_matrix(loop_wann,loop_wann,nn,nkp))) &
+                     - sheet(loop_wann,nn,nkp) )
              enddo
           enddo
        enddo
@@ -989,10 +991,12 @@ contains
     do loop_wann = 1, num_wann  
        do nkp = 1, num_kpts  
           do nn = 1, nntot  
-             r2ave (loop_wann) = r2ave (loop_wann) + wb (nkp, nn) * (1.d0 - m_matrix (loop_wann, &
-                  loop_wann, nn, nkp) * conjg (m_matrix (loop_wann, loop_wann, nn, nkp) ) + (aimag ( &
-                  log (csheet (loop_wann, nn, nkp) * m_matrix (loop_wann, loop_wann, nn, nkp) ) ) &
-                  - sheet (loop_wann, nn, nkp) ) **2)
+             r2ave(loop_wann) = r2ave(loop_wann) &
+                  + wb(nn) * ( 1.0_dp - m_matrix(loop_wann,loop_wann,nn,nkp) &
+                  * conjg(m_matrix(loop_wann,loop_wann,nn,nkp)) &
+                  + ( aimag(log(csheet(loop_wann,nn,nkp) &
+                  * m_matrix(loop_wann,loop_wann,nn,nkp))) &
+                  - sheet(loop_wann,nn,nkp) )**2 )
           enddo
        enddo
     enddo
@@ -1010,7 +1014,7 @@ contains
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
           do loop_wann = 1, num_wann  
-             wann_spread%om_1 = wann_spread%om_1 + wb(nkp,nn) * &
+             wann_spread%om_1 = wann_spread%om_1 + wb(nn) * &
                   ( 1.0_dp - m_matrix(loop_wann,loop_wann,nn,nkp) * &
                   conjg(m_matrix(loop_wann,loop_wann,nn,nkp)) )
           enddo
@@ -1023,7 +1027,7 @@ contains
        sqim = 0.0_dp  
        do nkp = 1, num_kpts  
           do nn = 1, nntot  
-             sqim = sqim + wb(nkp,nn) * &
+             sqim = sqim + wb(nn) * &
                   ( (aimag(log(csheet(loop_wann,nn,nkp) * &
                   m_matrix(loop_wann,loop_wann,nn,nkp))) - &
                   sheet(loop_wann,nn,nkp))**2 )
@@ -1040,7 +1044,7 @@ contains
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
                 bim(ind) = bim(ind) &
-                     + wb(nkp,nn) * bk(ind,nkp,nn) &
+                     + wb(nn) * bk(ind,nn,nkp) &
                      * ( aimag(log(csheet(loop_wann,nn,nkp) &
                      * m_matrix(loop_wann,loop_wann,nn,nkp))) &
                      - sheet(loop_wann,nn,nkp) )
@@ -1071,7 +1075,7 @@ contains
                 enddo
              enddo
              wann_spread%om_i = wann_spread%om_i &
-                  + wb(nkp,nn) * (real(num_wann,dp) - sum)
+                  + wb(nn) * (real(num_wann,dp) - sum)
           enddo
        enddo
        wann_spread%om_i = wann_spread%om_i / real(num_kpts,dp)  
@@ -1086,9 +1090,9 @@ contains
           sum = 0.0_dp  
           do m = 1, num_wann  
              do n = 1, num_wann  
-                sum = sum + wb(nkp,nn) &
+                sum = sum + wb(nn) &
                      * m_matrix(n,m,nn,nkp) * conjg(m_matrix(n,m,nn,nkp))
-                if (m.eq.n) sum = sum - wb(nkp,nn) &
+                if (m.eq.n) sum = sum - wb(nn) &
                      * m_matrix(n,m,nn,nkp) * conjg(m_matrix(n,m,nn,nkp))
              enddo
           enddo
@@ -1104,9 +1108,9 @@ contains
           do n = 1, num_wann  
              brn = 0.0_dp  
              do ind = 1, 3  
-                brn = brn + bk(ind,nkp,nn) * rave(ind,n)  
+                brn = brn + bk(ind,nn,nkp) * rave(ind,n)  
              enddo
-             sum = sum + wb(nkp,nn) &
+             sum = sum + wb(nn) &
                   * ( aimag(log(csheet(n,nn,nkp) * m_matrix(n,n,nn,nkp))) &
                   - sheet(n,nn,nkp) + brn )**2
           enddo
@@ -1128,8 +1132,7 @@ contains
 
 
   !==================================================================!
-  subroutine domega ( csheet, sheet, rave, cdodq1, cdodq2, cdodq3, &
-       cdodq)
+  subroutine domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -1163,7 +1166,7 @@ contains
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
                 rave(ind,loop_wann) = rave(ind,loop_wann) + &
-                     wb(nkp,nn) * bk(ind,nkp,nn) * &
+                     wb(nn) * bk(ind,nn,nkp) * &
                      ( aimag(log(csheet(loop_wann,nn,nkp) * &
                      m_matrix(loop_wann,loop_wann,nn,nkp))) - sheet(loop_wann,nn,nkp) )
              enddo
@@ -1185,7 +1188,7 @@ contains
              enddo
              brn = 0.0_dp  
              do ind = 1, 3  
-                brn = brn + bk (ind, nkp, nn) * rave (ind, n)  
+                brn = brn + bk(ind,nn,nkp) * rave(ind,n)  
              enddo
              rnkb(n,nn,nkp) = brn
           enddo
@@ -1202,17 +1205,17 @@ contains
           do m = 1, num_wann  
              do nn = 1, nntot  
                 ! A[R^{k,b}]=(R-Rdag)/2
-                cdodq1 (m, n, nkp) = cdodq1 (m, n, nkp) + wb (nkp, nn) * (cr (m, &
-                     n, nn, nkp) / 2.0_dp - conjg (cr (n, m, nn, nkp) ) / 2.0_dp)
+                cdodq1(m,n,nkp) = cdodq1(m,n,nkp) + wb(nn) &
+                     * (cr(m,n,nn,nkp)/2.0_dp - conjg(cr(n,m,nn,nkp))/2.0_dp)
                 ! -S[T^{k,b}]=-(T+Tdag)/2i ; T_mn = Rt_mn q_n
-                cdodq2 (m, n, nkp) = cdodq2 (m, n, nkp) - wb (nkp, nn) * (crt (m, &
-                     n, nn, nkp) * (aimag (log (csheet (n, nn, nkp) * m_matrix (n, n, nn, &
-                     nkp) ) ) - sheet (n, nn, nkp) ) + conjg (crt (n, m, nn, nkp) &
-                     * (aimag (log (csheet (m, nn, nkp) * m_matrix (m, m, nn, nkp) ) ) &
-                     - sheet (m, nn, nkp) ) ) ) / (0.0_dp, 2.0_dp)
-                cdodq3 (m, n, nkp) = cdodq3 (m, n, nkp) - wb (nkp, nn) * (crt (m, &
-                     n, nn, nkp) * rnkb (n, nn, nkp) + conjg (crt (n, m, nn, nkp) &
-                     * rnkb (m, nn, nkp) ) ) / (0.0_dp, 2.0_dp)
+                cdodq2(m,n,nkp) = cdodq2(m,n,nkp) - wb(nn) &
+                     * ( crt(m,n,nn,nkp) * ( aimag(log(csheet(n,nn,nkp) &
+                     * m_matrix(n,n,nn,nkp))) - sheet(n,nn,nkp) ) &
+                     + conjg( crt(n,m,nn,nkp) * ( aimag(log(csheet(m,nn,nkp) &
+                     * m_matrix(m,m,nn,nkp))) - sheet(m,nn,nkp) ) ) ) / (0.0_dp,2.0_dp)
+                cdodq3(m,n,nkp) = cdodq3(m,n,nkp) - wb(nn) &
+                     * ( crt(m,n,nn,nkp) * rnkb(n,nn,nkp) + conjg(crt(n,m,nn,nkp) &
+                     * rnkb(m,nn,nkp)) ) / (0.0_dp,2.0_dp)
              enddo
           enddo
        enddo

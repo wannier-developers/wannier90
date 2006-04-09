@@ -122,7 +122,7 @@ module parameters
   integer,       public, save, allocatable :: neigh(:,:)    
   integer,       public, save, allocatable :: nncell(:,:,:) ! gives BZ of each neighbour of each k-point
   real(kind=dp), public, save              :: wbtot
-  real(kind=dp), public, save, allocatable :: wb(:,:)       ! weights associated with neighbours of each k-point
+  real(kind=dp), public, save, allocatable :: wb(:)         ! weights associated with neighbours of each k-point (the same for all kpoints)
   real(kind=dp), public, save, allocatable :: bk(:,:,:)     ! the b-vectors that go from each k-point to its neighbours
   real(kind=dp), public, save, allocatable :: bka(:,:)      ! the b-directions from 1st k-point to its neighbours
 

@@ -1110,6 +1110,7 @@ contains
       ! *******************
       ! nshells           number of shells of k-points to be used in the
       !                   finite-difference formulas for the k-derivatives
+      ! aam: wb is now wb(1:nntot) 09/04/2006
       ! wb(nkp,nnx)       weight of the nnx-th b-vector (ordered along shells
       !                   of increasing length) associated with the nkp-th k-p
       ! wbtot             sum of the weights of all b-vectors associated with
@@ -1678,7 +1679,7 @@ contains
                             conjg(clamp(l,m,nkp)) * clamp(j,n,nkp2) * cmk(l,j,nnx)
                     enddo
                  enddo
-                 dis_zeig = dis_zeig + wb(nkp,nnx) * abs(cdot_bloch)**2  
+                 dis_zeig = dis_zeig + wb(nnx) * abs(cdot_bloch)**2  
               enddo
         enddo
 
@@ -1733,7 +1734,7 @@ contains
                                conjg(clamp(j,l,k_pls_b) * cmk(indxnfroz(n,nkp),j,nnx))
                        enddo
                        ! ADD CONTRIBUTION TO CMTRX(M,N)
-                       cmtrx(m,n) = cmtrx(m,n) + wb(nkp,nnx) * cdot_bloch1 * cdot_bloch2
+                       cmtrx(m,n) = cmtrx(m,n) + wb(nnx) * cdot_bloch1 * cdot_bloch2
                        ! NNSH
                  enddo
                  ! L

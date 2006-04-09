@@ -168,11 +168,11 @@ contains
     allocate(nncell(3,num_kpts,nntot), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating nncell in kmesh_get')
                                                                                                                          
-    allocate(wb(num_kpts,nntot), stat=ierr )
+    allocate(wb(nntot), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating wb in kmesh_get')
     allocate(bka(3,nntot/2), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating bka in kmesh_get')
-    allocate(bk(3,num_kpts,nntot), stat=ierr )
+    allocate(bk(3,nntot,num_kpts), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating bk in kmesh_get')
 
     nnx=0
@@ -187,7 +187,8 @@ contains
     ! nnlist(nkp,1...nnx) points to the nnx neighbours (ordered along increa
     ! shells) of the k-point nkp. nncell(i,nkp,nnth) tells us in which BZ is
     ! nnth nearest-neighbour of the k-point nkp. Construct the nnx b-vectors
-    ! go from k-point nkp to each neighbour bk(1:3,nkp,1...nnx).
+    ! go from k-point nkp to each neighbour bk(1:3,nkp,1...nnx). 
+    ! Comment: Now we have bk(3,nntot,num_kps) 09/04/2006
     write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+' 
     write(stdout,'(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
     write(stdout,'(1x,a)') '|                        -----   --------------------                        |'
@@ -325,7 +326,8 @@ contains
     write(stdout,'(1x,a)') '|            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |'
     write(stdout,'(1x,a)') '|            ---        --------------------------------     --------        |'
     do i = 1, nntot  
-       write (stdout,'(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') i,(bk_local(j,i,1)/lenconfac,j=1,3),wb_local(i)*lenconfac**2
+       write (stdout,'(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') &
+            i,(bk_local(j,i,1)/lenconfac,j=1,3),wb_local(i)*lenconfac**2
     enddo
     write(stdout,'(1x,"+",76("-"),"+")') 
     if (lenconfac.eq.1.0_dp) then
@@ -366,12 +368,12 @@ contains
    !fill in the global arrays from the local ones
 
    do loop=1,nntot
-      wb(:,loop)=wb_local(loop)
+      wb(loop)=wb_local(loop)
    end do
 
    do loop_s=1,num_kpts
       do loop=1,nntot
-         bk(:,loop_s,loop)=bk_local(:,loop,loop_s)
+         bk(:,loop,loop_s)=bk_local(:,loop,loop_s)
       end do
    end do
 
