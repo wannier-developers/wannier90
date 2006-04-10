@@ -68,14 +68,25 @@ OUTPUT. The master output file.
 INPUT/OUTPUT. Sufficient information to restart the calculation or enter the
 plotting phase.
 
-\section{UKNn.s}
-INPUT. Read if \verb#wannier_plot#=\verb#TRUE# and used to plot the Wannier functions. 
+\section{UNKp.s}
+INPUT. Read if \verb#wannier_plot#=\verb#TRUE# and used to plot the
+Wannier functions.
 
-The periodic part of the bloch states represented on a regular real space grid,
- indexed by kpoint n and spin s. 
-The first line of the file should contain 5 integers; the number of grid points in each
-direction (ngx, ngy and ngz), the kpoint number and the total number of bands in
-the file. The full file will be read by wannier90 as:
+The periodic part of the bloch states represented on a regular real
+ space grid, indexed by k-point \verb#p# (from 1 to \verb#num_kpts#)
+ and spin \verb#s# ('1' for 'up', '2' for 'down').
+
+The name of the wavefunction file is assumed to have the form:
+
+\begin{verbatim}
+    write(wfnname,200) p,spin
+200 format ('UNK',i5.5,'.',i1)
+\end{verbatim}
+
+The first line of each file should contain 5 integers: the number of
+ grid points in each direction (\verb#ngx#, \verb#ngy# and
+ \verb#ngz#), the k-point number \verb#ik# and the total number of
+ bands \verb#nbnd# in the file. The full file will be read by Wannier90 as:
 
 \begin{verbatim}
 read(file_unit) ngx,ngy,ngz,ik,nbnd
@@ -84,7 +95,8 @@ do loop_b=1,num_bands
 end do
 \end{verbatim}
 
-The file can be in formatted or unformatted style, this is controlled by the logical keyword \verb#wvfn_formatted#.
+The file can be in formatted or unformatted style, this is controlled
+by the logical keyword \verb#wvfn_formatted#. 
 
 
 

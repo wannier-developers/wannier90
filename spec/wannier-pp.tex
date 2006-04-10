@@ -164,6 +164,21 @@ that brings the k-point specified by the second integer (which is in
 the first BZ) to the actual $\mathbf{k+b}$ that we need.
 
 
+\subsection{exclude\_bands block}
+\begin{verbatim}
+begin exclude_bands 
+  8 
+  1 
+  2 
+  .
+  .
+end exclude_bands
+\end{verbatim}
+To exclude bands (independent of kpoint) from the calculation of the 
+overlap and projection matricies, for example to ignore shallow-core states.
+The first line is the number of states to exclude, the following lines give
+the states for be excluded.
+
 
 \subsection{An example of projections}\label{sec:proj_example}
 
@@ -207,20 +222,6 @@ and writes them to \verb#seedname.amn#.
 
 
 
-\subsection{exclude\_bands block}
-\begin{verbatim}
-begin exclude_bands 
-  8 
-  1 
-  2 
-  .
-  .
-end exclude_bands
-\end{verbatim}
-To exclude bands (independent of kpoint) from the calculation of the 
-overlap and projection matricies, for example to ignore shallow-core states.
-The first line is the number of states to exclude, the following lines give
-the states for be excluded.
 
 %\subsection{Things to add}
 %

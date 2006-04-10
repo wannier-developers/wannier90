@@ -400,7 +400,7 @@ contains
     read(file_unit) ngx,ngy,ngz,nk,nbnd
     close(file_unit)
 
-200 format ('UKN',i5.5,'.',i1)
+200 format ('UNK',i5.5,'.',i1)
 
     allocate(wann_func(-ngx:(ngs-1)*ngx-1,-ngy:(ngs-1)*ngy-1,-ngz:(ngs-1)*ngz-1,num_wannier_plot))
     if(disentanglement) then
