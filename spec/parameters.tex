@@ -163,6 +163,7 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{Plot Parameters} \\
 \hline
 {\sc wannier\_plot }   & L & Plot the Wannier Functions \\
+{\sc wannier\_plot\_list } & I & List of Wannier Functions to plot \\
 {\sc wannier\_plot\_supercell }   & I & Size of the supercell for
 plotting the Wannier Functions \\
 {\sc wannier\_plot\_format }   & S & File format in which to plot the
@@ -421,10 +422,10 @@ calculated.
 The default value of this parameter is \verb#FALSE#
 
 
-\subsection[exclude\_bands]{\tt integer :: exclude\_bands}
+\subsection[exclude\_bands]{\tt integer :: exclude\_bands(:)}
 \red{Not yet implemented}
 
-Exclude states from the calculation of the overlap matrices; for example to select only valence states, or exclude semi-core states
+A list of states to exluded from the calculation of the overlap matrices; for example to select only valence states, or exclude semi-core states
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
@@ -450,6 +451,7 @@ The valid options for this parameter are:
 
 
 \subsection[wvfn\_formated]{\tt character(len=20) :: wvfn\_formatted}
+\red{Not yet implemented}
 
 If $\verb#wvfn_formatted#=TRUE$ the wavefunctions will be read from disk
 in formatted (ie ASCII) style. Otherwise they will be read as unformatted
@@ -659,7 +661,12 @@ The valid options for this parameter are:
 
 The default value for \verb#wannier_plot_format# is xcrysden.
 
+\subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
+ A list of Wannier Functions to plot. The Wannier Functions numbered as per the
+ $<$seedname$>$.wout file after the minimisation of the spread.
+
+ The default behavior is to plot all Wannier Functions.
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
