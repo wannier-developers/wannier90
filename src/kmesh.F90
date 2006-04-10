@@ -480,6 +480,15 @@ contains
     end do
     write(nnkpout,'(a/)') 'end nnkpts'
 
+      !states to exclude                        
+      write(nnkpout,'(a)') 'begin exclude_bands'
+      if(num_exclude_bands>0) then
+         write(nnkpout,'(i4)') num_exclude_bands
+         do i=1,num_exclude_bands     
+            write(nnkpout,'(i4)') exclude_bands(i)  
+         end do        
+      endif   
+      write(nnkpout,'(a)') 'end exclude_bands'
 
     close(nnkpout)
 

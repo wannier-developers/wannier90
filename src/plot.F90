@@ -11,12 +11,12 @@
 
 
 module plot
- 
+
   use constants, only : dp
   implicit none
 
   private
-  
+
   complex(kind=dp),allocatable  :: ham_r(:,:,:)
   integer, allocatable          :: irvec(:,:)
   integer, allocatable          :: ndegen(:)
@@ -29,7 +29,7 @@ contains
 
   !============================================!
   subroutine plot_main( )
-  !============================================!
+    !============================================!
 
     use constants, only : cmplx_0
     use io, only        : io_error,stdout
@@ -71,26 +71,26 @@ contains
        !
     end if
 
-   if(wannier_plot) call plot_wannier
+    if(wannier_plot) call plot_wannier
 
 
   end subroutine plot_main
 
 
 
-        !-----------------------------------!
-!----------------- Private Routines ------------------------------
-        !-----------------------------------!
+  !-----------------------------------!
+  !----------------- Private Routines ------------------------------
+  !-----------------------------------!
 
 
 
   !============================================!
   subroutine plot_interpolate_bands
-  !============================================!
-  !                                            !
-  !     Plots the interpolated band structure  !
-  !                                            !
-  !============================================!
+    !============================================!
+    !                                            !
+    !     Plots the interpolated band structure  !
+    !                                            !
+    !============================================!
 
     use constants, only : dp,cmplx_0,cmplx_i,twopi
     use io, only        : io_error,stdout,io_file_unit,seedname,io_time
@@ -213,9 +213,9 @@ contains
     close(bndunit)
     ! Axis labels
     glabel(1)=' '//bands_label(1)//' '
-     do i=2,num_paths
+    do i=2,num_paths
        if(bands_label(2*(i-1))/=bands_label(2*(i-1)+1)) then
-           glabel(i)=bands_label(2*(i-1))//'/'//bands_label(2*(i-1)+1)
+          glabel(i)=bands_label(2*(i-1))//'/'//bands_label(2*(i-1)+1)
        else
           glabel(i)=' '//bands_label(2*(i-1))//' '
        end if
@@ -238,16 +238,16 @@ contains
 702 format('set xtics (',:20('"',A3,'" ',F8.5,','))
 703 format(A3,'" ',F8.5,')')
 705 format('set arrow from ',F8.5,',',F10.5,' to ',F8.5,',',F10.5, ' nohead')
-    
+
   end subroutine plot_interpolate_bands
 
   !===========================================================!
   subroutine plot_fermi_surface
-  !===========================================================!
-  !                                                           !
-  !  Prepares a Xcrysden bxsf file to view the fermi surface  !
-  !                                                           !
-  !===========================================================!
+    !===========================================================!
+    !                                                           !
+    !  Prepares a Xcrysden bxsf file to view the fermi surface  !
+    !                                                           !
+    !===========================================================!
 
     use constants, only : dp,cmplx_0,cmplx_i,twopi
     use io, only        : io_error,stdout,io_file_unit,seedname,io_date,io_time
@@ -285,7 +285,7 @@ contains
        do loop_y=1,fermi_surface_num_points+1
           do loop_z=1,fermi_surface_num_points+1
              ikp=ikp+1
-             
+
              ham_kprm=cmplx_0
              do loop_rpt=1,nrpts
                 rdotk=twopi*real( (loop_x-1)*irvec(1,loop_rpt)+ &
@@ -356,209 +356,245 @@ contains
 
   !============================================!
   subroutine plot_wannier
-  !============================================!
-  !                                            !
-  ! Plot the WF in Xcrysden format             !
-  !  based on code written by Michel Posternak !
-  !                                            !
-  !============================================!
+    !============================================!
+    !                                            !
+    ! Plot the WF in Xcrysden format             !
+    !  based on code written by Michel Posternak !
+    !                                            !
+    !============================================!
 
     use constants, only : dp,cmplx_0,cmplx_i,twopi,cmplx_1
-    use io, only        : io_error,stdout,io_file_unit,seedname,io_time,io_date
+    use io, only        : io_error,stdout,io_file_unit,seedname,io_time, &
+         io_date,io_stopwatch
     use parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
-         atoms_label,atoms_pos_cart,num_atoms,real_lattice
+         atoms_label,atoms_pos_cart,num_atoms,real_lattice,disentanglement, &
+         ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list
 
-   implicit none
+    implicit none
 
-   real(kind=dp) :: scalfac,tmax,tmaxx,x_0ang,y_0ang,z_0ang
-   real(kind=dp) :: fxcry(3),dirl(3,3)
-   complex(kind=dp), allocatable :: wann_func(:,:,:,:)
-   complex(kind=dp), allocatable :: r_wvfn(:,:)
-   complex(kind=dp) :: catmp,wmod
+    real(kind=dp) :: scalfac,tmax,tmaxx,x_0ang,y_0ang,z_0ang
+    real(kind=dp) :: fxcry(3),dirl(3,3)
+    complex(kind=dp), allocatable :: wann_func(:,:,:,:)
+    complex(kind=dp), allocatable :: r_wvfn(:,:)
+    complex(kind=dp), allocatable :: r_wvfn_tmp(:,:)
+    complex(kind=dp) :: local_u_matrix(num_bands,num_bands)
+    complex(kind=dp) :: catmp,wmod
 
-   logical :: have_file,lerror
-   integer :: i,j,k,nsp,nat,nbnd
-   integer :: loop_kpt,ik,ix,iy,iz,nk,ngx,ngy,ngz,nxx,nyy,nzz
-   integer :: loop_b,nx,ny,nz,npoint,file_unit,loop_w
-   character(len=11) :: wfnname
-   character(len=13) :: wanxsf
-   character(len=8)  :: typcrys
-   character(len=9)   :: cdate, ctime
+    logical :: have_file,lerror
+    integer :: i,j,k,nsp,nat,nbnd,counter,loop_i
+    integer :: loop_kpt,ik,ix,iy,iz,nk,ngx,ngy,ngz,nxx,nyy,nzz
+    integer :: loop_b,nx,ny,nz,npoint,file_unit,loop_w,num_inc
+    character(len=11) :: wfnname
+    character(len=13) :: wanxsf
+    character(len=8)  :: typcrys
+    character(len=9)  :: cdate, ctime
+    logical           :: inc_band(num_bands)  
 
-   write(wfnname,200 ) 1,spin
-   inquire(file=wfnname,exist=have_file)
-   if(.not.have_file) call io_error('plot_wannier: file '//wfnname//' not found') 
+    write(wfnname,200 ) 1,spin
+    inquire(file=wfnname,exist=have_file)
+    if(.not.have_file) call io_error('plot_wannier: file '//wfnname//' not found') 
 
-   file_unit=io_file_unit()
-   open(unit=file_unit,file=wfnname,form='unformatted')
-   read(file_unit) ngx,ngy,ngz,nk,nbnd
-   close(file_unit)
+    file_unit=io_file_unit()
+    open(unit=file_unit,file=wfnname,form='unformatted')
+    read(file_unit) ngx,ngy,ngz,nk,nbnd
+    close(file_unit)
 
 200 format ('UKN',i5.5,'.',i1)
 
-   allocate(wann_func(-ngx:(ngs-1)*ngx-1,-ngy:(ngs-1)*ngy-1,-ngz:(ngs-1)*ngz-1,num_wann))
-   allocate(r_wvfn(ngx*ngy*ngz,num_bands))
-   wann_func=cmplx_0
-
-   call io_date(cdate, ctime)
-   do loop_kpt=1,num_kpts
-
-      write(wfnname,200 ) loop_kpt,spin
-      file_unit=io_file_unit()
-      open(unit=file_unit,file=wfnname,form='unformatted')
-      read(file_unit) ix,iy,iz,ik,nbnd
-      lerror=.false.
-      if (ix.ne.ngx) lerror=.true.
-      if (iy.ne.ngy) lerror=.true.
-      if (iz.ne.ngz) lerror=.true.
-      if (ik.ne.loop_kpt) lerror=.true.
-      if (lerror) then
-         write(*,*) ' WARNING: mismatch in WAV',ix,iy,iz,ik,nbnd
-         call io_error('plot_wannier')
-      end if
-      do loop_b=1,num_bands
-         read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
-      end do
-      
-      do loop_b=1,num_wann
-         
-         do loop_w=1,num_wann
-            
-! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
-! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
-!
-! nx ny nz are the nxx nyy nzz brought back to the unit cell in
-! which u_nk(r)=cptwrb(r,n)  is represented
-!
-            do nzz=-ngz,(ngs-1)*ngz-1
-               nz=mod(nzz,ngz)
-               if(nz.lt.1) nz=nz+ngz
-               do nyy=-ngy,(ngs-1)*ngy-1
-                  ny=mod(nyy,ngy)
-                  if(ny.lt.1) ny=ny+ngy
-                  do nxx=-ngx,(ngs-1)*ngx-1
-                     nx=mod(nxx,ngx)
-                     if(nx.lt.1) nx=nx+ngx
-                     
-                     scalfac=kpt_latt(1,loop_kpt)*real(nxx-1,dp)/real(ngx,dp)+ &
-                               kpt_latt(2,loop_kpt)*real(nyy-1,dp)/real(ngy,dp)+ &
-                               kpt_latt(3,loop_kpt)*real(nzz-1,dp)/real(ngz,dp)
-                     npoint=nx+(ny-1)*ngx+(nz-1)*ngy*ngx
-                     catmp=exp(twopi*cmplx_i*scalfac)*r_wvfn(npoint,loop_b)* &
-                                u_matrix(loop_b,loop_w,loop_kpt)
-                     ! here it increments the wannier funcion in nx,ny,nz with the
-                     ! current nb,nkp bloch orbitals 
-                     wann_func(nxx,nyy,nzz,loop_w)=wann_func(nxx,nyy,nzz,loop_w)+catmp
-                     
-                  end do
-               end do
-            end do
-            
-         end do
-      end do
-      close(file_unit)
-      
-   end do !loop over kpoints
-
-! fix the global phase by setting the wannier to
-! be real at the point where it has max. modulus
-
-   do loop_w=1,num_wann
-      tmaxx=0.0
-      wmod=cmplx_1
-      do nzz=-ngz,(ngs-1)*ngz-1
-         do nyy=-ngy,(ngs-1)*ngy-1
-            do nxx=-ngx,(ngs-1)*ngx-1
-               wann_func(nxx,nyy,nzz,loop_w)=wann_func(nxx,nyy,nzz,loop_w)/ real(num_kpts,dp)
-               tmax=real(wann_func(nxx,nyy,nzz,loop_w)* conjg(wann_func(nxx,nyy,nzz,loop_w)),dp)
-               if (tmax>tmaxx) then
-                  tmaxx=tmax
-                  wmod=wann_func(nxx,nyy,nzz,loop_w)
-               end if
-            end do
-         end do
-      end do
-      wmod=wmod/sqrt(real(wmod)**2+aimag(wmod)**2)
-      wann_func(:,:,:,loop_w)=wann_func(:,:,:,loop_w)/wmod
-   end do
+    allocate(wann_func(-ngx:(ngs-1)*ngx-1,-ngy:(ngs-1)*ngy-1,-ngz:(ngs-1)*ngz-1,num_wannier_plot))
+    if(disentanglement) then
+       allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)))
+    end if
+    allocate(r_wvfn(ngx*ngy*ngz,num_wann))
+    wann_func=cmplx_0
 
 
-! this is to create the WF...xsf output, to be read by XCrySDen
-! (coordinates + isosurfaces)
+    call io_date(cdate, ctime)
+    do loop_kpt=1,num_kpts
 
-   x_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,1)- &
-        real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,1)-  &
-        real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,1)
-   y_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,2)- &
-        real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,2)-  &
-        real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,2)
-   z_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,3)- &
-        real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,3)-  &
-        real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,3)
+       inc_band=.true.
+       num_inc=num_wann
+       if(disentanglement) then
+          inc_band(:)=lwindow(:,loop_kpt)
+          num_inc=ndimwin(loop_kpt)
+       end if
 
-   fxcry(1)=real(ngs*ngx-1,dp)/real(ngx,dp)
-   fxcry(2)=real(ngs*ngy-1,dp)/real(ngy,dp)
-   fxcry(3)=real(ngs*ngz-1,dp)/real(ngz,dp)
-   do j=1,3
-      dirl(:,j)=fxcry(:)*real_lattice(:,j)
-   end do
+       write(wfnname,200 ) loop_kpt,spin
+       file_unit=io_file_unit()
+       open(unit=file_unit,file=wfnname,form='unformatted')
+       read(file_unit) ix,iy,iz,ik,nbnd
+
+       if ( (ix/=ngx) .or. (iy/=ngy) .or. (iz/=ngz) .or. (ik/=loop_kpt) ) then
+          write(stdout,'(1x,a,a)') 'WARNING: mismatch in file',trim(wfnname)
+          write(stdout,'(1x,5(a6,I5))')  '   ix=',ix ,'   iy=',iy ,'   iz=',iz ,'   ik=',ik      ,' nbnd=',nbnd
+          write(stdout,'(1x,5(a6,I5))')  '  ngx=',ngx,'  ngy=',ngy,'  ngz=',ngz,'  kpt=',loop_kpt,'bands=',num_bands
+          call io_error('plot_wannier')
+       end if
+
+       if(disentanglement) then
+          counter=1
+          do loop_b=1,num_bands
+             if(counter>num_inc) exit
+             read(file_unit) (r_wvfn_tmp(nx,counter),nx=1,ngx*ngy*ngz)
+             if(inc_band(loop_b)) counter=counter+1
+          end do
+       else
+          do loop_b=1,num_bands 
+             read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+          end do
+       end if
+
+       close(file_unit)
+
+       if(disentanglement) then
+          r_wvfn=cmplx_0
+          do loop_w=1,num_wann
+             do loop_b=1,num_inc
+                r_wvfn(:,loop_w)=r_wvfn(:,loop_w)+ &
+                     u_matrix_opt(loop_b,loop_w,loop_kpt)*r_wvfn_tmp(:,loop_b)
+             end do
+          end do
+       end if
+
+
+       ! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
+       ! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
+       !
+       ! nx ny nz are the nxx nyy nzz brought back to the unit cell in
+       ! which u_nk(r)=cptwrb(r,n)  is represented
+       !
+       ! There is a big performance improvement in looping over num_wann
+       ! in the inner loop. This is poor memory access for wann_func and
+       ! but the reduced number of operations wins out. 
+
+       do nzz=-ngz,(ngs-1)*ngz-1
+          nz=mod(nzz,ngz)
+          if(nz.lt.1) nz=nz+ngz
+          do nyy=-ngy,(ngs-1)*ngy-1
+             ny=mod(nyy,ngy)
+             if(ny.lt.1) ny=ny+ngy
+             do nxx=-ngx,(ngs-1)*ngx-1
+                nx=mod(nxx,ngx)
+                if(nx.lt.1) nx=nx+ngx
+
+                scalfac=kpt_latt(1,loop_kpt)*real(nxx-1,dp)/real(ngx,dp)+ &
+                     kpt_latt(2,loop_kpt)*real(nyy-1,dp)/real(ngy,dp)+ &
+                     kpt_latt(3,loop_kpt)*real(nzz-1,dp)/real(ngz,dp)
+                npoint=nx+(ny-1)*ngx+(nz-1)*ngy*ngx
+                catmp=exp(twopi*cmplx_i*scalfac)
+                do loop_b=1,num_wann
+                   do loop_w=1,num_wannier_plot            
+                      wann_func(nxx,nyy,nzz,loop_w)=wann_func(nxx,nyy,nzz,loop_w)+ &
+                           u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn(npoint,loop_b)*catmp
+                   end do
+                end do
+             end do
+          end do
+
+       end do
+
+    end do !loop over kpoints
+
+    ! fix the global phase by setting the wannier to
+    ! be real at the point where it has max. modulus
+
+    do loop_w=1,num_wannier_plot
+       tmaxx=0.0
+       wmod=cmplx_1
+       do nzz=-ngz,(ngs-1)*ngz-1
+          do nyy=-ngy,(ngs-1)*ngy-1
+             do nxx=-ngx,(ngs-1)*ngx-1
+                wann_func(nxx,nyy,nzz,loop_w)= wann_func(nxx,nyy,nzz,loop_w)/ real(num_kpts,dp)
+                tmax=real(wann_func(nxx,nyy,nzz,loop_w)* & 
+                     conjg(wann_func(nxx,nyy,nzz,loop_w)),dp)
+                if (tmax>tmaxx) then
+                   tmaxx=tmax
+                   wmod=wann_func(nxx,nyy,nzz,loop_w)
+                end if
+             end do
+          end do
+       end do
+       wmod=wmod/sqrt(real(wmod)**2+aimag(wmod)**2)
+       wann_func(:,:,:,loop_w)=wann_func(:,:,:,loop_w)/wmod
+    end do
+
+    ! this is to create the WF...xsf output, to be read by XCrySDen
+    ! (coordinates + isosurfaces)
+
+
+    x_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,1)- &
+         real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,1)-  &
+         real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,1)
+    y_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,2)- &
+         real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,2)-  &
+         real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,2)
+    z_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,3)- &
+         real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,3)-  &
+         real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,3)
+
+    fxcry(1)=real(ngs*ngx-1,dp)/real(ngx,dp)
+    fxcry(2)=real(ngs*ngy-1,dp)/real(ngy,dp)
+    fxcry(3)=real(ngs*ngz-1,dp)/real(ngz,dp)
+    do j=1,3
+       dirl(:,j)=fxcry(:)*real_lattice(:,j)
+    end do
 
 201 format ('WANN',i5.5,'.xsf')
 
-   do loop_b=1,num_wann
+    do loop_b=1,num_wannier_plot
 
-      write(wanxsf,201) loop_b
-      
-      file_unit=io_file_unit()
-      open(unit=file_unit,file=wanxsf,form='formatted',status='unknown')
-      write(file_unit,*) '      #'
-      write(file_unit,*) '      # Generated by the Wannier90 code http://www.wannier.org'
-      write(file_unit,*) '      # On ',cdate,' at ',ctime
-      write(file_unit,*) '      #'
-      ! should pass this into the code
-      typcrys='CRYSTAL'
-      if (typcrys.eq.'SLAB    ') then
-         write(file_unit,'("SLAB")')
-      else
-         write(file_unit,'("CRYSTAL")')
-      end if
-      write(file_unit,'("PRIMVEC")')
-      write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
-      write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
-      write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
-      if (typcrys.ne.'SLAB    ') then
-         write(file_unit,'("CONVEC")')
-         ! hack: Should take from input
-         write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
-         write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
-         write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
-      end if
-      write(file_unit,'("PRIMCOORD")')
-      write(file_unit,'(i2,"  1")') num_atoms
-      do nsp=1,num_species
-         do nat=1,atoms_species_num(nsp)
-            write(file_unit,'(a2,3x,3f12.7)') atoms_label(nsp),(atoms_pos_cart(i,nat,nsp),i=1,3)
-         end do
-      end do
-      
-      write(file_unit,'(/)')
-      write(file_unit,'("BEGIN_BLOCK_DATAGRID_3D",/,"3D_field",/, "BEGIN_DATAGRID_3D_UNKNOWN")')
-      write(file_unit,'(3i6)') ngs*ngx,ngs*ngy,ngs*ngz
-      write(file_unit,'(3f12.6)') x_0ang,y_0ang,z_0ang
-      write(file_unit,'(3f12.7)') dirl(1,1),dirl(1,2),dirl(1,3)
-      write(file_unit,'(3f12.7)') dirl(2,1),dirl(2,2),dirl(2,3)
-      write(file_unit,'(3f12.7)') dirl(3,1),dirl(3,2),dirl(3,3)
-      write(file_unit,'(6e13.5)') &
-           (((real(wann_func(nx,ny,nz,loop_b)),nx=-ngx,(ngs-1)*ngx-1), &
-           ny=-ngy,(ngs-1)*ngy-1),nz=-ngz,(ngs-1)*ngz-1)
-      write(file_unit,'("END_DATAGRID_3D",/, "END_BLOCK_DATAGRID_3D")')
-      close(file_unit)
+       write(wanxsf,201) wannier_plot_list(loop_b)
 
-   end do
+       file_unit=io_file_unit()
+       open(unit=file_unit,file=wanxsf,form='formatted',status='unknown')
+       write(file_unit,*) '      #'
+       write(file_unit,*) '      # Generated by the Wannier90 code http://www.wannier.org'
+       write(file_unit,*) '      # On ',cdate,' at ',ctime
+       write(file_unit,*) '      #'
+       ! should pass this into the code
+       typcrys='CRYSTAL'
+       if (typcrys.eq.'SLAB    ') then
+          write(file_unit,'("SLAB")')
+       else
+          write(file_unit,'("CRYSTAL")')
+       end if
+       write(file_unit,'("PRIMVEC")')
+       write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
+       write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
+       write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
+       if (typcrys.ne.'SLAB    ') then
+          write(file_unit,'("CONVEC")')
+          ! hack: Should take from input
+          write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
+          write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
+          write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
+       end if
+       write(file_unit,'("PRIMCOORD")')
+       write(file_unit,'(i2,"  1")') num_atoms
+       do nsp=1,num_species
+          do nat=1,atoms_species_num(nsp)
+             write(file_unit,'(a2,3x,3f12.7)') atoms_label(nsp),(atoms_pos_cart(i,nat,nsp),i=1,3)
+          end do
+       end do
+
+       write(file_unit,'(/)')
+       write(file_unit,'("BEGIN_BLOCK_DATAGRID_3D",/,"3D_field",/, "BEGIN_DATAGRID_3D_UNKNOWN")')
+       write(file_unit,'(3i6)') ngs*ngx,ngs*ngy,ngs*ngz
+       write(file_unit,'(3f12.6)') x_0ang,y_0ang,z_0ang
+       write(file_unit,'(3f12.7)') dirl(1,1),dirl(1,2),dirl(1,3)
+       write(file_unit,'(3f12.7)') dirl(2,1),dirl(2,2),dirl(2,3)
+       write(file_unit,'(3f12.7)') dirl(3,1),dirl(3,2),dirl(3,3)
+       write(file_unit,'(6e13.5)') &
+            (((real(wann_func(nx,ny,nz,loop_b)),nx=-ngx,(ngs-1)*ngx-1), &
+            ny=-ngy,(ngs-1)*ngy-1),nz=-ngz,(ngs-1)*ngz-1)
+       write(file_unit,'("END_DATAGRID_3D",/, "END_BLOCK_DATAGRID_3D")')
+       close(file_unit)
+
+    end do
 
 
- end subroutine plot_wannier
+  end subroutine plot_wannier
 
  
 

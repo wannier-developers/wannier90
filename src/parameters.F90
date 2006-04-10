@@ -28,6 +28,7 @@ module parameters
   integer,           public, save :: num_dump_cycles
   integer,           public, save :: num_print_cycles
   character(len=50), public, save :: devel_flag
+  integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
   integer,           public, save :: mp_grid(3)
   logical,           public, save :: automatic_mp_grid
@@ -44,6 +45,7 @@ module parameters
   real(kind=dp),     public, save :: conv_tol
   integer,           public, save :: conv_window
   logical,           public, save :: wannier_plot
+  integer, allocatable, public,save :: wannier_plot_list(:)
   integer,           public, save :: wannier_plot_supercell
   character(len=20), public, save :: wannier_plot_format
   logical,           public, save :: bands_plot
@@ -113,6 +115,9 @@ module parameters
   real(kind=dp), allocatable,    public, save ::kpt_cart(:,:) !kpoints in cartesians
   logical,           public, save :: disentanglement
   real(kind=dp),     public, save :: lenconfac
+  integer,           public, save :: num_wannier_plot
+  integer,           public, save :: num_exclude_bands
+
 
   ! kmesh parameters (set in kmesh)
 
@@ -122,7 +127,7 @@ module parameters
   integer,       public, save, allocatable :: neigh(:,:)    
   integer,       public, save, allocatable :: nncell(:,:,:) ! gives BZ of each neighbour of each k-point
   real(kind=dp), public, save              :: wbtot
-  real(kind=dp), public, save, allocatable :: wb(:)         ! weights associated with neighbours of each k-point (the same for all kpoints)
+  real(kind=dp), public, save, allocatable :: wb(:)       ! weights associated with neighbours of each k-point
   real(kind=dp), public, save, allocatable :: bk(:,:,:)     ! the b-vectors that go from each k-point to its neighbours
   real(kind=dp), public, save, allocatable :: bka(:,:)      ! the b-directions from 1st k-point to its neighbours
 
@@ -251,6 +256,17 @@ contains
     devel_flag      =   ' '          !       
     call param_get_keyword('devel_flag',found,c_value=devel_flag)
 
+
+    num_exclude_bands=0
+    call param_get_vector_length('exclude_bands',found,num_exclude_bands)
+    if(found) then
+       if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
+       allocate(exclude_bands(num_exclude_bands))
+       call param_get_keyword_vector('exclude_bands',found,num_exclude_bands,i_value=exclude_bands)
+       if (any(wannier_plot_list<1)  ) &
+            call io_error('Error: exclude_bands must contain positive numbers')
+    end if
+
     mp_grid=-99
     call param_get_keyword_vector('mp_grid',found,3,i_value=mp_grid)
     if (any(mp_grid(:)==-99)) then
@@ -320,8 +336,26 @@ contains
     wannier_plot_supercell    = 2
     call param_get_keyword('wannier_plot_supercell',found,i_value=wannier_plot_supercell)
     if (wannier_plot_supercell<0) call io_error('Error: wannier_plot_supercell must be positive')       
+
     wannier_plot_format       = 'xcrysden'
     call param_get_keyword('wannier_plot_format',found,c_value=wannier_plot_format)
+
+    call param_get_vector_length('wannier_plot_list',found,num_wannier_plot)
+    if(found) then
+       if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
+       allocate(wannier_plot_list(num_wannier_plot))
+       call param_get_keyword_vector('wannier_plot_list',found,num_wannier_plot,i_value=wannier_plot_list)
+       if (any(wannier_plot_list<1) .or. any(wannier_plot_list>num_wann) ) &
+            call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted')
+    else
+       ! we plot all wannier functions
+       num_wannier_plot=num_wann
+       allocate(wannier_plot_list(num_wannier_plot))
+       do loop=1,num_wann
+          wannier_plot_list(loop)=loop
+       end do
+    end if
+
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
@@ -1369,6 +1403,76 @@ contains
 
 
   end subroutine param_get_keyword_vector
+
+
+
+  !========================================================!
+  subroutine param_get_vector_length(keyword,found,length)
+    !======================================================!
+    !                                                      !
+    !        Returns the length of a keyword vector        !
+    !                                                      !
+    !======================================================!
+
+    use io,        only : io_error
+
+    implicit none
+
+    character(*),      intent(in)  :: keyword
+    logical          , intent(out) :: found
+    integer,           intent(out)  :: length
+
+    integer           :: kl, in,loop,i,pos
+    character(len=maxlen) :: dummy
+
+    kl=len_trim(keyword)
+
+    found=.false.
+
+
+
+    do loop=1,num_lines
+       in=index(in_data(loop),trim(keyword))
+       if (in==0 .or. in>1 ) cycle
+       if (found) then
+          call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+       endif
+       found=.true.
+       dummy=in_data(loop)(kl+1:)
+       dummy=adjustl(dummy)
+       if( dummy(1:1)=='=' .or. dummy(1:1)==':') then
+          dummy=dummy(2:)
+          dummy=adjustl(dummy)
+       end if
+    end do
+
+    length=0
+    if(found) then
+       if (len_trim(dummy)==0) call io_error('Error: keyword '//trim(keyword)//' is blank')
+       length=1
+       dummy=adjustl(dummy)
+       do 
+          pos=index(dummy,' ')
+          dummy=dummy(pos+1:)
+          dummy=adjustl(dummy)
+          if(len_trim(dummy)>0) then
+             length=length+1
+          else
+             exit
+          endif
+
+       end do
+
+    end if
+
+
+
+    return
+
+230 call io_error('Error: Problem reading keyword '//trim(keyword)//' in param_get_keyword_vector')
+
+
+  end subroutine param_get_vector_length
 
 
   !==============================================================================================!
