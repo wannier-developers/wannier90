@@ -2274,7 +2274,7 @@ contains
 
     ! Check
     do loop=1,num_wann
-       if ( sum(proj_z(:,loop)*proj_x(:,loop)).gt.1.0e-6_dp ) then
+       if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
           write(stdout,*) ' Projection:',loop
           call io_error(' Error in projections: z and x axes are not orthogonal')
        endif
