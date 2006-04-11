@@ -26,9 +26,43 @@ module utility
   public :: utility_string_to_coord
   public :: utility_lowercase
   public :: utility_strip
+  public :: utility_zgemm
 
 contains
 
+
+  !=============================================================!
+  subroutine utility_zgemm(c,a,transa,b,transb,n)
+    !=============================================================!
+    !                                                             !
+    ! Return matrix product of complex n x n matrices a and b:    !
+    !                                                             !
+    !                       C = Op(A) Op(B)                       !
+    !                                                             !
+    ! transa = 'N'  ==> Op(A) = A                                 !
+    ! transa = 'T'  ==> Op(A) = transpose(A)                      !
+    ! transa = 'C'  ==> Op(A) = congj(transpose(A))               !
+    !                                                             !
+    ! similarly for B                                             !
+    !                                                             !
+    !=============================================================!
+
+    use constants, only: cmplx_0,cmplx_1
+
+    implicit none
+
+    integer,           intent(in)  :: n
+    character(len=1),  intent(in)  :: transa
+    character(len=1),  intent(in)  :: transb
+    complex(kind=dp),  intent(out) :: a(n,n)
+    complex(kind=dp),  intent(out) :: b(n,n)
+    complex(kind=dp),  intent(out) :: c(n,n)
+
+    call zgemm(transa,transb,n,n,n,cmplx_1,a,n,b,n,cmplx_0,c,n)
+
+    return
+
+  end subroutine utility_zgemm
 
 
 
@@ -297,7 +331,6 @@ contains
     character(len=maxlen) :: utility_lowercase
 
     integer :: iA,iZ,idiff,ipos,ilett
-    character :: letter
 
     iA = ichar('A')
     iZ = ichar('Z')

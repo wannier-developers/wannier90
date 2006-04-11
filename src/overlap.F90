@@ -32,10 +32,9 @@ contains
   subroutine overlap_read( )
   !%%%%%%%%%%%%%%%%%%%%%
     
-    use parameters,     only : num_bands, num_wann, num_kpts, num_nnmax, &
-                           nntot, nncell, nnlist,devel_flag, &
-                           u_matrix, m_matrix, a_matrix, m_matrix_orig, &
-                           u_matrix_opt, cp_pp
+    use parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
+                           devel_flag, u_matrix, m_matrix, a_matrix, &
+                           m_matrix_orig, u_matrix_opt, cp_pp
     use io,         only : io_file_unit, io_error, seedname
 
     implicit none
@@ -221,8 +220,7 @@ return
   subroutine overlap_rotate
   !%%%%%%%%%%%%%%%%%%%%%
 
-    use parameters,     only : num_bands,num_wann,num_kpts,num_nnmax,&
-                           a_matrix,m_matrix_orig,nntot
+    use parameters, only : num_bands,a_matrix,m_matrix_orig,nntot
     use io,         only : io_file_unit,io_error
 
     implicit none
@@ -334,23 +332,20 @@ return
   !==================================================================!  
     use constants
     use io,         only : io_error
-    use parameters,     only : num_bands, num_wann, num_kpts,  &
-                           u_matrix, m_matrix, nntot, nncell, nnlist
+    use parameters, only : num_bands,num_kpts,u_matrix,m_matrix,nntot,nnlist
 
 
     implicit none
 
 
     ! internal variables
-    integer :: i,j,l,m,nkp,info,ierr,nn,nkp2,n,nout
+    integer :: i,j,m,nkp,info,ierr,nn,nkp2,n
     real(kind=dp),    allocatable :: svals(:)
     real(kind=dp)                 :: rwork(5*num_bands) 
     complex(kind=dp)              :: ctmp2
     complex(kind=dp), allocatable :: cwork(:)
     complex(kind=dp), allocatable :: cz(:,:)
     complex(kind=dp), allocatable :: cvdag(:,:)
-    logical                       :: lwork(num_bands)
-    logical                       :: lsel
 
 
     allocate(svals(num_bands),stat=ierr)
