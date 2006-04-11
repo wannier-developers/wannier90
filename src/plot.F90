@@ -369,7 +369,8 @@ contains
     use parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
          atoms_label,atoms_pos_cart,num_atoms,real_lattice,disentanglement, &
-         ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list
+         ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
+         wannier_plot_mode
 
     implicit none
 
@@ -387,7 +388,6 @@ contains
     integer :: loop_b,nx,ny,nz,npoint,file_unit,loop_w,num_inc
     character(len=11) :: wfnname
     character(len=13) :: wanxsf
-    character(len=8)  :: typcrys
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)  
 
@@ -553,25 +553,21 @@ contains
        write(file_unit,*) '      # On ',cdate,' at ',ctime
        write(file_unit,*) '      #'
        ! should pass this into the code
-       typcrys='CRYSTAL'
-       if (typcrys.eq.'SLAB    ') then
-          write(file_unit,'("SLAB")')
+       if (index(wannier_plot_mode,'mol') ) then
+          write(file_unit,'("ATOMS")')
        else
           write(file_unit,'("CRYSTAL")')
-       end if
        write(file_unit,'("PRIMVEC")')
        write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
        write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
        write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
-       if (typcrys.ne.'SLAB    ') then
-          write(file_unit,'("CONVEC")')
-          ! hack: Should take from input
-          write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
-          write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
-          write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
-       end if
+       write(file_unit,'("CONVEC")')
+       write(file_unit,'(3f12.7)') real_lattice(1,1),real_lattice(1,2),real_lattice(1,3)
+       write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
+       write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
        write(file_unit,'("PRIMCOORD")')
        write(file_unit,'(i2,"  1")') num_atoms
+       endif
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
              write(file_unit,'(a2,3x,3f12.7)') atoms_label(nsp),(atoms_pos_cart(i,nat,nsp),i=1,3)

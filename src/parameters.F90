@@ -48,6 +48,7 @@ module parameters
   integer, allocatable, public,save :: wannier_plot_list(:)
   integer,           public, save :: wannier_plot_supercell
   character(len=20), public, save :: wannier_plot_format
+  character(len=20), public, save :: wannier_plot_mode
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
@@ -340,6 +341,9 @@ contains
     wannier_plot_format       = 'xcrysden'
     call param_get_keyword('wannier_plot_format',found,c_value=wannier_plot_format)
 
+    wannier_plot_mode       = 'crystal'
+    call param_get_keyword('wannier_plot_mode',found,c_value=wannier_plot_mode)
+
     call param_get_vector_length('wannier_plot_list',found,num_wannier_plot)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
@@ -425,11 +429,12 @@ contains
     ! Read the eigenvalues from wannier.eig
     allocate(eigval(num_bands,num_kpts))
 
+    if(.not.postproc_setup)  then
     inquire(file=trim(seedname)//'.eig',exist=eig_found)
     if(.not. eig_found) then
-       if ( disentanglement.and.(.not.postproc_setup) ) then
+       if ( disentanglement) then
           call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-       else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) .and.(.not.postproc_setup) ) then
+       else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) ) then
           call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
        end if
     else
@@ -444,6 +449,7 @@ contains
           enddo
        end do
        close(unit)
+    end if
     end if
 
     dis_win_min=-1.0_dp;dis_win_max=0.0_dp
