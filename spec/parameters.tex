@@ -168,6 +168,8 @@ Keyword & Type & Description \\
 plotting the Wannier Functions \\
 {\sc wannier\_plot\_format }   & S & File format in which to plot the
 Wannier Functions \\
+{\sc wannier\_plot\_mode }   & S & Mode in which to plot the
+Wannier Functions, molecule or crystal \\ 
 {\sc bands\_plot }   & L & Plot and interpolated band structure \\
 {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
 {\sc bands\_num\_points }   & I & Number of points along the first
@@ -667,6 +669,20 @@ The default value for \verb#wannier_plot_format# is xcrysden.
  $<$seedname$>$.wout file after the minimisation of the spread.
 
  The default behavior is to plot all Wannier Functions.
+
+\subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
+
+Choose the mode in which to plot the Wannier functions, either as a molecule
+or as a crystal.
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}] crystal 
+\item[{\bf --}] molecule 
+\end{itemize}
+
+The default value for \verb#wannier_plot_mode# is crystal.
+
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
