@@ -59,7 +59,7 @@ Notes:
 \verb#f=0,0.50,0# -- centre on (0.0,0.5,0.0) in \textbf{f}ractional coordinates
 (crystallographic units) relative to the direct lattice vectors \\
 \verb#c=0.0,0.805,0.0# -- centre on (0.0,0.805,0.0) in \textbf{C}artesian
-coordinates in units determined by the keyword \verb#length_unit#
+coordinates in Angstrom.
 
 \noindent
 \verb#ang_mtm#:\\
@@ -69,12 +69,12 @@ coordinates in units determined by the keyword \verb#length_unit#
  \verb#l=2,mr=1 # or \verb# dz2# -- a single projection with $l=2$,
  $m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)\\
  \verb#l=2,mr=1,4 # or \verb# dz2,dx2-y2# -- two functions: d$_{z^{2}}$ and d$_{xz}$\\
- \verb#l=-1 # or \verb# sp3# -- four sp$^{3}$ hybrids\\
+ \verb#l=-3 # or \verb# sp3# -- four sp$^{3}$ hybrids\\
  Specific hybrid orbitals may be specified as follows:\\
- \verb#l=-1,mr=1,3 # or \verb# sp3-1,sp3-3# -- two specific sp$^{3}$ hybrids\\
+ \verb#l=-3,mr=1,3 # or \verb# sp3-1,sp3-3# -- two specific sp$^{3}$ hybrids\\
  Multiple states may be specified by separating with 
  `\verb#;#', e.g.,\\
- \verb#sp3;l=0 # or \verb# l=-1;l=0# -- four sp$^{3}$ hybrids and one s orbital
+ \verb#sp3;l=0 # or \verb# l=-3;l=0# -- four sp$^{3}$ hybrids and one s orbital
 
 \noindent
 \verb#zaxis# (optional):\\
@@ -115,7 +115,7 @@ is \verb#b=1.0#
 
 \verb#Cu:l=0;l=1;l=2 #
 
-\verb#O:l=-1 #  or  \verb# O:sp3#
+\verb#O:l=-3 #  or  \verb# O:sp3#
 
 2. A single projection onto a p$_z$ orbital orientated in the (1,1,1)
  direction:
