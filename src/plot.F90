@@ -368,7 +368,7 @@ contains
          io_date,io_stopwatch
     use parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
-         atoms_label,atoms_pos_cart,num_atoms,real_lattice,disentanglement, &
+         atoms_label,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
          wannier_plot_mode
 
@@ -403,7 +403,7 @@ contains
 200 format ('UNK',i5.5,'.',i1)
 
     allocate(wann_func(-ngx:(ngs-1)*ngx-1,-ngy:(ngs-1)*ngy-1,-ngz:(ngs-1)*ngz-1,num_wannier_plot))
-    if(disentanglement) then
+    if(have_disentangled) then
        allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)))
     end if
     allocate(r_wvfn(ngx*ngy*ngz,num_wann))
@@ -415,7 +415,7 @@ contains
 
        inc_band=.true.
        num_inc=num_wann
-       if(disentanglement) then
+       if(have_disentangled) then
           inc_band(:)=lwindow(:,loop_kpt)
           num_inc=ndimwin(loop_kpt)
        end if
@@ -432,7 +432,7 @@ contains
           call io_error('plot_wannier')
        end if
 
-       if(disentanglement) then
+       if(have_disentangled) then
           counter=1
           do loop_b=1,num_bands
              if(counter>num_inc) exit
@@ -447,7 +447,7 @@ contains
 
        close(file_unit)
 
-       if(disentanglement) then
+       if(have_disentangled) then
           r_wvfn=cmplx_0
           do loop_w=1,num_wann
              do loop_b=1,num_inc
