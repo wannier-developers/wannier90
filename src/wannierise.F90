@@ -87,8 +87,8 @@ contains
     real(kind=dp) :: falphamin,eqa,eqb,alphamin
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
     real(kind=dp) :: alphamin_quad,falphamin_quad
-    integer :: i,n,iter,ind,ierr,iw,ncg,bis_loop,nsdim,info
-    logical :: select,lprint,ldump
+    integer :: i,n,iter,ind,ierr,iw,ncg,bis_loop,info
+    logical :: lprint,ldump
 
     ! == bisection parameters -- slightly experimental ==!
     integer, parameter       :: max_bis_iter = 3
@@ -129,8 +129,8 @@ contains
     allocate( rguide (3, num_wann)   )
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main')
 
-    csheet=cmplx_0;cdodq1=cmplx_0;cdodq2=cmplx_0;cdodq3=cmplx_0
-    rave2=0.0_dp;sheet=0.0_dp;rave=0.0_dp; r2ave=0.0_dp
+    csheet=cmplx_1;cdodq=cmplx_0;cdodq1=cmplx_0;cdodq2=cmplx_0;cdodq3=cmplx_0
+    rave2=0.0_dp;sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;sheet=0.0_dp
 
     ! sub vars not passed into other subs
     allocate( cwschur1 (num_wann), cwschur2 (10 * num_wann),stat=ierr  )
@@ -149,8 +149,9 @@ contains
     if (ierr/=0) call io_error('Error in allocating tmp_cdq in wann_main')
 
     cwschur1=cmplx_0; cwschur2=cmplx_0; cwschur3=cmplx_0; cwschur4=cmplx_0
-    cdq=cmplx_0; cz=cmplx_0; cdodq=cmplx_0; cmtmp=cmplx_0; cdqkeep=cmplx_0
-    sheet=0.0_dp; csheet=cmplx_1; gcnorm1=0.0_dp; gcnorm0=0.0_dp
+    cdq=cmplx_0; cz=cmplx_0; cmtmp=cmplx_0; cdqkeep=cmplx_0
+    
+    gcnorm1=0.0_dp; gcnorm0=0.0_dp
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if( guiding_centres) then
@@ -553,17 +554,18 @@ contains
 
       implicit none
 
-      integer :: nkp,nn,nkp2
+      integer :: nkp,nn,nkp2,nsdim
+      logical :: ltmp
 
       call io_stopwatch('wann_main: u and m',1)
 
       do nkp = 1, num_kpts  
          tmp_cdq(:,:) = cdq(:,:,nkp)
-         call zgees ('V', 'N', select, num_wann, tmp_cdq, num_wann, nsdim, &
+         call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
               cwschur1, cz, num_wann, cwschur2, 10 * num_wann, cwschur3, &
               cwschur4, info)
          if (info.ne.0) then  
-            write ( stdout , * ) 'SCHUR: ', info  
+            write(stdout,*) 'SCHUR: ', info  
             call io_error('wann_main: problem computing schur form 1') 
          endif
          do i=1,num_wann
@@ -1234,7 +1236,6 @@ contains
     cdodq2 = cdodq2 / cmplx(num_kpts,0.0_dp,kind=dp) * cmplx(4.0_dp,0.0_dp,kind=dp)
     cdodq3 = cdodq3 / cmplx(num_kpts,0.0_dp,kind=dp) * cmplx(4.0_dp,0.0_dp,kind=dp)
     cdodq  = cdodq1 + cdodq2 + cdodq3
-
 
     call io_stopwatch('domega',2)
 

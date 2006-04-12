@@ -1880,9 +1880,11 @@ contains
     !                                   !
     !===================================!
 
+    use constants, only : bohr
     use utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
          utility_string_to_coord,utility_strip
     use io,        only : io_error
+
     implicit none
 
 
@@ -1913,6 +1915,7 @@ contains
     real(kind=dp) :: proj_zona_tmp
     real(kind=dp) :: proj_box_tmp
     integer       :: proj_radial_tmp
+    logical       :: lconvert
 
     keyword="projections"
 
@@ -1968,6 +1971,17 @@ contains
        call io_error('param_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
     end if
 
+    dummy=in_data(line_s+1)
+    lconvert=.false.
+    if ( index(dummy,'ang').ne.0 ) then
+       in_data(line_s)(1:maxlen) = ' '
+       line_s = line_s + 1
+    elseif ( index(dummy,'bohr').ne.0 ) then
+       in_data(line_s)(1:maxlen) = ' '
+       line_s = line_s + 1
+       lconvert=.true.
+    endif
+
     counter=0
     do line=line_s+1,line_e-1
        ang_states=0
@@ -1990,6 +2004,7 @@ contains
           sites=-1
           ctemp=ctemp(3:)
           call utility_string_to_coord(ctemp,pos_cart)
+          if (lconvert) pos_cart = pos_cart * bohr
           call utility_cart_to_frac (pos_cart(:),pos_frac(:),recip_lattice)          
        elseif(index(ctemp,'f=')>0) then
           sites=-1
