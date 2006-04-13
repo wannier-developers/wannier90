@@ -1,13 +1,40 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,
-!            Nicola Marzari, Ivo Souza, David Vanderbilt
-!
-! This file is distributed under the terms of the
-! GNU General Public License. See the file `License'
-! in the root directory of the present distribution,
-! or http://www.gnu.org/copyleft/gpl.txt .
-!
-!----------------------------------------------------------------------
+!                                                            !
+!                       WANNIER90                            !
+!                                                            !
+!          The Maximally-Localised Generalised               !
+!                Wannier Functions Code                      !
+!                                                            !
+!        Authors:                                            !
+!              Arash A. Mostofi   (MIT)                      !
+!              Jonathan R. Yates  (LBNL and UC Berkeley)     !
+!                                                            !
+!  Please cite                                               !
+!                                                            !
+!  [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza    !
+!        and D. Vanderbilt, http://www.wannier.org/          !
+!                                                            !
+!  in any publications arising from the use of this code.    !
+!                                                            !
+!  Wannier90 is based on routines written by N. Marzari,     !
+!  I. Souza and D. Vanderbilt. For the method please cite    !
+!                                                            !
+!  [ref] N. Marzari and D. Vanderbilt,                       !
+!        Phys. Rev. B 56 12847 (1997)                        !
+!                                                            !
+!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
+!        Phys. Rev. B 65 035109 (2001)                       !
+!                                                            !
+!                                                            !
+! Copyright (C) 1997-2006 Jonathan Yates, Arash Mostofi,     !
+!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+!                                                            !
+! This file is distributed under the terms of the            !
+! GNU General Public License. See the file `License'         !
+! in the root directory of the present distribution,         !
+! or http://www.gnu.org/copyleft/gpl.txt .                   !
+!                                                            !
+!------------------------------------------------------------!
 
 module parameters
 
@@ -839,7 +866,7 @@ contains
     write(stdout,*)
     write(stdout,*)  '            +---------------------------------------------------+'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |                    WANNIER                        |'
+    write(stdout,*)  '            |                   WANNIER90                       |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            +---------------------------------------------------+'
     write(stdout,*)  '            |                                                   |'
@@ -848,26 +875,39 @@ contains
     write(stdout,*)  '            |            http://www.wannier.org                 |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  Authors:                                         |'
-    write(stdout,*)  '            |           Arash Mostofi   (MIT)                   |'
-    write(stdout,*)  '            |           Jonathan Yates  (LBNL and UC Berkeley)  |'
+    write(stdout,*)  '            |        Arash A. Mostofi   (MIT)                   |'
+    write(stdout,*)  '            |        Jonathan R. Yates  (LBNL and UC Berkeley)  |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  Based on the codes written by                    |'
-    write(stdout,*)  '            |   Nicola Marzari, Ivo Souza and David Vanderbilt  |'
-    write(stdout,*)  '            |  and the methods detailed in                      |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  "Maximally Localised Generalised Wannier         |'
-    write(stdout,*)  '            |   Functions for Composite Energy Bands"           |'
-    write(stdout,*)  '            |  N. Marzari and D. Vanderbilt PRB 56 12847 (1997) |'
+    write(stdout,*)  '            |  Please cite                                      |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  "Maximally Localised Wannier                     |'
-    write(stdout,*)  '            |   Functions for Entangled Energy Bands"           |'
-    write(stdout,*)  '            |  I. Souza, N. Marzari and D. Vanderbilt           |'
-    write(stdout,*)  '            |  PRB 65 035109 (2001)                             |'
+    write(stdout,*)  '            |  [ref] A. A. Mostofi, J. R. Yates,                |'
+    write(stdout,*)  '            |        N. Marzari, I. Souza and D. Vanderbilt,    |'
+    write(stdout,*)  '            |        http://www.wannier.org/                    |'
+    write(stdout,*)  '            |                                                   |'
+    write(stdout,*)  '            |  in any publications arising from the use of      |'
+    write(stdout,*)  '            |  this code.                                       |'
+    write(stdout,*)  '            |                                                   |'
+    write(stdout,*)  '            |                                                   |'
+    write(stdout,*)  '            |  Wannier90 is based on routines written by        |'
+    write(stdout,*)  '            |  Nicola Marzari, Ivo Souza and David Vanderbilt.  |'
+    write(stdout,*)  '            |  For the method please cite                       |'
+    write(stdout,*)  '            |                                                   |'
+    write(stdout,*)  '            |  [ref] "Maximally Localized Generalised Wannier   |'
+    write(stdout,*)  '            |         Functions for Composite Energy Bands"     |'
+    write(stdout,*)  '            |         N. Marzari and D. Vanderbilt              |'
+    write(stdout,*)  '            |         Phys. Rev. B 56 12847 (1997)              |'
+    write(stdout,*)  '            |                                                   |'
+    write(stdout,*)  '            |  [ref] "Maximally Localized Wannier Functions     |'
+    write(stdout,*)  '            |         for Entangled Energy Bands"               |'
+    write(stdout,*)  '            |         I. Souza, N. Marzari and D. Vanderbilt    |'
+    write(stdout,*)  '            |         Phys. Rev. B 65 035109 (2001)             |'
+    write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | Copyright (c) 1997-2006 J. Yates, A. Mostofi,     |'
-    write(stdout,*)  '            |          N. Marzari, I. Souza, D. Vanderbilt      |'
+    write(stdout,*)  '            |        N. Marzari, I. Souza, D. Vanderbilt        |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |       Release: 1.91  18th November 2005           |'
+    write(stdout,*)  '            |         Release: 0.99  15th April 2006            |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
