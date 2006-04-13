@@ -52,10 +52,17 @@ test:   wannier
 
 dist-lite:
 	@(tar cf - \
-                ./src/?90 \
-		./src/Makefile \
-                ./Makefile \
-        | gzip -c > \
-                ./wannier90.tar.gz)
+		./src/*.?90 \
+		./tests/run_test.pl \
+		./tests/test*/wannier.win \
+		./tests/test*/des.dat \
+		./tests/test*/wannier.eig \
+		./tests/test*/wannier.?mn \
+		./tests/test*/stnd* \
+		./config/* \
+		./*/Makefile \
+		./Makefile \
+	| gzip -c > \
+		./wannier90.tar.gz)
 
 
