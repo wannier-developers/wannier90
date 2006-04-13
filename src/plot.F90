@@ -553,7 +553,7 @@ contains
        write(file_unit,*) '      # On ',cdate,' at ',ctime
        write(file_unit,*) '      #'
        ! should pass this into the code
-       if (index(wannier_plot_mode,'mol') ) then
+       if (index(wannier_plot_mode,'mol')>0 ) then
           write(file_unit,'("ATOMS")')
        else
           write(file_unit,'("CRYSTAL")')
