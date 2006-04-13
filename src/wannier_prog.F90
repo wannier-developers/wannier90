@@ -76,7 +76,7 @@ program wannier
      call kmesh_dealloc
      call param_dealloc
      write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
-     write(stdout,'(/a)') ' Exiting... wannier.nnkp written.'
+     write(stdout,'(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
      stop
   endif
 

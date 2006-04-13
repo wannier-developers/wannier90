@@ -189,7 +189,7 @@ contains
   !===================================================================  
     use constants, only : bohr   
     use utility, only : utility_recip_lattice,utility_compute_metric
-    use io,      only : io_error,io_file_unit,seedname
+    use io,      only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
 
     !local variables
@@ -283,6 +283,9 @@ contains
 
     postproc_setup = .false.            ! set to true to write .nnkp file and exit
     call param_get_keyword('postproc_setup',found,l_value=postproc_setup)
+    ! We allow this keyword to be overriden by a command line arg -pp
+    if(post_proc_flag) postproc_setup=.true.      
+
 
     cp_pp = .false.                  ! set to true if doing CP post-processing
     call param_get_keyword('cp_pp',found,l_value=cp_pp)

@@ -21,6 +21,7 @@ module io
   integer, public, save           :: stdout
   character(len=50), public, save :: seedname
   integer, parameter, public :: maxlen = 120  ! Max column width of input file
+  logical, public, save           :: post_proc_flag  ! Set post_processing from cmd line
 
   type timing_data
      integer :: ncalls           
@@ -151,15 +152,30 @@ contains
 #ifndef NAG
     integer :: iargc
 #endif
+         character(len=50) :: ctemp 
 
+         post_proc_flag=.false.
 
          num_arg=iargc()
          if (num_arg==0) then
             seedname='wannier'
+         elseif (num_arg==1) then
+            call getarg(1,seedname)
+            if( index(seedname,'-pp')>0 ) then
+               post_proc_flag=.true.
+               seedname='wannier'
+            end if
          else
             call getarg(1,seedname)
-         end if
+            if( index(seedname,'-pp')>0 ) then
+               post_proc_flag=.true.
+               call getarg(2,seedname)
+            else
+               call getarg(2,ctemp)
+               if( index(ctemp,'-pp')>0 ) post_proc_flag=.true.
+            end if
 
+         end if
 
        end subroutine io_get_seedname
 
