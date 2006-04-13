@@ -379,11 +379,10 @@ contains
     complex(kind=dp), allocatable :: wann_func(:,:,:,:)
     complex(kind=dp), allocatable :: r_wvfn(:,:)
     complex(kind=dp), allocatable :: r_wvfn_tmp(:,:)
-    complex(kind=dp) :: local_u_matrix(num_bands,num_bands)
     complex(kind=dp) :: catmp,wmod
 
-    logical :: have_file,lerror
-    integer :: i,j,k,nsp,nat,nbnd,counter,loop_i
+    logical :: have_file
+    integer :: i,j,nsp,nat,nbnd,counter,ierr
     integer :: loop_kpt,ik,ix,iy,iz,nk,ngx,ngy,ngz,nxx,nyy,nzz
     integer :: loop_b,nx,ny,nz,npoint,file_unit,loop_w,num_inc
     character(len=11) :: wfnname
@@ -402,11 +401,14 @@ contains
 
 200 format ('UNK',i5.5,'.',i1)
 
-    allocate(wann_func(-ngx:(ngs-1)*ngx-1,-ngy:(ngs-1)*ngy-1,-ngz:(ngs-1)*ngz-1,num_wannier_plot))
+    allocate(wann_func(-ngx:(ngs-1)*ngx-1,-ngy:(ngs-1)*ngy-1,-ngz:(ngs-1)*ngz-1,num_wannier_plot),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating wann_func in plot_wannier')
     if(have_disentangled) then
-       allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)))
+       allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier')
     end if
-    allocate(r_wvfn(ngx*ngy*ngz,num_wann))
+    allocate(r_wvfn(ngx*ngy*ngz,num_wann),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating r_wvfn in plot_wannier')
     wann_func=cmplx_0
 
 

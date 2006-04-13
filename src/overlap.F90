@@ -100,11 +100,11 @@ contains
        write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
 
        ! Read the comment line
-       read(mmn_in,'(a)') dummy
+       read(mmn_in,'(a)',err=103,end=103) dummy
        write(stdout,'(a)') trim(dummy)
 
        ! Read the number of bands, k-points and nearest neighbours
-       read(mmn_in,*) nb_tmp,nkp_tmp,nntot_tmp
+       read(mmn_in,*,err=103,end=103) nb_tmp,nkp_tmp,nntot_tmp
 
        ! Checks
        if (nb_tmp.ne.num_bands) &
@@ -119,10 +119,10 @@ contains
        allocate(mmn_tmp(num_bands,num_bands),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating mmn_tmp in overlap_read')
        do ncount = 1, num_mmn
-          read(mmn_in,*) nkp,nkp2,nnl,nnm,nnn
+          read(mmn_in,*,err=103,end=103) nkp,nkp2,nnl,nnm,nnn
           do n=1,num_bands
              do m=1,num_bands
-                read(mmn_in,*) m_real, m_imag
+                read(mmn_in,*,err=103,end=103) m_real, m_imag
                 mmn_tmp(m,n) = cmplx(m_real,m_imag,kind=dp)
              enddo
           enddo
@@ -165,11 +165,11 @@ contains
        write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
 
        ! Read the comment line
-       read(amn_in,'(a)') dummy
+       read(amn_in,'(a)',err=104,end=104) dummy
        write(stdout,'(a)') trim(dummy)
 
        ! Read the number of bands, k-points and wannier functions
-       read(amn_in,*) nb_tmp, nkp_tmp, nw_tmp
+       read(amn_in,*,err=104,end=104) nb_tmp, nkp_tmp, nw_tmp
        
        ! Checks
        if (nb_tmp.ne.num_bands) &
@@ -183,12 +183,12 @@ contains
        num_amn = num_bands*num_wann*num_kpts
        if (disentanglement) then
           do ncount = 1, num_amn
-             read(amn_in,*) m,n,nkp,a_real,a_imag
+             read(amn_in,*,err=104,end=104) m,n,nkp,a_real,a_imag
              a_matrix(m,n,nkp) = cmplx(a_real,a_imag,kind=dp)
           end do
        else
           do ncount = 1, num_amn
-             read(amn_in,*) m,n,nkp,a_real,a_imag
+             read(amn_in,*,err=104,end=104) m,n,nkp,a_real,a_imag
              u_matrix(m,n,nkp) = cmplx(a_real,a_imag,kind=dp)
           end do
        end if
@@ -210,7 +210,8 @@ contains
 return 
 101    call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn')
 102    call io_error('Error: Problem opening input file '//trim(seedname)//'.amn')
-
+103    call io_error('Error: Problem reading input file '//trim(seedname)//'.mmn')
+104    call io_error('Error: Problem reading input file '//trim(seedname)//'.amn')
 
 
   end subroutine overlap_read

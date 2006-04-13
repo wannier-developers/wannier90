@@ -193,6 +193,7 @@ contains
     implicit none
 
     !local variables
+    real(kind=dp)  :: real_lattice_tmp(3,3)
     integer :: nkp,i,j,n,k,i_temp,i_temp2,unit,loop
     logical :: found,found2,eig_found,lunits
     character(len=6) :: spin_str
@@ -442,7 +443,7 @@ contains
        open(unit=unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
        do k=1,num_kpts
           do n=1,num_bands
-             read(unit,*) i,j,eigval(i,j)
+             read(unit,*,err=106,end=106) i,j,eigval(n,k)
              if ((i.ne.n).or.(j.ne.k)) then
                 call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
              end if
@@ -515,9 +516,9 @@ contains
 
     insign=1
 
-    call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice)
+    call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     !This is a hack. I must workout what is the sensible way to read and store this jry
-    real_lattice=transpose(real_lattice)
+    real_lattice=transpose(real_lattice_tmp)
 
     if(.not. found) call io_error('Error: Did not find the cell information in the input file')
 
@@ -600,6 +601,7 @@ contains
     return
 
 105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
+106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
 
   end subroutine param_read
 
@@ -651,7 +653,7 @@ contains
 
     implicit none
 
-    integer :: i,nkp,loop,nat,nsp,ic
+    integer :: i,nkp,loop,nat,nsp
 
     ! System
     write(stdout,*)
@@ -759,8 +761,8 @@ contains
     write(stdout,'(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Total number of iterations                :',num_iter,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Number of CG steps before reset           :',num_cg_steps,'|'
-    write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :',conv_tol,'|'
-    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',conv_window,'|'
+!    write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :',conv_tol,'|'
+!    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',conv_window,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between writing output         :',num_print_cycles,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between backing up to disk     :',num_dump_cycles,'|'
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -1074,7 +1076,7 @@ contains
 
     character(len=*), intent(in) :: chkpt
 
-    integer :: chk_unit,nkp,nn,i,j
+    integer :: chk_unit,nkp,i,j
     character (len=9) :: cdate,ctime
     character (len=33) :: header
     character (len=20) :: chkpt1
@@ -1125,7 +1127,7 @@ contains
 
     implicit none
 
-    integer :: chk_unit,nkp,nn,i,j,ntmp,ierr
+    integer :: chk_unit,nkp,i,j,ntmp,ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
 
@@ -1227,7 +1229,7 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use io,        only : io_file_unit,io_error,seedname,stdout
+    use io,        only : io_file_unit,io_error,seedname
     use utility,   only : utility_lowercase
 
     implicit none
@@ -1334,8 +1336,8 @@ contains
              call io_error('Error: Problem reading logical keyword '//trim(keyword))
           endif
        endif
-       if( present(i_value) ) read(dummy,*,err=220) i_value
-       if( present(r_value) ) read(dummy,*,err=220) r_value
+       if( present(i_value) ) read(dummy,*,err=220,end=220) i_value
+       if( present(r_value) ) read(dummy,*,err=220,end=220) r_value
     end if
 
     return
@@ -1392,13 +1394,13 @@ contains
     end do
 
     if(found) then
-       if( present(c_value) ) read(dummy,*,err=230) (c_value(i),i=1,length)
+       if( present(c_value) ) read(dummy,*,err=230,end=230) (c_value(i),i=1,length)
        if( present(l_value) ) then
           ! I don't think we need this. Maybe read into a dummy charater
           ! array and convert each element to logical
        endif
-       if( present(i_value) ) read(dummy,*,err=230) (i_value(i),i=1,length)
-       if( present(r_value) ) read(dummy,*,err=230) (r_value(i),i=1,length)
+       if( present(i_value) ) read(dummy,*,err=230,end=230) (i_value(i),i=1,length)
+       if( present(r_value) ) read(dummy,*,err=230,end=230) (r_value(i),i=1,length)
     end if
 
 
@@ -1428,7 +1430,7 @@ contains
     logical          , intent(out) :: found
     integer,           intent(out)  :: length
 
-    integer           :: kl, in,loop,i,pos
+    integer           :: kl, in,loop,pos
     character(len=maxlen) :: dummy
 
     kl=len_trim(keyword)
@@ -1591,13 +1593,13 @@ contains
     do loop=line_s+1,line_e-1
        dummy=in_data(loop)
        counter=counter+1
-       if( present(c_value) ) read(dummy,*,err=240) (c_value(i,counter),i=1,columns)
+       if( present(c_value) ) read(dummy,*,err=240,end=240) (c_value(i,counter),i=1,columns)
        if( present(l_value) ) then
           ! I don't think we need this. Maybe read into a dummy charater
           ! array and convert each element to logical
        endif
-       if( present(i_value) ) read(dummy,*,err=240) (i_value(i,counter),i=1,columns)
-       if( present(r_value) ) read(dummy,*,err=240) (r_value(i,counter),i=1,columns)
+       if( present(i_value) ) read(dummy,*,err=240,end=240) (i_value(i,counter),i=1,columns)
+       if( present(r_value) ) read(dummy,*,err=240,end=240) (r_value(i,counter),i=1,columns)
     end do
 
     if (lconvert) then
@@ -1800,9 +1802,9 @@ contains
        dummy=in_data(loop)
        counter=counter+1
        if(frac) then
-          read(dummy,*,err=240) atoms_label_tmp(counter),(atoms_pos_frac_tmp(i,counter),i=1,3)
+          read(dummy,*,err=240,end=240) atoms_label_tmp(counter),(atoms_pos_frac_tmp(i,counter),i=1,3)
        else
-          read(dummy,*,err=240) atoms_label_tmp(counter),(atoms_pos_cart_tmp(i,counter),i=1,3)
+          read(dummy,*,err=240,end=240) atoms_label_tmp(counter),(atoms_pos_cart_tmp(i,counter),i=1,3)
        end if
     end do
 
@@ -2039,9 +2041,9 @@ contains
           if (index(ctemp3,'l=')==1) then
              mstate=index(ctemp3,',')
              if(mstate>0) then
-                read(ctemp3(3:mstate-1),*,err=101) l_tmp
+                read(ctemp3(3:mstate-1),*,err=101,end=101) l_tmp
              else
-                read(ctemp3(3:),*,err=101) l_tmp
+                read(ctemp3(3:),*,err=101,end=101) l_tmp
              end if
              if (l_tmp<-5 .or. l_tmp>3) call io_error('param_get_projection: Incorrect l state requested')
              if (mstate==0) then
@@ -2071,7 +2073,7 @@ contains
                    else
                       ctemp5=ctemp4(:pos3-1)
                    endif
-                   read(ctemp5(1:),*,err=102) m_tmp
+                   read(ctemp5(1:),*,err=102,end=102) m_tmp
                    if(l_tmp>=0) then
                       if ((m_tmp>2*l_tmp+1) .or. (m_tmp<=0)) call io_error('param_get_projection: m is > l !')
                    elseif (l_tmp==-1 .and. (m_tmp>2 .or. m_tmp<=0)) then
@@ -2098,7 +2100,7 @@ contains
                 else
                    ctemp4=ctemp3(:pos3-1)
                 endif
-                read(ctemp4(1:),*,err=106) m_string
+                read(ctemp4(1:),*,err=106,end=106) m_string
                 select case (trim(adjustl(m_string)))
                 case ('s')
                    ang_states(1,0)=1
@@ -2217,7 +2219,7 @@ contains
              ctemp=(dummy(pos1+2:))
              pos2=index(ctemp,':')
              if(pos2>0) ctemp=ctemp(:pos2-1)
-             read(ctemp,*,err=103) proj_box_tmp
+             read(ctemp,*,err=103,end=103) proj_box_tmp
           endif
           ! diffusivity of orbital
           pos1=index(dummy,'zona=')
@@ -2225,7 +2227,7 @@ contains
              ctemp=(dummy(pos1+2:))
              pos2=index(ctemp,':')
              if(pos2>0) ctemp=ctemp(:pos2-1)
-             read(ctemp,*,err=104) proj_zona_tmp
+             read(ctemp,*,err=104,end=104) proj_zona_tmp
           endif
           ! nodes for the radial part
           pos1=index(dummy,'r=')
@@ -2233,7 +2235,7 @@ contains
              ctemp=(dummy(pos1+2:))
              pos2=index(ctemp,':')
              if(pos2>0) ctemp=ctemp(:pos2-1)
-             read(ctemp,*,err=105) proj_radial_tmp
+             read(ctemp,*,err=105,end=105) proj_radial_tmp
           endif
        end if
        if(sites==-1) then
@@ -2373,7 +2375,7 @@ contains
 
        counter=counter+2
        dummy=in_data(loop)
-       read(dummy,*,err=240) bands_label(counter-1),(bands_spec_points(i,counter-1),i=1,3)&
+       read(dummy,*,err=240,end=240) bands_label(counter-1),(bands_spec_points(i,counter-1),i=1,3)&
             ,bands_label(counter),(bands_spec_points(i,counter),i=1,3)
     end do
 

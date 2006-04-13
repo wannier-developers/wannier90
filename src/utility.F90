@@ -376,13 +376,13 @@ contains
     pos=index(ctemp,',')
     if(pos<=0) call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
     ctemp2=ctemp(1:pos-1)
-    read(ctemp2,*,err=100) outvec(1)
+    read(ctemp2,*,err=100,end=100) outvec(1)
     ctemp=ctemp(pos+1:)
     pos=index(ctemp,',')
     ctemp2=ctemp(1:pos-1)
-    read(ctemp2,*,err=100) outvec(2)
+    read(ctemp2,*,err=100,end=100) outvec(2)
     ctemp=ctemp(pos+1:)
-    read(ctemp,*,err=100) outvec(3)
+    read(ctemp,*,err=100,end=100) outvec(3)
 
     return
 
