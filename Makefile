@@ -29,7 +29,7 @@ dist:
 		./tests/test*/wannier.win \
 		./tests/test*/des.dat \
 		./tests/test*/wannier.eig \
-		./tests/test*/wannier.*mn \
+		./tests/test*/wannier.?mn \
 		./examples/*/wannier.eig \
 		./tests/test*/stnd* \
 		./examples/*/wannier.win \
