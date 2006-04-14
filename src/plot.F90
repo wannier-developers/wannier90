@@ -146,7 +146,7 @@ contains
     if (ierr/=0) call io_error('Error in allocating eig_int in plot_interpolate_bands')
     allocate(glabel(num_spts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating num_spts in plot_interpolate_bands')
-    eig_val=0.0_dp
+    eig_int=0.0_dp
     !
     ! Find the position of each kpoint in the path
     !
