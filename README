@@ -1,0 +1,63 @@
+                       =========
+                       WANNIER90
+                       =========                            
+                                                            
+ The Maximally-Localised Generalised Wannier Functions Code 
+                                                            
+ Authors:  Arash A. Mostofi   (MIT)                      
+           Jonathan R. Yates  (LBNL and UC Berkeley)     
+ Wannier90 is based on routines written by 
+           Nicola Marzari, Ivo Souza, David Vanderbilt     
+
+ website:  http://www.wannier.org
+
+
+Directory Structure
+
+doc/        Documentation including the user guide and a tutorial
+examples/   Sample calculations from the tutorial
+src/        The Wannier90 source code
+tests/      A set of tests to check Wannier90 is installed correctly
+config/     Example make.sys for many platforms
+
+For Installation Instructions see README.install
+Further information can be found in the user guide and tutorial
+                                                         
+ Please cite                                             
+                                                         
+ [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza  
+       and D. Vanderbilt, http://www.wannier.org/        
+  in any publications arising from the use of this code.  
+
+ For the method please cite 
+
+ [ref] "Maximally Localized Generalised Wannier
+        Functions for Composite Energy Bands"     
+        N. Marzari and D. Vanderbilt              
+        Phys. Rev. B 56 12847 (1997)              
+                                                  
+ [ref] "Maximally Localized Wannier Functions 
+        for Entangled Energy Bands"
+        I. Souza, N. Marzari and D. Vanderbilt    
+        Phys. Rev. B 65 035109 (2001)             
+                                                         
+
+
+
+ Copyright (C) 1997-2006 Jonathan Yates, Arash Mostofi,     
+            Nicola Marzari, Ivo Souza, David Vanderbilt     
+
+All the material included in this distribution is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+ 
+These programs are distributed in the hope that they will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+for more details.
+ 
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+675 Mass Ave, Cambridge, MA 02139, USA.
+
