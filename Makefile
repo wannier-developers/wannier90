@@ -32,7 +32,8 @@ dist:
 		./tests/test*/wannier.?mn \
 		./examples/*/wannier.eig \
 		./tests/test*/stnd* \
-		./examples/*/wannier.win \
+		./examples/*/*.win \
+		./examples/*/*.eig \
 		./examples/*/old* \
 		./examples/*/new* \
                 ./examples/*/*.*mn \
@@ -44,6 +45,8 @@ dist:
                 ./spec/*.fig \
 		./*/Makefile \
 		./Makefile \
+		./LICENCE \
+		./README.* \
         | gzip -c > \
                 ./wannier90.tar.gz)
 
@@ -62,6 +65,8 @@ dist-lite:
 		./config/* \
 		./*/Makefile \
 		./Makefile \
+		./LICENCE \
+		./README.* \
 	| gzip -c > \
 		./wannier90.tar.gz)
 
