@@ -1,0 +1,129 @@
+                       =========
+                       WANNIER90
+                       =========                            
+                                                            
+ The Maximally-Localised Generalised Wannier Functions Code 
+
+
+
+ INSTALLATION
+ ------------
+
+ Requirements: A Fortran 95 compiler (most f90 compilers are really f95)
+               LAPACK and BLAS libraries
+
+ Configuration:
+   The system dependant parameters (eg compiler name) are contained in a file
+   called 'make.sys'. Sample files may be found in the ./config/ directory.
+   Choose one that is nearest to your setup and copy it to make.sys. You may 
+   need to edit it, for example to give the correct library path for your 
+   machine.
+   
+    On a linux system with the intel compiler build Wannier90 by typing
+
+         cp ./config/make.sys.intel ./make.sys
+         make 
+
+   Options to make include:
+
+   make wannier    (default) build the wannier90 executable
+   make test       run test cases
+   make doc        build the documentation
+   make dist       make a tar-ball of the distribution
+   make dist-lite  make a tar-ball of the src and tests only
+   make clean      remove object files etc
+
+ 
+ Compiler: If your operating system came with a Fortran compiler or you have a
+ commercial compiler (such as ifort) this should give the best performance.
+ The g95 compiler is available for many operating systems (inc Windows) and 
+ should give 50% - 75% the performance of the commercial compilers. 
+ http://www.g95.org We used g95 a lot when writing Wannier90. 
+ It's a really good compiler to develop code with.
+  
+ Libraries: For Wannier90 to perform well a well optimised BLAS library should
+ be used. Many commercial operating systems and compilers provide well optimised
+ BLAS libraries.
+  ATLAS is one of the fastest implementations
+     http://math-atlas.sourceforge.net/
+  GOTO BLAS provides optimised routines for many architecture
+     http://www.tacc.utexas.edu/resources/software/
+  ACML AMD provides optimised BLAS for AMD processors 
+    http://developer.amd.com/acml.aspx  
+  LAPACK can be obtained from
+     http://www.netlib.org/lapack/
+     
+
+Linux x86,x86-64
+----------------
+
+  1- make.sys.intel
+     Compiler:  Intel (ifc,ifort,iforte)
+     Libraries: Intel mkl
+                (ATLAS BLAS is faster for AMD processors) 
+
+  2- make.sys.pathscale
+     Compiler:  Pathscale (pathf90)
+     Libraries: acml 
+
+  3- make.sys.nag   
+     Compiler:  NAG (f95)
+     Libraries: ATLAS + LAPACK
+ [note in our experience the NAG compiler does not produce well optimised code]
+
+
+Generic: Most architectures
+---------------------------
+  1- make.sys.g95
+     Compiler: g95
+     Libraries: ATLAS + LAPACK
+
+
+Alpha/HP/Compaq/DEC Tru64 UNIX
+------------------------------
+
+   1- make.sys.alpha
+      Compiler: f90
+      Libraries: cxml
+
+Sun / Solaris  (sparc or x86)
+----------------------------
+
+   1- make.sys.sun
+      Compiler: f95
+      Libraries: sunperf
+
+IBM PowerPC/power series. Linux or AIX
+--------------------------------------
+
+  1- make.sys.xlf
+     Compiler:  xlf95
+     Libraries: ESSL + LAPACK
+       Note: ESSL does not provide a complete lapack installation.
+         If your machine does not have a full LAPACK install, 
+         download the netlib LAPACK plus the essl wrappers
+         from http://www.netlib.org/lapack/essl/
+
+Windows
+-------
+ There are many commercial Fortran compilers for windows.
+ We haven't included make.sys files for these as we don't 
+ have access to them. Wannier90 should compile just fine.
+
+ I use cygwin (http://www.cygwin.com/) which provides a bash shell.
+
+  1- make.sys.cygwin
+     Compiler: g95
+     Libraries: LAPACK and ATLAS (cygwin comes with a lapack and blas library,
+     but I think they have been compiled with g77. I had problems making 
+     a working executable. I suggest building your own)
+
+ 2- make.sys.ftn95
+    Compiler: Salford Fortran (ftn95) [the personal edition is 'free'
+     http://www.silverfrost.com/32/ftn95/ftn95_personal_edition.asp ]
+    Libraries: LAPACK and ATLAS
+
+ 3- make.sys.pgf90
+    Compiler: Portland Group (pgf90)
+    Libaries: pg supplies lapacl and blas
+ 
