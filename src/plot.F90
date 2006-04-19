@@ -371,12 +371,12 @@ contains
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
          atoms_label,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
-         wannier_plot_mode
+         wannier_plot_mode,wvfn_formatted
 
     implicit none
 
     real(kind=dp) :: scalfac,tmax,tmaxx,x_0ang,y_0ang,z_0ang
-    real(kind=dp) :: fxcry(3),dirl(3,3)
+    real(kind=dp) :: fxcry(3),dirl(3,3),w_real,w_imag
     complex(kind=dp), allocatable :: wann_func(:,:,:,:)
     complex(kind=dp), allocatable :: r_wvfn(:,:)
     complex(kind=dp), allocatable :: r_wvfn_tmp(:,:)
@@ -396,8 +396,13 @@ contains
     if(.not.have_file) call io_error('plot_wannier: file '//wfnname//' not found') 
 
     file_unit=io_file_unit()
-    open(unit=file_unit,file=wfnname,form='unformatted')
-    read(file_unit) ngx,ngy,ngz,nk,nbnd
+    if(wvfn_formatted) then
+       open(unit=file_unit,file=wfnname,form='formatted')
+       read(file_unit,*) ngx,ngy,ngz,nk,nbnd
+    else
+       open(unit=file_unit,file=wfnname,form='unformatted')
+       read(file_unit) ngx,ngy,ngz,nk,nbnd
+    end if
     close(file_unit)
 
 200 format ('UNK',i5.5,'.',i1)
@@ -425,8 +430,13 @@ contains
 
        write(wfnname,200 ) loop_kpt,spin
        file_unit=io_file_unit()
-       open(unit=file_unit,file=wfnname,form='unformatted')
-       read(file_unit) ix,iy,iz,ik,nbnd
+      if(wvfn_formatted) then
+          open(unit=file_unit,file=wfnname,form='formatted')
+          read(file_unit,*) ix,iy,iz,ik,nbnd
+       else
+          open(unit=file_unit,file=wfnname,form='unformatted')
+          read(file_unit) ix,iy,iz,ik,nbnd
+       end if
 
        if ( (ix/=ngx) .or. (iy/=ngy) .or. (iz/=ngz) .or. (ik/=loop_kpt) ) then
           write(stdout,'(1x,a,a)') 'WARNING: mismatch in file',trim(wfnname)
@@ -439,12 +449,26 @@ contains
           counter=1
           do loop_b=1,num_bands
              if(counter>num_inc) exit
-             read(file_unit) (r_wvfn_tmp(nx,counter),nx=1,ngx*ngy*ngz)
+             if(wvfn_formatted) then
+                do nx=1,ngx*ngy*ngz
+                  read(file_unit,*) w_real, w_imag
+                  r_wvfn_tmp(nx,counter) = cmplx(w_real,w_imag,kind=dp)
+                end do
+             else
+                read(file_unit) (r_wvfn_tmp(nx,counter),nx=1,ngx*ngy*ngz)
+             end if
              if(inc_band(loop_b)) counter=counter+1
           end do
        else
           do loop_b=1,num_bands 
-             read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+             if(wvfn_formatted) then
+               do nx=1,ngx*ngy*ngz
+                  read(file_unit,*) w_real, w_imag
+                  r_wvfn(nx,loop_b) = cmplx(w_real,w_imag,kind=dp)
+                end do
+             else
+                read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+             end if
           end do
        end if
 
