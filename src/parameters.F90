@@ -2147,12 +2147,16 @@ contains
                 select case (trim(adjustl(m_string)))
                 case ('s')
                    ang_states(1,0)=1
+                case ('p')
+                   ang_states(1:3,1)=1
                 case ('pz')
                    ang_states(1,1)=1
                 case ('px')
                    ang_states(2,1)=1
                 case ('py')
                    ang_states(3,1)=1
+                case ('d')
+                   ang_states(1:5,2)=1
                 case ('dz2')
                    ang_states(1,2)=1
                 case ('dxz')
@@ -2163,6 +2167,8 @@ contains
                    ang_states(4,2)=1
                 case ('dxy')
                    ang_states(5,2)=1
+                case ('f')
+                   ang_states(1:7,3)=1
                 case ('fz2')
                    ang_states(1,3)=1
                 case ('fxz2')
