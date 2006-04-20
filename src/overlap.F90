@@ -377,7 +377,7 @@ return
           if (info.lt.0) then  
              write(stdout,*) ' THE ',  -info, '-TH ARGUMENT HAD ILLEGAL VALUE'  
           endif
-          call io_error('DISENTANGLE: Error in ZGESVD in overlap_project')
+          call io_error('Error in ZGESVD in overlap_project')
        endif
 
 !       u_matrix(:,:,nkp)=matmul(cz,cvdag)
