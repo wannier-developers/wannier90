@@ -1,18 +1,45 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,
-!            Nicola Marzari, Ivo Souza, David Vanderbilt
-!
-! This file is distributed under the terms of the
-! GNU General Public License. See the file `License'
-! in the root directory of the present distribution,
-! or http://www.gnu.org/copyleft/gpl.txt .
-!
-!----------------------------------------------------------------------
+!                                                            !
+!                       WANNIER90                            !
+!                                                            !
+!          The Maximally-Localised Generalised               !
+!                Wannier Functions Code                      !
+!                                                            !
+!        Authors:                                            !
+!              Arash A. Mostofi   (MIT)                      !
+!              Jonathan R. Yates  (LBNL and UC Berkeley)     !
+!                                                            !
+!  Please cite                                               !
+!                                                            !
+!  [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza    !
+!        and D. Vanderbilt, http://www.wannier.org/          !
+!                                                            !
+!  in any publications arising from the use of this code.    !
+!                                                            !
+!  Wannier90 is based on routines written by N. Marzari,     !
+!  I. Souza and D. Vanderbilt. For the method please cite    !
+!                                                            !
+!  [ref] N. Marzari and D. Vanderbilt,                       !
+!        Phys. Rev. B 56 12847 (1997)                        !
+!                                                            !
+!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
+!        Phys. Rev. B 65 035109 (2001)                       !
+!                                                            !
+!                                                            !
+! Copyright (C) 1997-2006 Jonathan Yates, Arash Mostofi,     !
+!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+!                                                            !
+! This file is distributed under the terms of the            !
+! GNU General Public License. See the file `License'         !
+! in the root directory of the present distribution,         !
+! or http://www.gnu.org/copyleft/gpl.txt .                   !
+!                                                            !
+!------------------------------------------------------------!
 
 module disentangle
 
   use constants, only: dp,twopi,cmplx_i,cmplx_0,cmplx_1
-  use io, only: io_error,stdout
+  use io, only: io_error,stdout,io_stopwatch
   use parameters
 
   implicit none
@@ -31,10 +58,7 @@ module disentangle
   integer, allocatable   :: indxfroz(:,:)
   integer, allocatable   :: indxnfroz(:,:)
   
-
-
   public :: dis_main
-
 
 contains
 
@@ -50,56 +74,38 @@ contains
 
 
     ! internal variables
-    integer :: nkp,nn,i,j,m,n,l
-    integer :: nkp2,info,ierr
+    integer                       :: nkp,nkp2,nn,j,ierr
+    complex(kind=dp), allocatable :: cwb(:,:),cww(:,:)
 
-    complex(kind=dp) :: ctmp
-    complex(kind=dp), allocatable :: cmtmp(:,:)
-    complex(kind=dp), allocatable :: caa(:,:,:)
-
-    ! For ZGESVD
-    real(kind=dp),    allocatable :: svals(:)
-    real(kind=dp),    allocatable :: rwork(:)
-    complex(kind=dp), allocatable :: cv(:,:)
-    complex(kind=dp), allocatable :: cz(:,:)
-    complex(kind=dp), allocatable :: cwork(:)
 
     write(stdout,'(/1x,a)') &
          '*------------------------------- DISENTANGLE --------------------------------*'
 
+    ! Allocate arrays
     allocate(eigval_opt(num_bands,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating eigval_opt in dis_main')
     eigval_opt=eigval
+    allocate(clamp(num_bands,num_wann,num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating clamp in dis_main')
 
 
     ! Set up energy windows
+!    call io_stopwatch('dis:windows',1)
     call dis_windows()
+!    call io_stopwatch('dis:windows',2)
 
-
-    ! Allocate arrays
-    allocate(clamp(num_bands,num_bands,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating clamp in dis_main')
-    allocate(cmtmp(num_bands,num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating cmtmp in dis_main')
-    allocate(caa(num_bands,num_bands,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating caa in dis_main')
     
-    ! here we construct the U (unitarized projection) as described above
-    write(stdout,'(/1x,a)') &
-         '                  Unitarised projection of Wannier functions                  '
-    write(stdout,'(1x,a)') &
-         '                  ------------------------------------------                  '
-    write(stdout,'(3x,a)') 'A_mn = <psi_m|g_n> --> S = A.A^+ --> U = S^-1/2.A'
-    write(stdout,'(3x,a)',advance='no') 'In dis_project...' 
+    ! Construct the unitarized projection
+!    call io_stopwatch('dis:project',1)
     call dis_project()
-    write(stdout,'(a)') ' done'
+!    call io_stopwatch('dis:project',2)
  
 
+    ! Copy projections to clamp
+    clamp=cmplx_0
     do nkp = 1, num_kpts  
-       do j = 1, num_wann  
-          do i = 1, ndimwin(nkp)  
-             clamp(i,j,nkp) = u_matrix_opt(i,j,nkp)  
-          enddo
+       do j = 1, num_wann
+          clamp(1:ndimwin(nkp),j,nkp)=u_matrix_opt(1:ndimwin(nkp),j,nkp)
        enddo
     enddo
 
@@ -108,80 +114,24 @@ contains
     ! (Sec. III.G SMV)
     if (linner) then
        write(stdout,'(3x,a)') 'Using an inner window (linner = T)'  
-       write(stdout,'(3x,a)',advance='no') 'In dis_proj_froz...' 
+!       call io_stopwatch('dis:proj_froz',1)
        call dis_proj_froz()
-       write(stdout,'(a)') ' done'
+!       call io_stopwatch('dis:proj_froz',2)
     else
        write(stdout,'(3x,a)') 'No inner window (linner = F)'         
     endif
 
 
-    ! DEBUG
-    ! check that the states in the columns of the final matrix clamp are ort
-    ! at every k-point (i.e., that the matrix is unitary in the sense that
-    ! conjg(lamp) . lamp = 1 - but not lamp . conjg(lamp) = 1 - )
-    ! In particular, this checks whether the projected gaussians are indeed
-    ! orthogonal to the frozen states, at those k-points where both are pres
-    ! the trial subspace.
-    do nkp = 1, num_kpts  
-       do l = 1, num_wann  
-          do m = 1, l  
-             ctmp = cmplx_0
-             do j = 1, ndimwin(nkp)  
-                ctmp = ctmp + conjg(clamp(j,m,nkp)) * clamp(j,l,nkp)
-             enddo
-             if (l.eq.m) then  
-                if (abs(ctmp - cmplx_1).gt.1.0e-8_dp) then  
-                   write(stdout,*) ' *** ERROR ***'  
-                   write(stdout,*) ' projected gaussians in clamp not orthonormal'
-                   write(stdout,'(a11,i4)') ' at k-point ', nkp  
-                   write(stdout,'(i2,2x,i2,f16.12,1x,f16.12)') l, m, ctmp  
-                   call io_error('dis_main: orthonormal error 1') 
-                endif
-             else  
-                if (abs(ctmp).gt.1.0e-8_dp) then  
-                   write(stdout,*) ' *** ERROR ***'  
-                   write(stdout,*) ' projected gaussians in clamp not orthonormal'
-                   write(stdout,'(a11,i4)') ' at k-point ', nkp  
-                   write(stdout,'(i2,2x,i2,f16.12,1x,f16.12)') l, m, ctmp  
-                   call io_error('dis_main: orthonormal error 2') 
-                endif
-             endif
-          enddo
-       enddo
-    enddo
-    ! ENDDEBUG
+    ! Debug
+!    call io_stopwatch('dis:debug',1)
+    call internal_check_orthonorm()
+!    call io_stopwatch('dis:debug',2)
 
 
-!!$    write(stdout,'(1x,a)') &
-!!$         '+----------------------------------------------------------------------------+'
-
-
-    ! Slim down the original overlap matrices, removing rows and columns
-    ! corresponding to u_nks that fall outside the outer energy window
-    do nkp = 1, num_kpts  
-       do nn = 1, nntot  
-          nkp2 = nnlist(nkp,nn)  
-          do i = 1, ndimwin(nkp)  
-             do j = 1, ndimwin(nkp2)  
-                m = nfirstwin(nkp) + i - 1  
-                n = nfirstwin(nkp2) + j - 1  
-                cmtmp(i,j) = m_matrix_orig(m,n,nn,nkp)  
-             enddo
-          enddo
-          m_matrix_orig(:,:,nn,nkp) = cmplx_0
-!          do i = 1, num_bands  
-!             do j = 1, num_bands  
-!                m_matrix_orig(i,j,nkp,nn) = cmplx_0
-!             enddo
-!          enddo
-          do i = 1, ndimwin(nkp)  
-             do j = 1, ndimwin(nkp2)  
-                m_matrix_orig(i,j,nn,nkp) = cmtmp(i,j)  
-             enddo
-          enddo
-       enddo
-    enddo
+    ! Slim down the original Mmn(k,b)
+!    call io_stopwatch('dis:slim',1)
+    call internal_slim_m()
+!    call io_stopwatch('dis:slim',2)
 
 
     lwindow=.false.
@@ -192,187 +142,291 @@ contains
     end do
 
 
-
     ! Extract the optimally-connected num_wann-dimensional subspaces
-    write(stdout,'(/1x,a)') &
-         '                  Extraction of optimally-connected subspace                  '
-    write(stdout,'(1x,a)') &
-         '                  ------------------------------------------                  '
+!    call io_stopwatch('dis:extract',1)
     call dis_extract()
-    write(stdout,'(1x,a/)') &
-         '+----------------------------------------------------------------------------+'
+!    call io_stopwatch('dis:extract',2)
 
+    ! Allocate workspace
+    allocate(cwb(num_wann,num_bands),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cwb in dis_main')
+    allocate(cww(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cww in dis_main')
 
-    ! Find the num_wann x num_wann overlap matrices between the basis states of
-    ! the optimal subspaces
+    ! Find the num_wann x num_wann overlap matrices between 
+    ! the basis states of the optimal subspaces
+!    call io_stopwatch('dis:rotate1',1)
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
           nkp2 = nnlist(nkp,nn)
-          do i = 1, num_wann  
-             do j = 1, num_wann  
-                cmtmp(i,j) = cmplx_0
-                do m = 1, ndimwin(nkp)  
-                   do n = 1, ndimwin(nkp2)  
-                      cmtmp(i,j) = cmtmp(i,j) + conjg(clamp(m,i,nkp)) &
-                           * m_matrix_orig(m,n,nn,nkp) * clamp(n,j,nkp2)
-                   enddo
-                enddo
-             enddo
-          enddo
-          m_matrix_orig(:,:,nn,nkp) = cmplx_0
-!          do i = 1, num_bands  
-!             do j = 1, num_bands  
-!                m_matrix_orig(i,j,nkp,nn) = cmplx_0
-!             enddo
-!          enddo
-          do i = 1, num_wann  
-             do j = 1, num_wann  
-                m_matrix_orig(j,i,nn,nkp) = cmtmp(j,i)  
-             enddo
-          enddo
+          call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
+               clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,&
+               cmplx_0,cwb,num_wann)
+          call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
+               cwb,num_wann,clamp(:,:,nkp2),num_bands,&
+               cmplx_0,cww,num_wann)
+          m_matrix_orig(1:num_wann,1:num_wann,nn,nkp) = cww(:,:)
        enddo
     enddo
-    
-    ! Allocate arrays needed for ZGESVD
-    allocate(svals(num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating svals in dis_main')
-    allocate(rwork(5*num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating rwork in dis_main')
-    allocate(cv(num_bands,num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating cv in dis_main')
-    allocate(cz(num_bands,num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating cz in dis_main')
-    allocate(cwork(4*num_bands),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating cwork in dis_main')
-    
-    ! Find the initial guess for the square unitary rotation matrix cu. The
-    ! is similar to Sec. III.D of SMV, but with square instead of rectangula
-    ! matrices:
-    do nkp = 1, num_kpts  
-       ! First find caa, the square overlap matrix <psitilde_nk|g_m>, where psi
-       ! eigenstate of the optimal subspace. Note that, contrary to what is imp
-       ! in Sec. III.E of SMV, this does *not* need to be computed by brute for
-       ! instead we take advantage of the previous computation of overlaps with
-       ! the same gaussians that was used to initiate the minimization of Omega
-       ! note: |psi> clamp = |psitilde> and obviously <psitilde| = clamp^dagger
-       do j = 1, num_wann  
-          do i = 1, num_wann  
-             caa(i,j,nkp) = cmplx_0
-             do l = 1, ndimwin(nkp)  
-                caa(i,j,nkp) = caa(i,j,nkp) &
-                     + conjg(clamp(l,i,nkp)) * a_matrix(l,j,nkp)
-             enddo
-          enddo
-       enddo
-       
-       ! Singular-value decomposition
-       call ZGESVD ('A', 'A', num_wann, num_wann, caa(1,1,nkp), num_bands, &
-            svals, cz, num_bands, cv, num_bands, cwork, 4*num_bands, rwork, info)
-       if (info.ne.0) then  
-          write(stdout,*) ' ERROR: IN ZGESVD IN dis_main'  
-          write(stdout,*) 'K-POINT NKP=', nkp, ' INFO=', info  
-          if (info.lt.0) then  
-             write(stdout,*) 'THE ',  -info, '-TH ARGUMENT HAD ILLEGAL VALUE'  
-          endif
-          call io_error('dis_main: problem in ZGESVD 1')  
-       endif
-       
-       ! cu is the initial guess for the unitary rotation of the basis states g
-       ! out by the subroutine extract
-       do j = 1, num_wann  
-          do i = 1, num_wann  
-             u_matrix(i,j,nkp) = cmplx_0
-             do l = 1, num_wann  
-                u_matrix(i,j,nkp) = u_matrix(i,j,nkp) + cz(i,l) * cv(l,j) 
-             enddo
-          enddo
-       enddo
-    enddo
-    ! loop over k
-    
-    ! so now we have the U's that rotate the wavefunctions at each k-point.
-    ! the matrix elements M_ij have also to be updated
+!    call io_stopwatch('dis:rotate1',2)
+
+    ! Find the initial u_matrix
+!    call io_stopwatch('dis:find_u',1)
+    call internal_find_u()
+!    call io_stopwatch('dis:find_u',2)
+
+    ! Update the m_matrix accordingly
+!    call io_stopwatch('dis:rotate2',1)
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
-          nkp2 = nnlist(nkp,nn)  
-          do i = 1, num_wann  
-             do j = 1, num_wann  
-                cmtmp(i,j) = cmplx_0
-                do m = 1, num_wann  
-                   do n = 1, num_wann  
-                      cmtmp(i,j) = cmtmp(i,j) &
-                           + conjg(u_matrix(m,i,nkp)) * u_matrix(n,j,nkp2) &
-                           * m_matrix_orig(m,n,nn,nkp)
-                   enddo
-                enddo
-             enddo
-          enddo
-          do i = 1, num_wann  
-             do j = 1, num_wann  
-                m_matrix(i,j,nn,nkp) = cmtmp(i,j)  
-             enddo
-          enddo
+          nkp2 = nnlist(nkp,nn)
+          call zgemm('C','N',num_wann,num_wann,num_wann,cmplx_1,&
+               u_matrix(:,:,nkp),num_wann,m_matrix_orig(:,:,nn,nkp),num_bands,&
+               cmplx_0,cwb,num_wann)
+          call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
+               cwb,num_wann,u_matrix(:,:,nkp2),num_wann,&
+               cmplx_0,cww,num_wann)
+          m_matrix(:,:,nn,nkp) = cww(:,:)
        enddo
     enddo
+!    call io_stopwatch('dis:rotate2',2)
 
-!    eigval_opt=0.0_dp
-!    ! Copy the eigenvalues in the optimal space to eigval_opt (for plotting etc)
-!    do nkp=1,num_kpts
-!       do i=1,num_wann
-!          eigval_opt(i,nkp)=eigval(i,nkp)
-!       enddo
-!    enddo
+    ! Deallocate workspace
+    deallocate(cww,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cww in dis_main')
+    deallocate(cwb,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cwb in dis_main')
 
     u_matrix_opt=cmplx_0
-
     do nkp = 1, num_kpts  
        do j = 1, num_wann  
-          do i = 1, ndimwin(nkp)  
-             u_matrix_opt(i,j,nkp)  = clamp(i,j,nkp) 
-          enddo
+          u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp) 
        enddo
     enddo
 
-
-
-
-    ! Deallocate arrays for ZGESVD
-    deallocate(cwork,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating cwork in dis_main')
-    deallocate(cz,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating cz in dis_main')
-    deallocate(cv,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating cv in dis_main')
-    deallocate(rwork,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating rwork in dis_main')
-    deallocate(svals,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating svals in dis_main')
-
-    ! Deallocate module arrays allocated in dis_windows
-    deallocate(lfrozen,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating lfrozen in dis_main')
-    deallocate(indxnfroz,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating indxnfroz in dis_main')
-    deallocate(indxfroz,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating indxfroz in dis_main')
-    deallocate(ndimfroz,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating ndimfroz in dis_main')
-    deallocate(nfirstwin,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating nfirstwin in dis_main')
-
-    ! Deallocate arrays allocated in dis_main
-    deallocate(caa,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating caa in dis_main')
-    deallocate(cmtmp,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating cmtmp in dis_main')
-    deallocate(clamp,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating clamp in dis_main')
-
-    deallocate(eigval_opt,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating eigval_opt in dis_main')
+    ! Deallocate module arrays
+    call internal_dealloc()
 
 
     return
+
+
+  contains
+
+
+    !================================================================!
+    subroutine internal_check_orthonorm()
+    !================================================================!
+    !                                                                !
+    ! This subroutine checks that the states in the columns of the   !
+    ! final matrix clamp are orthonormal at every k-point, i.e.,     !
+    ! that the matrix is unitary in the sense that                   !
+    ! conjg(clamp).clamp = 1  (but not  clamp.conjg(clamp) = 1).     !
+    !                                                                !
+    ! In particular, this checks whether the projected gaussians     !
+    ! are indeed orthogonal to the frozen states, at those k-points  !
+    ! where both are present in the trial subspace.                  !
+    !                                                                !
+    !================================================================!
+
+      implicit none
+
+      integer          :: nkp,l,m,j
+      complex(kind=dp) :: ctmp
+
+      do nkp = 1, num_kpts  
+         do l = 1, num_wann  
+            do m = 1, l  
+               ctmp = cmplx_0
+               do j = 1, ndimwin(nkp)  
+                  ctmp = ctmp + conjg(clamp(j,m,nkp)) * clamp(j,l,nkp)
+               enddo
+               if (l.eq.m) then  
+                  if (abs(ctmp - cmplx_1).gt.1.0e-8_dp) then  
+                     write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
+                     call io_error('Error in dis_main: orthonormal error 1') 
+                  endif
+               else  
+                  if (abs(ctmp).gt.1.0e-8_dp) then  
+                     write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
+                     call io_error('Error in dis_main: orthonormal error 2') 
+                  endif
+               endif
+            enddo
+         enddo
+      enddo
+
+      return
+
+    end subroutine internal_check_orthonorm
+
+
+    !================================================================!
+    subroutine internal_slim_m()
+    !================================================================!
+    !                                                                !
+    ! This subroutine slims down the original Mmn(k,b), removing     !
+    ! rows and columns corresponding to u_nks that fall outside      !
+    ! the outer energy window                                        !
+    !                                                                !
+    !================================================================!
+      
+      implicit none
+      
+      integer                       :: nkp,nkp2,nn,i,j,m,n,ierr
+      complex(kind=dp), allocatable :: cmtmp(:,:)
+      
+      allocate(cmtmp(num_bands,num_bands),stat=ierr)
+      
+      if (ierr/=0) call io_error('Error in allocating cmtmp in dis_main')
+      do nkp = 1, num_kpts  
+         do nn = 1, nntot  
+            nkp2 = nnlist(nkp,nn)  
+            do j = 1, ndimwin(nkp2)  
+               n = nfirstwin(nkp2) + j - 1  
+               do i = 1, ndimwin(nkp)  
+                  m = nfirstwin(nkp) + i - 1  
+                  cmtmp(i,j) = m_matrix_orig(m,n,nn,nkp)  
+               enddo
+            enddo
+            m_matrix_orig(:,:,nn,nkp) = cmplx_0
+            do j = 1, ndimwin(nkp2)  
+               do i = 1, ndimwin(nkp)  
+                  m_matrix_orig(i,j,nn,nkp) = cmtmp(i,j)  
+               enddo
+            enddo
+         enddo
+      enddo
+      
+      deallocate(cmtmp,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cmtmp in dis_main')
+      
+      return
+      
+    end subroutine internal_slim_m
+
+
+    !================================================================!
+    subroutine internal_find_u()
+    !================================================================!
+    !                                                                !
+    ! This subroutine finds the initial guess for the square unitary ! 
+    ! rotation matrix u_matrix. The method is similar to Sec. III.D  !
+    ! of SMV, but with square instead of rectangular matrices:       !
+    !                                                                !
+    ! First find caa, the square overlap matrix <psitilde_nk|g_m>,   !
+    ! where psitilde is an eigenstate of the optimal subspace.       !
+    !                                                                !
+    ! Note that, contrary to what is implied in Sec. III.E of SMV,   !
+    ! this does *not* need to be computed by brute: instead we take  !
+    ! advantage of the previous computation of overlaps with the     !
+    ! same projections that are used to initiate the minimization of ! 
+    ! Omega.                                                         !
+    !                                                                !
+    ! Note: |psi> clamp = |psitilde> and obviously                   !
+    ! <psitilde| = clamp^dagger <psi|                                !
+    !                                                                !
+    !================================================================!
+
+      implicit none
+
+      integer                       :: nkp,info,ierr
+      complex(kind=dp), allocatable :: caa(:,:,:)
+      ! For ZGESVD
+      real(kind=dp),    allocatable :: svals(:)
+      real(kind=dp),    allocatable :: rwork(:)
+      complex(kind=dp), allocatable :: cv(:,:)
+      complex(kind=dp), allocatable :: cz(:,:)
+      complex(kind=dp), allocatable :: cwork(:)
+
+      ! Allocate arrays needed for ZGESVD
+      allocate(svals(num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating svals in dis_main')
+      allocate(rwork(5*num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating rwork in dis_main')
+      allocate(cv(num_wann,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating cv in dis_main')
+      allocate(cz(num_wann,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating cz in dis_main')
+      allocate(cwork(4*num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating cwork in dis_main')
+      allocate(caa(num_wann,num_wann,num_kpts),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating caa in dis_main')
+      
+      do nkp = 1, num_kpts  
+         call zgemm('C','N',num_wann,num_wann,ndimwin(nkp),cmplx_1,&
+              clamp(:,:,nkp),num_bands,a_matrix(:,:,nkp),num_bands,&
+              cmplx_0,caa(:,:,nkp),num_wann)
+         ! Singular-value decomposition
+         call ZGESVD ('A', 'A', num_wann, num_wann, caa(:,:,nkp), num_wann, &
+              svals, cz, num_wann, cv, num_wann, cwork, 4*num_wann, rwork, info)
+         if (info.ne.0) then  
+            write(stdout,*) ' ERROR: IN ZGESVD IN dis_main'  
+            write(stdout,*) 'K-POINT NKP=', nkp, ' INFO=', info  
+            if (info.lt.0) then  
+               write(stdout,*) 'THE ',  -info, '-TH ARGUMENT HAD ILLEGAL VALUE'  
+            endif
+            call io_error('dis_main: problem in ZGESVD 1')  
+         endif
+         ! u_matrix is the initial guess for the unitary rotation of the 
+         ! basis states given by the subroutine extract
+         call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
+              cz,num_wann,cv,num_wann,cmplx_0,u_matrix(:,:,nkp),num_wann)
+      enddo
+      
+      ! Deallocate arrays for ZGESVD
+      deallocate(caa,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating caa in dis_main')
+      deallocate(cwork,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cwork in dis_main')
+      deallocate(cz,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cz in dis_main')
+      deallocate(cv,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cv in dis_main')
+      deallocate(rwork,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating rwork in dis_main')
+      deallocate(svals,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating svals in dis_main')
+
+
+      return
+
+    end subroutine internal_find_u
+
+
+    !==================================!
+    subroutine internal_dealloc()
+    !==================================!
+    !                                  !
+    !                                  !
+    !==================================!
+
+      implicit none
+
+      integer :: ierr
+
+      ! Module arrays allocated in dis_windows
+      deallocate(lfrozen,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating lfrozen in dis_main')
+      deallocate(indxnfroz,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating indxnfroz in dis_main')
+      deallocate(indxfroz,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating indxfroz in dis_main')
+      deallocate(ndimfroz,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating ndimfroz in dis_main')
+      deallocate(nfirstwin,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating nfirstwin in dis_main')
+      
+      ! Module arrays allocated in dis_main
+      deallocate(clamp,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating clamp in dis_main')
+      deallocate(eigval_opt,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating eigval_opt in dis_main')
+
+      return
+
+    end subroutine internal_dealloc
+
 
   end subroutine dis_main
 
@@ -382,22 +436,21 @@ contains
   subroutine dis_windows()
   !==================================================================!
   !                                                                  !
+  ! This subroutine selects the states that are inside the outer     !
+  ! window (ie, the energy window out of which we fish out the       !
+  ! optimally-connected subspace) and those that are inside the      !
+  ! inner window (that make up the frozen manifold, and are          !
+  ! straightfowardly included as they are). This, in practice,       !
+  ! amounts to slimming down the original num_wann x num_wann overlap!
+  ! matrices, removing rows and columns that belong to u_nks that    !
+  ! have been excluded forever, and marking (indexing) the rows and  !
+  ! columns that correspond to frozen states.                        !
   !                                                                  !
-  !                                                                  !
+  ! Note - in windows eigval_opt are shifted, so the lowest ones go  !
+  ! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above  !
+  ! they are set to zero.                                            !
   !                                                                  !
   !==================================================================!  
-    ! here, we select the states that are inside the outer window (i.e.
-    ! the energy window out of which we fish out the optimally-connected
-    ! subspace) and those that are inside the inner window (that make up
-    ! the frozen manifold, and are straightfowardly included as they are).
-    ! this, in practice, amounts to slimming down the original num_wann x num_wann
-    ! overlap matrices, removing rows and columns that belong to u_nks that
-    ! have been excluded forever, and marking (indexing) the rows and column
-    ! that correspond to frozen states.
-
-    ! note - in windows eigval_opt are shifted, so the lowest ones go
-    ! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above
-    ! they are set to zero
 
     implicit none
 
@@ -461,8 +514,9 @@ contains
             (eigval_opt(num_bands,nkp).lt.dis_win_min) ) then
           write(stdout,*) ' ERROR AT K-POINT: ', nkp  
           write(stdout,*) ' ENERGY WINDOW (eV):    [',dis_win_min,  ',', dis_win_max,     ']'
-          write(stdout,*) ' EIGENVALUE RANGE (eV): [',eigval_opt(1,nkp),',',eigval_opt(num_bands,nkp),']'
-          call io_error('DISENTANGLE: The outer energy window contains no eigenvalues')
+          write(stdout,*) ' EIGENVALUE RANGE (eV): [',&
+               eigval_opt(1,nkp),',',eigval_opt(num_bands,nkp),']'
+          call io_error('dis_windows: The outer energy window contains no eigenvalues')
        endif
 
 
@@ -482,9 +536,10 @@ contains
        nfirstwin(nkp) = imin  
 
        if (ndimwin(nkp).lt.num_wann) then  
-          write(stdout,483) 'Error at k-point ',nkp,' ndimwin=',ndimwin(nkp),' num_wann=',num_wann
+          write(stdout,483) 'Error at k-point ',nkp,&
+               ' ndimwin=',ndimwin(nkp),' num_wann=',num_wann
 483       format(1x,a17,i4,a8,i3,a9,i3)  
-          call io_error('DISENTANGLE: Energy window contains fewer states than number of target WFs') 
+          call io_error('dis_windows: Energy window contains fewer states than number of target WFs') 
        endif
 
 
@@ -524,7 +579,7 @@ contains
                ' TARGET BANDS')
           write(stdout,402) (eigval_opt(i,nkp),i = imin, imax)  
 402       format('BANDS: (eV)',10(F10.5,1X))  
-          call io_error('DISENTANGLE: More states in the frozen window than target WFs')
+          call io_error('dis_windows: More states in the frozen window than target WFs')
        endif
 
        if (ndimfroz(nkp).gt.0) linner = .true.  
@@ -545,7 +600,7 @@ contains
              write(stdout,*) ' kifroz_min=', kifroz_min  
              write(stdout,*) ' kifroz_max=', kifroz_max  
              write(stdout,*) ' indxfroz(i,nkp)=', indxfroz(i,nkp)  
-             call io_error('DISENTANGLE: Something fishy...')
+             call io_error('dis_windows: Something fishy...')
           endif
        endif
 
@@ -563,7 +618,7 @@ contains
           write(stdout,*) ' Error at k-point: ',nkp
           write(stdout,'(3(a,i5))') ' i: ',i,' ndimwin: ',ndimwin(nkp),&
                ' ndimfroz: ',ndimfroz(nkp)
-          call io_error('DISENTANGLE: i .ne. (ndimwin-ndimfroz) at k-point')
+          call io_error('dis_windows: i .ne. (ndimwin-ndimfroz) at k-point')
        endif
 
        ! Slim down eigval vector at present k
@@ -609,7 +664,6 @@ contains
     endif
 
     write(stdout,'(3x,a,i4)') 'Number of target bands to extract: ',num_wann
-!!$    write(stdout,'(1x,a,76("-"),a)')'+','+'
     if (iprint>1) then
        write(stdout,'(1x,a)') &
             '+----------------------------------------------------------------------------+'
@@ -627,15 +681,7 @@ contains
 403    format(1x,'|',14x,i6,7x,i6,7x,i6,6x,i6,18x,'|')
        write(stdout,'(1x,a)') &
             '+----------------------------------------------------------------------------+'
-!!$    write(stdout,'(1x,a,76("-"),a)')'+','+'
     endif
-
-!!$    do nkp=1,num_kpts
-!!$       write(stdout,'(a,i5,a,i3,a,i3,a,i3)') '  K-point ',nkp,&
-!!$            ' ndimwin: ',ndimwin(nkp),' ndimfroz: ',ndimfroz(nkp),&
-!!$            ' nfirstwin: ',nfirstwin(nkp)
-!!$    enddo
-!!$    write(stdout,*) ' '  
 
     return  
 
@@ -646,8 +692,45 @@ contains
   subroutine dis_project()
   !==================================================================!
   !                                                                  !
+  ! Original notes from Nicola (refers only to the square case)      !
   !                                                                  !
+  ! This subroutine calculates the transformation matrix             !
+  ! CU = CS^(-1/2).CA, where CS = CA.CA^dagger.                      !
+  ! CS is diagonalized with a Schur factorization, to be on the safe !
+  ! side of numerical stability.                                     !
   !                                                                  !
+  ! ZGEES computes for an N-by-N complex nonsymmetric matrix Y, the  !
+  ! eigenvalues, the Schur form T, and, optionally, the matrix of    !
+  ! Schur vectors. This gives the Schur factorization Y = Z*T*(Z**H).!
+  !                                                                  !
+  ! Optionally, it also orders the eigenvalues on the diagonal of the!
+  ! Schur form so that selected eigenvalues are at the top left.     !
+  ! The leading components of Z then form an orthonormal basis for   !
+  ! the invariant subspace corresponding to the selected eigenvalues.!
+  !                                                                  !
+  ! A complex matrix is in Schur form if it is upper triangular.     !
+  !                                                                  !
+  ! Notes from Ivo disentangling (e.g. non-square) projection        !
+  ! (See Sec. III.D of SMV paper)                                    !
+  ! Compute the ndimwin(k) x num_wann matrix cu that yields,         !
+  ! from the ndimwin original Bloch states, the num_wann Bloch-like  !
+  ! states with maximal projection onto the num_wann localised       !
+  ! functions:                                                       !
+  !                                                                  !
+  ! CU = CA.CS^{-1/2}, CS = transpose(CA).CA                         !
+  !                                                                  !
+  ! Use the singular-calue decomposition of the matrix CA:           !
+  !                                                                  !
+  ! CA = CZ.CD.CVdagger (note: zgesvd spits out CVdagger)            !
+  !                                                                  !
+  ! which yields                                                     !
+  !                                                                  !
+  ! CU = CZ.CD.CD^{-1}.CVdag                                         !
+  !                                                                  !
+  ! where CZ is ndimwin(NKP) x ndimwin(NKP) and unitary, CD is       !
+  ! ndimwin(NKP) x num_wann and diagonal, CD^{-1} is                 !
+  ! num_wann x num_wann and diagonal, and CVdag is                   !
+  ! num_wann x num_wann and unitary.                                 !
   !                                                                  !
   !==================================================================!  
 
@@ -665,6 +748,12 @@ contains
     complex(kind=dp), allocatable :: cvdag(:,:)
     complex(kind=dp), allocatable :: catmpmat(:,:,:)
 
+    write(stdout,'(/1x,a)') &
+         '                  Unitarised projection of Wannier functions                  '
+    write(stdout,'(1x,a)') &
+         '                  ------------------------------------------                  '
+    write(stdout,'(3x,a)') 'A_mn = <psi_m|g_n> --> S = A.A^+ --> U = S^-1/2.A'
+    write(stdout,'(3x,a)',advance='no') 'In dis_project...' 
 
     allocate(catmpmat(num_bands,num_bands,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating catmpmat in dis_project')
@@ -683,64 +772,22 @@ contains
     ! here we slim down the ca matrix
     ! up to here num_bands(=num_bands) X num_wann(=num_wann)
     do nkp = 1, num_kpts
-       do i = 1, ndimwin(nkp)
-          do j = 1, num_wann
+       do j = 1, num_wann
+          do i = 1, ndimwin(nkp)
              catmpmat(i,j,nkp) = a_matrix(nfirstwin(nkp)+i-1,j,nkp)  
           enddo
        enddo
-       do i = 1, ndimwin(nkp)  
-          do j = 1, num_wann  
-             a_matrix(i,j,nkp) = catmpmat(i,j,nkp)  
-          enddo
+       do j = 1, num_wann  
+          a_matrix(1:ndimwin(nkp),j,nkp) = catmpmat(1:ndimwin(nkp),j,nkp)  
        enddo
-       do i = ndimwin(nkp) + 1, num_bands  
-          do j = 1, num_wann  
-             a_matrix(i,j,nkp) = cmplx_0  
-          enddo
+       do j = 1, num_wann  
+          a_matrix(ndimwin(nkp)+1:num_bands,j,nkp) = cmplx_0  
        enddo
     enddo
 
-    ! original notes from Nicola (refer only to the square case) -----------
-    !
-    ! now I calculate the transformation matrix CU = CS^(-1/2).CA,
-    ! where CS = CA.CA^\dagger. CS is diagonalized with a Schur
-    ! factorization, to be on the safe side of numerical stability.
-    ! From LAPACK:
-    ! ZGEES computes for an N-by-N complex nonsymmetric matrix Y, the eigen-
-    ! values, the Schur form T, and, optionally, the matrix of Schur vectors
-    ! This gives the Schur factorization Y = Z*T*(Z**H).
-    !
-    ! Optionally, it also orders the eigenvalues on the diagonal of the Schu
-    ! form so that selected eigenvalues are at the top left.  The leading co
-    ! of Z then form an orthonormal basis for the invariant subspace corresp
-    ! ing to the selected eigenvalues.
-    !
-    ! A complex matrix is in Schur form if it is upper triangular.
-    ! NOTES FROM IVO DISENTANGLING (e.g. NON-SQUARE) PROJECTION
-    ! (See Sec. III.D of SMV paper)
-    ! COMPUTE THE ndimwin(K) x num_wann MATRIX CU THAT YIELDS, FROM THE ndimwin
-    ! ORIGINAL BLOCH STATES, THE num_wann BLOCH-LIKE STATES WITH MAXIMAL PROJEC
-    ! ONTO THE num_wann GAUSSIANS:
-    !
-    ! CU = CA.CS^{-1/2}, CS = transpose(CA).CA
-    !
-    ! USE THE SINGULAR-VALUE DECOMPOSITION OF THE MATRIX CA:
-    !
-    ! CA = CZ.CD.CVdagger (note: zgesvd spits out CVdagger)
-    !
-    ! WHICH YIELDS
-    !
-    ! CU = CZ.CD.CD^{-1}.CVdag
-    !
-    ! WHERE CZ IS ndimwin(NKP) x ndimwin(NKP) AND UNITARY, CD IS
-    ! ndimwin(NKP) x num_wann AND DIAGONAL, CD^{-1} IS num_wann x num_wann AND
-    ! DIAGONAL, AND CVdag IS num_wann x num_wann AND UNITARY.
-
     do nkp = 1, num_kpts  
-       !
        ! SINGULAR VALUE DECOMPOSITION
-       !
-       call ZGESVD('A', 'A', ndimwin(nkp), num_wann, a_matrix(1,1,nkp), &
+       call ZGESVD('A', 'A', ndimwin(nkp), num_wann, a_matrix(:,:,nkp), &
             num_bands, svals, cz, num_bands, cvdag, num_bands, cwork, &
             4*num_bands, rwork, info)
        if (info.ne.0) then  
@@ -749,11 +796,9 @@ contains
           if (info.lt.0) then  
              write(stdout,*) ' THE ',  -info, '-TH ARGUMENT HAD ILLEGAL VALUE'  
           endif
-          call io_error('DISENTANGLE: Error in ZGESVD in dis_project')
           call io_error('dis_project: problem in ZGESVD 1')   
        endif
 
-       !
        ! NOTE THAT - AT LEAST FOR LINUX MKL LAPACK - THE OUTPUT OF ZGESVD
        ! GIVES ALREADY Vdagger, SO A=Z.S.Vdagger IS ACTUALLY GIVEN BY cz.s.cvda
        !
@@ -803,7 +848,7 @@ contains
                 write(stdout,'(1x,a,f12.6,1x,f12.6)') &
                      '[u_matrix_opt.transpose(u_matrix_opt)]_ij= ',&
                      real(ctmp2,dp),aimag(ctmp2)
-                call io_error('DISENTANGLE: Error in unitarity of initial U in dis_project')
+                call io_error('dis_project: Error in unitarity of initial U in dis_project')
              endif
              if ( (i.ne.j) .and. (abs(ctmp2).gt.0.00001_dp) ) then  
                 write(stdout,*) ' ERROR: unitarity of initial U'  
@@ -812,7 +857,7 @@ contains
                 write(stdout,'(1x,a,f12.6,1x,f12.6)') &
                      '[u_matrix_opt.transpose(u_matrix_opt)]_ij= ', &
                      real(ctmp2,dp),aimag(ctmp2)
-                call io_error('DISENTANGLE: Error in unitarity of initial U in dis_project')
+                call io_error('dis_project: Error in unitarity of initial U in dis_project')
              endif
           enddo
        enddo
@@ -832,6 +877,8 @@ contains
     deallocate(catmpmat,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating catmpmat in dis_project')
 
+    write(stdout,'(a)') ' done'
+
     return  
 
   end subroutine dis_project
@@ -842,30 +889,29 @@ contains
   subroutine dis_proj_froz()
   !==================================================================!
   !                                                                  !
-  !                                                                  !
-  !                                                                  !
+  ! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,      !
+  ! WHERE P_s PROJECTOR OPERATOR ONTO THE SUBSPACE S OF THE PROJECTED! 
+  ! GAUSSIANS, P_f THE PROJECTOR ONTO THE FROZEN STATES, AND         !
+  ! Q_froz = 1 - P_froz, ALL EXP IN THE BASIS OF THE BLOCH           !
+  ! EIGENSTATES INSIDE THE OUTER ENERGY WINDOW                       !
+  ! (See Eq. (27) in Sec. III.G of SMV)                              !
   !                                                                  !
   !==================================================================!  
 
       implicit none
 
-      ! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz, WHERE P_s
-      ! PROJECTOR OPERATOR ONTO THE SUBSPACE S OF THE PROJECTED GAUSSIANS, P_f
-      ! THE PROJECTOR ONTO THE FROZEN STATES, AND Q_froz = 1 - P_froz, ALL EXP
-      ! IN THE BASIS OF THE BLOCH EIGENSTATES INSIDE THE OUTER ENERGY WINDOW
-      ! (See Eq. (27) in Sec. III.G of SMV)
       ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
-      ! MODIFIED: clamp (At input it contains the gaussians projected onto the
-      !                 window states in the routine project.f. At output the
-      !                 entries with the second index from 1 to ndimfroz(nkp) contain
-      !                 the frozen (inner window) states, while those from
-      !                 ndimfroz(nkp)+1 to num_wann have been replaced by the new trial
-      !                 states outside the inner window.)
+      ! MODIFIED: clamp (At input it contains the gaussians projected onto 
+      !             the window states in the routine project.f. At output 
+      !             the entries with the second index from 1 to ndimfroz(nkp) 
+      !             contain the frozen (inner window) states, while those 
+      !             from ndimfroz(nkp)+1 to num_wann have been replaced by 
+      !             the new trial states outside the inner window.)
+
 
       ! *********************************************************
       ! VARIABLES USED BY LAPACK'S ZHPEVX DIAGONALIZATION ROUTINE
       ! *********************************************************
-      
       integer,          allocatable :: iwork(:)
       integer,          allocatable :: ifail(:)
       real(kind=dp),    allocatable :: w(:)
@@ -878,16 +924,16 @@ contains
       ! INTERNAL:
       ! *********
       !
-      ! CP_S(M,N)          PROJECTION OPERATOR ONTO THE SUBSPACE OF THE PROJEC
-      !                   GAUSSIANS, EXPRESSED IN THE BASIS OF THE ORIGINAL BL
-      !                   EIGENSTATES INSIDE THE OUTER WINDOW (FOR THE PRESENT
-      !                   K-POINT)
-      ! CQ_FROZ(M,N)       PROJECTION OPERATOR ONTO THE SUBSPACE OF THE STATES
-      !                   THE SPACE OF FROZEN STATES (BUT INSIDE THE OUTER WIN
-      !                   EXPRESSED IN THE BASIS OF THE ORIGINAL BLOCH EIGENST
-      !                   INSIDE THE OUTER WINDOW (FOR THE PRESENT K-POINT)
-      ! CPQ(M,N)           THE MATRIX cp_s . cq_froz FOR THE PRESENT K-POINT
-      ! CQPQ(M,N)          THE MATRIX cq_froz . cp_s . cq_froz FOR THE PRESENT
+      ! CP_S(M,N)      PROJECTION OPERATOR ONTO THE SUBSPACE OF THE PROJEC
+      !                  GAUSSIANS, EXPRESSED IN THE BASIS OF THE ORIGINAL BL
+      !                  EIGENSTATES INSIDE THE OUTER WINDOW (FOR THE PRESENT
+      !                  K-POINT)
+      ! CQ_FROZ(M,N)   PROJECTION OPERATOR ONTO THE SUBSPACE OF THE STATES
+      !                  THE SPACE OF FROZEN STATES (BUT INSIDE THE OUTER WIN
+      !                  EXPRESSED IN THE BASIS OF THE ORIGINAL BLOCH EIGENST
+      !                  INSIDE THE OUTER WINDOW (FOR THE PRESENT K-POINT)
+      ! CPQ(M,N)       THE MATRIX cp_s . cq_froz FOR THE PRESENT K-POINT
+      ! CQPQ(M,N)      THE MATRIX cq_froz . cp_s . cq_froz FOR THE PRESENT
       !
 
       integer :: il,iu,nkp,l,j,n,m,info,ierr
@@ -896,6 +942,7 @@ contains
       complex(kind=dp), allocatable :: cpq(:,:)
       complex(kind=dp), allocatable :: cqpq(:,:)
 
+      write(stdout,'(3x,a)',advance='no') 'In dis_proj_froz...' 
 
       allocate(iwork(5*num_bands),stat=ierr)
       if (ierr/=0) call io_error('Error allocating iwork in dis_proj_froz')
@@ -925,9 +972,7 @@ contains
          ! Put the frozen states in the lowest columns of clamp
          if (ndimfroz(nkp).gt.0) then  
             do l = 1, ndimfroz(nkp)  
-               do j = 1, ndimwin(nkp)  
-                  clamp(j,l,nkp) = cmplx_0  
-               enddo
+               clamp(:,l,nkp)=cmplx_0
                clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
             enddo
          endif
@@ -973,8 +1018,8 @@ contains
                   endif
                enddo
             enddo
-
             ! ENDDEBUG
+
             do n = 1, ndimwin(nkp)  
                do m = 1, n  
                   cap(m + (n - 1) * n / 2) = cqpq(m,n)  
@@ -984,6 +1029,7 @@ contains
             iu = ndimwin(nkp)  
             call ZHPEVX ('V', 'A', 'U', ndimwin(nkp), cap, 0.0_dp, 0.0_dp, il, &
                  iu, -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
+
             ! DEBUG
             if (info.lt.0) then  
                write(stdout,*) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
@@ -995,6 +1041,7 @@ contains
                call io_error('dis_proj_frozen: error') 
             endif
             ! ENDDEBUG
+
             ! DEBUG
             if (m.ne.ndimwin(nkp)) then  
                write(stdout,*) ' *** ERROR *** in dis_proj_froz'  
@@ -1003,6 +1050,7 @@ contains
                call io_error('dis_proj_frozen: error')  
             endif
             ! ENDDEBUG
+
             ! DEBUG
             ! check that the eigenvalues are between 0 and 1
             if (iprint>2) then
@@ -1021,9 +1069,7 @@ contains
             ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
             ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN cLAMP
             do l = ndimfroz(nkp) + 1, num_wann  
-               do j = 1, ndimwin(nkp)  
-                  clamp(j,l,nkp) = cz(j,il)  
-               enddo
+               clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il) 
                il = il + 1  
             enddo
 
@@ -1064,6 +1110,8 @@ contains
       deallocate(iwork,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating iwork in dis_proj_froz')
 
+      write(stdout,'(a)') ' done'
+
       return  
 
     end subroutine dis_proj_froz
@@ -1074,8 +1122,8 @@ contains
     subroutine dis_extract()
     !==================================================================!
     !                                                                  !
-    !                                                                  !
-    !                                                                  !
+    ! Extracts an num_wann-dimensional subspace at each k by           !
+    ! minimizing Omega_I                                               !
     !                                                                  !
     !==================================================================!  
       
@@ -1083,11 +1131,7 @@ contains
 
       implicit none
 
-      ! Extracts an num_wann-dimensional subspace at each k by minimizing Omega_I
-      ! INPUT: num_wann,cm,ndimwin,ndimfroz,indxnfroz,nnlist,nshells,nntot,
-      ! nwhich,wb,alphafixe,nitere,eigval
       ! MODIFIED:
-      !
       !           clamp (At input it contains the initial guess for the optima
       ! subspace (expressed in terms of the original states inside the window)
       ! output it contains the  states that diagonalize the hamiltonian inside
@@ -1099,6 +1143,7 @@ contains
       !
       !           eigval (At input: original energy eigenvalues.
       ! At output: eigenvalues of the hamiltonian inside optimal subspace)
+
       ! ----------------------------------------------------------------------
       ! TO DO: The complement subspace is computed but is not saved anywhere!
       ! (Check what was done with it in original code space.f)
@@ -1122,13 +1167,12 @@ contains
 
 
       ! Internal variables
-      integer :: i,j,l,m,nkp,info,ierr
-      integer :: icompflag,iter,nnx,ndnnx,ndnn,nnsh,ndiff,k_pls_b
-      real(kind=dp) :: womegai,wkomegai,womegai1,rlambda
+      integer :: i,j,l,m,n,nn,nkp,nkp2,info,ierr,ndimk,p
+      integer :: icompflag,iter,ndiff
+      real(kind=dp) :: womegai,wkomegai,womegai1,rsum
       real(kind=dp), allocatable :: wkomegai1(:)
       complex(kind=dp), allocatable :: ceamp(:,:,:)
       complex(kind=dp), allocatable :: camp(:,:,:)
-      complex(kind=dp), allocatable :: cmk(:,:,:)
       complex(kind=dp), allocatable :: czmat_in(:,:,:)
       complex(kind=dp), allocatable :: czmat_out(:,:,:)
       complex(kind=dp), allocatable :: cham(:,:,:)
@@ -1140,6 +1184,21 @@ contains
       complex(kind=dp), allocatable :: cap(:)
       complex(kind=dp), allocatable :: cwork(:)
       complex(kind=dp), allocatable :: cz(:,:)
+
+      complex(kind=dp), allocatable :: cwb(:,:),cww(:,:),cbw(:,:)
+
+      write(stdout,'(/1x,a)') &
+           '                  Extraction of optimally-connected subspace                  '
+      write(stdout,'(1x,a)') &
+           '                  ------------------------------------------                  '
+
+      allocate(cwb(num_wann,num_bands),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating cwb in dis_extract')
+      allocate(cww(num_wann,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating cww in dis_extract')
+      allocate(cbw(num_bands,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating cbw in dis_extract')
+      cwb=cmplx_0;cww=cmplx_0;cbw=cmplx_0
 
       allocate(iwork(5*num_bands),stat=ierr)
       if (ierr/=0) call io_error('Error allocating iwork in dis_extract')
@@ -1162,8 +1221,6 @@ contains
       if (ierr/=0) call io_error('Error allocating ceamp in dis_extract')
       allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating camp in dis_extract')
-      allocate(cmk(num_bands,num_bands,nntot),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating cmk in dis_extract')
       allocate(czmat_in(num_bands,num_bands,num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating czmat_in in dis_extract')
       allocate(czmat_out(num_bands,num_bands,num_kpts),stat=ierr)
@@ -1217,11 +1274,6 @@ contains
       endif
       ! ENDDEBUG
 
-!!$      write(stdout,121) num_wann  
-!!$121   format(/,'  DIMENSION OF SUBSPACE: num_wann=',I6)  
-!!$      write(stdout,122) dis_mix_ratio  
-!!$122   format(/,'  MIXING PARAMETER: DIS_MIX_RATIO =',F6.3,/)  
-
       ! TO DO: Check if this is the best place to initialize icompflag
       icompflag = 0  
 
@@ -1240,28 +1292,21 @@ contains
          if (iter.eq.1) then  
             ! Initialize Z matrix at k points w/ non-frozen states
             do nkp = 1, num_kpts  
-               if ( num_wann.gt.ndimfroz(nkp) ) then  
-                  do nnx = 1, nntot  
-                     do j = 1, ndimwin(nnlist(nkp,nnx))  
-                        do i = 1, ndimwin(nkp)  
-                          cmk(i,j,nnx) = m_matrix_orig(i,j,nnx,nkp)  
-                        enddo
-                     enddo
-                  enddo
-                  call dis_zmatrix(nkp,cmk,czmat_in(1,1,nkp))
-               endif
+               if (num_wann.gt.ndimfroz(nkp)) call dis_zmatrix(nkp,czmat_in(:,:,nkp))
             enddo
          else  
             ! [iter.ne.1]
             ! Update Z matrix at k points with non-frozen states, using a mixing sch
             do nkp = 1, num_kpts  
-               if (num_wann.gt.ndimfroz(nkp) ) then  
-                  do i = 1, ndimwin(nkp) - ndimfroz(nkp)  
-                     do j = 1, i  
-                        czmat_in(j,i,nkp) = dis_mix_ratio * czmat_out(j,i,nkp) &
-                             + (1.0_dp - dis_mix_ratio) * czmat_in(j,i,nkp)
+               if ( num_wann.gt.ndimfroz(nkp) ) then
+                  ndimk = ndimwin(nkp) - ndimfroz(nkp)
+                  do i=1,ndimk
+                     do j=1,i
+                        czmat_in(j,i,nkp) = &
+                             cmplx(dis_mix_ratio,0.0_dp,dp) * czmat_out(j,i,nkp) &
+                             + cmplx(1.0_dp-dis_mix_ratio,0.0_dp,dp) * czmat_in(j,i,nkp)
                         ! hermiticity
-                        czmat_in(i,j,nkp) = conjg(czmat_in(j,i,nkp))  
+                        czmat_in(i,j,nkp) = conjg(czmat_in(j,i,nkp))
                      enddo
                   enddo
                endif
@@ -1276,19 +1321,23 @@ contains
          ! every k (before updating any k), so that for iter>1 overlaps are with
          ! non-frozen neighboring states from the previous iteration
 
+         wkomegai1 = real(num_wann,dp) * wbtot
          do nkp = 1, num_kpts  
-            wkomegai1(nkp) = real(num_wann,dp) * wbtot  
             if ( ndimfroz(nkp).gt.0 ) then  
-               do nnx = 1, nntot  
-                     do j = 1, ndimwin(nnlist(nkp,nnx))  
-                        do i = 1, ndimwin(nkp)  
-                           cmk(i,j,nnx) = m_matrix_orig(i,j,nnx,nkp)  
-                        enddo
+               do nn=1,nntot
+                  nkp2=nnlist(nkp,nn)
+                  call zgemm('C','N',ndimfroz(nkp),ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
+                       clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+                       cwb,num_wann)                 
+                  call zgemm('N','N',ndimfroz(nkp),num_wann,ndimwin(nkp2),cmplx_1,&
+                       cwb,num_wann,clamp(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)
+                  rsum=0.0_dp
+                  do n=1,num_wann
+                     do m=1,ndimfroz(nkp)
+                        rsum = rsum + real(cww(m,n),dp)**2 + aimag(cww(m,n))**2
                      enddo
-               enddo
-               do m = 1, ndimfroz(nkp)  
-                  rlambda = dis_zeig(nkp,m,cmk) 
-                  wkomegai1(nkp) = wkomegai1(nkp) - rlambda  
+                  enddo
+                  wkomegai1(nkp) = wkomegai1(nkp) - wb(nn)*rsum
                enddo
             endif
          enddo
@@ -1324,11 +1373,11 @@ contains
                do j = ndimwin(nkp) - num_wann + 1, ndimwin(nkp) - ndimfroz(nkp)
                   m = m + 1  
                   wkomegai1(nkp) = wkomegai1(nkp) - w(j)  
-                  do i = 1, ndimwin(nkp)  
-                     clamp(i,m,nkp) = cmplx_0  
-                  enddo
-                  do i = 1, ndimwin(nkp) - ndimfroz(nkp)  
-                     clamp(indxnfroz(i,nkp),m,nkp) = cz(i,j)  
+                  clamp(1:ndimwin(nkp),m,nkp) = cmplx_0
+                  ndimk=ndimwin(nkp)-ndimfroz(nkp)
+                  do i=1,ndimk
+                     p=indxnfroz(i,nkp)
+                     clamp(p,m,nkp) = cz(i,j)  
                   enddo
                enddo
             endif
@@ -1345,9 +1394,7 @@ contains
                   do j = 1, ndimwin(nkp) - num_wann  
                      if ( num_wann.gt.ndimfroz(nkp) ) then  
                         ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
-                        do i = 1, ndimwin(nkp)  
-                           camp(i,j,nkp) = cz(i,j)  
-                        enddo
+                        camp(1:ndimwin(nkp),j,nkp)=cz(1:ndimwin(nkp),j)
                      else  
                         ! Then num_wann=NDIMFROZ(NKP)
                         ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
@@ -1361,7 +1408,7 @@ contains
                   icompflag = 1
                endif
             endif
-
+            
          enddo
          ! [Loop over k points (nkp)]
 
@@ -1405,28 +1452,31 @@ contains
 
          ! Compute womegai  using the updated subspaces at all k, i.e.,
          ! replacing (i-1) by (i) in Eq. (12) SMV
+
          womegai = 0.0_dp
-
          do nkp = 1, num_kpts  
-            wkomegai = real(num_wann,dp) * wbtot  
-            do nnx = 1, nntot  
-                  do j = 1, ndimwin(nnlist(nkp,nnx))  
-                     do i = 1, ndimwin(nkp)  
-                        cmk(i,j,nnx) = m_matrix_orig(i,j,nnx,nkp)  
-                     enddo
+            wkomegai=0.0_dp
+            do nn=1,nntot
+               nkp2=nnlist(nkp,nn)
+               call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
+                    clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+                    cwb,num_wann)                 
+               call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
+                    cwb,num_wann,clamp(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)               
+               rsum=0.0_dp
+               do n=1,num_wann
+                  do m=1,num_wann
+                     rsum = rsum + real(cww(m,n),dp)**2 + aimag(cww(m,n))**2
                   enddo
+               enddo
+               wkomegai = wkomegai + wb(nn) * rsum
             enddo
-            do m = 1, num_wann  
-               rlambda = dis_zeig(nkp,m,cmk) 
-               wkomegai = wkomegai - rlambda  
-            enddo
-
-            womegai = womegai + wkomegai  
-
+            wkomegai = real(num_wann,dp) * wbtot - wkomegai
+            womegai =  womegai + wkomegai
          enddo
+         womegai = womegai / real(num_kpts,dp)  
          ! [Loop over k (nkp)]
 
-         womegai = womegai / real(num_kpts,dp)  
 
          write(stdout,124) iter,womegai1*lenconfac**2,womegai*lenconfac**2,&
               100.0_dp*(womegai1-womegai)/womegai,io_time()
@@ -1436,17 +1486,7 @@ contains
 
          ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
          do nkp = 1, num_kpts  
-            if (num_wann.gt.ndimfroz(nkp) ) then  
-               do nnx = 1, nntot  
-                     k_pls_b = nnlist(nkp,nnx)  
-                     do j = 1, ndimwin(k_pls_b)  
-                        do i = 1, ndimwin(nkp)  
-                           cmk(i,j,nnx) = m_matrix_orig(i,j,nnx,nkp)  
-                        enddo
-                     enddo
-               enddo
-               call dis_zmatrix(nkp,cmk,czmat_out(1,1,nkp))
-            endif
+            if (num_wann.gt.ndimfroz(nkp)) call dis_zmatrix(nkp,czmat_out(:,:,nkp))
          enddo
 
       enddo
@@ -1477,15 +1517,19 @@ contains
       ! subsequent minimization of Omega_tilde in wannierise.f90
       ! We store it in the checkpoint file as a sanity check
       write(stdout,*) ' '
-      write(stdout,'(/8x,a,f14.8,a)') 'Final Omega_I ',womegai*lenconfac**2,' ('//trim(length_unit)//'^2)'
+      write(stdout,'(/8x,a,f14.8,a)') 'Final Omega_I ',&
+           womegai*lenconfac**2,' ('//trim(length_unit)//'^2)'
+
+      ! Set public variable omega_invariant
       omega_invariant=womegai
 
       ! DIAGONALIZE THE HAMILTONIAN WITHIN THE OPTIMIZED SUBSPACES
-      do nkp = 1, num_kpts  
-         do j = 1, num_wann  
+      do nkp = 1, num_kpts
+
+         do j = 1, num_wann 
             do i = 1, num_wann  
                cham(i,j,nkp) = cmplx_0  
-               do l = 1, ndimwin(nkp)  
+               do l = 1, ndimwin(nkp)
                   cham(i,j,nkp) = cham(i,j,nkp) + conjg(clamp(l,i,nkp)) &
                        * clamp(l,j,nkp) * eigval_opt(l,nkp)
                enddo
@@ -1513,9 +1557,7 @@ contains
          endif
 
          ! Store the energy eigenvalues of the optimal subspace (used in wann_ban
-         do i = 1, num_wann  
-            eigval_opt(i,nkp) = w(i)  
-         enddo
+         eigval_opt(1:num_wann,nkp) = w(1:num_wann)
 
          ! CALCULATE AMPLITUDES OF THE CORRESPONDING ENERGY EIGENVECTORS IN TERMS
          ! THE ORIGINAL ("WINDOW SPACE") ENERGY EIGENVECTORS
@@ -1544,10 +1586,8 @@ contains
       ! same space, but the latter is more convenient for the purpose of obtai
       ! an optimal Fourier-interpolated band structure: see Sec. III.E of SMV.
       do nkp = 1, num_kpts  
-         do j = 1, num_wann  
-            do i = 1, ndimwin(nkp)  
-               clamp(i,j,nkp) = ceamp(i,j,nkp)  
-            enddo
+         do j = 1, num_wann
+            clamp(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
          enddo
       enddo
 
@@ -1611,8 +1651,6 @@ contains
       if (ierr/=0) call io_error('Error deallocating czmat_out in dis_extract')
       deallocate(czmat_in,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating czmat_in in dis_extract')
-      deallocate(cmk,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating cmk in dis_extract')
       deallocate(camp,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating camp in dis_extract')
       deallocate(ceamp,stat=ierr)
@@ -1635,6 +1673,16 @@ contains
       deallocate(iwork,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating iwork in dis_extract')
 
+      deallocate(cbw,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cbw in dis_extract')
+      deallocate(cww,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cww in dis_extract')
+      deallocate(cwb,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cwb in dis_extract')
+
+      write(stdout,'(1x,a/)') &
+           '+----------------------------------------------------------------------------+'
+
 
       return  
 
@@ -1642,56 +1690,9 @@ contains
     contains
 
 
-      !==================================================================!
-      function dis_zeig(nkp,m,cmk)
-      !==================================================================!
-      !                                                                  !
-      !                                                                  !
-      !                                                                  !
-      !                                                                  !
-      !==================================================================!  
-        
-        ! Computes <lambda>_mk = sum_{n=1}^N sum_b w_b |<u_{mk}|u_{n,k+b}>|^2
-        ! [See Eqs. (12) and (17) of SMV]
-
-        implicit none
-
-        integer, intent(in) :: nkp
-        integer, intent(in) :: m
-        complex(kind=dp), intent(in) :: cmk(num_bands,num_bands,nntot)
-
-        ! Internal variables
-        real(kind=dp) :: dis_zeig
-        complex(kind=dp) :: cdot_bloch
-        integer :: n,nnx,ndnnx,ndnn,nnsh,nkp2,l,j
-
-        dis_zeig=0.0_dp
-
-        do n = 1, num_wann  
-           ! Loop over b-vectors
-           do nnx = 1, nntot  
-                 nkp2 = nnlist(nkp,nnx)  
-                 ! Dotproduct
-                 cdot_bloch = cmplx_0          
-                 do l = 1, ndimwin(nkp)  
-                    do j = 1, ndimwin(nkp2)  
-                       cdot_bloch = cdot_bloch + &
-                            conjg(clamp(l,m,nkp)) * clamp(j,n,nkp2) * cmk(l,j,nnx)
-                    enddo
-                 enddo
-                 dis_zeig = dis_zeig + wb(nnx) * abs(cdot_bloch)**2  
-              enddo
-        enddo
-
-
-        return  
-
-      end function dis_zeig
-
-
 
       !==================================================================!
-      subroutine dis_zmatrix(nkp,cmk,cmtrx)
+      subroutine dis_zmatrix(nkp,cmtrx)
       !==================================================================!
       !                                                                  !
       !                                                                  !
@@ -1702,54 +1703,103 @@ contains
         implicit none
 
         integer, intent(in) :: nkp
-        complex(kind=dp), intent(in) :: cmk(num_bands,num_bands,nntot)
-        complex(kind=dp), intent(inout) :: cmtrx(num_bands,num_bands)
+        complex(kind=dp), intent(out) :: cmtrx(num_bands,num_bands)
 
         ! OUTPUT:
-        !
         ! CMTRX(M,N)        (M,N)-TH ENTRY IN THE
         !                   (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
         !                   HERMITIAN MATRIX AT THE NKP-TH K-POINT
         
-
         ! Internal variables
-        integer :: l,m,n,j,nnx,ndnn,ndnnx,nnsh,k_pls_b
-        complex(kind=dp) :: cdot_bloch1,cdot_bloch2
+        integer          :: l,m,n,p,q,nn,nkp2,ndimk
+        complex(kind=dp) :: csum
 
-        ! LOOP OVER INDEPENDENT MATRIX ENTRIES
-        do m = 1, ndimwin(nkp) - ndimfroz(nkp)  
-           do n = 1, m  
-              cmtrx(m,n) = cmplx_0  
-              do l = 1, num_wann  
-                 ! LOOP OVER B-VECTORS
-                 do nnx = 1, nntot  
-                       k_pls_b = nnlist(nkp,nnx)  
-                       ! CALCULATE THE DOTPRODUCTS
-                       cdot_bloch1 = cmplx_0  
-                       cdot_bloch2 = cmplx_0  
-                       do j = 1, ndimwin(k_pls_b)  
-                          cdot_bloch1 = cdot_bloch1 + &
-                               clamp(j,l,k_pls_b) * cmk(indxnfroz(m,nkp),j,nnx)
-                          cdot_bloch2 = cdot_bloch2 + &
-                               conjg(clamp(j,l,k_pls_b) * cmk(indxnfroz(n,nkp),j,nnx))
-                       enddo
-                       ! ADD CONTRIBUTION TO CMTRX(M,N)
-                       cmtrx(m,n) = cmtrx(m,n) + wb(nnx) * cdot_bloch1 * cdot_bloch2
-                       ! NNSH
+        cmtrx=cmplx_0
+        ndimk=ndimwin(nkp)-ndimfroz(nkp)
+        do nn=1,nntot
+           nkp2=nnlist(nkp,nn)
+           call zgemm('N','N',num_bands,num_wann,ndimwin(nkp2),cmplx_1,&
+                m_matrix_orig(:,:,nn,nkp),num_bands,clamp(:,:,nkp2),num_bands,&
+                cmplx_0,cbw,num_bands)
+           do n=1,ndimk
+              q=indxnfroz(n,nkp)
+              do m=1,n
+                 p=indxnfroz(m,nkp)
+                 csum=cmplx_0
+                 do l=1,num_wann
+                    csum = csum + cbw(p,l) * conjg(cbw(q,l))
                  enddo
-                 ! L
+                 cmtrx(m,n) = cmtrx(m,n) + cmplx(wb(nn),0.0_dp,kind=dp) * csum
+                 cmtrx(n,m) = conjg(cmtrx(m,n))
               enddo
-              ! hermiticity
-              cmtrx(n,m) = conjg(cmtrx(m,n))  
-              ! N
            enddo
-           ! M
         enddo
-
 
         return  
 
       end subroutine dis_zmatrix
+
+
+!!$      !==================================================================!
+!!$!      function dis_zeig(nkp,m,cmk)
+!!$      function dis_zeig(nkp,m)
+!!$      !==================================================================!
+!!$      !                                                                  !
+!!$      !                                                                  !
+!!$      !                                                                  !
+!!$      !                                                                  !
+!!$      !==================================================================!  
+!!$        
+!!$        ! Computes <lambda>_mk = sum_{n=1}^N sum_b w_b |<u_{mk}|u_{n,k+b}>|^2
+!!$        ! [See Eqs. (12) and (17) of SMV]
+!!$
+!!$        implicit none
+!!$
+!!$        integer, intent(in) :: nkp
+!!$        integer, intent(in) :: m
+!!$!        complex(kind=dp), intent(in) :: cmk(num_bands,num_bands,nntot)
+!!$
+!!$        ! Internal variables
+!!$        real(kind=dp) :: dis_zeig
+!!$        complex(kind=dp) :: cdot_bloch
+!!$        integer :: n,nn,ndnnx,ndnn,nnsh,nkp2,l,j
+!!$
+!!$        dis_zeig=0.0_dp
+!!$
+!!$!        do nn=1,nntot
+!!$!           nkp2=nnlist(nkp,nn)
+!!$        do n = 1, num_wann  
+!!$           do nn = 1, nntot  
+!!$                 nkp2 = nnlist(nkp,nn)  
+!!$                 ! Dotproduct
+!!$                 cdot_bloch = cmplx_0          
+!!$                 do l = 1, ndimwin(nkp)  
+!!$                    do j = 1, ndimwin(nkp2)  
+!!$                       cdot_bloch = cdot_bloch + &
+!!$!                            conjg(clamp(l,m,nkp)) * clamp(j,n,nkp2) * cmk(l,j,nn)
+!!$                            conjg(clamp(l,m,nkp)) * clamp(j,n,nkp2) * m_matrix_orig(l,j,nn,nkp)
+!!$                    enddo
+!!$                 enddo
+!!$                 write(stdout,'(a,4i5,2f15.10)') 'zeig:',nkp,nn,m,n,cdot_bloch
+!!$!                 call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
+!!$!                      clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+!!$!                      cwb,num_wann)                 
+!!$!                 call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
+!!$!                      cwb,num_wann,clamp(:,:,nkp),num_bands,cmplx_0,cww,num_wann)
+!!$
+!!$                 dis_zeig = dis_zeig + wb(nn) * abs(cdot_bloch)**2  
+!!$
+!!$!                 do n=1,num_wann
+!!$!                    dis_zeig = dis_zeig + wb(nn) * abs(cww(m,n))**2
+!!$!                 enddo
+!!$
+!!$              enddo
+!!$        enddo
+!!$
+!!$        return  
+!!$
+!!$      end function dis_zeig
+
 
 
     end subroutine dis_extract
