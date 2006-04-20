@@ -16,6 +16,7 @@ Directory Structure
 
 doc/        Documentation including the user guide and a tutorial
 examples/   Sample calculations from the tutorial
+utility/    Useful scripts
 src/        The Wannier90 source code
 tests/      A set of tests to check Wannier90 is installed correctly
 config/     Example make.sys for many platforms
