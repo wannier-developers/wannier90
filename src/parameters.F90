@@ -322,6 +322,8 @@ contains
 
     restart = ' '
     call param_get_keyword('restart',found,c_value=restart)
+    !post processing takes priority (must warn user of this)
+    if(postproc_setup==.true.) restart = ' '
 
     write_r2mn = .false.
     call param_get_keyword('write_r2mn',found,l_value=write_r2mn)
