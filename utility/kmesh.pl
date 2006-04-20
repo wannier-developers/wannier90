@@ -25,7 +25,7 @@ if ($ARGV[2]<=0) {
 $totpts=$ARGV[0]*$ARGV[1]*$ARGV[2];
 
 if ($numargs==3) {
-    print "KPOINTS {crystal}\n";
+    print "K_POINTS crystal\n";
     print $totpts,"\n";
     for ($x=0; $x<$ARGV[0]; $x++) {
 	for ($y=0; $y<$ARGV[1]; $y++) {
