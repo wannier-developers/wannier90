@@ -40,6 +40,7 @@ dist:
                 ./examples/*/*.nnkp \
                 ./examples/*/README \
 		./config/* \
+		./utility/*.pl \
                 ./spec/*.tex \
                 ./spec/*.eps \
                 ./spec/*.fig \
@@ -64,6 +65,7 @@ dist-lite:
 		./tests/test*/stnd* \
 		./config/* \
 		./*/Makefile \
+		./utility/*.pl \
 		./Makefile \
 		./LICENCE \
 		./README.* \
