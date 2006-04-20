@@ -327,20 +327,22 @@ return
   subroutine overlap_project()
   !==================================================================!
   !                                                                  !
-  !                                                                  !
+  !  Note that in this subroutine num_wann = num_bands               ! 
+  !  since, if we are here, then disentanglement = FALSE             !
   !                                                                  !
   !                                                                  !
   !==================================================================!  
     use constants
     use io,         only : io_error
-    use parameters, only : num_bands,num_kpts,u_matrix,m_matrix,nntot,nnlist
-
+    use parameters, only : num_bands,num_wann,num_kpts,&
+                           u_matrix,m_matrix,nntot,nnlist
+    use utility,    only : utility_zgemm
 
     implicit none
 
 
     ! internal variables
-    integer :: i,j,m,nkp,info,ierr,nn,nkp2,n
+    integer :: i,j,m,nkp,info,ierr,nn,nkp2
     real(kind=dp),    allocatable :: svals(:)
     real(kind=dp)                 :: rwork(5*num_bands) 
     complex(kind=dp)              :: ctmp2
@@ -378,7 +380,9 @@ return
           call io_error('DISENTANGLE: Error in ZGESVD in overlap_project')
        endif
 
-       u_matrix(:,:,nkp)=matmul(cz,cvdag)
+!       u_matrix(:,:,nkp)=matmul(cz,cvdag)
+       call utility_zgemm(u_matrix(:,:,nkp),cz,'N',cvdag,'N',num_wann)
+
        !
        ! CHECK UNITARITY
        !
@@ -414,26 +418,14 @@ return
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated 
-
     do nkp=1, num_kpts 
        do nn=1,nntot
           nkp2=nnlist(nkp,nn)
-          do i=1,num_bands
-             do j=1,num_bands
-                cz(i,j)=cmplx_0
-                do m=1,num_bands
-                   do n=1,num_bands
-                      cz(i,j)=cz(i,j)+conjg(u_matrix(m,i,nkp))* &
-                           u_matrix(n,j,nkp2)*m_matrix(m,n,nn,nkp)
-                   end do
-                end do
-             end do
-          end do
-          do i=1,num_bands
-             do j=1,num_bands
-                m_matrix(i,j,nn,nkp)=cz(i,j)
-             end do
-          end do
+          ! cvdag = U^{dagger} . M   (use as workspace)
+          call utility_zgemm(cvdag,u_matrix(:,:,nkp),'C',m_matrix(:,:,nn,nkp),'N',num_wann)
+          ! cz = cvdag . U
+          call utility_zgemm(cz,cvdag,'N',u_matrix(:,:,nkp2),'N',num_wann)
+          m_matrix(:,:,nn,nkp) = cz(:,:)
        end do
     end do
     
