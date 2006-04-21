@@ -524,21 +524,19 @@ convergence.
 The default value is 1.0
 
 \subsection[dis\_conv\_tol]{\tt real(kind=dp) :: dis\_conv\_tol}
-\red{Not yet implemented}
 
 In the disentanglement procedure the minimisation is said to to converged
-if the fraction change in the spread between successive
+if the fractional change in the spread between successive
 iterations is less than
 \verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
 
-The default value of this parameter is 1.0E-5 (think a bit about this value)
+The default value of this parameter is 1.0E-10
 
 
 \subsection[dis\_conv\_window]{\tt integer :: dis\_conv\_window}
-\red{Not yet implemented}
 
 In the disentanglement procedure the minimisation is said to to converged
-if the fraction change in the spread between successive
+if the fractional change in the spread between successive
 iterations is less than
 \verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
 
