@@ -1169,7 +1169,7 @@ contains
       ! Internal variables
       integer :: i,j,l,m,n,nn,nkp,nkp2,info,ierr,ndimk,p
       integer :: icompflag,iter,ndiff
-      real(kind=dp) :: womegai,wkomegai,womegai1,rsum
+      real(kind=dp) :: womegai,wkomegai,womegai1,rsum,delta_womegai
       real(kind=dp), allocatable :: wkomegai1(:)
       complex(kind=dp), allocatable :: ceamp(:,:,:)
       complex(kind=dp), allocatable :: camp(:,:,:)
@@ -1186,6 +1186,9 @@ contains
       complex(kind=dp), allocatable :: cz(:,:)
 
       complex(kind=dp), allocatable :: cwb(:,:),cww(:,:),cbw(:,:)
+
+      real(kind=dp),    allocatable :: history(:)
+      logical                       :: dis_converged
 
       write(stdout,'(/1x,a)') &
            '                  Extraction of optimally-connected subspace                  '
@@ -1228,6 +1231,8 @@ contains
       allocate(cham(num_bands,num_bands,num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating cham in dis_extract')
 
+      allocate(history(dis_conv_window),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating history in dis_extract')
 
       ! ********************************************
       ! ENERGY WINDOWS AND SUBSPACES AT EACH K-POINT
@@ -1284,10 +1289,12 @@ contains
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
 
+      dis_converged = .false.
+
       ! ------------------
       ! BIG ITERATION LOOP
       ! ------------------
-      do iter = 1, dis_num_iter  
+      do iter = 1, dis_num_iter
 
          if (iter.eq.1) then  
             ! Initialize Z matrix at k points w/ non-frozen states
@@ -1477,9 +1484,11 @@ contains
          womegai = womegai / real(num_kpts,dp)  
          ! [Loop over k (nkp)]
 
+!         delta_womegai = 100.0_dp*(womegai1-womegai)/womegai
+         delta_womegai = (100.0_dp*womegai1)/womegai - 100.0_dp
 
          write(stdout,124) iter,womegai1*lenconfac**2,womegai*lenconfac**2,&
-              100.0_dp*(womegai1-womegai)/womegai,io_time()
+              delta_womegai,io_time()
 
 
 124      format(2x,i6,3x,f14.8,3x,f14.8,3x,es13.6,2x,f8.2,4x,'<-- DIS')
@@ -1489,8 +1498,24 @@ contains
             if (num_wann.gt.ndimfroz(nkp)) call dis_zmatrix(nkp,czmat_out(:,:,nkp))
          enddo
 
+         call internal_test_convergence()
+         
+         if (dis_converged) then
+            write(stdout,'(/15x,a,es10.3,a,i2,a)') &
+                 '<<< Delta (%) <',dis_conv_tol,&
+                 '  over ',dis_conv_window,' iterations >>>'
+            write(stdout,'(13x,a)')  '<<< Disentanglement convergence criteria satisfied >>>'
+            exit
+         endif
+
       enddo
       ! [BIG ITERATION LOOP (iter)]
+
+      if (.not.dis_converged) then
+         write(stdout,'(/5x,a)') '<<< Warning: Maximum number of disentanglement &
+              &iterations reached >>>'
+         write(stdout,'(10x,a)')  '<<< Disentanglement convergence criteria not satisfied >>>'
+      endif
 
       if (icompflag.eq.1) then
          if (iprint>2) then
@@ -1516,8 +1541,7 @@ contains
       ! Write the final womegai. This should remain unchanged during the
       ! subsequent minimization of Omega_tilde in wannierise.f90
       ! We store it in the checkpoint file as a sanity check
-      write(stdout,*) ' '
-      write(stdout,'(/8x,a,f14.8,a)') 'Final Omega_I ',&
+      write(stdout,'(/8x,a,f14.8,a/)') 'Final Omega_I ',&
            womegai*lenconfac**2,' ('//trim(length_unit)//'^2)'
 
       ! Set public variable omega_invariant
@@ -1645,6 +1669,9 @@ contains
       ! [if icompflag=1]
 
 
+      deallocate(history,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating history in dis_extract')
+
       deallocate(cham,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating cham in dis_extract')
       deallocate(czmat_out,stat=ierr)
@@ -1689,6 +1716,36 @@ contains
 
     contains
 
+
+      subroutine internal_test_convergence()
+
+        implicit none
+
+        integer :: j,ierr
+        real(kind=dp), allocatable :: temp_hist(:)
+        
+        allocate(temp_hist(dis_conv_window),stat=ierr)
+        if (ierr/=0) call io_error('Error allocating temp_hist in dis_extract')
+        
+        if (iter.le.dis_conv_window) then
+           history(iter) = delta_womegai
+        else
+           temp_hist = eoshift(history,1,delta_womegai)
+           history = temp_hist
+        endif
+
+        dis_converged = .false.
+        if (iter.ge.dis_conv_window) then
+!           write(stdout,*) (history(j),j=1,dis_conv_window)
+           do j=1,dis_conv_window
+              if ( abs(history(j)).gt.dis_conv_tol ) exit
+              dis_converged = .true.
+           enddo
+        endif
+
+        return
+
+      end subroutine internal_test_convergence
 
 
       !==================================================================!
