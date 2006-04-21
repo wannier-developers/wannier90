@@ -86,7 +86,7 @@ The name of the wavefunction file is assumed to have the form:
 The first line of each file should contain 5 integers: the number of
  grid points in each direction (\verb#ngx#, \verb#ngy# and
  \verb#ngz#), the k-point number \verb#ik# and the total number of
- bands \verb#nbnd# in the file. The full file will be read by Wannier90 as:
+ bands \verb#num\_band# in the file. The full file will be read by Wannier90 as:
 
 \begin{verbatim}
 read(file_unit) ngx,ngy,ngz,ik,nbnd
