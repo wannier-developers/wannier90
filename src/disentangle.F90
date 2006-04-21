@@ -1285,7 +1285,7 @@ contains
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
       write(stdout,'(1x,a)') &
-           '|  Iter     Omega_I(i-1)      Omega_I(i)      Delta (%)        Time   |<-- DIS'
+           '|  Iter     Omega_I(i-1)      Omega_I(i)    Delta (frac.)      Time   |<-- DIS'
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
 
@@ -1484,8 +1484,7 @@ contains
          womegai = womegai / real(num_kpts,dp)  
          ! [Loop over k (nkp)]
 
-!         delta_womegai = 100.0_dp*(womegai1-womegai)/womegai
-         delta_womegai = (100.0_dp*womegai1)/womegai - 100.0_dp
+         delta_womegai = womegai1/womegai - 1.0_dp
 
          write(stdout,124) iter,womegai1*lenconfac**2,womegai*lenconfac**2,&
               delta_womegai,io_time()
@@ -1501,9 +1500,9 @@ contains
          call internal_test_convergence()
          
          if (dis_converged) then
-            write(stdout,'(/15x,a,es10.3,a,i2,a)') &
-                 '<<< Delta (%) <',dis_conv_tol,&
-                 '  over ',dis_conv_window,' iterations >>>'
+            write(stdout,'(/13x,a,es10.3,a,i2,a)') &
+                 '<<<      Delta <',dis_conv_tol,&
+                 '  over ',dis_conv_window,' iterations     >>>'
             write(stdout,'(13x,a)')  '<<< Disentanglement convergence criteria satisfied >>>'
             exit
          endif

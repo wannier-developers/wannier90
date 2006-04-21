@@ -517,7 +517,7 @@ contains
     call param_get_keyword('dis_mix_ratio',found,r_value=dis_mix_ratio)
     if (dis_mix_ratio<0.d0) call io_error('Error: dis_mix_ratio must be positive')
 
-    dis_conv_tol      = 0.0d0       
+    dis_conv_tol      = 1.0d-10      
     call param_get_keyword('dis_conv_tol',found,r_value=dis_conv_tol)
     if (dis_conv_tol<0.d0) call io_error('Error: dis_conv_tol must be positive')
 
