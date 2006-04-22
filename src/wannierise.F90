@@ -83,10 +83,9 @@ contains
     complex(kind=dp), allocatable  :: cz (:,:)  
     complex(kind=dp), allocatable  :: cmtmp(:,:),tmp_cdq(:,:) 
 
-    real(kind=dp) :: fac,shift,trial_step,doda0
-    real(kind=dp) :: falphamin,eqa,eqb,alphamin
+    real(kind=dp) :: trial_step,doda0
+    real(kind=dp) :: falphamin,alphamin
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
-    real(kind=dp) :: alphamin_quad,falphamin_quad
     integer :: i,n,iter,ind,ierr,iw,ncg,bis_loop,info
     logical :: lprint,ldump
 
@@ -515,30 +514,20 @@ contains
 
       implicit none
 
-      fac = abs(trial_spread%om_tot - wann_spread%om_tot)
-      if ( fac.gt.tiny(1.0_dp) ) then
-         fac = 1.0_dp/fac
-         if ( trial_spread%om_tot .gt. wann_spread%om_tot ) then
-            shift =  1.0_dp
-         else
-            shift = -1.0_dp
-         endif
+      real(kind=dp) :: dy,eqa
+
+      dy = trial_spread%om_tot - wann_spread%om_tot
+      eqa = (dy - doda0*trial_step)/(trial_step**2)
+      if (abs(eqa).gt.(epsilon(1.0_dp))) then
+         alphamin = -0.5_dp*doda0/eqa
+         falphamin= -0.25_dp*doda0**2/eqa + wann_spread%om_tot
       else
-         fac   = 1.0e5_dp
-         shift = fac*trial_spread%om_tot - fac*wann_spread%om_tot
+         if ( lprint .and. iprint>2 ) &
+              write(stdout,*) ' LINE --> Parabolic line search unstable: taking trial step'
+         alphamin = trial_step
+         falphamin= trial_spread%om_tot
       endif
-      eqb = fac*doda0  
-      eqa = shift - eqb*trial_step
-      if ( abs(eqa/(fac*wann_spread%om_tot)) .gt. epsilon(1.0_DP) ) then
-         alphamin_quad = -eqb / (2.0_dp * eqa) * (trial_step**2)
-         falphamin_quad = wann_spread%om_tot &
-              - ( eqb*eqb / (4.0_dp * fac * eqa) ) * (trial_step**2)
-      endif
-
-      ! set line search coefficient
-      alphamin=alphamin_quad
-      falphamin=falphamin_quad
-
+         
       return
 
     end subroutine internal_optimal_step
