@@ -1285,7 +1285,7 @@ contains
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
       write(stdout,'(1x,a)') &
-           '|  Iter     Omega_I(i-1)      Omega_I(i)    Delta (frac.)      Time   |<-- DIS'
+           '|  Iter     Omega_I(i-1)      Omega_I(i)      Delta (frac.)    Time   |<-- DIS'
       write(stdout,'(1x,a)') &
            '+---------------------------------------------------------------------+<-- DIS'
 
@@ -1299,7 +1299,7 @@ contains
          if (iter.eq.1) then  
             ! Initialize Z matrix at k points w/ non-frozen states
             do nkp = 1, num_kpts  
-               if (num_wann.gt.ndimfroz(nkp)) call dis_zmatrix(nkp,czmat_in(:,:,nkp))
+               if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_in(:,:,nkp))
             enddo
          else  
             ! [iter.ne.1]
@@ -1490,11 +1490,11 @@ contains
               delta_womegai,io_time()
 
 
-124      format(2x,i6,3x,f14.8,3x,f14.8,3x,es13.6,2x,f8.2,4x,'<-- DIS')
+124      format(2x,i6,3x,f14.8,3x,f14.8,6x,es10.3,2x,f8.2,4x,'<-- DIS')
 
          ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
          do nkp = 1, num_kpts  
-            if (num_wann.gt.ndimfroz(nkp)) call dis_zmatrix(nkp,czmat_out(:,:,nkp))
+            if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_out(:,:,nkp))
          enddo
 
          call internal_test_convergence()
@@ -1748,7 +1748,7 @@ contains
 
 
       !==================================================================!
-      subroutine dis_zmatrix(nkp,cmtrx)
+      subroutine internal_zmatrix(nkp,cmtrx)
       !==================================================================!
       !                                                                  !
       !                                                                  !
@@ -1793,7 +1793,7 @@ contains
 
         return  
 
-      end subroutine dis_zmatrix
+      end subroutine internal_zmatrix
 
 
 !!$      !==================================================================!
