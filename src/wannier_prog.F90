@@ -24,14 +24,30 @@ program wannier
   implicit none
 
   real(kind=dp) time0,time1,time2
+  character(len=9) :: stat,pos,cdate,ctime
 
   time0=io_time()
-  stdout=io_file_unit()
-  call io_get_seedname
-  open(unit=stdout,file=trim(seedname)//'.wout')
-  call param_write_header
 
+  call io_get_seedname
+
+  stdout=io_file_unit()
+  open(unit=stdout,file=trim(seedname)//'.werr')
+  call io_date(cdate,ctime)
+  write(stdout,*)  'Wannier90: Execution started on ',cdate,' at ',ctime
   call param_read
+  close(stdout,status='delete')
+
+  if (restart.eq.' ') then
+     stat='replace'
+     pos ='rewind'
+  else
+     stat='old'
+     pos='append'
+  endif
+
+  stdout=io_file_unit()
+  open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
+  call param_write_header
   call param_write
 
   time1=io_time()
@@ -66,7 +82,7 @@ program wannier
         case ('plot')       ! continue from plot_main irrespective of value of last checkpoint 
            write(stdout,'(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
            goto 2002       
-        case default
+        case default        ! for completeness... (it is already trapped in param_read)
            call io_error('Value of restart not recognised in wann_prog')
      end select
   endif

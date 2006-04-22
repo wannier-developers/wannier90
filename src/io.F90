@@ -197,7 +197,7 @@ contains
          
          close(stdout)
          
-         stop "wannier90 error: examine the output file for details" 
+         stop "wannier90 error: examine the output/error file for details" 
          
        end subroutine io_error
 
