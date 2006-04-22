@@ -759,7 +759,7 @@ contains
     write(stdout,*) ' '
     write(stdout,'(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
-    write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',length_unit,'|'  
+    write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
 
     ! Wannierise
@@ -771,6 +771,12 @@ contains
 !    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',conv_window,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between writing output         :',num_print_cycles,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between backing up to disk     :',num_dump_cycles,'|'
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write r^2_nm to file                      :',write_r2mn,'|'
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Use guiding centre to control phases      :',guiding_centres,'|'
+    if(guiding_centres .or. iprint>2) then
+    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations before starting guiding centres:',num_no_guide_iter,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between using guiding centres  :',num_guide_cycles,'|'
+    end if
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     !
     ! Disentanglement
@@ -795,14 +801,15 @@ contains
        if (wannier_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :',wannier_plot,'|'
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Size of supercell for plotting           :',wannier_plot_supercell,'|'
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',wannier_plot_format,'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
        if (fermi_surface_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting Fermi surface                    :',fermi_surface_plot,'|'
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Number of plotting points (along b_1)    :',fermi_surface_num_points,'|'
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',fermi_surface_plot_format,'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(fermi_surface_plot_format),'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
@@ -810,7 +817,7 @@ contains
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting interpolated bandstructure       :',bands_plot,'|'
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :',bands_num_spec_points/2,'|'
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :',bands_num_points,'|'
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Output format                            :',bands_plot_format,'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Output format                            :',trim(bands_plot_format),'|'
           write(stdout,'(1x,a78)') '|   K-space path sections:                                                   |'
           if(bands_num_spec_points==0) then
              write(stdout,'(1x,a78)') '|     None defined                                                           |'
