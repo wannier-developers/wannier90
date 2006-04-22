@@ -758,12 +758,29 @@ contains
     ! Main
     write(stdout,*) ' '
     write(stdout,'(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :',num_wann,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :',num_bands,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
+    write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :',postproc_setup,'|'
+    if(cp_pp .or. iprint>2) &
+                  write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :',cp_pp,'|'
+    if(wannier_plot .or. iprint>2) then
+       if(wvfn_formatted) then
+             write(stdout,'(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :','formatted','|'
+        else
+         write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Wavefunction (UNK) file-type              :','unformatted','|'
+        endif
+       if(spin==1) then
+         write(stdout,'(1x,a46,16x,a2,13x,a1)') '|  Wavefunction spin channel                 :','up','|' 
+       else
+         write(stdout,'(1x,a46,14x,a4,13x,a1)') '|  Wavefunction spin channel                 :','down','|'  
+       endif
+     endif  
+
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
 
     ! Wannierise
-    write(stdout,*) ' '
     write(stdout,'(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Total number of iterations                :',num_iter,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Number of CG steps before reset           :',num_cg_steps,'|'
