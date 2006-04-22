@@ -46,16 +46,17 @@ contains
     write(stdout,*)
 
     if(bands_plot .or. dos_plot .or. fermi_surface_plot) then
+       call wigner_seitz(count_pts=.true.)
        allocate(irvec(3,3*num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating irvec in plot_main')
        irvec=0
        allocate(ndegen(3*num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating ndegen in plot_main')
        ndegen=0
-       call wigner_seitz
        allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating ham_r in plot_main')
        ham_r=cmplx_0
+       call wigner_seitz(count_pts=.false.)
        call plot_get_hr
        !
        if(bands_plot) call plot_interpolate_bands
@@ -224,7 +225,7 @@ contains
     glabel(num_spts)=' '//bands_label(bands_num_spec_points)//' '
     ! gnu file
     write(gnuunit,701) xval(total_pts),emin,emax
-    do i = 1, num_paths
+    do i = 1, num_paths-1
        write(gnuunit,705) sum(kpath_len(1:i)),emin,sum(kpath_len(1:i)),emax
     enddo
     write(gnuunit,702, advance="no") glabel(1),0.d0,(glabel(i+1),sum(kpath_len(1:i)),i=1,bands_num_spec_points/2-1)
@@ -719,7 +720,7 @@ contains
 
 
   !================================================================================!
-  subroutine wigner_seitz( )
+  subroutine wigner_seitz(count_pts)
   !================================================================================!
   ! Calculates a grid of points that fall inside of (and eventually on the         !
   ! surface of) the Wigner-Seitz supercell centered on the origin of the B         !
@@ -736,6 +737,8 @@ contains
   ! nrpts             number of Wigner-Seitz grid points
 
   implicit none
+
+  logical, intent(in) :: count_pts 
 
   integer       :: ndiff (3)
   real(kind=dp) :: dist(27),tot,dist_min
@@ -777,22 +780,15 @@ contains
            dist_min=minval(dist)
            if (abs(dist(14) - dist_min ) .lt.1.d-7) then
               nrpts = nrpts + 1  
-              ! Hopefully this will never happen, i.e., I think 3*nkpts is
-              ! an upper bound to the number of lattice points in (or on
-              ! the surface of) the Wigner-Seitz supercell
-              if (nrpts.gt.3 * num_kpts) then  
-                 call io_error('Error: nrpts too small in plot_wigner_seitz &
-                      & edit plot.f90 and contact code developers')
+              if(.not. count_pts) then
+                 ndegen(nrpts)=0
+                do i=1,27
+                   if (abs (dist (i) - dist_min) .lt.1.d-7) ndegen(nrpts)=ndegen(nrpts)+1
+                end do
+                irvec(1, nrpts) = n1 - mp_grid(1)  
+                irvec(2, nrpts) = n2 - mp_grid(2)  
+                irvec(3, nrpts) = n3 - mp_grid(3)  
               endif
-              ndegen(nrpts)=0
-              do i=1,27
-                 if (abs (dist (i) - dist_min) .lt.1.d-7) ndegen(nrpts)=ndegen(nrpts)+1
-              end do
-
-              irvec(1, nrpts) = n1 - mp_grid(1)  
-              irvec(2, nrpts) = n2 - mp_grid(2)  
-              irvec(3, nrpts) = n3 - mp_grid(3)  
-
            end if
 
            !n3
@@ -802,6 +798,9 @@ contains
      !n1
   enddo
   !
+  if(count_pts) return
+
+
   if(iprint>=3) then
      write(stdout,'(1x,i4,a,/)') nrpts,  ' lattice points in Wigner-Seitz supercell:'
      do i=1,nrpts
