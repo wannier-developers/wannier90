@@ -377,7 +377,7 @@ contains
     implicit none
 
     real(kind=dp) :: scalfac,tmax,tmaxx,x_0ang,y_0ang,z_0ang
-    real(kind=dp) :: fxcry(3),dirl(3,3),w_real,w_imag
+    real(kind=dp) :: fxcry(3),dirl(3,3),w_real,w_imag,ratmax,ratio
     complex(kind=dp), allocatable :: wann_func(:,:,:,:)
     complex(kind=dp), allocatable :: r_wvfn(:,:)
     complex(kind=dp), allocatable :: r_wvfn_tmp(:,:)
@@ -546,6 +546,27 @@ contains
        wmod=wmod/sqrt(real(wmod)**2+aimag(wmod)**2)
        wann_func(:,:,:,loop_w)=wann_func(:,:,:,loop_w)/wmod
     end do
+    !
+    ! Check the 'reality' of the WF
+    !
+    do loop_w=1,num_wannier_plot
+       ratmax=0.0_dp
+       do nzz=-ngz,(ngs-1)*ngz-1
+          do nyy=-ngy,(ngs-1)*ngy-1
+             do nxx=-ngx,(ngs-1)*ngx-1
+                if (abs(real(wann_func(nxx,nyy,nzz,loop_w),dp))>=0.01_dp) then
+                ratio=abs(aimag(wann_func(nxx,nyy,nzz,loop_w)))/ &
+                     abs(real(wann_func(nxx,nyy,nzz,loop_w),dp))
+                ratmax=max(ratmax,ratio)
+             end if
+             end do
+          end do
+       end do
+       write(stdout,'(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ',wannier_plot_list(loop_w),&
+         'Maximum Im/Re Ratio = ',ratmax
+    end do
+    write(stdout,*) ' '
+
 
     ! this is to create the WF...xsf output, to be read by XCrySDen
     ! (coordinates + isosurfaces)
