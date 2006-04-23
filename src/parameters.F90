@@ -831,7 +831,8 @@ contains
        if (fermi_surface_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting Fermi surface                    :',fermi_surface_plot,'|'
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Number of plotting points (along b_1)    :',fermi_surface_num_points,'|'
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(fermi_surface_plot_format),'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :' &
+                                                                                 ,trim(fermi_surface_plot_format),'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
