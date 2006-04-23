@@ -68,7 +68,6 @@ module parameters
   integer,           public, save :: num_nnmax    !expert  - max nearest neighbours
   integer,           public, save :: num_shells
   integer, allocatable, public,save :: shell_list(:)
-  integer,           public, save :: insign
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
   real(kind=dp),     public, save :: real_lattice(3,3)
   logical,           public, save :: postproc_setup
@@ -106,7 +105,6 @@ module parameters
 
   !parameters dervied from input
   integer,           public, save :: num_kpts
-  real(kind=dp), allocatable,    public, save ::wtkpt(:)
   real(kind=dp),     public, save :: recip_lattice(3,3)
   real(kind=dp),     public, save :: cell_volume
   real(kind=dp),     public, save :: real_metric(3,3)
@@ -195,7 +193,7 @@ contains
 
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3,3)
-    integer :: nkp,i,j,n,k,i_temp,i_temp2,unit,loop
+    integer :: nkp,i,j,n,k,i_temp,i_temp2,eig_unit,loop,ierr
     logical :: found,found2,eig_found,lunits
     character(len=6) :: spin_str
 
@@ -264,7 +262,8 @@ contains
     call param_get_vector_length('exclude_bands',found,num_exclude_bands)
     if(found) then
        if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
-       allocate(exclude_bands(num_exclude_bands))
+       allocate(exclude_bands(num_exclude_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
        call param_get_keyword_vector('exclude_bands',found,num_exclude_bands,i_value=exclude_bands)
        if (any(wannier_plot_list<1)  ) &
             call io_error('Error: exclude_bands must contain positive numbers')
@@ -354,14 +353,16 @@ contains
     call param_get_vector_length('wannier_plot_list',found,num_wannier_plot)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
-       allocate(wannier_plot_list(num_wannier_plot))
+       allocate(wannier_plot_list(num_wannier_plot),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating wannier_plot_list in param_read')
        call param_get_keyword_vector('wannier_plot_list',found,num_wannier_plot,i_value=wannier_plot_list)
        if (any(wannier_plot_list<1) .or. any(wannier_plot_list>num_wann) ) &
             call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted')
     else
        ! we plot all wannier functions
        num_wannier_plot=num_wann
-       allocate(wannier_plot_list(num_wannier_plot))
+       allocate(wannier_plot_list(num_wannier_plot),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating wannier_plot_list in param_read')
        do loop=1,num_wann
           wannier_plot_list(loop)=loop
        end do
@@ -381,8 +382,10 @@ contains
     call param_get_block_length('kpoint_path',found,i_temp)
     if (found) then
        bands_num_spec_points=i_temp*2
-       allocate(bands_label(bands_num_spec_points))
-       allocate(bands_spec_points(3,bands_num_spec_points))
+       allocate(bands_label(bands_num_spec_points),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating bands_label in param_read')
+       allocate(bands_spec_points(3,bands_num_spec_points),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating bands_spec_points in param_read')
        call param_get_keyword_kpath
     end if
     if(.not.found .and. bands_plot) &
@@ -434,7 +437,8 @@ contains
     if(num_bands>num_wann) disentanglement=.true.
 
     ! Read the eigenvalues from wannier.eig
-    allocate(eigval(num_bands,num_kpts))
+    allocate(eigval(num_bands,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating eigval in param_read')
 
     if(.not.postproc_setup)  then
     inquire(file=trim(seedname)//'.eig',exist=eig_found)
@@ -445,17 +449,17 @@ contains
           call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
        end if
     else
-       unit=io_file_unit()
-       open(unit=unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
+       eig_unit=io_file_unit()
+       open(unit=eig_unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
        do k=1,num_kpts
           do n=1,num_bands
-             read(unit,*,err=106,end=106) i,j,eigval(n,k)
+             read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
              if ((i.ne.n).or.(j.ne.k)) then
                 call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
              end if
           enddo
        end do
-       close(unit)
+       close(eig_unit)
     end if
     end if
 
@@ -511,16 +515,16 @@ contains
     call param_get_keyword('num_shells',found,i_value=num_shells)
     if(num_shells<0 .or. num_shells>6) call io_error('Error: num_shells must be between zero and six')
     if (num_shells==0) then
-       allocate( shell_list(max_shells))
+       allocate( shell_list(max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating shell_list in param_read')
     else
-       allocate( shell_list(num_shells))
+       allocate( shell_list(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating shell_list in param_read')
     end if
     call param_get_keyword_vector('shell_list',found,num_shells,i_value=shell_list)
     if(num_shells==0 .and. found) call io_error('Error: shell_list has no effect when num_shells=0')
     if(num_shells/=0 .and. .not. found) call io_error('Error: shell_list must be set when when num_shells>0')
     if(num_shells/=0 .and. any(shell_list<1)) call io_error('Error: shell_list must be positive')
-
-    insign=1
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     !This is a hack. I must workout what is the sensible way to read and store this jry
@@ -531,16 +535,13 @@ contains
     call utility_recip_lattice(real_lattice,recip_lattice,cell_volume)
     call utility_compute_metric(real_lattice,recip_lattice,real_metric,recip_metric)
 
-    allocate ( kpt_cart(3,num_kpts) )
-    allocate ( kpt_latt(3,num_kpts) )
-    allocate ( wtkpt(num_kpts)  )
+    allocate ( kpt_cart(3,num_kpts) ,stat=ierr)
+    if (ierr/=0) call io_error('Error allocating kpt_cart in param_read')
+    allocate ( kpt_latt(3,num_kpts) ,stat=ierr)
+    if (ierr/=0) call io_error('Error allocating kpt_latt in param_read')
 
     call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_latt)
     if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
-
-    do i=1,num_kpts
-       wtkpt(i)=1.d0/real(num_kpts,dp)
-    end do
 
     ! Calculate the kpoints in cartesian coordinates
     do nkp=1,num_kpts
@@ -583,12 +584,12 @@ contains
     end if
 
 
-
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase()
 
 
-    deallocate(in_data)
+    deallocate(in_data,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating in_data in param_read')
 
     ! Some checks 
     if (restart.ne.' ') disentanglement=.false.
@@ -597,8 +598,12 @@ contains
          .and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
          call io_error('Error in input file: value of restart not recognised')
 
-    if (disentanglement) allocate(ndimwin(num_kpts))
-    if (disentanglement) allocate(lwindow(num_bands,num_kpts))
+    if (disentanglement) then 
+       allocate(ndimwin(num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating ndimwin in param_read')
+        allocate(lwindow(num_bands,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating lwindow in param_read')
+    endif
 
     ! Initialise
     omega_invariant = -999.0_dp
@@ -957,8 +962,6 @@ contains
     if (ierr/=0) call io_error('Error in deallocating eigval in param_dealloc')
     deallocate ( shell_list, stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating shell_list in param_dealloc')
-    deallocate ( wtkpt , stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating wtkpt in param_dealloc')
     deallocate ( kpt_latt, stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating kpt_latt in param_dealloc')
     deallocate ( kpt_cart, stat=ierr  )
@@ -1299,7 +1302,8 @@ contains
 210 continue
     rewind(in_unit)
 
-    allocate(in_data(num_lines))
+    allocate(in_data(num_lines),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating in_data in param_in_file')
 
     line_counter=0
     do loop=1,tot_num_lines
@@ -1769,7 +1773,7 @@ contains
     real(kind=dp)     :: atoms_pos_cart_tmp(3,num_atoms)
     character(len=20) :: keyword
     integer           :: in,ins,ine,loop,i,line_e,line_s,counter
-    integer           :: i_temp,loop2,max_sites
+    integer           :: i_temp,loop2,max_sites,ierr
     logical           :: found_e,found_s,found,frac
     character(len=maxlen) :: dummy,end_st,start_st
     character(len=2)  :: ctemp(num_atoms)
@@ -1881,8 +1885,10 @@ contains
        end do
     end do
 
-    allocate(atoms_species_num(num_species))
-    allocate(atoms_label(num_atoms))
+    allocate(atoms_species_num(num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_species_num in param_get_atoms')
+    allocate(atoms_label(num_atoms),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_label in param_get_atoms')
     atoms_species_num(:)=0
 
     do loop=1,num_species
@@ -1895,8 +1901,10 @@ contains
     end do
 
     max_sites=maxval(atoms_species_num)
-    allocate(atoms_pos_frac(3,max_sites,num_species))
-    allocate(atoms_pos_cart(3,max_sites,num_species))
+    allocate(atoms_pos_frac(3,max_sites,num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_pos_frac in param_get_atoms')
+    allocate(atoms_pos_cart(3,max_sites,num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_pos_cart in param_get_atoms')
 
     do loop=1,num_species
        counter=0
@@ -1938,7 +1946,7 @@ contains
     character(len=20) :: keyword
     integer           :: in,ins,ine,loop,line_e,line_s,counter
     integer           :: sites,species,line,pos1,pos2,pos3,m_tmp,l_tmp,mstate
-    integer           :: loop_l,loop_m,loop_sites
+    integer           :: loop_l,loop_m,loop_sites,ierr
     logical           :: found_e,found_s
     character(len=maxlen) :: dummy,end_st,start_st
     character(len=maxlen) :: ctemp,ctemp2,ctemp3,ctemp4,ctemp5,m_string
@@ -1970,14 +1978,22 @@ contains
     start_st='begin '//trim(keyword)
     end_st='end '//trim(keyword)
 
-    allocate( proj_site(3,num_wann) )
-    allocate( proj_l(num_wann)  )
-    allocate( proj_m(num_wann)  )
-    allocate( proj_z(3,num_wann) )
-    allocate( proj_x(3,num_wann) )
-    allocate( proj_radial(num_wann) )  
-    allocate( proj_zona(num_wann) )
-    allocate( proj_box(num_wann) )
+    allocate( proj_site(3,num_wann),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_site in param_get_projections') 
+    allocate( proj_l(num_wann) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_l in param_get_projections') 
+    allocate( proj_m(num_wann)  ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_m in param_get_projections')
+    allocate( proj_z(3,num_wann) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_z in param_get_projections')
+    allocate( proj_x(3,num_wann) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_x in param_get_projections')
+    allocate( proj_radial(num_wann)   ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_radial in param_get_projections')
+    allocate( proj_zona(num_wann) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_zona in param_get_projections')
+    allocate( proj_box(num_wann) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating proj_box in param_get_projections')
 
 
 

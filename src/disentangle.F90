@@ -1,31 +1,5 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
 !                                                            !
-!                       WANNIER90                            !
-!                                                            !
-!          The Maximally-Localised Generalised               !
-!                Wannier Functions Code                      !
-!                                                            !
-!        Authors:                                            !
-!              Arash A. Mostofi   (MIT)                      !
-!              Jonathan R. Yates  (LBNL and UC Berkeley)     !
-!                                                            !
-!  Please cite                                               !
-!                                                            !
-!  [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza    !
-!        and D. Vanderbilt, http://www.wannier.org/          !
-!                                                            !
-!  in any publications arising from the use of this code.    !
-!                                                            !
-!  Wannier90 is based on routines written by N. Marzari,     !
-!  I. Souza and D. Vanderbilt. For the method please cite    !
-!                                                            !
-!  [ref] N. Marzari and D. Vanderbilt,                       !
-!        Phys. Rev. B 56 12847 (1997)                        !
-!                                                            !
-!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
-!        Phys. Rev. B 65 035109 (2001)                       !
-!                                                            !
-!                                                            !
 ! Copyright (C) 1997-2006 Jonathan Yates, Arash Mostofi,     !
 !            Nicola Marzari, Ivo Souza, David Vanderbilt     !
 !                                                            !
@@ -277,8 +251,8 @@ contains
       complex(kind=dp), allocatable :: cmtmp(:,:)
       
       allocate(cmtmp(num_bands,num_bands),stat=ierr)
-      
       if (ierr/=0) call io_error('Error in allocating cmtmp in dis_main')
+
       do nkp = 1, num_kpts  
          do nn = 1, nntot  
             nkp2 = nnlist(nkp,nn)  

@@ -651,13 +651,14 @@ contains
     real(kind=dp) :: work(lwork)
     real(kind=dp), parameter :: target(6)=(/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp/)
     logical :: b1sat,lpar
-    integer :: loop_i,loop_j,loop_bn,loop_b,loop_s,info,cur_shell
+    integer :: loop_i,loop_j,loop_bn,loop_b,loop_s,info,cur_shell,ierr
     real(kind=dp) :: delta
 
     integer :: loop,shell
 
 
-    allocate( bvector(3,maxval(multi),max_shells))
+    allocate( bvector(3,maxval(multi),max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating bvector in kmesh_shell_automatic')
     bvector=0.0_dp;bweight=0.0_dp
 
     write(stdout,'(1x,a)') '| The b-vectors are chosen automatically                                     |'
@@ -701,11 +702,16 @@ contains
        num_shells=num_shells+1
        shell_list(num_shells)=shell
 
-       allocate(amat(max_shells,num_shells))
-       allocate(umat(max_shells,max_shells))
-       allocate(vmat(num_shells,num_shells))
-       allocate(smat(num_shells,max_shells))
-       allocate(singv(num_shells))
+       allocate(amat(max_shells,num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(umat(max_shells,max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating umat in kmesh_shell_automatic')
+       allocate(vmat(num_shells,num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating vmat in kmesh_shell_automatic')
+       allocate(smat(num_shells,max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating smat in kmesh_shell_automatic')
+       allocate(singv(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating singv in kmesh_shell_automatic')
        amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
 
        amat=0.0_dp
@@ -770,11 +776,16 @@ contains
           end if
        end if
 
-       deallocate(amat)
-       deallocate(umat)
-       deallocate(vmat)
-       deallocate(smat)
-       deallocate(singv)
+       deallocate(amat,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(umat,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating umat in kmesh_shell_automatic')
+       deallocate(vmat,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating vmat in kmesh_shell_automatic')
+       deallocate(smat,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating smat in kmesh_shell_automatic')
+       deallocate(singv,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating singv in kmesh_shell_automatic')
 
        if(b1sat) exit
 
@@ -813,11 +824,12 @@ contains
     real(kind=dp) :: work(lwork)
     real(kind=dp), parameter :: target(6)=(/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp/)
     logical :: b1sat
-    integer :: loop_i,loop_j,loop_b,loop_s,info
+    integer :: ierr,loop_i,loop_j,loop_b,loop_s,info
     real(kind=dp) :: delta
 
     integer :: loop,shell
-    allocate( bvector(3,maxval(multi),num_shells) )
+    allocate( bvector(3,maxval(multi),num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating bvector in kmesh_shell_fixed') 
     bvector=0.0_dp;bweight=0.0_dp
     amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
 
