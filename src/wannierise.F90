@@ -23,6 +23,7 @@ module wannierise
   complex(kind=dp), allocatable  :: cr (:,:,:,:)   
   complex(kind=dp), allocatable  :: crt (:,:,:,:)  
   real(kind=dp),    allocatable  :: rnkb (:,:,:)   
+  real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
   type localisation_vars
      real(kind=dp) :: om_i   
@@ -83,9 +84,10 @@ contains
     complex(kind=dp), allocatable  :: cz (:,:)  
     complex(kind=dp), allocatable  :: cmtmp(:,:),tmp_cdq(:,:) 
 
-    real(kind=dp) :: trial_step,doda0
-    real(kind=dp) :: falphamin,alphamin
+    real(kind=dp) :: fac,shift,trial_step,doda0
+    real(kind=dp) :: falphamin,eqa,eqb,alphamin
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
+    real(kind=dp) :: alphamin_quad,falphamin_quad
     integer :: i,n,iter,ind,ierr,iw,ncg,bis_loop,info
     logical :: lprint,ldump
 
@@ -105,6 +107,8 @@ contains
     if (ierr/=0) call io_error('Error in allocating crt in wann_main')
     allocate( rnkb (num_wann, nntot, num_kpts),stat=ierr    )     
     if (ierr/=0) call io_error('Error in allocating rnkb in wann_main')
+    allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
+    if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main')
 
     cr=cmplx_0;  crt=cmplx_0;  rnkb=cmplx_0
 
@@ -514,20 +518,30 @@ contains
 
       implicit none
 
-      real(kind=dp) :: dy,eqa
-
-      dy = trial_spread%om_tot - wann_spread%om_tot
-      eqa = (dy - doda0*trial_step)/(trial_step**2)
-      if (abs(eqa).gt.(epsilon(1.0_dp))) then
-         alphamin = -0.5_dp*doda0/eqa
-         falphamin= -0.25_dp*doda0**2/eqa + wann_spread%om_tot
+      fac = abs(trial_spread%om_tot - wann_spread%om_tot)
+      if ( fac.gt.tiny(1.0_dp) ) then
+         fac = 1.0_dp/fac
+         if ( trial_spread%om_tot .gt. wann_spread%om_tot ) then
+            shift =  1.0_dp
+         else
+            shift = -1.0_dp
+         endif
       else
-         if ( lprint .and. iprint>2 ) &
-              write(stdout,*) ' LINE --> Parabolic line search unstable: taking trial step'
-         alphamin = trial_step
-         falphamin= trial_spread%om_tot
+         fac   = 1.0e5_dp
+         shift = fac*trial_spread%om_tot - fac*wann_spread%om_tot
       endif
-         
+      eqb = fac*doda0  
+      eqa = shift - eqb*trial_step
+      if ( abs(eqa/(fac*wann_spread%om_tot)) .gt. epsilon(1.0_DP) ) then
+         alphamin_quad = -eqb / (2.0_dp * eqa) * (trial_step**2)
+         falphamin_quad = wann_spread%om_tot &
+              - ( eqb*eqb / (4.0_dp * fac * eqa) ) * (trial_step**2)
+      endif
+
+      ! set line search coefficient
+      alphamin=alphamin_quad
+      falphamin=falphamin_quad
+
       return
 
     end subroutine internal_optimal_step
@@ -548,12 +562,16 @@ contains
 
       call io_stopwatch('wann_main: u and m',1)
 
+      call io_stopwatch('wann_main: svd u and m',1)
+
       do nkp = 1, num_kpts  
          tmp_cdq(:,:) = cdq(:,:,nkp)
+     call io_stopwatch('wann_main: svd2 u and m',1)
          call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
               cwschur1, cz, num_wann, cwschur2, 10 * num_wann, cwschur3, &
               cwschur4, info)
-         if (info.ne.0) then  
+     call io_stopwatch('wann_main: svd2 u and m',2)
+        if (info.ne.0) then  
             write(stdout,*) 'SCHUR: ', info  
             call io_error('wann_main: problem computing schur form 1') 
          endif
@@ -564,6 +582,8 @@ contains
          call utility_zgemm(cmtmp,tmp_cdq,'N',cz,'C',num_wann)
          cdq(:,:,nkp)=cmtmp(:,:)
       enddo
+
+ call io_stopwatch('wann_main: svd u and m',2)
 
       ! the orbitals are rotated
       do nkp=1,num_kpts
@@ -935,9 +955,9 @@ contains
           enddo
        enddo
     enddo
-    write ( stdout , * ) ' '  
-    write ( stdout , * ) ' PHASES ARE SET USING THE GUIDING CENTERS'  
-    write ( stdout , * ) ' '  
+!    write ( stdout , * ) ' '  
+!    write ( stdout , * ) ' PHASES ARE SET USING THE GUIDING CENTERS'  
+!    write ( stdout , * ) ' '  
 !    do nkp = 1, num_kpts  
 !       do n = 1, num_wann  
 !          do nn = 1, nntot  
@@ -976,13 +996,23 @@ contains
     type(localisation_vars)    , intent(out)  :: wann_spread
 
     !local variables
-!    real(kind=dp) :: sqim,bim2,bim(3),rtot(3)
-    real(kind=dp) :: summ,mnn2,imlogm
+    real(kind=dp) :: summ,mnn2
     real(kind=dp) :: brn
     integer :: ind,nkp,nn,m,n,iw
     logical, save :: first_pass=.true.
 
     call io_stopwatch('omega',1)
+
+
+    do nkp = 1, num_kpts
+       do nn = 1, nntot
+          do n = 1, num_wann
+             ln_tmp(n,nn,nkp)=( aimag(log(csheet(n,nn,nkp) &
+                     * m_matrix(n,n,nn,nkp))) - sheet(n,nn,nkp) )
+          end do
+      end do
+    end do
+
 
     rave  = 0.0_dp
     do iw = 1, num_wann  
@@ -990,8 +1020,7 @@ contains
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
                 rave(ind,iw) = rave(ind,iw) + wb(nn) * bk(ind,nn,nkp) &
-                     * ( aimag(log(csheet(iw,nn,nkp) * m_matrix(iw,iw,nn,nkp))) &
-                     - sheet(iw,nn,nkp) )
+                      *ln_tmp(iw,nn,nkp)
              enddo
           enddo
        enddo
@@ -1016,9 +1045,7 @@ contains
        do nkp = 1, num_kpts  
           do nn = 1, nntot  
              mnn2 = real(m_matrix(iw,iw,nn,nkp)*conjg(m_matrix(iw,iw,nn,nkp)),kind=dp)
-             imlogm = aimag( log( csheet(iw,nn,nkp)*m_matrix(iw,iw,nn,nkp) ) ) &
-                  - sheet(iw,nn,nkp)
-             r2ave(iw) = r2ave(iw) + wb(nn) * ( 1.0_dp - mnn2 + imlogm*imlogm )
+             r2ave(iw) = r2ave(iw) + wb(nn) * ( 1.0_dp - mnn2 + ln_tmp(iw,nn,nkp)**2 )
           enddo
        enddo
     enddo
@@ -1120,8 +1147,7 @@ contains
           do n = 1, num_wann  
              brn = sum(bk(:,nn,nkp)*rave(:,n))
              wann_spread%om_d = wann_spread%om_d + wb(nn) &
-                  * ( aimag(log(csheet(n,nn,nkp) * m_matrix(n,n,nn,nkp))) &
-                  - sheet(n,nn,nkp) + brn )**2
+                  * ( ln_tmp(n,nn,nkp) + brn)**2
           enddo
        enddo
     enddo
@@ -1166,6 +1192,14 @@ contains
 
     call io_stopwatch('domega',1)
 
+    do nkp = 1, num_kpts
+       do nn = 1, nntot
+          do n = 1, num_wann
+             ln_tmp(n,nn,nkp)=wb(nn)*( aimag(log(csheet(n,nn,nkp) &
+                     * m_matrix(n,n,nn,nkp))) - sheet(n,nn,nkp) )
+          end do
+      end do
+    end do
 
     ! recalculate rave
     rave = 0.0_dp
@@ -1173,15 +1207,13 @@ contains
        do ind = 1, 3  
           do nkp = 1, num_kpts  
              do nn = 1, nntot  
-                rave(ind,iw) = rave(ind,iw) + wb(nn) * bk(ind,nn,nkp) &
-                     * ( aimag(log(csheet(iw,nn,nkp) * m_matrix(iw,iw,nn,nkp))) &
-                     - sheet(iw,nn,nkp) )
+                rave(ind,iw) = rave(ind,iw) +  bk(ind,nn,nkp) &
+                     * ln_tmp(iw,nn,nkp)
              enddo
           enddo
        enddo
     enddo
     rave = -rave/real(num_kpts,dp)
-
 
     ! R_mn=M_mn/M_nn and q_m^{k,b} = Im phi_m^{k,b} + b.r_n are calculated
     rnkb = 0.0_dp
@@ -1196,7 +1228,6 @@ contains
        enddo
     enddo
 
-
     ! cd0dq(m,n,nkp) is calculated
     cdodq1 = cmplx_0 ; cdodq2 = cmplx_0 ; cdodq3 = cmplx_0
     do nkp = 1, num_kpts  
@@ -1208,11 +1239,9 @@ contains
                      + wb(nn) * cmplx(0.5_dp,0.0_dp,kind=dp) &
                      *( cr(m,n,nn,nkp) - conjg(cr(n,m,nn,nkp)) )
                 ! -S[T^{k,b}]=-(T+Tdag)/2i ; T_mn = Rt_mn q_n
-                cdodq2(m,n,nkp) = cdodq2(m,n,nkp) - wb(nn) &
-                     * ( crt(m,n,nn,nkp) * ( aimag(log(csheet(n,nn,nkp) &
-                     * m_matrix(n,n,nn,nkp))) - sheet(n,nn,nkp) ) &
-                     + conjg( crt(n,m,nn,nkp) * ( aimag(log(csheet(m,nn,nkp) &
-                     * m_matrix(m,m,nn,nkp))) - sheet(m,nn,nkp) ) ) ) &
+                cdodq2(m,n,nkp) = cdodq2(m,n,nkp) -  &
+                      ( crt(m,n,nn,nkp) * ln_tmp(n,nn,nkp)  &
+                     + conjg( crt(n,m,nn,nkp) * ln_tmp(m,nn,nkp) ) ) &
                      * cmplx(0.0_dp,-0.5_dp,kind=dp)
                 cdodq3(m,n,nkp) = cdodq3(m,n,nkp) - wb(nn) &
                      * ( crt(m,n,nn,nkp) * rnkb(n,nn,nkp) + conjg(crt(n,m,nn,nkp) &
