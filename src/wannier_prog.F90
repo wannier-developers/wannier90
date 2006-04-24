@@ -1,14 +1,40 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,
-!            Nicola Marzari, Ivo Souza, David Vanderbilt
-!
-! This file is distributed under the terms of the
-! GNU General Public License. See the file `License'
-! in the root directory of the present distribution,
-! or http://www.gnu.org/copyleft/gpl.txt .
-!
-!----------------------------------------------------------------------
-
+!                                                            !
+!                       WANNIER90                            !
+!                                                            !
+!          The Maximally-Localised Generalised               !
+!                 Wannier Functions Code                     !
+!                                                            !
+!        Authors:                                            !
+!              Arash A. Mostofi   (MIT)                      !
+!              Jonathan R. Yates  (LBNL and UC Berkeley)     !
+!                                                            !
+!  Please cite                                               !
+!                                                            !
+!  [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza    !
+!        and D. Vanderbilt, http://www.wannier.org/          !
+!                                                            !
+!  in any publications arising from the use of this code.    !
+!                                                            !
+!  Wannier90 is based on routines written by N. Marzari,     !
+!  I. Souza and D. Vanderbilt. For the method please cite    !
+!                                                            !
+!  [ref] N. Marzari and D. Vanderbilt,                       !
+!        Phys. Rev. B 56 12847 (1997)                        !
+!                                                            !
+!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
+!        Phys. Rev. B 65 035109 (2001)                       !
+!                                                            !
+!                                                            !
+! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,     !
+!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+!                                                            !
+! This file is distributed under the terms of the GNU        !
+! General Public License. See the file `LICENSE' in          !
+! the root directory of the present distribution, or         !
+! http://www.gnu.org/copyleft/gpl.txt .                      !
+!                                                            !
+!------------------------------------------------------------!
 
 program wannier
 

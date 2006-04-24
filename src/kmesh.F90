@@ -1,14 +1,14 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,
-!            Nicola Marzari, Ivo Souza, David Vanderbilt
-!
-! This file is distributed under the terms of the
-! GNU General Public License. See the file `License'
-! in the root directory of the present distribution,
-! or http://www.gnu.org/copyleft/gpl.txt .
-!
-!----------------------------------------------------------------------
-
+!                                                            !
+! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,     !
+!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+!                                                            !
+! This file is distributed under the terms of the GNU        !
+! General Public License. See the file `LICENSE' in          !
+! the root directory of the present distribution, or         !
+! http://www.gnu.org/copyleft/gpl.txt .                      !
+!                                                            !
+!------------------------------------------------------------!
 
 module kmesh
 
