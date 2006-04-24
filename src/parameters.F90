@@ -2073,6 +2073,8 @@ contains
           ctemp=ctemp(3:)
           call utility_string_to_coord(ctemp,pos_frac)
        else
+          if(num_species==0) &
+             call io_error('param_get_projection: Atom centred projection requested but no atoms defined')
           do loop=1,num_species
              if(trim(ctemp)==atoms_label(loop)) then
                 species=loop
