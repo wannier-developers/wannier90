@@ -160,6 +160,7 @@ contains
     do loop_s=1,num_shells
        nntot=nntot+multi(shell_list(loop_s))
     end do
+    if(nntot>12) call io_error('kmesh_get: something wrong, found > 12 nearest neighbours')
 
     allocate(nnlist(num_kpts,nntot), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating nnlist in kmesh_get')
@@ -663,6 +664,7 @@ contains
 
     write(stdout,'(1x,a)') '| The b-vectors are chosen automatically                                     |'
 
+    b1sat=.false.
     do shell=1,search_shells
        cur_shell=num_shells+1
 
@@ -671,7 +673,7 @@ contains
 
        if(iprint>=3) then
           write(stdout,'(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:',shell,' Multiplicity:',multi(shell), '|'
-             do loop=1,multi(cur_shell)
+             do loop=1,multi(shell)
                 write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ',loop,':', &
                      bvector(:,loop,cur_shell)/lenconfac,'('//trim(length_unit)//'^-1)','|'
              end do
@@ -735,8 +737,17 @@ contains
           call io_error('kmesh_shell_automatic: Singular Value Decomposition did not converge')
        end if
 
-       if(any(abs(singv)<0.0000001_dp)) &
-            call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value')
+       if(any(abs(singv)<0.00001_dp)) then
+         if(num_shells==1)  then 
+             call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value')
+         else
+            write(stdout,'(1x,a)') '| SVD found small singular value, Rejecting this shell and trying the next   |'
+            b1sat=.false.
+            num_shells=num_shells-1
+            goto 200
+         end if
+       end if  
+
 
        smat=0.0_dp
        do loop_s=1,num_shells
@@ -771,10 +782,14 @@ contains
        end do
 
        if(.not.b1sat) then
-          if(iprint>=3) then
+          if(shell<search_shells .and. iprint>=3) then
              write(stdout,'(1x,a,24x,a1)') '| B1 condition is not satisfied: Adding another shell','|'
+          elseif(shell==search_shells) then
+             call io_error('kmesh_get_automatic: Unable to satisfy B1 with any of the first 12 shells')
           end if
        end if
+
+200 continue
 
        deallocate(amat,stat=ierr)
        if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
@@ -791,7 +806,7 @@ contains
 
     end do
 
-
+    if(.not. b1sat)  call io_error('kmesh_get_automatic: Unable to satisfy B1 with any of the first 12 shells')
 
 
     return
