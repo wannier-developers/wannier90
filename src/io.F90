@@ -221,7 +221,7 @@ contains
     call date_and_time(values=date_time)
     !
     write (cdate,'(i2,a3,i4)') date_time(3), months(date_time(2)), date_time(1)
-    write (ctime,'(i2,":",i2,":",i2)') date_time(5), date_time(6), date_time(7)
+    write (ctime,'(i2.2,":",i2.2,":",i2.2)') date_time(5), date_time(6), date_time(7)
 
   end subroutine io_date
 
