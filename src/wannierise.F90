@@ -561,15 +561,11 @@ contains
 
       call io_stopwatch('wann_main: u and m',1)
 
-      call io_stopwatch('wann_main: svd u and m',1)
-
       do nkp = 1, num_kpts  
          tmp_cdq(:,:) = cdq(:,:,nkp)
-     call io_stopwatch('wann_main: svd2 u and m',1)
          call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
               cwschur1, cz, num_wann, cwschur2, 10 * num_wann, cwschur3, &
               cwschur4, info)
-     call io_stopwatch('wann_main: svd2 u and m',2)
         if (info.ne.0) then  
             write(stdout,*) 'SCHUR: ', info  
             call io_error('wann_main: problem computing schur form 1') 
@@ -581,8 +577,6 @@ contains
          call utility_zgemm(cmtmp,tmp_cdq,'N',cz,'C',num_wann)
          cdq(:,:,nkp)=cmtmp(:,:)
       enddo
-
- call io_stopwatch('wann_main: svd u and m',2)
 
       ! the orbitals are rotated
       do nkp=1,num_kpts
