@@ -1,23 +1,160 @@
 \chapter{Overview}
-The wannier90 code can operate in two modes
 
-(1) Read in the overlaps and projections from file as computed 
-inside an ab-initio code. We expect this to be the most common route to using the Wannier code.
+\section{Methodology}
+Wannier90 computes Maximally Localised
+Wannier Functions following the method of Marzari and Vanderbilt (MV).\footnote{
+{\it Maximally localized generalized Wannier functions for composite energy bands}
+N. Marzari and D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)}
+For entangled energy bands  the method of
+Souza, Marzari and Vanderbilt (SMV)\footnote{{\it Maximally localized
+    Wannier functions for entangled energy bands} 
+I. Souza, N. Marzari and D. Vanderbilt, Phys. Rev. B 65, 035109 (2002)}
+is used.
+We briefly introduce the methods and key definitions, but full details
+can be found in the original papers. 
+
+First principles codes typically solve the electronic structure of
+periodic materials in terms of Bloch states, $\psi_{n{\bf k}}$. 
+These extended states are characterised by a band index, n and crystal
+momentum, ${\bf k}$. An alternative representation can be given in terms
+of spatially localised functions known as Wannier functions (WF). The Wannier function 
+centred on a lattice site ${\bf R}$,  $w_{n{\bf R}}({\bf r})$, 
+is written in terms of the set of Bloch states as
+\begin{equation}
+w_{n{\bf R}}({\bf r})=\frac{V}{(2\pi)^3}\int_{BZ} \left[\sum_{m} U^{({\bf
+k})}_{mn} \psi_{m{\bf k}}({\bf r})\right]e^{-{\bf k}.{\bf R}} d{\bf k},
+\end{equation}
+where $U^{({\bf k})}$ is a unitary matrix which mixes the Bloch states at each
+${\bf k}$. $U^{({\bf k})}$ is not uniquely defined and different choices
+will lead to WF with varying spatial localisations. We define the spread
+of the Wannier functions, $\Omega$ 
+\begin{equation}
+\Omega=\sum_n \left[\langle w_{n{\bf 0}}({\bf r})| r^2 | w_{n{\bf
+      0}}({\bf r}) \rangle - | \langle w_{n{\bf 0}}({\bf r})| {\bf r} | w_{n{\bf
+      0}}({\bf r}) \rangle |^2 \right].
+\end{equation}
+The total spread can be decomposed into a gauge invariant term,
+$\Omega_{\rm I}$ and a term, ${\tilde \Omega}$ which is dependant on the gauge
+choice $U^{({\bf k})}$. ${\tilde \Omega}$ can
+be further divided into terms diagonal and off-diagonal in the WF basis,
+$\Omega_{\rm D}$ and $\Omega_{\rm OD}$.
+\begin{equation}
+\Omega=\Omega_{\rm I}+{\tilde \Omega}=\Omega_{\rm I}+\Omega_{\rm D}+\Omega_{\rm OD}
+\end{equation}
+where
+\begin{equation}
+\Omega_{{\rm I}}=\sum_n \left[\langle w_{n{\bf 0}}({\bf r})| r^2 | w_{n{\bf
+      0}}({\bf r}) \rangle - \sum_{{\bf R}m} \left| \langle w_{n{\bf R}}({\bf r})| {\bf r} | w_{n{\bf
+      0}}({\bf r}) \rangle \right| ^2 \right]
+\end{equation}
+\begin{equation}
+\Omega_{\rm D}=\sum_n \sum_{{\bf R}\neq{\bf 0}} |\langle w_{n{\bf R}}({\bf r})| {\bf r} |
+w_{n{\bf 0}}({\bf r}) \rangle|^2 
+\end{equation}
+\begin{equation}
+\Omega_{\rm D}=\sum_{m\neq n} \sum_{{\bf R}} |\langle w_{n{\bf R}}({\bf
+  r})| {\bf r} |
+w_{n{\bf 0}}({\bf r}) \rangle |^2 
+\end{equation}
+The MV method minimises the gauge dependent spread $\tilde{\Omega}$, with respect the set
+of $U^{({\bf k})}$ to obtain Maximally Localised Wannier Functions (MLWF).
+
+The Wannier90 code requires two ingredients from an initial electronic structure calculation.
+\begin{enumerate}
+\item The overlaps between the cell periodic part of the bloch states $|u_{n{\bf k}}\rangle$ 
+\begin{equation}
+M_{mn{\bf k}}=\langle u_{m{\bf k}}|u_{n{\bf k}+{\bf b}}\rangle,
+\end{equation}
+where the vectors ${\bf b}$, which connect a given kpoint with its neighbours, are determined
+by the Wannier90 code according to prescription outlined in MV.
+\item As a starting guess the projection of the bloch states onto trial localised orbitals 
+\begin{equation}
+M_{mn{\bf k}}=\langle \psi_{m{\bf k}}|\psi_{n{\bf k}+{\bf b}}\rangle,
+\end{equation}
+\end{enumerate}
+Note that $M_{{\bf k}}$, $A_{{\bf k}}$ and $U^{({\bf k})}$ are all
+small, $N_{{\rm wann}}^2$ matrices, independent of the basis set used to
+obtain the original Bloch states. To date the Wannier90 code has been
+used in combination with electronic codes based on planewaves and
+pseudopotentials (norm-conserving and ``ultrasoft'') as well as mixed
+basis set techniques such as FLAPW. 
+
+\subsection{Entangled Energy Bands}
+The above description is sufficient to obtain Wannier functions for
+isolated set of bands, such as the valence states in an insulator. In
+order to obtain MLWF for entangled energy bands we use the
+``disentanglement'' procedure introduced in SMV.
+
+We define an energy window (the ``outer window''). At a given kpoint 
+$N^{{\bf k}}_{{\rm win}}$ states lie within this energy window. We obtain a set of
+$N_{{\rm wann}}$ Bloch states by performing a unitary\footnote{As
+    $U^{{\rm dis}}_{{\bf k}}$ is a rectangular matrix this is a unitary
+    operation in the sense that $(U^{{\rm dis}}_{{\bf
+        k}})^{\dagger}U^{{\rm dis}}_{{\bf k}}=1$.}
+transformation amongst the Bloch states which fall within the energy window at each kpoint.
+ \begin{equation}
+| u_{n{\bf k}}^{{\rm opt}}\rangle = \sum_{m\in N^{{\bf k}}_{{\rm win}}}
+U^{{\rm dis}}_{mn{\bf k}} | u_{m{\bf k}}\rangle
+\end{equation}
+where $U^{{\rm dis}}_{{\bf k}}$ is a rectangular $N_{{\rm wann}}\times N^{{\bf
+ k}}_{{\rm win}}$
+ matrix. The set of $U^{{\rm dis}}_{{\bf k}}$ are obtained by minimising
+ the gauge invariant spread, $\Omega_{{\rm I}}$ within the outer energy
+ window. The MV procedure can then be used to minimise $\tilde{\Omega}$
+ and hence obtain MLWF for this optimal subspace.
+
+It should be noted that the energy bands of this
+optimally subspace may not correspond to any of the original energy
+bands (due to mixing between states). In order to preserve exactly the
+properties of a system in a given energy range (eg around the Fermi
+level) we introduce a second  energy window. States lying
+within this inner, or ``frozen'' energy window are included unchanged
+in the optimal subspace.
+
+\subsection{Citation}
+We ask that you acknowledge the use of Wannier90 in any publications
+arising from the use of this code through the following reference
+\begin{quote}
+[ref] A. A. Mostofi, J. R. Yates,
+N. Marzari, I. Souza and D. Vanderbilt,  
+
+ http://www.wannier.org/                 
+\end{quote}                                                              
+
+It will also be appropriate to cite the original articles:\\\\
+{\it Maximally localized generalized Wannier functions for composite energy bands}\\
+N. Marzari and D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)\\\\
+{\it Maximally localized Wannier functions for entangled energy bands}\\
+I. Souza, N. Marzari and D. Vanderbilt, Phys. Rev. B 65, 035109 (2002)
 
 
-(2) As a set of library routines to be called from within an ab-initio code. 
-The ab-initio code passes the overlaps and projections to the wannier library routines
-and in return gets the unitary transformation corresponding to maximally localised wannier functions.
-This route should be used if the Wannier functions are needed within the ab-initio code, for example
-in post-LDA methods such as LDA+U or SIC. (this mode is under development)
+\subsection{Credits}
+The present release of Wannier90 was written by Arash Mostofi (Marzari
+group @ MIT) and Jonathan Yates (Souza Group @ UCB/LBNL). Wannier90 is
+based on routines written in 1996-7 for occupied bands by Nicola Marzari
+and David Vanderbilt and for entangled bands by Ivo Souza, Nicola Marzari,
+and David Vanderbilt in 2000-1. 
+
+Acknowledgements: ?
+
+Wannier90 \copyright 1997-2006 Jonathan Yates, Arash
+Mostofi, Nicola Marzari, Ivo Souza, David Vanderbilt      
+
+\subsection{Licence}
+All the material in this distribution is free software; you can
+redistribute it and/or 
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=5in]{overview.eps}
-\caption{Schematic overview of the module structure of the wannier90 code. Modules may only use data
-and subroutines from lower modules.}
-\label{structure}
-\end{center}
-\end{figure}
+ 

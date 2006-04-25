@@ -1,14 +1,25 @@
-\documentclass[11pt,twoside]{book}
+\documentclass[a4paper,11pt,twoside]{book}
 %\documentclass[11pt,twoside,letterpaper]{book}
-\title{Wannier Code}
-\author{\bf Version 1.0 \\     \\
-       Arash A. Mostofi (MIT)  \\ 
-               \&              \\
-Jonathan R. Yates (LBNL and UC Berkeley)} 
-\date{\today}
+\title{Wannier90 User Guide}
+\author{\bf Version 1.0 }
+%
+%\\     \\
+%       Arash A. Mostofi (MIT)  \\ 
+%               \&              \\
+%Jonathan R. Yates (LBNL and UC Berkeley)} 
+\date{30th April 2006}
+
+\usepackage{a4wide}
+\usepackage{multirow}
+\usepackage{footnote}
+\usepackage{amsbsy}
+\usepackage[dvips]{graphicx}
+\usepackage{fancyheadings}
+\setlength{\parindent}{0in}
+%\setlength{\parskip}{0.05in}
+
 
 %\usepackage{a4wide}
-\usepackage{graphicx}
 \usepackage{color}
 \def\red{\textcolor{red}}
 
@@ -40,9 +51,11 @@ Jonathan R. Yates (LBNL and UC Berkeley)}
 
 \include{projections}
 
-\include{wannier}
+\include{developers}
 
 \include{wannier-pp}
+
+\include{wannier}
 
 \include{files}
 

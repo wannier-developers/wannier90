@@ -1,22 +1,42 @@
 \chapter{Parameters}
 
-The parameters for a run are specified in the free-format file
-seedname.win. The following parameters define the system and must be
-specified
-
+\section{Usage}
+{\tt
+\begin{quote}
+wannier90.x [-pp] [seedname]
+\end{quote} }
 \begin{itemize}
-\item[{\bf --}] \verb#num_wann#
-\item[{\bf --}] \verb#unit_cell_cart#
-\item[{\bf --}] \verb#mp_grid#
-\item[{\bf --}] \verb#kpoint#
+\item{ {\tt seedname} If a seedname string is given the code will read its input
+from a file {\tt seedname.win}. The default value is {\tt wannier}.}
+\item { {\tt -pp} This optional flag tells the code to generate
+a list of the required overlaps and then exit. 
+This information is written to the file {\tt seedname.nnkp}.}
 \end{itemize}
 
-Other parameters have default values which will be used unless values
-are explicitly specified.
+\section{win File}
+The Wannier90 input file {\tt seedname.win} has a flexible free-form structure.
+
+The ordering of the keywords is not significant. Case is ignored (so
+\verb#num_bands# is the same as \verb#Num_Bands#). Characters after !, or \#
+are treated as comments. Most keywords have a default value which is
+used unless the keyword is 
+given in the win file. Keywords can be set in any of the following ways
+{\tt
+\begin{quote}
+num\_wann   4
+
+num\_wann = 4
+
+num\_wann : 4
+\end{quote} }
+A logical keyword can be set to {\tt .true.} using any of the following
+strings: {\tt T}, {\tt true}, {\tt .true.}.
+
+ For futher examples see Chapter \ref{chap:input} and the
+ the Wannier90 Tutorial.
 
 
-
-\section{Data}
+\section{Keyword List}
 \label{parameter_data}
 
 \begin{table}
@@ -35,31 +55,21 @@ Keyword & Type & Description \\
 {\sc atoms\_frac }*   & R & Positions of atoms in lattice vectors \\
 {\sc mp\_grid }   & I & Dimensions of the Monkhorst-Pack grid \\
 %{\sc mp\_grid\_automatic }**   & L & Determine the kpoint automatically \\
-{\sc kpoints }**   & R & List of kpoints in the Monkhorst-Pack grid \\
+{\sc kpoints }   & R & List of kpoints in the Monkhorst-Pack grid \\
 {\sc num\_shells }   & I & Number of shells in finite difference formula \\
 {\sc shell\_list }   & I & Which shells to use in finite difference formula \\
-{\sc postproc\_setup }   & L & To output the nnkp file \\
-{\sc cp\_pp }   & L & CP code post-processing \\
-{\sc calc\_only\_a }   & L & Only recalculate the projections \\
-{\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
-{\sc restart }   & C & Restart from checkpoint file \\
-{\sc iprint }   & I & Output verbosity level \\
-{\sc length\_unit }   & S & System of units to output lengths \\
-{\sc devel\_flag }   & S & Flag for development use \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling system parameters.]
-{Parameter file keywords defining the system.  Argument types
+{win file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.\\
  {\footnotesize
-* {\sc atoms\_cart } and  {\sc atoms\_frac } may not both be defined in the same input file.\\
-** {\sc mp\_grid\_automatic } and  {\sc kpoints } may not both be defined in the same input file.
-}}
+* {\sc atoms\_cart } and  {\sc atoms\_frac } may not both be defined in
+the same input file. }} 
 \label{parameter_keywords1}
 \end{center}
 \end{table}
-
 
 
 \begin{table}
@@ -69,19 +79,30 @@ physical value, L for a logical value and S for a text string.\\
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{Wavefunctions Parameters} \\
+\multicolumn{3}{|c|}{Job Control} \\
 \hline
+{\sc postproc\_setup }   & L & To output the nnkp file \\
+{\sc cp\_pp }   & L & CP code post-processing \\
+{\sc calc\_only\_a }   & L & Only recalculate the projections \\
+{\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
+{\sc restart }   & C & Restart from checkpoint file \\
+{\sc iprint }   & I & Output verbosity level \\
+{\sc length\_unit }   & S & System of units to output lengths \\
 {\sc wvfn\_formated }   & L & Read the wavefunctions from a  (un)formatted file  \\
 {\sc spin }   & S & Which spin channel to read \\
+{\sc devel\_flag }   & S & Flag for development use \\
 \hline
 \end{tabular}
-\caption
-{Parameter file keywords controlling the aspects of wavefunctions.  Argument types
+\caption[win file keywords.]
+{win file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+physical value, L for a logical value and S for a text string.\\
+}
 \label{parameter_keywords2}
 \end{center}
 \end{table}
+
+
 
 
 
@@ -107,7 +128,7 @@ convergence of $\Omega_{I}$ is assessed. \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling disentanglement parameters.]
-{Parameter file keywords controlling the disentanglement.  Argument types
+{win file keywords controlling the disentanglement.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords4}
@@ -133,7 +154,7 @@ Steepest Descents \\
 {\sc conv\_tol }   & P &The convergence tolerance for finding $\Omega$  \\
 {\sc conv\_window }   & I & The number of iterations over which
 convergence of $\Omega$ is assessed \\
-{\sc num\_dump\_cycles }   & I & Control frequency of checkpointing \\
+{\sc num\_dump\_cycles }   & I & Control frequency of check-pointing \\
 {\sc num\_print\_cycles }   & I & Control frequency of printing \\
 {\sc write\_r2mn }   & L & Write matrix elements of $r^2$ between
 Wannier functions to file \\
@@ -144,7 +165,7 @@ after which guiding centres are used\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
-{Parameter file keywords controlling the wannierisation.  Argument types
+{win file keywords controlling the wannierisation.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords5}
@@ -186,16 +207,16 @@ surface plot \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
 %{\sc slice\_plot\_format }   & S & File format of the slice plot \\
-{\sc dos\_plot }   & L & Plot the interpolated density of states \\
-{\sc dos\_num\_points }   & I & Number of points in the dos plot \\
-{\sc dos\_energy\_step }   & P & Size of the energy step in the dos plot \\
-{\sc dos\_gaussian\_width }   & P & Width of the convolving gaussian
-smearing for the dos plot \\
-{\sc dos\_plot\_format }   & S & Format of the dos plot \\
+%{\sc dos\_plot }   & L & Plot the interpolated density of states \\
+%{\sc dos\_num\_points }   & I & Number of points in the dos plot \\
+%{\sc dos\_energy\_step }   & P & Size of the energy step in the dos plot \\
+%{\sc dos\_gaussian\_width }   & P & Width of the convolving gaussian
+%smearing for the dos plot \\
+%{\sc dos\_plot\_format }   & S & Format of the dos plot \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling plotting.]
-{Parameter file keywords controlling the  plotting.  Argument types
+{win file keywords controlling the  plotting.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords6}
@@ -210,17 +231,17 @@ physical value, L for a logical value and S for a text string.}
 \subsection[num\_wann]{\tt integer :: num\_wann}
 Number of wannier functions to be found.
 
-No default
+No default.
 
 \subsection[num\_bands]{\tt integer :: num\_bands} 
 
-Total number of bands passed to the code.
+Total number of bands passed to the code in the {\tt <seedname>.mmn} file.
 
 Default \verb#num_bands#=\verb#num_wann#
 
 \subsection[Cell Lattice Vectors]{Cell Lattice Vectors}
 
-The cell lattice vectors may be specified in Cartesian coordinates.
+The cell lattice vectors should be specified in Cartesian coordinates.
 
 
 \noindent \verb#begin unit_cell_cart# \\
@@ -241,15 +262,15 @@ $R_{2y}$ is the y-component of the second lattice vector etc.
 defined either \verb#bohr# or \verb#ang#. If not present, the default is \AA.
 
 
-There is no default
+There is no default.
 
 
 
 \subsection[Ionic Positions]{Ionic Positions}
 
 The ionic positions may be specified in fractional coordinates relative
-to the lattice vectors of the unit cell, or in absolute coordinates.
-Only one of \verb#atoms_cart# and \verb#atoms_frac# may be given an input
+to the lattice vectors of the unit cell, or in absolute cartesian coordinates.
+Only one of \verb#atoms_cart# and \verb#atoms_frac# may be given in the input
 file.
 
 
@@ -291,9 +312,9 @@ are the atom's position in fractional coordinates.
 
 
 \subsection[mp\_grid]{\tt integer, dimension :: mp\_grid(3)}
-Dimensions of the Monkhorst-Pack mesh
+Dimensions of the regular (Monkhorst-Pack) kpoint mesh.
 
-No default
+No default.
 
 
 %
@@ -347,43 +368,60 @@ $$
 %If a kpoint list is specified then \verb#mp_grid_automatic# must be
 %\verb#FALSE#.
 
-There is no default
+There is no default.
 
 \subsection{Shells}
 
-The Marzari-Vanderbilt scheme requires a finite difference expression for $\nabla_k$
-defined on a uniform Monkhorst-Pack mesh of kpoints. One choice (the 'B1' condition of MV)
+The Marzari-Vanderbilt scheme requires a finite difference expression
+for $\nabla_k$ 
+defined on a uniform Monkhorst-Pack mesh of kpoints. One choice (the
+`B1' condition of MV) 
 is to choose shells of kpoint neighbours to satisfy the equation
 \begin{equation}\nonumber
 \sum_s w_s \sum_i b_{i\alpha}^s b_{i\beta}^s = \delta_{\alpha\beta}
 \end{equation}
-'s' is sum over shells, 'i' is a sum over kpoints in that shell, $w_s$ is a weight factor for the shell s, ${\bf b}_{i}^s$
-is a vector connecting a kpoint to one of it nearest neighbours, $\alpha$ and $\beta$ are cartesian coordinates.
+`s' is sum over shells, `i' is a sum over kpoints in that shell, $w_s$ is a weight factor for the shell s, ${\bf b}_{i}^s$
+is a vector connecting a kpoint to one of it nearest neighbours, $\alpha$ and $\beta$ are Cartesian coordinates.
 
 \subsection[num\_shells]{\tt integer :: num\_shells}
 
 If \verb#num_shells#$>0$ the number of shells to include in the finite difference expression.
 If \verb#num_shells#$=0$ the code will choose the shells automatically. 
 
-The default value is O.
+The default value is 0.
 
 \subsection[shell\_list]{\tt integer :: shell\_list(num\_shells)}
 
-If \verb#num_shells#$>0$ \verb#shell_list# is vector which lists the shells to include in the
-finite difference expression.
+If \verb#num_shells#$>0$ \verb#shell_list# is vector listing the shells
+to include in the finite difference expression.
 
+\section{Projection}
 
+ The projections block defines a set of localised functions used to
+ generate an initial guess for the unitary transformations. 
+This data will be written in the {\tt <seedname>.nnkp} file.
+
+\noindent \verb#begin projections# \\\\
+\verb#end projections#
+
+For details see section \ref{sec:proj}.
+
+\section{Job Control}
 
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
 If \verb#postproc_setup#=\verb#TRUE# then the wannier code will write 
-a $<$seedname$>$.nnkp file and exit.
+ {\tt <seedname>.nnkp} file and exit.
+If Wannier90 is called with the option {\tt -pp}; 
+ \verb#postproc_setup# is set to 
+\verb#TRUE#, over-riding its
+value in the {\tt <seedname>.win} file.
 
 The default value is \verb#FALSE#.
 
 
 \subsection[cp\_pp]{\tt logical :: cp\_pp}
 If \verb#cp_pp#=\verb#TRUE# we are using input files from the CP code.
-                                                                                                                              
+
 The default value is \verb#FALSE#.
 
 
@@ -392,25 +430,23 @@ The default value is \verb#FALSE#.
 This indicates the level of verbosity of the output from 0,
 the bare minimum to 3, which corresponds to full debugging output.
 
-The default value of this parameter is 1.
+The default value is 1.
 
 \subsection[length\_unit]{\tt character(len=20) :: length\_unit}
 The length unit to be used for output.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  Ang
+\item[{\bf --}]  Ang (default)
 \item[{\bf --}]  Bohr
 \end{itemize}
 
- The default value of this parameter is $\verb#Ang#$
-
 \subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
 
-Not a parameter for users. Its purpose is to allow a developer to pass a
+Not a regular keyword. Its purpose is to allow a developer to pass a
 string into the code to be used inside a new routine as it is developed.
 
-No default
+No default.
 
 \subsection[calc\_only\_A]{\tt logical :: calc\_only\_A}
 \red{Not yet implemented}
@@ -421,18 +457,20 @@ calculates only $A_{mn}^{(\mathbf{k})}$. Otherwise, both
 $M_{mn}^{(\mathbf{k,b})}$ and $A_{mn}^{(\mathbf{k})}$ are
 calculated.
 
-The default value of this parameter is \verb#FALSE#
+The default value of this parameter is \verb#FALSE#.
 
 
 \subsection[exclude\_bands]{\tt integer :: exclude\_bands(:)}
-\red{Not yet implemented}
 
-A list of states to exluded from the calculation of the overlap matrices; for example to select only valence states, or exclude semi-core states
+A kpoint independent list of states to excluded from the calculation of the overlap matrices;
+ for example to select only valence states, or ignore semi-core states.
+ This keyword is passed to the first-principles code via the
+ {\tt <seedname>.nnkp} file. 
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
 If \verb#restart# is present the code will attempt to restart the calculation
-from the $<$seedname$>$.chk file. The value of the parameter
+from the {\tt <seedname>.chk } file. The value of the parameter
 determines the position of the restart
 
 The valid options for this parameter are:
@@ -448,34 +486,23 @@ The valid options for this parameter are:
 
 
 
-\section{Wavefunctions}
-
-
-
 \subsection[wvfn\_formated]{\tt character(len=20) :: wvfn\_formatted}
-\red{Not yet implemented}
 
-If $\verb#wvfn_formatted#=TRUE$ the wavefunctions will be read from disk
-in formatted (ie ASCII) style. Otherwise they will be read as unformatted
+If \verb#wvfn_formatted#=\verb#TRUE# the wavefunctions will be read from disk
+as formatted (ie ASCII) files. Otherwise they will be read as unformatted
 files. Unformatted in generally preferable as the files will take less disk
-space and unformatted I/O is significantly faster. However such files
+space  I/O is significantly faster. However such files
 will not be transferable between all machine architectures and formatted
 files should be used if transferability is required (ie for test cases).
 
-The default value of this parameter is $\verb#unformatted#$
+The default value of this parameter is $\verb#FALSE#$.
 
 
 \subsection[spin]{\tt character(len=20) :: spin}
 For bands from a spin polarised calculation determines which set
-of bands to read in, either 'up' or 'down'.
+of bands to read in, either `up' or `down'.
 
-The default value of this parameter is 'up'.
-
-
-\section{Projection}
-
-See Section \ref{sec:proj}
-
+The default value of this parameter is `up'.
 
 
 \section{Disentanglement}
@@ -509,7 +536,7 @@ The upper bound of the inner energy window for the disentanglement
 procedure. If \verb#dis_froz_max# is  not specified then 
 there are no frozen states.
 
-No default
+No default.
 
 \subsection[dis\_num\_iter]{\tt integer :: dis\_num\_iter}
 In the disentanglement procedure, the
@@ -530,7 +557,7 @@ if the fractional change in the spread between successive
 iterations is less than
 \verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
 
-The default value of this parameter is 1.0E-10
+The default value is 1.0E-10
 
 
 \subsection[dis\_conv\_window]{\tt integer :: dis\_conv\_window}
@@ -543,18 +570,13 @@ iterations is less than
 The default value of this parameter is 3.
 
 
-\subsection{Other keywords}
- We could have an option to take the lowest N states, rather than using
- an energy window.
 
-
-
-\section{Wannerise}
+\section{Wannierise}
 Minimise the non-invariant part of the spread functional.
 
 \subsection[num\_iter]{\tt integer :: num\_iter}
 
-Total number of iterations in the localization procedure.
+Total number of iterations in the minimisation procedure.
 
 The default value is 100.
 
@@ -564,16 +586,16 @@ Number of conjugate gradient steps to take before resetting to steepest descents
 
 The default value is 5.
 
-\subsection[conv\_tol]{\tt real(kind=dp) :: conv\_tol}
-\red{Not yet implemented}
+%\subsection[conv\_tol]{\tt real(kind=dp) :: conv\_tol}
+%\red{Not yet implemented}
 
 
-\subsection[conv\_window]{\tt integer :: conv\_window}
-\red{Not yet implemented}
+%\subsection[conv\_window]{\tt integer :: conv\_window}
+%\red{Not yet implemented}
 
-\verb#conv_tol# for \verb#conv_window# iterations.
+%\verb#conv_tol# for \verb#conv_window# iterations.
 
-The default value of this parameter is 5.
+%The default value of this parameter is 5.
 
 
 \subsection[num\_dump\_cycles]{\tt integer :: num\_dump\_cycles}
@@ -583,11 +605,11 @@ Write sufficient information to do a restart every
 The default is 0 (ie don't write out any restart information).
 
 \subsection[num\_print\_cycles]{\tt integer :: num\_print\_cycles}
-Write data to the $<$seedname$>$.wout file every
+Write data to the {\tt <seedname>.wout} file every
 \verb#num_print_cycles# iterations.
-                                                                                                                              
+
 The default is 1.
-                                                                                                                              
+
 \subsection[write\_r2mn]{\tt logical :: write\_r2mn}
 
 If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
@@ -598,27 +620,23 @@ The default value of this parameter is \verb#FALSE#.
 
 
 \subsection[guiding\_centres]{\tt logical :: guiding\_centres}
-\red{Not yet implemented}
 Use guiding centres during the minimisation, in order to avoid
 local minima.
 
-The default value of this parameter is \verb#FALSE#
+The default value is \verb#FALSE#.
 
 \subsection[num\_guide\_cycles]{\tt integer :: num\_guide\_cycles}
-\red{Not yet implemented}
 If \verb#guiding_centres# is set to true the
 guiding centres are used only every \verb#num_guide_cycles#.
 
-The default value of this parameter is 1
+The default value is 1.
 
 \subsection[num\_no\_guide\_iter]{\tt integer :: num\_no\_guide\_iter}
-\red{Not yet implemented}
 If \verb#guiding_centres# is set to true the
 guiding centres are used only after \verb#num_no_guide_iter#
 minimisation iterations have been completed.
 
-The default value of this parameter is 0
-
+The default value is 0.
 
 
 \section{Post-Processing}
@@ -629,7 +647,7 @@ The default value of this parameter is 0
 \item[{\bf --}]  Plot the Wannier functions
 \item[{\bf --}]  Plot the interpolated band structure 		     
 \item[{\bf --}]  Plot the Fermi surface 			     
-\item[{\bf --}]  Plot the density of states.
+%\item[{\bf --}]  Plot the density of states.
 \end{itemize}
 
 
@@ -639,7 +657,7 @@ If $\verb#wannier_plot#=\verb#TRUE#$ the code will write out the
 wannier functions in a super-cell \verb#wannier_plot_supercell# times
 the original unit cell in a format specified by \verb#wannier_plot_format#
 
-The default value of this parameter is FALSE
+The default value of this parameter is \verb#FALSE#.
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
 
@@ -654,19 +672,17 @@ The default value is 2.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] xcrysden
+\item[{\bf --}] xcrysden (default)
 %\item[{\bf --}] gopenmol
 %\item[{\bf --}] dan
 \end{itemize}
 
-The default value for \verb#wannier_plot_format# is xcrysden.
-
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
  A list of Wannier Functions to plot. The Wannier Functions numbered as per the
- $<$seedname$>$.wout file after the minimisation of the spread.
+ {\tt <seedname>.wout} file after the minimisation of the spread.
 
- The default behavior is to plot all Wannier Functions.
+ The default behaviour is to plot all Wannier Functions.
 
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 
@@ -675,26 +691,26 @@ or as a crystal.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] crystal 
+\item[{\bf --}] crystal (default)
 \item[{\bf --}] molecule 
 \end{itemize}
 
-The default value for \verb#wannier_plot_mode# is crystal.
-
-
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
-If $\verb#bands_plot#=\verb#TRUE#$ the code will calculate the interpolated band structure along
+If $\verb#bands_plot#=\verb#TRUE#$ the code will calculate the band
+structure, through Wannier interpolation,
+ along
 the path in k-space defined by \verb#bands_kpath# using \verb#bands_num_points# along the first
 section of the path and write out an output file in a format specified
 by \verb#bands_plot_format#. 
 
-The default value of this parameter is FALSE
+The default value is \verb#FALSE#.
 
 
 \subsection[kpoint\_path]{kpoint\_path}
-Start and end kpoints, with labels, for sections of the interpolated
-bandstructure plot.
+Defines the path in kspace along which to calculate the
+bandstructure. Each lines gives the start and end points (with labels)
+for a section of the path.
 
 \noindent  \verb#begin kpoint_path#
 $$
@@ -706,6 +722,7 @@ L & 0.0 & 0.0 & 1.0 & N & 0.0 & 1.0 & 1.0 \\
 $$
 \verb#end kpoint_path#
 
+
 There is no default
 
 \subsection[bands\_num\_points]{\tt integer :: bands\_num\_points}
@@ -714,21 +731,17 @@ If $\verb#bands_plot#=\verb#TRUE#$ the number of points along the first
 section of the bandstructure plot given by \verb#kpoint_path#. Other
 sections will have the same density of kpoints.
 
-The default value for \verb#bands_num_points# is 100
+The default value for \verb#bands_num_points# is 100.
 
 
 \subsection[bands\_plot\_format]{\tt character(len=20) :: bands\_plot\_format}
 
 Format in which to plot the interpolated band structure
-
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] gnuplot
-\item[{\bf --}] xmgrace (possibly)
+\item[{\bf --}] gnuplot (default)
+%\item[{\bf --}] xmgrace (possibly)
 \end{itemize}
-
-The default value for \verb#bands_plot_format# is gnuplot.
-
 
 \subsection[fermi\_surface\_plot]{\tt logical :: fermi\_surface\_plot}
 
@@ -738,37 +751,32 @@ eigenvalues on a regular grid with \verb#fermi_surface_num_points# in
 each direction. The code will write a file in bxsf format which can be
 read with Xcrysden and used to plot the Fermi surface.
 
-The default value of this parameter is FALSE
+The default value is \verb#FALSE#.
 
 
 \subsection[fermi\_surface\_num\_points]{\tt integer :: fermi\_surface\_num\_points}
 
 If $\verb#fermi_surface_plot#=\verb#TRUE#$ the number of divisions in
-the regular kpoint grid used to calculate the fermi surface.
+the regular kpoint grid used to calculate the Fermi surface.
 
-The default value for \verb#fermi_surface_num_points# is 50
+The default value for \verb#fermi_surface_num_points# is 50.
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
-The Fermi energyi eV. Whilst this is not directly used by the Wannier 
+The Fermi energy eV. Whilst this is not directly used by the Wannier 
 code is a useful parameter to set for Fermi surface plots as
 it will be written into the bxsf file.
 
-The default value is 0.0eV
+The default value is 0.0eV.
 
 
 \subsection[fermi\_surface\_plot\_format]{\tt character(len=20) :: fermi\_surface\_plot\_format}
 
-Format in which to plot the Fermi surface. I don't know of any other ways
-to plot Fermi surface other than bxsf/Xcrysden. But we have this
-parameter for future developments. 
-
+Format in which to plot the Fermi surface. 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] bxsf
+\item[{\bf --}] xcrysden  (default)
 \end{itemize}
-
-The default value for \verb#fermi_surface_plot_format# is bxsf.
 
 
 %\subsection[slice\_plot]{\tt logical :: slice\_plot}
@@ -825,54 +833,54 @@ The default value for \verb#fermi_surface_plot_format# is bxsf.
 
 
 
-\subsection[dos\_plot]{\tt logical :: dos\_plot}
-\red{Not yet implemented}
+%\subsection[dos\_plot]{\tt logical :: dos\_plot}
+%\red{Not yet implemented}
+%
+%If $\verb#dos_plot#=\verb#TRUE#$ the code will calculate,
+%through Wannier interpolation, the
+%eigenvalues on a regular grid with dimension \verb#dos_num_points#. The
+%density of states will be calculated by applying a Gaussian smearing of
+%width \verb#dos_gaussian_width#.
+%
+%The default value of this parameter is FALSE
+%
+%
+%\subsection[dos\_num\_points]{\tt integer :: dos\_num\_points}
+%\red{Not yet implemented}
+%
+%If $\verb#dos_plot#=\verb#TRUE#$ the dimension of the kpoint mesh
+%to sample in calculating the density of states.
+%
+%The default value for \verb#dos_num_points# is 50
+%
+%\subsection[dos\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
+%\red{Not yet implemented}
+%
+%The density of states will be calculated from the
+%lowest to highest eigenenergies in the system. \verb#dos_energy_step# determines
+%the size of the steps on the energy axis.
+%
+%The default value for \verb#dos_energy_step# is 0.02eV
+%
+%\subsection[dos\_gaussian\_width]{\tt real(kind=dp) :: dos\_gaussian\_width}
+%\red{Not yet implemented}
+%
+%The width of the gaussian smearing to apply to each eigenenergy when
+%calculating the dos.
 
-If $\verb#dos_plot#=\verb#TRUE#$ the code will calculate,
-through Wannier interpolation, the
-eigenvalues on a regular grid with dimension \verb#dos_num_points#. The
-density of states will be calculated by applying a Gaussian smearing of
-width \verb#dos_gaussian_width#.
 
-The default value of this parameter is FALSE
+%The default value for \verb#dos_gaussian_width# is 0.2eV
+%
+%\subsection[dos\_plot\_format]{\tt character(len=20) :: dos\_plot\_format}
+%\red{Not yet implemented}
+%
+%Format in which to plot the density of states
+%
+%The valid options for this parameter are:
+%\begin{itemize}
+%\item[{\bf --}] gnuplot
+%\item[{\bf --}] xmgrace
+%\end{itemize}
 
-
-\subsection[dos\_num\_points]{\tt integer :: dos\_num\_points}
-\red{Not yet implemented}
-
-If $\verb#dos_plot#=\verb#TRUE#$ the dimension of the kpoint mesh
-to sample in calculating the density of states.
-
-The default value for \verb#dos_num_points# is 50
-
-\subsection[dos\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
-\red{Not yet implemented}
-
-The density of states will be calculated from the
-lowest to highest eigenenergies in the system. \verb#dos_energy_step# determines
-the size of the steps on the energy axis.
-
-The default value for \verb#dos_energy_step# is 0.02eV
-
-\subsection[dos\_gaussian\_width]{\tt real(kind=dp) :: dos\_gaussian\_width}
-\red{Not yet implemented}
-
-The width of the gaussian smearing to apply to each eigenenergy when
-calculating the dos.
-
-
-The default value for \verb#dos_gaussian_width# is 0.2eV
-
-\subsection[dos\_plot\_format]{\tt character(len=20) :: dos\_plot\_format}
-\red{Not yet implemented}
-
-Format in which to plot the density of states
-
-The valid options for this parameter are:
-\begin{itemize}
-\item[{\bf --}] gnuplot
-\item[{\bf --}] xmgrace
-\end{itemize}
-
-The default value for \verb#dos_plot_format# is gnuplot.
+%The default value for \verb#dos_plot_format# is gnuplot.
 
