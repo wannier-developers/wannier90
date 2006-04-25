@@ -34,7 +34,9 @@
 {\bf Preliminaries}
 Install the Wannier90 code following the instructions in the README file.
 Refer to the overview of the code given in Chapter 1 of the Wannier90 User guide
-and the two papers, MV\footnote{{\it Maximally localized generalized Wannier functions for composite energy bands}\\ N. Marzari and D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)}
+and the two papers, MV\footnote{{\it Maximally localized generalized
+    Wannier functions for composite energy bands}\\ N. Marzari and
+  D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)} 
 nd SMV\footnote{{\it Maximally localized Wannier functions for entangled energy bands}\\
 I. Souza, N. Marzari and D. Vanderbilt, Phys. Rev. B 65, 035109 (2002)}.
 
@@ -89,30 +91,49 @@ wannier90.x gaas
 \end{quote} }
 Inspect the output file {\tt gaas.wout}. The total spread converges to its
 minimum value after just a few iterations. Note that the geometric centre of
-each Wannier function lies along a Ga-As bond, slightly closer to As than Ga. Note also that the memory requirement for the minimisation of the spread is very low as the Wannier functions are defined at each kpoint by just the 4x4 unitary matrix, $U_{{\bf k}}$.
+each Wannier function lies along a Ga-As bond, slightly closer to As
+than Ga. Note also that the memory requirement for the minimisation of
+the spread is very low as the Wannier functions are defined at each
+kpoint by just the 4x4 unitary matrix, $U_{{\bf k}}$. 
 \item Plot the Wannier Functions by adding the following keywords to the input file {\tt gaas.win}
 {\tt
 \begin{quote}
 wannier\_plot = true
 \end{quote} }
 and re-running Wannier90. To visualise the Wannier functions we must explicitly represent them on
-a real space grid (see User Guide Eq 2). As a consequence plotting the Wannier functions is slower and uses more memory than the minimisation of the spread. The 4 files that are created, {\tt WANN00001.xsf} etc can be viewed using XCrysden
+a real space grid (see User Guide Eq 2). As a consequence plotting the
+Wannier functions is slower and uses more memory than the minimisation
+of the spread. The 4 files that are created, {\tt WANN00001.xsf} etc can
+be viewed using XCrysden 
 {\tt
 \begin{quote}
 xcrysden --xsf WANN00001.xsf
 \end{quote} }
 
-For large systems plotting the Wannier functions may be time consuming and require a lot of memory. Use the keyword {\tt wannier\_plot\_list} to plot a subset of the Wannier functions. Eg to plot the 1st, 2nd and 7th Wannier functions use
+For large systems plotting the Wannier functions may be time consuming
+and require a lot of memory. Use the keyword {\tt wannier\_plot\_list}
+to plot a subset of the Wannier functions. Eg to plot the 1st, 2nd and
+7th Wannier functions use 
 {\tt
 \begin{quote}
 wannier\_plot\_list = 1 2 7
 \end{quote} }
-The Wannier functions are plotted in a supercell of the unit cell. The size of this supercell is set through the keyword {\tt wannier\_plot\_supercell}. The default value is 2 (corresponding to a supercell with 8 times the unit cell volume). We recommend not using values great than 3 as the memory and computational cost scales cubically with  supercell size. 
+The Wannier functions are plotted in a supercell of the unit cell. The
+size of this supercell is set through the keyword {\tt
+  wannier\_plot\_supercell}. The default value is 2 (corresponding to a
+supercell with 8 times the unit cell volume). We recommend not using
+values great than 3 as the memory and computational cost scales
+cubically with  supercell size.  
 
-Plot the 3rd Wannier function in a supercell of size 3. Choose a low value for the isosurface (say 0.5). Can you explain what you see?
+Plot the 3rd Wannier function in a supercell of size 3. Choose a low
+value for the isosurface (say 0.5). Can you explain what you see? 
 
 
-{\it Hint} For a finite kpoint mesh the Wannier functions are in fact periodic, where the period is related to spacing of the kpoint mesh. For an kpoint mesh with $n$ divisions in the $ith$ direction in the Brillouin zone the Wannier functions live in a supercell $n$ times the unit cell.
+{\it Hint} For a finite kpoint mesh the Wannier functions are in fact
+periodic, where the period is related to spacing of the kpoint mesh. For
+an kpoint mesh with $n$ divisions in the $ith$ direction in the
+Brillouin zone the Wannier functions live in a supercell $n$ times the
+unit cell. 
 \end{enumerate}
 
 
@@ -137,7 +158,11 @@ and a 4x4x4 kpoint grid. Starting guess: atom centred sp$^3$ hybrid orbitals}}
 \end{itemize}
 
 \end{itemize}
-The four lowest valence bands in lead are separated in energy from the higher conduction states, see Figure \ref{fig:pb-bnd}. The Wannier functions of these states have partial occupancy. Wannier functions describing just the occupied states would exhibit very poor localisation properties.
+The four lowest valence bands in lead are separated in energy from the
+higher conduction states, see Figure \ref{fig:pb-bnd}. The Wannier
+functions of these states have partial occupancy. Wannier functions
+describing just the occupied states would exhibit very poor localisation
+properties. 
 
 \begin{enumerate}
 \item Run the {\tt Wannier90} code to minimise the Wannier function spread
@@ -146,7 +171,11 @@ The four lowest valence bands in lead are separated in energy from the higher co
 wannier90.x lead
 \end{quote} }
 Inspect the output file {\tt lead.wout}.
-\item Use Wannier interpolation to obtain the Fermi surface of lead. Rather than rerunning the whole calculation we can use the unitary transformations obtained in the first calculation, restarting from the plotting routine. Add the following keywords to the {\tt lead.win} file
+\item Use Wannier interpolation to obtain the Fermi surface of
+  lead. Rather than rerunning the whole calculation we can use the
+  unitary transformations obtained in the first calculation, restarting
+  from the plotting routine. Add the following keywords to the {\tt
+    lead.win} file 
 {\tt
 \begin{quote}
 restart = plot
@@ -155,7 +184,12 @@ fermi\_energy = 5.2676
 
 fermi\_surface\_plot = true
 \end{quote} }
-and re-run Wannier90. The value of the Fermi energy (5.2676 eV) was obtained from the initial first principles calculation. The Wannier90 code calculates the band energies, through wannier interpolation, on a dense mesh of kpoints in the Brillouin zone. The density of this grid is controlled by the keyword {\tt fermi\_surface\_num\_points}. The default value is 50 (ie 50$^3$ points).
+and re-run Wannier90. The value of the Fermi energy (5.2676 eV) was
+obtained from the initial first principles calculation. The Wannier90
+code calculates the band energies, through wannier interpolation, on a
+dense mesh of kpoints in the Brillouin zone. The density of this grid is
+controlled by the keyword {\tt fermi\_surface\_num\_points}. The default
+value is 50 (ie 50$^3$ points). 
 The Fermi surface file {\tt lead.bxsf} can be viewed using XCrysden
 {\tt
 \begin{quote}
@@ -166,7 +200,8 @@ xcrysden --bxsf lead.bxsf
 \begin{figure}[h]
 \begin{center}
 \includegraphics{lead.eps}
-\caption{Band Structure of Lead showing the position of the Fermi level. Only the lowest 4 bands are included in the calculation.}
+\caption{Band Structure of Lead showing the position of the Fermi
+  level. Only the lowest 4 bands are included in the calculation.} 
 \label{fig:pb-bnd}
 \end{center}
 \end{figure}
@@ -189,14 +224,23 @@ and a 4x4x4 kpoint grid. Starting guess:  atom centred sp$^3$ hybrid orbitals}}
 \item{ {\tt silicon.eig}  {\it The Bloch eigenvalues at each kpoint}}
 \end{itemize}
 \end{itemize}
-The valence and lower conduction states can be represented by Wannier Functions with sp$^3$-like symmetry. The lower conduction states are not separated by an energy gap from the higher states. In order to form localised Wannier function we use the disentanglement procedure introduced in SMV. The position of the inner and outer energy windows are shown in Figure \ref{fig:si.bnd}.
+The valence and lower conduction states can be represented by Wannier
+Functions with sp$^3$-like symmetry. The lower conduction states are not
+separated by an energy gap from the higher states. In order to form
+localised Wannier function we use the disentanglement procedure
+introduced in SMV. The position of the inner and outer energy windows
+are shown in Figure \ref{fig:si.bnd}. 
 \begin{enumerate}
 \item Run the {\tt Wannier90} code.
 {\tt
 \begin{quote}
 wannier90.x silicon
 \end{quote} }
-Inspect the output file {\tt silicon.wout}. The minimisation of the spread occurs in a two step procedure. We first minimise $\Omega_{\rm I}$, this is the extraction of the optimal subspace in the disentanglement procedure. We then minimise $\Omega_{\rm O}+\Omega_{{\rm OD}}$
+Inspect the output file {\tt silicon.wout}. The minimisation of the
+spread occurs in a two step procedure. We first minimise $\Omega_{\rm
+  I}$, this is the extraction of the optimal subspace in the
+disentanglement procedure. We then minimise $\Omega_{\rm O}+\Omega_{{\rm
+    OD}}$ 
 
 
 \item Plot the Wannier Functions by adding the following commands to the input file {\tt silicon.win}
@@ -292,7 +336,7 @@ Investigate the effect of the outer and inner energy window on the interpolated 
 
 \section*{PWSCF Examples}
 
-A fully featured interface between Wannier90 and Pwscf will avaible as part of the 
+A fully featured interface between Wannier90 and Pwscf will be available as part of the 
 next Quantum Espresso release. Before that time it can be downloaded as part of the
 pwscf development distribution. Use the following commands to download a copy from the
 pwscf cvs server (bash shell):
@@ -303,36 +347,37 @@ cvs login  (The password is: cvsanon)
 cvs checkout pwscf
 \end{verbatim}
 
-\subsection*{Silane}
+\subsection*{Diamond}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the occupied state of silane, SiH$_4$}}
+\item{Outline: \it{Obtain MLWF for the occupied state of Diamond}}
 \item{Directory: {\tt examples/example5/}}
 \item{Input Files}
 \begin{itemize}
-\item{ {\tt silane.scf}  {\it Pwscf input file for ground state calculation}}
-\item{ {\tt silane.nscf}  {\it Pwscf input file to obtain Bloch states on a uniform grid}}
-\item{ {\tt silane.pw2wan}  {\it Input file for pw2wannier90}}
-\item{ {\tt silane.win}  {\it Wannier90 input file}}
+\item{ {\tt diamond.scf}  {\it Pwscf input file for ground state calculation}}
+\item{ {\tt diamond.nscf}  {\it Pwscf input file to obtain Bloch states on a uniform grid}}
+\item{ {\tt diamond.pw2wan}  {\it Input file for pw2wannier90}}
+\item{ {\tt diamond.win}  {\it Wannier90 input file}}
 \end{itemize}
 
 \end{itemize}
 
 \begin{enumerate}
-\item Run pwscf to obtain the ground state of Silane\\
-{\tt pw.x < silane.scf > scf.out}
+\item Run pwscf to obtain the ground state of Diamond\\
+{\tt pw.x < diamond.scf > scf.out}
 
 \item Run pwscf to obtain the Bloch states on a uniform kpoint grid\\
-{\tt pw.x < silane.nscf > nscf.out}
+{\tt pw.x < diamond.nscf > nscf.out}
 
-\item Run Wannier90 to generate a list of the required overlap (written in the {\tt silane.nnkp} file)\\
-{\tt wannier90.x -pp silane}
+\item Run Wannier90 to generate a list of the required overlaps (written
+  into the {\tt diamond.nnkp} file).\\ 
+{\tt wannier90.x -pp diamond}
 
-\item Run pw2wannier to compute the overlap between Bloch states and the projections for the starting guess (written
-in the {\tt silane.mmn} and {\tt silane.amn} files).\\
-{\tt pw2wannier90.x < silane.pw2wan > pw2wan.out}
+\item Run pw2wannier to compute the overlap between Bloch states and the
+  projections for the starting guess (written in the {\tt diamond.mmn} and {\tt diamond.amn} files). 
+{\tt pw2wannier90.x < diamond.pw2wan > pw2wan.out}
 
-\item Run Wannier90 to computer the wannier function.\\
-{\tt wannier90.x silane}
+\item Run Wannier90 to compute the Wannier functions.\\
+{\tt wannier90.x diamond}
 
 \end{enumerate}
 
@@ -340,7 +385,7 @@ in the {\tt silane.mmn} and {\tt silane.amn} files).\\
 
 \begin{enumerate}
 
-\item Silicon (valence)
+\item Silane
 
 \item Iron (spin up channel)
 
