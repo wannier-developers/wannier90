@@ -50,7 +50,8 @@
      http://www.tacc.utexas.edu/resources/software/
   ACML AMD provides optimised BLAS for AMD processors 
     http://developer.amd.com/acml.aspx  
-  LAPACK can be obtained from
+  LAPACK can be obtained from the netlib website. It also includes a 
+  non-optimised BLAS.
      http://www.netlib.org/lapack/
      
 
@@ -68,7 +69,7 @@ Linux x86,x86-64
 
   3- make.sys.nag   
      Compiler:  NAG (f95)
-     Libraries: ATLAS + LAPACK
+     Libraries: ATLAS + LAPACK (maybe acml)
  [note in our experience the NAG compiler does not produce well optimised code]
 
 
@@ -101,8 +102,9 @@ IBM PowerPC/power series. Linux or AIX
      Libraries: ESSL + LAPACK
        Note: ESSL does not provide a complete lapack installation.
          If your machine does not have a full LAPACK install, 
-         download the netlib LAPACK plus the essl wrappers
-         from http://www.netlib.org/lapack/essl/
+         download the netlib LAPACK. You might want to use
+         the essl wrappers from 
+         http://www.netlib.org/lapack/essl/
 
 Windows
 -------
@@ -112,18 +114,13 @@ Windows
 
  I use cygwin (http://www.cygwin.com/) which provides a bash shell.
 
-  1- make.sys.cygwin
-     Compiler: g95
+  1- make.sys.g95
+     Compiler: g95  (within cygwin)
      Libraries: LAPACK and ATLAS (cygwin comes with a lapack and blas library,
      but I think they have been compiled with g77. I had problems making 
      a working executable. I suggest building your own)
 
- 2- make.sys.ftn95
-    Compiler: Salford Fortran (ftn95) [the personal edition is 'free'
-     http://www.silverfrost.com/32/ftn95/ftn95_personal_edition.asp ]
-    Libraries: LAPACK and ATLAS
-
- 3- make.sys.pgf90
+ 2- make.sys.pgf90
     Compiler: Portland Group (pgf90)
-    Libaries: pg supplies lapacl and blas
+    Libaries: pg supplied lapack and blas
  
