@@ -1,0 +1,9 @@
+
+#=======================
+# Salford FTN95 compiler
+#======================= 
+ F90 = ftn95
+ FCOPTS  = -optimise 
+ LDOPTS = -link 
+ LIBS   =   
+
