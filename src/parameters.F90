@@ -315,7 +315,7 @@ contains
 
     conv_tol=0.0_dp
     call param_get_keyword('conv_tol',found,r_value=conv_tol)
-    if (conv_tol<0.d0) call io_error('Error: conv_tol must be positive')
+    if (conv_tol<0.0_dp) call io_error('Error: conv_tol must be positive')
 
     conv_window=3
     call param_get_keyword('conv_window',found,i_value=conv_window)
@@ -491,13 +491,13 @@ contains
     call param_get_keyword('dis_num_iter',found,i_value=dis_num_iter)
     if (dis_num_iter<0) call io_error('Error: dis_num_iter must be positive')       
 
-    dis_mix_ratio     = 0.5d0
+    dis_mix_ratio     = 0.5_dp
     call param_get_keyword('dis_mix_ratio',found,r_value=dis_mix_ratio)
-    if (dis_mix_ratio<0.d0) call io_error('Error: dis_mix_ratio must be positive')
+    if (dis_mix_ratio<0.0_dp) call io_error('Error: dis_mix_ratio must be positive')
 
-    dis_conv_tol      = 1.0d-10      
+    dis_conv_tol      = 1.0e-10_dp      
     call param_get_keyword('dis_conv_tol',found,r_value=dis_conv_tol)
-    if (dis_conv_tol<0.d0) call io_error('Error: dis_conv_tol must be positive')
+    if (dis_conv_tol<0.0_dp) call io_error('Error: dis_conv_tol must be positive')
 
     dis_conv_window=3   
     call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
@@ -1023,6 +1023,15 @@ contains
        deallocate( proj_box, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating proj_box in param_dealloc')
     end if
+    if ( allocated( wannier_plot_list )  ) then
+       deallocate( wannier_plot_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wannier_plot_list in param_dealloc')
+    end if
+    if( allocated( exclude_bands) ) then
+       deallocate( exclude_bands, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating exclude_bands in param_dealloc')
+    end if
+
 
     return
 
@@ -1525,8 +1534,6 @@ contains
 
     return
 
-230 call io_error('Error: Problem reading keyword '//trim(keyword)//' in param_get_keyword_vector')
-
 
   end subroutine param_get_vector_length
 
@@ -1958,11 +1965,11 @@ contains
     integer, parameter :: max_m=7
     integer            :: ang_states(min_m:max_m,min_l:max_l)
     ! default values for the optional part of the projection definitions
-    real(kind=dp), parameter :: proj_z_def(3)=(/0.d0,0.d0,1.d0/)
-    real(kind=dp), parameter :: proj_x_def(3)=(/1.d0,0.d0,0.d0/)
-    real(kind=dp), parameter :: proj_zona_def=1.d0
-    real(kind=dp), parameter :: proj_box_def=1.d0
-    integer, parameter       :: proj_radial_def=1.d0
+    real(kind=dp), parameter :: proj_z_def(3)=(/0.0_dp,0.0_dp,1.0_dp/)
+    real(kind=dp), parameter :: proj_x_def(3)=(/1.0_dp,0.0_dp,0.0_dp/)
+    real(kind=dp), parameter :: proj_zona_def=1.0_dp
+    real(kind=dp), parameter :: proj_box_def=1.0_dp
+    integer, parameter       :: proj_radial_def=1.0_dp
     !
     real(kind=dp) :: proj_z_tmp(3)
     real(kind=dp) :: proj_x_tmp(3)

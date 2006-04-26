@@ -399,6 +399,8 @@ contains
     if (ierr/=0) call io_error('Error in deallocating csheet in wann_main')
     
     ! deallocate module data
+    deallocate( ln_tmp , stat=ierr  )
+    if (ierr/=0) call io_error('Error in deallocating ln_tmp in wann_main')
     deallocate( rnkb,stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating rnkb in wann_main')
     deallocate(  crt,stat=ierr  )
@@ -729,7 +731,7 @@ contains
       singvd=0.0_dp
 
       ! singular value decomposition
-      omt1 = 0.d0 ; omt2 = 0.d0 ; omt3 = 0.d0
+      omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
       do nkp = 1, num_kpts  
          do nn = 1, nntot  
             ind = 1  
@@ -746,8 +748,8 @@ contains
             endif
 
             do nb = 1, num_wann  
-               omt1 = omt1 + wb(nn) * (1.d0 - singvd (nb) **2)  
-               omt2 = omt2 - wb(nn) * (2.d0 * log (singvd (nb) ) )  
+               omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
+               omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
                omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
             enddo
          enddo
@@ -794,7 +796,7 @@ contains
     !===================================================================  
     use parameters,     only : num_wann,m_matrix,nntot,neigh, &
          nnh,bk,bka,num_kpts
-    use io,         only : stdout,io_error,io_stopwatch
+    use io,         only : io_error,io_stopwatch
     use utility,    only : utility_inv3
 
     implicit none
@@ -816,7 +818,7 @@ contains
     call io_stopwatch('phases',1)
 
 
-    csum=cmplx_0; xx=0.d0
+    csum=cmplx_0; xx=0.0_dp
 
     ! report problem to solve
     ! for each band, csum is determined and then its appropriate
@@ -869,7 +871,7 @@ contains
              xx (nn) = - aimag (log (csum (nn) ) )  
           else  
              !         obtain xx with branch cut choice guided by rguide
-             xx0 = 0.d0  
+             xx0 = 0.0_dp  
              do j = 1, 3  
                 xx0 = xx0 + bka (j, nn) * rguide (j, loop_wann)  
              enddo
@@ -894,12 +896,12 @@ contains
              !         determine rguide
              call utility_inv3 (smat, sinv, det)  
              !         the inverse of smat is sinv/det
-             if (abs (det) .gt.1.e-06) then  
+             if (abs (det) .gt.1.e-06_dp) then  
                 !          to check that the first nn bka vectors are not
                 !          linearly dependent - this is a change from original code
                 if (irguide.ne.0) then  
                    do j = 1, 3  
-                      rguide (j, loop_wann) = 0.d0  
+                      rguide (j, loop_wann) = 0.0_dp  
                       do i = 1, 3  
                          rguide (j, loop_wann) = rguide (j, loop_wann) + sinv (j, i) &
                               * svec (i) / det

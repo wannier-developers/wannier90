@@ -1034,7 +1034,7 @@ contains
             endif
             do j = 1, ndimwin(nkp)  
                if (iprint>2) write(stdout,'(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)  
-               if ( (w(j).lt.-1.0e-8_dp).or.(w(j).gt.1.0d0 + 1.0e-8_dp) ) then
+               if ( (w(j).lt.-1.0e-8_dp).or.(w(j).gt.1.0_dp + 1.0e-8_dp) ) then
                   call io_error('dis_proj_frozen: error - Eigenvalues not between 0 and 1') 
                endif
             enddo
@@ -1579,7 +1579,7 @@ contains
       endif
       ! ENDDEBUG
 
-      ! Replace clamp by ceamp, which is given out to wannier.f (Both span the
+      ! Replace clamp by ceamp. Both span the
       ! same space, but the latter is more convenient for the purpose of obtai
       ! an optimal Fourier-interpolated band structure: see Sec. III.E of SMV.
       do nkp = 1, num_kpts  

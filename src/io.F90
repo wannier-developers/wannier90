@@ -249,7 +249,7 @@ contains
     !
     if (first) then
        t0 = t1
-       io_time = 0.d0
+       io_time = 0.0_dp
        first = .false.
     else
        io_time = t1 - t0

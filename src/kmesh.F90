@@ -89,7 +89,7 @@ contains
     eta = 99999999.0_dp
     eps = 0.000001_dp  
 
-    dnn0 = 0.d0  
+    dnn0 = 0.0_dp  
     dnn1 = eta  
     ndnntot = 0  
     do nlist = 1, num_nnmax  

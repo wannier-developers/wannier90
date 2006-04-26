@@ -183,7 +183,7 @@ contains
              ham_pack(i+((j-1)*j)/2)=ham_kprm(i,j)
           enddo
        enddo
-       call ZHPEVX('N','A','U',num_wann,ham_pack,0.d0,0.d0,0,0,-1.d0, &
+       call ZHPEVX('N','A','U',num_wann,ham_pack,0.0_dp,0.0_dp,0,0,-1.0_dp, &
             nfound,eig_int(1,loop_kpt),U_int,num_wann,cwork,rwork,iwork,ifail,info)
        if(info < 0) then
           write(stdout,'(a,i3,a)') 'THE ',-info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
@@ -228,7 +228,7 @@ contains
     do i = 1, num_paths-1
        write(gnuunit,705) sum(kpath_len(1:i)),emin,sum(kpath_len(1:i)),emax
     enddo
-    write(gnuunit,702, advance="no") glabel(1),0.d0,(glabel(i+1),sum(kpath_len(1:i)),i=1,bands_num_spec_points/2-1)
+    write(gnuunit,702, advance="no") glabel(1),0.0_dp,(glabel(i+1),sum(kpath_len(1:i)),i=1,bands_num_spec_points/2-1)
     write(gnuunit,703) glabel(1+bands_num_spec_points/2),sum(kpath_len(:))
     write(gnuunit,*) 'plot ','"'//trim(seedname)//'_band.dat','"' 
     close(gnuunit)
@@ -302,7 +302,7 @@ contains
                    ham_pack(i+((j-1)*j)/2)=ham_kprm(i,j)
                 enddo
              enddo
-             call ZHPEVX('N','A','U',num_wann,ham_pack,0.d0,0.d0,0,0,-1.d0, &
+             call ZHPEVX('N','A','U',num_wann,ham_pack,0.0_dp,0.0_dp,0,0,-1.0_dp, &
                   nfound,eig_int(1,ikp),U_int,num_wann,cwork,rwork,iwork,ifail,info)
              if(info < 0) then
                 write(stdout,'(a,i3,a)') 'THE ',-info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
@@ -784,7 +784,7 @@ contains
                     ndiff(1) = n1 - i1 * mp_grid(1)  
                     ndiff(2) = n2 - i2 * mp_grid(2)  
                     ndiff(3) = n3 - i3 * mp_grid(3)  
-                    dist(icnt) = 0.d0  
+                    dist(icnt) = 0.0_dp  
                     do i = 1, 3  
                        do j = 1, 3  
                           dist(icnt) = dist(icnt) + real(ndiff(i),dp) * real_metric(i,j) &
@@ -799,12 +799,12 @@ contains
 
 
            dist_min=minval(dist)
-           if (abs(dist(14) - dist_min ) .lt.1.d-7) then
+           if (abs(dist(14) - dist_min ) .lt.1.e-7_dp) then
               nrpts = nrpts + 1  
               if(.not. count_pts) then
                  ndegen(nrpts)=0
                 do i=1,27
-                   if (abs (dist (i) - dist_min) .lt.1.d-7) ndegen(nrpts)=ndegen(nrpts)+1
+                   if (abs (dist (i) - dist_min) .lt.1.e-7_dp) ndegen(nrpts)=ndegen(nrpts)+1
                 end do
                 irvec(1, nrpts) = n1 - mp_grid(1)  
                 irvec(2, nrpts) = n2 - mp_grid(2)  
@@ -834,7 +834,7 @@ contains
   do i = 1, nrpts  
      tot = tot + 1.0_dp/real(ndegen(i),dp)  
   enddo
-  if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) .gt.1.d-8) then
+  if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > 1.e-8_dp) then
      call io_error('ERROR in plot_wigner_seitz: error in finding Wigner-Seitz points')
   endif
 

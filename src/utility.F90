@@ -149,7 +149,7 @@ contains
          real_lat(1,3)*recip_lat(1,3)  
 
 
-    if( abs(volume) < 0.1d-4) then
+    if( abs(volume) < 0.1e-4_dp) then
        call io_error(' Found almost zero Volume in utility_recip_lattice')
     end if
 
@@ -179,9 +179,9 @@ contains
     rrp=(a(1)-b(1))**2+(a(2)-b(2))**2+(a(3)-b(3))**2
     rrm=(a(1)+b(1))**2+(a(2)+b(2))**2+(a(3)+b(3))**2
     ifpos=0
-    if (abs(rrp).lt.1.0d-8) ifpos=1
+    if (abs(rrp).lt.1.0e-8_dp) ifpos=1
     ifneg=0
-    if (abs(rrm).lt.1.0d-8) ifneg=1
+    if (abs(rrm).lt.1.0e-8_dp) ifneg=1
 
     return
 
@@ -206,7 +206,7 @@ contains
 
     integer :: i,j,l
 
-    real_metric=0.d0; recip_metric=0.d0
+    real_metric=0.0_dp ; recip_metric=0.0_dp
 
     do j=1,3
        do i=1,j
