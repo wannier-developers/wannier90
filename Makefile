@@ -24,7 +24,7 @@ thedoc:
 	cd doc/user_guide ; make guide ; \
 	cd ../tutorial ; make tutorial
 
-dist-full:
+dist:
 	@(tar cf - \
 		./src/*.?90 \
 		./tests/run_test.pl \
@@ -35,12 +35,12 @@ dist-full:
 		./tests/test*/stnd* \
 		./examples/example1/UNK* \
 		./examples/*/*.win \
-		./examples/*/*.eig \
-                ./examples/*/*.*mn \
-		./examples/*/*.scf \
-		./examples/*/*.nscf \
-		./examples/*/*.pw2wan \
-		./examples/*/*.UPF \
+		./examples/example[2-4]/*.eig \
+                ./examples/example[1-4]/*.*mn \
+		./examples/example5/*.scf \
+		./examples/example5/*.nscf \
+		./examples/example5/*.pw2wan \
+		./examples/example5/*.UPF \
 		./config/* \
 		./utility/*.pl \
                 ./doc/*/*.tex \
@@ -51,14 +51,14 @@ dist-full:
 		./*/*/Makefile \
 		./Makefile \
 		./LICENCE \
-		./README.* \
+		./README* \
         | gzip -c > \
                 ./wannier90.tar.gz)
 
 test:   wannier
 	(cd tests ; make test )
 
-dist:
+dist-lite:
 	@(tar cf - \
 		./src/*.?90 \
 		./tests/run_test.pl \
