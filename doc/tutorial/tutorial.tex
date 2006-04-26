@@ -37,7 +37,7 @@ Refer to the overview of the code given in Chapter 1 of the Wannier90 User guide
 and the two papers, MV\footnote{{\it Maximally localized generalized
     Wannier functions for composite energy bands}\\ N. Marzari and
   D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)} 
-nd SMV\footnote{{\it Maximally localized Wannier functions for entangled energy bands}\\
+ and SMV\footnote{{\it Maximally localized Wannier functions for entangled energy bands}\\
 I. Souza, N. Marzari and D. Vanderbilt, Phys. Rev. B 65, 035109 (2002)}.
 
 
@@ -70,7 +70,7 @@ codes.
 \section*{1: Gallium Arsenide}
 
 \begin{itemize}
-\item{Outline: \it{Obtain and plot Wannier functions for the 4 valence states of GaAs.}}
+\item{Outline: \it{Obtain and plot Wannier functions for the 4 valence bands of GaAs.}}
 \item{Generation details: \it{From pwscf using norm-conserving pseudopotentials
 and a 2x2x2 kpoint grid. Starting guess: 4 bond centred Gaussians.}}
 \item{Directory: {\tt examples/example1/}}
@@ -212,7 +212,7 @@ xcrysden --bxsf lead.bxsf
 \section*{3: Silicon}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence and lower conduction states of Si. Plot the interpolated band structure}}
+\item{Outline: \it{Obtain MLWF for the valence and low-lying conduction states of Si. Plot the interpolated band structure}}
 \item{Generation Details: \it{From pwscf using norm-conserving pseudopotentials
 and a 4x4x4 kpoint grid. Starting guess:  atom centred sp$^3$ hybrid orbitals}}
 \item{Directory: {\tt examples/example3/}}
@@ -276,7 +276,7 @@ The kpoint path for the bandstructure interpolation is set in the {\tt kpoint\_p
 \section*{4: Copper}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the 4 valence states of Copper. Plot the MLWF}}
+\item{Outline: \it{Obtain MLWF to describe the states around the Fermi-level in Copper}}
 \item{Generation Details: \it{From pwscf using ``ultrasoft'' pseudopotentials
 and a 4x4x4 kpoint grid. Starting guess: 5 atom centred `d' orbital and two `s' orbitals centred on 
 one of each of the two tetrahedral interstices.}}
