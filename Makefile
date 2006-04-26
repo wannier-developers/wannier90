@@ -4,7 +4,7 @@ default: wannier
 
 all: wannier
 
-spec: thespec
+doc: thedoc
 
 wannier: 
 	(cd src ; make all)
@@ -17,12 +17,14 @@ clean:
 	touch make.sys ;\
 	cd src ; make clean ;\
 	cd ../tests ; make clean ; \
-	cd ../spec ; make clean	
+	cd ../doc/user_guide ; make clean ; \
+	cd ../tutorial ; make clean 	
 
-thespec:
-	(cd spec ; make spec)
+thedoc:
+	cd doc/user_guide ; make guide ; \
+	cd ../tutorial ; make tutorial
 
-dist:
+dist-full:
 	@(tar cf - \
 		./src/*.?90 \
 		./tests/run_test.pl \
@@ -30,22 +32,23 @@ dist:
 		./tests/test*/des.dat \
 		./tests/test*/wannier.eig \
 		./tests/test*/wannier.?mn \
-		./examples/*/wannier.eig \
 		./tests/test*/stnd* \
 		./examples/example1/UNK* \
 		./examples/*/*.win \
 		./examples/*/*.eig \
-		./examples/*/old* \
-		./examples/*/new* \
                 ./examples/*/*.*mn \
-                ./examples/*/*.nnkp \
-                ./examples/*/README \
+		./examples/*/*.scf \
+		./examples/*/*.nscf \
+		./examples/*/*.pw2wan \
+		./examples/*/*.UPF \
 		./config/* \
 		./utility/*.pl \
-                ./spec/*.tex \
-                ./spec/*.eps \
-                ./spec/*.fig \
+                ./doc/*/*.tex \
+                ./doc/*/*.eps \
+                ./doc/*/*.fig \
+		./doc/*.pdf \
 		./*/Makefile \
+		./*/*/Makefile \
 		./Makefile \
 		./LICENCE \
 		./README.* \
@@ -55,7 +58,7 @@ dist:
 test:   wannier
 	(cd tests ; make test )
 
-dist-lite:
+dist:
 	@(tar cf - \
 		./src/*.?90 \
 		./tests/run_test.pl \
