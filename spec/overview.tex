@@ -2,7 +2,7 @@
 
 \section{Methodology}
 Wannier90 computes Maximally Localised
-Wannier Functions following the method of Marzari and Vanderbilt (MV).\footnote{
+Wannier Functions (MLWFs) following the method of Marzari and Vanderbilt (MV).\footnote{
 {\it Maximally localized generalized Wannier functions for composite energy bands}
 N. Marzari and D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)}
 For entangled energy bands  the method of
@@ -15,27 +15,29 @@ can be found in the original papers.
 
 First principles codes typically solve the electronic structure of
 periodic materials in terms of Bloch states, $\psi_{n{\bf k}}$. 
-These extended states are characterised by a band index, n and crystal
-momentum, ${\bf k}$. An alternative representation can be given in terms
-of spatially localised functions known as Wannier functions (WF). The Wannier function 
+These extended states are characterised by a band index $n$ and crystal
+momentum ${\bf k}$. An alternative representation can be given in terms
+of spatially localised functions known as Wannier functions (WFs). The WF 
 centred on a lattice site ${\bf R}$,  $w_{n{\bf R}}({\bf r})$, 
 is written in terms of the set of Bloch states as
 \begin{equation}
 w_{n{\bf R}}({\bf r})=\frac{V}{(2\pi)^3}\int_{BZ} \left[\sum_{m} U^{({\bf
-k})}_{mn} \psi_{m{\bf k}}({\bf r})\right]e^{-{\bf k}.{\bf R}} d{\bf k},
+k})}_{mn} \psi_{m{\bf k}}({\bf r})\right]e^{-\mathrm{i}{\bf k}.{\bf R}} d{\bf k},
 \end{equation}
-where $U^{({\bf k})}$ is a unitary matrix which mixes the Bloch states at each
-${\bf k}$. $U^{({\bf k})}$ is not uniquely defined and different choices
-will lead to WF with varying spatial localisations. We define the spread
-of the Wannier functions, $\Omega$ 
+where $\bf{U}^{({\bf k})}$ is a unitary matrix that mixes the Bloch
+states at each 
+${\bf k}$. $\bf{U}^{({\bf k})}$ is not uniquely defined and different choices
+will lead to WFs with varying spatial localisations. We define the
+spread $\Omega$
+of the WFs as 
 \begin{equation}
 \Omega=\sum_n \left[\langle w_{n{\bf 0}}({\bf r})| r^2 | w_{n{\bf
       0}}({\bf r}) \rangle - | \langle w_{n{\bf 0}}({\bf r})| {\bf r} | w_{n{\bf
       0}}({\bf r}) \rangle |^2 \right].
 \end{equation}
-The total spread can be decomposed into a gauge invariant term,
-$\Omega_{\rm I}$ and a term, ${\tilde \Omega}$ which is dependant on the gauge
-choice $U^{({\bf k})}$. ${\tilde \Omega}$ can
+The total spread can be decomposed into a gauge invariant term
+$\Omega_{\rm I}$ plus a term ${\tilde \Omega}$ that is dependant on the gauge
+choice $\bf{U}^{({\bf k})}$. ${\tilde \Omega}$ can
 be further divided into terms diagonal and off-diagonal in the WF basis,
 $\Omega_{\rm D}$ and $\Omega_{\rm OD}$.
 \begin{equation}
@@ -52,63 +54,68 @@ where
 w_{n{\bf 0}}({\bf r}) \rangle|^2 
 \end{equation}
 \begin{equation}
-\Omega_{\rm D}=\sum_{m\neq n} \sum_{{\bf R}} |\langle w_{n{\bf R}}({\bf
+\Omega_{\rm OD}=\sum_{m\neq n} \sum_{{\bf R}} |\langle w_{m{\bf R}}({\bf
   r})| {\bf r} |
 w_{n{\bf 0}}({\bf r}) \rangle |^2 
 \end{equation}
-The MV method minimises the gauge dependent spread $\tilde{\Omega}$, with respect the set
-of $U^{({\bf k})}$ to obtain Maximally Localised Wannier Functions (MLWF).
+The MV method minimises the gauge dependent spread $\tilde{\Omega}$ with respect the set
+of $\bf{U}^{({\bf k})}$ to obtain MLWFs.
 
 The Wannier90 code requires two ingredients from an initial electronic structure calculation.
 \begin{enumerate}
-\item The overlaps between the cell periodic part of the bloch states $|u_{n{\bf k}}\rangle$ 
+\item The overlaps between the cell periodic part of the Bloch states $|u_{n{\bf k}}\rangle$ 
 \begin{equation}
-M_{mn{\bf k}}=\langle u_{m{\bf k}}|u_{n{\bf k}+{\bf b}}\rangle,
+M_{mn}^{(\bf{k,b})}=\langle u_{m{\bf k}}|u_{n{\bf k}+{\bf b}}\rangle,
 \end{equation}
-where the vectors ${\bf b}$, which connect a given kpoint with its neighbours, are determined
-by the Wannier90 code according to prescription outlined in MV.
-\item As a starting guess the projection of the bloch states onto trial localised orbitals 
+where the vectors ${\bf b}$, which connect a given k-point with its neighbours, are determined
+by the Wannier90 code according to the prescription outlined in MV.
+\item As a starting guess the projection of the Bloch states
+  $|\psi_{n\bf{k}}\rangle$ onto trial localised orbitals $|g_{n}\rangle$ 
 \begin{equation}
-M_{mn{\bf k}}=\langle \psi_{m{\bf k}}|\psi_{n{\bf k}+{\bf b}}\rangle,
+A_{mn}^{(\bf{k})}=\langle \psi_{m{\bf k}}|g_{n}\rangle,
 \end{equation}
 \end{enumerate}
-Note that $M_{{\bf k}}$, $A_{{\bf k}}$ and $U^{({\bf k})}$ are all
-small, $N_{{\rm wann}}^2$ matrices, independent of the basis set used to
-obtain the original Bloch states. To date the Wannier90 code has been
-used in combination with electronic codes based on planewaves and
+Note that $\bf{M}^{(\bf{k,b})}$, $\bf{A}^{(\bf{k})}$ and
+$\bf{U}^{({\bf k})}$ are all 
+small, $N_{{\rm wann}}\times N_{{\rm wann}}$ matrices, independent of
+the basis set used to obtain the original Bloch states.  
+
+To date the Wannier90 code has been
+used in combination with electronic codes based on plane-waves and
 pseudopotentials (norm-conserving and ``ultrasoft'') as well as mixed
 basis set techniques such as FLAPW. 
 
 \subsection{Entangled Energy Bands}
-The above description is sufficient to obtain Wannier functions for
+The above description is sufficient to obtain Wannier functions for an
 isolated set of bands, such as the valence states in an insulator. In
-order to obtain MLWF for entangled energy bands we use the
+order to obtain MLWFs for entangled energy bands we use the
 ``disentanglement'' procedure introduced in SMV.
 
-We define an energy window (the ``outer window''). At a given kpoint 
-$N^{{\bf k}}_{{\rm win}}$ states lie within this energy window. We obtain a set of
-$N_{{\rm wann}}$ Bloch states by performing a unitary\footnote{As
-    $U^{{\rm dis}}_{{\bf k}}$ is a rectangular matrix this is a unitary
-    operation in the sense that $(U^{{\rm dis}}_{{\bf
-        k}})^{\dagger}U^{{\rm dis}}_{{\bf k}}=1$.}
-transformation amongst the Bloch states which fall within the energy window at each kpoint.
+We define an energy window (the ``outer window''). At a given
+k-point $\bf{k}$, 
+$N^{{\bf k}}_{{\rm win}}$ states lie within this energy window. We
+obtain a set of 
+$N_{{\rm wann}}$ Bloch states by performing a unitary
+transformation amongst the Bloch states which fall within the energy window at each k-point:
  \begin{equation}
 | u_{n{\bf k}}^{{\rm opt}}\rangle = \sum_{m\in N^{{\bf k}}_{{\rm win}}}
-U^{{\rm dis}}_{mn{\bf k}} | u_{m{\bf k}}\rangle
+U^{{\rm dis}({\bf k})}_{mn} | u_{m{\bf k}}\rangle
 \end{equation}
-where $U^{{\rm dis}}_{{\bf k}}$ is a rectangular $N_{{\rm wann}}\times N^{{\bf
- k}}_{{\rm win}}$
- matrix. The set of $U^{{\rm dis}}_{{\bf k}}$ are obtained by minimising
- the gauge invariant spread, $\Omega_{{\rm I}}$ within the outer energy
+where $\bf{U}^{{\rm dis}({\bf k})}$ is a rectangular $N_{{\rm
+ wann}}\times N^{{\bf k}}_{{\rm win}}$
+ matrix\footnote{As
+    $\bf{U}^{{\rm dis}({\bf k})}$ is a rectangular matrix this is a unitary
+    operation in the sense that $(\bf{U}^{{\rm dis}({\bf k})})^{\dagger}\bf{U}^{{\rm dis}({\bf k})}=\bf{1}$.}. The set of $\bf{U}^{{\rm dis}({\bf k})}$ are obtained by minimising
+ the gauge invariant spread $\Omega_{{\rm I}}$ within the outer energy
  window. The MV procedure can then be used to minimise $\tilde{\Omega}$
  and hence obtain MLWF for this optimal subspace.
 
 It should be noted that the energy bands of this
-optimally subspace may not correspond to any of the original energy
+optimal subspace may not correspond to any of the original energy
 bands (due to mixing between states). In order to preserve exactly the
-properties of a system in a given energy range (eg around the Fermi
+properties of a system in a given energy range (eg, around the Fermi
 level) we introduce a second  energy window. States lying
-within this inner, or ``frozen'' energy window are included unchanged
+within this inner, or ``frozen'', energy window are included unchanged
 in the optimal subspace.
 
 \subsection{Citation}
@@ -121,7 +128,7 @@ N. Marzari, I. Souza and D. Vanderbilt,
  http://www.wannier.org/                 
 \end{quote}                                                              
 
-It will also be appropriate to cite the original articles:\\\\
+It would also be appropriate to cite the original articles:\\\\
 {\it Maximally localized generalized Wannier functions for composite energy bands}\\
 N. Marzari and D. Vanderbilt, Phys. Rev. B 56, 12847 (1997)\\\\
 {\it Maximally localized Wannier functions for entangled energy bands}\\
