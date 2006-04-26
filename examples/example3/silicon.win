@@ -3,7 +3,7 @@ num_wann          =   8
 
 dis_win_max       = 17.0d0
 dis_froz_max      =  6.4d0
-dis_num_iter      =  100
+dis_num_iter      =  120
 
 num_iter          = 50
 num_print_cycles  = 10
