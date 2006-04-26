@@ -1,13 +1,22 @@
-
 #===================
-# g95 Linux / Cygwin
-# -fno-second-underscore is only for cygwin
+# g95
 #===================
 F90 = g95
-FCOPTS = -O2 -fno-second-underscore    
-#FCOPTS = -ftrace=full -fbounds-check -g -fno-second-underscore    
-LDOPTS = -fno-second-underscore  
-LIBS   =   liblapack.a libblas.a 
+FCOPTS = -O2
+LDOPTS = -O2
+                                                                                                                                            
+#=======================
+# ATLAS Blas and LAPACK
+#=======================
+#LIBDIR = /usr/local/lib
+#LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
+                                                                                                                                            
+#=======================
+# NETLIB LAPACK and BLAS
+#=======================
+                                                                                                                                            
+#LIBDIR = /usr/local/lib
+#LIBS = -L$(LIBDIR)  -llapack -lblas
 
 
 
