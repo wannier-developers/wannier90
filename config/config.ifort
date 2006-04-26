@@ -10,7 +10,7 @@ LDOPTS = -O2 -Vaxlib
 # Intel mkl libraries. Set LIBPATH if not in default path
 #========================================================
 
-#LIBDIR = /opt/intel/mkl721/lib/32
+LIBDIR = /opt/intel/mkl721/lib/32
 LIBS   =  -L$(LIBDIR) -lmkl_lapack  -lmkl_ia32 -lguide -lpthread
 
 #=======================
