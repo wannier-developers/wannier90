@@ -29,7 +29,7 @@ parameters.o: parameters.F90 constants.o io.o utility.o
 overlap.o: overlap.F90 parameters.o constants.o io.o
 	 $(F90) $(FCOPTS) -c overlap.F90
 
-kmesh.o: kmesh.F90 parameters.o constants.o io.o
+kmesh.o: kmesh.F90 utility.o parameters.o constants.o io.o
 	 $(F90) $(FCOPTS) -c kmesh.F90
 
 disentangle.o: disentangle.F90 parameters.o constants.o io.o
