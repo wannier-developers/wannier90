@@ -3,20 +3,17 @@
 This is a description of how to use Wannier90 code as a
 post-processing tool. 
 
-The code must be run twice. On the first pass the logical keyword
+The code must be run twice. On the first pass either the logical keyword
 \verb#postproc_setup# must be set to \verb#.true.# in the input file
-\verb#seedname.win#.  Running the code then generates the file
+\verb#seedname.win# or the code must be run with the command line
+option \verb#-pp#.  Running the code then generates the file
 \verb#seedname.nnkp# which provides the information required to 
-construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (MV\footnote{Marzari
-  and Vanderbilt, \textit{Phys.~Rev.~B} \textbf{56}, 12847 (1997)}
-Eq.~(25)) and $A_{mn}^{(\mathbf{k})}=\left\langle
-\psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections (MV
-Eq.~(62), SMV\footnote{Souza, Marzari and Vanderbilt,
-  \textit{Phys.~Rev.~B} \textbf{65}, 035109 (2001)} Eq.~(22)). 
+construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (MV Eq.~(25)) and
+$A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV Eq.~(22)). 
 
 Once the overlaps and projection have been computed and written to
-files \verb#seedname.mmn# and \verb#seedname.amn#, respectively, set
-\verb#postproc_setup# to \verb#.false.# and run the code. Output is
+files \verb#seedname.mmn# and \verb#seedname.amn#, respectively,
+set \verb#postproc_setup# to \verb#.false.# and run the code. Output is
 written to the file \verb#seedname.wout#.
 
 
@@ -25,10 +22,11 @@ written to the file \verb#seedname.wout#.
 OUTPUT, if $\verb#postproc_setup#=\verb#.true.#$
 
 The file \verb#seedname.nnkp# provides the information needed to
-determine the required overlap elements $M_{mn}^{(\mathbf{k,b})}$ (MV
-Eq.~(25)) and projections $A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV
-Eq.~(22)), ie, \verb#M_matrix_orig# and \verb#A_matrix#, described in
-Section~\ref{wannier_run}.
+determine the required overlap elements $M_{mn}^{(\mathbf{k,b})}$ and
+projections $A_{mn}^{(\mathbf{k})}$. It is written automatically when
+the code is invoked with the \verb#-pp# command-line option (or when
+\verb#postproc_setup=.true.# in \verb#seedname.win#. There should be
+no need for the user to edit this file.
 
 Much of the information in \verb#seedname.nnkp# is arranged in blocks
 delimited by the strings \verb#begin block_name# \ldots
@@ -44,7 +42,6 @@ The first line of the file is a user comment, e.g., the date and time:
 The only logical keyword is \verb#calc_only_A#, eg,
 
 \verb#calc_only_A  :  F#
-
 
 \subsection{Real\_lattice block}
 \begin{verbatim}
@@ -135,7 +132,8 @@ Angstrom.
 \verb#box-size#: real number; the linear dimension of the real-space
 box (or sphere) for calculating the overlap
 $\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the
-localised projection function. Units are in Angstrom.
+localised projection function. Units are in Angstrom. This feature is not
+currently used.
 
 
 
@@ -174,7 +172,7 @@ begin exclude_bands
   .
 end exclude_bands
 \end{verbatim}
-To exclude bands (independent of kpoint) from the calculation of the 
+To exclude bands (independent of k-point) from the calculation of the 
 overlap and projection matricies, for example to ignore shallow-core states.
 The first line is the number of states to exclude, the following lines give
 the states for be excluded.
@@ -276,7 +274,7 @@ $\mathbf{k+b}$ that we need.
 Subsequent $\verb#num_bands#\times\verb#num_bands#$ lines of each
 block: two real numbers per line. These are the real and imaginary
 parts, respectively, of the actual scalar product
-$M_{mn}^{(\mathbf{k,b})}$ for $m,n \in [1:\verb#num_bands#]$. The
+$M_{mn}^{(\mathbf{k,b})}$ for $m,n \in [1,\verb#num_bands#]$. The
 order of these elements is such that the first index $m$ is fastest.
 
 
@@ -299,7 +297,7 @@ $\verb#num_bands#\times\verb#num_wann#\times\verb#num_kpts#$
 lines: 3 integers and 2 real numbers on each line. The first 
 two integers are the band indices $m$ and $n$. The third integer specifies
 the $\mathbf{k}$ by giving the ordinal corresponding to its position
-in the list of $k$-points in the master input file. The real numbers
+in the list of $k$-points in \verb#seedname.win#. The real numbers
 are the real and imaginary parts, respectively, of the actual
 $A_{mn}^{(\mathbf{k})}$.
 
@@ -365,7 +363,7 @@ The file \verb#seedname.eig# contains the Kohn-Sham eigenvalues
 
 Each line consist of two integers and a real number. The first integer
 is the band index, the second integer gives the ordinal corresponding
-to the $k$-point in the list of $k$-points in the master input file,
+to the $k$-point in the list of $k$-points in \verb#seedname.win#,
 and the real number is the eigenvalue. 
 
 E.g.,
@@ -381,7 +379,7 @@ E.g.,
 \section{Interface with PWSCF}
 
 \begin{enumerate}
-\item Run an `scf' calculation with \verb#pw#
+\item Run `scf'/'nscf' calculation(s) with \verb#pw#
 \item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.true.# to
   generate \verb#seedname.nnkp#
 \item Run \verb#pw2wannier90#. First it reads \verb#pw2wannier90.in#,
@@ -389,9 +387,39 @@ E.g.,
   calculation, as well as the name of the file \verb#seedname.nnkp#,
   and does a consistency check between the direct and reciprocal lattice
   vectors read from \verb#seedname.nnkp# and those defined in the
-  files specified by \verb#prefix#. Then generate 
-  \verb#seedname.mmn#, \verb#seedname.amn#, \verb#seedname.eig#
+  files specified by \verb#prefix#. \verb#pw2wannier90# generates
+  \verb#seedname.mmn#, \verb#seedname.amn# and \verb#seedname.eig#
 \item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.# to
-  disentangle and localise Wannier functions
+  disentangle bands (if required) and localise Wannier functions.
 \end{enumerate}
 
+\subsection{pw2wannier90.in}
+
+A number of keywords may be specified in the \verb#pw2wannier90# input file:
+
+   \verb#outdir# -- Location to write output files. Default is \verb#`./'#
+
+   \verb#prefix# -- Prefix for the PWscf calculation. Default is \verb#` '#
+
+   \verb#seedname# -- Seedname for the Wannier90 calculation. Default
+   is \verb#`wannier'#
+
+   \verb#spin_component# -- Spin component. Takes values \verb#`up'#,
+
+   \verb#`down'# or \verb#`none'# (default).
+
+%   wan_mode = 'standalone'
+
+   \verb#write_unk# -- Set to \verb#true# to write the periodic part
+   of the Bloch functions for plotting in Wannier90. Default is
+   \verb#.false.#
+
+   \verb#wvfn_formatted# -- Set to \verb#.true.# to write formatted
+   wavefunctions. Default is \verb#.false.# (only relevant if
+   \verb#write_unk=.true.#)
+
+   \verb#write_amn# -- Set to \verb#.false.# if
+   $A_{mn}^{(\mathbf{k})}$ not required. Default is \verb#.true.#
+
+   \verb#write_mmn# -- Set to \verb#.false.# if
+   $M_{mn}^{(\mathbf{k,b})}$ not required. Default is \verb#.true.#

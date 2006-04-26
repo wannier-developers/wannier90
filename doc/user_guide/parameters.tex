@@ -54,8 +54,8 @@ Keyword & Type & Description \\
 {\sc atoms\_cart }*   & P & Positions of atoms in Cartesian coordinates \\
 {\sc atoms\_frac }*   & R & Positions of atoms in lattice vectors \\
 {\sc mp\_grid }   & I & Dimensions of the Monkhorst-Pack grid \\
-%{\sc mp\_grid\_automatic }**   & L & Determine the kpoint automatically \\
-{\sc kpoints }   & R & List of kpoints in the Monkhorst-Pack grid \\
+%{\sc mp\_grid\_automatic }**   & L & Determine the k-point automatically \\
+{\sc kpoints }   & R & List of k-points in the Monkhorst-Pack grid \\
 {\sc num\_shells }   & I & Number of shells in finite difference formula \\
 {\sc shell\_list }   & I & Which shells to use in finite difference formula \\
 \hline
@@ -259,10 +259,9 @@ Here $R_{1x}$ is the x-component of the first lattice vector,
 $R_{2y}$ is the y-component of the second lattice vector etc.
 
 \verb#[units]# specifies the units in which the lattice vectors are
-defined either \verb#bohr# or \verb#ang#. If not present, the default is \AA.
+defined: either \verb#Bohr# or \verb#Ang#. 
 
-
-There is no default.
+The default value is \verb#Ang#.
 
 
 
@@ -307,12 +306,15 @@ Y  & R_{2i} & R_{2j} & R_{2k} \\
 $$
 \verb#end atoms_frac#
 
-The first entry on a line is the Atomic symbol. The next three entries
+The first entry on a line is the atomic symbol. The next three entries
 are the atom's position in fractional coordinates.
 
 
 \subsection[mp\_grid]{\tt integer, dimension :: mp\_grid(3)}
-Dimensions of the regular (Monkhorst-Pack) kpoint mesh.
+Dimensions of the regular (Monkhorst-Pack) k-point mesh. For example,
+for a $2\times2\times2$ grid:
+
+\verb#mp_grid : 2  2  2#
 
 No default.
 
@@ -324,7 +326,7 @@ No default.
 %If
 %$\verb#mp_grid_automatic#=\verb#TRUE#$
 %then a "standard" Monkhorst-Pack grid over the interval (0,1] with dimensions \verb#mp_grid#
-%will be used. The kpoints will be assumed to be numbered such that the
+%will be used. The k-points will be assumed to be numbered such that the
 %loop over the x is fastest eg
 %
 %$$
@@ -374,14 +376,14 @@ There is no default.
 
 The Marzari-Vanderbilt scheme requires a finite difference expression
 for $\nabla_k$ 
-defined on a uniform Monkhorst-Pack mesh of kpoints. One choice (the
+defined on a uniform Monkhorst-Pack mesh of k-points. One choice (the
 `B1' condition of MV) 
-is to choose shells of kpoint neighbours to satisfy the equation
+is to choose shells of k-point neighbours to satisfy the equation
 \begin{equation}\nonumber
 \sum_s w_s \sum_i b_{i\alpha}^s b_{i\beta}^s = \delta_{\alpha\beta}
 \end{equation}
-`s' is sum over shells, `i' is a sum over kpoints in that shell, $w_s$ is a weight factor for the shell s, ${\bf b}_{i}^s$
-is a vector connecting a kpoint to one of it nearest neighbours, $\alpha$ and $\beta$ are Cartesian coordinates.
+`$s$' indexes the shell, `$i$' indexes k-points in that shell, $w_s$ is a weight factor for the shell s, ${\bf b}_{i}^s$
+is a vector connecting a k-point to one of it nearest neighbours, $\alpha$ and $\beta$ are Cartesian coordinates.
 
 \subsection[num\_shells]{\tt integer :: num\_shells}
 
@@ -411,7 +413,7 @@ For details see section \ref{sec:proj}.
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
 If \verb#postproc_setup#=\verb#TRUE# then the wannier code will write 
  {\tt <seedname>.nnkp} file and exit.
-If Wannier90 is called with the option {\tt -pp}; 
+If Wannier90 is called with the option {\tt -pp} then 
  \verb#postproc_setup# is set to 
 \verb#TRUE#, over-riding its
 value in the {\tt <seedname>.win} file.
@@ -428,7 +430,7 @@ The default value is \verb#FALSE#.
 \subsection[iprint]{\tt integer :: iprint}
 
 This indicates the level of verbosity of the output from 0,
-the bare minimum to 3, which corresponds to full debugging output.
+the bare minimum, to 3, which corresponds to full debugging output.
 
 The default value is 1.
 
@@ -437,8 +439,8 @@ The length unit to be used for output.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  Ang (default)
-\item[{\bf --}]  Bohr
+\item[{\bf --}]  \verb#Ang# (default)
+\item[{\bf --}]  \verb#Bohr#
 \end{itemize}
 
 \subsection[devel\_flag]{\tt character(len=50) :: devel\_flag}
@@ -448,21 +450,21 @@ string into the code to be used inside a new routine as it is developed.
 
 No default.
 
-\subsection[calc\_only\_A]{\tt logical :: calc\_only\_A}
-\red{Not yet implemented}
-
-If $\verb#calc_only_A#=\verb#.true.#$, then the \textit{ab initio}
-code, eg \textsc{pwscf},
-calculates only $A_{mn}^{(\mathbf{k})}$. Otherwise, both
-$M_{mn}^{(\mathbf{k,b})}$ and $A_{mn}^{(\mathbf{k})}$ are
-calculated.
-
-The default value of this parameter is \verb#FALSE#.
+%\subsection[calc\_only\_A]{\tt logical :: calc\_only\_A}
+%\red{Not yet implemented}
+%
+%If $\verb#calc_only_A#=\verb#.true.#$, then the \textit{ab initio}
+%code, eg \textsc{pwscf},
+%calculates only $A_{mn}^{(\mathbf{k})}$. Otherwise, both
+%$M_{mn}^{(\mathbf{k,b})}$ and $A_{mn}^{(\mathbf{k})}$ are
+%calculated.
+%
+%The default value of this parameter is \verb#FALSE#.
 
 
 \subsection[exclude\_bands]{\tt integer :: exclude\_bands(:)}
 
-A kpoint independent list of states to excluded from the calculation of the overlap matrices;
+A k-point independent list of states to excluded from the calculation of the overlap matrices;
  for example to select only valence states, or ignore semi-core states.
  This keyword is passed to the first-principles code via the
  {\tt <seedname>.nnkp} file. 
@@ -500,9 +502,9 @@ The default value of this parameter is $\verb#FALSE#$.
 
 \subsection[spin]{\tt character(len=20) :: spin}
 For bands from a spin polarised calculation determines which set
-of bands to read in, either `up' or `down'.
+of bands to read in, either \verb#up# or \verb#down#.
 
-The default value of this parameter is `up'.
+The default value of this parameter is \verb#up#.
 
 
 \section{Disentanglement}
@@ -613,7 +615,7 @@ The default is 1.
 \subsection[write\_r2mn]{\tt logical :: write\_r2mn}
 
 If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
-$<m|r^2|n>$ (where $m$ and $n$ refer to Wannier functions) are written
+$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to Wannier functions) are written
 to file \verb#seedname.r2mn# at the end of the wannierisation procedure.
 
 The default value of this parameter is \verb#FALSE#.
@@ -655,7 +657,8 @@ The default value is 0.
 
 If $\verb#wannier_plot#=\verb#TRUE#$ the code will write out the
 wannier functions in a super-cell \verb#wannier_plot_supercell# times
-the original unit cell in a format specified by \verb#wannier_plot_format#
+the original unit cell in a format specified by
+\verb#wannier_plot_format#
 
 The default value of this parameter is \verb#FALSE#.
 
@@ -672,7 +675,7 @@ The default value is 2.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] xcrysden (default)
+\item[{\bf --}] \verb#xcrysden# (default)
 %\item[{\bf --}] gopenmol
 %\item[{\bf --}] dan
 \end{itemize}
@@ -691,8 +694,8 @@ or as a crystal.
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] crystal (default)
-\item[{\bf --}] molecule 
+\item[{\bf --}] \verb#crystal# (default)
+\item[{\bf --}] \verb#molecule# 
 \end{itemize}
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
@@ -729,7 +732,7 @@ There is no default
 
 If $\verb#bands_plot#=\verb#TRUE#$ the number of points along the first
 section of the bandstructure plot given by \verb#kpoint_path#. Other
-sections will have the same density of kpoints.
+sections will have the same density of k-points.
 
 The default value for \verb#bands_num_points# is 100.
 
@@ -739,7 +742,7 @@ The default value for \verb#bands_num_points# is 100.
 Format in which to plot the interpolated band structure
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] gnuplot (default)
+\item[{\bf --}] \verb#gnuplot# (default)
 %\item[{\bf --}] xmgrace (possibly)
 \end{itemize}
 
@@ -757,7 +760,7 @@ The default value is \verb#FALSE#.
 \subsection[fermi\_surface\_num\_points]{\tt integer :: fermi\_surface\_num\_points}
 
 If $\verb#fermi_surface_plot#=\verb#TRUE#$ the number of divisions in
-the regular kpoint grid used to calculate the Fermi surface.
+the regular k-point grid used to calculate the Fermi surface.
 
 The default value for \verb#fermi_surface_num_points# is 50.
 
@@ -775,7 +778,7 @@ The default value is 0.0eV.
 Format in which to plot the Fermi surface. 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}] xcrysden  (default)
+\item[{\bf --}] \verb#xcrysden#  (default)
 \end{itemize}
 
 
@@ -848,7 +851,7 @@ The valid options for this parameter are:
 %\subsection[dos\_num\_points]{\tt integer :: dos\_num\_points}
 %\red{Not yet implemented}
 %
-%If $\verb#dos_plot#=\verb#TRUE#$ the dimension of the kpoint mesh
+%If $\verb#dos_plot#=\verb#TRUE#$ the dimension of the k-point mesh
 %to sample in calculating the density of states.
 %
 %The default value for \verb#dos_num_points# is 50

@@ -11,7 +11,7 @@ for each projection, the spatial orientation, the radial part, the
 diffusivity, and the volume over which real-space overlaps $A_{mn}$
 are calculated.
 
-We would like to be able to 
+The code is able to
 \begin{enumerate}
 \item project onto s,p,d and f
  angular momentum states, plus the hybrids sp, sp$^2$, sp$^3$, sp$^3$d,
@@ -29,7 +29,7 @@ can be constructed by simple linear combination $|\phi\rangle =
 \sum_{nlm} C_{nlm}|nlm\rangle$ for some coefficients
 $C_{nlm}$. 
 
-The angular functions that we want to use as a basis for the
+The angular functions that use as a basis for the
 projections are not the canonical spherical harmonics $Y_{lm}$ of the
 hydrogenic Schr\"{o}dinger equation but rather the
 \textit{real} (in the sense of non-imaginary) states
@@ -59,7 +59,7 @@ Notes:
 Optional. Either \verb#Ang# or \verb#Bohr# to specify whether the
 projection centres 
 specified in this block (if given in Cartesian co-ordinates) are in
-units of Angstrom or Bohr, respectively. Default is \verb#Ang#.
+units of Angstrom or Bohr, respectively. The default value is \verb#Ang#.
 
 \noindent
 \verb#site#:\\
@@ -68,7 +68,7 @@ units of Angstrom or Bohr, respectively. Default is \verb#Ang#.
 (crystallographic units) relative to the direct lattice vectors \\
 \verb#c=0.0,0.805,0.0# -- centre on (0.0,0.805,0.0) in \textbf{C}artesian
 coordinates in units specified by the optional string \verb#units# in
-the first line of the projections block (default is Angstrom).
+the first line of the projections block (see above).
 
 \noindent
 \verb#ang_mtm#:\\
@@ -114,7 +114,7 @@ function). Units always in reciprocal Angstrom. Default is \verb#zona=1.0#.
 box (or sphere) for calculating the overlap
 $\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the 
 localised projection function. Units are always in Angstrom. Default
-is \verb#b=1.0# 
+is \verb#b=1.0#. This feature is not currently used.
 
 
 \noindent

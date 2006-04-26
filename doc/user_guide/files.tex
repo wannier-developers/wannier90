@@ -22,11 +22,14 @@ Notes:
 
 \begin{itemize}
 \item The units (either \verb#ang#
-  (default) or \verb#bohr#) can be set in the first line of the blocks \verb#unit_cell_cart# and \verb#atoms_cart#
+  (default) or \verb#bohr#) in which the lattice vectors, atomic
+  positions or projection centres are given can be set in the first
+  line of the blocks 
+  \verb#unit_cell_cart#, \verb#atoms_cart# and \verb#projections#,
+  respectively, in \verb#seedname.win#.
 \item Energy is always in eV.
 \item Positions of $\mathbf{k}$-points are always in crystallographic
-  coordinates
-relative to the reciprocal lattice vectors.
+  coordinates relative to the reciprocal lattice vectors.
 \item \verb#box-size# and \verb#zona# always in Angstrom and
   reciprocal Angstrom, respectively
 \item The keyword \verb#length_unit# may be set to \verb#ang#
@@ -86,7 +89,7 @@ The name of the wavefunction file is assumed to have the form:
 The first line of each file should contain 5 integers: the number of
  grid points in each direction (\verb#ngx#, \verb#ngy# and
  \verb#ngz#), the k-point number \verb#ik# and the total number of
- bands \verb#num\_band# in the file. The full file will be read by Wannier90 as:
+ bands \verb#num_band# in the file. The full file will be read by Wannier90 as:
 
 \begin{verbatim}
 read(file_unit) ngx,ngy,ngz,ik,nbnd
