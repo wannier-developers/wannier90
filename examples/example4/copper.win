@@ -4,7 +4,8 @@
 
 dis_win_max       = 38.0
 dis_froz_max      = 13.0
-dis_num_iter      =  50
+dis_num_iter      =  60
+dis_mix_ratio = 1.0d0
 
 ! SYSTEM
 
