@@ -548,9 +548,12 @@ The default value is 100.
 
 \subsection[dis\_mix\_ratio]{\tt real(kind=dp) :: dis\_mix\_ratio}
 In the disentanglement procedure the mixing parameter to use for
-convergence.
+convergence (see pages 4-5 of SMV). A value of 0.5 is a `safe'
+choice. Using 1.0 (ie no mixing) often gives faster convergence, 
+but may cause the minimisation to be unstable in some cases.
 
-The default value is 1.0
+
+Restriction: $0<${\tt dis\_mix\_ratio}$\geq1$. The default value is 0.5 
 
 \subsection[dis\_conv\_tol]{\tt real(kind=dp) :: dis\_conv\_tol}
 
@@ -604,7 +607,7 @@ The default value is 5.
 Write sufficient information to do a restart every
 \verb#num_dump_cycles# iterations.
 
-The default is 0 (ie don't write out any restart information).
+The default is 100
 
 \subsection[num\_print\_cycles]{\tt integer :: num\_print\_cycles}
 Write data to the {\tt <seedname>.wout} file every
