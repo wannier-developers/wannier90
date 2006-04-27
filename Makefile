@@ -14,8 +14,7 @@ debug: $(OBJS)
 
 
 clean:
-	touch make.sys ;\
-	cd src ; make clean ;\
+	cd src ; rm -f *.o *.mod *.MOD *.obj ;\
 	cd ../tests ; make clean ; \
 	cd ../doc/user_guide ; make clean ; \
 	cd ../tutorial ; make clean 	
