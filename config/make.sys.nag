@@ -1,9 +1,23 @@
-
 #=======================
 # NAG 
 #======================= 
-# F90 = f95 
-# FCOPTS  =  
-# LDOPTS =  
-# LIBS   =   
+
+F90 = f95 
+FCOPTS = -DNAG  
+
+#=======================
+# ATLAS Blas and LAPACK
+#=======================
+LIBDIR = /usr/local/lib
+LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
+                                                                                                                                            
+#=======================
+# NETLIB LAPACK and BLAS
+#=======================
+                                                                                                                                            
+#LIBDIR = /usr/local/lib
+#LIBS = -L$(LIBDIR)  -llapack -lblas
+
+
+
 

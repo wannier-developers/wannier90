@@ -1,15 +1,22 @@
-
 #=======================
-#AIX / PowerPc
+# IBM Power series AIX 
+# PowerPc AIX / Linux
 #=======================
 #
-F90= xlf95_r 
-FCOPTS = -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto -q64 -O3
-##FCOPTS = -qarch=ppc64 -C -fullwarn
-LDOPTS =  -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto -q64
-LIBS   = -L/home/nano/isouza/jry20/LIBS/LAPACK64/LAPACK -llapack_64 -lessl -lxlf90_r -lpthread
- 
 
+F90= xlf95_r 
+FCOPTS = -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto  -O3
+LDOPTS = -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto 
+LIBDIR = 
+LIBS   = -L$(LIBDIR) -llapack -lessl 
+ 
+# Notes: This will compile with the default addressing (either 64 or 32)
+#        To explicitly specify the adressing use -q64 or -q32
+#
+#        If you machine does not have a LAPACK library build the netlib LAPACK
+#        http://www.netlib.org/lapack/
+#        and (optionally) the essl wrappers
+#        http://www.netlib.org/lapack/essl/
 
 
 

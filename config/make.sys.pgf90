@@ -1,9 +1,11 @@
+#=====
 #pgf90 
 #=====
-#F90 = pgf90 
-#FCOPTS  = -fast 
+
+F90 = pgf90 
+FCOPTS  = -fast 
 ##FCOPTS  = -C -g 
-#LDOPTS = 
-#LIBS   = -llapack -lblas 
+LDOPTS = 
+LIBS   = -llapack -lblas 
 
 
