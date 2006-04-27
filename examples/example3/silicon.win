@@ -4,6 +4,7 @@ num_wann          =   8
 dis_win_max       = 17.0d0
 dis_froz_max      =  6.4d0
 dis_num_iter      =  120
+dis_mix_ratio     = 1.d0
 
 num_iter          = 50
 num_print_cycles  = 10
@@ -17,12 +18,12 @@ Begin Projections
 Si : sp3 
 End Projections       
     
-Begin Kpoint_Path
+begin kpoint_path
 L 0.50000  0.50000 0.5000 G 0.00000  0.00000 0.0000
 G 0.00000  0.00000 0.0000 X 0.50000  0.00000 0.5000
 X 0.50000 -0.50000 0.0000 K 0.37500 -0.37500 0.0000 
 K 0.37500 -0.37500 0.0000 G 0.00000  0.00000 0.0000
-End Kpoint_Path
+end kpoint_path
 
 
 Begin Unit_Cell_Cart
