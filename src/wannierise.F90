@@ -538,9 +538,16 @@ contains
               - 0.25_dp * eqb * eqb / (fac * eqa) * (trial_step**2)
       else
          if ( lprint .and. iprint>2 ) write(stdout,*) &
-              ' LINE --> Parabolic line search unstable: taking trial step'
+              ' LINE --> Parabolic line search unstable : taking trial step'
          alphamin  = trial_step
          falphamin = trial_spread%om_tot
+      endif
+
+      if (doda0*alphamin.gt.0.0_dp) then
+         if ( lprint .and. iprint>2 ) write(stdout,*) &
+              ' LINE --> Line search unstable           : taking trial step'
+         alphamin=trial_step
+         falphamin=trial_spread%om_tot
       endif
 
       return
