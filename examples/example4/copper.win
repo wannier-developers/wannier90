@@ -5,7 +5,7 @@
 dis_win_max       = 38.0
 dis_froz_max      = 13.0
 dis_num_iter      =  60
-dis_mix_ratio = 1.0d0
+dis_mix_ratio     = 1.0d0
 
 ! SYSTEM
 
@@ -25,6 +25,16 @@ Cu:d
 f=0.25,0.25,0.25:s
 f=-0.25,-0.25,-0.25:s
 end projections
+
+
+begin kpoint_path
+G 0.00  0.00  0.00    X 0.50  0.50  0.00
+X 0.50  0.50  0.00    W 0.50  0.75  0.25
+W 0.50  0.75  0.25    L 0.00  0.50  0.00
+L 0.00  0.50  0.00    G 0.00  0.00  0.00
+G 0.00  0.00  0.00    K 0.00  0.50 -0.50
+end kpoint_path
+
 
 ! KPOINTS
 
