@@ -493,7 +493,9 @@ contains
 
     dis_mix_ratio     = 0.5_dp
     call param_get_keyword('dis_mix_ratio',found,r_value=dis_mix_ratio)
-    if (dis_mix_ratio<0.0_dp) call io_error('Error: dis_mix_ratio must be positive')
+    if (dis_mix_ratio<=0.0_dp .or. dis_mix_ratio>1.0_dp) &
+     call io_error('Error: dis_mix_ratio must be greater than 0.0 but not greater than 1.0')
+
 
     dis_conv_tol      = 1.0e-10_dp      
     call param_get_keyword('dis_conv_tol',found,r_value=dis_conv_tol)
@@ -808,7 +810,7 @@ contains
        write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Using band disentanglement                :',disentanglement,'|'
        write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Total number of iterations                :',dis_num_iter,'|'
        write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :',dis_mix_ratio,'|'
-       write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :',dis_conv_tol,'|'
+       write(stdout,'(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :',dis_conv_tol,'|'
        write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',dis_conv_window,'|'
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     end if
