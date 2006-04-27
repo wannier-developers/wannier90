@@ -168,6 +168,16 @@ contains
     xval(total_pts)=sum(kpath_len)
     plot_kpoint(:,total_pts)=bands_spec_points(:,bands_num_spec_points)
     !
+    ! Write out the kpoints in the path
+    !
+    bndunit=io_file_unit()
+    open(bndunit,file=trim(seedname)//'_band.kpt',form='formatted')
+    write(bndunit,*) total_pts
+    do loop_spts=1,total_pts
+       write(bndunit,'(3f12.6,3x,f3.1)') (plot_kpoint(loop_i,loop_spts),loop_i=1,3),1.0_dp
+    end do
+    close(bndunit)
+    !
     ! Interpolate the Hamiltonian at each kpoint
     !
     do loop_kpt=1,total_pts
