@@ -43,7 +43,7 @@ I. Souza, N. Marzari and D. Vanderbilt, Phys. Rev. B 65, 035109 (2002)}.
 
 The following additional programs should be installed to visualise the output of Wannier90
 \begin{itemize}
-\item {\tt gnuplot}; a graph plotting program is used to plot band structures. It is 
+\item {\tt gnuplot} is used to plot band structures. It is 
 available for many operating systems and is often installed by default on
  unix/Linux distributions\\
 {\tt http://www.gnuplot.info}
@@ -103,7 +103,7 @@ wannier\_plot = true
 and re-running Wannier90. To visualise the Wannier functions we must explicitly represent them on
 a real space grid (see User Guide Eq 2). As a consequence plotting the
 Wannier functions is slower and uses more memory than the minimisation
-of the spread. The 4 files that are created, {\tt gaas\_00001.xsf} etc can
+of the spread. The 4 files that are created ({\tt gaas\_00001.xsf}, etc) can
 be viewed using XCrysden 
 {\tt
 \begin{quote}
@@ -172,10 +172,10 @@ wannier90.x lead
 \end{quote} }
 Inspect the output file {\tt lead.wout}.
 \item Use Wannier interpolation to obtain the Fermi surface of
-  lead. Rather than rerunning the whole calculation we can use the
-  unitary transformations obtained in the first calculation, restarting
+  lead. Rather than re-running the whole calculation we can use the
+  unitary transformations obtained in the first calculation and restart
   from the plotting routine. Add the following keywords to the {\tt
-    lead.win} file 
+    lead.win} file: 
 {\tt
 \begin{quote}
 restart = plot
@@ -373,7 +373,7 @@ cvs checkout pwscf
 {\tt wannier90.x -pp diamond}
 
 \item Run pw2wannier to compute the overlap between Bloch states and the
-  projections for the starting guess (written in the {\tt diamond.mmn} and {\tt diamond.amn} files). 
+  projections for the starting guess (written in the {\tt diamond.mmn} and {\tt diamond.amn} files).\\ 
 {\tt pw2wannier90.x < diamond.pw2wan > pw2wan.out}
 
 \item Run Wannier90 to compute the Wannier functions.\\
