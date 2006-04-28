@@ -334,13 +334,14 @@ contains
     call param_get_keyword('num_no_guide_iter',found,i_value=num_no_guide_iter)
     if (num_no_guide_iter<0) call io_error('Error: num_no_guide_iter must be >= 0')
 
-    trial_step=2.0_dp
-    call param_get_keyword('trial_step',found,r_value=trial_step)
-
     fixed_step=-999.0_dp ; lfixstep=.false.
     call param_get_keyword('fixed_step',found,r_value=fixed_step)
     if ( found.and.(fixed_step<0.0_dp) ) call io_error('Error: fixed_step must be > 0')
     if ( fixed_step > 0.0_dp ) lfixstep=.true.
+
+    trial_step=2.0_dp
+    call param_get_keyword('trial_step',found,r_value=trial_step)
+    if ( found.and.lfixstep ) call io_error('Error: cannot specify both fixed_step and trial_step')
 
     !%%%%%%%%%
     ! Plotting
