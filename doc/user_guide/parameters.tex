@@ -162,12 +162,20 @@ Wannier functions to file \\
 {\sc num\_guide\_cycles }   & I & Frequency of guiding centres \\
 {\sc num\_no\_guide\_iter }   & I & The number of iterations
 after which guiding centres are used\\
+{\sc trial\_step }*   & R & The trial step length for the parabolic
+line search during the minimisation
+of $\Omega$\\
+{\sc fixed\_step }*   & R & The fixed step length to take during the minimisation
+of $\Omega$, instead of doing a parabolic line search \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
 {win file keywords controlling the wannierisation.  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+physical value, L for a logical value and S for a text string. 
+{\footnotesize
+* {\sc fixed\_step } and  {\sc trial\_step } may not both be defined in
+the same input file. }}
 \label{parameter_keywords5}
 \end{center}
 \end{table}
@@ -642,6 +650,25 @@ guiding centres are used only after \verb#num_no_guide_iter#
 minimisation iterations have been completed.
 
 The default value is 0.
+
+\subsection[trial\_step]{\tt real(kind=dp) :: trial\_step}
+The value of the trial step for the parabolic fit in the line
+search minimisation used in the minimisation of the spread
+function. Cannot be used in conjunction with \verb#fixed_step# (see
+below). If the minimisation procedure doesn't converge, try decreasing
+the value of \verb#trial_step# to give a more accurate line search.
+
+The default value is 2.0
+
+\subsection[fixed\_step]{\tt real(kind=dp) :: fixed\_step}
+If this is given a value in the input file then a fixed step of length
+\verb#fixed_step# (instead of a parabolic
+line search) is used at each iteration of the spread function
+minimisation. Cannot be used in conjunction with
+\verb#trial_step#. This can be useful in cases in which minimisation
+with a line search fails to converge.
+
+There is no default value.
 
 
 \section{Post-Processing}
