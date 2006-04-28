@@ -218,11 +218,19 @@ contains
                if (l.eq.m) then  
                   if (abs(ctmp - cmplx_1).gt.1.0e-8_dp) then  
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
+                     write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
+                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
+                     write(stdout,'(1x,a)') '  devel_flag=ortho-fix'
+                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
                      call io_error('Error in dis_main: orthonormal error 1') 
                   endif
                else  
                   if (abs(ctmp).gt.1.0e-8_dp) then  
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
+                     write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
+                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
+                     write(stdout,'(1x,a)') '  devel_flag=ortho-fix'
+                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
                      call io_error('Error in dis_main: orthonormal error 2') 
                   endif
                endif
@@ -910,7 +918,12 @@ contains
       ! CQPQ(M,N)      THE MATRIX cq_froz . cp_s . cq_froz FOR THE PRESENT
       !
 
-      integer :: il,iu,nkp,l,j,n,m,info,ierr
+      integer :: goods,il,iu,nkp,l,j,n,m,info,ierr
+      integer :: counter,loop_f,loop_v,vmap(num_bands)
+      integer :: nzero
+      logical :: take
+      character(len=4) :: rep
+      complex(kind=dp) :: ctmp
       complex(kind=dp), allocatable :: cp_s(:,:)
       complex(kind=dp), allocatable :: cq_froz(:,:)
       complex(kind=dp), allocatable :: cpq(:,:)
@@ -993,7 +1006,7 @@ contains
                enddo
             enddo
             ! ENDDEBUG
-
+            cap=cmplx_0
             do n = 1, ndimwin(nkp)  
                do m = 1, n  
                   cap(m + (n - 1) * n / 2) = cqpq(m,n)  
@@ -1040,21 +1053,118 @@ contains
             enddo
             ! ENDDEBUG
 
+            ! For certain cases we have found that one of the required eigenvectors of cqpq
+            ! has a zero eigenvalue (ie it forms a degenerate set with the frozen states).
+            ! It depends on floating point math as whether this eigenvalue is positive
+            ! or negative (ie +/- 1e-17). If it's positive everything is ok. If negative we
+            ! can end up putting one of the frozen states into clamp (and failing the later 
+            ! orthogonality check).
+            ! This fix detects this situation. If applies we choose the eigenvectors by
+            ! checking their orthogonality to the frozen states.
+
+            if(index(devel_flag,'orth-fix')>0) then
+               nzero=0;goods=0
+               do j=ndimwin(nkp),ndimwin(nkp) - (num_wann - ndimfroz(nkp) ) + 1,-1
+                  if(w(j)<1.0e-8_dp) then
+                     nzero=nzero+1
+                  else
+                     goods=goods+1
+                  end if
+               end do
+               if(nzero>0) then
+                  write(stdout,*) ' '
+                  write(stdout,'(1x,a,i0,a)') 'An eigenvalue of QPQ is close to zero at kpoint '&
+                       ,nkp,'. Using safety check.'
+                  if(iprint>2)  &
+                       write(stdout,'(1x,a,i4,a,i4)') 'We must find ',nzero, &
+                       ' eigenvectors with zero eigenvalues out of a set of ',ndimwin(nkp)-goods
+                  !First lets put the 'good' states into vamp
+                  vmap=0
+                  counter=1
+                  do j=ndimwin(nkp),ndimwin(nkp)-goods +1,-1
+                     vmap(counter)=j
+                     counter=counter+1
+                  end do
+                  
+                  if(iprint>2) then
+                     do loop_f=1,ndimwin(nkp)
+                        write(stdout,'(1x,a,i4,a,es13.6)') 'Eigenvector number',loop_f,'    Eigenvalue: ',w(loop_f)
+                        do loop_v=1,ndimwin(nkp)
+                           write(stdout,'(20x,2f12.8)') cz(loop_v,loop_f)
+                        end do
+                        write(stdout,*)
+                     end do
+                  end if
+                  
+                  ! We need to find nzero vectors out of the remining ndimwin(nkp)-goods vectors
+                  
+                  do loop_f=1,nzero
+                     do loop_v=ndimwin(nkp),1,-1 !loop backwards for efficiency only
+                        if(any(vmap==loop_v)) cycle
+                        !check to see if vector is orthogonal to frozen states in clamp
+                        take=.true.
+                        do m = 1, ndimfroz(nkp)  
+                           ctmp = cmplx_0
+                           do j = 1, ndimwin(nkp)  
+                              ctmp = ctmp + conjg(clamp(j,m,nkp)) * cz(j,loop_v)
+                           enddo
+                           if (abs(ctmp).gt.1.0e-8_dp) then  
+                              take=.false.
+                           endif
+                        enddo
+                        if(take) then !vector is good and we add it to vmap
+                           vmap(goods+loop_f)=loop_v
+                           exit
+                        end if
+                     end do
+                  end do
+                  
+                  if(iprint>2)  then
+                     write(rep,'(i4)') num_wann - ndimfroz(nkp)
+                     write(stdout,'(1x,a,'//trim(rep)//'(i0,1x))') 'We use the following eigenvectors: ' &
+                          ,vmap(1:(num_wann - ndimfroz(nkp)))
+                  end if
+                  do l=1,num_wann - ndimfroz(nkp)
+                     if(vmap(l)==0) call io_error('dis_proj_froz: Ortho-fix failed to find enough vectors')
+                  end do
+                  
+                  ! put the correct eigenvectors into clamp, and we're all done!
+                  counter=1
+                  do l = ndimfroz(nkp) + 1, num_wann
+                     clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),vmap(counter))
+                     counter=counter+1
+                  enddo
+                  
+               else ! we don't need to use the fix
+                  
+                  do l = ndimfroz(nkp) + 1, num_wann
+                     clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il)
+                     il = il + 1
+                  enddo
+
+                  if (il - 1.ne.iu) then  
+                     call io_error('dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)')
+                  endif
+                  
+               end if
+
+               
+            else ! if .not. using ortho-fix
             ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
-            ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN cLAMP
-            do l = ndimfroz(nkp) + 1, num_wann  
-               clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il) 
-               il = il + 1  
-            enddo
-
-            ! DEBUG
-            if (il - 1.ne.iu) then  
-               call io_error('dis_proj_frozen: error -  il-1.ne.iu')
-            endif
-            ! ENDDEBUG
-
+               ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN cLAMP
+               do l = ndimfroz(nkp) + 1, num_wann  
+                  clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il) 
+                  il = il + 1  
+               enddo
+               
+               ! DEBUG
+               if (il - 1.ne.iu) then  
+                  call io_error('dis_proj_frozen: error -  il-1.ne.iu')
+               endif
+               ! ENDDEBUG
+            end if
             ! num_wann>nDIMFROZ(NKP)
-
+            
          endif
          ! NKP
 
