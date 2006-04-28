@@ -78,6 +78,8 @@ module parameters
   logical,           public, save :: guiding_centres
   integer,           public, save :: num_guide_cycles
   integer,           public, save :: num_no_guide_iter
+  real(kind=dp),     public, save :: fixed_step
+  real(kind=dp),     public, save :: trial_step
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -117,7 +119,7 @@ module parameters
   real(kind=dp),     public, save :: lenconfac
   integer,           public, save :: num_wannier_plot
   integer,           public, save :: num_exclude_bands
-
+  logical,           public, save :: lfixstep
 
   ! kmesh parameters (set in kmesh)
 
@@ -331,7 +333,14 @@ contains
     num_no_guide_iter=0
     call param_get_keyword('num_no_guide_iter',found,i_value=num_no_guide_iter)
     if (num_no_guide_iter<0) call io_error('Error: num_no_guide_iter must be >= 0')
-    
+
+    trial_step=2.0_dp
+    call param_get_keyword('trial_step',found,r_value=trial_step)
+
+    fixed_step=-999.0_dp ; lfixstep=.false.
+    call param_get_keyword('fixed_step',found,r_value=fixed_step)
+    if ( found.and.(fixed_step<0.0_dp) ) call io_error('Error: fixed_step must be > 0')
+    if ( fixed_step > 0.0_dp ) lfixstep=.true.
 
     !%%%%%%%%%
     ! Plotting
@@ -791,6 +800,11 @@ contains
     write(stdout,'(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Total number of iterations                :',num_iter,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Number of CG steps before reset           :',num_cg_steps,'|'
+    if (lfixstep) then
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')   '|  Fixed step length for minimisation        :',fixed_step,'|'
+    else
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')   '|  Trial step length for line search         :',trial_step,'|'       
+    endif
 !    write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :',conv_tol,'|'
 !    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',conv_window,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between writing output         :',num_print_cycles,'|'

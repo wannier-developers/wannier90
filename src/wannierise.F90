@@ -54,7 +54,8 @@ contains
          num_print_cycles,num_dump_cycles,omega_invariant, &
          param_read_um,param_write_um,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres,&
-         num_guide_cycles,num_no_guide_iter
+         num_guide_cycles,num_no_guide_iter,&
+         trial_step,fixed_step,lfixstep
     use utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -85,14 +86,14 @@ contains
     complex(kind=dp), allocatable  :: cz (:,:)  
     complex(kind=dp), allocatable  :: cmtmp(:,:),tmp_cdq(:,:) 
 
-    real(kind=dp) :: trial_step,doda0
+    real(kind=dp) :: doda0
     real(kind=dp) :: falphamin,alphamin
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
     integer :: i,n,iter,ind,ierr,iw,ncg,bis_loop,info
     logical :: lprint,ldump
 
     ! == bisection parameters -- slightly experimental ==!
-    integer, parameter       :: max_bis_iter = 3
+    integer                  :: max_bis_iter = 3
     real(kind=dp), parameter :: bis_factor   = 0.1_dp
     real(kind=dp), parameter :: mono_thresh_omega = 1.0e-11_dp
     real(kind=dp), parameter :: mono_thresh_grad  = 1.0e-6_dp
@@ -156,6 +157,9 @@ contains
     
     gcnorm1=0.0_dp; gcnorm0=0.0_dp
 
+    ! if doing fixed steps then turn bisection search off
+    if (lfixstep) max_bis_iter=0
+
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if( guiding_centres) then
        do n=1,num_wann
@@ -174,9 +178,6 @@ contains
     write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
     write(stdout,*)
 
-
-    ! parameter for line minimisation
-    trial_step = 2.0_dp
 
     irguide=0
     if (guiding_centres.and.(num_no_guide_iter.le.0)) then
@@ -240,28 +241,43 @@ contains
        ! save search direction 
        cdqkeep(:,:,:) = cdq(:,:,:)
 
-       ! take trial step
-       cdq(:,:,:)=cdqkeep(:,:,:)*( trial_step / (4.0_dp*wbtot) ) 
+       ! check whether we're doing fixed step lengths
+       if (lfixstep) then
 
-       ! update U and M
-       call internal_new_u_and_m()
+          alphamin=fixed_step
 
-       ! calculate spread at trial step
-       call omega(csheet,sheet,rave,r2ave,rave2,trial_spread)
+       ! or a parabolic line search
+       else
 
-       ! Calculate optimal step (alphamin)
-       call internal_optimal_step()
+          ! take trial step
+          cdq(:,:,:)=cdqkeep(:,:,:)*( trial_step / (4.0_dp*wbtot) ) 
+
+          ! update U and M
+          call internal_new_u_and_m()
+
+          ! calculate spread at trial step
+          call omega(csheet,sheet,rave,r2ave,rave2,trial_spread)
+
+          ! Calculate optimal step (alphamin)
+          call internal_optimal_step()
+
+       endif
 
        ! print line search information
        if ( lprint .and. iprint>2 ) then
           write(stdout,*) ' LINE --> Spread at initial point       :',wann_spread%om_tot*lenconfac**2
-          write(stdout,*) ' LINE --> Spread at trial step          :',trial_spread%om_tot*lenconfac**2
+          if (.not.lfixstep) &
+               write(stdout,*) ' LINE --> Spread at trial step          :',trial_spread%om_tot*lenconfac**2
           write(stdout,*) ' LINE --> Slope along search direction  :',doda0*lenconfac**2
           write(stdout,*) ' LINE --> ||SD gradient||^2             :',gcnorm1*lenconfac**2
-          write(stdout,*) ' LINE --> Trial step length             :',trial_step
-          write(stdout,*) ' LINE --> Optimal parabolic step length :',alphamin
-          write(stdout,*) ' LINE --> Spread at predicted minimum   :',falphamin*lenconfac**2
-          write(stdout,*) ' LINE --> CG coefficient                :',gcfac
+          if (.not.lfixstep) then
+             write(stdout,*) ' LINE --> Trial step length             :',trial_step
+             write(stdout,*) ' LINE --> Optimal parabolic step length :',alphamin
+             write(stdout,*) ' LINE --> Spread at predicted minimum   :',falphamin*lenconfac**2
+          else
+             write(stdout,*) ' LINE --> Fixed step length             :',fixed_step
+          endif
+             write(stdout,*) ' LINE --> CG coefficient                :',gcfac
        endif
 
        ! bisection loop to try to avoid uphill moves
@@ -549,6 +565,7 @@ contains
          alphamin=trial_step
          falphamin=trial_spread%om_tot
       endif
+
 
       return
 
