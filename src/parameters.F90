@@ -1986,7 +1986,7 @@ contains
     real(kind=dp), parameter :: proj_x_def(3)=(/1.0_dp,0.0_dp,0.0_dp/)
     real(kind=dp), parameter :: proj_zona_def=1.0_dp
     real(kind=dp), parameter :: proj_box_def=1.0_dp
-    integer, parameter       :: proj_radial_def=1.0_dp
+    integer, parameter       :: proj_radial_def=1
     !
     real(kind=dp) :: proj_z_tmp(3)
     real(kind=dp) :: proj_x_tmp(3)
