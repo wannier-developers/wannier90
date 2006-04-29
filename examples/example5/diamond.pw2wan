@@ -3,7 +3,7 @@
    prefix = 'di'
    seedname = 'diamond'
    spin_component = 'none'
-   write_m = .true.
-   write_a = .true.
+   write_mmn = .true.
+   write_amn = .true.
    write_unk = .true.
 /
