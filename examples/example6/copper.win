@@ -5,6 +5,7 @@ num_iter        = 200
 dis_win_max     = 38.0
 dis_froz_max    = 13.0
 dis_num_iter    =  50
+dis_mix_ratio   = 1.0
 
 Begin Kpoint_Path
 L 0.50000  0.50000 0.5000 G 0.00000  0.00000 0.0000
