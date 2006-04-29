@@ -40,7 +40,7 @@ dist:
 		./examples/example[5-7]/*.nscf \
 		./examples/example[5-7]/*.pw2wan \
 		./examples/example[5-7]/*.UPF \
-		./config/* \
+		./config/make.sys* \
 		./utility/*.pl \
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
