@@ -77,8 +77,8 @@ contains
 
     ! Integer arrays that are public
 
-    write(stdout,'(/1x,a)') '*---------------------------------- &
-         &K-MESH ----------------------------------*'  
+    write(stdout,'(/1x,a)') &
+      '*---------------------------------- K-MESH ----------------------------------*'  
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
     call kmesh_supercell_sort
