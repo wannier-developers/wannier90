@@ -14,12 +14,15 @@ if (($numargs<3)||($numargs>4)) {
 
 if ($ARGV[0]<=0) {
     print "n1 must be >0\n";
+    exit;
 }
 if ($ARGV[1]<=0) {
     print "n2 must be >0\n";
+    exit;
 }
 if ($ARGV[2]<=0) {
     print "n3 must be >0\n";
+    exit;
 }
 
 $totpts=$ARGV[0]*$ARGV[1]*$ARGV[2];
