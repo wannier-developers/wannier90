@@ -36,10 +36,10 @@ dist:
 		./examples/*/*.win \
 		./examples/example[2-4]/*.eig \
                 ./examples/example[1-4]/*.*mn \
-		./examples/example5/*.scf \
-		./examples/example5/*.nscf \
-		./examples/example5/*.pw2wan \
-		./examples/example5/*.UPF \
+		./examples/example[5-7]/*.scf \
+		./examples/example[5-7]/*.nscf \
+		./examples/example[5-7]/*.pw2wan \
+		./examples/example[5-7]/*.UPF \
 		./config/* \
 		./utility/*.pl \
                 ./doc/*/*.tex \
