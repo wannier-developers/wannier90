@@ -82,7 +82,7 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{Job Control} \\
 \hline
 {\sc postproc\_setup }   & L & To output the nnkp file \\
-{\sc cp\_pp }   & L & CP code post-processing \\
+%{\sc cp\_pp }   & L & CP code post-processing \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
 {\sc restart }   & C & Restart from checkpoint file \\
@@ -237,7 +237,7 @@ physical value, L for a logical value and S for a text string.}
 \section{System}
 
 \subsection[num\_wann]{\tt integer :: num\_wann}
-Number of wannier functions to be found.
+Number of Wannier functions to be found.
 
 No default.
 
@@ -409,10 +409,14 @@ to include in the finite difference expression.
 
  The projections block defines a set of localised functions used to
  generate an initial guess for the unitary transformations. 
-This data will be written in the {\tt <seedname>.nnkp} file.
+This data will be written in the {\tt <seedname>.nnkp} file to be used
+by a first-principles code.
 
 \noindent \verb#begin projections# \\\\
 \verb#end projections#
+
+If \verb#guiding_centres#=={\tt TRUE} the projection centres are used
+as the guiding centres in the Wannierisation routine.
 
 For details see section \ref{sec:proj}.
 
@@ -429,10 +433,10 @@ value in the {\tt <seedname>.win} file.
 The default value is \verb#FALSE#.
 
 
-\subsection[cp\_pp]{\tt logical :: cp\_pp}
-If \verb#cp_pp#=\verb#TRUE# we are using input files from the CP code.
-
-The default value is \verb#FALSE#.
+%\subsection[cp\_pp]{\tt logical :: cp\_pp}
+%If \verb#cp_pp#=\verb#TRUE# we are using input files from the CP code.
+%
+%The default value is \verb#FALSE#.
 
 
 \subsection[iprint]{\tt integer :: iprint}
@@ -500,8 +504,8 @@ The valid options for this parameter are:
 
 If \verb#wvfn_formatted#=\verb#TRUE# the wavefunctions will be read from disk
 as formatted (ie ASCII) files. Otherwise they will be read as unformatted
-files. Unformatted in generally preferable as the files will take less disk
-space  I/O is significantly faster. However such files
+files. Unformatted is generally preferable as the files will take less disk
+space  and I/O is significantly faster. However such files
 will not be transferable between all machine architectures and formatted
 files should be used if transferability is required (ie for test cases).
 
@@ -509,7 +513,7 @@ The default value of this parameter is $\verb#FALSE#$.
 
 
 \subsection[spin]{\tt character(len=20) :: spin}
-For bands from a spin polarised calculation determines which set
+For bands from a spin polarised calculation {\tt spin} determines which set
 of bands to read in, either \verb#up# or \verb#down#.
 
 The default value of this parameter is \verb#up#.
@@ -552,7 +556,7 @@ No default.
 In the disentanglement procedure, the
 number of iterations used to extract the most connected subspace.
 
-The default value is 100.
+The default value is 200.
 
 \subsection[dis\_mix\_ratio]{\tt real(kind=dp) :: dis\_mix\_ratio}
 In the disentanglement procedure the mixing parameter to use for
@@ -561,7 +565,7 @@ choice. Using 1.0 (ie no mixing) often gives faster convergence,
 but may cause the minimisation to be unstable in some cases.
 
 
-Restriction: $0<${\tt dis\_mix\_ratio}$\geq1$. The default value is 0.5 
+Restriction: $0.0<${\tt dis\_mix\_ratio}$\geq1.0$ . The default value is 0.5 
 
 \subsection[dis\_conv\_tol]{\tt real(kind=dp) :: dis\_conv\_tol}
 
@@ -694,9 +698,9 @@ The default value of this parameter is \verb#FALSE#.
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
 
-Dimension of the ``super-unit-cell'' in which the Wannier Functions are plotted.
+Dimension of the `super-unit-cell' in which the Wannier Functions are plotted.
 The super-unit-cell is \verb#wannier_plot_supercell# times the unit cell along all three
-linear dimensions (the 'home' unit cell is kept approximately
+linear dimensions (the `home' unit cell is kept approximately
 in the middle)
 
 The default value is 2.
@@ -782,7 +786,7 @@ If $\verb#fermi_surface_plot#=\verb#TRUE#$ the code will calculate,
 through Wannier interpolation, the
 eigenvalues on a regular grid with \verb#fermi_surface_num_points# in
 each direction. The code will write a file in bxsf format which can be
-read with Xcrysden and used to plot the Fermi surface.
+read with XCrysden and used to plot the Fermi surface.
 
 The default value is \verb#FALSE#.
 
@@ -796,9 +800,9 @@ The default value for \verb#fermi_surface_num_points# is 50.
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
-The Fermi energy eV. Whilst this is not directly used by the Wannier 
-code is a useful parameter to set for Fermi surface plots as
-it will be written into the bxsf file.
+The Fermi energy in eV. Whilst this is not directly used by the Wannier 
+code it is a useful parameter to set as
+it will be written driectly into the bxsf file.
 
 The default value is 0.0eV.
 
