@@ -51,6 +51,7 @@ program wannier
 
   real(kind=dp) time0,time1,time2
   character(len=9) :: stat,pos,cdate,ctime
+  logical :: wout_found
 
   time0=io_time()
 
@@ -67,7 +68,12 @@ program wannier
      stat='replace'
      pos ='rewind'
   else
-     stat='old'
+     inquire(file=trim(seedname)//'.wout',exist=wout_found)
+     if (wout_found) then
+        stat='old'
+     else
+        stat='replace'
+     endif
      pos='append'
   endif
 
