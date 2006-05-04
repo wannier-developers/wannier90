@@ -220,7 +220,7 @@ contains
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
                      write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
                      write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
-                     write(stdout,'(1x,a)') '  devel_flag=ortho-fix'
+                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
                      write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
                      call io_error('Error in dis_main: orthonormal error 1') 
                   endif
@@ -229,7 +229,7 @@ contains
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
                      write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
                      write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
-                     write(stdout,'(1x,a)') '  devel_flag=ortho-fix'
+                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
                      write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
                      call io_error('Error in dis_main: orthonormal error 2') 
                   endif
