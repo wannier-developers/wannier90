@@ -219,8 +219,9 @@ contains
     !
     do i=1,num_wann
        do nkp=1,total_pts
-          write(bndunit,'(2E16.8)') XVAL(NKP),eig_int(i,nkp)
+          write(bndunit,'(2E16.8)') xval(nkp),eig_int(i,nkp)
        enddo
+       write(bndunit,*) ' '
     enddo
     close(bndunit)
     ! Axis labels
