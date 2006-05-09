@@ -450,7 +450,7 @@ contains
     write(nnkpout,'(a)') 'begin kpoints'
     write(nnkpout,'(i6)') num_kpts
     do nkp=1,num_kpts
-       write(nnkpout,'(3f10.5)') (kpt_latt(i,nkp), i=1,3)
+       write(nnkpout,'(3f14.8)') (kpt_latt(i,nkp), i=1,3)
     enddo
     write(nnkpout,'(a/)') 'end kpoints'
 
