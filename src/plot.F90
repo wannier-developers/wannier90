@@ -381,7 +381,7 @@ contains
          io_date,io_stopwatch
     use parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
-         atoms_label,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
+         atoms_symbol,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
          wannier_plot_mode,wvfn_formatted
 
@@ -630,7 +630,7 @@ contains
        endif
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
-             write(file_unit,'(a2,3x,3f12.7)') atoms_label(nsp),(atoms_pos_cart(i,nat,nsp),i=1,3)
+             write(file_unit,'(a2,3x,3f12.7)') atoms_symbol(nsp),(atoms_pos_cart(i,nat,nsp),i=1,3)
           end do
        end do
 

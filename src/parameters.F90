@@ -90,7 +90,8 @@ module parameters
   real(kind=dp), allocatable,     public, save :: atoms_pos_frac(:,:,:)
   real(kind=dp), allocatable,     public, save :: atoms_pos_cart(:,:,:)
   integer, allocatable,           public, save :: atoms_species_num(:)  
-  character(len=2), allocatable,  public, save :: atoms_label(:)
+  character(len=maxlen), allocatable,  public, save :: atoms_label(:)
+  character(len=2), allocatable,  public, save :: atoms_symbol(:)
   integer,                        public, save :: num_atoms
   integer,                        public, save :: num_species
 
@@ -649,6 +650,13 @@ contains
             atoms_label(nsp)(1:1) = char(ic+ichar('Z')-ichar('z'))
     enddo
 
+    do nsp=1,num_species
+       ic=ichar(atoms_symbol(nsp)(1:1))
+       if ((ic.ge.ichar('a')).and.(ic.le.ichar('z'))) &
+            atoms_symbol(nsp)(1:1) = char(ic+ichar('Z')-ichar('z'))
+    enddo
+
+
     ! Bands labels (eg, x --> X)
     do loop=1,bands_num_spec_points
        ic=ichar(bands_label(loop))                           
@@ -721,7 +729,7 @@ contains
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
-             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_label(nsp),nat,atoms_pos_frac(:,nat,nsp),&
+             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,atoms_pos_frac(:,nat,nsp),&
                   '|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
           end do
        end do
@@ -995,6 +1003,10 @@ contains
     if ( allocated ( atoms_label ) ) then
        deallocate (  atoms_label, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating atoms_label in param_dealloc')
+    end if
+    if ( allocated ( atoms_symbol ) ) then
+       deallocate (  atoms_symbol, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating atoms_symbol in param_dealloc')
     end if
     if ( allocated ( atoms_pos_frac ) ) then
        deallocate (  atoms_pos_frac, stat=ierr  )
@@ -1798,11 +1810,11 @@ contains
     real(kind=dp)     :: atoms_pos_cart_tmp(3,num_atoms)
     character(len=20) :: keyword
     integer           :: in,ins,ine,loop,i,line_e,line_s,counter
-    integer           :: i_temp,loop2,max_sites,ierr
+    integer           :: i_temp,loop2,max_sites,ierr,ic
     logical           :: found_e,found_s,found,frac
     character(len=maxlen) :: dummy,end_st,start_st
-    character(len=2)  :: ctemp(num_atoms)
-    character(len=2)  :: atoms_label_tmp(num_atoms)
+    character(len=maxlen) :: ctemp(num_atoms)
+    character(len=maxlen) :: atoms_label_tmp(num_atoms)
     logical           :: lconvert
 
     keyword="atoms_cart"
@@ -1912,8 +1924,10 @@ contains
 
     allocate(atoms_species_num(num_species),stat=ierr)
        if (ierr/=0) call io_error('Error allocating atoms_species_num in param_get_atoms')
-    allocate(atoms_label(num_atoms),stat=ierr)
+    allocate(atoms_label(num_species),stat=ierr)
        if (ierr/=0) call io_error('Error allocating atoms_label in param_get_atoms')
+    allocate(atoms_symbol(num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_symbol in param_get_atoms')
     atoms_species_num(:)=0
 
     do loop=1,num_species
@@ -1942,6 +1956,13 @@ contains
        end do
     end do
 
+    ! Strip any numeric characters from atoms_label to get atoms_symbol
+    do loop=1,num_species    
+       atoms_symbol(loop)(1:2)=atoms_label(loop)(1:2)
+       ic=ichar(atoms_symbol(loop)(2:2))
+       if ((ic.lt.ichar('a')).or.(ic.gt.ichar('z'))) &
+         atoms_symbol(loop)(2:2)=' '
+    end do
 
     return
 
