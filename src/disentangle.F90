@@ -219,18 +219,18 @@ contains
                   if (abs(ctmp - cmplx_1).gt.1.0e-8_dp) then  
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
                      write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
-                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
-                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
-                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
+!                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
+!                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
+!                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
                      call io_error('Error in dis_main: orthonormal error 1') 
                   endif
                else  
                   if (abs(ctmp).gt.1.0e-8_dp) then  
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
                      write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
-                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
-                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
-                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
+!                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
+!                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
+!                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
                      call io_error('Error in dis_main: orthonormal error 2') 
                   endif
                endif
@@ -1061,8 +1061,9 @@ contains
             ! orthogonality check).
             ! This fix detects this situation. If applies we choose the eigenvectors by
             ! checking their orthogonality to the frozen states.
+            ! === For version 1.0.1 we make this the default ===
 
-            if(index(devel_flag,'orth-fix')>0) then
+            if(index(devel_flag,'no-orth-fix')==0) then
                nzero=0;goods=0
                do j=ndimwin(nkp),ndimwin(nkp) - (num_wann - ndimfroz(nkp) ) + 1,-1
                   if(w(j)<1.0e-8_dp) then
@@ -1072,12 +1073,13 @@ contains
                   end if
                end do
                if(nzero>0) then
-                  write(stdout,*) ' '
-                  write(stdout,'(1x,a,i0,a)') 'An eigenvalue of QPQ is close to zero at kpoint '&
-                       ,nkp,'. Using safety check.'
-                  if(iprint>2)  &
+                  if(iprint>2) then
+                     write(stdout,*) ' '
+                     write(stdout,'(1x,a,i0,a)') 'An eigenvalue of QPQ is close to zero at kpoint '&
+                        ,nkp,'. Using safety check.'
                        write(stdout,'(1x,a,i4,a,i4)') 'We must find ',nzero, &
                        ' eigenvectors with zero eigenvalues out of a set of ',ndimwin(nkp)-goods
+                  endif
                   !First lets put the 'good' states into vamp
                   vmap=0
                   counter=1
