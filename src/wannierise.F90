@@ -55,7 +55,7 @@ contains
          param_read_um,param_write_um,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres,&
          num_guide_cycles,num_no_guide_iter,&
-         trial_step,fixed_step,lfixstep
+         trial_step,fixed_step,lfixstep,write_proj,have_disentangled
     use utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -85,23 +85,22 @@ contains
     complex(kind=dp), allocatable  :: cdq(:,:,:),cdqkeep(:,:,:)  
     complex(kind=dp), allocatable  :: cz (:,:)  
     complex(kind=dp), allocatable  :: cmtmp(:,:),tmp_cdq(:,:) 
+    complex(kind=dp), allocatable  :: m0(:,:,:,:),u0(:,:,:)
 
     real(kind=dp) :: doda0
     real(kind=dp) :: falphamin,alphamin
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
-    integer :: i,n,iter,ind,ierr,iw,ncg,bis_loop,info
-    logical :: lprint,ldump
+    integer :: i,n,iter,ind,ierr,iw,ncg,info
+    logical :: lprint,ldump,lquad
 
-    ! == bisection parameters -- slightly experimental ==!
-    integer                  :: max_bis_iter = 3
-    real(kind=dp), parameter :: bis_factor   = 0.1_dp
-    real(kind=dp), parameter :: mono_thresh_omega = 1.0e-11_dp
-    real(kind=dp), parameter :: mono_thresh_grad  = 1.0e-6_dp
-    ! ===================================================!
 
     ! Allocate stuff
 
     ! module data
+    allocate(  m0 (num_wann, num_wann, nntot, num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating m0 in wann_main')
+    allocate(  u0 (num_wann, num_wann, num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating u0 in wann_main')
     allocate(  cr (num_wann, num_wann, nntot, num_kpts),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating cr in wann_main')
     allocate(  crt (num_wann, num_wann, nntot, num_kpts),stat=ierr ) 
@@ -157,9 +156,6 @@ contains
     
     gcnorm1=0.0_dp; gcnorm0=0.0_dp
 
-    ! if doing fixed steps then turn bisection search off
-    if (lfixstep) max_bis_iter=0
-
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if( guiding_centres) then
        do n=1,num_wann
@@ -189,6 +185,7 @@ contains
     call omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     omega_invariant = wann_spread%om_i
 
+    if (lfixstep) lquad=.false.
     ncg  = 0
     iter = 0
     old_spread%om_tot = 0.0_dp
@@ -251,6 +248,9 @@ contains
 
           ! take trial step
           cdq(:,:,:)=cdqkeep(:,:,:)*( trial_step / (4.0_dp*wbtot) ) 
+          
+          ! store original U and M before rotating
+          u0=u_matrix ; m0=m_matrix
 
           ! update U and M
           call internal_new_u_and_m()
@@ -272,46 +272,44 @@ contains
           write(stdout,*) ' LINE --> ||SD gradient||^2             :',gcnorm1*lenconfac**2
           if (.not.lfixstep) then
              write(stdout,*) ' LINE --> Trial step length             :',trial_step
-             write(stdout,*) ' LINE --> Optimal parabolic step length :',alphamin
-             write(stdout,*) ' LINE --> Spread at predicted minimum   :',falphamin*lenconfac**2
+             if (lquad) then
+                write(stdout,*) ' LINE --> Optimal parabolic step length :',alphamin
+                write(stdout,*) ' LINE --> Spread at predicted minimum   :',falphamin*lenconfac**2
+             endif
           else
              write(stdout,*) ' LINE --> Fixed step length             :',fixed_step
           endif
              write(stdout,*) ' LINE --> CG coefficient                :',gcfac
        endif
 
-       ! bisection loop to try to avoid uphill moves
-       bisection: do bis_loop=0,max_bis_iter
+
+       ! if taking a fixed step or if parabolic line search was successful
+       if (lfixstep.or.lquad) then
 
           ! take optimal step
           cdq(:,:,:) = cdqkeep(:,:,:) * ( alphamin / (4.0_dp*wbtot) ) 
+          
+          ! if doing a line search then restore original U and M before rotating 
+          if (.not.lfixstep) then 
+             u_matrix=u0 ; m_matrix=m0
+          endif
 
           ! update U and M
           call internal_new_u_and_m()
-
-          ! copy original spread to old_spread
-          if (bis_loop.eq.0) call wann_spread_copy(wann_spread,old_spread)
-
+          
+          call wann_spread_copy(wann_spread,old_spread)
+          
           ! calculate the new centers and spread
           call omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+        
+       ! parabolic line search was unsuccessful, use trial step already taken
+       else 
 
-          ! check for non-monotonic convergence
-          if (max_bis_iter.gt.0 .and. bis_loop.lt.max_bis_iter) then
-             if ( ((wann_spread%om_tot - old_spread%om_tot).gt.mono_thresh_omega) &
-                  .and. (abs(doda0).lt.mono_thresh_grad) .and. (alphamin*doda0.lt.0.0_dp) )  then
-                alphamin = alphamin * bis_factor
-                if ( lprint .and. iprint>2 ) then 
-                   write(stdout,*) ' LINE --> Bisection iteration             :',bis_loop+1
-                   write(stdout,*) ' LINE --> Optimal step went uphill. Spread:',&
-                        wann_spread%om_tot*lenconfac**2
-                   write(stdout,*) ' LINE --> Reducing optimal step length to :',alphamin
-                endif
-             else
-                exit bisection
-             endif
-          endif
+          call wann_spread_copy(trial_spread,wann_spread)
+          call wann_spread_copy(wann_spread,old_spread)
 
-       enddo bisection
+       endif
+ 
 
        ! print the new centers and spreads
        if(lprint) then
@@ -377,7 +375,9 @@ contains
     ! write U and M to file
     call param_write_um
 
-    
+    ! calculate and write projection of WFs on original bands in outer window
+    if (have_disentangled .and. write_proj) call wann_calc_projection()
+
     ! deallocate sub vars not passed into other subs
     deallocate(tmp_cdq,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating tmp_cdq in wann_main')
@@ -424,6 +424,11 @@ contains
     deallocate(  cr,stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating cr in wann_main') 
 
+    deallocate(u0, stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating u0 in wann_main')
+    deallocate(m0, stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating m0 in wann_main')
+    
     return
 
 1000 format(2x,'WF centre and spread', &
@@ -465,7 +470,7 @@ contains
             ! prevent CG coefficient from getting too large
             if (gcfac.gt.3.0_dp) then
                if ( lprint .and. iprint>2 ) &
-                    write(stdout,*) ' LINE --> CG coeff too large. Resetting CG:',gcfac
+                    write(stdout,*) ' LINE --> CG coeff too large. Resetting :',gcfac
                gcfac = 0.0_dp
                ncg = 0
             else
@@ -538,6 +543,7 @@ contains
 
       real(kind=dp) :: fac,shift,eqa,eqb
 
+
       fac = trial_spread%om_tot - wann_spread%om_tot
       if ( abs(fac) .gt. tiny(1.0_dp) ) then
          fac   = 1.0_dp/fac
@@ -549,19 +555,22 @@ contains
       eqb = fac*doda0  
       eqa = shift - eqb*trial_step
       if ( abs(eqa/(fac*wann_spread%om_tot)).gt.epsilon(1.0_dp) ) then
+         lquad=.true.
          alphamin  = - 0.5_dp * eqb / eqa * (trial_step**2)
          falphamin = wann_spread%om_tot &
               - 0.25_dp * eqb * eqb / (fac * eqa) * (trial_step**2)
       else
          if ( lprint .and. iprint>2 ) write(stdout,*) &
-              ' LINE --> Parabolic line search unstable: taking trial step'
+              ' LINE --> Parabolic line search unstable: using trial step'
+         lquad=.false.
          alphamin  = trial_step
          falphamin = trial_spread%om_tot
       endif
 
       if (doda0*alphamin.gt.0.0_dp) then
          if ( lprint .and. iprint>2 ) write(stdout,*) &
-              ' LINE --> Line search unstable          : taking trial step'
+              ' LINE --> Line search unstable : using trial step'
+         lquad=.false.
          alphamin=trial_step
          falphamin=trial_spread%om_tot
       endif
@@ -788,8 +797,6 @@ contains
            omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
       write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
            omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
-      write ( stdout , * ) ' '
-      write ( stdout , * ) ' '  
 
       deallocate(cpad1,stat=ierr)
       if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_main')
@@ -1182,9 +1189,6 @@ contains
   end subroutine omega
 
 
-
-
-
   !==================================================================!
   subroutine domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
     !==================================================================!
@@ -1282,7 +1286,11 @@ contains
   end subroutine domega
 
 
+  !==================================================================!
   subroutine wann_spread_copy(orig,copy)
+  !==================================================================!
+  !                                                                  !
+  !==================================================================!
 
     implicit none
 
@@ -1301,5 +1309,64 @@ contains
 
   end subroutine wann_spread_copy
 
+
+  !==================================================================!
+  subroutine wann_calc_projection()
+  !==================================================================!
+  !                                                                  !
+  ! Calculates and writes the projection of each Wannier function    !
+  ! on the original bands within the outer window.                   !
+  !                                                                  !
+  !==================================================================!
+
+    use parameters, only : num_bands,num_wann,num_kpts,have_disentangled,&
+                           u_matrix_opt,u_matrix,eigval,ndimwin
+    use io,         only : stdout,io_error
+
+    implicit none
+
+    integer :: nw,nb,nkp,ierr
+    real(kind=dp) :: summ
+    complex(kind=dp), allocatable :: cmat(:,:,:)
+
+    allocate(cmat(num_bands,num_wann,num_kpts),stat=ierr)
+
+    if (ierr/=0) call io_error('Error allocating cmat in wann_calc_projection')
+     
+    if (have_disentangled) then
+       ! calculate [U_opt . U]_ij
+       do nkp=1,num_kpts
+          call zgemm('N','N',ndimwin(nkp),num_wann,num_wann,cmplx_1,&
+               u_matrix_opt(:,:,nkp),num_bands,u_matrix(:,:,nkp),num_wann,&
+               cmplx_0,cmat(:,:,nkp),num_bands)
+       enddo
+    else
+       cmat=u_matrix
+    endif
+
+    write(stdout,'(/1x,a78)') repeat('-',78)
+    write(stdout,'(1x,9x,a)') 'Projection of Bands in Outer Window on all Wannier Functions'
+    write(stdout,'(1x,8x,62a)') repeat('-',62)
+    write(stdout,'(1x,16x,a)') '   Kpt  Band      Eigval      |Projection|^2'
+    write(stdout,'(1x,16x,a47)') repeat('-',47) 
+
+    do nkp=1,num_kpts
+       do nb=1,ndimwin(nkp)
+          summ=0.0_dp
+          do nw=1,num_wann
+             summ=summ+abs(cmat(nb,nw,nkp))**2
+          enddo
+          write(stdout,'(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
+               nkp,nb,eigval(nb,nkp),summ
+       enddo
+    enddo
+    write(stdout,'(1x,a78/)') repeat('-',78)
+
+    deallocate(cmat,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating cmat in wann_calc_projection')
+  
+    return
+
+  end subroutine wann_calc_projection
 
 end module wannierise

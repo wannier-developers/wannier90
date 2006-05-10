@@ -80,6 +80,7 @@ module parameters
   integer,           public, save :: num_no_guide_iter
   real(kind=dp),     public, save :: fixed_step
   real(kind=dp),     public, save :: trial_step
+  logical,           public, save :: write_proj
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -303,6 +304,9 @@ contains
 
     write_r2mn = .false.
     call param_get_keyword('write_r2mn',found,l_value=write_r2mn)
+
+    write_proj = .false.
+    call param_get_keyword('write_proj',found,l_value=write_proj)
 
     !%%%%%%%%%%%
     ! Wannierise
@@ -938,7 +942,7 @@ contains
     write(stdout,*)  '            | Copyright (c) 1997-2006 J. Yates, A. Mostofi,     |'
     write(stdout,*)  '            |        N. Marzari, I. Souza, D. Vanderbilt        |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |         Release: 1.0   30th April 2006            |'
+    write(stdout,*)  '            |          Release: 1.0.1    17th May 2006          |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
