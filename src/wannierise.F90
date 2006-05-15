@@ -1319,52 +1319,38 @@ contains
   !                                                                  !
   !==================================================================!
 
-    use parameters, only : num_bands,num_wann,num_kpts,have_disentangled,&
-                           u_matrix_opt,u_matrix,eigval,ndimwin
-    use io,         only : stdout,io_error
+    use parameters, only : num_bands,num_wann,num_kpts,&
+                           u_matrix_opt,eigval,lwindow
+    use io,         only : stdout
 
     implicit none
 
-    integer :: nw,nb,nkp,ierr
+    integer :: nw,nb,nkp,counter
     real(kind=dp) :: summ
-    complex(kind=dp), allocatable :: cmat(:,:,:)
-
-    allocate(cmat(num_bands,num_wann,num_kpts),stat=ierr)
-
-    if (ierr/=0) call io_error('Error allocating cmat in wann_calc_projection')
-     
-    if (have_disentangled) then
-       ! calculate [U_opt . U]_ij
-       do nkp=1,num_kpts
-          call zgemm('N','N',ndimwin(nkp),num_wann,num_wann,cmplx_1,&
-               u_matrix_opt(:,:,nkp),num_bands,u_matrix(:,:,nkp),num_wann,&
-               cmplx_0,cmat(:,:,nkp),num_bands)
-       enddo
-    else
-       cmat=u_matrix
-    endif
 
     write(stdout,'(/1x,a78)') repeat('-',78)
-    write(stdout,'(1x,9x,a)') 'Projection of Bands in Outer Window on all Wannier Functions'
+    write(stdout,'(1x,9x,a)') &
+         'Projection of Bands in Outer Window on all Wannier Functions'
     write(stdout,'(1x,8x,62a)') repeat('-',62)
     write(stdout,'(1x,16x,a)') '   Kpt  Band      Eigval      |Projection|^2'
     write(stdout,'(1x,16x,a47)') repeat('-',47) 
 
     do nkp=1,num_kpts
-       do nb=1,ndimwin(nkp)
-          summ=0.0_dp
-          do nw=1,num_wann
-             summ=summ+abs(cmat(nb,nw,nkp))**2
-          enddo
-          write(stdout,'(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
-               nkp,nb,eigval(nb,nkp),summ
+       counter=0
+       do nb=1,num_bands
+          if (lwindow(nb,nkp)) then
+             counter=counter+1
+             summ=0.0_dp
+             do nw=1,num_wann
+                summ=summ+abs(u_matrix_opt(counter,nw,nkp))**2
+             enddo
+             write(stdout,'(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
+                  nkp,nb,eigval(nb,nkp),summ
+          endif
        enddo
     enddo
     write(stdout,'(1x,a78/)') repeat('-',78)
 
-    deallocate(cmat,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating cmat in wann_calc_projection')
-  
     return
 
   end subroutine wann_calc_projection
