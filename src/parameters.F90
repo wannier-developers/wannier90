@@ -299,8 +299,12 @@ contains
 
     restart = ' '
     call param_get_keyword('restart',found,c_value=restart)
+    if (found) then
+       if ( (restart.ne.'default').and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
+            call io_error('Error in input file: value of restart not recognised')   
+    endif
     !post processing takes priority (must warn user of this)
-    if(postproc_setup) restart = ' '
+    if (postproc_setup) restart = ' '
 
     write_r2mn = .false.
     call param_get_keyword('write_r2mn',found,l_value=write_r2mn)
@@ -453,29 +457,29 @@ contains
 
     ! Read the eigenvalues from wannier.eig
     allocate(eigval(num_bands,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating eigval in param_read')
+    if (ierr/=0) call io_error('Error allocating eigval in param_read')
 
     if(.not.postproc_setup)  then
-    inquire(file=trim(seedname)//'.eig',exist=eig_found)
-    if(.not. eig_found) then
-       if ( disentanglement) then
-          call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-       else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) ) then
-          call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+       inquire(file=trim(seedname)//'.eig',exist=eig_found)
+       if(.not. eig_found) then
+          if ( disentanglement) then
+             call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+          else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) ) then
+             call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+          end if
+       else
+          eig_unit=io_file_unit()
+          open(unit=eig_unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
+          do k=1,num_kpts
+             do n=1,num_bands
+                read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
+                if ((i.ne.n).or.(j.ne.k)) then
+                   call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
+                end if
+             enddo
+          end do
+          close(eig_unit)
        end if
-    else
-       eig_unit=io_file_unit()
-       open(unit=eig_unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
-       do k=1,num_kpts
-          do n=1,num_bands
-             read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
-             if ((i.ne.n).or.(j.ne.k)) then
-                call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
-             end if
-          enddo
-       end do
-       close(eig_unit)
-    end if
     end if
 
     dis_win_min=-1.0_dp;dis_win_max=0.0_dp
@@ -484,7 +488,6 @@ contains
 
     if(eig_found) dis_win_max = maxval(eigval)
     call param_get_keyword('dis_win_max',found,r_value=dis_win_max)
-
     if ( dis_win_max.lt.dis_win_min ) &
          call io_error('Error: param_read: check disentanglement windows')
 
@@ -610,10 +613,6 @@ contains
 
     ! Some checks 
     if (restart.ne.' ') disentanglement=.false.
-
-    if ( (restart.ne.' ').and.(restart.ne.'default') & 
-         .and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
-         call io_error('Error in input file: value of restart not recognised')
 
     if (disentanglement) then 
        allocate(ndimwin(num_kpts),stat=ierr)
