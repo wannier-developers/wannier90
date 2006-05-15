@@ -34,11 +34,12 @@ contains
     use constants, only : cmplx_0
     use io, only        : io_error,stdout
     use parameters, only    : num_kpts,bands_plot,dos_plot,&
-         fermi_surface_plot,num_wann,wannier_plot
+         kpt_latt,fermi_surface_plot,num_wann,wannier_plot
 
     implicit none
 
-    integer :: ierr
+    integer :: ierr,nkp
+    logical :: have_gamma
 
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,'(1x,a)') '|                               PLOTTING                                    |'
@@ -46,6 +47,14 @@ contains
     write(stdout,*)
 
     if(bands_plot .or. dos_plot .or. fermi_surface_plot) then
+       ! Check if the kmesh includes the gamma point
+       have_gamma=.false.
+       do nkp=1,num_kpts
+           if (all(kpt_latt(:,nkp)<0.000001_dp)) have_gamma=.true.       
+       end do
+       if(.not. have_gamma) &
+    write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. Interpolation may be incorrect. !!!!'
+       ! Find the number of points in the Wigner-Seitz cell
        call wigner_seitz(count_pts=.true.)
        allocate(irvec(3,3*num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating irvec in plot_main')
@@ -56,6 +65,7 @@ contains
        allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating ham_r in plot_main')
        ham_r=cmplx_0
+       ! Set up the wigner_seitz vectors and transform Hamiltonian to WF basis
        call wigner_seitz(count_pts=.false.)
        call plot_get_hr
        !
