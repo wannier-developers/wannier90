@@ -434,16 +434,16 @@ contains
 
     ! Real lattice
     write(nnkpout,'(a)') 'begin real_lattice'
-    write(nnkpout,'(3(f11.6))') (real_lattice(1,i), i=1,3)
-    write(nnkpout,'(3(f11.6))') (real_lattice(2,i), i=1,3)
-    write(nnkpout,'(3(f11.6))') (real_lattice(3,i), i=1,3)
+    write(nnkpout,'(3(f12.7))') (real_lattice(1,i), i=1,3)
+    write(nnkpout,'(3(f12.7))') (real_lattice(2,i), i=1,3)
+    write(nnkpout,'(3(f12.7))') (real_lattice(3,i), i=1,3)
     write(nnkpout,'(a/)') 'end real_lattice'
 
     ! Reciprocal lattice
     write(nnkpout,'(a)') 'begin recip_lattice'
-    write(nnkpout,'(3f11.6)') (recip_lattice(1,i), i=1,3)
-    write(nnkpout,'(3f11.6)') (recip_lattice(2,i), i=1,3)
-    write(nnkpout,'(3f11.6)') (recip_lattice(3,i), i=1,3)    
+    write(nnkpout,'(3f12.7)') (recip_lattice(1,i), i=1,3)
+    write(nnkpout,'(3f12.7)') (recip_lattice(2,i), i=1,3)
+    write(nnkpout,'(3f12.7)') (recip_lattice(3,i), i=1,3)    
     write(nnkpout,'(a/)') 'end recip_lattice'
 
     ! K-points
