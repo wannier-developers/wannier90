@@ -1,0 +1,16 @@
+                       =========
+                       WANNIER90
+                       =========                            
+                                                            
+ The Maximally-Localised Generalised Wannier Functions Code 
+
+v1.0.1 (17th May 2006)
+
+* Bug fix in wannierise minimiser - caused poor convergence in large systems
+* Increase precision of k-points in *.nnkp file
+* More robust selection of eigenvectors in disentanglement (dis_proj_froz)
+* Addition of write_proj keyword -- outputs projection of original bands 
+  on final Wannier functions
+* Longer strings for atom labels in *.win
+* Minor format change to *_bands.dat
+* Check restart keyword in *.win
