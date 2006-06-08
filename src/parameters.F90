@@ -263,13 +263,13 @@ contains
 
 
     num_exclude_bands=0
-    call param_get_vector_length('exclude_bands',found,num_exclude_bands)
+    call param_get_range_vector('exclude_bands',found,num_exclude_bands,lcount=.true.)
     if(found) then
        if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
        allocate(exclude_bands(num_exclude_bands),stat=ierr)
        if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
-       call param_get_keyword_vector('exclude_bands',found,num_exclude_bands,i_value=exclude_bands)
-       if (any(wannier_plot_list<1)  ) &
+       call param_get_range_vector('exclude_bands',found,num_exclude_bands,.false.,exclude_bands)
+       if (any(exclude_bands<1)  ) &
             call io_error('Error: exclude_bands must contain positive numbers')
     end if
 
@@ -369,12 +369,12 @@ contains
     wannier_plot_mode       = 'crystal'
     call param_get_keyword('wannier_plot_mode',found,c_value=wannier_plot_mode)
 
-    call param_get_vector_length('wannier_plot_list',found,num_wannier_plot)
+    call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,lcount=.true.)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
        allocate(wannier_plot_list(num_wannier_plot),stat=ierr)
        if (ierr/=0) call io_error('Error allocating wannier_plot_list in param_read')
-       call param_get_keyword_vector('wannier_plot_list',found,num_wannier_plot,i_value=wannier_plot_list)
+       call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,.false.,wannier_plot_list)
        if (any(wannier_plot_list<1) .or. any(wannier_plot_list>num_wann) ) &
             call io_error('Error: wannier_plot_list asks for a non-valid wannier function to be plotted')
     else
@@ -1973,6 +1973,105 @@ contains
 
   end subroutine param_get_atoms
 
+
+    !====================================================================!
+    subroutine param_get_range_vector(keyword,found,length,lcount,i_value)
+    !====================================================================!
+    !   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100               !
+    !   if(lcount) we return the number of states in length              !
+    !====================================================================!
+    use io,        only : io_error
+
+    implicit none
+
+    character(*),      intent(in)    :: keyword
+    logical          , intent(out)   :: found
+    integer,           intent(inout) :: length
+    logical,           intent(in)    :: lcount
+    integer, optional, intent(out)   :: i_value(length)
+
+    integer   :: kl, in,loop,num1,num2,i_punc
+    integer   :: counter,i_digit,loop_r,range_size
+    character(len=maxlen) :: dummy
+    character(len=10), parameter :: c_digit="0123456789"
+    character(len=2) , parameter :: c_range="-:"
+    character(len=3) , parameter :: c_sep=" ,;"
+    character(len=5) , parameter :: c_punc=" ,;-:"
+    character(len=5)  :: c_num1,c_num2
+
+    
+    if(lcount .and. present(i_value) ) call io_error('param_get_range_vector: incorrect call')
+
+    kl=len_trim(keyword)
+
+    found=.false.
+
+    do loop=1,num_lines
+       in=index(in_data(loop),trim(keyword))
+       if (in==0 .or. in>1 ) cycle
+       if (found) then
+          call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+       endif
+       found=.true.
+       dummy=in_data(loop)(kl+1:)
+       dummy=adjustl(dummy)
+       if(.not. lcount) in_data(loop)(1:maxlen) = ' '
+       if( dummy(1:1)=='=' .or. dummy(1:1)==':') then
+          dummy=dummy(2:)
+          dummy=adjustl(dummy)
+       end if
+    end do
+
+    if(.not. found) return
+
+    counter=0
+    if (len_trim(dummy)==0) call io_error('Error: keyword '//trim(keyword)//' is blank')
+    dummy=adjustl(dummy)
+    do 
+       i_punc=scan(dummy,c_punc)
+       if(i_punc==0) call io_error('Error parsing keyword '//trim(keyword)) 
+       c_num1=dummy(1:i_punc-1)
+       read(c_num1,*,err=101,end=101) num1
+       dummy=adjustl(dummy(i_punc:))
+       !look for range
+       if(scan(dummy,c_range)==1) then
+          i_digit=scan(dummy,c_digit)
+          dummy=adjustl(dummy(i_digit:))
+          i_punc=scan(dummy,c_punc)
+          c_num2=dummy(1:i_punc-1)
+          read(c_num2,*,err=101,end=101) num2
+          dummy=adjustl(dummy(i_punc:))
+          range_size=abs(num2-num1)+1
+          do loop_r=1,range_size
+             counter=counter+1
+             if(.not. lcount) i_value(counter)=min(num1,num2)+loop_r-1
+          end do
+       else
+          counter=counter+1 
+          if(.not. lcount) i_value(counter)=num1
+       end if
+
+       if(scan(dummy,c_sep)==1) dummy=adjustl(dummy(2:))
+       if(scan(dummy,c_range)==1) call io_error('Error parsing keyword '//trim(keyword)//' incorrect range') 
+       if(index(dummy,' ')==1) exit
+    end do
+
+    if(lcount) length=counter
+    if(.not.lcount) then
+       do loop=1,counter-1
+          do loop_r=loop+1,counter 
+             if(i_value(loop)==i_value(loop_r)) &
+                call io_error('Error parsing keyword '//trim(keyword)//' duplicate values')
+          end do
+        end do
+    end if
+
+    return
+
+101 call io_error('Error parsing keyword '//trim(keyword))
+
+
+   end  subroutine param_get_range_vector
 
   !===================================!
   subroutine param_get_projections
