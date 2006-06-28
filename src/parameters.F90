@@ -571,7 +571,8 @@ contains
        if(.not. found) call io_error('Error: Did not find the cell information in the input file')
     end if
 
-    call utility_recip_lattice(real_lattice,recip_lattice,cell_volume)
+    if(.not. library) &
+         call utility_recip_lattice(real_lattice,recip_lattice,cell_volume)
     call utility_compute_metric(real_lattice,recip_lattice,real_metric,recip_metric)
 
     allocate ( kpt_cart(3,num_kpts) ,stat=ierr)

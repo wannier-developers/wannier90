@@ -23,7 +23,7 @@ module overlap
 !!$  public :: overlap_dis_read
   public :: overlap_read
   public :: overlap_dealloc
-
+  public :: overlap_project
 
 contains
 
@@ -75,7 +75,7 @@ contains
 
 
     if (index(devel_flag,'f77input')>0) then
-       ! This block left for the short term as a mean
+       ! This block left for the short term as a means
        ! to quickly benchmark against the old f77 code
        ! Read U_matrix and M_matrix from file 
        open(20,file='wannier0.dat',form='formatted',status='unknown')
