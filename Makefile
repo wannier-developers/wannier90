@@ -7,11 +7,15 @@ all: wannier
 doc: thedoc
 
 wannier: 
-	(cd src ; make all)
+	(cd src ; make prog)
 
 debug: $(OBJS) 
 	$(F90) wannier_prog.f90 $(LDOPTS) $(OBJS) $(LIBS) -o wannier90.x
 
+lib:
+	(cd src ; make libs)
+
+libs: lib
 
 clean:
 	cd src ; rm -f *.o *.mod *.MOD *.obj ;\

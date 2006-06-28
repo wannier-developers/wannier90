@@ -165,6 +165,10 @@ module parameters
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
 
+  ! Are we running as a libarary
+  logical, save, public :: library
+
+
   !private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
@@ -197,7 +201,7 @@ contains
 
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3,3)
-    integer :: nkp,i,j,n,k,i_temp,i_temp2,eig_unit,loop,ierr
+    integer :: nkp,i,j,n,k,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
     logical :: found,found2,eig_found,lunits
     character(len=6) :: spin_str
 
@@ -237,18 +241,21 @@ contains
 
     num_wann      =   -99
     call param_get_keyword('num_wann',found,i_value=num_wann)
-    if (.not. found) then
-       call io_error('Error: You must specify num_wann')
-    elseif(num_wann<=0) then
+    if(.not. found) call io_error('Error: You must specify num_wann')
+    if(num_wann<=0) then
        call io_error('Error: num_wann must be greater than zero')
     endif
 
-    num_bands       =   -1   
-    call param_get_keyword('num_bands',found,i_value=num_bands)
-    if(.not.found) num_bands=num_wann
-    if(found .and. num_bands<num_wann) then
-       call io_error('Error: num_bands must be greater than or equal to num_wann')
-    endif
+!    num_bands       =   -1   
+    call param_get_keyword('num_bands',found,i_value=i_temp)
+    if(found.and.library) write(stdout,*) ' num_bands: ignored'
+    if (.not. library) then
+       if(found) num_bands=i_temp
+       if(.not.found) num_bands=num_wann
+       if(found .and. num_bands<num_wann) then
+          call io_error('Error: num_bands must be greater than or equal to num_wann')
+       endif
+    end if
 
     num_dump_cycles =   100          ! frequency to write backups at
     call param_get_keyword('num_dump_cycles',found,i_value=num_dump_cycles)
@@ -273,14 +280,18 @@ contains
             call io_error('Error: exclude_bands must contain positive numbers')
     end if
 
-    mp_grid=-99
-    call param_get_keyword_vector('mp_grid',found,3,i_value=mp_grid)
-    if (any(mp_grid(:)==-99)) then
-       call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
-    elseif (any(mp_grid<1)) then
-       call io_error('Error: mp_grid must be greater than zero')
+!    mp_grid=-99
+    call param_get_keyword_vector('mp_grid',found,3,i_value=iv_temp)
+    if(found.and.library) write(stdout,*) ' mp_grid: ignored'
+    if(.not.library) then
+       if(found) mp_grid=iv_temp
+       if (.not. found) then
+          call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
+       elseif (any(mp_grid<1)) then
+          call io_error('Error: mp_grid must be greater than zero')
+       end if
+       num_kpts= mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
-    num_kpts= mp_grid(1)*mp_grid(2)*mp_grid(3)
 
     automatic_mp_grid = .false.
     call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
@@ -455,32 +466,38 @@ contains
     disentanglement=.false.
     if(num_bands>num_wann) disentanglement=.true.
 
-    ! Read the eigenvalues from wannier.eig
-    allocate(eigval(num_bands,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating eigval in param_read')
 
-    if(.not.postproc_setup)  then
-       inquire(file=trim(seedname)//'.eig',exist=eig_found)
-       if(.not. eig_found) then
-          if ( disentanglement) then
-             call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-          else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) ) then
-             call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+    ! Read the eigenvalues from wannier.eig
+    eig_found=.false.
+    if(.not. library) then
+       allocate(eigval(num_bands,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating eigval in param_read')
+       
+       if(.not.postproc_setup)  then
+          inquire(file=trim(seedname)//'.eig',exist=eig_found)
+          if(.not. eig_found) then
+             if ( disentanglement) then
+                call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) ) then
+                call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+             end if
+          else
+             eig_unit=io_file_unit()
+             open(unit=eig_unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
+             do k=1,num_kpts
+                do n=1,num_bands
+                   read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
+                   if ((i.ne.n).or.(j.ne.k)) then
+                      call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
+                   end if
+                enddo
+             end do
+             close(eig_unit)
           end if
-       else
-          eig_unit=io_file_unit()
-          open(unit=eig_unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
-          do k=1,num_kpts
-             do n=1,num_bands
-                read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
-                if ((i.ne.n).or.(j.ne.k)) then
-                   call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
-                end if
-             enddo
-          end do
-          close(eig_unit)
        end if
     end if
+
+    if(library .and. allocated(eigval) ) eig_found=.true.
 
     dis_win_min=-1.0_dp;dis_win_max=0.0_dp
     if(eig_found) dis_win_min = minval(eigval)       
@@ -547,21 +564,29 @@ contains
     if(num_shells/=0 .and. any(shell_list<1)) call io_error('Error: shell_list must be positive')
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
-    !This is a hack. I must workout what is the sensible way to read and store this jry
-    real_lattice=transpose(real_lattice_tmp)
-
-    if(.not. found) call io_error('Error: Did not find the cell information in the input file')
+    if(found.and.library) write(stdout,*) ' unit_cell_cart: ignored'
+    if (.not. library) then
+       !This is a hack. I must workout what is the sensible way to read and store this jry
+       real_lattice=transpose(real_lattice_tmp)
+       if(.not. found) call io_error('Error: Did not find the cell information in the input file')
+    end if
 
     call utility_recip_lattice(real_lattice,recip_lattice,cell_volume)
     call utility_compute_metric(real_lattice,recip_lattice,real_metric,recip_metric)
 
     allocate ( kpt_cart(3,num_kpts) ,stat=ierr)
     if (ierr/=0) call io_error('Error allocating kpt_cart in param_read')
-    allocate ( kpt_latt(3,num_kpts) ,stat=ierr)
-    if (ierr/=0) call io_error('Error allocating kpt_latt in param_read')
+    if(.not. library) then
+       allocate ( kpt_latt(3,num_kpts) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpt_latt in param_read')
+    end if
 
-    call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_latt)
-    if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
+    call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_cart)
+    if(found.and.library) write(stdout,*) ' unit_cell_cart: ignored'
+    if (.not. library) then
+       kpt_latt=kpt_cart
+       if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
+    end if
 
     ! Calculate the kpoints in cartesian coordinates
     do nkp=1,num_kpts
@@ -569,21 +594,24 @@ contains
     end do
 
     ! Atoms
-    num_atoms=0
-    call param_get_block_length('atoms_frac',found,i_temp)
-    call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
-    if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
-    if (found .and. i_temp>0) then
-       lunits=.false.
-       num_atoms=i_temp
-    elseif (found2 .and. i_temp2>0) then
-       num_atoms=i_temp2
-       if (lunits) num_atoms=num_atoms-1
-    end if
-    if(num_atoms>0) then
-       call param_get_atoms(lunits)
+    if(.not. library) then
+       num_atoms=0
+       call param_get_block_length('atoms_frac',found,i_temp)
+       call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
+       if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
+       if (found .and. i_temp>0) then
+          lunits=.false.
+          num_atoms=i_temp
+       elseif (found2 .and. i_temp2>0) then
+          num_atoms=i_temp2
+          if (lunits) num_atoms=num_atoms-1
+       end if
+       if(num_atoms>0) then
+          call param_get_atoms(lunits)
+       end if
     end if
 
+    ! Projections
     call param_get_block_length('projections',found,i_temp)
     if (found) call param_get_projections
     if (guiding_centres .and. .not. found) &
@@ -1972,6 +2000,148 @@ contains
 240 call io_error('Error: Problem reading block keyword '//trim(keyword))
 
   end subroutine param_get_atoms
+
+    !=====================================================!
+     subroutine param_lib_set_atoms(atoms_label_tmp,atoms_pos_cart_tmp)
+    !=====================================================!
+    !                                                     !
+    !   Fills the atom data block during a library call   !
+    !                                                     !
+    !=====================================================!
+
+    use utility,   only : utility_frac_to_cart,utility_cart_to_frac
+    use io,        only : io_error
+    implicit none
+
+    character(len=maxlen), intent(in) :: atoms_label_tmp(num_atoms)
+    real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3,num_atoms)
+
+    real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
+    character(len=20) :: keyword
+    integer           :: in,ins,ine,loop,i,line_e,line_s,counter
+    integer           :: i_temp,loop2,max_sites,ierr,ic
+    logical           :: found_e,found_s,found1,found2,frac
+    character(len=maxlen) :: dummy,end_st,start_st
+    character(len=maxlen) :: ctemp(num_atoms)
+    logical           :: lconvert
+
+    keyword="atoms_cart"
+    frac=.false.
+    call param_get_block_length("atoms_frac",found1,i_temp)
+    if (found1) then
+       keyword="atoms_frac"
+    end if
+    call param_get_block_length("atoms_cart",found2,i_temp)
+    if(found1 .or. found2) then
+       write(stdout,*) ' WARNING: Atom data in win file is ignored'
+       
+       found_s=.false.
+       found_e=.false.
+       
+       start_st='begin '//trim(keyword)
+       end_st='end '//trim(keyword)
+       
+       
+       do loop=1,num_lines
+          ins=index(in_data(loop),trim(keyword))
+          if (ins==0 ) cycle
+          in=index(in_data(loop),'begin')
+          if (in==0 .or. in>1) cycle
+          line_s=loop
+          if (found_s) then
+             call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+          endif
+          found_s=.true.
+       end do
+       
+       
+       
+       do loop=1,num_lines
+          ine=index(in_data(loop),trim(keyword))
+          if (ine==0 ) cycle
+          in=index(in_data(loop),'end')
+          if (in==0 .or. in>1) cycle
+          line_e=loop
+          if (found_e) then
+             call io_error('Error: Found '//trim(end_st)//' more than once in input file')
+          endif
+          found_e=.true.
+       end do
+       
+       if(.not. found_e) then
+          call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+       end if
+       
+       if(line_e<=line_s) then
+          call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+       end if
+    
+       in_data(line_s:line_e)(1:maxlen) = ' '
+
+    end if
+
+    call utility_cart_to_frac (atoms_pos_cart_tmp(:,loop),atoms_pos_frac_tmp(:,loop),real_lattice)
+    
+    ! Now we sort the data into the proper structures
+    num_species=1
+    ctemp(1)=atoms_label_tmp(1)
+    do loop=2,num_atoms
+       do loop2=1,loop-1
+          if( trim(atoms_label_tmp(loop))==trim(atoms_label_tmp(loop2) )) exit
+          if (loop2==loop-1) then 
+             num_species=num_species+1
+             ctemp(num_species)=atoms_label_tmp(loop)
+          end if
+       end do
+    end do
+
+    allocate(atoms_species_num(num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_species_num in param_lib_set_atoms')
+    allocate(atoms_label(num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_label in param_lib_set_atoms')
+    allocate(atoms_symbol(num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_symbol in param_lib_set_atoms')
+    atoms_species_num(:)=0
+
+    do loop=1,num_species
+       atoms_label(loop)=ctemp(loop)
+       do loop2=1,num_atoms
+          if( trim(atoms_label(loop))==trim(atoms_label_tmp(loop2) )) then
+             atoms_species_num(loop)=atoms_species_num(loop)+1
+          end if
+       end do
+    end do
+
+    max_sites=maxval(atoms_species_num)
+    allocate(atoms_pos_frac(3,max_sites,num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms')
+    allocate(atoms_pos_cart(3,max_sites,num_species),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms')
+
+    do loop=1,num_species
+       counter=0
+       do loop2=1,num_atoms
+          if( trim(atoms_label(loop))==trim(atoms_label_tmp(loop2) )) then
+             counter=counter+1
+             atoms_pos_frac(:,counter,loop)=atoms_pos_frac_tmp(:,loop2)
+             atoms_pos_cart(:,counter,loop)=atoms_pos_cart_tmp(:,loop2)
+          end if
+       end do
+    end do
+
+    ! Strip any numeric characters from atoms_label to get atoms_symbol
+    do loop=1,num_species    
+       atoms_symbol(loop)(1:2)=atoms_label(loop)(1:2)
+       ic=ichar(atoms_symbol(loop)(2:2))
+       if ((ic.lt.ichar('a')).or.(ic.gt.ichar('z'))) &
+         atoms_symbol(loop)(2:2)=' '
+    end do
+
+    return
+
+240 call io_error('Error: Problem reading block keyword '//trim(keyword))
+
+  end subroutine param_lib_set_atoms
 
 
     !====================================================================!

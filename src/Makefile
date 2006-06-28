@@ -6,9 +6,18 @@ include ../make.sys
 OBJS  =  parameters.o io.o utility.o overlap.o kmesh.o  \
          disentangle.o wannierise.o plot.o
 
+OBJS2  =  wannier_lib.o
 
-all: $(OBJS) 
+LIBRARY = ../libwannier.a
+
+prog: $(OBJS) 
 	$(F90) wannier_prog.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../wannier90.x
+
+libs:     $(LIBRARY)
+
+$(LIBRARY): $(OBJS2) 
+	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS2) $(OBJS)
+
 
 
 clean:
@@ -40,5 +49,8 @@ wannierise.o: wannierise.F90 parameters.o io.o utility.o constants.o io.o
 
 plot.o: plot.F90
 	 $(F90) $(FCOPTS) -c plot.F90
+
+wannier_lib.o: wannier_lib.F90
+	 $(F90) $(FCOPTS) -c wannier_lib.F90
 
 
