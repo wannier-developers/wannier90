@@ -42,7 +42,7 @@ module kmesh
   integer, parameter :: nsupcell=5
   integer, parameter :: search_shells=12
   integer :: lmn(3,(2*nsupcell+1)**3)
-
+  real(kind=dp), parameter :: tol8=1.e-8_dp
 
 
 contains 
@@ -568,7 +568,7 @@ contains
     end do
 
     do loop=(2*nsupcell+1)**3,1,-1
-       indx=maxloc(dist)
+       indx=internal_maxloc(dist)
        dist_cp(loop)=dist(indx(1))
        lmn_cp(:,loop)=lmn(:,indx(1))
        dist(indx(1))=-1.0_dp
@@ -576,7 +576,6 @@ contains
 
     lmn=lmn_cp
     dist=dist_cp
-
 
   end subroutine kmesh_supercell_sort
 
@@ -936,6 +935,44 @@ contains
     return
 
   end subroutine kmesh_shell_fixed
+
+    !==========================================================================!
+     function internal_maxloc(dist)
+    !==========================================================================!
+    !                                                                          !
+    !  A predictable maxloc.                                                   !
+    !                                                                          !
+    !==========================================================================!
+
+    use io,   only : io_error,stdout
+    implicit none
+
+
+    real(kind=dp)  :: dist((2*nsupcell+1)**3)
+    integer        :: internal_maxloc
+  
+    integer       :: guess(1),loop,counter
+    real(kind=dp) :: list((2*nsupcell+1)**3)
+    
+    list=0.0_dp
+    counter=1
+    
+    guess=maxloc(dist)
+    list(1)=guess(1)
+    ! look for any degenerate values
+    do loop=1,(2*nsupcell+1)**3
+       if (loop==guess(1)) cycle
+       if ( abs(dist(loop)-dist(guess(1))) < tol8 ) then
+          counter=counter+1
+          list(counter)=loop
+       endif
+    end do
+    ! and always return the lowest index
+    internal_maxloc=minval(list(1:counter))
+
+
+    end function internal_maxloc
+
 
 
 end module kmesh
