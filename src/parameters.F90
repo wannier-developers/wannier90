@@ -183,6 +183,7 @@ module parameters
   public :: param_read_um
   public :: param_write_chkpt
   public :: param_read_chkpt
+  public :: param_lib_set_atoms
 
 contains
 
@@ -2020,7 +2021,7 @@ contains
     use io,        only : io_error
     implicit none
 
-    character(len=maxlen), intent(in) :: atoms_label_tmp(num_atoms)
+    character(len=*), intent(in) :: atoms_label_tmp(num_atoms)
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3,num_atoms)
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)

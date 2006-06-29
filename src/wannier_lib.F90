@@ -31,7 +31,7 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   real(kind=dp), dimension(3,num_kpts), intent(in) :: kpt_latt_loc
   integer, intent(in) :: num_bands_tot
   integer, intent(in) :: num_atoms_loc
-  character(len=20), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
+  character(len=*), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
   real(kind=dp), dimension(3,num_atoms_loc), intent(in) :: atoms_cart_loc
   integer, intent(out) :: nntot_loc
   integer, dimension(num_kpts_loc,num_nnmax), intent(out) :: nnlist_loc
