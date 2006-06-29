@@ -12,7 +12,7 @@
 
 module overlap
  
-  use constants, only : dp,cmplx_0
+  use constants, only : dp,cmplx_0,cmplx_1
   use parameters, only : disentanglement
   use io, only : stdout
 
@@ -35,7 +35,7 @@ contains
     
     use parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, &
-                           m_matrix_orig, u_matrix_opt, cp_pp
+                           m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases
     use io,         only : io_file_unit, io_error, seedname
 
     implicit none
@@ -159,6 +159,9 @@ contains
  
        close(mmn_in)
 
+
+       if(.not. use_bloch_phases) then
+
        ! Read A_matrix from file wannier.amn
        amn_in=io_file_unit()
        open(unit=amn_in,file=trim(seedname)//'.amn',form='formatted',status='old',err=102)
@@ -195,6 +198,16 @@ contains
        end if
 
        close(amn_in)
+
+       else
+
+          do n=1,num_kpts
+             do m=1,num_wann
+                u_matrix(m,m,n)=cmplx_1
+             end do
+          end do
+
+       end if
        
        ! If post-processing a Car-Parinello calculation (gamma only)
        ! then rotate M and A to the basis of Kohn-Sham eigenstates
@@ -203,7 +216,8 @@ contains
        
        ! If we don't need to disentangle we can now convert from A to U
        ! And rotate M accordingly
-       if(.not.disentanglement .and. (.not.cp_pp) ) call overlap_project
+       if(.not.disentanglement .and. (.not.cp_pp) .and. (.not. use_bloch_phases )) &
+            call overlap_project
 
     endif
 

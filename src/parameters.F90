@@ -73,6 +73,7 @@ module parameters
   logical,           public, save :: postproc_setup
   logical,           public, save :: cp_pp ! Car-Parinello post-proc flag
   logical,           public, save :: calc_only_A
+  logical,           public, save :: use_bloch_phases
   character(len=20), public, save :: restart
   logical,           public, save :: write_r2mn
   logical,           public, save :: guiding_centres
@@ -543,6 +544,11 @@ contains
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
+
+    use_bloch_phases = .false.
+    call param_get_keyword('use_bloch_phases',found,l_value=use_bloch_phases)
+    if(disentanglement .and. use_bloch_phases) &
+         call io_error('Error: Cannot use bloch phases for disentanglement')
 
     num_nnmax                 = 12
     call param_get_keyword('num_nnmax',found,i_value=num_nnmax)
