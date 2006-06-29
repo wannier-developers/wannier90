@@ -166,7 +166,7 @@ may be specified in the wannier input file.
       \verb#intent(in) :: atoms_cart#\\ The positions of the atoms in
       Cartesian co-ordinates in Angstrom.
 \item \verb#complex(kind=dp),#
-      \verb# dimension(num_bands,num_bands,num_kpts,nntot),#\\
+      \verb# dimension(num_bands,num_bands,nntot,num_kpts),#\\
       \verb#                  intent(in) :: M_matrix#\\ 
       The matrices of overlaps between neighbouring periodic parts of
       the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{k,b})}$
