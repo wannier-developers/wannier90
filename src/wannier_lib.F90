@@ -250,25 +250,19 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   endif
   
   m_matrix_orig=m_matrix_loc
-  a_matrix=a_matrix_loc
-
-  if(.not. disentanglement) call overlap_project
-
-
-  have_disentangled = .false.
-
-  if (disentanglement) then
-
+  if(disentanglement) then
+     a_matrix=a_matrix_loc
+     have_disentangled = .false.
      call io_stopwatch('dis_main',1)
      call dis_main
      call io_stopwatch('dis_main',2)
-
      have_disentangled=.true.
-
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
-
-  endif
+  else
+     u_matrix=a_matrix_loc
+     call overlap_project
+  end if
 
   call param_write_chkpt('postdis')
   call param_write_um
