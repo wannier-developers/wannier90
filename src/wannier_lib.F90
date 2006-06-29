@@ -21,10 +21,6 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   use parameters
   use io
   use kmesh
-  use disentangle
-  use overlap
-  use wannierise
-  use plot
  
   implicit none
 

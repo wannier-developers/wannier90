@@ -15,7 +15,7 @@ prog: $(OBJS)
 
 libs:     $(LIBRARY)
 
-$(LIBRARY): $(OBJS2) 
+$(LIBRARY): $(OBJS) $(OBJS2) 
 	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS2) $(OBJS)
 
 
@@ -50,7 +50,9 @@ wannierise.o: wannierise.F90 parameters.o io.o utility.o constants.o io.o
 plot.o: plot.F90
 	 $(F90) $(FCOPTS) -c plot.F90
 
-wannier_lib.o: wannier_lib.F90
+wannier_lib.o: ./plot.o ./wannierise.o ./overlap.o \
+	./disentangle.o ./kmesh.o ./io.o ./parameters.o \
+	./constants.o wannier_lib.F90
 	 $(F90) $(FCOPTS) -c wannier_lib.F90
 
 
