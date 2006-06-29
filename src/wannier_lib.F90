@@ -167,7 +167,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   integer, intent(in) :: num_atoms_loc
   character(len=20), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
   real(kind=dp), dimension(3,num_atoms_loc), intent(in) :: atoms_cart_loc
-  complex(kind=dp), dimension(num_bands,num_bands,num_kpts,nntot), intent(in) :: M_matrix_loc
+  complex(kind=dp), dimension(num_bands,num_bands,nntot,num_kpts), intent(in) :: M_matrix_loc
   complex(kind=dp), dimension(num_bands,num_wann,num_kpts), intent(in) :: A_matrix_loc
   real(kind=dp), dimension(num_bands,num_kpts), intent(in) :: eigenvalues_loc
   complex(kind=dp), dimension(num_wann,num_wann,num_kpts), intent(out) :: U_matrix_loc
