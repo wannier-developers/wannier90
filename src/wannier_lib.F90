@@ -210,7 +210,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   kpt_latt=kpt_latt_loc
   allocate(eigval(num_bands,num_kpts),stat=ierr)
   if (ierr/=0) call io_error('Error allocating eigval in wannier_setup')
-
+  eigval=eigenvalues_loc
 
   num_atoms=num_atoms_loc
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
