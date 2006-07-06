@@ -936,15 +936,15 @@ contains
 
   end subroutine kmesh_shell_fixed
 
-    !==========================================================================!
+    !=========================================================================!
      function internal_maxloc(dist)
-    !==========================================================================!
-    !                                                                          !
-    !  A predictable maxloc.                                                   !
-    !                                                                          !
-    !==========================================================================!
+    !=========================================================================!
+    !                                                                         !
+    !  A predictable maxloc.                                                  !
+    !                                                                         !
+    !=========================================================================!
 
-    use w90_io,   only : io_error,stdout
+    use w90_io,   only : io_error
     implicit none
 
 
@@ -952,9 +952,9 @@ contains
     integer        :: internal_maxloc
   
     integer       :: guess(1),loop,counter
-    real(kind=dp) :: list((2*nsupcell+1)**3)
+    integer       :: list((2*nsupcell+1)**3)
     
-    list=0.0_dp
+    list=0
     counter=1
     
     guess=maxloc(dist)

@@ -2034,69 +2034,10 @@ contains
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3,num_atoms)
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
-    character(len=20) :: keyword
-    integer           :: in,ins,ine,loop,i,line_e,line_s,counter
-    integer           :: i_temp,loop2,max_sites,ierr,ic
-    logical           :: found_e,found_s,found1,found2,frac
-    character(len=maxlen) :: dummy,end_st,start_st
+    integer           :: loop2,max_sites,ierr,ic,loop,counter
     character(len=maxlen) :: ctemp(num_atoms)
-    logical           :: lconvert
     character(len=maxlen) :: tmp_string
 
-!!$    keyword="atoms_cart"
-!!$    frac=.false.
-!!$    call param_get_block_length("atoms_frac",found1,i_temp)
-!!$    if (found1) then
-!!$       keyword="atoms_frac"
-!!$    end if
-!!$    call param_get_block_length("atoms_cart",found2,i_temp)
-!!$    if(found1 .or. found2) then
-!!$       write(stdout,*) ' WARNING: Atom data in win file is ignored'
-!!$       
-!!$       found_s=.false.
-!!$       found_e=.false.
-!!$       
-!!$       start_st='begin '//trim(keyword)
-!!$       end_st='end '//trim(keyword)
-!!$       
-!!$       
-!!$       do loop=1,num_lines
-!!$          ins=index(in_data(loop),trim(keyword))
-!!$          if (ins==0 ) cycle
-!!$          in=index(in_data(loop),'begin')
-!!$          if (in==0 .or. in>1) cycle
-!!$          line_s=loop
-!!$          if (found_s) then
-!!$             call io_error('Error: Found '//trim(start_st)//' more than once in input file')
-!!$          endif
-!!$          found_s=.true.
-!!$       end do
-!!$       
-!!$       
-!!$       
-!!$       do loop=1,num_lines
-!!$          ine=index(in_data(loop),trim(keyword))
-!!$          if (ine==0 ) cycle
-!!$          in=index(in_data(loop),'end')
-!!$          if (in==0 .or. in>1) cycle
-!!$          line_e=loop
-!!$          if (found_e) then
-!!$             call io_error('Error: Found '//trim(end_st)//' more than once in input file')
-!!$          endif
-!!$          found_e=.true.
-!!$       end do
-!!$       
-!!$       if(.not. found_e) then
-!!$          call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
-!!$       end if
-!!$       
-!!$       if(line_e<=line_s) then
-!!$          call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
-!!$       end if
-!!$    
-!!$       in_data(line_s:line_e)(1:maxlen) = ' '
-!!$
-!!$    end if
 
     do loop=1,num_atoms
        call utility_cart_to_frac(atoms_pos_cart_tmp(:,loop),&
@@ -2164,7 +2105,6 @@ contains
 
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword))
 
   end subroutine param_lib_set_atoms
 
@@ -2310,7 +2250,6 @@ contains
     real(kind=dp) :: proj_x_tmp(3)
     real(kind=dp) :: proj_zona_tmp
     real(kind=dp) :: proj_box_tmp
-    real(kind=dp) :: rtemp(3)
     integer       :: proj_radial_tmp
     logical       :: lconvert,lrandom
 
