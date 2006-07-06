@@ -17,10 +17,10 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
      proj_x_loc,proj_zona_loc,exclude_bands_loc)
 
-  use constants
-  use parameters
-  use io
-  use kmesh
+  use w90_constants
+  use w90_parameters
+  use w90_io
+  use w90_kmesh
  
   implicit none
 
@@ -28,7 +28,7 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   integer, intent(in) :: num_kpts_loc
   real(kind=dp), dimension(3,3), intent(in) :: real_lattice_loc
   real(kind=dp), dimension(3,3), intent(in) :: recip_lattice_loc
-  real(kind=dp), dimension(3,num_kpts), intent(in) :: kpt_latt_loc
+  real(kind=dp), dimension(3,num_kpts_loc), intent(in) :: kpt_latt_loc
   integer, intent(in) :: num_bands_tot
   integer, intent(in) :: num_atoms_loc
   character(len=*), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
@@ -70,7 +70,6 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   call param_write_header
 
   ! copy local data into module variables
-!  num_bands=num_bands_loc
   mp_grid=mp_grid_loc
   num_kpts=num_kpts_loc
   real_lattice=real_lattice_loc
@@ -80,7 +79,7 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   kpt_latt=kpt_latt_loc
   num_atoms=num_atoms_loc
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
-  
+
   call param_read
   call param_write
 
@@ -108,12 +107,12 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   exclude_bands_loc = 0
 
   nntot_loc       = nntot        
-  nnlist_loc(:,1:nntot)   =  nnlist_loc(:,1:nntot)       
+  nnlist_loc(:,1:nntot)   =  nnlist(:,1:nntot)       
   nncell_loc(:,:,1:nntot) =  nncell(:,:,1:nntot)       
   num_bands_loc=num_bands_tot-num_exclude_bands
   num_wann_loc=num_wann
   if(allocated(proj_site)) then
-     proj_site_loc(:,1:nntot)      = proj_site(:,1:nntot)    
+     proj_site_loc(:,1:num_wann)   = proj_site(:,1:num_wann)    
      proj_l_loc(1:num_wann)        = proj_l(1:num_wann)          
      proj_m_loc(1:num_wann)        = proj_m(1:num_wann)           
      proj_z_loc(:,1:num_wann)      = proj_z(:,1:num_wann)     
@@ -137,19 +136,19 @@ end subroutine wannier_setup
 
 subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
      recip_lattice_loc,kpt_latt_loc,num_bands_loc,num_wann_loc,   & 
-     num_atoms_loc,atom_symbols_loc,atoms_cart_loc,M_matrix_loc,  &
+     nntot_loc,num_atoms_loc,atom_symbols_loc,atoms_cart_loc,M_matrix_loc,  &
      A_matrix_loc,eigenvalues_loc,U_matrix_loc,U_matrix_opt_loc,  &
      lwindow_loc,wann_centres_loc,wann_spreads_loc,spread_loc)
 
 
-  use constants
-  use parameters
-  use io
-  use kmesh
-  use disentangle
-  use overlap
-  use wannierise
-  use plot
+  use w90_constants
+  use w90_parameters
+  use w90_io
+  use w90_kmesh
+  use w90_disentangle
+  use w90_overlap
+  use w90_wannierise
+  use w90_plot
 
   implicit none
 
@@ -157,26 +156,29 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   integer, intent(in) :: num_kpts_loc
   real(kind=dp), dimension(3,3), intent(in) :: real_lattice_loc
   real(kind=dp), dimension(3,3), intent(in) :: recip_lattice_loc
-  real(kind=dp), dimension(3,num_kpts), intent(in) :: kpt_latt_loc
+  real(kind=dp), dimension(3,num_kpts_loc), intent(in) :: kpt_latt_loc
   integer, intent(in) :: num_bands_loc
   integer, intent(in) :: num_wann_loc
+  integer, intent(in) :: nntot_loc
   integer, intent(in) :: num_atoms_loc
-  character(len=20), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
+  character(len=*), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
   real(kind=dp), dimension(3,num_atoms_loc), intent(in) :: atoms_cart_loc
-  complex(kind=dp), dimension(num_bands,num_bands,nntot,num_kpts), intent(in) :: M_matrix_loc
-  complex(kind=dp), dimension(num_bands,num_wann,num_kpts), intent(in) :: A_matrix_loc
-  real(kind=dp), dimension(num_bands,num_kpts), intent(in) :: eigenvalues_loc
-  complex(kind=dp), dimension(num_wann,num_wann,num_kpts), intent(out) :: U_matrix_loc
-  complex(kind=dp), dimension(num_bands,num_wann,num_kpts), optional, intent(out) :: U_matrix_opt_loc
-  logical, dimension(num_bands,num_kpts), optional, intent(out) :: lwindow_loc
-  real(kind=dp), dimension(3,num_wann), optional, intent(out) :: wann_centres_loc
-  real(kind=dp), dimension(num_wann), optional, intent(out) :: wann_spreads_loc
+  complex(kind=dp), dimension(num_bands_loc,num_bands_loc,nntot_loc,num_kpts_loc), intent(in) :: M_matrix_loc
+  complex(kind=dp), dimension(num_bands_loc,num_wann_loc,num_kpts_loc), intent(in) :: A_matrix_loc
+  real(kind=dp), dimension(num_bands_loc,num_kpts_loc), intent(in) :: eigenvalues_loc
+  complex(kind=dp), dimension(num_wann_loc,num_wann_loc,num_kpts_loc), intent(out) :: U_matrix_loc
+  complex(kind=dp), dimension(num_bands_loc,num_wann_loc,num_kpts_loc), optional, intent(out) :: U_matrix_opt_loc
+  logical, dimension(num_bands_loc,num_kpts_loc), optional, intent(out) :: lwindow_loc
+  real(kind=dp), dimension(3,num_wann_loc), optional, intent(out) :: wann_centres_loc
+  real(kind=dp), dimension(num_wann_loc), optional, intent(out) :: wann_spreads_loc
   real(kind=dp), dimension(3), optional, intent(out) :: spread_loc
 
   real(kind=dp) time0,time1,time2
   character(len=9) :: stat,pos,cdate,ctime
   integer :: ierr,loop_k,loop_w
   logical :: wout_found
+
+  integer :: nkp,nn,n,m
 
   time0=io_time()
 
@@ -193,7 +195,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   stdout=io_file_unit()
   open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
 
-  call param_write_header
+!  call param_write_header
 
   ! copy local data into module variables
   num_bands=num_bands_loc
@@ -209,6 +211,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   eigval=eigenvalues_loc
 
   num_atoms=num_atoms_loc
+
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
   
   call param_read
@@ -245,8 +248,8 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
      u_matrix_opt  = cmplx_0
   endif
   
-  m_matrix_orig=m_matrix_loc
   if(disentanglement) then
+     m_matrix_orig=m_matrix_loc
      a_matrix=a_matrix_loc
      have_disentangled = .false.
      call io_stopwatch('dis_main',1)
@@ -256,9 +259,31 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
   else
+     m_matrix=m_matrix_loc
      u_matrix=a_matrix_loc
      call overlap_project
   end if
+
+!!$  do nkp=1,num_kpts
+!!$     do n=1,num_wann
+!!$        do m=1,num_bands
+!!$           write(stdout,'(3i3,2f12.6)') &
+!!$                m, n, nkp, a_matrix(m,n,nkp)
+!!$        enddo
+!!$     enddo
+!!$  enddo
+
+!!$  do nkp=1,num_kpts
+!!$     do nn=1,nntot
+!!$        do n=1,num_bands
+!!$           do m=1,num_bands
+!!$              write(stdout,'(5i3,2f12.6)') &
+!!$                   nkp, nnlist(nkp,nn), nncell(1:3,nkp,nn), &
+!!$                   m_matrix_orig(m,n,nn,nkp)
+!!$           enddo
+!!$        enddo
+!!$     enddo
+!!$  enddo
 
   call param_write_chkpt('postdis')
   call param_write_um
@@ -306,9 +331,14 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   call overlap_dealloc
   call kmesh_dealloc
   call param_dealloc
-  write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
-  close(stdout)
 
+  write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time(),' (sec)'
+
+  call io_print_timings()
+
+  write(stdout,*) 
+  write(stdout,'(1x,a)') 'All done: wannier90 exiting'
+  close(stdout)
 
 
 

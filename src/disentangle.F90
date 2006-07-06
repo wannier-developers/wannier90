@@ -10,11 +10,11 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module disentangle
+module w90_disentangle
 
-  use constants, only: dp,twopi,cmplx_i,cmplx_0,cmplx_1
-  use io, only: io_error,stdout,io_stopwatch
-  use parameters
+  use w90_constants, only: dp,twopi,cmplx_i,cmplx_0,cmplx_1
+  use w90_io, only: io_error,stdout,io_stopwatch
+  use w90_parameters
 
   implicit none
 
@@ -1213,7 +1213,7 @@ contains
     !                                                                  !
     !==================================================================!  
       
-      use io, only: io_time
+      use w90_io, only: io_time
 
       implicit none
 
@@ -1948,4 +1948,4 @@ contains
 
 
 
-end module disentangle
+  end module w90_disentangle

@@ -10,9 +10,9 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module wannierise
+module w90_wannierise
 
-  use constants
+  use w90_constants
 
   implicit none
 
@@ -47,16 +47,16 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                                                                  !
     !===================================================================  
-    use constants,  only : dp,cmplx_1,cmplx_0
-    use io,         only : stdout,io_error,io_time,io_stopwatch,io_file_unit
-    use parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
+    use w90_constants,  only : dp,cmplx_1,cmplx_0
+    use w90_io,         only : stdout,io_error,io_time,io_stopwatch,io_file_unit
+    use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
          param_read_um,param_write_um,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres,&
          num_guide_cycles,num_no_guide_iter,&
          trial_step,fixed_step,lfixstep,write_proj,have_disentangled
-    use utility,    only : utility_frac_to_cart,utility_zgemm
+    use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
 
@@ -696,7 +696,7 @@ contains
     ! Write seedname.r2mn file               !
     !                                        !
     !========================================!
-      use io, only: seedname,io_file_unit,io_error
+      use w90_io, only: seedname,io_file_unit,io_error
       
       implicit none
 
@@ -825,10 +825,10 @@ contains
     !                                                                  !
     !                                                                  !
     !===================================================================  
-    use parameters,     only : num_wann,m_matrix,nntot,neigh, &
+    use w90_parameters,     only : num_wann,m_matrix,nntot,neigh, &
          nnh,bk,bka,num_kpts
-    use io,         only : io_error,io_stopwatch
-    use utility,    only : utility_inv3
+    use w90_io,         only : io_error,io_stopwatch
+    use w90_utility,    only : utility_inv3
 
     implicit none
 
@@ -1008,9 +1008,9 @@ contains
     !   Calculate the Wannier Function spread                          !
     !                                                                  !
     !===================================================================  
-    use parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
+    use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
                            omega_invariant
-    use io,         only : io_error,io_stopwatch
+    use w90_io,         only : io_error,io_stopwatch
 
     implicit none
 
@@ -1196,8 +1196,8 @@ contains
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
     !===================================================================  
-    use parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts
-    use io,         only : io_error,io_stopwatch
+    use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts
+    use w90_io,         only : io_error,io_stopwatch
 
     implicit none
 
@@ -1319,9 +1319,9 @@ contains
   !                                                                  !
   !==================================================================!
 
-    use parameters, only : num_bands,num_wann,num_kpts,&
+    use w90_parameters, only : num_bands,num_wann,num_kpts,&
                            u_matrix_opt,eigval,lwindow
-    use io,         only : stdout
+    use w90_io,         only : stdout
 
     implicit none
 
@@ -1355,4 +1355,4 @@ contains
 
   end subroutine wann_calc_projection
 
-end module wannierise
+end module w90_wannierise

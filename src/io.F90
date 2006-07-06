@@ -10,9 +10,9 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module io
+module w90_io
 
-  use constants, only : dp
+  use w90_constants, only : dp
 
   implicit none
 
@@ -234,7 +234,7 @@ contains
     ! uses standard f90 call                                           !
     !                                                                  !
     !===================================================================  
-    use constants, only : dp
+    use w90_constants, only : dp
     implicit none
 
     real(kind=dp) :: io_time
@@ -284,4 +284,4 @@ contains
 end function io_file_unit
 
 
-end module io
+end module w90_io

@@ -38,14 +38,14 @@
 
 program wannier
 
-  use constants
-  use parameters
-  use io
-  use kmesh
-  use disentangle
-  use overlap
-  use wannierise
-  use plot
+  use w90_constants
+  use w90_parameters
+  use w90_io
+  use w90_kmesh
+  use w90_disentangle
+  use w90_overlap
+  use w90_wannierise
+  use w90_plot
  
   implicit none
 

@@ -10,10 +10,10 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module kmesh
+module w90_kmesh
 
-  use constants, only : dp
-  use parameters
+  use w90_constants, only : dp
+  use w90_parameters
 
   implicit none
 
@@ -53,8 +53,8 @@ contains
     !  Set up the framework for the kspace derivatives                 ! 
     !                                                                  !
     !===================================================================  
-    use io,      only : stdout,io_error
-    use utility, only : utility_compar
+    use w90_io,      only : stdout,io_error
+    use w90_utility, only : utility_compar
 
     implicit none
 
@@ -415,7 +415,7 @@ contains
     ! PRB 56, 12847 (1997) Eq. (25) -- for each pair of band indices   !
     ! m and n.                                                         !
     !===================================================================  
-    use io,     only: io_file_unit,seedname,io_date
+    use w90_io,     only: io_file_unit,seedname,io_date
 
     implicit none
 
@@ -506,7 +506,7 @@ contains
     !  Release Memory                                                  ! 
     !                                                                  !
     !===================================================================  
-    use io,   only : io_error
+    use w90_io,   only : io_error
     implicit none
     integer :: ierr
 
@@ -543,7 +543,7 @@ contains
     ! Doing the search in this order gives a dramatic speed up         !
     !                                                                  !
     !==================================================================!  
-    use io,   only : io_error
+    use w90_io,   only : io_error
     implicit none
     integer :: counter,l,m,n,loop
 
@@ -588,7 +588,7 @@ contains
     ! Returns the bvectors for a given shell and kpoint                ! 
     !                                                                  !
     !===================================================================  
-    use io,   only : io_error
+    use w90_io,   only : io_error
     implicit none
 
     integer, intent(in) :: multi   ! the number of kpoints in the shell
@@ -637,7 +637,7 @@ contains
     !        Test to see if we satisfy B1, if not add another shell and repeat !
     !                                                                          !
     !==========================================================================!  
-    use io,   only : io_error,stdout
+    use w90_io,   only : io_error,stdout
     implicit none
 
     integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
@@ -821,7 +821,7 @@ contains
     !                                                                          !
     !==========================================================================!
 
-    use io,   only : io_error,stdout
+    use w90_io,   only : io_error,stdout
     implicit none
 
     integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
@@ -944,7 +944,7 @@ contains
     !                                                                          !
     !==========================================================================!
 
-    use io,   only : io_error,stdout
+    use w90_io,   only : io_error,stdout
     implicit none
 
 
@@ -975,4 +975,4 @@ contains
 
 
 
-end module kmesh
+  end module w90_kmesh

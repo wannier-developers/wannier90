@@ -10,9 +10,9 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module plot
+module w90_plot
 
-  use constants, only : dp
+  use w90_constants, only : dp
   implicit none
 
   private
@@ -31,9 +31,9 @@ contains
   subroutine plot_main( )
     !============================================!
 
-    use constants, only : cmplx_0
-    use io, only        : io_error,stdout
-    use parameters, only    : num_kpts,bands_plot,dos_plot,&
+    use w90_constants, only : cmplx_0
+    use w90_io, only        : io_error,stdout
+    use w90_parameters, only    : num_kpts,bands_plot,dos_plot,&
          kpt_latt,fermi_surface_plot,num_wann,wannier_plot
 
     implicit none
@@ -103,9 +103,9 @@ contains
     !                                            !
     !============================================!
 
-    use constants, only : dp,cmplx_0,cmplx_i,twopi
-    use io, only        : io_error,stdout,io_file_unit,seedname,io_time
-    use parameters, only    : num_wann,bands_num_points,&
+    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io, only        : io_error,stdout,io_file_unit,seedname,io_time
+    use w90_parameters, only    : num_wann,bands_num_points,&
          recip_metric,bands_num_spec_points, &
          bands_spec_points,bands_label
 
@@ -272,9 +272,9 @@ contains
     !                                                           !
     !===========================================================!
 
-    use constants, only : dp,cmplx_0,cmplx_i,twopi
-    use io, only        : io_error,stdout,io_file_unit,seedname,io_date,io_time
-    use parameters, only    : num_wann,fermi_surface_num_points,&
+    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io, only        : io_error,stdout,io_file_unit,seedname,io_date,io_time
+    use w90_parameters, only    : num_wann,fermi_surface_num_points,&
          recip_lattice,fermi_energy
 
     implicit none
@@ -386,10 +386,10 @@ contains
     !                                            !
     !============================================!
 
-    use constants, only : dp,cmplx_0,cmplx_i,twopi,cmplx_1
-    use io, only        : io_error,stdout,io_file_unit,seedname,io_time, &
+    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi,cmplx_1
+    use w90_io, only        : io_error,stdout,io_file_unit,seedname,io_time, &
          io_date,io_stopwatch
-    use parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
+    use w90_parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
          atoms_symbol,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
@@ -673,9 +673,9 @@ contains
   !                                            !
   !============================================!
 
-    use constants, only : dp,cmplx_0,cmplx_i,twopi
-    use io, only        : io_error
-    use parameters, only    : num_kpts,u_matrix,eigval,num_wann,kpt_latt, &
+    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io, only        : io_error
+    use w90_parameters, only    : num_kpts,u_matrix,eigval,num_wann,kpt_latt, &
          u_matrix_opt,num_bands,lwindow,have_disentangled,ndimwin
 
     implicit none
@@ -769,9 +769,9 @@ contains
   ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
   !================================================================================!
 
-    use constants, only : dp
-    use io, only        : stdout,io_error
-    use parameters, only    : mp_grid,real_metric,iprint
+    use w90_constants, only : dp
+    use w90_io, only        : stdout,io_error
+    use w90_parameters, only    : mp_grid,real_metric,iprint
 
   ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
   !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -866,5 +866,5 @@ end subroutine wigner_seitz
 
 
 
-  end module plot
+end module w90_plot
  

@@ -10,11 +10,11 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module overlap
+module w90_overlap
  
-  use constants, only : dp,cmplx_0,cmplx_1
-  use parameters, only : disentanglement
-  use io, only : stdout
+  use w90_constants, only : dp,cmplx_0,cmplx_1
+  use w90_parameters, only : disentanglement
+  use w90_io, only : stdout
 
   implicit none
  
@@ -33,10 +33,10 @@ contains
   subroutine overlap_read( )
   !%%%%%%%%%%%%%%%%%%%%%
     
-    use parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
+    use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, &
                            m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases
-    use io,         only : io_file_unit, io_error, seedname
+    use w90_io,         only : io_file_unit, io_error, seedname
 
     implicit none
 
@@ -236,8 +236,8 @@ return
   subroutine overlap_rotate
   !%%%%%%%%%%%%%%%%%%%%%
 
-    use parameters, only : num_bands,a_matrix,m_matrix_orig,nntot
-    use io,         only : io_file_unit,io_error
+    use w90_parameters, only : num_bands,a_matrix,m_matrix_orig,nntot
+    use w90_io,         only : io_file_unit,io_error
 
     implicit none
 
@@ -306,9 +306,9 @@ return
   subroutine overlap_dealloc( )
   !%%%%%%%%%%%%%%%%%%%%%
 
-    use parameters, only : u_matrix,m_matrix,m_matrix_orig,&
+    use w90_parameters, only : u_matrix,m_matrix,m_matrix_orig,&
                        a_matrix,u_matrix_opt
-    use io,     only : io_error
+    use w90_io,     only : io_error
 
     implicit none
 
@@ -347,11 +347,11 @@ return
   !                                                                  !
   !                                                                  !
   !==================================================================!  
-    use constants
-    use io,         only : io_error
-    use parameters, only : num_bands,num_wann,num_kpts,&
+    use w90_constants
+    use w90_io,         only : io_error
+    use w90_parameters, only : num_bands,num_wann,num_kpts,&
                            u_matrix,m_matrix,nntot,nnlist
-    use utility,    only : utility_zgemm
+    use w90_utility,    only : utility_zgemm
 
     implicit none
 
@@ -460,4 +460,4 @@ return
 
 
 
-end module overlap
+end module w90_overlap

@@ -10,9 +10,9 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module utility
+module w90_utility
 
-  use constants, only : dp
+  use w90_constants, only : dp
 
   implicit none
 
@@ -48,7 +48,7 @@ contains
     !                                                             !
     !=============================================================!
 
-    use constants, only: cmplx_0,cmplx_1
+    use w90_constants, only: cmplx_0,cmplx_1
 
     implicit none
 
@@ -126,8 +126,8 @@ contains
     !                                                                  !
     !===================================================================
 
-    use constants,  only : dp,twopi
-    use io,         only : io_error
+    use w90_constants,  only : dp,twopi
+    use w90_io,         only : io_error
 
     implicit none
     real(kind=dp), intent(in)  :: real_lat (3, 3)
@@ -256,7 +256,7 @@ contains
     !  Convert from fractional to Cartesian coordinates                !
     !                                                                  !
     !===================================================================  
-    use constants, only : twopi
+    use w90_constants, only : twopi
     implicit none
 
     real(kind=dp), intent(in)  :: recip_lat(3,3)
@@ -286,7 +286,7 @@ contains
   !                             !
   !=============================!
 
-    use io, only : maxlen
+    use w90_io, only : maxlen
 
     implicit none
 
@@ -324,11 +324,11 @@ contains
   !                                 !
   !=================================!
 
-    use io, only : maxlen
+    use w90_io, only : maxlen
 
     implicit none
 
-    character(len=maxlen), intent(in) :: string
+    character(len=*), intent(in) :: string
     character(len=maxlen) :: utility_lowercase
 
     integer :: iA,iZ,idiff,ipos,ilett
@@ -361,7 +361,7 @@ contains
   !       and returns an array of the real num         !
   !                                                    !
   !====================================================!
-    use io, only :io_error,maxlen
+    use w90_io, only :io_error,maxlen
 
     implicit none
 
@@ -425,4 +425,4 @@ contains
 !!$  end function utility_string_to_coord
 
 
-end module utility
+end module w90_utility

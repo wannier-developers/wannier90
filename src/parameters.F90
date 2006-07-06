@@ -10,10 +10,10 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module parameters
+module w90_parameters
 
-  use constants, only : dp
-  use io,        only : stdout,maxlen
+  use w90_constants, only : dp
+  use w90_io,        only : stdout,maxlen
 
   implicit none
 
@@ -65,7 +65,6 @@ module parameters
   real(kind=dp),     public, save :: dos_energy_step
   real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
-  integer,           public, save :: num_nnmax    !expert  - max nearest neighbours
   integer,           public, save :: num_shells
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
@@ -165,6 +164,7 @@ module parameters
 
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
+  integer, parameter, public :: num_nnmax=12
 
   ! Are we running as a libarary
   logical, save, public :: library
@@ -196,9 +196,9 @@ contains
   ! Read parameters and calculate derived values                     !
   !                                                                  !
   !===================================================================  
-    use constants, only : bohr   
-    use utility, only : utility_recip_lattice,utility_compute_metric
-    use io,      only : io_error,io_file_unit,seedname,post_proc_flag
+    use w90_constants, only : bohr   
+    use w90_utility, only : utility_recip_lattice,utility_compute_metric
+    use w90_io,      only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
 
     !local variables
@@ -248,6 +248,17 @@ contains
        call io_error('Error: num_wann must be greater than zero')
     endif
 
+    num_exclude_bands=0
+    call param_get_range_vector('exclude_bands',found,num_exclude_bands,lcount=.true.)
+    if(found) then
+       if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
+       allocate(exclude_bands(num_exclude_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
+       call param_get_range_vector('exclude_bands',found,num_exclude_bands,.false.,exclude_bands)
+       if (any(exclude_bands<1)  ) &
+            call io_error('Error: exclude_bands must contain positive numbers')
+    end if
+
 !    num_bands       =   -1   
     call param_get_keyword('num_bands',found,i_value=i_temp)
     if(found.and.library) write(stdout,*) ' num_bands: ignored'
@@ -269,18 +280,6 @@ contains
 
     devel_flag      =   ' '          !       
     call param_get_keyword('devel_flag',found,c_value=devel_flag)
-
-
-    num_exclude_bands=0
-    call param_get_range_vector('exclude_bands',found,num_exclude_bands,lcount=.true.)
-    if(found) then
-       if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
-       allocate(exclude_bands(num_exclude_bands),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
-       call param_get_range_vector('exclude_bands',found,num_exclude_bands,.false.,exclude_bands)
-       if (any(exclude_bands<1)  ) &
-            call io_error('Error: exclude_bands must contain positive numbers')
-    end if
 
 !    mp_grid=-99
     call param_get_keyword_vector('mp_grid',found,3,i_value=iv_temp)
@@ -551,9 +550,9 @@ contains
     if(disentanglement .and. use_bloch_phases) &
          call io_error('Error: Cannot use bloch phases for disentanglement')
 
-    num_nnmax                 = 12
-    call param_get_keyword('num_nnmax',found,i_value=num_nnmax)
-    if (num_nnmax<0) call io_error('Error: num_nnmax must be positive')       
+!!$    num_nnmax                 = 12
+!!$    call param_get_keyword('num_nnmax',found,i_value=num_nnmax)
+!!$    if (num_nnmax<0) call io_error('Error: num_nnmax must be positive')       
 
     num_shells                   = 0 
     call param_get_keyword('num_shells',found,i_value=num_shells)
@@ -925,7 +924,7 @@ contains
   end subroutine param_write
 
   subroutine param_write_header
-    use io, only : io_date
+    use w90_io, only : io_date
     implicit none
 
 
@@ -1010,7 +1009,7 @@ contains
     ! release memory from allocated parameters                         !
     !                                                                  !
     !===================================================================  
-    use io, only : io_error
+    use w90_io, only : io_error
 
     implicit none
     integer :: ierr
@@ -1023,14 +1022,22 @@ contains
        deallocate (  lwindow, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating lwindow in param_dealloc')
     end if
-    deallocate ( eigval, stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating eigval in param_dealloc')
-    deallocate ( shell_list, stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating shell_list in param_dealloc')
-    deallocate ( kpt_latt, stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating kpt_latt in param_dealloc')
-    deallocate ( kpt_cart, stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating kpt_cart in param_dealloc')
+    if ( allocated (eigval) ) then
+       deallocate ( eigval, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating eigval in param_dealloc')
+    endif
+    if ( allocated (shell_list) ) then
+       deallocate ( shell_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating shell_list in param_dealloc')
+    endif
+    if ( allocated(kpt_latt) ) then
+       deallocate ( kpt_latt, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating kpt_latt in param_dealloc')
+    endif
+    if ( allocated(kpt_cart) ) then
+       deallocate ( kpt_cart, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating kpt_cart in param_dealloc')
+    endif
     if ( allocated ( bands_label ) ) then
        deallocate (  bands_label, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating bands_label in param_dealloc')
@@ -1115,7 +1122,7 @@ contains
     !================================!
 
 
-    use io,        only : io_file_unit,io_error,seedname,io_date
+    use w90_io,        only : io_file_unit,io_error,seedname,io_date
     implicit none
 
     integer :: i,j,k,l,um_unit
@@ -1147,7 +1154,7 @@ contains
     !                                !
     !================================!
 
-    use io,        only : io_file_unit,io_error,seedname
+    use w90_io,        only : io_file_unit,io_error,seedname
     implicit none
 
     integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
@@ -1194,7 +1201,7 @@ contains
     ! Write checkpoint file                           !
     !=================================================!
 
-    use io, only : io_file_unit,io_date,seedname
+    use w90_io, only : io_file_unit,io_date,seedname
 
     implicit none
 
@@ -1246,8 +1253,8 @@ contains
     ! Read checkpoint file                  !
     !=======================================!
 
-    use io,      only : io_error,io_file_unit,stdout,seedname
-    use utility, only : utility_strip
+    use w90_io,      only : io_error,io_file_unit,stdout,seedname
+    use w90_utility, only : utility_strip
 
     implicit none
 
@@ -1353,8 +1360,8 @@ contains
     ! to lowercase characters               !
     !=======================================!
 
-    use io,        only : io_file_unit,io_error,seedname
-    use utility,   only : utility_lowercase
+    use w90_io,        only : io_file_unit,io_error,seedname
+    use w90_utility,   only : utility_lowercase
 
     implicit none
 
@@ -1412,7 +1419,7 @@ contains
     !                                                                           !
     !===========================================================================!
 
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -1481,7 +1488,7 @@ contains
     !                                                                                         !
     !=========================================================================================!
 
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -1547,7 +1554,7 @@ contains
     !                                                      !
     !======================================================!
 
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -1614,8 +1621,8 @@ contains
     !                                                                                              !
     !==============================================================================================!
 
-    use constants, only : bohr
-    use io,        only : io_error
+    use w90_constants, only : bohr
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -1749,7 +1756,7 @@ contains
     !                                                     !
     !=====================================================!
 
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -1838,9 +1845,9 @@ contains
     !                                   !
     !===================================!
 
-    use constants, only : bohr
-    use utility,   only : utility_frac_to_cart,utility_cart_to_frac
-    use io,        only : io_error
+    use w90_constants, only : bohr
+    use w90_utility,   only : utility_frac_to_cart,utility_cart_to_frac
+    use w90_io,        only : io_error
     implicit none
 
     logical, intent(in) :: lunits
@@ -2017,8 +2024,10 @@ contains
     !                                                     !
     !=====================================================!
 
-    use utility,   only : utility_frac_to_cart,utility_cart_to_frac
-    use io,        only : io_error
+    use w90_utility,   only : utility_frac_to_cart, &
+                          utility_cart_to_frac, utility_lowercase
+    use w90_io,        only : io_error
+
     implicit none
 
     character(len=*), intent(in) :: atoms_label_tmp(num_atoms)
@@ -2032,64 +2041,68 @@ contains
     character(len=maxlen) :: dummy,end_st,start_st
     character(len=maxlen) :: ctemp(num_atoms)
     logical           :: lconvert
+    character(len=maxlen) :: tmp_string
 
-    keyword="atoms_cart"
-    frac=.false.
-    call param_get_block_length("atoms_frac",found1,i_temp)
-    if (found1) then
-       keyword="atoms_frac"
-    end if
-    call param_get_block_length("atoms_cart",found2,i_temp)
-    if(found1 .or. found2) then
-       write(stdout,*) ' WARNING: Atom data in win file is ignored'
-       
-       found_s=.false.
-       found_e=.false.
-       
-       start_st='begin '//trim(keyword)
-       end_st='end '//trim(keyword)
-       
-       
-       do loop=1,num_lines
-          ins=index(in_data(loop),trim(keyword))
-          if (ins==0 ) cycle
-          in=index(in_data(loop),'begin')
-          if (in==0 .or. in>1) cycle
-          line_s=loop
-          if (found_s) then
-             call io_error('Error: Found '//trim(start_st)//' more than once in input file')
-          endif
-          found_s=.true.
-       end do
-       
-       
-       
-       do loop=1,num_lines
-          ine=index(in_data(loop),trim(keyword))
-          if (ine==0 ) cycle
-          in=index(in_data(loop),'end')
-          if (in==0 .or. in>1) cycle
-          line_e=loop
-          if (found_e) then
-             call io_error('Error: Found '//trim(end_st)//' more than once in input file')
-          endif
-          found_e=.true.
-       end do
-       
-       if(.not. found_e) then
-          call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
-       end if
-       
-       if(line_e<=line_s) then
-          call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
-       end if
-    
-       in_data(line_s:line_e)(1:maxlen) = ' '
+!!$    keyword="atoms_cart"
+!!$    frac=.false.
+!!$    call param_get_block_length("atoms_frac",found1,i_temp)
+!!$    if (found1) then
+!!$       keyword="atoms_frac"
+!!$    end if
+!!$    call param_get_block_length("atoms_cart",found2,i_temp)
+!!$    if(found1 .or. found2) then
+!!$       write(stdout,*) ' WARNING: Atom data in win file is ignored'
+!!$       
+!!$       found_s=.false.
+!!$       found_e=.false.
+!!$       
+!!$       start_st='begin '//trim(keyword)
+!!$       end_st='end '//trim(keyword)
+!!$       
+!!$       
+!!$       do loop=1,num_lines
+!!$          ins=index(in_data(loop),trim(keyword))
+!!$          if (ins==0 ) cycle
+!!$          in=index(in_data(loop),'begin')
+!!$          if (in==0 .or. in>1) cycle
+!!$          line_s=loop
+!!$          if (found_s) then
+!!$             call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+!!$          endif
+!!$          found_s=.true.
+!!$       end do
+!!$       
+!!$       
+!!$       
+!!$       do loop=1,num_lines
+!!$          ine=index(in_data(loop),trim(keyword))
+!!$          if (ine==0 ) cycle
+!!$          in=index(in_data(loop),'end')
+!!$          if (in==0 .or. in>1) cycle
+!!$          line_e=loop
+!!$          if (found_e) then
+!!$             call io_error('Error: Found '//trim(end_st)//' more than once in input file')
+!!$          endif
+!!$          found_e=.true.
+!!$       end do
+!!$       
+!!$       if(.not. found_e) then
+!!$          call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+!!$       end if
+!!$       
+!!$       if(line_e<=line_s) then
+!!$          call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+!!$       end if
+!!$    
+!!$       in_data(line_s:line_e)(1:maxlen) = ' '
+!!$
+!!$    end if
 
-    end if
-
-    call utility_cart_to_frac (atoms_pos_cart_tmp(:,loop),atoms_pos_frac_tmp(:,loop),real_lattice)
-    
+    do loop=1,num_atoms
+       call utility_cart_to_frac(atoms_pos_cart_tmp(:,loop),&
+            atoms_pos_frac_tmp(:,loop),recip_lattice)
+    enddo
+       
     ! Now we sort the data into the proper structures
     num_species=1
     ctemp(1)=atoms_label_tmp(1)
@@ -2122,10 +2135,10 @@ contains
 
     max_sites=maxval(atoms_species_num)
     allocate(atoms_pos_frac(3,max_sites,num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms')
+    if (ierr/=0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms')
     allocate(atoms_pos_cart(3,max_sites,num_species),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms')
-
+    if (ierr/=0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms')
+    
     do loop=1,num_species
        counter=0
        do loop2=1,num_atoms
@@ -2143,6 +2156,10 @@ contains
        ic=ichar(atoms_symbol(loop)(2:2))
        if ((ic.lt.ichar('a')).or.(ic.gt.ichar('z'))) &
          atoms_symbol(loop)(2:2)=' '
+       tmp_string = trim(adjustl(utility_lowercase(atoms_symbol(loop))))
+       atoms_symbol(loop)(1:2)=tmp_string(1:2)
+       tmp_string = trim(adjustl(utility_lowercase(atoms_label(loop))))
+       atoms_label(loop)(1:2)=tmp_string(1:2)
     end do
 
     return
@@ -2158,7 +2175,7 @@ contains
     !   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100               !
     !   if(lcount) we return the number of states in length              !
     !====================================================================!
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -2259,10 +2276,10 @@ contains
     !                                   !
     !===================================!
 
-    use constants, only : bohr
-    use utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
+    use w90_constants, only : bohr
+    use w90_utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
          utility_string_to_coord,utility_strip
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -2736,7 +2753,7 @@ contains
     !  Fills the kpath data block       !
     !                                   !
     !===================================!
-    use io,        only : io_error
+    use w90_io,        only : io_error
 
     implicit none
 
@@ -2807,4 +2824,4 @@ contains
 
   end subroutine param_get_keyword_kpath
 
-end module parameters
+end module w90_parameters

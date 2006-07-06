@@ -10,7 +10,7 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module constants
+module w90_constants
 
   implicit none
 
@@ -26,4 +26,4 @@ module constants
   real(kind=dp), parameter, public :: bohr = 0.5291772108_dp
 
 
-end module constants
+end module w90_constants
