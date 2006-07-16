@@ -86,6 +86,9 @@ contains
     complex(kind=dp), allocatable  :: cz (:,:)  
     complex(kind=dp), allocatable  :: cmtmp(:,:),tmp_cdq(:,:) 
     complex(kind=dp), allocatable  :: m0(:,:,:,:),u0(:,:,:)
+    complex(kind=dp), allocatable  :: cwork(:)
+    real(kind=dp),    allocatable  :: evals(:)
+    real(kind=dp),    allocatable  :: rwork(:)
 
     real(kind=dp) :: doda0
     real(kind=dp) :: falphamin,alphamin
@@ -150,6 +153,13 @@ contains
     if (ierr/=0) call io_error('Error in allocating cdqkeep in wann_main')
     allocate(tmp_cdq(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating tmp_cdq in wann_main')
+    allocate( evals (num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating evals in wann_main')
+    allocate( cwork (4*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cwork in wann_main')
+    allocate( rwork (3*num_wann-2),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating rwork in wann_main')
+
 
     cwschur1=cmplx_0; cwschur2=cmplx_0; cwschur3=cmplx_0; cwschur4=cmplx_0
     cdq=cmplx_0; cz=cmplx_0; cmtmp=cmplx_0; cdqkeep=cmplx_0
@@ -379,6 +389,12 @@ contains
     if (have_disentangled .and. write_proj) call wann_calc_projection()
 
     ! deallocate sub vars not passed into other subs
+    deallocate(rwork,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating rwork in wann_main')
+    deallocate(cwork,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cwork in wann_main')
+    deallocate(evals,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating evals in wann_main')
     deallocate(tmp_cdq,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating tmp_cdq in wann_main')
     deallocate(cdqkeep,stat=ierr)
@@ -596,22 +612,55 @@ contains
 
       call io_stopwatch('wann_main: u and m',1)
 
-      do nkp = 1, num_kpts  
-         tmp_cdq(:,:) = cdq(:,:,nkp)
-         call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
-              cwschur1, cz, num_wann, cwschur2, 10 * num_wann, cwschur3, &
-              cwschur4, info)
-        if (info.ne.0) then  
-            write(stdout,*) 'SCHUR: ', info  
-            call io_error('wann_main: problem computing schur form 1') 
+      do nkp=1,num_kpts
+         ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
+         tmp_cdq(:,:) = cmplx_i * cdq(:,:,nkp)
+         ! Hermitian matrix eigen-solver
+         call zheev('V','U',num_wann,tmp_cdq,num_wann,evals,cwork,4*num_wann,rwork,info)
+         if (info.ne.0) then  
+            write(stdout,*) &
+                 'wann_main: ZHEEV in internal_new_u_and_m failed, info= ',info
+            write(stdout,*) '           trying Schur decomposition instead'
+!!$            call io_error('wann_main: problem in ZHEEV in internal_new_u_and_m') 
+            tmp_cdq(:,:) = cdq(:,:,nkp)
+            call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
+                 cwschur1, cz, num_wann, cwschur2, 10 * num_wann, cwschur3, &
+                 cwschur4, info)
+            if (info.ne.0) then  
+               write(stdout,*) 'wann_main: SCHUR failed, info= ', info  
+               call io_error('wann_main: problem computing schur form 1') 
+            endif
+            do i=1,num_wann
+               tmp_cdq(:,i) = cz(:,i) * exp(cwschur1(i))
+            enddo
+            ! cmtmp   = tmp_cdq . cz^{dagger}
+            call utility_zgemm(cmtmp,tmp_cdq,'N',cz,'C',num_wann)
+            cdq(:,:,nkp)=cmtmp(:,:)
+         else
+            do i=1,num_wann
+               cmtmp(:,i) = tmp_cdq(:,i) * exp(-cmplx_i * evals(i))
+            enddo
+            ! cdq(nkp)   = cmtmp . tmp_cdq^{dagger}
+            call utility_zgemm(cdq(:,:,nkp),cmtmp,'N',tmp_cdq,'C',num_wann)
          endif
-         do i=1,num_wann
-            tmp_cdq(:,i) = cz(:,i) * exp(cwschur1(i))
-         enddo
-         ! cmtmp   = tmp_cdq . cz^{dagger}
-         call utility_zgemm(cmtmp,tmp_cdq,'N',cz,'C',num_wann)
-         cdq(:,:,nkp)=cmtmp(:,:)
       enddo
+
+!!$      do nkp = 1, num_kpts  
+!!$         tmp_cdq(:,:) = cdq(:,:,nkp)
+!!$         call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
+!!$              cwschur1, cz, num_wann, cwschur2, 10 * num_wann, cwschur3, &
+!!$              cwschur4, info)
+!!$         if (info.ne.0) then  
+!!$            write(stdout,*) 'SCHUR: ', info  
+!!$            call io_error('wann_main: problem computing schur form 1') 
+!!$         endif
+!!$         do i=1,num_wann
+!!$            tmp_cdq(:,i) = cz(:,i) * exp(cwschur1(i))
+!!$         enddo
+!!$         ! cmtmp   = tmp_cdq . cz^{dagger}
+!!$         call utility_zgemm(cmtmp,tmp_cdq,'N',cz,'C',num_wann)
+!!$         cdq(:,:,nkp)=cmtmp(:,:)
+!!$      enddo
 
       ! the orbitals are rotated
       do nkp=1,num_kpts
