@@ -53,8 +53,8 @@ contains
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
          param_read_um,param_write_um,length_unit,lenconfac, &
-         proj_site,real_lattice,write_r2mn,guiding_centres,&
-         num_guide_cycles,num_no_guide_iter,&
+         proj_site,real_lattice,write_r2mn,guiding_centres, &
+         num_guide_cycles,num_no_guide_iter,timing_level, &
          trial_step,fixed_step,lfixstep,write_proj,have_disentangled
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
@@ -96,6 +96,8 @@ contains
     integer :: i,n,iter,ind,ierr,iw,ncg,info
     logical :: lprint,ldump,lquad
 
+
+    if (timing_level>0) call io_stopwatch('wann: main',1)
 
     ! Allocate stuff
 
@@ -187,12 +189,12 @@ contains
 
     irguide=0
     if (guiding_centres.and.(num_no_guide_iter.le.0)) then
-       call phases(csheet,sheet,rguide,irguide)
+       call wann_phases(csheet,sheet,rguide,irguide)
        irguide=1
     endif
 
     ! calculate initial centers and spread
-    call omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+    call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     omega_invariant = wann_spread%om_i
 
     if (lfixstep) lquad=.false.
@@ -232,12 +234,12 @@ contains
 
        if ( guiding_centres.and.(iter.gt.num_no_guide_iter) & 
             .and.(mod(iter,num_guide_cycles).eq.0) ) then
-          call phases(csheet,sheet,rguide,irguide)
+          call wann_phases(csheet,sheet,rguide,irguide)
           irguide=1
        endif
 
        ! calculate gradient of omega
-       call domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
+       call wann_domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
 
        if ( lprint .and. iprint>2 ) &
             write(stdout,*) ' LINE --> Iteration                     :',iter
@@ -266,7 +268,7 @@ contains
           call internal_new_u_and_m()
 
           ! calculate spread at trial step
-          call omega(csheet,sheet,rave,r2ave,rave2,trial_spread)
+          call wann_omega(csheet,sheet,rave,r2ave,rave2,trial_spread)
 
           ! Calculate optimal step (alphamin)
           call internal_optimal_step()
@@ -310,7 +312,7 @@ contains
           call wann_spread_copy(wann_spread,old_spread)
           
           ! calculate the new centers and spread
-          call omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+          call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
         
        ! parabolic line search was unsuccessful, use trial step already taken
        else 
@@ -370,7 +372,7 @@ contains
     write(stdout,'(1x,a78)') repeat('-',78) 
 
 
-    if (guiding_centres) call phases(csheet,sheet,rguide,irguide)
+    if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
 
     ! unitarity is checked
@@ -445,6 +447,9 @@ contains
     deallocate(m0, stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating m0 in wann_main')
     
+
+    if (timing_level>0) call io_stopwatch('wann: main',2)
+
     return
 
 1000 format(2x,'WF centre and spread', &
@@ -472,6 +477,8 @@ contains
       implicit none
 
       complex(kind=dp) :: zdotc
+
+      if (timing_level>1) call io_stopwatch('wann: main: search_direction',1)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
@@ -541,6 +548,8 @@ contains
       ! calculate search direction
       cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
 
+      if (timing_level>1) call io_stopwatch('wann: main: search_direction',2)
+
       return
 
     end subroutine internal_search_direction
@@ -559,6 +568,7 @@ contains
 
       real(kind=dp) :: fac,shift,eqa,eqb
 
+      if (timing_level>1) call io_stopwatch('wann: main: optimal_step',1)
 
       fac = trial_spread%om_tot - wann_spread%om_tot
       if ( abs(fac) .gt. tiny(1.0_dp) ) then
@@ -591,6 +601,7 @@ contains
          falphamin=trial_spread%om_tot
       endif
 
+      if (timing_level>1) call io_stopwatch('wann: main: optimal_step',2)
 
       return
 
@@ -610,7 +621,7 @@ contains
       integer :: nkp,nn,nkp2,nsdim
       logical :: ltmp
 
-      call io_stopwatch('wann_main: u and m',1)
+      if (timing_level>1) call io_stopwatch('wann: main: u_and_m',1)
 
       do nkp=1,num_kpts
          ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
@@ -681,7 +692,7 @@ contains
          enddo
       enddo
 
-      call io_stopwatch('wann_main: u and m',2)
+      if (timing_level>1) call io_stopwatch('wann: main: u_and_m',2)
 
       return
 
@@ -696,6 +707,8 @@ contains
 
       integer :: nkp,i,j,m
       complex(kind=dp) :: ctmp1,ctmp2
+
+      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',1)
 
       do nkp = 1, num_kpts  
          do i = 1, num_wann  
@@ -732,6 +745,7 @@ contains
          enddo
       enddo
 
+      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',2)
 
       return
 
@@ -795,6 +809,8 @@ contains
 
       integer :: nkp,nn,nb,na,ind
       real(kind=dp) :: omt1,omt2,omt3
+
+      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',1)
 
       allocate( cw1 (10 * num_wann),stat=ierr  )
       if (ierr/=0) call io_error('Error in allocating cw1 in wann_main')
@@ -860,6 +876,8 @@ contains
       deallocate(cw1,stat=ierr)
       if (ierr/=0) call io_error('Error in deallocating cw1 in wann_main')
 
+      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',2)
+
       return
       
     end subroutine internal_svd_omega_i
@@ -869,13 +887,13 @@ contains
 
 
   !==================================================================!
-  subroutine phases (csheet, sheet, rguide, irguide)
+  subroutine wann_phases (csheet, sheet, rguide, irguide)
     !==================================================================!
     !                                                                  !
     !                                                                  !
     !===================================================================  
     use w90_parameters,     only : num_wann,m_matrix,nntot,neigh, &
-         nnh,bk,bka,num_kpts
+         nnh,bk,bka,num_kpts,timing_level
     use w90_io,         only : io_error,io_stopwatch
     use w90_utility,    only : utility_inv3
 
@@ -895,7 +913,7 @@ contains
     integer :: loop_wann,na,nkp,i,j,nn,ind,m
 
 
-    call io_stopwatch('phases',1)
+    if (timing_level>1) call io_stopwatch('wann: phases',1)
 
 
     csum=cmplx_0; xx=0.0_dp
@@ -1042,23 +1060,23 @@ contains
 !       enddo
 !    enddo
 
-    call io_stopwatch('phases',2)
+    if (timing_level>1) call io_stopwatch('wann: phases',2)
 
     return  
 
-  end subroutine phases
+  end subroutine wann_phases
 
 
 
   !==================================================================!
-  subroutine omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+  subroutine wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     !==================================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
     !                                                                  !
     !===================================================================  
     use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
-                           omega_invariant
+                           omega_invariant,timing_level
     use w90_io,         only : io_error,io_stopwatch
 
     implicit none
@@ -1076,7 +1094,7 @@ contains
     integer :: ind,nkp,nn,m,n,iw
     logical, save :: first_pass=.true.
 
-    call io_stopwatch('omega',1)
+    if (timing_level>1) call io_stopwatch('wann: omega',1)
 
 
     do nkp = 1, num_kpts
@@ -1230,22 +1248,22 @@ contains
 
     wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
 
-    call io_stopwatch('omega',2)
+    if (timing_level>1) call io_stopwatch('wann: omega',2)
 
     return  
 
 
-  end subroutine omega
+  end subroutine wann_omega
 
 
   !==================================================================!
-  subroutine domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
+  subroutine wann_domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
     !===================================================================  
-    use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts
+    use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
     use w90_io,         only : io_error,io_stopwatch
 
     implicit none
@@ -1262,7 +1280,7 @@ contains
     integer :: iw,ind,nkp,nn,m,n
     complex(kind=dp) :: mnn
 
-    call io_stopwatch('domega',1)
+    if (timing_level>1) call io_stopwatch('wann: domega',1)
 
     do nkp = 1, num_kpts
        do nn = 1, nntot
@@ -1327,12 +1345,12 @@ contains
     cdodq3 = cdodq3 / cmplx(num_kpts,0.0_dp,kind=dp) * cmplx(4.0_dp,0.0_dp,kind=dp)
     cdodq  = cdodq1 + cdodq2 + cdodq3
 
-    call io_stopwatch('domega',2)
+    if (timing_level>1) call io_stopwatch('wann: domega',2)
 
     return  
 
 
-  end subroutine domega
+  end subroutine wann_domega
 
 
   !==================================================================!
@@ -1369,13 +1387,15 @@ contains
   !==================================================================!
 
     use w90_parameters, only : num_bands,num_wann,num_kpts,&
-                           u_matrix_opt,eigval,lwindow
-    use w90_io,         only : stdout
+                           u_matrix_opt,eigval,lwindow,timing_level
+    use w90_io,         only : stdout,io_stopwatch
 
     implicit none
 
     integer :: nw,nb,nkp,counter
     real(kind=dp) :: summ
+
+    if (timing_level>1) call io_stopwatch('wann: calc_projection',1)
 
     write(stdout,'(/1x,a78)') repeat('-',78)
     write(stdout,'(1x,9x,a)') &
@@ -1399,6 +1419,8 @@ contains
        enddo
     enddo
     write(stdout,'(1x,a78/)') repeat('-',78)
+
+    if (timing_level>1) call io_stopwatch('wann: calc_projection',2)
 
     return
 

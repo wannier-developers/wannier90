@@ -81,6 +81,7 @@ module w90_parameters
   real(kind=dp),     public, save :: fixed_step
   real(kind=dp),     public, save :: trial_step
   logical,           public, save :: write_proj
+  integer,           public, save :: timing_level
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -212,6 +213,9 @@ contains
     !%%%%%%%%%%%%%%%%
     !System variables
     !%%%%%%%%%%%%%%%%
+
+    timing_level    =  1             ! Verbosity of timing output info
+    call param_get_keyword('timing_level',found,i_value=timing_level)
 
     iprint          =  1             ! Verbosity
     call param_get_keyword('iprint',found,i_value=iprint)
@@ -519,9 +523,9 @@ contains
     end if
     call param_get_keyword('dis_froz_min',found2,r_value=dis_froz_min)
     if ( dis_froz_max.lt.dis_froz_min ) &
-       call io_error('Error: param_read: check disentanglement frozen windows')
+         call io_error('Error: param_read: check disentanglement frozen windows')
     if(found2 .and. .not. found) &
-           call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
+         call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
 
     dis_num_iter      = 200
     call param_get_keyword('dis_num_iter',found,i_value=dis_num_iter)
@@ -530,7 +534,7 @@ contains
     dis_mix_ratio     = 0.5_dp
     call param_get_keyword('dis_mix_ratio',found,r_value=dis_mix_ratio)
     if (dis_mix_ratio<=0.0_dp .or. dis_mix_ratio>1.0_dp) &
-     call io_error('Error: dis_mix_ratio must be greater than 0.0 but not greater than 1.0')
+         call io_error('Error: dis_mix_ratio must be greater than 0.0 but not greater than 1.0')
 
 
     dis_conv_tol      = 1.0e-10_dp      

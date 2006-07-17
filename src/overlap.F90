@@ -34,9 +34,9 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
     
     use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
-                           devel_flag, u_matrix, m_matrix, a_matrix, &
+                           devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
                            m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases
-    use w90_io,         only : io_file_unit, io_error, seedname
+    use w90_io,         only : io_file_unit, io_error, seedname, io_stopwatch
 
     implicit none
 
@@ -49,6 +49,7 @@ contains
     character(len=50) :: dummy
     logical :: nn_found
 
+    if (timing_level>0) call io_stopwatch('overlap: read',1)
 
     allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
@@ -221,6 +222,7 @@ contains
 
     endif
 
+    if (timing_level>0) call io_stopwatch('overlap: read',2)
 
 return 
 101    call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn')
@@ -236,8 +238,8 @@ return
   subroutine overlap_rotate
   !%%%%%%%%%%%%%%%%%%%%%
 
-    use w90_parameters, only : num_bands,a_matrix,m_matrix_orig,nntot
-    use w90_io,         only : io_file_unit,io_error
+    use w90_parameters, only : num_bands,a_matrix,m_matrix_orig,nntot,timing_level
+    use w90_io,         only : io_file_unit,io_error,io_stopwatch
 
     implicit none
 
@@ -245,6 +247,8 @@ return
     real(kind=DP) :: lambda(num_bands,num_bands)
     real(kind=DP) :: AP(num_bands*(num_bands+1)/2)
     real(kind=DP) :: eig(num_bands),work(3*num_bands)
+
+    if (timing_level>1) call io_stopwatch('overlap: rotate',1)
 
     lam_unit=io_file_unit()
     open(unit=lam_unit,file='lambda.dat',&
@@ -295,6 +299,8 @@ return
 !!$       enddo
 !!$    enddo
 !!$    stop
+
+    if (timing_level>1) call io_stopwatch('overlap: rotate',2)
 
     return
 
@@ -348,8 +354,8 @@ return
   !                                                                  !
   !==================================================================!  
     use w90_constants
-    use w90_io,         only : io_error
-    use w90_parameters, only : num_bands,num_wann,num_kpts,&
+    use w90_io,         only : io_error,io_stopwatch
+    use w90_parameters, only : num_bands,num_wann,num_kpts,timing_level,&
                            u_matrix,m_matrix,nntot,nnlist
     use w90_utility,    only : utility_zgemm
 
@@ -365,6 +371,7 @@ return
     complex(kind=dp), allocatable :: cz(:,:)
     complex(kind=dp), allocatable :: cvdag(:,:)
 
+    if (timing_level>1) call io_stopwatch('overlap: project',1)
 
     allocate(svals(num_bands),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating svals in overlap_project')
@@ -453,6 +460,7 @@ return
     deallocate(svals,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating svals in overlap_project')
 
+    if (timing_level>1) call io_stopwatch('overlap: project',2)
 
     return  
 

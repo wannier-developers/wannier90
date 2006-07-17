@@ -86,9 +86,7 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call io_stopwatch('kmesh_get',1)
   call kmesh_get
-  call io_stopwatch('kmesh_get',2)
 
 
   ! Now we zero all of the local output data, then copy in the data
@@ -220,10 +218,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call io_stopwatch('kmesh_get',1)
   call kmesh_get
-  call io_stopwatch('kmesh_get',2)
-
 
   allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
@@ -252,9 +247,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
      m_matrix_orig=m_matrix_loc
      a_matrix=a_matrix_loc
      have_disentangled = .false.
-     call io_stopwatch('dis_main',1)
      call dis_main
-     call io_stopwatch('dis_main',2)
      have_disentangled=.true.
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
@@ -290,9 +283,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
 
   time2=io_time()
 
-  call io_stopwatch('wann_main',1)
   call wann_main
-  call io_stopwatch('wann_main',2)
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time1-time2,' (sec)'     
@@ -332,9 +323,9 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   call kmesh_dealloc
   call param_dealloc
 
-  write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time(),' (sec)'
+  write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time()-time0,' (sec)'
 
-  call io_print_timings()
+  if (timing_level>0) call io_print_timings()
 
   write(stdout,*) 
   write(stdout,'(1x,a)') 'All done: wannier90 exiting'

@@ -53,7 +53,7 @@ contains
     !  Set up the framework for the kspace derivatives                 ! 
     !                                                                  !
     !===================================================================  
-    use w90_io,      only : stdout,io_error
+    use w90_io,      only : stdout,io_error,io_stopwatch
     use w90_utility, only : utility_compar
 
     implicit none
@@ -76,6 +76,8 @@ contains
     real(kind=dp) :: bk_local(3,num_nnmax,num_kpts)
 
     ! Integer arrays that are public
+
+    if (timing_level>0) call io_stopwatch('kmesh: get',1)
 
     write(stdout,'(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'  
@@ -365,22 +367,23 @@ contains
        enddo
     enddo
 
-
-   !fill in the global arrays from the local ones
-
-   do loop=1,nntot
-      wb(loop)=wb_local(loop)
-   end do
-
-   do loop_s=1,num_kpts
-      do loop=1,nntot
-         bk(:,loop,loop_s)=bk_local(:,loop,loop_s)
-      end do
-   end do
-
-
+    
+    !fill in the global arrays from the local ones
+    
+    do loop=1,nntot
+       wb(loop)=wb_local(loop)
+    end do
+    
+    do loop_s=1,num_kpts
+       do loop=1,nntot
+          bk(:,loop,loop_s)=bk_local(:,loop,loop_s)
+       end do
+    end do
+    
+    if (timing_level>0) call io_stopwatch('kmesh: get',2)
+    
     return
-
+    
   end subroutine kmesh_get
 
 
@@ -415,12 +418,14 @@ contains
     ! PRB 56, 12847 (1997) Eq. (25) -- for each pair of band indices   !
     ! m and n.                                                         !
     !===================================================================  
-    use w90_io,     only: io_file_unit,seedname,io_date
+    use w90_io,     only: io_file_unit,seedname,io_date,io_stopwatch
 
     implicit none
 
     integer           :: i,nkp,nn,nnkpout
     character (len=9) :: cdate,ctime
+
+    if (timing_level>0) call io_stopwatch('kmesh: write',1)
 
     nnkpout=io_file_unit()
     open(unit=nnkpout,file=trim(seedname)//'.nnkp',form='formatted')
@@ -493,6 +498,8 @@ contains
 
     close(nnkpout)
 
+    if (timing_level>0) call io_stopwatch('kmesh: write',2)
+
     return
 
   end subroutine kmesh_write
@@ -543,7 +550,7 @@ contains
     ! Doing the search in this order gives a dramatic speed up         !
     !                                                                  !
     !==================================================================!  
-    use w90_io,   only : io_error
+    use w90_io,   only : io_error,io_stopwatch
     implicit none
     integer :: counter,l,m,n,loop
 
@@ -551,6 +558,8 @@ contains
     real(kind=dp) :: pos(3)
     real(kind=dp) :: dist((2*nsupcell+1)**3)
     real(kind=dp) :: dist_cp((2*nsupcell+1)**3)
+
+    if (timing_level>1) call io_stopwatch('kmesh: supercell_sort',1)
 
     counter=1
     lmn(:,counter)=0
@@ -577,6 +586,8 @@ contains
     lmn=lmn_cp
     dist=dist_cp
 
+    if (timing_level>1) call io_stopwatch('kmesh: supercell_sort',2)
+
   end subroutine kmesh_supercell_sort
 
 
@@ -588,7 +599,7 @@ contains
     ! Returns the bvectors for a given shell and kpoint                ! 
     !                                                                  !
     !===================================================================  
-    use w90_io,   only : io_error
+    use w90_io,   only : io_error,io_stopwatch
     implicit none
 
     integer, intent(in) :: multi   ! the number of kpoints in the shell
@@ -600,6 +611,9 @@ contains
     integer :: loop,nkp2,num_bvec
 
     real(kind=dp) :: dist,vkpp2(3),vkpp(3)
+
+    if (timing_level>1) call io_stopwatch('kmesh: get_bvectors',1)
+
     bvector=0.0_dp
 
     num_bvec=0
@@ -620,6 +634,7 @@ contains
 
     if(num_bvec<multi) call io_error('kmesh_get_bvector: Not enough bvectors found')
 
+    if (timing_level>1) call io_stopwatch('kmesh: get_bvectors',2)
 
     return
 
@@ -637,7 +652,7 @@ contains
     !        Test to see if we satisfy B1, if not add another shell and repeat !
     !                                                                          !
     !==========================================================================!  
-    use w90_io,   only : io_error,stdout
+    use w90_io,   only : io_error,stdout,io_stopwatch
     implicit none
 
     integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
@@ -656,6 +671,7 @@ contains
 
     integer :: loop,shell
 
+    if (timing_level>1) call io_stopwatch('kmesh: shell_automatic',1)
 
     allocate( bvector(3,maxval(multi),max_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating bvector in kmesh_shell_automatic')
@@ -807,6 +823,7 @@ contains
 
     if(.not. b1sat)  call io_error('kmesh_get_automatic: Unable to satisfy B1 with any of the first 12 shells')
 
+    if (timing_level>1) call io_stopwatch('kmesh: shell_automatic',2)
 
     return
 
@@ -821,7 +838,7 @@ contains
     !                                                                          !
     !==========================================================================!
 
-    use w90_io,   only : io_error,stdout
+    use w90_io,   only : io_error,stdout,io_stopwatch
     implicit none
 
     integer, intent(in) :: multi(search_shells)   ! the number of kpoints in the shell
@@ -842,6 +859,9 @@ contains
     real(kind=dp) :: delta
 
     integer :: loop,shell
+
+    if (timing_level>1) call io_stopwatch('kmesh: shell_fixed',1)
+
     allocate( bvector(3,maxval(multi),num_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating bvector in kmesh_shell_fixed') 
     bvector=0.0_dp;bweight=0.0_dp
@@ -930,7 +950,7 @@ contains
 
     if(.not.b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied')
 
-
+    if (timing_level>1) call io_stopwatch('kmesh: shell_fixed',2)
 
     return
 

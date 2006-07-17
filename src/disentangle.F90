@@ -51,6 +51,7 @@ contains
     integer                       :: nkp,nkp2,nn,j,ierr
     complex(kind=dp), allocatable :: cwb(:,:),cww(:,:)
 
+    if (timing_level>0) call io_stopwatch('dis: main',1)
 
     write(stdout,'(/1x,a)') &
          '*------------------------------- DISENTANGLE --------------------------------*'
@@ -64,16 +65,10 @@ contains
 
 
     ! Set up energy windows
-!    call io_stopwatch('dis:windows',1)
     call dis_windows()
-!    call io_stopwatch('dis:windows',2)
-
     
     ! Construct the unitarized projection
-!    call io_stopwatch('dis:project',1)
     call dis_project()
-!    call io_stopwatch('dis:project',2)
- 
 
     ! Copy projections to clamp
     clamp=cmplx_0
@@ -88,25 +83,17 @@ contains
     ! (Sec. III.G SMV)
     if (linner) then
        write(stdout,'(3x,a)') 'Using an inner window (linner = T)'  
-!       call io_stopwatch('dis:proj_froz',1)
        call dis_proj_froz()
-!       call io_stopwatch('dis:proj_froz',2)
     else
        write(stdout,'(3x,a)') 'No inner window (linner = F)'         
     endif
 
 
     ! Debug
-!    call io_stopwatch('dis:debug',1)
     call internal_check_orthonorm()
-!    call io_stopwatch('dis:debug',2)
-
 
     ! Slim down the original Mmn(k,b)
-!    call io_stopwatch('dis:slim',1)
     call internal_slim_m()
-!    call io_stopwatch('dis:slim',2)
-
 
     lwindow=.false.
     do nkp=1,num_kpts
@@ -115,11 +102,8 @@ contains
        end do
     end do
 
-
     ! Extract the optimally-connected num_wann-dimensional subspaces
-!    call io_stopwatch('dis:extract',1)
     call dis_extract()
-!    call io_stopwatch('dis:extract',2)
 
     ! Allocate workspace
     allocate(cwb(num_wann,num_bands),stat=ierr)
@@ -129,7 +113,6 @@ contains
 
     ! Find the num_wann x num_wann overlap matrices between 
     ! the basis states of the optimal subspaces
-!    call io_stopwatch('dis:rotate1',1)
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
           nkp2 = nnlist(nkp,nn)
@@ -142,15 +125,11 @@ contains
           m_matrix_orig(1:num_wann,1:num_wann,nn,nkp) = cww(:,:)
        enddo
     enddo
-!    call io_stopwatch('dis:rotate1',2)
 
     ! Find the initial u_matrix
-!    call io_stopwatch('dis:find_u',1)
     call internal_find_u()
-!    call io_stopwatch('dis:find_u',2)
 
     ! Update the m_matrix accordingly
-!    call io_stopwatch('dis:rotate2',1)
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
           nkp2 = nnlist(nkp,nn)
@@ -163,7 +142,6 @@ contains
           m_matrix(:,:,nn,nkp) = cww(:,:)
        enddo
     enddo
-!    call io_stopwatch('dis:rotate2',2)
 
     ! Deallocate workspace
     deallocate(cww,stat=ierr)
@@ -181,6 +159,7 @@ contains
     ! Deallocate module arrays
     call internal_dealloc()
 
+    if (timing_level>0) call io_stopwatch('dis: main',2)
 
     return
 
@@ -207,6 +186,8 @@ contains
 
       integer          :: nkp,l,m,j
       complex(kind=dp) :: ctmp
+
+      if (timing_level>1) call io_stopwatch('dis: main: check_orthonorm',1)
 
       do nkp = 1, num_kpts  
          do l = 1, num_wann  
@@ -238,6 +219,8 @@ contains
          enddo
       enddo
 
+      if (timing_level>1) call io_stopwatch('dis: main: check_orthonorm',2)
+
       return
 
     end subroutine internal_check_orthonorm
@@ -258,6 +241,8 @@ contains
       integer                       :: nkp,nkp2,nn,i,j,m,n,ierr
       complex(kind=dp), allocatable :: cmtmp(:,:)
       
+      if (timing_level>1) call io_stopwatch('dis: main: slim_m',1)
+
       allocate(cmtmp(num_bands,num_bands),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating cmtmp in dis_main')
 
@@ -282,7 +267,9 @@ contains
       
       deallocate(cmtmp,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating cmtmp in dis_main')
-      
+ 
+      if (timing_level>1) call io_stopwatch('dis: main: slim_m',2)
+     
       return
       
     end subroutine internal_slim_m
@@ -320,6 +307,8 @@ contains
       complex(kind=dp), allocatable :: cv(:,:)
       complex(kind=dp), allocatable :: cz(:,:)
       complex(kind=dp), allocatable :: cwork(:)
+
+      if (timing_level>1) call io_stopwatch('dis: main: find_u',1)
 
       ! Allocate arrays needed for ZGESVD
       allocate(svals(num_wann),stat=ierr)
@@ -370,6 +359,7 @@ contains
       deallocate(svals,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating svals in dis_main')
 
+      if (timing_level>1) call io_stopwatch('dis: main: find_u',2)
 
       return
 
@@ -455,6 +445,7 @@ contains
     !                    it is slimmed down to contain only those inside the
     !                    energy window, stored in nb=1,...,ndimwin(nkp)
 
+    if (timing_level>1) call io_stopwatch('dis: windows',1)
 
     ! Allocate module arrays
     allocate(nfirstwin(num_kpts),stat=ierr)
@@ -665,6 +656,8 @@ contains
             '+----------------------------------------------------------------------------+'
     endif
 
+    if (timing_level>1) call io_stopwatch('dis: windows',2)
+
     return  
 
   end subroutine dis_windows
@@ -729,6 +722,8 @@ contains
     complex(kind=dp), allocatable :: cz(:,:)
     complex(kind=dp), allocatable :: cvdag(:,:)
     complex(kind=dp), allocatable :: catmpmat(:,:,:)
+
+    if (timing_level>1) call io_stopwatch('dis: project',1)
 
     write(stdout,'(/1x,a)') &
          '                  Unitarised projection of Wannier functions                  '
@@ -861,6 +856,8 @@ contains
 
     write(stdout,'(a)') ' done'
 
+    if (timing_level>1) call io_stopwatch('dis: project',2)
+
     return  
 
   end subroutine dis_project
@@ -928,6 +925,8 @@ contains
       complex(kind=dp), allocatable :: cq_froz(:,:)
       complex(kind=dp), allocatable :: cpq(:,:)
       complex(kind=dp), allocatable :: cqpq(:,:)
+
+      if (timing_level>1) call io_stopwatch('dis: proj_froz',1)
 
       write(stdout,'(3x,a)',advance='no') 'In dis_proj_froz...' 
 
@@ -1198,6 +1197,8 @@ contains
 
       write(stdout,'(a)') ' done'
 
+      if (timing_level>1) call io_stopwatch('dis: proj_froz',2)
+
       return  
 
     end subroutine dis_proj_froz
@@ -1275,6 +1276,8 @@ contains
 
       real(kind=dp),    allocatable :: history(:)
       logical                       :: dis_converged
+
+      if (timing_level>1) call io_stopwatch('dis: extract',1)
 
       write(stdout,'(/1x,a)') &
            '                  Extraction of optimally-connected subspace                  '
@@ -1795,6 +1798,7 @@ contains
       write(stdout,'(1x,a/)') &
            '+----------------------------------------------------------------------------+'
 
+      if (timing_level>1) call io_stopwatch('dis: extract',2)
 
       return  
 
@@ -1856,6 +1860,8 @@ contains
         integer          :: l,m,n,p,q,nn,nkp2,ndimk
         complex(kind=dp) :: csum
 
+        if (timing_level>1) call io_stopwatch('dis: extract: zmatrix',1)
+
         cmtrx=cmplx_0
         ndimk=ndimwin(nkp)-ndimfroz(nkp)
         do nn=1,nntot
@@ -1876,6 +1882,8 @@ contains
               enddo
            enddo
         enddo
+
+        if (timing_level>1) call io_stopwatch('dis: extract: zmatrix',2)
 
         return  
 

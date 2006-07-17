@@ -85,9 +85,7 @@ program wannier
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call io_stopwatch('kmesh_get',1)
   call kmesh_get
-  call io_stopwatch('kmesh_get',2)
 
   ! Sort out restarts
   if (restart.eq.' ') then  ! start a fresh calculation
@@ -131,11 +129,7 @@ program wannier
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
-  call io_stopwatch('overlap_read',1)
-
   call overlap_read
-
-  call io_stopwatch('overlap_read',2)
 
   time1=io_time()
   write(stdout,'(/1x,a25,f11.3,a)') 'Time to read overlaps    ',time1-time2,' (sec)'
@@ -143,16 +137,10 @@ program wannier
   have_disentangled = .false.
 
   if (disentanglement) then
-
-     call io_stopwatch('dis_main',1)
      call dis_main
-     call io_stopwatch('dis_main',2)
-
      have_disentangled=.true.
-
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
-
   endif
 
   call param_write_chkpt('postdis')
@@ -160,9 +148,7 @@ program wannier
 
   time2=io_time()
 
-  call io_stopwatch('wann_main',1)
 1001 call wann_main
-  call io_stopwatch('wann_main',2)
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time1-time2,' (sec)'     
@@ -183,7 +169,7 @@ program wannier
 
   write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time(),' (sec)'
 
-  call io_print_timings()
+  if (timing_level>0) call io_print_timings()
 
   write(stdout,*) 
   write(stdout,'(1x,a)') 'All done: wannier90 exiting'

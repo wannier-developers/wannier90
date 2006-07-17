@@ -32,14 +32,16 @@ contains
     !============================================!
 
     use w90_constants, only : cmplx_0
-    use w90_io, only        : io_error,stdout
+    use w90_io, only        : io_error,stdout,io_stopwatch
     use w90_parameters, only    : num_kpts,bands_plot,dos_plot,&
-         kpt_latt,fermi_surface_plot,num_wann,wannier_plot
+         kpt_latt,fermi_surface_plot,num_wann,wannier_plot,timing_level
 
     implicit none
 
     integer :: ierr,nkp
     logical :: have_gamma
+
+    if (timing_level>0) call io_stopwatch('plot: main',1)
 
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,'(1x,a)') '|                               PLOTTING                                    |'
@@ -84,6 +86,8 @@ contains
 
     if(wannier_plot) call plot_wannier
 
+    if (timing_level>0) call io_stopwatch('plot: main',2)
+
 
   end subroutine plot_main
 
@@ -103,11 +107,12 @@ contains
     !                                            !
     !============================================!
 
-    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io, only        : io_error,stdout,io_file_unit,seedname,io_time
-    use w90_parameters, only    : num_wann,bands_num_points,&
-         recip_metric,bands_num_spec_points, &
-         bands_spec_points,bands_label
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
+                               io_time,io_stopwatch
+    use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
+                               bands_num_spec_points,timing_level, &
+                               bands_spec_points,bands_label
 
     implicit none
 
@@ -129,6 +134,8 @@ contains
     integer              :: num_paths,num_spts,ierr
     integer              :: bndunit,gnuunit
     character(len=3),allocatable  :: glabel(:)
+    !
+    if (timing_level>1) call io_stopwatch('plot: interpolate_bands',1)
     !
     time0=io_time()
     write(stdout,*) 
@@ -256,7 +263,9 @@ contains
 
     write(stdout,'(1x,a,f11.3,a)')  'Time to calculate interpolated band structure ',io_time()-time0,' (sec)'
     write(stdout,*)
-
+    !
+    if (timing_level>1) call io_stopwatch('plot: interpolate_bands',2)
+    !
 701 format('set data style dots',/,'set nokey',/, 'set xrange [0:',F8.5,']',/,'set yrange [',F9.5,' :',F9.5,']')
 702 format('set xtics (',:20('"',A3,'" ',F8.5,','))
 703 format(A3,'" ',F8.5,')')
@@ -272,10 +281,11 @@ contains
     !                                                           !
     !===========================================================!
 
-    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io, only        : io_error,stdout,io_file_unit,seedname,io_date,io_time
-    use w90_parameters, only    : num_wann,fermi_surface_num_points,&
-         recip_lattice,fermi_energy
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
+                               io_date,io_time,io_stopwatch
+    use w90_parameters, only : num_wann,fermi_surface_num_points,timing_level,&
+                               recip_lattice,fermi_energy
 
     implicit none
 
@@ -291,6 +301,8 @@ contains
     integer            :: loop_x,loop_y,loop_z,INFO,ikp,ifail,i,j,ierr
     integer            :: loop_rpt,nfound,npts_plot,loop_kpt,bxsf_unit
     character(len=9)   :: cdate, ctime
+    !
+    if (timing_level>1) call io_stopwatch('plot: fermi_surface',1)
     !
     time0=io_time()
     write(stdout,*) 
@@ -372,7 +384,10 @@ contains
 
     write(stdout,'(1x,a,f11.3,a)') 'Time to calculate interpolated Fermi surface ',io_time()-time0,' (sec)'
     write(stdout,*)
-
+    !    
+    if (timing_level>1) call io_stopwatch('plot: fermi_surface',2)
+    !
+    return
 
   end subroutine plot_fermi_surface
 
@@ -393,7 +408,7 @@ contains
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
          atoms_symbol,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
-         wannier_plot_mode,wvfn_formatted
+         wannier_plot_mode,wvfn_formatted,timing_level
 
     implicit none
 
@@ -412,7 +427,9 @@ contains
     character(len=60) :: wanxsf
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)  
-
+    !
+    if (timing_level>1) call io_stopwatch('plot: wannier',1)
+    !
     write(wfnname,200 ) 1,spin
     inquire(file=wfnname,exist=have_file)
     if(.not.have_file) call io_error('plot_wannier: file '//wfnname//' not found') 
@@ -659,6 +676,7 @@ contains
 
     end do
 
+    if (timing_level>1) call io_stopwatch('plot: wannier',2)
 
   end subroutine plot_wannier
 
@@ -674,9 +692,9 @@ contains
   !============================================!
 
     use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io, only        : io_error
+    use w90_io, only        : io_error,io_stopwatch
     use w90_parameters, only    : num_kpts,u_matrix,eigval,num_wann,kpt_latt, &
-         u_matrix_opt,num_bands,lwindow,have_disentangled,ndimwin
+         u_matrix_opt,num_bands,lwindow,have_disentangled,ndimwin,timing_level
 
     implicit none
   
@@ -687,6 +705,7 @@ contains
     real(kind=dp)      :: eigval2(num_wann,num_kpts)
     integer            :: loop_kpt,i,j,m,loop_rpt,counter
 
+    if (timing_level>1) call io_stopwatch('plot: get_hr',1)
 
     ham_k=cmplx_0
     eigval_opt=0.0_dp
@@ -757,6 +776,7 @@ contains
        enddo
     enddo
     
+    if (timing_level>1) call io_stopwatch('plot: get_hr',2)
 
   end subroutine plot_get_hr
 
@@ -770,8 +790,8 @@ contains
   !================================================================================!
 
     use w90_constants, only : dp
-    use w90_io, only        : stdout,io_error
-    use w90_parameters, only    : mp_grid,real_metric,iprint
+    use w90_io, only        : stdout,io_error,io_stopwatch
+    use w90_parameters, only    : mp_grid,real_metric,iprint,timing_level
 
   ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
   !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -786,6 +806,7 @@ contains
   real(kind=dp) :: dist(27),tot,dist_min
   integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j
 
+  if (timing_level>1) call io_stopwatch('plot: wigner_seitz',1)
 
   ! Loop over grid points r on a unit cell that is 8 times larger than a
   ! primitive supercell. In the end nrpts contains the total number of grid
@@ -859,6 +880,7 @@ contains
      call io_error('ERROR in plot_wigner_seitz: error in finding Wigner-Seitz points')
   endif
 
+  if (timing_level>1) call io_stopwatch('plot: wigner_seitz',2)
 
   return  
 end subroutine wigner_seitz
