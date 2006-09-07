@@ -510,7 +510,7 @@ contains
 
     if(eig_found) dis_win_max = maxval(eigval)
     call param_get_keyword('dis_win_max',found,r_value=dis_win_max)
-    if ( dis_win_max.lt.dis_win_min ) &
+    if ( eig_found .and. (dis_win_max.lt.dis_win_min) ) &
          call io_error('Error: param_read: check disentanglement windows')
 
     dis_froz_min=-1.0_dp;dis_froz_max=0.0_dp
@@ -522,10 +522,12 @@ contains
        dis_froz_min = dis_win_min ! default value for the bottom of frozen window
     end if
     call param_get_keyword('dis_froz_min',found2,r_value=dis_froz_min)
-    if ( dis_froz_max.lt.dis_froz_min ) &
-         call io_error('Error: param_read: check disentanglement frozen windows')
-    if(found2 .and. .not. found) &
-         call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
+    if (eig_found) then
+       if ( dis_froz_max.lt.dis_froz_min ) &
+            call io_error('Error: param_read: check disentanglement frozen windows')
+       if(found2 .and. .not. found) &
+            call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
+    endif
 
     dis_num_iter      = 200
     call param_get_keyword('dis_num_iter',found,i_value=dis_num_iter)
