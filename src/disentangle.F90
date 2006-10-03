@@ -1357,7 +1357,7 @@ contains
       ! alphafixe         mixing parameter for the iterative procedure
       ! nitere            total number of iterations
 
-
+      camp=cmplx_0
       ! DEBUG
       if (iprint>2) then
          write(stdout,'(a,/)') '  Original eigenvalues inside outer window:'  
@@ -1703,6 +1703,7 @@ contains
          enddo
       enddo
 
+      ! The compliment subspace code needs work: jry
       if (icompflag.eq.1) then  
          if (iprint>2) then
             write(stdout,*) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
