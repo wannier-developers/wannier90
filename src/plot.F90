@@ -653,7 +653,7 @@ contains
        write(file_unit,'(3f12.7)') real_lattice(2,1),real_lattice(2,2),real_lattice(2,3)
        write(file_unit,'(3f12.7)') real_lattice(3,1),real_lattice(3,2),real_lattice(3,3)
        write(file_unit,'("PRIMCOORD")')
-       write(file_unit,'(i2,"  1")') num_atoms
+       write(file_unit,'(i6,"  1")') num_atoms
        endif
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
