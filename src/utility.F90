@@ -55,8 +55,8 @@ contains
     integer,           intent(in)  :: n
     character(len=1),  intent(in)  :: transa
     character(len=1),  intent(in)  :: transb
-    complex(kind=dp),  intent(out) :: a(n,n)
-    complex(kind=dp),  intent(out) :: b(n,n)
+    complex(kind=dp),  intent(in)  :: a(n,n)
+    complex(kind=dp),  intent(in)  :: b(n,n)
     complex(kind=dp),  intent(out) :: c(n,n)
 
     call zgemm(transa,transb,n,n,n,cmplx_1,a,n,b,n,cmplx_0,c,n)
