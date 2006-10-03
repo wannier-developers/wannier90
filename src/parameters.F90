@@ -414,6 +414,7 @@ contains
     bands_plot_format         = 'gnuplot'
     call param_get_keyword('bands_plot_format',found,c_value=bands_plot_format)
 
+    bands_num_spec_points=0
     call param_get_block_length('kpoint_path',found,i_temp)
     if (found) then
        bands_num_spec_points=i_temp*2
