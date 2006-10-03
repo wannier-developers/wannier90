@@ -746,7 +746,7 @@ contains
     write(stdout,101) 'a_2',(real_lattice(2,I)*lenconfac, i=1,3)
     write(stdout,101) 'a_3',(real_lattice(3,I)*lenconfac, i=1,3)
     write(stdout,*)   
-    write(stdout,'(19x,a17,3x,f11.5))',advance='no') &
+    write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
          'Unit Cell Volume:',cell_volume*lenconfac**3
     if (lenconfac.eq.1.0_dp) then
        write(stdout,'(2x,a7)') '(Ang^3)'
