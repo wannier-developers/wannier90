@@ -105,7 +105,6 @@ module w90_parameters
   real(kind=dp), allocatable,     public, save :: proj_x(:,:)
   integer, allocatable,           public, save :: proj_radial(:)  
   real(kind=dp), allocatable,     public, save :: proj_zona(:)
-  real(kind=dp), allocatable,     public, save :: proj_box(:)
 
 
   !parameters dervied from input
@@ -265,7 +264,7 @@ contains
 
 !    num_bands       =   -1   
     call param_get_keyword('num_bands',found,i_value=i_temp)
-    if(found.and.library) write(stdout,*) ' num_bands: ignored'
+    if(found.and.library) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library) then
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
@@ -287,7 +286,7 @@ contains
 
 !    mp_grid=-99
     call param_get_keyword_vector('mp_grid',found,3,i_value=iv_temp)
-    if(found.and.library) write(stdout,*) ' mp_grid: ignored'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <mp_grid> in input file'
     if(.not.library) then
        if(found) mp_grid=iv_temp
        if (.not. found) then
@@ -577,7 +576,7 @@ contains
     if(num_shells/=0 .and. any(shell_list<1)) call io_error('Error: shell_list must be positive')
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
-    if(found.and.library) write(stdout,*) ' unit_cell_cart: ignored'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
        !This is a hack. I must workout what is the sensible way to read and store this jry
        real_lattice=transpose(real_lattice_tmp)
@@ -596,7 +595,7 @@ contains
     end if
 
     call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_cart)
-    if(found.and.library) write(stdout,*) ' unit_cell_cart: ignored'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <kpoints> in input file'
     if (.not. library) then
        kpt_latt=kpt_cart
        if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
@@ -608,11 +607,13 @@ contains
     end do
 
     ! Atoms
-    if(.not. library) then
-       num_atoms=0
-       call param_get_block_length('atoms_frac',found,i_temp)
-       call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
-       if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
+    num_atoms=0
+    call param_get_block_length('atoms_frac',found,i_temp)
+    if (found.and.library) write(stdout,'(a)') ' Ignoring <atoms_frac> in input file'
+    call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
+    if (found2.and.library) write(stdout,'(a)') ' Ignoring <atoms_cart> in input file'
+    if (.not.library) then
+       if (found.and.found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
        if (found .and. i_temp>0) then
           lunits=.false.
           num_atoms=i_temp
@@ -623,7 +624,7 @@ contains
        if(num_atoms>0) then
           call param_get_atoms(lunits)
        end if
-    end if
+    endif
 
     ! Projections
     call param_get_block_length('projections',found,i_temp)
@@ -673,7 +674,6 @@ contains
 106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
 
   end subroutine param_read
-
 
 
   !===================================================================
@@ -790,14 +790,14 @@ contains
        write(stdout,'(32x,a)') '-----------'
        write(stdout,*) ' '
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       write(stdout,'(1x,a)') '|    Frac. Coord.     l mr r        z-axis            x-axis        diff box |'
+       write(stdout,'(1x,a)') '|    Frac. Coord.     l mr  r        z-axis            x-axis         diff   |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_wann
-          write(stdout,'(1x,a1,3(1x,f5.2),2x,i2,1x,i2,1x,i1,1x,3(1x,f5.2),1x,3(1x,f5.2),&
-               & 2x,f4.1,1x,f3.1,1x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
+          write(stdout,'(1x,a1,3(1x,f5.2),2x,i2,1x,i2,1x,i2,1x,3(1x,f5.2),1x,3(1x,f5.2),&
+               & 3x,f4.1,3x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
                proj_site(3,nsp),proj_l(nsp), proj_m(nsp),proj_radial(nsp),&
                proj_z(1,nsp),proj_z(2,nsp),proj_z(3,nsp),proj_x(1,nsp),&
-               proj_x(2,nsp),proj_x(3,nsp),proj_zona(nsp), proj_box(nsp),'|'
+               proj_x(2,nsp),proj_x(3,nsp),proj_zona(nsp),'|'
        end do
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        write(stdout,*) ' '
@@ -1100,10 +1100,6 @@ contains
     if ( allocated( proj_zona ) ) then
        deallocate( proj_zona, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating proj_zona in param_dealloc')
-    end if
-    if ( allocated( proj_box ) ) then
-       deallocate( proj_box, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating proj_box in param_dealloc')
     end if
     if ( allocated( wannier_plot_list )  ) then
        deallocate( wannier_plot_list, stat=ierr  )
@@ -1784,7 +1780,6 @@ contains
     start_st='begin '//trim(keyword)
     end_st='end '//trim(keyword)
 
-
     do loop=1,num_lines
        ins=index(in_data(loop),trim(keyword))
        if (ins==0 ) cycle
@@ -1796,6 +1791,7 @@ contains
        endif
        found_s=.true.
     end do
+
 
     if(.not. found_s) then
        found=.false.
@@ -1815,6 +1811,7 @@ contains
        found_e=.true.
     end do
 
+
     if(.not. found_e) then
        call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
     end if
@@ -1826,6 +1823,13 @@ contains
     rows=line_e-line_s-1
 
     found=.true.
+
+    ! Ignore atoms_cart and atoms_frac blocks if running in library mode
+    if (library) then
+       if (trim(keyword).eq.'atoms_cart' .or. trim(keyword).eq.'atoms_frac') then
+          in_data(line_s:line_e)(1:maxlen) = ' '
+       endif
+    endif
 
     if (present(lunits)) then
        dummy=in_data(line_s+1)
@@ -1948,7 +1952,6 @@ contains
     if (lconvert) atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr
 
     in_data(line_s:line_e)(1:maxlen) = ' '
-
 
 
     if(frac) then
@@ -2250,13 +2253,11 @@ contains
     real(kind=dp), parameter :: proj_z_def(3)=(/0.0_dp,0.0_dp,1.0_dp/)
     real(kind=dp), parameter :: proj_x_def(3)=(/1.0_dp,0.0_dp,0.0_dp/)
     real(kind=dp), parameter :: proj_zona_def=1.0_dp
-    real(kind=dp), parameter :: proj_box_def=1.0_dp
     integer, parameter       :: proj_radial_def=1
     !
     real(kind=dp) :: proj_z_tmp(3)
     real(kind=dp) :: proj_x_tmp(3)
     real(kind=dp) :: proj_zona_tmp
-    real(kind=dp) :: proj_box_tmp
     integer       :: proj_radial_tmp
     logical       :: lconvert,lrandom
 
@@ -2282,8 +2283,6 @@ contains
        if (ierr/=0) call io_error('Error allocating proj_radial in param_get_projections')
     allocate( proj_zona(num_wann) ,stat=ierr)
        if (ierr/=0) call io_error('Error allocating proj_zona in param_get_projections')
-    allocate( proj_box(num_wann) ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_box in param_get_projections')
 
 
 
@@ -2346,7 +2345,6 @@ contains
           proj_z_tmp      = proj_z_def  
           proj_x_tmp      = proj_x_def  
           proj_zona_tmp   = proj_zona_def  
-          proj_box_tmp    = proj_box_def   
           proj_radial_tmp =  proj_radial_def
           ! Strip input line of all spaces
           dummy=utility_strip(in_data(line))
@@ -2576,14 +2574,6 @@ contains
                 if(pos2>0) ctemp=ctemp(:pos2-1)
                 call utility_string_to_coord(ctemp,proj_x_tmp)
              endif
-             ! projection box
-             pos1=index(dummy,'b=')
-             if(pos1>0) then
-                ctemp=(dummy(pos1+2:))
-                pos2=index(ctemp,':')
-                if(pos2>0) ctemp=ctemp(:pos2-1)
-                read(ctemp,*,err=103,end=103) proj_box_tmp
-             endif
              ! diffusivity of orbital
              pos1=index(dummy,'zona=')
              if(pos1>0) then
@@ -2621,7 +2611,6 @@ contains
                       proj_x(:,counter)    = proj_x_tmp
                       proj_radial(counter) = proj_radial_tmp
                       proj_zona(counter)   = proj_zona_tmp
-                      proj_box(counter)    = proj_box_tmp
                    end if
                 end do
              end do
@@ -2638,7 +2627,6 @@ contains
                          proj_x(:,counter)    = proj_x_tmp
                          proj_radial(counter) = proj_radial_tmp
                          proj_zona(counter)   = proj_zona_tmp
-                         proj_box(counter)    = proj_box_tmp
                       end if
                    end do
                 end do
@@ -2659,10 +2647,7 @@ contains
           proj_z(:,loop)    = proj_z_def  
           proj_x(:,loop)    = proj_x_def  
           proj_zona(loop)   = proj_zona_def  
-          proj_box(loop)    = proj_box_def   
           proj_radial(loop) = proj_radial_def
-
-
        end do
 
     end if
@@ -2683,7 +2668,6 @@ contains
 
 101 call io_error('param_get_projection: Problem reading l state into integer '//trim(ctemp3))
 102 call io_error('param_get_projection: Problem reading m state into integer '//trim(ctemp3))
-103 call io_error('param_get_projection: Problem reading box size into real '//trim(ctemp))
 104 call io_error('param_get_projection: Problem reading zona into real '//trim(ctemp))
 105 call io_error('param_get_projection: Problem reading radial state into integer '//trim(ctemp))
 106 call io_error('param_get_projection: Problem reading m state into string '//trim(ctemp3))
