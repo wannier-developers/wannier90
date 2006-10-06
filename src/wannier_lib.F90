@@ -10,8 +10,8 @@
 !                                                            !
 !------------------------------------------------------------!
 
-subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
-     recip_lattice_loc,kpt_latt_loc, &
+subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
+     real_lattice_loc,recip_lattice_loc,kpt_latt_loc, &
      num_bands_tot,num_atoms_loc,atom_symbols_loc,atoms_cart_loc, &
      nntot_loc,nnlist_loc,nncell_loc,num_bands_loc,num_wann_loc, &
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
@@ -24,6 +24,7 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
  
   implicit none
 
+  character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
   integer, intent(in) :: num_kpts_loc
   real(kind=dp), dimension(3,3), intent(in) :: real_lattice_loc
@@ -55,7 +56,8 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   time0=io_time()
 
   library=.true.
-  seedname="wannier"
+!  seedname="wannier"
+  seedname=trim(adjustl(seed__name))
   inquire(file=trim(seedname)//'.wout',exist=wout_found)
   if (wout_found) then
      stat='old'
@@ -68,6 +70,8 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
   open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
 
   call param_write_header
+
+  write(stdout,'(/a)') ' Wannier90 is running in LIBRARY MODE'
 
   ! copy local data into module variables
   mp_grid=mp_grid_loc
@@ -132,11 +136,12 @@ subroutine wannier_setup(mp_grid_loc,num_kpts_loc,real_lattice_loc,&
 end subroutine wannier_setup
 
 
-subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
-     recip_lattice_loc,kpt_latt_loc,num_bands_loc,num_wann_loc,   & 
-     nntot_loc,num_atoms_loc,atom_symbols_loc,atoms_cart_loc,M_matrix_loc,  &
-     A_matrix_loc,eigenvalues_loc,U_matrix_loc,U_matrix_opt_loc,  &
-     lwindow_loc,wann_centres_loc,wann_spreads_loc,spread_loc)
+subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
+     real_lattice_loc,recip_lattice_loc,kpt_latt_loc,num_bands_loc, &
+     num_wann_loc,nntot_loc,num_atoms_loc,atom_symbols_loc, &
+     atoms_cart_loc,M_matrix_loc,A_matrix_loc,eigenvalues_loc, &
+     U_matrix_loc,U_matrix_opt_loc,lwindow_loc,wann_centres_loc, &
+     wann_spreads_loc,spread_loc)
 
 
   use w90_constants
@@ -150,6 +155,7 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
 
   implicit none
 
+  character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
   integer, intent(in) :: num_kpts_loc
   real(kind=dp), dimension(3,3), intent(in) :: real_lattice_loc
@@ -181,7 +187,8 @@ subroutine wannier_run(mp_grid_loc,num_kpts_loc,real_lattice_loc, &
   time0=io_time()
 
   library=.true.
-  seedname="wannier"
+!  seedname="wannier"
+  seedname=trim(adjustl(seed__name))
   inquire(file=trim(seedname)//'.wout',exist=wout_found)
   if (wout_found) then
      stat='old'
