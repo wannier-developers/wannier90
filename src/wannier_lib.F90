@@ -71,7 +71,8 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
 
   call param_write_header
 
-  write(stdout,'(/a)') ' Wannier90 is running in LIBRARY MODE'
+  write(stdout,'(/a/)') ' Wannier90 is running in LIBRARY MODE'
+  write(stdout,'(a/)') ' Setting up k-point neighbours...'
 
   ! copy local data into module variables
   mp_grid=mp_grid_loc
@@ -85,6 +86,11 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
 
   call param_read
+  ! set num_bands and cell_volume as they are written to output in param_write
+  num_bands = num_bands_tot - num_exclude_bands
+  cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
+                real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
+                real_lattice(1,3)*(real_lattice(2,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(2,2))
   call param_write
 
   time1=io_time()
@@ -130,6 +136,10 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   call kmesh_dealloc
   call param_dealloc
   write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
+
+  write(stdout,'(/a/)') ' Finished setting up k-point neighbours.'
+  write(stdout,'(a)') ' Returning to pw2wannier90.'
+
   close(stdout)
 
   
@@ -200,6 +210,8 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   stdout=io_file_unit()
   open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
 
+  write(stdout,'(/a/)') ' Wannier90: Disentanglement - Localisation - Plotting'
+
 !  call param_write_header
 
   ! copy local data into module variables
@@ -218,8 +230,9 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   num_atoms=num_atoms_loc
 
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
-  
+
   call param_read
+
   call param_write
 
   time1=io_time()
