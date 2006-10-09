@@ -82,6 +82,7 @@ module w90_parameters
   real(kind=dp),     public, save :: trial_step
   logical,           public, save :: write_proj
   integer,           public, save :: timing_level
+  logical,           public, save :: spinors   !are our WF spinors?
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -326,6 +327,11 @@ contains
 
     write_proj = .false.
     call param_get_keyword('write_proj',found,l_value=write_proj)
+
+    spinors=.false.  ! by default our WF are not spinors
+    call param_get_keyword('spinors',found,l_value=spinors)
+    if(spinors .and. (2*(num_wann/2))/=num_wann) &
+       call io_error('Error: For spinor WF num_wann ust be even')
 
     !%%%%%%%%%%%
     ! Wannierise
@@ -2634,8 +2640,13 @@ contains
           end if
           
        end do !end loop over projection block
-       if (counter.ne.num_wann) call io_error('param_get_projections:&
-            & Fewer projections defined than the number of Wannier functions requested')
+       if(spinors) then
+         if (counter.ne.num_wann/2) call io_error('param_get_projections:&
+           & Fewer projections defined than the number of Wannier functions requested')
+       else
+          if (counter.ne.num_wann) call io_error('param_get_projections:&
+          & Fewer projections defined than the number of Wannier functions requested')
+       endif
        
     elseif(lrandom) then
 
