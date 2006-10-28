@@ -34,7 +34,7 @@ contains
     use w90_constants, only : cmplx_0
     use w90_io, only        : io_error,stdout,io_stopwatch
     use w90_parameters, only    : num_kpts,bands_plot,dos_plot,&
-         kpt_latt,fermi_surface_plot,num_wann,wannier_plot,timing_level
+         mp_grid,kpt_latt,fermi_surface_plot,num_wann,wannier_plot,timing_level
 
     implicit none
 
@@ -57,6 +57,7 @@ contains
        if(.not. have_gamma) &
     write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. Interpolation may be incorrect. !!!!'
        ! Find the number of points in the Wigner-Seitz cell
+       mp_grid(:)=2
        call wigner_seitz(count_pts=.true.)
        allocate(irvec(3,3*num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating irvec in plot_main')
@@ -803,24 +804,32 @@ contains
   logical, intent(in) :: count_pts 
 
   integer       :: ndiff (3)
-  real(kind=dp) :: dist(27),tot,dist_min
+  real(kind=dp) :: dist(125),tot,dist_min
   integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j
 
   if (timing_level>1) call io_stopwatch('plot: wigner_seitz',1)
 
-  ! Loop over grid points r on a unit cell that is 8 times larger than a
-  ! primitive supercell. In the end nrpts contains the total number of grid
+  ! The Wannier functions live in a supercell of the real space unit cell
+  ! this supercell is mp_grid unit cells long in each direction
+  !
+  ! We loop over grid points r on a unit cell that is 8 times larger than this
+  ! primitive supercell. 
+  !
+  ! One of these points is in the W-S cell if it is closer to R=0 than any of the
+  ! other points, R (where R are the translation vectors of the supercell)
+
+  ! In the end nrpts contains the total number of grid
   ! points that have been found in the Wigner-Seitz cell
 
   nrpts = 0  
-  do n1 = 0, 2 * mp_grid(1)  
-     do n2 = 0, 2 * mp_grid(2)  
-        do n3 = 0, 2 * mp_grid(3)  
-           ! Loop over the 27 points R. R=0 corresponds to i1=i2=i3=1, or icnt=14
+  do n1 = -mp_grid(1) , mp_grid(1)  
+     do n2 = -mp_grid(2), mp_grid(2)  
+        do n3 = -mp_grid(3),  mp_grid(3)  
+           ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=1, or icnt=14
            icnt = 0  
-           do i1 = 0, 2  
-              do i2 = 0, 2  
-                 do i3 = 0, 2  
+           do i1 = -2, 2  
+              do i2 = -2, 2  
+                 do i3 = -2, 2  
                     icnt = icnt + 1  
                     ! Calculate distance squared |r-R|^2
                     ndiff(1) = n1 - i1 * mp_grid(1)  
@@ -838,19 +847,17 @@ contains
 
 
            enddo
-
-
            dist_min=minval(dist)
-           if (abs(dist(14) - dist_min ) .lt.1.e-7_dp) then
+           if (abs(dist(63) - dist_min ) .lt.1.e-7_dp) then
               nrpts = nrpts + 1  
               if(.not. count_pts) then
                  ndegen(nrpts)=0
-                do i=1,27
+                do i=1,125
                    if (abs (dist (i) - dist_min) .lt.1.e-7_dp) ndegen(nrpts)=ndegen(nrpts)+1
                 end do
-                irvec(1, nrpts) = n1 - mp_grid(1)  
-                irvec(2, nrpts) = n2 - mp_grid(2)  
-                irvec(3, nrpts) = n3 - mp_grid(3)  
+                irvec(1, nrpts) = n1  
+                irvec(2, nrpts) = n2   
+                irvec(3, nrpts) = n3   
               endif
            end if
 
