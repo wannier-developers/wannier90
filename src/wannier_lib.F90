@@ -138,7 +138,10 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
 
   write(stdout,'(/a/)') ' Finished setting up k-point neighbours.'
-  write(stdout,'(a)') ' Returning to pw2wannier90.'
+
+  call io_date(cdate,ctime)
+
+  write(stdout,'(2a)') ' Returning to pw2wannier90 at ',ctime
 
   close(stdout)
 
@@ -210,7 +213,9 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   stdout=io_file_unit()
   open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
 
-  write(stdout,'(/a/)') ' Wannier90: Disentanglement - Localisation - Plotting'
+  call io_date(cdate,ctime)
+
+  write(stdout,'(/,2a,/)') ' Resuming Wannier90 at ',ctime
 
 !  call param_write_header
 
