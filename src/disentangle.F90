@@ -790,8 +790,8 @@ contains
        ! it seemed to be identical to the input ca (as it should be)
 
 
-       u_matrix_opt = cmplx_0
-       a_matrix = cmplx_0
+       u_matrix_opt(:,:,nkp) = cmplx_0
+       a_matrix(:,:,nkp) = cmplx_0
        do j = 1, num_wann  
           do i = 1, ndimwin(nkp)  
              do l = 1, num_wann  
@@ -1187,7 +1187,6 @@ contains
             
          endif   ! num_wann>nDIMFROZ(NKP)
 
-
          ! Put the frozen states in the lowest columns of clamp
          if (ndimfroz(nkp).gt.0) then  
             do l = 1, ndimfroz(nkp)  
@@ -1195,7 +1194,7 @@ contains
                clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
             enddo
          endif
-
+         
 !!$         write(stdout,*) 'clamp:'
 !!$         do m=1,ndimwin(nkp)
 !!$            write(stdout,'(6f12.8)') clamp(m,1,nkp), &
