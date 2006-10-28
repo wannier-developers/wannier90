@@ -71,13 +71,8 @@ contains
     call dis_project()
 
     ! Copy projections to clamp
-    clamp=cmplx_0
-    do nkp = 1, num_kpts  
-       do j = 1, num_wann
-          clamp(1:ndimwin(nkp),j,nkp)=u_matrix_opt(1:ndimwin(nkp),j,nkp)
-       enddo
-    enddo
-
+    clamp = u_matrix_opt
+    
 
     ! If there is an inner window, need to modify projection procedure
     ! (Sec. III.G SMV)
@@ -791,15 +786,17 @@ contains
        ! to moltiplying the first num_wann columns of cz, each by the correspondin
        ! diagonal element of s, that is s(L)
        ! I'm not sure why we reconstruct ca in what follows - in one explicit t
+       ! [ aam: it is because a_matrix is overwritten by ZGESVD ]
        ! it seemed to be identical to the input ca (as it should be)
 
+
+       u_matrix_opt = cmplx_0
+       a_matrix = cmplx_0
        do j = 1, num_wann  
           do i = 1, ndimwin(nkp)  
-             u_matrix_opt(i,j,nkp) = cmplx_0
-             a_matrix(i,j,nkp) = cmplx_0
              do l = 1, num_wann  
                 u_matrix_opt(i,j,nkp) = u_matrix_opt(i,j,nkp) + cz(i,l) * cvdag(l,j)  
-                a_matrix(i,j,nkp) = a_matrix(i,j,nkp) + cz(i,l) * svals(l) * cvdag(l,j)  
+                a_matrix(i,j,nkp) = a_matrix(i,j,nkp) + cz(i,l) * svals(l) * cvdag(l,j)
              enddo
           enddo
        enddo
@@ -955,38 +952,43 @@ contains
       if (ierr/=0) call io_error('Error allocating cqpq in dis_proj_froz')
 
       do nkp = 1, num_kpts  
-         ! Put the frozen states in the lowest columns of clamp
-         if (ndimfroz(nkp).gt.0) then  
-            do l = 1, ndimfroz(nkp)  
-               clamp(:,l,nkp)=cmplx_0
-               clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
-            enddo
-         endif
+
+         ! aam: this should be done at the end, otherwise important
+         !      projection info is lost
+!!$         ! Put the frozen states in the lowest columns of clamp
+!!$         if (ndimfroz(nkp).gt.0) then  
+!!$            do l = 1, ndimfroz(nkp)  
+!!$               clamp(:,l,nkp)=cmplx_0
+!!$               clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
+!!$            enddo
+!!$         endif
 
          ! If there are non-frozen states, compute the num_wann-ndimfroz(nkp) leadin
          ! eigenvectors of cqpq
          if (num_wann.gt.ndimfroz(nkp)) then  
+            cq_froz = cmplx_0
+            cp_s = cmplx_0
             do n = 1, ndimwin(nkp)  
                do m = 1, ndimwin(nkp)  
-                  cq_froz(m,n) = cmplx_0  
-                  cp_s(m,n) = cmplx_0  
                   do l = 1, num_wann  
                      cp_s(m,n) = cp_s(m,n) + clamp(m,l,nkp) * conjg(clamp(n,l,nkp))
                   enddo
                enddo
                if (.not.lfrozen(n,nkp)) cq_froz(n,n) = cmplx_1
             enddo
+
+            cpq = cmplx_0
             do n = 1, ndimwin(nkp)  
                do m = 1, ndimwin(nkp)  
-                  cpq(m,n) = cmplx_0  
                   do l = 1, ndimwin(nkp)  
                      cpq(m,n) = cpq(m,n) + cp_s(m,l) * cq_froz(l,n)  
                   enddo
                enddo
             enddo
+
+            cqpq = cmplx_0
             do n = 1, ndimwin(nkp)  
                do m = 1, ndimwin(nkp)  
-                  cqpq(m,n) = cmplx_0  
                   do l = 1, ndimwin(nkp)  
                      cqpq(m,n) = cqpq(m,n) + cq_froz(m,l) * cpq(l,n)  
                   enddo
@@ -1005,6 +1007,7 @@ contains
                enddo
             enddo
             ! ENDDEBUG
+
             cap=cmplx_0
             do n = 1, ndimwin(nkp)  
                do m = 1, n  
@@ -1015,6 +1018,15 @@ contains
             iu = ndimwin(nkp)  
             call ZHPEVX ('V', 'A', 'U', ndimwin(nkp), cap, 0.0_dp, 0.0_dp, il, &
                  iu, -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
+
+!!$            write(stdout,*) 'w:'
+!!$            do n=1,ndimwin(nkp)
+!!$               write(stdout,'(f14.10)') w(n)
+!!$            enddo
+!!$            write(stdout,*) 'cz:'
+!!$            do n=1,ndimwin(nkp)
+!!$               write(stdout,'(6f12.8)') cz(n,il), cz(n,iu)
+!!$            enddo
 
             ! DEBUG
             if (info.lt.0) then  
@@ -1051,6 +1063,10 @@ contains
                endif
             enddo
             ! ENDDEBUG
+
+            ! [ aam: sometimes the leading eigenvalues form a degenerate set that is 
+            !      of higher dimensionality than (num_wann - ndimfroz). ]
+
 
             ! For certain cases we have found that one of the required eigenvectors of cqpq
             ! has a zero eigenvalue (ie it forms a degenerate set with the frozen states).
@@ -1151,9 +1167,11 @@ contains
 
                
             else ! if .not. using ortho-fix
-            ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
+
+               ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
                ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN cLAMP
                do l = ndimfroz(nkp) + 1, num_wann  
+                  write(stdout,*) 'il=',il
                   clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il) 
                   il = il + 1  
                enddo
@@ -1163,13 +1181,27 @@ contains
                   call io_error('dis_proj_frozen: error -  il-1.ne.iu')
                endif
                ! ENDDEBUG
-            end if
-            ! num_wann>nDIMFROZ(NKP)
-            
-         endif
-         ! NKP
 
-      enddo
+            end if
+            
+         endif   ! num_wann>nDIMFROZ(NKP)
+
+
+         ! Put the frozen states in the lowest columns of clamp
+         if (ndimfroz(nkp).gt.0) then  
+            do l = 1, ndimfroz(nkp)  
+               clamp(:,l,nkp)=cmplx_0
+               clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
+            enddo
+         endif
+
+!!$         write(stdout,*) 'clamp:'
+!!$         do m=1,ndimwin(nkp)
+!!$            write(stdout,'(6f12.8)') clamp(m,1,nkp), &
+!!$                 clamp(m,ndimfroz(nkp),nkp), clamp(m,num_wann,nkp)
+!!$         enddo
+         
+      enddo   ! NKP
 
       deallocate(cqpq,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating cqpq in dis_proj_froz')
@@ -1740,14 +1772,20 @@ contains
                write(stdout,*) info, 'EIGENVECTORS FAILED TO CONVERGE'  
                call io_error(' dis_extract: error')   
             endif
-
             ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
             ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
             do j = 1, ndimwin(nkp) - num_wann  
                do i = 1, ndimwin(nkp)  
                   camp(i,j,nkp) = cmplx_0  
                   do l = 1, ndimwin(nkp) - num_wann  
-                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
+!write(stdout,*) 'i=',i,'   j=',j,'   l=',l
+!write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
+!write(stdout,*) '           cz(l,j)=',cz(l,j)
+!write(stdout,*) '           clamp(i,l,nkp)=',clamp(i,l,nkp)
+
+! aam: 20/10/2006 -- the second dimension of clamp is out of bounds (allocated as num_wann)! 
+! commenting this line out.
+!                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
                   enddo
                enddo
             enddo
@@ -1756,7 +1794,6 @@ contains
 
       endif
       ! [if icompflag=1]
-
 
       deallocate(history,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating history in dis_extract')
