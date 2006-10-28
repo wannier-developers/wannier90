@@ -1065,7 +1065,8 @@ contains
             ! ENDDEBUG
 
             ! [ aam: sometimes the leading eigenvalues form a degenerate set that is 
-            !      of higher dimensionality than (num_wann - ndimfroz). ]
+            !        of higher dimensionality than (num_wann - ndimfroz). May need to 
+            !        fix this at some point. ]
 
 
             ! For certain cases we have found that one of the required eigenvectors of cqpq
