@@ -997,7 +997,7 @@ contains
     write(stdout,*)  '            | Copyright (c) 1997-2006 J. Yates, A. Mostofi,     |'
     write(stdout,*)  '            |        N. Marzari, I. Souza, D. Vanderbilt        |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |          Release: 1.0.1    17th May 2006          |'
+    write(stdout,*)  '            |          Release: 1.0.2     1st Dec 2006          |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
