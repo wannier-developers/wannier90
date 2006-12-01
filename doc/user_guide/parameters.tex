@@ -91,13 +91,20 @@ Keyword & Type & Description \\
 {\sc wvfn\_formatted }   & L & Read the wavefunctions from a  (un)formatted file  \\
 {\sc spin }   & S & Which spin channel to read \\
 {\sc devel\_flag }   & S & Flag for development use \\
+{\sc timing\_level } & I & Determines amount of timing information
+written to output \\
+{\sc translate\_home\_cell } & L & To translate final Wannier centres
+to home unit cell \\
+{\sc write\_xyz }*   & L & To write final centres in xyz file format \\
 \hline
 \end{tabular}
 \caption[win file keywords.]
 {win file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.\\
-}
+physical value, L for a logical value and S for a text string.
+{\footnotesize
+* {\sc write\_xyz } is only effective if {\sc translate\_home\_cell } is
+\texttt{true} }} 
 \label{parameter_keywords2}
 \end{center}
 \end{table}
@@ -167,6 +174,7 @@ line search during the minimisation
 of $\Omega$\\
 {\sc fixed\_step }*   & R & The fixed step length to take during the minimisation
 of $\Omega$, instead of doing a parabolic line search \\
+{\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -175,7 +183,7 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. 
 {\footnotesize
 * {\sc fixed\_step } and  {\sc trial\_step } may not both be defined in
-the same input file. }}
+the same input file. **Cannot be used in conjunction with disentanglement.}}
 \label{parameter_keywords5}
 \end{center}
 \end{table}
@@ -476,10 +484,14 @@ No default.
 
 \subsection[exclude\_bands]{\tt integer :: exclude\_bands(:)}
 
-A k-point independent list of states to excluded from the calculation of the overlap matrices;
+A k-point independent list of states to excluded from the calculation
+ of the overlap matrices; 
  for example to select only valence states, or ignore semi-core states.
  This keyword is passed to the first-principles code via the
- {\tt <seedname>.nnkp} file. 
+ {\tt <seedname>.nnkp} file. For example, to exclude bands 2, 6, 7, 8
+ and 12:
+
+ \verb#exclude_bands : 2, 6-8, 12# 
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
@@ -517,6 +529,33 @@ For bands from a spin polarised calculation {\tt spin} determines which set
 of bands to read in, either \verb#up# or \verb#down#.
 
 The default value of this parameter is \verb#up#.
+
+
+\subsection[timing\_level]{\tt integer :: timing\_level}
+
+Determines the amount of timing information regarding the calculation
+that will be written to the output file. A value of 1 produces the
+least information. 
+
+The default value is 1.
+
+\subsection[translate\_home\_cell]{\tt logical :: translate\_home\_cell}
+
+Determines whether to translate the final Wannier centres to the home
+unit cell at the end of the calculation. Useful for molecular systems
+in which the molecule resides entirely within the home unit
+cell. 
+
+The default value is \verb#false#. 
+
+\subsection[write\_xyz]{\tt logical :: write\_xyz}
+
+Determines whether to write the final Wannier centres to an xyz
+formatted file, \verb#seedname_centres.xyz#, for subsequent
+visualisation. Only effective when {\sc translate\_home\_cell} is
+\verb#true#. 
+
+The default value is \verb#false#.
 
 
 \section{Disentanglement}
@@ -674,6 +713,14 @@ with a line search fails to converge.
 
 There is no default value.
 
+\subsection[use\_bloch\_phases]{\tt logical :: use\_bloch\_phases}
+
+Determines whether to use the Bloch functions as the
+initial guess for the projections. Can only be used if
+\verb#disentanglement = false#. 
+
+Th default value is \verb#false#.
+
 
 \section{Post-Processing}
 
@@ -719,7 +766,11 @@ The valid options for this parameter are:
  A list of Wannier Functions to plot. The Wannier Functions numbered as per the
  {\tt <seedname>.wout} file after the minimisation of the spread.
 
- The default behaviour is to plot all Wannier Functions.
+ The default behaviour is to plot all Wannier Functions. For example,
+ to plot Wannier functions 4, 5, 6 and 10:
+
+ \verb#wannier_plot_list : 4-6, 10#
+
 
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 

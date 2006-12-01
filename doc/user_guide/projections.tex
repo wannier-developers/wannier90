@@ -138,6 +138,28 @@ is \verb#b=1.0#. This feature is not currently used.
 
 \verb#Si:l=0;l=1:r=2#
 
+\section{Short-Cuts}
+
+\subsection{Random projections}
+
+It is possible to specify the projections as follows:
+
+\noindent
+\verb#Begin Projections#\\
+\verb#random#\\
+\verb#End Projections#\\
+
+in which case the code chooses the appropriate number of
+randomly-centred s-type gaussian functions for the initial projection.
+
+\subsection{Bloch phases}
+
+Setting \verb#use_bloch_phases = true# in the input file absolves the
+user of the need to specify explicit projections. In this case, the
+Bloch wave-functions are used as the projection orbitals, namely
+$A_{mn}^{(\mathbf{k})} =
+\langle\psi_{m\mathbf{k}}|\psi_{n\mathbf{k}}\rangle = \delta_{mn}$.
+
 
 \section{Orbital Definitions} \label{sec:orbital-defs}
 

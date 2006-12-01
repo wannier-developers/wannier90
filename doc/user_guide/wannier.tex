@@ -26,12 +26,14 @@ the overlaps and projection have been computed, calling
 
 \subsection{wannier\_setup}
 
-{\noindent \bf \verb#wannier_setup(mp_grid,num_kpts,real_lattice,recip_lattice,kpt_latt,#\\
-\verb#              num_bands_tot,num_atoms,atom_symbols,atoms_cart,nntot,nnlist,nncell,#\\
-\verb#              num_bands,num_wann,proj_site,proj_l,proj_m,proj_radial,proj_z,#\\
+{\noindent \bf \verb#wannier_setup(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
+\verb#              kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,nntot,nnlist,#\\
+\verb#              nncell,num_bands,num_wann,proj_site,proj_l,proj_m,proj_radial,proj_z,#\\
 \verb#              proj_x,proj_zona,exclude_bands)   #}
 
 \begin{itemize}
+\item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
+  of the current calculation.
 \item \verb#integer, dimension(3), intent(in) :: mp_grid#\\ The
   dimensions of the {Monkhorst-Pack} k-point grid.
 \item \verb#integer, intent(in) :: num_kpts#\\ The number of k-points on
@@ -125,19 +127,21 @@ For the avoidance of doubt, \verb#real_lattice(1,2)# is the
 $y-$component of the first lattice vector $\mathbf{A}_{1}$, etc.
 
 The list of nearest neighbours of a particular k-point \verb#nkp# is
-given by \verb#nnlist(nkp,1:nntot)#.  
+given by \verb#nnlist(nkp,1:nntot)#.
 
 Additionally, the parameters \verb#num_shells# and \verb#shell_list#
 may be specified in the wannier input file.
 
 \subsection{wannier\_run} \label{wannier_run}
 
-{\noindent \bf \verb#wannier_run(mp_grid,num_kpts,real_lattice,recip_lattice,kpt_latt,num_bands,num_wann,#\\
-\verb#            nntot,num_atoms,atom_symbols,atoms_cart,M_matrix_orig,#\\
-\verb#            A_matrix,eigenvalues,U_matrix,U_matrix_opt,lwindow,#\\
+{\noindent \bf \verb#wannier_run(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
+\verb#            kpt_latt,num_bands,num_wann,nntot,num_atoms,atom_symbols,atoms_cart,#\\
+\verb#            M_matrix_orig,A_matrix,eigenvalues,U_matrix,U_matrix_opt,lwindow,#\\
 \verb#            wann_centres,wann_spreads,spread#)}
 
 \begin{itemize}
+\item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
+  of the current calculation.
 \item \verb#integer, dimension(3), intent(in) :: mp_grid#\\ The
   dimensions of the {Monkhorst-Pack} k-point grid.
 \item \verb#integer, intent(in) :: num_kpts#\\ The number of k-points on
