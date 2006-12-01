@@ -83,6 +83,8 @@ module w90_parameters
   logical,           public, save :: write_proj
   integer,           public, save :: timing_level
   logical,           public, save :: spinors   !are our WF spinors?
+  logical,           public, save :: translate_home_cell
+  logical,           public, save :: write_xyz
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -332,6 +334,12 @@ contains
     call param_get_keyword('spinors',found,l_value=spinors)
     if(spinors .and. (2*(num_wann/2))/=num_wann) &
        call io_error('Error: For spinor WF num_wann ust be even')
+
+    translate_home_cell = .false.
+    call param_get_keyword('translate_home_cell',found,l_value=translate_home_cell)
+
+    write_xyz = .false.
+    call param_get_keyword('write_xyz',found,l_value=write_xyz)
 
     !%%%%%%%%%%%
     ! Wannierise
