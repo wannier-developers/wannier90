@@ -4,6 +4,21 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
+v1.0.2 (1st Dec 2006)
+
+* Addition of "library mode" functionality
+* Introduction of "range vectors" for specifying exclude_bands and 
+  wannier_plot_list in input file
+* Option to specify random projections
+* Option to use Bloch phases for initial projections
+* Addition of timing_level input flag to control how much timing
+  information is outputted
+* Option to translate final centres to the home unit cell
+* Option to write final centres in xyz format
+* Acceleration of disentanglement procedure
+* Speed-up of localisation routines
+* Improved robustness of plotting routines
+
 v1.0.1 (17th May 2006)
 
 * Bug fix in wannierise minimiser - caused poor convergence in large systems
