@@ -56,7 +56,7 @@ contains
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
          trial_step,fixed_step,lfixstep,write_proj,have_disentangled, &
-         translate_home_cell
+         translate_home_cell,conv_tol,conv_window,conv_noise_amp,conv_noise_num
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -94,13 +94,19 @@ contains
     real(kind=dp) :: doda0
     real(kind=dp) :: falphamin,alphamin
     real(kind=dp) :: gcfac,gcnorm1,gcnorm0
-    integer :: i,n,iter,ind,ierr,iw,ncg,info
-    logical :: lprint,ldump,lquad
-
+    integer       :: i,n,iter,ind,ierr,iw,ncg,info
+    logical       :: lprint,ldump,lquad
+    real(kind=dp), allocatable :: history(:)
+    real(kind=dp)              :: save_spread
+    logical                    :: lconverged,lrandom,lfirst
+    integer                    :: conv_count,noise_count
 
     if (timing_level>0) call io_stopwatch('wann: main',1)
 
     ! Allocate stuff
+
+    allocate(history(conv_window),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating history in wann_main')
 
     ! module data
     allocate(  m0 (num_wann, num_wann, nntot, num_kpts),stat=ierr)
@@ -220,6 +226,8 @@ contains
          ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
     write(stdout,'(1x,a78)') repeat('-',78) 
 
+    lconverged=.false. ; lfirst=.true. ; lrandom=.false.
+    conv_count=0 ; noise_count=0
 
     ! main iteration loop
     do iter=1,num_iter
@@ -350,6 +358,16 @@ contains
 
        if (ldump) call param_write_um
 
+       if (conv_window.gt.1) call internal_test_convergence()
+
+       if (lconverged) then 
+          write(stdout,'(/13x,a,es10.3,a,i2,a)') &
+               '<<<     Delta <',conv_tol,&
+               '  over ',conv_window,' iterations     >>>'
+          write(stdout,'(13x,a/)')  '<<< Wannierisation convergence criteria satisfied >>>'
+          exit
+       endif
+
     enddo
     ! end of the minimization loop
 
@@ -449,6 +467,8 @@ contains
     deallocate(m0, stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating m0 in wann_main')
     
+    deallocate(history,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating history in wann_main')
 
     if (timing_level>0) call io_stopwatch('wann: main',2)
 
@@ -462,6 +482,138 @@ contains
 
 
   contains
+
+    
+    !===============================================!
+    subroutine internal_test_convergence()
+      !===============================================!
+      !                                               !
+      ! Determine whether minimisation of gauge-      !
+      ! invariant spread is converged                 !
+      !                                               !
+      !===============================================!
+
+      implicit none
+
+      real(kind=dp) :: delta_omega
+      integer :: j,ierr
+      real(kind=dp), allocatable :: temp_hist(:)
+        
+      allocate(temp_hist(conv_window),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating temp_hist in wann_main')
+
+      delta_omega=wann_spread%om_tot-old_spread%om_tot
+       
+      if (iter.le.conv_window) then
+         history(iter) = delta_omega
+      else
+         temp_hist = eoshift(history,1,delta_omega)
+         history = temp_hist
+      endif
+
+      conv_count=conv_count+1
+
+      if (conv_count.lt.conv_window) then
+         return
+      else
+!!$         write(stdout,*) (history(j),j=1,conv_window)
+         do j=1,conv_window
+            if ( abs(history(j)).gt.conv_tol ) return
+         enddo
+      endif
+
+      if ((conv_noise_amp.gt.0.0_dp) .and. (noise_count.lt.conv_noise_num)) then
+         if (lfirst) then
+            lfirst=.false.
+            save_spread=wann_spread%om_tot
+            lrandom=.true.
+            conv_count=0
+         else
+            if (abs(save_spread-wann_spread%om_tot).lt.conv_tol) then
+               lconverged=.true.
+               return
+            else
+               save_spread=wann_spread%om_tot
+               lrandom=.true.
+               conv_count=0
+            endif
+         endif
+      else
+         lconverged=.true.
+      endif
+
+      if (lrandom) noise_count = noise_count + 1
+
+      deallocate(temp_hist,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating temp_hist in wann_main')
+
+      return
+
+    end subroutine internal_test_convergence
+
+
+
+    !===============================================!
+    subroutine internal_random_noise()
+      !===============================================!
+      !                                               !
+      ! Add some random noise to the search direction !
+      ! to help escape from local minima              !
+      !                                               !
+      !===============================================!
+
+      implicit none
+
+      integer :: ikp,iw,jw
+      real(kind=dp), allocatable :: noise_real(:,:), noise_imag(:,:)
+      complex(kind=dp), allocatable :: cnoise(:,:)
+
+      ! Allocate
+      allocate(noise_real(num_wann,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating noise_real in wann_main')
+      allocate(noise_imag(num_wann,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating noise_imag in wann_main')
+      allocate(cnoise(num_wann,num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating cnoise in wann_main')
+      
+      ! Initialise
+      cnoise=cmplx_0; noise_real=0.0_dp; noise_imag=0.0_dp
+
+      ! cdq is a num_wann x num_wann x num_kpts anti-hermitian array
+      ! to which we add a random anti-hermitian matrix 
+
+      do ikp=1,num_kpts
+         do iw=1,num_wann
+            call random_seed()
+            call random_number(noise_real(:,iw))
+            call random_seed()
+            call random_number(noise_imag(:,iw))
+         enddo
+         do jw=1,num_wann
+            do iw=1,jw
+               if (iw.eq.jw) then 
+                  cnoise(iw,jw) = cmplx(0.0_dp,noise_imag(iw,jw),dp)
+               else
+                  cnoise(iw,jw) = cmplx(noise_real(iw,jw),noise_imag(iw,jw),dp)
+               endif
+               cnoise(jw,iw) = -conjg(cnoise(iw,jw))
+            enddo
+         enddo
+         ! Add noise to search direction
+         cdq(:,:,ikp) = cdq(:,:,ikp) + conv_noise_amp * cnoise(:,:)
+      enddo
+
+      ! Deallocate
+      deallocate(cnoise,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating cnoise in wann_main')
+      deallocate(noise_imag,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating noise_imag in wann_main')
+      deallocate(noise_real,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating noise_real in wann_main')
+
+      return
+
+    end subroutine internal_random_noise
 
 
 
@@ -513,6 +665,12 @@ contains
       ! calculate search direction
       cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
 
+      ! add some random noise to search direction, if required
+      if (lrandom) then
+         write(stdout,'(a,i3,a,i3,a)') &
+              ' [ Adding random noise to search direction. Time ',noise_count,' / ',conv_noise_num,' ]'
+         call internal_random_noise()
+      endif
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
       doda0 = -real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdq,1),dp)
@@ -526,6 +684,7 @@ contains
             if ( lprint .and. iprint>2 ) &
                  write(stdout,*) ' LINE --> Search direction uphill: resetting CG'
             cdq(:,:,:) = cdodq(:,:,:)
+            if (lrandom) call internal_random_noise()
             ncg = 0
             gcfac = 0.0_dp
             ! re-calculate gradient along search direction
@@ -547,10 +706,12 @@ contains
          endif
       endif
 
-      ! calculate search direction
-      cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
+ !!$     ! calculate search direction
+ !!$     cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
 
       if (timing_level>1) call io_stopwatch('wann: main: search_direction',2)
+
+      lrandom=.false.
 
       return
 

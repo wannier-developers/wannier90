@@ -85,6 +85,8 @@ module w90_parameters
   logical,           public, save :: spinors   !are our WF spinors?
   logical,           public, save :: translate_home_cell
   logical,           public, save :: write_xyz
+  real(kind=dp),     public, save :: conv_noise_amp
+  integer,           public, save :: conv_noise_num
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -353,13 +355,19 @@ contains
     call param_get_keyword('num_cg_steps',found,i_value=num_cg_steps)
     if (num_cg_steps<0) call io_error('Error: num_cg_steps must be positive')       
 
-    conv_tol=0.0_dp
+    conv_tol=1.0e-10_dp
     call param_get_keyword('conv_tol',found,r_value=conv_tol)
     if (conv_tol<0.0_dp) call io_error('Error: conv_tol must be positive')
 
-    conv_window=3
+    conv_window=-1
     call param_get_keyword('conv_window',found,i_value=conv_window)
-    if (conv_window<0) call io_error('Error: conv_window must be positive')
+
+    conv_noise_amp=-1.0_dp
+    call param_get_keyword('conv_noise_amp',found,r_value=conv_noise_amp)
+
+    conv_noise_num=3
+    call param_get_keyword('conv_noise_num',found,i_value=conv_noise_num)
+    if (conv_noise_num<0) call io_error('Error: conv_noise_num must be positive')
 
     guiding_centres=.false.
     call param_get_keyword('guiding_centres',found,l_value=guiding_centres)

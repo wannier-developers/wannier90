@@ -1870,6 +1870,9 @@ contains
            enddo
         endif
 
+        deallocate(temp_hist,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating temp_hist in dis_extract')
+
         return
 
       end subroutine internal_test_convergence
