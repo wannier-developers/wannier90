@@ -359,11 +359,12 @@ contains
     call param_get_keyword('conv_tol',found,r_value=conv_tol)
     if (conv_tol<0.0_dp) call io_error('Error: conv_tol must be positive')
 
-    conv_window=-1
-    call param_get_keyword('conv_window',found,i_value=conv_window)
-
     conv_noise_amp=-1.0_dp
     call param_get_keyword('conv_noise_amp',found,r_value=conv_noise_amp)
+
+    conv_window=-1
+    if (conv_noise_amp>0.0_dp) conv_window=5
+    call param_get_keyword('conv_window',found,i_value=conv_window)
 
     conv_noise_num=3
     call param_get_keyword('conv_noise_num',found,i_value=conv_noise_num)
