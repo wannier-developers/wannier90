@@ -87,6 +87,7 @@ module w90_parameters
   logical,           public, save :: write_xyz
   real(kind=dp),     public, save :: conv_noise_amp
   integer,           public, save :: conv_noise_num
+  real(kind=dp),     public, save :: wannier_plot_radius
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -174,6 +175,8 @@ module w90_parameters
   ! Are we running as a libarary
   logical, save, public :: library
 
+  ! Wannier centres
+  real(kind=dp), public, save, allocatable :: wannier_centres(:,:)
 
   !private data
   integer                            :: num_lines
@@ -425,6 +428,15 @@ contains
        end do
     end if
 
+    wannier_plot_radius = 3.5_dp
+    call param_get_keyword('wannier_plot_radius',found,r_value=wannier_plot_radius)
+    if (wannier_plot_radius < 0.0_dp) call io_error('Error: wannier_plot_radius must be positive')
+
+    ! check
+    if (wannier_plot) then
+       if ( (index(wannier_plot_format,'xcrys').eq.0) .and. (index(wannier_plot_format,'cub').eq.0) ) &
+            call io_error('Error: wannier_plot_format not recognised')
+    endif
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
@@ -683,13 +695,17 @@ contains
     if (disentanglement) then 
        allocate(ndimwin(num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error allocating ndimwin in param_read')
-        allocate(lwindow(num_bands,num_kpts),stat=ierr)
+       allocate(lwindow(num_bands,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error allocating lwindow in param_read')
     endif
 
     ! Initialise
     omega_invariant = -999.0_dp
     have_disentangled = .false.
+
+    allocate(wannier_centres(3,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
+    wannier_centres=0.0_dp
 
     return
 
@@ -1131,6 +1147,10 @@ contains
     if( allocated( exclude_bands) ) then
        deallocate( exclude_bands, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating exclude_bands in param_dealloc')
+    end if
+    if( allocated( wannier_centres) ) then
+       deallocate( wannier_centres, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wannier_centres in param_dealloc')
     end if
 
 

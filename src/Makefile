@@ -47,7 +47,7 @@ disentangle.o: disentangle.F90 parameters.o constants.o io.o
 wannierise.o: wannierise.F90 parameters.o io.o utility.o constants.o io.o
 	 $(F90) $(FCOPTS) -c wannierise.F90
 
-plot.o: plot.F90
+plot.o: plot.F90 constants.o parameters.o io.o
 	 $(F90) $(FCOPTS) -c plot.F90
 
 wannier_lib.o: ./plot.o ./wannierise.o ./overlap.o \
