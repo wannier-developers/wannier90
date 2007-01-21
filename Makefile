@@ -55,6 +55,7 @@ dist:
 		./Makefile \
 		./LICENCE \
 		./README* \
+		./CHANGE.log \
         | gzip -c > \
                 ./wannier90.tar.gz)
 
