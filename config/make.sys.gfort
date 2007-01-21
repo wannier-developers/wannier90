@@ -1,20 +1,21 @@
 #===================
 # g95
 #===================
-F90 = gfort
-FCOPTS = -O2 -DG95
+F90 = gfortran
+FCOPTS = -O2 
 LDOPTS = -O2
-                                                                                                                                            
+
+
 #=======================
 # ATLAS Blas and LAPACK
 #=======================
 #LIBDIR = /usr/local/lib
 #LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
-                                                                                                                                            
+
+
 #=======================
 # NETLIB LAPACK and BLAS
 #=======================
-                                                                                                                                            
 #LIBDIR = /usr/local/lib
 #LIBS = -L$(LIBDIR)  -llapack -lblas
 
