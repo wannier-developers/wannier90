@@ -650,29 +650,12 @@ contains
 
       implicit none
 
-#ifdef G95
-      complex(kind=dp) :: ztmp
-#else
       complex(kind=dp) :: zdotc
-#endif
-      integer :: iw,jw,ik
 
       if (timing_level>1) call io_stopwatch('wann: main: search_direction',1)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
-#ifdef G95
-      ztmp=cmplx_0
-      do ik=1,num_kpts
-         do jw=1,num_wann
-            do iw=1,num_wann
-               ztmp = ztmp + conjg(cdodq(iw,jw,ik))*cdodq(iw,jw,ik)
-            enddo
-         enddo
-      enddo
-      gcnorm1 = real(ztmp,dp)
-#else
       gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
-#endif
 
       ! calculate cg_coefficient
       if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
@@ -710,19 +693,7 @@ contains
       endif
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
-#ifdef G95
-      ztmp=cmplx_0
-      do ik=1,num_kpts
-         do jw=1,num_wann
-            do iw=1,num_wann
-               ztmp = ztmp + conjg(cdodq(iw,jw,ik))*cdq(iw,jw,ik)
-            enddo
-         enddo
-      enddo
-      doda0 = -real(ztmp,dp)
-#else
       doda0 = -real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdq,1),dp)
-#endif
       doda0 = doda0 / (4.0_dp*wbtot)
 
       ! check search direction is not uphill
@@ -736,19 +707,7 @@ contains
             ncg = 0
             gcfac = 0.0_dp
             ! re-calculate gradient along search direction
-#ifdef G95
-            ztmp=cmplx_0
-            do ik=1,num_kpts
-               do jw=1,num_wann
-                  do iw=1,num_wann
-                     ztmp = ztmp + conjg(cdodq(iw,jw,ik))*cdq(iw,jw,ik)
-                  enddo
-               enddo
-            enddo
-            doda0 = -real(ztmp,dp)
-#else
             doda0 = -real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdq,1),dp)
-#endif
             doda0 = doda0 / (4.0_dp*wbtot)
             ! if search direction still uphill then reverse search direction
             if (doda0.gt.0.0_dp) then
