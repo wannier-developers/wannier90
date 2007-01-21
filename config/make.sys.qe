@@ -1,0 +1,16 @@
+#=======================================
+# For use inside a Quantum Espresso Dist
+#=======================================
+
+# read in the QE config
+
+include ../../make.sys
+
+# rewrite to our variable names
+
+F90=$(MPIF90)
+FCOPTS=$(F90FLAGS) 
+
+
+
+
