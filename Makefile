@@ -2,7 +2,7 @@
 
 default: wannier
 
-all: wannier
+all: wannier lib
 
 doc: thedoc
 
