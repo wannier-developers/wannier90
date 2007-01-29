@@ -719,7 +719,7 @@ contains
          enddo
 
          ! Debugging
-!         if (iprint>3) then
+         if (iprint>3) then
             write(stdout,'(a,3i12)')    'ngi     =', ngx,ngy,ngz
             write(stdout,'(a,3f12.6)') 'dgrid   =',(dgrid(i),i=1,3)
             write(stdout,'(a,3f12.6)') 'rstart  =',(rstart(i),i=1,3)
@@ -730,7 +730,7 @@ contains
             write(stdout,'(a,3i12)')    'ilength =',(ilength(i),i=1,3)
             write(stdout,'(a,3f12.6)') 'orig    =',(orig(i),i=1,3)
             write(stdout,'(a,3f12.6,/)') 'wann_cen=',(wannier_centres(loop_w,i),i=1,3)
-!         endif
+         endif
 
          allocate(wann_cube(1:ilength(1),1:ilength(2),1:ilength(3)),stat=ierr)
          if (ierr.ne.0) call io_error('Error: allocating wann_cube in wannier_plot')
