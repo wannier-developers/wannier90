@@ -1283,6 +1283,8 @@ contains
        write(chk_unit) (ndimwin(nkp),nkp=1,num_kpts)
        write(chk_unit) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
     endif
+    ! Required for plot restarts and cube files
+    write(chk_unit) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
 
     close(chk_unit)
 
@@ -1383,6 +1385,10 @@ contains
 
     endif
 
+    if ( (index(restart,'plot').ne.0) .and. (index(wannier_plot_format,'cub').ne.0)) then
+       read(chk_unit,err=125) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
+    endif
+
     close(chk_unit)
 
     write(stdout,'(a/)') ' ... done'
@@ -1393,6 +1399,7 @@ contains
 122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in param_read_chkpt')
 123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in param_read_chkpt')
 124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt')
+125 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in param_read_chkpt')
 
   end subroutine param_read_chkpt
 
