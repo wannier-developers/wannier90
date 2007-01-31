@@ -640,7 +640,7 @@ contains
       real(kind=dp) :: moda(3),modb(3)
       real(kind=dp) :: radius,val_Q
       integer :: ierr,iname,max_elements
-      integer :: isp,iat,nzz,nyy,nxx,loop_w,qxx,qyy,qzz
+      integer :: isp,iat,nzz,nyy,nxx,loop_w,qxx,qyy,qzz,wann_index
       integer :: istart(3),iend(3),ilength(3)
       integer, allocatable :: atomic_Z(:)
       character(len=2), dimension(109) :: periodic_table= (/ &
@@ -691,17 +691,18 @@ contains
       ! Loop over WFs
       do loop_w=1,num_wannier_plot
          
-         write(wancube,202) trim(seedname),wannier_plot_list(loop_w)
+         wann_index = wannier_plot_list(loop_w)
+         write(wancube,202) trim(seedname),wann_index
 
          ! Find start and end of cube wrt simulation cell origin
          do i=1,3
             ! ... in terms of distance along each lattice vector direction i
-            rstart(i) = ( wannier_centres(loop_w,1)*recip_lattice(i,1) &
-                 + wannier_centres(loop_w,2)*recip_lattice(i,2) &
-                 + wannier_centres(loop_w,3)*recip_lattice(i,3) - radius*modb(i) ) * moda(i) / twopi
-            rend(i) = ( wannier_centres(loop_w,1)*recip_lattice(i,1) &
-                 + wannier_centres(loop_w,2)*recip_lattice(i,2) &
-                 + wannier_centres(loop_w,3)*recip_lattice(i,3) + radius*modb(i) ) * moda(i) / twopi
+            rstart(i) = ( wannier_centres(1,wann_index)*recip_lattice(i,1) &
+                 + wannier_centres(2,wann_index)*recip_lattice(i,2) &
+                 + wannier_centres(3,wann_index)*recip_lattice(i,3) - radius*modb(i) ) * moda(i) / twopi
+            rend(i) = ( wannier_centres(1,wann_index)*recip_lattice(i,1) &
+                 + wannier_centres(2,wann_index)*recip_lattice(i,2) &
+                 + wannier_centres(3,wann_index)*recip_lattice(i,3) + radius*modb(i) ) * moda(i) / twopi
          enddo
 
          rlength(:) = rend(:) - rstart(:)
@@ -729,7 +730,7 @@ contains
             write(stdout,'(a,3i12)')    'iend    =',(iend(i),i=1,3)
             write(stdout,'(a,3i12)')    'ilength =',(ilength(i),i=1,3)
             write(stdout,'(a,3f12.6)') 'orig    =',(orig(i),i=1,3)
-            write(stdout,'(a,3f12.6,/)') 'wann_cen=',(wannier_centres(loop_w,i),i=1,3)
+            write(stdout,'(a,3f12.6,/)') 'wann_cen=',(wannier_centres(i,wann_index),i=1,3)
          endif
 
          allocate(wann_cube(1:ilength(1),1:ilength(2),1:ilength(3)),stat=ierr)
