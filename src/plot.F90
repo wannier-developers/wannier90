@@ -33,7 +33,7 @@ contains
 
     use w90_constants, only : cmplx_0
     use w90_io, only        : io_error,stdout,io_stopwatch
-    use w90_parameters, only    : num_kpts,bands_plot,dos_plot,&
+    use w90_parameters, only    : num_kpts,bands_plot,dos_plot,h_plot, &
          mp_grid,kpt_latt,fermi_surface_plot,num_wann,wannier_plot,timing_level
 
     implicit none
@@ -48,7 +48,7 @@ contains
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,*)
 
-    if(bands_plot .or. dos_plot .or. fermi_surface_plot) then
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. h_plot) then
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
@@ -74,6 +74,8 @@ contains
        if(bands_plot) call plot_interpolate_bands
        !
        if(fermi_surface_plot) call plot_fermi_surface
+       !
+       if(h_plot) call plot_ham_r
        !
        deallocate(ham_r,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating ham_r in plot_main')
@@ -980,6 +982,164 @@ contains
     if (timing_level>1) call io_stopwatch('plot: get_hr',2)
 
   end subroutine plot_get_hr
+
+
+
+ !============================================!
+  subroutine plot_ham_r
+  !============================================!
+  !                                            !
+  !  Write the Hamiltonian in the WF basis:    !
+  !  input for the conductance calculation     !
+  !                                            !
+  !  Only for 1-dim at this point              ! 
+  !  mp_grid should be 1 except one direction  !
+  !   - will be checked                        !
+  !  *Gamma-point : simply write ham_r         !
+  !                                            !
+  !  ex) 5 k-pts, in terms of irvec            !
+  !      z : zero                              !
+  !                                            !
+  !     |  0  1  2 |     |  z  z  z |          !
+  ! H00=| -1  0  1 | H01=|  2  z  z |          !
+  !     | -2 -1  0 |     |  1  2  z |          !      
+  !                                            !
+  !============================================!
+
+    use w90_constants, only : dp
+    use w90_io,        only : io_error,io_stopwatch,io_file_unit, &
+                              stdout,seedname
+    use w90_parameters, only : mp_grid,num_wann,ham_r_max,timing_level
+
+    implicit none
+  
+    integer            :: kdir,nrx,file_unit,i,j,im,jm,m,loop_rpt,counter
+    real(kind=dp)      :: ham_rr(num_wann,num_wann), max_hamr(nrpts)
+    real(kind=dp), allocatable  :: hr(:,:)
+
+    if (timing_level>1) call io_stopwatch('plot: ham_r',1)
+
+    ! check mp_grid - one dimension?
+
+    counter=0
+    do i=1,3
+       if ( mp_grid(i) .eq. 1 ) then
+          counter=counter+1
+       else
+          kdir = i
+       end if
+    end do
+   
+    if( counter .lt. 2 ) then 
+      write(stdout,'(i3,a)') counter,' : NOT A ONE-DIMENSIONAL SYSTEM'
+      call io_error('Error in plot_ham_r: incorrect mp_grid') 
+    end if
+
+    ! write the  whole matrix with all indices for a crosscheck
+    file_unit=io_file_unit()
+    open(unit=file_unit,file=trim(seedname)//'.h_all.dat',form='formatted',status='unknown')
+    if ( counter .eq. 3 ) then
+       do i=1,num_wann
+          do j=1,num_wann
+             write( file_unit,'(2I5,2F12.6)') j,i,dreal(ham_r(j,i,1)),dimag(ham_r(j,i,1))
+          end do
+       end do
+    else
+       do loop_rpt=1,nrpts
+          do i=1,num_wann
+             do j=1,num_wann
+                write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
+                                     dreal(ham_r(j,i,loop_rpt)),dimag(ham_r(j,i,loop_rpt))
+             end do
+          end do
+       end do
+    end if   
+    close(file_unit)
+
+    ! stop here for Gamma sampling
+
+    if (counter .eq. 3 ) return
+
+    ! degeneracy - simply divide by ndegen ( should be fine if ham_r elements are very small at the boundary )
+
+    do loop_rpt=1,nrpts
+       if ( ndegen(loop_rpt) .ne. 1 ) ham_r(:,:,loop_rpt) = ham_r(:,:,loop_rpt) / real(ndegen(loop_rpt),dp)
+    end do
+
+    ! output largest elements in each lattice point inside W-S cell  
+    write(stdout,'(a)') ' Output ham_r for conductance/dos calculation'
+    write(stdout,'(a)') ' --check the biggest component in ham_r for each lattice in Wigner-Seitz cell'
+    do loop_rpt=1,nrpts
+       ham_rr=abs(real(ham_r(:,:,loop_rpt)))
+       max_hamr(loop_rpt) = maxval( ham_rr )
+       write(stdout,'(I5,"  irvec=",I5,F12.6)') loop_rpt, irvec(kdir,loop_rpt), max_hamr(loop_rpt)   
+    end do
+    write(stdout,'(a)') ' '
+   
+    ! H00 will be (nrx+1)*num_wann by (nrx+1)*num_wann
+
+    nrx = nrpts/2
+
+    ! check irvec
+    ! irvec should be [-nrx,nrx] in sequence
+    m=-nrx
+    do loop_rpt=1,nrpts
+       if (irvec(kdir,loop_rpt) .ne. m) then
+          write(stdout,'(a8,i5,a)') 'nrpts=',nrpts,'YOUR GRID IS NOT THE ONE YOU THINK'
+          call io_error('Error in plot_ham_r: wrong guess for nrpts') 
+       end if
+       m=m+1
+    end do 
+
+    ! apply cutoff ham_r_max -> new nrx
+   
+    nrx = 0
+    do loop_rpt=1,nrpts 
+       if (max_hamr(loop_rpt) .gt. ham_r_max ) then
+          if ( abs(irvec(kdir,loop_rpt)) .gt. nrx )  nrx = abs(irvec(kdir,loop_rpt))
+       end if
+    end do
+    write(stdout,'(a,f10.6)') '  ham_r_max :',ham_r_max
+    write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
+
+    allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann))
+
+    file_unit=io_file_unit()
+    open(unit=file_unit,file=trim(seedname)//'.h.dat',form='formatted',status='unknown')
+  
+    ! H00  
+    write(file_unit,'(I6)') (nrx+1)*num_wann 
+    hr = 0.d0
+    do j=0,nrx
+       do i=0,nrx  
+          m = i-j+nrpts/2+1
+          im=i*num_wann
+          jm=j*num_wann
+          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
+       end do
+    end do
+    write(file_unit,'(6F15.10)') hr
+    
+    ! H01  
+    write(file_unit,'(I6)') (nrx+1)*num_wann 
+    hr = 0.d0
+    do j=0,nrx
+       do i=0,j-1
+          m = i-j+(nrpts/2+1)+(nrx+1) ! starting point shifted by nrx+1  
+          im=i*num_wann
+          jm=j*num_wann
+          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
+       end do
+    end do
+    write(file_unit,'(6F15.10)') hr
+
+    close(file_unit)
+    deallocate(hr)
+    
+    if (timing_level>1) call io_stopwatch('plot: ham_r',2)
+
+  end subroutine plot_ham_r
+
 
 
   !================================================================================!

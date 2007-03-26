@@ -157,7 +157,7 @@ program wannier
 
 2002 continue
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. h_plot) then
      call plot_main
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time2-time1,' (sec)'     
