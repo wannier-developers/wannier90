@@ -1897,9 +1897,21 @@ contains
        lunits=.false.
     endif
 
+    if(rows<=0) then !cope with empty blocks
+       found=.false.
+       in_data(line_s:line_e)(1:maxlen) = ' '
+    end if
+
+
     return
 
 555 lunits=.true.
+
+    if(rows<=1) then !cope with empty blocks
+       found=.false.
+       in_data(line_s:line_e)(1:maxlen) = ' '
+    end if
+
 
     return
 
