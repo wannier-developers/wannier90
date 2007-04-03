@@ -63,15 +63,15 @@ contains
     integer :: nlist,nkp,nkp2,l,m,n,ndnn,ndnnx,ndnntot
     integer :: nnsh,nn,nnx,loop,i,j
     integer :: ifound,counter,na,nap,loop_s,loop_b
-    integer :: ifpos,ifneg,ierr,multi(num_nnmax)
-    integer :: nnshell(num_kpts,num_nnmax)
+    integer :: ifpos,ifneg,ierr,multi(search_shells)
+    integer :: nnshell(num_kpts,search_shells)
     
 
     real(kind=dp) :: vkpp(3),vkpp2(3)
     real(kind=dp) :: dist, dnn0,dnn1, bb1,bbn, ddelta
     real(kind=dp) :: eta,eps                    ! eta = very large ; eps = very small
     real(kind=dp) :: bweight(max_shells)
-    real(kind=dp) :: dnn(num_nnmax)
+    real(kind=dp) :: dnn(search_shells)
     real(kind=dp) :: wb_local(num_nnmax)
     real(kind=dp) :: bk_local(3,num_nnmax,num_kpts)
 
@@ -94,7 +94,7 @@ contains
     dnn0 = 0.0_dp  
     dnn1 = eta  
     ndnntot = 0  
-    do nlist = 1, num_nnmax  
+    do nlist = 1, search_shells
        do nkp = 1, num_kpts  
           do loop=1,(2*nsupcell+1)**3
              l=lmn(1,loop);m=lmn(2,loop);n=lmn(3,loop)
@@ -800,7 +800,8 @@ contains
           if(shell<search_shells .and. iprint>=3) then
              write(stdout,'(1x,a,24x,a1)') '| B1 condition is not satisfied: Adding another shell','|'
           elseif(shell==search_shells) then
-             call io_error('kmesh_get_automatic: Unable to satisfy B1 with any of the first 12 shells')
+             write(stdout,'(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ',search_shells,' shells'
+             call io_error('kmesh_get_automatic')
           end if
        end if
 
@@ -821,7 +822,11 @@ contains
 
     end do
 
-    if(.not. b1sat)  call io_error('kmesh_get_automatic: Unable to satisfy B1 with any of the first 12 shells')
+    if(.not. b1sat)  then
+       write(stdout,'(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ',search_shells,' shells'
+       call io_error('kmesh_get_automatic')
+    end if
+
 
     if (timing_level>1) call io_stopwatch('kmesh: shell_automatic',2)
 
