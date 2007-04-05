@@ -91,6 +91,8 @@ module w90_parameters
   integer,           public, save :: conv_noise_num
   real(kind=dp),     public, save :: wannier_plot_radius
 
+  integer,           public, save :: search_shells   !for kmesh
+
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
   character(len=20), public, save :: checkpoint
@@ -599,9 +601,9 @@ contains
     if(disentanglement .and. use_bloch_phases) &
          call io_error('Error: Cannot use bloch phases for disentanglement')
 
-!!$    num_nnmax                 = 12
-!!$    call param_get_keyword('num_nnmax',found,i_value=num_nnmax)
-!!$    if (num_nnmax<0) call io_error('Error: num_nnmax must be positive')       
+    search_shells                 = 12
+    call param_get_keyword('search_shells',found,i_value=search_shells)
+    if (search_shells<0) call io_error('Error: search_shells must be positive')       
 
     num_shells                   = 0 
     call param_get_keyword('num_shells',found,i_value=num_shells)
@@ -621,7 +623,6 @@ contains
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
-       !This is a hack. I must workout what is the sensible way to read and store this jry
        real_lattice=transpose(real_lattice_tmp)
        if(.not. found) call io_error('Error: Did not find the cell information in the input file')
     end if

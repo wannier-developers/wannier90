@@ -40,7 +40,6 @@ module w90_kmesh
 
 
   integer, parameter :: nsupcell=5
-  integer, parameter :: search_shells=12
   integer :: lmn(3,(2*nsupcell+1)**3)
   real(kind=dp), parameter :: tol8=1.e-8_dp
 
@@ -800,7 +799,11 @@ contains
           if(shell<search_shells .and. iprint>=3) then
              write(stdout,'(1x,a,24x,a1)') '| B1 condition is not satisfied: Adding another shell','|'
           elseif(shell==search_shells) then
-             write(stdout,'(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ',search_shells,' shells'
+             write(stdout,*) ' '
+       write(stdout,'(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ',search_shells,' shells'
+       write(stdout,'(1x,a)') 'Your cell might be very long, or you may have an irregular MP grid'
+       write(stdout,'(1x,a)') 'Try increasing the parameter search_shells in the win file (default=12)'
+       write(stdout,*) ' '
              call io_error('kmesh_get_automatic')
           end if
        end if
@@ -823,7 +826,11 @@ contains
     end do
 
     if(.not. b1sat)  then
+       write(stdout,*) ' '
        write(stdout,'(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ',search_shells,' shells'
+       write(stdout,'(1x,a)') 'Your cell might be very long, or you may have an irregular MP grid'
+       write(stdout,'(1x,a)') 'Try increasing the parameter search_shells in the win file (default=12)'
+       write(stdout,*) ' '
        call io_error('kmesh_get_automatic')
     end if
 
