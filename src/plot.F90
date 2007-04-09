@@ -1013,7 +1013,8 @@ contains
 
     implicit none
   
-    integer            :: kdir,nrx,file_unit,i,j,im,jm,m,loop_rpt,counter
+    integer            :: kdir,nrx,file_unit,ierr
+    integer            :: i,j,im,jm,m,loop_rpt,counter
     real(kind=dp)      :: ham_rr(num_wann,num_wann), max_hamr(nrpts)
     real(kind=dp), allocatable  :: hr(:,:)
 
@@ -1102,7 +1103,8 @@ contains
     write(stdout,'(a,f10.6)') '  ham_r_max :',ham_r_max
     write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
 
-    allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann))
+    allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hr in plot_ham_r')
 
     file_unit=io_file_unit()
     open(unit=file_unit,file=trim(seedname)//'.h.dat',form='formatted',status='unknown')
@@ -1134,7 +1136,9 @@ contains
     write(file_unit,'(6F15.10)') hr
 
     close(file_unit)
-    deallocate(hr)
+
+    deallocate(hr,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating hr in plot_ham_r')
     
     if (timing_level>1) call io_stopwatch('plot: ham_r',2)
 

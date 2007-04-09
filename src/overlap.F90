@@ -24,6 +24,7 @@ module w90_overlap
   public :: overlap_read
   public :: overlap_dealloc
   public :: overlap_project
+  public :: overlap_project_gamma  ![ysl]
 
 contains
 
@@ -35,7 +36,7 @@ contains
     
     use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
-                           m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases
+                           m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only ![ysl]
     use w90_io,         only : io_file_unit, io_error, seedname, io_stopwatch
 
     implicit none
@@ -217,8 +218,28 @@ contains
        
        ! If we don't need to disentangle we can now convert from A to U
        ! And rotate M accordingly
-       if(.not.disentanglement .and. (.not.cp_pp) .and. (.not. use_bloch_phases )) &
-            call overlap_project
+![ysl-b]
+!       if(.not.disentanglement .and. (.not.cp_pp) .and. (.not. use_bloch_phases )) &
+!            call overlap_project
+       if((.not.cp_pp) .and. (.not. use_bloch_phases )) then
+         if (.not.disentanglement) then
+            if ( .not. gamma_only ) then
+               call overlap_project
+            else
+               call overlap_project_gamma()
+            endif
+         else
+            if (gamma_only) call overlap_symmetrize()
+         endif
+       endif
+                                                                                                                                             
+       if( gamma_only .and. use_bloch_phases ) then
+         write(stdout,'(1x,"+",76("-"),"+")')
+         write(stdout,'(3x,a)') 'WARNING: gamma_only and use_bloch_phases                 '
+         write(stdout,'(3x,a)') '         M must be calculated from *real* Bloch functions'
+         write(stdout,'(1x,"+",76("-"),"+")')
+       end if
+![ysl-e]
 
     endif
 
@@ -234,6 +255,98 @@ return
   end subroutine overlap_read
 
   
+![ysl-b]
+  !%%%%%%%%%%%%%%%%%%%%%
+  subroutine overlap_symmetrize
+  !%%%%%%%%%%%%%%%%%%%%%
+
+    use w90_parameters, only : num_bands,num_wann,a_matrix,m_matrix_orig,u_matrix,m_matrix, &
+                               nntot,timing_level,disentanglement,ph_g
+    use w90_io,         only : io_error,io_stopwatch
+
+    implicit none
+
+    integer       :: nn,i,j,m,n, p(1), mdev, ndev, nndev,ierr
+    real(kind=dp) :: eps,dev,dev_tmp
+    real(kind=dp),    allocatable :: a_cmp(:)
+   
+   
+    if (timing_level>1) call io_stopwatch('overlap: symmetrize',1)
+
+    allocate(a_cmp(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating a_cmp in overlap_symmetrize')
+    allocate(ph_g(num_bands),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_symmetrize')
+
+    eps = 1.0e-6_dp
+    ph_g=cmplx_0
+
+    ! disentanglement - m_matrix_orig 
+    ! localzation only - m_matrix
+    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
+    ! A_mn = ph_g(m)^(-1)*<m_R|g_n>   (m_R implies a real wave function)
+    ! At m_th row, find five elements with largest complex component
+    ! -> ph_g(m) is calculated from those elements 
+    !
+    do m=1,num_bands
+       a_cmp(:)=dabs(dimag(a_matrix(m,:,1)))
+       do j=1,2
+          p=maxloc(a_cmp)
+          ph_g(m)=ph_g(m)+a_matrix(m,p(1),1)/cdabs(a_matrix(m,p(1),1))
+          a_cmp(p(1))=0.0_dp
+       end do
+       ph_g(m)=conjg(ph_g(m)/cdabs(ph_g(m)))
+    end do  
+
+    ! M_mn (new) = ph_g(m) * M_mn (old) * conjg(ph_g(n))
+    ! a_mn (new) = ph_g(m) * a_mn (old)
+
+    do nn=1,nntot
+       do n=1,num_bands 
+          do m=1,num_bands
+             m_matrix_orig(m,n,nn,1)=ph_g(m)*m_matrix_orig(m,n,nn,1)*conjg(ph_g(n))
+          end do 
+       end do
+    end do
+    do n=1,num_wann
+       do m=1,num_bands
+          a_matrix(m,n,1)=ph_g(m)*a_matrix(m,n,1)
+       end do
+    end do
+
+    ! check whether M_mn is now symmetric
+    dev = 0.0_dp
+    do nn=1,nntot
+       do n=1,num_bands
+          do m=1,n
+             dev_tmp=cdabs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
+             if ( dev_tmp .gt. dev ) then
+                dev = dev_tmp
+                mdev  = m ; ndev  = n ;  nndev  = nn
+             end if
+          end do 
+       end do
+    end do
+    if ( dev .gt. eps ) then    
+       write(stdout,'(1x,"+",76("-"),"+")') 
+       write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_symmetrize'  
+       write(stdout,'(3x,a,f12.8)') &
+            'Largest deviation |M_mn-M_nm| at k : ',dev
+       write(stdout,'(3(a5,i4))') &
+            '   m=',mdev,',  n=',ndev,',  k=',nndev
+       write(stdout,'(1x,"+",76("-"),"+")') 
+    end if
+
+    deallocate(a_cmp,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating a_cmp in overlap_symmetrize')
+
+    if (timing_level>1) call io_stopwatch('overlap: symmetrize',2)
+
+    return
+
+  end subroutine overlap_symmetrize
+![ysl-e]
+
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_rotate
   !%%%%%%%%%%%%%%%%%%%%%
@@ -313,7 +426,7 @@ return
   !%%%%%%%%%%%%%%%%%%%%%
 
     use w90_parameters, only : u_matrix,m_matrix,m_matrix_orig,&
-                       a_matrix,u_matrix_opt
+                       a_matrix,u_matrix_opt, ph_g ![ysl]
     use w90_io,     only : io_error
 
     implicit none
@@ -332,6 +445,13 @@ return
        deallocate( m_matrix_orig, stat=ierr )
        if (ierr/=0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc')
     endif
+![ysl-b]
+    if (allocated( ph_g)) then
+       deallocate( ph_g, stat=ierr )
+       if (ierr/=0) call io_error('Error deallocating ph_g in overlap_dealloc')
+    endif
+![ysl-e]
+
 
     deallocate ( m_matrix, stat=ierr )
     if (ierr/=0) call io_error('Error deallocating m_matrix in overlap_dealloc')
@@ -466,6 +586,194 @@ return
 
   end subroutine overlap_project
 
+![ysl-b]
+  !==================================================================!
+  subroutine overlap_project_gamma()
+  !==================================================================!
+  !                                                                  !
+  !  Note that in this subroutine num_wann = num_bands               ! 
+  !  since, if we are here, then disentanglement = FALSE             !
+  !  Gamma specific version                                          !
+  !                                                                  !
+  !==================================================================!  
+    use w90_constants
+    use w90_io,         only : io_error,io_stopwatch
+    use w90_parameters, only : num_bands,num_wann,num_kpts,timing_level,&
+                           u_matrix,m_matrix,nntot,nnlist,ph_g 
+    use w90_utility,    only : utility_zgemm
+
+    implicit none
+
+
+    ! internal variables
+    integer :: i,j,m,n,info,ierr,nn, p(1), mdev, ndev, nndev       
+    real(kind=dp)                 :: eps, rtmp2, dev, dev_tmp
+    real(kind=dp),    allocatable :: u_matrix_r(:,:)
+    real(kind=dp),    allocatable :: u_cmp(:)
+    real(kind=dp),    allocatable :: svals(:)
+    real(kind=dp),    allocatable :: work(:)
+    real(kind=dp),    allocatable :: rz(:,:)
+    real(kind=dp),    allocatable :: rv(:,:)
+    complex(kind=dp), allocatable :: ph(:)
+    complex(kind=dp), allocatable :: cz(:,:)
+    complex(kind=dp), allocatable :: cvdag(:,:)
+
+    if (timing_level>1) call io_stopwatch('overlap: project_gamma',1)
+
+    allocate(ph_g(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_project_gamma')
+    ! internal variables
+    allocate(u_matrix_r(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating u_matrix_r in overlap_project_gamma')
+    allocate(u_cmp(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating u_cmp in overlap_project_gamma')
+    allocate(svals(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating svals in overlap_project_gamma')
+    allocate(work(5*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating work in overlap_project_gamma')
+    allocate(rz(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating rz in overlap_project_gamma')
+    allocate(rv(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating rv in overlap_project_gamma')
+    allocate(cz(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cz in overlap_project_gamma')
+    allocate(cvdag(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cvdag in overlap_project_gamma')
+
+    eps = 1.0e-6_dp
+    ! 
+    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
+    ! U_mn = ph_g(m)^(-1)*<m_R|g_n>   (m_R implies a real wave function)
+    ! At m_th row, find five elements with largest complex component
+    ! -> ph_g(m) is calculated from those elements 
+    ! U_mn (new) = ph_g(m) * U_mn (old)
+    !
+    do m=1,num_wann
+       u_cmp(:)=dabs(dimag(u_matrix(m,:,1)))
+       do j=1,2
+          p=maxloc(u_cmp)
+          ph_g(m)=ph_g(m)+u_matrix(m,p(1),1)/cdabs(u_matrix(m,p(1),1))
+          u_cmp(p(1))=0.0_dp
+       end do
+       ph_g(m)=conjg(ph_g(m)/cdabs(ph_g(m)))
+       u_matrix_r(m,:)=dreal(ph_g(m)*u_matrix(m,:,1))
+    end do  
+
+    ! M_mn (new) = ph(m) * M_mn (old) * conjg(ph(n))
+
+    do nn=1,nntot
+       do n=1,num_wann
+          do m=1,num_wann
+             m_matrix(m,n,nn,1)=ph_g(m)*m_matrix(m,n,nn,1)*conjg(ph_g(n))
+          end do
+       end do
+    end do
+    !
+    ! check whether M_mn is now symmetric
+    !
+    dev = 0.0_dp
+    do nn=1,nntot
+       do n=1,num_wann
+          do m=1,n
+             dev_tmp=cdabs(m_matrix(m,n,nn,1)-m_matrix(n,m,nn,1))
+             if ( dev_tmp .gt. dev ) then
+                dev = dev_tmp
+                mdev  = m ; ndev  = n ;  nndev  = nn
+             end if
+          end do 
+       end do
+    end do
+    if ( dev .gt. eps ) then    
+       write(stdout,'(1x,"+",76("-"),"+")')
+       write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_project_gamma'
+       write(stdout,'(3x,a,f12.8)') &
+            'Largest deviation |M_mn-M_nm| at k : ',dev
+       write(stdout,'(3(a5,i4))') &
+            '   m=',mdev,',  n=',ndev,',  k=',nndev
+       write(stdout,'(1x,"+",76("-"),"+")')
+    end if
+    !
+    ! Calculate the transformation matrix RU = RS^(-1/2).RA,
+    ! where RS = RA.RA^\dagger.
+    !
+    ! SINGULAR VALUE DECOMPOSITION
+    !
+    call DGESVD ('A', 'A', num_wann, num_wann, u_matrix_r, num_wann, &
+           svals, rz, num_wann, rv, num_wann, work, 5*num_wann, info)
+    if (info.ne.0) then
+       write(stdout,*) ' ERROR: IN DGESVD IN overlap_project_gamma'
+       if (info.lt.0) then
+          write(stdout,*) 'THE ',  -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
+       endif
+       call io_error('overlap_project_gamma: problem in DGESVD 1')
+    endif
+
+    call dgemm('N','N',num_wann,num_wann,num_wann,1.0_dp,&
+           rz,num_wann,rv,num_wann,0.0_dp,u_matrix_r,num_wann)
+    !
+    ! CHECK UNITARITY
+    !
+    do i = 1, num_wann
+       do j = 1, num_wann 
+          rtmp2 = 0.0_dp
+          do m = 1, num_wann  
+             rtmp2 = rtmp2 + u_matrix_r(m,j) * u_matrix_r(m,i)  
+          enddo
+          if ( (i.eq.j).and.(abs(rtmp2-1.0_dp).gt.0.00001_dp) ) then
+             write(stdout,*) ' ERROR: unitarity of initial U'  
+             write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
+             write(stdout,'(1x,a,f12.6)') &
+                  '[u_matrix.transpose(u_matrix)]_ij= ',&
+                  rtmp2
+             call io_error('Error in unitarity of initial U in overlap_project_gamma')
+          endif
+          if ( (i.ne.j) .and. (abs(rtmp2).gt.0.00001_dp) ) then  
+             write(stdout,*) ' ERROR: unitarity of initial U'  
+             write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
+             write(stdout,'(1x,a,f12.6,1x,f12.6)') &
+                  '[u_matrix.transpose(u_matrix)]_ij= ', &
+                  rtmp2
+             call io_error('Error in unitarity of initial U in overlap_project_gamma')
+          endif
+       enddo
+    enddo
+
+    u_matrix(:,:,1)=dcmplx(u_matrix_r(:,:),0.0_dp)
+
+    ! so now we have the U's that rotate the wavefunctions at each k-point.
+    ! the matrix elements M_ij have also to be updated
+
+    do nn=1,nntot
+       ! cvdag = U^{dagger} . M   (use as workspace)
+       call utility_zgemm(cvdag,u_matrix(:,:,1),'C',m_matrix(:,:,nn,1),'N',num_wann)
+       ! cz = cvdag . U
+       call utility_zgemm(cz,cvdag,'N',u_matrix(:,:,1),'N',num_wann)
+       m_matrix(:,:,nn,1) = cz(:,:)
+    end do
+    
+    deallocate(cvdag,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cvdag in overlap_project_gamma')
+    deallocate(cz,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cz in overlap_project_gamma')
+    deallocate(rv,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating rv in overlap_project_gamma')
+    deallocate(rz,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating rz in overlap_project_gamma')
+    deallocate(work,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating work in overlap_project_gamma')
+    deallocate(svals,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating svals in overlap_project_gamma')
+    deallocate(u_cmp,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating u_cmp in overlap_project_gamma')
+    deallocate(u_matrix_r,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating u_matrix_r in overlap_project_gamma')
+
+    if (timing_level>1) call io_stopwatch('overlap: project_gamma',2)
+
+    return  
+
+  end subroutine overlap_project_gamma
+![ysl-e]
 
 
 end module w90_overlap

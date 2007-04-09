@@ -148,7 +148,14 @@ program wannier
 
   time2=io_time()
 
-1001 call wann_main
+![ysl-b]
+1001 continue
+  if (.not. gamma_only) then
+       call wann_main
+  else
+       call wann_main_gamma
+  end if
+![ysl-e]
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time1-time2,' (sec)'     

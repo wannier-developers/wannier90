@@ -64,7 +64,7 @@ contains
     integer :: ifound,counter,na,nap,loop_s,loop_b
     integer :: ifpos,ifneg,ierr,multi(search_shells)
     integer :: nnshell(num_kpts,search_shells)
-    
+    integer, allocatable :: nnlist_tmp(:,:), nncell_tmp(:,:,:) ![ysl]
 
     real(kind=dp) :: vkpp(3),vkpp2(3)
     real(kind=dp) :: dist, dnn0,dnn1, bb1,bbn, ddelta
@@ -378,6 +378,93 @@ contains
           bk(:,loop,loop_s)=bk_local(:,loop,loop_s)
        end do
     end do
+
+![ysl-b]
+
+    if (gamma_only) then
+    ! use half of the b-vectors
+       if (num_kpts .ne. 1)  call io_error('Error in kmesh_get: wrong choice of gamma_only option')
+                                                                                                                                             
+    ! reassign nnlist, nncell, wb, bk
+       allocate(nnlist_tmp(num_kpts,nntot), stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating nnlist_tmp in kmesh_get')
+       allocate(nncell_tmp(3,num_kpts,nntot), stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating nncell_tmp in kmesh_get')
+                                                                                                                                             
+       nnlist_tmp(:,:) = nnlist(:,:)
+       nncell_tmp(:,:,:)   = nncell(:,:,:)
+                                                                                                                                             
+       deallocate(nnlist, stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_get')
+       deallocate(nncell, stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating nncell in kmesh_get')
+       deallocate(wb, stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating wb in kmesh_get')
+       deallocate(bk, stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating bk in kmesh_get')
+                                                                                                                                             
+       nntot=nntot/2
+                                                                                                                                             
+       allocate(nnlist(num_kpts,nntot), stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating nnlist in kmesh_get')
+       allocate(nncell(3,num_kpts,nntot), stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating nncell in kmesh_get')
+       allocate(wb(nntot), stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating wb in kmesh_get')
+       allocate(bk(3,nntot,num_kpts), stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating bk in kmesh_get')
+                                                                                                                                             
+       na = 0
+       do nn = 1, 2*nntot
+          ifound = 0
+          if (na.ne.0) then
+             do nap = 1, na
+                call utility_compar(bk(1,nap,1),bk_local(1,nn,1),ifpos,ifneg)
+                if (ifneg.eq.1) ifound = 1
+             enddo
+          endif
+          if (ifound.eq.0) then
+             !         found new vector to add to set
+             na = na + 1
+             bk(1,na,1) = bk_local(1,nn,1)
+             bk(2,na,1) = bk_local(2,nn,1)
+             bk(3,na,1) = bk_local(3,nn,1)
+             wb(na)     = 2.0_dp*wb_local(nn)
+             nnlist(1,na) = nnlist_tmp(1,nn)
+             nncell(1,1,na)=nncell_tmp(1,1,nn)
+             nncell(2,1,na)=nncell_tmp(2,1,nn)
+             nncell(3,1,na)=nncell_tmp(3,1,nn)
+          endif
+       enddo
+                                                                                                                                             
+       if (na.ne.nnh) call io_error('Did not find right number of bk directions')
+                                                                                                                                             
+       write(stdout,'(1x,"+",76("-"),"+")')
+       write(stdout,'(1x,a)') '|         Gamma-point: number of the b-vectors is cut by half                |'
+       write(stdout,'(1x,"+",76("-"),"+")')
+       if (lenconfac.eq.1.0_dp) then
+          write(stdout,'(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
+          write(stdout,'(1x,a)') '|                  ----------------------------------------                  |'
+       else
+          write(stdout,'(1x,a)') '|                 b_k Vectors (Bohr^-1) and Weights (Bohr^2)                 |'
+          write(stdout,'(1x,a)') '|                 ------------------------------------------                 |'
+       endif
+       write(stdout,'(1x,a)') '|            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |'
+       write(stdout,'(1x,a)') '|            ---        --------------------------------     --------        |'
+       do i = 1, nntot
+          write (stdout,'(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') &
+               i,(bk(j,i,1)/lenconfac,j=1,3),wb(i)*lenconfac**2
+       enddo
+       write(stdout,'(1x,"+",76("-"),"+")')
+       write(stdout,*) ' '
+
+       deallocate(nnlist_tmp, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating nnlist_tmp in kmesh_get')
+       deallocate(nncell_tmp, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating nncell_tmp in kmesh_get')
+
+    endif
+![ysl-e]
     
     if (timing_level>0) call io_stopwatch('kmesh: get',2)
     

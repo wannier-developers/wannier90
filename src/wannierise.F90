@@ -19,6 +19,7 @@ module w90_wannierise
   private
 
   public :: wann_main
+  public :: wann_main_gamma  ![ysl]
 
   ! Data to avoid large allocation within iteration loop
   complex(kind=dp), allocatable  :: cr (:,:,:,:)   
@@ -1674,5 +1675,721 @@ contains
     return
 
   end subroutine wann_calc_projection
+
+![ysl-b]
+  !==================================================================!
+  subroutine wann_main_gamma
+    !==================================================================!
+    !                                                                  !
+    ! Calculate the Unitary Rotations to give                          !
+    !            Maximally Localised Wannier Functions                 !
+    !                      Gamma version                               !
+    !===================================================================  
+    use w90_constants,  only : dp,cmplx_1,cmplx_0
+    use w90_io,         only : stdout,io_error,io_time,io_stopwatch,io_file_unit
+    use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
+         nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
+         num_print_cycles,num_dump_cycles,omega_invariant, &
+         param_read_um,param_write_um,length_unit,lenconfac, &
+         proj_site,real_lattice,write_r2mn,guiding_centres, &
+         num_guide_cycles,num_no_guide_iter,timing_level, &
+         write_proj,have_disentangled, &
+         translate_home_cell, ph_g
+    use w90_utility,    only : utility_frac_to_cart,utility_zgemm
+
+    implicit none
+
+
+    type(localisation_vars) :: old_spread
+    type(localisation_vars) :: wann_spread
+
+
+    ! guiding centres
+    real(kind=dp), allocatable :: rguide (:,:)  
+    integer :: irguide
+
+    ! local arrays used and passed in subroutines
+    complex(kind=dp), allocatable :: csheet(:,:,:)
+    real(kind=dp),    allocatable :: sheet (:,:,:)
+    real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)  
+
+    !local arrays not passed into subroutines
+    real(kind=dp),    allocatable  :: ur_rot(:,:),m_w(:,:,:)  
+    complex(kind=dp), allocatable  :: cz (:,:)  
+    complex(kind=dp), allocatable  :: u0(:,:,:)
+    complex(kind=dp), allocatable  :: uc_rot(:,:)
+
+    real(kind=dp) :: gcnorm1,gcnorm0
+    real(kind=dp) :: theta, theta4, d2, rot_m(2), cc, ss, tmpi, tmpj, sqwb
+    real(kind=dp), parameter :: piover4=0.25_dp*pi
+    integer :: i,n,nn,iter,ind,ierr,iw,ncg,info
+    integer :: k, id, jd, tnntot
+    logical :: lprint,ldump
+
+
+    if (timing_level>0) call io_stopwatch('wann: main_gamma',1)
+
+    ! Allocate stuff
+
+    if (.not.allocated(ph_g)) then
+    allocate(  ph_g(num_wann),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating ph_g in wann_main_gamma')
+    ph_g = cmplx_1
+    endif
+
+    ! module data
+    allocate(  cr (num_wann, num_wann, nntot, num_kpts),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating cr in wann_main_gamma')
+    allocate(  crt (num_wann, num_wann, nntot, num_kpts),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating crt in wann_main_gamma')
+    allocate( rnkb (num_wann, nntot, num_kpts),stat=ierr    )
+    if (ierr/=0) call io_error('Error in allocating rnkb in wann_main_gamma')
+    allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
+    if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main_gamma')
+    
+    cr=cmplx_0;  crt=cmplx_0;  rnkb=cmplx_0
+
+    ! sub vars passed into other subs 
+    allocate( csheet (num_wann, nntot, num_kpts), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating csheet in wann_main_gamma')
+    allocate( sheet (num_wann, nntot, num_kpts), stat=ierr    )
+    if (ierr/=0) call io_error('Error in allocating sheet in wann_main_gamma')
+    allocate( rave (3, num_wann), r2ave (num_wann),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating rave in wann_main_gamma')
+    allocate( rave2 (num_wann),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating rave2 in wann_main_gamma')
+    allocate( rguide (3, num_wann)   )
+    if (ierr/=0) call io_error('Error in allocating rguide in wann_main_gamma')
+
+    csheet=cmplx_1
+    rave2=0.0_dp;sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;sheet=0.0_dp
+    tnntot=2*nntot
+
+    ! sub vars not passed into other subs
+    allocate(u0 (num_wann, num_wann, num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating u0 in wann_main_gamma')
+    allocate(m_w(num_wann,num_wann,tnntot),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating m_w in wann_main_gamma')
+    allocate(ur_rot(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ur_rot in wann_main_gamma')
+    allocate(uc_rot(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating uc_rot in wann_main_gamma')
+    allocate( cz (num_wann, num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating cz in wann_main_gamma')
+
+
+    cz=cmplx_0
+    
+    ! store original U before rotating
+    ! Phase factor ph_g is applied to u_matrix_opt if (have_disentangled)
+    if (have_disentangled) then
+       u0=u_matrix 
+    else
+       do iw=1,num_wann
+          u0(iw,:,:)= conjg(ph_g(iw))*u_matrix(iw,:,:)
+       end do
+    endif
+
+    ! initialise rguide to projection centres (Cartesians in units of Ang)
+    if( guiding_centres) then
+       do n=1,num_wann
+          call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
+        enddo
+    end if
+
+    write(stdout,*)
+    write(stdout,'(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
+    write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV'
+    else
+       write(stdout,'(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Bohr^2)     Time  |<-- CONV'
+    endif
+    write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
+    write(stdout,*)
+
+
+    irguide=0
+    if (guiding_centres.and.(num_no_guide_iter.le.0)) then
+       call wann_phases(csheet,sheet,rguide,irguide)
+       irguide=1
+    endif
+
+    ! calculate initial centers and spread
+    call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+    omega_invariant = wann_spread%om_i
+
+    iter = 0
+    old_spread%om_tot = 0.0_dp
+
+    ! print initial state
+    write(stdout,'(1x,a78)') repeat('-',78) 
+    write(stdout,'(1x,a)') 'Initial State'
+    do iw=1,num_wann
+       write(stdout,1000) iw,(rave(ind,iw)*lenconfac,ind=1,3),&
+            (r2ave(iw) - rave2(iw))*lenconfac**2
+    end do
+    write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
+    write(stdout,*)
+    write(stdout,'(1x,i6,2x,E12.3,19x,F18.10,3x,F8.2,2x,a)') &
+         iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,&
+         wann_spread%om_tot*lenconfac**2,io_time(),'<-- CONV'
+    write(stdout,'(8x,a,F15.7,a,F15.7,a,F15.7,a)') &
+         'O_D=',wann_spread%om_d*lenconfac**2,' O_OD=',wann_spread%om_od*lenconfac**2,&
+         ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
+    write(stdout,'(1x,a78)') repeat('-',78) 
+
+    ur_rot=0.0_dp
+    do i=1,num_wann
+       ur_rot(i,i)=1.0_dp
+    end do
+!   weight m_matrix first to reduce number of operations
+!   m_w : weighted real matrix
+    do nn = 1, nntot  
+       sqwb=dsqrt(wb(nn))
+       m_w(:,:,2*nn-1)=sqwb*dreal(m_matrix(:,:,nn,1))
+       m_w(:,:,2*nn)=sqwb*dimag(m_matrix(:,:,nn,1))
+    end do
+
+    ! main iteration loop
+
+    do iter=1,num_iter
+
+       lprint=.false.
+       if ( (mod(iter,num_print_cycles).eq.0) .or. (iter.eq.1) &
+            .or. (iter.eq.num_iter)) lprint=.true.
+
+       ldump=.false.
+       if ( (num_dump_cycles.gt.0) .and. (mod(iter,num_dump_cycles).eq.0) ) ldump=.true.
+
+       if(lprint) write(stdout,'(1x,a,i6)') 'Cycle: ',iter
+
+       if ( guiding_centres.and.(iter.gt.num_no_guide_iter) & 
+            .and.(mod(iter,num_guide_cycles).eq.0) ) then
+          call wann_phases(csheet,sheet,rguide,irguide)
+          irguide=1
+       endif
+
+!@@@ 
+! F. Gygi algorithm Ref) Comp. Phys. Commun. 155 (2003) 1-6
+
+loop_id: do id=1,num_wann
+loop_jd: do jd=id+1,num_wann
+! Construct rot_m
+            rot_m(:)=0.0_dp
+            do nn=1,tnntot
+               rot_m(1)=rot_m(1)+m_w(id,jd,nn)*(m_w(id,id,nn)-m_w(jd,jd,nn))
+               rot_m(2)=rot_m(2)+m_w(id,jd,nn)*m_w(id,jd,nn)-0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))*(m_w(id,id,nn)-m_w(jd,jd,nn))
+            end do
+            if(abs(rot_m(2)).gt.1.0e-10_dp) then
+              theta4=-rot_m(1)/rot_m(2)
+              theta=0.25_dp*atan(theta4)
+            elseif (abs(rot_m(1)).lt.1.0e-10_dp) then
+              theta=0.0_dp
+              rot_m(2)=0.0_dp
+            else
+              theta=piover4
+            endif
+            d2=rot_m(1)*sin(4.0_dp*theta)-rot_m(2)*cos(4.0_dp*theta)
+            if(d2 .le. 0.0_dp) theta=theta+piover4
+!          
+            cc=dcos(theta)
+            ss=dsin(theta)
+                                                                                                                     
+! update M               
+            do nn=1,tnntot
+! MR
+               do k=1,num_wann
+                  tmpi=m_w(k,id,nn)*cc+m_w(k,jd,nn)*ss
+                  tmpj=-m_w(k,id,nn)*ss+m_w(k,jd,nn)*cc
+                  m_w(k,id,nn)=tmpi
+                  m_w(k,jd,nn)=tmpj
+               end do
+! R^+ M R
+               do k=1,num_wann
+                  tmpi=cc*m_w(id,k,nn)+ss*m_w(jd,k,nn)
+                  tmpj=-ss*m_w(id,k,nn)+cc*m_w(jd,k,nn)
+                  m_w(id,k,nn)=tmpi
+                  m_w(jd,k,nn)=tmpj
+               end do
+            end do
+                                                                                                                 
+! update U : U=UR
+            do k=1,num_wann
+               tmpi=ur_rot(k,id)*cc+ur_rot(k,jd)*ss
+               tmpj=-ur_rot(k,id)*ss+ur_rot(k,jd)*cc
+               ur_rot(k,id)=tmpi
+               ur_rot(k,jd)=tmpj
+            end do
+!
+         end do loop_jd
+       end do loop_id
+
+! more efficient gamma_only subroutines(wann_omega_gamma) should be added
+
+       ! update M
+       do nn = 1, nntot
+          sqwb=1.0_dp/dsqrt(wb(nn))  
+          m_matrix(:,:,nn,1)=sqwb*dcmplx(m_w(:,:,2*nn-1),m_w(:,:,2*nn))
+       end do
+       
+       call wann_spread_copy(wann_spread,old_spread)
+       
+       ! calculate the new centers and spread
+       call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+
+       if ( lprint ) then
+          ! print the new centers and spreads
+          do iw=1,num_wann
+             write(stdout,1000) iw,(rave(ind,iw)*lenconfac,ind=1,3),&
+                  (r2ave(iw) - rave2(iw))*lenconfac**2
+          end do
+          write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), &
+               (sum(r2ave)-sum(rave2))*lenconfac**2
+          write(stdout,*)
+          write(stdout,'(1x,i6,2x,E12.3,19x,F18.10,3x,F8.2,2x,a)') &
+               iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,&
+               wann_spread%om_tot*lenconfac**2,io_time(),'<-- CONV'
+          write(stdout,'(8x,a,F15.7,a,F15.7,a,F15.7,a)') &
+               'O_D=',wann_spread%om_d*lenconfac**2,&
+               ' O_OD=',wann_spread%om_od*lenconfac**2,&
+               ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
+          write(stdout,'(1x,a,E15.7,a,E15.7,a,E15.7,a)') &
+               'Delta: O_D=',(wann_spread%om_d-old_spread%om_d)*lenconfac**2,&
+               ' O_OD=',(wann_spread%om_od-old_spread%om_od)*lenconfac**2,&
+               ' O_TOT=',(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,' <-- DLTA'
+          write(stdout,'(1x,a78)') repeat('-',78) 
+       end if
+
+       if (ldump) then
+          uc_rot(:,:)=dcmplx(ur_rot(:,:),0.0_dp)
+          call  utility_zgemm(u_matrix,u0,'N',uc_rot,'N',num_wann)
+          call param_write_um
+       endif
+
+    enddo
+    ! end of the minimization loop
+
+    ! update U
+    uc_rot(:,:)=dcmplx(ur_rot(:,:),0.0_dp)
+    call  utility_zgemm(u_matrix,u0,'N',uc_rot,'N',num_wann)
+
+    write(stdout,'(1x,a)') 'Final State'
+    do iw=1,num_wann
+       write(stdout,1000) iw,(rave(ind,iw)*lenconfac,ind=1,3),&
+            (r2ave(iw) - rave2(iw))*lenconfac**2
+    end do
+    write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3),&
+         (sum(r2ave)-sum(rave2))*lenconfac**2
+    write(stdout,*)
+    write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)',&
+         '       Omega I      = ',wann_spread%om_i*lenconfac**2
+    write(stdout,'(3x,a,f15.9)') '     ================       Omega D      = ',&
+         wann_spread%om_d*lenconfac**2
+    write(stdout,'(3x,a,f15.9)') '                            Omega OD     = ',&
+         wann_spread%om_od*lenconfac**2
+    write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)',&
+         '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
+    write(stdout,'(1x,a78)') repeat('-',78) 
+
+
+    if (translate_home_cell) call internal_translate_home(rave)
+
+    if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
+
+    ! unitarity is checked
+    call internal_check_unitarity()
+
+    ! write extra info regarding omega_invariant
+    if (iprint>2) call internal_svd_omega_i()
+
+    ! write matrix elements <m|r^2|n> to file
+    if (write_r2mn) call internal_write_r2mn()
+
+    ! write U and M to file
+    call param_write_um
+
+    ! calculate and write projection of WFs on original bands in outer window
+    if (have_disentangled .and. write_proj) call wann_calc_projection()
+
+    ! deallocate sub vars not passed into other subs
+    deallocate(cz,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cz in wann_main_gamma')
+    deallocate(uc_rot,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating uc_rot in wann_main_gamma')
+    deallocate(ur_rot,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating ur_rot in wann_main_gamma')
+    deallocate(m_w,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating m_w in wann_main_gamma')
+    deallocate(u0, stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating u0 in wann_main_gamma')
+
+    ! deallocate sub vars passed into other subs
+    deallocate(rguide,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating rguide in wann_main_gamma')
+    deallocate(rave2,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating rave2 in wann_main_gamma')
+    deallocate(rave,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating rave in wann_main_gamma')
+    deallocate(sheet,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating sheet in wann_main_gamma')
+    deallocate(csheet,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating csheet in wann_main_gamma')
+    
+    ! deallocate module data
+    deallocate( ln_tmp , stat=ierr  )
+    if (ierr/=0) call io_error('Error in deallocating ln_tmp in wann_main_gamma')
+    deallocate( rnkb,stat=ierr  )
+    if (ierr/=0) call io_error('Error in deallocating rnkb in wann_main_gamma')
+    deallocate(  crt,stat=ierr  )
+    if (ierr/=0) call io_error('Error in deallocating crt in wann_main_gamma')
+    deallocate(  cr,stat=ierr  )
+    if (ierr/=0) call io_error('Error in deallocating cr in wann_main_gamma')
+
+    if (timing_level>0) call io_stopwatch('wann: main_gamma',2)
+
+    return
+
+1000 format(2x,'WF centre and spread', &
+         &       i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )',f15.8)
+
+1001 format(2x,'Sum of centres and spreads', &
+         &       1x,'(',f10.6,',',f10.6,',',f10.6,' )',f15.8)
+
+
+  contains
+
+
+
+    !========================================!
+    subroutine internal_check_unitarity()
+    !========================================!
+
+      implicit none
+
+      integer :: nkp,i,j,m
+      complex(kind=dp) :: ctmp1,ctmp2
+
+      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',1)
+
+      do nkp = 1, num_kpts  
+         do i = 1, num_wann  
+            do j = 1, num_wann  
+               ctmp1 = cmplx_0  
+               ctmp2 = cmplx_0  
+               do m = 1, num_wann  
+                  ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
+                  ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
+               enddo
+               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt.0.00001_dp) ) &
+                    then
+                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                       ctmp1
+                  call io_error('wann_main: unitariety error 1')  
+               endif
+               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt.0.00001_dp) ) &
+                    then
+                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                       ctmp2
+                  call io_error('wann_main: unitariety error 2')  
+               endif
+               if ( (i.ne.j) .and. (abs (ctmp1) .gt.0.00001_dp) ) then  
+                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                       ctmp1
+                  call io_error('wann_main: unitariety error 3')  
+               endif
+               if ( (i.ne.j) .and. (abs (ctmp2) .gt.0.00001_dp) ) then  
+                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                       ctmp2
+                  call io_error('wann_main: unitariety error 4')  
+               endif
+            enddo
+         enddo
+      enddo
+
+      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',2)
+
+      return
+
+    end subroutine internal_check_unitarity
+
+
+    !========================================!
+    subroutine internal_write_r2mn()
+    !========================================!
+    !                                        !
+    ! Write seedname.r2mn file               !
+    !                                        !
+    !========================================!
+      use w90_io, only: seedname,io_file_unit,io_error
+      
+      implicit none
+
+      integer :: r2mnunit,nw1,nw2,nkp,nn
+      real(kind=dp) :: r2ave_mn,delta
+
+      ! note that here I use formulas analogue to Eq. 23, and not to the
+      ! shift-invariant Eq. 32 .
+      r2mnunit=io_file_unit()
+      open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
+      do nw1 = 1, num_wann  
+         do nw2 = 1, num_wann  
+            r2ave_mn = 0.0_dp  
+            delta = 0.0_dp  
+            if (nw1.eq.nw2) delta = 1.0_dp  
+            do nkp = 1, num_kpts  
+               do nn = 1, nntot
+                  r2ave_mn = r2ave_mn + wb(nn) * &
+                       ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) - &
+                       conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
+               enddo
+            enddo
+            r2ave_mn = r2ave_mn / real(num_kpts,dp)  
+            write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
+         enddo
+      enddo
+      close(r2mnunit)  
+      
+      return
+      
+158   call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_main')
+      
+    end subroutine internal_write_r2mn
+
+
+
+    !========================================!
+    subroutine internal_svd_omega_i()
+    !========================================!
+
+      implicit none
+
+      complex(kind=dp), allocatable  :: cv1(:,:),cv2(:,:)
+      complex(kind=dp), allocatable  :: cw1(:),cw2(:)  
+      complex(kind=dp), allocatable  :: cpad1 (:)  
+      real(kind=dp),    allocatable  :: singvd (:)  
+
+      integer :: nkp,nn,nb,na,ind
+      real(kind=dp) :: omt1,omt2,omt3
+
+      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',1)
+
+      allocate( cw1 (10 * num_wann),stat=ierr  )
+      if (ierr/=0) call io_error('Error in allocating cw1 in wann_main')
+      allocate( cw2 (10 * num_wann),stat=ierr  )
+      if (ierr/=0) call io_error('Error in allocating cw2 in wann_main')
+      allocate( cv1 (num_wann, num_wann),stat=ierr  )
+      if (ierr/=0) call io_error('Error in allocating cv1 in wann_main')
+      allocate( cv2 (num_wann, num_wann),stat=ierr  )
+      if (ierr/=0) call io_error('Error in allocating cv2 in wann_main')
+      allocate( singvd (num_wann),stat=ierr  )
+      if (ierr/=0) call io_error('Error in allocating singvd in wann_main')
+      allocate( cpad1 (num_wann * num_wann),stat=ierr  )
+      if (ierr/=0) call io_error('Error in allocating cpad1 in wann_main')
+
+      cw1=cmplx_0; cw2=cmplx_0; cv1=cmplx_0; cv2=cmplx_0; cpad1=cmplx_0 
+      singvd=0.0_dp
+
+      ! singular value decomposition
+      omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
+      do nkp = 1, num_kpts  
+         do nn = 1, nntot  
+            ind = 1  
+            do nb = 1, num_wann  
+               do na = 1, num_wann  
+                  cpad1 (ind) = m_matrix (na, nb, nn, nkp)  
+                  ind = ind+1  
+               enddo
+            enddo
+            call zgesvd ('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
+                 num_wann, cv2, num_wann, cw1, 10 * num_wann, cw2, info)
+            if (info.ne.0) then  
+               call io_error('ERROR: Singular value decomp. zgesvd failed')  
+            endif
+
+            do nb = 1, num_wann  
+               omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
+               omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
+               omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
+            enddo
+         enddo
+      enddo
+      omt1 = omt1 / real(num_kpts,dp)  
+      omt2 = omt2 / real(num_kpts,dp)  
+      omt3 = omt3 / real(num_kpts,dp)  
+      write ( stdout , * ) ' '  
+      write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
+           omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
+      write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
+           omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
+      write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
+           omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
+
+      deallocate(cpad1,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_main')
+      deallocate(singvd,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating singvd in wann_main')
+      deallocate(cv2,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating cv2 in wann_main')
+      deallocate(cv1,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating cv1 in wann_main')
+      deallocate(cw2,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating cw2 in wann_main')
+      deallocate(cw1,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating cw1 in wann_main')
+
+      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',2)
+
+      return
+      
+    end subroutine internal_svd_omega_i
+
+
+
+    !========================================!
+    subroutine internal_translate_home(rave)
+    !========================================!
+    !                                        !
+    ! Translate centres to home unit cell    !
+    !                                        !
+    !========================================!
+
+      use w90_parameters, only : num_wann,real_lattice,recip_lattice,atoms_symbol,&
+                                 num_species,atoms_species_num,atoms_pos_cart,write_xyz
+      use w90_io,         only : stdout,io_error,io_file_unit,seedname,io_date,io_time
+      use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
+
+      implicit none
+
+      real(kind=dp), intent(in) :: rave(3,num_wann)
+
+      ! <<<local variables>>>
+      integer :: iw,ind,ierr,isp,iat,max_sites,ix,iy,iz
+      integer :: xyz_unit
+      character(len=9)   :: cdate, ctime
+!!$      integer, allocatable :: sp_index(:),at_index(:)
+      real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:),pos_tmp(:,:,:)
+      real(kind=dp) :: shift,dist,min_dist,rvec(3)
+
+      max_sites=maxval(atoms_species_num)
+!!$      allocate(pos_tmp(3,max_sites,num_species))
+!!$      allocate(sp_index(num_wann))
+!!$      allocate(at_index(num_wann))
+      allocate(r_home(3,num_wann),stat=ierr) 
+      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
+      allocate(r_frac(3,num_wann),stat=ierr) 
+      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
+      r_home=0.0_dp;r_frac=0.0_dp
+
+      ! Cartesian --> fractional
+      do iw=1,num_wann
+         call utility_cart_to_frac(rave(:,iw),r_frac(:,iw),recip_lattice)
+         ! Rationalise to interval [0,1]
+         do ind=1,3
+            if (r_frac(ind,iw).lt.0.0_dp) then
+               shift=real(ceiling(abs(r_frac(ind,iw))),kind=dp)
+               r_frac(ind,iw)=r_frac(ind,iw)+shift
+            endif
+            if (r_frac(ind,iw).gt.1.0_dp) then
+               shift=-real(int(r_frac(ind,iw)),kind=dp)
+               r_frac(ind,iw)=r_frac(ind,iw)+shift
+            endif
+         enddo
+         ! Fractional --> Cartesian
+         call utility_frac_to_cart(r_frac(:,iw),r_home(:,iw),real_lattice)
+      enddo
+
+!!$      ! Bring atomic co-ordinates into home unit cell
+!!$      pos_tmp=atoms_pos_cart
+!!$      do isp=1,num_species
+!!$         do iat=1,atoms_species_num(isp)
+!!$            call utility_cart_to_frac(pos_tmp(:,iat,isp),pos_tmp(:,iat,isp),recip_lattice)
+!!$            do ind=1,3
+!!$               if (pos_tmp(ind,iat,isp).lt.0.0_dp) then
+!!$                  shift=real(ceiling(abs(pos_tmp(ind,iat,isp))),kind=dp)
+!!$                  pos_tmp(ind,iat,isp)=pos_tmp(ind,iat,isp)+shift
+!!$               endif
+!!$               if (pos_tmp(ind,iat,isp).gt.1.0_dp) then
+!!$                  shift=-real(int(pos_tmp(ind,iat,isp)),kind=dp)
+!!$                  pos_tmp(ind,iat,isp)=pos_tmp(ind,iat,isp)+shift
+!!$               endif
+!!$            enddo
+!!$            call utility_frac_to_cart(pos_tmp(:,iat,isp),pos_tmp(:,iat,isp),real_lattice)
+!!$         enddo
+!!$      enddo
+!!$
+!!$      do iw=1,num_wann
+!!$         do isp=1,num_species
+!!$            do iat=1,atoms_species_num(isp)
+!!$               do ix=-1,1
+!!$                  do iy=-1,1
+!!$                     do iz=-1,1
+!!$                        rvec(:) = ix*real_lattice(1,:) &
+!!$                             + iy*real_lattice(2,:) + iz*real_lattice(3,:)
+!!$                        dist=(pos_tmp(1,iat,isp)-r_home(1,iw) + rvec(1))**2 + &
+!!$                             (pos_tmp(2,iat,isp)-r_home(2,iw) + rvec(2))**2 + &
+!!$                             (pos_tmp(3,iat,isp)-r_home(3,iw) + rvec(3))**2
+!!$                        if (isp.eq.1 .and. iat.eq.1) then
+!!$                           min_dist=dist
+!!$                           sp_index(iw)=isp
+!!$                           at_index(iw)=iat
+!!$                        endif
+!!$                        if (dist<min_dist) then
+!!$                           min_dist=dist
+!!$                           sp_index(iw)=isp
+!!$                           at_index(iw)=iat
+!!$                        endif
+!!$                     enddo
+!!$                  enddo
+!!$               enddo
+!!$            enddo
+!!$         enddo
+!!$      enddo
+      
+!!$      write(stdout,'(1x,a)') 'Final centres (translated to home cell) &
+!!$           &with corresponding nearest atom sites'
+!!$      do iw=1,num_wann
+!!$         write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3),&
+!!$              atoms_symbol(sp_index(iw)),at_index(iw)
+!!$      end do
+!!$      write(stdout,'(1x,a78)') repeat('-',78) 
+!!$      write(stdout,*)
+
+      if (write_xyz) then
+         xyz_unit=io_file_unit()
+         open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
+         write(xyz_unit,'(i6)') num_wann
+         call io_date(cdate,ctime)
+         write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
+      endif
+
+      write(stdout,'(1x,a)') 'Final centres (translated to home cell)'
+      do iw=1,num_wann
+         write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3)
+         if (write_xyz) write(xyz_unit,'("X",6x,3(f14.8,3x))') (r_home(ind,iw),ind=1,3)
+      end do
+      write(stdout,'(1x,a78)') repeat('-',78)
+      write(stdout,*)
+      if (write_xyz) write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
+
+      deallocate(r_frac,stat=ierr) 
+      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
+      deallocate(r_home,stat=ierr) 
+      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
+!!$      deallocate(at_index)
+!!$      deallocate(sp_index)
+!!$      deallocate(pos_tmp)
+
+      return
+
+!!$888   format(2x,'WF centre and spread', &
+!!$           &       i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )',2x,a4,1x,i5)
+888   format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
+
+    end subroutine internal_translate_home
+
+
+  end subroutine wann_main_gamma
+![ysl-e]
 
 end module w90_wannierise

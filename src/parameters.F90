@@ -33,6 +33,7 @@ module w90_parameters
   integer,           public, save :: num_wann
   integer,           public, save :: mp_grid(3)
   logical,           public, save :: automatic_mp_grid
+  logical,           public, save :: gamma_only  ![ysl]
   real(kind=dp),     public, save :: dis_win_min
   real(kind=dp),     public, save :: dis_win_max
   real(kind=dp),     public, save :: dis_froz_min
@@ -159,6 +160,12 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: a_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix_orig(:,:,:,:)
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
+
+![ysl-b]
+  ! ph_g = phase factor of Bloch functions at Gamma
+  !  assuming that Bloch functions at Gamma are real except this phase factor
+  complex(kind=dp), allocatable, save, public :: ph_g(:)
+![ysl-e]
 
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the
   ! original bloch states
@@ -308,6 +315,11 @@ contains
        end if
        num_kpts= mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
+
+![ysl-b]
+    gamma_only = .false.
+    call param_get_keyword('gamma_only',found,l_value=gamma_only)
+![ysl-e]
 
     automatic_mp_grid = .false.
     call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
