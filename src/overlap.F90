@@ -289,13 +289,9 @@ return
     ! -> ph_g(m) is calculated from those elements 
     !
     do m=1,num_bands
-       a_cmp(:)=dabs(dimag(a_matrix(m,:,1)))
-       do j=1,2
-          p=maxloc(a_cmp)
-          ph_g(m)=ph_g(m)+a_matrix(m,p(1),1)/cdabs(a_matrix(m,p(1),1))
-          a_cmp(p(1))=0.0_dp
-       end do
-       ph_g(m)=conjg(ph_g(m)/cdabs(ph_g(m)))
+       a_cmp(:)=abs(a_matrix(m,:,1))
+       p=maxloc(a_cmp)
+       ph_g(m)=conjg(a_matrix(m,p(1),1)/abs(a_matrix(m,p(1),1)))
     end do  
 
     ! M_mn (new) = ph_g(m) * M_mn (old) * conjg(ph_g(n))
@@ -319,7 +315,7 @@ return
     do nn=1,nntot
        do n=1,num_bands
           do m=1,n
-             dev_tmp=cdabs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
+             dev_tmp=abs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
              if ( dev_tmp .gt. dev ) then
                 dev = dev_tmp
                 mdev  = m ; ndev  = n ;  nndev  = nn
@@ -649,14 +645,10 @@ return
     ! U_mn (new) = ph_g(m) * U_mn (old)
     !
     do m=1,num_wann
-       u_cmp(:)=dabs(dimag(u_matrix(m,:,1)))
-       do j=1,2
-          p=maxloc(u_cmp)
-          ph_g(m)=ph_g(m)+u_matrix(m,p(1),1)/cdabs(u_matrix(m,p(1),1))
-          u_cmp(p(1))=0.0_dp
-       end do
-       ph_g(m)=conjg(ph_g(m)/cdabs(ph_g(m)))
-       u_matrix_r(m,:)=dreal(ph_g(m)*u_matrix(m,:,1))
+       u_cmp(:)=abs(u_matrix(m,:,1))
+       p=maxloc(u_cmp)
+       ph_g(m)=conjg(u_matrix(m,p(1),1)/abs(u_matrix(m,p(1),1)))
+       u_matrix_r(m,:)=real(ph_g(m)*u_matrix(m,:,1),dp)
     end do  
 
     ! M_mn (new) = ph(m) * M_mn (old) * conjg(ph(n))
@@ -675,7 +667,7 @@ return
     do nn=1,nntot
        do n=1,num_wann
           do m=1,n
-             dev_tmp=cdabs(m_matrix(m,n,nn,1)-m_matrix(n,m,nn,1))
+             dev_tmp=abs(m_matrix(m,n,nn,1)-m_matrix(n,m,nn,1))
              if ( dev_tmp .gt. dev ) then
                 dev = dev_tmp
                 mdev  = m ; ndev  = n ;  nndev  = nn

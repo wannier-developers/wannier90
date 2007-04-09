@@ -426,12 +426,12 @@ contains
       if (ierr/=0) call io_error('Error in allocating raa in dis_main')
      
 
-      clamp_r(:,:)=dreal(clamp(1:ndimwin(1),1:num_wann,1))
+      clamp_r(:,:)=real(clamp(1:ndimwin(1),1:num_wann,1),dp)
 
       ! Take real part of a matrix - a matrix is realized in overlap_symmetrize
       do i=1,num_wann
          do j=1,ndimwin(1) 
-            a_matrix_r(j,i)=dreal(a_matrix(j,i,1))
+            a_matrix_r(j,i)=real(a_matrix(j,i,1),dp)
          end do
       end do
  
@@ -443,7 +443,7 @@ contains
            svals, rz, num_wann, rv, num_wann, work, 5*num_wann, info)
       if (info.ne.0) then  
          write(stdout,*) ' ERROR: IN DGESVD IN dis_main'  
-         write(stdout,*) 'K-POINT NKP=', nkp, ' INFO=', info  
+         write(stdout,*) 'K-POINT = Gamma', ' INFO=', info  
          if (info.lt.0) then  
             write(stdout,*) 'THE ',  -info, '-TH ARGUMENT HAD ILLEGAL VALUE'  
          endif
@@ -2326,7 +2326,7 @@ contains
          if (iter.eq.1) then  
             ! Initialize Z matrix at k points w/ non-frozen states
             do nkp = 1, num_kpts  
-               if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix_r(nkp,rzmat_in(:,:,nkp))
+               if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix_gamma(nkp,rzmat_in(:,:,nkp))
             enddo
          else  
             ! [iter.ne.1]
@@ -2522,7 +2522,7 @@ contains
 
          ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
          do nkp = 1, num_kpts  
-            if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix_r(nkp,rzmat_out(:,:,nkp))
+            if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix_gamma(nkp,rzmat_out(:,:,nkp))
          enddo
 
          call internal_test_convergence()
@@ -2589,7 +2589,7 @@ contains
 !@@@
          do j = 1, num_wann  
             do i = 1, j 
-               cap_r(i + ( (j - 1) * j) / 2) = dreal(cham(i,j,nkp))  
+               cap_r(i + ( (j - 1) * j) / 2) = real(cham(i,j,nkp),dp)  
             enddo
          enddo
 
@@ -2667,7 +2667,7 @@ contains
 !@@@
             do j = 1, ndimwin(nkp) - num_wann  
                do i = 1, j  
-                  cap_r(i + ( (j - 1) * j) / 2) = dreal(cham(i,j,nkp))  
+                  cap_r(i + ( (j - 1) * j) / 2) = real(cham(i,j,nkp),dp)  
                enddo
             enddo
             ndiff = ndimwin(nkp) - num_wann 
@@ -2790,13 +2790,16 @@ contains
            enddo
         endif
 
+        deallocate(temp_hist,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating temp_hist in dis_extract_gamma')
+
         return
 
       end subroutine internal_test_convergence
 
 
       !==================================================================!
-      subroutine internal_zmatrix_r(nkp,rmtrx)
+      subroutine internal_zmatrix_gamma(nkp,rmtrx)
       !==================================================================!
       !                                                                  !
       !                                                                  !
@@ -2818,7 +2821,7 @@ contains
         integer          :: l,m,n,p,q,nn,nkp2,ndimk
         complex(kind=dp) :: csum
 
-        if (timing_level>1) call io_stopwatch('dis: extract: zmatrix_r',1)
+        if (timing_level>1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma',1)
 
         rmtrx=0.0_dp
         ndimk=ndimwin(nkp)-ndimfroz(nkp)
@@ -2835,17 +2838,17 @@ contains
                  do l=1,num_wann
                     csum = csum + cbw(p,l) * conjg(cbw(q,l))
                  enddo
-                 rmtrx(m,n) = rmtrx(m,n) + wb(nn) * dreal(csum)
+                 rmtrx(m,n) = rmtrx(m,n) + wb(nn) * real(csum,dp)
                  rmtrx(n,m) = rmtrx(m,n)
               enddo
            enddo
         enddo
 
-        if (timing_level>1) call io_stopwatch('dis: extract: zmatrix_r',2)
+        if (timing_level>1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma',2)
 
         return  
 
-      end subroutine internal_zmatrix_r
+      end subroutine internal_zmatrix_gamma
 
 
     end subroutine dis_extract_gamma

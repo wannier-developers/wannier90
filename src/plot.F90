@@ -1042,7 +1042,7 @@ contains
     if ( counter .eq. 3 ) then
        do i=1,num_wann
           do j=1,num_wann
-             write( file_unit,'(2I5,2F12.6)') j,i,dreal(ham_r(j,i,1)),dimag(ham_r(j,i,1))
+             write( file_unit,'(2I5,2F12.6)') j,i,real(ham_r(j,i,1)),aimag(ham_r(j,i,1))
           end do
        end do
     else
@@ -1050,7 +1050,7 @@ contains
           do i=1,num_wann
              do j=1,num_wann
                 write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
-                                     dreal(ham_r(j,i,loop_rpt)),dimag(ham_r(j,i,loop_rpt))
+                                     real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
              end do
           end do
        end do

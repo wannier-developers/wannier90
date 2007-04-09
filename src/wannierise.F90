@@ -1686,15 +1686,17 @@ contains
     !                      Gamma version                               !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0
-    use w90_io,         only : stdout,io_error,io_time,io_stopwatch,io_file_unit
+    use w90_io,         only : stdout,io_error,io_time, &
+         io_date,io_stopwatch,io_file_unit,seedname
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
          param_read_um,param_write_um,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
-         write_proj,have_disentangled, &
-         translate_home_cell, ph_g
+         write_proj,have_disentangled, ph_g, &
+         translate_home_cell,conv_tol,conv_window, &
+         wannier_centres,write_xyz
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -1722,19 +1724,26 @@ contains
     real(kind=dp) :: gcnorm1,gcnorm0
     real(kind=dp) :: theta, theta4, d2, rot_m(2), cc, ss, tmpi, tmpj, sqwb
     real(kind=dp), parameter :: piover4=0.25_dp*pi
-    integer :: i,n,nn,iter,ind,ierr,iw,ncg,info
-    integer :: k, id, jd, tnntot
-    logical :: lprint,ldump
-
+    integer       :: i,n,nn,iter,ind,ierr,iw,ncg,info
+    integer       :: k, id, jd, tnntot
+    logical       :: lprint,ldump
+    real(kind=dp), allocatable :: history(:)
+    logical                    :: lconverged
+    integer            :: xyz_unit
+    character(len=9)   :: cdate, ctime
 
     if (timing_level>0) call io_stopwatch('wann: main_gamma',1)
 
     ! Allocate stuff
 
+    !conv_window = 3
+    allocate(history(conv_window),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating history in wann_main_gamma')
+
     if (.not.allocated(ph_g)) then
-    allocate(  ph_g(num_wann),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating ph_g in wann_main_gamma')
-    ph_g = cmplx_1
+       allocate(  ph_g(num_wann),stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating ph_g in wann_main_gamma')
+       ph_g = cmplx_1
     endif
 
     ! module data
@@ -1781,7 +1790,8 @@ contains
     cz=cmplx_0
     
     ! store original U before rotating
-    ! Phase factor ph_g is applied to u_matrix_opt if (have_disentangled)
+    ! phase factor ph_g is applied to u_matrix
+    ! NB: ph_g is applied to u_matrix_opt if (have_disentangled)
     if (have_disentangled) then
        u0=u_matrix 
     else
@@ -1839,6 +1849,8 @@ contains
          ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
     write(stdout,'(1x,a78)') repeat('-',78) 
 
+    lconverged=.false. 
+
     ur_rot=0.0_dp
     do i=1,num_wann
        ur_rot(i,i)=1.0_dp
@@ -1846,9 +1858,9 @@ contains
 !   weight m_matrix first to reduce number of operations
 !   m_w : weighted real matrix
     do nn = 1, nntot  
-       sqwb=dsqrt(wb(nn))
-       m_w(:,:,2*nn-1)=sqwb*dreal(m_matrix(:,:,nn,1))
-       m_w(:,:,2*nn)=sqwb*dimag(m_matrix(:,:,nn,1))
+       sqwb=sqrt(wb(nn))
+       m_w(:,:,2*nn-1)=sqwb*real(m_matrix(:,:,nn,1),dp)
+       m_w(:,:,2*nn)=sqwb*aimag(m_matrix(:,:,nn,1))
     end do
 
     ! main iteration loop
@@ -1929,7 +1941,7 @@ loop_jd: do jd=id+1,num_wann
 
        ! update M
        do nn = 1, nntot
-          sqwb=1.0_dp/dsqrt(wb(nn))  
+          sqwb=1.0_dp/sqrt(wb(nn))  
           m_matrix(:,:,nn,1)=sqwb*dcmplx(m_w(:,:,2*nn-1),m_w(:,:,2*nn))
        end do
        
@@ -1938,8 +1950,8 @@ loop_jd: do jd=id+1,num_wann
        ! calculate the new centers and spread
        call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
 
+       ! print the new centers and spreads
        if ( lprint ) then
-          ! print the new centers and spreads
           do iw=1,num_wann
              write(stdout,1000) iw,(rave(ind,iw)*lenconfac,ind=1,3),&
                   (r2ave(iw) - rave2(iw))*lenconfac**2
@@ -1967,6 +1979,16 @@ loop_jd: do jd=id+1,num_wann
           call param_write_um
        endif
 
+       if (conv_window.gt.1) call internal_test_convergence_gamma()
+
+       if (lconverged) then
+          write(stdout,'(/13x,a,es10.3,a,i2,a)') &
+               '<<<     Delta <',conv_tol,&
+               '  over ',conv_window,' iterations     >>>'
+          write(stdout,'(13x,a/)')  '<<< Wannierisation convergence criteria satisfied >>>'
+          exit
+       endif
+
     enddo
     ! end of the minimization loop
 
@@ -1992,8 +2014,24 @@ loop_jd: do jd=id+1,num_wann
          '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
+    ! Public array of Wannier centres
+    wannier_centres = rave
 
+    ! Translate centres to home unit cell, if required. Overwrites wannier_centres.
     if (translate_home_cell) call internal_translate_home(rave)
+
+    ! Write '.xyz' file of centres, if required
+    if (write_xyz) then
+       xyz_unit=io_file_unit()
+       open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
+       write(xyz_unit,'(i6)') num_wann
+       call io_date(cdate,ctime)
+       write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
+       do iw=1,num_wann
+          write(xyz_unit,'("X",6x,3(f14.8,3x))') (wannier_centres(ind,iw),ind=1,3)
+       end do
+       write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
+    endif
 
     if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
@@ -2046,6 +2084,9 @@ loop_jd: do jd=id+1,num_wann
     deallocate(  cr,stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating cr in wann_main_gamma')
 
+    deallocate(history,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating history in wann_main_gamma')
+
     if (timing_level>0) call io_stopwatch('wann: main_gamma',2)
 
     return
@@ -2058,6 +2099,51 @@ loop_jd: do jd=id+1,num_wann
 
 
   contains
+
+    
+    !===============================================!
+    subroutine internal_test_convergence_gamma()
+      !===============================================!
+      !                                               !
+      ! Determine whether minimisation of gauge-      !
+      ! invariant spread is converged                 !
+      !                                               !
+      !===============================================!
+
+      implicit none
+
+      real(kind=dp) :: delta_omega
+      integer :: j,ierr
+      real(kind=dp), allocatable :: temp_hist(:)
+        
+      allocate(temp_hist(conv_window),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating temp_hist in wann_main')
+
+      delta_omega=wann_spread%om_tot-old_spread%om_tot
+       
+      if (iter.le.conv_window) then
+         history(iter) = delta_omega
+      else
+         temp_hist = eoshift(history,1,delta_omega)
+         history = temp_hist
+      endif
+
+      lconverged = .false.
+
+      if (iter.ge.conv_window) then
+!!$         write(stdout,*) (history(j),j=1,conv_window)
+         do j=1,conv_window
+            if ( abs(history(j)).gt.conv_tol ) exit
+            lconverged = .true.
+         enddo
+      endif
+
+      deallocate(temp_hist,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating temp_hist in wann_main_gamma')
+
+      return
+
+    end subroutine internal_test_convergence_gamma
 
 
 
@@ -2254,9 +2340,8 @@ loop_jd: do jd=id+1,num_wann
     !                                        !
     !========================================!
 
-      use w90_parameters, only : num_wann,real_lattice,recip_lattice,atoms_symbol,&
-                                 num_species,atoms_species_num,atoms_pos_cart,write_xyz
-      use w90_io,         only : stdout,io_error,io_file_unit,seedname,io_date,io_time
+      use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres
+      use w90_io,         only : stdout,io_error,seedname
       use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
 
       implicit none
@@ -2264,17 +2349,10 @@ loop_jd: do jd=id+1,num_wann
       real(kind=dp), intent(in) :: rave(3,num_wann)
 
       ! <<<local variables>>>
-      integer :: iw,ind,ierr,isp,iat,max_sites,ix,iy,iz
-      integer :: xyz_unit
-      character(len=9)   :: cdate, ctime
-!!$      integer, allocatable :: sp_index(:),at_index(:)
-      real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:),pos_tmp(:,:,:)
-      real(kind=dp) :: shift,dist,min_dist,rvec(3)
+      integer :: iw,ind,ierr
+      real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:)
+      real(kind=dp) :: shift
 
-      max_sites=maxval(atoms_species_num)
-!!$      allocate(pos_tmp(3,max_sites,num_species))
-!!$      allocate(sp_index(num_wann))
-!!$      allocate(at_index(num_wann))
       allocate(r_home(3,num_wann),stat=ierr) 
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
       allocate(r_frac(3,num_wann),stat=ierr) 
@@ -2299,91 +2377,22 @@ loop_jd: do jd=id+1,num_wann
          call utility_frac_to_cart(r_frac(:,iw),r_home(:,iw),real_lattice)
       enddo
 
-!!$      ! Bring atomic co-ordinates into home unit cell
-!!$      pos_tmp=atoms_pos_cart
-!!$      do isp=1,num_species
-!!$         do iat=1,atoms_species_num(isp)
-!!$            call utility_cart_to_frac(pos_tmp(:,iat,isp),pos_tmp(:,iat,isp),recip_lattice)
-!!$            do ind=1,3
-!!$               if (pos_tmp(ind,iat,isp).lt.0.0_dp) then
-!!$                  shift=real(ceiling(abs(pos_tmp(ind,iat,isp))),kind=dp)
-!!$                  pos_tmp(ind,iat,isp)=pos_tmp(ind,iat,isp)+shift
-!!$               endif
-!!$               if (pos_tmp(ind,iat,isp).gt.1.0_dp) then
-!!$                  shift=-real(int(pos_tmp(ind,iat,isp)),kind=dp)
-!!$                  pos_tmp(ind,iat,isp)=pos_tmp(ind,iat,isp)+shift
-!!$               endif
-!!$            enddo
-!!$            call utility_frac_to_cart(pos_tmp(:,iat,isp),pos_tmp(:,iat,isp),real_lattice)
-!!$         enddo
-!!$      enddo
-!!$
-!!$      do iw=1,num_wann
-!!$         do isp=1,num_species
-!!$            do iat=1,atoms_species_num(isp)
-!!$               do ix=-1,1
-!!$                  do iy=-1,1
-!!$                     do iz=-1,1
-!!$                        rvec(:) = ix*real_lattice(1,:) &
-!!$                             + iy*real_lattice(2,:) + iz*real_lattice(3,:)
-!!$                        dist=(pos_tmp(1,iat,isp)-r_home(1,iw) + rvec(1))**2 + &
-!!$                             (pos_tmp(2,iat,isp)-r_home(2,iw) + rvec(2))**2 + &
-!!$                             (pos_tmp(3,iat,isp)-r_home(3,iw) + rvec(3))**2
-!!$                        if (isp.eq.1 .and. iat.eq.1) then
-!!$                           min_dist=dist
-!!$                           sp_index(iw)=isp
-!!$                           at_index(iw)=iat
-!!$                        endif
-!!$                        if (dist<min_dist) then
-!!$                           min_dist=dist
-!!$                           sp_index(iw)=isp
-!!$                           at_index(iw)=iat
-!!$                        endif
-!!$                     enddo
-!!$                  enddo
-!!$               enddo
-!!$            enddo
-!!$         enddo
-!!$      enddo
-      
-!!$      write(stdout,'(1x,a)') 'Final centres (translated to home cell) &
-!!$           &with corresponding nearest atom sites'
-!!$      do iw=1,num_wann
-!!$         write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3),&
-!!$              atoms_symbol(sp_index(iw)),at_index(iw)
-!!$      end do
-!!$      write(stdout,'(1x,a78)') repeat('-',78) 
-!!$      write(stdout,*)
-
-      if (write_xyz) then
-         xyz_unit=io_file_unit()
-         open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
-         write(xyz_unit,'(i6)') num_wann
-         call io_date(cdate,ctime)
-         write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
-      endif
+      wannier_centres = r_home
 
       write(stdout,'(1x,a)') 'Final centres (translated to home cell)'
       do iw=1,num_wann
          write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3)
-         if (write_xyz) write(xyz_unit,'("X",6x,3(f14.8,3x))') (r_home(ind,iw),ind=1,3)
       end do
       write(stdout,'(1x,a78)') repeat('-',78)
       write(stdout,*)
-      if (write_xyz) write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
 
       deallocate(r_frac,stat=ierr) 
       if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
       deallocate(r_home,stat=ierr) 
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
-!!$      deallocate(at_index)
-!!$      deallocate(sp_index)
-!!$      deallocate(pos_tmp)
 
       return
 
-!!$888   format(2x,'WF centre and spread', &
-!!$           &       i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )',2x,a4,1x,i5)
 888   format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
 
     end subroutine internal_translate_home
