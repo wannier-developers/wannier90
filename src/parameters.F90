@@ -685,7 +685,7 @@ contains
     ! Projections
     call param_get_block_length('projections',found,i_temp)
     if (found) call param_get_projections
-    if (guiding_centres .and. .not. found) &
+    if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) & 
        call io_error('param_read: Guiding centres requested, but no projection block found')
 
     ! check to see that there are no unrecognised keywords
