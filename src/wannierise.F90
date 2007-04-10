@@ -1155,8 +1155,8 @@ contains
     integer         , intent(in)    :: irguide
 
     !local
-    complex(kind=dp) :: csum (nntot/2)  
-    real(kind=dp)    ::  xx(nntot/2)
+    complex(kind=dp) :: csum (nnh)  
+    real(kind=dp)    ::  xx(nnh)
     real(kind=dp)    :: smat(3,3),svec(3),sinv(3,3)  
     real(kind=dp)    :: xx0,det,brn
     complex(kind=dp) :: csumt
@@ -1678,6 +1678,129 @@ contains
 
 ![ysl-b]
   !==================================================================!
+  subroutine wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
+    !==================================================================!
+    !                                                                  !
+    !   Calculate the Wannier Function spread                          !
+    !                                                                  !
+    !===================================================================  
+    use w90_parameters, only : num_wann,nntot,wbtot,wb,bk,&
+                           omega_invariant,timing_level
+    use w90_io,         only : io_error,io_stopwatch
+
+    implicit none
+
+    real(kind=dp)   , intent(in)  :: m_w (:,:,:)
+    complex(kind=dp), intent(in)  :: csheet (:,:,:)
+    real(kind=dp)   , intent(in)  :: sheet (:,:,:)
+    real(kind=dp)   , intent(out) :: rave (:,:)
+    real(kind=dp)   , intent(out) :: r2ave (:)
+    real(kind=dp)   , intent(out) :: rave2 (:)
+    type(localisation_vars)    , intent(out)  :: wann_spread
+
+    !local variables
+    real(kind=dp) :: summ, brn
+    real(kind=dp), allocatable :: m_w_nn2(:)
+    integer :: ind, nn,m,n,iw, rn, cn, ierr
+    logical, save :: first_pass=.true.
+
+    if (timing_level>1) call io_stopwatch('wann: omega_gamma',1)
+
+    allocate( m_w_nn2(num_wann),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating m_w_nn2 in wann_omega_gamma')
+
+    if (nntot .eq. 3 ) then
+       do nn = 1, nntot
+          rn = 2*nn-1
+          cn = 2*nn
+          do n = 1, num_wann
+             ln_tmp(n,nn,1)= atan2(m_w(n,n,cn),m_w(n,n,rn)) 
+           end do
+       end do
+    else
+       do nn = 1, nntot
+          rn = 2*nn-1
+          cn = 2*nn
+          do n = 1, num_wann
+             ln_tmp(n,nn,1)= aimag(log(csheet(n,nn,1)*cmplx(m_w(n,n,rn),m_w(n,n,cn),dp))) &
+                             -sheet(n,nn,1) 
+           end do
+       end do
+    endif
+
+    rave  = 0.0_dp
+    do iw = 1, num_wann  
+       do ind = 1, 3  
+          do nn = 1, nntot  
+             rave(ind,iw) = rave(ind,iw) - wb(nn) * bk(ind,nn,1) &
+                   *ln_tmp(iw,nn,1)
+          enddo
+       enddo
+    enddo
+
+    rave2 = 0.0_dp
+    do iw = 1, num_wann  
+       rave2(iw) = sum(rave(:,iw)*rave(:,iw))
+    enddo
+
+    m_w_nn2 = 0.0_dp
+    r2ave = wbtot
+    do iw = 1, num_wann  
+       do nn = 1, nntot  
+          rn = 2*nn -1 
+          cn = 2*nn
+          m_w_nn2(iw) = m_w_nn2(iw) + m_w(iw,iw,rn)**2 + m_w(iw,iw,cn)**2
+          r2ave(iw) = r2ave(iw) + wb(nn)*ln_tmp(iw,nn,1)**2 
+       enddo
+       r2ave(iw) = r2ave(iw) - m_w_nn2(iw) 
+    enddo
+
+    if (first_pass) then
+       summ = 0.0_dp  
+       do nn = 1, nntot  
+          rn = 2*nn -1
+          cn = 2*nn 
+          do m = 1, num_wann  
+             do n = 1, num_wann  
+                summ = summ + m_w(n,m,rn)**2+m_w(n,m,cn)**2
+             enddo
+          enddo
+       enddo
+       wann_spread%om_i = wbtot*real(num_wann,dp) - summ
+       first_pass=.false.
+    else 
+       wann_spread%om_i=omega_invariant
+    endif
+
+    wann_spread%om_od = wbtot*real(num_wann,dp) - sum(m_w_nn2(:)) - wann_spread%om_i 
+
+    if (nntot.eq.3) then 
+       wann_spread%om_d = 0.0_dp  
+    else
+       wann_spread%om_d = 0.0_dp  
+       do nn = 1, nntot  
+          do n = 1, num_wann  
+             brn = sum(bk(:,nn,1)*rave(:,n))
+             wann_spread%om_d = wann_spread%om_d + wb(nn) &
+                  * ( ln_tmp(n,nn,1) + brn)**2
+          enddo
+       enddo
+    end if
+
+    wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
+
+    deallocate( m_w_nn2,stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma')
+
+    if (timing_level>1) call io_stopwatch('wann: omega_gamma',2)
+
+    return  
+
+
+  end subroutine wann_omega_gamma
+
+
+  !==================================================================!
   subroutine wann_main_gamma
     !==================================================================!
     !                                                                  !
@@ -1696,7 +1819,7 @@ contains
          num_guide_cycles,num_no_guide_iter,timing_level, &
          write_proj,have_disentangled, ph_g, &
          translate_home_cell,conv_tol,conv_window, &
-         wannier_centres,write_xyz
+         wannier_centres,write_xyz, use_bloch_phases
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -1728,7 +1851,7 @@ contains
     integer       :: k, id, jd, tnntot
     logical       :: lprint,ldump
     real(kind=dp), allocatable :: history(:)
-    logical                    :: lconverged
+    logical                    :: lconverged, lguide
     integer            :: xyz_unit
     character(len=9)   :: cdate, ctime
 
@@ -1800,12 +1923,17 @@ contains
        end do
     endif
 
+    lguide = .false.
+    if (guiding_centres .and. nntot.gt.3 ) then
     ! initialise rguide to projection centres (Cartesians in units of Ang)
-    if( guiding_centres) then
-       do n=1,num_wann
-          call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
-        enddo
-    end if
+       if ( use_bloch_phases) then
+          lguide = .true.
+       else
+          do n=1,num_wann
+             call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
+          enddo
+       endif
+    endif
 
     write(stdout,*)
     write(stdout,'(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
@@ -1818,15 +1946,22 @@ contains
     write(stdout,'(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
     write(stdout,*)
 
-
     irguide=0
     if (guiding_centres.and.(num_no_guide_iter.le.0)) then
-       call wann_phases(csheet,sheet,rguide,irguide)
+       if (nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)
        irguide=1
     endif
 
+    !  weight m_matrix first to reduce number of operations
+    !  m_w : weighted real matrix
+    do nn = 1, nntot  
+       sqwb=sqrt(wb(nn))
+       m_w(:,:,2*nn-1)=sqwb*real(m_matrix(:,:,nn,1),dp)
+       m_w(:,:,2*nn)=sqwb*aimag(m_matrix(:,:,nn,1))
+    end do
     ! calculate initial centers and spread
-    call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+    call wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
+
     omega_invariant = wann_spread%om_i
 
     iter = 0
@@ -1851,18 +1986,12 @@ contains
 
     lconverged=.false. 
 
+    ! initialize ur_rot
     ur_rot=0.0_dp
     do i=1,num_wann
        ur_rot(i,i)=1.0_dp
     end do
-!   weight m_matrix first to reduce number of operations
-!   m_w : weighted real matrix
-    do nn = 1, nntot  
-       sqwb=sqrt(wb(nn))
-       m_w(:,:,2*nn-1)=sqwb*real(m_matrix(:,:,nn,1),dp)
-       m_w(:,:,2*nn)=sqwb*aimag(m_matrix(:,:,nn,1))
-    end do
-
+    
     ! main iteration loop
 
     do iter=1,num_iter
@@ -1876,13 +2005,19 @@ contains
 
        if(lprint) write(stdout,'(1x,a,i6)') 'Cycle: ',iter
 
-       if ( guiding_centres.and.(iter.gt.num_no_guide_iter) & 
+       ! initialize rguide as rave for use_bloch_phases
+       if ( (iter.gt.num_no_guide_iter) .and. lguide ) then 
+          rguide(:,:) = rave(:,:)
+          lguide = .false.
+       endif
+ 
+       if ( guiding_centres.and.(iter.gt.num_no_guide_iter) &
             .and.(mod(iter,num_guide_cycles).eq.0) ) then
-          call wann_phases(csheet,sheet,rguide,irguide)
+          if(nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)    
           irguide=1
        endif
 
-!@@@ 
+
 ! F. Gygi algorithm Ref) Comp. Phys. Commun. 155 (2003) 1-6
 
 loop_id: do id=1,num_wann
@@ -1891,7 +2026,8 @@ loop_jd: do jd=id+1,num_wann
             rot_m(:)=0.0_dp
             do nn=1,tnntot
                rot_m(1)=rot_m(1)+m_w(id,jd,nn)*(m_w(id,id,nn)-m_w(jd,jd,nn))
-               rot_m(2)=rot_m(2)+m_w(id,jd,nn)*m_w(id,jd,nn)-0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))*(m_w(id,id,nn)-m_w(jd,jd,nn))
+               rot_m(2)=rot_m(2)+m_w(id,jd,nn)*m_w(id,jd,nn) &
+                        -0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))*(m_w(id,id,nn)-m_w(jd,jd,nn))
             end do
             if(abs(rot_m(2)).gt.1.0e-10_dp) then
               theta4=-rot_m(1)/rot_m(2)
@@ -1937,18 +2073,11 @@ loop_jd: do jd=id+1,num_wann
          end do loop_jd
        end do loop_id
 
-! more efficient gamma_only subroutines(wann_omega_gamma) should be added
-
-       ! update M
-       do nn = 1, nntot
-          sqwb=1.0_dp/sqrt(wb(nn))  
-          m_matrix(:,:,nn,1)=sqwb*dcmplx(m_w(:,:,2*nn-1),m_w(:,:,2*nn))
-       end do
        
        call wann_spread_copy(wann_spread,old_spread)
        
        ! calculate the new centers and spread
-       call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
+       call wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
 
        ! print the new centers and spreads
        if ( lprint ) then
@@ -1974,7 +2103,7 @@ loop_jd: do jd=id+1,num_wann
        end if
 
        if (ldump) then
-          uc_rot(:,:)=dcmplx(ur_rot(:,:),0.0_dp)
+          uc_rot(:,:)=cmplx(ur_rot(:,:),0.0_dp,dp)
           call  utility_zgemm(u_matrix,u0,'N',uc_rot,'N',num_wann)
           call param_write_um
        endif
@@ -1992,8 +2121,13 @@ loop_jd: do jd=id+1,num_wann
     enddo
     ! end of the minimization loop
 
+    ! update M
+    do nn = 1, nntot
+       sqwb=1.0_dp/sqrt(wb(nn))  
+       m_matrix(:,:,nn,1)=sqwb*cmplx(m_w(:,:,2*nn-1),m_w(:,:,2*nn),dp)
+    end do
     ! update U
-    uc_rot(:,:)=dcmplx(ur_rot(:,:),0.0_dp)
+    uc_rot(:,:)=cmplx(ur_rot(:,:),0.0_dp,dp)
     call  utility_zgemm(u_matrix,u0,'N',uc_rot,'N',num_wann)
 
     write(stdout,'(1x,a)') 'Final State'
