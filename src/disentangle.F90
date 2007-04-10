@@ -454,7 +454,7 @@ contains
       call dgemm('N','N',num_wann,num_wann,num_wann,1.0_dp,&
            rz,num_wann,rv,num_wann,0.0_dp,raa,num_wann)
      
-      u_matrix(:,:,1)=dcmplx(raa(:,:),0.0_dp)
+      u_matrix(:,:,1)=cmplx(raa(:,:),0.0_dp,dp)
  
       ! Deallocate arrays for DGESVD
       deallocate(raa,stat=ierr)
@@ -2399,7 +2399,7 @@ contains
                   write(stdout,*) info, ' EIGENVECTORS FAILED TO CONVERGE'  
                   call io_error(' dis_extract_gamma: error')  
                endif
-               cz(:,:)=dcmplx(rz(:,:),0.0_dp)
+               cz(:,:)=cmplx(rz(:,:),0.0_dp,dp)
                !
                ! Update the optimal subspace by incorporating the num_wann-ndimfroz(nkp) l
                ! eigenvectors of the Z matrix into clamp. Also, add contribution from
@@ -2608,7 +2608,7 @@ contains
          endif
 
          cz=cmplx_0
-         cz(1:num_wann,1:num_wann)=dcmplx(rz(1:num_wann,1:num_wann),0.0_dp)
+         cz(1:num_wann,1:num_wann)=cmplx(rz(1:num_wann,1:num_wann),0.0_dp,dp)
 
 !@@@
          ! Store the energy eigenvalues of the optimal subspace (used in wann_ban
@@ -2687,7 +2687,7 @@ contains
             endif
 
             cz=cmplx_0
-            cz(1:ndiff,1:ndiff)=dcmplx(rz(1:ndiff,1:ndiff),0.0_dp)
+            cz(1:ndiff,1:ndiff)=cmplx(rz(1:ndiff,1:ndiff),0.0_dp,dp)
                 
 !@@@
             ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS

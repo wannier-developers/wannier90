@@ -730,7 +730,7 @@ return
        enddo
     enddo
 
-    u_matrix(:,:,1)=dcmplx(u_matrix_r(:,:),0.0_dp)
+    u_matrix(:,:,1)=cmplx(u_matrix_r(:,:),0.0_dp,dp)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
