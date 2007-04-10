@@ -1845,7 +1845,7 @@ contains
     complex(kind=dp), allocatable  :: uc_rot(:,:)
 
     real(kind=dp) :: gcnorm1,gcnorm0
-    real(kind=dp) :: theta, theta4, d2, rot_m(2), cc, ss, tmpi, tmpj, sqwb
+    real(kind=dp) :: theta, theta4, rot_m(2), cc, ss, tmpi, tmpj, sqwb
     real(kind=dp), parameter :: piover4=0.25_dp*pi
     integer       :: i,n,nn,iter,ind,ierr,iw,ncg,info
     integer       :: k, id, jd, tnntot
@@ -2026,11 +2026,10 @@ loop_jd: do jd=id+1,num_wann
             rot_m(:)=0.0_dp
             do nn=1,tnntot
                rot_m(1)=rot_m(1)+m_w(id,jd,nn)*(m_w(id,id,nn)-m_w(jd,jd,nn))
-               rot_m(2)=rot_m(2)+m_w(id,jd,nn)*m_w(id,jd,nn) &
-                        -0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))*(m_w(id,id,nn)-m_w(jd,jd,nn))
+               rot_m(2)=rot_m(2)+0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))**2-m_w(id,jd,nn)**2 
             end do
             if(abs(rot_m(2)).gt.1.0e-10_dp) then
-              theta4=-rot_m(1)/rot_m(2)
+              theta4=rot_m(1)/rot_m(2)
               theta=0.25_dp*atan(theta4)
             elseif (abs(rot_m(1)).lt.1.0e-10_dp) then
               theta=0.0_dp
@@ -2038,11 +2037,11 @@ loop_jd: do jd=id+1,num_wann
             else
               theta=piover4
             endif
-            d2=rot_m(1)*sin(4.0_dp*theta)-rot_m(2)*cos(4.0_dp*theta)
-            if(d2 .le. 0.0_dp) theta=theta+piover4
+            tmpi=rot_m(1)*sin(4.0_dp*theta)+rot_m(2)*cos(4.0_dp*theta)
+            if(tmpi .le. 0.0_dp) theta=theta+piover4
 !          
-            cc=dcos(theta)
-            ss=dsin(theta)
+            cc=cos(theta)
+            ss=sin(theta)
                                                                                                                      
 ! update M               
             do nn=1,tnntot
