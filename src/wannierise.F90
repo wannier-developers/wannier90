@@ -331,8 +331,8 @@ contains
        ! parabolic line search was unsuccessful, use trial step already taken
        else 
 
-          call wann_spread_copy(trial_spread,wann_spread)
           call wann_spread_copy(wann_spread,old_spread)
+          call wann_spread_copy(trial_spread,wann_spread)
 
        endif
  
