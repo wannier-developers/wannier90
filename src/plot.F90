@@ -58,10 +58,10 @@ contains
     write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. Interpolation may be incorrect. !!!!'
        ! Find the number of points in the Wigner-Seitz cell
        call wigner_seitz(count_pts=.true.)
-       allocate(irvec(3,3*num_kpts),stat=ierr)
+       allocate(irvec(3,nrpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating irvec in plot_main')
        irvec=0
-       allocate(ndegen(3*num_kpts),stat=ierr)
+       allocate(ndegen(nrpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating ndegen in plot_main')
        ndegen=0
        allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
