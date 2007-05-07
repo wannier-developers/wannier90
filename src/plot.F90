@@ -901,14 +901,17 @@ contains
 
     implicit none
   
-    complex(kind=dp)   :: ham_k(num_wann,num_wann,num_kpts)
+    complex(kind=dp),allocatable  :: ham_k(:,:,:)
     complex(kind=dp)   :: fac
     real(kind=dp)      :: rdotk
     real(kind=dp)      :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)      :: eigval2(num_wann,num_kpts)
-    integer            :: loop_kpt,i,j,m,loop_rpt,counter
+    integer            :: loop_kpt,i,j,m,loop_rpt,ierr,counter
 
     if (timing_level>1) call io_stopwatch('plot: get_hr',1)
+
+    allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_k in plot_get_hr')
 
     ham_k=cmplx_0
     eigval_opt=0.0_dp
