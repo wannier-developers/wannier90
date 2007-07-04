@@ -114,7 +114,7 @@ contains
                                io_time,io_stopwatch
     use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
                                bands_num_spec_points,timing_level, &
-                               bands_spec_points,bands_label
+                               bands_spec_points,bands_label,bands_plot_format
 
     implicit none
 
@@ -135,7 +135,9 @@ contains
     integer              :: loop_spts,total_pts,loop_i,nkp
     integer              :: num_paths,num_spts,ierr
     integer              :: bndunit,gnuunit
-    character(len=3),allocatable  :: glabel(:)
+    character(len=3),allocatable   :: glabel(:)
+    character(len=10),allocatable  :: xlabel(:)
+    character(len=10),allocatable  :: ctemp(:)
     !
     if (timing_level>1) call io_stopwatch('plot: interpolate_bands',1)
     !
@@ -166,6 +168,10 @@ contains
     if (ierr/=0) call io_error('Error in allocating eig_int in plot_interpolate_bands')
     allocate(glabel(num_spts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating num_spts in plot_interpolate_bands')
+    allocate(xlabel(num_spts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating xlabel in plot_interpolate_bands')
+    allocate(ctemp(bands_num_spec_points),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ctemp in plot_interpolate_bands')
     eig_int=0.0_dp
     !
     ! Find the position of each kpoint in the path
@@ -229,6 +235,38 @@ contains
     !
     emin=minval(eig_int)-1.0_dp
     emax=maxval(eig_int)+1.0_dp
+
+
+    if(index(bands_plot_format,'gnu')>0)  call plot_interpolate_gnuplot
+    if(index(bands_plot_format,'xmgr')>0) call plot_interpolate_xmgrace
+
+
+    write(stdout,'(1x,a,f11.3,a)')  'Time to calculate interpolated band structure ',io_time()-time0,' (sec)'
+    write(stdout,*)
+    !
+    if (timing_level>1) call io_stopwatch('plot: interpolate_bands',2)
+    !
+
+    contains
+
+  !============================================!
+  subroutine plot_interpolate_gnuplot
+    !============================================!
+    !                                            !
+    !     Plots the interpolated band structure  !
+    !           in gnuplot format                !
+    !============================================!
+
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
+                               io_time,io_stopwatch
+    use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
+                               bands_num_spec_points,timing_level, &
+                               bands_spec_points,bands_label
+
+    implicit none
+
+    !
     bndunit=io_file_unit()
     open(bndunit,file=trim(seedname)//'_band.dat',form='formatted')
     gnuunit=io_file_unit()
@@ -263,17 +301,109 @@ contains
     write(gnuunit,*) 'plot ','"'//trim(seedname)//'_band.dat','"' 
     close(gnuunit)
 
-    write(stdout,'(1x,a,f11.3,a)')  'Time to calculate interpolated band structure ',io_time()-time0,' (sec)'
-    write(stdout,*)
-    !
-    if (timing_level>1) call io_stopwatch('plot: interpolate_bands',2)
     !
 701 format('set data style dots',/,'set nokey',/, 'set xrange [0:',F8.5,']',/,'set yrange [',F9.5,' :',F9.5,']')
 702 format('set xtics (',:20('"',A3,'" ',F8.5,','))
 703 format(A3,'" ',F8.5,')')
 705 format('set arrow from ',F8.5,',',F10.5,' to ',F8.5,',',F10.5, ' nohead')
 
-  end subroutine plot_interpolate_bands
+  end subroutine plot_interpolate_gnuplot
+
+  subroutine plot_interpolate_xmgrace
+    !============================================!
+    !                                            !
+    !     Plots the interpolated band structure  !
+    !         in Xmgrace format                  !
+    !============================================!
+
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
+                               io_time,io_stopwatch
+    use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
+                               bands_num_spec_points,timing_level, &
+                               bands_spec_points,bands_label
+
+    implicit none
+
+
+    ! Axis labels
+
+    ! Switch any G to Gamma
+
+    do i=1,bands_num_spec_points
+       if(bands_label(i)=='G') then
+          ctemp(i)='\xG\0'
+       else
+          ctemp(i)=bands_label(i)
+       end if
+    end do
+
+
+    xlabel(1)=' '//ctemp(1)//' '
+    do i=2,num_paths
+       if(ctemp(2*(i-1))/=ctemp(2*(i-1)+1)) then
+          xlabel(i)=ctemp(2*(i-1))//'/'//ctemp(2*(i-1)+1)
+       else
+          xlabel(i)=ctemp(2*(i-1))
+       end if
+    end do
+    xlabel(num_spts)=ctemp(bands_num_spec_points)
+
+    gnuunit=io_file_unit()
+    open(gnuunit,file=trim(seedname)//'_band.agr',form='formatted')
+    !
+    ! Xmgrace format
+    !
+    write(gnuunit,'(a)') '# Grace project file                      '
+    write(gnuunit,'(a)') '# written using Wannier90 www.wannier.org '
+    write(gnuunit,'(a)') '@version 50113                            '
+    write(gnuunit,'(a)') '@page size 792, 612                       '
+    write(gnuunit,'(a)') '@page scroll 5%                           '
+    write(gnuunit,'(a)') '@page inout 5%                            '
+    write(gnuunit,'(a)') '@link page off                            '
+    write(gnuunit,'(a)') '@timestamp def "Mon Jul  2 23:07:11 2007"' 
+    write(gnuunit,'(a)') '@with g0'                                  
+    write(gnuunit,'(a)') '@    world xmin 0.00'
+    write(gnuunit,'(a,f10.5)') '@    world xmax ',xval(total_pts)
+    write(gnuunit,'(a,f10.5)') '@    world ymin ',emin
+    write(gnuunit,'(a,f10.5)') '@    world ymax ',emax
+    write(gnuunit,'(a)') '@default linewidth 1.5'
+    write(gnuunit,'(a)') '@    xaxis  tick on'
+    write(gnuunit,'(a)') '@    xaxis  tick major 1'
+    write(gnuunit,'(a)') '@    xaxis  tick major color 1'
+    write(gnuunit,'(a)') '@    xaxis  tick major linestyle 3'
+    write(gnuunit,'(a)') '@    xaxis  tick major grid on'
+    write(gnuunit,'(a)') '@    xaxis  tick spec type both'
+    write(gnuunit,'(a,i0)') '@    xaxis  tick spec ',1+bands_num_spec_points/2
+    write(gnuunit,'(a)') '@    xaxis  tick major 0, 0'
+    do i=1,bands_num_spec_points/2
+       write(gnuunit,'(a,i0,a,a)') '@    xaxis  ticklabel ',i-1,',', '"'//trim(adjustl(xlabel(i)))//'"'
+       write(gnuunit,'(a,i0,a,f10.5)') '@    xaxis  tick major ',i,' , ',sum(kpath_len(1:i))
+    end do
+    write(gnuunit,'(a,i0,a)') '@    xaxis  ticklabel ',bands_num_spec_points/2 &
+         ,',"'//trim(adjustl(xlabel(1+bands_num_spec_points/2)))//'"'
+    write(gnuunit,'(a)') '@    xaxis  ticklabel char size 1.500000'
+    write(gnuunit,'(a)') '@    yaxis  tick major 10'
+    write(gnuunit,'(a)') '@    yaxis  label "Band Energy (eV)"'
+    write(gnuunit,'(a)') '@    yaxis  label char size 1.500000'
+    write(gnuunit,'(a)') '@    yaxis  ticklabel char size 1.500000'
+    do i=1,num_wann
+       write(gnuunit,'(a,i0,a)') '@    s',i-1,' line color 1'
+    end do
+    do i=1,num_wann
+       write(gnuunit,'(a,i0)') '@target G0.S',i-1
+       write(gnuunit,'(a)') '@type xy'
+       do nkp=1,total_pts
+          write(gnuunit,'(2E16.8)') xval(nkp),eig_int(i,nkp)
+       end do
+       write(gnuunit,'(a,i0)') '&'
+    end do
+
+
+  end subroutine plot_interpolate_xmgrace
+
+end subroutine plot_interpolate_bands
+
 
   !===========================================================!
   subroutine plot_fermi_surface

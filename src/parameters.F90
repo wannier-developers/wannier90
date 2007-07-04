@@ -464,6 +464,10 @@ contains
     bands_plot_format         = 'gnuplot'
     call param_get_keyword('bands_plot_format',found,c_value=bands_plot_format)
 
+    if ( (index(bands_plot_format,'gnu').eq.0) .and. (index(bands_plot_format,'xmgr').eq.0) ) &
+            call io_error('Error: bands_plot_format not recognised')
+
+
     bands_num_spec_points=0
     call param_get_block_length('kpoint_path',found,i_temp)
     if (found) then
