@@ -1,0 +1,7 @@
+
+&inputpp
+  prefix='gh'
+  spin_component = 'none'
+  seedname = 'graphite'
+/
+
