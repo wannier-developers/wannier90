@@ -336,17 +336,19 @@ Investigate the effect of the outer and inner energy window on the interpolated 
 
 \section*{PWSCF Examples}
 
-A fully featured interface between Wannier90 and Pwscf, {\tt pw2wannier90} will be available as part of the 
-next Quantum Espresso release\footnote{Note that earlier versions of pwscf contain a program called
-{\tt pw2wan} which is unrelated to Wannier90}. Before that time it can be downloaded as part of the
-pwscf development distribution. Use the following commands to download a copy from the
-pwscf cvs server (bash shell):
-\begin{verbatim}
-export CVS_RSH=ssh
-export CVSROOT=:pserver:cvsanon@democritos.sissa.it:/home/cvs
-cvs login  (The password is: cvsanon)
-cvs checkout pwscf
-\end{verbatim}
+A fully featured interface between Wannier90 and Pwscf, {\tt pw2wannier90} is available as part of  
+Quantum Espresso.
+
+% release\footnote{Note that earlier versions of pwscf contain a program called
+%{\tt pw2wan} which is unrelated to Wannier90}. Before that time it can be downloaded as part of the
+%pwscf development distribution. Use the following commands to download a copy from the
+%pwscf cvs server (bash shell):
+%\begin{verbatim}
+%export CVS_RSH=ssh
+%export CVSROOT=:pserver:cvsanon@democritos.sissa.it:/home/cvs
+%cvs login  (The password is: cvsanon)
+%cvs checkout pwscf
+%\end{verbatim}
 
 \subsection*{Diamond}
 \begin{itemize}
@@ -409,7 +411,55 @@ to generate the input for example 4.}}
 \item{ {\tt silane.pw2wan}  {\it Input file for pw2wannier90}}
 \item{ {\tt silane.win}  {\it Wannier90 input file}}
 \end{itemize}
+\end{itemize}
+
+
+\subsection*{Iron}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWF to describe the states around the Fermi-level in Iron.}}
+\item{Directory: {\tt examples/example8/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt iron.scf}  {\it Pwscf input file for ground state calculation}}
+\item{ {\tt iron.nscf}  {\it Pwscf input file to obtain Bloch states on a uniform grid}}
+\item{ {\tt iron\_up.pw2wan}  {\it Input file for pw2wannier90 - spin up}}
+\item{ {\tt iron\_up.win}  {\it Wannier90 input file - spin up}}
+\item{ {\tt iron\_dn.pw2wan}  {\it Input file for pw2wannier90 - spin down}}
+\item{ {\tt iron\_dn.win}  {\it Wannier90 input file - spin down}}
+\end{itemize}
+\item{Note that we obtain the MLWF for spin up and spin down in separate calculations.}
                                                                                                                                             
 \end{itemize}
+
+\subsection*{BaTiO$_3$}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWF for the Oxygen 'p' states in cubic BaTiO$_3$}}
+\item{Directory: {\tt examples/example9/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt BaTiO3.scf}  {\it Pwscf input file for ground state calculation}}
+\item{ {\tt BaTiO3.nscf}  {\it Pwscf input file to obtain Bloch states on a uniform grid}}
+\item{ {\tt BaTiO3.pw2wan}  {\it Input file for pw2wannier90}}
+\item{ {\tt BaTiO3.win}  {\it Wannier90 input file}}
+\end{itemize}
+\item{We use {\tt exclude\_bands} to obtain MLWF for just the Oxygen 'p' bands. See Ref \footnote{Maximally-localized Wannier functions in perovskites: Cubic BaTiO3\\
+N. Marzari and D. Vanderbilt http://arxiv.org/abs/cond-mat/9802210} for more details. To simulate the ferroelectric phase (and reproduce Fig 2) change the position of the Ti atom to {\tt Ti 0.505 0.5 0.5}.} 
+\end{itemize}
+
+\subsection*{Graphite}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWF for graphite (AB, Bernal)}}
+\item{Directory: {\tt examples/example10/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt graphite.scf}  {\it Pwscf input file for ground state calculation}}
+\item{ {\tt graphite.nscf}  {\it Pwscf input file to obtain Bloch states on a uniform grid}}
+\item{ {\tt graphite.pw2wan}  {\it Input file for pw2wannier90}}
+\item{ {\tt graphite.win}  {\it Wannier90 input file}}
+\end{itemize}
+\end{itemize}
+
+
+
 
 \end{document}
