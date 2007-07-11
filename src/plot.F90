@@ -130,7 +130,7 @@ contains
     real(kind=dp), allocatable :: eig_int(:,:),plot_kpoint(:,:)
     real(kind=dp)        :: rdotk,vec(3),emin,emax,time0
     integer              :: iwork(5*num_wann)
-    integer              :: info,ifail,i,j
+    integer              :: info,ifail(num_wann),i,j
     integer              :: loop_rpt,nfound,loop_kpt,counter
     integer              :: loop_spts,total_pts,loop_i,nkp
     integer              :: num_paths,num_spts,ierr
@@ -430,7 +430,7 @@ end subroutine plot_interpolate_bands
     real(kind=dp),allocatable  :: eig_int(:,:)
     real(kind=dp)      :: rdotk,time0
     integer            :: iwork(5*num_wann)     
-    integer            :: loop_x,loop_y,loop_z,INFO,ikp,ifail,i,j,ierr
+    integer            :: loop_x,loop_y,loop_z,INFO,ikp,ifail(num_wann),i,j,ierr
     integer            :: loop_rpt,nfound,npts_plot,loop_kpt,bxsf_unit
     character(len=9)   :: cdate, ctime
     !
