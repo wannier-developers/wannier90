@@ -13,8 +13,9 @@ a list of the required overlaps and then exit.
 This information is written to the file {\tt seedname.nnkp}.}
 \end{itemize}
 
-\section{win File}
-The Wannier90 input file {\tt seedname.win} has a flexible free-form structure.
+\section{{\tt seedname.win} File}
+The \wannier\ input file {\tt seedname.win} has a flexible free-form
+structure. 
 
 The ordering of the keywords is not significant. Case is ignored (so
 \verb#num_bands# is the same as \verb#Num_Bands#). Characters after !, or \#
@@ -33,7 +34,7 @@ A logical keyword can be set to {\tt .true.} using any of the following
 strings: {\tt T}, {\tt true}, {\tt .true.}.
 
  For futher examples see Chapter \ref{chap:input} and the
- the Wannier90 Tutorial.
+ the \wannier\ Tutorial.
 
 
 \section{Keyword List}
@@ -56,12 +57,14 @@ Keyword & Type & Description \\
 {\sc mp\_grid }   & I & Dimensions of the Monkhorst-Pack grid \\
 %{\sc mp\_grid\_automatic }**   & L & Determine the k-point automatically \\
 {\sc kpoints }   & R & List of k-points in the Monkhorst-Pack grid \\
+{\sc gamma\_only} & L & Wavefunctions from underlying ab initio
+calculation are manifestly real \\
 {\sc num\_shells }   & I & Number of shells in finite difference formula \\
 {\sc shell\_list }   & I & Which shells to use in finite difference formula \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling system parameters.]
-{win file keywords defining the system.  Argument types
+{{\tt seedname.win} file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.\\
  {\footnotesize
@@ -99,7 +102,7 @@ to home unit cell \\
 \hline
 \end{tabular}
 \caption[win file keywords.]
-{win file keywords defining the system.  Argument types
+{{\tt seedname.win} file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 {\footnotesize
@@ -135,7 +138,8 @@ convergence of $\Omega_{I}$ is assessed. \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling disentanglement parameters.]
-{win file keywords controlling the disentanglement.  Argument types
+{{\tt seedname.win} file keywords controlling the disentanglement.
+  Argument types 
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords4}
@@ -178,7 +182,8 @@ of $\Omega$, instead of doing a parabolic line search \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
-{win file keywords controlling the wannierisation.  Argument types
+{{\tt seedname.win} file keywords controlling the wannierisation.
+  Argument types 
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. 
 {\footnotesize
@@ -232,7 +237,7 @@ surface plot \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling plotting.]
-{win file keywords controlling the  plotting.  Argument types
+{{\tt seedname.win} file keywords controlling the  plotting.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords6}
@@ -289,7 +294,7 @@ Only one of \verb#atoms_cart# and \verb#atoms_frac# may be given in the input
 file.
 
 
-\subsubsection{atoms\_cart}
+\subsubsection{Cartesian coordinates}
 
 \noindent \verb#begin atoms_cart# \\
 \verb#[units]#
@@ -310,7 +315,7 @@ are the atom's position in Cartesian coordinates in units specified by
 \verb#[units]# specifies the units in which the lattice vectors are
 defined either \verb#bohr# or \verb#ang#. If not present, the default is \AA.
 
-\subsubsection{atoms\_frac}
+\subsubsection{Fractional coordinates}
 
 \noindent \verb#begin atoms_frac#
 $$
@@ -364,7 +369,17 @@ No default.
 %
 %The default for this keyword is \verb#FALSE#.
 
-\subsection[Kpoints]{Kpoints}
+\subsection[gamma\_only]{{\tt logical :: gamma\_only}}
+
+If {\tt gamma\_only=TRUE}, then \wannier\ uses a branch of algorithms
+for disentanglement and localisation that exploit the fact that the 
+Bloch eigenstates obtained from the underlying ab initio calculation
+are manifestly real. This can be the case when only the $\Gamma$-point
+is used to sample the Brillouin zone. The localisation procedure
+that is used in the $\Gamma$-only branch is based on the method of
+Ref.~\cite{Gygi}.
+
+\subsection[Kpoints]{K-points}
 Each line gives the coordinate of a k-point
 in relative units, i.e. in units of the reciprocal lattice
 vectors.
@@ -439,7 +454,7 @@ For details see section \ref{sec:proj}.
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
 If \verb#postproc_setup#=\verb#TRUE#, then the wannier code will write 
  {\tt seedname.nnkp} file and exit.
-If Wannier90 is called with the option {\tt -pp}, then 
+If \wannier\ is called with the option {\tt -pp}, then 
  \verb#postproc_setup# is set to 
 \verb#TRUE#, over-riding its
 value in the {\tt seedname.win} file.
@@ -566,7 +581,8 @@ The default value is \verb#false#.
 
 
 \section{Disentanglement}
-These keywords control the disentanglement routine of SMV. This routine
+These keywords control the disentanglement routine of
+Ref.~\cite{SMV}. This routine 
 will be activated if \verb#num_wann#$<$\verb#num_bands#.
 
 
@@ -606,7 +622,7 @@ The default value is 200.
 
 \subsection[dis\_mix\_ratio]{\tt real(kind=dp) :: dis\_mix\_ratio}
 In the disentanglement procedure, the mixing parameter to use for
-convergence (see pages 4-5 of SMV). A value of 0.5 is a `safe'
+convergence (see pages 4-5 of Ref.~\cite{SMV}). A value of 0.5 is a `safe'
 choice. Using 1.0 (ie no mixing) often gives faster convergence, 
 but may cause the minimisation to be unstable in some cases.
 
