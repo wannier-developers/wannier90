@@ -8,14 +8,17 @@ dis_num_iter    =  50
 dis_mix_ratio   = 1.0
 
 Begin Kpoint_Path
-L 0.50000  0.50000 0.5000 G 0.00000  0.00000 0.0000
-G 0.00000  0.00000 0.0000 X 0.50000  0.00000 0.5000
-X 0.50000 -0.50000 0.0000 K 0.37500 -0.37500 0.0000
-K 0.37500 -0.37500 0.0000 G 0.00000  0.00000 0.0000
+G 0.00  0.00  0.00    X 0.50  0.50  0.00
+X 0.50  0.50  0.00    W 0.50  0.75  0.25
+W 0.50  0.75  0.25    L 0.00  0.50  0.00
+L 0.00  0.50  0.00    G 0.00  0.00  0.00
+G 0.00  0.00  0.00    K 0.00  0.50 -0.50
 End Kpoint_Path
  
-bands_plot = .true.
-fermi_surface_plot = .true.
+! bands_plot = .true.
+! fermi_surface_plot = .true.
+
+
 ! SYSTEM
 
 begin unit_cell_cart

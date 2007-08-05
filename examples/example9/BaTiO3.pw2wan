@@ -1,5 +1,5 @@
 &inputpp 
-   outdir = '/tmp/mlwf/'
+   outdir = './'
    prefix = 'batio3'
    seedname = 'BaTiO3'
    spin_component = 'none'

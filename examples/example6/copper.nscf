@@ -13,6 +13,7 @@
  /
  &electrons
     conv_thr = 1.0e-9
+    diagonalization =  'cg'
  /
 ATOMIC_SPECIES
  Cu 55.85 Cu.pz-n-van_ak.UPF 
