@@ -4,10 +4,11 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
                                                             
- Authors:  Arash A. Mostofi   (MIT)                      
-           Jonathan R. Yates  (LBNL and UC Berkeley)     
+ Authors:  Arash A. Mostofi   (Imperial College London, UK)
+           Jonathan R. Yates  (University of Cambridge, UK)
+           Young-Su Lee       (KIST, S. Korea)
  Wannier90 is based on routines written by 
-           Nicola Marzari, Ivo Souza, David Vanderbilt     
+           Nicola Marzari, Ivo Souza, David Vanderbilt
 
  website:  http://www.wannier.org
 
@@ -26,8 +27,8 @@ Further information can be found in the user guide and tutorial
                                                          
  Please cite                                             
                                                          
- [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza  
-       and D. Vanderbilt, http://www.wannier.org/        
+ [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt  
+       and N. Marzari, http://www.wannier.org/        
   in any publications arising from the use of this code.  
 
  For the method please cite 
@@ -43,10 +44,8 @@ Further information can be found in the user guide and tutorial
         Phys. Rev. B 65 035109 (2001)             
                                                          
 
-
-
- Copyright (C) 1997-2006 Jonathan Yates, Arash Mostofi,     
-            Nicola Marzari, Ivo Souza, David Vanderbilt     
+Copyright (C) 1997-2007 Jonathan Yates, Arash Mostofi, Young-Su Lee, 
+           Nicola Marzari, Ivo Souza, David Vanderbilt 
 
 All the material included in this distribution is free software;
 you can redistribute it and/or modify it under the terms of the GNU
