@@ -1,17 +1,16 @@
-\chapter{Wannier as a library}
+\chapter{\wannier\ as a library}\label{ch:wann-lib}
 
 This is a description of the interface between any external program and
 the wannier code. There are two subroutines: \verb#wannier_setup# and
 \verb#wannier_run#. Calling \verb#wannier_setup# will return
 information required to 
-construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (MV\footnote{Marzari
-  and Vanderbilt, \textit{Phys.~Rev.~B} \textbf{56}, 12847 (1997)}
+construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref.~\cite{MV},
 Eq.~(25)) and $A_{mn}^{(\mathbf{k})}=\left\langle
-\psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections (MV
-Eq.~(62), SMV\footnote{Souza, Marzari and Vanderbilt,
-  \textit{Phys.~Rev.~B} \textbf{65}, 035109 (2001)} Eq.~(22)). Once 
+\psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections (Ref.~\cite{MV},
+Eq.~(62); Ref.~\cite{SMV}, Eq.~(22)). Once 
 the overlaps and projection have been computed, calling
-\verb#wannier_run# activates the main wannier code.
+\verb#wannier_run# activates the minimisation and plotting routines in
+\wannier.
 
 %\section{Dependencies}
 %\begin{itemize}
@@ -24,12 +23,12 @@ the overlaps and projection have been computed, calling
 
 \section{Subroutines}
 
-\subsection{wannier\_setup}
+\subsection{{\tt wannier\_setup}}
 
 {\noindent \bf \verb#wannier_setup(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
-\verb#              kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,nntot,nnlist,#\\
-\verb#              nncell,num_bands,num_wann,proj_site,proj_l,proj_m,proj_radial,proj_z,#\\
-\verb#              proj_x,proj_zona,exclude_bands)   #}
+\verb#              kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,#\\
+\verb#              nntot,nnlist,nncell,num_bands,num_wann,proj_site,proj_l,#\\
+\verb#              proj_m,proj_radial,proj_z,proj_x,proj_zona,exclude_bands)   #}
 
 \begin{itemize}
 \item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
@@ -70,8 +69,8 @@ first-principles calculation (note: including semi-core states).
       $M_{mn}^{(\mathbf{k,b})}$.
 \item \verb#integer, intent(out) :: num_bands#\\ The number of bands in the
 first-principles calculation used to form the overlap matricies (note: excluding eg. semi-core states).
-\item \verb#integer, intent(out) :: num_wann#\\ The number of Wannier
-  functions to be extracted.
+\item \verb#integer, intent(out) :: num_wann#\\ The number of MLWF
+  to be extracted.
 \item  \verb#real(kind=dp), dimension(3,num_bands_tot), intent(out) :: proj_site# \\
 Projection function centre
 in crystallographic co-ordinates relative to the direct lattice
@@ -105,8 +104,8 @@ The value of $\frac{Z}{a}$ associated
 with the radial part of the atomic orbital. Units are in reciprocal
 Angstrom.
 \item \verb#integer, dimension(num_bands_tot), intent(out) :: exclude_bands#\\ 
-      Kpoints independant list of bands to exclude from the calculation of the wannier functions 
-(eg semi-core states).
+      Kpoints independant list of bands to exclude from the
+      calculation of the MLWF (e.g., semi-core states). 
 
 \end{itemize}
 
@@ -118,10 +117,10 @@ Conditions:
 \end{itemize}
 
 This subroutine returns the information required to determine the
-required overlap elements $M_{mn}^{(\mathbf{k,b})}$ (MV Eq.~(25)) and
-projections $A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV Eq.~(22)),
-ie, \verb#M_matrix# and \verb#A_matrix#, described in
-Section~\ref{wannier_run}.
+required overlap elements $M_{mn}^{(\mathbf{k,b})}$ and
+projections $A_{mn}^{(\mathbf{k})}$,
+i.e., \verb#M_matrix# and \verb#A_matrix#, described in
+Section~\ref{wannier_run}. 
 
 For the avoidance of doubt, \verb#real_lattice(1,2)# is the
 $y-$component of the first lattice vector $\mathbf{A}_{1}$, etc.
@@ -130,14 +129,14 @@ The list of nearest neighbours of a particular k-point \verb#nkp# is
 given by \verb#nnlist(nkp,1:nntot)#.
 
 Additionally, the parameters \verb#num_shells# and \verb#shell_list#
-may be specified in the wannier input file.
+may be specified in the \wannier\ input file.
 
-\subsection{wannier\_run} \label{wannier_run}
+\subsection{{\tt wannier\_run}} \label{wannier_run}
 
 {\noindent \bf \verb#wannier_run(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
-\verb#            kpt_latt,num_bands,num_wann,nntot,num_atoms,atom_symbols,atoms_cart,#\\
-\verb#            M_matrix_orig,A_matrix,eigenvalues,U_matrix,U_matrix_opt,lwindow,#\\
-\verb#            wann_centres,wann_spreads,spread#)}
+\verb#            kpt_latt,num_bands,num_wann,nntot,num_atoms,atom_symbols,#\\
+\verb#            atoms_cart,M_matrix_orig,A_matrix,eigenvalues,U_matrix,#\\
+\verb#            U_matrix_opt,lwindow,wann_centres,wann_spreads,spread#)}
 
 \begin{itemize}
 \item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
@@ -157,8 +156,8 @@ may be specified in the wannier input file.
       vectors.
 \item \verb#integer, intent(in) :: num_bands#\\ The total number of
       bands to be processed.
-\item \verb#integer, intent(in) :: num_wann#\\ The number of Wannier
-  functions to be extracted.
+\item \verb#integer, intent(in) :: num_wann#\\ The number of MLWF to
+  be extracted. 
 \item \verb#integer, intent(in) :: nntot#\\ The number of
   nearest neighbours for each k-point.
 \item \verb#integer, intent(in) :: num_atoms#\\ The total number of atoms
@@ -174,35 +173,36 @@ may be specified in the wannier input file.
       \verb#                  intent(in) :: M_matrix#\\ 
       The matrices of overlaps between neighbouring periodic parts of
       the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{k,b})}$
-      (MV Eq.~(25)).
+      (Ref.~\cite{MV}, Eq.~(25)).
 \item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
       \verb#                  intent(in) :: A_matrix# \\The matrices
       describing the projection of \verb#num_wann# trial orbitals on
       \verb#num_bands# Bloch states at each k-point,
-      $A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV Eq.~(22)).
+      $A_{mn}^{(\mathbf{k})}$ (Ref.~\cite{MV}, Eq.~(62);
+      Ref.~\cite{SMV}, Eq.~(22)).
 \item \verb#real(kind=dp), dimension(num_bands,num_kpts),#
       \verb#intent(in) :: eigenvalues#\\ The
       eigenvalues $\varepsilon_{n\mathbf{k}}$ corresponding to the
       eigenstates, in eV.
 \item \verb#complex(kind=dp), dimension(num_wann,num_wann,num_kpts),#\\
       \verb#                  intent(out) :: U_matrix#\\ The unitary
-      matrices at each k-point (MV Eq.~(59))
+      matrices at each k-point (Ref.~\cite{MV}, Eq.~(59))
 \item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
       \verb#                   intent(out) :: U_matrix_opt#\\ The
       unitary matrices that describe the optimal sub-space at each
-      k-point (see SMV Section~{\sc IIIa}). The array is packed (see below)
+      k-point (see Ref.~\cite{SMV}, Section~{\sc IIIa}). The array is
+      packed (see below) 
 \item \verb#logical, dimension(num_bands,num_kpts), intent(out) :: lwindow#\\ 
        The element \verb#lwindow(nband,nkpt)# is {\tt .true.} if the band
 {\tt nband} lies within the outer energy window at kpoint {\tt nkpt}.
-\item \verb#real(kind=dp), dimension(3,num_wann), intent(out) :: wann_centres#\\ 
-      The centres of the wannier
-      functions in Cartesian co-ordinates in Angstrom. 
+\item \verb#real(kind=dp), dimension(3,num_wann), intent(out) :: wann_centres#\\   
+      The centres of the MLWF in Cartesian co-ordinates in Angstrom. 
 \item \verb#real(kind=dp), dimension(num_wann), intent(out) :: wann_spreads#\\ 
-      The spread of each wannier function in \AA$^{2}$.
+      The spread of each MLWF in \AA$^{2}$.
 \item \verb#real(kind=dp), dimension(3), intent(out) ::#
       \verb#spread#\\ 
       The values of $\Omega$, $\Omega_{\mathrm{I}}$ and
-      $\tilde{\Omega}$ (MV Eq.~(13)). 
+      $\tilde{\Omega}$ (Ref.~\cite{MV}, Eq.~(13)). 
 \end{itemize}
 
 Conditions:
@@ -235,9 +235,9 @@ where
 and
 $\left\{|g_{n}\rangle\right\}$ are a set of initial trial
 orbitals. These are
-typically atom- or bond-centred Gaussians that are modulated by
+typically atom or bond-centred Gaussians that are modulated by
 appropriate spherical harmonics. 
 
-Additional parameters should be specified in the wannier input
+Additional parameters should be specified in the \wannier\ input
 file.
 

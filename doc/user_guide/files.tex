@@ -1,7 +1,7 @@
 \chapter{Files}
 
 
-\section{seedname.win}
+\section{{\tt seedname.win}}
 INPUT. The master input file; contains the specification of the system
 and any parameters for the run. 
 
@@ -14,7 +14,7 @@ specified in the master input file:
 \item Direct lattice vectors
 \item Positions (of atomic or projection) centres in real space
 \item Energy windows
-\item Positions of $\mathbf{k}$-points in reciprocal space
+\item Positions of k-points in reciprocal space
 \item \verb#zona# and \verb#box-size# (see Section~\ref{sec:proj})
 \end{itemize}
 
@@ -28,7 +28,7 @@ Notes:
   \verb#unit_cell_cart#, \verb#atoms_cart# and \verb#projections#,
   respectively, in \verb#seedname.win#.
 \item Energy is always in eV.
-\item Positions of $\mathbf{k}$-points are always in crystallographic
+\item Positions of k-points are always in crystallographic
   coordinates relative to the reciprocal lattice vectors.
 \item \verb#box-size# and \verb#zona# always in Angstrom and
   reciprocal Angstrom, respectively
@@ -49,63 +49,64 @@ $\{\mathbf{A}_{1},\mathbf{A}_{2},\mathbf{A}_{3}\}$ by the equation
 \end{equation}
 
 where the cell volume is
-$\Omega=\mathbf{A}_{1}\cdot(\mathbf{A}_{2}\times\mathbf{A}_{3})$.
+$V=\mathbf{A}_{1}\cdot(\mathbf{A}_{2}\times\mathbf{A}_{3})$.
 
-\section{seedname.mmn}
+\section{{\tt seedname.mmn}}
 INPUT. See Chapter~\ref{ch:wann-pp}.
 
-\section{seedname.amn}
+\section{{\tt seedname.amn}}
 INPUT. See Chapter~\ref{ch:wann-pp}.
 
-\section{seedname.eig}
+\section{{\tt seedname.eig}}
 INPUT. See Chapter~\ref{ch:wann-pp}.
 
-\section{seedname.nnkp} \label{sec:old-nnkp}
+\section{{\tt seedname.nnkp}} \label{sec:old-nnkp}
 OUTPUT. See Chapter~\ref{ch:wann-pp}.
 
-\section{seedname.wout}
+\section{{\tt seedname.wout}}
 OUTPUT. The master output file.
 
-\section{seedname.chk}
+\section{{\tt seedname.chk}}
 INPUT/OUTPUT. Information required to restart the calculation or enter the
 plotting phase. If we have used disentanglement this file also contains the
 rectangular matrices $\bf{U}^{{\rm dis}({\bf k})}$.
 
-\section{seedname\_um.dat}
+\section{{\tt seedname\_um.dat}}
 INPUT/OUTPUT. Contains $\bf{U}^{({\bf k})}$ and $\bf{M}^{(\bf{k,b})}$ (in the
 basis of the rotated Bloch states). Required to restart the calculation or enter the
 plotting phase.
 
-\section{seedname.r2mn}
+\section{{\tt seedname.r2mn}}
 OUTPUT.
 Written if $\verb#write_r2mn#=\verb#true#$. The matrix elements
-$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to Wannier functions)
+$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to MLWF)
 
-\section{seedname\_band.dat}
+\section{{\tt seedname\_band.dat}}
 OUTPUT. Written if {\tt bands\_plot=TRUE}. The interpolated band structure.
 
-\section{seedname\_band.gnu}
+\section{{\tt seedname\_band.gnu}}
 OUTPUT. Written if {\tt bands\_plot=TRUE}. A gnuplot script to plot the interpolated band structure.
 
-\section{seedname\_band.dat}
+\section{{\tt seedname\_band.dat}}
 OUTPUT. Written if {\tt bands\_plot=TRUE}. The kpoints used for the interpolated band structure, in units
 of the reciprical lattice vectors. This file can be used to generate
 a comparison band structure from a first-principles code.
 
-\section{seedname.bxsf}
+\section{{\tt seedname.bxsf}}
 OUTPUT. Written if {\tt fermi\_surface\_plot=TRUE}. A Fermi surface plot file
-suitable for plotting with XCrysden.
+suitable for plotting with XCrySDen.
 
-\section{seedname\_w.xsf}
-OUTPUT. Written if {\tt wannier\_plot=TRUE}. The Wannier function, w,  in real space 
-in a format suitable for plotting with XCrysden.
+\section{{\tt seedname\_w.xsf}}
+OUTPUT. Written if {\tt wannier\_plot=TRUE}. The {\tt
+  w}$^{\mathrm{th}}$ in real space in a format suitable for plotting
+  with XCrySDen. 
 
 
-\section{UNKp.s}
+\section{{\tt UNKp.s}}
 INPUT. Read if \verb#wannier_plot#=\verb#TRUE# and used to plot the
-Wannier functions.
+MLWF.
 
-The periodic part of the bloch states represented on a regular real
+The periodic part of the Bloch states represented on a regular real
  space grid, indexed by k-point \verb#p# (from 1 to \verb#num_kpts#)
  and spin \verb#s# (`1' for `up', `2' for `down').
 
@@ -119,7 +120,7 @@ The name of the wavefunction file is assumed to have the form:
 The first line of each file should contain 5 integers: the number of
  grid points in each direction (\verb#ngx#, \verb#ngy# and
  \verb#ngz#), the k-point number \verb#ik# and the total number of
- bands \verb#num_band# in the file. The full file will be read by Wannier90 as:
+ bands \verb#num_band# in the file. The full file will be read by \wannier\ as:
 
 \begin{verbatim}
 read(file_unit) ngx,ngy,ngz,ik,nbnd

@@ -1,6 +1,6 @@
 \chapter{Projections}\label{ch:proj}
 
-\section{Specification of projections in seedname.win}
+\section{Specification of projections in {\tt seedname.win}}
 \label{sec:proj}
 Here we describe the projection functions used to construct the
 initial guess $A_{mn}^{(\mathbf{k})}$ for the unitary transformations.
@@ -164,11 +164,11 @@ $A_{mn}^{(\mathbf{k})} =
 \section{Orbital Definitions} \label{sec:orbital-defs}
 
 The angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-associated with particular values of \verb#l# and \verb#mr# are given
+associated with particular values of $l$ and $m_{\mathrm{r}}$ are given
 in Tables~\ref{tab:angular} and \ref{tab:hybrids}. 
 
 The radial functions $R_{\mathrm{r}}(r)$ associated with different values of
-\verb#r# should be orthogonal. One choice would be to take the set of
+$r$ should be orthogonal. One choice would be to take the set of
 solutions to the radial part of the hydrogenic Schr\"{o}dinger
 equation for $l=0$, i.e., the radial parts of the 1s,
 2s, 3s\ldots\ orbitals, which are given in Table~\ref{tab:radial}. 
@@ -179,7 +179,7 @@ equation for $l=0$, i.e., the radial parts of the 1s,
 \begin{tabular}{|cccc|}
 \hline\hline
 &&&\\
-\verb#l# & \verb#mr# & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\ 
+$l$ & $m_{\mathrm{r}}$ & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\ 
 &&&\\\hline&&&\\
  0  &  1  &  \verb#s#   & $\frac{1}{\sqrt{4\pi}}$ \\ 
 &&&\\\hline&&&\\
@@ -228,8 +228,8 @@ $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(3\cos^{2}\varphi-\sin^{2}\varphi)\
 \end{tabular}
 \caption{Angular functions
 $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-associated with particular values of l and mr for
-l$\ge0$.
+associated with particular values of $l$ and $m_{\mathrm{r}}$ for
+$l\ge0$.
 \label{tab:angular}}
 \end{center}
 \end{table}
@@ -240,7 +240,7 @@ l$\ge0$.
 \begin{tabular}{|cccc|}
 \hline\hline
 &&&\\
-\verb#l# & \verb#mr# & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\ 
+$l$ & $m_{\mathrm{r}}$ & Name & $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ \\ 
 &&&\\\hline&&&\\
  $-$1  &  1  &  \verb#sp-1#   &  
 $\frac{1}{\sqrt{2}}$\verb#s# $+\frac{1}{\sqrt{2}}$\verb#px# \\
@@ -315,8 +315,8 @@ $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#pz#
 \end{tabular}
 \caption{Angular functions
 $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-associated with particular values of l and mr for
-l$<0$, in terms of the orbitals defined in Table~\ref{tab:angular}.
+associated with particular values of $l$ and $m_{\mathrm{r}}$ for
+$l<0$, in terms of the orbitals defined in Table~\ref{tab:angular}.
 \label{tab:hybrids}}
 \end{center}
 \end{table}
@@ -327,7 +327,7 @@ l$<0$, in terms of the orbitals defined in Table~\ref{tab:angular}.
 \begin{tabular}{|cc|}
 \hline\hline
 &\\
-\ \ \verb#r# \ \ & $R_{\mathrm{r}}(r)$ \\
+\ \ $r$ \ \ & $R_{\mathrm{r}}(r)$ \\
 &\\\hline&\\
 1        &  $2 \alpha^{3/2}\exp(-\alpha r)$ \\
 &\\\hline&\\
@@ -340,9 +340,9 @@ r/3+2\alpha^{2}r^{2}/27)\exp(-\alpha r/3)$ \\
 \end{tabular}
 \caption{ One possible choice for the radial functions
   $R_{\mathrm{r}}(r)$ associated with different values of 
-r: the set of
+$r$: the set of
 solutions to the radial part of the hydrogenic Schr\"{o}dinger
 equation for $l=0$, i.e., the radial parts of the 1s,
-2s, 3s\ldots\ orbitals, where $\alpha=Z/a=\mathrm{zona}$. \label{tab:radial}}
+2s, 3s\ldots\ orbitals, where $\alpha=Z/a={\tt zona}$. \label{tab:radial}}
 \end{center}
 \end{table}

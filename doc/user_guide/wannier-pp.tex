@@ -1,6 +1,6 @@
-\chapter{Wannier as a post-processing tool} \label{ch:wann-pp}
+\chapter{\wannier\ as a post-processing tool} \label{ch:wann-pp}
 
-This is a description of how to use Wannier90 code as a
+This is a description of how to use \wannier\ as a
 post-processing tool. 
 
 The code must be run twice. On the first pass either the logical keyword
@@ -8,8 +8,9 @@ The code must be run twice. On the first pass either the logical keyword
 \verb#seedname.win# or the code must be run with the command line
 option \verb#-pp#.  Running the code then generates the file
 \verb#seedname.nnkp# which provides the information required to 
-construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (MV Eq.~(25)) and
-$A_{mn}^{(\mathbf{k})}$ (MV Eq.~(62), SMV Eq.~(22)). 
+construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref.~\cite{MV},
+Eq.~(25)) and $A_{mn}^{(\mathbf{k})}$ (Ref.~\cite{MV}, Eq.~(62);
+Ref.~\cite{SMV}, Eq.~(22)).
 
 Once the overlaps and projection have been computed and written to
 files \verb#seedname.mmn# and \verb#seedname.amn#, respectively,
@@ -17,7 +18,7 @@ set \verb#postproc_setup# to \verb#.false.# and run the code. Output is
 written to the file \verb#seedname.wout#.
 
 
-\section{nnkp file}
+\section{{\tt nnkp} file}
 
 OUTPUT, if $\verb#postproc_setup#=\verb#.true.#$
 
@@ -43,7 +44,7 @@ The only logical keyword is \verb#calc_only_A#, eg,
 
 \verb#calc_only_A  :  F#
 
-\subsection{Real\_lattice block}
+\subsection{{\tt Real\_lattice} block}
 \begin{verbatim}
 begin real_lattice
  2.250000   0.000000   0.000000
@@ -55,7 +56,7 @@ end real_lattice
 The real lattice vectors in units of Angstrom.
 
 
-\subsection{Recip\_lattice block}
+\subsection{{\tt Recip\_lattice} block}
 \begin{verbatim}
 begin recip_lattice
  2.792527   0.000000   0.000000
@@ -67,7 +68,7 @@ end recip_lattice
 The reciprocal lattice vectors in units of inverse Angstrom.
 
 
-\subsection{Kpoints block}
+\subsection{{\tt Kpoints} block}
 \begin{verbatim}
 begin kpoints
   8
@@ -86,7 +87,7 @@ k-points in crystallographic co-ordinates relative to the reciprocal
 lattice vectors.
 
 
-\subsection{Projections block}
+\subsection{{\tt Projections} block}
 \begin{verbatim}
 begin projections
    n_proj
@@ -103,7 +104,7 @@ end projections
 Notes:
 
 \verb#n_proj#: integer; the number of projection centres, equal to the
-number of Wannier functions \verb#num_wann#.
+number of MLWF \verb#num_wann#.
 
 \verb#centre#: three real numbers; projection function centre
 in crystallographic co-ordinates relative to the direct lattice
@@ -137,7 +138,7 @@ currently used.
 
 
 
-\subsection{nnkpts block}
+\subsection{{\tt nnkpts} block}
 \begin{verbatim}
 begin nnkpts
   10
@@ -162,7 +163,7 @@ that brings the k-point specified by the second integer (which is in
 the first BZ) to the actual $\mathbf{k+b}$ that we need.
 
 
-\subsection{exclude\_bands block}
+\subsection{{\tt exclude\_bands} block}
 \begin{verbatim}
 begin exclude_bands 
   8 
@@ -192,7 +193,7 @@ end projections
 \end{verbatim}
 
 and \verb#seedname.nnkp#, generated on the first pass of
-\verb#wannier90# (with \verb#postproc_setup=T#), will contain: 
+\wannier\ (with \verb#postproc_setup=T#), will contain: 
 
 \begin{verbatim}
 begin projections
@@ -246,7 +247,7 @@ and writes them to \verb#seedname.amn#.
 %\verb#seedname.nnkp#.
 %
 
-\section{Mmn file} 
+\section{{\tt mmn} file} 
 
 INPUT. 
 
@@ -278,7 +279,7 @@ $M_{mn}^{(\mathbf{k,b})}$ for $m,n \in [1,\verb#num_bands#]$. The
 order of these elements is such that the first index $m$ is fastest.
 
 
-\section{Amn file}
+\section{{\tt amn} file}
 
 INPUT.
 
@@ -350,7 +351,7 @@ $A_{mn}^{(\mathbf{k})}$.
 %($-$,$-$,$+$).
 
 
-\section{eig file}
+\section{{\tt eig} file}
 
 INPUT. 
 
@@ -376,13 +377,13 @@ E.g.,
 \end{verbatim}
 
 
-\section{Interface with PWSCF}
+\section{Interface with {\sc pwscf}}
 
 \begin{enumerate}
 \item Run `scf'/'nscf' calculation(s) with \verb#pw#
-\item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.true.# to
+\item Run \wannier\ with \verb#postproc_setup#~=~\verb#.true.# to
   generate \verb#seedname.nnkp#
-\item Run \verb#pw2wannier90#. First it reads \verb#pw2wannier90.in#,
+\item Run {\tt pw2wannier90}. First it reads \verb#pw2wannier90.in#,
   which defines \verb#prefix# and \verb#outdir# for the underlying `scf'
   calculation, as well as the name of the file \verb#seedname.nnkp#,
   and does a consistency check between the direct and reciprocal lattice
@@ -390,18 +391,18 @@ E.g.,
   files specified by \verb#prefix#. \verb#pw2wannier90# generates
   \verb#seedname.mmn#, \verb#seedname.amn# and \verb#seedname.eig#
 \item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.# to
-  disentangle bands (if required) and localise Wannier functions.
+  disentangle bands (if required) and localise MLWF.
 \end{enumerate}
 
-\subsection{pw2wannier90.in}
+\subsection{{\tt pw2wannier90.in}}
 
-A number of keywords may be specified in the \verb#pw2wannier90# input file:
+A number of keywords may be specified in the {\tt pw2wannier90} input file:
 
    \verb#outdir# -- Location to write output files. Default is \verb#`./'#
 
-   \verb#prefix# -- Prefix for the PWscf calculation. Default is \verb#` '#
+   \verb#prefix# -- Prefix for the \pwscf\ calculation. Default is \verb#` '#
 
-   \verb#seedname# -- Seedname for the Wannier90 calculation. Default
+   \verb#seedname# -- Seedname for the \wannier\ calculation. Default
    is \verb#`wannier'#
 
    \verb#spin_component# -- Spin component. Takes values \verb#`up'#,
@@ -411,7 +412,7 @@ A number of keywords may be specified in the \verb#pw2wannier90# input file:
 %   wan_mode = 'standalone'
 
    \verb#write_unk# -- Set to \verb#true# to write the periodic part
-   of the Bloch functions for plotting in Wannier90. Default is
+   of the Bloch functions for plotting in \wannier. Default is
    \verb#.false.#
 
    \verb#wvfn_formatted# -- Set to \verb#.true.# to write formatted

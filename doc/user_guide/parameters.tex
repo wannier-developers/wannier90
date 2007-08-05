@@ -251,7 +251,7 @@ No default.
 
 \subsection[num\_bands]{\tt integer :: num\_bands} 
 
-Total number of bands passed to the code in the {\tt <seedname>.mmn} file.
+Total number of bands passed to the code in the {\tt seedname.mmn} file.
 
 Default \verb#num_bands#=\verb#num_wann#
 
@@ -390,53 +390,59 @@ There is no default.
 
 \subsection{Shells}
 
-The Marzari-Vanderbilt scheme requires a finite difference expression
-for $\nabla_k$ 
-defined on a uniform Monkhorst-Pack mesh of k-points. One choice (the
-`B1' condition of MV) 
-is to choose shells of k-point neighbours to satisfy the equation
+The MV scheme requires a finite difference expression
+for $\nabla_{\bf k}$ defined on a uniform Monkhorst-Pack mesh of
+k-points. The vectors $\{{\bf b}\}$ connect each mesh-point ${\bf k}$
+  to its nearest neighbours. $N_{\mathrm{sh}}$ shells of neighbours
+  are included in the finite-difference formula, with $M_s$ vectors in
+  the $s^{\mathrm{th}}$ shell. For $\nabla_{{\bf k}}$ to be correct to
+  linear order, we require that the following equation is satisfied
+  (Eq.~B1 of Ref.~\cite{MV}):
 \begin{equation}\nonumber
-\sum_s w_s \sum_i b_{i\alpha}^s b_{i\beta}^s = \delta_{\alpha\beta}
+\sum_{s}^{N_{\mathrm{sh}}} w_s \sum_i^{M_{\mathrm{s}}}
+b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:, 
 \end{equation}
-`$s$' indexes the shell, `$i$' indexes k-points in that shell, $w_s$ is a weight factor for the shell s, ${\bf b}_{i}^s$
-is a vector connecting a k-point to one of it nearest neighbours, $\alpha$ and $\beta$ are Cartesian coordinates.
+where ${\bf b}^{i,s}$, $i\in[1,M_s]$, is the
+$i^{\mathrm{th}}$ vector belonging to the $s^{\mathrm{th}}$ shell
+with associated weight $w_s$, and $\alpha$ and $\beta$ run over the
+three Cartesian indices. 
 
 \subsection[num\_shells]{\tt integer :: num\_shells}
 
-If \verb#num_shells#$>0$ the number of shells to include in the finite difference expression.
-If \verb#num_shells#$=0$ the code will choose the shells automatically. 
+If \verb#num_shells#$>0$, then the number of shells to include in the finite difference expression.
+If \verb#num_shells#$=0$, then the code will choose the shells automatically. 
 
 The default value is 0.
 
 \subsection[shell\_list]{\tt integer :: shell\_list(num\_shells)}
 
-If \verb#num_shells#$>0$ \verb#shell_list# is vector listing the shells
+If \verb#num_shells#$>0$, then \verb#shell_list# is vector listing the shells
 to include in the finite difference expression.
 
 \section{Projection}
 
  The projections block defines a set of localised functions used to
  generate an initial guess for the unitary transformations. 
-This data will be written in the {\tt <seedname>.nnkp} file to be used
+This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
 \noindent \verb#begin projections# \\\\
 \verb#end projections#
 
-If \verb#guiding_centres#={\tt TRUE} the projection centres are used
-as the guiding centres in the Wannierisation routine.
+If \verb#guiding_centres#={\tt TRUE}, then the projection centres are
+used as the guiding centres in the Wannierisation routine.
 
 For details see section \ref{sec:proj}.
 
 \section{Job Control}
 
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
-If \verb#postproc_setup#=\verb#TRUE# then the wannier code will write 
- {\tt <seedname>.nnkp} file and exit.
-If Wannier90 is called with the option {\tt -pp} then 
+If \verb#postproc_setup#=\verb#TRUE#, then the wannier code will write 
+ {\tt seedname.nnkp} file and exit.
+If Wannier90 is called with the option {\tt -pp}, then 
  \verb#postproc_setup# is set to 
 \verb#TRUE#, over-riding its
-value in the {\tt <seedname>.win} file.
+value in the {\tt seedname.win} file.
 
 The default value is \verb#FALSE#.
 
@@ -488,7 +494,7 @@ A k-point independent list of states to excluded from the calculation
  of the overlap matrices; 
  for example to select only valence states, or ignore semi-core states.
  This keyword is passed to the first-principles code via the
- {\tt <seedname>.nnkp} file. For example, to exclude bands 2, 6, 7, 8
+ {\tt seedname.nnkp} file. For example, to exclude bands 2, 6, 7, 8
  and 12:
 
  \verb#exclude_bands : 2, 6-8, 12# 
@@ -496,13 +502,13 @@ A k-point independent list of states to excluded from the calculation
 \subsection[restart]{\tt character(len=20) :: restart}
 
 If \verb#restart# is present the code will attempt to restart the calculation
-from the {\tt <seedname>.chk } file. The value of the parameter
+from the {\tt seedname.chk } file. The value of the parameter
 determines the position of the restart
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#default#. Restart from the point at which the
-  check file was written  
+  check file {\tt seedname.chk} was written  
 \item[{\bf --}]  \verb#wannierise#. Restart from the beginning of the
   wannierise routine 
 \item[{\bf --}]  \verb#plot#. Go directly to the plotting phase 
@@ -514,12 +520,13 @@ The valid options for this parameter are:
 
 \subsection[wvfn\_formated]{\tt character(len=20) :: wvfn\_formatted}
 
-If \verb#wvfn_formatted#=\verb#TRUE# the wavefunctions will be read from disk
-as formatted (ie ASCII) files. Otherwise they will be read as unformatted
-files. Unformatted is generally preferable as the files will take less disk
-space  and I/O is significantly faster. However such files
-will not be transferable between all machine architectures and formatted
-files should be used if transferability is required (ie for test cases).
+If \verb#wvfn_formatted#=\verb#TRUE#, then the wavefunctions will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files. Unformatted is generally preferable as the
+files will take less disk space and I/O is significantly
+faster. However such files will not be transferable between all
+machine architectures and formatted files should be used if
+transferability is required (i.e., for test cases).
 
 The default value of this parameter is $\verb#FALSE#$.
 
@@ -580,13 +587,13 @@ are included in the disentanglement procedure).
 The lower bound of the inner energy window for the disentanglement
 procedure. 
 
-If \verb#dis_froz_max# is given the default for 
+If \verb#dis_froz_max# is given, then the default for 
 \verb#dis_froz_min# is \verb#dis_win_min#.
 
 
 \subsection[dis\_froz\_max]{\tt real(kind=dp) :: dis\_froz\_max}
 The upper bound of the inner energy window for the disentanglement
-procedure. If \verb#dis_froz_max# is  not specified then 
+procedure. If \verb#dis_froz_max# is not specified, then 
 there are no frozen states.
 
 No default.
@@ -598,7 +605,7 @@ number of iterations used to extract the most connected subspace.
 The default value is 200.
 
 \subsection[dis\_mix\_ratio]{\tt real(kind=dp) :: dis\_mix\_ratio}
-In the disentanglement procedure the mixing parameter to use for
+In the disentanglement procedure, the mixing parameter to use for
 convergence (see pages 4-5 of SMV). A value of 0.5 is a `safe'
 choice. Using 1.0 (ie no mixing) often gives faster convergence, 
 but may cause the minimisation to be unstable in some cases.
@@ -608,7 +615,7 @@ Restriction: $0.0<${\tt dis\_mix\_ratio}$\geq1.0$ . The default value is 0.5
 
 \subsection[dis\_conv\_tol]{\tt real(kind=dp) :: dis\_conv\_tol}
 
-In the disentanglement procedure the minimisation is said to to converged
+In the disentanglement procedure, the minimisation is said to to converged
 if the fractional change in the spread between successive
 iterations is less than
 \verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
@@ -618,7 +625,7 @@ The default value is 1.0E-10
 
 \subsection[dis\_conv\_window]{\tt integer :: dis\_conv\_window}
 
-In the disentanglement procedure the minimisation is said to to converged
+In the disentanglement procedure, the minimisation is said to to converged
 if the fractional change in the spread between successive
 iterations is less than
 \verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
@@ -661,7 +668,7 @@ Write sufficient information to do a restart every
 The default is 100
 
 \subsection[num\_print\_cycles]{\tt integer :: num\_print\_cycles}
-Write data to the {\tt <seedname>.wout} file every
+Write data to the {\tt seedname.wout} file every
 \verb#num_print_cycles# iterations.
 
 The default is 1.
@@ -669,8 +676,10 @@ The default is 1.
 \subsection[write\_r2mn]{\tt logical :: write\_r2mn}
 
 If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
-$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to Wannier functions) are written
-to file \verb#seedname.r2mn# at the end of the wannierisation procedure.
+$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to Wannier
+functions) are written 
+to file \verb#seedname.r2mn# at the end of the Wannierisation
+procedure. 
 
 The default value of this parameter is \verb#FALSE#.
 
@@ -682,13 +691,13 @@ local minima.
 The default value is \verb#FALSE#.
 
 \subsection[num\_guide\_cycles]{\tt integer :: num\_guide\_cycles}
-If \verb#guiding_centres# is set to true the
+If \verb#guiding_centres# is set to true, then the
 guiding centres are used only every \verb#num_guide_cycles#.
 
 The default value is 1.
 
 \subsection[num\_no\_guide\_iter]{\tt integer :: num\_no\_guide\_iter}
-If \verb#guiding_centres# is set to true the
+If \verb#guiding_centres# is set to true, then the
 guiding centres are used only after \verb#num_no_guide_iter#
 minimisation iterations have been completed.
 
@@ -704,7 +713,7 @@ the value of \verb#trial_step# to give a more accurate line search.
 The default value is 2.0
 
 \subsection[fixed\_step]{\tt real(kind=dp) :: fixed\_step}
-If this is given a value in the input file then a fixed step of length
+If this is given a value in the input file, then a fixed step of length
 \verb#fixed_step# (instead of a parabolic
 line search) is used at each iteration of the spread function
 minimisation. Cannot be used in conjunction with
@@ -736,7 +745,7 @@ Th default value is \verb#false#.
 
 \subsection[wannier\_plot]{\tt logical :: wannier\_plot}
 
-If $\verb#wannier_plot#=\verb#TRUE#$ the code will write out the
+If $\verb#wannier_plot#=\verb#TRUE#$, then the code will write out the
 wannier functions in a super-cell \verb#wannier_plot_supercell# times
 the original unit cell in a format specified by
 \verb#wannier_plot_format#
@@ -745,10 +754,10 @@ The default value of this parameter is \verb#FALSE#.
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
 
-Dimension of the `super-unit-cell' in which the Wannier Functions are plotted.
-The super-unit-cell is \verb#wannier_plot_supercell# times the unit cell along all three
-linear dimensions (the `home' unit cell is kept approximately
-in the middle)
+Dimension of the `super-unit-cell' in which the Wannier functions are
+plotted. The super-unit-cell is \verb#wannier_plot_supercell# times
+the unit cell along all three linear dimensions (the `home' unit cell
+is kept approximately in the middle)
 
 The default value is 2.
 
@@ -763,10 +772,11 @@ The valid options for this parameter are:
 
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
- A list of Wannier Functions to plot. The Wannier Functions numbered as per the
- {\tt <seedname>.wout} file after the minimisation of the spread.
+ A list of Wannier functions to plot. The Wannier functions numbered
+ as per the {\tt seedname.wout} file after the minimisation of the
+ spread. 
 
- The default behaviour is to plot all Wannier Functions. For example,
+ The default behaviour is to plot all Wannier functions. For example,
  to plot Wannier functions 4, 5, 6 and 10:
 
  \verb#wannier_plot_list : 4-6, 10#
@@ -775,7 +785,7 @@ The valid options for this parameter are:
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 
 Choose the mode in which to plot the Wannier functions, either as a molecule
-or as a crystal.
+or as a crystal. 
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -785,7 +795,7 @@ The valid options for this parameter are:
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
-If $\verb#bands_plot#=\verb#TRUE#$ the code will calculate the band
+If $\verb#bands_plot#=\verb#TRUE#$, then the code will calculate the band
 structure, through Wannier interpolation,
  along
 the path in k-space defined by \verb#bands_kpath# using \verb#bands_num_points# along the first
@@ -797,7 +807,7 @@ The default value is \verb#FALSE#.
 
 \subsection[kpoint\_path]{kpoint\_path}
 Defines the path in kspace along which to calculate the
-bandstructure. Each lines gives the start and end points (with labels)
+bandstructure. Each line gives the start and end point (with labels)
 for a section of the path.
 
 \noindent  \verb#begin kpoint_path#
@@ -815,9 +825,10 @@ There is no default
 
 \subsection[bands\_num\_points]{\tt integer :: bands\_num\_points}
 
-If $\verb#bands_plot#=\verb#TRUE#$ the number of points along the first
-section of the bandstructure plot given by \verb#kpoint_path#. Other
-sections will have the same density of k-points.
+If $\verb#bands_plot#=\verb#TRUE#$, then the number of points along
+the first section of the bandstructure plot given by
+\verb#kpoint_path#. Other sections will have the same density of
+k-points. 
 
 The default value for \verb#bands_num_points# is 100.
 
@@ -828,34 +839,34 @@ Format in which to plot the interpolated band structure
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#gnuplot# (default)
-%\item[{\bf --}] xmgrace (possibly)
+\item[{\bf --}] \verb#xmgrace#
 \end{itemize}
 
 \subsection[fermi\_surface\_plot]{\tt logical :: fermi\_surface\_plot}
 
-If $\verb#fermi_surface_plot#=\verb#TRUE#$ the code will calculate,
+If $\verb#fermi_surface_plot#=\verb#TRUE#$, then the code will calculate,
 through Wannier interpolation, the
 eigenvalues on a regular grid with \verb#fermi_surface_num_points# in
 each direction. The code will write a file in bxsf format which can be
-read with XCrysden and used to plot the Fermi surface.
+read by XCrySDen in order to plot the Fermi surface.
 
 The default value is \verb#FALSE#.
 
 
 \subsection[fermi\_surface\_num\_points]{\tt integer :: fermi\_surface\_num\_points}
 
-If $\verb#fermi_surface_plot#=\verb#TRUE#$ the number of divisions in
+If $\verb#fermi_surface_plot#=\verb#TRUE#$, then the number of divisions in
 the regular k-point grid used to calculate the Fermi surface.
 
 The default value for \verb#fermi_surface_num_points# is 50.
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
-The Fermi energy in eV. Whilst this is not directly used by the Wannier 
-code it is a useful parameter to set as
+The Fermi energy in eV. Whilst this is not directly used by the
+\wannier, it is a useful parameter to set as
 it will be written driectly into the bxsf file.
 
-The default value is 0.0eV.
+The default value is 0.0\,eV.
 
 
 \subsection[fermi\_surface\_plot\_format]{\tt character(len=20) :: fermi\_surface\_plot\_format}
