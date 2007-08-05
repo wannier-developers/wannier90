@@ -4,6 +4,25 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
+v1.0.3 (1st Sep 2007)
+
+* Addition of specific algorithms for when only Gamma-point 
+  sampling is used (new input variable: gamma_only)
+* Option to write out hamiltonian matrix elements in the Wannier 
+  function basis (new input variables: h_plot,ham_r_max)
+* Option to set a convergence threshold for localisation procedure
+  (new input variables: conv_tol, conv_window)
+* Improved minimisation algorithms for localisation routines
+  (new input variables: conv_noise_amp, conv_noise_num)
+* Option to specify the number of shells that are searched to find
+  nearest neighbour b-vectors (new input variable: search_shells)
+* Option to plot bandstructures in xmgrace format (bands_plot_format=xmgrace)
+* Option to plot Wannier functions in cube format (wannier_plot_format=cube) 
+  -- works for isolated molecules, further testing for periodic systems is 
+  required -- significantly reduced WF file-size  
+  (new input variable: wannier_plot_radius) 
+
+
 v1.0.2 (1st Dec 2006)
 
 * Addition of "library mode" functionality
