@@ -33,7 +33,7 @@ contains
 
     use w90_constants, only : cmplx_0
     use w90_io, only        : io_error,stdout,io_stopwatch
-    use w90_parameters, only    : num_kpts,bands_plot,dos_plot,h_plot, &
+    use w90_parameters, only    : num_kpts,bands_plot,dos_plot,hr_plot, &
          mp_grid,kpt_latt,fermi_surface_plot,num_wann,wannier_plot,timing_level
 
     implicit none
@@ -48,7 +48,7 @@ contains
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,*)
 
-    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. h_plot) then
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot) then
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
@@ -75,7 +75,7 @@ contains
        !
        if(fermi_surface_plot) call plot_fermi_surface
        !
-       if(h_plot) call plot_ham_r
+       if(hr_plot) call plot_ham_r
        !
        deallocate(ham_r,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating ham_r in plot_main')
@@ -1142,7 +1142,7 @@ end subroutine plot_interpolate_bands
     use w90_constants, only : dp
     use w90_io,        only : io_error,io_stopwatch,io_file_unit, &
                               stdout,seedname
-    use w90_parameters, only : mp_grid,num_wann,ham_r_max,timing_level
+    use w90_parameters, only : mp_grid,num_wann,hr_max,timing_level
 
     implicit none
   
@@ -1225,15 +1225,15 @@ end subroutine plot_interpolate_bands
        m=m+1
     end do 
 
-    ! apply cutoff ham_r_max -> new nrx
+    ! apply cutoff hr_max -> new nrx
    
     nrx = 0
     do loop_rpt=1,nrpts 
-       if (max_hamr(loop_rpt) .gt. ham_r_max ) then
+       if (max_hamr(loop_rpt) .gt. hr_max ) then
           if ( abs(irvec(kdir,loop_rpt)) .gt. nrx )  nrx = abs(irvec(kdir,loop_rpt))
        end if
     end do
-    write(stdout,'(a,f10.6)') '  ham_r_max :',ham_r_max
+    write(stdout,'(a,f10.6)') '  hr_max :',hr_max
     write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
 
     allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann),stat=ierr)

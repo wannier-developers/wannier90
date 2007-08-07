@@ -66,8 +66,8 @@ module w90_parameters
   real(kind=dp),     public, save :: dos_energy_step
   real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
-  logical,           public, save :: h_plot
-  real(kind=dp),     public, save :: ham_r_max
+  logical,           public, save :: hr_plot
+  real(kind=dp),     public, save :: hr_max
   integer,           public, save :: num_shells
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
@@ -519,11 +519,11 @@ contains
     dos_plot_format           = 'gnuplot'
     call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
-    h_plot                    = .false.
-    call param_get_keyword('h_plot',found,l_value=h_plot)
+    hr_plot                    = .false.
+    call param_get_keyword('hr_plot',found,l_value=hr_plot)
                                                                                            
-    ham_r_max                 = 0.0_dp
-    call param_get_keyword('ham_r_max',found,r_value=ham_r_max)
+    hr_max                 = 0.0_dp
+    call param_get_keyword('hr_max',found,r_value=hr_max)
 
     !%%%%%%%%%%%%%%%%
     ! Disentanglement
