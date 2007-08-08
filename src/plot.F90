@@ -1142,7 +1142,7 @@ end subroutine plot_interpolate_bands
     use w90_constants, only : dp
     use w90_io,        only : io_error,io_stopwatch,io_file_unit, &
                               stdout,seedname
-    use w90_parameters, only : mp_grid,num_wann,hr_max,timing_level
+    use w90_parameters, only : mp_grid,num_wann,hr_min,timing_level
 
     implicit none
   
@@ -1225,15 +1225,15 @@ end subroutine plot_interpolate_bands
        m=m+1
     end do 
 
-    ! apply cutoff hr_max -> new nrx
+    ! apply cutoff hr_min -> new nrx
    
     nrx = 0
     do loop_rpt=1,nrpts 
-       if (max_hamr(loop_rpt) .gt. hr_max ) then
+       if (max_hamr(loop_rpt) .gt. hr_min ) then
           if ( abs(irvec(kdir,loop_rpt)) .gt. nrx )  nrx = abs(irvec(kdir,loop_rpt))
        end if
     end do
-    write(stdout,'(a,f10.6)') '  hr_max :',hr_max
+    write(stdout,'(a,f10.6)') '  hr_min :',hr_min
     write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
 
     allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann),stat=ierr)
