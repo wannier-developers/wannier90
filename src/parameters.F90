@@ -67,7 +67,7 @@ module w90_parameters
   real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
   logical,           public, save :: hr_plot
-  real(kind=dp),     public, save :: hr_min
+!!$  real(kind=dp),     public, save :: hr_min
   integer,           public, save :: num_shells
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
@@ -522,8 +522,8 @@ contains
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
                                                                                            
-    hr_min                 = 0.0_dp
-    call param_get_keyword('hr_min',found,r_value=hr_min)
+!!$    hr_min                 = 0.0_dp
+!!$    call param_get_keyword('hr_min',found,r_value=hr_min)
 
     !%%%%%%%%%%%%%%%%
     ! Disentanglement
@@ -2306,467 +2306,501 @@ contains
    end  subroutine param_get_range_vector
 
   !===================================!
-  subroutine param_get_projections
-    !===================================!
-    !                                   !
-    !  Fills the projection data block  !
-    !                                   !
-    !===================================!
+   subroutine param_get_projections
+     !===================================!
+     !                                   !
+     !  Fills the projection data block  !
+     !                                   !
+     !===================================!
 
-    use w90_constants, only : bohr
-    use w90_utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
-         utility_string_to_coord,utility_strip
-    use w90_io,        only : io_error
+     use w90_constants, only : bohr
+     use w90_utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
+          utility_string_to_coord,utility_strip
+     use w90_io,        only : io_error
 
-    implicit none
-
-
-    real(kind=dp)     :: pos_frac(3)
-    real(kind=dp)     :: pos_cart(3)
-    character(len=20) :: keyword
-    integer           :: in,ins,ine,loop,line_e,line_s,counter
-    integer           :: sites,species,line,pos1,pos2,pos3,m_tmp,l_tmp,mstate
-    integer           :: loop_l,loop_m,loop_sites,ierr
-    logical           :: found_e,found_s
-    character(len=maxlen) :: dummy,end_st,start_st
-    character(len=maxlen) :: ctemp,ctemp2,ctemp3,ctemp4,ctemp5,m_string
-    !
-    integer, parameter :: min_l=-5
-    integer, parameter :: max_l=3
-    integer, parameter :: min_m=1
-    integer, parameter :: max_m=7
-    integer            :: ang_states(min_m:max_m,min_l:max_l)
-    ! default values for the optional part of the projection definitions
-    real(kind=dp), parameter :: proj_z_def(3)=(/0.0_dp,0.0_dp,1.0_dp/)
-    real(kind=dp), parameter :: proj_x_def(3)=(/1.0_dp,0.0_dp,0.0_dp/)
-    real(kind=dp), parameter :: proj_zona_def=1.0_dp
-    integer, parameter       :: proj_radial_def=1
-    !
-    real(kind=dp) :: proj_z_tmp(3)
-    real(kind=dp) :: proj_x_tmp(3)
-    real(kind=dp) :: proj_zona_tmp
-    integer       :: proj_radial_tmp
-    logical       :: lconvert,lrandom
-
-    keyword="projections"
-
-    found_s=.false.
-    found_e=.false.
-
-    start_st='begin '//trim(keyword)
-    end_st='end '//trim(keyword)
-
-    allocate( proj_site(3,num_wann),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_site in param_get_projections') 
-    allocate( proj_l(num_wann) ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_l in param_get_projections') 
-    allocate( proj_m(num_wann)  ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_m in param_get_projections')
-    allocate( proj_z(3,num_wann) ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_z in param_get_projections')
-    allocate( proj_x(3,num_wann) ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_x in param_get_projections')
-    allocate( proj_radial(num_wann)   ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_radial in param_get_projections')
-    allocate( proj_zona(num_wann) ,stat=ierr)
-       if (ierr/=0) call io_error('Error allocating proj_zona in param_get_projections')
+     implicit none
 
 
+     real(kind=dp)     :: pos_frac(3)
+     real(kind=dp)     :: pos_cart(3)
+     character(len=20) :: keyword
+     integer           :: in,ins,ine,loop,line_e,line_s,counter
+     integer           :: sites,species,line,pos1,pos2,pos3,m_tmp,l_tmp,mstate
+     integer           :: loop_l,loop_m,loop_sites,ierr
+     logical           :: found_e,found_s
+     character(len=maxlen) :: dummy,end_st,start_st
+     character(len=maxlen) :: ctemp,ctemp2,ctemp3,ctemp4,ctemp5,m_string
+     !
+     integer, parameter :: min_l=-5
+     integer, parameter :: max_l=3
+     integer, parameter :: min_m=1
+     integer, parameter :: max_m=7
+     integer            :: ang_states(min_m:max_m,min_l:max_l)
+     ! default values for the optional part of the projection definitions
+     real(kind=dp), parameter :: proj_z_def(3)=(/0.0_dp,0.0_dp,1.0_dp/)
+     real(kind=dp), parameter :: proj_x_def(3)=(/1.0_dp,0.0_dp,0.0_dp/)
+     real(kind=dp), parameter :: proj_zona_def=1.0_dp
+     integer, parameter       :: proj_radial_def=1
+     !
+     real(kind=dp) :: proj_z_tmp(3)
+     real(kind=dp) :: proj_x_tmp(3)
+     real(kind=dp) :: proj_zona_tmp
+     integer       :: proj_radial_tmp
+     integer       :: num_proj
+     logical       :: lconvert,lrandom
+     logical       :: lpartrandom
 
+     keyword="projections"
 
-    do loop=1,num_lines
-       ins=index(in_data(loop),trim(keyword))
-       if (ins==0 ) cycle
-       in=index(in_data(loop),'begin')
-       if (in==0 .or. in>1) cycle
-       line_s=loop
-       if (found_s) then
-          call io_error('Error: Found '//trim(start_st)//' more than once in input file')
-       endif
-       found_s=.true.
-    end do
+     found_s=.false.
+     found_e=.false.
+
+     start_st='begin '//trim(keyword)
+     end_st='end '//trim(keyword)
+
+     allocate( proj_site(3,num_wann),stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_site in param_get_projections') 
+     allocate( proj_l(num_wann) ,stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_l in param_get_projections') 
+     allocate( proj_m(num_wann)  ,stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_m in param_get_projections')
+     allocate( proj_z(3,num_wann) ,stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_z in param_get_projections')
+     allocate( proj_x(3,num_wann) ,stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_x in param_get_projections')
+     allocate( proj_radial(num_wann)   ,stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_radial in param_get_projections')
+     allocate( proj_zona(num_wann) ,stat=ierr)
+     if (ierr/=0) call io_error('Error allocating proj_zona in param_get_projections')
 
 
 
-    do loop=1,num_lines
-       ine=index(in_data(loop),trim(keyword))
-       if (ine==0 ) cycle
-       in=index(in_data(loop),'end')
-       if (in==0 .or. in>1) cycle
-       line_e=loop
-       if (found_e) then
-          call io_error('param_get_projections: Found '//trim(end_st)//' more than once in input file')
-       endif
-       found_e=.true.
-    end do
 
-    if(.not. found_e) then
-       call io_error('param_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
-    end if
-
-    if(line_e<=line_s) then
-       call io_error('param_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
-    end if
-
-    dummy=in_data(line_s+1)
-    lconvert=.false.
-    lrandom=.false.
-    if ( index(dummy,'ang').ne.0 ) then
-       in_data(line_s)(1:maxlen) = ' '
-       line_s = line_s + 1
-    elseif ( index(dummy,'bohr').ne.0 ) then
-       in_data(line_s)(1:maxlen) = ' '
-       line_s = line_s + 1
-       lconvert=.true.
-    elseif ( index(dummy,'random').ne.0 ) then
-       in_data(line_s)(1:maxlen) = ' '
-       line_s = line_s + 1
-       lrandom=.true.
-    endif
-
-    if(.not. lrandom) then
-       counter=0
-       do line=line_s+1,line_e-1
-          ang_states=0
-          !Assume the default values
-          proj_z_tmp      = proj_z_def  
-          proj_x_tmp      = proj_x_def  
-          proj_zona_tmp   = proj_zona_def  
-          proj_radial_tmp =  proj_radial_def
-          ! Strip input line of all spaces
-          dummy=utility_strip(in_data(line))
-          dummy=adjustl(dummy)
-          pos1=index(dummy,':')
-          if(pos1==0) call io_error('param_read_projection: malformed projection &
-               &definition: '//trim(dummy))
-          sites=0
-          ctemp=dummy(:pos1-1)
-          ! Read the atomic site
-          if(index(ctemp,'c=')>0) then
-             sites=-1
-             ctemp=ctemp(3:)
-             call utility_string_to_coord(ctemp,pos_cart)
-             if (lconvert) pos_cart = pos_cart * bohr
-             call utility_cart_to_frac (pos_cart(:),pos_frac(:),recip_lattice)          
-          elseif(index(ctemp,'f=')>0) then
-             sites=-1
-             ctemp=ctemp(3:)
-             call utility_string_to_coord(ctemp,pos_frac)
-          else
-             if(num_species==0) &
-                  call io_error('param_get_projection: Atom centred projection requested but no atoms defined')
-             do loop=1,num_species
-                if(trim(ctemp)==atoms_label(loop)) then
-                   species=loop
-                   sites=atoms_species_num(loop)
-                   exit
-                end if
-                if(loop==num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp))
-             end do
-          end if
-          !Now we know the sites for this line. Get the angular momentum states
-          dummy=dummy(pos1+1:)
-          pos1=index(dummy,':')
-          if (pos1>0) then
-             ctemp=dummy(:pos1-1)
-          else
-             ctemp=dummy
-          end if
-          ctemp2=ctemp
-          do
-             pos2=index(ctemp2,';')
-             if (pos2==0) then
-                ctemp3=ctemp2
-             else
-                ctemp3=ctemp2(:pos2-1)
-             endif
-             if (index(ctemp3,'l=')==1) then
-                mstate=index(ctemp3,',')
-                if(mstate>0) then
-                   read(ctemp3(3:mstate-1),*,err=101,end=101) l_tmp
-                else
-                   read(ctemp3(3:),*,err=101,end=101) l_tmp
-                end if
-                if (l_tmp<-5 .or. l_tmp>3) call io_error('param_get_projection: Incorrect l state requested')
-                if (mstate==0) then
-                   if(l_tmp>=0) then
-                      do loop_m=1,2*l_tmp+1
-                         ang_states(loop_m,l_tmp)=1
-                      end do
-                   elseif (l_tmp==-1) then !sp
-                      ang_states(1:2,l_tmp)=1
-                   elseif (l_tmp==-2) then !sp2
-                      ang_states(1:3,l_tmp)=1
-                   elseif (l_tmp==-3) then !sp3
-                      ang_states(1:4,l_tmp)=1
-                   elseif (l_tmp==-4) then !sp3d
-                      ang_states(1:5,l_tmp)=1
-                   elseif (l_tmp==-5) then !sp3d2
-                      ang_states(1:6,l_tmp)=1
-                   endif
-                else
-                   if (index(ctemp3,'mr=')/=mstate+1) &
-                        call io_error('param_get_projection: Problem reading m state')
-                   ctemp4=ctemp3(mstate+4:)
-                   do
-                      pos3=index(ctemp4,',')
-                      if (pos3==0) then
-                         ctemp5=ctemp4
-                      else
-                         ctemp5=ctemp4(:pos3-1)
-                      endif
-                      read(ctemp5(1:),*,err=102,end=102) m_tmp
-                      if(l_tmp>=0) then
-                         if ((m_tmp>2*l_tmp+1) .or. (m_tmp<=0)) call io_error('param_get_projection: m is > l !')
-                      elseif (l_tmp==-1 .and. (m_tmp>2 .or. m_tmp<=0)) then
-                         call io_error('param_get_projection: m has incorrect value (1)')
-                      elseif (l_tmp==-2 .and. (m_tmp>3 .or. m_tmp<=0)) then
-                         call io_error('param_get_projection: m has incorrect value (2)')
-                      elseif (l_tmp==-3 .and. (m_tmp>4 .or. m_tmp<=0)) then
-                         call io_error('param_get_projection: m has incorrect value (3)')
-                      elseif (l_tmp==-4 .and. (m_tmp>5 .or. m_tmp<=0)) then
-                         call io_error('param_get_projection: m has incorrect value (4)')
-                      elseif (l_tmp==-5 .and. (m_tmp>6 .or. m_tmp<=0)) then
-                         call io_error('param_get_projection: m has incorrect value (5)')
-                      endif
-                      ang_states(m_tmp,l_tmp)=1
-                      if (pos3==0) exit
-                      ctemp4=ctemp4(pos3+1:)
-                   enddo
-                end if
-             else
-                do
-                   pos3=index(ctemp3,',')
-                   if (pos3==0) then
-                      ctemp4=ctemp3
-                   else
-                      ctemp4=ctemp3(:pos3-1)
-                   endif
-                   read(ctemp4(1:),*,err=106,end=106) m_string
-                   select case (trim(adjustl(m_string)))
-                   case ('s')
-                      ang_states(1,0)=1
-                   case ('p')
-                      ang_states(1:3,1)=1
-                   case ('pz')
-                      ang_states(1,1)=1
-                   case ('px')
-                      ang_states(2,1)=1
-                   case ('py')
-                      ang_states(3,1)=1
-                   case ('d')
-                      ang_states(1:5,2)=1
-                   case ('dz2')
-                      ang_states(1,2)=1
-                   case ('dxz')
-                      ang_states(2,2)=1
-                   case ('dyz')
-                      ang_states(3,2)=1
-                   case ('dx2-y2')
-                      ang_states(4,2)=1
-                   case ('dxy')
-                      ang_states(5,2)=1
-                   case ('f')
-                      ang_states(1:7,3)=1
-                   case ('fz2')
-                      ang_states(1,3)=1
-                   case ('fxz2')
-                      ang_states(2,3)=1
-                   case ('fyz2')
-                      ang_states(3,3)=1
-                   case ('fxyz')
-                      ang_states(4,3)=1
-                   case ('fz(x2-y2)')
-                      ang_states(5,3)=1
-                   case ('fx(x2-3y2)')
-                      ang_states(6,3)=1
-                   case ('fy(3x2-y2)')
-                      ang_states(7,3)=1
-                   case ('sp')
-                      ang_states(1:2,-1)=1
-                   case ('sp-1')
-                      ang_states(1,-1)=1
-                   case ('sp-2')
-                      ang_states(2,-1)=1
-                   case ('sp2')
-                      ang_states(1:3,-2)=1
-                   case ('sp2-1')
-                      ang_states(1,-2)=1
-                   case ('sp2-2')
-                      ang_states(2,-2)=1
-                   case ('sp2-3')
-                      ang_states(3,-2)=1
-                   case ('sp3')
-                      ang_states(1:4,-3)=1
-                   case ('sp3-1')
-                      ang_states(1,-3)=1
-                   case ('sp3-2')
-                      ang_states(2,-3)=1
-                   case ('sp3-3')
-                      ang_states(3,-3)=1
-                   case ('sp3-4')
-                      ang_states(4,-3)=1
-                   case ('sp3d')
-                      ang_states(1:5,-4)=1
-                   case ('sp3d-1')
-                      ang_states(1,-4)=1
-                   case ('sp3d-2')
-                      ang_states(2,-4)=1
-                   case ('sp3d-3')
-                      ang_states(3,-4)=1
-                   case ('sp3d-4')
-                      ang_states(4,-4)=1
-                   case ('sp3d-5')
-                      ang_states(5,-4)=1
-                   case ('sp3d2')
-                      ang_states(1:6,-5)=1
-                   case ('sp3d2-1')
-                      ang_states(1,-5)=1
-                   case ('sp3d2-2')
-                      ang_states(2,-5)=1
-                   case ('sp3d2-3')
-                      ang_states(3,-5)=1
-                   case ('sp3d2-4')
-                      ang_states(4,-5)=1
-                   case ('sp3d2-5')
-                      ang_states(5,-5)=1
-                   case ('sp3d2-6')
-                      ang_states(6,-5)=1
-                   case default
-                      call io_error('param_get_projection: Problem reading l state '//trim(ctemp3))
-                   end select
-                   if (pos3==0) exit
-                   ctemp3=ctemp3(pos3+1:)
-                enddo
-             endif
-             if(pos2==0) exit
-             ctemp2=ctemp2(pos2+1:)
-          enddo
-          ! check for non-default values
-          if(pos1>0) then
-             dummy=dummy(pos1+1:)
-             ! z axis
-             pos1=index(dummy,'z=')
-             if(pos1>0) then
-                ctemp=(dummy(pos1+2:))
-                pos2=index(ctemp,':')
-                if(pos2>0) ctemp=ctemp(:pos2-1)
-                call utility_string_to_coord(ctemp,proj_z_tmp)
-             endif
-             ! x axis
-             pos1=index(dummy,'x=')
-             if(pos1>0) then
-                ctemp=(dummy(pos1+2:))
-                pos2=index(ctemp,':')
-                if(pos2>0) ctemp=ctemp(:pos2-1)
-                call utility_string_to_coord(ctemp,proj_x_tmp)
-             endif
-             ! diffusivity of orbital
-             pos1=index(dummy,'zona=')
-             if(pos1>0) then
-                ctemp=(dummy(pos1+2:))
-                pos2=index(ctemp,':')
-                if(pos2>0) ctemp=ctemp(:pos2-1)
-                read(ctemp,*,err=104,end=104) proj_zona_tmp
-             endif
-             ! nodes for the radial part
-             pos1=index(dummy,'r=')
-             if(pos1>0) then
-                ctemp=(dummy(pos1+2:))
-                pos2=index(ctemp,':')
-                if(pos2>0) ctemp=ctemp(:pos2-1)
-                read(ctemp,*,err=105,end=105) proj_radial_tmp
-             endif
-          end if
-          if(sites==-1) then
-             if(counter+sum(ang_states) > num_wann) call io_error('param_get_projection: &
-                  &too many projections defined')
-          else
-             if(counter+sites*sum(ang_states) > num_wann) call io_error('param_get_projection:&
-                  & too many projections defined')
-          end if
-          !
-          if(sites==-1) then
-             do loop_l=min_l,max_l
-                do loop_m=min_m,max_m
-                   if(ang_states(loop_m,loop_l)==1) then
-                      counter=counter+1
-                      proj_site(:,counter) = pos_frac
-                      proj_l(counter)      = loop_l
-                      proj_m(counter)      = loop_m
-                      proj_z(:,counter)    = proj_z_tmp
-                      proj_x(:,counter)    = proj_x_tmp
-                      proj_radial(counter) = proj_radial_tmp
-                      proj_zona(counter)   = proj_zona_tmp
-                   end if
-                end do
-             end do
-          else
-             do loop_sites=1,sites
-                do loop_l=min_l,max_l
-                   do loop_m=min_m,max_m
-                      if(ang_states(loop_m,loop_l)==1) then
-                         counter=counter+1
-                         proj_site(:,counter) = atoms_pos_frac(:,loop_sites,species)
-                         proj_l(counter)      = loop_l
-                         proj_m(counter)      = loop_m
-                         proj_z(:,counter)    = proj_z_tmp
-                         proj_x(:,counter)    = proj_x_tmp
-                         proj_radial(counter) = proj_radial_tmp
-                         proj_zona(counter)   = proj_zona_tmp
-                      end if
-                   end do
-                end do
-             end do
-          end if
-          
-       end do !end loop over projection block
-       if(spinors) then
-         if (counter.ne.num_wann/2) call io_error('param_get_projections:&
-           & Fewer projections defined than the number of Wannier functions requested')
-       else
-          if (counter.ne.num_wann) call io_error('param_get_projections:&
-          & Fewer projections defined than the number of Wannier functions requested')
-       endif
-       
-    elseif(lrandom) then
-
-       call random_seed() ! comment out this line for reproducible random positions!
-       do loop=1,num_wann
-          call random_number(proj_site(:,loop))
-          proj_l(loop)      = 0
-          proj_m(loop)      = 1
-          proj_z(:,loop)    = proj_z_def  
-          proj_x(:,loop)    = proj_x_def  
-          proj_zona(loop)   = proj_zona_def  
-          proj_radial(loop) = proj_radial_def
-       end do
-
-    end if
-
-       
-       in_data(line_s:line_e)(1:maxlen) = ' '
-       
-       ! Check
-       do loop=1,num_wann
-          if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
-             write(stdout,*) ' Projection:',loop
-             call io_error(' Error in projections: z and x axes are not orthogonal')
-          endif
-       enddo
-       
-       return
-
-
-101 call io_error('param_get_projection: Problem reading l state into integer '//trim(ctemp3))
-102 call io_error('param_get_projection: Problem reading m state into integer '//trim(ctemp3))
-104 call io_error('param_get_projection: Problem reading zona into real '//trim(ctemp))
-105 call io_error('param_get_projection: Problem reading radial state into integer '//trim(ctemp))
-106 call io_error('param_get_projection: Problem reading m state into string '//trim(ctemp3))
+     do loop=1,num_lines
+        ins=index(in_data(loop),trim(keyword))
+        if (ins==0 ) cycle
+        in=index(in_data(loop),'begin')
+        if (in==0 .or. in>1) cycle
+        line_s=loop
+        if (found_s) then
+           call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+        endif
+        found_s=.true.
+     end do
 
 
 
-  end subroutine param_get_projections
+     do loop=1,num_lines
+        ine=index(in_data(loop),trim(keyword))
+        if (ine==0 ) cycle
+        in=index(in_data(loop),'end')
+        if (in==0 .or. in>1) cycle
+        line_e=loop
+        if (found_e) then
+           call io_error('param_get_projections: Found '//trim(end_st)//' more than once in input file')
+        endif
+        found_e=.true.
+     end do
+
+     if(.not. found_e) then
+        call io_error('param_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+     end if
+
+     if(line_e<=line_s) then
+        call io_error('param_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+     end if
+
+     dummy=in_data(line_s+1)
+     lconvert=.false.
+     lrandom=.false.
+     lpartrandom=.false.
+     if ( index(dummy,'ang').ne.0 ) then
+        in_data(line_s)(1:maxlen) = ' '
+        line_s = line_s + 1
+     elseif ( index(dummy,'bohr').ne.0 ) then
+        in_data(line_s)(1:maxlen) = ' '
+        line_s = line_s + 1
+        lconvert=.true.
+     elseif ( index(dummy,'random').ne.0 ) then
+        in_data(line_s)(1:maxlen) = ' '
+        line_s = line_s + 1
+        if (index(in_data(line_s+1),end_st).ne.0) then
+           lrandom=.true.     ! all projections random
+        else
+           lpartrandom=.true. ! only some projections random
+           if ( index(in_data(line_s+1),'ang').ne.0 ) then
+              in_data(line_s)(1:maxlen) = ' '
+              line_s = line_s + 1
+           elseif ( index(in_data(line_s+1),'bohr').ne.0 ) then
+              in_data(line_s)(1:maxlen) = ' '
+              line_s = line_s + 1
+              lconvert=.true.
+           endif
+        endif
+     endif
+
+     if(.not. lrandom) then
+        counter=0
+        do line=line_s+1,line_e-1
+           ang_states=0
+           !Assume the default values
+           proj_z_tmp      = proj_z_def  
+           proj_x_tmp      = proj_x_def  
+           proj_zona_tmp   = proj_zona_def  
+           proj_radial_tmp =  proj_radial_def
+           ! Strip input line of all spaces
+           dummy=utility_strip(in_data(line))
+           dummy=adjustl(dummy)
+           pos1=index(dummy,':')
+           if(pos1==0) call io_error('param_read_projection: malformed projection &
+                &definition: '//trim(dummy))
+           sites=0
+           ctemp=dummy(:pos1-1)
+           ! Read the atomic site
+           if(index(ctemp,'c=')>0) then
+              sites=-1
+              ctemp=ctemp(3:)
+              call utility_string_to_coord(ctemp,pos_cart)
+              if (lconvert) pos_cart = pos_cart * bohr
+              call utility_cart_to_frac (pos_cart(:),pos_frac(:),recip_lattice)          
+           elseif(index(ctemp,'f=')>0) then
+              sites=-1
+              ctemp=ctemp(3:)
+              call utility_string_to_coord(ctemp,pos_frac)
+           else
+              if(num_species==0) &
+                   call io_error('param_get_projection: Atom centred projection requested but no atoms defined')
+              do loop=1,num_species
+                 if(trim(ctemp)==atoms_label(loop)) then
+                    species=loop
+                    sites=atoms_species_num(loop)
+                    exit
+                 end if
+                 if(loop==num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp))
+              end do
+           end if
+           !Now we know the sites for this line. Get the angular momentum states
+           dummy=dummy(pos1+1:)
+           pos1=index(dummy,':')
+           if (pos1>0) then
+              ctemp=dummy(:pos1-1)
+           else
+              ctemp=dummy
+           end if
+           ctemp2=ctemp
+           do
+              pos2=index(ctemp2,';')
+              if (pos2==0) then
+                 ctemp3=ctemp2
+              else
+                 ctemp3=ctemp2(:pos2-1)
+              endif
+              if (index(ctemp3,'l=')==1) then
+                 mstate=index(ctemp3,',')
+                 if(mstate>0) then
+                    read(ctemp3(3:mstate-1),*,err=101,end=101) l_tmp
+                 else
+                    read(ctemp3(3:),*,err=101,end=101) l_tmp
+                 end if
+                 if (l_tmp<-5 .or. l_tmp>3) call io_error('param_get_projection: Incorrect l state requested')
+                 if (mstate==0) then
+                    if(l_tmp>=0) then
+                       do loop_m=1,2*l_tmp+1
+                          ang_states(loop_m,l_tmp)=1
+                       end do
+                    elseif (l_tmp==-1) then !sp
+                       ang_states(1:2,l_tmp)=1
+                    elseif (l_tmp==-2) then !sp2
+                       ang_states(1:3,l_tmp)=1
+                    elseif (l_tmp==-3) then !sp3
+                       ang_states(1:4,l_tmp)=1
+                    elseif (l_tmp==-4) then !sp3d
+                       ang_states(1:5,l_tmp)=1
+                    elseif (l_tmp==-5) then !sp3d2
+                       ang_states(1:6,l_tmp)=1
+                    endif
+                 else
+                    if (index(ctemp3,'mr=')/=mstate+1) &
+                         call io_error('param_get_projection: Problem reading m state')
+                    ctemp4=ctemp3(mstate+4:)
+                    do
+                       pos3=index(ctemp4,',')
+                       if (pos3==0) then
+                          ctemp5=ctemp4
+                       else
+                          ctemp5=ctemp4(:pos3-1)
+                       endif
+                       read(ctemp5(1:),*,err=102,end=102) m_tmp
+                       if(l_tmp>=0) then
+                          if ((m_tmp>2*l_tmp+1) .or. (m_tmp<=0)) call io_error('param_get_projection: m is > l !')
+                       elseif (l_tmp==-1 .and. (m_tmp>2 .or. m_tmp<=0)) then
+                          call io_error('param_get_projection: m has incorrect value (1)')
+                       elseif (l_tmp==-2 .and. (m_tmp>3 .or. m_tmp<=0)) then
+                          call io_error('param_get_projection: m has incorrect value (2)')
+                       elseif (l_tmp==-3 .and. (m_tmp>4 .or. m_tmp<=0)) then
+                          call io_error('param_get_projection: m has incorrect value (3)')
+                       elseif (l_tmp==-4 .and. (m_tmp>5 .or. m_tmp<=0)) then
+                          call io_error('param_get_projection: m has incorrect value (4)')
+                       elseif (l_tmp==-5 .and. (m_tmp>6 .or. m_tmp<=0)) then
+                          call io_error('param_get_projection: m has incorrect value (5)')
+                       endif
+                       ang_states(m_tmp,l_tmp)=1
+                       if (pos3==0) exit
+                       ctemp4=ctemp4(pos3+1:)
+                    enddo
+                 end if
+              else
+                 do
+                    pos3=index(ctemp3,',')
+                    if (pos3==0) then
+                       ctemp4=ctemp3
+                    else
+                       ctemp4=ctemp3(:pos3-1)
+                    endif
+                    read(ctemp4(1:),*,err=106,end=106) m_string
+                    select case (trim(adjustl(m_string)))
+                    case ('s')
+                       ang_states(1,0)=1
+                    case ('p')
+                       ang_states(1:3,1)=1
+                    case ('pz')
+                       ang_states(1,1)=1
+                    case ('px')
+                       ang_states(2,1)=1
+                    case ('py')
+                       ang_states(3,1)=1
+                    case ('d')
+                       ang_states(1:5,2)=1
+                    case ('dz2')
+                       ang_states(1,2)=1
+                    case ('dxz')
+                       ang_states(2,2)=1
+                    case ('dyz')
+                       ang_states(3,2)=1
+                    case ('dx2-y2')
+                       ang_states(4,2)=1
+                    case ('dxy')
+                       ang_states(5,2)=1
+                    case ('f')
+                       ang_states(1:7,3)=1
+                    case ('fz2')
+                       ang_states(1,3)=1
+                    case ('fxz2')
+                       ang_states(2,3)=1
+                    case ('fyz2')
+                       ang_states(3,3)=1
+                    case ('fxyz')
+                       ang_states(4,3)=1
+                    case ('fz(x2-y2)')
+                       ang_states(5,3)=1
+                    case ('fx(x2-3y2)')
+                       ang_states(6,3)=1
+                    case ('fy(3x2-y2)')
+                       ang_states(7,3)=1
+                    case ('sp')
+                       ang_states(1:2,-1)=1
+                    case ('sp-1')
+                       ang_states(1,-1)=1
+                    case ('sp-2')
+                       ang_states(2,-1)=1
+                    case ('sp2')
+                       ang_states(1:3,-2)=1
+                    case ('sp2-1')
+                       ang_states(1,-2)=1
+                    case ('sp2-2')
+                       ang_states(2,-2)=1
+                    case ('sp2-3')
+                       ang_states(3,-2)=1
+                    case ('sp3')
+                       ang_states(1:4,-3)=1
+                    case ('sp3-1')
+                       ang_states(1,-3)=1
+                    case ('sp3-2')
+                       ang_states(2,-3)=1
+                    case ('sp3-3')
+                       ang_states(3,-3)=1
+                    case ('sp3-4')
+                       ang_states(4,-3)=1
+                    case ('sp3d')
+                       ang_states(1:5,-4)=1
+                    case ('sp3d-1')
+                       ang_states(1,-4)=1
+                    case ('sp3d-2')
+                       ang_states(2,-4)=1
+                    case ('sp3d-3')
+                       ang_states(3,-4)=1
+                    case ('sp3d-4')
+                       ang_states(4,-4)=1
+                    case ('sp3d-5')
+                       ang_states(5,-4)=1
+                    case ('sp3d2')
+                       ang_states(1:6,-5)=1
+                    case ('sp3d2-1')
+                       ang_states(1,-5)=1
+                    case ('sp3d2-2')
+                       ang_states(2,-5)=1
+                    case ('sp3d2-3')
+                       ang_states(3,-5)=1
+                    case ('sp3d2-4')
+                       ang_states(4,-5)=1
+                    case ('sp3d2-5')
+                       ang_states(5,-5)=1
+                    case ('sp3d2-6')
+                       ang_states(6,-5)=1
+                    case default
+                       call io_error('param_get_projection: Problem reading l state '//trim(ctemp3))
+                    end select
+                    if (pos3==0) exit
+                    ctemp3=ctemp3(pos3+1:)
+                 enddo
+              endif
+              if(pos2==0) exit
+              ctemp2=ctemp2(pos2+1:)
+           enddo
+           ! check for non-default values
+           if(pos1>0) then
+              dummy=dummy(pos1+1:)
+              ! z axis
+              pos1=index(dummy,'z=')
+              if(pos1>0) then
+                 ctemp=(dummy(pos1+2:))
+                 pos2=index(ctemp,':')
+                 if(pos2>0) ctemp=ctemp(:pos2-1)
+                 call utility_string_to_coord(ctemp,proj_z_tmp)
+              endif
+              ! x axis
+              pos1=index(dummy,'x=')
+              if(pos1>0) then
+                 ctemp=(dummy(pos1+2:))
+                 pos2=index(ctemp,':')
+                 if(pos2>0) ctemp=ctemp(:pos2-1)
+                 call utility_string_to_coord(ctemp,proj_x_tmp)
+              endif
+              ! diffusivity of orbital
+              pos1=index(dummy,'zona=')
+              if(pos1>0) then
+                 ctemp=(dummy(pos1+2:))
+                 pos2=index(ctemp,':')
+                 if(pos2>0) ctemp=ctemp(:pos2-1)
+                 read(ctemp,*,err=104,end=104) proj_zona_tmp
+              endif
+              ! nodes for the radial part
+              pos1=index(dummy,'r=')
+              if(pos1>0) then
+                 ctemp=(dummy(pos1+2:))
+                 pos2=index(ctemp,':')
+                 if(pos2>0) ctemp=ctemp(:pos2-1)
+                 read(ctemp,*,err=105,end=105) proj_radial_tmp
+              endif
+           end if
+           if(sites==-1) then
+              if(counter+sum(ang_states) > num_wann) call io_error('param_get_projection: &
+                   &too many projections defined')
+           else
+              if(counter+sites*sum(ang_states) > num_wann) call io_error('param_get_projection:&
+                   & too many projections defined')
+           end if
+           !
+           if(sites==-1) then
+              do loop_l=min_l,max_l
+                 do loop_m=min_m,max_m
+                    if(ang_states(loop_m,loop_l)==1) then
+                       counter=counter+1
+                       proj_site(:,counter) = pos_frac
+                       proj_l(counter)      = loop_l
+                       proj_m(counter)      = loop_m
+                       proj_z(:,counter)    = proj_z_tmp
+                       proj_x(:,counter)    = proj_x_tmp
+                       proj_radial(counter) = proj_radial_tmp
+                       proj_zona(counter)   = proj_zona_tmp
+                    end if
+                 end do
+              end do
+           else
+              do loop_sites=1,sites
+                 do loop_l=min_l,max_l
+                    do loop_m=min_m,max_m
+                       if(ang_states(loop_m,loop_l)==1) then
+                          counter=counter+1
+                          proj_site(:,counter) = atoms_pos_frac(:,loop_sites,species)
+                          proj_l(counter)      = loop_l
+                          proj_m(counter)      = loop_m
+                          proj_z(:,counter)    = proj_z_tmp
+                          proj_x(:,counter)    = proj_x_tmp
+                          proj_radial(counter) = proj_radial_tmp
+                          proj_zona(counter)   = proj_zona_tmp
+                       end if
+                    end do
+                 end do
+              end do
+           end if
+
+        end do !end loop over projection block
+
+        ! check there are enough projections and add random projections if required
+        if (.not. lpartrandom) then
+           if(spinors) then
+              if (counter.ne.num_wann/2) call io_error('param_get_projections:&
+                   & Fewer projections defined than the number of Wannier functions requested')
+           else
+              if (counter.ne.num_wann) call io_error('param_get_projections:&
+                   & Fewer projections defined than the number of Wannier functions requested')
+           endif
+        else
+           if(spinors) then
+              num_proj = num_wann/2
+           else
+              num_proj = num_wann
+           endif
+           call random_seed()
+           do loop=counter+1,num_proj
+              call random_number(proj_site(:,loop))
+              proj_l(loop)      = 0
+              proj_m(loop)      = 1
+              proj_z(:,loop)    = proj_z_def  
+              proj_x(:,loop)    = proj_x_def  
+              proj_zona(loop)   = proj_zona_def  
+              proj_radial(loop) = proj_radial_def             
+           enddo
+        endif
+
+     elseif(lrandom) then
+
+        call random_seed() ! comment out this line for reproducible random positions!
+        do loop=1,num_wann
+           call random_number(proj_site(:,loop))
+           proj_l(loop)      = 0
+           proj_m(loop)      = 1
+           proj_z(:,loop)    = proj_z_def  
+           proj_x(:,loop)    = proj_x_def  
+           proj_zona(loop)   = proj_zona_def  
+           proj_radial(loop) = proj_radial_def
+        end do
+
+     end if
+
+     in_data(line_s:line_e)(1:maxlen) = ' '
+
+     ! Check
+     do loop=1,num_wann
+        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
+           write(stdout,*) ' Projection:',loop
+           call io_error(' Error in projections: z and x axes are not orthogonal')
+        endif
+     enddo
+
+     return
+
+
+101  call io_error('param_get_projection: Problem reading l state into integer '//trim(ctemp3))
+102  call io_error('param_get_projection: Problem reading m state into integer '//trim(ctemp3))
+104  call io_error('param_get_projection: Problem reading zona into real '//trim(ctemp))
+105  call io_error('param_get_projection: Problem reading radial state into integer '//trim(ctemp))
+106  call io_error('param_get_projection: Problem reading m state into string '//trim(ctemp3))
+
+
+
+   end subroutine param_get_projections
 
   !===================================!
   subroutine param_get_keyword_kpath
