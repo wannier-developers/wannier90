@@ -18,7 +18,7 @@ set \verb#postproc_setup# to \verb#.false.# and run the code. Output is
 written to the file \verb#seedname.wout#.
 
 
-\section{{\tt nnkp} file}
+\section{{\tt seedname.nnkp} file}
 
 OUTPUT, if $\verb#postproc_setup#=\verb#.true.#$
 
@@ -92,9 +92,9 @@ lattice vectors.
 begin projections
    n_proj
    centre   l  mr  r   
-     z-axis   x-axis   zona   box-size   
+     z-axis   x-axis   zona
    centre   l  mr  r   
-     z-axis   x-axis   zona   box-size   
+     z-axis   x-axis   zona
    .
    .
 end projections
@@ -130,11 +130,11 @@ coordinates is measured.
 with the radial part of the atomic orbital. Units are in reciprocal
 Angstrom.
 
-\verb#box-size#: real number; the linear dimension of the real-space
-box (or sphere) for calculating the overlap
-$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the
-localised projection function. Units are in Angstrom. This feature is not
-currently used.
+%%\verb#box-size#: real number; the linear dimension of the real-space
+%%box (or sphere) for calculating the overlap
+%%$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the
+%%localised projection function. Units are in Angstrom. This feature is not
+%%currently used.
 
 
 
@@ -199,13 +199,13 @@ and \verb#seedname.nnkp#, generated on the first pass of
 begin projections
    4
    0.50000    0.50000    0.50000    -1  1  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
    0.50000    0.50000    0.50000    -1  2  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
    0.50000    0.50000    0.50000    -1  3  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
    0.50000    0.50000    0.50000    -1  4  1
-     0.000  0.000  1.000   1.000  0.000  0.000   2.00  2.00
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00 
 end projections
 \end{verbatim}
 
@@ -247,7 +247,7 @@ and writes them to \verb#seedname.amn#.
 %\verb#seedname.nnkp#.
 %
 
-\section{{\tt mmn} file} 
+\section{{\tt seedname.mmn} file} 
 
 INPUT. 
 
@@ -279,7 +279,7 @@ $M_{mn}^{(\mathbf{k,b})}$ for $m,n \in [1,\verb#num_bands#]$. The
 order of these elements is such that the first index $m$ is fastest.
 
 
-\section{{\tt amn} file}
+\section{{\tt seedname.amn} file}
 
 INPUT.
 
@@ -351,12 +351,12 @@ $A_{mn}^{(\mathbf{k})}$.
 %($-$,$-$,$+$).
 
 
-\section{{\tt eig} file}
+\section{{\tt seedname.eig} file}
 
 INPUT. 
 
 Required if any of \verb#disentanglement#, \verb#plot_bands#,
-   \verb#plot_fermi_surface# or \verb#plot_dos# are \verb#.true.#
+   \verb#plot_fermi_surface# or \verb#hr_plot# are \verb#.true.#
 
 The file \verb#seedname.eig# contains the Kohn-Sham eigenvalues
      $\varepsilon_{n\mathbf{k}}$ (in eV) at each point in the
@@ -379,48 +379,79 @@ E.g.,
 
 \section{Interface with {\sc pwscf}}
 
+There is a seamless interface between \wannier\ and \pwscf, a
+plane-wave DFT code that comes as part of the {\tt quantum-espresso}
+package (see {\tt www.quantum-espresso.org} or {\tt
+  www.pwscf.org}). At the time of writing, interfaces to other
+electronic structure codes are in progress, e.g., {\sc castep} ({\tt
+  www.castep.org}), {\sc abinit} ({\tt www.abinit.org}) and {\sc
+  fleur} ({\tt www.fleur.de}). But, for the time being, you will need
+to download and compile \pwscf\ (i.e., the {\tt pw.x} code) and the
+post-processing interface {\tt pw2wannier90.x}. Please refer to the
+documentation that comes with the {\tt quantum-espresso} distribution
+for instructions. 
+
 \begin{enumerate}
-\item Run `scf'/'nscf' calculation(s) with \verb#pw#
+\item Run `scf'/`nscf' calculation(s) with \verb#pw#
 \item Run \wannier\ with \verb#postproc_setup#~=~\verb#.true.# to
   generate \verb#seedname.nnkp#
-\item Run {\tt pw2wannier90}. First it reads \verb#pw2wannier90.in#,
-  which defines \verb#prefix# and \verb#outdir# for the underlying `scf'
-  calculation, as well as the name of the file \verb#seedname.nnkp#,
-  and does a consistency check between the direct and reciprocal lattice
-  vectors read from \verb#seedname.nnkp# and those defined in the
-  files specified by \verb#prefix#. \verb#pw2wannier90# generates
-  \verb#seedname.mmn#, \verb#seedname.amn# and \verb#seedname.eig#
+\item Run {\tt pw2wannier90}. First it reads an input file, e.g.,
+  \verb#seedname.pw2wan#, which defines \verb#prefix# and
+  \verb#outdir# for the underlying `scf' calculation, as well as the
+  name of the file \verb#seedname.nnkp#, and does a consistency check
+  between the direct and reciprocal lattice vectors read from
+  \verb#seedname.nnkp# and those defined in the files specified by
+  \verb#prefix#. \verb#pw2wannier90# generates \verb#seedname.mmn#,
+  \verb#seedname.amn# and \verb#seedname.eig# 
 \item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.# to
-  disentangle bands (if required) and localise MLWF.
+  disentangle bands (if required), localise MLWF, and use MLWF for
+  plotting, bandstructures, Fermi surfaces etc.
 \end{enumerate}
 
-\subsection{{\tt pw2wannier90.in}}
+Examples of how the interface with \pwscf\ works are given in the
+\wannier\ Tutorial. 
+
+\subsection{{\tt seedname.pw2wan}}
 
 A number of keywords may be specified in the {\tt pw2wannier90} input file:
 
-   \verb#outdir# -- Location to write output files. Default is \verb#`./'#
 
-   \verb#prefix# -- Prefix for the \pwscf\ calculation. Default is \verb#` '#
+\begin{itemize}
 
-   \verb#seedname# -- Seedname for the \wannier\ calculation. Default
+\item   \verb#outdir# -- Location to write output files. Default is \verb#`./'#
+
+\item   \verb#prefix# -- Prefix for the \pwscf\ calculation. Default is \verb#` '#
+
+\item   \verb#seedname# -- Seedname for the \wannier\ calculation. Default
    is \verb#`wannier'#
 
-   \verb#spin_component# -- Spin component. Takes values \verb#`up'#,
-
+\item   \verb#spin_component# -- Spin component. Takes values \verb#`up'#,
    \verb#`down'# or \verb#`none'# (default).
 
-%   wan_mode = 'standalone'
+\item   \verb#wan_mode# -- Either \verb#`standalone'# (default) or \verb#`library'#
 
-   \verb#write_unk# -- Set to \verb#true# to write the periodic part
+\item   \verb#write_unk# -- Set to \verb#.true.# to write the periodic part
    of the Bloch functions for plotting in \wannier. Default is
    \verb#.false.#
 
-   \verb#wvfn_formatted# -- Set to \verb#.true.# to write formatted
+\item   \verb#reduce_unk# -- Set to \verb#.true.# to reduce file-size (and
+   resolution) of Bloch functions by a factor of 8. Default is
+   \verb#.false.# (only relevant if
+   \verb#write_unk=.true.#)\footnote{Note that there is a small bug
+   with this feature in v3.2 (and subsequent patches) of {\tt
+   quantum-espresso}. Please use a later version (if available) or the
+   CVS version of {\tt pw2wannier90.f90}, which has been fixed.}
+
+\item   \verb#wvfn_formatted# -- Set to \verb#.true.# to write formatted
    wavefunctions. Default is \verb#.false.# (only relevant if
    \verb#write_unk=.true.#)
 
-   \verb#write_amn# -- Set to \verb#.false.# if
+\item   \verb#write_amn# -- Set to \verb#.false.# if
    $A_{mn}^{(\mathbf{k})}$ not required. Default is \verb#.true.#
 
-   \verb#write_mmn# -- Set to \verb#.false.# if
+\item   \verb#write_mmn# -- Set to \verb#.false.# if
    $M_{mn}^{(\mathbf{k,b})}$ not required. Default is \verb#.true.#
+
+\end{itemize}
+
+For examples of use, refer to the \wannier\ Tutorial.

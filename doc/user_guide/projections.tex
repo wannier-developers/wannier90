@@ -46,8 +46,9 @@ We use the following format to specify projections in
 
 \noindent
 \verb#Begin Projections#\\
-\verb#units#\\ 
-\verb#site:ang_mtm:zaxis:xaxis:radial:zona:box-size#\\
+\verb#[units]#\\ 
+%%\verb#site:ang_mtm:zaxis:xaxis:radial:zona:box-size#\\
+\verb#site:ang_mtm:zaxis:xaxis:radial:zona#\\
 \verb#    #\vdots\\
 \verb#End Projections#
 
@@ -108,13 +109,13 @@ pseudostate with that angular momentum). Default is
 atomic orbital (controls the diffusivity of the radial
 function). Units always in reciprocal Angstrom. Default is \verb#zona=1.0#.
 
-\noindent
-\verb#box-size# (optional):\\
-\verb#b=2.0# -- the linear dimension of the real-space
-box (or sphere) for calculating the overlap
-$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the 
-localised projection function. Units are always in Angstrom. Default
-is \verb#b=1.0#. This feature is not currently used.
+%%\noindent
+%%\verb#box-size# (optional):\\
+%%\verb#b=2.0# -- the linear dimension of the real-space
+%%box (or sphere) for calculating the overlap
+%%$\langle\psi_{m\mathbf{k}}|\phi_{n}\rangle$ of a wavefunction with the 
+%%localised projection function. Units are always in Angstrom. Default
+%%is \verb#b=1.0#. This feature is not currently used.
 
 
 \noindent
@@ -142,15 +143,21 @@ is \verb#b=1.0#. This feature is not currently used.
 
 \subsection{Random projections}
 
-It is possible to specify the projections as follows:
+It is possible to specify the projections, for example, as follows:
 
 \noindent
 \verb#Begin Projections#\\
 \verb#random#\\
-\verb#End Projections#\\
+\verb#C:sp3#\\
+\verb#End Projections#
 
-in which case the code chooses the appropriate number of
-randomly-centred s-type gaussian functions for the initial projection.
+in which case \wannier\ uses four sp$^3$ orbitals centred on each C
+atom and then chooses the appropriate number of randomly-centred
+s-type Gaussian functions for the remaining projection functions. If
+the block only consists of the string {\tt random} and no specific
+projection centres are given, then all of the projection centres are
+chosen randomly.
+
 
 \subsection{Bloch phases}
 

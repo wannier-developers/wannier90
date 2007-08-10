@@ -1,4 +1,4 @@
-\chapter{Parameters}
+\chapter{Parameters}\label{chap:parameters}
 
 \section{Usage}
 {\tt
@@ -6,9 +6,9 @@
 wannier90.x [-pp] [seedname]
 \end{quote} }
 \begin{itemize}
-\item{ {\tt seedname} If a seedname string is given the code will read its input
+\item{ {\tt seedname}: If a seedname string is given the code will read its input
 from a file {\tt seedname.win}. The default value is {\tt wannier}.}
-\item { {\tt -pp} This optional flag tells the code to generate
+\item { {\tt -pp}: This optional flag tells the code to generate
 a list of the required overlaps and then exit. 
 This information is written to the file {\tt seedname.nnkp}.}
 \end{itemize}
@@ -19,9 +19,9 @@ structure.
 
 The ordering of the keywords is not significant. Case is ignored (so
 \verb#num_bands# is the same as \verb#Num_Bands#). Characters after !, or \#
-are treated as comments. Most keywords have a default value which is
-used unless the keyword is 
-given in the win file. Keywords can be set in any of the following ways
+are treated as comments. Most keywords have a default value that is
+used unless the keyword is given in {\tt seedname.win}. Keywords can be set
+in any of the following ways
 {\tt
 \begin{quote}
 num\_wann   4
@@ -33,8 +33,7 @@ num\_wann : 4
 A logical keyword can be set to {\tt .true.} using any of the following
 strings: {\tt T}, {\tt true}, {\tt .true.}.
 
- For futher examples see Chapter \ref{chap:input} and the
- the \wannier\ Tutorial.
+For further examples see Section~\ref{winfile} and the the \wannier\ Tutorial.
 
 
 \section{Keyword List}
@@ -49,18 +48,22 @@ Keyword & Type & Description \\
 \hline\hline
 \multicolumn{3}{|c|}{System Parameters} \\
 \hline
-{\sc num\_wann }   & I & Number of Wannier Functions \\
+{\sc num\_wann }   & I & Number of WF \\
 {\sc num\_bands }   & I & Number of bands passed to the code \\
-{\sc unit\_cell\_cart }   & P & Unit cell vectors \\
+{\sc unit\_cell\_cart }   & P & Unit cell vectors in Cartesian coordinates \\
 {\sc atoms\_cart }*   & P & Positions of atoms in Cartesian coordinates \\
-{\sc atoms\_frac }*   & R & Positions of atoms in lattice vectors \\
-{\sc mp\_grid }   & I & Dimensions of the Monkhorst-Pack grid \\
+{\sc atoms\_frac }*   & R & Positions of atoms in fractional
+coordinates with respect to the lattice vectors \\
+{\sc mp\_grid }   & I & Dimensions of the Monkhorst-Pack grid of
+k-points \\
 %{\sc mp\_grid\_automatic }**   & L & Determine the k-point automatically \\
 {\sc kpoints }   & R & List of k-points in the Monkhorst-Pack grid \\
 {\sc gamma\_only} & L & Wavefunctions from underlying ab initio
 calculation are manifestly real \\
 {\sc num\_shells }   & I & Number of shells in finite difference formula \\
 {\sc shell\_list }   & I & Which shells to use in finite difference formula \\
+{\sc search\_shells }   & I & The number of shells to search when
+determining finite difference formula \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling system parameters.]
@@ -84,7 +87,7 @@ Keyword & Type & Description \\
 \hline\hline
 \multicolumn{3}{|c|}{Job Control} \\
 \hline
-{\sc postproc\_setup }   & L & To output the nnkp file \\
+{\sc postproc\_setup }   & L & To output the {\tt seedname.nnkp} file \\
 %{\sc cp\_pp }   & L & CP code post-processing \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
@@ -98,16 +101,13 @@ Keyword & Type & Description \\
 written to output \\
 {\sc translate\_home\_cell } & L & To translate final Wannier centres
 to home unit cell \\
-{\sc write\_xyz }*   & L & To write final centres in xyz file format \\
+{\sc write\_xyz }  & L & To write final centres in xyz file format \\
 \hline
 \end{tabular}
 \caption[win file keywords.]
 {{\tt seedname.win} file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.
-{\footnotesize
-* {\sc write\_xyz } is only effective if {\sc translate\_home\_cell } is
-\texttt{true} }} 
+physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords2}
 \end{center}
 \end{table}
@@ -130,11 +130,11 @@ Keyword & Type & Description \\
 {\sc dis\_froz\_min }   & P & Bottom of the inner (frozen) energy window \\
 {\sc dis\_froz\_max }   & P & Top of the inner (frozen) energy window \\
 {\sc dis\_num\_iter }   & I & Number of iterations for the minimisation
-of $\Omega_{I}$ \\
-{\sc dis\_mix\_ratio }   & R & Mixing ratio during the minimisation of $\Omega_{I}$\\
-{\sc dis\_conv\_tol }   & R & The convergence tolerance for finding $\Omega_{I}$ \\
+of $\omi$ \\
+{\sc dis\_mix\_ratio }   & R & Mixing ratio during the minimisation of $\omi$\\
+{\sc dis\_conv\_tol }   & R & The convergence tolerance for finding $\omi$ \\
 {\sc dis\_conv\_window }   & I & The number of iterations over which
-convergence of $\Omega_{I}$ is assessed. \\ 
+convergence of $\omi$ is assessed. \\ 
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling disentanglement parameters.]
@@ -162,13 +162,17 @@ of $\Omega$ \\
 {\sc num\_cg\_steps }   & I & During the minimisation
 of $\Omega$ the number of Conjugate Gradient steps before resetting to
 Steepest Descents \\
-{\sc conv\_tol }   & P &The convergence tolerance for finding $\Omega$  \\
 {\sc conv\_window }   & I & The number of iterations over which
 convergence of $\Omega$ is assessed \\
+{\sc conv\_tol }   & P & The convergence tolerance for finding $\Omega$  \\
+{\sc conv\_noise\_amp} & R & The amplitude of random noise applied
+towards end of minimisation procedure \\
+{\sc conv\_noise\_num} & I & The number of times random noise is
+applied \\
 {\sc num\_dump\_cycles }   & I & Control frequency of check-pointing \\
 {\sc num\_print\_cycles }   & I & Control frequency of printing \\
 {\sc write\_r2mn }   & L & Write matrix elements of $r^2$ between
-Wannier functions to file \\
+WF to file \\
 {\sc guiding\_centres }   & L & Use guiding centres \\
 {\sc num\_guide\_cycles }   & I & Frequency of guiding centres \\
 {\sc num\_no\_guide\_iter }   & I & The number of iterations
@@ -204,15 +208,16 @@ Keyword & Type & Description \\
 \hline\hline
 \multicolumn{3}{|c|}{Plot Parameters} \\
 \hline
-{\sc wannier\_plot }   & L & Plot the Wannier Functions \\
-{\sc wannier\_plot\_list } & I & List of Wannier Functions to plot \\
+{\sc wannier\_plot }   & L & Plot the WF \\
+{\sc wannier\_plot\_list } & I & List of WF to plot \\
 {\sc wannier\_plot\_supercell }   & I & Size of the supercell for
-plotting the Wannier Functions \\
+plotting the WF \\
 {\sc wannier\_plot\_format }   & S & File format in which to plot the
-Wannier Functions \\
+WF \\
 {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
-Wannier Functions, molecule or crystal \\ 
-{\sc bands\_plot }   & L & Plot and interpolated band structure \\
+WF, molecule or crystal \\ 
+{\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
+{\sc bands\_plot }   & L & Plot interpolated band structure \\
 {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
 {\sc bands\_num\_points }   & I & Number of points along the first
 section of the k-point path \\
@@ -224,6 +229,8 @@ surface plot\\
 {\sc fermi\_energy }   & P & The Fermi energy \\
 {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
 surface plot \\
+{\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
+%{\sc hr\_min} & R & Cut-off for Hamiltonian matrix elements \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -239,7 +246,8 @@ surface plot \\
 \caption[Parameter file keywords controlling plotting.]
 {{\tt seedname.win} file keywords controlling the  plotting.  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+physical value, L for a logical value and S for a text string. * Only
+applies when {\sc wannier\_plot\_format} is {\tt cube}.}
 \label{parameter_keywords6}
 \end{center}
 \end{table}
@@ -250,7 +258,7 @@ physical value, L for a logical value and S for a text string.}
 \section{System}
 
 \subsection[num\_wann]{\tt integer :: num\_wann}
-Number of Wannier functions to be found.
+Number of WF to be found.
 
 No default.
 
@@ -269,15 +277,15 @@ The cell lattice vectors should be specified in Cartesian coordinates.
 \verb#[units]#
 $$
 \begin{array}{ccc}
-R_{1x} & R_{1y} & R_{1z} \\
-R_{2x} & R_{2y} & R_{2z} \\
-R_{3x} & R_{3y} & R_{3z}
+A_{1x} & A_{1y} & A_{1z} \\
+A_{2x} & A_{2y} & A_{2z} \\
+A_{3x} & A_{3y} & A_{3z}
 \end{array}
 $$
 \verb#end unit_cell_cart#
 
-Here $R_{1x}$ is the x-component of the first lattice vector,
-$R_{2y}$ is the y-component of the second lattice vector etc.
+Here $A_{1x}$ is the $x$-component of the first lattice vector $\mathbf{A}_1$,
+$A_{2y}$ is the $y$-component of the second lattice vector $\mathbf{A}_2$, etc.
 
 \verb#[units]# specifies the units in which the lattice vectors are
 defined: either \verb#Bohr# or \verb#Ang#. 
@@ -300,8 +308,8 @@ file.
 \verb#[units]#
 $$
 \begin{array}{cccc}
-X  & R_{1i} & R_{1j} & R_{1k} \\
-Y  & R_{2i} & R_{2j} & R_{2k} \\
+P  & R^{P}_{x} & R^{P}_{y} & R^{P}_{z} \\
+Q  & R^{Q}_{x} & R^{Q}_{y} & R^{Q}_{z} \\
 \vdots
 \end{array}
 $$
@@ -309,26 +317,27 @@ $$
 
 
 The first entry on a line is the atomic symbol. The next three entries
-are the atom's position in Cartesian coordinates in units specified by
-\verb#length_unit#.
-
-\verb#[units]# specifies the units in which the lattice vectors are
-defined either \verb#bohr# or \verb#ang#. If not present, the default is \AA.
+are the atom's position $\mathbf{R}=(R_x , R_y, R_z)$ in Cartesian
+coordinates. The first line of the block, \verb#[units]#, specifies
+the units in which the coordinates are given and can be either
+\verb#bohr# or \verb#ang#. If not present, the default is \verb#ang#.
 
 \subsubsection{Fractional coordinates}
 
 \noindent \verb#begin atoms_frac#
 $$
 \begin{array}{cccc}
-X  & R_{1i} & R_{1j} & R_{1k} \\
-Y  & R_{2i} & R_{2j} & R_{2k} \\
+P  & F^{P}_{1} & F^{P}_{2} & F^{P}_{3} \\
+Q  & F^{Q}_{1} & F^{Q}_{2} & F^{Q}_{3} \\
 \vdots
 \end{array}
 $$
 \verb#end atoms_frac#
 
 The first entry on a line is the atomic symbol. The next three entries
-are the atom's position in fractional coordinates.
+are the atom's position in fractional coordinates $\mathbf{F} = F_1
+\mathbf{A}_{1} + F_2 \mathbf{A}_{2} + F_3 \mathbf{A}_{3}$
+relative to the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$. 
 
 
 \subsection[mp\_grid]{\tt integer, dimension :: mp\_grid(3)}
@@ -369,6 +378,33 @@ No default.
 %
 %The default for this keyword is \verb#FALSE#.
 
+
+\subsection[Kpoints]{K-points}
+Each line gives the coordinate $\mathbf{K}=K_1 \mathbf{B}_{1} + K_2
+\mathbf{B}_{2} + K_3 \mathbf{B}_3$ of a k-point
+in relative (crystallographic) units, i.e., in fractional units with
+respect to the primitive reciprocal lattice vectors $\mathbf{B}_{i}$,
+$i \in [1,3]$. The position  of each
+k-point in this list assigns its numbering; the first k-point is
+k-point 1, the second is k-point 2, and so on.
+
+
+\noindent \verb#begin kpoints# \\
+$$
+\begin{array}{ccc}
+ K^{1}_{1} & K^{1}_{2} & K^{1}_{3} \\
+ K^{2}_{1} & K^{2}_{2} & K^{2}_{3} \\
+\vdots
+\end{array}
+$$
+\verb#end kpoints#
+
+%If a kpoint list is specified then \verb#mp_grid_automatic# must be
+%\verb#FALSE#.
+
+There is no default.
+
+
 \subsection[gamma\_only]{{\tt logical :: gamma\_only}}
 
 If {\tt gamma\_only=TRUE}, then \wannier\ uses a branch of algorithms
@@ -379,29 +415,8 @@ is used to sample the Brillouin zone. The localisation procedure
 that is used in the $\Gamma$-only branch is based on the method of
 Ref.~\cite{Gygi}.
 
-\subsection[Kpoints]{K-points}
-Each line gives the coordinate of a k-point
-in relative units, i.e. in units of the reciprocal lattice
-vectors.
-The position  of each k-point in this
-list assigns its numbering; the first k-point is k-point 1, the second
-is k-point 2, and so on.
+The default value is {\tt FALSE}.
 
-
-\noindent \verb#begin kpoints# \\
-$$
-\begin{array}{ccc}
- R_{1i} & R_{1j} & R_{1k} \\
- R_{2i} & R_{2j} & R_{2k} \\
-\vdots
-\end{array}
-$$
-\verb#end kpoints#
-
-%If a kpoint list is specified then \verb#mp_grid_automatic# must be
-%\verb#FALSE#.
-
-There is no default.
 
 \subsection{Shells}
 
@@ -413,7 +428,7 @@ k-points. The vectors $\{{\bf b}\}$ connect each mesh-point ${\bf k}$
   the $s^{\mathrm{th}}$ shell. For $\nabla_{{\bf k}}$ to be correct to
   linear order, we require that the following equation is satisfied
   (Eq.~B1 of Ref.~\cite{MV}):
-\begin{equation}\nonumber
+\begin{equation}\label{eq:B1}
 \sum_{s}^{N_{\mathrm{sh}}} w_s \sum_i^{M_{\mathrm{s}}}
 b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:, 
 \end{equation}
@@ -424,8 +439,9 @@ three Cartesian indices.
 
 \subsection[num\_shells]{\tt integer :: num\_shells}
 
-If \verb#num_shells#$>0$, then the number of shells to include in the finite difference expression.
-If \verb#num_shells#$=0$, then the code will choose the shells automatically. 
+If \verb#num_shells#$>0$, then the number of shells to include in the
+finite difference expression. If \verb#num_shells#$=0$, then the code
+will choose the shells automatically.
 
 The default value is 0.
 
@@ -434,6 +450,14 @@ The default value is 0.
 If \verb#num_shells#$>0$, then \verb#shell_list# is vector listing the shells
 to include in the finite difference expression.
 
+\subsection[search\_shells]{\tt integer :: search\_shells}
+
+Specifies the number of shells of neighbours over which to search in
+attempting to determine an automatic solution to the B1 condition
+Eq.~\ref{eq:B1}. 
+
+The default value is 12.
+
 \section{Projection}
 
  The projections block defines a set of localised functions used to
@@ -441,13 +465,15 @@ to include in the finite difference expression.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
-\noindent \verb#begin projections# \\\\
+\noindent \verb#begin projections# \\ 
+  . \\ 
+  . \\ 
 \verb#end projections#
 
 If \verb#guiding_centres#={\tt TRUE}, then the projection centres are
 used as the guiding centres in the Wannierisation routine.
 
-For details see section \ref{sec:proj}.
+For details see Section~\ref{sec:proj}.
 
 \section{Job Control}
 
@@ -476,7 +502,8 @@ the bare minimum, to 3, which corresponds to full debugging output.
 The default value is 1.
 
 \subsection[length\_unit]{\tt character(len=20) :: length\_unit}
-The length unit to be used for output.
+The length unit to be used for writing quantities in the output file
+{\tt seedname.wout}.
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -564,53 +591,53 @@ The default value is 1.
 \subsection[translate\_home\_cell]{\tt logical :: translate\_home\_cell}
 
 Determines whether to translate the final Wannier centres to the home
-unit cell at the end of the calculation. Useful for molecular systems
-in which the molecule resides entirely within the home unit
-cell. 
+unit cell at the end of the calculation. Mainly useful for molecular
+systems in which the molecule resides entirely within the home unit 
+cell and user wants to write an xyz file ({\tt write\_xyz=.TRUE.}) for
+the WF centres to compare with the structure. 
 
 The default value is \verb#false#. 
 
 \subsection[write\_xyz]{\tt logical :: write\_xyz}
 
 Determines whether to write the final Wannier centres to an xyz
-formatted file, \verb#seedname_centres.xyz#, for subsequent
-visualisation. Only effective when {\sc translate\_home\_cell} is
-\verb#true#. 
+file, \verb#seedname_centres.xyz#, for subsequent
+visualisation. 
 
 The default value is \verb#false#.
 
 
 \section{Disentanglement}
 These keywords control the disentanglement routine of
-Ref.~\cite{SMV}. This routine 
-will be activated if \verb#num_wann#$<$\verb#num_bands#.
+Ref.~\cite{SMV}, i.e., the iterative minimisation of $\omi$. This
+routine will be activated if \verb#num_wann#$\:<\:$\verb#num_bands#.
 
 
 \subsection[dis\_win\_min]{\tt real(kind=dp) :: dis\_win\_min}
 The lower bound of the outer energy window for the disentanglement
-procedure.
+procedure. Units are eV.
 
 The default is the lowest eigenvalue in the system.
 
 \subsection[dis\_win\_max]{\tt real(kind=dp) :: dis\_win\_max}
 The upper bound of the outer energy window for the disentanglement
-procedure.
+procedure. Units are eV.
 
-The default is the highest eigenvalue in the given states (ie all states
+The default is the highest eigenvalue in the given states (i.e., all states
 are included in the disentanglement procedure).
 
 \subsection[dis\_froz\_min]{\tt real(kind=dp) :: dis\_froz\_min}
 The lower bound of the inner energy window for the disentanglement
-procedure. 
+procedure.  Units are eV.
 
 If \verb#dis_froz_max# is given, then the default for 
 \verb#dis_froz_min# is \verb#dis_win_min#.
 
 
 \subsection[dis\_froz\_max]{\tt real(kind=dp) :: dis\_froz\_max}
-The upper bound of the inner energy window for the disentanglement
-procedure. If \verb#dis_froz_max# is not specified, then 
-there are no frozen states.
+The upper bound of the inner (frozen) energy window for the
+disentanglement procedure. If \verb#dis_froz_max# is not specified,
+then there are no frozen states. Units are eV.
 
 No default.
 
@@ -623,25 +650,26 @@ The default value is 200.
 \subsection[dis\_mix\_ratio]{\tt real(kind=dp) :: dis\_mix\_ratio}
 In the disentanglement procedure, the mixing parameter to use for
 convergence (see pages 4-5 of Ref.~\cite{SMV}). A value of 0.5 is a `safe'
-choice. Using 1.0 (ie no mixing) often gives faster convergence, 
-but may cause the minimisation to be unstable in some cases.
+choice. Using 1.0 (i.e., no mixing) often gives faster convergence, 
+but may cause the minimisation of $\omi$ to be unstable in some cases.
 
+Restriction: $0.0<\:${\tt dis\_mix\_ratio}$\:\leq 1.0$
 
-Restriction: $0.0<${\tt dis\_mix\_ratio}$\geq1.0$ . The default value is 0.5 
+The default value is 0.5 
 
 \subsection[dis\_conv\_tol]{\tt real(kind=dp) :: dis\_conv\_tol}
 
-In the disentanglement procedure, the minimisation is said to to converged
-if the fractional change in the spread between successive
-iterations is less than
-\verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
+In the disentanglement procedure, the minimisation of $\omi$ is said
+to be converged if the fractional change in the gauge-invariant spread
+between successive iterations is less than
+\verb#dis_conv_tol# for \verb#dis_conv_window# iterations. Units are \AA$^2$.
 
 The default value is 1.0E-10
 
 
 \subsection[dis\_conv\_window]{\tt integer :: dis\_conv\_window}
 
-In the disentanglement procedure, the minimisation is said to to converged
+In the disentanglement procedure, the minimisation is said to be converged
 if the fractional change in the spread between successive
 iterations is less than
 \verb#dis_conv_tol# for \verb#dis_conv_window# iterations.
@@ -650,32 +678,63 @@ The default value of this parameter is 3.
 
 
 
-\section{Wannierise}
-Minimise the non-invariant part of the spread functional.
+\section{Wannierise}\label{sec:wann_params}
+Iterative minimisation of $\omt$, the non-gauge-invariant part of the
+spread functional.
 
 \subsection[num\_iter]{\tt integer :: num\_iter}
 
 Total number of iterations in the minimisation procedure.
 
-The default value is 100.
+The default value is 100
 
 \subsection[num\_cg\_steps]{\tt integer :: num\_cg\_steps}
 
 Number of conjugate gradient steps to take before resetting to steepest descents.
 
-The default value is 5.
+The default value is 5
 
-%\subsection[conv\_tol]{\tt real(kind=dp) :: conv\_tol}
-%\red{Not yet implemented}
+\subsection[conv\_window]{\tt integer :: conv\_window}
 
+If {\tt conv\_window}$\:>1$, then the minimisation is said to be
+  converged if the change in $\Omega$ over {\tt
+  conv\_window} successive iterations is less than {\tt
+  conv\_tol}. Otherwise, the minimisation proceeds for
+  {num\_iter} iterations (default).
 
-%\subsection[conv\_window]{\tt integer :: conv\_window}
-%\red{Not yet implemented}
+The default value is -1
 
-%\verb#conv_tol# for \verb#conv_window# iterations.
+\subsection[conv\_tol]{\tt real(kind=dp) :: conv\_tol}
 
-%The default value of this parameter is 5.
+If {\tt conv\_window}$\:>1$, then this is the convergence tolerance on
+$\Omega$, otherwise not used. Units are \AA$^2$.
 
+The default value is 1.0E-10
+
+\subsection[conv\_noise\_amp]{\tt real(kind=dp) :: conv\_noise\_amp}
+
+If {\tt conv\_noise\_amp}$\:>0$, once convergence (as defined above) is
+achieved, some random noise $f$ is added to the search direction, and the
+minimisation is continued until convergence is achieved once more. If 
+the same value of $\Omega$ as before is arrived at, then the calculation
+is considered to be converged. If not, then random noise is added
+again and the procedure repeated up to a maximum of {\tt
+  conv\_noise\_num} times. {\tt conv\_noise\_amp} is the amplitude of
+the random noise $f$ that is added to the search direction: 
+$0 < |f| <\:${\tt conv\_noise\_amp}. This functionality requires {\tt
+  conv\_window}$\:>1$. If {\tt conv\_window} is not specified, it is set
+to the value 5 by default. 
+
+If {\tt conv\_noise\_amp}$\:\leq 0$, then no noise is added (default).
+
+The default value is -1.0
+
+\subsection[conv\_noise\_num]{\tt integer :: conv\_noise\_num}
+
+If {\tt conv\_noise\_amp}$\:>0$, then this is the number of times in the
+minimisation that random noise is added.
+
+The default value is 3
 
 \subsection[num\_dump\_cycles]{\tt integer :: num\_dump\_cycles}
 Write sufficient information to do a restart every
@@ -684,16 +743,15 @@ Write sufficient information to do a restart every
 The default is 100
 
 \subsection[num\_print\_cycles]{\tt integer :: num\_print\_cycles}
-Write data to the {\tt seedname.wout} file every
+Write data to the master output file {\tt seedname.wout} every
 \verb#num_print_cycles# iterations.
 
-The default is 1.
+The default is 1
 
 \subsection[write\_r2mn]{\tt logical :: write\_r2mn}
 
 If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
-$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to Wannier
-functions) are written 
+$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to WF) are written 
 to file \verb#seedname.r2mn# at the end of the Wannierisation
 procedure. 
 
@@ -752,9 +810,10 @@ Th default value is \verb#false#.
  Capabilities:
 
 \begin{itemize}
-\item[{\bf --}]  Plot the Wannier functions
+\item[{\bf --}]  Plot the WF
 \item[{\bf --}]  Plot the interpolated band structure 		     
-\item[{\bf --}]  Plot the Fermi surface 			     
+\item[{\bf --}]  Plot the Fermi surface 
+\item[{\bf --}]  Output the Hamiltonian in the WF basis			     
 %\item[{\bf --}]  Plot the density of states.
 \end{itemize}
 
@@ -770,44 +829,70 @@ The default value of this parameter is \verb#FALSE#.
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
 
-Dimension of the `super-unit-cell' in which the Wannier functions are
+Dimension of the `super-unit-cell' in which the WF are
 plotted. The super-unit-cell is \verb#wannier_plot_supercell# times
 the unit cell along all three linear dimensions (the `home' unit cell
-is kept approximately in the middle)
+is kept approximately in the middle).
 
 The default value is 2.
 
 \subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
 
-The valid options for this parameter are:
+WF can be plotted in either XCrySDen (xsf) format or Gaussian cube
+format. The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#xcrysden# (default)
+\item[{\bf --}] \verb#cube#
 %\item[{\bf --}] gopenmol
 %\item[{\bf --}] dan
 \end{itemize}
 
+If {\tt wannier\_plot\_format=cube}: Most visualisation programs
+(including XCrySDen) are only able to handle cube files for systems
+with orthogonal lattice vectors.\footnote{It's worth noting that the
+  visualisation program VMD ({\tt
+    http://www.ks.uiuc.edu/Research/vmd}), for example, is able to
+  deal with certain special cases of non-orthogonal lattice
+  vectors. See {\tt
+    http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.
+    At present \wannier\ only supports orthogonal lattice vectors for cube output.}  
+\wannier\ checks this on reading the {\tt seedname.win} and reports an
+error if cube format has been selected and the lattice vectors are not
+mutually orthogonal.
+
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
- A list of Wannier functions to plot. The Wannier functions numbered
+ A list of WF to plot. The WF numbered
  as per the {\tt seedname.wout} file after the minimisation of the
  spread. 
 
- The default behaviour is to plot all Wannier functions. For example,
- to plot Wannier functions 4, 5, 6 and 10:
+ The default behaviour is to plot all WF. For example,
+ to plot WF 4, 5, 6 and 10:
 
  \verb#wannier_plot_list : 4-6, 10#
 
 
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 
-Choose the mode in which to plot the Wannier functions, either as a molecule
-or as a crystal. 
+Choose the mode in which to plot the WF, either as a molecule
+or as a crystal. Only relevant if {\tt wannier\_plot\_format=xcrysden}. 
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#crystal# (default)
 \item[{\bf --}] \verb#molecule# 
 \end{itemize}
+
+
+\subsection[wannier\_plot\_radius]{\tt real(kind=dp) ::
+  wannier\_plot\_radius}
+
+If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt
+  wannier\_plot\_radius} determines the cut-off radius of the WF for
+  the purpose of plotting. {\tt wannier\_plot\_radius} must be greater than
+  0. Units are \AA.
+
+The default value is 3.5. 
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
@@ -822,9 +907,10 @@ The default value is \verb#FALSE#.
 
 
 \subsection[kpoint\_path]{kpoint\_path}
-Defines the path in kspace along which to calculate the
+Defines the path in k-space along which to calculate the
 bandstructure. Each line gives the start and end point (with labels)
-for a section of the path.
+for a section of the path. Values are in fractional coordinates with
+respect to the primitive reciprocal lattice vectors.
 
 \noindent  \verb#begin kpoint_path#
 $$
@@ -879,19 +965,40 @@ The default value for \verb#fermi_surface_num_points# is 50.
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
 The Fermi energy in eV. Whilst this is not directly used by the
-\wannier, it is a useful parameter to set as
-it will be written driectly into the bxsf file.
+\wannier, it is a useful parameter to set as it will be written
+into the bxsf file. 
 
-The default value is 0.0\,eV.
+The default value is 0.0
 
 
-\subsection[fermi\_surface\_plot\_format]{\tt character(len=20) :: fermi\_surface\_plot\_format}
+\subsection[fermi\_surface\_plot\_format]{\tt character(len=20) ::
+  fermi\_surface\_plot\_format} 
 
 Format in which to plot the Fermi surface. 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#xcrysden#  (default)
 \end{itemize}
+
+\subsection[hr\_plot]{\tt logical :: hr\_plot}
+
+If {\tt hr\_plot} is {\tt TRUE}, then the Hamiltonian matrix in the
+basis of the WF will be written to a file {\tt seedname\_hr.dat}.
+
+The default value is {\tt FALSE}
+
+%%\subsection[hr\_min]{\tt real(kind=dp) :: hr\_min}
+%%
+%%The absolute value of the largest matrix element of the
+%%Hamiltonian in the WF basis at lattice vector $\mathbf{R}$ is given by
+%%$h_{\mathrm{max}}(\mathbf{R}) = \left|\mathrm{max}\:\:
+%%H_{mn}(\mathbf{R})\right|$. If $h_{\mathrm{max}}(\mathbf{R})>\:${\tt
+%%  hr\_min}, then the matrix elements 
+%%$H_{mn}(\mathbf{R})$ are retained in the Hamiltonian that is written
+%%to {\tt seedname.h.dat}. Otherwise they are deemed to be insignificant
+%%and are discarded. Only applies if {\tt hr\_plot} is {\tt TRUE}.  
+%%
+%%The default is 0.0
 
 
 %\subsection[slice\_plot]{\tt logical :: slice\_plot}

@@ -1,0 +1,141 @@
+\chapter{Frequently Asked Questions}\label{chap:faq}
+
+
+\section{General Questions}
+
+\subsection{What is \wannier?}
+
+\wannier\ is a computer package, written in Fortran90, for obtaining
+maximally-localised Wannier functions, using them to calculate
+bandstructures, Fermi surfaces, dielectric properties, sparse
+Hamiltonians and many things besides.
+
+\subsection{Where can I get \wannier?}
+
+The most recent release of \wannier\ is always available on our
+website {\tt www.wannier.org}.
+
+\subsection{Where can I get the most recent information about
+  \wannier?}
+
+The latest news about \wannier\ can be followed on our website {\tt
+  www.wannier.org}.
+
+\subsection{Is \wannier\ free?}
+
+Yes! \wannier\ is available for use free-of-charge under the GNU
+General Public Licence. See the file {\tt LICENCE} that comes with the
+\wannier\ distribution or the GNU hopepage at {\tt www.gnu.org}. 
+
+\subsection{Who wrote \wannier?}
+
+\wannier\ is written by Arash A. Mostofi (Imperial College London),
+Jonathan. R. Yates (University of Cambridge) and Young-Su Lee (Korea
+Institute of Science and Technology). \wannier\ is based on algorithms
+written in 1996-7 by Nicola Marzari (Massachusetts Institute of
+Technology) and David Vanderbilt (Rutgers University), and in 2000-1
+by Ivo Souza (University of California at Berkeley), Nicola Marzari
+and David Vanderbilt.
+
+The interface to {\sc pwscf} was written by Stefano de Gironcoli
+(SISSA, Trieste). 
+
+\section{Getting Help}
+
+\subsection{Is there a Tutorial available for \wannier?}
+
+Yes! The {\tt examples} directory of the \wannier\ distribution
+contains input files for a number of tutorial calculations. The {\tt
+  doc} directory contains the accompanying tutorial handout. 
+
+\subsection{Where do I get support for \wannier?}
+
+There are a number of options:
+
+\begin{enumerate}
+\item The \wannier\ User Guide, available in the {\tt doc} directory of the
+  distribution, and from the webpage ({\tt
+  www.wannier.org/user\_guide.html})
+\item The \wannier\ webpage for the most recent announcements ({\tt
+  www.wannier.org})
+\item The \wannier\ mailing list (see {\tt www.wannier.org/forum.html})
+\end{enumerate}
+
+\subsection{Is there a mailing list for \wannier?}
+
+Yes! You need to register: go to {\tt www.wannier.org/forum.html} and
+follow the instructions. 
+
+\section{Providing Help: Finding and Reporting Bugs}
+
+\subsection{I think I found a bug. How do I report it?}
+
+\begin{itemize}
+\item Check and double-check. Make sure it's a bug.
+\item Check that it is a bug in \wannier\ and not a bug in the
+  software interfaced to \wannier.
+\item Check that you're using the latest version of \wannier.
+\item Send an email to {\tt developers@wannier.org}. Make sure to
+  describe the problem and to attach all input and output files
+  relating to the problem that you have found.
+\end{itemize}
+
+\subsection{I have got an idea! How do I report a wish?}
+
+We're always happy to listen to suggestions. Email your idea to the
+  \wannier\ developers at {\tt developers@wannier.org}.
+
+\subsection{I want to help! How can I contribute to \wannier?}
+
+Great! There's always plenty of functionality to add. Email us at {\tt
+  developers@wannier.org} to let us know about the functionality you'd
+  like to contribute. 
+
+\subsection{I like \wannier! Should I donate anything to its authors?}
+
+Our Swiss bank account number is... just kidding! There is no need to
+donate anything, please just cite our paper in any publications that
+arise from your use of \wannier:
+
+[ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt
+and N. Marzari, \wannier: A Tool for Obtaining Maximally-Localised
+Wannier Functions, {\it Comput. Phys. Commun.}, submitted (2007); {\tt
+http://arxiv.org/abs/0708.0650}.
+
+\section{Installation}
+
+\subsection{How do I install \wannier?}
+
+Follow the instructions in the file {\tt README.install} in the main
+directory of the \wannier\ distribution.
+
+\subsection{Are there \wannier\ binaries available?}
+
+Not at present.
+
+\subsection{Is there anything else I need?}
+
+Yes. \wannier\ works on top of an electronic structure
+calculation. At the time of writing, \wannier\ is interfaced to the
+\pwscf\ code, a plane-wave, pseudopotential, density-functional theory
+code, which is part of the {\tt quantum-espresso} package. You 
+will need to download it from the webpage {\tt
+  www.quantum-espresso.org} or {\tt www.pwscf.org}. Then compile \pwscf\
+and the \wannier\ interface program {\tt pw2wannier90}. For
+instructions, please refer to the
+documentation that comes with the {\tt quantum-espresso} distribution.
+
+For examples of how to use \pwscf\ and \wannier\ in conjunction with
+each other, see the \wannier\ Tutorial.
+
+Interfaces to other electronic structure codes, such as {\sc
+  castep},\footnote{{\tt www.castep.org}}
+{\sc fleur}\footnote{{\tt www.flapw.de}} and {\sc
+  abinit},\footnote{{\tt www.abinit.org}} are currently in
+progress and should become available in the near future. 
+
+\section{Compile-time Problems}
+
+\section{Run-time Problems}
+
+\section{Using \wannier}
