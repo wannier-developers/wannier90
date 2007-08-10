@@ -55,7 +55,7 @@ contains
            if (all(kpt_latt(:,nkp)<0.000001_dp)) have_gamma=.true.       
        end do
        if(.not. have_gamma) &
-    write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. Interpolation may be incorrect. !!!!'
+            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. Interpolation may be incorrect. !!!!'
        ! Find the number of points in the Wigner-Seitz cell
        call wigner_seitz(count_pts=.true.)
        allocate(irvec(3,nrpts),stat=ierr)
@@ -774,6 +774,7 @@ end subroutine plot_interpolate_bands
       integer :: ierr,iname,max_elements
       integer :: isp,iat,nzz,nyy,nxx,loop_w,qxx,qyy,qzz,wann_index
       integer :: istart(3),iend(3),ilength(3)
+      integer :: ixx,iyy,izz
       integer, allocatable :: atomic_Z(:)
       character(len=2), dimension(109) :: periodic_table= (/ &
            & 'H ',                                                                                'He', &
@@ -853,34 +854,72 @@ end subroutine plot_interpolate_bands
 
          ! Debugging
          if (iprint>3) then
-            write(stdout,'(a,3i12)')    'ngi     =', ngx,ngy,ngz
-            write(stdout,'(a,3f12.6)') 'dgrid   =',(dgrid(i),i=1,3)
-            write(stdout,'(a,3f12.6)') 'rstart  =',(rstart(i),i=1,3)
-            write(stdout,'(a,3f12.6)') 'rend    =',(rend(i),i=1,3)
-            write(stdout,'(a,3f12.6)') 'rlength =',(rlength(i),i=1,3)
-            write(stdout,'(a,3i12)')    'istart  =',(istart(i),i=1,3)
-            write(stdout,'(a,3i12)')    'iend    =',(iend(i),i=1,3)
-            write(stdout,'(a,3i12)')    'ilength =',(ilength(i),i=1,3)
-            write(stdout,'(a,3f12.6)') 'orig    =',(orig(i),i=1,3)
+            write(stdout,'(a,3i12)')     'ngi     =', ngx,ngy,ngz
+            write(stdout,'(a,3f12.6)')   'dgrid   =',(dgrid(i),i=1,3)
+            write(stdout,'(a,3f12.6)')   'rstart  =',(rstart(i),i=1,3)
+            write(stdout,'(a,3f12.6)')   'rend    =',(rend(i),i=1,3)
+            write(stdout,'(a,3f12.6)')   'rlength =',(rlength(i),i=1,3)
+            write(stdout,'(a,3i12)')     'istart  =',(istart(i),i=1,3)
+            write(stdout,'(a,3i12)')     'iend    =',(iend(i),i=1,3)
+            write(stdout,'(a,3i12)')     'ilength =',(ilength(i),i=1,3)
+            write(stdout,'(a,3f12.6)')   'orig    =',(orig(i),i=1,3)
             write(stdout,'(a,3f12.6,/)') 'wann_cen=',(wannier_centres(i,wann_index),i=1,3)
          endif
 
          allocate(wann_cube(1:ilength(1),1:ilength(2),1:ilength(3)),stat=ierr)
          if (ierr.ne.0) call io_error('Error: allocating wann_cube in wannier_plot')
 
-         ! Copy WF to cube
+!!$         ! Copy WF to cube
+!!$         do nzz=1,ilength(3)
+!!$            do nyy=1,ilength(2)
+!!$               do nxx=1,ilength(1)
+!!$                  qxx=nxx+istart(1)-ngx-1
+!!$                  if (qxx.lt.-ngx) qxx=qxx+ngx
+!!$                  if (qxx.gt.-1)   qxx=qxx-ngx
+!!$                  qyy=nyy+istart(2)-ngy-1
+!!$                  if (qyy.lt.-ngy) qyy=qyy+ngy
+!!$                  if (qyy.gt.-1)   qyy=qyy-ngy
+!!$                  qzz=nzz+istart(3)-ngz-1
+!!$                  if (qzz.lt.-ngz) qzz=qzz+ngz
+!!$                  if (qzz.gt.-1)   qzz=qzz-ngz
+!!$                  wann_cube(nxx,nyy,nzz) = real(wann_func(qxx,qyy,qzz,loop_w),dp)
+!!$               enddo
+!!$            enddo
+!!$         enddo
+
+         ! initialise
+         wann_cube = 0.0_dp
+
          do nzz=1,ilength(3)
+            qzz=nzz+istart(3)-ngz-1
+            izz=int((abs(qzz)-1)/ngz)
+            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
+            izz=int(abs(qzz)/ngz)+1
+            if (qzz.gt.-1)   qzz=qzz-izz*ngz
+            write(stdout,*) 'qzz:', qzz
+            if (qzz.lt.-ngz .or. qzz.gt.((ngs-1)*ngz-1)) &
+                 call io_error('Error plotting WF cube: increase wannier_plot_supercell &
+                 &or set wannier_plot_format=xcrysden')
             do nyy=1,ilength(2)
+               qyy=nyy+istart(2)-ngy-1
+               iyy=int((abs(qyy)-1)/ngy)
+               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
+               iyy=int(abs(qyy)/ngy)+1               
+               if (qyy.gt.-1)   qyy=qyy-iyy*ngy
+               write(stdout,*) 'qyy:',qyy
+               if (qyy.lt.-ngy .or. qyy.gt.((ngs-1)*ngy-1)) &
+                    call io_error('Error plotting WF cube: increase wannier_plot_supercell &
+                    &or set wannier_plot_format=xcrysden')
                do nxx=1,ilength(1)
                   qxx=nxx+istart(1)-ngx-1
-                  if (qxx.lt.-ngx) qxx=qxx+ngx
-                  if (qxx.gt.-1)   qxx=qxx-ngx
-                  qyy=nyy+istart(2)-ngy-1
-                  if (qyy.lt.-ngy) qyy=qyy+ngy
-                  if (qyy.gt.-1)   qyy=qyy-ngy
-                  qzz=nzz+istart(3)-ngz-1
-                  if (qzz.lt.-ngz) qzz=qzz+ngz
-                  if (qzz.gt.-1)   qzz=qzz-ngz
+                  ixx=int((abs(qxx)-1)/ngx)
+                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
+                  ixx=int(abs(qxx)/ngx)+1
+                  if (qxx.gt.-1)   qxx=qxx-ixx*ngx
+                  write(stdout,*) 'qxx:',qxx
+                  if (qxx.lt.-ngx .or. qxx.gt.((ngs-1)*ngx-1)) &
+                       call io_error('Error plotting WF cube: increase wannier_plot_supercell &
+                       &or set wannier_plot_format=xcrysden')
                   wann_cube(nxx,nyy,nzz) = real(wann_func(qxx,qyy,qzz,loop_w),dp)
                enddo
             enddo
@@ -1122,34 +1161,41 @@ end subroutine plot_interpolate_bands
   subroutine plot_ham_r
   !============================================!
   !                                            !
-  !  Write the Hamiltonian in the WF basis:    !
-  !  input for the conductance calculation     !
-  !                                            !
-  !  Only for 1-dim at this point              ! 
-  !  mp_grid should be 1 except one direction  !
-  !   - will be checked                        !
-  !  *Gamma-point : simply write ham_r         !
-  !                                            !
-  !  ex) 5 k-pts, in terms of irvec            !
-  !      z : zero                              !
-  !                                            !
-  !     |  0  1  2 |     |  z  z  z |          !
-  ! H00=| -1  0  1 | H01=|  2  z  z |          !
-  !     | -2 -1  0 |     |  1  2  z |          !      
-  !                                            !
+  !  Write the Hamiltonian in the WF basis     !
   !============================================!
+
+! aam: 9-Aug-2007: YSL to update this subroutine.
+
+!!$  !  input for the conductance calculation     !
+!!$  !                                            !
+!!$  !  Only for 1-dim at this point              ! 
+!!$  !  mp_grid should be 1 except one direction  !
+!!$  !   - will be checked                        !
+!!$  !  *Gamma-point : simply write ham_r         !
+!!$  !                                            !
+!!$  !  ex) 5 k-pts, in terms of irvec            !
+!!$  !      z : zero                              !
+!!$  !                                            !
+!!$  !     |  0  1  2 |     |  z  z  z |          !
+!!$  ! H00=| -1  0  1 | H01=|  2  z  z |          !
+!!$  !     | -2 -1  0 |     |  1  2  z |          !      
+!!$  !                                            !
+!!$  !============================================!
+
 
     use w90_constants, only : dp
     use w90_io,        only : io_error,io_stopwatch,io_file_unit, &
-                              stdout,seedname
-    use w90_parameters, only : mp_grid,num_wann,hr_min,timing_level
+                              stdout,seedname,io_date
+    use w90_parameters, only : mp_grid,num_wann,timing_level
 
     implicit none
   
     integer            :: kdir,nrx,file_unit,ierr
-    integer            :: i,j,im,jm,m,loop_rpt,counter
+    integer            :: i,j,k,im,jm,m,loop_rpt,counter
     real(kind=dp)      :: ham_rr(num_wann,num_wann), max_hamr(nrpts)
     real(kind=dp), allocatable  :: hr(:,:)
+    character (len=33) :: header
+    character (len=9)  :: cdate,ctime
 
     if (timing_level>1) call io_stopwatch('plot: ham_r',1)
 
@@ -1171,107 +1217,114 @@ end subroutine plot_interpolate_bands
 
     ! write the  whole matrix with all indices for a crosscheck
     file_unit=io_file_unit()
-    open(unit=file_unit,file=trim(seedname)//'.h_all.dat',form='formatted',status='unknown')
-    if ( counter .eq. 3 ) then
-       do i=1,num_wann
-          do j=1,num_wann
-             write( file_unit,'(2I5,2F12.6)') j,i,real(ham_r(j,i,1)),aimag(ham_r(j,i,1))
-          end do
-       end do
-    else
-       do loop_rpt=1,nrpts
+    open(unit=file_unit,file=trim(seedname)//'_hr.dat',form='formatted',status='unknown')
+    call io_date(cdate,ctime)
+    header='written on '//cdate//' at '//ctime
+!!$    if ( counter .eq. 3 ) then
+!!$       do i=1,num_wann
+!!$          do j=1,num_wann
+!!$             write( file_unit,'(2I5,2F12.6)') j,i,real(ham_r(j,i,1)),aimag(ham_r(j,i,1))
+!!$          end do
+!!$       end do
+!!$    else
+    write(file_unit) header ! Date and time
+    do loop_rpt=1,nrpts
+       do k=1,3
           do i=1,num_wann
              do j=1,num_wann
-                write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
-                                     real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
+                write( file_unit,'(5I5,2F12.6)') irvec(k,loop_rpt), j,i, &
+                     real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
+!!$                write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
+!!$                     real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
              end do
           end do
        end do
-    end if   
+    end do
+!!$    end if   
     close(file_unit)
 
-    ! stop here for Gamma sampling
+!!$    ! stop here for Gamma sampling
+!!$
+!!$    if (counter .eq. 3 ) return
+!!$
+!!$    ! degeneracy - simply divide by ndegen ( should be fine if ham_r elements are very small at the boundary )
+!!$
+!!$    do loop_rpt=1,nrpts
+!!$       if ( ndegen(loop_rpt) .ne. 1 ) ham_r(:,:,loop_rpt) = ham_r(:,:,loop_rpt) / real(ndegen(loop_rpt),dp)
+!!$    end do
+!!$
+!!$    ! output largest elements in each lattice point inside W-S cell  
+!!$    write(stdout,'(a)') ' Output ham_r for conductance/dos calculation'
+!!$    write(stdout,'(a)') ' --check the biggest component in ham_r for each lattice in Wigner-Seitz cell'
+!!$    do loop_rpt=1,nrpts
+!!$       ham_rr=abs(real(ham_r(:,:,loop_rpt)))
+!!$       max_hamr(loop_rpt) = maxval( ham_rr )
+!!$       write(stdout,'(I5,"  irvec=",I5,F12.6)') loop_rpt, irvec(kdir,loop_rpt), max_hamr(loop_rpt)   
+!!$    end do
+!!$    write(stdout,'(a)') ' '
+!!$   
+!!$    ! H00 will be (nrx+1)*num_wann by (nrx+1)*num_wann
+!!$
+!!$    nrx = nrpts/2
+!!$
+!!$    ! check irvec
+!!$    ! irvec should be [-nrx,nrx] in sequence
+!!$    m=-nrx
+!!$    do loop_rpt=1,nrpts
+!!$       if (irvec(kdir,loop_rpt) .ne. m) then
+!!$          write(stdout,'(a8,i5,a)') 'nrpts=',nrpts,'YOUR GRID IS NOT THE ONE YOU THINK'
+!!$          call io_error('Error in plot_ham_r: wrong guess for nrpts') 
+!!$       end if
+!!$       m=m+1
+!!$    end do 
 
-    if (counter .eq. 3 ) return
-
-    ! degeneracy - simply divide by ndegen ( should be fine if ham_r elements are very small at the boundary )
-
-    do loop_rpt=1,nrpts
-       if ( ndegen(loop_rpt) .ne. 1 ) ham_r(:,:,loop_rpt) = ham_r(:,:,loop_rpt) / real(ndegen(loop_rpt),dp)
-    end do
-
-    ! output largest elements in each lattice point inside W-S cell  
-    write(stdout,'(a)') ' Output ham_r for conductance/dos calculation'
-    write(stdout,'(a)') ' --check the biggest component in ham_r for each lattice in Wigner-Seitz cell'
-    do loop_rpt=1,nrpts
-       ham_rr=abs(real(ham_r(:,:,loop_rpt)))
-       max_hamr(loop_rpt) = maxval( ham_rr )
-       write(stdout,'(I5,"  irvec=",I5,F12.6)') loop_rpt, irvec(kdir,loop_rpt), max_hamr(loop_rpt)   
-    end do
-    write(stdout,'(a)') ' '
-   
-    ! H00 will be (nrx+1)*num_wann by (nrx+1)*num_wann
-
-    nrx = nrpts/2
-
-    ! check irvec
-    ! irvec should be [-nrx,nrx] in sequence
-    m=-nrx
-    do loop_rpt=1,nrpts
-       if (irvec(kdir,loop_rpt) .ne. m) then
-          write(stdout,'(a8,i5,a)') 'nrpts=',nrpts,'YOUR GRID IS NOT THE ONE YOU THINK'
-          call io_error('Error in plot_ham_r: wrong guess for nrpts') 
-       end if
-       m=m+1
-    end do 
-
-    ! apply cutoff hr_min -> new nrx
-   
-    nrx = 0
-    do loop_rpt=1,nrpts 
-       if (max_hamr(loop_rpt) .gt. hr_min ) then
-          if ( abs(irvec(kdir,loop_rpt)) .gt. nrx )  nrx = abs(irvec(kdir,loop_rpt))
-       end if
-    end do
-    write(stdout,'(a,f10.6)') '  hr_min :',hr_min
-    write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
-
-    allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating hr in plot_ham_r')
-
-    file_unit=io_file_unit()
-    open(unit=file_unit,file=trim(seedname)//'.h.dat',form='formatted',status='unknown')
-  
-    ! H00  
-    write(file_unit,'(I6)') (nrx+1)*num_wann 
-    hr = 0.d0
-    do j=0,nrx
-       do i=0,nrx  
-          m = i-j+nrpts/2+1
-          im=i*num_wann
-          jm=j*num_wann
-          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
-       end do
-    end do
-    write(file_unit,'(6F15.10)') hr
-    
-    ! H01  
-    write(file_unit,'(I6)') (nrx+1)*num_wann 
-    hr = 0.d0
-    do j=0,nrx
-       do i=0,j-1
-          m = i-j+(nrpts/2+1)+(nrx+1) ! starting point shifted by nrx+1  
-          im=i*num_wann
-          jm=j*num_wann
-          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
-       end do
-    end do
-    write(file_unit,'(6F15.10)') hr
-
-    close(file_unit)
-
-    deallocate(hr,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating hr in plot_ham_r')
+!!$    ! apply cutoff hr_min -> new nrx
+!!$   
+!!$    nrx = 0
+!!$    do loop_rpt=1,nrpts 
+!!$       if (max_hamr(loop_rpt) .gt. hr_min ) then
+!!$          if ( abs(irvec(kdir,loop_rpt)) .gt. nrx )  nrx = abs(irvec(kdir,loop_rpt))
+!!$       end if
+!!$    end do
+!!$    write(stdout,'(a,f10.6)') '  hr_min :',hr_min
+!!$    write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
+!!$
+!!$    allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann),stat=ierr)
+!!$    if (ierr/=0) call io_error('Error in allocating hr in plot_ham_r')
+!!$
+!!$    file_unit=io_file_unit()
+!!$    open(unit=file_unit,file=trim(seedname)//'.h.dat',form='formatted',status='unknown')
+!!$  
+!!$    ! H00  
+!!$    write(file_unit,'(I6)') (nrx+1)*num_wann 
+!!$    hr = 0.d0
+!!$    do j=0,nrx
+!!$       do i=0,nrx  
+!!$          m = i-j+nrpts/2+1
+!!$          im=i*num_wann
+!!$          jm=j*num_wann
+!!$          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
+!!$       end do
+!!$    end do
+!!$    write(file_unit,'(6F15.10)') hr
+!!$    
+!!$    ! H01  
+!!$    write(file_unit,'(I6)') (nrx+1)*num_wann 
+!!$    hr = 0.d0
+!!$    do j=0,nrx
+!!$       do i=0,j-1
+!!$          m = i-j+(nrpts/2+1)+(nrx+1) ! starting point shifted by nrx+1  
+!!$          im=i*num_wann
+!!$          jm=j*num_wann
+!!$          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
+!!$       end do
+!!$    end do
+!!$    write(file_unit,'(6F15.10)') hr
+!!$
+!!$    close(file_unit)
+!!$
+!!$    deallocate(hr,stat=ierr)
+!!$    if (ierr/=0) call io_error('Error in deallocating hr in plot_ham_r')
     
     if (timing_level>1) call io_stopwatch('plot: ham_r',2)
 

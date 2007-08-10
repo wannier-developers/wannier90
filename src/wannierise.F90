@@ -54,7 +54,7 @@ contains
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
-         param_read_um,param_write_um,length_unit,lenconfac, &
+         param_write_chkpt,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
          trial_step,fixed_step,lfixstep,write_proj,have_disentangled, &
@@ -209,6 +209,9 @@ contains
     call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     omega_invariant = wann_spread%om_i
 
+    ! Public array of Wannier centres
+    wannier_centres = rave
+
     if (lfixstep) lquad=.false.
     ncg  = 0
     iter = 0
@@ -361,7 +364,10 @@ contains
           write(stdout,'(1x,a78)') repeat('-',78) 
        end if
 
-       if (ldump) call param_write_um
+       ! Public array of Wannier centres
+       wannier_centres = rave
+
+       if (ldump) call param_write_chkpt('postdis')
 
        if (conv_window.gt.1) call internal_test_convergence()
 
@@ -395,11 +401,9 @@ contains
          '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
-    ! Public array of Wannier centres
-    wannier_centres = rave
-
-    ! Translate centres to home unit cell, if required. Overwrites wannier_centres.
-    if (translate_home_cell) call internal_translate_home(rave)
+    ! Translate centres to home unit cell, if required. 
+    ! Overwrites wannier_centres.
+    if (translate_home_cell) call internal_translate_home()
 
     ! Write '.xyz' file of centres, if required
     if (write_xyz) then
@@ -424,9 +428,6 @@ contains
 
     ! write matrix elements <m|r^2|n> to file
     if (write_r2mn) call internal_write_r2mn()
-
-    ! write U and M to file
-    call param_write_um
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
@@ -1067,21 +1068,19 @@ contains
 
 
 
-    !========================================!
-    subroutine internal_translate_home(rave)
-    !========================================!
-    !                                        !
-    ! Translate centres to home unit cell    !
-    !                                        !
-    !========================================!
+    !=====================================!
+    subroutine internal_translate_home()
+    !=====================================!
+    !                                     !
+    ! Translate centres to home unit cell !
+    !                                     !
+    !=====================================!
 
       use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres
       use w90_io,         only : stdout,io_error,seedname
       use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
 
       implicit none
-
-      real(kind=dp), intent(in) :: rave(3,num_wann)
 
       ! <<<local variables>>>
       integer :: iw,ind,ierr
@@ -1814,7 +1813,7 @@ contains
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
-         param_read_um,param_write_um,length_unit,lenconfac, &
+         param_write_chkpt,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
          write_proj,have_disentangled, ph_g, &
@@ -1962,6 +1961,9 @@ contains
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
 
+    ! Public array of Wannier centres
+    wannier_centres = rave
+
     omega_invariant = wann_spread%om_i
 
     iter = 0
@@ -2101,10 +2103,13 @@ loop_jd: do jd=id+1,num_wann
           write(stdout,'(1x,a78)') repeat('-',78) 
        end if
 
+       ! Public array of Wannier centres
+       wannier_centres = rave
+
        if (ldump) then
           uc_rot(:,:)=cmplx(ur_rot(:,:),0.0_dp,dp)
           call  utility_zgemm(u_matrix,u0,'N',uc_rot,'N',num_wann)
-          call param_write_um
+          call param_write_chkpt('postdis')
        endif
 
        if (conv_window.gt.1) call internal_test_convergence_gamma()
@@ -2147,11 +2152,9 @@ loop_jd: do jd=id+1,num_wann
          '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
-    ! Public array of Wannier centres
-    wannier_centres = rave
-
-    ! Translate centres to home unit cell, if required. Overwrites wannier_centres.
-    if (translate_home_cell) call internal_translate_home(rave)
+    ! Translate centres to home unit cell, if required. 
+    ! Overwrites wannier_centres.
+    if (translate_home_cell) call internal_translate_home()
 
     ! Write '.xyz' file of centres, if required
     if (write_xyz) then
@@ -2176,9 +2179,6 @@ loop_jd: do jd=id+1,num_wann
 
     ! write matrix elements <m|r^2|n> to file
     if (write_r2mn) call internal_write_r2mn()
-
-    ! write U and M to file
-    call param_write_um
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
@@ -2466,7 +2466,7 @@ loop_jd: do jd=id+1,num_wann
 
 
     !========================================!
-    subroutine internal_translate_home(rave)
+    subroutine internal_translate_home()
     !========================================!
     !                                        !
     ! Translate centres to home unit cell    !
@@ -2478,8 +2478,6 @@ loop_jd: do jd=id+1,num_wann
       use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
 
       implicit none
-
-      real(kind=dp), intent(in) :: rave(3,num_wann)
 
       ! <<<local variables>>>
       integer :: iw,ind,ierr

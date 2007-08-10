@@ -304,7 +304,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
 !!$  enddo
 
   call param_write_chkpt('postdis')
-  call param_write_um
+!!$  call param_write_um
 
   time2=io_time()
 

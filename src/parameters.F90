@@ -193,13 +193,12 @@ module w90_parameters
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
 
-
   public :: param_read
   public :: param_write
   public :: param_dealloc
   public :: param_write_header
-  public :: param_write_um
-  public :: param_read_um
+!!$  public :: param_write_um
+!!$  public :: param_read_um
   public :: param_write_chkpt
   public :: param_read_chkpt
   public :: param_lib_set_atoms
@@ -223,8 +222,9 @@ contains
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3,3)
     integer :: nkp,i,j,n,k,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
-    logical :: found,found2,eig_found,lunits
+    logical :: found,found2,eig_found,lunits,chk_found
     character(len=6) :: spin_str
+    real(kind=dp) :: cosa(3)
 
     call param_in_file
 
@@ -339,8 +339,13 @@ contains
     restart = ' '
     call param_get_keyword('restart',found,c_value=restart)
     if (found) then
-       if ( (restart.ne.'default').and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) &
-            call io_error('Error in input file: value of restart not recognised')   
+       if ( (restart.ne.'default').and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) then 
+          call io_error('Error in input file: value of restart not recognised')
+       else
+          inquire(file=trim(seedname)//'.chk',exist=chk_found)
+          if (.not. chk_found) &
+               call io_error('Error: restart requested but '//trim(seedname)//'.chk file not found')
+       endif
     endif
     !post processing takes priority (must warn user of this)
     if (postproc_setup) restart = ' '
@@ -722,6 +727,15 @@ contains
        if (ierr/=0) call io_error('Error allocating ndimwin in param_read')
        allocate(lwindow(num_bands,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error allocating lwindow in param_read')
+    endif
+    
+    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
+       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
+       cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
+       cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
+       cosa = abs(cosa)
+       if (any(cosa.gt.1.0e-6_dp)) &
+            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
     endif
 
     ! Initialise
@@ -1184,85 +1198,85 @@ contains
   end subroutine param_dealloc
 
 
-  !================================!
-  subroutine param_write_um
-    !================================!
-    !                                !
-    ! Dump the U and M to *_um.dat   !
-    !                                !
-    !================================!
+!!$  !================================!
+!!$  subroutine param_write_um
+!!$    !================================!
+!!$    !                                !
+!!$    ! Dump the U and M to *_um.dat   !
+!!$    !                                !
+!!$    !================================!
+!!$
+!!$
+!!$    use w90_io,        only : io_file_unit,io_error,seedname,io_date
+!!$    implicit none
+!!$
+!!$    integer :: i,j,k,l,um_unit
+!!$    character (len=9) :: cdate, ctime
+!!$    character(len=33) :: header
+!!$
+!!$    call io_date(cdate, ctime)
+!!$    header='written on '//cdate//' at '//ctime
+!!$
+!!$    um_unit=io_file_unit()
+!!$    open(unit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
+!!$    write(um_unit) header
+!!$    write(um_unit) omega_invariant
+!!$    write(um_unit) num_wann,num_kpts,num_nnmax    
+!!$    write(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
+!!$    write(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
+!!$    close(um_unit)
+!!$
+!!$    return
+!!$
+!!$  end subroutine param_write_um
 
 
-    use w90_io,        only : io_file_unit,io_error,seedname,io_date
-    implicit none
-
-    integer :: i,j,k,l,um_unit
-    character (len=9) :: cdate, ctime
-    character(len=33) :: header
-
-    call io_date(cdate, ctime)
-    header='written on '//cdate//' at '//ctime
-
-    um_unit=io_file_unit()
-    open(unit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
-    write(um_unit) header
-    write(um_unit) omega_invariant
-    write(um_unit) num_wann,num_kpts,num_nnmax    
-    write(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
-    write(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
-    close(um_unit)
-
-    return
-
-  end subroutine param_write_um
-
-
-  !================================!
-  subroutine param_read_um
-    !================================!
-    !                                !
-    ! Restore U and M from file      !
-    !                                !
-    !================================!
-
-    use w90_io,        only : io_file_unit,io_error,seedname
-    implicit none
-
-    integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
-    integer       :: i,j,k,l,um_unit,ierr
-    character(len=33) :: header
-    real(kind=dp) :: tmp_omi
-
-    um_unit=io_file_unit()
-    open(unit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
-    read(um_unit) header
-    write(stdout,'(1x,4(a))') 'Reading U and M from file ',trim(seedname),'_um.dat ', header 
-    read(um_unit) tmp_omi
-    if ( have_disentangled ) then
-       if ( abs(tmp_omi-omega_invariant).gt.1.0e-10_dp )  &
-            call io_error('Error in restart: omega_invariant in .chk and um.dat files do not match')
-    endif
-    read(um_unit) tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
-    if(tmp_num_wann/=num_wann) call io_error('Error in param_read_um: num_wann mismatch')
-    if(tmp_num_kpts/=num_kpts) call io_error('Error in param_read_um: num_kpts mismatch')
-    if(tmp_num_nnmax/=num_nnmax) call io_error('Error in param_read_um: num_nnmax mismatch')
-    if (.not.allocated(u_matrix)) then
-       allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating u_matrix in param_read_um')
-    endif
-    read(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
-    if (.not.allocated(m_matrix)) then
-       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating m_matrix in param_read_um')
-    endif
-    read(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
-    close(um_unit)
-
-    return
-
-105 call io_error('Error: Problem opening file '//trim(seedname)//'_um.dat in param_read_um')
-
-  end subroutine param_read_um
+!!$  !================================!
+!!$  subroutine param_read_um
+!!$    !================================!
+!!$    !                                !
+!!$    ! Restore U and M from file      !
+!!$    !                                !
+!!$    !================================!
+!!$
+!!$    use w90_io,        only : io_file_unit,io_error,seedname
+!!$    implicit none
+!!$
+!!$    integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
+!!$    integer       :: i,j,k,l,um_unit,ierr
+!!$    character(len=33) :: header
+!!$    real(kind=dp) :: tmp_omi
+!!$
+!!$    um_unit=io_file_unit()
+!!$    open(unit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
+!!$    read(um_unit) header
+!!$    write(stdout,'(1x,4(a))') 'Reading U and M from file ',trim(seedname),'_um.dat ', header 
+!!$    read(um_unit) tmp_omi
+!!$    if ( have_disentangled ) then
+!!$       if ( abs(tmp_omi-omega_invariant).gt.1.0e-10_dp )  &
+!!$            call io_error('Error in restart: omega_invariant in .chk and um.dat files do not match')
+!!$    endif
+!!$    read(um_unit) tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
+!!$    if(tmp_num_wann/=num_wann) call io_error('Error in param_read_um: num_wann mismatch')
+!!$    if(tmp_num_kpts/=num_kpts) call io_error('Error in param_read_um: num_kpts mismatch')
+!!$    if(tmp_num_nnmax/=num_nnmax) call io_error('Error in param_read_um: num_nnmax mismatch')
+!!$    if (.not.allocated(u_matrix)) then
+!!$       allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
+!!$       if (ierr/=0) call io_error('Error allocating u_matrix in param_read_um')
+!!$    endif
+!!$    read(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
+!!$    if (.not.allocated(m_matrix)) then
+!!$       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+!!$       if (ierr/=0) call io_error('Error allocating m_matrix in param_read_um')
+!!$    endif
+!!$    read(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
+!!$    close(um_unit)
+!!$
+!!$    return
+!!$
+!!$105 call io_error('Error: Problem opening file '//trim(seedname)//'_um.dat in param_read_um')
+!!$
+!!$  end subroutine param_read_um
 
 
 
@@ -1278,7 +1292,7 @@ contains
 
     character(len=*), intent(in) :: chkpt
 
-    integer :: chk_unit,nkp,i,j
+    integer :: chk_unit,nkp,i,j,k,l
     character (len=9) :: cdate,ctime
     character (len=33) :: header
     character (len=20) :: chkpt1
@@ -1308,7 +1322,8 @@ contains
        write(chk_unit) (ndimwin(nkp),nkp=1,num_kpts)
        write(chk_unit) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
     endif
-    ! Required for plot restarts and cube files
+    write(chk_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)               ! U_matrix
+    write(chk_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts) ! M_matrix
     write(chk_unit) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
 
     close(chk_unit)
@@ -1331,7 +1346,7 @@ contains
 
     implicit none
 
-    integer :: chk_unit,nkp,i,j,ntmp,ierr
+    integer :: chk_unit,nkp,i,j,k,l,ntmp,ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
 
@@ -1375,7 +1390,6 @@ contains
     read(chk_unit) ntmp                ! num_wann
     if (ntmp.ne.num_wann) &
          call io_error('param_read_chk: Mismatch in num_wann')
-
     ! End of consistency checks
 
     read(chk_unit) checkpoint             ! checkpoint
@@ -1387,32 +1401,47 @@ contains
 
        read(chk_unit) omega_invariant     ! omega invariant
 
-       ! Allocate matrices if required
-       if (.not.allocated(u_matrix_opt)) then
-          allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
-          if (ierr/=0) call io_error('Error allocating u_matrix_opt in param_read_chkpt')
-       endif
-
+       ! lwindow
        if (.not.allocated(lwindow)) then
           allocate(lwindow(num_bands,num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating lwindow in param_read_chkpt')
        endif
+       read(chk_unit,err=122) ((lwindow(i,nkp),i=1,num_bands),nkp=1,num_kpts)
 
+       ! ndimwin
        if (.not.allocated(ndimwin)) then
           allocate(ndimwin(num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating ndimwin in param_read_chkpt')
        endif
-
-       ! U matrix opt
-       read(chk_unit,err=122) ((lwindow(i,nkp),i=1,num_bands),nkp=1,num_kpts)
        read(chk_unit,err=123) (ndimwin(nkp),nkp=1,num_kpts)
+
+       ! U_matrix_opt
+       if (.not.allocated(u_matrix_opt)) then
+          allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating u_matrix_opt in param_read_chkpt')
+       endif
        read(chk_unit,err=124) (((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann),nkp=1,num_kpts)
 
     endif
 
-    if ( (index(restart,'plot').ne.0) .and. (index(wannier_plot_format,'cub').ne.0)) then
-       read(chk_unit,err=125) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
+    ! U_matrix
+    if (.not.allocated(u_matrix)) then
+       allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating u_matrix in param_read_chkpt')
     endif
+    read(chk_unit,err=125) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
+
+    ! M_matrix
+    if (.not.allocated(m_matrix)) then
+       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating m_matrix in param_read_chkpt')
+    endif
+    read(chk_unit,err=126) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
+
+    ! wannier_centres
+!    if ( (index(restart,'plot').ne.0) .and. (index(wannier_plot_format,'cub').ne.0)) then
+    read(chk_unit,err=127) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
+!    endif
 
     close(chk_unit)
 
@@ -1424,7 +1453,9 @@ contains
 122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in param_read_chkpt')
 123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in param_read_chkpt')
 124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt')
-125 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in param_read_chkpt')
+125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
+126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
+127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in param_read_chkpt')
 
   end subroutine param_read_chkpt
 
