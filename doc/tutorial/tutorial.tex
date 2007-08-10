@@ -60,12 +60,15 @@ available for many operating systems and is often installed by default on
  unix/Linux distributions\\
 {\tt http://www.gnuplot.info}
 \item {\tt xmgrace} may also be used to plot bandstructures.\\
-{\tt http://www.xmgrace.org}
+{\tt http://plasma-gate.weizmann.ac.il/Grace}
 \item {\tt XCrySDen} is used to visualise crystal structures, MLWF,
   and Fermi surfaces. It is available for unix/Linux, 
   Windows (using cygwin), and OSX. To correctly display 
 files from \wannier, version 1.4 or later must be used.\\
 {\tt http://www.xcrysden.org}
+\item {\tt vmd} can also be used to visualise crystal structures and
+  MLWF.\\
+{\tt http://www.ks.uiuc.edu/Research/vmd}
 \end{itemize}
 
 
@@ -79,20 +82,35 @@ of the \wannier\ input files have been provided.
 The second part of the tutorial covers the generation of \wannier\
 input files starting from a full electronic structure calculation. We
 have provided input files for the \pwscf\ ({\tt
-  www.quantum-espresso.org}) interface to \wannier. At the time of
-writing, interfaces to other electronic structure codes, such as {\sc
+  www.quantum-espresso.org}) interface to \wannier. Therefore, you
+will need to install and compile elements of the {\tt
+  quantum-espresso} package, namely {\tt pw.x} and {\tt
+  pw2wannier90.x}, in order to run these
+examples. Please visit {\tt www.quantum-espresso.org} to download the
+package, and for installation instructions. 
+
+At the time of
+writing, interfaces to a number of other electronic structure codes,
+such as {\sc 
   castep} ({\tt www.castep.org}), {\sc abinit} ({\tt
   www.abinit.org}), and {\sc fleur} ({\tt
   www.flapw.de}), are in progress.
 
+For images of MLWF, see our gallery at {\tt
+  http://www.wannier.org/gallery.html}. If you have any images that
+  you would like to submit to the gallery, please email us at\\ {\tt 
+  developers@wannier.org}.
 
 \section*{Contact us}
 
 If you have any suggestions regarding ways in which this tutorial may
-be improved, then send an email to the \wannier\ forum at {\tt
-wannier@quantum-espresso.org}. Note that first you will need to
+be improved, then send us an email at {\tt
+developers@wannier.org}. 
+
+For other questions, email the \wannier\ forum at {\tt
+  wannier@quantum-espresso.org}.  Note that first you will need to
 register in order to post emails. Emails from non-registered users are
-deleted automatically. You can register by following the links at
+deleted automatically. You can register by following the links at\\
 {\tt http://www.wannier.org/forum.html}.
 
 
@@ -184,7 +202,7 @@ unit cell.
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the four lowest states
-    in Lead. Use Wannier interpolation to plot the Fermi surface}}
+    in lead. Use Wannier interpolation to plot the Fermi surface}}
 \item{Generation Details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 4$\times$4$\times$4 k-point grid. Starting
     guess: atom-centred sp$^3$ hybrid orbitals}} 
@@ -242,7 +260,7 @@ xcrysden --bxsf lead.bxsf
 \begin{figure}[h]
 \begin{center}
 \includegraphics{lead.eps}
-\caption{Bandstructure of Lead showing the position of the Fermi
+\caption{Bandstructure of lead showing the position of the Fermi
   level. Only the lowest four bands are included in the calculation.} 
 \label{fig:pb-bnd}
 \end{center}
@@ -399,6 +417,8 @@ available as part of the \QE\ distribution ({\tt
 {\tt pw2wannier90} post-processing code that is also available as part
 of \QE.
 
+\cleardoublepage
+
 \section*{5: Diamond}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the valence bands of diamond}}
@@ -434,6 +454,7 @@ of \QE.
 {\tt wannier90.x diamond}
 \end{enumerate}
 
+\cleardoublepage
 
 \section*{6: Copper}
 
@@ -543,6 +564,7 @@ end kpoint\_path
 %\end{center}
 %\end{figure}
 
+\cleardoublepage
 
 \section*{7: Silane - SiH$_4$}
 \begin{itemize}
@@ -580,7 +602,7 @@ end kpoint\_path
 {\tt wannier90.x silane}
 \end{enumerate}
 
-
+\cleardoublepage
 
 \section*{8: Iron}
 \begin{itemize}
@@ -627,6 +649,9 @@ end kpoint\_path
 {\tt wannier90.x iron\_up}\\
 {\tt wannier90.x iron\_dn}
 \end{enumerate}
+
+
+\cleardoublepage
 
 
 \section*{9: Cubic BaTiO$_3$}
@@ -708,6 +733,7 @@ the second MLWF.
 %%Compare with the values you obtained this morning.
 \end{itemize}
 
+\cleardoublepage
 
 \section*{10: Graphite}
 \begin{itemize}
@@ -744,6 +770,8 @@ the second MLWF.
 {\tt wannier90.x graphite}
 \end{enumerate}
 
+
+\cleardoublepage
 
 
 \section*{11: Silicon}
@@ -876,7 +904,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \begin{thebibliography}{99}
 
 \bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
-  Guide v1.0.3, available at {\tt http://www.wannier.org/user\_guide.html}.
+  Guide, available at {\tt http://www.wannier.org/user\_guide.html}.
 
 \bibitem{MV} N.~Marzari and D.~Vanderbilt, 
   Maximally Localized Generalized Wannier Functions for Composite
@@ -889,7 +917,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \bibitem{W90} A.~A.~Mostofi, J.~R.~Yates, Y.-S.~Lee, I.~Souza,
    D.~Vanderbilt and N.~Marzari, \wannier: A Tool for Obtaining
    Maximally-Localized Wannier Functions, {\it Comput. Phys. Commun.},
-   submitted (2007) and {\tt http://arxiv.org/abs/cond-mat/xxxxxxx}.
+   submitted (2007) and {\tt http://arxiv.org/abs/0708.0650}.
 
 \bibitem{USPP} D.~Vanderbilt, Soft Self-Consistent Pseudopotentials in
   a Generalized Eigenvalue Formalism, {\it Phys. Rev. B} {\bf 41}
