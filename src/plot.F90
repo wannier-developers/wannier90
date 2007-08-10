@@ -869,57 +869,42 @@ end subroutine plot_interpolate_bands
          allocate(wann_cube(1:ilength(1),1:ilength(2),1:ilength(3)),stat=ierr)
          if (ierr.ne.0) call io_error('Error: allocating wann_cube in wannier_plot')
 
-!!$         ! Copy WF to cube
-!!$         do nzz=1,ilength(3)
-!!$            do nyy=1,ilength(2)
-!!$               do nxx=1,ilength(1)
-!!$                  qxx=nxx+istart(1)-ngx-1
-!!$                  if (qxx.lt.-ngx) qxx=qxx+ngx
-!!$                  if (qxx.gt.-1)   qxx=qxx-ngx
-!!$                  qyy=nyy+istart(2)-ngy-1
-!!$                  if (qyy.lt.-ngy) qyy=qyy+ngy
-!!$                  if (qyy.gt.-1)   qyy=qyy-ngy
-!!$                  qzz=nzz+istart(3)-ngz-1
-!!$                  if (qzz.lt.-ngz) qzz=qzz+ngz
-!!$                  if (qzz.gt.-1)   qzz=qzz-ngz
-!!$                  wann_cube(nxx,nyy,nzz) = real(wann_func(qxx,qyy,qzz,loop_w),dp)
-!!$               enddo
-!!$            enddo
-!!$         enddo
-
          ! initialise
          wann_cube = 0.0_dp
 
          do nzz=1,ilength(3)
-            qzz=nzz+istart(3)-ngz-1
+            qzz=nzz+istart(3)-1
             izz=int((abs(qzz)-1)/ngz)
             if (qzz.lt.-ngz) qzz=qzz+izz*ngz
-            izz=int(abs(qzz)/ngz)+1
-            if (qzz.gt.-1)   qzz=qzz-izz*ngz
-            write(stdout,*) 'qzz:', qzz
-            if (qzz.lt.-ngz .or. qzz.gt.((ngs-1)*ngz-1)) &
-                 call io_error('Error plotting WF cube: increase wannier_plot_supercell &
-                 &or set wannier_plot_format=xcrysden')
+            if (qzz.gt.(ngs-1)*ngz-1) then
+               write(stdout,*) 'Error plotting WF cube. Try one of the following:'
+               write(stdout,*) '   (1) increase wannier_plot_supercell;'
+               write(stdout,*) '   (2) decrease wannier_plot_radius;'
+               write(stdout,*) '   (3) set wannier_plot_format=xcrysden'
+               call io_error('Error plotting WF cube.')
+            endif
             do nyy=1,ilength(2)
-               qyy=nyy+istart(2)-ngy-1
+               qyy=nyy+istart(2)-1
                iyy=int((abs(qyy)-1)/ngy)
                if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
-               iyy=int(abs(qyy)/ngy)+1               
-               if (qyy.gt.-1)   qyy=qyy-iyy*ngy
-               write(stdout,*) 'qyy:',qyy
-               if (qyy.lt.-ngy .or. qyy.gt.((ngs-1)*ngy-1)) &
-                    call io_error('Error plotting WF cube: increase wannier_plot_supercell &
-                    &or set wannier_plot_format=xcrysden')
+               if (qyy.gt.(ngs-1)*ngy-1) then
+                  write(stdout,*) 'Error plotting WF cube. Try one of the following:'
+                  write(stdout,*) '   (1) increase wannier_plot_supercell;'
+                  write(stdout,*) '   (2) decrease wannier_plot_radius;'
+                  write(stdout,*) '   (3) set wannier_plot_format=xcrysden'
+                  call io_error('Error plotting WF cube.')
+               endif
                do nxx=1,ilength(1)
-                  qxx=nxx+istart(1)-ngx-1
+                  qxx=nxx+istart(1)-1
                   ixx=int((abs(qxx)-1)/ngx)
                   if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
-                  ixx=int(abs(qxx)/ngx)+1
-                  if (qxx.gt.-1)   qxx=qxx-ixx*ngx
-                  write(stdout,*) 'qxx:',qxx
-                  if (qxx.lt.-ngx .or. qxx.gt.((ngs-1)*ngx-1)) &
-                       call io_error('Error plotting WF cube: increase wannier_plot_supercell &
-                       &or set wannier_plot_format=xcrysden')
+                  if (qxx.gt.(ngs-1)*ngx-1) then
+                     write(stdout,*) 'Error plotting WF cube. Try one of the following:'
+                     write(stdout,*) '   (1) increase wannier_plot_supercell;'
+                     write(stdout,*) '   (2) decrease wannier_plot_radius;'
+                     write(stdout,*) '   (3) set wannier_plot_format=xcrysden'
+                     call io_error('Error plotting WF cube.')                     
+                  endif
                   wann_cube(nxx,nyy,nzz) = real(wann_func(qxx,qyy,qzz,loop_w),dp)
                enddo
             enddo
