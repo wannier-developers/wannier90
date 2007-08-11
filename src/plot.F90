@@ -1214,14 +1214,12 @@ end subroutine plot_interpolate_bands
 !!$    else
     write(file_unit) header ! Date and time
     do loop_rpt=1,nrpts
-       do k=1,3
-          do i=1,num_wann
-             do j=1,num_wann
-                write( file_unit,'(5I5,2F12.6)') irvec(k,loop_rpt), j,i, &
-                     real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
-!!$                write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
-!!$                     real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
-             end do
+       do i=1,num_wann
+          do j=1,num_wann
+             write( file_unit,'(5I5,2F12.6)') irvec(:,loop_rpt), j,i, &
+                  real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
+!!$             write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
+!!$                  real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
           end do
        end do
     end do
