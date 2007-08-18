@@ -25,6 +25,7 @@ module w90_overlap
   public :: overlap_dealloc
   public :: overlap_project
   public :: overlap_project_gamma  ![ysl]
+  public :: overlap_check_m_symmetry
 
 contains
 

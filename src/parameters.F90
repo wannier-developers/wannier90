@@ -192,6 +192,7 @@ module w90_parameters
   !private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
+  logical                            :: ltmp
 
   public :: param_read
   public :: param_write
@@ -317,10 +318,15 @@ contains
     end if
 
 ![ysl-b]
-    gamma_only = .false.
-    call param_get_keyword('gamma_only',found,l_value=gamma_only)
-    if ( gamma_only .and. (num_kpts.ne.1) ) &
-         call io_error('Error: gamma_only is true, but num_kpts > 1')
+    ltmp=.false.
+    call param_get_keyword('gamma_only',found,l_value=ltmp)
+    if (.not.library) then
+       gamma_only=ltmp
+       if ( gamma_only .and. (num_kpts.ne.1) ) &
+            call io_error('Error: gamma_only is true, but num_kpts > 1')
+    else
+       if (found) write(stdout,'(a)') ' Ignoring <gamma_only> in input file'
+    endif
 ![ysl-e]
 
     automatic_mp_grid = .false.

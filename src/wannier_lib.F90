@@ -42,7 +42,7 @@
 
 subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
      real_lattice_loc,recip_lattice_loc,kpt_latt_loc, &
-     num_bands_tot,num_atoms_loc,atom_symbols_loc,atoms_cart_loc, &
+     num_bands_tot,num_atoms_loc,atom_symbols_loc,atoms_cart_loc, gamma_only_loc, &
      nntot_loc,nnlist_loc,nncell_loc,num_bands_loc,num_wann_loc, &
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
      proj_x_loc,proj_zona_loc,exclude_bands_loc)
@@ -64,6 +64,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   integer, intent(in) :: num_atoms_loc
   character(len=*), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
   real(kind=dp), dimension(3,num_atoms_loc), intent(in) :: atoms_cart_loc
+  logical, intent(in) :: gamma_only_loc
   integer, intent(out) :: nntot_loc
   integer, dimension(num_kpts_loc,num_nnmax), intent(out) :: nnlist_loc
   integer,dimension(3,num_kpts_loc,num_nnmax), intent(out) :: nncell_loc
@@ -99,7 +100,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   stdout=io_file_unit()
   open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
 
-  call param_write_header
+  call param_write_header()
 
   write(stdout,'(/a/)') ' Wannier90 is running in LIBRARY MODE'
   write(stdout,'(a/)') ' Setting up k-point neighbours...'
@@ -114,19 +115,20 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   kpt_latt=kpt_latt_loc
   num_atoms=num_atoms_loc
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
+  gamma_only=gamma_only_loc
 
-  call param_read
+  call param_read()
   ! set num_bands and cell_volume as they are written to output in param_write
   num_bands = num_bands_tot - num_exclude_bands
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
                 real_lattice(1,3)*(real_lattice(2,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(2,2))
-  call param_write
+  call param_write()
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call kmesh_get
+  call kmesh_get()
 
 
   ! Now we zero all of the local output data, then copy in the data
@@ -163,8 +165,8 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   end if
 
 
-  call kmesh_dealloc
-  call param_dealloc
+  call kmesh_dealloc()
+  call param_dealloc()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
 
   write(stdout,'(/a/)') ' Finished setting up k-point neighbours.'
@@ -182,7 +184,7 @@ end subroutine wannier_setup
 subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      real_lattice_loc,recip_lattice_loc,kpt_latt_loc,num_bands_loc, &
      num_wann_loc,nntot_loc,num_atoms_loc,atom_symbols_loc, &
-     atoms_cart_loc,M_matrix_loc,A_matrix_loc,eigenvalues_loc, &
+     atoms_cart_loc,gamma_only_loc,M_matrix_loc,A_matrix_loc,eigenvalues_loc, &
      U_matrix_loc,U_matrix_opt_loc,lwindow_loc,wann_centres_loc, &
      wann_spreads_loc,spread_loc)
 
@@ -210,6 +212,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   integer, intent(in) :: num_atoms_loc
   character(len=*), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
   real(kind=dp), dimension(3,num_atoms_loc), intent(in) :: atoms_cart_loc
+  logical, intent(in) :: gamma_only_loc
   complex(kind=dp), dimension(num_bands_loc,num_bands_loc,nntot_loc,num_kpts_loc), intent(in) :: M_matrix_loc
   complex(kind=dp), dimension(num_bands_loc,num_wann_loc,num_kpts_loc), intent(in) :: A_matrix_loc
   real(kind=dp), dimension(num_bands_loc,num_kpts_loc), intent(in) :: eigenvalues_loc
@@ -261,19 +264,19 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   allocate(eigval(num_bands,num_kpts),stat=ierr)
   if (ierr/=0) call io_error('Error allocating eigval in wannier_setup')
   eigval=eigenvalues_loc
-
   num_atoms=num_atoms_loc
+  gamma_only=gamma_only_loc
 
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
 
-  call param_read
+  call param_read()
 
-  call param_write
+  call param_write()
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call kmesh_get
+  call kmesh_get()
 
   allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
@@ -289,27 +292,56 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
   endif
   
-  u_matrix = cmplx_0
-  m_matrix = cmplx_0
+!!$  u_matrix = cmplx_0
+!!$  m_matrix = cmplx_0
+!!$  
+!!$  if (disentanglement) then
+!!$     m_matrix_orig = cmplx_0
+!!$     a_matrix      = cmplx_0
+!!$     u_matrix_opt  = cmplx_0
+!!$  endif
+!!$  
+!!$  if(disentanglement) then
+!!$     m_matrix_orig=m_matrix_loc
+!!$     a_matrix=a_matrix_loc
+!!$     have_disentangled = .false.
+!!$     call dis_main
+!!$     have_disentangled=.true.
+!!$     time2=io_time()
+!!$     write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
+!!$  else
+!!$     m_matrix=m_matrix_loc
+!!$     u_matrix=a_matrix_loc
+!!$     call overlap_project
+!!$  end if
+
   
   if (disentanglement) then
-     m_matrix_orig = cmplx_0
-     a_matrix      = cmplx_0
+     m_matrix_orig = m_matrix_loc
+     a_matrix      = a_matrix_loc
      u_matrix_opt  = cmplx_0
+     u_matrix      = cmplx_0
+     m_matrix      = cmplx_0
+  else
+     m_matrix=m_matrix_loc
+     u_matrix=a_matrix_loc
   endif
-  
+
+  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
+  if (gamma_only) call overlap_check_m_symmetry()
+
   if(disentanglement) then
-     m_matrix_orig=m_matrix_loc
-     a_matrix=a_matrix_loc
      have_disentangled = .false.
-     call dis_main
+     call dis_main()
      have_disentangled=.true.
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
   else
-     m_matrix=m_matrix_loc
-     u_matrix=a_matrix_loc
-     call overlap_project
+     if (gamma_only) then
+        call overlap_project_gamma()
+     else
+        call overlap_project()
+     endif
   end if
 
 !!$  do nkp=1,num_kpts
@@ -338,7 +370,11 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
 
   time2=io_time()
 
-  call wann_main
+  if (gamma_only) then
+     call wann_main_gamma()
+  else
+     call wann_main()
+  endif
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time1-time2,' (sec)'     
@@ -346,11 +382,10 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   call param_write_chkpt('postwann')
 
   if (wannier_plot .or. bands_plot .or. fermi_surface_plot) then
-     call plot_main
+     call plot_main()
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time2-time1,' (sec)'     
   end if
-
 
   ! Now we zero all of the local output data, then copy in the data
   ! from the parameters module
@@ -369,14 +404,13 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      lwindow=.true.
   end if
 
-
   wann_centres_loc=0.0_dp
   wann_spreads_loc=0.0_dp
   spread_loc=0.0_dp
 
-  call overlap_dealloc
-  call kmesh_dealloc
-  call param_dealloc
+  call overlap_dealloc()
+  call kmesh_dealloc()
+  call param_dealloc()
 
   write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time()-time0,' (sec)'
 
