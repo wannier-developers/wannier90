@@ -27,6 +27,7 @@
    Options to make include:
 
    make wannier    (default) build the wannier90 executable
+   make lib        build the wannier90 library
    make test       run test cases
    make doc        build the documentation
    make dist       make a tar-ball of the distribution
