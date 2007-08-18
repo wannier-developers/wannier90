@@ -214,7 +214,7 @@ contains
   ! Read parameters and calculate derived values                     !
   !                                                                  !
   !===================================================================  
-    use w90_constants, only : bohr   
+    use w90_constants, only : bohr, eps6
     use w90_utility, only : utility_recip_lattice,utility_compute_metric
     use w90_io,      only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
@@ -734,7 +734,7 @@ contains
        cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
        cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
        cosa = abs(cosa)
-       if (any(cosa.gt.1.0e-6_dp)) &
+       if (any(cosa.gt.eps6)) &
             call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
     endif
 
@@ -1364,8 +1364,9 @@ contains
     ! Read checkpoint file                  !
     !=======================================!
 
-    use w90_io,      only : io_error,io_file_unit,stdout,seedname
-    use w90_utility, only : utility_strip
+    use w90_constants, only : eps6
+    use w90_io,        only : io_error,io_file_unit,stdout,seedname
+    use w90_utility,   only : utility_strip
 
     implicit none
 
@@ -1386,14 +1387,14 @@ contains
     read(chk_unit) ((tmp_latt(i,j),i=1,3),j=1,3)  ! Real lattice
     do j=1,3
        do i=1,3
-          if (abs(tmp_latt(i,j)-real_lattice(i,j)).gt.1.0e-6_dp) &
+          if (abs(tmp_latt(i,j)-real_lattice(i,j)).gt.eps6) &
                call io_error('param_read_chk: Mismatch in real_lattice')
        enddo
     enddo
     read(chk_unit) ((tmp_latt(i,j),i=1,3),j=1,3)  ! Reciprocal lattice
     do j=1,3
        do i=1,3
-          if (abs(tmp_latt(i,j)-recip_lattice(i,j)).gt.1.0e-6_dp) &
+          if (abs(tmp_latt(i,j)-recip_lattice(i,j)).gt.eps6) &
                call io_error('param_read_chk: Mismatch in recip_lattice')
        enddo
     enddo
@@ -1403,7 +1404,7 @@ contains
     read(chk_unit) ((tmp_kpt_latt(i,nkp),i=1,3),nkp=1,num_kpts)
     do nkp=1,num_kpts
        do i=1,3
-          if (abs(tmp_kpt_latt(i,nkp)-kpt_latt(i,nkp)).gt.1.0e-6_dp) &
+          if (abs(tmp_kpt_latt(i,nkp)-kpt_latt(i,nkp)).gt.eps6) &
                call io_error('param_read_chk: Mismatch in kpt_latt')
        enddo
     enddo
@@ -2367,7 +2368,7 @@ contains
      !                                   !
      !===================================!
 
-     use w90_constants, only : bohr
+     use w90_constants, only : bohr,eps6,eps2
      use w90_utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
           utility_string_to_coord,utility_strip
      use w90_io,        only : io_error
@@ -2855,7 +2856,7 @@ contains
         cosphi=sum(proj_z(:,loop)*proj_x(:,loop))       
 
         ! Check whether z-axis and z-axis are orthogonal
-        if ( abs(cosphi).gt.1.0e-6_dp ) then
+        if ( abs(cosphi).gt.eps6 ) then
 
            ! Special case of circularly symmetric projections (pz, dz2, fz3)
            ! just choose an x-axis that is perpendicular to the given z-axis
@@ -2874,7 +2875,7 @@ contains
 
            ! If projection axes non-orthogonal enough, then
            ! user may have made a mistake and should check
-           if ( abs(cosphi).gt.1.0e-2_dp ) then 
+           if ( abs(cosphi).gt.eps2 ) then 
               write(stdout,*) ' Projection:',loop
               call io_error(' Error in projections: z and x axes are not orthogonal')
            endif
@@ -2889,7 +2890,7 @@ contains
 
            ! Final check
 555        cosphi_new=sum(proj_z(:,loop)*proj_x(:,loop))
-           if ( abs(cosphi_new).gt.1.0e-6_dp ) then
+           if ( abs(cosphi_new).gt.eps6 ) then
               write(stdout,*) ' Projection:',loop
               call io_error(' Error: z and x axes are still not orthogonal after projection')
            endif

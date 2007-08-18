@@ -1323,7 +1323,7 @@ end subroutine plot_interpolate_bands
   ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
   !================================================================================!
 
-    use w90_constants, only : dp
+    use w90_constants, only : dp,eps7,eps8
     use w90_io, only        : stdout,io_error,io_stopwatch
     use w90_parameters, only    : mp_grid,real_metric,iprint,timing_level
 
@@ -1381,12 +1381,12 @@ end subroutine plot_interpolate_bands
 
            enddo
            dist_min=minval(dist)
-           if (abs(dist(63) - dist_min ) .lt.1.e-7_dp) then
+           if (abs(dist(63) - dist_min ) .lt.eps7) then
               nrpts = nrpts + 1  
               if(.not. count_pts) then
                  ndegen(nrpts)=0
                 do i=1,125
-                   if (abs (dist (i) - dist_min) .lt.1.e-7_dp) ndegen(nrpts)=ndegen(nrpts)+1
+                   if (abs (dist (i) - dist_min) .lt.eps7) ndegen(nrpts)=ndegen(nrpts)+1
                 end do
                 irvec(1, nrpts) = n1  
                 irvec(2, nrpts) = n2   
@@ -1416,7 +1416,7 @@ end subroutine plot_interpolate_bands
   do i = 1, nrpts  
      tot = tot + 1.0_dp/real(ndegen(i),dp)  
   enddo
-  if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > 1.e-8_dp) then
+  if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > eps8) then
      call io_error('ERROR in plot_wigner_seitz: error in finding Wigner-Seitz points')
   endif
 

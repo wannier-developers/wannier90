@@ -37,13 +37,9 @@ module w90_kmesh
   public :: kmesh_dealloc
 
 
-
-
   integer, parameter :: nsupcell=5
-  integer :: lmn(3,(2*nsupcell+1)**3)
-  real(kind=dp), parameter :: tol8=1.e-8_dp
-
-  real(kind=dp) :: bvec_inp(3,num_nnmax,max_shells)
+  integer            :: lmn(3,(2*nsupcell+1)**3)
+  real(kind=dp)      :: bvec_inp(3,num_nnmax,max_shells)
 
 
 contains 
@@ -1386,6 +1382,7 @@ nnshell=0
     !                                                                         !
     !=========================================================================!
 
+    use w90_constants, only : eps8   
     use w90_io,   only : io_error
     implicit none
 
@@ -1404,7 +1401,7 @@ nnshell=0
     ! look for any degenerate values
     do loop=1,(2*nsupcell+1)**3
        if (loop==guess(1)) cycle
-       if ( abs(dist(loop)-dist(guess(1))) < tol8 ) then
+       if ( abs(dist(loop)-dist(guess(1))) < eps8 ) then
           counter=counter+1
           list(counter)=loop
        endif

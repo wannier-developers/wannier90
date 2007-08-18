@@ -207,6 +207,8 @@ contains
     !                                                                !
     !================================================================!
 
+      use w90_constants, only: eps8
+
       implicit none
 
       integer          :: nkp,l,m,j
@@ -222,7 +224,7 @@ contains
                   ctmp = ctmp + conjg(clamp(j,m,nkp)) * clamp(j,l,nkp)
                enddo
                if (l.eq.m) then  
-                  if (abs(ctmp - cmplx_1).gt.1.0e-8_dp) then  
+                  if (abs(ctmp - cmplx_1).gt.eps8) then  
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
                      write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
 !                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
@@ -231,7 +233,7 @@ contains
                      call io_error('Error in dis_main: orthonormal error 1') 
                   endif
                else  
-                  if (abs(ctmp).gt.1.0e-8_dp) then  
+                  if (abs(ctmp).gt.eps8) then  
                      write(stdout,'(3i6,2f16.12)') nkp,l,m,ctmp  
                      write(stdout,'(1x,a)') 'The trial orbitals for disentanglement are not orthonormal'
 !                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
@@ -1019,7 +1021,9 @@ contains
   !                                                                  !
   !==================================================================!  
 
-      implicit none
+    use w90_constants, only: eps8 
+
+    implicit none
 
       ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
       ! MODIFIED: clamp (At input it contains the gaussians projected onto 
@@ -1144,7 +1148,7 @@ contains
             ! check hermiticity of cqpq
             do n = 1, ndimwin(nkp)  
                do m = 1, n  
-                  if (abs(cqpq(m,n) - conjg(cqpq(n,m))).gt.1.0e-8_dp) then
+                  if (abs(cqpq(m,n) - conjg(cqpq(n,m))).gt.eps8) then
                      write(stdout,*) ' matrix CQPQ is not hermitian'  
                      write(stdout,*) ' k-point ', nkp  
                      call io_error('dis_proj_froz: error')  
@@ -1203,7 +1207,7 @@ contains
             endif
             do j = 1, ndimwin(nkp)  
                if (iprint>2) write(stdout,'(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)  
-               if ( (w(j).lt.-1.0e-8_dp).or.(w(j).gt.1.0_dp + 1.0e-8_dp) ) then
+               if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
                   call io_error('dis_proj_frozen: error - Eigenvalues not between 0 and 1') 
                endif
             enddo
@@ -1227,7 +1231,7 @@ contains
             if(index(devel_flag,'no-orth-fix')==0) then
                nzero=0;goods=0
                do j=ndimwin(nkp),ndimwin(nkp) - (num_wann - ndimfroz(nkp) ) + 1,-1
-                  if(w(j)<1.0e-8_dp) then
+                  if(w(j)<eps8) then
                      nzero=nzero+1
                   else
                      goods=goods+1
@@ -1271,7 +1275,7 @@ contains
                            do j = 1, ndimwin(nkp)  
                               ctmp = ctmp + conjg(clamp(j,m,nkp)) * cz(j,loop_v)
                            enddo
-                           if (abs(ctmp).gt.1.0e-8_dp) then  
+                           if (abs(ctmp).gt.eps8) then  
                               take=.false.
                            endif
                         enddo

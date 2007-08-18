@@ -26,13 +26,10 @@ module w90_constants
   real(kind=dp), parameter, public :: bohr = 0.5291772108_dp
 
   real(kind=dp), parameter, public    :: eps2  = 1.0e-2_dp
-  real(kind=dp), parameter, public    :: eps3  = 1.0e-3_dp
-  real(kind=dp), parameter, public    :: eps4  = 1.0e-4_dp
   real(kind=dp), parameter, public    :: eps5  = 1.0e-5_dp
   real(kind=dp), parameter, public    :: eps6  = 1.0e-6_dp
   real(kind=dp), parameter, public    :: eps7  = 1.0e-7_dp
   real(kind=dp), parameter, public    :: eps8  = 1.0e-8_dp
-  real(kind=dp), parameter, public    :: eps9  = 1.0e-9_dp
   real(kind=dp), parameter, public    :: eps10 = 1.0e-10_dp
 
 end module w90_constants

@@ -272,6 +272,7 @@ return
   subroutine overlap_check_m_symmetry()
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    use w90_constants,  only : eps6
     use w90_parameters, only : num_bands,num_wann,a_matrix,m_matrix_orig,u_matrix,m_matrix, &
                                nntot,timing_level,disentanglement
     use w90_io,         only : io_error,io_stopwatch
@@ -279,11 +280,9 @@ return
     implicit none
 
     integer       :: nn,i,j,m,n, p(1), mdev, ndev, nndev,ierr, num_tmp
-    real(kind=dp) :: eps,dev,dev_tmp
+    real(kind=dp) :: dev,dev_tmp
    
     if (timing_level>1) call io_stopwatch('overlap: check_m_sym',1)
-
-    eps = 1.0e-6_dp
 
     if (disentanglement) then
        num_tmp=num_bands
@@ -309,7 +308,7 @@ return
        end do
     end do
 
-    if ( dev .gt. eps ) then    
+    if ( dev .gt. eps6 ) then    
        write(stdout,'(1x,"+",76("-"),"+")') 
        write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_check_m_symmetry'  
        write(stdout,'(3x,a,f12.8)') &
@@ -675,7 +674,7 @@ return
 
     ! internal variables
     integer :: i,j,m,n,info,ierr,nn, p(1), mdev, ndev, nndev       
-    real(kind=dp)                 :: eps, rtmp2, dev, dev_tmp
+    real(kind=dp)                 :: rtmp2, dev, dev_tmp
     real(kind=dp),    allocatable :: u_matrix_r(:,:)
 !!$    real(kind=dp),    allocatable :: u_cmp(:)
     real(kind=dp),    allocatable :: svals(:)
@@ -708,7 +707,6 @@ return
     allocate(cvdag(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating cvdag in overlap_project_gamma')
 
-    eps = 1.0e-6_dp
     ! 
 !!$    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
 !!$    ! U_mn = ph_g(m)^(-1)*<m_R|g_n>   (m_R implies a real wave function)

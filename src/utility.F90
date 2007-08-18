@@ -126,7 +126,7 @@ contains
     !                                                                  !
     !===================================================================
 
-    use w90_constants,  only : dp,twopi
+    use w90_constants,  only : dp,twopi,eps5
     use w90_io,         only : io_error
 
     implicit none
@@ -149,7 +149,7 @@ contains
          real_lat(1,3)*recip_lat(1,3)  
 
 
-    if( abs(volume) < 0.1e-4_dp) then
+    if( abs(volume) < eps5 ) then
        call io_error(' Found almost zero Volume in utility_recip_lattice')
     end if
 
@@ -162,12 +162,14 @@ contains
 
 
     !===================================================================
-              subroutine utility_compar(a,b,ifpos,ifneg)
+  subroutine utility_compar(a,b,ifpos,ifneg)
     !==================================================================!
     !                                                                  !
     !                                                                  !
     !                                                                  !
     !===================================================================
+    use w90_constants, only: eps8
+
     implicit none
 
     real(kind=dp), intent(in) :: a(3)
@@ -179,9 +181,9 @@ contains
     rrp=(a(1)-b(1))**2+(a(2)-b(2))**2+(a(3)-b(3))**2
     rrm=(a(1)+b(1))**2+(a(2)+b(2))**2+(a(3)+b(3))**2
     ifpos=0
-    if (abs(rrp).lt.1.0e-8_dp) ifpos=1
+    if (abs(rrp).lt.eps8) ifpos=1
     ifneg=0
-    if (abs(rrm).lt.1.0e-8_dp) ifneg=1
+    if (abs(rrm).lt.eps8) ifneg=1
 
     return
 

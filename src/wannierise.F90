@@ -1141,7 +1141,8 @@ contains
     !                                                                  !
     !                                                                  !
     !===================================================================  
-    use w90_parameters,     only : num_wann,m_matrix,nntot,neigh, &
+    use w90_constants,  only : eps6
+    use w90_parameters, only : num_wann,m_matrix,nntot,neigh, &
          nnh,bk,bka,num_kpts,timing_level
     use w90_io,         only : io_error,io_stopwatch
     use w90_utility,    only : utility_inv3
@@ -1243,7 +1244,7 @@ contains
              !         determine rguide
              call utility_inv3 (smat, sinv, det)  
              !         the inverse of smat is sinv/det
-             if (abs (det) .gt.1.e-06_dp) then  
+             if (abs (det) .gt.eps6) then  
                 !          to check that the first nn bka vectors are not
                 !          linearly dependent - this is a change from original code
                 if (irguide.ne.0) then  
@@ -1807,7 +1808,7 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                      Gamma version                               !
     !===================================================================  
-    use w90_constants,  only : dp,cmplx_1,cmplx_0
+    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps10
     use w90_io,         only : stdout,io_error,io_time, &
          io_date,io_stopwatch,io_file_unit,seedname
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
@@ -2031,10 +2032,10 @@ loop_jd: do jd=id+1,num_wann
                rot_m(1)=rot_m(1)+m_w(id,jd,nn)*(m_w(id,id,nn)-m_w(jd,jd,nn))
                rot_m(2)=rot_m(2)+0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))**2-m_w(id,jd,nn)**2 
             end do
-            if(abs(rot_m(2)).gt.1.0e-10_dp) then
+            if(abs(rot_m(2)).gt.eps10) then
               theta4=rot_m(1)/rot_m(2)
               theta=0.25_dp*atan(theta4)
-            elseif (abs(rot_m(1)).lt.1.0e-10_dp) then
+            elseif (abs(rot_m(1)).lt.eps10) then
               theta=0.0_dp
               rot_m(2)=0.0_dp
             else
