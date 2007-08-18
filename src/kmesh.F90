@@ -673,7 +673,8 @@ nnshell=0
           write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
                proj_site(1,i),proj_site(2,i),proj_site(3,i), &
                proj_l(i),proj_m(i),proj_radial(i)
-          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+!!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+          write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
                proj_z(1,i),proj_z(2,i),proj_z(3,i), &
                proj_x(1,i),proj_x(2,i),proj_x(3,i), &
                proj_zona(i)

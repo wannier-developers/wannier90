@@ -862,17 +862,36 @@ contains
     end if
     write(stdout,*) ' '
     ! Projections
+!!$    if(iprint>1 .and. allocated(proj_site) ) then
+!!$       write(stdout,'(32x,a)') '-----------'
+!!$       write(stdout,'(32x,a)') 'PROJECTIONS'
+!!$       write(stdout,'(32x,a)') '-----------'
+!!$       write(stdout,*) ' '
+!!$       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+!!$       write(stdout,'(1x,a)') '|    Frac. Coord.     l mr  r        z-axis            x-axis          Z/a   |'
+!!$       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+!!$       do nsp=1,num_wann
+!!$          write(stdout,'(1x,a1,3(1x,f5.2),2x,i2,1x,i2,1x,i2,1x,3(1x,f5.2),1x,3(1x,f5.2),&
+!!$               & 3x,f4.1,3x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
+!!$               proj_site(3,nsp),proj_l(nsp), proj_m(nsp),proj_radial(nsp),&
+!!$               proj_z(1,nsp),proj_z(2,nsp),proj_z(3,nsp),proj_x(1,nsp),&
+!!$               proj_x(2,nsp),proj_x(3,nsp),proj_zona(nsp),'|'
+!!$       end do
+!!$       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+!!$       write(stdout,*) ' '
+!!$    end if
+    ! Projections
     if(iprint>1 .and. allocated(proj_site) ) then
        write(stdout,'(32x,a)') '-----------'
        write(stdout,'(32x,a)') 'PROJECTIONS'
        write(stdout,'(32x,a)') '-----------'
        write(stdout,*) ' '
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       write(stdout,'(1x,a)') '|    Frac. Coord.     l mr  r        z-axis            x-axis         diff   |'
+       write(stdout,'(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_wann
-          write(stdout,'(1x,a1,3(1x,f5.2),2x,i2,1x,i2,1x,i2,1x,3(1x,f5.2),1x,3(1x,f5.2),&
-               & 3x,f4.1,3x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
+          write(stdout,'(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),&
+               & 2x,f4.1,1x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
                proj_site(3,nsp),proj_l(nsp), proj_m(nsp),proj_radial(nsp),&
                proj_z(1,nsp),proj_z(2,nsp),proj_z(3,nsp),proj_x(1,nsp),&
                proj_x(2,nsp),proj_x(3,nsp),proj_zona(nsp),'|'
@@ -1029,15 +1048,19 @@ contains
     write(stdout,*)  '            |            http://www.wannier.org                 |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  Authors:                                         |'
-    write(stdout,*)  '            |        Arash A. Mostofi   (MIT)                   |'
-    write(stdout,*)  '            |        Jonathan R. Yates  (LBNL and UC Berkeley)  |'
+    write(stdout,*)  '            |    Arash A. Mostofi   (Imperial College London)   |'
+    write(stdout,*)  '            |    Jonathan R. Yates  (University of Cambridge)   |'
+    write(stdout,*)  '            |    Young-Su Lee       (KIST, S. Korea)            |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  Please cite                                      |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  [ref] A. A. Mostofi, J. R. Yates,                |'
-    write(stdout,*)  '            |        N. Marzari, I. Souza and D. Vanderbilt,    |'
-    write(stdout,*)  '            |        http://www.wannier.org/                    |'
+    write(stdout,*)  '            |  [ref] "Wannier90: A Tool for Obtaining Maximally |'
+    write(stdout,*)  '            |         Localised Wannier Functions"              |'
+    write(stdout,*)  '            |        A. A. Mostofi, J. R. Yates, Y.-S. Lee,     |'
+    write(stdout,*)  '            |        I. Souza, D. Vanderbilt and N. Marzari     |'
+    write(stdout,*)  '            |        Comput. Phys. Commun., submitted (2007);   |'
+    write(stdout,*)  '            |        www.arxiv.org/abs/0708.0650                |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  in any publications arising from the use of      |'
     write(stdout,*)  '            |  this code.                                       |'
@@ -1058,8 +1081,8 @@ contains
     write(stdout,*)  '            |         Phys. Rev. B 65 035109 (2001)             |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            | Copyright (c) 1997-2006 J. Yates, A. Mostofi,     |'
-    write(stdout,*)  '            |        N. Marzari, I. Souza, D. Vanderbilt        |'
+    write(stdout,*)  '            | Copyright (c) 1997-2007 J. Yates, A. Mostofi,     |'
+    write(stdout,*)  '            |   Y.-S Lee, N. Marzari, I. Souza, D. Vanderbilt   |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |          Release: 1.0.2     1st Dec 2006          |'
     write(stdout,*)  '            |                                                   |'
@@ -2380,6 +2403,8 @@ contains
      integer       :: num_proj
      logical       :: lconvert,lrandom
      logical       :: lpartrandom
+     !
+     real(kind=dp) :: xnorm,znorm,cosphi,sinphi,xnorm_new,cosphi_new
 
      keyword="projections"
 
@@ -2812,12 +2837,65 @@ contains
 
      in_data(line_s:line_e)(1:maxlen) = ' '
 
-     ! Check
+!!$     ! Check
+!!$     do loop=1,num_wann
+!!$        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
+!!$           write(stdout,*) ' Projection:',loop
+!!$           call io_error(' Error in projections: z and x axes are not orthogonal')
+!!$        endif
+!!$     enddo
+
+     ! Normalise z-axis and x-axis and check/fix orthogonality
      do loop=1,num_wann
-        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
-           write(stdout,*) ' Projection:',loop
-           call io_error(' Error in projections: z and x axes are not orthogonal')
+
+        znorm=sqrt(sum(proj_z(:,loop)*proj_z(:,loop)))
+        xnorm=sqrt(sum(proj_x(:,loop)*proj_x(:,loop)))
+        proj_z(:,loop)=proj_z(:,loop)/znorm             ! normalise z
+        proj_x(:,loop)=proj_x(:,loop)/xnorm             ! normalise x
+        cosphi=sum(proj_z(:,loop)*proj_x(:,loop))       
+
+        ! Check whether z-axis and z-axis are orthogonal
+        if ( abs(cosphi).gt.1.0e-6_dp ) then
+
+           ! Special case of circularly symmetric projections (pz, dz2, fz3)
+           ! just choose an x-axis that is perpendicular to the given z-axis
+           if ( (proj_l(loop).ge.0) .and. (proj_m(loop).eq.1) ) then
+              proj_x_tmp(:) = proj_x(:,loop)            ! copy of original x-axis
+              call random_seed()
+              call random_number(proj_z_tmp(:))         ! random vector
+              ! calculate new x-axis as the cross (vector) product of random vector with z-axis
+              proj_x(1,loop)=proj_z_tmp(2)*proj_z(3,loop) - proj_z_tmp(3)*proj_z(2,loop)
+              proj_x(2,loop)=proj_z_tmp(3)*proj_z(1,loop) - proj_z_tmp(1)*proj_z(3,loop)
+              proj_x(3,loop)=proj_z_tmp(1)*proj_z(2,loop) - proj_z_tmp(2)*proj_z(1,loop)
+              xnorm_new=sqrt(sum(proj_x(:,loop)*proj_x(:,loop)))
+              proj_x(:,loop)=proj_x(:,loop)/xnorm_new   ! normalise
+              goto 555
+           endif
+
+           ! If projection axes non-orthogonal enough, then
+           ! user may have made a mistake and should check
+           if ( abs(cosphi).gt.1.0e-2_dp ) then 
+              write(stdout,*) ' Projection:',loop
+              call io_error(' Error in projections: z and x axes are not orthogonal')
+           endif
+
+           ! If projection axes are "reasonably orthogonal", project x-axis
+           ! onto plane perpendicular to z-axis to make them more so
+           sinphi=sqrt(1-cosphi*cosphi)
+           proj_x_tmp(:) = proj_x(:,loop)               ! copy of original x-axis
+           ! calculate new x-axis:
+           ! x = z \cross (x_tmp \cross z) / sinphi = ( x_tmp - z(z.x_tmp) ) / sinphi
+           proj_x(:,loop) = ( proj_x_tmp(:) - cosphi*proj_z(:,loop) ) / sinphi
+
+           ! Final check
+555        cosphi_new=sum(proj_z(:,loop)*proj_x(:,loop))
+           if ( abs(cosphi_new).gt.1.0e-6_dp ) then
+              write(stdout,*) ' Projection:',loop
+              call io_error(' Error: z and x axes are still not orthogonal after projection')
+           endif
+
         endif
+
      enddo
 
      return
