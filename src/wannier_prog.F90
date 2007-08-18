@@ -6,13 +6,17 @@
 !                 Wannier Functions Code                     !
 !                                                            !
 !        Authors:                                            !
-!              Arash A. Mostofi   (MIT)                      !
-!              Jonathan R. Yates  (LBNL and UC Berkeley)     !
+!              Arash A. Mostofi   (Imperial College London)  !
+!              Jonathan R. Yates  (University of Cambridge)  !
+!              Young-Su Lee       (KIST, S.Korea)            ! 
 !                                                            !
 !  Please cite                                               !
 !                                                            !
-!  [ref] A. A. Mostofi, J. R. Yates, N. Marzari, I. Souza    !
-!        and D. Vanderbilt, http://www.wannier.org/          !
+!  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza,    !
+!        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
+!        for Obtaining Maximally Localised Wannier           !
+!        Functions", Computer Physics Communications,        !
+!        submitted (2007); http//www.arxiv.org/abs/0708.0650 !
 !                                                            !
 !  in any publications arising from the use of this code.    !
 !                                                            !
@@ -26,8 +30,8 @@
 !        Phys. Rev. B 65 035109 (2001)                       !
 !                                                            !
 !                                                            !
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,     !
-!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
+!  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
 ! General Public License. See the file `LICENSE' in          !

@@ -1,7 +1,37 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
 !                                                            !
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,     !
-!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+!                       WANNIER90                            !
+!                                                            !
+!          The Maximally-Localised Generalised               !
+!                 Wannier Functions Code                     !
+!                                                            !
+!        Authors:                                            !
+!              Arash A. Mostofi   (Imperial College London)  !
+!              Jonathan R. Yates  (University of Cambridge)  !
+!              Young-Su Lee       (KIST, S.Korea)            ! 
+!                                                            !
+!  Please cite                                               !
+!                                                            !
+!  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza,    !
+!        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
+!        for Obtaining Maximally Localised Wannier           !
+!        Functions", Computer Physics Communications,        !
+!        submitted (2007); http//www.arxiv.org/abs/0708.0650 !
+!                                                            !
+!  in any publications arising from the use of this code.    !
+!                                                            !
+!  Wannier90 is based on routines written by N. Marzari,     !
+!  I. Souza and D. Vanderbilt. For the method please cite    !
+!                                                            !
+!  [ref] N. Marzari and D. Vanderbilt,                       !
+!        Phys. Rev. B 56 12847 (1997)                        !
+!                                                            !
+!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
+!        Phys. Rev. B 65 035109 (2001)                       !
+!                                                            !
+!                                                            !
+! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
+!  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
 ! General Public License. See the file `LICENSE' in          !
