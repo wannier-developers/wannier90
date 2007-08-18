@@ -319,6 +319,8 @@ contains
 ![ysl-b]
     gamma_only = .false.
     call param_get_keyword('gamma_only',found,l_value=gamma_only)
+    if ( gamma_only .and. (num_kpts.ne.1) ) &
+         call io_error('Error: gamma_only is true, but num_kpts > 1')
 ![ysl-e]
 
     automatic_mp_grid = .false.
