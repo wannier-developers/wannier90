@@ -510,7 +510,7 @@ contains
     subroutine internal_test_convergence()
       !===============================================!
       !                                               !
-      ! Determine whether minimisation of gauge-      !
+      ! Determine whether minimisation of non-gauge   !
       ! invariant spread is converged                 !
       !                                               !
       !===============================================!
@@ -1816,7 +1816,7 @@ contains
          param_write_chkpt,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
-         write_proj,have_disentangled, ph_g, &
+         write_proj,have_disentangled, &
          translate_home_cell,conv_tol,conv_window, &
          wannier_centres,write_xyz, use_bloch_phases
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
@@ -1862,11 +1862,11 @@ contains
     allocate(history(conv_window),stat=ierr)
     if (ierr/=0) call io_error('Error allocating history in wann_main_gamma')
 
-    if (.not.allocated(ph_g)) then
-       allocate(  ph_g(num_wann),stat=ierr )
-       if (ierr/=0) call io_error('Error in allocating ph_g in wann_main_gamma')
-       ph_g = cmplx_1
-    endif
+!!$    if (.not.allocated(ph_g)) then
+!!$       allocate(  ph_g(num_wann),stat=ierr )
+!!$       if (ierr/=0) call io_error('Error in allocating ph_g in wann_main_gamma')
+!!$       ph_g = cmplx_1
+!!$    endif
 
     ! module data
     allocate(  cr (num_wann, num_wann, nntot, num_kpts),stat=ierr )
@@ -1912,15 +1912,16 @@ contains
     cz=cmplx_0
     
     ! store original U before rotating
-    ! phase factor ph_g is applied to u_matrix
-    ! NB: ph_g is applied to u_matrix_opt if (have_disentangled)
-    if (have_disentangled) then
-       u0=u_matrix 
-    else
-       do iw=1,num_wann
-          u0(iw,:,:)= conjg(ph_g(iw))*u_matrix(iw,:,:)
-       end do
-    endif
+!!$    ! phase factor ph_g is applied to u_matrix
+!!$    ! NB: ph_g is applied to u_matrix_opt if (have_disentangled)
+!!$    if (have_disentangled) then
+!!$       u0=u_matrix 
+!!$    else
+!!$       do iw=1,num_wann
+!!$          u0(iw,:,:)= conjg(ph_g(iw))*u_matrix(iw,:,:)
+!!$       end do
+!!$    endif
+    u0=u_matrix
 
     lguide = .false.
     if (guiding_centres .and. nntot.gt.3 ) then
@@ -2238,7 +2239,7 @@ loop_jd: do jd=id+1,num_wann
     subroutine internal_test_convergence_gamma()
       !===============================================!
       !                                               !
-      ! Determine whether minimisation of gauge-      !
+      ! Determine whether minimisation of non-gauge-  !
       ! invariant spread is converged                 !
       !                                               !
       !===============================================!

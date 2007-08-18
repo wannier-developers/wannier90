@@ -161,11 +161,11 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: m_matrix_orig(:,:,:,:)
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
 
-![ysl-b]
-  ! ph_g = phase factor of Bloch functions at Gamma
-  !  assuming that Bloch functions at Gamma are real except this phase factor
-  complex(kind=dp), allocatable, save, public :: ph_g(:)
-![ysl-e]
+!!$![ysl-b]
+!!$  ! ph_g = phase factor of Bloch functions at Gamma
+!!$  !  assuming that Bloch functions at Gamma are real except this phase factor
+!!$  complex(kind=dp), allocatable, save, public :: ph_g(:)
+!!$![ysl-e]
 
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the
   ! original bloch states

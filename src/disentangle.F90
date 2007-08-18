@@ -157,22 +157,29 @@ contains
     if (ierr/=0) call io_error('Error in deallocating cwb in dis_main')
 
     u_matrix_opt=cmplx_0
-![ysl-b]
-!   Apply phase factor ph_g if gamma_only
-    if (.not. gamma_only) then
-       do nkp = 1, num_kpts
-          do j = 1, num_wann
-             u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp)
-          enddo
+
+    do nkp = 1, num_kpts
+       do j = 1, num_wann
+          u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp)
        enddo
-    else
-       do nkp = 1, num_kpts
-          do j = 1, ndimwin(nkp)
-             u_matrix_opt(j,1:num_wann,nkp)  = conjg(ph_g(j))*clamp(j,1:num_wann,nkp)
-          enddo
-       enddo
-    endif
-![ysl-e]
+    enddo
+    
+!!$![ysl-b]
+!!$!   Apply phase factor ph_g if gamma_only
+!!$    if (.not. gamma_only) then
+!!$       do nkp = 1, num_kpts
+!!$          do j = 1, num_wann
+!!$             u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp)
+!!$          enddo
+!!$       enddo
+!!$    else
+!!$       do nkp = 1, num_kpts
+!!$          do j = 1, ndimwin(nkp)
+!!$             u_matrix_opt(j,1:num_wann,nkp)  = conjg(ph_g(j))*clamp(j,1:num_wann,nkp)
+!!$          enddo
+!!$       enddo
+!!$    endif
+!!$![ysl-e]
 
     ! Deallocate module arrays
     call internal_dealloc()
@@ -721,25 +728,24 @@ contains
 
     enddo
     ! [k-point loop (nkp)]
-![ysl-b]
-    if (gamma_only) then
-       if (.not. allocated(ph_g)) then
-          allocate(  ph_g(num_bands),stat=ierr )
-          if (ierr/=0) call io_error('Error in allocating ph_g in dis_windows')
-          ph_g = cmplx_1
-       endif
-       ! Apply same operation to ph_g
-       do i = 1, ndimwin(1)
-          j = nfirstwin(1) + i - 1
-          ph_g(i) = ph_g(j)
-       enddo
-                                                                                                                                             
-       do i = ndimwin(1) + 1, num_bands
-          ph_g(i) = cmplx_0
-       enddo
 
-    endif
-![ysl-e]
+!!$![ysl-b]
+!!$    if (gamma_only) then
+!!$       if (.not. allocated(ph_g)) then
+!!$          allocate(  ph_g(num_bands),stat=ierr )
+!!$          if (ierr/=0) call io_error('Error in allocating ph_g in dis_windows')
+!!$          ph_g = cmplx_1
+!!$       endif
+!!$       ! Apply same operation to ph_g
+!!$       do i = 1, ndimwin(1)
+!!$          j = nfirstwin(1) + i - 1
+!!$          ph_g(i) = ph_g(j)
+!!$       enddo
+!!$       do i = ndimwin(1) + 1, num_bands
+!!$          ph_g(i) = cmplx_0
+!!$       enddo
+!!$    endif
+!!$![ysl-e]
 
     if (iprint>1) then
        write(stdout,'(1x,a)') &
