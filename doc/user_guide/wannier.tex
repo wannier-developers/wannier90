@@ -27,8 +27,9 @@ the overlaps and projection have been computed, calling
 
 {\noindent \bf \verb#wannier_setup(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
 \verb#              kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,#\\
-\verb#              nntot,nnlist,nncell,num_bands,num_wann,proj_site,proj_l,#\\
-\verb#              proj_m,proj_radial,proj_z,proj_x,proj_zona,exclude_bands)   #}
+\verb#              gamma_only,nntot,nnlist,nncell,num_bands,num_wann,proj_site,#\\
+\verb#              proj_l,proj_m,proj_radial,proj_z,proj_x,proj_zona,#\\
+\verb#              exclude_bands)#}
 
 \begin{itemize}
 \item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
@@ -55,6 +56,11 @@ first-principles calculation (note: including semi-core states).
 \item \verb#real(kind=dp), dimension(3,num_atoms),#
       \verb#intent(in) :: atoms_cart#\\ The positions of the atoms in
       Cartesian co-ordinates in Angstrom.
+\item \verb#logical, intent(in) :: gamma_only#\\ Set to \texttt{.true.} if the
+  underlying electronic structure calculation has been performed with
+  only $\Gamma$-point sampling and, hence, if the Bloch eigenstates
+  that are used to construct $A_{mn}^{(\mathbf{k})}$ and
+  $M_{mn}^{\mathbf{(k,b)}}$ are real.
 \item \verb#integer, intent(out) :: nntot#\\ The
   total number of nearest neighbours for each k-point. 
 \item \verb#integer, dimension(num_kpts,num_nnmax),#
@@ -135,8 +141,9 @@ may be specified in the \wannier\ input file.
 
 {\noindent \bf \verb#wannier_run(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
 \verb#            kpt_latt,num_bands,num_wann,nntot,num_atoms,atom_symbols,#\\
-\verb#            atoms_cart,M_matrix_orig,A_matrix,eigenvalues,U_matrix,#\\
-\verb#            U_matrix_opt,lwindow,wann_centres,wann_spreads,spread#)}
+\verb#            atoms_cart,gamma_only,M_matrix_orig,A_matrix,eigenvalues,#\\
+\verb#            U_matrix,U_matrix_opt,lwindow,wann_centres,wann_spreads,#\\
+\verb#            spread#)}
 
 \begin{itemize}
 \item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
@@ -168,11 +175,16 @@ may be specified in the \wannier\ input file.
 \item \verb#real(kind=dp), dimension(3,num_atoms),#
       \verb#intent(in) :: atoms_cart#\\ The positions of the atoms in
       Cartesian co-ordinates in Angstrom.
+\item \verb#logical, intent(in) :: gamma_only#\\ Set to \texttt{.true.} if the
+  underlying electronic structure calculation has been performed with
+  only $\Gamma$-point sampling and, hence, if the Bloch eigenstates
+  that are used to construct $A_{mn}^{(\mathbf{k})}$ and
+  $M_{mn}^{\mathbf{(k,b)}}$ are real.
 \item \verb#complex(kind=dp),#
       \verb# dimension(num_bands,num_bands,nntot,num_kpts),#\\
       \verb#                  intent(in) :: M_matrix#\\ 
       The matrices of overlaps between neighbouring periodic parts of
-      the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{k,b})}$
+      the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{(k,b)})}$
       (Ref.~\cite{MV}, Eq.~(25)).
 \item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
       \verb#                  intent(in) :: A_matrix# \\The matrices
