@@ -158,12 +158,14 @@ contains
 
     u_matrix_opt=cmplx_0
 
+!!$[aam]
     do nkp = 1, num_kpts
        do j = 1, num_wann
           u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp)
        enddo
     enddo
-    
+!!$[aam]
+
 !!$![ysl-b]
 !!$!   Apply phase factor ph_g if gamma_only
 !!$    if (.not. gamma_only) then
@@ -731,7 +733,7 @@ contains
     enddo
     ! [k-point loop (nkp)]
 
-!!$![ysl-b]
+![ysl-b]
 !!$    if (gamma_only) then
 !!$       if (.not. allocated(ph_g)) then
 !!$          allocate(  ph_g(num_bands),stat=ierr )
@@ -1207,7 +1209,8 @@ contains
             endif
             do j = 1, ndimwin(nkp)  
                if (iprint>2) write(stdout,'(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)  
-               if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
+!!$[aam]        if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
+               if ( (w(j).lt.-eps8).or.(w(j).gt.1.0_dp + eps8) ) then
                   call io_error('dis_proj_frozen: error - Eigenvalues not between 0 and 1') 
                endif
             enddo
