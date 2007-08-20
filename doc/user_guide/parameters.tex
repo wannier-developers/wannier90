@@ -100,14 +100,16 @@ Keyword & Type & Description \\
 {\sc timing\_level } & I & Determines amount of timing information
 written to output \\
 {\sc translate\_home\_cell } & L & To translate final Wannier centres
-to home unit cell \\
+to home unit cell when writing xyz file\\
 {\sc write\_xyz }  & L & To write final centres in xyz file format \\
 \hline
 \end{tabular}
 \caption[win file keywords.]
 {{\tt seedname.win} file keywords defining the system.  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+physical value, L for a logical value and S for a text string. {\sc
+  translate\_home\_cell } only relevant if {\sc write\_xyz} is
+\texttt{.true.}}
 \label{parameter_keywords2}
 \end{center}
 \end{table}
@@ -223,6 +225,8 @@ WF, molecule or crystal \\
 section of the k-point path \\
 {\sc bands\_plot\_format }   & S & File format in which to plot the
 interpolated bands \\
+{\sc bands\_plot\_mode }   & S & Slater-Koster type interpolation or
+Hamiltonian cut-off \\
 {\sc fermi\_surface\_plot }   & L & Plot the Fermi surface \\
 {\sc fermi\_surface\_num\_points }   & I & Number of points in the Fermi
 surface plot\\
@@ -230,7 +234,11 @@ surface plot\\
 {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
 surface plot \\
 {\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
-%{\sc hr\_min} & R & Cut-off for Hamiltonian matrix elements \\
+{\sc hr\_cutoff} & R &  \\
+{\sc dist\_cutoff\_mode} & S & \\
+{\sc dist\_cutoff} & R & \\
+{\sc one\_dim\_axis} & S &  \\
+{\sc translation\_centre\_frac } & L & \\ 
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -249,6 +257,47 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. * Only
 applies when {\sc wannier\_plot\_format} is {\tt cube}.}
 \label{parameter_keywords6}
+\end{center}
+\end{table}
+
+
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{Transport Parameters} \\
+\hline
+{\sc transport}   & L &  \\
+{\sc transport\_mode }  & S & \\ 
+{\sc tran\_win\_min } & R & \\ 
+{\sc tran\_win\_max } & R & \\ 
+{\sc tran\_energy\_step } & R & \\ 
+{\sc tran\_num\_bb } & I & \\ 
+{\sc tran\_num\_ll } & I & \\ 
+{\sc tran\_num\_rr } & I & \\ 
+{\sc tran\_num\_cc } & I & \\ 
+{\sc tran\_num\_lc } & I & \\ 
+{\sc tran\_num\_cr } & I & \\ 
+{\sc tran\_num\_bandc } & I & \\ 
+{\sc tran\_write\_ht } & L & \\ 
+{\sc tran\_read\_ht } & L & \\ 
+{\sc tran\_use\_same\_lead } & L & \\ 
+{\sc hr\_cutoff} & R &  \\
+{\sc dist\_cutoff\_mode} & S & \\
+{\sc dist\_cutoff} & R & \\
+{\sc one\_dim\_axis} & S &  \\
+{\sc translation\_centre\_frac } & L & \\ 
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling transport.]
+{{\tt seedname.win} file keywords controlling transport. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords7}
 \end{center}
 \end{table}
 
@@ -814,6 +863,8 @@ Th default value is \verb#false#.
 \item[{\bf --}]  Plot the interpolated band structure 		     
 \item[{\bf --}]  Plot the Fermi surface 
 \item[{\bf --}]  Output the Hamiltonian in the WF basis			     
+\item[{\bf --}]  Transport calculation (quantum conductance and
+  density of states)			     
 %\item[{\bf --}]  Plot the density of states.
 \end{itemize}
 
@@ -944,6 +995,14 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#xmgrace#
 \end{itemize}
 
+\subsection[bands\_plot\_mode]{\tt character(len=20) :: bands\_plot\_mode}
+
+\begin{itemize}
+\item[{\bf --}] \verb#s-k# (default)
+\item[{\bf --}] \verb#cut#
+\end{itemize}
+
+
 \subsection[fermi\_surface\_plot]{\tt logical :: fermi\_surface\_plot}
 
 If $\verb#fermi_surface_plot#=\verb#TRUE#$, then the code will calculate,
@@ -987,18 +1046,109 @@ basis of the WF will be written to a file {\tt seedname\_hr.dat}.
 
 The default value is {\tt FALSE}
 
-%%\subsection[hr\_min]{\tt real(kind=dp) :: hr\_min}
-%%
-%%The absolute value of the largest matrix element of the
-%%Hamiltonian in the WF basis at lattice vector $\mathbf{R}$ is given by
-%%$h_{\mathrm{max}}(\mathbf{R}) = \left|\mathrm{max}\:\:
-%%H_{mn}(\mathbf{R})\right|$. If $h_{\mathrm{max}}(\mathbf{R})>\:${\tt
-%%  hr\_min}, then the matrix elements 
-%%$H_{mn}(\mathbf{R})$ are retained in the Hamiltonian that is written
-%%to {\tt seedname.h.dat}. Otherwise they are deemed to be insignificant
-%%and are discarded. Only applies if {\tt hr\_plot} is {\tt TRUE}.  
-%%
-%%The default is 0.0
+\subsection[transport]{\tt logical :: transport}
+
+If $\verb#transport#=\verb#TRUE#$, then the code will calculate
+quantum conductance and density of states.
+
+The default value of this parameter is \verb#FALSE#.
+
+\subsection[transport\_mode]{\tt character :: transport\_mode}
+
+\begin{itemize}
+\item[{\bf --}] \verb#bulk#  (default)
+\item[{\bf --}] \verb#lcr# 
+\end{itemize}
+
+\subsection[tran\_win\_min]{\tt real(kind=dp) :: tran\_win\_min}
+
+The default value is -3.0
+
+\subsection[tran\_win\_max]{\tt real(kind=dp) :: tran\_win\_max}
+
+The default value is 3.0
+
+\subsection[tran\_energy\_step]{\tt real(kind=dp) :: tran\_energy\_step}
+
+The default value is 0.01
+
+\subsection[tran\_num\_bb]{\tt integer :: tran\_num\_bb}
+
+The default value is 0
+
+\subsection[tran\_num\_ll]{\tt integer :: tran\_num\_ll}
+
+The default value is 0
+
+\subsection[tran\_num\_rr]{\tt integer :: tran\_num\_rr}
+
+The default value is 0
+
+\subsection[tran\_num\_cc]{\tt integer :: tran\_num\_cc}
+
+The default value is 0
+
+\subsection[tran\_num\_lc]{\tt integer :: tran\_num\_lc}
+
+The default value is 0
+
+\subsection[tran\_num\_cr]{\tt integer :: tran\_num\_cr}
+
+The default value is 0
+
+\subsection[tran\_num\_bandc]{\tt integer :: tran\_num\_bandc}
+
+The default value is 0
+
+\subsection[tran\_write\_ht]{\tt logical :: tran\_write\_ht}
+
+The default value is {\tt FALSE}
+
+\subsection[tran\_read\_ht]{\tt logical :: tran\_read\_ht}
+
+The default value is {\tt FALSE}
+
+\subsection[tran\_use\_same\_lead]{\tt logical :: tran\_use\_same\_lead}
+
+The default value is {\tt TRUE}
+
+\subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
+
+The default value is (0.0,0.0,0.0)
+
+\subsection[hr\_cutoff]{\tt real(kind=dp) :: hr\_cutoff}
+
+The absolute value of the largest matrix element of the
+Hamiltonian in the WF basis at lattice vector $\mathbf{R}$ is given by
+$h_{\mathrm{max}}(\mathbf{R}) = \left|\mathrm{max}\:\:
+H_{mn}(\mathbf{R})\right|$. If $h_{\mathrm{max}}(\mathbf{R})>\:${\tt
+  hr\_cutoff}, then the matrix elements 
+$H_{mn}(\mathbf{R})$ are retained in the Hamiltonian that is written
+to {\tt seedname.h.dat}. Otherwise they are deemed to be insignificant
+and are discarded.
+
+The default value is 0.0
+
+\subsection[dist\_cutoff\_mode]{\tt character :: dist\_cutoff\_mode}
+
+\begin{itemize}
+\item[{\bf --}] \verb#three_dim#  (default)
+\item[{\bf --}] \verb#one_dim# 
+\end{itemize}
+
+\subsection[dist\_cutoff]{\tt real(kind=dp) :: dist\_cutoff}
+
+The default value is 0.0
+
+\subsection[one\_dim\_axis]{\tt character :: one\_dim\_axis}
+
+\begin{itemize}
+\item[{\bf --}] \verb#x#
+\item[{\bf --}] \verb#y#
+\item[{\bf --}] \verb#z# 
+\end{itemize}
+
+No default
 
 
 %\subsection[slice\_plot]{\tt logical :: slice\_plot}
@@ -1006,9 +1156,6 @@ The default value is {\tt FALSE}
 %
 %If $\verb#slice_plot#=\verb#TRUE#$ plot the wannier orbitals along
 % slices in the super-unit-cell defined by \verb#slice_coord#.
-
-
-
 
 %The default value of this parameter is FALSE
 %
