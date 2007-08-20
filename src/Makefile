@@ -3,8 +3,8 @@
 
 include ../make.sys
 
-OBJS  =  parameters.o io.o utility.o overlap.o kmesh.o  \
-         disentangle.o wannierise.o plot.o
+OBJS  =  parameters.o io.o utility.o hamiltonian.o overlap.o kmesh.o  \
+         disentangle.o wannierise.o plot.o transport.o
 
 OBJS2  =  wannier_lib.o
 
@@ -35,24 +35,30 @@ utility.o: utility.F90  constants.o io.o
 parameters.o: parameters.F90 constants.o io.o utility.o
 	 $(F90) $(FCOPTS) -c parameters.F90
 
-overlap.o: overlap.F90 parameters.o constants.o io.o
+hamiltonian.o: hamiltonian.F90 constants.o io.o utility.o parameters.o
+	 $(F90) $(FCOPTS) -c hamiltonian.F90
+
+overlap.o: overlap.F90 constants.o io.o parameters.o
 	 $(F90) $(FCOPTS) -c overlap.F90
 
-kmesh.o: kmesh.F90 utility.o parameters.o constants.o io.o
+kmesh.o: kmesh.F90 constants.o io.o utility.o parameters.o 
 	 $(F90) $(FCOPTS) -c kmesh.F90
 
-disentangle.o: disentangle.F90 parameters.o constants.o io.o
+disentangle.o: disentangle.F90 constants.o io.o parameters.o
 	 $(F90) $(FCOPTS) -c disentangle.F90
 
-wannierise.o: wannierise.F90 parameters.o io.o utility.o constants.o io.o
+wannierise.o: wannierise.F90 constants.o io.o utility.o parameters.o
 	 $(F90) $(FCOPTS) -c wannierise.F90
 
-plot.o: plot.F90 constants.o parameters.o io.o
+plot.o: plot.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(F90) $(FCOPTS) -c plot.F90
 
-wannier_lib.o: ./plot.o ./wannierise.o ./overlap.o \
-	./disentangle.o ./kmesh.o ./io.o ./parameters.o \
-	./constants.o wannier_lib.F90
+transport.o: transport.F90 constants.o io.o parameters.o hamiltonian.o
+	 $(F90) $(FCOPTS) -c transport.F90
+
+wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
+	./hamiltonian.o ./kmesh.o ./overlap.o ./disentangle.o \
+	./wannierise.o ./plot.o ./transport.o wannier_lib.F90
 	 $(F90) $(FCOPTS) -c wannier_lib.F90
 
 

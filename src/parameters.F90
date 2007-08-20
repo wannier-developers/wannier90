@@ -54,6 +54,12 @@ module w90_parameters
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
+  character(len=20), public, save :: bands_plot_mode
+  logical,           public, save :: hr_plot
+  real(kind=dp),     public, save :: hr_cutoff
+  real(kind=dp),     public, save :: dist_cutoff
+  character(len=20), public, save :: dist_cutoff_mode
+  character(len=20), public, save :: one_dim_axis
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -66,8 +72,22 @@ module w90_parameters
   real(kind=dp),     public, save :: dos_energy_step
   real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
-  logical,           public, save :: hr_plot
-!!$  real(kind=dp),     public, save :: hr_min
+  logical,           public, save :: transport
+  character(len=20), public, save :: transport_mode
+  real(kind=dp),     public, save :: tran_win_min
+  real(kind=dp),     public, save :: tran_win_max
+  real(kind=dp),     public, save :: tran_energy_step
+  integer,           public, save :: tran_num_bb
+  integer,           public, save :: tran_num_ll
+  integer,           public, save :: tran_num_rr
+  integer,           public, save :: tran_num_cc
+  integer,           public, save :: tran_num_lc
+  integer,           public, save :: tran_num_cr
+  integer,           public, save :: tran_num_bandc
+  logical,           public, save :: tran_write_ht
+  logical,           public, save :: tran_read_ht 
+  logical,           public, save :: tran_use_same_lead
+  real(kind=dp),     public, save :: translation_centre_frac(3)
   integer,           public, save :: num_shells
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
@@ -91,7 +111,6 @@ module w90_parameters
   real(kind=dp),     public, save :: conv_noise_amp
   integer,           public, save :: conv_noise_num
   real(kind=dp),     public, save :: wannier_plot_radius
-
   integer,           public, save :: search_shells   !for kmesh
 
   ! Restarts
@@ -142,10 +161,9 @@ module w90_parameters
   integer,       public, save, allocatable :: neigh(:,:)    
   integer,       public, save, allocatable :: nncell(:,:,:) ! gives BZ of each neighbour of each k-point
   real(kind=dp), public, save              :: wbtot
-  real(kind=dp), public, save, allocatable :: wb(:)       ! weights associated with neighbours of each k-point
+  real(kind=dp), public, save, allocatable :: wb(:)         ! weights associated with neighbours of each k-point
   real(kind=dp), public, save, allocatable :: bk(:,:,:)     ! the b-vectors that go from each k-point to its neighbours
   real(kind=dp), public, save, allocatable :: bka(:,:)      ! the b-directions from 1st k-point to its neighbours
-
 
   ! disentangle parameters
   integer, public, save, allocatable :: ndimwin(:)
@@ -188,7 +206,31 @@ module w90_parameters
 
   ! Wannier centres
   real(kind=dp), public, save, allocatable :: wannier_centres(:,:)
+  real(kind=dp), public, save, allocatable :: wannier_centres_translated(:,:)
 
+  ! Hamiltonian matrix in WF representation
+  complex(kind=dp), public, save, allocatable :: ham_r(:,:,:)
+  complex(kind=dp), public, save, allocatable :: ham_k(:,:,:)
+  logical,          public, save              :: have_ham_r
+  logical,          public, save              :: have_ham_k
+  logical,          public, save              :: hr_written
+
+  integer,          public, save              :: one_dim_dir
+
+  ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
+  !                   irvec(1:3,irpt) in the basis of the lattice vectors
+  integer,          public, save, allocatable :: irvec(:,:)
+
+  ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
+  integer,          public, save, allocatable :: ndegen(:)
+
+  ! nrpts             number of Wigner-Seitz grid points
+  integer,          public, save              :: nrpts
+
+  logical,          public, save              :: have_translated
+  logical,          public, save              :: use_translation
+  logical,          public, save              :: automatic_translation
+  
   !private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
@@ -215,7 +257,7 @@ contains
   ! Read parameters and calculate derived values                     !
   !                                                                  !
   !===================================================================  
-    use w90_constants, only : bohr, eps6
+    use w90_constants, only : bohr, eps6, cmplx_0
     use w90_utility, only : utility_recip_lattice,utility_compute_metric
     use w90_io,      only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
@@ -225,7 +267,7 @@ contains
     integer :: nkp,i,j,n,k,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
     logical :: found,found2,eig_found,lunits,chk_found
     character(len=6) :: spin_str
-    real(kind=dp) :: cosa(3)
+    real(kind=dp) :: cosa(3),rv_temp(3)
 
     call param_in_file
 
@@ -431,14 +473,13 @@ contains
 
     wannier_plot_supercell    = 2
     call param_get_keyword('wannier_plot_supercell',found,i_value=wannier_plot_supercell)
-    if (wannier_plot_supercell<0) call io_error('Error: wannier_plot_supercell must be positive')       
 
     wannier_plot_format       = 'xcrysden'
     call param_get_keyword('wannier_plot_format',found,c_value=wannier_plot_format)
 
     wannier_plot_mode       = 'crystal'
     call param_get_keyword('wannier_plot_mode',found,c_value=wannier_plot_mode)
-
+    
     call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,lcount=.true.)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
@@ -459,12 +500,15 @@ contains
 
     wannier_plot_radius = 3.5_dp
     call param_get_keyword('wannier_plot_radius',found,r_value=wannier_plot_radius)
-    if (wannier_plot_radius < 0.0_dp) call io_error('Error: wannier_plot_radius must be positive')
 
-    ! check
+    ! checks
     if (wannier_plot) then
        if ( (index(wannier_plot_format,'xcrys').eq.0) .and. (index(wannier_plot_format,'cub').eq.0) ) &
             call io_error('Error: wannier_plot_format not recognised')
+       if ( (index(wannier_plot_mode,'crys').eq.0) .and. (index(wannier_plot_mode,'mol').eq.0) ) &
+            call io_error('Error: wannier_plot_mode not recognised')
+       if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
+       if ( wannier_plot_supercell < 0 ) call io_error('Error: wannier_plot_supercell must be positive')       
     endif
 
     bands_plot                = .false.
@@ -472,14 +516,12 @@ contains
 
     bands_num_points          = 100
     call param_get_keyword('bands_num_points',found,i_value=bands_num_points)
-    if (bands_num_points<0) call io_error('Error: bands_num_points must be positive')       
 
     bands_plot_format         = 'gnuplot'
     call param_get_keyword('bands_plot_format',found,c_value=bands_plot_format)
 
-    if ( (index(bands_plot_format,'gnu').eq.0) .and. (index(bands_plot_format,'xmgr').eq.0) ) &
-            call io_error('Error: bands_plot_format not recognised')
-
+    bands_plot_mode             = 's-k'
+    call param_get_keyword('bands_plot_mode',found,c_value=bands_plot_mode)
 
     bands_num_spec_points=0
     call param_get_block_length('kpoint_path',found,i_temp)
@@ -494,17 +536,33 @@ contains
     if(.not.found .and. bands_plot) &
          call io_error('A bandstructure plot has been requested but there is no kpoint_path block') 
 
+    ! checks
+    if (bands_plot) then
+       if ( (index(bands_plot_format,'gnu').eq.0) .and. (index(bands_plot_format,'xmgr').eq.0) ) &
+            call io_error('Error: bands_plot_format not recognised')
+       if ( (index(bands_plot_mode,'s-k').eq.0) .and. (index(bands_plot_mode,'cut').eq.0) ) &
+            call io_error('Error: bands_plot_mode not recognised')
+       if ( bands_num_points < 0 ) call io_error('Error: bands_num_points must be positive')       
+    endif
+
     fermi_surface_plot        =  .false.
     call param_get_keyword('fermi_surface_plot',found,l_value=fermi_surface_plot)
 
     fermi_surface_num_points  = 50
     call param_get_keyword('fermi_surface_num_points',found,i_value=fermi_surface_num_points)
-    if (fermi_surface_num_points<0) call io_error('Error: fermi_surface_num_points must be positive')       
+ 
     fermi_surface_plot_format = 'xcrysden'
     call param_get_keyword('fermi_surface_plot_format',found,c_value=fermi_surface_plot_format)
 
     fermi_energy=0.0_dp
     call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
+
+    ! checks
+    if (fermi_surface_plot) then
+       if ( (index(fermi_surface_plot_format,'xcrys').eq.0) ) &
+            call io_error('Error: fermi_surface_plot_format not recognised')    
+       if ( fermi_surface_num_points < 0 ) call io_error('Error: fermi_surface_num_points must be positive')
+    endif
 
     slice_plot                = .false.
     call param_get_keyword('slice_plot',found,l_value=slice_plot)
@@ -535,8 +593,85 @@ contains
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
                                                                                            
-!!$    hr_min                 = 0.0_dp
-!!$    call param_get_keyword('hr_min',found,r_value=hr_min)
+    hr_cutoff                 = 0.0_dp
+    call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)
+
+    dist_cutoff_mode             = 'three_dim'
+    call param_get_keyword('dist_cutoff_mode',found,c_value=dist_cutoff_mode)
+
+    dist_cutoff                 = 1000.0_dp
+    call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
+
+    one_dim_dir=0
+    call param_get_keyword('one_dim_axis',found,c_value=one_dim_axis)
+    if (index(one_dim_axis,'x')>0 ) one_dim_dir = 1
+    if (index(one_dim_axis,'y')>0 ) one_dim_dir = 2
+    if (index(one_dim_axis,'z')>0 ) one_dim_dir = 3
+    if ( transport.and.(one_dim_dir.eq.0) ) call io_error('Error: one_dim_axis not recognised')
+    if ( bands_plot.and.(index(bands_plot_mode,'cut').ne.0).and.(one_dim_dir.eq.0) ) &
+         call io_error('Error: one_dim_axis not recognised')
+
+    !%%%%%%%%%%%%%%%%
+    ! Transport 
+    !%%%%%%%%%%%%%%%%
+
+    transport         = .false.
+    call param_get_keyword('transport',found,l_value=transport)    
+
+    transport_mode    = 'bulk'
+    call param_get_keyword('transport_mode',found,c_value=transport_mode)
+
+    tran_win_min      = -3.0_dp
+    call param_get_keyword('tran_win_min',found,r_value=tran_win_min)
+
+    tran_win_max      =  3.0_dp
+    call param_get_keyword('tran_win_max',found,r_value=tran_win_max)
+
+    tran_energy_step  =  0.01_dp
+    call param_get_keyword('tran_energy_step',found,r_value=tran_energy_step)
+
+    tran_num_bb            = 0
+    call param_get_keyword('tran_num_bb',found,i_value=tran_num_bb)
+
+    tran_num_ll            = 0
+    call param_get_keyword('tran_num_ll',found,i_value=tran_num_ll)
+
+    tran_num_rr            = 0
+    call param_get_keyword('tran_num_rr',found,i_value=tran_num_rr)
+
+    tran_num_cc            = 0
+    call param_get_keyword('tran_num_cc',found,i_value=tran_num_cc)
+
+    tran_num_lc            = 0
+    call param_get_keyword('tran_num_lc',found,i_value=tran_num_lc)
+
+    tran_num_cr            = 0
+    call param_get_keyword('tran_num_cr',found,i_value=tran_num_cr)
+
+    tran_num_bandc         = 0
+    call param_get_keyword('tran_num_bandc',found,i_value=tran_num_bandc)
+
+    tran_write_ht          = .false. 
+    call param_get_keyword('tran_write_ht',found,l_value=tran_write_ht)
+
+    tran_read_ht           = .false. 
+    call param_get_keyword('tran_read_ht',found,l_value=tran_read_ht)
+
+    tran_use_same_lead     = .true.
+    call param_get_keyword('tran_use_same_lead',found,l_value=tran_use_same_lead)
+
+    ! checks
+    if (transport) then
+       if ( (index(transport_mode,'bulk').eq.0) .and. (index(transport_mode,'lcr').eq.0) ) &
+            call io_error('Error: transport_mode not recognised')
+       if ( tran_num_bb < 0 )    call io_error('Error: tran_num_bb < 0')
+       if ( tran_num_ll < 0 )    call io_error('Error: tran_num_ll < 0')
+       if ( tran_num_rr < 0 )    call io_error('Error: tran_num_rr < 0')
+       if ( tran_num_cc < 0 )    call io_error('Error: tran_num_cc < 0')
+       if ( tran_num_lc < 0 )    call io_error('Error: tran_num_lc < 0')
+       if ( tran_num_cr < 0 )    call io_error('Error: tran_num_cr < 0')
+       if ( tran_num_bandc < 0 ) call io_error('Error: tran_num_bandc < 0')
+    endif
 
     !%%%%%%%%%%%%%%%%
     ! Disentanglement
@@ -544,7 +679,6 @@ contains
 
     disentanglement=.false.
     if(num_bands>num_wann) disentanglement=.true.
-
 
     ! Read the eigenvalues from wannier.eig
     eig_found=.false.
@@ -624,6 +758,17 @@ contains
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
+
+    ! Whether ham_r has been written to file seedname_hr.dat
+    hr_written=.false.
+
+    automatic_translation=.true.
+    translation_centre_frac=0.0_dp
+    call param_get_keyword_vector('translation_centre_frac',found,3,r_value=rv_temp)
+    if (found) then
+       translation_centre_frac=rv_temp
+       automatic_translation=.false.
+    endif
 
     use_bloch_phases = .false.
     call param_get_keyword('use_bloch_phases',found,l_value=use_bloch_phases)
@@ -727,7 +872,11 @@ contains
     deallocate(in_data,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating in_data in param_read')
 
-    ! Some checks 
+
+    ! =============================== !
+    ! Some checks and initialisations !
+    ! =============================== !
+
     if (restart.ne.' ') disentanglement=.false.
 
     if (disentanglement) then 
@@ -753,6 +902,36 @@ contains
     allocate(wannier_centres(3,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
     wannier_centres=0.0_dp
+
+    allocate(wannier_centres_translated(3,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
+    wannier_centres_translated=0.0_dp
+
+    have_translated=.false.
+    use_translation=.false.
+    if ( bands_plot .and. (index(bands_plot_mode,'cut').ne.0) ) use_translation=.true.
+    if ( transport  .and. (index(transport_mode,'bulk').ne.0) ) use_translation=.true.
+    have_ham_r = .false.
+    have_ham_k = .false.
+
+    ! Set up Wigner-Seitz vectors
+    if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. transport) then
+       call param_wigner_seitz(count_pts=.true.)
+       allocate(irvec(3,nrpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating irvec in param_read')
+       irvec=0
+       allocate(ndegen(nrpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating ndegen in param_read')
+       ndegen=0
+       allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating ham_r in param_read')
+       ham_r=cmplx_0
+       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating ham_k in param_read')
+       ham_k=cmplx_0
+       ! Set up the wigner_seitz vectors
+       call param_wigner_seitz(count_pts=.false.)
+    endif
 
     return
 
@@ -936,8 +1115,10 @@ contains
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :',num_wann,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :',num_bands,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :',timing_level,'|'
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :',postproc_setup,'|'
+    write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :',gamma_only,'|'
     if(cp_pp .or. iprint>2) &
                   write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :',cp_pp,'|'
     if(wannier_plot .or. iprint>2) then
@@ -964,11 +1145,12 @@ contains
     else
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')   '|  Trial step length for line search         :',trial_step,'|'       
     endif
-!    write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :',conv_tol,'|'
-!    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',conv_window,'|'
+    write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :',conv_tol,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',conv_window,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between writing output         :',num_print_cycles,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between backing up to disk     :',num_dump_cycles,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write r^2_nm to file                      :',write_r2mn,'|'
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write xyz WF centres to file              :',write_xyz,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Use guiding centre to control phases      :',guiding_centres,'|'
     if(guiding_centres .or. iprint>2) then
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations before starting guiding centres:',num_no_guide_iter,'|'
@@ -991,7 +1173,7 @@ contains
     ! Plotting
     !
     if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. slice_plot &
-         .or. dos_plot .or. iprint>2) then
+         .or. dos_plot .or. hr_plot .or. iprint>2) then
        !
        write(stdout,'(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
        !
@@ -1016,6 +1198,7 @@ contains
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :',bands_num_spec_points/2,'|'
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :',bands_num_points,'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Output format                            :',trim(bands_plot_format),'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :',trim(bands_plot_mode),'|'
           write(stdout,'(1x,a78)') '|   K-space path sections:                                                   |'
           if(bands_num_spec_points==0) then
              write(stdout,'(1x,a78)') '|     None defined                                                           |'
@@ -1028,8 +1211,37 @@ contains
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
+       if (hr_plot .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',hr_plot,'|'
+          if(index(bands_plot_mode,'cut').ne.0) then
+             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :',hr_cutoff,'|'
+             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :',dist_cutoff,'|'
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   Hamiltonian cut-off distance mode        :',trim(dist_cutoff_mode),'|'
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   System extended in                       :',trim(one_dim_axis),'|'
+          endif
+          write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+       endif
+       !
     endif
-
+    !
+    ! Transport
+    !
+    if (transport.or.iprint>2) then
+       !
+       write(stdout,'(1x,a78)') '*------------------------------- TRANSPORT ----------------------------------*'
+       !
+       write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Transport mode                            :',trim(transport_mode),'|'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)') '|   Hamiltonian from external files          :',tran_read_ht,'|'
+       if (index(transport_mode,'bulk').ne.0 .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :',trim(one_dim_axis),'|'
+       end if
+       !
+       if (index(transport_mode,'lcr').ne.0 .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Transport mode                            :',trim(transport_mode),'|'
+       end if
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+       !
+    endif
 
 101 format(20x,a3,2x,3F11.6)
 
@@ -1214,15 +1426,34 @@ contains
        deallocate( wannier_plot_list, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating wannier_plot_list in param_dealloc')
     end if
-    if( allocated( exclude_bands) ) then
+    if( allocated( exclude_bands ) ) then
        deallocate( exclude_bands, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating exclude_bands in param_dealloc')
     end if
-    if( allocated( wannier_centres) ) then
+    if( allocated( wannier_centres ) ) then
        deallocate( wannier_centres, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating wannier_centres in param_dealloc')
     end if
-
+    if( allocated( wannier_centres_translated ) ) then
+       deallocate( wannier_centres_translated, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wannier_centres_translated in param_dealloc')
+    end if
+    if( allocated( ham_r ) ) then
+       deallocate( ham_r, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating ham_r in param_dealloc')
+    end if
+    if( allocated( ham_k ) ) then
+       deallocate( ham_k, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating ham_k in param_dealloc')
+    end if
+    if( allocated( irvec ) ) then
+       deallocate( irvec, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating irvec in param_dealloc')
+    end if
+    if( allocated( ndegen ) ) then
+       deallocate( ndegen, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating ndegen in param_dealloc')
+    end if
 
     return
 
@@ -1471,9 +1702,7 @@ contains
     read(chk_unit,err=126) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
 
     ! wannier_centres
-!    if ( (index(restart,'plot').ne.0) .and. (index(wannier_plot_format,'cub').ne.0)) then
     read(chk_unit,err=127) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
-!    endif
 
     close(chk_unit)
 
@@ -2997,5 +3226,116 @@ contains
 240 call io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy))
 
   end subroutine param_get_keyword_kpath
+
+
+  !================================================================================!
+  subroutine param_wigner_seitz(count_pts)
+  !================================================================================!
+  ! Calculates a grid of points that fall inside of (and eventually on the         !
+  ! surface of) the Wigner-Seitz supercell centered on the origin of the B         !
+  ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
+  !================================================================================!
+
+    use w90_io, only : io_error,io_stopwatch
+
+  ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
+  !                   irvec(1:3,irpt) in the basis of the lattice vectors
+  ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
+  ! nrpts             number of Wigner-Seitz grid points
+
+  implicit none
+
+  logical, intent(in) :: count_pts 
+
+  integer       :: ndiff (3)
+  real(kind=dp) :: dist(125),tot,dist_min
+  integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j
+
+  if (timing_level>1) call io_stopwatch('param: wigner_seitz',1)
+
+  ! The Wannier functions live in a supercell of the real space unit cell
+  ! this supercell is mp_grid unit cells long in each direction
+  !
+  ! We loop over grid points r on a unit cell that is 8 times larger than this
+  ! primitive supercell. 
+  !
+  ! One of these points is in the W-S cell if it is closer to R=0 than any of the
+  ! other points, R (where R are the translation vectors of the supercell)
+
+  ! In the end nrpts contains the total number of grid
+  ! points that have been found in the Wigner-Seitz cell
+
+  nrpts = 0  
+  do n1 = -mp_grid(1) , mp_grid(1)  
+     do n2 = -mp_grid(2), mp_grid(2)  
+        do n3 = -mp_grid(3),  mp_grid(3)  
+           ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=1, or icnt=14
+           icnt = 0  
+           do i1 = -2, 2  
+              do i2 = -2, 2  
+                 do i3 = -2, 2  
+                    icnt = icnt + 1  
+                    ! Calculate distance squared |r-R|^2
+                    ndiff(1) = n1 - i1 * mp_grid(1)  
+                    ndiff(2) = n2 - i2 * mp_grid(2)  
+                    ndiff(3) = n3 - i3 * mp_grid(3)  
+                    dist(icnt) = 0.0_dp  
+                    do i = 1, 3  
+                       do j = 1, 3  
+                          dist(icnt) = dist(icnt) + real(ndiff(i),dp) * real_metric(i,j) &
+                               * real(ndiff(j),dp)
+                       enddo
+                    enddo
+                 enddo
+              enddo
+
+              ! AAM: On first pass, we reference unallocated variables (ndegen,irvec)
+
+           enddo
+           dist_min=minval(dist)
+           if (abs(dist(63) - dist_min ) .lt.1.e-7_dp) then
+              nrpts = nrpts + 1  
+              if(.not. count_pts) then
+                 ndegen(nrpts)=0
+                do i=1,125
+                   if (abs (dist (i) - dist_min) .lt.1.e-7_dp) ndegen(nrpts)=ndegen(nrpts)+1
+                end do
+                irvec(1, nrpts) = n1  
+                irvec(2, nrpts) = n2   
+                irvec(3, nrpts) = n3   
+              endif
+           end if
+
+           !n3
+        enddo
+        !n2
+     enddo
+     !n1
+  enddo
+  !
+  if(count_pts) return
+
+
+  if(iprint>=3) then
+     write(stdout,'(1x,i4,a,/)') nrpts,  ' lattice points in Wigner-Seitz supercell:'
+     do i=1,nrpts
+        write(stdout,'(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1,i),irvec(2,i),&
+             irvec(3,i),'  degeneracy: ', ndegen(i)
+     enddo
+  endif
+  ! Check the "sum rule"
+  tot = 0.0_dp  
+  do i = 1, nrpts  
+     tot = tot + 1.0_dp/real(ndegen(i),dp)  
+  enddo
+  if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > 1.e-8_dp) then
+     call io_error('ERROR in param_wigner_seitz: error in finding Wigner-Seitz points')
+  endif
+
+  if (timing_level>1) call io_stopwatch('param: wigner_seitz',2)
+
+  return  
+end subroutine param_wigner_seitz
+
 
 end module w90_parameters

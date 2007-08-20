@@ -17,11 +17,6 @@ module w90_plot
 
   private
 
-  complex(kind=dp),allocatable  :: ham_r(:,:,:)
-  integer, allocatable          :: irvec(:,:)
-  integer, allocatable          :: ndegen(:)
-  integer                       :: nrpts
-
   public :: plot_main
 
 
@@ -31,10 +26,12 @@ contains
   subroutine plot_main( )
     !============================================!
 
-    use w90_constants, only : cmplx_0
-    use w90_io, only        : io_error,stdout,io_stopwatch
-    use w90_parameters, only    : num_kpts,bands_plot,dos_plot,hr_plot, &
-         mp_grid,kpt_latt,fermi_surface_plot,num_wann,wannier_plot,timing_level
+    use w90_constants,   only : cmplx_0
+    use w90_io,          only : io_error,stdout,io_stopwatch
+    use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
+         mp_grid,kpt_latt,fermi_surface_plot,num_wann,wannier_plot, &
+         timing_level,hr_written
+    use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr
 
     implicit none
 
@@ -55,34 +52,16 @@ contains
            if (all(kpt_latt(:,nkp)<0.000001_dp)) have_gamma=.true.       
        end do
        if(.not. have_gamma) &
-            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. Interpolation may be incorrect. !!!!'
-       ! Find the number of points in the Wigner-Seitz cell
-       call wigner_seitz(count_pts=.true.)
-       allocate(irvec(3,nrpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating irvec in plot_main')
-       irvec=0
-       allocate(ndegen(nrpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating ndegen in plot_main')
-       ndegen=0
-       allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating ham_r in plot_main')
-       ham_r=cmplx_0
-       ! Set up the wigner_seitz vectors and transform Hamiltonian to WF basis
-       call wigner_seitz(count_pts=.false.)
-       call plot_get_hr
+            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. &
+            &Interpolation may be incorrect. !!!!'
+       ! Transform Hamiltonian to WF basis
+       call hamiltonian_get_hr()
        !
        if(bands_plot) call plot_interpolate_bands
        !
        if(fermi_surface_plot) call plot_fermi_surface
        !
-       if(hr_plot) call plot_ham_r
-       !
-       deallocate(ham_r,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating ham_r in plot_main')
-       deallocate(ndegen,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating ndegen in plot_main')
-       deallocate(irvec,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating irvec in plot_main')
+       if(hr_plot.and..not.hr_written) call hamiltonian_write_hr()
        !
     end if
 
@@ -114,10 +93,12 @@ contains
                                io_time,io_stopwatch
     use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
                                bands_num_spec_points,timing_level, &
-                               bands_spec_points,bands_label,bands_plot_format
+                               bands_spec_points,bands_label,bands_plot_format, &
+                               bands_plot_mode,irvec,nrpts,ndegen,ham_r
 
     implicit none
 
+    complex(kind=dp),allocatable  :: ham_r_cut(:,:,:)
     complex(kind=dp)   :: ham_pack((num_wann*(num_wann+1))/2)
     complex(kind=dp)   :: fac
     complex(kind=dp)   :: ham_kprm(num_wann,num_wann)
@@ -129,6 +110,9 @@ contains
     real(kind=dp), allocatable :: xval(:)
     real(kind=dp), allocatable :: eig_int(:,:),plot_kpoint(:,:)
     real(kind=dp)        :: rdotk,vec(3),emin,emax,time0
+    integer, allocatable :: irvec_cut(:,:)
+    integer              :: irvec_max(3)
+    integer              :: nrpts_cut
     integer              :: iwork(5*num_wann)
     integer              :: info,ifail(num_wann),i,j
     integer              :: loop_rpt,nfound,loop_kpt,counter
@@ -203,15 +187,36 @@ contains
     end do
     close(bndunit)
     !
+    ! Cut H matrix in real-space
+    !
+    if (index(bands_plot_mode,'cut').ne.0) then
+       irvec_max = maxval(irvec,DIM=2)+1
+       nrpts_cut = (2*irvec_max(1)+1)*(2*irvec_max(2)+1)*(2*irvec_max(3)+1)
+       allocate(ham_r_cut(num_wann,num_wann,nrpts_cut),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating ham_r_cut in plot_interpolate_bands')
+       call plot_cut_hr()
+    end if
+    !
     ! Interpolate the Hamiltonian at each kpoint
     !
     do loop_kpt=1,total_pts
        ham_kprm=cmplx_0
-       do loop_rpt=1,nrpts
-          rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,loop_rpt))
-          fac=exp(cmplx_i*rdotk)/real(ndegen(loop_rpt),dp)
-          ham_kprm=ham_kprm+fac*ham_r(:,:,loop_rpt)
-       end do
+       if (index(bands_plot_mode,'s-k').ne.0) then
+          do loop_rpt=1,nrpts
+             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,loop_rpt))
+             fac=exp(cmplx_i*rdotk)/real(ndegen(loop_rpt),dp)
+             ham_kprm=ham_kprm+fac*ham_r(:,:,loop_rpt)
+          end do
+       elseif (index(bands_plot_mode,'cut').ne.0) then
+          do loop_rpt=1,nrpts_cut
+             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,loop_rpt))
+!!$[aam] check divide by ndegen?
+             fac=exp(cmplx_i*rdotk)
+             ham_kprm=ham_kprm+fac*ham_r_cut(:,:,loop_rpt)
+          end do
+       else
+          call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+       endif
        ! Diagonalise H_k (->basis of eigenstates)
        do j=1,num_wann
           do i=1,j
@@ -241,13 +246,129 @@ contains
     if(index(bands_plot_format,'xmgr')>0) call plot_interpolate_xmgrace
 
 
-    write(stdout,'(1x,a,f11.3,a)')  'Time to calculate interpolated band structure ',io_time()-time0,' (sec)'
+    write(stdout,'(1x,a,f11.3,a)')  &
+         'Time to calculate interpolated band structure ',io_time()-time0,' (sec)'
     write(stdout,*)
     !
     if (timing_level>1) call io_stopwatch('plot: interpolate_bands',2)
     !
 
     contains
+
+  !============================================!
+  subroutine plot_cut_hr() 
+    !============================================!
+    !                                                           
+    !  In real-space picture, ham_r(j,i,k) is an interaction between                   
+    !  j_th WF at 0 and i_th WF at the lattice point translated 
+    !  by matmul(real_lattice(:,:),irvec(:,k))                          
+    !  We truncate Hamiltonian matrix when                                                               
+    !   1) |  r_i(0) - r_j (R) | > dist_cutoff               
+    !   2) |  ham_r(i,j,k)     | < hr_cutoff              
+    !  while the condition 1) is essential to get a meaningful band structure, 
+    !    ( dist_cutoff must be smaller than the shortest distance from
+    !      the center of W-S supercell to the points at the cell boundaries )
+    !  the condition 2) is optional.
+    !                                            
+    !============================================!
+
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
+                               io_time,io_stopwatch
+    use w90_parameters, only : num_wann,hr_cutoff,dist_cutoff,     &
+                               real_lattice, wannier_centres_translated, mp_grid, &
+                               dist_cutoff_mode, one_dim_dir
+
+    implicit none
+    !
+    integer :: nrpts_tmp
+    integer :: n1, n2, n3, i1, i2, i3
+    real(kind=dp) :: ham_r_tmp(num_wann,num_wann)
+    real(kind=dp) :: shift_vec(3,nrpts_cut)
+    real(kind=dp) :: dist_ij_vec(3)
+    real(kind=dp) :: dist_vec(3)
+    real(kind=dp) :: dist
+                                 
+    nrpts_tmp = 0
+    do n1 = -irvec_max(1), irvec_max(1)    
+       do n2 = -irvec_max(2), irvec_max(2)    
+loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
+             do loop_rpt = 1, nrpts
+                i1 = mod(n1 - irvec(1,loop_rpt),mp_grid(1))
+                i2 = mod(n2 - irvec(2,loop_rpt),mp_grid(2))
+                i3 = mod(n3 - irvec(3,loop_rpt),mp_grid(3))
+                if (i1.eq.0 .and. i2.eq.0 .and. i3.eq.0 ) then
+                   nrpts_tmp = nrpts_tmp+1 
+                   ham_r_cut(:,:,nrpts_tmp) = ham_r(:,:,loop_rpt)
+                   irvec_cut(1,nrpts_tmp)=n1
+                   irvec_cut(2,nrpts_tmp)=n2
+                   irvec_cut(3,nrpts_tmp)=n3
+                   cycle loop_n3
+                end if
+             end do
+          end do loop_n3
+       end do
+    end do
+
+    if ( nrpts_tmp .ne. nrpts_cut) then
+       write(stdout,'(a)') 'FAILED TO EXPAND ham_r'
+       call io_error('Error in plot_cut_hr')
+    end if
+
+    do loop_rpt = 1, nrpts_cut
+       shift_vec(:,loop_rpt) = matmul(real_lattice(:,:),real(irvec_cut(:,loop_rpt),kind=dp)) 
+    end do
+
+    if (index(dist_cutoff_mode, 'one_dim')>0) then
+       do i=1,num_wann
+           do j=1,num_wann
+              dist_ij_vec(one_dim_dir)= &
+                   wannier_centres_translated(one_dim_dir,i) - wannier_centres_translated(one_dim_dir,j)
+              do loop_rpt =1, nrpts_cut
+                 dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+ shift_vec(one_dim_dir,loop_rpt)
+                 dist = abs(dist_vec(one_dim_dir))
+                 if ( dist .gt. dist_cutoff ) &
+                    ham_r_cut(j,i,loop_rpt) = cmplx_0
+              end do
+           end do
+       end do
+    else
+       do i=1,num_wann
+           do j=1,num_wann
+              dist_ij_vec(:)=wannier_centres_translated(:,i) - wannier_centres_translated(:,j)
+              do loop_rpt =1, nrpts_cut
+                 dist_vec(:) = dist_ij_vec(:)+ shift_vec(:,loop_rpt)
+                 dist = sqrt(dot_product(dist_vec,dist_vec))
+                 if ( dist .gt. dist_cutoff ) &
+                    ham_r_cut(j,i,loop_rpt) = cmplx_0
+              end do
+           end do
+       end do
+    end if
+
+    do loop_rpt = 1,nrpts_cut
+       do i=1, num_wann
+          do j=1,num_wann
+             if (abs(ham_r_cut(j,i,loop_rpt)) .lt. hr_cutoff) &
+                ham_r_cut(j,i,loop_rpt) = cmplx_0 
+          end do
+       end do
+    end do
+
+    write(stdout,'(/1x,a78)') repeat('-',78)
+    write(stdout,'(1x,4x,a)') &
+                 'Maximum absolute value of Real-space Hamiltonian at each lattice point'
+    write(stdout,'(1x,8x,a62)') repeat('-',62)
+    write(stdout,'(1x,11x,a,11x,a)') 'Lattice point R', 'Max |H_ij(R)|'
+    !  output maximum ham_r_cut at each lattice point
+    do loop_rpt = 1, nrpts_cut
+       ham_r_tmp(:,:)=abs(ham_r_cut(:,:,loop_rpt))
+       write(stdout,'(1x,9x,3I5,9x,F12.6)') irvec_cut(:,loop_rpt),maxval(ham_r_tmp)
+    end do 
+    !
+    return
+
+  end subroutine plot_cut_hr           
 
   !============================================!
   subroutine plot_interpolate_gnuplot
@@ -417,7 +538,7 @@ end subroutine plot_interpolate_bands
     use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
          io_date,io_time,io_stopwatch
     use w90_parameters, only : num_wann,fermi_surface_num_points,timing_level,&
-         recip_lattice,fermi_energy
+         recip_lattice,fermi_energy,irvec,nrpts,ndegen,ham_r
 
     implicit none
 
@@ -1036,397 +1157,6 @@ end subroutine plot_interpolate_bands
     end subroutine internal_xsf_format
 
   end subroutine plot_wannier
-
- 
-
-
- !============================================!
-  subroutine plot_get_hr
-  !============================================!
-  !                                            !
-  !  Calculate the Hamiltonian in the WF basis !
-  !                                            !
-  !============================================!
-
-    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io, only        : io_error,io_stopwatch
-    use w90_parameters, only    : num_kpts,u_matrix,eigval,num_wann,kpt_latt, &
-         u_matrix_opt,num_bands,lwindow,have_disentangled,ndimwin,timing_level
-
-    implicit none
-  
-    complex(kind=dp),allocatable  :: ham_k(:,:,:)
-    complex(kind=dp)   :: fac
-    real(kind=dp)      :: rdotk
-    real(kind=dp)      :: eigval_opt(num_bands,num_kpts)
-    real(kind=dp)      :: eigval2(num_wann,num_kpts)
-    integer            :: loop_kpt,i,j,m,loop_rpt,ierr,counter
-
-    if (timing_level>1) call io_stopwatch('plot: get_hr',1)
-
-    allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ham_k in plot_get_hr')
-
-    ham_k=cmplx_0
-    eigval_opt=0.0_dp
-    eigval2=0.0_dp
-
-
-    if(have_disentangled) then
-
-       ! slim down eigval to contain states within the outer window
-
-       do loop_kpt=1,num_kpts
-          counter=0
-          do j=1,num_bands
-             if(lwindow(j,loop_kpt)) then
-                counter=counter+1
-                eigval_opt(counter,loop_kpt)=eigval(j,loop_kpt)
-             end if
-          end do
-       end do
-       
-       ! rotate eigval into the optimal subspace
-       ! in general eigval would be a matrix at each kpoints
-       ! but we choose u_matrix_opt such that the Hamiltonian is
-       ! diagonal at each kpoint. (I guess we should check it here)
-       
-       do loop_kpt=1,num_kpts
-          do j=1,num_wann
-             do m=1,ndimwin(loop_kpt)
-                eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
-                     real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
-             enddo
-          enddo
-       enddo
-
-    else
-       eigval2(1:num_wann,:)=eigval(1:num_wann,:)
-    end if
-
-
-    ! At this point eigval2 contains num_wann values which belong to the wannier subspace.
-
-
-    ! Rotate Hamiltonian into the basis of smooth bloch states 
-    !          H(k)=U^{dagger}(k).H_0(k).U(k)
-    ! Note: we enforce hermiticity here
-
-    do loop_kpt=1,num_kpts
-       do j=1,num_wann
-          do i=1,j
-             do m=1,num_wann
-                ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
-                     conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
-             enddo
-             if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
-          enddo
-       enddo
-    enddo
-
-
-    ! Fourier transform rotated hamiltonian into WF basis
-    ! H_ij(k) --> H_ij(R) = (1/N_kpts) sum_k e^{-ikR} H_ij(k)
-
-    do loop_rpt=1,nrpts
-       do loop_kpt=1,num_kpts
-          rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,loop_rpt),dp))
-          fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
-          ham_r(:,:,loop_rpt)=ham_r(:,:,loop_rpt)+fac*ham_k(:,:,loop_kpt)
-       enddo
-    enddo
-    
-    if (timing_level>1) call io_stopwatch('plot: get_hr',2)
-
-  end subroutine plot_get_hr
-
-
-
- !============================================!
-  subroutine plot_ham_r
-  !============================================!
-  !                                            !
-  !  Write the Hamiltonian in the WF basis     !
-  !============================================!
-
-! aam: 9-Aug-2007: YSL to update this subroutine.
-
-!!$  !  input for the conductance calculation     !
-!!$  !                                            !
-!!$  !  Only for 1-dim at this point              ! 
-!!$  !  mp_grid should be 1 except one direction  !
-!!$  !   - will be checked                        !
-!!$  !  *Gamma-point : simply write ham_r         !
-!!$  !                                            !
-!!$  !  ex) 5 k-pts, in terms of irvec            !
-!!$  !      z : zero                              !
-!!$  !                                            !
-!!$  !     |  0  1  2 |     |  z  z  z |          !
-!!$  ! H00=| -1  0  1 | H01=|  2  z  z |          !
-!!$  !     | -2 -1  0 |     |  1  2  z |          !      
-!!$  !                                            !
-!!$  !============================================!
-
-
-    use w90_constants, only : dp
-    use w90_io,        only : io_error,io_stopwatch,io_file_unit, &
-                              stdout,seedname,io_date
-    use w90_parameters, only : mp_grid,num_wann,timing_level
-
-    implicit none
-  
-    integer            :: kdir,nrx,file_unit,ierr
-    integer            :: i,j,k,im,jm,m,loop_rpt,counter
-    real(kind=dp)      :: ham_rr(num_wann,num_wann), max_hamr(nrpts)
-    real(kind=dp), allocatable  :: hr(:,:)
-    character (len=33) :: header
-    character (len=9)  :: cdate,ctime
-
-    if (timing_level>1) call io_stopwatch('plot: ham_r',1)
-
-    ! check mp_grid - one dimension?
-
-    counter=0
-    do i=1,3
-       if ( mp_grid(i) .eq. 1 ) then
-          counter=counter+1
-       else
-          kdir = i
-       end if
-    end do
-   
-    if( counter .lt. 2 ) then 
-      write(stdout,'(i3,a)') counter,' : NOT A ONE-DIMENSIONAL SYSTEM'
-      call io_error('Error in plot_ham_r: incorrect mp_grid') 
-    end if
-
-    ! write the  whole matrix with all indices for a crosscheck
-    file_unit=io_file_unit()
-    open(unit=file_unit,file=trim(seedname)//'_hr.dat',form='formatted',status='unknown')
-    call io_date(cdate,ctime)
-    header='written on '//cdate//' at '//ctime
-!!$    if ( counter .eq. 3 ) then
-!!$       do i=1,num_wann
-!!$          do j=1,num_wann
-!!$             write( file_unit,'(2I5,2F12.6)') j,i,real(ham_r(j,i,1)),aimag(ham_r(j,i,1))
-!!$          end do
-!!$       end do
-!!$    else
-    write(file_unit) header ! Date and time
-    do loop_rpt=1,nrpts
-       do i=1,num_wann
-          do j=1,num_wann
-             write( file_unit,'(5I5,2F12.6)') irvec(:,loop_rpt), j,i, &
-                  real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
-!!$             write( file_unit,'(4I5,2F12.6)') loop_rpt, irvec(kdir,loop_rpt), j,i, &
-!!$                  real(ham_r(j,i,loop_rpt)),aimag(ham_r(j,i,loop_rpt))
-          end do
-       end do
-    end do
-!!$    end if   
-    close(file_unit)
-
-!!$    ! stop here for Gamma sampling
-!!$
-!!$    if (counter .eq. 3 ) return
-!!$
-!!$    ! degeneracy - simply divide by ndegen ( should be fine if ham_r elements are very small at the boundary )
-!!$
-!!$    do loop_rpt=1,nrpts
-!!$       if ( ndegen(loop_rpt) .ne. 1 ) ham_r(:,:,loop_rpt) = ham_r(:,:,loop_rpt) / real(ndegen(loop_rpt),dp)
-!!$    end do
-!!$
-!!$    ! output largest elements in each lattice point inside W-S cell  
-!!$    write(stdout,'(a)') ' Output ham_r for conductance/dos calculation'
-!!$    write(stdout,'(a)') ' --check the biggest component in ham_r for each lattice in Wigner-Seitz cell'
-!!$    do loop_rpt=1,nrpts
-!!$       ham_rr=abs(real(ham_r(:,:,loop_rpt)))
-!!$       max_hamr(loop_rpt) = maxval( ham_rr )
-!!$       write(stdout,'(I5,"  irvec=",I5,F12.6)') loop_rpt, irvec(kdir,loop_rpt), max_hamr(loop_rpt)   
-!!$    end do
-!!$    write(stdout,'(a)') ' '
-!!$   
-!!$    ! H00 will be (nrx+1)*num_wann by (nrx+1)*num_wann
-!!$
-!!$    nrx = nrpts/2
-!!$
-!!$    ! check irvec
-!!$    ! irvec should be [-nrx,nrx] in sequence
-!!$    m=-nrx
-!!$    do loop_rpt=1,nrpts
-!!$       if (irvec(kdir,loop_rpt) .ne. m) then
-!!$          write(stdout,'(a8,i5,a)') 'nrpts=',nrpts,'YOUR GRID IS NOT THE ONE YOU THINK'
-!!$          call io_error('Error in plot_ham_r: wrong guess for nrpts') 
-!!$       end if
-!!$       m=m+1
-!!$    end do 
-
-!!$    ! apply cutoff hr_min -> new nrx
-!!$   
-!!$    nrx = 0
-!!$    do loop_rpt=1,nrpts 
-!!$       if (max_hamr(loop_rpt) .gt. hr_min ) then
-!!$          if ( abs(irvec(kdir,loop_rpt)) .gt. nrx )  nrx = abs(irvec(kdir,loop_rpt))
-!!$       end if
-!!$    end do
-!!$    write(stdout,'(a,f10.6)') '  hr_min :',hr_min
-!!$    write(stdout,'(a,i3,a)') '  ham_r truncated at',nrx,'th repeated cell'
-!!$
-!!$    allocate(hr((nrx+1)*num_wann,(nrx+1)*num_wann),stat=ierr)
-!!$    if (ierr/=0) call io_error('Error in allocating hr in plot_ham_r')
-!!$
-!!$    file_unit=io_file_unit()
-!!$    open(unit=file_unit,file=trim(seedname)//'.h.dat',form='formatted',status='unknown')
-!!$  
-!!$    ! H00  
-!!$    write(file_unit,'(I6)') (nrx+1)*num_wann 
-!!$    hr = 0.d0
-!!$    do j=0,nrx
-!!$       do i=0,nrx  
-!!$          m = i-j+nrpts/2+1
-!!$          im=i*num_wann
-!!$          jm=j*num_wann
-!!$          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
-!!$       end do
-!!$    end do
-!!$    write(file_unit,'(6F15.10)') hr
-!!$    
-!!$    ! H01  
-!!$    write(file_unit,'(I6)') (nrx+1)*num_wann 
-!!$    hr = 0.d0
-!!$    do j=0,nrx
-!!$       do i=0,j-1
-!!$          m = i-j+(nrpts/2+1)+(nrx+1) ! starting point shifted by nrx+1  
-!!$          im=i*num_wann
-!!$          jm=j*num_wann
-!!$          hr(jm+1:jm+num_wann,im+1:im+num_wann)=real(ham_r(:,:,m))
-!!$       end do
-!!$    end do
-!!$    write(file_unit,'(6F15.10)') hr
-!!$
-!!$    close(file_unit)
-!!$
-!!$    deallocate(hr,stat=ierr)
-!!$    if (ierr/=0) call io_error('Error in deallocating hr in plot_ham_r')
-    
-    if (timing_level>1) call io_stopwatch('plot: ham_r',2)
-
-  end subroutine plot_ham_r
-
-
-
-  !================================================================================!
-  subroutine wigner_seitz(count_pts)
-  !================================================================================!
-  ! Calculates a grid of points that fall inside of (and eventually on the         !
-  ! surface of) the Wigner-Seitz supercell centered on the origin of the B         !
-  ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
-  !================================================================================!
-
-    use w90_constants, only : dp,eps7,eps8
-    use w90_io, only        : stdout,io_error,io_stopwatch
-    use w90_parameters, only    : mp_grid,real_metric,iprint,timing_level
-
-  ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
-  !                   irvec(1:3,irpt) in the basis of the lattice vectors
-  ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
-  ! nrpts             number of Wigner-Seitz grid points
-
-  implicit none
-
-  logical, intent(in) :: count_pts 
-
-  integer       :: ndiff (3)
-  real(kind=dp) :: dist(125),tot,dist_min
-  integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j
-
-  if (timing_level>1) call io_stopwatch('plot: wigner_seitz',1)
-
-  ! The Wannier functions live in a supercell of the real space unit cell
-  ! this supercell is mp_grid unit cells long in each direction
-  !
-  ! We loop over grid points r on a unit cell that is 8 times larger than this
-  ! primitive supercell. 
-  !
-  ! One of these points is in the W-S cell if it is closer to R=0 than any of the
-  ! other points, R (where R are the translation vectors of the supercell)
-
-  ! In the end nrpts contains the total number of grid
-  ! points that have been found in the Wigner-Seitz cell
-
-  nrpts = 0  
-  do n1 = -mp_grid(1) , mp_grid(1)  
-     do n2 = -mp_grid(2), mp_grid(2)  
-        do n3 = -mp_grid(3),  mp_grid(3)  
-           ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=1, or icnt=14
-           icnt = 0  
-           do i1 = -2, 2  
-              do i2 = -2, 2  
-                 do i3 = -2, 2  
-                    icnt = icnt + 1  
-                    ! Calculate distance squared |r-R|^2
-                    ndiff(1) = n1 - i1 * mp_grid(1)  
-                    ndiff(2) = n2 - i2 * mp_grid(2)  
-                    ndiff(3) = n3 - i3 * mp_grid(3)  
-                    dist(icnt) = 0.0_dp  
-                    do i = 1, 3  
-                       do j = 1, 3  
-                          dist(icnt) = dist(icnt) + real(ndiff(i),dp) * real_metric(i,j) &
-                               * real(ndiff(j),dp)
-                       enddo
-                    enddo
-                 enddo
-              enddo
-
-
-           enddo
-           dist_min=minval(dist)
-           if (abs(dist(63) - dist_min ) .lt.eps7) then
-              nrpts = nrpts + 1  
-              if(.not. count_pts) then
-                 ndegen(nrpts)=0
-                do i=1,125
-                   if (abs (dist (i) - dist_min) .lt.eps7) ndegen(nrpts)=ndegen(nrpts)+1
-                end do
-                irvec(1, nrpts) = n1  
-                irvec(2, nrpts) = n2   
-                irvec(3, nrpts) = n3   
-              endif
-           end if
-
-           !n3
-        enddo
-        !n2
-     enddo
-     !n1
-  enddo
-  !
-  if(count_pts) return
-
-
-  if(iprint>=3) then
-     write(stdout,'(1x,i4,a,/)') nrpts,  ' lattice points in Wigner-Seitz supercell:'
-     do i=1,nrpts
-        write(stdout,'(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1,i),irvec(2,i),&
-             irvec(3,i),'  degeneracy: ', ndegen(i)
-     enddo
-  endif
-  ! Check the "sum rule"
-  tot = 0.0_dp  
-  do i = 1, nrpts  
-     tot = tot + 1.0_dp/real(ndegen(i),dp)  
-  enddo
-  if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > eps8) then
-     call io_error('ERROR in plot_wigner_seitz: error in finding Wigner-Seitz points')
-  endif
-
-  if (timing_level>1) call io_stopwatch('plot: wigner_seitz',2)
-
-  return  
-end subroutine wigner_seitz
-
-
-
 
 end module w90_plot
  

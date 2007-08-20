@@ -52,14 +52,12 @@ contains
     use w90_io,         only : stdout,io_error,io_time, &
          io_date,io_stopwatch,io_file_unit,seedname
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
-         nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
-         num_print_cycles,num_dump_cycles,omega_invariant, &
-         param_write_chkpt,length_unit,lenconfac, &
-         proj_site,real_lattice,write_r2mn,guiding_centres, &
-         num_guide_cycles,num_no_guide_iter,timing_level, &
-         trial_step,fixed_step,lfixstep,write_proj,have_disentangled, &
-         translate_home_cell,conv_tol,conv_window,conv_noise_amp, &
-         conv_noise_num,wannier_centres,write_xyz
+         nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
+         num_dump_cycles,omega_invariant,param_write_chkpt,length_unit, &
+         lenconfac,proj_site,real_lattice,write_r2mn,guiding_centres, &
+         num_guide_cycles,num_no_guide_iter,timing_level,trial_step, &
+         fixed_step,lfixstep,write_proj,have_disentangled,conv_tol, &
+         conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -103,7 +101,6 @@ contains
     real(kind=dp)              :: save_spread
     logical                    :: lconverged,lrandom,lfirst
     integer                    :: conv_count,noise_count
-    integer            :: xyz_unit
     character(len=9)   :: cdate, ctime
 
     if (timing_level>0) call io_stopwatch('wann: main',1)
@@ -401,22 +398,7 @@ contains
          '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
-    ! Translate centres to home unit cell, if required. 
-    ! Overwrites wannier_centres.
-    if (translate_home_cell) call internal_translate_home()
-
-    ! Write '.xyz' file of centres, if required
-    if (write_xyz) then
-       xyz_unit=io_file_unit()
-       open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
-       write(xyz_unit,'(i6)') num_wann
-       call io_date(cdate,ctime)
-       write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
-       do iw=1,num_wann
-          write(xyz_unit,'("X",6x,3(f14.8,3x))') (wannier_centres(ind,iw),ind=1,3)
-       end do
-       write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
-    endif
+    if (write_xyz) call wann_write_xyz()
 
     if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
@@ -1065,71 +1047,6 @@ contains
       return
       
     end subroutine internal_svd_omega_i
-
-
-
-    !=====================================!
-    subroutine internal_translate_home()
-    !=====================================!
-    !                                     !
-    ! Translate centres to home unit cell !
-    !                                     !
-    !=====================================!
-
-      use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres
-      use w90_io,         only : stdout,io_error,seedname
-      use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
-
-      implicit none
-
-      ! <<<local variables>>>
-      integer :: iw,ind,ierr
-      real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:)
-      real(kind=dp) :: shift
-
-      allocate(r_home(3,num_wann),stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
-      allocate(r_frac(3,num_wann),stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
-      r_home=0.0_dp;r_frac=0.0_dp
-
-      ! Cartesian --> fractional
-      do iw=1,num_wann
-         call utility_cart_to_frac(rave(:,iw),r_frac(:,iw),recip_lattice)
-         ! Rationalise to interval [0,1]
-         do ind=1,3
-            if (r_frac(ind,iw).lt.0.0_dp) then
-               shift=real(ceiling(abs(r_frac(ind,iw))),kind=dp)
-               r_frac(ind,iw)=r_frac(ind,iw)+shift
-            endif
-            if (r_frac(ind,iw).gt.1.0_dp) then
-               shift=-real(int(r_frac(ind,iw)),kind=dp)
-               r_frac(ind,iw)=r_frac(ind,iw)+shift
-            endif
-         enddo
-         ! Fractional --> Cartesian
-         call utility_frac_to_cart(r_frac(:,iw),r_home(:,iw),real_lattice)
-      enddo
-
-      wannier_centres = r_home
-
-      write(stdout,'(1x,a)') 'Final centres (translated to home cell)'
-      do iw=1,num_wann
-         write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3)
-      end do
-      write(stdout,'(1x,a78)') repeat('-',78)
-      write(stdout,*)
-
-      deallocate(r_frac,stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
-      deallocate(r_home,stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
-
-      return
-
-888   format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
-
-    end subroutine internal_translate_home
 
 
   end subroutine wann_main
@@ -1817,8 +1734,7 @@ contains
          param_write_chkpt,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
-         write_proj,have_disentangled, &
-         translate_home_cell,conv_tol,conv_window, &
+         write_proj,have_disentangled,conv_tol,conv_window, &
          wannier_centres,write_xyz, use_bloch_phases
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
@@ -1852,7 +1768,6 @@ contains
     logical       :: lprint,ldump
     real(kind=dp), allocatable :: history(:)
     logical                    :: lconverged, lguide
-    integer            :: xyz_unit
     character(len=9)   :: cdate, ctime
 
     if (timing_level>0) call io_stopwatch('wann: main_gamma',1)
@@ -2154,22 +2069,7 @@ loop_jd: do jd=id+1,num_wann
          '       Omega Total  = ',wann_spread%om_tot*lenconfac**2  
     write(stdout,'(1x,a78)') repeat('-',78) 
 
-    ! Translate centres to home unit cell, if required. 
-    ! Overwrites wannier_centres.
-    if (translate_home_cell) call internal_translate_home()
-
-    ! Write '.xyz' file of centres, if required
-    if (write_xyz) then
-       xyz_unit=io_file_unit()
-       open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
-       write(xyz_unit,'(i6)') num_wann
-       call io_date(cdate,ctime)
-       write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
-       do iw=1,num_wann
-          write(xyz_unit,'("X",6x,3(f14.8,3x))') (wannier_centres(ind,iw),ind=1,3)
-       end do
-       write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
-    endif
+    if (write_xyz) call wann_write_xyz()
 
     if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
@@ -2466,35 +2366,73 @@ loop_jd: do jd=id+1,num_wann
     end subroutine internal_svd_omega_i
 
 
+  end subroutine wann_main_gamma
+![ysl-e]
 
-    !========================================!
+
+  !=====================================!
+  subroutine wann_write_xyz()
+    !=====================================!
+    !                                     !
+    ! Write xyz file with Wannier centres !
+    !                                     !
+    !=====================================!
+
+    use w90_io,         only: seedname,io_file_unit,io_date,io_error,stdout
+    use w90_parameters, only: translate_home_cell,num_wann,wannier_centres,lenconfac
+
+    implicit none
+
+    integer          :: iw,ind,xyz_unit
+    character(len=9) :: cdate, ctime
+    real(kind=dp)    :: wc(3,num_wann) 
+
+    wc = wannier_centres
+
+    if (translate_home_cell) call internal_translate_home()
+
+    xyz_unit=io_file_unit()
+    open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
+    write(xyz_unit,'(i6)') num_wann
+    call io_date(cdate,ctime)
+    write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
+    do iw=1,num_wann
+       write(xyz_unit,'("X",6x,3(f14.8,3x))') (wc(ind,iw),ind=1,3)
+    end do
+    write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
+    
+    return
+    
+  contains
+
+    !=====================================!
     subroutine internal_translate_home()
-    !========================================!
-    !                                        !
-    ! Translate centres to home unit cell    !
-    !                                        !
-    !========================================!
+    !=====================================!
+    !                                     !
+    ! Translate centres to home unit cell !
+    !                                     !
+    !=====================================!
 
-      use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres
-      use w90_io,         only : stdout,io_error,seedname
+      use w90_parameters, only : real_lattice,recip_lattice,iprint
       use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
 
       implicit none
 
       ! <<<local variables>>>
-      integer :: iw,ind,ierr
+      integer                    :: iw,ind,ierr
       real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:)
-      real(kind=dp) :: shift
+      real(kind=dp)              :: shift
 
       allocate(r_home(3,num_wann),stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
+      if (ierr/=0) call io_error('Error in allocating r_home in wann: write_xyz: internal_translate_home')
       allocate(r_frac(3,num_wann),stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
+      if (ierr/=0) call io_error('Error in allocating r_frac in wann: write_xyz: internal_translate_home')
+
       r_home=0.0_dp;r_frac=0.0_dp
 
       ! Cartesian --> fractional
       do iw=1,num_wann
-         call utility_cart_to_frac(rave(:,iw),r_frac(:,iw),recip_lattice)
+         call utility_cart_to_frac(wc(:,iw),r_frac(:,iw),recip_lattice)
          ! Rationalise to interval [0,1]
          do ind=1,3
             if (r_frac(ind,iw).lt.0.0_dp) then
@@ -2510,19 +2448,21 @@ loop_jd: do jd=id+1,num_wann
          call utility_frac_to_cart(r_frac(:,iw),r_home(:,iw),real_lattice)
       enddo
 
-      wannier_centres = r_home
+      wc = r_home
 
-      write(stdout,'(1x,a)') 'Final centres (translated to home cell)'
-      do iw=1,num_wann
-         write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3)
-      end do
-      write(stdout,'(1x,a78)') repeat('-',78)
-      write(stdout,*)
+      if (iprint>2) then
+         write(stdout,'(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
+         do iw=1,num_wann
+            write(stdout,888) iw,(wc(ind,iw)*lenconfac,ind=1,3)
+         end do
+         write(stdout,'(1x,a78)') repeat('-',78)
+         write(stdout,*)
+      endif
 
       deallocate(r_frac,stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_home')
+      if (ierr/=0) call io_error('Error in allocating r_frac in wann: write_xyz: internal_translate_home')
       deallocate(r_home,stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_home')
+      if (ierr/=0) call io_error('Error in allocating r_home in wann: write_xyz: internal_translate_home')
 
       return
 
@@ -2530,8 +2470,7 @@ loop_jd: do jd=id+1,num_wann
 
     end subroutine internal_translate_home
 
+  end subroutine wann_write_xyz
 
-  end subroutine wann_main_gamma
-![ysl-e]
 
 end module w90_wannierise

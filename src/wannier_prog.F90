@@ -50,6 +50,7 @@ program wannier
   use w90_overlap
   use w90_wannierise
   use w90_plot
+  use w90_transport
  
   implicit none
 
@@ -150,28 +151,33 @@ program wannier
   call param_write_chkpt('postdis')
 !!$  call param_write_um
 
-  time2=io_time()
+1001 time2=io_time()
 
-![ysl-b]
-1001 continue
   if (.not. gamma_only) then
        call wann_main
   else
        call wann_main_gamma
   end if
-![ysl-e]
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time1-time2,' (sec)'     
 
   call param_write_chkpt('postwann')
 
-2002 continue
+2002 time2=io_time()
 
   if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
      call plot_main
-     time2=io_time()
-     write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time2-time1,' (sec)'     
+     time1=io_time()
+     write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
+  end if
+
+  time2=io_time()
+
+  if (transport) then
+     call tran_main
+     time1=io_time()
+     write(stdout,'(1x,a25,f11.3,a)') 'Time for transport       ',time1-time2,' (sec)'
   end if
 
   call overlap_dealloc
