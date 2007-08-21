@@ -1,0 +1,37 @@
+To run the examples, follow the instructions in the
+Wannier90 Tutorial, which may be found in the 'doc'
+directory of the Wannier90 distribution.
+
+The examples are as follows:
+
+Examples with A and M matrices provided
+---------------------------------------
+
+example1: Gallium Arsenide, valence bands
+
+example2: Lead, 4 lowest states; Fermi surface
+
+example3: Silicon, 4 valence bands + 4 conduction bands;
+          interpolated bandstructure
+
+example4: Copper, states around the Fermi level; Fermi surface
+
+Examples that use the pw2wannier90 interface with PWSCF
+-------------------------------------------------------
+
+example5: Diamond, valence states
+
+example6: Copper, states around the Fermi level; Fermi surface
+
+example7: Silane, valence states
+
+example8: Iron, states around the Fermi level
+
+example9: Barium Titanate
+
+example10: Graphite
+
+example11: Silicon
+
+example12: Benzene (gamma-only branch of algorithms)
+
