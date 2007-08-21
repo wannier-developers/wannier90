@@ -1,0 +1,10 @@
+&inputpp 
+   outdir = './'
+   prefix = 'benz'
+   seedname = 'benzene'
+   spin_component = 'none'
+   write_mmn = .true.
+   write_amn = .true.
+   write_unk = .true.
+   wan_mode = 'standalone'
+/
