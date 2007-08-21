@@ -2379,7 +2379,9 @@ loop_jd: do jd=id+1,num_wann
     !=====================================!
 
     use w90_io,         only: seedname,io_file_unit,io_date,io_error,stdout
-    use w90_parameters, only: translate_home_cell,num_wann,wannier_centres,lenconfac
+    use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
+         lenconfac,real_lattice,recip_lattice,iprint
+    use w90_utility,    only : utility_translate_home
 
     implicit none
 
@@ -2389,7 +2391,20 @@ loop_jd: do jd=id+1,num_wann
 
     wc = wannier_centres
 
-    if (translate_home_cell) call internal_translate_home()
+    if (translate_home_cell) then
+       do iw=1,num_wann
+          call utility_translate_home(wc(:,iw),real_lattice,recip_lattice)
+       enddo
+    endif
+
+    if (iprint>2) then
+       write(stdout,'(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
+       do iw=1,num_wann
+          write(stdout,888) iw,(wc(ind,iw)*lenconfac,ind=1,3)
+       end do
+       write(stdout,'(1x,a78)') repeat('-',78)
+       write(stdout,*)
+    endif
 
     xyz_unit=io_file_unit()
     open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
@@ -2402,74 +2417,9 @@ loop_jd: do jd=id+1,num_wann
     write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
     
     return
+
+888 format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
     
-  contains
-
-    !=====================================!
-    subroutine internal_translate_home()
-    !=====================================!
-    !                                     !
-    ! Translate centres to home unit cell !
-    !                                     !
-    !=====================================!
-
-      use w90_parameters, only : real_lattice,recip_lattice,iprint
-      use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
-
-      implicit none
-
-      ! <<<local variables>>>
-      integer                    :: iw,ind,ierr
-      real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:)
-      real(kind=dp)              :: shift
-
-      allocate(r_home(3,num_wann),stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_home in wann: write_xyz: internal_translate_home')
-      allocate(r_frac(3,num_wann),stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_frac in wann: write_xyz: internal_translate_home')
-
-      r_home=0.0_dp;r_frac=0.0_dp
-
-      ! Cartesian --> fractional
-      do iw=1,num_wann
-         call utility_cart_to_frac(wc(:,iw),r_frac(:,iw),recip_lattice)
-         ! Rationalise to interval [0,1]
-         do ind=1,3
-            if (r_frac(ind,iw).lt.0.0_dp) then
-               shift=real(ceiling(abs(r_frac(ind,iw))),kind=dp)
-               r_frac(ind,iw)=r_frac(ind,iw)+shift
-            endif
-            if (r_frac(ind,iw).gt.1.0_dp) then
-               shift=-real(int(r_frac(ind,iw)),kind=dp)
-               r_frac(ind,iw)=r_frac(ind,iw)+shift
-            endif
-         enddo
-         ! Fractional --> Cartesian
-         call utility_frac_to_cart(r_frac(:,iw),r_home(:,iw),real_lattice)
-      enddo
-
-      wc = r_home
-
-      if (iprint>2) then
-         write(stdout,'(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
-         do iw=1,num_wann
-            write(stdout,888) iw,(wc(ind,iw)*lenconfac,ind=1,3)
-         end do
-         write(stdout,'(1x,a78)') repeat('-',78)
-         write(stdout,*)
-      endif
-
-      deallocate(r_frac,stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_frac in wann: write_xyz: internal_translate_home')
-      deallocate(r_home,stat=ierr) 
-      if (ierr/=0) call io_error('Error in allocating r_home in wann: write_xyz: internal_translate_home')
-
-      return
-
-888   format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
-
-    end subroutine internal_translate_home
-
   end subroutine wann_write_xyz
 
 

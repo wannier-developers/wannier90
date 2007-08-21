@@ -882,17 +882,20 @@ end subroutine plot_interpolate_bands
     !============================================!
 
 
-      use w90_constants,  only: bohr!,periodic_table
+      use w90_constants,  only: bohr
       use w90_parameters, only: recip_lattice,iprint,&
-           wannier_plot_radius,wannier_centres,atoms_symbol
- 
+           wannier_plot_radius,wannier_centres,atoms_symbol, &
+           translate_home_cell
+      use w90_utility,    only: utility_translate_home
+
       implicit none
 
       real(kind=dp), allocatable :: wann_cube(:,:,:)
       real(kind=dp) :: rstart(3),rend(3),rlength(3),orig(3),dgrid(3)
       real(kind=dp) :: moda(3),modb(3)
       real(kind=dp) :: radius,val_Q
-      integer :: ierr,iname,max_elements
+      real(kind=dp) :: wc(3,num_wann) 
+      integer :: ierr,iname,max_elements,iw
       integer :: isp,iat,nzz,nyy,nxx,loop_w,qxx,qyy,qzz,wann_index
       integer :: istart(3),iend(3),ilength(3)
       integer :: ixx,iyy,izz
@@ -942,6 +945,14 @@ end subroutine plot_interpolate_bands
       ! Grid spacing in each lattice direction
       dgrid(1) = moda(1)/ngx; dgrid(2) = moda(2)/ngy; dgrid(3)=moda(3)/ngz
 
+      ! Translate centres to home unit cell
+      wc = wannier_centres
+      if (translate_home_cell) then
+         do iw=1,num_wann
+            call utility_translate_home(wc(:,iw),real_lattice,recip_lattice)
+         enddo
+      endif
+
       ! Loop over WFs
       do loop_w=1,num_wannier_plot
          
@@ -951,12 +962,12 @@ end subroutine plot_interpolate_bands
          ! Find start and end of cube wrt simulation cell origin
          do i=1,3
             ! ... in terms of distance along each lattice vector direction i
-            rstart(i) = ( wannier_centres(1,wann_index)*recip_lattice(i,1) &
-                 + wannier_centres(2,wann_index)*recip_lattice(i,2) &
-                 + wannier_centres(3,wann_index)*recip_lattice(i,3) - radius*modb(i) ) * moda(i) / twopi
-            rend(i) = ( wannier_centres(1,wann_index)*recip_lattice(i,1) &
-                 + wannier_centres(2,wann_index)*recip_lattice(i,2) &
-                 + wannier_centres(3,wann_index)*recip_lattice(i,3) + radius*modb(i) ) * moda(i) / twopi
+            rstart(i) = ( wc(1,wann_index)*recip_lattice(i,1) &
+                 + wc(2,wann_index)*recip_lattice(i,2) &
+                 + wc(3,wann_index)*recip_lattice(i,3) - radius*modb(i) ) * moda(i) / twopi
+            rend(i) = ( wc(1,wann_index)*recip_lattice(i,1) &
+                 + wc(2,wann_index)*recip_lattice(i,2) &
+                 + wc(3,wann_index)*recip_lattice(i,3) + radius*modb(i) ) * moda(i) / twopi
          enddo
 
          rlength(:) = rend(:) - rstart(:)

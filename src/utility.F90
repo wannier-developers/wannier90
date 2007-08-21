@@ -28,6 +28,7 @@ module w90_utility
   public :: utility_lowercase
   public :: utility_strip
   public :: utility_zgemm
+  public :: utility_translate_home
 
 contains
 
@@ -426,5 +427,46 @@ contains
 !!$
 !!$  end function utility_string_to_coord
 
+    !========================================================!
+    subroutine utility_translate_home(vec,real_lat,recip_lat)
+    !========================================================!
+    !                                                        !
+    !        Translate a vector to the home unit cell        !
+    !                                                        !
+    !========================================================!
+
+      implicit none
+
+      real(kind=dp), intent(inout) :: vec(3)
+      real(kind=dp), intent(in)    :: real_lat(3,3)
+      real(kind=dp), intent(in)    :: recip_lat(3,3)
+      
+      ! <<<local variables>>>
+      integer       :: ind
+      real(kind=dp) :: r_home(3),r_frac(3)
+      real(kind=dp) :: shift
+
+      r_home=0.0_dp;r_frac=0.0_dp
+
+      ! Cartesian --> fractional
+      call utility_cart_to_frac(vec,r_frac,recip_lat)
+      ! Rationalise to interval [0,1]
+      do ind=1,3
+         if (r_frac(ind).lt.0.0_dp) then
+            shift=real(ceiling(abs(r_frac(ind))),kind=dp)
+            r_frac(ind)=r_frac(ind)+shift
+         endif
+         if (r_frac(ind).gt.1.0_dp) then
+            shift=-real(int(r_frac(ind)),kind=dp)
+            r_frac(ind)=r_frac(ind)+shift
+         endif
+      enddo
+      ! Fractional --> Cartesian
+      call utility_frac_to_cart(r_frac,r_home,real_lat)
+      
+      vec = r_home
+
+      return
+    end subroutine utility_translate_home
 
 end module w90_utility
