@@ -777,7 +777,7 @@ the second MLWF.
 \section*{11: Silicon}
 \subsection*{Valence Bands}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence bands of Silicon}}
+\item{Outline: \it{Obtain MLWF for the valence bands of silicon}}
 \item{Directory: {\tt examples/example11/}}
 \item{Input Files}
 \begin{itemize}
@@ -854,7 +854,7 @@ localised WF we use the disentanglement procedure
 introduced in Ref.~\cite{SMV}. The position of the inner and outer
 energy windows are shown in Fig.~\ref{fig:si.bnd}. 
 \begin{enumerate}
-\item Run \pwscf\ and \wannier.\\
+\item Modify the input file and run \pwscf\ and \wannier.\\
 Inspect the output file {\tt silicon.wout}. The minimisation of the
 spread occurs in a two-step procedure. First, we minimise $\Omega_{\rm
   I}$ -- this is the extraction of the optimal subspace in the 
@@ -900,6 +900,95 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 %\label{fig:si.bnd}
 %\end{center}
 %\end{figure}
+
+\cleardoublepage
+
+
+\section*{11: Benzene}
+\subsection*{Valence States}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWF for the valence states of benzene}}
+\item{Directory: {\tt examples/example12/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt benzene.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt benzene.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt benzene.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of benzene\\
+{\tt pw.x < benzene.scf > scf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt benzene.nnkp} file).\\
+{\tt wannier90.x -pp benzene}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt benzene.mmn} and {\tt  benzene.amn} files).\\
+{\tt pw2wannier90.x < benzene.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWF.\\
+{\tt wannier90.x benzene}
+
+\end{enumerate}
+
+Inspect the output file {\tt benzene.wout}. The total spread converges
+to its minimum value after just a few iterations. 
+
+Plot the MLWF by adding the following keywords to the input file {\tt
+  benzene.win} 
+{\tt
+\begin{quote}
+restart               = plot\\
+wannier\_plot         = true\\
+wannier\_plot\_format = cube\\
+wannier\_plot\_list   = 2-4
+\end{quote} }
+and re-running \wannier. Visualise them using, e.g., XCrySDen. 
+
+\subsection*{Valence + Conduction States}
+
+\begin{itemize}
+\item{Outline: \it{Obtain MLWF for the valence and low-lying
+    conduction states of benzene.}} 
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt benzene.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt benzene.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states for the conduction states}} 
+\item{ {\tt benzene.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt benzene.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+In order to form localised WF we use the disentanglement
+procedure. The position of the inner energy window is set to lie in
+the energy gap; the outer energy window is set to 4.0\,eV. Modify the
+input file appropriately. 
+\begin{enumerate}
+\item Run \pwscf\ and \wannier.\\
+Inspect the output file {\tt benzene.wout}. The minimisation of the
+spread occurs in a two-step procedure. First, we minimise $\Omega_{\rm
+  I}$. Then, we minimise $\Omega_{\rm O}+\Omega_{{\rm OD}}$.
+
+\item Plot the MLWF by adding the following commands to the
+ input file {\tt benzene.win}
+{\tt
+\begin{quote}
+restart               = plot\\
+wannier\_plot         = true\\
+wannier\_plot\_format = cube\\
+wannier\_plot\_list   = 1,7,13
+\end{quote} }
+and re-running \wannier. Visualise them using, e.g., XCrySDen. 
+\end{enumerate}
+
+\cleardoublepage
 
 \begin{thebibliography}{99}
 
