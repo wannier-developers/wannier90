@@ -17,11 +17,134 @@ module w90_hamiltonian
   implicit none
 
   private
+  !
+  ! Hamiltonian matrix in WF representation
+  !
+  complex(kind=dp), public, save, allocatable :: ham_r(:,:,:)
+  !
+  ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
+  !                   irvec(1:3,irpt) in the basis of the lattice vectors
+  !
+  integer,          public, save, allocatable :: irvec(:,:)
+  !
+  ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
+  !
+  integer,          public, save, allocatable :: ndegen(:)
+  !
+  ! nrpts             number of Wigner-Seitz grid points
+  !
+  integer,          public, save              :: nrpts
+  !
+  ! translated Wannier centres
+  !
+  real(kind=dp),    public, save, allocatable :: wannier_centres_translated(:,:)
 
   public :: hamiltonian_get_hr
   public :: hamiltonian_write_hr
+  public :: hamiltonian_setup
+  public :: hamiltonian_dealloc
+
+  ! Module variables
+  logical, save :: ham_have_setup=.false.
+  logical, save :: have_translated=.false.
+  logical, save :: use_translation=.false.
+  logical, save :: have_ham_r=.false.
+  logical, save :: have_ham_k=.false.
+  logical, save :: hr_written=.false.
+
+  complex(kind=dp), save, allocatable :: ham_k(:,:,:)
 
 contains
+
+ !============================================!
+  subroutine hamiltonian_setup()
+  !============================================!
+
+    use w90_constants,  only: cmplx_0
+    use w90_io,         only: io_error
+    use w90_parameters, only: num_wann,num_kpts,bands_plot,transport,&
+         bands_plot_mode,transport_mode
+
+    implicit none
+
+    integer :: ierr
+
+    if (ham_have_setup) return
+
+    !
+    ! Determine whether to use translation
+    !
+    if ( bands_plot .and. (index(bands_plot_mode,'cut').ne.0) ) use_translation=.true.
+    if ( transport  .and. (index(transport_mode,'bulk').ne.0) ) use_translation=.true.
+    !
+    ! Set up Wigner-Seitz vectors
+    !
+    call hamiltonian_wigner_seitz(count_pts=.true.)
+    !
+    allocate(irvec(3,nrpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating irvec in param_read')
+    irvec=0
+    !
+    allocate(ndegen(nrpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ndegen in param_read')
+    ndegen=0
+    !
+    allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_r in param_read')
+    ham_r=cmplx_0
+    !
+    allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_k in param_read')
+    ham_k=cmplx_0
+    !
+    ! Set up the wigner_seitz vectors
+    !
+    call hamiltonian_wigner_seitz(count_pts=.false.)
+    !
+    allocate(wannier_centres_translated(3,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
+    wannier_centres_translated=0.0_dp
+
+    ham_have_setup = .true.
+
+    return
+  end subroutine hamiltonian_setup
+
+
+ !============================================!
+  subroutine hamiltonian_dealloc()
+  !============================================!
+
+    use w90_io, only : io_error
+
+    implicit none
+
+    integer :: ierr
+
+    if( allocated( ham_r ) ) then
+       deallocate( ham_r, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating ham_r in hamiltonian_dealloc')
+    end if
+    if( allocated( ham_k ) ) then
+       deallocate( ham_k, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating ham_k in hamiltonian_dealloc')
+    end if
+    if( allocated( irvec ) ) then
+       deallocate( irvec, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating irvec in hamiltonian_dealloc')
+    end if
+    if( allocated( ndegen ) ) then
+       deallocate( ndegen, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating ndegen in hamiltonian_dealloc')
+    end if
+    if( allocated( wannier_centres_translated ) ) then
+       deallocate( wannier_centres_translated, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wannier_centres_translated in param_dealloc')
+    end if
+
+    return
+  end subroutine hamiltonian_dealloc
+
 
  !============================================!
   subroutine hamiltonian_get_hr()
@@ -34,9 +157,9 @@ contains
     use w90_constants,  only : cmplx_0,cmplx_i,twopi
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
                                stdout, seedname, io_date
-    use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix,eigval,kpt_latt, &
-         u_matrix_opt,lwindow,ndimwin,have_disentangled,ham_r,ham_k,irvec,nrpts, &
-         have_ham_k,have_ham_r,have_translated,use_translation,hr_plot,timing_level
+    use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
+                               eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
+                               have_disentangled,hr_plot,timing_level
 
     implicit none
   
@@ -195,8 +318,7 @@ contains
 
       use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres, &
                                  num_atoms,atoms_pos_cart,translation_centre_frac, &
-                                 automatic_translation,wannier_centres_translated, &
-                                 num_species,atoms_species_num,lenconfac
+                                 automatic_translation,num_species,atoms_species_num,lenconfac
       use w90_io,         only : stdout,io_error
       use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
 
@@ -283,9 +405,9 @@ contains
   !  Write the Hamiltonian in the WF basis     !
   !============================================!
 
-    use w90_io,        only : io_error,io_stopwatch,io_file_unit, &
-                              stdout,seedname,io_date
-    use w90_parameters, only : num_wann,timing_level,ham_r,nrpts,irvec,hr_written
+    use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
+                               stdout,seedname,io_date
+    use w90_parameters, only : num_wann,timing_level
 
     integer            :: i,j,loop_rpt,file_unit
     character (len=33) :: header
@@ -325,5 +447,117 @@ contains
 
   end subroutine hamiltonian_write_hr
   
+
+  !================================================================================!
+  subroutine hamiltonian_wigner_seitz(count_pts)
+    !================================================================================!
+    ! Calculates a grid of points that fall inside of (and eventually on the         !
+    ! surface of) the Wigner-Seitz supercell centered on the origin of the B         !
+    ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
+    !================================================================================!
+
+    use w90_constants,  only : eps7,eps8
+    use w90_io,         only : io_error,io_stopwatch,stdout
+    use w90_parameters, only : iprint,mp_grid,real_metric,timing_level
+
+    ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
+    !                   irvec(1:3,irpt) in the basis of the lattice vectors
+    ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
+    ! nrpts             number of Wigner-Seitz grid points
+
+    implicit none
+
+    logical, intent(in) :: count_pts 
+
+    integer       :: ndiff (3)
+    real(kind=dp) :: dist(125),tot,dist_min
+    integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j
+
+    if (timing_level>1) call io_stopwatch('hamiltonian: wigner_seitz',1)
+
+    ! The Wannier functions live in a supercell of the real space unit cell
+    ! this supercell is mp_grid unit cells long in each direction
+    !
+    ! We loop over grid points r on a unit cell that is 8 times larger than this
+    ! primitive supercell. 
+    !
+    ! One of these points is in the W-S cell if it is closer to R=0 than any of the
+    ! other points, R (where R are the translation vectors of the supercell)
+
+    ! In the end nrpts contains the total number of grid
+    ! points that have been found in the Wigner-Seitz cell
+
+    nrpts = 0  
+    do n1 = -mp_grid(1) , mp_grid(1)  
+       do n2 = -mp_grid(2), mp_grid(2)  
+          do n3 = -mp_grid(3),  mp_grid(3)  
+             ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=1, or icnt=14
+             icnt = 0  
+             do i1 = -2, 2  
+                do i2 = -2, 2  
+                   do i3 = -2, 2  
+                      icnt = icnt + 1  
+                      ! Calculate distance squared |r-R|^2
+                      ndiff(1) = n1 - i1 * mp_grid(1)  
+                      ndiff(2) = n2 - i2 * mp_grid(2)  
+                      ndiff(3) = n3 - i3 * mp_grid(3)  
+                      dist(icnt) = 0.0_dp  
+                      do i = 1, 3  
+                         do j = 1, 3  
+                            dist(icnt) = dist(icnt) + real(ndiff(i),dp) * real_metric(i,j) &
+                                 * real(ndiff(j),dp)
+                         enddo
+                      enddo
+                   enddo
+                enddo
+
+                ! AAM: On first pass, we reference unallocated variables (ndegen,irvec)
+
+             enddo
+             dist_min=minval(dist)
+             if (abs(dist(63) - dist_min ) .lt. eps7 ) then
+                nrpts = nrpts + 1  
+                if(.not. count_pts) then
+                   ndegen(nrpts)=0
+                   do i=1,125
+                      if (abs (dist (i) - dist_min) .lt. eps7 ) ndegen(nrpts)=ndegen(nrpts)+1
+                   end do
+                   irvec(1, nrpts) = n1  
+                   irvec(2, nrpts) = n2   
+                   irvec(3, nrpts) = n3   
+                endif
+             end if
+
+             !n3
+          enddo
+          !n2
+       enddo
+       !n1
+    enddo
+    !
+    if(count_pts) return
+
+
+    if(iprint>=3) then
+       write(stdout,'(1x,i4,a,/)') nrpts,  ' lattice points in Wigner-Seitz supercell:'
+       do i=1,nrpts
+          write(stdout,'(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1,i),irvec(2,i),&
+               irvec(3,i),'  degeneracy: ', ndegen(i)
+       enddo
+    endif
+    ! Check the "sum rule"
+    tot = 0.0_dp  
+    do i = 1, nrpts  
+       tot = tot + 1.0_dp/real(ndegen(i),dp)  
+    enddo
+    if (abs (tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > eps8) then
+       call io_error('ERROR in hamiltonian_wigner_seitz: error in finding Wigner-Seitz points')
+    endif
+
+    if (timing_level>1) call io_stopwatch('hamiltonian: wigner_seitz',2)
+
+    return  
+  end subroutine hamiltonian_wigner_seitz
+
 
 end module w90_hamiltonian

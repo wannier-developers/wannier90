@@ -73,8 +73,8 @@ contains
     !==================================================================!
 
     use w90_io,         only : io_error,stdout,io_stopwatch
-    use w90_parameters, only : one_dim_dir,transport_mode,tran_read_ht,timing_level,hr_written,hr_plot
-    use w90_hamiltonian,only : hamiltonian_get_hr,hamiltonian_write_hr
+    use w90_parameters, only : one_dim_dir,transport_mode,tran_read_ht,timing_level,hr_plot
+    use w90_hamiltonian,only : hamiltonian_get_hr,hamiltonian_write_hr,hamiltonian_setup
 
     implicit none
  
@@ -94,8 +94,9 @@ contains
     if (index(transport_mode,'bulk').ne.0 ) then
        write(stdout,'(/1x,a/)') 'Calculating quantum conductance and density of states: bulk'
        if (.not.tran_read_ht) then
+          call hamiltonian_setup()
           call hamiltonian_get_hr()
-          if (hr_plot.and..not.hr_written) call hamiltonian_write_hr()
+          if (hr_plot) call hamiltonian_write_hr()
           call tran_reduce_hr()
           call tran_cut_hr_one_dim()
           call tran_get_ht()
@@ -122,10 +123,10 @@ contains
     !
     ! reduce ham_r from 3-d to 1-d
     !
-    use w90_io, only : io_error, io_stopwatch, stdout
-    use w90_constants,  only : dp
-    use w90_parameters, only : one_dim_dir,real_lattice,num_wann,num_kpts,mp_grid, &
-         timing_level,irvec,nrpts,ham_r
+    use w90_io,          only : io_error, io_stopwatch, stdout
+    use w90_parameters,  only : one_dim_dir,real_lattice,num_wann, &
+                                num_kpts,mp_grid,timing_level
+    use w90_hamiltonian, only : irvec,nrpts,ham_r
 
     integer :: ierr
     integer :: irvec_max, irvec_tmp(nrpts), two_dim_vec(2)
@@ -203,11 +204,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_cut_hr_one_dim()
     !==================================================================!
     !
-    use w90_io, only : io_error, io_stopwatch, stdout
-    use w90_constants, only : dp, cmplx_0
-    use w90_parameters, only : num_wann, mp_grid, wannier_centres_translated, real_lattice, &
-                               hr_cutoff, dist_cutoff, dist_cutoff_mode,  &
-                               one_dim_dir, length_unit, timing_level, ham_r, irvec, nrpts
+    use w90_io,          only : io_error,io_stopwatch,stdout
+    use w90_constants,   only : cmplx_0
+    use w90_parameters,  only : num_wann,mp_grid,timing_level,real_lattice,&
+                                hr_cutoff,dist_cutoff,dist_cutoff_mode, &
+                                one_dim_dir,length_unit
+    use w90_hamiltonian, only : ham_r,irvec,nrpts,wannier_centres_translated
 
     implicit none
     !
@@ -306,8 +308,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !  construct h00 and h01
     !==================================================================!
     !
-    use w90_io, only : io_error, io_stopwatch, seedname, io_date, &
-                       stdout, io_file_unit
+    use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
+                               stdout, io_file_unit
     use w90_parameters, only : num_wann, tran_num_bb, tran_write_ht, &
                                fermi_energy, timing_level
     !
@@ -380,9 +382,9 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_bulk()
     !==================================================================!
 
-    use w90_constants, only : dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only : io_error, io_stopwatch, seedname, io_date, &
-                       stdout, io_file_unit
+    use w90_constants,  only : cmplx_0, cmplx_1, cmplx_i, pi
+    use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
+                               stdout, io_file_unit
     use w90_parameters, only : tran_num_bb, tran_read_ht,  &
                                tran_win_min, tran_win_max, tran_energy_step, &
                                timing_level
@@ -532,10 +534,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_lcr()
     !==================================================================!
 
-    use w90_constants, only : dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only : io_error, io_stopwatch, seedname, io_date, &
-                       stdout, io_file_unit
-    use w90_parameters, only : tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc, tran_num_cr, tran_num_bandc, &
+    use w90_constants,  only : cmplx_0, cmplx_1, cmplx_i, pi
+    use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
+                               stdout, io_file_unit
+    use w90_parameters, only : tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc, &
+                               tran_num_cr, tran_num_bandc, &
                                tran_win_min, tran_win_max, tran_energy_step,      &
                                tran_use_same_lead, tran_read_ht, timing_level
 
@@ -841,7 +844,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !===================================================================
 
     use w90_io, only : stdout, io_error
-    use w90_constants, only : dp, cmplx_0, cmplx_1
+    use w90_constants, only : cmplx_0, cmplx_1
 
     implicit none
 
@@ -1043,7 +1046,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !==================================================================!
 
     use w90_io, only : stdout, io_error
-    use w90_constants, only : dp, cmplx_0, cmplx_1
+    use w90_constants, only : cmplx_0, cmplx_1
 
     implicit none
 

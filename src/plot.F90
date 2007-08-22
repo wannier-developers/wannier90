@@ -29,9 +29,10 @@ contains
     use w90_constants,   only : cmplx_0
     use w90_io,          only : io_error,stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
-         mp_grid,kpt_latt,fermi_surface_plot,num_wann,wannier_plot, &
-         timing_level,hr_written
-    use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr
+                                mp_grid,kpt_latt,fermi_surface_plot, &
+                                num_wann,wannier_plot,timing_level
+    use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
+                                hamiltonian_setup
 
     implicit none
 
@@ -55,13 +56,16 @@ contains
             write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. &
             &Interpolation may be incorrect. !!!!'
        ! Transform Hamiltonian to WF basis
+       !
+       call hamiltonian_setup()
+       !
        call hamiltonian_get_hr()
        !
        if(bands_plot) call plot_interpolate_bands
        !
        if(fermi_surface_plot) call plot_fermi_surface
        !
-       if(hr_plot.and..not.hr_written) call hamiltonian_write_hr()
+       if(hr_plot) call hamiltonian_write_hr()
        !
     end if
 
@@ -88,13 +92,14 @@ contains
     !                                            !
     !============================================!
 
-    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
-                               io_time,io_stopwatch
-    use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
-                               bands_num_spec_points,timing_level, &
-                               bands_spec_points,bands_label,bands_plot_format, &
-                               bands_plot_mode,irvec,nrpts,ndegen,ham_r
+    use w90_constants,  only  : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only  : io_error,stdout,io_file_unit,seedname,&
+                                io_time,io_stopwatch
+    use w90_parameters, only  : num_wann,bands_num_points,recip_metric,&
+                                bands_num_spec_points,timing_level, &
+                                bands_spec_points,bands_label,bands_plot_format, &
+                                bands_plot_mode
+    use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
 
     implicit none
 
@@ -272,12 +277,12 @@ contains
     !                                            
     !============================================!
 
-    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
-                               io_time,io_stopwatch
-    use w90_parameters, only : num_wann,hr_cutoff,dist_cutoff,     &
-                               real_lattice, wannier_centres_translated, mp_grid, &
-                               dist_cutoff_mode, one_dim_dir
+    use w90_constants,   only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,          only : io_error,stdout,io_file_unit,seedname,&
+                                io_time,io_stopwatch
+    use w90_parameters,  only : num_wann,hr_cutoff,dist_cutoff,real_lattice,&
+                                mp_grid,dist_cutoff_mode, one_dim_dir
+    use w90_hamiltonian, only : wannier_centres_translated
 
     implicit none
     !
@@ -534,11 +539,12 @@ end subroutine plot_interpolate_bands
     !                                                           !
     !===========================================================!
 
-    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
-         io_date,io_time,io_stopwatch
-    use w90_parameters, only : num_wann,fermi_surface_num_points,timing_level,&
-         recip_lattice,fermi_energy,irvec,nrpts,ndegen,ham_r
+    use w90_constants,   only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,          only : io_error,stdout,io_file_unit,seedname,&
+                                io_date,io_time,io_stopwatch
+    use w90_parameters,  only : num_wann,fermi_surface_num_points,timing_level,&
+                                recip_lattice,fermi_energy
+    use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
 
     implicit none
 
@@ -654,10 +660,10 @@ end subroutine plot_interpolate_bands
     !                                            !
     !============================================!
 
-    use w90_constants, only : dp,cmplx_0,cmplx_i,twopi,cmplx_1
-    use w90_io, only        : io_error,stdout,io_file_unit,seedname,io_time, &
-         io_date,io_stopwatch
-    use w90_parameters, only    : num_wann,num_bands,num_kpts,u_matrix,spin, &
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi,cmplx_1
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname,io_time, &
+                               io_date,io_stopwatch
+    use w90_parameters, only : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
          atoms_symbol,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &

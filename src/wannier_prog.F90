@@ -45,6 +45,7 @@ program wannier
   use w90_constants
   use w90_parameters
   use w90_io
+  use w90_hamiltonian
   use w90_kmesh
   use w90_disentangle
   use w90_overlap
@@ -60,13 +61,13 @@ program wannier
 
   time0=io_time()
 
-  call io_get_seedname
+  call io_get_seedname()
 
   stdout=io_file_unit()
   open(unit=stdout,file=trim(seedname)//'.werr')
   call io_date(cdate,ctime)
   write(stdout,*)  'Wannier90: Execution started on ',cdate,' at ',ctime
-  call param_read
+  call param_read()
   close(stdout,status='delete')
 
   if (restart.eq.' ') then
@@ -84,19 +85,19 @@ program wannier
 
   stdout=io_file_unit()
   open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
-  call param_write_header
-  call param_write
+  call param_write_header()
+  call param_write()
 
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call kmesh_get
+  call kmesh_get()
 
   ! Sort out restarts
   if (restart.eq.' ') then  ! start a fresh calculation
      write(stdout,'(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
-     call param_read_chkpt
+     call param_read_chkpt()
 !!$     call param_read_um
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
@@ -123,9 +124,9 @@ program wannier
   endif
 
   if (postproc_setup) then
-     call kmesh_write
-     call kmesh_dealloc
-     call param_dealloc
+     call kmesh_write()
+     call kmesh_dealloc()
+     call param_dealloc()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
      write(stdout,'(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
      stop
@@ -134,7 +135,7 @@ program wannier
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
-  call overlap_read
+  call overlap_read()
 
   time1=io_time()
   write(stdout,'(/1x,a25,f11.3,a)') 'Time to read overlaps    ',time1-time2,' (sec)'
@@ -142,7 +143,7 @@ program wannier
   have_disentangled = .false.
 
   if (disentanglement) then
-     call dis_main
+     call dis_main()
      have_disentangled=.true.
      time2=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
@@ -154,9 +155,9 @@ program wannier
 1001 time2=io_time()
 
   if (.not. gamma_only) then
-       call wann_main
+       call wann_main()
   else
-       call wann_main_gamma
+       call wann_main_gamma()
   end if
 
   time1=io_time()
@@ -167,7 +168,7 @@ program wannier
 2002 time2=io_time()
 
   if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
-     call plot_main
+     call plot_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
   end if
@@ -175,14 +176,15 @@ program wannier
   time2=io_time()
 
   if (transport) then
-     call tran_main
+     call tran_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for transport       ',time1-time2,' (sec)'
   end if
 
-  call overlap_dealloc
-  call kmesh_dealloc
-  call param_dealloc
+  call hamiltonian_dealloc()
+  call overlap_dealloc()
+  call kmesh_dealloc()
+  call param_dealloc()
 
   write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time(),' (sec)'
 
