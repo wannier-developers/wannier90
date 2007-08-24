@@ -192,11 +192,13 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   use w90_constants
   use w90_parameters
   use w90_io
+  use w90_hamiltonian
   use w90_kmesh
   use w90_disentangle
   use w90_overlap
   use w90_wannierise
   use w90_plot
+  use w90_transport
 
   implicit none
 
@@ -278,6 +280,9 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
 
   call kmesh_get()
 
+  time2=io_time()
+  write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
+
   allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
   allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
@@ -291,31 +296,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
      if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
   endif
-  
-!!$  u_matrix = cmplx_0
-!!$  m_matrix = cmplx_0
-!!$  
-!!$  if (disentanglement) then
-!!$     m_matrix_orig = cmplx_0
-!!$     a_matrix      = cmplx_0
-!!$     u_matrix_opt  = cmplx_0
-!!$  endif
-!!$  
-!!$  if(disentanglement) then
-!!$     m_matrix_orig=m_matrix_loc
-!!$     a_matrix=a_matrix_loc
-!!$     have_disentangled = .false.
-!!$     call dis_main
-!!$     have_disentangled=.true.
-!!$     time2=io_time()
-!!$     write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
-!!$  else
-!!$     m_matrix=m_matrix_loc
-!!$     u_matrix=a_matrix_loc
-!!$     call overlap_project
-!!$  end if
-
-  
+    
   if (disentanglement) then
      m_matrix_orig = m_matrix_loc
      a_matrix      = a_matrix_loc
@@ -334,41 +315,18 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      have_disentangled = .false.
      call dis_main()
      have_disentangled=.true.
-     time2=io_time()
-     write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle bands',time2-time1,' (sec)'     
+     call param_write_chkpt('postdis')
+     time1=io_time()
+     write(stdout,'(1x,a25,f11.3,a)') 'Time to disentangle      ',time1-time2,' (sec)'     
   else
      if (gamma_only) then
         call overlap_project_gamma()
      else
         call overlap_project()
      endif
+     time1=io_time()
+     write(stdout,'(1x,a25,f11.3,a)') 'Time to project overlaps ',time1-time2,' (sec)'     
   end if
-
-!!$  do nkp=1,num_kpts
-!!$     do n=1,num_wann
-!!$        do m=1,num_bands
-!!$           write(stdout,'(3i3,2f12.6)') &
-!!$                m, n, nkp, a_matrix(m,n,nkp)
-!!$        enddo
-!!$     enddo
-!!$  enddo
-
-!!$  do nkp=1,num_kpts
-!!$     do nn=1,nntot
-!!$        do n=1,num_bands
-!!$           do m=1,num_bands
-!!$              write(stdout,'(5i3,2f12.6)') &
-!!$                   nkp, nnlist(nkp,nn), nncell(1:3,nkp,nn), &
-!!$                   m_matrix_orig(m,n,nn,nkp)
-!!$           enddo
-!!$        enddo
-!!$     enddo
-!!$  enddo
-
-  call param_write_chkpt('postdis')
-!!$  call param_write_um
-
-  time2=io_time()
 
   if (gamma_only) then
      call wann_main_gamma()
@@ -376,15 +334,22 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      call wann_main()
   endif
 
-  time1=io_time()
-  write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time1-time2,' (sec)'     
-
   call param_write_chkpt('postwann')
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot) then
+  time2=io_time()
+  write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time2-time1,' (sec)'     
+
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
      call plot_main()
-     time2=io_time()
-     write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time2-time1,' (sec)'     
+     time1=io_time()
+     write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'     
+  end if
+
+  time2=io_time()
+  if (transport) then
+     call tran_main()
+     time1=io_time()
+     write(stdout,'(1x,a25,f11.3,a)') 'Time for transport       ',time1-time2,' (sec)'
   end if
 
   ! Now we zero all of the local output data, then copy in the data
@@ -408,6 +373,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   wann_spreads_loc=0.0_dp
   spread_loc=0.0_dp
 
+  call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
   call param_dealloc()

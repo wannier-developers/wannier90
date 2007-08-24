@@ -686,8 +686,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
        ! Self-energy (Sigma_L) : sLr = (hLC_cmp)^+ * g_surf_L * hLC_cmp
        c1 = cmplx_0
        sLr = cmplx_0
-       call ZGEMM('C','N',tran_num_lc,tran_num_ll,tran_num_ll,cmplx_1,hLC_cmp,tran_num_ll,g_surf_L,tran_num_ll,cmplx_0,c1,tran_num_lc)
-       call ZGEMM('N','N',tran_num_lc,tran_num_lc,tran_num_ll,cmplx_1,c1,tran_num_lc,hLC_cmp,tran_num_ll,cmplx_0,sLr,tran_num_lc)
+       call ZGEMM('C','N',tran_num_lc,tran_num_ll,tran_num_ll,cmplx_1,&
+          hLC_cmp,tran_num_ll,g_surf_L,tran_num_ll,cmplx_0,c1,tran_num_lc)
+       call ZGEMM('N','N',tran_num_lc,tran_num_lc,tran_num_ll,cmplx_1,&
+          c1,tran_num_lc,hLC_cmp,tran_num_ll,cmplx_0,sLr,tran_num_lc)
 
        ! Surface green function for the right lead : g_surf_R
        if (tran_use_same_lead) then
@@ -700,8 +702,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
        ! Self-energy (Sigma_R) : sRr = hCR_cmp * g_surf_R * (hCR_cmp)^+
        c2 = cmplx_0
        sRr = cmplx_0
-       call ZGEMM('N','N',tran_num_cr,tran_num_rr,tran_num_rr,cmplx_1,hCR_cmp,tran_num_cr,g_surf_R,tran_num_rr,cmplx_0,c2,tran_num_cr)
-       call ZGEMM('N','C',tran_num_cr,tran_num_cr,tran_num_rr,cmplx_1,c2,tran_num_cr,hCR_cmp,tran_num_cr,cmplx_0,sRr,tran_num_cr)
+       call ZGEMM('N','N',tran_num_cr,tran_num_rr,tran_num_rr,cmplx_1,&
+         hCR_cmp,tran_num_cr,g_surf_R,tran_num_rr,cmplx_0,c2,tran_num_cr)
+       call ZGEMM('N','C',tran_num_cr,tran_num_cr,tran_num_rr,cmplx_1,&
+         c2,tran_num_cr,hCR_cmp,tran_num_cr,cmplx_0,sRr,tran_num_cr)
 
        ! g_C^-1 = -H
        g_C_inv(:,:) = cmplx(-hCband(:,:),kind=dp)
