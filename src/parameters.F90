@@ -800,7 +800,7 @@ contains
     end do
 
     ! Atoms
-    num_atoms=0
+    if (.not.library) num_atoms=0
     call param_get_block_length('atoms_frac',found,i_temp)
     if (found.and.library) write(stdout,'(a)') ' Ignoring <atoms_frac> in input file'
     call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
