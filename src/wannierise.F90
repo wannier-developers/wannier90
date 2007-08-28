@@ -139,15 +139,17 @@ contains
     if (ierr/=0) call io_error('Error in allocating cdodq3 in wann_main')
     allocate( sheet (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating sheet in wann_main')
-    allocate( rave (3, num_wann), r2ave (num_wann),stat=ierr ) 
+    allocate( rave (3, num_wann), stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating rave in wann_main')
+    allocate( r2ave (num_wann),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating r2ave in wann_main')
     allocate( rave2 (num_wann),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating rave2 in wann_main')
     allocate( rguide (3, num_wann)   )
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main')
 
     csheet=cmplx_1;cdodq=cmplx_0;cdodq1=cmplx_0;cdodq2=cmplx_0;cdodq3=cmplx_0
-    rave2=0.0_dp;sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;sheet=0.0_dp
+    sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;rave2=0.0_dp;rguide=0.0_dp
 
     ! sub vars not passed into other subs
     allocate( cwschur1 (num_wann), cwschur2 (10 * num_wann),stat=ierr  )
@@ -1053,7 +1055,7 @@ contains
 
 
   !==================================================================!
-  subroutine wann_phases (csheet, sheet, rguide, irguide)
+  subroutine wann_phases (csheet, sheet, rguide, irguide, m_w)
     !==================================================================!
     !                                                                  !
     !                                                                  !
@@ -1070,6 +1072,7 @@ contains
     real(kind=dp)   , intent(out)   :: sheet (:,:,:)
     real(kind=dp)   , intent(inout) :: rguide (:,:)
     integer         , intent(in)    :: irguide
+    real(kind=dp), intent(in), optional :: m_w(:,:,:)
 
     !local
     complex(kind=dp) :: csum (nnh)  
@@ -1090,15 +1093,30 @@ contains
     ! guiding center rguide(3,nwann)
 
     do loop_wann = 1,num_wann  
-       ! get average phase for each unique bk direction
-       do na = 1, nnh  
-          csum (na) = cmplx_0
-          do nkp = 1, num_kpts  
-             nn = neigh (nkp, na)  
-             csum (na) = csum (na) + m_matrix (loop_wann, loop_wann, nn, nkp)  
-          enddo
-       enddo
 
+       if (.not. present(m_w) ) then
+          ! get average phase for each unique bk direction
+          do na = 1, nnh  
+             csum (na) = cmplx_0
+             do nkp = 1, num_kpts  
+                nn = neigh (nkp, na)  
+                csum (na) = csum (na) + m_matrix (loop_wann, loop_wann, nn, nkp)  
+             enddo
+          enddo
+
+       else
+       
+          do na = 1, nnh  
+             csum (na) = cmplx_0
+             do nkp = 1, num_kpts  
+                nn = neigh (nkp, na)  
+                csum (na) = csum (na) &
+                + cmplx(m_w(loop_wann,loop_wann,2*nn-1),m_w(loop_wann,loop_wann,2*nn),dp)  
+             enddo
+          enddo
+
+       end if
+          
        ! now analyze that information to get good guess at
        ! wannier center
        !      write(*,*)
@@ -1632,7 +1650,7 @@ contains
           cn = 2*nn
           do n = 1, num_wann
              ln_tmp(n,nn,1)= atan2(m_w(n,n,cn),m_w(n,n,rn)) 
-           end do
+          end do
        end do
     else
        do nn = 1, nntot
@@ -1735,7 +1753,7 @@ contains
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
          write_proj,have_disentangled,conv_tol,conv_window, &
-         wannier_centres,write_xyz, use_bloch_phases
+         wannier_centres,write_xyz
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -1750,15 +1768,16 @@ contains
     integer :: irguide
 
     ! local arrays used and passed in subroutines
+    real(kind=dp),    allocatable :: m_w(:,:,:)  
     complex(kind=dp), allocatable :: csheet(:,:,:)
     real(kind=dp),    allocatable :: sheet (:,:,:)
     real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)  
 
     !local arrays not passed into subroutines
-    real(kind=dp),    allocatable  :: ur_rot(:,:),m_w(:,:,:)  
-    complex(kind=dp), allocatable  :: cz (:,:)  
     complex(kind=dp), allocatable  :: u0(:,:,:)
     complex(kind=dp), allocatable  :: uc_rot(:,:)
+    real(kind=dp),    allocatable  :: ur_rot(:,:)
+    complex(kind=dp), allocatable  :: cz (:,:)  
 
     real(kind=dp) :: gcnorm1,gcnorm0
     real(kind=dp) :: theta, theta4, rot_m(2), cc, ss, tmpi, tmpj, sqwb
@@ -1767,7 +1786,7 @@ contains
     integer       :: k, id, jd, tnntot
     logical       :: lprint,ldump
     real(kind=dp), allocatable :: history(:)
-    logical                    :: lconverged, lguide
+    logical                    :: lconverged
     character(len=9)   :: cdate, ctime
 
     if (timing_level>0) call io_stopwatch('wann: main_gamma',1)
@@ -1795,35 +1814,36 @@ contains
     if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main_gamma')
     
     cr=cmplx_0;  crt=cmplx_0;  rnkb=cmplx_0
+    tnntot=2*nntot
 
     ! sub vars passed into other subs 
+    allocate( m_w(num_wann,num_wann,tnntot),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating m_w in wann_main_gamma')
     allocate( csheet (num_wann, nntot, num_kpts), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating csheet in wann_main_gamma')
     allocate( sheet (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating sheet in wann_main_gamma')
-    allocate( rave (3, num_wann), r2ave (num_wann),stat=ierr ) 
+    allocate( rave (3, num_wann), stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating rave in wann_main_gamma')
-    allocate( rave2 (num_wann),stat=ierr ) 
+    allocate( r2ave (num_wann), stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating r2ave in wann_main_gamma')
+    allocate( rave2 (num_wann), stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating rave2 in wann_main_gamma')
     allocate( rguide (3, num_wann)   )
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main_gamma')
 
     csheet=cmplx_1
-    rave2=0.0_dp;sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;sheet=0.0_dp
-    tnntot=2*nntot
+    sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;rave2=0.0_dp;rguide=0.0_dp
 
     ! sub vars not passed into other subs
     allocate(u0 (num_wann, num_wann, num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating u0 in wann_main_gamma')
-    allocate(m_w(num_wann,num_wann,tnntot),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating m_w in wann_main_gamma')
-    allocate(ur_rot(num_wann,num_wann),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ur_rot in wann_main_gamma')
     allocate(uc_rot(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating uc_rot in wann_main_gamma')
+    allocate(ur_rot(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ur_rot in wann_main_gamma')
     allocate( cz (num_wann, num_wann),stat=ierr  )
     if (ierr/=0) call io_error('Error in allocating cz in wann_main_gamma')
-
 
     cz=cmplx_0
     
@@ -1839,16 +1859,19 @@ contains
 !!$    endif
     u0=u_matrix
 
-    lguide = .false.
-    if (guiding_centres .and. nntot.gt.3 ) then
+!!$    lguide = .false.
+    ! guiding centres are not neede for orthorhombic systems
+    if (nntot .eq. 3) guiding_centres = .false.
+
+    if (guiding_centres ) then
     ! initialise rguide to projection centres (Cartesians in units of Ang)
-       if ( use_bloch_phases) then
-          lguide = .true.
-       else
-          do n=1,num_wann
-             call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
-          enddo
-       endif
+!!$       if ( use_bloch_phases) then
+!!$          lguide = .true.
+!!$       else
+       do n=1,num_wann
+          call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
+       enddo
+!!$       endif
     endif
 
     write(stdout,*)
@@ -1863,8 +1886,12 @@ contains
     write(stdout,*)
 
     irguide=0
+!!$    if (guiding_centres.and.(num_no_guide_iter.le.0)) then
+!!$       if (nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)
+!!$       irguide=1
+!!$    endif
     if (guiding_centres.and.(num_no_guide_iter.le.0)) then
-       if (nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)
+       call wann_phases(csheet,sheet,rguide,irguide)
        irguide=1
     endif
 
@@ -1875,13 +1902,13 @@ contains
        m_w(:,:,2*nn-1)=sqwb*real(m_matrix(:,:,nn,1),dp)
        m_w(:,:,2*nn)=sqwb*aimag(m_matrix(:,:,nn,1))
     end do
+
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
+    omega_invariant = wann_spread%om_i
 
     ! Public array of Wannier centres
     wannier_centres = rave
-
-    omega_invariant = wann_spread%om_i
 
     iter = 0
     old_spread%om_tot = 0.0_dp
@@ -1910,7 +1937,7 @@ contains
     do i=1,num_wann
        ur_rot(i,i)=1.0_dp
     end do
-    
+
     ! main iteration loop
 
     do iter=1,num_iter
@@ -1924,18 +1951,22 @@ contains
 
        if(lprint) write(stdout,'(1x,a,i6)') 'Cycle: ',iter
 
-       ! initialize rguide as rave for use_bloch_phases
-       if ( (iter.gt.num_no_guide_iter) .and. lguide ) then 
-          rguide(:,:) = rave(:,:)
-          lguide = .false.
-       endif
- 
+!!$       ! initialize rguide as rave for use_bloch_phases
+!!$       if ( (iter.gt.num_no_guide_iter) .and. lguide ) then 
+!!$          rguide(:,:) = rave(:,:)
+!!$          lguide = .false.
+!!$       endif
+!!$       if ( guiding_centres.and.(iter.gt.num_no_guide_iter) &
+!!$            .and.(mod(iter,num_guide_cycles).eq.0) ) then
+!!$          if(nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)    
+!!$          irguide=1
+!!$       endif
+
        if ( guiding_centres.and.(iter.gt.num_no_guide_iter) &
-            .and.(mod(iter,num_guide_cycles).eq.0) ) then
-          if(nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)    
+            .and.(mod(iter,num_guide_cycles).eq.0)) then
+          call wann_phases(csheet,sheet,rguide,irguide,m_w)    
           irguide=1
        endif
-
 
 ! F. Gygi algorithm Ref) Comp. Phys. Commun. 155 (2003) 1-6
 
@@ -2088,12 +2119,10 @@ loop_jd: do jd=id+1,num_wann
     ! deallocate sub vars not passed into other subs
     deallocate(cz,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cz in wann_main_gamma')
-    deallocate(uc_rot,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating uc_rot in wann_main_gamma')
     deallocate(ur_rot,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating ur_rot in wann_main_gamma')
-    deallocate(m_w,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating m_w in wann_main_gamma')
+    deallocate(uc_rot,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating uc_rot in wann_main_gamma')
     deallocate(u0, stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating u0 in wann_main_gamma')
 
@@ -2108,6 +2137,8 @@ loop_jd: do jd=id+1,num_wann
     if (ierr/=0) call io_error('Error in deallocating sheet in wann_main_gamma')
     deallocate(csheet,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating csheet in wann_main_gamma')
+    deallocate(m_w,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating m_w in wann_main_gamma')
     
     ! deallocate module data
     deallocate( ln_tmp , stat=ierr  )
