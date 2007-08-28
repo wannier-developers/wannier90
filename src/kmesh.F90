@@ -550,13 +550,17 @@ nnshell=0
              nncell(1,1,na)=nncell_tmp(1,1,nn)
              nncell(2,1,na)=nncell_tmp(2,1,nn)
              nncell(3,1,na)=nncell_tmp(3,1,nn)
+             neigh(1,na)=na
+             ! check bk.eq.bka
+             call utility_compar(bk(1,na,1),bka(1,na),ifpos,ifneg)
+             if (ifpos.ne.1) call io_error('Error in kmesh_get: bk is not identical to bka in gamma_only option')
           endif
        enddo
                                                                                                                                              
-       if (na.ne.nnh) call io_error('Did not find right number of bk directions')
+       if (na.ne.nnh) call io_error('Did not find right number of b-vectors in gamma_only option')
                                                                                                                                              
        write(stdout,'(1x,"+",76("-"),"+")')
-       write(stdout,'(1x,a)') '|         Gamma-point: number of the b-vectors is cut by half                |'
+       write(stdout,'(1x,a)') '|        Gamma-point: number of the b-vectors is reduced by half             |'
        write(stdout,'(1x,"+",76("-"),"+")')
        if (lenconfac.eq.1.0_dp) then
           write(stdout,'(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
