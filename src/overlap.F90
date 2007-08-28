@@ -25,7 +25,7 @@ module w90_overlap
   public :: overlap_dealloc
   public :: overlap_project
   public :: overlap_project_gamma  ![ysl]
-  public :: overlap_check_m_symmetry
+!!$  public :: overlap_check_m_symmetry
 
 contains
 
@@ -217,7 +217,7 @@ contains
        if (cp_pp) call overlap_rotate()
 
        ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
-       if (gamma_only) call overlap_check_m_symmetry()
+!!$      if (gamma_only) call overlap_check_m_symmetry()
        
        ! If we don't need to disentangle we can now convert from A to U
        ! And rotate M accordingly
@@ -238,20 +238,20 @@ contains
 !
 !!$[aam]
        if ( (.not.disentanglement).and.(.not.cp_pp).and.(.not.use_bloch_phases) ) then
-          if (gamma_only) then
-             call overlap_project_gamma()
-          else
+          if (.not.gamma_only) then
              call overlap_project()
+          else
+             call overlap_project_gamma()
           endif
        endif
 !!$[aam]
 
-       if( gamma_only .and. use_bloch_phases ) then
-         write(stdout,'(1x,"+",76("-"),"+")')
-         write(stdout,'(3x,a)') 'WARNING: gamma_only and use_bloch_phases                 '
-         write(stdout,'(3x,a)') '         M must be calculated from *real* Bloch functions'
-         write(stdout,'(1x,"+",76("-"),"+")')
-       end if
+ !!$      if( gamma_only .and. use_bloch_phases ) then
+ !!$        write(stdout,'(1x,"+",76("-"),"+")')
+ !!$        write(stdout,'(3x,a)') 'WARNING: gamma_only and use_bloch_phases                 '
+ !!$        write(stdout,'(3x,a)') '         M must be calculated from *real* Bloch functions'
+ !!$        write(stdout,'(1x,"+",76("-"),"+")')
+ !!$      end if
 ![ysl-e]
 
     endif
@@ -269,61 +269,61 @@ return
 
   
 !!$[aam]
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_check_m_symmetry()
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    use w90_constants,  only : eps6
-    use w90_parameters, only : num_bands,num_wann,a_matrix,m_matrix_orig,u_matrix,m_matrix, &
-                               nntot,timing_level,disentanglement
-    use w90_io,         only : io_error,io_stopwatch
-
-    implicit none
-
-    integer       :: nn,i,j,m,n, p(1), mdev, ndev, nndev,ierr, num_tmp
-    real(kind=dp) :: dev,dev_tmp
-   
-    if (timing_level>1) call io_stopwatch('overlap: check_m_sym',1)
-
-    if (disentanglement) then
-       num_tmp=num_bands
-    else
-       num_tmp=num_wann
-    endif
-
-    ! check whether M_mn is symmetric
-    dev = 0.0_dp
-    do nn=1,nntot
-       do n=1,num_tmp
-          do m=1,n
-             if (disentanglement) then
-                dev_tmp=abs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
-             else
-                dev_tmp=abs(m_matrix(m,n,nn,1)-m_matrix(n,m,nn,1))
-             endif
-             if ( dev_tmp .gt. dev ) then
-                dev = dev_tmp
-                mdev  = m ; ndev  = n ;  nndev  = nn
-             end if
-          end do 
-       end do
-    end do
-
-    if ( dev .gt. eps6 ) then    
-       write(stdout,'(1x,"+",76("-"),"+")') 
-       write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_check_m_symmetry'  
-       write(stdout,'(3x,a,f12.8)') &
-            'Largest deviation |M_mn-M_nm| at k : ',dev
-       write(stdout,'(3(a5,i4))') &
-            '   m=',mdev,',  n=',ndev,',  k=',nndev
-       write(stdout,'(1x,"+",76("-"),"+")') 
-    end if
-
-    if (timing_level>1) call io_stopwatch('overlap: check_m_sym',2)
-
-    return
-
-  end subroutine overlap_check_m_symmetry
+!!$  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$ subroutine overlap_check_m_symmetry()
+!!$ !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$
+!!$   use w90_constants,  only : eps6
+!!$   use w90_parameters, only : num_bands,num_wann,a_matrix,m_matrix_orig,u_matrix,m_matrix, &
+!!$                              nntot,timing_level,disentanglement
+!!$   use w90_io,         only : io_error,io_stopwatch
+!!$
+!!$   implicit none
+!!$
+!!$   integer       :: nn,i,j,m,n, p(1), mdev, ndev, nndev,ierr, num_tmp
+!!$  real(kind=dp) :: dev,dev_tmp
+!!$   
+!!$   if (timing_level>1) call io_stopwatch('overlap: check_m_sym',1)
+!!$
+!!$   if (disentanglement) then
+!!$      num_tmp=num_bands
+!!$   else
+!!$      num_tmp=num_wann
+!!$   endif
+!!$
+!!$   ! check whether M_mn is symmetric
+!!$   dev = 0.0_dp
+!!$   do nn=1,nntot
+!!$      do n=1,num_tmp
+!!$         do m=1,n
+!!$            if (disentanglement) then
+!!$               dev_tmp=abs(m_matrix_orig(m,n,nn,1)-m_matrix_orig(n,m,nn,1))
+!!$            else
+!!$               dev_tmp=abs(m_matrix(m,n,nn,1)-m_matrix(n,m,nn,1))
+!!$            endif
+!!$            if ( dev_tmp .gt. dev ) then
+!!$               dev = dev_tmp
+!!$               mdev  = m ; ndev  = n ;  nndev  = nn
+!!$            end if
+!!$         end do 
+!!$      end do
+!!$   end do
+!!$
+!!$   if ( dev .gt. eps6 ) then    
+!!$      write(stdout,'(1x,"+",76("-"),"+")') 
+!!$      write(stdout,'(3x,a)') 'WARNING: M is not strictly symmetric in overlap_check_m_symmetry'  
+!!$      write(stdout,'(3x,a,f12.8)') &
+!!$           'Largest deviation |M_mn-M_nm| at k : ',dev
+!!$      write(stdout,'(3(a5,i4))') &
+!!$           '   m=',mdev,',  n=',ndev,',  k=',nndev
+!!$      write(stdout,'(1x,"+",76("-"),"+")') 
+!!$   end if
+!!$
+!!$   if (timing_level>1) call io_stopwatch('overlap: check_m_sym',2)
+!!$
+!!$   return
+!!$
+!!$ end subroutine overlap_check_m_symmetry
 !!$[aam]
 
 !!$![ysl-b]
