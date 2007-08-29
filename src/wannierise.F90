@@ -405,13 +405,16 @@ contains
     if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
     ! unitarity is checked
-    call internal_check_unitarity()
+!!$    call internal_check_unitarity()
+    call wann_check_unitarity()
 
     ! write extra info regarding omega_invariant
-    if (iprint>2) call internal_svd_omega_i()
+!!$    if (iprint>2) call internal_svd_omega_i()
+    if (iprint>2) call wann_svd_omega_i()
 
     ! write matrix elements <m|r^2|n> to file
-    if (write_r2mn) call internal_write_r2mn()
+!!$    if (write_r2mn) call internal_write_r2mn()
+    if (write_r2mn) call wann_write_r2mn()
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
@@ -1611,129 +1614,256 @@ contains
 
   end subroutine wann_calc_projection
 
-![ysl-b]
-  !==================================================================!
-  subroutine wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
-    !==================================================================!
-    !                                                                  !
-    !   Calculate the Wannier Function spread                          !
-    !                                                                  !
-    !===================================================================  
-    use w90_parameters, only : num_wann,nntot,wbtot,wb,bk,&
-                           omega_invariant,timing_level
-    use w90_io,         only : io_error,io_stopwatch
+  !=====================================!
+  subroutine wann_write_xyz()
+    !=====================================!
+    !                                     !
+    ! Write xyz file with Wannier centres !
+    !                                     !
+    !=====================================!
+
+    use w90_io,         only: seedname,io_file_unit,io_date,io_error,stdout
+    use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
+         lenconfac,real_lattice,recip_lattice,iprint
+    use w90_utility,    only : utility_translate_home
 
     implicit none
 
-    real(kind=dp)   , intent(in)  :: m_w (:,:,:)
-    complex(kind=dp), intent(in)  :: csheet (:,:,:)
-    real(kind=dp)   , intent(in)  :: sheet (:,:,:)
-    real(kind=dp)   , intent(out) :: rave (:,:)
-    real(kind=dp)   , intent(out) :: r2ave (:)
-    real(kind=dp)   , intent(out) :: rave2 (:)
-    type(localisation_vars)    , intent(out)  :: wann_spread
+    integer          :: iw,ind,xyz_unit
+    character(len=9) :: cdate, ctime
+    real(kind=dp)    :: wc(3,num_wann) 
 
-    !local variables
-    real(kind=dp) :: summ, brn
-    real(kind=dp), allocatable :: m_w_nn2(:)
-    integer :: ind, nn,m,n,iw, rn, cn, ierr
-    logical, save :: first_pass=.true.
+    wc = wannier_centres
 
-    if (timing_level>1) call io_stopwatch('wann: omega_gamma',1)
-
-    allocate( m_w_nn2(num_wann),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating m_w_nn2 in wann_omega_gamma')
-
-    if (nntot .eq. 3 ) then
-       do nn = 1, nntot
-          rn = 2*nn-1
-          cn = 2*nn
-          do n = 1, num_wann
-             ln_tmp(n,nn,1)= atan2(m_w(n,n,cn),m_w(n,n,rn)) 
-          end do
-       end do
-    else
-       do nn = 1, nntot
-          rn = 2*nn-1
-          cn = 2*nn
-          do n = 1, num_wann
-             ln_tmp(n,nn,1)= aimag(log(csheet(n,nn,1)*cmplx(m_w(n,n,rn),m_w(n,n,cn),dp))) &
-                             -sheet(n,nn,1) 
-           end do
-       end do
+    if (translate_home_cell) then
+       do iw=1,num_wann
+          call utility_translate_home(wc(:,iw),real_lattice,recip_lattice)
+       enddo
     endif
 
-    rave  = 0.0_dp
-    do iw = 1, num_wann  
-       do ind = 1, 3  
-          do nn = 1, nntot  
-             rave(ind,iw) = rave(ind,iw) - wb(nn) * bk(ind,nn,1) &
-                   *ln_tmp(iw,nn,1)
+    if (iprint>2) then
+       write(stdout,'(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
+       do iw=1,num_wann
+          write(stdout,888) iw,(wc(ind,iw)*lenconfac,ind=1,3)
+       end do
+       write(stdout,'(1x,a78)') repeat('-',78)
+       write(stdout,*)
+    endif
+
+    xyz_unit=io_file_unit()
+    open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
+    write(xyz_unit,'(i6)') num_wann
+    call io_date(cdate,ctime)
+    write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
+    do iw=1,num_wann
+       write(xyz_unit,'("X",6x,3(f14.8,3x))') (wc(ind,iw),ind=1,3)
+    end do
+    write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
+    
+    return
+
+888 format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
+    
+  end subroutine wann_write_xyz
+
+
+  !========================================!
+  subroutine wann_check_unitarity()
+    !========================================!
+
+    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps5
+    use w90_io,         only : io_stopwatch,io_error,stdout
+    use w90_parameters, only : num_kpts, num_wann,  &
+                               u_matrix, timing_level 
+
+    implicit none
+
+    integer :: nkp,i,j,m
+    complex(kind=dp) :: ctmp1,ctmp2
+
+    if (timing_level>1) call io_stopwatch('wann: check_unitarity',1)
+
+    do nkp = 1, num_kpts  
+       do i = 1, num_wann  
+          do j = 1, num_wann  
+             ctmp1 = cmplx_0  
+             ctmp2 = cmplx_0  
+             do m = 1, num_wann  
+                ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
+                ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
+             enddo
+             if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
+                  then
+                write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                     ctmp1
+                call io_error('wann_check_unitarity: error 1')  
+             endif
+             if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
+                  then
+                write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                     ctmp2
+                call io_error('wann_check_unitarity: error 2')  
+             endif
+             if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
+                write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                     ctmp1
+                call io_error('wann_check_unitarity: error 3')  
+             endif
+             if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
+                write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+                     ctmp2
+                call io_error('wann_check_unitarity: error 4')  
+             endif
           enddo
        enddo
     enddo
 
-    rave2 = 0.0_dp
-    do iw = 1, num_wann  
-       rave2(iw) = sum(rave(:,iw)*rave(:,iw))
-    enddo
+    if (timing_level>1) call io_stopwatch('wann: check_unitarity',2)
 
-    m_w_nn2 = 0.0_dp
-    r2ave = wbtot
-    do iw = 1, num_wann  
-       do nn = 1, nntot  
-          rn = 2*nn -1 
-          cn = 2*nn
-          m_w_nn2(iw) = m_w_nn2(iw) + m_w(iw,iw,rn)**2 + m_w(iw,iw,cn)**2
-          r2ave(iw) = r2ave(iw) + wb(nn)*ln_tmp(iw,nn,1)**2 
-       enddo
-       r2ave(iw) = r2ave(iw) - m_w_nn2(iw) 
-    enddo
+    return
 
-    if (first_pass) then
-       summ = 0.0_dp  
-       do nn = 1, nntot  
-          rn = 2*nn -1
-          cn = 2*nn 
-          do m = 1, num_wann  
-             do n = 1, num_wann  
-                summ = summ + m_w(n,m,rn)**2+m_w(n,m,cn)**2
+  end subroutine wann_check_unitarity
+
+
+  !========================================!
+  subroutine wann_write_r2mn()
+    !========================================!
+    !                                        !
+    ! Write seedname.r2mn file               !
+    !                                        !
+    !========================================!
+
+    use w90_constants,  only : dp
+    use w90_io,         only : seedname,io_file_unit,io_error
+    use w90_parameters, only : num_kpts, num_wann, nntot, wb,  &
+                               m_matrix, timing_level 
+      
+    implicit none
+
+    integer :: r2mnunit,nw1,nw2,nkp,nn
+    real(kind=dp) :: r2ave_mn,delta
+
+    ! note that here I use formulas analogue to Eq. 23, and not to the
+    ! shift-invariant Eq. 32 .
+    r2mnunit=io_file_unit()
+    open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
+    do nw1 = 1, num_wann  
+       do nw2 = 1, num_wann  
+          r2ave_mn = 0.0_dp  
+          delta = 0.0_dp  
+          if (nw1.eq.nw2) delta = 1.0_dp  
+          do nkp = 1, num_kpts  
+             do nn = 1, nntot
+                r2ave_mn = r2ave_mn + wb(nn) * &
+                     ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) - &
+                     conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
              enddo
           enddo
+          r2ave_mn = r2ave_mn / real(num_kpts,dp)  
+          write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
        enddo
-       wann_spread%om_i = wbtot*real(num_wann,dp) - summ
-       first_pass=.false.
-    else 
-       wann_spread%om_i=omega_invariant
-    endif
+    enddo
+    close(r2mnunit)  
+    
+    return
+    
+158   call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn')
+      
+  end subroutine wann_write_r2mn
 
-    wann_spread%om_od = wbtot*real(num_wann,dp) - sum(m_w_nn2(:)) - wann_spread%om_i 
 
-    if (nntot.eq.3) then 
-       wann_spread%om_d = 0.0_dp  
-    else
-       wann_spread%om_d = 0.0_dp  
+  !========================================!
+  subroutine wann_svd_omega_i()
+    !========================================!
+  
+    use w90_constants,  only : dp,cmplx_0
+    use w90_io,         only : io_stopwatch,io_error,stdout
+    use w90_parameters, only: num_wann, num_kpts, nntot, wb, &
+                              m_matrix, lenconfac, length_unit, &
+                              timing_level
+
+    implicit none
+
+    complex(kind=dp), allocatable  :: cv1(:,:),cv2(:,:)
+    complex(kind=dp), allocatable  :: cw1(:),cw2(:)  
+    complex(kind=dp), allocatable  :: cpad1 (:)  
+    real(kind=dp),    allocatable  :: singvd (:)  
+
+    integer :: ierr, info
+    integer :: nkp,nn,nb,na,ind
+    real(kind=dp) :: omt1,omt2,omt3
+
+    if (timing_level>1) call io_stopwatch('wann: svd_omega_i',1)
+
+    allocate( cw1 (10 * num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating cw1 in wann_svd_omega_i')
+    allocate( cw2 (10 * num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating cw2 in wann_svd_omega_i')
+    allocate( cv1 (num_wann, num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating cv1 in wann_svd_omega_i')
+    allocate( cv2 (num_wann, num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating cv2 in wann_svd_omega_i')
+    allocate( singvd (num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating singvd in wann_svd_omega_i')
+    allocate( cpad1 (num_wann * num_wann),stat=ierr  )
+    if (ierr/=0) call io_error('Error in allocating cpad1 in wann_svd_omega_i')
+
+    cw1=cmplx_0; cw2=cmplx_0; cv1=cmplx_0; cv2=cmplx_0; cpad1=cmplx_0 
+    singvd=0.0_dp
+
+    ! singular value decomposition
+    omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
+    do nkp = 1, num_kpts  
        do nn = 1, nntot  
-          do n = 1, num_wann  
-             brn = sum(bk(:,nn,1)*rave(:,n))
-             wann_spread%om_d = wann_spread%om_d + wb(nn) &
-                  * ( ln_tmp(n,nn,1) + brn)**2
+          ind = 1  
+          do nb = 1, num_wann  
+             do na = 1, num_wann  
+                cpad1 (ind) = m_matrix (na, nb, nn, nkp)  
+                ind = ind+1  
+             enddo
+          enddo
+          call zgesvd ('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
+               num_wann, cv2, num_wann, cw1, 10 * num_wann, cw2, info)
+          if (info.ne.0) then  
+             call io_error('ERROR: Singular value decomp. zgesvd failed')  
+          endif
+
+          do nb = 1, num_wann  
+             omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
+             omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
+             omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
           enddo
        enddo
-    end if
+    enddo
+    omt1 = omt1 / real(num_kpts,dp)  
+    omt2 = omt2 / real(num_kpts,dp)  
+    omt3 = omt3 / real(num_kpts,dp)  
+    write ( stdout , * ) ' '  
+    write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
+         omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
+    write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
+         omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
+    write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
+         omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
 
-    wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
+    deallocate(cpad1,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_svd_omega_i')
+    deallocate(singvd,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating singvd in wann_svd_omega_i')
+    deallocate(cv2,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cv2 in wann_svd_omega_i')
+    deallocate(cv1,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cv1 in wann_svd_omega_i')
+    deallocate(cw2,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cw2 in wann_svd_omega_i')
+    deallocate(cw1,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cw1 in wann_svd_omega_i')
 
-    deallocate( m_w_nn2,stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma')
+    if (timing_level>1) call io_stopwatch('wann: svd_omega_i',2)
 
-    if (timing_level>1) call io_stopwatch('wann: omega_gamma',2)
-
-    return  
-
-
-  end subroutine wann_omega_gamma
-
+    return
+    
+  end subroutine wann_svd_omega_i
 
   !==================================================================!
   subroutine wann_main_gamma
@@ -1743,7 +1873,7 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                      Gamma version                               !
     !===================================================================  
-    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps10
+    use w90_constants,  only : dp,cmplx_1,cmplx_0
     use w90_io,         only : stdout,io_error,io_time, &
          io_date,io_stopwatch,io_file_unit,seedname
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
@@ -1758,10 +1888,8 @@ contains
 
     implicit none
 
-
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
-
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide (:,:)  
@@ -1780,10 +1908,9 @@ contains
     complex(kind=dp), allocatable  :: cz (:,:)  
 
     real(kind=dp) :: gcnorm1,gcnorm0
-    real(kind=dp) :: theta, theta4, rot_m(2), cc, ss, tmpi, tmpj, sqwb
-    real(kind=dp), parameter :: piover4=0.25_dp*pi
+    real(kind=dp) :: sqwb
     integer       :: i,n,nn,iter,ind,ierr,iw,ncg,info
-    integer       :: k, id, jd, tnntot
+    integer       :: tnntot
     logical       :: lprint,ldump
     real(kind=dp), allocatable :: history(:)
     logical                    :: lconverged
@@ -1968,61 +2095,8 @@ contains
           irguide=1
        endif
 
-! F. Gygi algorithm Ref) Comp. Phys. Commun. 155 (2003) 1-6
+       call internal_new_u_and_m_gamma()
 
-loop_id: do id=1,num_wann
-loop_jd: do jd=id+1,num_wann
-! Construct rot_m
-            rot_m(:)=0.0_dp
-            do nn=1,tnntot
-               rot_m(1)=rot_m(1)+m_w(id,jd,nn)*(m_w(id,id,nn)-m_w(jd,jd,nn))
-               rot_m(2)=rot_m(2)+0.25_dp*(m_w(id,id,nn)-m_w(jd,jd,nn))**2-m_w(id,jd,nn)**2 
-            end do
-            if(abs(rot_m(2)).gt.eps10) then
-              theta4=rot_m(1)/rot_m(2)
-              theta=0.25_dp*atan(theta4)
-            elseif (abs(rot_m(1)).lt.eps10) then
-              theta=0.0_dp
-              rot_m(2)=0.0_dp
-            else
-              theta=piover4
-            endif
-            tmpi=rot_m(1)*sin(4.0_dp*theta)+rot_m(2)*cos(4.0_dp*theta)
-            if(tmpi .le. 0.0_dp) theta=theta+piover4
-!          
-            cc=cos(theta)
-            ss=sin(theta)
-                                                                                                                     
-! update M               
-            do nn=1,tnntot
-! MR
-               do k=1,num_wann
-                  tmpi=m_w(k,id,nn)*cc+m_w(k,jd,nn)*ss
-                  tmpj=-m_w(k,id,nn)*ss+m_w(k,jd,nn)*cc
-                  m_w(k,id,nn)=tmpi
-                  m_w(k,jd,nn)=tmpj
-               end do
-! R^+ M R
-               do k=1,num_wann
-                  tmpi=cc*m_w(id,k,nn)+ss*m_w(jd,k,nn)
-                  tmpj=-ss*m_w(id,k,nn)+cc*m_w(jd,k,nn)
-                  m_w(id,k,nn)=tmpi
-                  m_w(jd,k,nn)=tmpj
-               end do
-            end do
-                                                                                                                 
-! update U : U=UR
-            do k=1,num_wann
-               tmpi=ur_rot(k,id)*cc+ur_rot(k,jd)*ss
-               tmpj=-ur_rot(k,id)*ss+ur_rot(k,jd)*cc
-               ur_rot(k,id)=tmpi
-               ur_rot(k,jd)=tmpj
-            end do
-!
-         end do loop_jd
-       end do loop_id
-
-       
        call wann_spread_copy(wann_spread,old_spread)
        
        ! calculate the new centers and spread
@@ -2105,13 +2179,16 @@ loop_jd: do jd=id+1,num_wann
     if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
     ! unitarity is checked
-    call internal_check_unitarity()
+!!$    call internal_check_unitarity()
+    call wann_check_unitarity()
 
     ! write extra info regarding omega_invariant
-    if (iprint>2) call internal_svd_omega_i()
+!!$    if (iprint>2) call internal_svd_omega_i()
+    if (iprint>2) call wann_svd_omega_i()
 
     ! write matrix elements <m|r^2|n> to file
-    if (write_r2mn) call internal_write_r2mn()
+!!$    if (write_r2mn) call internal_write_r2mn()
+    if (write_r2mn) call wann_write_r2mn()
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
@@ -2163,10 +2240,78 @@ loop_jd: do jd=id+1,num_wann
 1001 format(2x,'Sum of centres and spreads', &
          &       1x,'(',f10.6,',',f10.6,',',f10.6,' )',f15.8)
 
-
   contains
-
     
+    !===============================================!
+    subroutine internal_new_u_and_m_gamma()
+      !===============================================!
+
+      use w90_constants, only : pi, eps10
+
+      implicit none
+
+      real(kind=dp) :: theta, fourtheta
+      real(kind=dp) :: rot_m(2), cc, ss, rtmp1, rtmp2
+      real(kind=dp), parameter :: pifour=0.25_dp*pi
+      integer       :: nn, nw1, nw2, nw3
+
+      if (timing_level>1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma',1)
+
+loop_nw1: do nw1=1,num_wann
+loop_nw2: do nw2=nw1+1,num_wann
+   
+           rot_m(:)=0.0_dp
+           do nn=1,tnntot
+              rot_m(1)=rot_m(1)+m_w(nw1,nw2,nn)*(m_w(nw1,nw1,nn)-m_w(nw2,nw2,nn))
+              rot_m(2)=rot_m(2)+0.25_dp*(m_w(nw1,nw1,nn)-m_w(nw2,nw2,nn))**2-m_w(nw1,nw2,nn)**2 
+           end do
+           if(abs(rot_m(2)).gt.eps10) then
+             fourtheta=rot_m(1)/rot_m(2)
+             theta=0.25_dp*atan(fourtheta)
+           elseif (abs(rot_m(1)).lt.eps10) then
+             theta=0.0_dp
+             rot_m(2)=0.0_dp
+           else
+             theta=pifour
+           endif
+           rtmp1=rot_m(1)*sin(4.0_dp*theta)+rot_m(2)*cos(4.0_dp*theta)
+           if(rtmp1 .le. 0.0_dp) theta=theta+pifour
+           cc=cos(theta)
+           ss=sin(theta)
+
+           ! update M               
+           do nn=1,tnntot
+              ! MR
+              do nw3=1,num_wann
+                 rtmp1=m_w(nw3,nw1,nn)*cc+m_w(nw3,nw2,nn)*ss
+                 rtmp2=-m_w(nw3,nw1,nn)*ss+m_w(nw3,nw2,nn)*cc
+                 m_w(nw3,nw1,nn)=rtmp1
+                 m_w(nw3,nw2,nn)=rtmp2
+              end do
+              ! R^+ M R
+              do nw3=1,num_wann
+                 rtmp1=cc*m_w(nw1,nw3,nn)+ss*m_w(nw2,nw3,nn)
+                 rtmp2=-ss*m_w(nw1,nw3,nn)+cc*m_w(nw2,nw3,nn)
+                 m_w(nw1,nw3,nn)=rtmp1
+                 m_w(nw2,nw3,nn)=rtmp2
+              end do
+           end do
+           ! update U : U=UR
+           do nw3=1,num_wann
+              rtmp1=ur_rot(nw3,nw1)*cc+ur_rot(nw3,nw2)*ss
+              rtmp2=-ur_rot(nw3,nw1)*ss+ur_rot(nw3,nw2)*cc
+              ur_rot(nw3,nw1)=rtmp1
+              ur_rot(nw3,nw2)=rtmp2
+           end do
+        end do loop_nw2
+      end do loop_nw1
+
+      if (timing_level>1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma',2)
+
+      return
+
+    end subroutine internal_new_u_and_m_gamma
+
     !===============================================!
     subroutine internal_test_convergence_gamma()
       !===============================================!
@@ -2398,60 +2543,126 @@ loop_jd: do jd=id+1,num_wann
 
 
   end subroutine wann_main_gamma
-![ysl-e]
 
-
-  !=====================================!
-  subroutine wann_write_xyz()
-    !=====================================!
-    !                                     !
-    ! Write xyz file with Wannier centres !
-    !                                     !
-    !=====================================!
-
-    use w90_io,         only: seedname,io_file_unit,io_date,io_error,stdout
-    use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
-         lenconfac,real_lattice,recip_lattice,iprint
-    use w90_utility,    only : utility_translate_home
+  !==================================================================!
+  subroutine wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
+    !==================================================================!
+    !                                                                  !
+    !   Calculate the Wannier Function spread                          !
+    !                                                                  !
+    !===================================================================  
+    use w90_parameters, only : num_wann,nntot,wbtot,wb,bk,&
+                           omega_invariant,timing_level
+    use w90_io,         only : io_error,io_stopwatch
 
     implicit none
 
-    integer          :: iw,ind,xyz_unit
-    character(len=9) :: cdate, ctime
-    real(kind=dp)    :: wc(3,num_wann) 
+    real(kind=dp)   , intent(in)  :: m_w (:,:,:)
+    complex(kind=dp), intent(in)  :: csheet (:,:,:)
+    real(kind=dp)   , intent(in)  :: sheet (:,:,:)
+    real(kind=dp)   , intent(out) :: rave (:,:)
+    real(kind=dp)   , intent(out) :: r2ave (:)
+    real(kind=dp)   , intent(out) :: rave2 (:)
+    type(localisation_vars)    , intent(out)  :: wann_spread
 
-    wc = wannier_centres
+    !local variables
+    real(kind=dp) :: summ, brn
+    real(kind=dp), allocatable :: m_w_nn2(:)
+    integer :: ind, nn,m,n,iw, rn, cn, ierr
+    logical, save :: first_pass=.true.
 
-    if (translate_home_cell) then
-       do iw=1,num_wann
-          call utility_translate_home(wc(:,iw),real_lattice,recip_lattice)
-       enddo
-    endif
+    if (timing_level>1) call io_stopwatch('wann: omega_gamma',1)
 
-    if (iprint>2) then
-       write(stdout,'(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
-       do iw=1,num_wann
-          write(stdout,888) iw,(wc(ind,iw)*lenconfac,ind=1,3)
+    allocate( m_w_nn2(num_wann),stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating m_w_nn2 in wann_omega_gamma')
+
+    if (nntot .eq. 3 ) then
+       do nn = 1, nntot
+          rn = 2*nn-1
+          cn = 2*nn
+          do n = 1, num_wann
+             ln_tmp(n,nn,1)= atan2(m_w(n,n,cn),m_w(n,n,rn)) 
+          end do
        end do
-       write(stdout,'(1x,a78)') repeat('-',78)
-       write(stdout,*)
+    else
+       do nn = 1, nntot
+          rn = 2*nn-1
+          cn = 2*nn
+          do n = 1, num_wann
+             ln_tmp(n,nn,1)= aimag(log(csheet(n,nn,1)*cmplx(m_w(n,n,rn),m_w(n,n,cn),dp))) &
+                             -sheet(n,nn,1) 
+           end do
+       end do
     endif
 
-    xyz_unit=io_file_unit()
-    open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
-    write(xyz_unit,'(i6)') num_wann
-    call io_date(cdate,ctime)
-    write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
-    do iw=1,num_wann
-       write(xyz_unit,'("X",6x,3(f14.8,3x))') (wc(ind,iw),ind=1,3)
-    end do
-    write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
-    
-    return
+    rave  = 0.0_dp
+    do iw = 1, num_wann  
+       do ind = 1, 3  
+          do nn = 1, nntot  
+             rave(ind,iw) = rave(ind,iw) - wb(nn) * bk(ind,nn,1) &
+                   *ln_tmp(iw,nn,1)
+          enddo
+       enddo
+    enddo
 
-888 format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
-    
-  end subroutine wann_write_xyz
+    rave2 = 0.0_dp
+    do iw = 1, num_wann  
+       rave2(iw) = sum(rave(:,iw)*rave(:,iw))
+    enddo
 
+    m_w_nn2 = 0.0_dp
+    r2ave = wbtot
+    do iw = 1, num_wann  
+       do nn = 1, nntot  
+          rn = 2*nn -1 
+          cn = 2*nn
+          m_w_nn2(iw) = m_w_nn2(iw) + m_w(iw,iw,rn)**2 + m_w(iw,iw,cn)**2
+          r2ave(iw) = r2ave(iw) + wb(nn)*ln_tmp(iw,nn,1)**2 
+       enddo
+       r2ave(iw) = r2ave(iw) - m_w_nn2(iw) 
+    enddo
+
+    if (first_pass) then
+       summ = 0.0_dp  
+       do nn = 1, nntot  
+          rn = 2*nn -1
+          cn = 2*nn 
+          do m = 1, num_wann  
+             do n = 1, num_wann  
+                summ = summ + m_w(n,m,rn)**2+m_w(n,m,cn)**2
+             enddo
+          enddo
+       enddo
+       wann_spread%om_i = wbtot*real(num_wann,dp) - summ
+       first_pass=.false.
+    else 
+       wann_spread%om_i=omega_invariant
+    endif
+
+    wann_spread%om_od = wbtot*real(num_wann,dp) - sum(m_w_nn2(:)) - wann_spread%om_i 
+
+    if (nntot.eq.3) then 
+       wann_spread%om_d = 0.0_dp  
+    else
+       wann_spread%om_d = 0.0_dp  
+       do nn = 1, nntot  
+          do n = 1, num_wann  
+             brn = sum(bk(:,nn,1)*rave(:,n))
+             wann_spread%om_d = wann_spread%om_d + wb(nn) &
+                  * ( ln_tmp(n,nn,1) + brn)**2
+          enddo
+       enddo
+    end if
+
+    wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
+
+    deallocate( m_w_nn2,stat=ierr )
+    if (ierr/=0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma')
+
+    if (timing_level>1) call io_stopwatch('wann: omega_gamma',2)
+
+    return  
+
+  end subroutine wann_omega_gamma
 
 end module w90_wannierise
