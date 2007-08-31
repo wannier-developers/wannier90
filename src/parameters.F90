@@ -55,6 +55,7 @@ module w90_parameters
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
+  integer,           public, save :: bands_plot_dim         
   logical,           public, save :: hr_plot
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
@@ -513,8 +514,11 @@ contains
     bands_plot_format         = 'gnuplot'
     call param_get_keyword('bands_plot_format',found,c_value=bands_plot_format)
 
-    bands_plot_mode             = 's-k'
+    bands_plot_mode             = 'S-K'
     call param_get_keyword('bands_plot_mode',found,c_value=bands_plot_mode)
+
+    bands_plot_dim             = 3
+    call param_get_keyword('bands_plot_dim',found,i_value=bands_plot_dim)
 
     bands_num_spec_points=0
     call param_get_block_length('kpoint_path',found,i_temp)
@@ -533,7 +537,7 @@ contains
     if (bands_plot) then
        if ( (index(bands_plot_format,'gnu').eq.0) .and. (index(bands_plot_format,'xmgr').eq.0) ) &
             call io_error('Error: bands_plot_format not recognised')
-       if ( (index(bands_plot_mode,'s-k').eq.0) .and. (index(bands_plot_mode,'cut').eq.0) ) &
+       if ( (index(bands_plot_mode,'S-K').eq.0) .and. (index(bands_plot_mode,'cut').eq.0) ) &
             call io_error('Error: bands_plot_mode not recognised')
        if ( bands_num_points < 0 ) call io_error('Error: bands_num_points must be positive')       
     endif
@@ -591,6 +595,10 @@ contains
 
     dist_cutoff_mode             = 'three_dim'
     call param_get_keyword('dist_cutoff_mode',found,c_value=dist_cutoff_mode)
+    if (      (index(dist_cutoff_mode,'three_dim').eq.0)  &
+        .and. (index(dist_cutoff_mode,'two_dim')  .eq.0)  &
+        .and. (index(dist_cutoff_mode,'one_dim')  .eq.0)) &
+       call io_error('Error: dist_cutoff_mode not recognised')
 
     dist_cutoff                 = 1000.0_dp
     call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
@@ -1149,6 +1157,17 @@ contains
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :',bands_num_points,'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Output format                            :',trim(bands_plot_format),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :',trim(bands_plot_mode),'|'
+          if(index(bands_plot_mode,'cut').ne.0) then
+             write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|   Dimension of the system                  :',bands_plot_dim,'|'
+             if (bands_plot_dim .eq. 1) &
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   System extended in                       :',trim(one_dim_axis),'|'
+             if (bands_plot_dim .eq. 2) &
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   System confined in                       :',trim(one_dim_axis),'|'
+             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :',hr_cutoff,'|'
+             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :',dist_cutoff,'|'
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   Hamiltonian cut-off distance mode        :',trim(dist_cutoff_mode),'|'
+          endif
+          write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
           write(stdout,'(1x,a78)') '|   K-space path sections:                                                   |'
           if(bands_num_spec_points==0) then
              write(stdout,'(1x,a78)') '|     None defined                                                           |'
@@ -1163,12 +1182,6 @@ contains
        !
        if (hr_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',hr_plot,'|'
-          if(index(bands_plot_mode,'cut').ne.0) then
-             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :',hr_cutoff,'|'
-             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :',dist_cutoff,'|'
-             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   Hamiltonian cut-off distance mode        :',trim(dist_cutoff_mode),'|'
-             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|   System extended in                       :',trim(one_dim_axis),'|'
-          endif
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        endif
        !
