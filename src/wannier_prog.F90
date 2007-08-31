@@ -91,6 +91,8 @@ program wannier
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
+  if (transport .and. tran_read_ht) goto 3003
+
   call kmesh_get()
 
   ! Sort out restarts
@@ -118,6 +120,9 @@ program wannier
         case ('plot')       ! continue from plot_main irrespective of value of last checkpoint 
            write(stdout,'(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
            goto 2002       
+        case ('transport')   ! continue from tran_main irrespective of value of last checkpoint 
+           write(stdout,'(1x,a/)') 'Restarting Wannier90 from transport routines ...'
+           goto 3003       
         case default        ! for completeness... (it is already trapped in param_read)
            call io_error('Value of restart not recognised in wann_prog')
      end select
@@ -173,18 +178,21 @@ program wannier
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
   end if
 
-  time2=io_time()
+3003 time2=io_time()
 
   if (transport) then
      call tran_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for transport       ',time1-time2,' (sec)'
+     if (tran_read_ht) goto 4004
   end if
 
   call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
   call param_dealloc()
+
+4004 continue 
 
   write(stdout,'(1x,a25,f11.3,a)') 'Total Execution Time     ',io_time(),' (sec)'
 
