@@ -33,7 +33,7 @@ module w90_parameters
   integer,           public, save :: num_wann
   integer,           public, save :: mp_grid(3)
   logical,           public, save :: automatic_mp_grid
-  logical,           public, save :: gamma_only  ![ysl]
+  logical,           public, save :: gamma_only  
   real(kind=dp),     public, save :: dis_win_min
   real(kind=dp),     public, save :: dis_win_max
   real(kind=dp),     public, save :: dis_froz_min
@@ -250,6 +250,18 @@ contains
     call param_in_file
 
     !%%%%%%%%%%%%%%%%
+    ! Transport 
+    !%%%%%%%%%%%%%%%%
+
+    transport         = .false.
+    call param_get_keyword('transport',found,l_value=transport)    
+
+    tran_read_ht           = .false. 
+    call param_get_keyword('tran_read_ht',found,l_value=tran_read_ht)
+
+    if (transport .and. tran_read_ht) restart = ' '
+
+    !%%%%%%%%%%%%%%%%
     !System variables
     !%%%%%%%%%%%%%%%%
 
@@ -258,6 +270,8 @@ contains
 
     iprint          =  1             ! Verbosity
     call param_get_keyword('iprint',found,i_value=iprint)
+
+    if (transport .and. tran_read_ht) goto 301 
 
     energy_unit     =  'ev'          !
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
@@ -367,7 +381,8 @@ contains
     restart = ' '
     call param_get_keyword('restart',found,c_value=restart)
     if (found) then
-       if ( (restart.ne.'default').and.(restart.ne.'wannierise').and.(restart.ne.'plot') ) then 
+       if ( (restart.ne.'default').and.(restart.ne.'wannierise') &
+          .and.(restart.ne.'plot').and.(restart.ne.'transport') ) then 
           call io_error('Error in input file: value of restart not recognised')
        else
           inquire(file=trim(seedname)//'.chk',exist=chk_found)
@@ -580,24 +595,27 @@ contains
     dist_cutoff                 = 1000.0_dp
     call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
 
-    one_dim_dir=0
+    one_dim_axis                = 'none'
     call param_get_keyword('one_dim_axis',found,c_value=one_dim_axis)
+    one_dim_dir=0
     if (index(one_dim_axis,'x')>0 ) one_dim_dir = 1
     if (index(one_dim_axis,'y')>0 ) one_dim_dir = 2
     if (index(one_dim_axis,'z')>0 ) one_dim_dir = 3
-    if ( transport.and.(one_dim_dir.eq.0) ) call io_error('Error: one_dim_axis not recognised')
+    if ( transport.and. .not.tran_read_ht .and.(one_dim_dir.eq.0) ) call io_error('Error: one_dim_axis not recognised')
     if ( bands_plot.and.(index(bands_plot_mode,'cut').ne.0).and.(one_dim_dir.eq.0) ) &
          call io_error('Error: one_dim_axis not recognised')
+
+301  continue
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
     !%%%%%%%%%%%%%%%%
 
-    transport         = .false.
-    call param_get_keyword('transport',found,l_value=transport)    
-
     transport_mode    = 'bulk'
     call param_get_keyword('transport_mode',found,c_value=transport_mode)
+
+    if ( .not.tran_read_ht  .and. (index(transport_mode,'lcr').ne.0) ) &
+       call io_error('Error: transport_mode.eq.lcr not compatible with tran_read_ht.eq.false')
 
     tran_win_min      = -3.0_dp
     call param_get_keyword('tran_win_min',found,r_value=tran_win_min)
@@ -632,9 +650,6 @@ contains
     tran_write_ht          = .false. 
     call param_get_keyword('tran_write_ht',found,l_value=tran_write_ht)
 
-    tran_read_ht           = .false. 
-    call param_get_keyword('tran_read_ht',found,l_value=tran_read_ht)
-
     tran_use_same_lead     = .true.
     call param_get_keyword('tran_use_same_lead',found,l_value=tran_use_same_lead)
 
@@ -650,6 +665,8 @@ contains
        if ( tran_num_cr < 0 )    call io_error('Error: tran_num_cr < 0')
        if ( tran_num_bandc < 0 ) call io_error('Error: tran_num_bandc < 0')
     endif
+
+    if (transport .and. tran_read_ht) goto 302 
 
     !%%%%%%%%%%%%%%%%
     ! Disentanglement
@@ -827,6 +844,8 @@ contains
 
     ! check to see that there are no unrecognised keywords
 
+302  continue
+
     if ( any(len_trim(in_data(:))>0 )) then
        write(stdout,'(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
        write(stdout,*) 
@@ -839,14 +858,17 @@ contains
        call io_error('Unrecognised keyword(s) in input file')
     end if
 
+    if (transport .and. tran_read_ht) goto 303 
 
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase()
 
+303  continue
 
     deallocate(in_data,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating in_data in param_read')
 
+    if (transport .and. tran_read_ht) return 
 
     ! =============================== !
     ! Some checks and initialisations !
@@ -940,6 +962,8 @@ contains
     implicit none
 
     integer :: i,nkp,loop,nat,nsp
+
+    if (transport .and. tran_read_ht) goto 401
 
     ! System
     write(stdout,*)
@@ -1149,25 +1173,32 @@ contains
        endif
        !
     endif
+
+401  continue
     !
     ! Transport
     !
-    if (transport.or.iprint>2) then
+    if (transport.or.iprint>2 ) then
        !
        write(stdout,'(1x,a78)') '*------------------------------- TRANSPORT ----------------------------------*'
        !
        write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Transport mode                            :',trim(transport_mode),'|'
-       write(stdout,'(1x,a46,10x,L8,13x,a1)') '|   Hamiltonian from external files          :',tran_read_ht,'|'
-       if (index(transport_mode,'bulk').ne.0 .or. iprint>2) then
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :',trim(one_dim_axis),'|'
+       !
+       if (tran_read_ht) then
+       !
+       write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :','T','|'
+       !
+       else
+       !
+       write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :','F','|'
+       write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :',trim(one_dim_axis),'|'
+       !
        end if
        !
-       if (index(transport_mode,'lcr').ne.0 .or. iprint>2) then
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Transport mode                            :',trim(transport_mode),'|'
-       end if
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        !
     endif
+
 
 101 format(20x,a3,2x,3F11.6)
 
