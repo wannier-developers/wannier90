@@ -194,13 +194,7 @@ contains
     !
     ! Cut H matrix in real-space
     !
-    if (index(bands_plot_mode,'cut').ne.0) then
-       irvec_max = maxval(irvec,DIM=2)+1
-       nrpts_cut = (2*irvec_max(1)+1)*(2*irvec_max(2)+1)*(2*irvec_max(3)+1)
-       allocate(ham_r_cut(num_wann,num_wann,nrpts_cut),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating ham_r_cut in plot_interpolate_bands')
-       call plot_cut_hr()
-    end if
+    if (index(bands_plot_mode,'cut').ne.0)  call plot_cut_hr()
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
@@ -254,6 +248,11 @@ contains
     write(stdout,'(1x,a,f11.3,a)')  &
          'Time to calculate interpolated band structure ',io_time()-time0,' (sec)'
     write(stdout,*)
+
+    if (allocated(ham_r_cut)) deallocate(ham_r_cut,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating ham_r_cut in plot_interpolate_bands')
+    if (allocated(irvec_cut)) deallocate(irvec_cut,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating irvec_cut in plot_interpolate_bands')
     !
     if (timing_level>1) call io_stopwatch('plot: interpolate_bands',2)
     !
@@ -274,26 +273,65 @@ contains
     !    ( dist_cutoff must be smaller than the shortest distance from
     !      the center of W-S supercell to the points at the cell boundaries )
     !  the condition 2) is optional.
-    !                                            
+    !      
+    !  limitation: when bands_plot_dim .ne. 3
+    !      one_dim_vec must be parallel to one of the cartesian axis
+    !      and perpendicular to the other two primitive lattice vectors                         
     !============================================!
 
-    use w90_constants,   only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,          only : io_error,stdout,io_file_unit,seedname,&
-                                io_time,io_stopwatch
-    use w90_parameters,  only : num_wann,hr_cutoff,dist_cutoff,real_lattice,&
-                                mp_grid,dist_cutoff_mode, one_dim_dir
+    use w90_constants,   only : dp,cmplx_0, eps8
+    use w90_io,          only : io_error,stdout
+    use w90_parameters,  only : num_wann, mp_grid, real_lattice,   &
+                                one_dim_dir, bands_plot_dim,       &
+                                hr_cutoff, dist_cutoff, dist_cutoff_mode
     use w90_hamiltonian, only : wannier_centres_translated
 
     implicit none
     !
     integer :: nrpts_tmp
-    integer :: n1, n2, n3, i1, i2, i3
+    integer :: one_dim_vec, two_dim_vec(2)
+    integer :: i, j, n1, n2, n3, i1, i2, i3
     real(kind=dp) :: ham_r_tmp(num_wann,num_wann)
     real(kind=dp) :: shift_vec(3,nrpts_cut)
     real(kind=dp) :: dist_ij_vec(3)
     real(kind=dp) :: dist_vec(3)
     real(kind=dp) :: dist
                                  
+    irvec_max = maxval(irvec,DIM=2)+1
+
+    if (bands_plot_dim .ne. 3) then
+       ! Find one_dim_vec which is parallel to one_dim_dir
+       ! two_dim_vec - the other two lattice vectors
+       ! Along the confined directions, take only irvec=0
+       j = 0
+       do i=1,3
+          if ( abs(abs(real_lattice(one_dim_dir,i)) &
+               - sqrt(dot_product(real_lattice(:,i),real_lattice(:,i)))) .lt. eps8 ) then
+             one_dim_vec = i
+             j = j +1
+          end if
+       end do
+       if ( j .ne. 1 ) call io_error('Error: 1-d lattice vector not defined in plot_cut_hr')
+       j=0
+       do i=1,3
+          if ( i .ne. one_dim_vec ) then
+             j = j +1
+             two_dim_vec(j)=i
+          end if
+       end do
+       if (bands_plot_dim .eq. 1) then
+          irvec_max(two_dim_vec(1))=0
+          irvec_max(two_dim_vec(2))=0
+       end if
+       if (bands_plot_dim .eq. 2) irvec_max(one_dim_vec)=0
+    end if  
+
+    nrpts_cut = (2*irvec_max(1)+1)*(2*irvec_max(2)+1)*(2*irvec_max(3)+1)
+    allocate(ham_r_cut(num_wann,num_wann,nrpts_cut),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_r_cut in plot_cut_hr')
+    allocate(irvec_cut(3,nrpts_cut),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating irvec_cut in plot_cut_hr')
+
     nrpts_tmp = 0
     do n1 = -irvec_max(1), irvec_max(1)    
        do n2 = -irvec_max(2), irvec_max(2)    
@@ -321,9 +359,11 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     end if
 
     do loop_rpt = 1, nrpts_cut
-       shift_vec(:,loop_rpt) = matmul(real_lattice(:,:),real(irvec_cut(:,loop_rpt),kind=dp)) 
+       shift_vec(:,loop_rpt) = matmul(real_lattice(:,:),real(irvec_cut(:,loop_rpt),dp)) 
     end do
 
+    ! note: dist_cutoff_mode does not necessarily follow bands_plot_dim
+    ! e.g. for 1-d system (bands_plot_dim=1) we can still apply 3-d dist_cutoff (dist_cutoff_mode=three_dim)
     if (index(dist_cutoff_mode, 'one_dim')>0) then
        do i=1,num_wann
            do j=1,num_wann
@@ -332,6 +372,19 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
               do loop_rpt =1, nrpts_cut
                  dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+ shift_vec(one_dim_dir,loop_rpt)
                  dist = abs(dist_vec(one_dim_dir))
+                 if ( dist .gt. dist_cutoff ) &
+                    ham_r_cut(j,i,loop_rpt) = cmplx_0
+              end do
+           end do
+       end do
+    else if (index(dist_cutoff_mode, 'two_dim')>0) then
+       do i=1,num_wann
+           do j=1,num_wann
+              dist_ij_vec(:)=wannier_centres_translated(:,i) - wannier_centres_translated(:,j)
+              do loop_rpt =1, nrpts_cut
+                 dist_vec(:) = dist_ij_vec(:)+ shift_vec(:,loop_rpt)
+                 dist_vec(one_dim_dir) = 0.0_dp
+                 dist = sqrt(dot_product(dist_vec,dist_vec))
                  if ( dist .gt. dist_cutoff ) &
                     ham_r_cut(j,i,loop_rpt) = cmplx_0
               end do
