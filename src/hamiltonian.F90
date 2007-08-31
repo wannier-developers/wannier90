@@ -56,9 +56,9 @@ module w90_hamiltonian
 
 contains
 
- !============================================!
-  subroutine hamiltonian_setup()
   !============================================!
+  subroutine hamiltonian_setup()
+    !============================================!
 
     use w90_constants,  only: cmplx_0
     use w90_io,         only: io_error
@@ -82,19 +82,19 @@ contains
     call hamiltonian_wigner_seitz(count_pts=.true.)
     !
     allocate(irvec(3,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating irvec in param_read')
+    if (ierr/=0) call io_error('Error in allocating irvec in hamiltonian_setup')
     irvec=0
     !
     allocate(ndegen(nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ndegen in param_read')
+    if (ierr/=0) call io_error('Error in allocating ndegen in hamiltonian_setup')
     ndegen=0
     !
     allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ham_r in param_read')
+    if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_setup')
     ham_r=cmplx_0
     !
     allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ham_k in param_read')
+    if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_setup')
     ham_k=cmplx_0
     !
     ! Set up the wigner_seitz vectors
@@ -102,7 +102,7 @@ contains
     call hamiltonian_wigner_seitz(count_pts=.false.)
     !
     allocate(wannier_centres_translated(3,num_wann),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
+    if (ierr/=0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
     wannier_centres_translated=0.0_dp
 
     ham_have_setup = .true.
@@ -111,9 +111,9 @@ contains
   end subroutine hamiltonian_setup
 
 
- !============================================!
-  subroutine hamiltonian_dealloc()
   !============================================!
+  subroutine hamiltonian_dealloc()
+    !============================================!
 
     use w90_io, only : io_error
 
@@ -146,20 +146,20 @@ contains
   end subroutine hamiltonian_dealloc
 
 
- !============================================!
+  !============================================!
   subroutine hamiltonian_get_hr()
-  !============================================!
-  !                                            !
-  !  Calculate the Hamiltonian in the WF basis !
-  !                                            !
-  !============================================!
+    !============================================!
+    !                                            !
+    !  Calculate the Hamiltonian in the WF basis !
+    !                                            !
+    !============================================!
 
     use w90_constants,  only : cmplx_0,cmplx_i,twopi
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
                                stdout, seedname, io_date
     use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
                                eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
-                               have_disentangled,hr_plot,timing_level
+                               have_disentangled,timing_level
 
     implicit none
   
@@ -186,10 +186,10 @@ contains
 
     if(have_ham_k) go to 100
 
-    if (.not. allocated(ham_k)) then
-       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
-    end if
+!!$    if (.not. allocated(ham_k)) then
+!!$       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+!!$       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
+!!$    end if
 
     ham_k=cmplx_0
     eigval_opt=0.0_dp
@@ -253,10 +253,10 @@ contains
 
     ! Fourier transform rotated hamiltonian into WF basis
     ! H_ij(k) --> H_ij(R) = (1/N_kpts) sum_k e^{-ikR} H_ij(k)
-    if (.not.allocated(ham_r)) then
-      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
-      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
-    end if
+!!$    if (.not.allocated(ham_r)) then
+!!$      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
+!!$    end if
     
     ham_r=cmplx_0
 
@@ -310,38 +310,38 @@ contains
 
     return
 
-    contains
+  contains
 
     !====================================================!
-      subroutine internal_translate_wannier_centres()
-    !====================================================!
+    subroutine internal_translate_wannier_centres()
+      !====================================================!
 
       use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres, &
                                  num_atoms,atoms_pos_cart,translation_centre_frac, &
                                  automatic_translation,num_species,atoms_species_num,lenconfac
       use w90_io,         only : stdout,io_error
       use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
-
+    
       implicit none
-
+    
       ! <<<local variables>>>
       integer :: iw,loop,ierr,nat,nsp,ind
       real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:)
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
-
-      if (.not.allocated(wannier_centres_translated)) then
-         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
-         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
-              &in internal_translate_wannier_centres')
-      end if
+    
+!!$      if (.not.allocated(wannier_centres_translated)) then
+!!$         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
+!!$         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
+!!$              &in internal_translate_wannier_centres')
+!!$      end if
       
       allocate(r_home(3,num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_wannier_centres')
       allocate(r_frac(3,num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_wannier_centres')
       r_home=0.0_dp;r_frac=0.0_dp
-
+    
       if (automatic_translation) then
          ! Calculate centre of atomic positions
          c_pos_cart=0.0_dp;c_pos_frac=0.0_dp
@@ -355,12 +355,10 @@ contains
 !!@         end do
          c_pos_cart = c_pos_cart / num_atoms
          ! Cartesian --> fractional
-         call utility_cart_to_frac(c_pos_cart,c_pos_frac,recip_lattice)      
-         ! Wannier function centres will be in [c_pos_frac-0.5,c_pos_frac+0.5]
-         r_frac_min(:)=c_pos_frac(:)-0.5_dp
-      else
-         r_frac_min(:)=translation_centre_frac(:)-0.5_dp
-      end if
+         call utility_cart_to_frac(c_pos_cart,translation_centre_frac,recip_lattice)
+      end if      
+      ! Wannier function centres will be in [c_pos_frac-0.5,c_pos_frac+0.5]
+      r_frac_min(:)=translation_centre_frac(:)-0.5_dp
        
       ! Cartesian --> fractional
       do iw=1,num_wann
@@ -368,7 +366,7 @@ contains
          ! Rationalise r_frac - r_frac_min to interval [0,1]
          !  by applying shift of -floor(r_frac - r_frac_min)
          shift_vec(:,iw)=-floor(r_frac(:,iw)-r_frac_min(:))
-         r_frac(:,iw)=r_frac(:,iw)+real(shift_vec(:,iw),kind=dp)
+         r_frac(:,iw)=r_frac(:,iw)+real(shift_vec(:,iw),dp)
          ! Fractional --> Cartesian
          call utility_frac_to_cart(r_frac(:,iw),r_home(:,iw),real_lattice)
       end do
@@ -376,7 +374,8 @@ contains
       ! NEVER overwrite wannier_centres
       !wannier_centres = r_home
 
-      write(stdout,'(1x,a)') 'Translated centres (translated to the center of atomic position)'
+      write(stdout,'(1x,a)') 'Translated centres'
+      write(stdout,'(4x,a,3f10.6)') 'translation centre in fractional coordinate:',translation_centre_frac(:)
       do iw=1,num_wann
          write(stdout,888) iw,(r_home(ind,iw)*lenconfac,ind=1,3)
       end do
@@ -392,7 +391,7 @@ contains
 
       return
 
-888   format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )',f15.8)
+888   format(2x,'WF centre ',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
 
     end subroutine internal_translate_wannier_centres
 
@@ -401,9 +400,9 @@ contains
 
   !============================================!
   subroutine hamiltonian_write_hr()
-  !============================================!
-  !  Write the Hamiltonian in the WF basis     !
-  !============================================!
+    !============================================!
+    !  Write the Hamiltonian in the WF basis     !
+    !============================================!
 
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
                                stdout,seedname,io_date
@@ -557,6 +556,7 @@ contains
     if (timing_level>1) call io_stopwatch('hamiltonian: wigner_seitz',2)
 
     return  
+
   end subroutine hamiltonian_wigner_seitz
 
 

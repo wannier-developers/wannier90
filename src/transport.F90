@@ -10,9 +10,23 @@
 !                                                            !
 !------------------------------------------------------------!
 !
+!-----------------------------------------------------------------------!
+!  Based on                                                             !
+!  < dosqc_1.0 >                                                        !
+!  Density Of States and Quantum Conductance - Version 1.0              !
+!  Marco Buongiorno Nardelli, January 2000.                             !
+!                                                                       !
+!  Reference:                                                           !
+!  - M. Buongiorno Nardelli, "Electronic transport in extended systems: !
+!  application to carbon nanotubes", Phys. Rev. B, vol. 60(11), 7828    !
+!  (1999)                                                               !
+!-----------------------------------------------------------------------!
+
 !=====================================================================!
+! Definition of parameters used in w90_transport                      !
 !=====================================================================!
 !                                                                     !
+! transport_mode     = 'bulk' or 'lcr'                                !
 ! tran_win_min   = minimum E                                          !
 ! tran_win_max   = maximum E                                          !
 ! tran_energy_step   = delta E                                        !
@@ -28,11 +42,9 @@
 ! tran_num_bandc     = width of band-diagonal hC matrix               !
 ! tran_read_ht       = .true. => read H matrix from h*.dat files      !
 ! tran_write_ht      = .true. => write H matrix from h*.dat files     !
-! transport_mode     = 'bulk' or 'lcr'                                !
 ! tran_use_same_lead = .true. => in L-C-R construction, left and      !
 !                                right lead are the same kind         !
 !                                                                     !
-!=====================================================================!
 !=====================================================================!
 
 module w90_transport
@@ -85,13 +97,7 @@ contains
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,*)
 
-    ! check one_dim_dir
-    if ( .not. tran_read_ht .and. one_dim_dir .eq. 0 ) then
-       write(stdout,'(1x,a)') 'Direction of 1-D is not given'
-       call io_error('Error: one_dim_dir not defined in tran_main')   
-    end if
-
-    if (index(transport_mode,'bulk').ne.0 ) then
+    if (index(transport_mode,'bulk')>0 ) then
        write(stdout,'(/1x,a/)') 'Calculating quantum conductance and density of states: bulk'
        if (.not.tran_read_ht) then
           call hamiltonian_setup()
@@ -106,10 +112,6 @@ contains
 
     if (index(transport_mode,'lcr')>0 ) then
        write(stdout,'(/1x,a/)') 'Calculating quantum conductance and density of states: lead-conductor-lead'
-       if (.not.tran_read_ht) then
-          write(stdout,'(1x,a)') 'transport_mode = lcr not compatible with tran_read_ht = false'
-          call io_error('Error: invalid option in tran_main')   
-       end if     
        call tran_lcr()
     end if
   
@@ -123,6 +125,7 @@ contains
     !
     ! reduce ham_r from 3-d to 1-d
     !
+    use w90_constants,   only : dp, eps8
     use w90_io,          only : io_error, io_stopwatch, stdout
     use w90_parameters,  only : one_dim_dir,real_lattice,num_wann, &
                                 num_kpts,mp_grid,timing_level
@@ -140,7 +143,7 @@ contains
     j = 0
     do i=1,3
        if ( abs(abs(real_lattice(one_dim_dir,i)) &
-            - sqrt(dot_product(real_lattice(:,i),real_lattice(:,i)))) .lt. 1.e-8_dp ) then
+            - sqrt(dot_product(real_lattice(:,i),real_lattice(:,i)))) .lt. eps8 ) then
           one_dim_vec = i
           j = j +1 
        end if
@@ -163,7 +166,7 @@ contains
     ! adding one more buffer layer when mp_grid(one_dim_vec) is an odd number
 
     !irvec_max = (mp_grid(one_dim_vec)+1)/2
-    irvec_tmp = maxval(irvec,DIM=2)
+    irvec_tmp = maxval(irvec,DIM=2)+1
     irvec_max = irvec_tmp(one_dim_vec)
     nrpts_one_dim = 2*irvec_max+1 
     allocate(hr_one_dim(num_wann,num_wann,-irvec_max:irvec_max),stat=ierr)
@@ -183,7 +186,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
           i3 = irvec(two_dim_vec(2),loop_rpt)
           if (i1.eq.0 .and. i2.eq.0 .and. i3.eq.0 ) then
              nrpts_tmp = nrpts_tmp+1
-             hr_one_dim(:,:,n1) = real(ham_r(:,:,loop_rpt),kind=dp)
+             hr_one_dim(:,:,n1) = real(ham_r(:,:,loop_rpt),dp)
              cycle loop_n1
           end if
        end do
@@ -204,6 +207,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_cut_hr_one_dim()
     !==================================================================!
     !
+    use w90_constants,   only : dp
     use w90_io,          only : io_error,io_stopwatch,stdout
     use w90_constants,   only : cmplx_0
     use w90_parameters,  only : num_wann,mp_grid,timing_level,real_lattice,&
@@ -227,7 +231,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     irvec_max = nrpts_one_dim/2
     ! maximum possible dist_cutoff
-    dist = real(mp_grid(one_dim_vec),kind=dp)*abs(real_lattice(one_dim_dir,one_dim_vec))/2.0_dp
+    dist = real(mp_grid(one_dim_vec),dp)*abs(real_lattice(one_dim_dir,one_dim_vec))/2.0_dp
 
     if ( dist_cutoff .gt. dist ) then
        write(stdout,'(1x,a,1x,F10.5,1x,a)') 'dist_cutoff',dist_cutoff,trim(length_unit),'is too large'
@@ -236,12 +240,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
     end if
 
     do n1 = -irvec_max, irvec_max
-       shift_vec(:,n1) = real(n1,kind=dp)*(real_lattice(:,one_dim_vec))
-       write(stdout,'(a,3f10.6)') 'shift_vec', shift_vec(:,n1)
+       shift_vec(:,n1) = real(n1,dp)*(real_lattice(:,one_dim_vec))
+    !       write(stdout,'(a,3f10.6)') 'shift_vec', shift_vec(:,n1)
     end do
 
     ! apply dist_cutoff first
-    if ( index(dist_cutoff_mode,'one_dim').ne.0 ) then
+    if ( index(dist_cutoff_mode,'one_dim')>0 ) then
        do i=1,num_wann
           do j=1,num_wann
              dist_ij_vec(one_dim_dir)=wannier_centres_translated(one_dim_dir,i)-wannier_centres_translated(one_dim_dir,j)
@@ -308,6 +312,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !  construct h00 and h01
     !==================================================================!
     !
+    use w90_constants,  only : dp
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
                                stdout, io_file_unit
     use w90_parameters, only : num_wann, tran_num_bb, tran_write_ht, &
@@ -382,7 +387,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_bulk()
     !==================================================================!
 
-    use w90_constants,  only : cmplx_0, cmplx_1, cmplx_i, pi
+    use w90_constants,  only : dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
                                stdout, io_file_unit
     use w90_parameters, only : tran_num_bb, tran_read_ht,  &
@@ -402,6 +407,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     complex(kind=dp), allocatable, dimension(:,:) :: sLr, sRr
     complex(kind=dp), allocatable, dimension(:,:) :: s1, s2, c1
     character(len=50) :: filename
+    character(len=9)  :: cdate, ctime
  
     if (timing_level>1) call io_stopwatch('tran: bulk',1)
 
@@ -426,12 +432,17 @@ loop_n1: do n1 = -irvec_max, irvec_max
     allocate (c1(tran_num_bb,tran_num_bb),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating c1 in tran_bulk')
 
+    call io_date(cdate,ctime)
+
     qc_unit = io_file_unit()
     open(qc_unit, file=trim(seedname)//'_qc.dat',status='unknown', &
          form='formatted',action='write')
+    write(qc_unit,*) '## written on '//cdate//' at '//ctime ! Date and time
+
     dos_unit = io_file_unit()
     open(dos_unit, file=trim(seedname)//'_dos.dat',status='unknown', &
          form='formatted',action='write') 
+    write(dos_unit,*) '## written on '//cdate//' at '//ctime ! Date and time
 
     !   set up the layer hamiltonians
 
@@ -449,7 +460,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     n_e = floor((tran_win_max-tran_win_min)/tran_energy_step)+1
 
     do n=1,n_e
-       e_scan = tran_win_min + real(n-1,kind=dp)*tran_energy_step
+       e_scan = tran_win_min + real(n-1,dp)*tran_energy_step
  
        ! compute conductance according to Fisher and Lee
        ! retarded Green
@@ -486,7 +497,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
            
        qc = 0.0_dp
        do i=1,tran_num_bb
-          qc = qc + real(c1(i,i),kind=dp)
+          qc = qc + real(c1(i,i),dp)
        end do
        write(qc_unit,'(f12.6,f15.6)') e_scan, qc
 
@@ -534,7 +545,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_lcr()
     !==================================================================!
 
-    use w90_constants,  only : cmplx_0, cmplx_1, cmplx_i, pi
+    use w90_constants,  only : dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
                                stdout, io_file_unit
     use w90_parameters, only : tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc, &
@@ -558,15 +569,21 @@ loop_n1: do n1 = -irvec_max, irvec_max
                               g_surf_L, g_surf_R, g_C, g_C_inv,            &
                               gR, gL, sLr, sRr, s1, s2, c1, c2
     character(len=50) :: filename 
+    character(len=9)  :: cdate, ctime
 
     if (timing_level>1) call io_stopwatch('tran: lcr',1)
+
+    call io_date(cdate,ctime)
 
     qc_unit = io_file_unit()
     open(qc_unit, file=trim(seedname)//'_qc.dat',status='unknown', &
          form='formatted',action='write')
+    write(qc_unit,*) '## written on '//cdate//' at '//ctime ! Date and time
+
     dos_unit = io_file_unit()
     open(dos_unit, file=trim(seedname)//'_dos.dat',status='unknown', &
          form='formatted',action='write') 
+    write(dos_unit,*) '## written on '//cdate//' at '//ctime ! Date and time
 
     KL = max(tran_num_lc, tran_num_cr, tran_num_bandc) - 1
     KU = KL
@@ -579,37 +596,35 @@ loop_n1: do n1 = -irvec_max, irvec_max
     allocate (hCR_cmp(tran_num_cr,tran_num_rr),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating hCR_cmp in tran_lcr')
 
-    if (tran_read_ht) then
-       allocate (hL0(tran_num_ll,tran_num_ll),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating hL0 in tran_lcr')
-       allocate (hL1(tran_num_ll,tran_num_ll),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating hL1 in tran_lcr')
-       allocate (hC(tran_num_cc,tran_num_cc),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating hC in tran_lcr')
-       allocate (hLC(tran_num_ll,tran_num_lc),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating hLC in tran_lcr')
-       allocate (hCR(tran_num_cr,tran_num_rr),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating hCR in tran_lcr')
+    allocate (hL0(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hL0 in tran_lcr')
+    allocate (hL1(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hL1 in tran_lcr')
+    allocate (hC(tran_num_cc,tran_num_cc),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hC in tran_lcr')
+    allocate (hLC(tran_num_ll,tran_num_lc),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hLC in tran_lcr')
+    allocate (hCR(tran_num_cr,tran_num_rr),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hCR in tran_lcr')
 
-       filename = trim(seedname)//'_htL.dat'
-       call tran_read_htX(tran_num_ll,hL0,hL1,filename)
-       
-       if (.not. tran_use_same_lead ) then
-          allocate (hR0(tran_num_rr,tran_num_rr),stat=ierr)
-          if (ierr/=0) call io_error('Error in allocating hR0 in tran_lcr')
-          allocate (hR1(tran_num_rr,tran_num_rr),stat=ierr)
-          if (ierr/=0) call io_error('Error in allocating hR1 in tran_lcr')
-          filename = trim(seedname)//'_htR.dat'
-          call tran_read_htX(tran_num_rr,hR0,hR1,filename)
-       end if
-
-       filename = trim(seedname)//'_htC.dat'
-       call tran_read_htC(tran_num_cc,hC,filename)
-       filename = trim(seedname)//'_htLC.dat'
-       call tran_read_htXY(tran_num_ll,tran_num_lc,hLC,filename)
-       filename = trim(seedname)//'_htCR.dat'
-       call tran_read_htXY(tran_num_cr,tran_num_rr,hCR,filename)
+    filename = trim(seedname)//'_htL.dat'
+    call tran_read_htX(tran_num_ll,hL0,hL1,filename)
+    
+    if (.not. tran_use_same_lead ) then
+       allocate (hR0(tran_num_rr,tran_num_rr),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating hR0 in tran_lcr')
+       allocate (hR1(tran_num_rr,tran_num_rr),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating hR1 in tran_lcr')
+       filename = trim(seedname)//'_htR.dat'
+       call tran_read_htX(tran_num_rr,hR0,hR1,filename)
     end if
+
+    filename = trim(seedname)//'_htC.dat'
+    call tran_read_htC(tran_num_cc,hC,filename)
+    filename = trim(seedname)//'_htLC.dat'
+    call tran_read_htXY(tran_num_ll,tran_num_lc,hLC,filename)
+    filename = trim(seedname)//'_htCR.dat'
+    call tran_read_htXY(tran_num_cr,tran_num_rr,hCR,filename)
 
     !  Banded matrix H_C  :  save memory !
     do j=1, tran_num_cc
@@ -672,7 +687,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     do n=1,n_e
 
-       e_scan = tran_win_min + real(n-1,kind=dp)*tran_energy_step
+       e_scan = tran_win_min + real(n-1,dp)*tran_energy_step
  
        !    compute conductance according to Fisher and Lee
        !    compute self-energies following Datta
@@ -771,7 +786,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
        qc = 0.0_dp
        do i=1,KC
           do j=1,KC
-             qc = qc + real(s1(i,j)*s2(j,i),kind=dp)
+             qc = qc + real(s1(i,j)*s2(j,i),dp)
           end do
        end do
        write(qc_unit,'(f12.6,f15.6)') e_scan, qc
@@ -847,8 +862,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !                                                                  !
     !===================================================================
 
+    use w90_constants, only : dp, cmplx_0, cmplx_1, eps7
     use w90_io, only : stdout, io_error
-    use w90_constants, only : cmplx_0, cmplx_1
 
     implicit none
 
@@ -918,7 +933,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     taut = cmplx_0
 
     ! t_0:
-    t12(:,:) = cmplx(h_01(:,:), kind=dp)
+    t12(:,:) = cmplx(h_01(:,:),kind=dp)
 
     !  tau  = ( e - H_00 )^-1 * H_01^+
     call ZGEMM('N','C',nxx,nxx,nxx,cmplx_1,t11,nxx,t12,nxx,cmplx_0,tau(1,1,1),nxx)
@@ -1000,17 +1015,15 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
        do j=1,nxx
           do i=1,nxx
-              conver=conver+sqrt(real(tau(i,j,2),kind=dp)**2+     &
-                                 aimag(tau(i,j,2))**2)
-              conver2=conver2+sqrt(real(taut(i,j,2),kind=dp)**2+  &
-                                   aimag(taut(i,j,2))**2)
+              conver=conver+sqrt(real(tau(i,j,2),dp)**2+aimag(tau(i,j,2))**2)
+              conver2=conver2+sqrt(real(taut(i,j,2),dp)**2+aimag(taut(i,j,2))**2)
           end do
        end do
 
-       if (conver.lt. 1.e-7_dp .and. conver2.lt. 1.e-7_dp) return
+       if (conver.lt.eps7 .and. conver2.lt.eps7) return
     end do 
 
-    if (conver.gt. 1.e-7_dp .or. conver2.gt. 1.e-7_dp) &
+    if (conver.gt.eps7 .or. conver2.gt.eps7) &
        call io_error('Error in converging transfer matrix in tran_transfer') 
 
     deallocate(ipiv,stat=ierr)
@@ -1049,8 +1062,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !   invert = 1 computes g^-1 and g
     !==================================================================!
 
+    use w90_constants, only : dp, cmplx_0, cmplx_1
     use w90_io, only : stdout, io_error
-    use w90_constants, only : cmplx_0, cmplx_1
 
     implicit none
 
@@ -1203,6 +1216,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
    subroutine tran_read_htX(nxx,h_00,h_01,h_file)
     !============================================!
 
+    use w90_constants, only : dp
     use w90_io, only : stdout, io_file_unit, io_error, maxlen
  
     implicit none
@@ -1245,6 +1259,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_read_htC(nxx,h_00,h_file)
     !============================================!
 
+    use w90_constants, only : dp
     use w90_io, only : stdout, io_file_unit, io_error, maxlen
  
     implicit none
@@ -1283,6 +1298,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   subroutine tran_read_htXY(nxx1,nxx2,h_01,h_file)
     !============================================!
 
+    use w90_constants, only : dp
     use w90_io, only : stdout, io_file_unit, io_error, maxlen
  
     implicit none
