@@ -55,6 +55,7 @@ module w90_parameters
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
+  integer, allocatable, public, save :: bands_plot_project(:)
   integer,           public, save :: bands_plot_dim         
   logical,           public, save :: hr_plot
   real(kind=dp),     public, save :: hr_cutoff
@@ -151,6 +152,7 @@ module w90_parameters
   logical,           public, save :: disentanglement
   real(kind=dp),     public, save :: lenconfac
   integer,           public, save :: num_wannier_plot
+  integer,           public, save :: num_bands_project
   integer,           public, save :: num_exclude_bands
   logical,           public, save :: lfixstep
 
@@ -514,11 +516,22 @@ contains
     bands_plot_format         = 'gnuplot'
     call param_get_keyword('bands_plot_format',found,c_value=bands_plot_format)
 
-    bands_plot_mode             = 'S-K'
+    bands_plot_mode             = 's-k'
     call param_get_keyword('bands_plot_mode',found,c_value=bands_plot_mode)
 
     bands_plot_dim             = 3
     call param_get_keyword('bands_plot_dim',found,i_value=bands_plot_dim)
+
+    num_bands_project=0
+    call param_get_range_vector('bands_plot_project',found,num_bands_project,lcount=.true.)
+    if(found) then
+       if(num_bands_project<1) call io_error('Error: problem reading bands_plot_project')
+       allocate(bands_plot_project(num_bands_project),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating bands_plot_project in param_read')
+       call param_get_range_vector('bands_plot_project',found,num_bands_project,.false.,bands_plot_project)
+       if (any(bands_plot_project<1) .or. any(bands_plot_project>num_wann) ) &
+            call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected')
+    endif 
 
     bands_num_spec_points=0
     call param_get_block_length('kpoint_path',found,i_temp)
@@ -537,7 +550,7 @@ contains
     if (bands_plot) then
        if ( (index(bands_plot_format,'gnu').eq.0) .and. (index(bands_plot_format,'xmgr').eq.0) ) &
             call io_error('Error: bands_plot_format not recognised')
-       if ( (index(bands_plot_mode,'S-K').eq.0) .and. (index(bands_plot_mode,'cut').eq.0) ) &
+       if ( (index(bands_plot_mode,'s-k').eq.0) .and. (index(bands_plot_mode,'cut').eq.0) ) &
             call io_error('Error: bands_plot_mode not recognised')
        if ( bands_num_points < 0 ) call io_error('Error: bands_num_points must be positive')       
     endif

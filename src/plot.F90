@@ -98,7 +98,7 @@ contains
     use w90_parameters, only  : num_wann,bands_num_points,recip_metric,&
                                 bands_num_spec_points,timing_level, &
                                 bands_spec_points,bands_label,bands_plot_format, &
-                                bands_plot_mode
+                                bands_plot_mode,num_bands_project,bands_plot_project
     use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
 
     implicit none
@@ -114,6 +114,7 @@ contains
     integer            :: kpath_pts(bands_num_spec_points/2)     
     real(kind=dp), allocatable :: xval(:)
     real(kind=dp), allocatable :: eig_int(:,:),plot_kpoint(:,:)
+    real(kind=dp), allocatable :: bands_proj(:,:)
     real(kind=dp)        :: rdotk,vec(3),emin,emax,time0
     integer, allocatable :: irvec_cut(:,:)
     integer              :: irvec_max(3)
@@ -123,7 +124,7 @@ contains
     integer              :: loop_rpt,nfound,loop_kpt,counter
     integer              :: loop_spts,total_pts,loop_i,nkp
     integer              :: num_paths,num_spts,ierr
-    integer              :: bndunit,gnuunit
+    integer              :: bndunit,gnuunit,loop_w,loop_p
     character(len=3),allocatable   :: glabel(:)
     character(len=10),allocatable  :: xlabel(:)
     character(len=10),allocatable  :: ctemp(:)
@@ -155,13 +156,15 @@ contains
     if (ierr/=0) call io_error('Error in allocating xval in plot_interpolate_bands')
     allocate(eig_int(num_wann,total_pts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating eig_int in plot_interpolate_bands')
+    allocate(bands_proj(num_wann,total_pts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating bands_proj in plot_interpolate_bands')
     allocate(glabel(num_spts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating num_spts in plot_interpolate_bands')
     allocate(xlabel(num_spts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating xlabel in plot_interpolate_bands')
     allocate(ctemp(bands_num_spec_points),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating ctemp in plot_interpolate_bands')
-    eig_int=0.0_dp
+    eig_int=0.0_dp;bands_proj=0.0_dp
     !
     ! Find the position of each kpoint in the path
     !
@@ -222,7 +225,7 @@ contains
              ham_pack(i+((j-1)*j)/2)=ham_kprm(i,j)
           enddo
        enddo
-       call ZHPEVX('N','A','U',num_wann,ham_pack,0.0_dp,0.0_dp,0,0,-1.0_dp, &
+       call ZHPEVX('V','A','U',num_wann,ham_pack,0.0_dp,0.0_dp,0,0,-1.0_dp, &
             nfound,eig_int(1,loop_kpt),U_int,num_wann,cwork,rwork,iwork,ifail,info)
        if(info < 0) then
           write(stdout,'(a,i3,a)') 'THE ',-info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
@@ -232,6 +235,17 @@ contains
           write(stdout,'(i3,a)') info,' EIGENVECTORS FAILED TO CONVERGE'
           call io_error('Error in plot_interpolate_bands')
        endif
+       ! Compute projection onto WF if requested
+       if(num_bands_project>0) then
+       do loop_w=1,num_wann
+         do loop_p=1,num_wann 
+          if(any(bands_plot_project==loop_p)) then
+            bands_proj(loop_w,loop_kpt)=bands_proj(loop_w,loop_kpt)+abs(U_int(loop_p,loop_w))**2
+          end if 
+         end do
+       end do
+       end if
+       !
     end do
     !
     ! Interpolation Finished!
@@ -441,7 +455,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
                                io_time,io_stopwatch
     use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
                                bands_num_spec_points,timing_level, &
-                               bands_spec_points,bands_label
+                               bands_spec_points,bands_label,num_bands_project
 
     implicit none
 
@@ -455,7 +469,11 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     !
     do i=1,num_wann
        do nkp=1,total_pts
-          write(bndunit,'(2E16.8)') xval(nkp),eig_int(i,nkp)
+          if(num_bands_project>0) then
+             write(bndunit,'(3E16.8)') xval(nkp),eig_int(i,nkp),bands_proj(i,nkp)
+          else
+             write(bndunit,'(2E16.8)') xval(nkp),eig_int(i,nkp)
+          end if
        enddo
        write(bndunit,*) ' '
     enddo
@@ -480,6 +498,27 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     write(gnuunit,*) 'plot ','"'//trim(seedname)//'_band.dat','"' 
     close(gnuunit)
 
+    if(num_bands_project>0) then
+     gnuunit=io_file_unit()
+     open(gnuunit,file=trim(seedname)//'_band_proj.gnu',form='formatted')
+     write(gnuunit,'(a)') '#File to plot a colour-mapped Bandstructure' 
+     write(gnuunit,'(a)') 'set palette defined ( 0 "blue", 3 "green", 6 "yellow", 10 "red" )'
+     write(gnuunit,'(a)') 'unset ztics'
+     write(gnuunit,'(a)') 'unset key'
+     write(gnuunit,'(a)') '# can make pointsize smaller (~0.5). Too small and nothing is printed'
+     write(gnuunit,'(a)') 'set pointsize 0.8'
+     write(gnuunit,'(a)') 'set grid xtics'
+     write(gnuunit,'(a)') 'set view 0,0'
+     write(gnuunit,'(a,f9.5,a)') 'set xrange [0:',xval(total_pts),']'
+     write(gnuunit,'(a,f9.5,a,f9.5,a)') 'set yrange [',emin,':',emax,']'
+     write(gnuunit,702, advance="no") glabel(1),0.0_dp,(glabel(i+1),sum(kpath_len(1:i)),i=1,bands_num_spec_points/2-1)
+     write(gnuunit,703) glabel(1+bands_num_spec_points/2),sum(kpath_len(:))
+
+     write(gnuunit,'(a,a,a,a)') 'splot ','"'//trim(seedname)//'_band.dat','"',' u 1:2:3 w p pt 13 palette'
+     write(gnuunit,'(a)') '#use the next lines to make a nice figure for a paper'
+     write(gnuunit,'(a)') '#set term postscript enhanced eps color lw 0.5 dl 0.5'
+     write(gnuunit,'(a)') '#set pointsize 0.275'
+    end if
     !
 701 format('set data style dots',/,'set nokey',/, 'set xrange [0:',F8.5,']',/,'set yrange [',F9.5,' :',F9.5,']')
 702 format('set xtics (',:20('"',A3,'" ',F8.5,','))
