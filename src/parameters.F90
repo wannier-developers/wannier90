@@ -90,7 +90,7 @@ module w90_parameters
   logical,           public, save :: tran_read_ht 
   logical,           public, save :: tran_use_same_lead
   real(kind=dp),     public, save :: translation_centre_frac(3)
-  integer,           public, save :: num_shells
+  integer,           public, save :: num_shells    !no longer an input keyword
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
   real(kind=dp),     public, save :: real_lattice(3,3)
@@ -246,7 +246,7 @@ contains
 
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3,3)
-    integer :: nkp,i,j,n,k,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
+    integer :: nkp,i,j,n,k,itmp,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
     logical :: found,found2,eig_found,lunits,chk_found
     character(len=6) :: spin_str
     real(kind=dp) :: cosa(3),rv_temp(3)
@@ -797,20 +797,25 @@ contains
     call param_get_keyword('kmesh_tol',found,r_value=kmesh_tol)
     if (kmesh_tol<0.0_dp) call io_error('Error: kmesh_tol must be positive')
 
-    num_shells                   = 0 
-    call param_get_keyword('num_shells',found,i_value=num_shells)
-    if(num_shells<0 .or. num_shells>6) call io_error('Error: num_shells must be between zero and six')
-    if (num_shells==0) then
+    num_shells  = 0
+    call param_get_range_vector('shell_list',found,num_shells,lcount=.true.)
+    if(found) then
+       if(num_shells<0 .or. num_shells>max_shells) &
+            call io_error('Error: number of shell in shell_list must be between zero and six')
+       allocate(shell_list(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating shell_list in param_read')
+       call param_get_range_vector('shell_list',found,num_shells,.false.,shell_list)
+       if (any(shell_list<1)  ) &
+            call io_error('Error: shell_list must contain positive numbers')
+    else
        allocate( shell_list(max_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating shell_list in param_read')
-    else
-       allocate( shell_list(num_shells),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating shell_list in param_read')
     end if
-    call param_get_keyword_vector('shell_list',found,num_shells,i_value=shell_list)
-    if(num_shells==0 .and. found) call io_error('Error: shell_list has no effect when num_shells=0')
-    if(num_shells/=0 .and. .not. found) call io_error('Error: shell_list must be set when when num_shells>0')
-    if(num_shells/=0 .and. any(shell_list<1)) call io_error('Error: shell_list must be positive')
+
+    call param_get_keyword('num_shells',found,i_value=itmp)
+    if(found .and. (itmp/=num_shells)) &
+        call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list')
+
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
