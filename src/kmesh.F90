@@ -66,7 +66,7 @@ contains
 
     real(kind=dp) :: vkpp(3),vkpp2(3)
     real(kind=dp) :: dist, dnn0,dnn1, bb1,bbn, ddelta
-    real(kind=dp) :: eta,eps                    ! eta = very large ; eps = very small
+    real(kind=dp), parameter :: eta=99999999.0_dp    ! eta = very large 
     real(kind=dp) :: bweight(max_shells)
     real(kind=dp) :: dnn(search_shells)
     real(kind=dp) :: wb_local(num_nnmax)
@@ -86,8 +86,6 @@ contains
 
     ! find the distance between k-point 1 and its nearest-neighbour shells
     ! if we have only one k-point, the n-neighbours are its periodic images
-    eta = 99999999.0_dp
-    eps = 0.000001_dp  
 
     dnn0 = 0.0_dp  
     dnn1 = eta  
@@ -101,18 +99,18 @@ contains
              dist= sqrt( (kpt_cart(1,1)-vkpp(1))**2 &
                   + (kpt_cart(2,1)-vkpp(2))**2 + (kpt_cart(3,1)-vkpp(3))**2 )
              !
-             if ( (dist.gt.eps) .and. (dist.gt.dnn0 + eps) ) then
-                if(dist.lt.dnn1-eps) then
+             if ( (dist.gt.kmesh_tol) .and. (dist.gt.dnn0 + kmesh_tol) ) then
+                if(dist.lt.dnn1-kmesh_tol) then
                    dnn1=dist  ! found a closer shell
                    counter=0
                 end if
-                if(dist.gt.(dnn1-eps) .and. dist.lt.(dnn1+eps)) then
+                if(dist.gt.(dnn1-kmesh_tol) .and. dist.lt.(dnn1+kmesh_tol)) then
                    counter=counter+1 ! count the multiplicity of the shell
                 end if
              end if
           enddo
        enddo
-       if (dnn1.lt.eta - eps) ndnntot = ndnntot + 1  
+       if (dnn1.lt.eta - kmesh_tol) ndnntot = ndnntot + 1  
        dnn(nlist) = dnn1  
        multi(nlist)=counter
        dnn0 = dnn1  
@@ -282,7 +280,7 @@ nnshell=0
                 vkpp=vkpp2+kpt_cart(:,nkp2)
                 dist= sqrt( (kpt_cart(1,nkp)-vkpp(1))**2 &
                      + (kpt_cart(2,nkp)-vkpp(2))**2 + (kpt_cart(3,nkp)-vkpp(3)) **2)
-                if ( (dist.ge.dnn(ndnn)*0.99999_dp) .and. (dist.le.dnn(ndnn)*1.00001_dp) ) then
+                if ( (dist.ge.dnn(ndnn)*(1-kmesh_tol)) .and. (dist.le.dnn(ndnn)*(1+kmesh_tol)) ) then
                    nnx = nnx + 1
                    nnshell(nkp,ndnn) = nnshell(nkp,ndnn) + 1
                    nnlist(nkp,nnx) = nkp2
@@ -319,7 +317,7 @@ nnshell=0
                    kpbvec=kpt_cart(:,nkp)+bvec_inp(:,nbvec,ndnnx)
                    dist= sqrt( (kpbvec(1)-vkpp(1))**2 &
                         + (kpbvec(2)-vkpp(2))**2 + (kpbvec(3)-vkpp(3)) **2)
-                   if ( (dist.ge.-0.00001_dp) .and. (dist.le.0.00001_dp) ) then
+                   if(abs(dist)<kmesh_tol) then
                       nnx = nnx + 1
                       nnshell(nkp,ndnnx) = nnshell(nkp,ndnnx) + 1
                       nnlist(nkp,bnum) = nkp2
@@ -359,7 +357,7 @@ nnshell=0
                 bb1 = bb1 + bk_local(i,nnx,1) * bk_local(i,nnx,1)  
                 bbn = bbn + bk_local(i,nnx,nkp) * bk_local(i,nnx,nkp)  
              enddo
-             if (abs(sqrt(bb1)-sqrt(bbn)).gt.eps) then  
+             if (abs(sqrt(bb1)-sqrt(bbn)).gt.kmesh_tol) then  
                 write(stdout,'(1x,2f10.6)') bb1,bbn
                 call io_error('Non-symmetric k-point neighbours!')
              endif
@@ -384,11 +382,11 @@ nnshell=0
                    ddelta = ddelta + wb_local(nnx) * bk_local(i,nnx,nkp) * bk_local(j,nnx,nkp)
                 enddo
              enddo
-             if ( (i.eq.j) .and. (abs(ddelta-1.0_dp).gt.eps) ) then
+             if ( (i.eq.j) .and. (abs(ddelta-1.0_dp).gt.kmesh_tol) ) then
                 write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
                 call io_error('Eq. (B1) not satisfied in kmesh_get (1)')  
              endif
-             if ( (i.ne.j) .and. (abs(ddelta).gt.eps) ) then  
+             if ( (i.ne.j) .and. (abs(ddelta).gt.kmesh_tol) ) then  
                 write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
                 call io_error('Eq. (B1) not satisfied in kmesh_get (2)')  
              endif
@@ -830,7 +828,7 @@ nnshell=0
           vkpp=vkpp2+kpt_cart(:,nkp2)
           dist= sqrt( (kpt_cart(1,kpt)-vkpp(1))**2 &
                + (kpt_cart(2,kpt)-vkpp(2))**2 + (kpt_cart(3,kpt)-vkpp(3)) **2)
-          if ( (dist.ge.shell_dist*0.99999_dp) .and. (dist.le.shell_dist*1.00001_dp) ) then
+          if ( (dist.ge.shell_dist*(1.0_dp-kmesh_tol)) .and. dist.le.shell_dist*(1.0_dp+kmesh_tol) ) then
              num_bvec = num_bvec + 1
              bvector(:,num_bvec) = vkpp(:) - kpt_cart(:,kpt)
           endif
@@ -859,6 +857,8 @@ nnshell=0
     !        Test to see if we satisfy B1, if not add another shell and repeat !
     !                                                                          !
     !==========================================================================!  
+
+    use w90_constants, only : eps5,eps6
     use w90_io,   only : io_error,stdout,io_stopwatch
     implicit none
 
@@ -910,7 +910,7 @@ nnshell=0
                    delta=dot_product(bvector(:,loop_bn,cur_shell),bvector(:,loop_b,loop_s))/ &
                         sqrt(dot_product(bvector(:,loop_bn,cur_shell),bvector(:,loop_bn,cur_shell))* &
                         dot_product(bvector(:,loop_b,loop_s),bvector(:,loop_b,loop_s)))
-                   if(abs(abs(delta)-1.0_dp)<0.000001_dp) lpar=.true.
+                   if(abs(abs(delta)-1.0_dp)<eps6) lpar=.true.
                 end do
              end do
           end do
@@ -959,7 +959,7 @@ nnshell=0
           call io_error('kmesh_shell_automatic: Singular Value Decomposition did not converge')
        end if
 
-       if(any(abs(singv)<0.00001_dp)) then
+       if(any(abs(singv)<eps5)) then
          if(num_shells==1)  then 
              call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value')
          else
@@ -995,10 +995,10 @@ nnshell=0
                 end do
              end do
              if(loop_i==loop_j) then
-                if(abs(delta-1.0_dp)>0.001_dp) b1sat=.false.
+                if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.
              end if
              if(loop_i/=loop_j) then
-                if(abs(delta)>0.001_dp) b1sat=.false.
+                if(abs(delta)>kmesh_tol) b1sat=.false.
              end if
           end do
        end do
@@ -1058,6 +1058,7 @@ nnshell=0
     !                                                                          !
     !==========================================================================!
 
+    use w90_constants, only : eps7
     use w90_io,   only : io_error,stdout,io_stopwatch
     implicit none
 
@@ -1100,8 +1101,6 @@ nnshell=0
        do shell=1,num_shells
           write(stdout,'(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:',shell,' Multiplicity:',multi(shell_list(shell)), '|'
           do loop=1,multi(shell_list(shell))
-!             write(stdout,'(1x,a7,1x,I2,67x,a1)')  '| Shell:',shell,'|'
-!             write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,23x,a)') '| b-vector ',loop,':', bvector(:,loop,shell) , '|'
              write(stdout,'(1x,a10,I2,1x,a1,4x,3f12.6,5x,a9,9x,a)') '| b-vector ',loop,':', &
                   bvector(:,loop,shell)/lenconfac,'('//trim(length_unit)//'^-1)','|'
           end do
@@ -1129,7 +1128,7 @@ nnshell=0
        call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge')
     end if
     
-    if(any(abs(singv)<0.0000001_dp)) &
+    if(any(abs(singv)<eps7)) &
          call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value')
     
     smat=0.0_dp
@@ -1159,10 +1158,10 @@ nnshell=0
              end do
           end do
           if(loop_i==loop_j) then
-             if(abs(delta-1.0_dp)>0.001_dp) b1sat=.false.  
+             if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.  
           end if
           if(loop_i/=loop_j) then
-             if(abs(delta)>0.001_dp) b1sat=.false.
+             if(abs(delta)>kmesh_tol) b1sat=.false.
           end if
        end do
     end do
@@ -1185,6 +1184,7 @@ nnshell=0
     !                                                                          !
     !==========================================================================!
 
+    use w90_constants, only : eps7
     use w90_io,   only : io_error,stdout,io_stopwatch,io_file_unit,seedname,maxlen
     implicit none
 
@@ -1325,7 +1325,7 @@ nnshell=0
        call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge')
     end if
     
-    if(any(abs(singv)<0.0000001_dp)) &
+    if(any(abs(singv)<eps7)) &
          call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value')
     
     smat=0.0_dp
@@ -1336,7 +1336,6 @@ nnshell=0
     bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
     if(iprint>=2) then
        do loop_s=1,num_shells
-!          write(stdout,'(1x,a,I2,a,f12.7,49x,a)') '| Shell: ',loop_s,' w_b ', bweight(loop_s),'|'
           write(stdout,'(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ',loop_s,&
                ' w_b ', bweight(loop_s)*lenconfac**2,'('//trim(length_unit)//'^2)','|'
        end do
@@ -1355,10 +1354,10 @@ nnshell=0
              end do
           end do
           if(loop_i==loop_j) then
-             if(abs(delta-1.0_dp)>0.001_dp) b1sat=.false.  
+             if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.  
           end if
           if(loop_i/=loop_j) then
-             if(abs(delta)>0.001_dp) b1sat=.false.
+             if(abs(delta)>kmesh_tol) b1sat=.false.
           end if
        end do
     end do

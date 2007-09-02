@@ -114,6 +114,7 @@ module w90_parameters
   integer,           public, save :: conv_noise_num
   real(kind=dp),     public, save :: wannier_plot_radius
   integer,           public, save :: search_shells   !for kmesh
+  real(kind=dp),     public, save :: kmesh_tol
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -791,6 +792,10 @@ contains
     search_shells                 = 12
     call param_get_keyword('search_shells',found,i_value=search_shells)
     if (search_shells<0) call io_error('Error: search_shells must be positive')       
+
+    kmesh_tol=0.000001_dp
+    call param_get_keyword('kmesh_tol',found,r_value=kmesh_tol)
+    if (kmesh_tol<0.0_dp) call io_error('Error: kmesh_tol must be positive')
 
     num_shells                   = 0 
     call param_get_keyword('num_shells',found,i_value=num_shells)
