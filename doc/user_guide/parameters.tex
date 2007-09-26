@@ -227,6 +227,7 @@ section of the k-point path \\
 interpolated bands \\
 {\sc bands\_plot\_mode }   & S & Slater-Koster type interpolation or
 Hamiltonian cut-off \\
+{\sc bands\_plot\_dim } & I & Dimension of the system \\
 {\sc fermi\_surface\_plot }   & L & Plot the Fermi surface \\
 {\sc fermi\_surface\_num\_points }   & I & Number of points in the Fermi
 surface plot\\
@@ -234,11 +235,13 @@ surface plot\\
 {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
 surface plot \\
 {\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
-{\sc hr\_cutoff} & R &  \\
-{\sc dist\_cutoff\_mode} & S & \\
-{\sc dist\_cutoff} & R & \\
-{\sc one\_dim\_axis} & S &  \\
-{\sc translation\_centre\_frac } & L & \\ 
+{\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
+{\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
+{\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
+is calculated \\
+{\sc one\_dim\_axis} & S &  Extended direction for a one-dimensional system \\
+{\sc translation\_centre\_frac } & R & Centre of the unit cell to which
+final WF are translated \\ 
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -271,26 +274,28 @@ Keyword & Type & Description \\
 \hline\hline
 \multicolumn{3}{|c|}{Transport Parameters} \\
 \hline
-{\sc transport}   & L &  \\
-{\sc transport\_mode }  & S & \\ 
-{\sc tran\_win\_min } & R & \\ 
-{\sc tran\_win\_max } & R & \\ 
-{\sc tran\_energy\_step } & R & \\ 
-{\sc tran\_num\_bb } & I & \\ 
-{\sc tran\_num\_ll } & I & \\ 
-{\sc tran\_num\_rr } & I & \\ 
-{\sc tran\_num\_cc } & I & \\ 
-{\sc tran\_num\_lc } & I & \\ 
-{\sc tran\_num\_cr } & I & \\ 
-{\sc tran\_num\_bandc } & I & \\ 
-{\sc tran\_write\_ht } & L & \\ 
-{\sc tran\_read\_ht } & L & \\ 
-{\sc tran\_use\_same\_lead } & L & \\ 
-{\sc hr\_cutoff} & R &  \\
-{\sc dist\_cutoff\_mode} & S & \\
-{\sc dist\_cutoff} & R & \\
-{\sc one\_dim\_axis} & S &  \\
-{\sc translation\_centre\_frac } & L & \\ 
+{\sc transport}   & L & Calculate quantum conductance and density of states \\
+{\sc transport\_mode }  & S & Bulk or left-lead\_conductor\_right-lead calculation \\ 
+{\sc tran\_win\_min } & P &  Bottom of the energy window for transport calculation\\  
+{\sc tran\_win\_max } & P &  Top of the energy window for transport calculation\\ 
+{\sc tran\_energy\_step } & R & Sampling interval of the energy values \\ 
+{\sc tran\_num\_bb } & I & Size of a bulk Hamiltonian \\  
+{\sc tran\_num\_ll } & I & Size of a left-lead Hamiltonian \\
+{\sc tran\_num\_rr } & I & Size of a right-lead Hamiltonian \\
+{\sc tran\_num\_cc } & I & Size of a conductor Hamiltonian \\
+{\sc tran\_num\_lc } & I & Number of columns in a left-lead\_conductor Hamiltonian \\
+{\sc tran\_num\_cr } & I & Number of rows in a conductor\_right-lead Hamiltonian \\
+{\sc tran\_num\_bandc } & I & Half-bandwidth+1 of a band-diagonal conductor Hamiltonian \\ 
+{\sc tran\_write\_ht } & L & Write the Hamiltonian for transport calculation \\ 
+{\sc tran\_read\_ht } & L & Read the Hamiltonian for transport calculation \\
+{\sc tran\_use\_same\_lead } & L & Left and right leads are the same \\
+{\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
+{\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
+{\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
+is calculated \\
+{\sc one\_dim\_axis} & S &  Extended direction for a one-dimensional system \\
+{\sc translation\_centre\_frac } & R & Centre of the unit cell to which
+final WF are translated \\ 
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling transport.]
@@ -988,7 +993,7 @@ The default value for \verb#bands_num_points# is 100.
 
 \subsection[bands\_plot\_format]{\tt character(len=20) :: bands\_plot\_format}
 
-Format in which to plot the interpolated band structure
+Format in which to plot the interpolated band structure.
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#gnuplot# (default)
@@ -997,9 +1002,32 @@ The valid options for this parameter are:
 
 \subsection[bands\_plot\_mode]{\tt character(len=20) :: bands\_plot\_mode}
 
+To interpolate the band structure along the k-point path,
+either use the Slater-Koster interpolation scheme
+or truncate the Hamiltonian matrix in the WF basis. 
+Truncation criteria are provided by \verb#hr_cutoff#
+and \verb#dist_cutoff#. 
+
+The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#s-k# (default)
 \item[{\bf --}] \verb#cut#
+\end{itemize}
+
+\subsection[bands\_plot\_dim]{\tt integer :: bands\_plot\_dim}
+
+Dimension of the system.
+If $\verb#bands_plot_dim#<\:$3 and $\verb#bands_plot_mode#=\verb#cut#$,
+lattice vector $\mathbf{R}=N_1 \mathbf{A}_{1} + N_2 \mathbf{A}_{2} + N_3 \mathbf{A}_3$,
+where $N_i=0$ if $\mathbf{A}_i$ is parallel to any of the
+confined directions specified by \verb#one_dim_axis#,
+are exclusively used in the band structure interpolation.
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}] 3 (default)
+\item[{\bf --}] 2
+\item[{\bf --}] 1
 \end{itemize}
 
 
@@ -1041,10 +1069,10 @@ The valid options for this parameter are:
 
 \subsection[hr\_plot]{\tt logical :: hr\_plot}
 
-If {\tt hr\_plot} is {\tt TRUE}, then the Hamiltonian matrix in the
-basis of the WF will be written to a file {\tt seedname\_hr.dat}.
+If $\verb#hr_plot#=\verb#TRUE#$, then the Hamiltonian matrix in the
+WF basis will be written to a file {\tt seedname\_hr.dat}.
 
-The default value is {\tt FALSE}
+The default value is {\tt FALSE}.
 
 \subsection[transport]{\tt logical :: transport}
 
@@ -1053,102 +1081,186 @@ quantum conductance and density of states.
 
 The default value of this parameter is \verb#FALSE#.
 
-\subsection[transport\_mode]{\tt character :: transport\_mode}
+\subsection[transport\_mode]{\tt character(len=20) :: transport\_mode}
 
+If $\verb#transport_mode#=\verb#bulk#$, quantum conductance
+and density of states are calculated for a perfectly-periodic one-dimensional system.
+In this case, the transport part can either use 
+the Hamiltonian matrix in the WF basis generated by \wannier\
+or read a Hamiltonian matrix from an external file
+{\tt seedname\_htB.dat}.
+
+If $\verb#transport_mode#=\verb#lcr#$,
+quantum conductance and density of states are calculated 
+for a system where semi-infinite, left and right leads
+are connected through a central conductor region. 
+In this case, the transport part will work independently from
+the wannierise procedure, and
+Hamiltonian matrices must be provided by
+the five external files:
+{\tt seedname\_htL.dat, seedname\_htLC.dat, seedname\_htC.dat,
+seedname\_htCR.dat, seedname\_htR.dat}.
+
+
+The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#bulk#  (default)
 \item[{\bf --}] \verb#lcr# 
 \end{itemize}
 
 \subsection[tran\_win\_min]{\tt real(kind=dp) :: tran\_win\_min}
+The lower bound of the energy window for the transport calculation. 
+Units are eV.
 
-The default value is -3.0
+The default value is -3.0.
 
 \subsection[tran\_win\_max]{\tt real(kind=dp) :: tran\_win\_max}
+The upper bound of the energy window for the transport calculation. 
+Units are eV.
 
-The default value is 3.0
+The default value is 3.0.
 
 \subsection[tran\_energy\_step]{\tt real(kind=dp) :: tran\_energy\_step}
+Sampling interval of the energy values from \verb#tran_win_min# 
+to \verb#tran_win_max#. 
+Units are eV.
 
-The default value is 0.01
+The default value is 0.01.
 
 \subsection[tran\_num\_bb]{\tt integer :: tran\_num\_bb}
+Size of a bulk Hamiltonian matrix. 
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_num\_ll]{\tt integer :: tran\_num\_ll}
+Size of a left-lead Hamiltonian matrix. 
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_num\_rr]{\tt integer :: tran\_num\_rr}
+Size of a right-lead Hamiltonian matrix.
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_num\_cc]{\tt integer :: tran\_num\_cc}
+Size of a conductor Hamiltonian matrix.
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_num\_lc]{\tt integer :: tran\_num\_lc}
+Number of columns in a left-lead\_conductor Hamiltonian matrix.
+Number of rows is equal to \verb#tran_num_ll#.
+ 
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_num\_cr]{\tt integer :: tran\_num\_cr}
+Number of rows in a conductor\_rigt-lead Hamiltonian matrix.
+Number of columns is equal to \verb#tran_num_rr#.
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_num\_bandc]{\tt integer :: tran\_num\_bandc}
+Half-bandwidth+1 of a band-diagonal conductor Hamiltonian matrix.
 
-The default value is 0
+The default value is 0.
 
 \subsection[tran\_write\_ht]{\tt logical :: tran\_write\_ht}
 
-The default value is {\tt FALSE}
+If $\verb#tran_write_ht#=\verb#TRUE#$, then the Hamiltonian matrix 
+formatted for the transport calculation will be written 
+to a file {\tt seedname\_htB.dat}.
+
+The default value is {\tt FALSE}.
 
 \subsection[tran\_read\_ht]{\tt logical :: tran\_read\_ht}
 
-The default value is {\tt FALSE}
+If $\verb#tran_write_ht#=\verb#TRUE#$, then the Hamiltonian matrix
+formatted for the transport calculation will be read
+from a set of files described in the
+parameter \verb#transport_mode#. 
+
+The default value is {\tt FALSE}.
 
 \subsection[tran\_use\_same\_lead]{\tt logical :: tran\_use\_same\_lead}
 
-The default value is {\tt TRUE}
+If $\verb#tran_use_same_lead#=\verb#TRUE#$, then the
+left and the right leads are the same. In this case, 
+{\tt seedname\_htR.dat} is not required.
+
+The default value is {\tt TRUE}.
 
 \subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
 
-The default value is (0.0,0.0,0.0)
+Centre of the unit cell to which the final Wannier centers are translated. Numbers are in fractional coordinates with respect to the lattice vectors.
+ 
+The default value is (0.0,0.0,0.0).
 
 \subsection[hr\_cutoff]{\tt real(kind=dp) :: hr\_cutoff}
 
-The absolute value of the largest matrix element of the
-Hamiltonian in the WF basis at lattice vector $\mathbf{R}$ is given by
-$h_{\mathrm{max}}(\mathbf{R}) = \left|\mathrm{max}\:\:
-H_{mn}(\mathbf{R})\right|$. If $h_{\mathrm{max}}(\mathbf{R})>\:${\tt
-  hr\_cutoff}, then the matrix elements 
-$H_{mn}(\mathbf{R})$ are retained in the Hamiltonian that is written
-to {\tt seedname.h.dat}. Otherwise they are deemed to be insignificant
-and are discarded.
+The absolute value of the smallest matrix element of the
+Hamiltonian in the WF basis.
+If $h_{mn}(\mathbf{R})>\:${\tt
+  hr\_cutoff}, then the matrix element
+$h_{mn}(\mathbf{R})$ is retained and used in
+the band structure interpolation (when $\verb#bands_plot_mode#=\verb#cut#$)
+or in the transport calculation.
+Otherwise it is deemed to be insignificant
+and is discarded. Units are eV.
 
-The default value is 0.0
+%The absolute value of the largest matrix element of the
+%Hamiltonian in the WF basis at lattice vector $\mathbf{R}$ is given by
+%$h_{\mathrm{max}}(\mathbf{R}) = \left|\mathrm{max}\:\:
+%H_{mn}(\mathbf{R})\right|$. If $h_{\mathrm{max}}(\mathbf{R})>\:${\tt
+%  hr\_cutoff}, then the matrix elements 
+%$H_{mn}(\mathbf{R})$ are retained in the Hamiltonian that is written
+%to {\tt seedname.h.dat}. Otherwise they are deemed to be insignificant
+%and are discarded.
 
-\subsection[dist\_cutoff\_mode]{\tt character :: dist\_cutoff\_mode}
-
-\begin{itemize}
-\item[{\bf --}] \verb#three_dim#  (default)
-\item[{\bf --}] \verb#one_dim# 
-\end{itemize}
+The default value is 0.0.
 
 \subsection[dist\_cutoff]{\tt real(kind=dp) :: dist\_cutoff}
 
-The default value is 0.0
+The largest distance between WF for which
+the Hamiltonian matrix element is retained and used in
+the band interpolation (when $\verb#bands_plot_mode#=\verb#cut#$)
+or in the transport calculation. Units are \AA. 
 
-\subsection[one\_dim\_axis]{\tt character :: one\_dim\_axis}
+The default value is 1000.0.
 
+\subsection[dist\_cutoff\_mode]{\tt character(len=20) :: dist\_cutoff\_mode}
+
+Dimension in which the distance between WF is calculated.
+The vector connecting two WF may be projected
+to a line (\verb#one_dim#) or a plane (\verb#two_dim#).
+The size of the projected vector 
+is calculated, and \verb#dist_cutoff# is applied.
+When \verb#one_dim# or \verb#two_dim#
+is used, \verb#one_dim_axis# must be given
+to specify extended or confined direction.
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}] \verb#three_dim#  (default)
+\item[{\bf --}] \verb#two_dim#  
+\item[{\bf --}] \verb#one_dim# 
+\end{itemize}
+
+\subsection[one\_dim\_axis]{\tt character(len=20) :: one\_dim\_axis}
+
+Extended direction for a one-dimensional system.
+This direction must be parallel to one of the Cartesian axes.
+Confined direction in a two-dimensional system
+can be specified through this parameter.
+
+The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#x#
 \item[{\bf --}] \verb#y#
 \item[{\bf --}] \verb#z# 
 \end{itemize}
 
-No default
+No default.
 
 
 %\subsection[slice\_plot]{\tt logical :: slice\_plot}
