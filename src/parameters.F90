@@ -138,7 +138,7 @@ module w90_parameters
   real(kind=dp), allocatable,     public, save :: proj_x(:,:)
   integer, allocatable,           public, save :: proj_radial(:)  
   real(kind=dp), allocatable,     public, save :: proj_zona(:)
-
+  integer,                        public, save :: num_proj
 
   !parameters dervied from input
   integer,           public, save :: num_kpts
@@ -239,7 +239,7 @@ contains
   ! Read parameters and calculate derived values                     !
   !                                                                  !
   !===================================================================  
-    use w90_constants, only : bohr, eps6, cmplx_0
+    use w90_constants, only : bohr, eps6
     use w90_utility, only : utility_recip_lattice,utility_compute_metric
     use w90_io,      only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
@@ -1057,7 +1057,7 @@ contains
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        write(stdout,'(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       do nsp=1,num_wann
+       do nsp=1,num_proj
           write(stdout,'(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),&
                & 2x,f4.1,1x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
                proj_site(3,nsp),proj_l(nsp), proj_m(nsp),proj_radial(nsp),&
@@ -1578,7 +1578,6 @@ contains
 
     use w90_constants, only : eps6
     use w90_io,        only : io_error,io_file_unit,stdout,seedname
-    use w90_utility,   only : utility_strip
 
     implicit none
 
@@ -2386,8 +2385,7 @@ contains
     !                                                     !
     !=====================================================!
 
-    use w90_utility,   only : utility_frac_to_cart, &
-                          utility_cart_to_frac, utility_lowercase
+    use w90_utility,   only : utility_cart_to_frac, utility_lowercase
     use w90_io,        only : io_error
 
     implicit none
@@ -2579,7 +2577,7 @@ contains
      !===================================!
 
      use w90_constants, only : bohr,eps6,eps2
-     use w90_utility,   only : utility_frac_to_cart,utility_cart_to_frac,&
+     use w90_utility,   only : utility_cart_to_frac,&
           utility_string_to_coord,utility_strip
      use w90_io,        only : io_error
 
@@ -2611,7 +2609,6 @@ contains
      real(kind=dp) :: proj_x_tmp(3)
      real(kind=dp) :: proj_zona_tmp
      integer       :: proj_radial_tmp
-     integer       :: num_proj
      logical       :: lconvert,lrandom
      logical       :: lpartrandom
      !
@@ -2625,19 +2622,23 @@ contains
      start_st='begin '//trim(keyword)
      end_st='end '//trim(keyword)
 
-     allocate( proj_site(3,num_wann),stat=ierr)
+     num_proj=num_wann
+     if(spinors) num_proj=num_wann/2
+
+
+     allocate( proj_site(3,num_proj),stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_site in param_get_projections') 
-     allocate( proj_l(num_wann) ,stat=ierr)
+     allocate( proj_l(num_proj) ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_l in param_get_projections') 
-     allocate( proj_m(num_wann)  ,stat=ierr)
+     allocate( proj_m(num_proj)  ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_m in param_get_projections')
-     allocate( proj_z(3,num_wann) ,stat=ierr)
+     allocate( proj_z(3,num_proj) ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_z in param_get_projections')
-     allocate( proj_x(3,num_wann) ,stat=ierr)
+     allocate( proj_x(3,num_proj) ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_x in param_get_projections')
-     allocate( proj_radial(num_wann)   ,stat=ierr)
+     allocate( proj_radial(num_proj)   ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_radial in param_get_projections')
-     allocate( proj_zona(num_wann) ,stat=ierr)
+     allocate( proj_zona(num_proj) ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_zona in param_get_projections')
 
 
@@ -2961,10 +2962,10 @@ contains
               endif
            end if
            if(sites==-1) then
-              if(counter+sum(ang_states) > num_wann) call io_error('param_get_projection: &
+              if(counter+sum(ang_states) > num_proj) call io_error('param_get_projection: &
                    &too many projections defined')
            else
-              if(counter+sites*sum(ang_states) > num_wann) call io_error('param_get_projection:&
+              if(counter+sites*sum(ang_states) > num_proj) call io_error('param_get_projection:&
                    & too many projections defined')
            end if
            !
@@ -3006,19 +3007,9 @@ contains
 
         ! check there are enough projections and add random projections if required
         if (.not. lpartrandom) then
-           if(spinors) then
-              if (counter.ne.num_wann/2) call io_error('param_get_projections:&
+              if (counter.ne.num_proj) call io_error('param_get_projections:&
                    & Fewer projections defined than the number of Wannier functions requested')
-           else
-              if (counter.ne.num_wann) call io_error('param_get_projections:&
-                   & Fewer projections defined than the number of Wannier functions requested')
-           endif
         else
-           if(spinors) then
-              num_proj = num_wann/2
-           else
-              num_proj = num_wann
-           endif
            call random_seed()
            do loop=counter+1,num_proj
               call random_number(proj_site(:,loop))
@@ -3034,7 +3025,7 @@ contains
      elseif(lrandom) then
 
         call random_seed() ! comment out this line for reproducible random positions!
-        do loop=1,num_wann
+        do loop=1,num_proj
            call random_number(proj_site(:,loop))
            proj_l(loop)      = 0
            proj_m(loop)      = 1
@@ -3057,7 +3048,7 @@ contains
 !!$     enddo
 
      ! Normalise z-axis and x-axis and check/fix orthogonality
-     do loop=1,num_wann
+     do loop=1,num_proj
 
         znorm=sqrt(sum(proj_z(:,loop)*proj_z(:,loop)))
         xnorm=sqrt(sum(proj_x(:,loop)*proj_x(:,loop)))

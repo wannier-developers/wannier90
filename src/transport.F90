@@ -1,7 +1,7 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
 !                                                            !
-! Copyright (C) 2004,2006 Jonathan Yates, Arash Mostofi,     !
-!            Nicola Marzari, Ivo Souza, David Vanderbilt     !
+! Copyright (C) 2004-2007 Jonathan Yates, Arash Mostofi,     !
+! Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt  !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
 ! General Public License. See the file `LICENSE' in          !
@@ -84,8 +84,8 @@ contains
   subroutine tran_main()
     !==================================================================!
 
-    use w90_io,         only : io_error,stdout,io_stopwatch
-    use w90_parameters, only : one_dim_dir,transport_mode,tran_read_ht,timing_level,hr_plot
+    use w90_io,         only : stdout,io_stopwatch
+    use w90_parameters, only : transport_mode,tran_read_ht,timing_level,hr_plot
     use w90_hamiltonian,only : hamiltonian_get_hr,hamiltonian_write_hr,hamiltonian_setup
 
     implicit none
@@ -128,7 +128,7 @@ contains
     use w90_constants,   only : dp, eps8
     use w90_io,          only : io_error, io_stopwatch, stdout
     use w90_parameters,  only : one_dim_dir,real_lattice,num_wann, &
-                                num_kpts,mp_grid,timing_level
+                                mp_grid,timing_level
     use w90_hamiltonian, only : irvec,nrpts,ham_r
 
     integer :: ierr
@@ -208,18 +208,16 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !==================================================================!
     !
     use w90_constants,   only : dp
-    use w90_io,          only : io_error,io_stopwatch,stdout
-    use w90_constants,   only : cmplx_0
+    use w90_io,          only : io_stopwatch,stdout
     use w90_parameters,  only : num_wann,mp_grid,timing_level,real_lattice,&
                                 hr_cutoff,dist_cutoff,dist_cutoff_mode, &
                                 one_dim_dir,length_unit
-    use w90_hamiltonian, only : ham_r,irvec,nrpts,wannier_centres_translated
+    use w90_hamiltonian, only : wannier_centres_translated
 
     implicit none
     !
-    integer :: ierr       
     integer :: irvec_max
-    integer :: i, j, n1, loop_rpt
+    integer :: i, j, n1
     real(kind=dp) :: hr_max
     real(kind=dp) :: dist
     real(kind=dp) :: dist_vec(3)
@@ -314,7 +312,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     use w90_constants,  only : dp
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
-                               stdout, io_file_unit
+                               io_file_unit
     use w90_parameters, only : num_wann, tran_num_bb, tran_write_ht, &
                                fermi_energy, timing_level
     !
@@ -389,7 +387,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     use w90_constants,  only : dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
-                               stdout, io_file_unit
+                               io_file_unit
     use w90_parameters, only : tran_num_bb, tran_read_ht,  &
                                tran_win_min, tran_win_max, tran_energy_step, &
                                timing_level
@@ -551,7 +549,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_parameters, only : tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc, &
                                tran_num_cr, tran_num_bandc, &
                                tran_win_min, tran_win_max, tran_energy_step,      &
-                               tran_use_same_lead, tran_read_ht, timing_level
+                               tran_use_same_lead, timing_level
 
     implicit none
 

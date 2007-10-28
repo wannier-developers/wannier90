@@ -155,15 +155,13 @@ contains
     !============================================!
 
     use w90_constants,  only : cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
-                               stdout, seedname, io_date
+    use w90_io,         only : io_error,io_stopwatch
     use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
                                eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
                                have_disentangled,timing_level
 
     implicit none
   
-    integer              :: file_unit
     integer, allocatable :: shift_vec(:,:)
     complex(kind=dp)     :: fac
     real(kind=dp)        :: rdotk
@@ -171,8 +169,6 @@ contains
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
     integer              :: loop_kpt,i,j,m,loop_rpt,ierr,counter
-    character (len=33)   :: header
-    character (len=9)    :: cdate,ctime
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -276,7 +272,7 @@ contains
 
        allocate(shift_vec(3,num_wann),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
-       call internal_translate_wannier_centres()
+       call internal_translate_centres()
 
        do loop_rpt=1,nrpts
           do loop_kpt=1,num_kpts
@@ -313,7 +309,7 @@ contains
   contains
 
     !====================================================!
-    subroutine internal_translate_wannier_centres()
+    subroutine internal_translate_centres()
       !====================================================!
 
       use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres, &
@@ -325,7 +321,7 @@ contains
       implicit none
     
       ! <<<local variables>>>
-      integer :: iw,loop,ierr,nat,nsp,ind
+      integer :: iw,ierr,nat,nsp,ind
       real(kind=dp), allocatable :: r_home(:,:),r_frac(:,:)
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
@@ -337,9 +333,9 @@ contains
 !!$      end if
       
       allocate(r_home(3,num_wann),stat=ierr)
-      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_wannier_centres')
+      if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_centres')
       allocate(r_frac(3,num_wann),stat=ierr)
-      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_wannier_centres')
+      if (ierr/=0) call io_error('Error in allocating r_frac in internal_translate_centres')
       r_home=0.0_dp;r_frac=0.0_dp
     
       if (automatic_translation) then
@@ -350,9 +346,6 @@ contains
                c_pos_cart(:) = c_pos_cart(:) + atoms_pos_cart(:,nat,nsp)
             enddo
          enddo
-!!@         do loop=1,num_atoms
-!!@            c_pos_cart(:) = c_pos_cart(:) + atoms_pos_cart(:,loop)
-!!@         end do
          c_pos_cart = c_pos_cart / num_atoms
          ! Cartesian --> fractional
          call utility_cart_to_frac(c_pos_cart,translation_centre_frac,recip_lattice)
@@ -385,15 +378,15 @@ contains
       wannier_centres_translated = r_home
 
       deallocate(r_frac,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating r_frac in internal_translate_wannier_centres')
+      if (ierr/=0) call io_error('Error in deallocating r_frac in internal_translate_centres')
       deallocate(r_home,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating r_home in internal_translate_wannier_centres')
+      if (ierr/=0) call io_error('Error in deallocating r_home in internal_translate_centres')
 
       return
 
 888   format(2x,'WF centre ',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
 
-    end subroutine internal_translate_wannier_centres
+    end subroutine internal_translate_centres
 
   end subroutine hamiltonian_get_hr
 
@@ -405,7 +398,7 @@ contains
     !============================================!
 
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
-                               stdout,seedname,io_date
+                               seedname,io_date
     use w90_parameters, only : num_wann,timing_level
 
     integer            :: i,j,loop_rpt,file_unit

@@ -199,7 +199,7 @@ contains
     write(stdout,'(a)') ' '
     write(stdout,'(a)') ' The problem may be caused by having accidentally degenerate shells of '
     write(stdout,'(a)') ' kpoints. The solution is then to rerun wannier90 specifying the b-vectors '
-    write(stdout,'(a)') ' in each shell.  Give devel_flag=kmesh_degen and num_shells= in the *.win file'
+    write(stdout,'(a)') ' in each shell.  Give devel_flag=kmesh_degen in the *.win file'
     write(stdout,'(a)') ' and create a *.kshell file:'
     write(stdout,'(a)') ' '
     write(stdout,'(a)') ' $>   cat hexagonal.kshell'
@@ -496,18 +496,18 @@ nnshell=0
 ![ysl-b]
 
     if (gamma_only) then
-    ! use half of the b-vectors
+       ! use half of the b-vectors
        if (num_kpts .ne. 1)  call io_error('Error in kmesh_get: wrong choice of gamma_only option')
-                                                                                                                                             
-    ! reassign nnlist, nncell, wb, bk
+       
+       ! reassign nnlist, nncell, wb, bk
        allocate(nnlist_tmp(num_kpts,nntot), stat=ierr )
        if (ierr/=0) call io_error('Error in allocating nnlist_tmp in kmesh_get')
        allocate(nncell_tmp(3,num_kpts,nntot), stat=ierr )
        if (ierr/=0) call io_error('Error in allocating nncell_tmp in kmesh_get')
-                                                                                                                                             
+
        nnlist_tmp(:,:) = nnlist(:,:)
        nncell_tmp(:,:,:)   = nncell(:,:,:)
-                                                                                                                                             
+
        deallocate(nnlist, stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_get')
        deallocate(nncell, stat=ierr)
@@ -516,9 +516,9 @@ nnshell=0
        if (ierr/=0) call io_error('Error in deallocating wb in kmesh_get')
        deallocate(bk, stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating bk in kmesh_get')
-                                                                                                                                             
+
        nntot=nntot/2
-                                                                                                                                             
+
        allocate(nnlist(num_kpts,nntot), stat=ierr )
        if (ierr/=0) call io_error('Error in allocating nnlist in kmesh_get')
        allocate(nncell(3,num_kpts,nntot), stat=ierr )
@@ -527,7 +527,7 @@ nnshell=0
        if (ierr/=0) call io_error('Error in allocating wb in kmesh_get')
        allocate(bk(3,nntot,num_kpts), stat=ierr )
        if (ierr/=0) call io_error('Error in allocating bk in kmesh_get')
-                                                                                                                                             
+
        na = 0
        do nn = 1, 2*nntot
           ifound = 0
@@ -554,9 +554,9 @@ nnshell=0
              if (ifpos.ne.1) call io_error('Error in kmesh_get: bk is not identical to bka in gamma_only option')
           endif
        enddo
-                                                                                                                                             
+
        if (na.ne.nnh) call io_error('Did not find right number of b-vectors in gamma_only option')
-                                                                                                                                             
+
        write(stdout,'(1x,"+",76("-"),"+")')
        write(stdout,'(1x,a)') '|        Gamma-point: number of the b-vectors is reduced by half             |'
        write(stdout,'(1x,"+",76("-"),"+")')
@@ -666,8 +666,8 @@ nnshell=0
     ! Projections
     write(nnkpout,'(a)') 'begin projections'
     if (allocated(proj_site)) then
-       write(nnkpout,'(i6)') num_wann
-       do i=1,num_wann
+       write(nnkpout,'(i6)') num_proj
+       do i=1,num_proj
           write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
                proj_site(1,i),proj_site(2,i),proj_site(3,i), &
                proj_l(i),proj_m(i),proj_radial(i)
@@ -755,7 +755,7 @@ nnshell=0
     ! Doing the search in this order gives a dramatic speed up         !
     !                                                                  !
     !==================================================================!  
-    use w90_io,   only : io_error,io_stopwatch
+    use w90_io,   only : io_stopwatch
     implicit none
     integer :: counter,l,m,n,loop
 
@@ -1386,12 +1386,11 @@ nnshell=0
     !=========================================================================!
 
     use w90_constants, only : eps8   
-    use w90_io,   only : io_error
     implicit none
 
 
-    real(kind=dp)  :: dist((2*nsupcell+1)**3)
-    integer        :: internal_maxloc
+    real(kind=dp), intent(in)  :: dist((2*nsupcell+1)**3)
+    integer                    :: internal_maxloc
   
     integer       :: guess(1),loop,counter
     integer       :: list((2*nsupcell+1)**3)

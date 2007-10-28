@@ -27,16 +27,16 @@ contains
     !============================================!
 
     use w90_constants,   only : cmplx_0
-    use w90_io,          only : io_error,stdout,io_stopwatch
+    use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
-                                mp_grid,kpt_latt,fermi_surface_plot, &
-                                num_wann,wannier_plot,timing_level
+                                kpt_latt,fermi_surface_plot, &
+                                wannier_plot,timing_level
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup
 
     implicit none
 
-    integer :: ierr,nkp
+    integer :: nkp
     logical :: have_gamma
 
     if (timing_level>0) call io_stopwatch('plot: main',1)
@@ -451,11 +451,9 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     !============================================!
 
     use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
-                               io_time,io_stopwatch
-    use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
-                               bands_num_spec_points,timing_level, &
-                               bands_spec_points,bands_label,num_bands_project
+    use w90_io,         only : io_file_unit,seedname
+    use w90_parameters, only : num_wann,bands_num_spec_points, &
+                               bands_label,num_bands_project
 
     implicit none
 
@@ -535,11 +533,8 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     !============================================!
 
     use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_error,stdout,io_file_unit,seedname,&
-                               io_time,io_stopwatch
-    use w90_parameters, only : num_wann,bands_num_points,recip_metric,&
-                               bands_num_spec_points,timing_level, &
-                               bands_spec_points,bands_label
+    use w90_io,         only : io_file_unit,seedname
+    use w90_parameters, only : num_wann,bands_num_spec_points
 
     implicit none
 
@@ -753,7 +748,7 @@ end subroutine plot_interpolate_bands
     !============================================!
 
     use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi,cmplx_1
-    use w90_io,         only : io_error,stdout,io_file_unit,seedname,io_time, &
+    use w90_io,         only : io_error,stdout,io_file_unit,seedname, &
                                io_date,io_stopwatch
     use w90_parameters, only : num_wann,num_bands,num_kpts,u_matrix,spin, &
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &

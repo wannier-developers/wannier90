@@ -406,7 +406,7 @@ contains
 
       implicit none
 
-      integer                       :: i,j,p(1),info,ierr
+      integer                       :: i,j,info,ierr
       real(kind=dp),    allocatable :: clamp_r(:,:)
       real(kind=dp),    allocatable :: a_matrix_r(:,:)
       real(kind=dp),    allocatable :: raa(:,:)
@@ -2216,7 +2216,6 @@ contains
       real(kind=dp),    allocatable :: rz(:,:)
 !@@@     
       real(kind=dp),    allocatable :: w(:)
-      complex(kind=dp), allocatable :: cap(:)
       complex(kind=dp), allocatable :: cz(:,:)
 
       complex(kind=dp), allocatable :: cwb(:,:),cww(:,:),cbw(:,:)

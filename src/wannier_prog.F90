@@ -204,8 +204,6 @@ program wannier
   close(stdout)
 
 
-100 format(1x,'Execution started on ',a9,' at ',a9)
-101 format(1x,'Reading parameters')
 
 end program wannier
   

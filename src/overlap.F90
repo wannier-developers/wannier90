@@ -666,16 +666,16 @@ return
   !==================================================================!  
     use w90_constants
     use w90_io,         only : io_error,io_stopwatch
-    use w90_parameters, only : num_bands,num_wann,num_kpts,timing_level,&
-                           u_matrix,m_matrix,nntot,nnlist 
+    use w90_parameters, only : num_wann,timing_level,&
+                           u_matrix,m_matrix,nntot!,num_kpts,nnlist 
     use w90_utility,    only : utility_zgemm
 
     implicit none
 
 
     ! internal variables
-    integer :: i,j,m,n,info,ierr,nn, p(1), mdev, ndev, nndev       
-    real(kind=dp)                 :: rtmp2, dev, dev_tmp
+    integer :: i,j,m,info,ierr,nn
+    real(kind=dp)                 :: rtmp2
     real(kind=dp),    allocatable :: u_matrix_r(:,:)
 !!$    real(kind=dp),    allocatable :: u_cmp(:)
     real(kind=dp),    allocatable :: svals(:)
@@ -685,6 +685,10 @@ return
     complex(kind=dp), allocatable :: ph(:)
     complex(kind=dp), allocatable :: cz(:,:)
     complex(kind=dp), allocatable :: cvdag(:,:)
+
+!!$ real(kind=dp),    allocatable :: u_cmp(:)
+!!$ integer :: n,mdev, ndev, nndev,p(1)
+!!$ real(kind=dp)                 :: dev, dev_tmp
 
     if (timing_level>1) call io_stopwatch('overlap: project_gamma',1)
 

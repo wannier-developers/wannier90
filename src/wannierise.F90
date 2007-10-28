@@ -49,14 +49,13 @@ contains
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0
-    use w90_io,         only : stdout,io_error,io_time, &
-         io_date,io_stopwatch,io_file_unit,seedname
+    use w90_io,         only : stdout,io_error,io_time,io_stopwatch
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
          num_dump_cycles,omega_invariant,param_write_chkpt,length_unit, &
          lenconfac,proj_site,real_lattice,write_r2mn,guiding_centres, &
-         num_guide_cycles,num_no_guide_iter,timing_level,trial_step, &
-         fixed_step,lfixstep,write_proj,have_disentangled,conv_tol, &
+         num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
+         fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
@@ -101,7 +100,6 @@ contains
     real(kind=dp)              :: save_spread
     logical                    :: lconverged,lrandom,lfirst
     integer                    :: conv_count,noise_count
-    character(len=9)   :: cdate, ctime
 
     if (timing_level>0) call io_stopwatch('wann: main',1)
 
@@ -181,9 +179,14 @@ contains
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if( guiding_centres) then
-       do n=1,num_wann
+       do n=1,num_proj
           call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
-        enddo
+       enddo
+       if(spinors) then
+          do n=1,num_proj
+             call utility_frac_to_cart(proj_site(:,n),rguide(:,n+num_proj),real_lattice)
+          enddo
+       end if
     end if
 
     write(stdout,*)
@@ -1066,7 +1069,7 @@ contains
     use w90_constants,  only : eps6
     use w90_parameters, only : num_wann,m_matrix,nntot,neigh, &
          nnh,bk,bka,num_kpts,timing_level
-    use w90_io,         only : io_error,io_stopwatch
+    use w90_io,         only : io_stopwatch
     use w90_utility,    only : utility_inv3
 
     implicit none
@@ -1265,7 +1268,7 @@ contains
     !===================================================================  
     use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
                            omega_invariant,timing_level
-    use w90_io,         only : io_error,io_stopwatch
+    use w90_io,         only : io_stopwatch
 
     implicit none
 
@@ -1452,7 +1455,7 @@ contains
     !                                                                  !
     !===================================================================  
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
-    use w90_io,         only : io_error,io_stopwatch
+    use w90_io,         only : io_stopwatch
 
     implicit none
 
@@ -1622,7 +1625,7 @@ contains
     !                                     !
     !=====================================!
 
-    use w90_io,         only: seedname,io_file_unit,io_date,io_error,stdout
+    use w90_io,         only: seedname,io_file_unit,io_date,stdout
     use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
          lenconfac,real_lattice,recip_lattice,iprint
     use w90_utility,    only : utility_translate_home
@@ -1736,7 +1739,7 @@ contains
     use w90_constants,  only : dp
     use w90_io,         only : seedname,io_file_unit,io_error
     use w90_parameters, only : num_kpts, num_wann, nntot, wb,  &
-                               m_matrix, timing_level 
+                               m_matrix
       
     implicit none
 
@@ -1874,10 +1877,9 @@ contains
     !                      Gamma version                               !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0
-    use w90_io,         only : stdout,io_error,io_time, &
-         io_date,io_stopwatch,io_file_unit,seedname
-    use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
-         nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint, &
+    use w90_io,         only : stdout,io_error,io_time,io_stopwatch
+    use w90_parameters, only : num_wann,num_iter,wb, &
+         nntot,u_matrix,m_matrix,num_kpts,iprint, &
          num_print_cycles,num_dump_cycles,omega_invariant, &
          param_write_chkpt,length_unit,lenconfac, &
          proj_site,real_lattice,write_r2mn,guiding_centres, &
@@ -1907,14 +1909,12 @@ contains
     real(kind=dp),    allocatable  :: ur_rot(:,:)
     complex(kind=dp), allocatable  :: cz (:,:)  
 
-    real(kind=dp) :: gcnorm1,gcnorm0
     real(kind=dp) :: sqwb
-    integer       :: i,n,nn,iter,ind,ierr,iw,ncg,info
+    integer       :: i,n,nn,iter,ind,ierr,iw,info
     integer       :: tnntot
     logical       :: lprint,ldump
     real(kind=dp), allocatable :: history(:)
     logical                    :: lconverged
-    character(len=9)   :: cdate, ctime
 
     if (timing_level>0) call io_stopwatch('wann: main_gamma',1)
 

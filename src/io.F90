@@ -211,7 +211,8 @@ contains
     !                                                                  !
     !===================================================================  
     implicit none
-    character (len=9) :: cdate, ctime
+    character (len=9), intent(out) :: cdate
+    character (len=9), intent(out) :: ctime
 
     character(len=3), dimension(12) :: months
     data months /'Jan','Feb','Mar','Apr','May','Jun',   &
