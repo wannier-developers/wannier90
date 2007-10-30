@@ -240,8 +240,8 @@ contains
   !                                                                  !
   !===================================================================  
     use w90_constants, only : bohr, eps6
-    use w90_utility, only : utility_recip_lattice,utility_compute_metric
-    use w90_io,      only : io_error,io_file_unit,seedname,post_proc_flag
+    use w90_utility,   only : utility_recip_lattice,utility_compute_metric
+    use w90_io,        only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
 
     !local variables

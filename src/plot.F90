@@ -26,7 +26,7 @@ contains
   subroutine plot_main( )
     !============================================!
 
-    use w90_constants,   only : cmplx_0
+    use w90_constants,   only : cmplx_0,eps6
     use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
                                 kpt_latt,fermi_surface_plot, &
@@ -50,7 +50,7 @@ contains
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
-           if (all(kpt_latt(:,nkp)<0.000001_dp)) have_gamma=.true.       
+           if (all(kpt_latt(:,nkp)<eps6)) have_gamma=.true.       
        end do
        if(.not. have_gamma) &
             write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. &

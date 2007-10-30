@@ -48,7 +48,7 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                                                                  !
     !===================================================================  
-    use w90_constants,  only : dp,cmplx_1,cmplx_0
+    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps5
     use w90_io,         only : stdout,io_error,io_time,io_stopwatch
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
@@ -893,24 +893,24 @@ contains
                   ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
                   ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
                enddo
-               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt.0.00001_dp) ) &
+               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
                     then
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp1
                   call io_error('wann_main: unitariety error 1')  
                endif
-               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt.0.00001_dp) ) &
+               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
                     then
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp2
                   call io_error('wann_main: unitariety error 2')  
                endif
-               if ( (i.ne.j) .and. (abs (ctmp1) .gt.0.00001_dp) ) then  
+               if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp1
                   call io_error('wann_main: unitariety error 3')  
                endif
-               if ( (i.ne.j) .and. (abs (ctmp2) .gt.0.00001_dp) ) then  
+               if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp2
                   call io_error('wann_main: unitariety error 4')  
@@ -1876,7 +1876,7 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                      Gamma version                               !
     !===================================================================  
-    use w90_constants,  only : dp,cmplx_1,cmplx_0
+    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps5
     use w90_io,         only : stdout,io_error,io_time,io_stopwatch
     use w90_parameters, only : num_wann,num_iter,wb, &
          nntot,u_matrix,m_matrix,num_kpts,iprint, &
@@ -2378,24 +2378,24 @@ loop_nw2: do nw2=nw1+1,num_wann
                   ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
                   ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
                enddo
-               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt.0.00001_dp) ) &
+               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
                     then
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp1
                   call io_error('wann_main: unitariety error 1')  
                endif
-               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt.0.00001_dp) ) &
+               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
                     then
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp2
                   call io_error('wann_main: unitariety error 2')  
                endif
-               if ( (i.ne.j) .and. (abs (ctmp1) .gt.0.00001_dp) ) then  
+               if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp1
                   call io_error('wann_main: unitariety error 3')  
                endif
-               if ( (i.ne.j) .and. (abs (ctmp2) .gt.0.00001_dp) ) then  
+               if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
                   write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
                        ctmp2
                   call io_error('wann_main: unitariety error 4')  

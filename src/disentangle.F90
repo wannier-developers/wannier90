@@ -853,9 +853,9 @@ contains
   !                                                                  !
   !==================================================================!  
 
+    use w90_constants, only: eps5
 
     implicit none
-
 
     ! internal variables
     integer :: i,j,l,m,nkp,info,ierr
@@ -964,7 +964,7 @@ contains
              do m = 1, ndimwin(nkp)  
                 ctmp2 = ctmp2 + u_matrix_opt(m,j,nkp) * conjg(u_matrix_opt(m,i,nkp))  
              enddo
-             if ( (i.eq.j).and.(abs(ctmp2-cmplx_1).gt.0.00001_dp) ) then
+             if ( (i.eq.j).and.(abs(ctmp2-cmplx_1).gt.eps5) ) then
                 write(stdout,*) ' ERROR: unitarity of initial U'  
                 write(stdout,'(1x,a,i2)') 'nkp= ', nkp  
                 write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
@@ -973,7 +973,7 @@ contains
                      real(ctmp2,dp),aimag(ctmp2)
                 call io_error('dis_project: Error in unitarity of initial U in dis_project')
              endif
-             if ( (i.ne.j) .and. (abs(ctmp2).gt.0.00001_dp) ) then  
+             if ( (i.ne.j) .and. (abs(ctmp2).gt.eps5) ) then  
                 write(stdout,*) ' ERROR: unitarity of initial U'  
                 write(stdout,'(1x,a,i2)') 'nkp= ', nkp  
                 write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  

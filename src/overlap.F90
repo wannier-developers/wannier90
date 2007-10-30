@@ -602,7 +602,7 @@ return
              do m = 1, num_bands  
                 ctmp2 = ctmp2 + u_matrix(m,j,nkp) * conjg(u_matrix(m,i,nkp))  
              enddo
-             if ( (i.eq.j).and.(abs(ctmp2-cmplx_1).gt.0.00001_dp) ) then
+             if ( (i.eq.j).and.(abs(ctmp2-cmplx_1).gt.eps5) ) then
                 write(stdout,*) ' ERROR: unitarity of initial U'  
                 write(stdout,'(1x,a,i2)') 'nkp= ', nkp  
                 write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
@@ -611,7 +611,7 @@ return
                      real(ctmp2,dp),aimag(ctmp2)
                 call io_error('Error in unitarity of initial U in overlap_project')
              endif
-             if ( (i.ne.j) .and. (abs(ctmp2).gt.0.00001_dp) ) then  
+             if ( (i.ne.j) .and. (abs(ctmp2).gt.eps5) ) then  
                 write(stdout,*) ' ERROR: unitarity of initial U'  
                 write(stdout,'(1x,a,i2)') 'nkp= ', nkp  
                 write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
@@ -789,7 +789,7 @@ return
           do m = 1, num_wann  
              rtmp2 = rtmp2 + u_matrix_r(m,j) * u_matrix_r(m,i)  
           enddo
-          if ( (i.eq.j).and.(abs(rtmp2-1.0_dp).gt.0.00001_dp) ) then
+          if ( (i.eq.j).and.(abs(rtmp2-1.0_dp).gt.eps5) ) then
              write(stdout,*) ' ERROR: unitarity of initial U'  
              write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
              write(stdout,'(1x,a,f12.6)') &
@@ -797,7 +797,7 @@ return
                   rtmp2
              call io_error('Error in unitarity of initial U in overlap_project_gamma')
           endif
-          if ( (i.ne.j) .and. (abs(rtmp2).gt.0.00001_dp) ) then  
+          if ( (i.ne.j) .and. (abs(rtmp2).gt.eps5) ) then  
              write(stdout,*) ' ERROR: unitarity of initial U'  
              write(stdout,'(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j  
              write(stdout,'(1x,a,f12.6,1x,f12.6)') &
