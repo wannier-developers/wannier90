@@ -28,7 +28,9 @@ Further information can be found in the user guide and tutorial
  Please cite                                             
                                                          
  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt  
-       and N. Marzari, http://www.wannier.org/        
+       and N. Marzari, http://www.wannier.org/; 
+       http://arxiv.org/abs/0708.0650        
+
   in any publications arising from the use of this code.  
 
  For the method please cite 

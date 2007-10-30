@@ -4,12 +4,14 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
-v1.0.3 (1st Sep 2007)
+v1.1 (1st Dec 2007)
 
 * Addition of specific algorithms for when only Gamma-point 
   sampling is used (new input variable: gamma_only)
+* Addition of routines for quantum transport calculations
+  (new input variables: transport, transport_mode, etc.)
 * Option to write out hamiltonian matrix elements in the Wannier 
-  function basis (new input variables: h_plot,ham_r_max)
+  function basis (new input variable: hr_plot)
 * Option to set a convergence threshold for localisation procedure
   (new input variables: conv_tol, conv_window)
 * Improved minimisation algorithms for localisation routines
@@ -21,7 +23,15 @@ v1.0.3 (1st Sep 2007)
   -- works for isolated molecules, further testing for periodic systems is 
   required -- significantly reduced WF file-size  
   (new input variable: wannier_plot_radius) 
-
+* Optional capability to specify some projections in input file and
+  have the remaining centres chosen randomly by the code
+* Checkpointing and restarts all done via the .chk file (_um.dat file
+  now obsolete)
+* Further enhancements to the way projections are specified
+* Option to map Wannier functions onto bandstructure
+  (new input variable: bands_plot_project)
+* Option to have spinor Wannier functions
+  (new input variable: spinors)
 
 v1.0.2 (1st Dec 2006)
 
