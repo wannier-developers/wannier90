@@ -2947,7 +2947,7 @@ contains
               ! diffusivity of orbital
               pos1=index(dummy,'zona=')
               if(pos1>0) then
-                 ctemp=(dummy(pos1+2:))
+                 ctemp=(dummy(pos1+5:))
                  pos2=index(ctemp,':')
                  if(pos2>0) ctemp=ctemp(:pos2-1)
                  read(ctemp,*,err=104,end=104) proj_zona_tmp
