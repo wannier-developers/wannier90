@@ -730,7 +730,6 @@ the second MLWF.
 
 \item Following Ref.~\cite{BaTiO3}, compute the Born effective charges from the
   change in Wannier centres under an atomic displacement. 
-%%Compare with the values you obtained this morning.
 \end{itemize}
 
 \cleardoublepage
@@ -904,7 +903,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \cleardoublepage
 
 
-\section*{11: Benzene}
+\section*{12: Benzene}
 \subsection*{Valence States}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the valence states of benzene}}
@@ -990,6 +989,90 @@ and re-running \wannier. Visualise them using, e.g., XCrySDen.
 
 \cleardoublepage
 
+
+\section*{13: (5,5) Carbon Nanotube}
+\subsection*{Transport properties}
+
+\begin{itemize}
+  \item{Outline: \it{Obtain the bandstructure, quantum conductance and
+  density of states of a metallic (5,5) carbon nanotube}}
+  \item{Directory: {\tt examples/example13/}}
+  \item{Input Files}
+    \begin{itemize}
+      \item{ {\tt cnt55.scf}  {\it The \pwscf\ input file for ground state
+	  calculation}}
+      \item{ {\tt cnt55.nscf}  {\it The \pwscf\ input file to obtain Bloch
+	  states for the conduction states}} 
+      \item{ {\tt cnt55.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+      \item{ {\tt cnt55.win}  {\it The {\tt wannier90} input file}}
+    \end{itemize}
+\end{itemize}
+
+In order to form localised WF that describe both the occupied and
+unoccupied $\pi$ and $\pi^{\ast}$ manifolds, we use the
+disentanglement procedure to extract a smooth manifold of states that
+has dimension equal to 2.5 times the number of carbon atoms per unit
+cell~\cite{WanTran}. The positions of the energy windows are shown in
+Fig.~\ref{fig:cnt.win}.
+
+The part of the \wannier\ input file that controls the transport part
+of the calculation looks like:
+
+{\tt
+\begin{quote}
+transport                 = true\\
+transport\_mode           = bulk\\
+one\_dim\_axis            = z\\
+dist\_cutoff              =  5.5\\
+fermi\_energy             = -1.06\\
+tran\_win\_min            = -6.5\\
+tran\_win\_max            = 6.5\\
+tran\_energy\_step         = 0.01\\
+dist\_cutoff\_mode        = one\_dim\\
+translation\_centre\_frac = 0.0 0.0 0.0
+\end{quote} }
+
+Descriptions of these and other keywords related to the calculation of
+transport properties can be found in the User Guide.
+
+\begin{enumerate}
+\item Run \pwscf\ and \wannier.\\
+Inspect the output file {\tt cnt55.wout}. The minimisation of the
+spread occurs in a two-step procedure. First, we minimise $\Omega_{\rm
+  I}$. Then, we minimise $\Omega_{\rm O}+\Omega_{{\rm OD}}$.
+\item Note that the initial $p_{z}$ projections on the carbon atoms
+are oriented in the radial direction with respect to the nanotube
+axis.
+\item The interpolated bandstructure is written to {\tt
+cnt55\_band.agr} (since {\tt bands\_plot\_format = xmgr} in the input
+file).
+\item The quantum conductance and density of states are written to the
+files {\tt cnt55\_qc.dat} and {\tt cnt55\_dos.dat}, respectively. Use a
+package such as {\tt gnuplot} or {\tt xmgrace} in order to visualise
+them. You should get something that looks like Fig.~\ref{fig:cnt.tran}.
+\end{enumerate}
+
+\begin{figure}[h]
+\begin{center}
+\scalebox{0.75}{\includegraphics{cnt.win.eps}}
+\caption{Bandstructure of (5,5) carbon nanotube showing the position
+  of the outer and inner energy windows.}
+\label{fig:cnt.win}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\scalebox{0.8}{\includegraphics{cnt.tran.eps}}
+\caption{Wannier interpolated bandstructure, quantum conductance and
+density of states of (5,5) carbon nanotube. Note that the Fermi level has been shifted 
+by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
+\label{fig:cnt.tran}
+\end{center}
+\end{figure}
+
+\cleardoublepage
+
 \begin{thebibliography}{99}
 
 \bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
@@ -1019,6 +1102,11 @@ and re-running \wannier. Visualise them using, e.g., XCrySDen.
 \bibitem{WanInt} J.~R.~Yates {\it et al.}, Spectral and Fermi
   Surface Properties from Wannier Interpolation, {\it Phys. Rev. B}
   {\bf 75}, 195121 (2007). 
+
+\bibitem{WanTran} Y.-S.~Lee, M.~B.~Nardelli and N.~Marzari, Band
+  Structure and Quantum Conductance of Nanostructures from Maximally
+  Localized Wannier Funtions: The Case of Functionalized carbon
+  nanotubes, {\it Phys. Rev. Lett.} {\bf 95}, 076804 (2005).
 
 \end{thebibliography}
 
