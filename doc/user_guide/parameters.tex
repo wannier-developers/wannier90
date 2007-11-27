@@ -279,6 +279,7 @@ Keyword & Type & Description \\
 {\sc tran\_win\_min } & P &  Bottom of the energy window for transport calculation\\  
 {\sc tran\_win\_max } & P &  Top of the energy window for transport calculation\\ 
 {\sc tran\_energy\_step } & R & Sampling interval of the energy values \\ 
+{\sc fermi\_energy } & R & The Fermi energy \\
 {\sc tran\_num\_bb } & I & Size of a bulk Hamiltonian \\  
 {\sc tran\_num\_ll } & I & Size of a left-lead Hamiltonian \\
 {\sc tran\_num\_rr } & I & Size of a right-lead Hamiltonian \\
@@ -1051,9 +1052,11 @@ The default value for \verb#fermi_surface_num_points# is 50.
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
-The Fermi energy in eV. Whilst this is not directly used by the
-\wannier, it is a useful parameter to set as it will be written
-into the bxsf file. 
+The Fermi energy in eV. This parameter is written into the bxsf file.
+
+%Whilst this is not directly used by the
+%\wannier, it is a useful parameter to set as it will be written
+%into the bxsf file. 
 
 The default value is 0.0
 
@@ -1127,6 +1130,12 @@ Units are eV.
 
 The default value is 0.01.
 
+\subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
+The Fermi energy in eV. The energy axis of the quantum conductance and
+density of states data are shifted rigidly by this amount.
+
+The default value is 0.0
+
 \subsection[tran\_num\_bb]{\tt integer :: tran\_num\_bb}
 Size of a bulk Hamiltonian matrix. 
 
@@ -1192,7 +1201,9 @@ The default value is {\tt TRUE}.
 
 \subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
 
-Centre of the unit cell to which the final Wannier centers are translated. Numbers are in fractional coordinates with respect to the lattice vectors.
+Centre of the unit cell to which the final Wannier centers are
+translated. Numbers are in fractional coordinates with respect to the
+lattice vectors.
  
 The default value is (0.0,0.0,0.0).
 
