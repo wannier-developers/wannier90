@@ -1,6 +1,6 @@
  &control
     calculation = 'nscf'
-    title = 'cnt55'
+    title = 'cnt'
     verbosity = 'high'
     outdir='./'
     pseudo_dir = './'

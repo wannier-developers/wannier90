@@ -5,7 +5,7 @@
     verbosity = 'high'
     outdir='./'
     pseudo_dir = './'
-    prefix='cnt55'
+    prefix='cnt'
     tstress =.f.
     tprnfor =.t.
  /
