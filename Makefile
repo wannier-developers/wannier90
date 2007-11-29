@@ -41,13 +41,13 @@ dist:
 		./examples/example[2-4]/*.eig \
                 ./examples/example[1-4]/*.*mn \
 		./examples/example[5-9]/*.scf \
-		./examples/example1[0-1]/*.scf \
+		./examples/example1[0-3]/*.scf \
 		./examples/example[5-9]/*.nscf \
-		./examples/example1[0-1]/*.nscf \
+		./examples/example1[0-3]/*.nscf \
 		./examples/example[5-9]/*.pw2wan \
-		./examples/example1[0-1]/*.pw2wan \
+		./examples/example1[0-3]/*.pw2wan \
 		./examples/example[5-9]/*.UPF \
-		./examples/example1[0-1]/*.UPF \
+		./examples/example1[0-3]/*.UPF \
 		./config/make.sys* \
 		./utility/*.pl \
                 ./doc/*/*.tex \
