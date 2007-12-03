@@ -132,7 +132,7 @@ contains
     use w90_hamiltonian, only : irvec,nrpts,ham_r
 
     integer :: ierr
-    integer :: irvec_max, irvec_tmp(nrpts), two_dim_vec(2)
+    integer :: irvec_max, irvec_tmp(3), two_dim_vec(2)
     integer :: i, j
     integer :: i1, i2, i3, n1, nrpts_tmp, loop_rpt
 
