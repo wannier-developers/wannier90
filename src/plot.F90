@@ -533,11 +533,14 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     !============================================!
 
     use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only : io_file_unit,seedname
+    use w90_io,         only : io_file_unit,seedname,io_date
     use w90_parameters, only : num_wann,bands_num_spec_points
 
     implicit none
 
+    character (len=9) :: cdate, ctime
+
+    call io_date(cdate, ctime)
 
     ! Axis labels
 
@@ -574,7 +577,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     write(gnuunit,'(a)') '@page scroll 5%                           '
     write(gnuunit,'(a)') '@page inout 5%                            '
     write(gnuunit,'(a)') '@link page off                            '
-    write(gnuunit,'(a)') '@timestamp def "Mon Jul  2 23:07:11 2007"' 
+    write(gnuunit,'(a)') '@timestamp def "'//cdate//' at '//ctime//'" ' 
     write(gnuunit,'(a)') '@with g0'                                  
     write(gnuunit,'(a)') '@    world xmin 0.00'
     write(gnuunit,'(a,f10.5)') '@    world xmax ',xval(total_pts)
