@@ -60,10 +60,11 @@ k-points \\
 {\sc kpoints }   & R & List of k-points in the Monkhorst-Pack grid \\
 {\sc gamma\_only} & L & Wavefunctions from underlying ab initio
 calculation are manifestly real \\
-{\sc num\_shells }   & I & Number of shells in finite difference formula \\
+{\sc spinors} & L & WF are spinors \\
 {\sc shell\_list }   & I & Which shells to use in finite difference formula \\
 {\sc search\_shells }   & I & The number of shells to search when
 determining finite difference formula \\
+{\sc kmesh\_tol } & R & The tolerance to control if two kpoint belong to the same shell \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling system parameters.]
@@ -225,6 +226,7 @@ WF, molecule or crystal \\
 section of the k-point path \\
 {\sc bands\_plot\_format }   & S & File format in which to plot the
 interpolated bands \\
+{\sc bands\_plot\_project } & I & WF to project the band structure onto \\
 {\sc bands\_plot\_mode }   & S & Slater-Koster type interpolation or
 Hamiltonian cut-off \\
 {\sc bands\_plot\_dim } & I & Dimension of the system \\
@@ -352,7 +354,7 @@ The default value is \verb#Ang#.
 \subsection[Ionic Positions]{Ionic Positions}
 
 The ionic positions may be specified in fractional coordinates relative
-to the lattice vectors of the unit cell, or in absolute cartesian coordinates.
+to the lattice vectors of the unit cell, or in absolute Cartesian coordinates.
 Only one of \verb#atoms_cart# and \verb#atoms_frac# may be given in the input
 file.
 
@@ -473,6 +475,13 @@ Ref.~\cite{Gygi}.
 The default value is {\tt FALSE}.
 
 
+\subsection[spinors]{{\tt logical :: spinors}}
+
+If {\tt spinors=TRUE}, then \wannier\ will expect to find twice as many
+wannier functions as initial projections.
+
+The default value is {\tt FALSE}.
+
 \subsection{Shells}
 
 The MV scheme requires a finite difference expression
@@ -492,26 +501,30 @@ $i^{\mathrm{th}}$ vector belonging to the $s^{\mathrm{th}}$ shell
 with associated weight $w_s$, and $\alpha$ and $\beta$ run over the
 three Cartesian indices. 
 
-\subsection[num\_shells]{\tt integer :: num\_shells}
 
-If \verb#num_shells#$>0$, then the number of shells to include in the
-finite difference expression. If \verb#num_shells#$=0$, then the code
-will choose the shells automatically.
+\subsection[shell\_list]{\tt integer :: shell\_list(:)}
 
-The default value is 0.
-
-\subsection[shell\_list]{\tt integer :: shell\_list(num\_shells)}
-
-If \verb#num_shells#$>0$, then \verb#shell_list# is vector listing the shells
-to include in the finite difference expression.
+\verb#shell_list# is vector listing the shells
+to include in the finite difference expression. If this keyword is
+absent, the shells are chosen automatically.
 
 \subsection[search\_shells]{\tt integer :: search\_shells}
 
 Specifies the number of shells of neighbours over which to search in
 attempting to determine an automatic solution to the B1 condition
-Eq.~\ref{eq:B1}. 
+Eq.~\ref{eq:B1}. Larger values than the default may be required in special
+cases e.g. for very long thin unit cells. 
 
 The default value is 12.
+
+
+\subsection[kmesh\_tol]{\tt real(kind=dp) :: kmesh\_tol}
+
+Two kpoints belong to the same shell if the distance between them is
+less than {\tt kmesh\_tol}.
+Units are Ang.
+
+The default value is 0.000001 Ang.
 
 \section{Projection}
 
@@ -1000,6 +1013,23 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#gnuplot# (default)
 \item[{\bf --}] \verb#xmgrace#
 \end{itemize}
+Note: it is possible to request output in both formats eg
+$\verb#bands_format#=\verb#gnuplot xmgrace#$
+
+
+
+\subsection[bands\_plot\_project]{\tt integer :: bands\_plot\_project(:)}
+
+If present \wannier\ will compute the contribution of this set of WF to the
+states at each point of the interpolated band structure.
+The WF are numbered according to the seedname.wout file. The result is written 
+in the {\tt seedname\_band.dat} file, and a corresponding gnuplot script to
+{\tt seedname\_band\_proj.dat} .
+
+ For example, to project on to WFs 2, 6, 7, 8 and 12:
+
+ \verb#bands_plot_project : 2, 6-8, 12#
+
 
 \subsection[bands\_plot\_mode]{\tt character(len=20) :: bands\_plot\_mode}
 
@@ -1164,7 +1194,7 @@ Number of rows is equal to \verb#tran_num_ll#.
 The default value is 0.
 
 \subsection[tran\_num\_cr]{\tt integer :: tran\_num\_cr}
-Number of rows in a conductor\_rigt-lead Hamiltonian matrix.
+Number of rows in a conductor\_right-lead Hamiltonian matrix.
 Number of columns is equal to \verb#tran_num_rr#.
 
 The default value is 0.

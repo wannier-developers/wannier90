@@ -27,7 +27,7 @@
 \title{\wannier: Tutorial}
 
 \author{Version 1.0.3}
-\date{31st July 2007}
+\date{3rd December 2007}
 
 \begin{document}
 \newcommand{\wannier}{\texttt{wannier90}}
@@ -390,7 +390,23 @@ G 0.00  0.00  0.00    K 0.00  0.50 -0.50
  
 end kpoint\_path
 \end{quote} }
+\item Plot the contribution of the interstitial WF to the
+  bandstructure. Add the following keyword to {\tt copper.win}
+\smallskip
+{\tt
+\begin{quote}
+bands\_plot\_project = 6,7
+\end{quote} }
+The resulting file {\tt copper\_band\_proj.gnu} can be opened with
+gnuplot. Red lines correspond to a large contribution from the
+interstitial WF (blue line are a small contribution; ie a large `d' contribution).
+
+
 \end{enumerate}
+
+
+
+
 Investigate the effect of the outer and inner energy window on the
 interpolated bands. 
 
@@ -795,7 +811,7 @@ the second MLWF.
 {\tt pw.x < silicon.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid. Note that we rquest the lower 4 (valence) bands\\ 
+  grid. Note that we request the lower 4 (valence) bands\\ 
 {\tt pw.x < silicon.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -1089,7 +1105,7 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 \bibitem{W90} A.~A.~Mostofi, J.~R.~Yates, Y.-S.~Lee, I.~Souza,
    D.~Vanderbilt and N.~Marzari, \wannier: A Tool for Obtaining
    Maximally-Localized Wannier Functions, {\it Comput. Phys. Commun.},
-   submitted (2007) and {\tt http://arxiv.org/abs/0708.0650}.
+   accepted (2007) and {\tt http://arxiv.org/abs/0708.0650}.
 
 \bibitem{USPP} D.~Vanderbilt, Soft Self-Consistent Pseudopotentials in
   a Generalized Eigenvalue Formalism, {\it Phys. Rev. B} {\bf 41}
@@ -1105,7 +1121,7 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 
 \bibitem{WanTran} Y.-S.~Lee, M.~B.~Nardelli and N.~Marzari, Band
   Structure and Quantum Conductance of Nanostructures from Maximally
-  Localized Wannier Funtions: The Case of Functionalized carbon
+  Localized Wannier Functions: The Case of Functionalized carbon
   nanotubes, {\it Phys. Rev. Lett.} {\bf 95}, 076804 (2005).
 
 \end{thebibliography}
