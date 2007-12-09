@@ -431,7 +431,10 @@ The \pwscf\ plane-wave, density-functional theory code, which is
 available as part of the \QE\ distribution ({\tt
   www.quantum-espresso.org}), is fully interfaced to \wannier\ via the
 {\tt pw2wannier90} post-processing code that is also available as part
-of \QE.
+of \QE. The latest version of {\tt pw2wannier90} is included as part of 
+the \wannier\ distribution. Please see the {\tt pwscf} directory for 
+instructions on how to incorporate it into \pwscf. 
+
 
 \cleardoublepage
 
@@ -1063,9 +1066,11 @@ axis.
 cnt55\_band.agr} (since {\tt bands\_plot\_format = xmgr} in the input
 file).
 \item The quantum conductance and density of states are written to the
-files {\tt cnt55\_qc.dat} and {\tt cnt55\_dos.dat}, respectively. Use a
-package such as {\tt gnuplot} or {\tt xmgrace} in order to visualise
-them. You should get something that looks like Fig.~\ref{fig:cnt.tran}.
+files {\tt cnt55\_qc.dat} and {\tt cnt55\_dos.dat}, respectively. 
+Note that this part of the calculation may take some time. You can 
+follow its progress by monitoring the output to these files. 
+Use a package such as {\tt gnuplot} or {\tt xmgrace} in order to visualise
+the data. You should get something that looks like Fig.~\ref{fig:cnt.tran}.
 \end{enumerate}
 
 \begin{figure}[h]
