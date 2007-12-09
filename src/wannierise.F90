@@ -56,7 +56,8 @@ contains
          lenconfac,proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
-         conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz
+         conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
+         wannier_spreads,omega_total,omega_tilde
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -209,10 +210,15 @@ contains
 
     ! calculate initial centers and spread
     call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
-    omega_invariant = wann_spread%om_i
 
-    ! Public array of Wannier centres
+    ! public variables
+    omega_total = wann_spread%om_tot
+    omega_invariant = wann_spread%om_i
+    omega_tilde = wann_spread%om_d + wann_spread%om_od
+  
+    ! public arrays of Wannier centres and spreads
     wannier_centres = rave
+    wannier_spreads = r2ave - rave2
 
     if (lfixstep) lquad=.false.
     ncg  = 0
@@ -366,8 +372,13 @@ contains
           write(stdout,'(1x,a78)') repeat('-',78) 
        end if
 
-       ! Public array of Wannier centres
+       ! Public array of Wannier centres and spreads
        wannier_centres = rave
+       wannier_spreads = r2ave - rave2
+
+       ! Public variables
+       omega_total = wann_spread%om_tot
+       omega_tilde = wann_spread%om_d + wann_spread%om_od
 
        if (ldump) call param_write_chkpt('postdis')
 
@@ -1885,7 +1896,8 @@ contains
          proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level, &
          write_proj,have_disentangled,conv_tol,conv_window, &
-         wannier_centres,write_xyz
+         wannier_centres,write_xyz,wannier_spreads,omega_total, &
+         omega_tilde
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -2032,10 +2044,15 @@ contains
 
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w,csheet,sheet,rave,r2ave,rave2,wann_spread)
-    omega_invariant = wann_spread%om_i
 
-    ! Public array of Wannier centres
+    ! public variables
+    omega_total = wann_spread%om_tot
+    omega_invariant = wann_spread%om_i
+    omega_tilde = wann_spread%om_d + wann_spread%om_od
+
+    ! Public array of Wannier centres and spreads
     wannier_centres = rave
+    wannier_spreads = r2ave - rave2
 
     iter = 0
     old_spread%om_tot = 0.0_dp
@@ -2125,8 +2142,14 @@ contains
           write(stdout,'(1x,a78)') repeat('-',78) 
        end if
 
-       ! Public array of Wannier centres
+       ! Public array of Wannier centres and spreads
        wannier_centres = rave
+       wannier_spreads = r2ave - rave2
+
+       ! Public variables
+       omega_total = wann_spread%om_tot
+       omega_tilde = wann_spread%om_d + wann_spread%om_od
+
 
        if (ldump) then
           uc_rot(:,:)=cmplx(ur_rot(:,:),0.0_dp,dp)

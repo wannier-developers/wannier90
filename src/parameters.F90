@@ -208,8 +208,12 @@ module w90_parameters
   ! Are we running as a libarary
   logical, save, public :: library
 
-  ! Wannier centres
+  ! Wannier centres and spreads
   real(kind=dp), public, save, allocatable :: wannier_centres(:,:)
+  real(kind=dp), public, save, allocatable :: wannier_spreads(:)
+  real(kind=dp), public, save :: omega_total
+  real(kind=dp), public, save :: omega_tilde
+  ! [ omega_invariant is declared above ]
 
   ! For Hamiltonian matrix in WF representation
   logical,          public, save              :: automatic_translation
@@ -924,12 +928,17 @@ contains
     endif
 
     ! Initialise
+    omega_total = -999.0_dp
+    omega_tilde = -999.0_dp
     omega_invariant = -999.0_dp
     have_disentangled = .false.
 
     allocate(wannier_centres(3,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
     wannier_centres=0.0_dp
+    allocate(wannier_spreads(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating wannier_spreads in param_read')
+    wannier_spreads=0.0_dp
 
     return
 
@@ -1297,7 +1306,7 @@ contains
     write(stdout,*)  '            | Copyright (c) 1997-2007 J. Yates, A. Mostofi,     |'
     write(stdout,*)  '            |   Y.-S Lee, N. Marzari, I. Souza, D. Vanderbilt   |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |          Release: 1.0.2     1st Dec 2006          |'
+    write(stdout,*)  '            |        Release: 1.1 (beta)    7th Dec 2007        |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
@@ -1427,7 +1436,10 @@ contains
        deallocate( wannier_centres, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating wannier_centres in param_dealloc')
     end if
-
+    if( allocated( wannier_spreads ) ) then
+       deallocate( wannier_spreads, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wannier_spreads in param_dealloc')
+    endif
     return
 
   end subroutine param_dealloc

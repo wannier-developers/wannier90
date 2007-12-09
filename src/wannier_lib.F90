@@ -366,12 +366,14 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
            u_matrix_opt_loc(loop_w,loop_w,loop_k)=cmplx_1
         end do
      end do
-     lwindow=.true.
+     lwindow_loc=.true.
   end if
 
-  wann_centres_loc=0.0_dp
-  wann_spreads_loc=0.0_dp
-  spread_loc=0.0_dp
+  wann_centres_loc=wannier_centres
+  wann_spreads_loc=wannier_spreads
+  spread_loc(1)=omega_total
+  spread_loc(2)=omega_invariant
+  spread_loc(3)=omega_tilde
 
   call hamiltonian_dealloc()
   call overlap_dealloc()
