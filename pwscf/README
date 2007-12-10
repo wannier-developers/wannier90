@@ -1,0 +1,19 @@
+                       =========
+                       WANNIER90
+                       =========
+
+ The Maximally-Localised Generalised Wannier Functions Code
+
+This directory containes the subroutines for post-processing 
+a pwscf calculation for use with Wannier90.
+
+In general, the releases of quantum-espresso and those of 
+Wannier90 are out of sync. Therefore, we provide here a copy 
+of the post-processing routine that is compatible with this
+release of Wannier90 and a particular release of quantum-espresso.
+
+Within, e.g., the sub-directory v3.2.3 you will find a file 
+pw2wannier90.f90 that should be copied to the "PP" directory
+of v3.2.3 of the quantum-espresso distribution, replacing the 
+file of the same name that is already there. Then you should 
+compile pw2wannier90.x as normal.
