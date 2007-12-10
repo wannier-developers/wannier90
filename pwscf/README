@@ -12,8 +12,14 @@ Wannier90 are out of sync. Therefore, we provide here a copy
 of the post-processing routine that is compatible with this
 release of Wannier90 and a particular release of quantum-espresso.
 
-Within, e.g., the sub-directory v3.2.3 you will find a file 
-pw2wannier90.f90 that should be copied to the "PP" directory
+Within, e.g., the sub-directory v3.2.3 you will find two files:
+
+1. pw2wannier90.f90 should be copied to the "PP" directory
 of v3.2.3 of the quantum-espresso distribution, replacing the 
-file of the same name that is already there. Then you should 
-compile pw2wannier90.x as normal.
+file of the same name that is already there,
+
+2. wannier.f90 that should be copied to the "Modules" directory
+of v3.2.3 of the quantum-espresso distribution, replacing the 
+file of the same name that is already there.
+
+Then you should compile pw2wannier90.x as normal.
