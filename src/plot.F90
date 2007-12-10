@@ -104,12 +104,12 @@ contains
     implicit none
 
     complex(kind=dp),allocatable  :: ham_r_cut(:,:,:)
-    complex(kind=dp)   :: ham_pack((num_wann*(num_wann+1))/2)
-    complex(kind=dp)   :: fac
-    complex(kind=dp)   :: ham_kprm(num_wann,num_wann)
-    complex(kind=dp)   :: U_int(num_wann,num_wann)
-    complex(kind=dp)   :: cwork(2*num_wann)     
-    real(kind=dp)      :: rwork(7*num_wann)     
+    complex(kind=dp),allocatable  :: ham_pack(:)
+    complex(kind=dp)              :: fac
+    complex(kind=dp),allocatable  :: ham_kprm(:,:)
+    complex(kind=dp),allocatable  :: U_int(:,:)
+    complex(kind=dp),allocatable  :: cwork(:)     
+    real(kind=dp),allocatable     :: rwork(:)     
     real(kind=dp)      :: kpath_len(bands_num_spec_points/2)     
     integer            :: kpath_pts(bands_num_spec_points/2)     
     real(kind=dp), allocatable :: xval(:)
@@ -119,8 +119,8 @@ contains
     integer, allocatable :: irvec_cut(:,:)
     integer              :: irvec_max(3)
     integer              :: nrpts_cut
-    integer              :: iwork(5*num_wann)
-    integer              :: info,ifail(num_wann),i,j
+    integer, allocatable :: iwork(:),ifail(:)
+    integer              :: info,i,j
     integer              :: loop_rpt,nfound,loop_kpt,counter
     integer              :: loop_spts,total_pts,loop_i,nkp
     integer              :: num_paths,num_spts,ierr
@@ -135,6 +135,21 @@ contains
     write(stdout,*) 
     write(stdout,'(1x,a)') 'Calculating interpolated band-structure'
     write(stdout,*) 
+    !
+    allocate(ham_pack((num_wann*(num_wann+1))/2),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_pack in plot_interpolate_bands')
+    allocate(ham_kprm(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_kprm in plot_interpolate_bands')
+    allocate(U_int(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating U_int in plot_interpolate_bands')
+    allocate(cwork(2*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cwork in plot_interpolate_bands')
+    allocate(rwork(7*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating rwork in plot_interpolate_bands')
+    allocate(iwork(5*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating iwork in plot_interpolate_bands')
+    allocate(ifail(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ifail in plot_interpolate_bands')
     !
     ! Work out how many points in the total path and the positions of the special points
     !
@@ -305,12 +320,17 @@ contains
     integer :: nrpts_tmp
     integer :: one_dim_vec, two_dim_vec(2)
     integer :: i, j, n1, n2, n3, i1, i2, i3
-    real(kind=dp) :: ham_r_tmp(num_wann,num_wann)
-    real(kind=dp) :: shift_vec(3,nrpts_cut)
+    real(kind=dp), allocatable :: ham_r_tmp(:,:)
+    real(kind=dp), allocatable :: shift_vec(:,:)
     real(kind=dp) :: dist_ij_vec(3)
     real(kind=dp) :: dist_vec(3)
     real(kind=dp) :: dist
-                                 
+
+    allocate(ham_r_tmp(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_r_tmp in plot_cut_hr')
+    allocate(shift_vec(3,nrpts_cut),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating shift_vec in plot_cut_hr')
+   
     irvec_max = maxval(irvec,DIM=2)+1
 
     if (bands_plot_dim .ne. 3) then
@@ -638,25 +658,39 @@ end subroutine plot_interpolate_bands
 
     implicit none
 
-    complex(kind=dp)   :: ham_pack((num_wann*(num_wann+1))/2)
+    complex(kind=dp) ,allocatable :: ham_pack(:)
     complex(kind=dp)   :: fac
-    complex(kind=dp)   :: ham_kprm(num_wann,num_wann)
-    complex(kind=dp)   :: U_int(num_wann,num_wann)
-    complex(kind=dp)   :: cwork(2*num_wann)
-    real(kind=dp)      :: rwork(7*num_wann)     
+    complex(kind=dp) ,allocatable :: ham_kprm(:,:)
+    complex(kind=dp) ,allocatable :: U_int(:,:)
+    complex(kind=dp) ,allocatable :: cwork(:)
+    real(kind=dp) ,allocatable    :: rwork(:)
     real(kind=dp),allocatable  :: eig_int(:,:)
     real(kind=dp)      :: rdotk,time0
-    integer            :: iwork(5*num_wann)     
-    integer            :: loop_x,loop_y,loop_z,INFO,ikp,ifail(num_wann),i,j,ierr
-    integer            :: loop_rpt,nfound,npts_plot,loop_kpt,bxsf_unit
-    character(len=9)   :: cdate, ctime
+    integer, allocatable :: iwork(:),ifail(:)
+    integer              :: loop_x,loop_y,loop_z,INFO,ikp,i,j,ierr
+    integer              :: loop_rpt,nfound,npts_plot,loop_kpt,bxsf_unit
+    character(len=9)     :: cdate, ctime
     !
     if (timing_level>1) call io_stopwatch('plot: fermi_surface',1)
-    !
     time0=io_time()
-    write(stdout,*) 
+    write(stdout,*)
     write(stdout,'(1x,a)') 'Calculating Fermi surface'
-    write(stdout,*) 
+    write(stdout,*)
+    !
+    allocate(ham_pack((num_wann*(num_wann+1))/2),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_pack plot_fermi_surface') 
+    allocate(ham_kprm(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ham_kprm plot_fermi_surface')
+    allocate(U_int(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating U_int in plot_fermi_surface')
+    allocate(cwork(2*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating cwork in plot_fermi_surface')
+    allocate(rwork(7*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating rwork in plot_fermi_surface')
+    allocate(iwork(5*num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating iwork in plot_fermi_surface')
+    allocate(ifail(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ifail in plot_fermi_surface')
     !
     npts_plot=(fermi_surface_num_points+1)**3
     allocate(eig_int(num_wann,npts_plot),stat=ierr)
