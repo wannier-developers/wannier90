@@ -1,22 +1,23 @@
- &control
-    calculation='nscf'
-    restart_mode='from_scratch',
-    pseudo_dir = './',
-    outdir='./'
-    prefix='sil'
+&control
+    calculation  = 'nscf'
+    restart_mode = 'from_scratch'
+    pseudo_dir   = './'
+    outdir       = './'
+    prefix       = 'sil'
  /
-&SYSTEM
-                       ibrav = 1,
-                   celldm(1) = 12,
-                         nat = 5,
-                        ntyp = 2,
-ecutwfc =40.0,nbnd=4
+&system
+    ibrav     = 1
+    celldm(1) = 12
+    nat       = 5
+    ntyp      = 2
+    ecutwfc   = 40.0
+    nbnd      = 4
  /
- &electrons
-    startingwfc='random'
-    diagonalization='cg'
-    conv_thr = 1.0e-8
-    mixing_beta = 0.2
+&electrons
+    startingwfc     = 'random'
+    diagonalization = 'cg'
+    conv_thr        = 1.0e-10
+    mixing_beta     = 0.2
  /
 ATOMIC_SPECIES
 Si 55  Si.pz-vbc.UPF
@@ -27,6 +28,4 @@ ATOMIC_POSITIONS angstrom
     H      1.056551000   -1.056551000   -1.056551000    
     H     -1.056551000    1.056551000   -1.056551000    
     H     -1.056551000   -1.056551000    1.056551000    
-K_POINTS crystal 
-1
-0.0 0.0 0.0 1.0
+K_POINTS {gamma}

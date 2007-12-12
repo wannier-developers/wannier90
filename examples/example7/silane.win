@@ -1,5 +1,5 @@
-num_wann        =   4 
-num_iter          = 20
+num_wann        =  4 
+num_iter        = 20
 
 begin atoms_cart
    Si      0.000000000    0.000000000    0.000000000
@@ -13,16 +13,15 @@ begin projections
 Si:sp3
 end projections
 
-
 begin unit_cell_cart
 bohr
-12 0 0
-0 12 0
-0 0 12
+12.0  0.0  0.0
+ 0.0 12.0  0.0
+ 0.0  0.0 12.0
 end unit_cell_cart
 
-
-mp_grid : 1 1 1 
+mp_grid    : 1 1 1 
+gamma_only : true
 
 begin kpoints
 0.0 0.0 0.0
