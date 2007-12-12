@@ -8,7 +8,7 @@ v1.1 (1st Dec 2007)
 
 * Addition of specific algorithms for when only Gamma-point 
   sampling is used (new input variable: gamma_only)
-* Addition of routines for quantum transport calculations
+* Addition of routines for quantum transport and DoS calculations
   (new input variables: transport, transport_mode, etc.)
 * Option to write out hamiltonian matrix elements in the Wannier 
   function basis (new input variable: hr_plot)
@@ -32,6 +32,8 @@ v1.1 (1st Dec 2007)
   (new input variable: bands_plot_project)
 * Option to have spinor Wannier functions
   (new input variable: spinors)
+* New directory containing current post-processing subroutines
+  for PWSCF (Quantum-Espresso)
 
 v1.0.2 (1st Dec 2006)
 
