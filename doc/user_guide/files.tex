@@ -505,3 +505,234 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
     .
 \end{verbatim}
 
+\section{{\tt seedname\_qc.dat}}
+OUTPUT. Written if $\verb#transport#=\verb#.TRUE.#$.
+The first line gives the date and
+time at which the file was created. 
+In the subsequent lines, the energy value
+in units of eV is written in the left column,
+and the quantum conductance in units of 
+$\frac{2e^2}{h}$ ($\frac{e^2}{h}$
+for a spin-polarized system)
+is written in the right column.
+
+\begin{verbatim}
+ ## written on 14Dec2007 at 11:30:17
+   -3.000000       8.999999
+   -2.990000       8.999999
+   -2.980000       8.999999
+   -2.970000       8.999999
+    .
+    .
+    .
+\end{verbatim}
+
+\section{{\tt seedname\_dos.dat}}
+OUTPUT. Written if $\verb#transport#=\verb#.TRUE.#$.
+The first line gives the date and
+time at which the file was created. 
+In the subsequent lines, the energy value
+in units of eV is written in the left column,
+and the density of states in an arbitrary unit
+is written in the right column.
+ 
+\begin{verbatim}
+ ## written on 14Dec2007 at 11:30:17
+   -3.000000       6.801199
+   -2.990000       6.717692
+   -2.980000       6.640828
+   -2.970000       6.569910
+    .
+    .
+    .
+\end{verbatim}
+
+
+\section{{\tt seedname\_htB.dat}}
+
+INPUT/OUTPUT. 
+Read if 
+$\verb#transport_mode#=\verb#bulk#$
+and $\verb#tran_read_ht#=\verb#.TRUE.#$.
+Written if $\verb#tran_write_ht#=\verb#.TRUE.#$. 
+The first line gives the date and
+time at which the file was created. 
+The second line gives \verb#tran_num_bb#.
+The subsequent lines contain 
+\verb#tran_num_bb#$\times$\verb#tran_num_bb#
+$H_{mn}$ matrix, where the indices
+$m$ and $n$ span all \verb#tran_num_bb# WFs
+located at $0^{\mathrm{th}}$ principal layer.
+Then \verb#tran_num_bb# is recorded again in the new line 
+followed by $H_{mn}$, where
+$m^{\mathrm{th}}$ WF is 
+at $0^{\mathrm{th}}$ principal layer
+and $n^{\mathrm{th}}$ at $1^{\mathrm{st}}$ principal layer.
+The $H_{mn}$ matrix is written in such a way that
+$m$ is the fastest varying index.
+
+\begin{verbatim}
+ written on 14Dec2007 at 11:30:17
+   150
+   -1.737841   -2.941054    0.052673   -0.032926    0.010738   -0.009515
+    0.011737   -0.016325    0.051863   -0.170897   -2.170467    0.202254
+    .
+    .
+    .
+   -0.057064   -0.571967   -0.691431    0.015155   -0.007859    0.000474
+   -0.000107   -0.001141   -0.002126    0.019188   -0.686423  -10.379876
+   150
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
+    .
+    .
+    .
+    0.000000    0.000000    0.000000    0.000000    0.000000   -0.001576
+    0.000255   -0.000143   -0.001264    0.002278    0.000000    0.000000
+\end{verbatim}
+
+\section{{\tt seedname\_htL.dat}}
+
+INPUT.
+Read if $\verb#transport_mode#=\verb#lcr#$
+and $\verb#tran_read_ht#=\verb#.TRUE.#$.
+The file must be written in the same way as 
+in \verb#seedname_htB.dat#.
+The first line can be any comment you want.
+The second line gives \verb#tran_num_ll#.
+\verb#tran_num_ll# in \verb#seedname_htL.dat#
+must be equal to
+that in \verb#seedname.win#. 
+The code will stop otherwise.
+
+\begin{verbatim}
+ Created by a WANNIER user
+   105
+    0.316879    0.000000   -2.762434    0.048956    0.000000   -0.016639
+    0.000000    0.000000    0.000000    0.000000    0.000000   -2.809405
+    .
+    .
+    .
+    0.000000    0.078188    0.000000    0.000000   -2.086453   -0.001535
+    0.007878   -0.545485  -10.525435
+   105
+    0.000000    0.000000    0.000315   -0.000294    0.000000    0.000085
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000021
+    .
+    .
+    .
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
+    0.000000    0.000000    0.000000
+\end{verbatim}
+
+\section{{\tt seedname\_htR.dat}}
+
+INPUT.
+Read if $\verb#transport_mode#=\verb#lcr#$
+and $\verb#tran_read_ht#=\verb#.TRUE.#$
+and $\verb#tran_use_same_lead#=\verb#.FALSE.#$.
+The file must be written in the same way as 
+in \verb#seedname_htL.dat#.
+\verb#tran_num_rr# in \verb#seedname_htR.dat#
+must be equal to
+that in \verb#seedname.win#. 
+
+\section{{\tt seedname\_htC.dat}}
+
+INPUT.
+Read if $\verb#transport_mode#=\verb#lcr#$
+and $\verb#tran_read_ht#=\verb#.TRUE.#$.
+The first line can be any comment you want.
+The second line gives \verb#tran_num_cc#.
+The subsequent lines contain 
+\verb#tran_num_cc#$\times$\verb#tran_num_cc#
+$H_{mn}$ matrix, where the indices
+$m$ and $n$ span all \verb#tran_num_cc# WFs
+inside the central conductor region.
+\verb#tran_num_cc# in \verb#seedname_htC.dat#
+must be equal to
+that in \verb#seedname.win#. 
+
+\begin{verbatim}
+ Created by a WANNIER user
+    99
+  -10.499455   -0.541232    0.007684   -0.001624   -2.067078   -0.412188
+    0.003217    0.076965    0.000522   -0.000414    0.000419   -2.122184
+    .
+    .
+    .
+   -0.003438    0.078545    0.024426    0.757343   -2.004899   -0.001632
+    0.007807   -0.542983  -10.516896
+\end{verbatim}
+
+\section{{\tt seedname\_htLC.dat}}
+
+INPUT.
+Read if $\verb#transport_mode#=\verb#lcr#$
+and $\verb#tran_read_ht#=\verb#.TRUE.#$.
+The first line can be any comment you want.
+The second line gives
+\verb#tran_num_ll#
+and \verb#tran_num_lc#
+in the given order.
+The subsequent lines contain 
+\verb#tran_num_ll#$\times$\verb#tran_num_lc#
+$H_{mn}$ matrix.
+The index $m$ spans \verb#tran_num_ll# WFs
+in the surface principal layer of semi-infinite left lead
+which is in contact with the conductor region.
+The index $n$ spans \verb#tran_num_lc# WFs
+in the conductor region which
+have a non-negligible interaction with
+the WFs in the semi-infinite left lead.
+Note that \verb#tran_num_lc# 
+can be different from \verb#tran_num_cc#.
+
+
+\begin{verbatim}
+ Created by a WANNIER user
+   105    99
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
+    .
+    .
+    .
+   -0.000003    0.000009    0.000290    0.000001   -0.000007   -0.000008
+    0.000053   -0.000077   -0.000069
+\end{verbatim}
+
+\section{{\tt seedname\_htCR.dat}}
+
+INPUT.
+Read if $\verb#transport_mode#=\verb#lcr#$
+and $\verb#tran_read_ht#=\verb#.TRUE.#$.
+The first line can be any comment you want.
+The second line gives
+\verb#tran_num_cr#
+and \verb#tran_num_rr#
+in the given order.
+The subsequent lines contain 
+\verb#tran_num_cr#$\times$\verb#tran_num_rr#
+$H_{mn}$ matrix.
+The index $m$ spans \verb#tran_num_cr# WFs
+in the conductor region which
+have a non-negligible interaction with
+the WFs in the semi-infinite right lead.
+The index $n$ spans \verb#tran_num_rr# WFs
+in the surface principal layer of semi-infinite right lead
+which is in contact with the conductor region.
+Note that \verb#tran_num_cr# 
+can be different from \verb#tran_num_cc#.
+
+\begin{verbatim}
+ Created by a WANNIER user
+    99   105
+   -0.000180    0.000023    0.000133   -0.000001    0.000194    0.000008
+   -0.000879   -0.000028    0.000672   -0.000257   -0.000102   -0.000029
+    .
+    .
+    .
+    0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
+    0.000000    0.000000    0.000000
+\end{verbatim}
+
