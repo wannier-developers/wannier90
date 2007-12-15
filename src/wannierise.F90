@@ -2273,8 +2273,9 @@ contains
 
       implicit none
 
-      real(kind=dp) :: theta, fourtheta
-      real(kind=dp) :: rot_m(2), cc, ss, rtmp1, rtmp2
+      real(kind=dp) :: theta, twotheta
+      real(kind=dp) :: a11, a12, a21, a22
+      real(kind=dp) :: cc, ss, rtmp1, rtmp2
       real(kind=dp), parameter :: pifour=0.25_dp*pi
       integer       :: nn, nw1, nw2, nw3
 
@@ -2283,22 +2284,23 @@ contains
 loop_nw1: do nw1=1,num_wann
 loop_nw2: do nw2=nw1+1,num_wann
    
-           rot_m(:)=0.0_dp
+           a11=0.0_dp ; a12=0.0_dp ; a22=0.0_dp 
            do nn=1,tnntot
-              rot_m(1)=rot_m(1)+m_w(nw1,nw2,nn)*(m_w(nw1,nw1,nn)-m_w(nw2,nw2,nn))
-              rot_m(2)=rot_m(2)+0.25_dp*(m_w(nw1,nw1,nn)-m_w(nw2,nw2,nn))**2-m_w(nw1,nw2,nn)**2 
+              a11=a11+(m_w(nw1,nw1,nn)-m_w(nw2,nw2,nn))**2
+              a12=a12+m_w(nw1,nw2,nn)*(m_w(nw1,nw1,nn)-m_w(nw2,nw2,nn))
+              a22=a22+m_w(nw1,nw2,nn)**2
            end do
-           if(abs(rot_m(2)).gt.eps10) then
-             fourtheta=rot_m(1)/rot_m(2)
-             theta=0.25_dp*atan(fourtheta)
-           elseif (abs(rot_m(1)).lt.eps10) then
+           a12 = 2.0_dp * a12
+           a22 = 4.0_dp * a22
+           a21 = a22-a11
+           if(abs(a12).gt.eps10) then
+             twotheta=0.5_dp*(a21+sqrt(a21**2+4.0_dp*a12**2))/a12
+             theta=0.5_dp*atan(twotheta)
+           elseif (a21.lt.eps10 ) then
              theta=0.0_dp
-             rot_m(2)=0.0_dp
            else
              theta=pifour
            endif
-           rtmp1=rot_m(1)*sin(4.0_dp*theta)+rot_m(2)*cos(4.0_dp*theta)
-           if(rtmp1 .le. 0.0_dp) theta=theta+pifour
            cc=cos(theta)
            ss=sin(theta)
 
