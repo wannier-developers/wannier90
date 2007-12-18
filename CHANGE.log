@@ -32,8 +32,6 @@ v1.1 (1st Dec 2007)
   (new input variable: bands_plot_project)
 * Option to have spinor Wannier functions
   (new input variable: spinors)
-* New directory containing current post-processing subroutines
-  for PWSCF (Quantum-Espresso)
 
 v1.0.2 (1st Dec 2006)
 
