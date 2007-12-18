@@ -1,5 +1,5 @@
 !
-! Copyright (C) 2003 PWSCF group
+! Copyright (C) 2003-2007 Quantum-Espresso group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -21,6 +21,7 @@ program pw2wannier90
   use ktetra,     ONLY : k1, k2, k3, nk1, nk2, nk3
   use io_files,   ONLY : nd_nmbr, prefix, tmp_dir
   use noncollin_module, ONLY : noncolin
+  use wvfct,            ONLY : gamma_only
   use wannier
   !
   implicit none
@@ -30,12 +31,14 @@ program pw2wannier90
 
   ! these are in wannier module.....-> integer :: ispinw, ikstart, ikstop, iknum
   namelist / inputpp / outdir, prefix, spin_component, wan_mode, &
-       seedname, write_unk, write_amn, write_mmn, wvfn_formatted, reduce_unk
+       seedname, write_unk, write_amn, write_mmn, write_spn, &
+       wvfn_formatted, reduce_unk
   !
   call start_postproc (nd_nmbr)
   !
   ! Read input on i/o node and broadcast to the rest
   !
+  ios = 0
   if(ionode) then
      !
      ! Check to see if we are reading from a file
@@ -53,19 +56,21 @@ program pw2wannier90
      write_unk = .false.
      write_amn = .true.
      write_mmn = .true.
+     write_spn = .false.
      reduce_unk= .false.
      !
      !     reading the namelist inputpp
      !
-     read (5, inputpp, err=200,iostat=ios)
-     !
-200  call errore( 'phq_readin', 'reading inputpp namelist', abs(ios) )
+     read (5, inputpp, iostat=ios)
      !
      !     Check of namelist variables
      !
      tmp_dir = TRIM(outdir) 
      ! back to all nodes
   end if
+  !
+  call mp_bcast(ios,ionode_id)    
+  if (ios /= 0) call errore( 'pw2wannier90', 'reading inputpp namelist', abs(ios))
   !
   ! broadcast input variable to all nodes
   !
@@ -79,6 +84,7 @@ program pw2wannier90
   call mp_bcast(write_unk,ionode_id)
   call mp_bcast(write_amn,ionode_id)
   call mp_bcast(write_mmn,ionode_id)
+  call mp_bcast(write_spn,ionode_id)
   call mp_bcast(reduce_unk,ionode_id)
   !
   !   Now allocate space for pwscf variables, read and check them.
@@ -89,11 +95,9 @@ program pw2wannier90
   call read_file  
   write(stdout,*)
   !
-  ! Make sure we aren't reading from a NCLS calculation
-  !
-  if (noncolin) call errore('pw2wannier90',&
-       'Non-collinear calculation is not implemented',1)
-  !
+  if (noncolin.and.gamma_only) call errore('pw2wannier90',&
+       'Non-collinear and gamma_only not implemented',1)
+
   ! Here we should trap restarts from a different number of nodes.
   ! or attempts at kpoint distribution
   !
@@ -111,7 +115,11 @@ program pw2wannier90
      ikstop  = nkstot
      iknum   = nkstot/2
   CASE DEFAULT
-     write(stdout,*) ' Spin CASE ( default = unpolarized )'
+     if(noncolin) then
+        write(stdout,*) ' Spin CASE ( non-collinear )'
+     else
+        write(stdout,*) ' Spin CASE ( default = unpolarized )'
+     end if
      ispinw = 0
      ikstart = 1
      ikstop  = nkstot
@@ -777,7 +785,7 @@ subroutine compute_mmn
    USE io_global,  ONLY : stdout, ionode
    use kinds,           only: DP
    use wvfct,           only : nbnd, npw, npwx, igk, g2kin, gamma_only
-   use wavefunctions_module, only : evc, psic
+   use wavefunctions_module, only : evc, psic, evc_nc, psic_nc
    use gsmooth,         only: nls, nlsm, nrxxs, nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s
    use klist,           only : nkstot, xk
    use io_files,        only : nwordwfc, iunwfc
@@ -789,6 +797,7 @@ subroutine compute_mmn
    use uspp,            only : nkb, vkb
    USE uspp_param,      ONLY : nh, tvanp, lmaxq
    use becmod,          only : becp, rbecp
+   USE noncollin_module,ONLY : noncolin, npol
    use wannier
 
    implicit none
@@ -797,7 +806,7 @@ subroutine compute_mmn
    integer :: ikb, jkb, ih, jh, na, nt, ijkb0, ind, nbt
    integer :: ikevc, ikpevcq
    complex(DP), allocatable :: phase(:), aux(:), aux2(:), evcq(:,:), &
-                               becp2(:,:), Mkb(:,:)
+                               becp2(:,:), Mkb(:,:),evcq_nc(:,:,:),aux_nc(:,:)
    real(DP), allocatable    :: rbecp2(:,:)
    complex(DP), allocatable :: qb(:,:,:,:), qgm(:)
    real(DP), allocatable    :: qg(:), ylm(:,:), dxk(:,:)
@@ -807,10 +816,22 @@ subroutine compute_mmn
    character (len=9)        :: cdate,ctime
    character (len=60)       :: header
    logical                  :: any_uspp
-   integer                  :: nn,inn
+   integer                  :: nn,inn,loop,loop2
    logical                  :: nn_found
+   complex(DP)              :: spin
 
-   allocate( phase(nrxxs), aux(npwx), evcq(npwx,nbnd), igkq(npwx) )
+   any_uspp = ANY(tvanp(1:ntyp))
+
+   if(any_uspp .and. noncolin) call errore('pw2wannier90',&
+       'NCLS calculation not implimented with USP',1)
+
+   allocate( phase(nrxxs), igkq(npwx) )
+   if(noncolin) then
+      allocate( aux_nc(npwx,npol), evcq_nc(npwx,npol,nbnd) )
+   else
+      allocate( aux(npwx), evcq(npwx,nbnd) )
+   end if
+
    if (gamma_only) allocate(aux2(npwx))
 
    if (wan_mode.eq.'library') allocate(m_mat(num_bands,num_bands,nnb,iknum))
@@ -820,6 +841,11 @@ subroutine compute_mmn
       if (ionode) open (unit=iun_mmn, file=TRIM(seedname)//".mmn",form='formatted')
    endif
 
+   if(write_spn.and.noncolin) then
+      iun_spn = find_free_unit()
+       if (ionode) open (unit=iun_spn, file=TRIM(seedname)//".spn",form='formatted')
+    end if
+
    mmn_tot = 0
    do ik=1,iknum
       mmn_tot = mmn_tot + nnb * nbnd * nbnd
@@ -827,7 +853,6 @@ subroutine compute_mmn
    !
    !   USPP
    !
-   any_uspp = ANY(tvanp(1:ntyp))
    !
    if(any_uspp) then
       CALL init_us_1
@@ -897,6 +922,14 @@ subroutine compute_mmn
          write (iun_mmn,*) nbnd-nexband, iknum, nnb
       endif
    endif
+   if(write_spn.and.noncolin) then
+      CALL date_and_tim( cdate, ctime )
+      header='Created on '//cdate//' at '//ctime
+      if (ionode) then
+         write (iun_spn,*) header
+         write (iun_spn,*) nbnd-nexband, iknum, nnb
+      endif
+   end if
    !
    allocate( Mkb(nbnd,nbnd) )
    !
@@ -906,8 +939,23 @@ subroutine compute_mmn
    do ik=1,iknum
       write (stdout,'(i8)') ik
       ikevc = ik + ikstart - 1 
-      call davcio (evc, nwordwfc, iunwfc, ikevc, -1 )
+      if(noncolin) then
+         call davcio (evc_nc, nwordwfc, iunwfc, ikevc, -1 )
+      else
+         call davcio (evc, nwordwfc, iunwfc, ikevc, -1 )
+      end if
       call gk_sort (xk(1,ik), ngm, g, ecutwfc / tpiba2, npw, igk, g2kin)
+      if(write_spn.and.noncolin) then
+         do loop=1,nbnd
+            do loop2=1,nbnd
+               spin=ZDOTC (npw, evc_nc(1,1,loop2),1,evc_nc(1,1,loop),1) - &
+                    ZDOTC (npw, evc_nc(1,2,loop2),1,evc_nc(1,2,loop),1) 
+               call reduce(2,spin)
+               if (ionode) write(iun_spn,'(3i7,2es22.12)') loop2,loop, ik,spin
+            end do
+         end do
+      endif
+
       !
       !  USPP
       !
@@ -928,7 +976,11 @@ subroutine compute_mmn
          ikp = kpb(ik,ib)
 ! read wfc at k+b
          ikpevcq = ikp + ikstart - 1
-         call davcio (evcq, nwordwfc, iunwfc, ikpevcq, -1 )
+         if(noncolin) then
+            call davcio (evcq_nc, nwordwfc, iunwfc, ikpevcq, -1 )
+         else
+            call davcio (evcq, nwordwfc, iunwfc, ikpevcq, -1 )
+         end if
          call gk_sort (xk(1,ikp), ngm, g, ecutwfc / tpiba2, npwq, igkq, g2kin)
 ! compute the phase
          phase(:) = (0.d0,0.d0)
@@ -1006,13 +1058,24 @@ subroutine compute_mmn
          do m=1,nbnd
             if (excluded_band(m)) cycle
             !
-            psic(:) = (0.d0, 0.d0)
-            psic(nls (igk (1:npw) ) ) = evc (1:npw, m)
-            if(gamma_only) psic(nlsm(igk (1:npw) ) ) = conjg(evc (1:npw, m))
-            call cft3s (psic, nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s, +2)
-            psic(1:nrxxs) = psic(1:nrxxs) * phase(1:nrxxs)
-            call cft3s (psic, nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s, -2)
-            aux(1:npwq)  = psic(nls (igkq(1:npwq) ) )
+            if(noncolin) then
+               psic_nc(:,:) = (0.d0, 0.d0)
+               do ipol=1,2!npol    
+                  psic_nc(nls (igk (1:npw) ),ipol ) = evc_nc(1:npw,ipol, m)
+                  call cft3s (psic_nc(1,ipol), nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s, +2)
+                  psic_nc(1:nrxxs,ipol) = psic_nc(1:nrxxs,ipol) * phase(1:nrxxs)
+                  call cft3s (psic_nc(1,ipol), nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s, -2)
+                  aux_nc(1:npwq,ipol) = psic_nc(nls (igkq(1:npwq) ),ipol )
+               end do
+            else
+               psic(:) = (0.d0, 0.d0)
+               psic(nls (igk (1:npw) ) ) = evc (1:npw, m)
+               if(gamma_only) psic(nlsm(igk (1:npw) ) ) = conjg(evc (1:npw, m))
+               call cft3s (psic, nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s, +2)
+               psic(1:nrxxs) = psic(1:nrxxs) * phase(1:nrxxs)
+               call cft3s (psic, nr1s, nr2s, nr3s, nrx1s, nrx2s, nrx3s, -2)
+               aux(1:npwq)  = psic(nls (igkq(1:npwq) ) )
+            end if
             if(gamma_only) then
                if (gstart==2) psic(nlsm(1)) = (0.d0,0.d0)
                aux2(1:npwq) = conjg(psic(nlsm(igkq(1:npwq) ) ) )
@@ -1030,6 +1093,17 @@ subroutine compute_mmn
                   call reduce(2,mmn)
                   Mkb(m,n) = mmn + Mkb(m,n)
                   if (m.ne.n) Mkb(n,m) = Mkb(m,n) ! fill other half of matrix by symmetry
+                  aa = aa + abs(mmn)**2
+               enddo
+            elseif(noncolin) then
+               do n=1,nbnd
+                  if (excluded_band(n)) cycle
+                  mmn=(0.d0, 0.d0)
+                  do ipol=1,2
+                     mmn = mmn+ZDOTC (npwq, aux_nc(1,ipol),1,evcq_nc(1,ipol,n),1)
+                  end do
+                  call reduce(2,mmn)
+                  Mkb(m,n) = mmn + Mkb(m,n)
                   aa = aa + abs(mmn)**2
                enddo
             else
@@ -1062,9 +1136,16 @@ subroutine compute_mmn
    end do  !ik
 
    if (ionode .and. wan_mode.eq.'standalone') close (iun_mmn)
+   if (ionode .and. write_spn .and. noncolin) close (iun_spn)
 ! 
    if (gamma_only) deallocate(aux2)
-   deallocate (Mkb, dxk, phase, aux, evcq, igkq)
+   deallocate (Mkb, dxk, phase, igkq)
+   if(noncolin) then
+      deallocate(aux_nc,evcq_nc)
+   else
+      deallocate(aux,evcq)
+   end if
+
    if(any_uspp) then
       deallocate (  qb)
       if (gamma_only) then
@@ -1088,7 +1169,7 @@ subroutine compute_amn
    use kinds,           only : DP
    use klist,           only : nkstot, xk
    use wvfct,           only : nbnd, npw, npwx, igk, g2kin, gamma_only
-   use wavefunctions_module, only : evc
+   use wavefunctions_module, only : evc,evc_nc
    use io_files,        only : nwordwfc, iunwfc
    use io_files,        only : find_free_unit
    use gvect,           only : g, ngm, ecutwfc, gstart
@@ -1098,20 +1179,29 @@ subroutine compute_amn
    use wannier
    USE ions_base,       only : nat, ntyp => nsp, ityp, tau
    USE uspp_param,      ONLY : tvanp
+   USE noncollin_module,ONLY : noncolin,npol
 
    implicit none
 
    complex(DP) :: amn, ZDOTC
    real(DP):: DDOT
    complex(DP), allocatable :: sgf(:,:)
-   integer :: amn_tot, ik, ibnd, ibnd1, iw,i, ikevc, nt
+   integer :: amn_tot, ik, ibnd, ibnd1, iw,i, ikevc, nt,ipol
    character (len=9)  :: cdate,ctime
    character (len=60) :: header
    logical            :: any_uspp
 
-   !call read_gf_definition.....>   this is done at the begin
+   !nocolin: we have half as many projections g(r) defined as wannier
+   !         functions. We project onto (1,0) (ie up spin) and then onto
+   !         (0,1) to obtain num_wann projections. jry
+
+
+   !call read_gf_definition.....>   this is done at the beging
 
    any_uspp =ANY (tvanp(1:ntyp)) 
+
+   if(any_uspp .and. noncolin) call errore('pw2wannier90',&
+       'NCLS calculation not implimented with USP',1)
 
    if (wan_mode.eq.'library') allocate(a_mat(num_bands,n_wannier,iknum))
 
@@ -1128,7 +1218,11 @@ subroutine compute_amn
       header='Created on '//cdate//' at '//ctime
       if (ionode) then
          write (iun_amn,*) header 
-         write (iun_amn,*) nbnd-nexband,  iknum, n_wannier 
+         if(noncolin) then
+            write (iun_amn,*) nbnd-nexband,  iknum, n_wannier*2 
+         else
+            write (iun_amn,*) nbnd-nexband,  iknum, n_wannier
+         end if
       endif
    endif
    !
@@ -1147,7 +1241,11 @@ subroutine compute_amn
    do ik=1,iknum
       write (stdout,'(i8)') ik
       ikevc = ik + ikstart - 1
-      call davcio (evc, nwordwfc, iunwfc, ikevc, -1 )
+      if(noncolin) then
+         call davcio (evc_nc, nwordwfc, iunwfc, ikevc, -1 )
+      else
+         call davcio (evc, nwordwfc, iunwfc, ikevc, -1 )
+      end if
       call gk_sort (xk(1,ik), ngm, g, ecutwfc / tpiba2, npw, igk, g2kin)
       call generate_guiding_functions(ik)   ! they are called gf(npw,n_wannier)
       !
@@ -1168,27 +1266,45 @@ subroutine compute_amn
          sgf(:,:) = gf(:,:)
       endif
       !
-      do iw = 1,n_wannier
-         ibnd1 = 0 
-         do ibnd = 1,nbnd
-            if (excluded_band(ibnd)) cycle
-            if (gamma_only) then
-               amn = 2.0_dp*DDOT(2*npw,evc(1,ibnd),1,sgf(1,iw),1)
-               if (gstart==2) amn = amn - real(conjg(evc(1,ibnd))*sgf(1,iw))
-            else
-               amn = ZDOTC(npw,evc(1,ibnd),1,sgf(1,iw),1) 
-            end if
-            call reduce(2,amn)
-            ibnd1=ibnd1+1
-            if (wan_mode.eq.'standalone') then
-               if (ionode) write(iun_amn,'(3i5,2f18.12)') ibnd1, iw, ik, amn
-            elseif (wan_mode.eq.'library') then
-               a_mat(ibnd1,iw,ik) = amn
-            else
-               call errore('compute_amn',' value of wan_mode not recognised',1)
-            endif
+      if(noncolin) then
+         ! we do the projection as g(r)*a(r) and g(r)*b(r)
+         do ipol=1,npol
+            do iw = 1,n_wannier
+               ibnd1 = 0 
+               do ibnd = 1,nbnd
+                  if (excluded_band(ibnd)) cycle
+                  amn=(0.0_dp,0.0_dp)
+                  amn = ZDOTC(npw,evc_nc(1,ipol,ibnd),1,sgf(1,iw),1)
+                  call reduce(2,amn)
+                  if (excluded_band(ibnd)) cycle
+                  ibnd1=ibnd1+1
+                  if (ionode) write(iun_amn,'(3i7,2es22.12)') ibnd1, iw+n_wannier*(ipol-1), ik, amn
+               end do
+            end do
          end do
-      end do
+      else
+         do iw = 1,n_wannier
+            ibnd1 = 0 
+            do ibnd = 1,nbnd
+               if (excluded_band(ibnd)) cycle
+               if (gamma_only) then
+                  amn = 2.0_dp*DDOT(2*npw,evc(1,ibnd),1,sgf(1,iw),1)
+                  if (gstart==2) amn = amn - real(conjg(evc(1,ibnd))*sgf(1,iw))
+               else
+                  amn = ZDOTC(npw,evc(1,ibnd),1,sgf(1,iw),1) 
+               end if
+               call reduce(2,amn)
+               ibnd1=ibnd1+1
+               if (wan_mode.eq.'standalone') then
+                  if (ionode) write(iun_amn,'(3i5,2f18.12)') ibnd1, iw, ik, amn
+               elseif (wan_mode.eq.'library') then
+                  a_mat(ibnd1,iw,ik) = amn
+               else
+                  call errore('compute_amn',' value of wan_mode not recognised',1)
+               endif
+            end do
+         end do
+      end if
    end do  ! k-points
    deallocate (sgf,csph)
    if(any_uspp) then 
@@ -1310,7 +1426,7 @@ subroutine write_band
          elseif (wan_mode.eq.'library') then
             eigval(ibnd1,ikevc) = et(ibnd,ik)*rytoev
          else
-            call errore('compute_amn',' value of wan_mode not recognised',1)
+            call errore('write_band',' value of wan_mode not recognised',1)
          endif
       end do
    end do
@@ -1327,6 +1443,7 @@ subroutine write_plot
    use klist,           only : nkstot, xk
    use gvect,           only : g, ngm, ecutwfc
    use cell_base,       only : tpiba2
+   USE noncollin_module,ONLY : noncolin
 
    implicit none
    integer ik, ibnd, ibnd1, ikevc, i1, j, spin
@@ -1343,6 +1460,9 @@ subroutine write_plot
    nxxs = nrx1s * nrx2s * nrx3s
    allocate(psic_all(nxxs) )
 #endif
+
+   if(noncolin) call errore('pw2wannier90',&
+       'write_unk not implemented with ncls',1)
 
    if (reduce_unk) then
       write(stdout,'(3(a,i5))') 'nr1s =',nr1s,'nr2s=',nr2s,'nr3s=',nr3s
