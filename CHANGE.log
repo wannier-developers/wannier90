@@ -4,7 +4,7 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
-v1.1 (1st Dec 2007)
+v1.1 (21st Dec 2007)
 
 * Addition of specific algorithms for when only Gamma-point 
   sampling is used (new input variable: gamma_only)
@@ -21,7 +21,7 @@ v1.1 (1st Dec 2007)
 * Option to plot bandstructures in xmgrace format (bands_plot_format=xmgrace)
 * Option to plot Wannier functions in cube format (wannier_plot_format=cube) 
   -- works for isolated molecules, further testing for periodic systems is 
-  required -- significantly reduced WF file-size  
+  required -- significantly reduces WF file-size  
   (new input variable: wannier_plot_radius) 
 * Optional capability to specify some projections in input file and
   have the remaining centres chosen randomly by the code
@@ -32,6 +32,8 @@ v1.1 (1st Dec 2007)
   (new input variable: bands_plot_project)
 * Option to have spinor Wannier functions
   (new input variable: spinors)
+* A few new tutorial examples
+* Improvements to "library mode" functionality
 
 v1.0.2 (1st Dec 2006)
 
