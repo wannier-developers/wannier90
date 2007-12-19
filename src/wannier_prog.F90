@@ -16,7 +16,7 @@
 !        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
 !        for Obtaining Maximally Localised Wannier           !
 !        Functions", Computer Physics Communications,        !
-!        submitted (2007); http//www.arxiv.org/abs/0708.0650 !
+!        accepted (2007); http//www.arxiv.org/abs/0708.0650  !
 !                                                            !
 !  in any publications arising from the use of this code.    !
 !                                                            !
