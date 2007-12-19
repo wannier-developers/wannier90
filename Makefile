@@ -54,8 +54,6 @@ dist:
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
 		./doc/*.pdf \
-		./pwscf/README \
-		./pwscf/*/*.f90 \
 		./*/Makefile \
 		./*/*/Makefile \
 		./Makefile \
