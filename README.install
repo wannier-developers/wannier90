@@ -63,6 +63,8 @@ Linux x86,x86-64
      Compiler:  Intel (ifc,ifort,iforte)
      Libraries: Intel mkl
                 (ATLAS BLAS is faster for AMD processors) 
+**Note: we have found an issue with ifort and ATLAS3.8.0. In certain cases BLAS calls return
+  NANs. The origin of this is unclear - we'd welcome any further reports.**
 
   2- make.sys.pathscale
      Compiler:  Pathscale (pathf90)
@@ -73,12 +75,21 @@ Linux x86,x86-64
      Libraries: ATLAS + LAPACK (maybe acml)
  [note in our experience the NAG compiler does not produce well optimised code]
 
+  4- make.sys
+     Compiler: Sun-studio f90
+     Libraries: sunperf (ATLAS is faster)
+     avaible as a free beta for Linux
 
 Generic: Most architectures
 ---------------------------
   1- make.sys.g95
      Compiler: g95
      Libraries: ATLAS + LAPACK
+
+  2- make.sys.gfort
+     Compiler: gfortran
+     Libraries: ATLAS + LAPACK
+     (the official gcc f90 compiler - often faster than g95)
 
 
 Alpha/HP/Compaq/DEC Tru64 UNIX

@@ -16,7 +16,7 @@ FCOPTS=$(F90FLAGS)
 # as ../flib/*.a, when what we need is ../../flib*.a
 
 LIBS  = `echo $(LAPACK_LIBS) | sed -e "s/..\/flib/..\/..\/flib/g"`  \
-  `echo  $(BLAS_LIBS) | sed -e "s/..\/flib/..\/..\/flib/g" $(MASS_LIBS)
+  `echo  $(BLAS_LIBS) | sed -e "s/..\/flib/..\/..\/flib/g"` $(MASS_LIBS)
 
 
 
