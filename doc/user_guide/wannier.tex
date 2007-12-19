@@ -27,7 +27,7 @@ the overlaps and projection have been computed, calling
 
 {\noindent \bf \verb#wannier_setup(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,#\\
 \verb#              kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,#\\
-\verb#              gamma_only,nntot,nnlist,nncell,num_bands,num_wann,proj_site,#\\
+\verb#              gamma_only,spinors,nntot,nnlist,nncell,num_bands,num_wann,proj_site,#\\
 \verb#              proj_l,proj_m,proj_radial,proj_z,proj_x,proj_zona,#\\
 \verb#              exclude_bands)#}
 
@@ -61,6 +61,10 @@ first-principles calculation (note: including semi-core states).
   only $\Gamma$-point sampling and, hence, if the Bloch eigenstates
   that are used to construct $A_{mn}^{(\mathbf{k})}$ and
   $M_{mn}^{\mathbf{(k,b)}}$ are real.
+\item \verb#logical, intent(in) :: spinors#\\ Set to \texttt{.true.} if
+  underlying electronic structure calculation has been performed with
+  spinor wavefunctions. Note: the only effect this has is that wannier90
+  will expect half the usual number of projections.
 \item \verb#integer, intent(out) :: nntot#\\ The
   total number of nearest neighbours for each k-point. 
 \item \verb#integer, dimension(num_kpts,num_nnmax),#
