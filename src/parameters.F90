@@ -407,8 +407,14 @@ contains
     write_proj = .false.
     call param_get_keyword('write_proj',found,l_value=write_proj)
 
-    spinors=.false.  ! by default our WF are not spinors
-    call param_get_keyword('spinors',found,l_value=spinors)
+
+    ltmp=.false.  ! by default our WF are not spinors
+    call param_get_keyword('spinors',found,l_value=ltmp)
+    if (.not.library) then
+       spinors=ltmp
+    else
+       if (found) write(stdout,'(a)') ' Ignoring <spinors> in input file'
+    endif
     if(spinors .and. (2*(num_wann/2))/=num_wann) &
        call io_error('Error: For spinor WF num_wann ust be even')
 

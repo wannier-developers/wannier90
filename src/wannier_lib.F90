@@ -41,8 +41,8 @@
 !------------------------------------------------------------!
 
 subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
-     real_lattice_loc,recip_lattice_loc,kpt_latt_loc, &
-     num_bands_tot,num_atoms_loc,atom_symbols_loc,atoms_cart_loc, gamma_only_loc, &
+     real_lattice_loc,recip_lattice_loc,kpt_latt_loc,num_bands_tot, &
+     num_atoms_loc,atom_symbols_loc,atoms_cart_loc, gamma_only_loc,spinors_loc, &
      nntot_loc,nnlist_loc,nncell_loc,num_bands_loc,num_wann_loc, &
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
      proj_x_loc,proj_zona_loc,exclude_bands_loc)
@@ -65,6 +65,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   character(len=*), dimension(num_atoms_loc), intent(in) :: atom_symbols_loc
   real(kind=dp), dimension(3,num_atoms_loc), intent(in) :: atoms_cart_loc
   logical, intent(in) :: gamma_only_loc
+  logical, intent(in) :: spinors_loc
   integer, intent(out) :: nntot_loc
   integer, dimension(num_kpts_loc,num_nnmax), intent(out) :: nnlist_loc
   integer,dimension(3,num_kpts_loc,num_nnmax), intent(out) :: nncell_loc
@@ -116,6 +117,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   num_atoms=num_atoms_loc
   call param_lib_set_atoms(atom_symbols_loc,atoms_cart_loc)
   gamma_only=gamma_only_loc
+  spinors=spinors_loc
 
   call param_read()
   ! set num_bands and cell_volume as they are written to output in param_write
@@ -152,13 +154,13 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   num_bands_loc=num_bands_tot-num_exclude_bands
   num_wann_loc=num_wann
   if(allocated(proj_site)) then
-     proj_site_loc(:,1:num_wann)   = proj_site(:,1:num_wann)    
-     proj_l_loc(1:num_wann)        = proj_l(1:num_wann)          
-     proj_m_loc(1:num_wann)        = proj_m(1:num_wann)           
-     proj_z_loc(:,1:num_wann)      = proj_z(:,1:num_wann)     
-     proj_x_loc(:,1:num_wann)      = proj_x(:,1:num_wann)       
-     proj_radial_loc(1:num_wann)   = proj_radial(1:num_wann)            
-     proj_zona_loc(1:num_wann)     = proj_zona(1:num_wann)         
+     proj_site_loc(:,1:num_proj)   = proj_site(:,1:num_proj)    
+     proj_l_loc(1:num_proj)        = proj_l(1:num_proj)          
+     proj_m_loc(1:num_proj)        = proj_m(1:num_proj)           
+     proj_z_loc(:,1:num_proj)      = proj_z(:,1:num_proj)     
+     proj_x_loc(:,1:num_proj)      = proj_x(:,1:num_proj)       
+     proj_radial_loc(1:num_proj)   = proj_radial(1:num_proj)            
+     proj_zona_loc(1:num_proj)     = proj_zona(1:num_proj)         
   end if
   if(allocated(exclude_bands)) then
      exclude_bands_loc(1:num_exclude_bands) = exclude_bands(1:num_exclude_bands)
