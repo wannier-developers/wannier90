@@ -36,6 +36,7 @@ dist:
 		./tests/test*/wannier.eig \
 		./tests/test*/wannier.?mn \
 		./tests/test*/stnd* \
+		./examples/README \
 		./examples/example1/UNK* \
 		./examples/*/*.win \
 		./examples/example[2-4]/*.eig \
