@@ -94,6 +94,7 @@ program wannier
   if (transport .and. tran_read_ht) goto 3003
 
   call kmesh_get()
+  call param_memory_estimate()
 
   ! Sort out restarts
   if (restart.eq.' ') then  ! start a fresh calculation

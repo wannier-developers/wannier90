@@ -231,6 +231,7 @@ module w90_parameters
   public :: param_write_chkpt
   public :: param_read_chkpt
   public :: param_lib_set_atoms
+  public :: param_memory_estimate
 
 contains
 
@@ -915,7 +916,7 @@ contains
     ! Some checks and initialisations !
     ! =============================== !
 
-    if (restart.ne.' ') disentanglement=.false.
+!    if (restart.ne.' ') disentanglement=.false.
 
     if (disentanglement) then 
        allocate(ndimwin(num_kpts),stat=ierr)
@@ -3208,6 +3209,175 @@ contains
 240 call io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy))
 
   end subroutine param_get_keyword_kpath
+
+
+    !===========================================!
+    subroutine param_memory_estimate
+    !===========================================!
+    !                                           !
+    ! Estimate how much memory we will allocate !
+    !                                           !
+    !===========================================!
+
+    implicit none
+
+    real(kind=dp), parameter :: size_log=1.0_dp
+    real(kind=dp), parameter :: size_int=4.0_dp
+    real(kind=dp), parameter :: size_real=8.0_dp
+    real(kind=dp), parameter :: size_cmplx=16.0_dp
+    real(kind=dp) :: mem_wan,mem_wan1,mem_param,mem_dis,mem_dis2,mem_dis1
+
+    mem_param=0    
+    mem_dis=0    
+    mem_dis1=0    
+    mem_dis2=0    
+    mem_wan=0    
+    mem_wan1=0    
+
+
+    ! First the data stored in the parameters module
+    mem_param= mem_param+num_wann*num_wann*num_kpts*size_cmplx                   !u_matrix
+    if(.not.disentanglement) &
+         mem_param= mem_param+ num_wann*num_wann*nntot*num_kpts*size_cmplx       !m_matrix
+       
+    if (disentanglement) then
+       mem_param= mem_param+  num_bands*num_wann*num_kpts*size_cmplx             ! u_matrix_opt
+    endif
+
+    if(allocated(atoms_species_num))then 
+       mem_param= mem_param+(num_species)*size_int                               !atoms_species_num
+       mem_param= mem_param+(num_species)*size_real                              !atoms_label
+       mem_param= mem_param+(num_species)*size_real                              !atoms_symbol
+       mem_param= mem_param+(3*maxval(atoms_species_num)*num_species)*size_real  !atoms_pos_frac
+       mem_param= mem_param+(3*maxval(atoms_species_num)*num_species)*size_real  !atoms_pos_cart
+    endif
+
+    if(allocated(proj_site))then 
+       mem_param= mem_param+ (3*num_proj)*size_real              !proj_site
+       mem_param= mem_param+ (num_proj) *size_int                !proj_l
+       mem_param= mem_param+ (num_proj)*size_int                 !proj_m
+       mem_param= mem_param+ (3*num_proj) *size_real             !proj_z
+       mem_param= mem_param+ (3*num_proj) *size_real             !proj_x
+       mem_param= mem_param+ (num_proj)*size_real                !proj_radial
+       mem_param= mem_param+ (num_proj)*size_real                !proj_zona
+    endif
+
+    mem_param=mem_param+num_kpts*nntot*size_int                  !nnlist
+    mem_param=mem_param+num_kpts*nntot/2*size_int                !neigh
+    mem_param=mem_param+3*num_kpts*nntot*size_int                !nncell
+    mem_param=mem_param+nntot*size_real                          !wb
+    mem_param=mem_param+3*nntot/2*size_real                      !bka
+    mem_param=mem_param+3*nntot*num_kpts*size_real               !bk
+
+    mem_param=mem_param+num_bands*num_kpts*size_real             !eigval
+    mem_param=mem_param+3*num_kpts*size_real                     !kpt_cart
+    mem_param=mem_param+3*num_kpts*size_real                     !kpt_latt
+    if (disentanglement) then
+       mem_param=mem_param+num_kpts*size_int                     !ndimwin
+       mem_param=mem_param+num_bands*num_kpts*size_log           !lwindow
+    endif
+    mem_param=mem_param+3*num_wann*size_real                     !wannier_centres
+    mem_param=mem_param+num_wann*size_real                       !wannier_spreads
+
+    if (disentanglement) then
+       ! Module vars
+       mem_dis=mem_dis+num_bands*num_kpts*size_real              !eigval_opt
+       mem_dis=mem_dis+num_bands*num_wann*num_kpts*size_cmplx    !clamp
+       mem_dis=mem_dis+num_kpts*size_int                         !nfirstwin
+       mem_dis=mem_dis+num_kpts*size_int                         !ndimfroz
+       mem_dis=mem_dis+num_bands*num_kpts*size_int               !indxfroz
+       mem_dis=mem_dis+num_bands*num_kpts*size_int               !indxnfroz
+       mem_dis=mem_dis+num_bands*num_kpts*size_log               !lfrozen
+
+       !the memory high-water wiil occur in dis_extract or when we allocate m_matrix
+
+       mem_dis1=mem_dis1+num_wann*num_bands*size_cmplx              !cwb
+       mem_dis1=mem_dis1+num_wann*num_wann*size_cmplx               !cww
+       mem_dis1=mem_dis1+num_bands*num_wann*size_cmplx              !cbw
+       mem_dis1=mem_dis1+5*num_bands*size_int                       !iwork
+       mem_dis1=mem_dis1+num_bands*size_int                         !ifail
+       mem_dis1=mem_dis1+num_bands*size_real                        !w
+       mem_dis1=mem_dis1+7*num_bands*size_real                      !rwork
+       mem_dis1=mem_dis1+(num_bands*(num_bands+1))/2*size_cmplx     !cap
+       mem_dis1=mem_dis1+2*num_bands*size_cmplx                     !cwork
+       mem_dis1=mem_dis1+num_bands*num_bands*size_cmplx             !cz
+       mem_dis1=mem_dis1+num_kpts*size_real                         !wkomegai1
+       mem_dis1=mem_dis1+num_bands*num_bands*num_kpts*size_cmplx    !ceamp
+       mem_dis1=mem_dis1+num_bands*num_bands*num_kpts*size_cmplx    !cham
+       mem_dis2=mem_dis2+num_wann*num_wann*nntot*num_kpts*size_cmplx!m_matrix
+
+       if(index(devel_flag,'memory')>0) then
+          mem_dis=mem_dis+mem_dis1
+       else
+          mem_dis=mem_dis+max(mem_dis1,mem_dis2)
+       endif
+
+       mem_dis= mem_dis+num_bands*num_bands*nntot*num_kpts*size_cmplx      ! m_matrix_orig
+       mem_dis= mem_dis+num_bands*num_wann*num_kpts*size_cmplx             ! a_matrix
+
+    endif
+
+    !Wannierise
+
+    mem_wan1=mem_wan1+(num_wann*num_wann*nntot*num_kpts)*size_cmplx     !  'm0' 
+    if(index(devel_flag,'memory')==0) then
+       mem_wan=mem_wan+mem_wan1
+    endif
+    mem_wan=mem_wan+(num_wann* num_wann* num_kpts)*size_cmplx           !  'u0' 
+    mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_real               !  'rnkb' 
+    mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_real               !  'ln_tmp' 
+    mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_cmplx              !  'csheet' 
+    mem_wan=mem_wan+(num_wann* num_wann* num_kpts) *size_cmplx          !  'cdodq' 
+    mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_real               !  'sheet' 
+    mem_wan=mem_wan+(3* num_wann)*size_real                             !  'rave' 
+    mem_wan=mem_wan+(num_wann)  *size_real                              !  'r2ave' 
+    mem_wan=mem_wan+(num_wann) *size_real                               !  'rave2' 
+    mem_wan=mem_wan+(3* num_wann) *size_real                            !  'rguide' 
+    mem_wan=mem_wan+ (num_wann)*size_cmplx                              !  'cwschur1'
+    mem_wan=mem_wan+ (10 * num_wann) *size_cmplx                        !  'cwschur2'
+    mem_wan=mem_wan+ (num_wann)*size_cmplx                              !  'cwschur3'
+    mem_wan=mem_wan+ (num_wann) *size_cmplx                             !  'cwschur4'
+    mem_wan=mem_wan+ (num_wann* num_wann* num_kpts) *size_cmplx         !  'cdq'
+    mem_wan=mem_wan+ (num_wann* num_wann)  *size_cmplx                  !  'cz'
+    mem_wan=mem_wan+ (num_wann* num_wann) *size_cmplx                   !  'cmtmp'
+    mem_wan=mem_wan+ (num_wann* num_wann* num_kpts) *size_cmplx         !  'cdqkeep'
+    mem_wan=mem_wan+(num_wann*num_wann)*size_cmplx                      !  'tmp_cdq'
+    mem_wan=mem_wan+ (num_wann)*size_real                               !  'evals'
+    mem_wan=mem_wan+ (4*num_wann)*size_cmplx                            !  'cwork'
+    mem_wan=mem_wan+ (3*num_wann-2)*size_real                           !  'rwork'
+    !d_omega
+    mem_wan=mem_wan+(num_wann* num_wann) *size_cmplx   !  'cr' 
+    mem_wan=mem_wan+(num_wann* num_wann)*size_cmplx    !  'crt' 
+    if(disentanglement) &
+         mem_wan= mem_wan+ num_wann*num_wann*nntot*num_kpts*size_cmplx       !m_matrix
+
+     write(stdout,'(1x,a)') '*============================================================================*'
+     write(stdout,'(1x,a)')  '|                              MEMORY ESTIMATE                               |'
+     write(stdout,'(1x,a)')  '|         Maximum RAM allocated during each phase of the calculation         |'
+     write(stdout,'(1x,a)')  '*============================================================================*'
+     if(disentanglement) &
+          write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:',(mem_param+mem_dis)/(1024**2),' Mb'
+     write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan)/(1024**2),' Mb'
+     if(index(devel_flag,'memory')==0.and. iprint>1) then
+        write(stdout,'(1x,a)')  '|                                                                            |'
+        write(stdout,'(1x,a)')  '| N.B. by setting the page file option memory usage will be reduced to:      |'
+        write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:',(mem_param+mem_dis- &
+             max(mem_dis1,mem_dis2)+mem_dis1)/(1024**2),' Mb'
+        write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan-mem_wan1)/(1024**2),' Mb'
+     endif
+
+     write(stdout,'(1x,a)')  '*----------------------------------------------------------------------------*'
+     write(stdout,*) ' '
+
+
+!    if(disentanglement) then
+!       write(*,'(a12,f12.4,a)') 'Disentangle',(mem_param+mem_dis)/(1024**2),' Mb'
+!    end if
+!    write(*,'(a12,f12.4,a)') 'Wannierise ',(mem_wan+mem_param)/(1024**2),' Mb'
+!    write(*,'(a12,f12.4,a)') 'Module',(mem_param)/(1024**2),' Mb'
+
+    return
+  end subroutine param_memory_estimate
 
 
 end module w90_parameters

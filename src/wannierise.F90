@@ -22,8 +22,6 @@ module w90_wannierise
   public :: wann_main_gamma  ![ysl]
 
   ! Data to avoid large allocation within iteration loop
-  complex(kind=dp), allocatable  :: cr (:,:,:,:)   
-  complex(kind=dp), allocatable  :: crt (:,:,:,:)  
   real(kind=dp),    allocatable  :: rnkb (:,:,:)   
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
@@ -49,7 +47,8 @@ contains
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0,eps5
-    use w90_io,         only : stdout,io_error,io_time,io_stopwatch
+    use w90_io,         only : stdout,io_error,io_time,io_stopwatch &
+         ,io_file_unit,seedname
     use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
          num_dump_cycles,omega_invariant,param_write_chkpt,length_unit, &
@@ -57,7 +56,7 @@ contains
          num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
-         wannier_spreads,omega_total,omega_tilde
+         wannier_spreads,omega_total,omega_tilde,devel_flag
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -75,9 +74,6 @@ contains
     ! local arrays used and passed in subroutines
     complex(kind=dp), allocatable :: csheet(:,:,:)
     complex(kind=dp), allocatable :: cdodq(:,:,:)  
-    complex(kind=dp), allocatable :: cdodq1(:,:,:)  
-    complex(kind=dp), allocatable :: cdodq2(:,:,:)  
-    complex(kind=dp), allocatable :: cdodq3(:,:,:)  
     real(kind=dp),    allocatable :: sheet (:,:,:)
     real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)  
 
@@ -100,7 +96,7 @@ contains
     real(kind=dp), allocatable :: history(:)
     real(kind=dp)              :: save_spread
     logical                    :: lconverged,lrandom,lfirst
-    integer                    :: conv_count,noise_count
+    integer                    :: conv_count,noise_count,page_unit
 
     if (timing_level>0) call io_stopwatch('wann: main',1)
 
@@ -110,32 +106,24 @@ contains
     if (ierr/=0) call io_error('Error allocating history in wann_main')
 
     ! module data
-    allocate(  m0 (num_wann, num_wann, nntot, num_kpts),stat=ierr)
+    if(index(devel_flag,'memory')==0) then
+       allocate(  m0 (num_wann, num_wann, nntot, num_kpts),stat=ierr)
+    end if
     if (ierr/=0) call io_error('Error in allocating m0 in wann_main')
     allocate(  u0 (num_wann, num_wann, num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating u0 in wann_main')
-    allocate(  cr (num_wann, num_wann, nntot, num_kpts),stat=ierr ) 
-    if (ierr/=0) call io_error('Error in allocating cr in wann_main')
-    allocate(  crt (num_wann, num_wann, nntot, num_kpts),stat=ierr ) 
-    if (ierr/=0) call io_error('Error in allocating crt in wann_main')
     allocate( rnkb (num_wann, nntot, num_kpts),stat=ierr    )     
     if (ierr/=0) call io_error('Error in allocating rnkb in wann_main')
     allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main')
 
-    cr=cmplx_0;  crt=cmplx_0;  rnkb=cmplx_0
+    rnkb=0.0_dp
 
     ! sub vars passed into other subs 
     allocate( csheet (num_wann, nntot, num_kpts), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating csheet in wann_main')
     allocate( cdodq (num_wann, num_wann, num_kpts),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating cdodq in wann_main')
-    allocate( cdodq1 (num_wann, num_wann, num_kpts),stat=ierr  )
-    if (ierr/=0) call io_error('Error in allocating cdodq1 in wann_main')
-    allocate( cdodq2 (num_wann, num_wann, num_kpts),stat=ierr  )
-    if (ierr/=0) call io_error('Error in allocating cdodq2 in wann_main')
-    allocate( cdodq3 (num_wann, num_wann, num_kpts),stat=ierr  )
-    if (ierr/=0) call io_error('Error in allocating cdodq3 in wann_main')
     allocate( sheet (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating sheet in wann_main')
     allocate( rave (3, num_wann), stat=ierr ) 
@@ -147,7 +135,7 @@ contains
     allocate( rguide (3, num_wann)   )
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main')
 
-    csheet=cmplx_1;cdodq=cmplx_0;cdodq1=cmplx_0;cdodq2=cmplx_0;cdodq3=cmplx_0
+    csheet=cmplx_1;cdodq=cmplx_0
     sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;rave2=0.0_dp;rguide=0.0_dp
 
     ! sub vars not passed into other subs
@@ -245,6 +233,11 @@ contains
     lconverged=.false. ; lfirst=.true. ; lrandom=.false.
     conv_count=0 ; noise_count=0
 
+    if(.not.lfixstep .and.index(devel_flag,'memory')>0) then
+       page_unit=io_file_unit()
+       open(unit=page_unit,status='scratch',form='unformatted')
+    endif
+
     ! main iteration loop
     do iter=1,num_iter
 
@@ -264,7 +257,7 @@ contains
        endif
 
        ! calculate gradient of omega
-       call wann_domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
+       call wann_domega(csheet,sheet,rave,cdodq)
 
        if ( lprint .and. iprint>2 ) &
             write(stdout,*) ' LINE --> Iteration                     :',iter
@@ -287,7 +280,14 @@ contains
           cdq(:,:,:)=cdqkeep(:,:,:)*( trial_step / (4.0_dp*wbtot) ) 
           
           ! store original U and M before rotating
-          u0=u_matrix ; m0=m_matrix
+          u0=u_matrix 
+
+          if(index(devel_flag,'memory')>0) then
+             write(page_unit)   m_matrix
+             rewind(page_unit)
+          else
+             m0=m_matrix
+          endif
 
           ! update U and M
           call internal_new_u_and_m()
@@ -328,7 +328,13 @@ contains
           
           ! if doing a line search then restore original U and M before rotating 
           if (.not.lfixstep) then 
-             u_matrix=u0 ; m_matrix=m0
+             u_matrix=u0
+             if(index(devel_flag,'memory')>0) then
+                read(page_unit)  m_matrix
+                rewind(page_unit)
+             else
+                m_matrix=m0
+             endif
           endif
 
           ! update U and M
@@ -464,12 +470,6 @@ contains
     if (ierr/=0) call io_error('Error in deallocating rave in wann_main')
     deallocate(sheet,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating sheet in wann_main')
-    deallocate(cdodq3,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating cdodq3 in wann_main')
-    deallocate(cdodq2,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating cdodq2 in wann_main')
-    deallocate(cdodq1,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating cdodq1 in wann_main')
     deallocate(cdodq,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cdodq in wann_main')
     deallocate(csheet,stat=ierr)
@@ -480,16 +480,14 @@ contains
     if (ierr/=0) call io_error('Error in deallocating ln_tmp in wann_main')
     deallocate( rnkb,stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating rnkb in wann_main')
-    deallocate(  crt,stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating crt in wann_main') 
-    deallocate(  cr,stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating cr in wann_main') 
 
     deallocate(u0, stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating u0 in wann_main')
-    deallocate(m0, stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating m0 in wann_main')
-    
+    if(index(devel_flag,'memory')==0) then
+       deallocate(m0, stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating m0 in wann_main')
+    end if
+
     deallocate(history,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating history in wann_main')
 
@@ -1459,30 +1457,37 @@ contains
 
 
   !==================================================================!
-  subroutine wann_domega(csheet,sheet,rave,cdodq1,cdodq2,cdodq3,cdodq)
+  subroutine wann_domega(csheet,sheet,rave,cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
     !===================================================================  
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
-    use w90_io,         only : io_stopwatch
+    use w90_io,         only : io_stopwatch,io_error
 
     implicit none
 
     complex(kind=dp), intent(in)  :: csheet (:,:,:)    
     complex(kind=dp), intent(out) :: cdodq (:,:,:)     
-    complex(kind=dp), intent(out) :: cdodq1 (:,:,:)    
-    complex(kind=dp), intent(out) :: cdodq2 (:,:,:)    
-    complex(kind=dp), intent(out) :: cdodq3 (:,:,:)    
     real(kind=dp),    intent(in)  :: sheet (:,:,:)     
     real(kind=dp),    intent(out) :: rave (:,:)        
 
+    !local
+    complex(kind=dp), allocatable  :: cr (:,:)   
+    complex(kind=dp), allocatable  :: crt (:,:)  
+
     ! local
-    integer :: iw,ind,nkp,nn,m,n
+    integer :: iw,ind,nkp,nn,m,n,ierr
     complex(kind=dp) :: mnn
 
     if (timing_level>1) call io_stopwatch('wann: domega',1)
+
+    allocate(  cr (num_wann, num_wann),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating cr in wann_domega')
+    allocate(  crt (num_wann, num_wann),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating crt in wann_domega')
+
 
     do nkp = 1, num_kpts
        do nn = 1, nntot
@@ -1512,40 +1517,41 @@ contains
     do nkp=1,num_kpts
        do nn=1,nntot
           do n=1,num_wann
-             mnn = m_matrix(n,n,nn,nkp)
-             crt(:,n,nn,nkp) = m_matrix(:,n,nn,nkp) / mnn
-             cr(:,n,nn,nkp)  = m_matrix(:,n,nn,nkp) * conjg(mnn)
              rnkb(n,nn,nkp) = sum(bk(:,nn,nkp)*rave(:,n))
           enddo
        enddo
     enddo
 
     ! cd0dq(m,n,nkp) is calculated
-    cdodq1 = cmplx_0 ; cdodq2 = cmplx_0 ; cdodq3 = cmplx_0
+    cdodq=cmplx_0
     do nkp = 1, num_kpts  
        do nn = 1, nntot  
+          do n=1,num_wann
+             mnn = m_matrix(n,n,nn,nkp)
+             crt(:,n) = m_matrix(:,n,nn,nkp) / mnn
+             cr(:,n)  = m_matrix(:,n,nn,nkp) * conjg(mnn)
+          enddo
+
           do n = 1, num_wann  
              do m = 1, num_wann  
                 ! A[R^{k,b}]=(R-Rdag)/2
-                cdodq1(m,n,nkp) = cdodq1(m,n,nkp) &
-                     + wb(nn) * cmplx(0.5_dp,0.0_dp,kind=dp) &
-                     *( cr(m,n,nn,nkp) - conjg(cr(n,m,nn,nkp)) )
+                cdodq(m,n,nkp) = cdodq(m,n,nkp) &
+                     + wb(nn) * 0.5_dp &
+                     *( cr(m,n) - conjg(cr(n,m)) )
                 ! -S[T^{k,b}]=-(T+Tdag)/2i ; T_mn = Rt_mn q_n
-                cdodq2(m,n,nkp) = cdodq2(m,n,nkp) -  &
-                      ( crt(m,n,nn,nkp) * ln_tmp(n,nn,nkp)  &
-                     + conjg( crt(n,m,nn,nkp) * ln_tmp(m,nn,nkp) ) ) &
+                cdodq(m,n,nkp) = cdodq(m,n,nkp) -  &
+                      ( crt(m,n) * ln_tmp(n,nn,nkp)  &
+                     + conjg( crt(n,m) * ln_tmp(m,nn,nkp) ) ) &
                      * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                cdodq3(m,n,nkp) = cdodq3(m,n,nkp) - wb(nn) &
-                     * ( crt(m,n,nn,nkp) * rnkb(n,nn,nkp) + conjg(crt(n,m,nn,nkp) &
+                cdodq(m,n,nkp) = cdodq(m,n,nkp) - wb(nn) &
+                     * ( crt(m,n) * rnkb(n,nn,nkp) + conjg(crt(n,m) &
                      * rnkb(m,nn,nkp)) ) * cmplx(0.0_dp,-0.5_dp,kind=dp)
              enddo
           enddo
        enddo
     enddo
-    cdodq1 = cdodq1 / cmplx(num_kpts,0.0_dp,kind=dp) * cmplx(4.0_dp,0.0_dp,kind=dp)
-    cdodq2 = cdodq2 / cmplx(num_kpts,0.0_dp,kind=dp) * cmplx(4.0_dp,0.0_dp,kind=dp)
-    cdodq3 = cdodq3 / cmplx(num_kpts,0.0_dp,kind=dp) * cmplx(4.0_dp,0.0_dp,kind=dp)
-    cdodq  = cdodq1 + cdodq2 + cdodq3
+    cdodq = cdodq / real(num_kpts,dp) * 4.0_dp
+
 
     if (timing_level>1) call io_stopwatch('wann: domega',2)
 
@@ -1943,16 +1949,12 @@ contains
 !!$    endif
 
     ! module data
-    allocate(  cr (num_wann, num_wann, nntot, num_kpts),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating cr in wann_main_gamma')
-    allocate(  crt (num_wann, num_wann, nntot, num_kpts),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating crt in wann_main_gamma')
     allocate( rnkb (num_wann, nntot, num_kpts),stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating rnkb in wann_main_gamma')
     allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main_gamma')
     
-    cr=cmplx_0;  crt=cmplx_0;  rnkb=cmplx_0
+    rnkb=0.0_dp
     tnntot=2*nntot
 
     ! sub vars passed into other subs 
@@ -2245,10 +2247,6 @@ contains
     if (ierr/=0) call io_error('Error in deallocating ln_tmp in wann_main_gamma')
     deallocate( rnkb,stat=ierr  )
     if (ierr/=0) call io_error('Error in deallocating rnkb in wann_main_gamma')
-    deallocate(  crt,stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating crt in wann_main_gamma')
-    deallocate(  cr,stat=ierr  )
-    if (ierr/=0) call io_error('Error in deallocating cr in wann_main_gamma')
 
     deallocate(history,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating history in wann_main_gamma')

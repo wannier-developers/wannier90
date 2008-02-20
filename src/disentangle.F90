@@ -45,10 +45,10 @@ contains
   !                                                                  !
   !                                                                  !
   !==================================================================!  
-
+  use w90_io, only: io_file_unit,seedname
 
     ! internal variables
-    integer                       :: nkp,nkp2,nn,j,ierr
+    integer                       :: nkp,nkp2,nn,j,ierr,page_unit
     complex(kind=dp), allocatable :: cwb(:,:),cww(:,:)
 
     if (timing_level>0) call io_stopwatch('dis: main',1)
@@ -82,7 +82,6 @@ contains
     else
        write(stdout,'(3x,a)') 'No inner window (linner = F)'         
     endif
-
 
     ! Debug
     call internal_check_orthonorm()
@@ -136,19 +135,62 @@ contains
     end if
 ![ysl-e]
 
-    ! Update the m_matrix accordingly
-    do nkp = 1, num_kpts  
-       do nn = 1, nntot  
-          nkp2 = nnlist(nkp,nn)
-          call zgemm('C','N',num_wann,num_wann,num_wann,cmplx_1,&
-               u_matrix(:,:,nkp),num_wann,m_matrix_orig(:,:,nn,nkp),num_bands,&
-               cmplx_0,cwb,num_wann)
-          call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
-               cwb,num_wann,u_matrix(:,:,nkp2),num_wann,&
-               cmplx_0,cww,num_wann)
-          m_matrix(:,:,nn,nkp) = cww(:,:)
+    if(index(devel_flag,'memory')>0) then
+       page_unit=io_file_unit()
+       open(unit=page_unit,form='unformatted',status='scratch')
+       ! Update the m_matrix accordingly
+       do nkp = 1, num_kpts  
+          do nn = 1, nntot  
+             nkp2 = nnlist(nkp,nn)
+             call zgemm('C','N',num_wann,num_wann,num_wann,cmplx_1,&
+                  u_matrix(:,:,nkp),num_wann,m_matrix_orig(:,:,nn,nkp),num_bands,&
+                  cmplx_0,cwb,num_wann)
+             call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
+                  cwb,num_wann,u_matrix(:,:,nkp2),num_wann,&
+                  cmplx_0,cww,num_wann)
+             write(page_unit)   cww(:,:)
+          enddo
        enddo
-    enddo
+       rewind(page_unit)
+       deallocate( m_matrix_orig, stat=ierr )
+       if (ierr/=0) call io_error('Error deallocating m_matrix_orig in dis_main')
+       allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating m_matrix in dis_main')
+       do nkp = 1, num_kpts  
+          do nn = 1, nntot  
+             read(page_unit)  m_matrix(:,:,nn,nkp)
+          end do
+       end do
+       close(page_unit)
+
+    else
+
+
+       allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating m_matrix in dis_main')
+       ! Update the m_matrix accordingly
+       do nkp = 1, num_kpts  
+          do nn = 1, nntot  
+             nkp2 = nnlist(nkp,nn)
+             call zgemm('C','N',num_wann,num_wann,num_wann,cmplx_1,&
+                  u_matrix(:,:,nkp),num_wann,m_matrix_orig(:,:,nn,nkp),num_bands,&
+                  cmplx_0,cwb,num_wann)
+             call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
+                  cwb,num_wann,u_matrix(:,:,nkp2),num_wann,&
+                  cmplx_0,cww,num_wann)
+             m_matrix(:,:,nn,nkp) = cww(:,:)
+          enddo
+       enddo
+       deallocate( m_matrix_orig, stat=ierr )
+       if (ierr/=0) call io_error('Error deallocating m_matrix_orig in dis_main')
+
+    endif
+
+
+
+    deallocate( a_matrix, stat=ierr )
+    if (ierr/=0) call io_error('Error deallocating a_matrix in dis_main')
+
 
     ! Deallocate workspace
     deallocate(cww,stat=ierr)
@@ -1493,16 +1535,10 @@ contains
 
       allocate(wkomegai1(num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating wkomegai1 in dis_extract')
-      allocate(ceamp(num_bands,num_bands,num_kpts),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating ceamp in dis_extract')
-      allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating camp in dis_extract')
       allocate(czmat_in(num_bands,num_bands,num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating czmat_in in dis_extract')
       allocate(czmat_out(num_bands,num_bands,num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating czmat_out in dis_extract')
-      allocate(cham(num_bands,num_bands,num_kpts),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating cham in dis_extract')
 
       allocate(history(dis_conv_window),stat=ierr)
       if (ierr/=0) call io_error('Error allocating history in dis_extract')
@@ -1569,6 +1605,8 @@ contains
       ! ------------------
       do iter = 1, dis_num_iter
 
+      if (timing_level>1) call io_stopwatch('dis: extract_1',1)
+
          if (iter.eq.1) then  
             ! Initialize Z matrix at k points w/ non-frozen states
             do nkp = 1, num_kpts  
@@ -1593,7 +1631,9 @@ contains
             enddo
          endif
          ! [if iter=1]
+      if (timing_level>1) call io_stopwatch('dis: extract_1',2)
 
+      if (timing_level>1) call io_stopwatch('dis: extract_2',1)
 
          womegai1 = 0.0_dp
          ! wkomegai1 is defined by Eq. (18) of SMV.
@@ -1621,7 +1661,9 @@ contains
                enddo
             endif
          enddo
+      if (timing_level>1) call io_stopwatch('dis: extract_2',2)
 
+      if (timing_level>1) call io_stopwatch('dis: extract_3',1)
 
          ! Refine optimal subspace at k points w/ non-frozen states
          do nkp = 1, num_kpts  
@@ -1667,30 +1709,40 @@ contains
             ! wkomegai1(nkp), add it to womegai1
             womegai1 = womegai1 + wkomegai1(nkp)  
 
-            ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
-            ! COMPLEMENT SPACE
-            if (iter.eq.dis_num_iter) then  
-               if (ndimwin(nkp).gt.num_wann) then  
-                  do j = 1, ndimwin(nkp) - num_wann  
-                     if ( num_wann.gt.ndimfroz(nkp) ) then  
-                        ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
-                        camp(1:ndimwin(nkp),j,nkp)=cz(1:ndimwin(nkp),j)
-                     else  
-                        ! Then num_wann=NDIMFROZ(NKP)
-                        ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
-                        do i = 1,ndimwin(nkp)  
-                           camp(i,j,nkp) = cmplx_0  
-                           if (i.eq.indxnfroz(j,nkp)) camp(i,j,nkp) = cmplx_1
-                        enddo
-                     endif
-                  enddo
-               else  
-                  icompflag = 1
+
+            if(index(devel_flag,'compspace')>0) then
+               
+               ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
+               ! COMPLEMENT SPACE
+               
+               allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
+               if (ierr/=0) call io_error('Error allocating camp in dis_extract')
+               
+               if (iter.eq.dis_num_iter) then  
+                  if (ndimwin(nkp).gt.num_wann) then  
+                     do j = 1, ndimwin(nkp) - num_wann  
+                        if ( num_wann.gt.ndimfroz(nkp) ) then  
+                           ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
+                           camp(1:ndimwin(nkp),j,nkp)=cz(1:ndimwin(nkp),j)
+                        else  
+                           ! Then num_wann=NDIMFROZ(NKP)
+                           ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
+                           do i = 1,ndimwin(nkp)  
+                              camp(i,j,nkp) = cmplx_0  
+                              if (i.eq.indxnfroz(j,nkp)) camp(i,j,nkp) = cmplx_1
+                           enddo
+                        endif
+                     enddo
+                  else  
+                     icompflag = 1
+                  endif
                endif
-            endif
             
+            end if ! index(devel_flag,'compspace')>0
+
          enddo
          ! [Loop over k points (nkp)]
+      if (timing_level>1) call io_stopwatch('dis: extract_3',2)
 
 
          womegai1 = womegai1 / real(num_kpts,dp)  
@@ -1732,6 +1784,7 @@ contains
 
          ! Compute womegai  using the updated subspaces at all k, i.e.,
          ! replacing (i-1) by (i) in Eq. (12) SMV
+      if (timing_level>1) call io_stopwatch('dis: extract_4',1)
 
          womegai = 0.0_dp
          do nkp = 1, num_kpts  
@@ -1756,6 +1809,7 @@ contains
          enddo
          womegai = womegai / real(num_kpts,dp)  
          ! [Loop over k (nkp)]
+      if (timing_level>1) call io_stopwatch('dis: extract_4',2)
 
          delta_womegai = womegai1/womegai - 1.0_dp
 
@@ -1783,32 +1837,48 @@ contains
       enddo
       ! [BIG ITERATION LOOP (iter)]
 
+      deallocate(czmat_out,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating czmat_out in dis_extract')
+      deallocate(czmat_in,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating czmat_in in dis_extract')
+
+      allocate(ceamp(num_bands,num_bands,num_kpts),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating ceamp in dis_extract')
+      allocate(cham(num_bands,num_bands,num_kpts),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating cham in dis_extract')
+
       if (.not.dis_converged) then
          write(stdout,'(/5x,a)') '<<< Warning: Maximum number of disentanglement &
               &iterations reached >>>'
          write(stdout,'(10x,a)')  '<<< Disentanglement convergence criteria not satisfied >>>'
       endif
 
-      if (icompflag.eq.1) then
-         if (iprint>2) then
-            write(stdout,('(/4x,a)')) &
-                 'WARNING: Complement subspace has zero dimensions at the following k-points:'
-            i=0
-            write(stdout,'(4x)',advance='no')
-            do nkp=1,num_kpts
-               if (ndimwin(nkp).eq.num_wann) then  
-                  i=i+1
-                  if (i.le.12) then
-                     write(stdout,'(i6)',advance='no') nkp
-                  else
-                     i=1
-                     write(stdout,'(/4x)',advance='no')
-                     write(stdout,'(i6)',advance='no') nkp
+      if(index(devel_flag,'compspace')>0) then
+
+         if (icompflag.eq.1) then
+            if (iprint>2) then
+               write(stdout,('(/4x,a)')) &
+                    'WARNING: Complement subspace has zero dimensions at the following k-points:'
+               i=0
+               write(stdout,'(4x)',advance='no')
+               do nkp=1,num_kpts
+                  if (ndimwin(nkp).eq.num_wann) then  
+                     i=i+1
+                     if (i.le.12) then
+                        write(stdout,'(i6)',advance='no') nkp
+                     else
+                        i=1
+                        write(stdout,'(/4x)',advance='no')
+                        write(stdout,'(i6)',advance='no') nkp
+                     endif
                   endif
-               endif
-            enddo
+               enddo
+            endif
          endif
+
       endif
+
+
 
       ! Write the final womegai. This should remain unchanged during the
       ! subsequent minimization of Omega_tilde in wannierise.f90
@@ -1887,49 +1957,50 @@ contains
          enddo
       enddo
 
-      ! The compliment subspace code needs work: jry
-      if (icompflag.eq.1) then  
-         if (iprint>2) then
-            write(stdout,*) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
-            write(stdout,*) '=> DID NOT CREATE FILE COMPSPACE.DAT'  
-         endif
-      else  
-         ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
-         ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
-         do nkp = 1, num_kpts  
-            do j = 1, ndimwin(nkp) - num_wann  
-               do i = 1, ndimwin(nkp) - num_wann  
-                  cham(i,j,nkp) = cmplx_0  
-                  do l = 1, ndimwin(nkp)  
-                     cham(i,j,nkp) = cham(i,j,nkp) + conjg(camp(l,i,nkp)) &
-                          * camp(l,j,nkp) * eigval_opt(l,nkp)
+      if(index(devel_flag,'compspace')>0) then
+
+         if (icompflag.eq.1) then  
+            if (iprint>2) then
+               write(stdout,*) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
+               write(stdout,*) '=> DID NOT CREATE FILE COMPSPACE.DAT'  
+            endif
+         else  
+            ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
+            ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
+            do nkp = 1, num_kpts  
+               do j = 1, ndimwin(nkp) - num_wann  
+                  do i = 1, ndimwin(nkp) - num_wann  
+                     cham(i,j,nkp) = cmplx_0  
+                     do l = 1, ndimwin(nkp)  
+                        cham(i,j,nkp) = cham(i,j,nkp) + conjg(camp(l,i,nkp)) &
+                             * camp(l,j,nkp) * eigval_opt(l,nkp)
+                     enddo
                   enddo
                enddo
-            enddo
-            do j = 1, ndimwin(nkp) - num_wann  
-               do i = 1, j  
-                  cap(i + ( (j - 1) * j) / 2) = cham(i,j,nkp)  
+               do j = 1, ndimwin(nkp) - num_wann  
+                  do i = 1, j  
+                     cap(i + ( (j - 1) * j) / 2) = cham(i,j,nkp)  
+                  enddo
                enddo
-            enddo
-            ndiff = ndimwin(nkp) - num_wann  
-            call ZHPEVX ('V', 'A', 'U', ndiff, cap, 0.0_dp, 0.0_dp, 0, 0, &
-                 -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
-            if (info.lt.0) then  
-               write(stdout,*) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
-               write(stdout,*) 'THE ',  -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-               call io_error(' dis_extract: error')   
-            endif
-            if (info.gt.0) then  
-               write(stdout,*) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
-               write(stdout,*) info, 'EIGENVECTORS FAILED TO CONVERGE'  
-               call io_error(' dis_extract: error')   
-            endif
-            ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
-            ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
-            do j = 1, ndimwin(nkp) - num_wann  
-               do i = 1, ndimwin(nkp)  
-                  camp(i,j,nkp) = cmplx_0  
-                  do l = 1, ndimwin(nkp) - num_wann  
+               ndiff = ndimwin(nkp) - num_wann  
+               call ZHPEVX ('V', 'A', 'U', ndiff, cap, 0.0_dp, 0.0_dp, 0, 0, &
+                    -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
+               if (info.lt.0) then  
+                  write(stdout,*) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
+                  write(stdout,*) 'THE ',  -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
+                  call io_error(' dis_extract: error')   
+               endif
+               if (info.gt.0) then  
+                  write(stdout,*) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
+                  write(stdout,*) info, 'EIGENVECTORS FAILED TO CONVERGE'  
+                  call io_error(' dis_extract: error')   
+               endif
+               ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
+               ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
+               do j = 1, ndimwin(nkp) - num_wann  
+                  do i = 1, ndimwin(nkp)  
+                     camp(i,j,nkp) = cmplx_0  
+                     do l = 1, ndimwin(nkp) - num_wann  
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
@@ -1938,26 +2009,25 @@ contains
 ! aam: 20/10/2006 -- the second dimension of clamp is out of bounds (allocated as num_wann)! 
 ! commenting this line out.
 !                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
+                     enddo
                   enddo
                enddo
-            enddo
-         enddo
-         ! [loop over k points (nkp)]
+            enddo   ! [loop over k points (nkp)]
 
-      endif
-      ! [if icompflag=1]
+         endif   ! [if icompflag=1]
+
+      endif     ![if(index(devel_flag,'compspace')>0)]
+
 
       deallocate(history,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating history in dis_extract')
 
       deallocate(cham,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating cham in dis_extract')
-      deallocate(czmat_out,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating czmat_out in dis_extract')
-      deallocate(czmat_in,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating czmat_in in dis_extract')
-      deallocate(camp,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating camp in dis_extract')
+      if(allocated(camp)) then
+         deallocate(camp,stat=ierr)
+         if (ierr/=0) call io_error('Error deallocating camp in dis_extract')
+      end if
       deallocate(ceamp,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating ceamp in dis_extract')
       deallocate(wkomegai1,stat=ierr)
@@ -2016,10 +2086,11 @@ contains
         dis_converged = .false.
         if (iter.ge.dis_conv_window) then
 !           write(stdout,*) (history(j),j=1,dis_conv_window)
-           do j=1,dis_conv_window
-              if ( abs(history(j)).gt.dis_conv_tol ) exit
-              dis_converged = .true.
-           enddo
+           dis_converged=all(abs(history).lt.dis_conv_tol)
+!           do j=1,dis_conv_window
+!              if ( abs(history(j)).gt.dis_conv_tol ) exit
+!              dis_converged = .true.
+!           enddo
         endif
 
         deallocate(temp_hist,stat=ierr)

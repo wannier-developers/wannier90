@@ -287,8 +287,6 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
 
   allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
-  allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
   
   if (disentanglement) then
      allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
@@ -297,6 +295,9 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      if (ierr/=0) call io_error('Error in allocating a_matrix in overlap_read')
      allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
      if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
+  else
+     allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
+     if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
   endif
     
   if (disentanglement) then
@@ -304,7 +305,6 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      a_matrix      = a_matrix_loc
      u_matrix_opt  = cmplx_0
      u_matrix      = cmplx_0
-     m_matrix      = cmplx_0
   else
      m_matrix=m_matrix_loc
      u_matrix=a_matrix_loc
