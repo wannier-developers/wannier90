@@ -729,6 +729,15 @@ contains
                 do n=1,num_bands
                    read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
                    if ((i.ne.n).or.(j.ne.k)) then
+                      write(stdout,'(a)') 'Found a mismatch in '//trim(seedname)//'.eig' 
+                      write(stdout,'(a,i0,a,i0)') 'Wanted band  : ',n,' found band  : ',i
+                      write(stdout,'(a,i0,a,i0)') 'Wanted kpoint: ',k,' found kpoint: ',j
+                      write(stdout,'(a)') ' '
+                      write(stdout,'(a)') 'A common cause of this error is using the wrong'
+                      write(stdout,'(a)') 'number of bands. Check your input files.'
+                      write(stdout,'(a)') 'If your pseudopotentials have shallow core states remember'
+                      write(stdout,'(a)') 'to account for these electrons.'   
+                      write(stdout,'(a)') ' '
                       call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
                    end if
                 enddo
