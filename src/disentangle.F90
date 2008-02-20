@@ -2867,10 +2867,7 @@ contains
         dis_converged = .false.
         if (iter.ge.dis_conv_window) then
 !           write(stdout,*) (history(j),j=1,dis_conv_window)
-           do j=1,dis_conv_window
-              if ( abs(history(j)).gt.dis_conv_tol ) exit
-              dis_converged = .true.
-           enddo
+            dis_converged=all(abs(history).lt.dis_conv_tol)
         endif
 
         deallocate(temp_hist,stat=ierr)
