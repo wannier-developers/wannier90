@@ -21,7 +21,6 @@ module w90_disentangle
   private
 
   ! Variables local to this module
-  complex(kind=dp), allocatable :: clamp(:,:,:)
   real(kind=dp),    allocatable :: eigval_opt(:,:)
 
   ! Determined in dis_windows
@@ -60,8 +59,6 @@ contains
     allocate(eigval_opt(num_bands,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating eigval_opt in dis_main')
     eigval_opt=eigval
-    allocate(clamp(num_bands,num_wann,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating clamp in dis_main')
 
 
     ! Set up energy windows
@@ -69,10 +66,6 @@ contains
     
     ! Construct the unitarized projection
     call dis_project()
-
-    ! Copy projections to clamp
-    clamp = u_matrix_opt
-    
 
     ! If there is an inner window, need to modify projection procedure
     ! (Sec. III.G SMV)
@@ -117,10 +110,10 @@ contains
        do nn = 1, nntot  
           nkp2 = nnlist(nkp,nn)
           call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-               clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,&
+               u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,&
                cmplx_0,cwb,num_wann)
           call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
-               cwb,num_wann,clamp(:,:,nkp2),num_bands,&
+               cwb,num_wann,u_matrix_opt(:,:,nkp2),num_bands,&
                cmplx_0,cww,num_wann)
           m_matrix_orig(1:num_wann,1:num_wann,nn,nkp) = cww(:,:)
        enddo
@@ -198,28 +191,26 @@ contains
     deallocate(cwb,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cwb in dis_main')
 
-    u_matrix_opt=cmplx_0
-
-!!$[aam]
+    !zero the unused elements of u_matrix_opt (just in case...)
     do nkp = 1, num_kpts
        do j = 1, num_wann
-          u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp)
+          if ( ndimwin(nkp)<num_bands ) &
+               u_matrix_opt(ndimwin(nkp):,j,nkp)  = cmplx_0 
        enddo
     enddo
-!!$[aam]
 
 !!$![ysl-b]
 !!$!   Apply phase factor ph_g if gamma_only
 !!$    if (.not. gamma_only) then
 !!$       do nkp = 1, num_kpts
 !!$          do j = 1, num_wann
-!!$             u_matrix_opt(1:ndimwin(nkp),j,nkp)  = clamp(1:ndimwin(nkp),j,nkp)
+!!$             u_matrix_opt(1:ndimwin(nkp),j,nkp)  = u_matrix_opt(1:ndimwin(nkp),j,nkp)
 !!$          enddo
 !!$       enddo
 !!$    else
 !!$       do nkp = 1, num_kpts
 !!$          do j = 1, ndimwin(nkp)
-!!$             u_matrix_opt(j,1:num_wann,nkp)  = conjg(ph_g(j))*clamp(j,1:num_wann,nkp)
+!!$             u_matrix_opt(j,1:num_wann,nkp)  = conjg(ph_g(j))*u_matrix_opt(j,1:num_wann,nkp)
 !!$          enddo
 !!$       enddo
 !!$    endif
@@ -265,7 +256,7 @@ contains
             do m = 1, l  
                ctmp = cmplx_0
                do j = 1, ndimwin(nkp)  
-                  ctmp = ctmp + conjg(clamp(j,m,nkp)) * clamp(j,l,nkp)
+                  ctmp = ctmp + conjg(u_matrix_opt(j,m,nkp)) * u_matrix_opt(j,l,nkp)
                enddo
                if (l.eq.m) then  
                   if (abs(ctmp - cmplx_1).gt.eps8) then  
@@ -397,7 +388,7 @@ contains
       
       do nkp = 1, num_kpts  
          call zgemm('C','N',num_wann,num_wann,ndimwin(nkp),cmplx_1,&
-              clamp(:,:,nkp),num_bands,a_matrix(:,:,nkp),num_bands,&
+              u_matrix_opt(:,:,nkp),num_bands,a_matrix(:,:,nkp),num_bands,&
               cmplx_0,caa(:,:,nkp),num_wann)
          ! Singular-value decomposition
          call ZGESVD ('A', 'A', num_wann, num_wann, caa(:,:,nkp), num_wann, &
@@ -479,7 +470,7 @@ contains
       if (ierr/=0) call io_error('Error in allocating raa in dis_main')
      
 
-      clamp_r(:,:)=real(clamp(1:ndimwin(1),1:num_wann,1),dp)
+      clamp_r(:,:)=real(u_matrix_opt(1:ndimwin(1),1:num_wann,1),dp)
 
       ! Take real part of a matrix - a matrix is realized in overlap_symmetrize
       do i=1,num_wann
@@ -558,8 +549,6 @@ contains
       if (ierr/=0) call io_error('Error deallocating nfirstwin in dis_main')
       
       ! Module arrays allocated in dis_main
-      deallocate(clamp,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating clamp in dis_main')
       deallocate(eigval_opt,stat=ierr)
       if (ierr/=0) call io_error('Error in deallocating eigval_opt in dis_main')
 
@@ -1070,7 +1059,7 @@ contains
     implicit none
 
       ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
-      ! MODIFIED: clamp (At input it contains the gaussians projected onto 
+      ! MODIFIED: u_matrix_opt (At input it contains the gaussians projected onto 
       !             the window states in the routine project.f. At output 
       !             the entries with the second index from 1 to ndimfroz(nkp) 
       !             contain the frozen (inner window) states, while those 
@@ -1148,11 +1137,11 @@ contains
 
          ! aam: this should be done at the end, otherwise important
          !      projection info is lost
-!!$         ! Put the frozen states in the lowest columns of clamp
+!!$         ! Put the frozen states in the lowest columns of u_matrix_opt
 !!$         if (ndimfroz(nkp).gt.0) then  
 !!$            do l = 1, ndimfroz(nkp)  
-!!$               clamp(:,l,nkp)=cmplx_0
-!!$               clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
+!!$               u_matrix_opt(:,l,nkp)=cmplx_0
+!!$               u_matrix_opt(indxfroz(l,nkp),l,nkp) = cmplx_1
 !!$            enddo
 !!$         endif
 
@@ -1164,7 +1153,7 @@ contains
             do n = 1, ndimwin(nkp)  
                do m = 1, ndimwin(nkp)  
                   do l = 1, num_wann  
-                     cp_s(m,n) = cp_s(m,n) + clamp(m,l,nkp) * conjg(clamp(n,l,nkp))
+                     cp_s(m,n) = cp_s(m,n) + u_matrix_opt(m,l,nkp) * conjg(u_matrix_opt(n,l,nkp))
                   enddo
                enddo
                if (.not.lfrozen(n,nkp)) cq_froz(n,n) = cmplx_1
@@ -1313,12 +1302,12 @@ contains
                   do loop_f=1,nzero
                      do loop_v=ndimwin(nkp),1,-1 !loop backwards for efficiency only
                         if(any(vmap==loop_v)) cycle
-                        !check to see if vector is orthogonal to frozen states in clamp
+                        !check to see if vector is orthogonal to frozen states in u_matrix_opt
                         take=.true.
                         do m = 1, ndimfroz(nkp)  
                            ctmp = cmplx_0
                            do j = 1, ndimwin(nkp)  
-                              ctmp = ctmp + conjg(clamp(j,m,nkp)) * cz(j,loop_v)
+                              ctmp = ctmp + conjg(u_matrix_opt(j,m,nkp)) * cz(j,loop_v)
                            enddo
                            if (abs(ctmp).gt.eps8) then  
                               take=.false.
@@ -1340,17 +1329,17 @@ contains
                      if(vmap(l)==0) call io_error('dis_proj_froz: Ortho-fix failed to find enough vectors')
                   end do
                   
-                  ! put the correct eigenvectors into clamp, and we're all done!
+                  ! put the correct eigenvectors into u_matrix_opt, and we're all done!
                   counter=1
                   do l = ndimfroz(nkp) + 1, num_wann
-                     clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),vmap(counter))
+                     u_matrix_opt(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),vmap(counter))
                      counter=counter+1
                   enddo
                   
                else ! we don't need to use the fix
                   
                   do l = ndimfroz(nkp) + 1, num_wann
-                     clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il)
+                     u_matrix_opt(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il)
                      il = il + 1
                   enddo
 
@@ -1364,10 +1353,10 @@ contains
             else ! if .not. using ortho-fix
 
                ! PICK THE num_wann-nDIMFROZ(NKP) LEADING EIGENVECTORS AS TRIAL STATES
-               ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN cLAMP
+               ! and PUT THEM RIGHT AFTER THE FROZEN STATES IN u_matrix_opt
                do l = ndimfroz(nkp) + 1, num_wann  
                   write(stdout,*) 'il=',il
-                  clamp(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il) 
+                  u_matrix_opt(1:ndimwin(nkp),l,nkp) = cz(1:ndimwin(nkp),il) 
                   il = il + 1  
                enddo
                
@@ -1381,18 +1370,18 @@ contains
             
          endif   ! num_wann>nDIMFROZ(NKP)
 
-         ! Put the frozen states in the lowest columns of clamp
+         ! Put the frozen states in the lowest columns of u_matrix_opt
          if (ndimfroz(nkp).gt.0) then  
             do l = 1, ndimfroz(nkp)  
-               clamp(:,l,nkp)=cmplx_0
-               clamp(indxfroz(l,nkp),l,nkp) = cmplx_1
+               u_matrix_opt(:,l,nkp)=cmplx_0
+               u_matrix_opt(indxfroz(l,nkp),l,nkp) = cmplx_1
             enddo
          endif
          
-!!$         write(stdout,*) 'clamp:'
+!!$         write(stdout,*) 'u_matrix_opt:'
 !!$         do m=1,ndimwin(nkp)
-!!$            write(stdout,'(6f12.8)') clamp(m,1,nkp), &
-!!$                 clamp(m,ndimfroz(nkp),nkp), clamp(m,num_wann,nkp)
+!!$            write(stdout,'(6f12.8)') u_matrix_opt(m,1,nkp), &
+!!$                 u_matrix_opt(m,ndimfroz(nkp),nkp), u_matrix_opt(m,num_wann,nkp)
 !!$         enddo
          
       enddo   ! NKP
@@ -1445,7 +1434,7 @@ contains
       implicit none
 
       ! MODIFIED:
-      !           clamp (At input it contains the initial guess for the optima
+      !           u_matrix_opt (At input it contains the initial guess for the optima
       ! subspace (expressed in terms of the original states inside the window)
       ! output it contains the  states that diagonalize the hamiltonian inside
       ! optimal subspace (again expressed in terms of the original window stat
@@ -1553,16 +1542,16 @@ contains
       ! NDIMFROZ(NKP)     number of frozen bands at the nkp-th k-point
       ! INDXNFROZ(I,NKP)  INDEX (BETWEEN 1 AND NDIMWIN(NKP)) OF THE I-TH NON-F
       !                   ORIGINAL BAND STATE AT THE NKP-TH K-POINT
-      ! CLAMP(J,L,NKP)    AMPLITUDE OF THE J-TH ENERGY EIGENVECTOR INSIDE THE
+      ! U_MATRIX_OPT(J,L,NKP)    AMPLITUDE OF THE J-TH ENERGY EIGENVECTOR INSIDE THE
       !                   ENERGY WINDOW AT THE NKP-TH K-POINT IN THE EXPANSION
       !                   THE L-TH LEADING RLAMBDA EIGENVECTOR AT THE SAME K-P
       !                   If there are M_k frozen states, they occupy the lowe
-      !                   entries of the second index of clamp, and the leadin
+      !                   entries of the second index of u_matrix_opt, and the leadin
       !                   nabnds-M_k eigenvectors of the Z matrix occupy the
       !                   remaining slots
-      ! CAMP(J,L,NKP)     SAME AS CLAMP, BUT FOR THE COMPLEMENT SUBSPACE INSID
+      ! CAMP(J,L,NKP)     SAME AS U_MATRIX_OPT, BUT FOR THE COMPLEMENT SUBSPACE INSID
       !                   ENERGY WINDOW (I.E., THE NON-LEADING RLAMBDA EIGENVE
-      ! CEAMP(J,L,NKPTS)  SAME AS CLAMP, BUT INSTEAD OF RLAMBDA EIGENVECTOR, I
+      ! CEAMP(J,L,NKPTS)  SAME AS U_MATRIX_OPT, BUT INSTEAD OF RLAMBDA EIGENVECTOR, I
       !                   FOR THE ENERGY EIGENVECTOR OBTAINED BY DIAGONALIZING
       !                   HAMILTONIAN IN THE OPTIMIZED SUBSPACE
       ! CZMAT_IN(M,N,NKP) Z-MATRIX [Eq. (21) SMV]
@@ -1577,7 +1566,6 @@ contains
       ! alphafixe         mixing parameter for the iterative procedure
       ! nitere            total number of iterations
 
-      camp=cmplx_0
       ! DEBUG
       if (iprint>2) then
          write(stdout,'(a,/)') '  Original eigenvalues inside outer window:'  
@@ -1647,10 +1635,10 @@ contains
                do nn=1,nntot
                   nkp2=nnlist(nkp,nn)
                   call zgemm('C','N',ndimfroz(nkp),ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-                       clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+                       u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
                        cwb,num_wann)                 
                   call zgemm('N','N',ndimfroz(nkp),num_wann,ndimwin(nkp2),cmplx_1,&
-                       cwb,num_wann,clamp(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)
+                       cwb,num_wann,u_matrix_opt(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)
                   rsum=0.0_dp
                   do n=1,num_wann
                      do m=1,ndimfroz(nkp)
@@ -1689,17 +1677,17 @@ contains
                endif
 
                ! Update the optimal subspace by incorporating the num_wann-ndimfroz(nkp) l
-               ! eigenvectors of the Z matrix into clamp. Also, add contribution from
+               ! eigenvectors of the Z matrix into u_matrix_opt. Also, add contribution from
                ! non-frozen states to wkomegai1(nkp) (minus the corresponding eigenvalu
                m = ndimfroz(nkp)  
                do j = ndimwin(nkp) - num_wann + 1, ndimwin(nkp) - ndimfroz(nkp)
                   m = m + 1  
                   wkomegai1(nkp) = wkomegai1(nkp) - w(j)  
-                  clamp(1:ndimwin(nkp),m,nkp) = cmplx_0
+                  u_matrix_opt(1:ndimwin(nkp),m,nkp) = cmplx_0
                   ndimk=ndimwin(nkp)-ndimfroz(nkp)
                   do i=1,ndimk
                      p=indxnfroz(i,nkp)
-                     clamp(p,m,nkp) = cz(i,j)  
+                     u_matrix_opt(p,m,nkp) = cz(i,j)  
                   enddo
                enddo
             endif
@@ -1756,7 +1744,7 @@ contains
          !           do m=1,l
          !             ctmp=czero
          !             do j=1,ndimwin(nkp)
-         !               ctmp=ctmp+conjg(clamp(j,m,nkp))*clamp(j,l,nkp)
+         !               ctmp=ctmp+conjg(u_matrix_opt(j,m,nkp))*u_matrix_opt(j,l,nkp)
          !             enddo
          !             write(*,'(i2,2x,i2,f16.12,1x,f16.12)') l,m,ctmp
          !             if(l.eq.m) then
@@ -1764,7 +1752,7 @@ contains
          !                 write(*,'(a49,i4)')
          !     1           '*** ERROR *** with iterative subspace at k-point ',
          !     2           nkp
-         !                 write(*,*) 'vectors in clamp not orthonormal'
+         !                 write(*,*) 'vectors in u_matrix_opt not orthonormal'
          !                 stop
          !               endif
          !             else
@@ -1772,7 +1760,7 @@ contains
          !                 write(*,'(a49,i4)')
          !     1           '*** ERROR *** with iterative subspace at k-point ',
          !     2           nkp
-         !                 write(*,*) 'vectors in clamp not orthonormal'
+         !                 write(*,*) 'vectors in u_matrix_opt not orthonormal'
          !                 stop
          !               endif
          !             endif
@@ -1792,10 +1780,10 @@ contains
             do nn=1,nntot
                nkp2=nnlist(nkp,nn)
                call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-                    clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+                    u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
                     cwb,num_wann)                 
                call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
-                    cwb,num_wann,clamp(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)               
+                    cwb,num_wann,u_matrix_opt(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)               
                rsum=0.0_dp
                do n=1,num_wann
                   do m=1,num_wann
@@ -1896,8 +1884,8 @@ contains
             do i = 1, num_wann  
                cham(i,j,nkp) = cmplx_0  
                do l = 1, ndimwin(nkp)
-                  cham(i,j,nkp) = cham(i,j,nkp) + conjg(clamp(l,i,nkp)) &
-                       * clamp(l,j,nkp) * eigval_opt(l,nkp)
+                  cham(i,j,nkp) = cham(i,j,nkp) + conjg(u_matrix_opt(l,i,nkp)) &
+                       * u_matrix_opt(l,j,nkp) * eigval_opt(l,nkp)
                enddo
             enddo
          enddo
@@ -1931,7 +1919,7 @@ contains
             do i = 1, ndimwin(nkp)  
                ceamp(i,j,nkp) = cmplx_0  
                do l = 1, num_wann  
-                  ceamp(i,j,nkp) = ceamp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
+                  ceamp(i,j,nkp) = ceamp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
                enddo
             enddo
          enddo
@@ -1948,12 +1936,12 @@ contains
       endif
       ! ENDDEBUG
 
-      ! Replace clamp by ceamp. Both span the
+      ! Replace u_matrix_opt by ceamp. Both span the
       ! same space, but the latter is more convenient for the purpose of obtai
       ! an optimal Fourier-interpolated band structure: see Sec. III.E of SMV.
       do nkp = 1, num_kpts  
          do j = 1, num_wann
-            clamp(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
+            u_matrix_opt(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
          enddo
       enddo
 
@@ -2004,11 +1992,11 @@ contains
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
-!write(stdout,*) '           clamp(i,l,nkp)=',clamp(i,l,nkp)
+!write(stdout,*) '           u_matrix_opt(i,l,nkp)=',u_matrix_opt(i,l,nkp)
 
-! aam: 20/10/2006 -- the second dimension of clamp is out of bounds (allocated as num_wann)! 
+! aam: 20/10/2006 -- the second dimension of u_matrix_opt is out of bounds (allocated as num_wann)! 
 ! commenting this line out.
-!                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
+!                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
                      enddo
                   enddo
                enddo
@@ -2131,7 +2119,7 @@ contains
         do nn=1,nntot
            nkp2=nnlist(nkp,nn)
            call zgemm('N','N',num_bands,num_wann,ndimwin(nkp2),cmplx_1,&
-                m_matrix_orig(:,:,nn,nkp),num_bands,clamp(:,:,nkp2),num_bands,&
+                m_matrix_orig(:,:,nn,nkp),num_bands,u_matrix_opt(:,:,nkp2),num_bands,&
                 cmplx_0,cbw,num_bands)
            do n=1,ndimk
               q=indxnfroz(n,nkp)
@@ -2190,16 +2178,16 @@ contains
 !!$                 do l = 1, ndimwin(nkp)  
 !!$                    do j = 1, ndimwin(nkp2)  
 !!$                       cdot_bloch = cdot_bloch + &
-!!$!                            conjg(clamp(l,m,nkp)) * clamp(j,n,nkp2) * cmk(l,j,nn)
-!!$                            conjg(clamp(l,m,nkp)) * clamp(j,n,nkp2) * m_matrix_orig(l,j,nn,nkp)
+!!$!                            conjg(u_matrix_opt(l,m,nkp)) * u_matrix_opt(j,n,nkp2) * cmk(l,j,nn)
+!!$                            conjg(u_matrix_opt(l,m,nkp)) * u_matrix_opt(j,n,nkp2) * m_matrix_orig(l,j,nn,nkp)
 !!$                    enddo
 !!$                 enddo
 !!$                 write(stdout,'(a,4i5,2f15.10)') 'zeig:',nkp,nn,m,n,cdot_bloch
 !!$!                 call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-!!$!                      clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+!!$!                      u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
 !!$!                      cwb,num_wann)                 
 !!$!                 call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
-!!$!                      cwb,num_wann,clamp(:,:,nkp),num_bands,cmplx_0,cww,num_wann)
+!!$!                      cwb,num_wann,u_matrix_opt(:,:,nkp),num_bands,cmplx_0,cww,num_wann)
 !!$
 !!$                 dis_zeig = dis_zeig + wb(nn) * abs(cdot_bloch)**2  
 !!$
@@ -2444,10 +2432,10 @@ contains
                do nn=1,nntot
                   nkp2=nnlist(nkp,nn)
                   call zgemm('C','N',ndimfroz(nkp),ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-                       clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+                       u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
                        cwb,num_wann)                 
                   call zgemm('N','N',ndimfroz(nkp),num_wann,ndimwin(nkp2),cmplx_1,&
-                       cwb,num_wann,clamp(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)
+                       cwb,num_wann,u_matrix_opt(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)
                   rsum=0.0_dp
                   do n=1,num_wann
                      do m=1,ndimfroz(nkp)
@@ -2485,17 +2473,17 @@ contains
                cz(:,:)=cmplx(rz(:,:),0.0_dp,dp)
                !
                ! Update the optimal subspace by incorporating the num_wann-ndimfroz(nkp) l
-               ! eigenvectors of the Z matrix into clamp. Also, add contribution from
+               ! eigenvectors of the Z matrix into u_matrix_opt. Also, add contribution from
                ! non-frozen states to wkomegai1(nkp) (minus the corresponding eigenvalu
                m = ndimfroz(nkp)  
                do j = ndimwin(nkp) - num_wann + 1, ndimwin(nkp) - ndimfroz(nkp)
                   m = m + 1  
                   wkomegai1(nkp) = wkomegai1(nkp) - w(j)  
-                  clamp(1:ndimwin(nkp),m,nkp) = cmplx_0
+                  u_matrix_opt(1:ndimwin(nkp),m,nkp) = cmplx_0
                   ndimk=ndimwin(nkp)-ndimfroz(nkp)
                   do i=1,ndimk
                      p=indxnfroz(i,nkp)
-                     clamp(p,m,nkp) = cz(i,j)  
+                     u_matrix_opt(p,m,nkp) = cz(i,j)  
                   enddo
                enddo
             endif
@@ -2542,7 +2530,7 @@ contains
          !           do m=1,l
          !             ctmp=czero
          !             do j=1,ndimwin(nkp)
-         !               ctmp=ctmp+conjg(clamp(j,m,nkp))*clamp(j,l,nkp)
+         !               ctmp=ctmp+conjg(u_matrix_opt(j,m,nkp))*u_matrix_opt(j,l,nkp)
          !             enddo
          !             write(*,'(i2,2x,i2,f16.12,1x,f16.12)') l,m,ctmp
          !             if(l.eq.m) then
@@ -2550,7 +2538,7 @@ contains
          !                 write(*,'(a49,i4)')
          !     1           '*** ERROR *** with iterative subspace at k-point ',
          !     2           nkp
-         !                 write(*,*) 'vectors in clamp not orthonormal'
+         !                 write(*,*) 'vectors in u_matrix_opt not orthonormal'
          !                 stop
          !               endif
          !             else
@@ -2558,7 +2546,7 @@ contains
          !                 write(*,'(a49,i4)')
          !     1           '*** ERROR *** with iterative subspace at k-point ',
          !     2           nkp
-         !                 write(*,*) 'vectors in clamp not orthonormal'
+         !                 write(*,*) 'vectors in u_matrix_opt not orthonormal'
          !                 stop
          !               endif
          !             endif
@@ -2577,10 +2565,10 @@ contains
             do nn=1,nntot
                nkp2=nnlist(nkp,nn)
                call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-                    clamp(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+                    u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
                     cwb,num_wann)                 
                call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
-                    cwb,num_wann,clamp(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)               
+                    cwb,num_wann,u_matrix_opt(:,:,nkp2),num_bands,cmplx_0,cww,num_wann)               
                rsum=0.0_dp
                do n=1,num_wann
                   do m=1,num_wann
@@ -2664,8 +2652,8 @@ contains
             do i = 1, num_wann  
                cham(i,j,nkp) = cmplx_0  
                do l = 1, ndimwin(nkp)
-                  cham(i,j,nkp) = cham(i,j,nkp) + conjg(clamp(l,i,nkp)) &
-                       * clamp(l,j,nkp) * eigval_opt(l,nkp)
+                  cham(i,j,nkp) = cham(i,j,nkp) + conjg(u_matrix_opt(l,i,nkp)) &
+                       * u_matrix_opt(l,j,nkp) * eigval_opt(l,nkp)
                enddo
             enddo
          enddo
@@ -2703,7 +2691,7 @@ contains
             do i = 1, ndimwin(nkp)  
                ceamp(i,j,nkp) = cmplx_0  
                do l = 1, num_wann  
-                  ceamp(i,j,nkp) = ceamp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
+                  ceamp(i,j,nkp) = ceamp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
                enddo
             enddo
          enddo
@@ -2719,12 +2707,12 @@ contains
       endif
       ! ENDDEBUG
 
-      ! Replace clamp by ceamp. Both span the
+      ! Replace u_matrix_opt by ceamp. Both span the
       ! same space, but the latter is more convenient for the purpose of obtai
       ! an optimal Fourier-interpolated band structure: see Sec. III.E of SMV.
       do nkp = 1, num_kpts  
          do j = 1, num_wann
-            clamp(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
+            u_matrix_opt(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
          enddo
       enddo
 
@@ -2782,11 +2770,11 @@ contains
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
-!write(stdout,*) '           clamp(i,l,nkp)=',clamp(i,l,nkp)
+!write(stdout,*) '           u_matrix_opt(i,l,nkp)=',u_matrix_opt(i,l,nkp)
 
-! aam: 20/10/2006 -- the second dimension of clamp is out of bounds (allocated as num_wann)! 
+! aam: 20/10/2006 -- the second dimension of u_matrix_opt is out of bounds (allocated as num_wann)! 
 ! commenting this line out.
-!                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * clamp(i,l,nkp)
+!                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
                   enddo
                enddo
             enddo
@@ -2908,7 +2896,7 @@ contains
         do nn=1,nntot
            nkp2=nnlist(nkp,nn)
            call zgemm('N','N',num_bands,num_wann,ndimwin(nkp2),cmplx_1,&
-                m_matrix_orig(:,:,nn,nkp),num_bands,clamp(:,:,nkp2),num_bands,&
+                m_matrix_orig(:,:,nn,nkp),num_bands,u_matrix_opt(:,:,nkp2),num_bands,&
                 cmplx_0,cbw,num_bands)
            do n=1,ndimk
               q=indxnfroz(n,nkp)

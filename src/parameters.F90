@@ -3291,7 +3291,6 @@ contains
     if (disentanglement) then
        ! Module vars
        mem_dis=mem_dis+num_bands*num_kpts*size_real              !eigval_opt
-       mem_dis=mem_dis+num_bands*num_wann*num_kpts*size_cmplx    !clamp
        mem_dis=mem_dis+num_kpts*size_int                         !nfirstwin
        mem_dis=mem_dis+num_kpts*size_int                         !ndimfroz
        mem_dis=mem_dis+num_bands*num_kpts*size_int               !indxfroz
