@@ -328,8 +328,6 @@ contains
 
     allocate(ham_r_tmp(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating ham_r_tmp in plot_cut_hr')
-    allocate(shift_vec(3,nrpts_cut),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating shift_vec in plot_cut_hr')
    
     irvec_max = maxval(irvec,DIM=2)+1
 
@@ -365,6 +363,8 @@ contains
     if (ierr/=0) call io_error('Error in allocating ham_r_cut in plot_cut_hr')
     allocate(irvec_cut(3,nrpts_cut),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating irvec_cut in plot_cut_hr')
+    allocate(shift_vec(3,nrpts_cut),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating shift_vec in plot_cut_hr')
 
     nrpts_tmp = 0
     do n1 = -irvec_max(1), irvec_max(1)    
