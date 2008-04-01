@@ -98,7 +98,7 @@ contains
     write(stdout,*)
 
     if (index(transport_mode,'bulk')>0 ) then
-       write(stdout,'(/1x,a/)') 'Calculating quantum conductance and density of states: bulk'
+       write(stdout,'(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
        if (.not.tran_read_ht) then
           call hamiltonian_setup()
           call hamiltonian_get_hr()
@@ -111,7 +111,7 @@ contains
     end if
 
     if (index(transport_mode,'lcr')>0 ) then
-       write(stdout,'(/1x,a/)') 'Calculating quantum conductance and density of states: lead-conductor-lead'
+       write(stdout,'(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
        call tran_lcr()
     end if
   
@@ -387,7 +387,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     use w90_constants,  only : dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
-                               io_file_unit
+                               io_file_unit, stdout
     use w90_parameters, only : tran_num_bb, tran_read_ht,  &
                                tran_win_min, tran_win_max, tran_energy_step, &
                                timing_level
@@ -457,6 +457,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     n_e = floor((tran_win_max-tran_win_min)/tran_energy_step)+1
 
+    write(stdout,'(/1x,a)',advance='no') 'Calculating quantum conductance and density of states...'
+
     do n=1,n_e
        e_scan = tran_win_min + real(n-1,dp)*tran_energy_step
  
@@ -508,6 +510,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     end do
 
+    write(stdout,'(a)') ' done'
+
     close(qc_unit)
     close(dos_unit)
 
@@ -536,7 +540,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if (timing_level>1) call io_stopwatch('tran: bulk',2)
 
     return
- 
+
   end subroutine tran_bulk 
 
   !==================================================================!
@@ -683,6 +687,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !  Loop over the energies
     n_e = floor((tran_win_max-tran_win_min)/tran_energy_step)+1
 
+    write(stdout,'(/1x,a)',advance='no') 'Calculating quantum conductance and density of states...'
+
     do n=1,n_e
 
        e_scan = tran_win_min + real(n-1,dp)*tran_energy_step
@@ -799,6 +805,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
        write(dos_unit,'(f12.6,f15.6)') e_scan, dos
 
     end do
+
+    write(stdout,'(a)') ' done'
 
     close(qc_unit)
     close(dos_unit)

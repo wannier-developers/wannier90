@@ -195,7 +195,7 @@ contains
     do nkp = 1, num_kpts
        do j = 1, num_wann
           if ( ndimwin(nkp)<num_bands ) &
-               u_matrix_opt(ndimwin(nkp):,j,nkp)  = cmplx_0 
+               u_matrix_opt(ndimwin(nkp)+1:,j,nkp)  = cmplx_0 
        enddo
     enddo
 
@@ -232,9 +232,9 @@ contains
     !================================================================!
     !                                                                !
     ! This subroutine checks that the states in the columns of the   !
-    ! final matrix clamp are orthonormal at every k-point, i.e.,     !
+    ! final matrix U_opt are orthonormal at every k-point, i.e.,     !
     ! that the matrix is unitary in the sense that                   !
-    ! conjg(clamp).clamp = 1  (but not  clamp.conjg(clamp) = 1).     !
+    ! conjg(U_opt).U_opt = 1  (but not  U_opt.conjg(U_opt) = 1).     !
     !                                                                !
     ! In particular, this checks whether the projected gaussians     !
     ! are indeed orthogonal to the frozen states, at those k-points  !
@@ -354,8 +354,8 @@ contains
     ! same projections that are used to initiate the minimization of ! 
     ! Omega.                                                         !
     !                                                                !
-    ! Note: |psi> clamp = |psitilde> and obviously                   !
-    ! <psitilde| = clamp^dagger <psi|                                !
+    ! Note: |psi> U_opt = |psitilde> and obviously                   !
+    ! <psitilde| = (U_opt)^dagger <psi|                              !
     !                                                                !
     !================================================================!
 
@@ -440,7 +440,7 @@ contains
       implicit none
 
       integer                       :: i,j,info,ierr
-      real(kind=dp),    allocatable :: clamp_r(:,:)
+      real(kind=dp),    allocatable :: u_opt_r(:,:)
       real(kind=dp),    allocatable :: a_matrix_r(:,:)
       real(kind=dp),    allocatable :: raa(:,:)
       ! For DGESVD
@@ -452,8 +452,8 @@ contains
       if (timing_level>1) call io_stopwatch('dis: main: find_u_gamma',1)
 
       ! Allocate arrays needed for getting a_matrix_r
-      allocate(clamp_r(ndimwin(1),num_wann),stat=ierr)
-      if (ierr/=0) call io_error('Error in allocating clamp_r in dis_main')
+      allocate(u_opt_r(ndimwin(1),num_wann),stat=ierr)
+      if (ierr/=0) call io_error('Error in allocating u_opt_r in dis_main')
       allocate(a_matrix_r(ndimwin(1),num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating a_matrix_r in dis_main')
 
@@ -470,17 +470,19 @@ contains
       if (ierr/=0) call io_error('Error in allocating raa in dis_main')
      
 
-      clamp_r(:,:)=real(u_matrix_opt(1:ndimwin(1),1:num_wann,1),dp)
+      u_opt_r(:,:)=real(u_matrix_opt(1:ndimwin(1),1:num_wann,1),dp)
 
-      ! Take real part of a matrix - a matrix is realized in overlap_symmetrize
-      do i=1,num_wann
-         do j=1,ndimwin(1) 
-            a_matrix_r(j,i)=real(a_matrix(j,i,1),dp)
-         end do
-      end do
- 
+!!$      ! Take real part of a matrix - a matrix is realized in overlap_symmetrize
+!!$      do i=1,num_wann
+!!$         do j=1,ndimwin(1) 
+!!$            a_matrix_r(j,i)=real(a_matrix(j,i,1),dp)
+!!$         end do
+!!$      end do
+
+      a_matrix_r(:,:)=real(a_matrix(:,:,1),kind=dp)
+
       call dgemm('T','N',num_wann,num_wann,ndimwin(1),1.0_dp,&
-           clamp_r,ndimwin(1),a_matrix_r,ndimwin(1),&
+           u_opt_r,ndimwin(1),a_matrix_r,ndimwin(1),&
            0.0_dp,raa,num_wann)
       ! Singular-value decomposition
       call DGESVD ('A', 'A', num_wann, num_wann, raa, num_wann, &
@@ -515,8 +517,8 @@ contains
       ! Deallocate arrays for a_matrix_r
       deallocate(a_matrix_r,stat=ierr)
       if (ierr/=0) call io_error('Error in deallocating a_matrix_r in dis_main')
-      deallocate(clamp_r,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating clamp_r in dis_main')
+      deallocate(u_opt_r,stat=ierr)
+      if (ierr/=0) call io_error('Error in deallocating u_opt_r in dis_main')
 
       if (timing_level>1) call io_stopwatch('dis: main: find_u_gamma',2)
 
@@ -1256,7 +1258,7 @@ contains
             ! has a zero eigenvalue (ie it forms a degenerate set with the frozen states).
             ! It depends on floating point math as whether this eigenvalue is positive
             ! or negative (ie +/- 1e-17). If it's positive everything is ok. If negative we
-            ! can end up putting one of the frozen states into clamp (and failing the later 
+            ! can end up putting one of the frozen states into U_opt (and failing the later 
             ! orthogonality check).
             ! This fix detects this situation. If applies we choose the eigenvectors by
             ! checking their orthogonality to the frozen states.
@@ -2221,13 +2223,13 @@ contains
       implicit none
 
       ! MODIFIED:
-      !           clamp (At input it contains the initial guess for the optima
-      ! subspace (expressed in terms of the original states inside the window)
-      ! output it contains the  states that diagonalize the hamiltonian inside
-      ! optimal subspace (again expressed in terms of the original window stat
+      !           u_matrix_opt (At input it contains the initial guess for the optimal
+      ! subspace (expressed in terms of the original states inside the window). At
+      ! output it contains the  states that diagonalize the hamiltonian inside the
+      ! optimal subspace (again expressed in terms of the original window states). 
       ! Giving out states that diagonalize the hamiltonian inside the optimal
       ! subspace (instead of the eigenstates of the Z matrix) is useful for
-      ! performing the Wannier interpolation of the energy bands as described
+      ! performing the Wannier interpolation of the energy bands as described in
       ! Sec. III.F of SMV)
       !
       !           eigval (At input: original energy eigenvalues.
@@ -2342,16 +2344,16 @@ contains
       ! NDIMFROZ(NKP)     number of frozen bands at the nkp-th k-point
       ! INDXNFROZ(I,NKP)  INDEX (BETWEEN 1 AND NDIMWIN(NKP)) OF THE I-TH NON-F
       !                   ORIGINAL BAND STATE AT THE NKP-TH K-POINT
-      ! CLAMP(J,L,NKP)    AMPLITUDE OF THE J-TH ENERGY EIGENVECTOR INSIDE THE
-      !                   ENERGY WINDOW AT THE NKP-TH K-POINT IN THE EXPANSION
-      !                   THE L-TH LEADING RLAMBDA EIGENVECTOR AT THE SAME K-P
-      !                   If there are M_k frozen states, they occupy the lowe
-      !                   entries of the second index of clamp, and the leadin
-      !                   nabnds-M_k eigenvectors of the Z matrix occupy the
+      ! U_MATRIX_OPT(J,L,NKP) AMPLITUDE OF THE J-TH ENERGY EIGENVECTOR INSIDE THE
+      !                   ENERGY WINDOW AT THE NKP-TH K-POINT IN THE EXPANSION OF
+      !                   THE L-TH LEADING RLAMBDA EIGENVECTOR AT THE SAME K-POINT
+      !                   If there are M_k frozen states, they occupy the lowest
+      !                   entries of the second index of u_matrix_opt, and the leading
+      !                   nbands-M_k eigenvectors of the Z matrix occupy the
       !                   remaining slots
-      ! CAMP(J,L,NKP)     SAME AS CLAMP, BUT FOR THE COMPLEMENT SUBSPACE INSID
-      !                   ENERGY WINDOW (I.E., THE NON-LEADING RLAMBDA EIGENVE
-      ! CEAMP(J,L,NKPTS)  SAME AS CLAMP, BUT INSTEAD OF RLAMBDA EIGENVECTOR, I
+      ! CAMP(J,L,NKP)     SAME AS U_MATRIX_OPT, BUT FOR THE COMPLEMENT SUBSPACE INSIDE THE
+      !                   ENERGY WINDOW (I.E., THE NON-LEADING RLAMBDA EIGENVECTORS)
+      ! CEAMP(J,L,NKPTS)  SAME AS U_MATRIX_OPT, BUT INSTEAD OF RLAMBDA EIGENVECTOR, I
       !                   FOR THE ENERGY EIGENVECTOR OBTAINED BY DIAGONALIZING
       !                   HAMILTONIAN IN THE OPTIMIZED SUBSPACE
       ! RZMAT_IN(M,N,NKP) Z-MATRIX [Eq. (21) SMV]
