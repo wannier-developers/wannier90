@@ -7,27 +7,27 @@ The examples are as follows:
 Examples with A and M matrices provided
 ---------------------------------------
 
-example1: Gallium Arsenide, valence bands
+example01: Gallium Arsenide, valence bands
 
-example2: Lead, 4 lowest states; Fermi surface
+example02: Lead, 4 lowest states; Fermi surface
 
-example3: Silicon, 4 valence bands + 4 conduction bands;
+example03: Silicon, 4 valence bands + 4 conduction bands;
           interpolated bandstructure
 
-example4: Copper, states around the Fermi level; Fermi surface
+example04: Copper, states around the Fermi level; Fermi surface
 
 Examples that use the pw2wannier90 interface with PWSCF
 -------------------------------------------------------
 
-example5: Diamond, valence states
+example05: Diamond, valence states
 
-example6: Copper, states around the Fermi level; Fermi surface
+example06: Copper, states around the Fermi level; Fermi surface
 
-example7: Silane, valence states
+example07: Silane, valence states
 
-example8: Iron, states around the Fermi level
+example08: Iron, states around the Fermi level
 
-example9: Barium Titanate
+example09: Barium Titanate
 
 example10: Graphite
 
