@@ -1,0 +1,9 @@
+&inputpp 
+   outdir = './'
+   prefix = 'batio3'
+   seedname = 'BaTiO3'
+   spin_component = 'none'
+   write_mmn = .true.
+   write_amn = .true.
+   write_unk = .true.
+/

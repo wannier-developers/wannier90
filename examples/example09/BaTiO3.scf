@@ -1,0 +1,26 @@
+ &control
+    calculation = 'scf'
+    restart_mode='from_scratch',
+    prefix='batio3',
+    pseudo_dir = '../../pseudo/',
+    outdir='./'
+ /
+ &system    
+    ibrav=  1, celldm(1) =7.44266, nat=  5, ntyp= 3,
+    ecutwfc =40.0, 
+ /
+ &electrons
+    conv_thr =  1.0d-10
+ /
+ATOMIC_SPECIES
+O  8 O.pbe-van_ak.UPF  
+Ti 22 Ti.pbe-sp-van_ak.UPF
+Ba 56 Ba-vdb-usp-pbe.UPF 
+ATOMIC_POSITIONS {crystal}
+Ba 0.0 0.0 0.0
+Ti 0.5 0.5 0.5
+O  0.0 0.5 0.5
+O  0.5 0.5 0.0
+O  0.5 0.0 0.5
+K_POINTS {automatic}
+ 8 8 8  0 0 0
