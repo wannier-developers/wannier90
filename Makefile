@@ -53,9 +53,10 @@ dist:
 		./examples/example1[0-3]/*.nscf \
 		./examples/example0[5-9]/*.pw2wan \
 		./examples/example1[0-3]/*.pw2wan \
-		./examples/example0[5-9]/*.UPF \
-		./examples/example1[0-3]/*.UPF \
 		./examples/example08/README \
+		./pseudo/*.UPF \
+		./pwscf/README \
+		./pwscf/v3.2.3/*.f90 \
 		./config/make.sys* \
 		./utility/*.pl \
                 ./doc/*/*.tex \
