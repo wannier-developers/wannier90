@@ -17,10 +17,12 @@ Directory Structure
 
 doc/        Documentation including the user guide and a tutorial
 examples/   Sample calculations from the tutorial
+pseudo/     Pseudopotential files for sample calculations
 utility/    Useful scripts
 src/        The Wannier90 source code
 tests/      A set of tests to check Wannier90 is installed correctly
 config/     Example make.sys for many platforms
+pwscf/      Source files for the interface with Quantum-Espresso
 
 For Installation Instructions see README.install
 Further information can be found in the user guide and tutorial
@@ -28,8 +30,8 @@ Further information can be found in the user guide and tutorial
  Please cite                                             
                                                          
  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt  
-       and N. Marzari, http://www.wannier.org/; 
-       http://arxiv.org/abs/0708.0650        
+       and N. Marzari, "Wannier90: A Tool for Obtaining Maximally-Localised
+       Wannier Functions", Computer Physics Communications 178, 685 (2008)
 
   in any publications arising from the use of this code.  
 
@@ -46,7 +48,7 @@ Further information can be found in the user guide and tutorial
         Phys. Rev. B 65 035109 (2001)             
                                                          
 
-Copyright (C) 1997-2007 Jonathan Yates, Arash Mostofi, Young-Su Lee, 
+Copyright (C) 1997-2008 Jonathan Yates, Arash Mostofi, Young-Su Lee, 
            Nicola Marzari, Ivo Souza, David Vanderbilt 
 
 All the material included in this distribution is free software;
