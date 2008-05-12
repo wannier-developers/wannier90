@@ -4,6 +4,11 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
+v1.1.1 (10th May 2008)
+
+* Report of estimated memory usage
+* Improved memory efficiency
+ 
 v1.1 (21st Dec 2007)
 
 * Addition of specific algorithms for when only Gamma-point 
