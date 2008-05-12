@@ -62,7 +62,6 @@ dist:
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
-		./doc/*.pdf \
 		./*/Makefile \
 		./*/*/Makefile \
 		./Makefile \
