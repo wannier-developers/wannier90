@@ -4,7 +4,7 @@
     title = 'cnt'
     verbosity = 'high'
     outdir='./'
-    pseudo_dir = './'
+    pseudo_dir = '../../pseudo/'
     prefix='cnt'
     tstress =.f.
     tprnfor =.t.

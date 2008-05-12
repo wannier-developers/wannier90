@@ -2,7 +2,7 @@
     calculation  = 'scf'
     restart_mode = 'from_scratch'
     prefix       = 'benz'
-    pseudo_dir   = './'
+    pseudo_dir   = '../../pseudo/'
     outdir       = './'
  /
  &system    

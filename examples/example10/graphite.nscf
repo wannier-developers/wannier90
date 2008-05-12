@@ -1,6 +1,6 @@
  &control
     calculation='nscf'
-    pseudo_dir = './',
+    pseudo_dir = '../../pseudo/',
     outdir='./'
     prefix='gh'
  /

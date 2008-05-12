@@ -1,7 +1,7 @@
  &control
     calculation  = 'nscf'
     prefix       = 'benz'
-    pseudo_dir   = './'
+    pseudo_dir   = '../../pseudo/'
     outdir       = './'
  /
  &system    
