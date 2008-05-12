@@ -23,6 +23,12 @@ clean:
 	cd ../doc/user_guide ; make clean ; \
 	cd ../tutorial ; make clean 	
 
+veryclean: clean
+	rm -f wannier90.x libwannier.a ; \
+	cd doc ; rm -f user_guide.pdf tutorial.pdf ; \
+	cd user_guide ; rm -f user_guide.ps ; \
+	cd ../tutorial ; rm -f tutorial.ps
+
 thedoc:
 	cd doc/user_guide ; make guide ; \
 	cd ../tutorial ; make tutorial
@@ -37,18 +43,19 @@ dist:
 		./tests/test*/wannier.?mn \
 		./tests/test*/stnd* \
 		./examples/README \
-		./examples/example1/UNK* \
+		./examples/example01/UNK* \
 		./examples/*/*.win \
-		./examples/example[2-4]/*.eig \
-                ./examples/example[1-4]/*.*mn \
-		./examples/example[5-9]/*.scf \
+		./examples/example0[2-4]/*.eig \
+                ./examples/example0[1-4]/*.*mn \
+		./examples/example0[5-9]/*.scf \
 		./examples/example1[0-3]/*.scf \
-		./examples/example[5-9]/*.nscf \
+		./examples/example0[5-9]/*.nscf \
 		./examples/example1[0-3]/*.nscf \
-		./examples/example[5-9]/*.pw2wan \
+		./examples/example0[5-9]/*.pw2wan \
 		./examples/example1[0-3]/*.pw2wan \
-		./examples/example[5-9]/*.UPF \
+		./examples/example0[5-9]/*.UPF \
 		./examples/example1[0-3]/*.UPF \
+		./examples/example08/README \
 		./config/make.sys* \
 		./utility/*.pl \
                 ./doc/*/*.tex \
