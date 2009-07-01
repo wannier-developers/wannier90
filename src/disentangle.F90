@@ -2718,57 +2718,61 @@ contains
          enddo
       enddo
 
-      ! The compliment subspace code needs work: jry
-      if (icompflag.eq.1) then  
-         if (iprint>2) then
-            write(stdout,*) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
-            write(stdout,*) '=> DID NOT CREATE FILE COMPSPACE.DAT'  
-         endif
-      else  
-         ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
-         ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
-         do nkp = 1, num_kpts  
-            do j = 1, ndimwin(nkp) - num_wann  
-               do i = 1, ndimwin(nkp) - num_wann  
-                  cham(i,j,nkp) = cmplx_0  
-                  do l = 1, ndimwin(nkp)  
-                     cham(i,j,nkp) = cham(i,j,nkp) + conjg(camp(l,i,nkp)) &
-                          * camp(l,j,nkp) * eigval_opt(l,nkp)
+      ! aam: 01/05/2009: added devel_flag if statement as the complementary
+      !      subspace code was causing catastrophic seg-faults
+      if (index(devel_flag,'compspace')>0) then
+
+         ! The compliment subspace code needs work: jry
+         if (icompflag.eq.1) then  
+            if (iprint>2) then
+               write(stdout,*) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
+               write(stdout,*) '=> DID NOT CREATE FILE COMPSPACE.DAT'  
+            endif
+         else  
+            ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
+            ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
+            do nkp = 1, num_kpts  
+               do j = 1, ndimwin(nkp) - num_wann  
+                  do i = 1, ndimwin(nkp) - num_wann  
+                     cham(i,j,nkp) = cmplx_0  
+                     do l = 1, ndimwin(nkp)  
+                        cham(i,j,nkp) = cham(i,j,nkp) + conjg(camp(l,i,nkp)) &
+                             * camp(l,j,nkp) * eigval_opt(l,nkp)
+                     enddo
                   enddo
                enddo
-            enddo
 !@@@
-            do j = 1, ndimwin(nkp) - num_wann  
-               do i = 1, j  
-                  cap_r(i + ( (j - 1) * j) / 2) = real(cham(i,j,nkp),dp)  
+               do j = 1, ndimwin(nkp) - num_wann  
+                  do i = 1, j  
+                     cap_r(i + ( (j - 1) * j) / 2) = real(cham(i,j,nkp),dp)  
+                  enddo
                enddo
-            enddo
-            ndiff = ndimwin(nkp) - num_wann 
- 
-            call DSPEVX ('V', 'A', 'U', ndiff, cap_r, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
-              m, w, rz, num_bands, work, iwork, ifail, info)
-
-            if (info.lt.0) then  
-               write(stdout,*) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
-               write(stdout,*) 'THE ',  -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-               call io_error(' dis_extract_gamma: error')   
-            endif
-            if (info.gt.0) then  
-               write(stdout,*) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
-               write(stdout,*) info, 'EIGENVECTORS FAILED TO CONVERGE'  
-               call io_error(' dis_extract_gamma: error')   
-            endif
-
-            cz=cmplx_0
-            cz(1:ndiff,1:ndiff)=cmplx(rz(1:ndiff,1:ndiff),0.0_dp,dp)
+               ndiff = ndimwin(nkp) - num_wann 
+               
+               call DSPEVX ('V', 'A', 'U', ndiff, cap_r, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
+                    m, w, rz, num_bands, work, iwork, ifail, info)
+               
+               if (info.lt.0) then  
+                  write(stdout,*) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
+                  write(stdout,*) 'THE ',  -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
+                  call io_error(' dis_extract_gamma: error')   
+               endif
+               if (info.gt.0) then  
+                  write(stdout,*) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
+                  write(stdout,*) info, 'EIGENVECTORS FAILED TO CONVERGE'  
+                  call io_error(' dis_extract_gamma: error')   
+               endif
+               
+               cz=cmplx_0
+               cz(1:ndiff,1:ndiff)=cmplx(rz(1:ndiff,1:ndiff),0.0_dp,dp)
                 
 !@@@
-            ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
-            ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
-            do j = 1, ndimwin(nkp) - num_wann  
-               do i = 1, ndimwin(nkp)  
-                  camp(i,j,nkp) = cmplx_0  
-                  do l = 1, ndimwin(nkp) - num_wann  
+               ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
+               ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
+               do j = 1, ndimwin(nkp) - num_wann  
+                  do i = 1, ndimwin(nkp)  
+                     camp(i,j,nkp) = cmplx_0  
+                     do l = 1, ndimwin(nkp) - num_wann  
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
@@ -2777,14 +2781,17 @@ contains
 ! aam: 20/10/2006 -- the second dimension of u_matrix_opt is out of bounds (allocated as num_wann)! 
 ! commenting this line out.
 !                     camp(i,j,nkp) = camp(i,j,nkp) + cz(l,j) * u_matrix_opt(i,l,nkp)
+                     enddo
                   enddo
                enddo
             enddo
-         enddo
-         ! [loop over k points (nkp)]
+            ! [loop over k points (nkp)]
+
+         endif
+         ! [if icompflag=1]
 
       endif
-      ! [if icompflag=1]
+      ! [if index(devel_flag,'compspace')>0]
 
       deallocate(history,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating history in dis_extract_gamma')
