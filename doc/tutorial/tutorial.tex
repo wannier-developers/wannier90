@@ -1008,7 +1008,6 @@ and re-running \wannier. Visualise them using, e.g., XCrySDen.
 
 \cleardoublepage
 
-
 \section*{13: (5,5) Carbon Nanotube}
 \subsection*{Transport properties}
 
@@ -1091,6 +1090,177 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 \label{fig:cnt.tran}
 \end{center}
 \end{figure}
+
+\cleardoublepage
+
+\section*{14: Linear Sodium Chain}
+
+\begin{itemize}
+  \item{Outline: \it{Compare the quantum conductance of a periodic 
+  	linear chain of Sodium atoms with that of a defected chain}}
+  \item{\begin{tabbing}
+  Directories: \= {\tt examples/example14/periodic}\\ 
+    				 \> {\tt examples/example14/defected}
+    		\end{tabbing}}
+  \item{Input Files}
+    \begin{itemize}
+      \item{ {\tt Na\_chain.scf}  {\it The \pwscf\ input file for ground state
+	  calculation}}
+      \item{ {\tt Na\_chain.nscf}  {\it The \pwscf\ input file to obtain Bloch
+	  states for the conduction states}} 
+      \item{ {\tt Na\_chain.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+      \item{ {\tt Na\_chain.win}  {\it The {\tt wannier90} input file}}
+    \end{itemize}
+\end{itemize}
+
+The periodic system is contians two unit cells evenly distributed along the 
+supercell. Transport calculations are performed using {\tt transport\_mode =
+bulk} and so the resulting quantum conductance represents that of an infinite
+periodic chain. 
+
+The part of the \wannier\ input file that controls the transport part
+of the calculation looks like:
+
+{\tt
+\begin{quote}
+transport = true\\
+transport\_mode = bulk\\
+tran\_read\_ht = false\\
+one\_dim\_axis = x\\
+fermi\_energy = -2.7401\\
+tran\_win\_min = -5.0\\
+tran\_win\_max = 5.0\\
+tran\_energy\_step = 0.01\\
+translation\_centre\_frac = 0.5 0.5 0.5\\
+tran\_num\_bb = 2
+
+\end{quote} }
+
+The defected system uses a 13 atom supercell with the central atom
+position altered to break symmetry. Setting {\tt transport\_mode = lcr} with tell 
+\wannier\ to treat the system as an infinte sytsem with the defect at its centre.
+The supercell is chosen so that is conforms to the 2c2 geometry (see User Guide 
+for details). Each principal layer is 2 atoms long so that the conductor 
+region contains the defected atom plus a single atom on either side.
+
+The transport section of the input file contians  these key differences:
+
+{\tt
+\begin{quote}
+transport\_mode = lcr\\
+tran\_num\_ll = 2\\
+tran\_num\_cell\_ll = 2\\
+
+\end{quote} }
+
+Descriptions of these and other keywords related to the calculation of
+transport properties can be found in the User Guide.
+
+\begin{enumerate}
+\item Run \pwscf\ and \wannier\ for the periodic system.
+\item Run \pwscf\ and \wannier\ for the defected system.
+\item The quantum conductance is written to the files {\tt periodic/Na\_chain\_qc.dat} 
+and {\tt defected/Na\_chain\_dos.dat}, respectively. 
+Compare the quantum conductance of the periodic (bulk) calculation with the
+defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
+\end{enumerate}
+
+
+\begin{figure}[h]
+\begin{center}
+\scalebox{0.3}{\includegraphics{Na_qc.eps}}
+\caption{Quantum conductance of periodic Sodium chain (black) compared to that of the defected Sodium chain (red).}
+\label{fig:Na_qc}
+\end{center}
+\end{figure}
+
+\cleardoublepage
+
+\section*{15: (5,0) Carbon Nanotube}
+\subsection*{Bulk Transport properties}
+
+\begin{itemize}
+  \item{Outline: \it{Obtain the quantum conductance of a pristine single-walled carbon nanotube}}
+  \item{Directory: {\tt examples/example14/periodic}}
+  \item{Input Files}
+    \begin{itemize}
+      \item{ {\tt cnt.scf}  {\it The \pwscf\ input file for ground state
+	  calculation}}
+      \item{ {\tt cnt.nscf}  {\it The \pwscf\ input file to obtain Bloch
+	  states for the conduction states}} 
+      \item{ {\tt cnt.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+      \item{ {\tt cnt.win}  {\it The {\tt wannier90} input file}}
+    \end{itemize}
+\end{itemize}
+
+
+First we consider a single unit cell, with 10 k-points. With 
+{\tt transport\_mode = bulk} we compute the transport properties 
+of a pristine, infinite, periodic (5,0) carbon nanotube. Later, we will 
+compare the quantum conductance of this system with a defected
+nanotube.
+
+\begin{enumerate}
+\item Run \pwscf\ and \wannier. Note that these calculations can be 
+quite lengthy.\\ 
+\item The quantum conductance and density of states are written to the
+files {\tt cnt\_qc.dat} and {\tt cnt\_dos.dat}, respectively.
+\end{enumerate}
+
+\subsection*{LCR transport properties -- Defected nanotube}
+
+\emph{Note that to run this section of the tutorial
+approximately 9.2Gb of disk space is required. In addition, approximately 6.5Gb
+of memory is needed for the transport calculation.}
+
+\begin{itemize}
+  \item{Outline: \it{Use the automated LCR routine to investigate the effect of
+  a single silicon atom in a infinite (5,0) carbon nanotube.}}
+  \item{Directory: {\tt examples/example15/defected}}
+  \item{Input Files}
+    \begin{itemize}
+      \item{ {\tt cnt+si.scf}  {\it The \pwscf\ input file for ground state
+	  calculation}}
+      \item{ {\tt cnt+si.nscf}  {\it The \pwscf\ input file to obtain Bloch
+	  states for the conduction states}} 
+      \item{ {\tt cnt+si.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+      \item{ {\tt cnt+si.win}  {\it The {\tt wannier90} input file}}
+    \end{itemize}
+\end{itemize}
+
+In this calculation a 11 atom supercell is used with a single silicon 
+substitutional defect in the central unit cell. The supercell is chosen so that is 
+conforms to the 2c2 geometry (see User Guide for details) with principal 
+layers set to be 2 unit cells long.
+
+\begin{enumerate}
+\item Run \pwscf\ and \wannier. Again these are large calculations, progress
+can be monitored by viewing respective output files.\\
+\item The quantum conductance is written to {\tt cnt+si\_qc.dat}. 
+Compare the quantum conductance with the periodic (bulk) calculation.
+Your plot should look like Fig.~\ref{fig:cnt_qc}.
+
+\end{enumerate}
+
+\begin{figure}[h]
+\begin{center}
+\scalebox{0.3}{\includegraphics{cnt_qc.eps}}
+\caption{Quantum conductance of infinite pristine nanotube (black) 
+compared to that of the infinite nanotube with the substitutional silicon 
+defect (red).}
+\label{fig:cnt_qc}
+\end{center}
+\end{figure}
+
+\subsection*{Further ideas}
+\begin{itemize}
+\item Set {\tt hr\_plot = true} in the bulk case. Consider the magnitude of Hamiltonian 
+	elements between Wannier functions in increasingly distant unit cells. Are two 
+	unit cell principal layers really large enough, or are significant errors introduced?
+\item Does one unit cell either side of the defected unit cell shield the disorder
+	so that the leads are ideal? Does the quantum conductance change if these 
+	`buffer' regions are increased?
+\end{itemize}
 
 \cleardoublepage
 
