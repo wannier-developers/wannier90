@@ -1,0 +1,9 @@
+&inputpp
+  outdir     =  './'
+  prefix     =  'Na_13chain'
+  seedname   =  'Na_13chain'
+  write_amn  =  .true.
+  write_mmn  =  .true.
+  write_unk  =  .true.
+  reduce_unk =  .true.
+/
