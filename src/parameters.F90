@@ -89,6 +89,10 @@ module w90_parameters
   logical,           public, save :: tran_write_ht
   logical,           public, save :: tran_read_ht 
   logical,           public, save :: tran_use_same_lead
+  integer,           public, save :: tran_num_cell_ll      
+  integer,           public, save :: tran_num_cell_rr      
+  real(kind=dp),     public, save :: tran_group_threshold  !used in sorting wannier centres for lcr conductance calculations
+  real(kind=dp),     public, save :: tran_wf_threshold     !threshold for WF parity integral
   real(kind=dp),     public, save :: translation_centre_frac(3)
   integer,           public, save :: num_shells    !no longer an input keyword
   integer, allocatable, public,save :: shell_list(:)
@@ -647,8 +651,8 @@ contains
     transport_mode    = 'bulk'
     call param_get_keyword('transport_mode',found,c_value=transport_mode)
 
-    if ( .not.tran_read_ht  .and. (index(transport_mode,'lcr').ne.0) ) &
-       call io_error('Error: transport_mode.eq.lcr not compatible with tran_read_ht.eq.false')
+!    if ( .not.tran_read_ht  .and. (index(transport_mode,'lcr').ne.0) ) &
+!       call io_error('Error: transport_mode.eq.lcr not compatible with tran_read_ht.eq.false')
 
     tran_win_min      = -3.0_dp
     call param_get_keyword('tran_win_min',found,r_value=tran_win_min)
@@ -686,17 +690,33 @@ contains
     tran_use_same_lead     = .true.
     call param_get_keyword('tran_use_same_lead',found,l_value=tran_use_same_lead)
 
+    tran_num_cell_ll       = 0
+    call param_get_keyword('tran_num_cell_ll',found,i_value=tran_num_cell_ll)
+
+    tran_num_cell_rr       = 0
+    call param_get_keyword('tran_num_cell_rr',found,i_value=tran_num_cell_rr)
+
+    tran_group_threshold   = 0.15_dp
+    call param_get_keyword('tran_group_threshold',found,r_value=tran_group_threshold)
+
+    tran_wf_threshold      = 1.0e-2_dp
+    call param_get_keyword('tran_wf_threshold',found,r_value=tran_wf_threshold)
+
     ! checks
     if (transport) then
        if ( (index(transport_mode,'bulk').eq.0) .and. (index(transport_mode,'lcr').eq.0) ) &
             call io_error('Error: transport_mode not recognised')
-       if ( tran_num_bb < 0 )    call io_error('Error: tran_num_bb < 0')
-       if ( tran_num_ll < 0 )    call io_error('Error: tran_num_ll < 0')
-       if ( tran_num_rr < 0 )    call io_error('Error: tran_num_rr < 0')
-       if ( tran_num_cc < 0 )    call io_error('Error: tran_num_cc < 0')
-       if ( tran_num_lc < 0 )    call io_error('Error: tran_num_lc < 0')
-       if ( tran_num_cr < 0 )    call io_error('Error: tran_num_cr < 0')
-       if ( tran_num_bandc < 0 ) call io_error('Error: tran_num_bandc < 0')
+       if ( tran_num_bb < 0 )          call io_error('Error: tran_num_bb < 0')
+       if ( tran_num_ll < 0 )          call io_error('Error: tran_num_ll < 0')
+       if ( tran_num_rr < 0 )          call io_error('Error: tran_num_rr < 0')
+       if ( tran_num_cc < 0 )          call io_error('Error: tran_num_cc < 0')
+       if ( tran_num_lc < 0 )          call io_error('Error: tran_num_lc < 0')
+       if ( tran_num_cr < 0 )          call io_error('Error: tran_num_cr < 0')
+       if ( tran_num_bandc < 0 )       call io_error('Error: tran_num_bandc < 0')
+       if ( tran_num_cell_ll < 0 )     call io_error('Error: tran_num_cell_ll < 0')
+       if ( tran_num_cell_rr < 0 )     call io_error('Error: tran_num_cell_rr < 0')
+       if ( tran_group_threshold < 0.0_dp ) call io_error('Error: tran_group_threshold < 0')
+       if ( tran_wf_threshold < 0.0_dp )    call io_error('Error: tran_wf_threshold < 0')
     endif
 
     if (transport .and. tran_read_ht) goto 302 

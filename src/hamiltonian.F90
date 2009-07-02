@@ -76,6 +76,7 @@ contains
     !
     if ( bands_plot .and. (index(bands_plot_mode,'cut').ne.0) ) use_translation=.true.
     if ( transport  .and. (index(transport_mode,'bulk').ne.0) ) use_translation=.true.
+    if ( transport  .and. (index(transport_mode,'lcr' ).ne.0) ) use_translation=.true.
     !
     ! Set up Wigner-Seitz vectors
     !
@@ -331,7 +332,7 @@ contains
 !!$         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
 !!$              &in internal_translate_wannier_centres')
 !!$      end if
-      
+
       allocate(r_home(3,num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_centres')
       allocate(r_frac(3,num_wann),stat=ierr)
