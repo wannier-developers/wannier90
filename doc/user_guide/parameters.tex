@@ -288,10 +288,14 @@ Keyword & Type & Description \\
 {\sc tran\_num\_cc } & I & Size of a conductor Hamiltonian \\
 {\sc tran\_num\_lc } & I & Number of columns in a left-lead\_conductor Hamiltonian \\
 {\sc tran\_num\_cr } & I & Number of rows in a conductor\_right-lead Hamiltonian \\
+{\sc tran\_num\_cell\_ll } & I & Number of unit cells in PL of left lead \\
+{\sc tran\_num\_cell\_rr } & I & Number of unit cells in PL of right lead \\
 {\sc tran\_num\_bandc } & I & Half-bandwidth+1 of a band-diagonal conductor Hamiltonian \\ 
 {\sc tran\_write\_ht } & L & Write the Hamiltonian for transport calculation \\ 
 {\sc tran\_read\_ht } & L & Read the Hamiltonian for transport calculation \\
 {\sc tran\_use\_same\_lead } & L & Left and right leads are the same \\
+{\sc tran\_group\_threshold } & R & Distance that determines the grouping of WFs \\
+{\sc tran\_wf\_threshold } & R & Threshold for WF integrals to be considered zero \\
 {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
 {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
 {\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
@@ -874,6 +878,7 @@ Th default value is \verb#false#.
 
 
 \section{Post-Processing}
+\label{sec:post-p}
 
  Capabilities:
 
@@ -1133,13 +1138,17 @@ quantum conductance and density of states are calculated
 for a system where semi-infinite, left and right leads
 are connected through a central conductor region. 
 In this case, the transport part will work independently from
-the disentanglement and wannierise procedure, and
+the disentanglement and wannierise procedure. 
+Details of the method is described in Ref. \cite{Nardelli}.
+
+If $\verb#tran_read_ht# = \verb#TRUE#$ then the
 Hamiltonian matrices must be provided by
 the five external files:
 {\tt seedname\_htL.dat, seedname\_htLC.dat, seedname\_htC.dat,
 seedname\_htCR.dat, seedname\_htR.dat}.
-
-Details of the method is described in Ref. \cite{Nardelli}.
+If $\verb#tran_read_ht# = \verb#FALSE#$ then the Hamiltonian
+matrices are found automatically provided the supercell adheres to 
+conditions outlined in Section~\ref{sec:2c2}.
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -1193,6 +1202,10 @@ The default value is 0.
 
 \subsection[tran\_num\_ll]{\tt integer :: tran\_num\_ll}
 Size of a left-lead Hamiltonian matrix. 
+If $\verb#transport_mode# = \verb#lcr#$ and 
+$\verb#tran_read_ht# = \verb#FALSE#$ then 
+\verb#tran_num_ll# is the number of Wannier functions
+in a principal layer.
 
 The default value is 0.
 
@@ -1216,6 +1229,19 @@ The default value is 0.
 \subsection[tran\_num\_cr]{\tt integer :: tran\_num\_cr}
 Number of rows in a conductor\_right-lead Hamiltonian matrix.
 Number of columns must be equal to \verb#tran_num_rr#.
+
+The default value is 0.
+
+\subsection[tran\_num\_cell\_ll]{\tt integer :: tran\_num\_cell\_ll}
+Number of unit cells in one principal layer of left lead. 
+Used if $\verb#transport_mode# = \verb#lcr#$ and 
+$\verb#tran_read_ht# = \verb#FALSE#$.
+
+The default value is 0. 
+ 
+\subsection[tran\_num\_cell\_rr]{\tt integer :: tran\_num\_cell\_rr}
+Number of unit cells in one principal layer of right lead. 
+Not used at present.
 
 The default value is 0.
 
@@ -1249,6 +1275,8 @@ If $\verb#tran_write_ht#=\verb#TRUE#$, then the Hamiltonian matrix
 formatted for the transport calculation will be read
 from a set of files described in the
 parameter \verb#transport_mode#. 
+Set $\verb#tran_write_ht#=\verb#FALSE#$ to perform automated 
+lcr calculations (see Section~\ref{sec:2c2}).
 
 The default value is {\tt FALSE}.
 
@@ -1259,6 +1287,21 @@ left and the right leads are the same. In this case,
 \verb#seedname_htR.dat# is not required.
 
 The default value is {\tt TRUE}.
+
+\subsection[tran\_group\_threshold]{\tt real(kind=dp) :: tran\_group\_threshold}
+
+Used to group and sort Wannier functions according to the positions of their centres.
+Wannier functions in a group are within \verb#tran_group_threshold#
+from one another in \verb#x,y# and \verb#z# directions. Units are \AA
+
+The default is 0.15
+
+\subsection[tran\_wf\_thresfold]{\tt real(kind=dp) :: tran\_wf\_thresfold}
+
+Parity integrals found during automated lcr calculations (see Section~\ref{sec:2c2})
+are considered zero if their value is below \verb#tran_wf_threshold#.
+
+The default value is 1.0E-4
 
 \subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
 
