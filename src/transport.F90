@@ -2311,13 +2311,13 @@ loop_n1: do n1 = -irvec_max, irvec_max
     enddo
 
 
-    write(stdout,*)' Calculating parities of MLWFs'
+    write(stdout,*)' Calculating parity integrals of MLWFs'
     write(stdout,*)' '
 
     !
     !Loop over wannier functions
     !
-    write(stdout,*)'WF       integral_counter       integral value'
+    if (iprint .ge. 4)  write(stdout,*)' WF   integral_counter   integral value'
     do n=1,num_wann
         !
         !Disentanglement step
@@ -2343,7 +2343,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !Normalise
         !
         uu(n)=uu(n)/(ngx*ngy*ngz)
-        if (iprint .ge. 4) write(stdout,*)n,'0',real(uu(n))
+        if (iprint .ge. 4) write(stdout,'(i4,a21,es15.6)')n,'        0             ',real(uu(n))
         !
         !Integral not significantly away from zero, move to higher orders
         !
@@ -2388,7 +2388,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
                             !Normalise
                             !
                             uu(n)=uu(n)/(ngx*ngy*ngz)
-                            if (iprint .ge. 4) write(stdout,*)n,integral_counter,real(uu(n))
+                            if (iprint .ge. 4) write(stdout,'(i4,a6,i3,a12,es15.6)')n,'      ',integral_counter,'            ',real(uu(n))
                             !
                             !Check if integral is sufficiently far from zero
                             !
