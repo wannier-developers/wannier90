@@ -737,3 +737,65 @@ can be different from \verb#tran_num_cc#.
     0.000000    0.000000    0.000000
 \end{verbatim}
 
+\section{{\tt seedname.unkg}}
+\label{sec:files_unkg}
+
+INPUT.
+Read if $\verb#transport_mode#=\verb#lcr#$
+and $\verb#tran_read_ht#=\verb#.FALSE.#$.
+The first line is the number of G-vectors at which the
+$\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ are subsequently
+printed. This number should always be 32 since 32 
+specific $\tilde{u}_{m\mathbf{k}}$ are required.
+The following lines contain the following in this order:
+The band index $m$, a counter on the number of G-vectors,
+the integer co-efficient of the G-vector components $a,b,c$
+(where $\mathbf{G}=a\mathbf{b}_1+b\mathbf{b}_2+c\mathbf{b}_3$),
+then the real and imaginary parts of the corresponding
+$\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ at the $\Gamma$-point. 
+We note that the ordering in which the G-vectors and 
+$\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ are printed is not 
+important, but the specific G-vectors are critical. The following 
+example displays for a single band, the complete set of 
+$\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ that are required.
+Note the G-vectors ($a,b,c$) needed.
+ 
+\begin{verbatim}
+      32
+    1    1    0    0    0   0.4023306   0.0000000
+    1    2    0    0    1  -0.0000325   0.0000000
+    1    3    0    1    0  -0.3043665   0.0000000
+    1    4    1    0    0  -0.3043665   0.0000000
+    1    5    2    0    0   0.1447143   0.0000000
+    1    6    1   -1    0   0.2345179   0.0000000
+    1    7    1    1    0   0.2345179   0.0000000
+    1    8    1    0   -1   0.0000246   0.0000000
+    1    9    1    0    1   0.0000246   0.0000000
+    1   10    0    2    0   0.1447143   0.0000000
+    1   11    0    1   -1   0.0000246   0.0000000
+    1   12    0    1    1   0.0000246   0.0000000
+    1   13    0    0    2   0.0000338   0.0000000
+    1   14    3    0    0  -0.0482918   0.0000000
+    1   15    2   -1    0  -0.1152414   0.0000000
+    1   16    2    1    0  -0.1152414   0.0000000
+    1   17    2    0   -1  -0.0000117   0.0000000
+    1   18    2    0    1  -0.0000117   0.0000000
+    1   19    1   -2    0  -0.1152414   0.0000000
+    1   20    1    2    0  -0.1152414   0.0000000
+    1   21    1   -1   -1  -0.0000190   0.0000000
+    1   22    1   -1    1  -0.0000190   0.0000000
+    1   23    1    1   -1  -0.0000190   0.0000000
+    1   24    1    1    1  -0.0000190   0.0000000
+    1   25    1    0   -2  -0.0000257   0.0000000
+    1   26    1    0    2  -0.0000257   0.0000000
+    1   27    0    3    0  -0.0482918   0.0000000
+    1   28    0    2   -1  -0.0000117   0.0000000
+    1   29    0    2    1  -0.0000117   0.0000000
+    1   30    0    1   -2  -0.0000257   0.0000000
+    1   31    0    1    2  -0.0000257   0.0000000
+    1   32    0    0    3   0.0000187   0.0000000
+    2    1    0    0    0  -0.0000461   0.0000000
+    .
+    .
+    .
+\end{verbatim}
