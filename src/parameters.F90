@@ -92,7 +92,6 @@ module w90_parameters
   integer,           public, save :: tran_num_cell_ll      
   integer,           public, save :: tran_num_cell_rr      
   real(kind=dp),     public, save :: tran_group_threshold  !used in sorting wannier centres for lcr conductance calculations
-  real(kind=dp),     public, save :: tran_wf_threshold     !threshold for WF parity integral
   real(kind=dp),     public, save :: translation_centre_frac(3)
   integer,           public, save :: num_shells    !no longer an input keyword
   integer, allocatable, public,save :: shell_list(:)
@@ -699,9 +698,6 @@ contains
     tran_group_threshold   = 0.15_dp
     call param_get_keyword('tran_group_threshold',found,r_value=tran_group_threshold)
 
-    tran_wf_threshold      = 1.0e-2_dp
-    call param_get_keyword('tran_wf_threshold',found,r_value=tran_wf_threshold)
-
     ! checks
     if (transport) then
        if ( (index(transport_mode,'bulk').eq.0) .and. (index(transport_mode,'lcr').eq.0) ) &
@@ -716,7 +712,6 @@ contains
        if ( tran_num_cell_ll < 0 )     call io_error('Error: tran_num_cell_ll < 0')
        if ( tran_num_cell_rr < 0 )     call io_error('Error: tran_num_cell_rr < 0')
        if ( tran_group_threshold < 0.0_dp ) call io_error('Error: tran_group_threshold < 0')
-       if ( tran_wf_threshold < 0.0_dp )    call io_error('Error: tran_wf_threshold < 0')
     endif
 
     if (transport .and. tran_read_ht) goto 302 
@@ -1611,7 +1606,7 @@ contains
     write(chk_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)               ! U_matrix
     write(chk_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts) ! M_matrix
     write(chk_unit) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
-
+    write(chk_unit) (wannier_spreads(i),i=1,num_wann)
     close(chk_unit)
 
     write(stdout,'(a/)') ' done'
@@ -1726,6 +1721,9 @@ contains
 
     ! wannier_centres
     read(chk_unit,err=127) ((wannier_centres(i,j),i=1,3),j=1,num_wann)
+    
+    ! wannier spreads
+    read(chk_unit,err=128) (wannier_spreads(i),i=1,num_wann)
 
     close(chk_unit)
 
@@ -1740,6 +1738,7 @@ contains
 125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
 126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
 127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in param_read_chkpt')
+128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in param_read_chkpt')
 
   end subroutine param_read_chkpt
 

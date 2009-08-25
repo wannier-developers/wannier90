@@ -50,8 +50,6 @@
 ! tran_num_cell_rr     = # of unit cells in a PL of right lead          !
 !                        (equal to tran_num_cell_ll for now)            !
 ! tran_group_threshold = distance defining the grouping of WFs          !
-! tran_wf_threshold    = threshold of integrals in parity subroutine    !
-!                        to be considered zero                          !
 !=======================================================================!
 
 module w90_transport
@@ -98,7 +96,9 @@ contains
 
     implicit none
 
-    integer,dimension(num_wann) :: tran_sorted_idx
+    real(kind=dp),allocatable,dimension(:,:)     :: signatures
+    integer                                      :: num_G
+    integer,dimension(num_wann)                  :: tran_sorted_idx
  
     if (timing_level>0) call io_stopwatch('tran: main',1) 
 
@@ -125,9 +125,12 @@ contains
        if (.not.tran_read_ht) then
           call hamiltonian_setup()
           call hamiltonian_get_hr()
-          call tran_lcr_sort(tran_sorted_idx)
-          call tran_hr_parity_shift(tran_sorted_idx)
-          call tran_lcr_build_ham(tran_sorted_idx) 
+          write(stdout,*)'------------------------- 2c2 Calculation Type: ------------------------------'
+          write(stdout,*)' '
+          call tran_find_integral_signatures(signatures,num_G)
+          call tran_lcr_2c2_sort(tran_sorted_idx,signatures,num_G)
+          call tran_parity_enforce(tran_sorted_idx,signatures)
+          call tran_lcr_2c2_build_ham(tran_sorted_idx) 
        endif 
        call tran_lcr()
     end if
@@ -1360,38 +1363,311 @@ loop_n1: do n1 = -irvec_max, irvec_max
  
   end subroutine tran_read_htXY
 
+!========================================
+ subroutine tran_find_integral_signatures(signatures,num_G)
+ !=========================================================================!
+ ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate      !    
+ ! Fourier components of each wannier function. Linear combinations of     !
+ ! these provide integral of different spatial dependence.                 !
+ ! The set of these integrals provide a signature for distinguishing the   !
+ ! type and 'parity' of each wannier function.                             !
+ !=========================================================================!
+     use w90_constants,          only : dp,cmplx_0,twopi,cmplx_i
+     use w90_io,                 only : io_error,stdout,seedname,io_file_unit,io_date,&
+                                        io_stopwatch
+
+     use w90_parameters,         only : num_wann,have_disentangled,num_bands,u_matrix,u_matrix_opt,&
+                                        real_lattice,iprint,timing_level
+
+     use w90_hamiltonian,        only : wannier_centres_translated
+
+     implicit none
+     integer,intent(out)                                    :: num_G
+     real(kind=dp),allocatable,dimension(:,:),intent(out)   :: signatures
+
+     complex(kind=dp),allocatable                           :: unkg(:,:),tran_u_matrix(:,:)
+     complex(kind=dp)                                       :: phase_factor,signature_basis(32)
+
+     real(kind=dp)                                          :: i_unkg,r_unkg,wf_frac(3),det_rl,inv_t_rl(3,3),&
+                                                               mag_signature_sq
+
+     character(len=11)                                      :: unkg_file
+
+     logical                                                :: have_file
+
+     integer,allocatable,dimension(:,:)                     :: g_abc
+     integer                                                :: i,j,ibnd,file_unit,ierr,p,p_max,n,m,ig,a,b,c,ig_idx(32)
+
+     if (timing_level>1) call io_stopwatch('tran: find_sigs_unkg_int',1)
+     !
+     file_unit=io_file_unit()
+     inquire(file=trim(seedname)//'.unkg',exist=have_file)
+     if(.not.have_file) call io_error('tran_hr_parity_unkg: file '//trim(seedname)//'.unkg not found')
+     open(file_unit,file=trim(seedname)//'.unkg',form='formatted',action='read')
+     !
+     !Read unkg file
+     !
+     unkg=cmplx_0
+     write(stdout,*)'    Reading '//trim(seedname)//'.unkg  file'
+     read(file_unit,*)num_G
+
+     allocate(signatures(20,num_bands),stat=ierr)
+     if (ierr/=0) call io_error('Error in allocating signatures in tran_find_sigs_unkg_int')
+     allocate(unkg(num_G,num_bands),stat=ierr )
+     if (ierr/=0) call io_error('Error in allocating unkg in tran_find_sigs_unkg_int')
+     allocate(g_abc(num_G,3),stat=ierr)
+     if (ierr/=0) call io_error('Error in allocating g_abc in tran_find_sigs_unkg_int')
+     if(have_disentangled) then
+        allocate(tran_u_matrix(num_bands,num_wann), stat=ierr )
+        if (ierr/=0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+     else
+        allocate(tran_u_matrix(num_wann,num_wann), stat=ierr )
+        if (ierr/=0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+     endif
+     !
+     do m=1,num_bands
+         do i=1,num_G
+            read(file_unit,*) ibnd,ig,a,b,c,r_unkg,i_unkg
+            if ( (ig.ne.i) .OR. (ibnd.ne.m) ) then
+                call io_error('tran_find_sigs_unkg_int: Incorrect bands or g vectors')
+            endif
+            unkg(i,m)=cmplx(r_unkg,i_unkg,kind=dp)
+            g_abc(i,:)=(/a,b,c/)
+         enddo
+     enddo
+     !
+     close(file_unit)
+     !
+     ! Computing inverse of transpose of real_lattice
+     !
+     det_rl=real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(2,3)*real_lattice(3,2)) &
+           -real_lattice(2,2)*(real_lattice(2,1)*real_lattice(3,3)-real_lattice(2,3)*real_lattice(3,1)) &
+           +real_lattice(3,3)*(real_lattice(2,1)*real_lattice(3,2)-real_lattice(2,2)*real_lattice(3,1))
+
+     inv_t_rl(1,1)=(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3))
+     inv_t_rl(1,2)=(real_lattice(2,1)*real_lattice(3,3)-real_lattice(3,1)*real_lattice(2,3))
+     inv_t_rl(1,3)=(real_lattice(2,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(2,2))
+
+     inv_t_rl(2,1)=(real_lattice(1,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(1,3))
+     inv_t_rl(2,2)=(real_lattice(1,1)*real_lattice(3,3)-real_lattice(3,1)*real_lattice(1,3))
+     inv_t_rl(2,3)=(real_lattice(1,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(1,2))
+
+     inv_t_rl(3,1)=(real_lattice(1,2)*real_lattice(2,3)-real_lattice(2,2)*real_lattice(1,3))
+     inv_t_rl(3,2)=(real_lattice(1,1)*real_lattice(2,3)-real_lattice(2,1)*real_lattice(1,3))
+     inv_t_rl(3,3)=(real_lattice(1,1)*real_lattice(2,2)-real_lattice(2,1)*real_lattice(1,2))
+
+     inv_t_rl=inv_t_rl/det_rl
+     !
+     !Loop over wannier functions to compute generalised U matrix
+     !
+     signatures=0.d0
+     tran_u_matrix=cmplx_0
+     do n=1,num_wann
+        !
+        !Disentanglement step
+        !
+        if(have_disentangled) then
+            do p=1,num_bands
+                do m=1,num_wann
+                   tran_u_matrix(p,n)=tran_u_matrix(p,n)+u_matrix(m,n,1)*u_matrix_opt(p,m,1)
+                enddo
+            enddo
+            p_max=num_bands
+        else
+            tran_u_matrix=u_matrix(:,:,1)
+            p_max=num_wann
+        endif
+    enddo
+
+    if (iprint .ge. 5 ) write(stdout,*)'Printing integral signatures for each wannier funciton:'
+    !
+    ! Loop over all wannier functions
+    !
+    do n=1,num_wann
+        !
+        ! Find fraction coordinate of wannier function in lattice vector basis
+        ! wf_frac(:)=(transpose(real_lattice))^(-1) * wannier_centres_translated(:,n)
+        !
+        wf_frac=0.d0
+        wf_frac=matmul(inv_t_rl,wannier_centres_translated(:,n))
+        !
+        ! Loop over all g vectors, find a,b,c's required
+        !
+        do ig=1,num_G
+            ! 0th Order
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 0))  ig_idx(1)=ig   ! 1
+            ! 1st Order
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 0))  ig_idx(2)=ig   ! x
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq. 0))  ig_idx(3)=ig   ! y
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 1))  ig_idx(4)=ig   ! z
+            ! 2nd Order
+            if ((g_abc(ig,1) .eq. 2) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 0))  ig_idx(5)=ig   ! x^2
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq. 0))  ig_idx(6)=ig   ! xy
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq.-1) .and. (g_abc(ig,3) .eq. 0))  ig_idx(7)=ig   ! xy
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 1))  ig_idx(8)=ig   ! xz
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq.-1))  ig_idx(9)=ig   ! xz
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 2) .and. (g_abc(ig,3) .eq. 0))  ig_idx(10)=ig  ! y^2
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq. 1))  ig_idx(11)=ig  ! yz
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq.-1))  ig_idx(12)=ig  ! yz
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 2))  ig_idx(13)=ig  ! z^2
+            ! 3rd Order
+            if ((g_abc(ig,1) .eq. 3) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 0))  ig_idx(14)=ig  ! x^3
+            if ((g_abc(ig,1) .eq. 2) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq. 0))  ig_idx(15)=ig  ! x^2y
+            if ((g_abc(ig,1) .eq. 2) .and. (g_abc(ig,2) .eq.-1) .and. (g_abc(ig,3) .eq. 0))  ig_idx(16)=ig  ! x^2y
+            if ((g_abc(ig,1) .eq. 2) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 1))  ig_idx(17)=ig  ! x^2z
+            if ((g_abc(ig,1) .eq. 2) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq.-1))  ig_idx(18)=ig  ! x^2z
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 2) .and. (g_abc(ig,3) .eq. 0))  ig_idx(19)=ig  ! xy^2
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq.-2) .and. (g_abc(ig,3) .eq. 0))  ig_idx(20)=ig  ! xy^2
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq. 1))  ig_idx(21)=ig  ! xyz
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq.-1))  ig_idx(22)=ig  ! xyz 
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq.-1) .and. (g_abc(ig,3) .eq. 1))  ig_idx(23)=ig  ! xyz
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq.-1) .and. (g_abc(ig,3) .eq.-1))  ig_idx(24)=ig  ! xyz
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 2))  ig_idx(25)=ig  ! xz^2
+            if ((g_abc(ig,1) .eq. 1) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq.-2))  ig_idx(26)=ig  ! xz^2
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 3) .and. (g_abc(ig,3) .eq. 0))  ig_idx(27)=ig  ! y^3
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 2) .and. (g_abc(ig,3) .eq. 1))  ig_idx(28)=ig  ! y^2z
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 2) .and. (g_abc(ig,3) .eq.-1))  ig_idx(29)=ig  ! y^2z
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq. 2))  ig_idx(30)=ig  ! yz^2
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 1) .and. (g_abc(ig,3) .eq.-2))  ig_idx(31)=ig  ! yz^2
+            if ((g_abc(ig,1) .eq. 0) .and. (g_abc(ig,2) .eq. 0) .and. (g_abc(ig,3) .eq. 3))  ig_idx(32)=ig  ! z^3
+        enddo
+        !
+        ! Loop over the 32 required g-vectors
+        !
+        signature_basis=cmplx_0
+        do ig=1,32
+            phase_factor=cmplx_0
+            !
+            ! Compute the phase factor exp(-i*G*x_c)
+            !
+            phase_factor=exp(-twopi*cmplx_i*(g_abc(ig_idx(ig),1)*wf_frac(1)&
+                                            +g_abc(ig_idx(ig),2)*wf_frac(2)&
+                                            +g_abc(ig_idx(ig),3)*wf_frac(3)))
+            !
+            ! Compute integrals that form the basis of the spatial integrals that form the signature
+            do p=1,p_max
+                signature_basis(ig)=signature_basis(ig)+tran_u_matrix(p,n)*conjg(unkg(ig_idx(ig),p))
+            enddo
+            signature_basis(ig)=signature_basis(ig)*phase_factor
+        enddo
+        !
+        ! Definitions of the signature integrals
+        !
+        ! 0th Order
+        signatures(1,n)=real(signature_basis(1))                                                                  ! 1
+        ! 1st Order
+        signatures(2,n)=aimag(signature_basis(2))                                                                 ! x
+        signatures(3,n)=aimag(signature_basis(3))                                                                 ! y
+        signatures(4,n)=aimag(signature_basis(4))                                                                 ! z
+        ! 2nd Orde r
+        signatures(5,n) =real(signature_basis(1) -signature_basis(5))/2                                           ! x^2
+        signatures(6,n) =real(signature_basis(7) -signature_basis(6))/2                                           ! xy
+        signatures(7,n) =real(signature_basis(9) -signature_basis(8))/2                                           ! xz
+        signatures(8,n) =real(signature_basis(1) -signature_basis(10))/2                                          ! y^2
+        signatures(9,n) =real(signature_basis(12)-signature_basis(11))/2                                          ! yz
+        signatures(10,n)=real(signature_basis(1) -signature_basis(13))/2                                          ! z^2
+        ! 3rd Order
+        signatures(11,n)=aimag(3*signature_basis(2)-signature_basis(14))/4                                        ! x^3
+        signatures(12,n)=aimag(2*signature_basis(3)+signature_basis(16)-signature_basis(15))/4                    ! x^2y
+        signatures(13,n)=aimag(2*signature_basis(4)+signature_basis(18)-signature_basis(17))/4                    ! x^2z
+        signatures(14,n)=aimag(2*signature_basis(2)-signature_basis(20)-signature_basis(19))/4                    ! xy^2
+        signatures(15,n)=aimag(signature_basis(23)+signature_basis(22)-signature_basis(21)-signature_basis(24))/4 ! xyz
+        signatures(16,n)=aimag(2*signature_basis(2)-signature_basis(26)-signature_basis(25))/4                    ! xz^2
+        signatures(17,n)=aimag(3*signature_basis(3)-signature_basis(27))/4                                        ! y^3
+        signatures(18,n)=aimag(2*signature_basis(4)+signature_basis(29)-signature_basis(28))/4                    ! y^2z
+        signatures(19,n)=aimag(2*signature_basis(3)-signature_basis(31)-signature_basis(30))/4                    ! yz^2
+        signatures(20,n)=aimag(3*signature_basis(4)-signature_basis(32))/4                                        ! z^3
+
+        if (iprint .ge. 5 ) then
+            write(stdout,*)' '
+            write(stdout,*)' Wannier function: ',n
+            do ig=1,20
+                write(stdout,*)ig-1,signatures(ig,n)
+            enddo
+        endif
+        !
+        !Normalise signature of each wannier function to a unit vector
+        !
+        mag_signature_sq=0.d0
+        do ig=1,20
+           mag_signature_sq=mag_signature_sq+abs(signatures(ig,n))**2
+        enddo
+        signatures(:,n)=signatures(:,n)/dsqrt(mag_signature_sq)
+        !
+     enddo ! Wannier Function loop
+
+     !
+     ! Set num_G = 20 to ensure later subroutines work correctly
+     !
+     num_G=20
+
+     deallocate(unkg,stat=ierr )
+     if (ierr/=0) call io_error('Error deallocating unkg in tran_find_signatures')
+     deallocate(tran_u_matrix,stat=ierr )
+     if (ierr/=0) call io_error('Error deallocating tran_u_matrix in tran_find_signatures')
+     deallocate(g_abc,stat=ierr )
+     if (ierr/=0) call io_error('Error deallocating g_abc in tran_find_signatures')
+
+     if (timing_level>1) call io_stopwatch('tran: find_sigs_unkg_int',2)
+
+     return
+
+
+ end subroutine tran_find_integral_signatures
+
+
   !========================================!
-  subroutine tran_lcr_sort(tran_sorted_idx)
-    !========================================!
+  subroutine tran_lcr_2c2_sort(tran_sorted_idx,signatures,num_G)
+    !=======================================================!
+    ! This is the main subroutine controling the sorting    !
+    ! for the 2c2 geometry. We first sort in the conduction !
+    ! direction, group, sort in 2nd direction, group and    !
+    ! sort in 3rd direction. Rigourous checks are performed !
+    ! to ensure group and subgroup structure is consistent  !
+    ! between principal layers (PLs), and unit cells. Once  !
+    ! checks are passed we consider the possibility of      !
+    ! multiple wannier functions are of similar centre, and !
+    ! sort those                                            !
+    !=======================================================!
 
     use w90_constants,          only : dp
     use w90_io,                 only : io_error,stdout,io_stopwatch
-    use w90_parameters,         only : one_dim_dir,tran_num_ll,tran_num_rr,num_wann,&
-                                       real_lattice,tran_group_threshold,iprint,timing_level
+    use w90_parameters,         only : one_dim_dir,tran_num_ll,tran_num_rr,num_wann,tran_num_cell_ll,&
+                                       real_lattice,tran_group_threshold,iprint,timing_level,lenconfac,&
+                                       wannier_spreads
     use w90_hamiltonian,        only : wannier_centres_translated
 
     implicit none
 
     integer,intent(out),dimension(num_wann)           :: tran_sorted_idx
+    integer,intent(in)                                :: num_G
+    real(dp),intent(in),dimension(:,:)                :: signatures
  
     real(dp),dimension(2,num_wann)                    :: centres_non_sorted,centres_initial_sorted
     real(dp),dimension(2,tran_num_ll)                 :: PL1,PL2,PL3,PL4,PL
     real(dp),dimension(2,num_wann-(4*tran_num_ll))    :: central_region
     real(dp)                                          :: reference_position,cell_length,distance
 
-    integer                                           :: i,j,k,PL_selector,max_i,iterator
-    integer,allocatable,dimension(:)                  :: PL_groups,PL1_groups,PL2_groups,PL3_groups,PL4_groups,central_region_groups
+    integer                                           :: i,j,k,l,PL_selector,max_i,iterator,sort_iterator,sort_iterator2,ierr,&
+                                                         temp_coord_2,temp_coord_3,n,num_wann_cell_ll
     integer,dimension(3)                              :: coord
+    integer,allocatable,dimension(:)                  :: PL_groups,PL1_groups,PL2_groups,PL3_groups,PL4_groups,central_region_groups
+    integer,allocatable,dimension(:,:)                :: PL_subgroup_info,PL1_subgroup_info,PL2_subgroup_info,PL3_subgroup_info,&
+                                                         PL4_subgroup_info,central_subgroup_info,temp_subgroup
 
     character(30)                                     :: fmt_1
+    
+    
+    num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
 
-    if (timing_level>1) call io_stopwatch('tran: lcr_sort',1)
+    if (timing_level>1) call io_stopwatch('tran: lcr_2c2_sort',1)
 
+    sort_iterator=0
     !
-    !Check Plotting regime has been entered and translated centres have been found
+    !Check translated centres have been found
     !
     if (size(wannier_centres_translated) .eq. 0) then
-        call io_error('Plotting regime must find translated centres in order to perform lcr transport')
+        call io_error('Translated centres not known : required perform lcr transport, try restart=plot')
     endif
 
     !read one_dim_dir and creates an array (coord) that correspond to the 
@@ -1426,9 +1702,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
         call io_error('Principle layers are too big.')
     endif
 
-    write(stdout,*)'------------------------- 2c2 Calculation Type: ------------------------------'
-    write(stdout,*)' '
-
 100 continue
     !
     !Extract a 2d array of the wannier_indices and their coord(1) from wannier_centers_translated
@@ -1450,11 +1723,20 @@ loop_n1: do n1 = -irvec_max, irvec_max
     PL2=centres_initial_sorted(:,tran_num_ll+1:2*tran_num_ll)
     PL3=centres_initial_sorted(:,num_wann-(2*tran_num_ll-1):num_wann-(tran_num_ll))
     PL4=centres_initial_sorted(:,num_wann-(tran_num_ll-1):)
-
-    if (iprint .ge. 4) then
-        write(stdout,*)' Group Breakdown of each principal layer'
+    !
+    if (sort_iterator .eq. 1) then
+       temp_coord_2 = coord(2)
+       temp_coord_3 = coord(3)
+       coord(2) = temp_coord_3
+       coord(3) = temp_coord_2
     endif
-
+    !
+    if (iprint .ge. 4) then
+       write(stdout,*)' Group Breakdown of each principal layer'
+    endif
+    !
+    !Loop over principal layers
+    !
     do i=1,4 
         !
         !Creating a variable PL_selector which choose the appropriate PL
@@ -1485,48 +1767,67 @@ loop_n1: do n1 = -irvec_max, irvec_max
             write(stdout,fmt_1)' PL',i,' ',size(PL_groups),' (',(PL_groups(j),j=1,size(PL_groups)),')'
         endif
         !
-        !Returns the sorted PL
+        !Returns the sorted PL and informations on this PL
         !
-        call master_sort_and_group(PL,PL_groups,coord,tran_num_ll) 
-        
+        allocate(PL_subgroup_info(size(PL_groups),maxval(PL_groups)),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort')
+        call master_sort_and_group(PL,PL_groups,coord,tran_num_ll,PL_subgroup_info) 
+
         select case(PL_selector)
         case(1)
+            allocate(PL1_groups(size(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL1_groups in tran_lcr_2c2_sort')
+            allocate(PL1_subgroup_info(size(PL_groups),maxval(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort')
+            !
             PL1=PL
-            allocate(PL1_groups(size(PL_groups)))
             PL1_groups=PL_groups
+            PL1_subgroup_info=PL_subgroup_info
+            !
+            deallocate(PL_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
         case(2)
+            allocate(PL2_groups(size(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL2_groups in tran_lcr_2c2_sort')
+            allocate(PL2_subgroup_info(size(PL_groups),maxval(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort')
+            !
             PL2=PL
-            allocate(PL2_groups(size(PL_groups)))
             PL2_groups=PL_groups
+            PL2_subgroup_info=PL_subgroup_info
+            !
+            deallocate(PL_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
         case(3)
+            allocate(PL3_groups(size(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL3_groups in tran_lcr_2c2_sort')
+            allocate(PL3_subgroup_info(size(PL_groups),maxval(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort')
+            !
             PL3=PL
-            allocate(PL3_groups(size(PL_groups)))
             PL3_groups=PL_groups
+            PL3_subgroup_info=PL_subgroup_info
+            !
+            deallocate(PL_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
         case(4)
+            allocate(PL4_groups(size(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL4_groups in tran_lcr_2c2_sort')
+            allocate(PL4_subgroup_info(size(PL_groups),maxval(PL_groups)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort')
+            !
             PL4=PL
-            allocate(PL4_groups(size(PL_groups)))
             PL4_groups=PL_groups
+            PL4_subgroup_info=PL_subgroup_info
+            !
+            deallocate(PL_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
         endselect  
 
-        deallocate(PL_groups)        
+        deallocate(PL_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL_groups in tran_lcr_2c2_sort') 
+    enddo ! Principal layer loop
 
-    enddo
-    !
-    !Checks
-    !
-    if ((size(PL1_groups) .ne. size(PL2_groups)) .or.&
-        (size(PL2_groups) .ne. size(PL3_groups)) .or.&
-        (size(PL3_groups) .ne. size(PL4_groups))) then 
-        call io_error('Inconsistent number of groups among principal layers')
-    endif
-
-    do i=1,size(PL1_groups)
-        if ((PL1_groups(i) .ne. PL2_groups(i)) .or.&
-            (PL2_groups(i) .ne. PL3_groups(i)) .or.&
-            (PL3_groups(i) .ne. PL4_groups(i))) then 
-            call io_error('Inconsitent number of wannier function among similar groups within principal layers')
-        endif
-    enddo
     !
     !Grouping and sorting of central conductor region
     !
@@ -1550,8 +1851,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Returns sorted central group region
     !
-    call master_sort_and_group(central_region,central_region_groups,coord,num_wann-(4*tran_num_ll))
-
+    allocate(central_subgroup_info(size(central_region_groups),maxval(central_region_groups)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort')
+    call master_sort_and_group(central_region,central_region_groups,coord,num_wann-(4*tran_num_ll),central_subgroup_info)
+    deallocate(central_subgroup_info,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort')
+    write(stdout,*)' '
     !
     !Build the sorted index array
     !
@@ -1561,55 +1866,206 @@ loop_n1: do n1 = -irvec_max, irvec_max
     tran_sorted_idx(2*tran_num_ll+1:num_wann-(2*tran_num_ll))           =central_region(1,:)
     tran_sorted_idx(num_wann-(2*tran_num_ll-1):num_wann-(tran_num_ll))  =PL3(1,:)
     tran_sorted_idx(num_wann-(tran_num_ll-1):)                          =PL4(1,:)
+
+    sort_iterator=sort_iterator+1
+    !
+    !Checks:
+    !
+    if ((size(PL1_groups) .ne. size(PL2_groups)) .or.&
+        (size(PL2_groups) .ne. size(PL3_groups)) .or.&
+        (size(PL3_groups) .ne. size(PL4_groups))) then
+        if (sort_iterator .ge. 2) call io_error ('Sorting techniques exhausted: Inconsistent number of groups among principal layers')
+        write(stdout,*) 'Inconsistent number of groups among principal layers: restarting sorting...'
+        deallocate(PL1_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        deallocate(PL2_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        deallocate(PL3_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        deallocate(PL4_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        deallocate(PL1_subgroup_info)
+        if (ierr/=0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        deallocate(PL2_subgroup_info,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        deallocate(PL3_subgroup_info,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        deallocate(PL4_subgroup_info,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        goto 100
+    endif
+    !
+    do i=1,size(PL1_groups)
+        if ((PL1_groups(i) .ne. PL2_groups(i)) .or.&
+            (PL2_groups(i) .ne. PL3_groups(i)) .or.&
+            (PL3_groups(i) .ne. PL4_groups(i))) then
+            if (sort_iterator .ge. 2) call io_error&
+                ('Sorting techniques exhausted: Inconsitent number of wannier function among similar groups within principal layers')
+            write(stdout,*) 'Inconsitent number of wannier function among similar groups within principal layers: restarting sorting...'
+            deallocate(PL1_groups,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+            deallocate(PL2_groups,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+            deallocate(PL3_groups,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+            deallocate(PL4_groups,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+            deallocate(PL1_subgroup_info)
+            if (ierr/=0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+            deallocate(PL2_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+            deallocate(PL3_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+            deallocate(PL4_subgroup_info,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+            goto 100
+        endif
+    enddo
     !
     !Now we check that the leftmost group and the rightmost group aren't
     !supposed to be the same group
     !
     reference_position=wannier_centres_translated(coord(1),tran_sorted_idx(1))
     cell_length=real_lattice(coord(1),coord(1))
-    iterator=1
+    sort_iterator2=1
     do i=1,tran_num_ll
         distance=abs(abs(reference_position-wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-i+1)))-cell_length)
         if (distance .lt. tran_group_threshold) then
             wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-i+1))= &
             wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-i+1))-cell_length
-            iterator=iterator+1
+            sort_iterator2=sort_iterator2+1
         endif
     enddo
-
-    if (iterator .gt. 1) then
+    !
+    if (sort_iterator2 .gt. 1) then
         if (iprint .ge. 4) then
-            write(stdout,*)' Grouping inconsistency: Restarting sorting'
+            write(stdout,*)' Grouping inconsistency between first and last unit cells: restarting sorting...'
             write(stdout,*)' '
         endif
-        deallocate(PL1_groups)
-        deallocate(PL2_groups)
-        deallocate(PL3_groups)
-        deallocate(PL4_groups)
+        sort_iterator=sort_iterator-1
+        deallocate(PL1_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        deallocate(PL2_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        deallocate(PL3_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        deallocate(PL4_groups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        deallocate(PL1_subgroup_info)
+        if (ierr/=0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        deallocate(PL2_subgroup_info,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        deallocate(PL3_subgroup_info,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        deallocate(PL4_subgroup_info,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
         goto 100
     endif
+    !
+    ! if we reach this point, we don't have any left/right problems anymore. So we now
+    ! check for inconsistencies in subgroups
+    !
+    allocate(temp_subgroup(size(PL1_subgroup_info,1),size(PL1_subgroup_info,2)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating tmp_subgroup in tran_lcr_2c2_sort')
+    do i=2,4
+       select case(i)
+          case(2)
+             temp_subgroup = PL1_subgroup_info - PL2_subgroup_info
+          case(3)
+             temp_subgroup = PL1_subgroup_info - PL3_subgroup_info
+          case(4)
+             temp_subgroup = PL1_subgroup_info - PL4_subgroup_info
+       end select
+       do j=1,size(temp_subgroup,1)
+          do k=1,size(temp_subgroup,2)
+             if (temp_subgroup(j,k) .ne. 0) then
+                if (sort_iterator .ge. 2) call io_error&
+                   ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
+                write(stdout,*) 'Inconsitent subgroup structure among principal layers: restarting sorting...'
+                deallocate(temp_subgroup,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating tmp_subgroup in tran_lcr_2c2_sort')
+                deallocate(PL1_groups,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+                deallocate(PL2_groups,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+                deallocate(PL3_groups,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+                deallocate(PL4_groups,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+                deallocate(PL1_subgroup_info)
+                if (ierr/=0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+                deallocate(PL2_subgroup_info,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+                deallocate(PL3_subgroup_info,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+                deallocate(PL4_subgroup_info,stat=ierr)
+                if (ierr/=0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+                goto 100
+             endif
+          enddo
+       enddo
+    enddo
+    !
+    ! At this point, every check has been cleared, and we need to use
+    ! the parity signatures of the WFs for the possibility of equal centres
+    !
+    call check_and_sort_similar_centres(tran_sorted_idx,coord,signatures,num_G)
 
     write(stdout,*)' '
     write(stdout,*)'------------------------- Sorted Wannier Centres -----------------------------'
-    do i=1,num_wann
-        write(stdout,FMT='(A12,I4,3F12.6)')' WF centre  ',tran_sorted_idx(i),wannier_centres_translated(1,tran_sorted_idx(i)), &
-                                                          wannier_centres_translated(2,tran_sorted_idx(i)), &
-                                                          wannier_centres_translated(3,tran_sorted_idx(i))
+    write(stdout,*)'Sorted index   Unsorted index           x           y           z     Spread  '
+    write(stdout,*)'==================================PL1========================================='
+    n=0
+    do k=1,4
+       if (k .eq. 2) write(stdout,*)'==================================PL2========================================='
+       if (k .eq. 3) then
+           write(stdout,*)'===========================Central Region==================================='
+           do i=1,num_wann-4*tran_num_ll
+               n=n+1
+               write(stdout,FMT='(2x,i6,10x,i6,6x,4F12.6)') n,tran_sorted_idx(n), &
+                                                          wannier_centres_translated(1,tran_sorted_idx(n)), &
+                                                          wannier_centres_translated(2,tran_sorted_idx(n)), &
+                                                          wannier_centres_translated(3,tran_sorted_idx(n)), &
+                                                          wannier_spreads(tran_sorted_idx(n))*lenconfac**2
+           enddo
+           write(stdout,*)'==================================PL3========================================='
+       endif
+       if (k .eq. 4) write(stdout,*)'==================================PL4========================================='
+       do i=1,tran_num_cell_ll
+          do j=1,num_wann_cell_ll
+             n=n+1
+             write(stdout,FMT='(2x,i6,10x,i6,6x,4F12.6)') n,tran_sorted_idx(n), &
+                                                          wannier_centres_translated(1,tran_sorted_idx(n)), &
+                                                          wannier_centres_translated(2,tran_sorted_idx(n)), &
+                                                          wannier_centres_translated(3,tran_sorted_idx(n)), &
+                                                          wannier_spreads(tran_sorted_idx(n))*lenconfac**2
+          enddo
+          if (i .ne. tran_num_cell_ll) write(stdout,*)'------------------------------------------------------------------------------'
+       enddo         
     enddo
-    write(stdout,*)'------------------------------------------------------------------------------'
+ 
+    write(stdout,*)'=============================================================================='
     write(stdout,*)' '
 
-    if (timing_level>1) call io_stopwatch('tran: lcr_sort',2)
+    call tran_write_xyz(tran_sorted_idx)
+
+    if (timing_level>1) call io_stopwatch('tran: lcr_2c2_sort',2)
 
     return
 
-  end subroutine tran_lcr_sort
+  end subroutine tran_lcr_2c2_sort
 
 
   !========================================!
-  subroutine master_sort_and_group(Array,Array_groups,coord,Array_size)
-    !========================================!
-
+  subroutine master_sort_and_group(Array,Array_groups,coord,Array_size,subgroup_info)
+    !=============================================================!
+    ! General sorting and grouping subroutine which takes Array,  !
+    ! an ordered in conduction direction array of wannier function!  
+    ! indexes and positions, and returns the ordered (and grouped)!
+    ! indexes and positions after considering the other two       !
+    ! directions. Sub group info is also return for later checks. !
+    !=============================================================!
+ 
     use w90_constants,          only : dp
     use w90_io,                 only : io_error,stdout,io_stopwatch
     use w90_parameters,         only : one_dim_dir,tran_num_ll,iprint,timing_level
@@ -1621,9 +2077,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
     integer,intent(in),dimension(3)                 :: coord
     integer,intent(in)                              :: Array_size 
 
+    integer,intent(out),allocatable,dimension(:,:)  :: subgroup_info
+
     real(dp),intent(inout),dimension(2,Array_size)  :: Array
 
-    integer                                         :: i,j,k,Array_num_groups,increment, &
+    integer                                         :: i,j,k,Array_num_groups,increment,ierr,&
                                                        subgroup_increment,group_num_subgroups
     integer,allocatable,dimension(:)                :: group_subgroups
     
@@ -1631,11 +2089,16 @@ loop_n1: do n1 = -irvec_max, irvec_max
                                                        subgroup_array,sorted_subgroup_array
     character(30)                                   :: fmt_2
 
-    if (timing_level>2) call io_stopwatch('tran: lcr_sort: master_sort',1)
+    if (timing_level>2) call io_stopwatch('tran: lcr_2c2_sort: master_sort',1)
+
+    allocate(subgroup_info(size(Array_groups),maxval(Array_groups)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating subgroup_info in master_sort_and_group')
+    subgroup_info=0
     !
     !Number of groups inside the principal layer
     !
-    Array_num_groups=size(Array_groups)                  
+    Array_num_groups=size(Array_groups)
+    
     !
     !Convenient variable which will be amended later. Used to appropriately extract the group array from the Array
     !
@@ -1644,8 +2107,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !Loop over groups inside Array
     !
     do j=1,Array_num_groups
-        allocate(group_array(2,Array_groups(j)))
-        allocate(sorted_group_array(2,Array_groups(j)))
+        allocate(group_array(2,Array_groups(j)),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating group_array in master_sort_and_group')
+        allocate(sorted_group_array(2,Array_groups(j)),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating sorted_group_array in master_sort_and_group')
         !
         !Extract the group from the Array
         !
@@ -1672,6 +2137,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
             write(stdout,fmt_2)' Group ',j,' ',group_num_subgroups,' (',(group_subgroups(i),i=1,group_num_subgroups),')'
         endif
         !
+        ! filling up subgroup_info
+        !
+        do k = 1,group_num_subgroups
+           subgroup_info(j,k)=group_subgroups(k)
+        enddo
+        !
         !Convenient variable which will be amended later. Used to appropriately extract the subgroup array from the group_array
         !
         subgroup_increment=1
@@ -1679,8 +2150,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !Loop over subgroups inside group
         !
         do k=1,group_num_subgroups
-            allocate(subgroup_array(2,group_subgroups(k)))
-            allocate(sorted_subgroup_array(2,group_subgroups(k)))
+            allocate(subgroup_array(2,group_subgroups(k)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating subgroup_array in master_sort_and_group')
+            allocate(sorted_subgroup_array(2,group_subgroups(k)),stat=ierr)
+            if (ierr/=0) call io_error('Error in allocating sorted_subgroup_array in master_sort_and_group')
             !
             !Extract the subgroup from the group
             !
@@ -1701,8 +2174,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
             !Update the subgroup_increment
             !
             subgroup_increment=subgroup_increment+group_subgroups(k)
-            deallocate(subgroup_array)
-            deallocate(sorted_subgroup_array)
+            deallocate(subgroup_array,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating subgroup_array in master_sort_and_group')
+            deallocate(sorted_subgroup_array,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating sorted_subgroup_array in master_sort_and_group')
         enddo
         !
         !Update Array with the sorted group array
@@ -1712,12 +2187,15 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !Update the group increment
         !
         increment=increment+Array_groups(j)
-        deallocate(group_array)
-        deallocate(sorted_group_array)
-        deallocate(group_subgroups)
+        deallocate(group_array,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating group_array in master_sort_and_group')
+        deallocate(sorted_group_array,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating sorted_group_array in master_sort_and_group')
+        deallocate(group_subgroups,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating group_subgroups in master_sort_and_group')
     enddo
             
-    if (timing_level>2) call io_stopwatch('tran: lcr_sort: master_sort',2)
+    if (timing_level>2) call io_stopwatch('tran: lcr_2c2_sort: master_sort',2)
 
     return
 
@@ -1783,13 +2261,15 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     integer,allocatable,dimension(:)             :: dummy_array
     logical,allocatable,dimension(:)             :: logic
-    integer                                      :: array_idx,i,j,group_number,array_size
+    integer                                      :: array_idx,i,j,group_number,array_size,ierr
 
 
     array_size=size(array,2)
 
-    allocate(dummy_array(array_size))
-    allocate(logic(array_size))
+    allocate(dummy_array(array_size),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating dummy_array in group')
+    allocate(logic(array_size),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating logic in group')
     !
     !Initialise dummy array
     !
@@ -1864,19 +2344,414 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Copy elements of dummy_array to array_groups
     !
-    allocate(array_groups(array_idx))
+    allocate(array_groups(array_idx),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating array_groups in group')
     array_groups=dummy_array(:array_idx)
 
-    deallocate(dummy_array)
-    deallocate(logic)
+    deallocate(dummy_array,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating dummy_array in group')
+    deallocate(logic,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating logic in group')
 
     return
 
-    endsubroutine group
+    end subroutine group
+
+
+ !=========================================================
+ subroutine check_and_sort_similar_centres(tran_sorted_idx,coord,signatures,num_G)
+    !=======================================================!
+    ! Here, we consider the possiblity of wannier functions !
+    ! with similar centres, such as a set of d-orbitals     !
+    ! centred on an atom. We use tran_group_threshold to    !
+    ! identify them, if they exist, then use the signatures !
+    ! to dishinguish and sort then consistently from unit   !
+    ! cell to unit cell.                                    !
+    !                                                       !
+    ! MS: For 2two-shot and beyond, some parameters,        !
+    ! eg, first_group_element will need changing to consider!
+    ! the geometry of the new systems.                      !
+    !=======================================================!
+
+    use w90_constants,          only : dp
+    use w90_io,                 only : stdout,io_stopwatch,io_error
+    use w90_parameters,         only : tran_num_ll,num_wann,tran_num_cell_ll,iprint,timing_level,&
+                                       tran_group_threshold
+    use w90_hamiltonian,        only : wannier_centres_translated
+
+    implicit none
+
+    integer,intent(inout),dimension(num_wann)         :: tran_sorted_idx
+    integer,intent(in),dimension(3)                   :: coord
+    integer,intent(in)                                :: num_G
+    real(dp),intent(in),dimension(:,:)                :: signatures
+ 
+    integer                                           :: i,j,k,l,ierr,group_iterator,coord_iterator,num_wf_iterator,&
+                                                         num_wann_cell_ll,iterator,max_position(1),p
+
+    integer,allocatable,dimension(:)                  :: idx_similar_wf,group_verifier,sorted_idx
+    real(dp),allocatable,dimension(:)                 :: dot_p
+    integer,allocatable,dimension(:,:)                :: tmp_wf_verifier,wf_verifier,first_group_element,&
+                                                         ref_similar_centres,unsorted_similar_centres
+    integer,allocatable,dimension(:,:,:)              :: wf_similar_centres
+
+    logical,allocatable,dimension(:)                  :: has_similar_centres   
+
+    if (timing_level>2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres',1)
+
+    num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
+    
+    allocate(wf_similar_centres(tran_num_cell_ll*4,num_wann_cell_ll,num_wann_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating wf_similar_centre in check_and_sort_similar_centres')
+    allocate(idx_similar_wf(num_wann_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating idx_similar_wf in check_and_sort_similar_centres')
+    allocate(has_similar_centres(num_wann_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating has_similar_centres in check_and_sort_similar_centres')
+    allocate(tmp_wf_verifier(4*tran_num_cell_ll,num_wann_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating tmp_wf_verifier in check_and_sort_similar_centres')
+    allocate(group_verifier(4*tran_num_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating group_verifier in check_and_sort_similar_centres')
+    allocate(first_group_element(4*tran_num_cell_ll,num_wann_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating first_group_element in check_and_sort_similar_centres')
+    
+    !
+    ! First find WFs with similar centres: store in wf_similar_centres(cell#,group#,WF#)
+    !
+    group_verifier=0
+    tmp_wf_verifier=0
+    !
+    ! Loop over unit cells in PL1,PL2,PL3 and PL4
+    !
+    do i=1,4*tran_num_cell_ll
+       group_iterator=0
+       has_similar_centres=.false.
+       !
+       ! Loops over wannier functions in present unit cell
+       !
+       do j=1,num_wann_cell_ll
+          num_wf_iterator=0
+          !
+          ! 2nd Loop over wannier functions in the present unit cell
+          !
+          do k=1,num_wann_cell_ll
+             if ((.not. has_similar_centres(k)) .and. (j .ne. k)) then
+                coord_iterator=0
+                !
+                ! Loop over x,y,z to find similar centres
+                !
+                do l=1,3
+                   if (i .le. 2*tran_num_cell_ll) then
+                       if (abs(wannier_centres_translated(coord(l),tran_sorted_idx(j+(i-1)*num_wann_cell_ll)) - &
+                               wannier_centres_translated(coord(l),tran_sorted_idx(k+(i-1)*num_wann_cell_ll)))  &
+                               .le. tran_group_threshold) then
+                          coord_iterator=coord_iterator+1
+                       else
+                          exit
+                       endif
+                   else
+                       if (abs(wannier_centres_translated(coord(l),tran_sorted_idx(num_wann-2*tran_num_ll+&
+                               j+(i-2*tran_num_cell_ll-1)*num_wann_cell_ll)) - &
+                               wannier_centres_translated(coord(l),tran_sorted_idx(num_wann-2*tran_num_ll+&
+                               k+(i-2*tran_num_cell_ll-1)*num_wann_cell_ll)))   &
+                               .le. tran_group_threshold) then
+                          coord_iterator=coord_iterator+1
+                       else
+                          exit
+                       endif
+                   endif
+                enddo
+                if (coord_iterator .eq. 3) then
+                   if (.not. has_similar_centres(j)) then
+                      num_wf_iterator=num_wf_iterator+1
+                      if (i .le. 2*tran_num_cell_ll) then
+                         idx_similar_wf(num_wf_iterator)=tran_sorted_idx(j+(i-1)*num_wann_cell_ll)
+                      else
+                         idx_similar_wf(num_wf_iterator)=tran_sorted_idx(j+num_wann-2*tran_num_ll+&
+                               (i-2*tran_num_cell_ll-1)*num_wann_cell_ll)
+                      endif
+                      if (i .le. 2*tran_num_cell_ll) then
+                         first_group_element(i,j)=j+(i-1)*num_wann_cell_ll
+                      else
+                         first_group_element(i,j)=num_wann-2*tran_num_ll+&
+                              j+(i-2*tran_num_cell_ll-1)*num_wann_cell_ll
+                      endif
+                   endif
+                   has_similar_centres(k)=.true.
+                   has_similar_centres(j)=.true.
+                   num_wf_iterator=num_wf_iterator+1
+                   if (i .le. 2*tran_num_cell_ll) then
+                      idx_similar_wf(num_wf_iterator)=tran_sorted_idx(k+(i-1)*num_wann_cell_ll)
+                   else
+                      idx_similar_wf(num_wf_iterator)=tran_sorted_idx(k+num_wann-2*tran_num_ll+&
+                           (i-2*tran_num_cell_ll-1)*num_wann_cell_ll)
+                   endif
+                endif
+             endif             
+          enddo ! loop over k
+          if (num_wf_iterator .gt. 0) then
+             group_iterator=group_iterator+1
+             wf_similar_centres(i,group_iterator,:)=idx_similar_wf(:)
+             !
+             !Save number of WFs in each group
+             !
+             tmp_wf_verifier(i,group_iterator)=num_wf_iterator
+          endif
+       enddo
+       if ((count(has_similar_centres) .eq. 0) .and. (i .eq. 1)) then
+          write(stdout,*)'No wannier functions found with similar centres: sorting completed'
+          exit
+       elseif (i .eq. 1) then
+            write(stdout,*)'Wannier functions found with similar centres: '
+            write(stdout,*)' -> using signatures to complete sorting '
+       endif
+       !
+       !Save number of group of WFs in each unit cell and compare to previous unit cell
+       !
+       group_verifier(i)=group_iterator
+       if (iprint .ge. 4) write(stdout,'(a11,i4,a13,i4)') ' Unit cell:',i,'  Num groups:',group_verifier(i)
+       if (i .ne. 1) then
+          if (group_verifier(i) .ne. group_verifier(i-1)) then
+             call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells')
+          elseif (i .eq. 4*tran_num_cell_ll) then
+             write(stdout,*)'Consistent groups of similar centred wannier functions between '
+             write(stdout,*)'unit cells found'
+             write(stdout,*)' '
+          endif
+       endif
+    enddo
+    !
+    ! Perform check to ensure consistent number of WFs between equivalent groups in different unit cells
+    !
+    if (any(has_similar_centres)) then
+        !
+        !
+        allocate(wf_verifier(4*tran_num_cell_ll,group_verifier(1)),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating wf_verifier in check_and_sort_similar_centres')
+        !
+        !
+        if (iprint .ge. 4) write(stdout,*)'Unit cell   Group number   Num WFs'
+        wf_verifier=0
+        wf_verifier=tmp_wf_verifier(:,1:group_verifier(1))
+        do i=1,4*tran_num_cell_ll
+            do j=1,group_verifier(1)
+                if (iprint .ge. 4) write(stdout,'(a3,i4,a9,i4,a7,i4)')'   ',i,'         ',j,'       ',wf_verifier(i,j)
+                if (i .ne. 1) then
+                    if (wf_verifier(i,j) .ne. wf_verifier(i-1,j)) &
+                        call io_error('Inconsitent number of wannier functions between equivalent groups of similar centred wannier functions')
+                endif
+            enddo
+        enddo
+        write(stdout,*)'Consistent number of wannier functions between equivalent groups of similar'
+        write(stdout,*)'centred wannier functions'
+        write(stdout,*)' '
+        !
+        write(stdout,*)' Fixing order of similar centred wannier functions using parity signatures'
+        !
+        do i=2,4*tran_num_cell_ll
+           do j=1,group_verifier(1)
+               !
+               ! Make array of WF numbers which act as a reference to sort against
+               ! and an array which need sorting
+               !
+               allocate(ref_similar_centres(group_verifier(1),wf_verifier(1,j)),stat=ierr)
+               if (ierr/=0) call io_error('Error in allocating ref_similar_centres in check_and_sort_similar_centres')
+               allocate(unsorted_similar_centres(group_verifier(1),wf_verifier(1,j)),stat=ierr)
+               if (ierr/=0) call io_error('Error in allocating unsorted_similar_centres in check_and_sort_similar_centres')
+               allocate(sorted_idx(wf_verifier(1,j)),stat=ierr)
+               if (ierr/=0) call io_error('Error in allocating sorted_idx in check_and_sort_similar_centres')
+               allocate(dot_p(wf_verifier(1,j)),stat=ierr)
+               if (ierr/=0) call io_error('Error in allocating dot_p in check_and_sort_similar_centres')
+               !
+               do k=1,wf_verifier(1,j)
+                  ref_similar_centres(j,k)=wf_similar_centres(1,j,k)
+                  unsorted_similar_centres(j,k)=wf_similar_centres(i,j,k)
+               enddo
+               !
+               sorted_idx=0
+               do k=1,wf_verifier(1,j)
+               dot_p=0.0d0
+               !
+               ! building the array of positive dot products of signatures between unsorted_similar_centres(j,k)
+               ! and all the ref_similar_centres(j,:)
+               !
+               do l=1,wf_verifier(1,j)
+                   do p=1,num_G
+                       dot_p(l)=dot_p(l)+abs(signatures(p,unsorted_similar_centres(j,k)))* &
+                                        abs(signatures(p,ref_similar_centres(j,l)))
+                   enddo
+               enddo
+              !
+              max_position=maxloc(dot_p)
+              !
+              sorted_idx(max_position(1))=unsorted_similar_centres(j,k)
+              enddo
+              !
+              ! we have the properly ordered indexes for group j in unit cell i, now we need
+              ! to overwrite the tran_sorted_idx array at the proper position
+              !
+              tran_sorted_idx(first_group_element(i,j):first_group_element(i,j)+wf_verifier(i,j)-1)=sorted_idx(:)
+              !
+              deallocate(dot_p,stat=ierr)
+              if (ierr/=0) call io_error('Error in deallocating dot_p in check_and_sort_similar_centres')
+              deallocate(sorted_idx,stat=ierr)
+              if (ierr/=0) call io_error('Error in deallocating sorted_idx in check_and_sort_similar_centres')
+              deallocate(ref_similar_centres,stat=ierr)
+              if (ierr/=0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres')
+              deallocate(unsorted_similar_centres,stat=ierr)
+              if (ierr/=0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres')
+           enddo
+        enddo
+        !
+        ! checking that all the indices of WFs in the new tran_sorted_idx are distinct
+        ! Remark: physically, no two WFs with similar centres can have the same type so we should expect
+        ! this check to always pass unless the signatures/wf are very weird !!
+        !
+        do k=1,num_wann
+           iterator=0
+           do l=1,num_wann
+              if (tran_sorted_idx(l) .eq. k) then
+                 iterator=iterator+1
+              endif
+           enddo
+           !
+           if ((iterator .ge. 2) .or. (iterator .eq. 0))  call io_error(&
+           'A Wannier Function appears either zero times or twice after sorting, this may be due to a poor wannierisation and/or disentanglement')
+           !write(stdout,*) ' WF : ',k,' appears ',iterator,' time(s)'
+        enddo
+    endif
+    
+    if (timing_level>2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres',2)
+
+    return
+
+  end subroutine check_and_sort_similar_centres
+
+
+  !=====================================!
+  subroutine tran_write_xyz(tran_sorted_idx)
+    !=====================================!
+    !                                     !
+    ! Write xyz file with Wannier centres !
+    ! and atomic positions                !
+    !                                     !
+    !=====================================!
+
+    use w90_io,          only: seedname,io_file_unit,io_date,stdout
+    use w90_parameters,  only: num_wann,wannier_centres, &
+                               lenconfac,real_lattice,recip_lattice,iprint, &
+                               atoms_pos_cart,atoms_symbol,num_species, &
+                               atoms_species_num,num_atoms
+    use w90_utility,     only: utility_translate_home
+    use w90_hamiltonian, only: wannier_centres_translated
+
+    implicit none
+
+    integer,intent(in),dimension(num_wann)           :: tran_sorted_idx
+
+    integer          :: iw,ind,xyz_unit,nat,nsp
+    character(len=9) :: cdate, ctime
+    real(kind=dp)    :: wc(3,num_wann)
+
+    wc = wannier_centres_translated
+
+    xyz_unit=io_file_unit()
+    open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
+    !
+    write(xyz_unit,'(i6)') num_wann+num_atoms
+    !
+    call io_date(cdate,ctime)
+    write(xyz_unit,'(a84)') 'Wannier centres and atomic positions, written by Wannier90 on '//cdate//' at '//ctime
+    !
+    do iw=1,num_wann
+       write(xyz_unit,'("X",6x,3(f14.8,3x))') (wc(ind,iw),ind=1,3)
+    end do
+    do nsp=1,num_species
+       do nat=1,atoms_species_num(nsp)
+          write(xyz_unit,'(a2,5x,3(f14.8,3x))') atoms_symbol(nsp),atoms_pos_cart(:,nat,nsp)
+       end do
+    end do
+
+    write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
+
+    return
+
+ endsubroutine tran_write_xyz
+
+
+  !==============================================================!
+  subroutine tran_parity_enforce(tran_sorted_idx,signatures)
+    !==============================================================!
+    ! Here, the signatures of the each wannier fucntion (stored in !
+    ! signatures) is used to determine its relavite parity         !
+    ! with respect to the first unit cell. The parity pattern of   !
+    ! first unit cell is then enforced.                            !
+    !==============================================================!
+
+    use w90_constants,          only : dp
+    use w90_io,                 only : io_error,stdout,io_stopwatch
+    use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll,timing_level,iprint
+    use w90_hamiltonian,        only : ham_r
+
+    implicit none
+
+    integer,intent(in),dimension(num_wann)              :: tran_sorted_idx
+    real(dp),intent(in),dimension(:,:)                  :: signatures
+
+    integer                                             :: i,j,k,wf_idx,num_wann_cell_ll
+    real(dp)                                         :: signature_dot_p
+
+    if (timing_level>1) call io_stopwatch('tran: parity_enforce',1)
+
+    num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
+    if (iprint .eq. 5) write(stdout,'(a101)') 'Unit cell    Sorted WF index    Unsort WF index  Unsorted WF Equiv       Signature Dot Product'
+    !
+    ! Loop over unit cell in principal layers
+    !
+    do i=2,4*tran_num_cell_ll
+        !
+        ! Loop over wannier functions in unit cell
+        !
+        do j=1,num_wann_cell_ll
+            if (i .le. 2*tran_num_cell_ll) then
+                wf_idx=j+(i-1)*num_wann_cell_ll
+            else
+                wf_idx=num_wann-2*tran_num_ll+j+(i-1-2*tran_num_cell_ll)*num_wann_cell_ll
+            endif
+            signature_dot_p=dot_product(signatures(:,tran_sorted_idx(j)),signatures(:,tran_sorted_idx(wf_idx)))
+            if (iprint .eq. 5) then 
+                write(stdout,'(2x,i4,3(13x,i5),12x,f20.17)')&
+                i,wf_idx,tran_sorted_idx(wf_idx),tran_sorted_idx(j),signature_dot_p
+            endif
+            if (abs(signature_dot_p) .le. 0.8d0) then
+              write(stdout,'(a28,i4,a64,i4,a20)') ' WARNING: Wannier function (',tran_sorted_idx(wf_idx),&
+                   ') seems to has poor resemblance to equivalent wannier function (',tran_sorted_idx(j),') in first unit cell'
+              if (iprint .lt. 5) write(stdout,*)'Dot product of signatures: ',signature_dot_p
+            endif
+            if (real(signature_dot_p) .lt. 0) then
+                do k=1,num_wann
+                    ham_r(k,tran_sorted_idx(wf_idx),1)=-ham_r(k,tran_sorted_idx(wf_idx),1)
+                    ham_r(tran_sorted_idx(wf_idx),k,1)=-ham_r(tran_sorted_idx(wf_idx),k,1)
+                enddo
+            endif
+        enddo
+    enddo
+
+    if (timing_level>1) call io_stopwatch('tran: parity_enforce',2)
+
+    return
+
+  end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_build_ham(tran_sorted_idx)
-    !========================================!
+  subroutine tran_lcr_2c2_build_ham(tran_sorted_idx)
+    !==============================================!
+    ! Builds hamiltonians blocks required for the  !
+    ! Greens function caclulations of the quantum  !
+    ! conductance according to the 2c2 geometry.   !
+    ! Leads are also symmetrised, in that unit cell!
+    ! sub-blocks are copied to create truely ideal !
+    ! leads.                                       !
+    !==============================================!
 
     use w90_constants,          only : dp
     use w90_io,                 only : io_error,stdout,seedname,io_file_unit,io_date,io_stopwatch
@@ -1888,21 +2763,28 @@ loop_n1: do n1 = -irvec_max, irvec_max
     implicit none
 
     integer,intent(in),dimension(num_wann) :: tran_sorted_idx
-    integer                                :: i,j,k,num_wann_cell_ll,file_unit
+    integer                                :: i,j,k,num_wann_cell_ll,file_unit,ierr
     
     real(dp),allocatable,dimension(:,:)    :: sub_block
 
     character(len=9)                       :: cdate, ctime
 
-    if (timing_level>1) call io_stopwatch('tran: lcr_build_ham',1)
+    if (timing_level>1) call io_stopwatch('tran: lcr_2c2_build_ham',1)
 
-    allocate(hL0(tran_num_ll,tran_num_ll))
-    allocate(hL1(tran_num_ll,tran_num_ll))
-    allocate(hR0(tran_num_ll,tran_num_ll))
-    allocate(hR1(tran_num_ll,tran_num_ll))
-    allocate(hC(num_wann-(2*tran_num_ll),num_wann-(2*tran_num_ll)))
-    allocate(hLC(tran_num_ll,tran_num_ll))
-    allocate(hCR(tran_num_ll,tran_num_ll))    
+    allocate(hL0(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hL0 in tran_lcr_2c2_build_ham')
+    allocate(hL1(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hL1 in tran_lcr_2c2_build_ham')
+    allocate(hR0(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hR0 in tran_lcr_2c2_build_ham')
+    allocate(hR1(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hR1 in tran_lcr_2c2_build_ham')
+    allocate(hC(num_wann-(2*tran_num_ll),num_wann-(2*tran_num_ll)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham')
+    allocate(hLC(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hLC in tran_lcr_2c2_build_ham')
+    allocate(hCR(tran_num_ll,tran_num_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hCR in tran_lcr_2c2_build_ham')
     !
     !This checks that only the gamma point is used in wannierisation
     !This is necessary since this calculation only makes sense if we
@@ -1917,7 +2799,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
 
-    allocate(sub_block(num_wann_cell_ll,num_wann_cell_ll))
+    allocate(sub_block(num_wann_cell_ll,num_wann_cell_ll),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating sub_block in tran_lcr_2c2_build_ham')
     !
     !Build hL0 & hL1
     !
@@ -2099,7 +2982,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     tran_num_cr=tran_num_ll
     tran_num_cc=num_wann-(2*tran_num_ll)
 
-    deallocate(sub_block)
+    deallocate(sub_block,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham')
     !
     !Writing to file:
     !
@@ -2176,318 +3060,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
         write(stdout,*)'------------------------------------------------------------------------------'
     end if
 
-    if (timing_level>1) call io_stopwatch('tran: lcr_build_ham',2)
+    if (timing_level>1) call io_stopwatch('tran: lcr_2c2_build_ham',2)
 
     return 
 
-  end subroutine tran_lcr_build_ham
-
-
-!=============================================
- subroutine tran_hr_parity_shift(tran_sorted_idx)
-  !==============================================
-  ! Find parity of each MLWF and set all to be positive
-  ! for consistency from unit cell to unit cell within 
-  ! the PLs.
-  ! The parity of the MLWFs are calculated by summing 
-  ! their values over all space, assigning positive parity
-  ! to those which have a positive sum. (Negative for
-  ! negative sum)
-  !
-  ! Also further work is needed for mulitple MLWF with
-  ! the same centre. These must be consitently ordered 
-  ! using the sequence of signs of the higher order 
-  ! integrals as a signiture.
-  ! 
-  ! M. Shelley 03/09
-
-
-    use w90_constants,          only : dp,cmplx_0,twopi,pi
-    use w90_io,                 only : io_error,stdout,seedname,io_file_unit,io_date,&
-                                       io_stopwatch
-    use w90_parameters,         only : num_wann,spin,wvfn_formatted,have_disentangled,&
-                                       ndimwin,lwindow,num_bands,u_matrix,u_matrix_opt,&
-                                       real_lattice,tran_wf_threshold,tran_num_ll,&
-                                       tran_num_cell_ll,iprint,timing_level
-    use w90_hamiltonian,        only : ham_r,wannier_centres_translated
-    
-    implicit none
-
-    integer,intent(in),dimension(num_wann)            :: tran_sorted_idx
-    complex(kind=dp), allocatable                     :: r_wvfn(:,:),uu(:),tran_u_matrix(:,:)
-    real(kind=dp)                                     :: w_real,w_imag,cell_len(3)
-    real(kind=dp),allocatable                         :: r(:,:)
-    real(dp),dimension(tran_num_ll/tran_num_cell_ll)  :: parity_identifier
-    character(len=11)                                 :: wfnname
-    character(len=30)                                 :: i_char
-    logical                                           :: have_file,inc_band(num_bands),&
-                                                         ham_r_shift(num_wann),integral_found(num_wann)
-    integer                                           :: file_unit,n,m,p,nx,ny,nz,counter,&
-                                                         nk,nbnd,ngx,ngy,ngz,ierr,&
-                                                         integral_counter,order,n1,n2,n3,npoint,&
-                                                         i,j,num_wann_cell_ll,p_max
-
-    if (timing_level>1) call io_stopwatch('tran: hr_parity_shift',1)
-
-    write(wfnname,200 ) 1,spin
-    inquire(file=wfnname,exist=have_file)
-    if(.not.have_file) call io_error('tran_hr_parity_shift: file '//wfnname//' not found')
-
-    file_unit=io_file_unit()
-    if(wvfn_formatted) then
-       open(unit=file_unit,file=wfnname,form='formatted')
-       read(file_unit,*) ngx,ngy,ngz,nk,nbnd
-    else
-       open(unit=file_unit,file=wfnname,form='unformatted')
-       read(file_unit) ngx,ngy,ngz,nk,nbnd
-    end if
-
-200 format ('UNK',i5.5,'.',i1) 
-
-    if(have_disentangled) then
-        allocate(r_wvfn(ngx*ngy*ngz,num_bands),stat=ierr )
-        if (ierr/=0) call io_error('Error in allocating r_wvfn in tran_hr_parity_shift')
-        allocate(tran_u_matrix(num_bands,num_wann), stat=ierr )
-        if (ierr/=0) call io_error('Error in allocating tran_u_matrix in tran_hr_parity_shift')
-    else
-        allocate(r_wvfn(ngx*ngy*ngz,num_wann),stat=ierr )
-        if (ierr/=0) call io_error('Error in allocating r_wvfn in tran_hr_parity_shift')
-        allocate(tran_u_matrix(num_wann,num_wann), stat=ierr )
-        if (ierr/=0) call io_error('Error in allocating tran_u_matrix in tran_hr_parity_shift')
-    endif
-
-    allocate(uu(num_wann),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating uu in tran_hr_parity_shift')
-
-    allocate(r(ngx*ngy*ngz,3),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating r in tran_hr_parity_shift')
-
-    !
-    !Create logical array set to true if band is in the outer window at Gamma. 
-    !
-    inc_band=.true.
-    if(have_disentangled) then
-        inc_band(:)=lwindow(:,1)
-    end if
-    !
-    !Read U_nk file
-    !
-    write(stdout,*)'    Reading '//wfnname//' file'
-    if(have_disentangled) then
-        counter=1
-        do n=1,num_bands
-            if(counter>ndimwin(1)) exit
-            if(wvfn_formatted) then
-                do nx=1,ngx*ngy*ngz
-                    read(file_unit,*) w_real, w_imag
-                    r_wvfn(nx,counter) = cmplx(w_real,w_imag,kind=dp)
-                end do
-            else
-                read(file_unit) (r_wvfn(nx,counter),nx=1,ngx*ngy*ngz)
-            end if
-            if(inc_band(n)) counter=counter+1
-        end do
-    else
-        do n=1,num_wann
-           if(wvfn_formatted) then
-                do nx=1,ngx*ngy*ngz
-                    read(file_unit,*) w_real, w_imag
-                    r_wvfn(nx,n) = cmplx(w_real,w_imag,kind=dp)
-                end do
-            else
-                read(file_unit) (r_wvfn(nx,n),nx=1,ngx*ngy*ngz)
-            end if
-        end do
-    end if
-    close(file_unit)
-
-    tran_u_matrix=cmplx_0
-    uu=cmplx_0
-    ham_r_shift=.false.
-    integral_found=.false.
-
-    do i=1,3
-        cell_len(i)=dsqrt(real_lattice(i,1)**2+real_lattice(i,2)**2+real_lattice(i,3)**2)
-    enddo
-
-
-    write(stdout,*)' Calculating parity integrals of MLWFs'
-    write(stdout,*)' '
-
-    !
-    !Loop over wannier functions
-    !
-    if (iprint .ge. 4)  write(stdout,*)' WF   integral_counter   integral value'
-    do n=1,num_wann
-        !
-        !Disentanglement step
-        !
-        if(have_disentangled) then
-            do p=1,num_bands
-                do m=1,num_wann
-                   tran_u_matrix(p,n)=tran_u_matrix(p,n)+u_matrix(m,n,1)*u_matrix_opt(p,m,1)
-                enddo
-            enddo
-            p_max=num_bands
-        else
-            tran_u_matrix=u_matrix(:,:,1)
-            p_max=num_wann
-        endif
-        !
-        !Calculate uu for 0th order
-        !      
-        do p=1,p_max
-            uu(n)=uu(n)+tran_u_matrix(p,n)*sum(r_wvfn(:,p))
-        enddo
-        !
-        !Normalise
-        !
-        uu(n)=uu(n)/(ngx*ngy*ngz)
-        if (iprint .ge. 4) write(stdout,'(i4,a21,es15.6)')n,'        0             ',real(uu(n))
-        !
-        !Integral not significantly away from zero, move to higher orders
-        !
-        if (abs(uu(n)) .lt. tran_wf_threshold) then
-            order=1
-            integral_counter=1
-            !
-            !Define vectors from WF centre to each grid point
-            !
-            do nz=1,ngz
-                do ny=1,ngy
-                    do nx=1,ngx
-                        npoint=nx+(ny-1)*ngx+(nz-1)*ngx*ngy
-                        do i=1,3
-                            r(npoint,i)=(nx-1)*real_lattice(1,i)/ngx &
-                                       +(ny-1)*real_lattice(2,i)/ngy &
-                                       +(nz-1)*real_lattice(3,i)/ngz-wannier_centres_translated(i,n)
-                        enddo
-                    enddo
-                enddo
-            enddo
-            !
-            !Loop over powers of integral pre-factor g(:)=(sin(r(:,1)*2*pi/cell_len(1))^n1)&
-            !                                            *(sin(r(:,2)*2*pi/cell_len(2))^n2)&
-            !                                            *(sin(r(:,3)*2*pi/cell_len(3))^n3)
-            !The sin's enforce periodicity of the supercell
-            !
-444 continue
-            do n1=order,0,-1
-                do n2=order,0,-1
-                    do n3=order,0,-1
-                        if ( (n1+n2+n3 .eq. order) .and. .not. integral_found(n) ) then
-                            do p=1,p_max
-                                !
-                                !Calculate double sum with prefactor (disentanglement step already performed at order=0)
-                                !
-                                uu(n)=uu(n)+tran_u_matrix(p,n)*sum((dsin(r(:,1)*2.d0*pi/cell_len(1))**n1)&
-                                                                  *(dsin(r(:,2)*2.d0*pi/cell_len(2))**n2)&
-                                                                  *(dsin(r(:,3)*2.d0*pi/cell_len(3))**n3)*r_wvfn(:,p))
-                            enddo
-                            !
-                            !Normalise
-                            !
-                            uu(n)=uu(n)/(ngx*ngy*ngz)
-                            if (iprint .ge. 4) write(stdout,'(i4,a6,i3,a12,es15.6)')n,'      ',integral_counter,'            ',real(uu(n))
-                            !
-                            !Check if integral is sufficiently far from zero
-                            !
-                            if (abs(uu(n)) .lt. tran_wf_threshold) then
-                                integral_counter=integral_counter+1
-                                !
-                                !Define cases which increase order
-                                !
-                                select case(integral_counter)
-                                case(4)
-                                    order=2
-                                    goto 444
-                                case(10)
-                                    order=3
-                                    goto 444
-                                case(20) 
-                                    call io_error('tran_hr_parity_unkg: Parity integral not found')
-                                endselect
-                            else
-                                integral_found(n)=.true.
-                            endif
-                        endif            
-                    enddo
-                enddo
-            enddo
-        endif !order > 0 if
-        !
-        !Save parity
-        !
-        if (real(uu(n)) .lt. 0) ham_r_shift(n)=.true.
-    enddo !Wannier function loop
-
-    !
-    !Set all negative parity to be positive
-    !
-    do n=1,num_wann
-        do m=1,num_wann
-            if (ham_r_shift(n)) then
-                ham_r(n,m,1)=-ham_r(n,m,1)
-                ham_r(m,n,1)=-ham_r(m,n,1)
-            endif
-        enddo
-    enddo
-    write(stdout,*)' Consistent parities enforced throughout PL1, PL2, PL3 and PL4'
-
-    !
-    !Quick parity double check through PL1 & 2
-    !
-    num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
-!    do i=1,2*tran_num_cell_ll
-!        parity_identifier=0
-!        do j=1,num_wann_cell_ll
-!            parity_identifier(j)=real(ham_r(tran_sorted_idx(1),tran_sorted_idx(j),1))*&
-!                                 real(ham_r(tran_sorted_idx((i-1)*num_wann_cell_ll+1),&
-!                                            tran_sorted_idx((i-1)*num_wann_cell_ll+j),1))
-            !
-            !if parity_identifier(j) < 0 parities must be incorrect
-            !
-!            if (parity_identifier(j) .lt. 0 ) then
-!                write(i_char,*)i
-!                call io_error('Parities found to be inconsistent in unit cell '//trim(i_char)//' from left hand side')
-!            endif
-!        enddo
-!    enddo
-    !
-    !PL3 & 4
-    !
-!    do i=1,2*tran_num_cell_ll
-!        parity_identifier=0
-!        do j=1,num_wann_cell_ll
-!            parity_identifier(j)=real(ham_r(tran_sorted_idx(1),tran_sorted_idx(j),1))*&
-!                                 real(ham_r(tran_sorted_idx(num_wann-(2*tran_num_ll)+(i-1)*num_wann_cell_ll+1),&
-!                                            tran_sorted_idx(num_wann-(2*tran_num_ll)+(i-1)*num_wann_cell_ll+j),1))
-            !
-            !if parity_identifier(j) < 0 parities must be incorrect
-            !
-!            if (parity_identifier(j) .lt. 0 ) then
-!                write(i_char,*)2*tran_num_cell_ll-i+1
-!                call io_error('Parities found to be inconsistent in unit cell '//trim(i_char)//' from right hand side')
-!            endif
-!        enddo
-!    enddo
-
-
-    deallocate(r_wvfn,stat=ierr )
-    if (ierr/=0) call io_error('Error deallocating r_wvfn in tran_hr_parity_shift')
-    deallocate(uu,stat=ierr )
-    if (ierr/=0) call io_error('Error deallocating uu in tran_hr_parity_shift')
-    deallocate(r,stat=ierr )
-    if (ierr/=0) call io_error('Error deallocating r in tran_hr_parity_shift')
-    deallocate(tran_u_matrix,stat=ierr )
-    if (ierr/=0) call io_error('Error deallocating tran_u_matrix in tran_hr_parity_shift')
-
-
-    if (timing_level>1) call io_stopwatch('tran: hr_parity_shift',2)
-
-    return
-
- end subroutine tran_hr_parity_shift
-
+  end subroutine tran_lcr_2c2_build_ham
 
 end module w90_transport
+
