@@ -1160,7 +1160,7 @@ transport properties can be found in the User Guide.
 \item Run \pwscf\ and \wannier\ for the periodic system.
 \item Run \pwscf\ and \wannier\ for the defected system.
 \item The quantum conductance is written to the files {\tt periodic/Na\_chain\_qc.dat} 
-and {\tt defected/Na\_chain\_dos.dat}, respectively. 
+and \linebreak{\tt defected/Na\_chain\_dos.dat}, respectively. 
 Compare the quantum conductance of the periodic (bulk) calculation with the
 defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
 \end{enumerate}
@@ -1177,6 +1177,10 @@ defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
 \cleardoublepage
 
 \section*{15: (5,0) Carbon Nanotube}
+
+\emph{Note that these systems require significant calculations 
+with \pwscf.}
+
 \subsection*{Bulk Transport properties}
 
 \begin{itemize}
@@ -1201,17 +1205,12 @@ compare the quantum conductance of this system with a defected
 nanotube.
 
 \begin{enumerate}
-\item Run \pwscf\ and \wannier. Note that these calculations can be 
-quite lengthy.\\ 
+\item Run \pwscf\ and \wannier.\\ 
 \item The quantum conductance and density of states are written to the
 files {\tt cnt\_qc.dat} and {\tt cnt\_dos.dat}, respectively.
 \end{enumerate}
 
 \subsection*{LCR transport properties -- Defected nanotube}
-
-\emph{Note that to run this section of the tutorial
-approximately 9.2Gb of disk space is required. In addition, approximately 6.5Gb
-of memory is needed for the transport calculation.}
 
 \begin{itemize}
   \item{Outline: \it{Use the automated LCR routine to investigate the effect of
