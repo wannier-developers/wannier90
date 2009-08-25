@@ -4,7 +4,6 @@
    seedname       = 'cnt+si'
    write_mmn      = .true.
    write_amn      = .true.
-   write_unk      = .true.
-   reduce_unk     = .true.
+   write_unkg     = .true.
 /
 

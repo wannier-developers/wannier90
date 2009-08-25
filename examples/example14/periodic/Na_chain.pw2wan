@@ -4,5 +4,4 @@
   seedname   =  'Na_chain'
   write_amn  =  .true.
   write_mmn  =  .true.
-  write_unk  =  .false.
 /
