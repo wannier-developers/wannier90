@@ -17,7 +17,7 @@ module wannier
    integer, allocatable :: lw(:,:), mw(:,:) ! l and m of wannier (16,n_wannier)
    integer, allocatable :: num_sph(:)   ! num. func. in lin. comb., (n_wannier)
    logical, allocatable :: excluded_band(:)
-   integer  :: iun_nnkp, iun_mmn, iun_amn, iun_band, iun_spn, iun_plot, nnbx, nexband
+   integer  :: iun_nnkp, iun_mmn, iun_amn, iun_band, iun_spn, iun_plot, iun_parity, nnbx, nexband
    integer  :: n_wannier !number of WF
    integer  :: n_proj    !number of projection (=#WF unless spinors then =#WF/2)
    complex(DP), allocatable :: gf(:,:)  ! guding_function(npwx,n_wannier)
