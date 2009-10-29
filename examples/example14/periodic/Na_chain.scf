@@ -1,12 +1,10 @@
 &control 
     calculation = 'scf' 
-    verbosity = 'high' 
     restart_mode = 'from_scratch' 
     prefix = 'Na_chain' 
     outdir = './' 
     pseudo_dir = '../../../pseudo/' 
-    tprnfor = .false. 
-    tstress = .false. 
+    wf_collect = .true.
 / 
 &system 
     ibrav= 8 

@@ -14,15 +14,11 @@ num_print_cycles = 10
 gamma_only = .false.
 translate_home_cell=.true.
 
-Begin Kpoint_Path 
-G 0.00  0.00  0.00    A 0.50  0.00  0.00 
-End Kpoint_Path 
-
 begin unit_cell_cart 
 ang 
- 9.75 0.00 0.00 
- 0.00 10.0 0.00 
- 0.00 0.00 10.0 
+ 9.75  0.00  0.00 
+ 0.00 10.00  0.00 
+ 0.00  0.00 10.00 
 end unit_cell_cart 
 
 begin atoms_frac 
@@ -55,3 +51,5 @@ tran_energy_step = 0.01
 translation_centre_frac = 0.5 0.5 0.5 
 tran_num_bb = 3
 
+dist_cutoff_mode = one_dim
+dist_cutoff = 9.76
