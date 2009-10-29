@@ -392,8 +392,13 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
        call io_error('Error in plot_cut_hr')
     end if
 
+    ! AAM: 29/10/2009 Bug fix thanks to Dr Shujun Hu, NIMS, Japan. 
     do loop_rpt = 1, nrpts_cut
-       shift_vec(:,loop_rpt) = matmul(real_lattice(:,:),real(irvec_cut(:,loop_rpt),dp)) 
+       ! line below is incorrect for non-orthorhombic cells
+       !shift_vec(:,loop_rpt) = matmul(real_lattice(:,:),real(irvec_cut(:,loop_rpt),dp))
+       ! line below is the same as calculating 
+       ! matmul(transpose(real_lattice(:,:)),irvec_cut(:,loop_rpt))
+       shift_vec(:,loop_rpt) = matmul(real(irvec_cut(:,loop_rpt),dp),real_lattice(:,:))
     end do
 
     ! note: dist_cutoff_mode does not necessarily follow bands_plot_dim
