@@ -1,0 +1,42 @@
+---------------------------------------------
+|               PL_assess.f90               |
+---------------------------------------------
+|        Written by M.Shelley 09/09         |
+|         Imperial College, London          |
+---------------------------------------------
+
+Function: To assess principal layer size of a 
+          system from a single cell many 
+          k-point calculation.
+
+Requirements: <seedname>_hr.dat
+
+Usage: Copy hr file to directory containing 
+       executable. Within that directory, 
+       type:
+
+./PL_assess.x <nk1> <nk2> <nk3> <num_wann> 
+
+where:
+
+ <nk1> is the number of k-points in x-direction
+ <nk2> is the number of k-points in y-direction
+ <nk3> is the number of k-points in z-direction
+ <num_wann> is the number of wannier functions of your system
+
+    Note currently, only one k-point in non-transport directions
+    is accepted.
+
+
+eg.  ./PL_assess.x 1 1 20 16
+
+When prompted, enter the seedname.
+
+Result: <seedname>_pl.dat written. It contains 3 coloumns
+        (1): Unit cell number
+        (2): Average 'on-site' between Wannier functions in 
+             true unit cell, and unit cell (1) away due to 
+             k-point 'periodicity'
+        (3): Standard devaition of (2)
+        (4): Maximum absolute Hamiltonian value in unit cell
+
