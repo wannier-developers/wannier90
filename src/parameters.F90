@@ -75,6 +75,7 @@ module w90_parameters
   real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
   logical,           public, save :: transport
+  logical,           public, save :: easy_fix ! a boolean that tells the code to use the "easy_fix" method for fixing the WF parities
   character(len=20), public, save :: transport_mode
   real(kind=dp),     public, save :: tran_win_min
   real(kind=dp),     public, save :: tran_win_max
@@ -98,7 +99,8 @@ module w90_parameters
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
   real(kind=dp),     public, save :: real_lattice(3,3)
   logical,           public, save :: postproc_setup
-  logical,           public, save :: cp_pp ! Car-Parinello post-proc flag
+  logical,           public, save :: cp_pp ! Car-Parinello post-proc flag/transport
+
   logical,           public, save :: calc_only_A
   logical,           public, save :: use_bloch_phases
   character(len=20), public, save :: restart
@@ -270,6 +272,9 @@ contains
 
     tran_read_ht           = .false. 
     call param_get_keyword('tran_read_ht',found,l_value=tran_read_ht)
+
+    easy_fix          = .false. 
+    call param_get_keyword('easy_fix',found,l_value=easy_fix)
 
     if (transport .and. tran_read_ht) restart = ' '
 
