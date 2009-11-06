@@ -1644,12 +1644,13 @@ contains
 
     use w90_io,         only: seedname,io_file_unit,io_date,stdout
     use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
-         lenconfac,real_lattice,recip_lattice,iprint
+                              lenconfac,real_lattice,recip_lattice,iprint, &
+                              atoms_symbol,atoms_pos_cart,num_species,atoms_species_num
     use w90_utility,    only : utility_translate_home
 
     implicit none
 
-    integer          :: iw,ind,xyz_unit
+    integer          :: iw,ind,xyz_unit,nsp,nat
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3,num_wann) 
 
@@ -1678,6 +1679,13 @@ contains
     do iw=1,num_wann
        write(xyz_unit,'("X",6x,3(f14.8,3x))') (wc(ind,iw),ind=1,3)
     end do
+    do nsp=1,num_species
+       do nat=1,atoms_species_num(nsp)
+          write(xyz_unit,'(a2,5x,3(f14.8,3x))') atoms_symbol(nsp),atoms_pos_cart(:,nat,nsp)
+       end do
+    end do
+    close(xyz_unit)
+
     write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
     
     return
