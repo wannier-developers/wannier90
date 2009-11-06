@@ -4,6 +4,24 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
+v1.2 (***DATE***)
+
+* Automated lcr transport calculations from a single supercell.
+  Includes robust sorting and Wannier function parity determination
+  algorithms (new input variables: tran_num_cell_ll, tran_num_cell_rr,
+  tran_group_threshold, easy_fix)
+* Added examples 14, 15 to tutorial to displaying new lcr transport
+  functionality
+* Updated pw2wannier90 interface to allow new lcr calculations
+  (new input variable: write_unkg)
+* New utility: PL_assessment. Investigates principal layer size 
+  from bulk transport, many k-point lead calculations.
+* Altered <seedname>_centres.xyz output file to include atomic
+  positions in transport calculations
+* Fixes for tran_num_cell_ll=1 in tran_hr_one_dim_cut
+* Minor bug fixes
+* Addition of Matthew Shelley and Nicolas Poilvert as contributors.
+
 v1.1.1 (10th May 2008)
 
 * Report of estimated memory usage
