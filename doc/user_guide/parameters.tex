@@ -102,7 +102,7 @@ Keyword & Type & Description \\
 written to output \\
 {\sc translate\_home\_cell } & L & To translate final Wannier centres
 to home unit cell when writing xyz file\\
-{\sc write\_xyz }  & L & To write final centres in xyz file format \\
+{\sc write\_xyz }  & L & To write atomic positions and final centres in xyz file format \\
 \hline
 \end{tabular}
 \caption[win file keywords.]
@@ -672,8 +672,9 @@ The default value is \verb#false#.
 
 \subsection[write\_xyz]{\tt logical :: write\_xyz}
 
-Determines whether to write the final Wannier centres to an xyz
-file, \verb#seedname_centres.xyz#, for subsequent
+Determines whether to write the atomic positions and 
+final Wannier centres to an xyzfile,
+\verb#seedname_centres.xyz#, for subsequent
 visualisation. 
 
 The default value is \verb#false#.
