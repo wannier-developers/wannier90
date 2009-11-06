@@ -54,7 +54,8 @@
 
 module w90_transport
 
-  use w90_constants, only : dp
+  use w90_constants,  only : dp
+  use w90_parameters, only : num_wann
 
   implicit none
 
@@ -73,6 +74,8 @@ module w90_transport
   ! coord : coord(1) defines the conduction direction according to 1=x,2=y,3=z, 
   ! coord(2),coord(3) define the other directions during sorting routines
   integer,dimension(3) :: coord
+  ! index of sorted WF centres to unsorted
+  integer,allocatable :: tran_sorted_idx(:)
 
   real(kind=dp), allocatable :: hr_one_dim(:,:,:)
   real(kind=dp), allocatable :: hB0(:,:)
@@ -94,14 +97,14 @@ contains
     !==================================================================!
 
     use w90_io,         only : stdout,io_stopwatch
-    use w90_parameters, only : transport_mode,tran_read_ht,timing_level,hr_plot,num_wann
+    use w90_parameters, only : transport_mode,tran_read_ht,timing_level,hr_plot,&
+                               write_xyz
     use w90_hamiltonian,only : hamiltonian_get_hr,hamiltonian_write_hr,hamiltonian_setup
 
     implicit none
 
     real(kind=dp),allocatable,dimension(:,:)     :: signatures
     integer                                      :: num_G
-    integer,dimension(num_wann)                  :: tran_sorted_idx
  
     if (timing_level>0) call io_stopwatch('tran: main',1) 
 
@@ -119,6 +122,7 @@ contains
           call tran_reduce_hr()
           call tran_cut_hr_one_dim()
           call tran_get_ht()
+          if (write_xyz) call tran_write_xyz()
        end if
        call tran_bulk()
     end if
@@ -134,9 +138,10 @@ contains
           write(stdout,*)'------------------------- 2c2 Calculation Type: ------------------------------'
           write(stdout,*)' '
           call tran_find_integral_signatures(signatures,num_G)
-          call tran_lcr_2c2_sort(tran_sorted_idx,signatures,num_G)
-          call tran_parity_enforce(tran_sorted_idx,signatures)
-          call tran_lcr_2c2_build_ham(tran_sorted_idx) 
+          call tran_lcr_2c2_sort(signatures,num_G)
+          if (write_xyz) call tran_write_xyz()
+          call tran_parity_enforce(signatures)
+          call tran_lcr_2c2_build_ham() 
        endif 
        call tran_lcr()
     end if
@@ -226,6 +231,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
        call io_error('Error: cannot extract 1d hamiltonian in tran_reduce_hr')
     end if
 
+
     if (timing_level>1) call io_stopwatch('tran: reduce_hr',2)
 
     return
@@ -270,7 +276,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     do n1 = -irvec_max, irvec_max
        shift_vec(:,n1) = real(n1,dp)*(real_lattice(:,one_dim_vec))
-    !       write(stdout,'(a,3f10.6)') 'shift_vec', shift_vec(:,n1)
+!           write(stdout,'(a,3f10.6)') 'shift_vec', shift_vec(:,n1)
     end do
 
     ! apply dist_cutoff first
@@ -1667,7 +1673,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
 
   !========================================!
-  subroutine tran_lcr_2c2_sort(tran_sorted_idx,signatures,num_G)
+  subroutine tran_lcr_2c2_sort(signatures,num_G)
     !=======================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
@@ -1689,7 +1695,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     implicit none
 
-    integer,intent(out),dimension(num_wann)           :: tran_sorted_idx
     integer,intent(in)                                :: num_G
     real(dp),intent(in),dimension(:,:)                :: signatures
  
@@ -1706,6 +1711,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     character(30)                                     :: fmt_1
     
+    allocate(tran_sorted_idx(num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating tran_sorted_idx in tran_lcr_2c2_sort')
     
     num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
 
@@ -1985,12 +1992,20 @@ loop_n1: do n1 = -irvec_max, irvec_max
             sort_iterator2=sort_iterator2+1
         endif
     enddo
-    !
+
     if (sort_iterator2 .gt. 1) then
-        if (iprint .ge. 4) then
-            write(stdout,*)' Grouping inconsistency between first and last unit cells: restarting sorting...'
-            write(stdout,*)' '
-        endif
+        write(stdout,*)' Grouping inconsistency found between first and last unit cells: '
+        write(stdout,*)' suspect Wannier functions have been translated. '
+        write(stdout,*)' '
+        write(stdout,*)' Rebuilding Hamiltonian...'
+        write(stdout,*)' '
+        deallocate(hr_one_dim,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+        call tran_reduce_hr()
+        call tran_cut_hr_one_dim()
+        write(stdout,*)' '
+        write(stdout,*)' Restarting sorting...'
+        write(stdout,*)' '
         sort_iterator=sort_iterator-1
         deallocate(PL1_groups,stat=ierr)
         if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
@@ -2058,7 +2073,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     ! At this point, every check has been cleared, and we need to use
     ! the parity signatures of the WFs for the possibility of equal centres
     !
-    call check_and_sort_similar_centres(tran_sorted_idx,signatures,num_G)
+    call check_and_sort_similar_centres(signatures,num_G)
 
     write(stdout,*)' '
     write(stdout,*)'------------------------- Sorted Wannier Centres -----------------------------'
@@ -2095,8 +2110,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
  
     write(stdout,*)'=============================================================================='
     write(stdout,*)' '
-
-    call tran_write_xyz(tran_sorted_idx)
 
     if (timing_level>1) call io_stopwatch('tran: lcr_2c2_sort',2)
 
@@ -2407,7 +2420,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
 
  !=========================================================
- subroutine check_and_sort_similar_centres(tran_sorted_idx,signatures,num_G)
+ subroutine check_and_sort_similar_centres(signatures,num_G)
     !=======================================================!
     ! Here, we consider the possiblity of wannier functions !
     ! with similar centres, such as a set of d-orbitals     !
@@ -2429,7 +2442,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     implicit none
 
-    integer,intent(inout),dimension(num_wann)         :: tran_sorted_idx
     integer,intent(in)                                :: num_G
     real(dp),intent(in),dimension(:,:)                :: signatures
  
@@ -2682,7 +2694,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
 
   !=====================================!
-  subroutine tran_write_xyz(tran_sorted_idx)
+  subroutine tran_write_xyz()
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
@@ -2694,19 +2706,22 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_parameters,  only: num_wann,wannier_centres, &
                                lenconfac,real_lattice,recip_lattice,iprint, &
                                atoms_pos_cart,atoms_symbol,num_species, &
-                               atoms_species_num,num_atoms
+                               atoms_species_num,num_atoms,transport_mode
     use w90_utility,     only: utility_translate_home
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
-    integer,intent(in),dimension(num_wann)           :: tran_sorted_idx
-
     integer          :: iw,ind,xyz_unit,nat,nsp
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3,num_wann)
 
-    wc = wannier_centres_translated
+    if (index(transport_mode,'bulk')) wc = wannier_centres_translated
+    if (index(transport_mode,'lcr' )) then
+        do iw=1,num_wann
+            wc(:,iw)=wannier_centres_translated(:,tran_sorted_idx(iw))
+        enddo
+    endif
 
     xyz_unit=io_file_unit()
     open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
@@ -2733,7 +2748,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
 
   !==============================================================!
-  subroutine tran_parity_enforce(tran_sorted_idx,signatures)
+  subroutine tran_parity_enforce(signatures)
     !==============================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
     ! signatures) is used to determine its relavite parity         !
@@ -2748,7 +2763,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     implicit none
 
-    integer,intent(in),dimension(num_wann)              :: tran_sorted_idx
     real(dp),intent(inout),dimension(:,:)               :: signatures
 
     integer                                             :: i,j,k,wf_idx,num_wann_cell_ll
@@ -2815,7 +2829,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(tran_sorted_idx)
+  subroutine tran_lcr_2c2_build_ham()
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !
@@ -2834,7 +2848,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
     
     implicit none
 
-    integer,intent(in),dimension(num_wann) :: tran_sorted_idx
     integer                                :: i,j,k,num_wann_cell_ll,file_unit,ierr
     
     real(dp),allocatable,dimension(:,:)    :: sub_block
@@ -3031,7 +3044,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if (tran_num_cell_ll .eq. 1) then
         do j=1,num_wann_cell_ll                                                                            
             do k=num_wann-num_wann_cell_ll+1,num_wann                                                      
-                hR1(j,k-num_wann+num_wann_cell_ll)=hr_one_dim(tran_sorted_idx(j),tran_sorted_idx(k),0)
+                hR1(k-num_wann+num_wann_cell_ll,j)=hr_one_dim(tran_sorted_idx(j),tran_sorted_idx(k),0)
             enddo
         enddo
     endif
