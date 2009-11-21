@@ -1479,6 +1479,10 @@ contains
        deallocate( wannier_spreads, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating wannier_spreads in param_dealloc')
     endif
+    if( allocated( bands_plot_project ) ) then
+       deallocate( bands_plot_project, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating bands_plot_project in param_dealloc')
+    endif
     return
 
   end subroutine param_dealloc
