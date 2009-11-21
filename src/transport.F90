@@ -1749,7 +1749,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if (((real_lattice(coord(1),coord(2)) .ne. 0) .or. (real_lattice(coord(1),coord(3)) .ne. 0)) .or. &
         ((real_lattice(coord(2),coord(1)) .ne. 0) .or. (real_lattice(coord(3),coord(1)) .ne. 0))) then
         call io_error(&
-        'Lattice vector in conduction direction must point along x,y or z direction and be orthogonal to the remaining lattice vectors.')
+        'Lattice vector in conduction direction must point along x,y or z &
+        & direction and be orthogonal to the remaining lattice vectors.')
     endif
     !
     !Check
@@ -1930,7 +1931,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if ((size(PL1_groups) .ne. size(PL2_groups)) .or.&
         (size(PL2_groups) .ne. size(PL3_groups)) .or.&
         (size(PL3_groups) .ne. size(PL4_groups))) then
-        if (sort_iterator .ge. 2) call io_error ('Sorting techniques exhausted: Inconsistent number of groups among principal layers')
+        if (sort_iterator .ge. 2) call io_error ('Sorting techniques exhausted:&
+             & Inconsistent number of groups among principal layers')
         write(stdout,*) 'Inconsistent number of groups among principal layers: restarting sorting...'
         deallocate(PL1_groups,stat=ierr)
         if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
@@ -1956,8 +1958,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
             (PL2_groups(i) .ne. PL3_groups(i)) .or.&
             (PL3_groups(i) .ne. PL4_groups(i))) then
             if (sort_iterator .ge. 2) call io_error&
-                ('Sorting techniques exhausted: Inconsitent number of wannier function among similar groups within principal layers')
-            write(stdout,*) 'Inconsitent number of wannier function among similar groups within principal layers: restarting sorting...'
+                ('Sorting techniques exhausted: Inconsitent number of wannier function among &
+                & similar groups within principal layers')
+            write(stdout,*) 'Inconsitent number of wannier function among similar groups within&
+                 & principal layers: restarting sorting...'
             deallocate(PL1_groups,stat=ierr)
             if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
             deallocate(PL2_groups,stat=ierr)
@@ -2104,7 +2108,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
                                                           wannier_centres_translated(3,tran_sorted_idx(n)), &
                                                           wannier_spreads(tran_sorted_idx(n))*lenconfac**2
           enddo
-          if (i .ne. tran_num_cell_ll) write(stdout,*)'------------------------------------------------------------------------------'
+          if (i .ne. tran_num_cell_ll) write(stdout,*)'---------------------------------------------&
+               &---------------------------------'
        enddo         
     enddo
  
@@ -2299,7 +2304,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !here one replaces the minimum coordinate with 10**10 such that this value
         !will not be picked-up again by minloc
         !
-        non_sorted(2,min_loc(1))=10**10
+        non_sorted(2,min_loc(1))=10.0**10
     enddo
 
     return    
@@ -2350,7 +2355,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !
         !If an element of logic is true then it means the wannier function has already been grouped
         !
-        if (logic(i) .eq. .false.) then 
+        if (logic(i) .eqv. .false.) then 
             !
             !Create a group for the wannier function
             !
@@ -2603,7 +2608,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
                 if (iprint .ge. 4) write(stdout,'(a3,i4,a9,i4,a7,i4)')'   ',i,'         ',j,'       ',wf_verifier(i,j)
                 if (i .ne. 1) then
                     if (wf_verifier(i,j) .ne. wf_verifier(i-1,j)) &
-                        call io_error('Inconsitent number of wannier functions between equivalent groups of similar centred wannier functions')
+                        call io_error('Inconsitent number of wannier functions between equivalent groups of similar &
+                        &centred wannier functions')
                 endif
             enddo
         enddo
@@ -2655,7 +2661,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
               ! we have the properly ordered indexes for group j in unit cell i, now we need
               ! to overwrite the tran_sorted_idx array at the proper position
               !
-              tran_sorted_idx(first_group_element(i,centre_id(j)):first_group_element(i,centre_id(j))+wf_verifier(i,j)-1)=sorted_idx(:)
+              tran_sorted_idx(first_group_element(i,centre_id(j)):first_group_element(i,centre_id(j))+&
+                   &wf_verifier(i,j)-1)=sorted_idx(:)
               !
               deallocate(dot_p,stat=ierr)
               if (ierr/=0) call io_error('Error in deallocating dot_p in check_and_sort_similar_centres')
@@ -2681,7 +2688,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
            enddo
            !
            if ((iterator .ge. 2) .or. (iterator .eq. 0))  call io_error(&
-           'A Wannier Function appears either zero times or twice after sorting, this may be due to a poor wannierisation and/or disentanglement')
+           'A Wannier Function appears either zero times or twice after sorting, this may be due to a &
+           &poor wannierisation and/or disentanglement')
            !write(stdout,*) ' WF : ',k,' appears ',iterator,' time(s)'
         enddo
     endif
@@ -2716,8 +2724,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3,num_wann)
 
-    if (index(transport_mode,'bulk')) wc = wannier_centres_translated
-    if (index(transport_mode,'lcr' )) then
+    if (index(transport_mode,'bulk')>0) wc = wannier_centres_translated
+    if (index(transport_mode,'lcr' )>0) then
         do iw=1,num_wann
             wc(:,iw)=wannier_centres_translated(:,tran_sorted_idx(iw))
         enddo
@@ -2789,7 +2797,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     endif
 
     num_wann_cell_ll=tran_num_ll/tran_num_cell_ll
-    if (iprint .eq. 5) write(stdout,'(a101)') 'Unit cell    Sorted WF index    Unsort WF index  Unsorted WF Equiv       Signature Dot Product'
+    if (iprint .eq. 5) write(stdout,'(a101)') 'Unit cell    Sorted WF index    Unsort WF index  &
+         &Unsorted WF Equiv       Signature Dot Product'
     !
     ! Loop over unit cell in principal layers
     !
@@ -2986,7 +2995,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !
         do j=1,num_wann_cell_ll
             do k=1,num_wann_cell_ll
-                sub_block(j,k)=hr_one_dim(tran_sorted_idx(num_wann-i*(num_wann_cell_ll)+j),tran_sorted_idx(num_wann-num_wann_cell_ll+k),0)
+                sub_block(j,k)=hr_one_dim(tran_sorted_idx(num_wann-i*(num_wann_cell_ll)+j),&
+                     tran_sorted_idx(num_wann-num_wann_cell_ll+k),0)
             enddo
         enddo
         !
