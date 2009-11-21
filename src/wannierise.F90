@@ -25,6 +25,11 @@ module w90_wannierise
   real(kind=dp),    allocatable  :: rnkb (:,:,:)   
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
+  ! The next variable is used to trigger the calculation of the invarient spread
+  ! we only need to do this on entering wann_main (_gamma)
+  logical :: first_pass
+
+
   type localisation_vars
      real(kind=dp) :: om_i   
      real(kind=dp) :: om_d   
@@ -99,6 +104,8 @@ contains
     integer                    :: conv_count,noise_count,page_unit
 
     if (timing_level>0) call io_stopwatch('wann: main',1)
+
+    first_pass=.true.
 
     ! Allocate stuff
 
@@ -1292,7 +1299,6 @@ contains
     real(kind=dp) :: summ,mnn2
     real(kind=dp) :: brn
     integer :: ind,nkp,nn,m,n,iw
-    logical, save :: first_pass=.true.
 
     if (timing_level>1) call io_stopwatch('wann: omega',1)
 
@@ -1944,9 +1950,10 @@ contains
 
     if (timing_level>0) call io_stopwatch('wann: main_gamma',1)
 
+    first_pass=.true.
+
     ! Allocate stuff
 
-    !conv_window = 3
     allocate(history(conv_window),stat=ierr)
     if (ierr/=0) call io_error('Error allocating history in wann_main_gamma')
 
@@ -2600,7 +2607,6 @@ loop_nw2: do nw2=nw1+1,num_wann
     real(kind=dp) :: summ, brn
     real(kind=dp), allocatable :: m_w_nn2(:)
     integer :: ind, nn,m,n,iw, rn, cn, ierr
-    logical, save :: first_pass=.true.
 
     if (timing_level>1) call io_stopwatch('wann: omega_gamma',1)
 
