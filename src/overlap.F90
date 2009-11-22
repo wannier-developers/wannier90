@@ -683,7 +683,7 @@ return
     real(kind=dp),    allocatable :: work(:)
     real(kind=dp),    allocatable :: rz(:,:)
     real(kind=dp),    allocatable :: rv(:,:)
-    complex(kind=dp), allocatable :: ph(:)
+!!$    complex(kind=dp), allocatable :: ph(:)
     complex(kind=dp), allocatable :: cz(:,:)
     complex(kind=dp), allocatable :: cvdag(:,:)
 
