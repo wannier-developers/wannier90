@@ -105,7 +105,8 @@ contains
 
     real(kind=dp),allocatable,dimension(:,:)     :: signatures
     integer                                      :: num_G
- 
+    logical                                      :: pl_warning
+
     if (timing_level>0) call io_stopwatch('tran: main',1) 
 
     write(stdout,'(/1x,a)') '*---------------------------------------------------------------------------*'
@@ -138,10 +139,10 @@ contains
           write(stdout,*)'------------------------- 2c2 Calculation Type: ------------------------------'
           write(stdout,*)' '
           call tran_find_integral_signatures(signatures,num_G)
-          call tran_lcr_2c2_sort(signatures,num_G)
+          call tran_lcr_2c2_sort(signatures,num_G,pl_warning)
           if (write_xyz) call tran_write_xyz()
           call tran_parity_enforce(signatures)
-          call tran_lcr_2c2_build_ham() 
+          call tran_lcr_2c2_build_ham(pl_warning) 
        endif 
        call tran_lcr()
     end if
@@ -287,12 +288,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
              do n1 = -irvec_max, irvec_max
                 dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+ shift_vec(one_dim_dir,n1)
                 !
-                !MS: Add special case for tran_num_cell_ll=1 (used if unit cells are long)
-                !    We must not cut the elements that are within dist_cutoff under PBC's (single kpt assumed)
-                !    A cut of PL length is then enforced during tran_2c2_build_hams
+                !MS: Add special case for lcr: We must not cut the elements that are within 
+                !    dist_cutoff under PBC's (single kpt assumed) in order to build 
+                !    hamiltonians correctly in tran_2c2_build_hams
                 !
                 if ((index(transport_mode,'lcr')>0 ) .and. &
-                    (tran_num_cell_ll .eq. 1)        .and. &
+!!!                    (tran_num_cell_ll .eq. 1)        .and. &
                     (abs(dist_vec(one_dim_dir)) .gt. dist_cutoff) ) then
                     ! Move to right
                     dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+real_lattice(one_dim_dir,one_dim_vec)
@@ -319,7 +320,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
                  ! MS: Special case (as above) equivalent for alternate definition of cut off
                  !
                  if ((index(transport_mode,'lcr')>0 ) .and. &
-                    (tran_num_cell_ll .eq. 1)         .and. &
+ !!!                   (tran_num_cell_ll .eq. 1)         .and. &
                     (dist .gt. dist_cutoff) ) then
                     ! Move to right
                     dist_vec(:) = dist_ij_vec(:)+real_lattice(:,one_dim_vec)
@@ -1447,7 +1448,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
      real(kind=dp)                                          :: i_unkg,r_unkg,wf_frac(3),det_rl,inv_t_rl(3,3),&
                                                                mag_signature_sq
 
-     character(len=11)                                      :: unkg_file
+!!$     character(len=11)                                      :: unkg_file
 
      logical                                                :: have_file
 
@@ -1673,7 +1674,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
 
   !========================================!
-  subroutine tran_lcr_2c2_sort(signatures,num_G)
+  subroutine tran_lcr_2c2_sort(signatures,num_G,pl_warning)
     !=======================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
@@ -1690,21 +1691,23 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_io,                 only : io_error,stdout,io_stopwatch
     use w90_parameters,         only : one_dim_dir,tran_num_ll,tran_num_rr,num_wann,tran_num_cell_ll,&
                                        real_lattice,tran_group_threshold,iprint,timing_level,lenconfac,&
-                                       wannier_spreads
+                                       wannier_spreads,write_xyz,dist_cutoff
     use w90_hamiltonian,        only : wannier_centres_translated
 
     implicit none
 
     integer,intent(in)                                :: num_G
     real(dp),intent(in),dimension(:,:)                :: signatures
- 
+    logical,intent(out)                               :: pl_warning 
+
     real(dp),dimension(2,num_wann)                    :: centres_non_sorted,centres_initial_sorted
     real(dp),dimension(2,tran_num_ll)                 :: PL1,PL2,PL3,PL4,PL
     real(dp),dimension(2,num_wann-(4*tran_num_ll))    :: central_region
-    real(dp)                                          :: reference_position,cell_length,distance
+    real(dp)                                          :: reference_position,cell_length,distance,PL_max_val,PL_min_val
 
-    integer                                           :: i,j,k,l,PL_selector,max_i,iterator,sort_iterator,sort_iterator2,ierr,&
-                                                         temp_coord_2,temp_coord_3,n,num_wann_cell_ll
+!!$    integer                                           :: l,max_i,iterator !aam: unused variables
+    integer                                           :: i,j,k,PL_selector,sort_iterator,sort_iterator2,ierr,&
+                                                         temp_coord_2,temp_coord_3,n,num_wann_cell_ll,num_wf_group1,num_wf_last_group
     integer,allocatable,dimension(:)                  :: PL_groups,PL1_groups,PL2_groups,PL3_groups,PL4_groups,central_region_groups
     integer,allocatable,dimension(:,:)                :: PL_subgroup_info,PL1_subgroup_info,PL2_subgroup_info,PL3_subgroup_info,&
                                                          PL4_subgroup_info,central_subgroup_info,temp_subgroup
@@ -1931,8 +1934,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if ((size(PL1_groups) .ne. size(PL2_groups)) .or.&
         (size(PL2_groups) .ne. size(PL3_groups)) .or.&
         (size(PL3_groups) .ne. size(PL4_groups))) then
-        if (sort_iterator .ge. 2) call io_error ('Sorting techniques exhausted:&
+        if (sort_iterator .ge. 2) then
+           if (write_xyz) call tran_write_xyz()
+           call io_error ('Sorting techniques exhausted:&
              & Inconsistent number of groups among principal layers')
+        endif
         write(stdout,*) 'Inconsistent number of groups among principal layers: restarting sorting...'
         deallocate(PL1_groups,stat=ierr)
         if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
@@ -1957,9 +1963,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
         if ((PL1_groups(i) .ne. PL2_groups(i)) .or.&
             (PL2_groups(i) .ne. PL3_groups(i)) .or.&
             (PL3_groups(i) .ne. PL4_groups(i))) then
-            if (sort_iterator .ge. 2) call io_error&
+            if (sort_iterator .ge. 2) then
+               if (write_xyz) call tran_write_xyz()
+               call io_error&
                 ('Sorting techniques exhausted: Inconsitent number of wannier function among &
-                & similar groups within principal layers')
+                  & similar groups within principal layers')
+            endif
             write(stdout,*) 'Inconsitent number of wannier function among similar groups within&
                  & principal layers: restarting sorting...'
             deallocate(PL1_groups,stat=ierr)
@@ -2047,8 +2056,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
        do j=1,size(temp_subgroup,1)
           do k=1,size(temp_subgroup,2)
              if (temp_subgroup(j,k) .ne. 0) then
-                if (sort_iterator .ge. 2) call io_error&
+                if (sort_iterator .ge. 2) then
+                   if (write_xyz) call tran_write_xyz()
+                   call io_error&
                    ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
+                endif
                 write(stdout,*) 'Inconsitent subgroup structure among principal layers: restarting sorting...'
                 deallocate(temp_subgroup,stat=ierr)
                 if (ierr/=0) call io_error('Error deallocating tmp_subgroup in tran_lcr_2c2_sort')
@@ -2116,6 +2128,32 @@ loop_n1: do n1 = -irvec_max, irvec_max
     write(stdout,*)'=============================================================================='
     write(stdout,*)' '
 
+    !
+    ! MS: Use sorting to assess whether dist_cutoff is suitable for correct PL cut
+    !     by using limits of coord(1) values in 1st and last groups of PL1, & 1st group of PL2
+    !
+    pl_warning=.false.
+    num_wf_group1=size(PL1_subgroup_info(1,:))
+    if (size(PL1_groups .ge. 1)) then
+        num_wf_last_group=size(PL1_subgroup_info(size(PL1_groups),:)) 
+    else
+        !
+        !Exception for 1 group in unit cell.
+        !
+        num_wf_last_group=num_wann_cell_ll
+    endif
+    PL_min_val= maxval(wannier_centres_translated(coord(1),tran_sorted_idx(tran_num_ll-num_wf_last_group+1:tran_num_ll)))&
+               -minval(wannier_centres_translated(coord(1),tran_sorted_idx(1:num_wf_group1)))
+    PL_max_val= minval(wannier_centres_translated(coord(1),tran_sorted_idx(tran_num_ll+1:tran_num_ll+num_wf_group1)))&
+               -minval(wannier_centres_translated(coord(1),tran_sorted_idx(1:num_wf_group1)))
+    if ((dist_cutoff .lt. PL_min_val) .or. (dist_cutoff .gt. PL_max_val)) then
+        write(stdout,'(a)')' WARNING: Expected dist_cutoff to be a PL length, I think this' 
+        write(stdout,'(2(a,f10.6),a)')' WARNING: is somewhere between ',PL_min_val,' and ',PL_max_val,' Ang'
+        pl_warning=.true.
+    endif
+    !
+    ! End MS.
+    !
     if (timing_level>1) call io_stopwatch('tran: lcr_2c2_sort',2)
 
     return
@@ -2442,7 +2480,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_constants,          only : dp
     use w90_io,                 only : stdout,io_stopwatch,io_error
     use w90_parameters,         only : tran_num_ll,num_wann,tran_num_cell_ll,iprint,timing_level,&
-                                       tran_group_threshold
+                                       tran_group_threshold,write_xyz
     use w90_hamiltonian,        only : wannier_centres_translated
 
     implicit none
@@ -2582,6 +2620,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
        if (iprint .ge. 4) write(stdout,'(a11,i4,a13,i4)') ' Unit cell:',i,'  Num groups:',group_verifier(i)
        if (i .ne. 1) then
           if (group_verifier(i) .ne. group_verifier(i-1)) then
+             if (write_xyz) call tran_write_xyz()
              call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells')
           elseif (i .eq. 4*tran_num_cell_ll) then
              write(stdout,*)'Consistent groups of similar centred wannier functions between '
@@ -2838,7 +2877,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham()
+  subroutine tran_lcr_2c2_build_ham(pl_warning)
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !
@@ -2856,6 +2895,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_hamiltonian,        only : wannier_centres_translated
     
     implicit none
+
+    logical,intent(in)                     :: pl_warning
 
     integer                                :: i,j,k,num_wann_cell_ll,file_unit,ierr
     
@@ -2943,28 +2984,25 @@ loop_n1: do n1 = -irvec_max, irvec_max
                     (j-1)*num_wann_cell_ll+1                    : j*num_wann_cell_ll)=sub_block                
             enddo
         endif
-!        !       
-!        ! MS: Get diagonal and upper triangular sublocks for hL1 - use periodic image of PL4
-!        !
-!        sub_block=0.d0
-!        !
-!!        if (i==1) then !Do diagonal only
-!            do j=1,num_wann_cell_ll
-!                do k=1,num_wann_cell_ll
-!                    sub_block(j,k)=hr_one_dim(tran_sorted_idx(num_wann-tran_num_ll+j),tran_sorted_idx((i-1)*num_wann_cell_ll+k),0)
-!                enddo
-!            enddo
-!            !
-!            ! MS: Now fill diagonal and upper triangular subblocks of hL1
-!            !
-!            do j=1,tran_num_cell_ll-i+1
-!                !
-!                !Fill diagonal and upper diagonal sub_blocks
-!                !
-!                hL1((j-1)*num_wann_cell_ll+1                        :j*num_wann_cell_ll,&
-!                    (j-1)*num_wann_cell_ll+1+(i-1)*num_wann_cell_ll :j*num_wann_cell_ll+(i-1)*num_wann_cell_ll)=sub_block
-!            enddo
-!!        endif
+        !       
+        ! MS: Get diagonal and upper triangular sublocks for hL1 - use periodic image of PL4
+        !
+        sub_block=0.d0
+        !
+        if (i==1) then !Do diagonal only
+            do j=1,num_wann_cell_ll
+                do k=1,num_wann_cell_ll
+                    sub_block(j,k)=hr_one_dim(tran_sorted_idx(num_wann-tran_num_ll+j),tran_sorted_idx((i-1)*num_wann_cell_ll+k),0)
+                enddo
+            enddo
+            !
+            ! MS: Now fill subblocks of hL1
+            !
+            do j=1,tran_num_cell_ll-i+1
+                hL1((j-1)*num_wann_cell_ll+1                        :j*num_wann_cell_ll,&
+                    (j-1)*num_wann_cell_ll+1+(i-1)*num_wann_cell_ll :j*num_wann_cell_ll+(i-1)*num_wann_cell_ll)=sub_block
+            enddo
+        endif
     enddo
     !
     !Special case tran_num_cell_ll=1, the diagonal sub-block of hL1 is hL1, so cannot be left as zero
@@ -3025,28 +3063,25 @@ loop_n1: do n1 = -irvec_max, irvec_max
                     (j-1)*num_wann_cell_ll+1                    : j*num_wann_cell_ll)=sub_block
             enddo
         endif
-!        !
-!        ! MS: Get diagonal and upper triangular sublocks for hR1 - use periodic image of PL1
-!        !
-!        sub_block=0.d0
-!        !
-!!        if (i==1) then  !Do diagonal only
-!            do j=1,num_wann_cell_ll
-!                do k=1,num_wann_cell_ll
-!                    sub_block(j,k)=hr_one_dim(tran_sorted_idx((i-1)*num_wann_cell_ll+k),tran_sorted_idx(num_wann-tran_num_ll+j),0)
-!                enddo
-!            enddo
-!            !
-!            ! MS: Now fill diagonal and upper triangular subblocks of hR1
-!            !
-!            do j=1,tran_num_cell_ll-i+1
-!                !
-!                !Fill diagonal and upper diagonal sub_blocks
-!                !
-!                hR1((j-1)*num_wann_cell_ll+1                        :j*num_wann_cell_ll,&
-!                    (j-1)*num_wann_cell_ll+1+(i-1)*num_wann_cell_ll :j*num_wann_cell_ll+(i-1)*num_wann_cell_ll)=sub_block
-!            enddo
-!!        endif
+        !
+        ! MS: Get diagonal and upper triangular sublocks for hR1 - use periodic image of PL1
+        !
+        sub_block=0.d0
+        !
+        if (i==1) then  !Do diagonal only
+            do j=1,num_wann_cell_ll
+                do k=1,num_wann_cell_ll
+                    sub_block(j,k)=hr_one_dim(tran_sorted_idx((i-1)*num_wann_cell_ll+k),tran_sorted_idx(num_wann-tran_num_ll+j),0)
+                enddo
+            enddo
+            !
+            ! MS: Now fill subblocks of hR1
+            !
+            do j=1,tran_num_cell_ll-i+1
+                hR1((j-1)*num_wann_cell_ll+1                        :j*num_wann_cell_ll,&
+                    (j-1)*num_wann_cell_ll+1+(i-1)*num_wann_cell_ll :j*num_wann_cell_ll+(i-1)*num_wann_cell_ll)=sub_block
+            enddo
+        endif
     enddo
     !
     !Special case tran_num_cell_ll=1, the diagonal sub-block of hR1 is hR1, so cannot be left as zero
@@ -3068,15 +3103,22 @@ loop_n1: do n1 = -irvec_max, irvec_max
             hLC(i,j-tran_num_ll)=hr_one_dim(tran_sorted_idx(i),tran_sorted_idx(j),0)
         enddo
     enddo
-    if (tran_num_cell_ll .gt. 1) then
-        do j=1,tran_num_cell_ll
-            do k=1,tran_num_cell_ll
-                if (k .ge. j) then
-                    hLC((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.d0
-                endif
-            enddo
-        enddo
-    endif
+!----!
+! MS ! Rely on dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
+!----!
+!    if (tran_num_cell_ll .gt. 1) then
+!        do j=1,tran_num_cell_ll
+!            do k=1,tran_num_cell_ll
+!                if (k .ge. j) then
+!                    hLC((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.d0
+!                endif
+!            enddo
+!        enddo
+!    endif
+!---!
+!end!
+!---!
+
     !
     !Building hC
     !
@@ -3095,15 +3137,22 @@ loop_n1: do n1 = -irvec_max, irvec_max
             hCR(i-(num_wann-2*tran_num_ll),j-(num_wann-tran_num_ll))=hr_one_dim(tran_sorted_idx(i),tran_sorted_idx(j),0)
         enddo
     enddo
-    if (tran_num_cell_ll .gt. 1) then
-        do j=1,tran_num_cell_ll
-            do k=1,tran_num_cell_ll
-                if (k .ge. j) then
-                    hCR((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.d0
-                endif
-            enddo
-        enddo
-    endif
+!----!
+! MS ! Rely on dist_cutoff doing the work here, as it cuts element-wise, not block wise (incorrect)
+!----!
+!    if (tran_num_cell_ll .gt. 1) then
+!        do j=1,tran_num_cell_ll
+!            do k=1,tran_num_cell_ll
+!                if (k .ge. j) then
+!                    hCR((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.d0
+!                endif
+!            enddo
+!        enddo
+!    endif
+!---!
+!end!
+!---!
+
     !
     !Subtract the Fermi energy from the diagonal elements of hC,hL0,hR0
     !
@@ -3123,36 +3172,38 @@ loop_n1: do n1 = -irvec_max, irvec_max
     tran_num_cc=num_wann-(2*tran_num_ll)
 
     !
-    ! Find and print effective PL length
+    ! MS: Find and print effective PL length
     !
+    if (.not. pl_warning) then
     PL_length=0.d0
-    do i=1,tran_num_ll
-        do j=1,tran_num_ll
-            if (abs(hL1(i,j)) .gt. 0.d0) then
-                if (index(dist_cutoff_mode,'one_dim') .gt. 0) then
-                    dist=abs(wannier_centres_translated(coord(1),tran_sorted_idx(i))&
-                            -wannier_centres_translated(coord(1),tran_sorted_idx(j+tran_num_ll)))
-                else
-                    dist_vec(:)=wannier_centres_translated(:,tran_sorted_idx(i))&
-                               -wannier_centres_translated(:,tran_sorted_idx(j+tran_num_ll))
-                    dist=dsqrt(dot_product(dist_vec,dist_vec))
-                endif
-                PL_length=max(PL_length,dist)
-            endif
-            if (abs(hR1(i,j)) .gt. 0.d0) then
-                if (index(dist_cutoff_mode,'one_dim') .gt. 0) then
-                    dist=abs(wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-2*tran_num_ll+i))&
-                            -wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-tran_num_ll+j)))
-                else
-                    dist_vec(:)=wannier_centres_translated(:,tran_sorted_idx(num_wann-2*tran_num_ll+i))&
+       do i=1,tran_num_ll
+           do j=1,tran_num_ll
+               if (abs(hL1(i,j)) .gt. 0.d0) then
+                   if (index(dist_cutoff_mode,'one_dim') .gt. 0) then
+                       dist=abs(wannier_centres_translated(coord(1),tran_sorted_idx(i))&
+                               -wannier_centres_translated(coord(1),tran_sorted_idx(j+tran_num_ll)))
+                   else
+                       dist_vec(:)=wannier_centres_translated(:,tran_sorted_idx(i))&
+                                  -wannier_centres_translated(:,tran_sorted_idx(j+tran_num_ll))
+                       dist=dsqrt(dot_product(dist_vec,dist_vec))
+                   endif
+                   PL_length=max(PL_length,dist)
+               endif
+               if (abs(hR1(i,j)) .gt. 0.d0) then
+                  if (index(dist_cutoff_mode,'one_dim') .gt. 0) then
+                       dist=abs(wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-2*tran_num_ll+i))&
+                               -wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-tran_num_ll+j)))
+                  else
+                       dist_vec(:)=wannier_centres_translated(:,tran_sorted_idx(num_wann-2*tran_num_ll+i))&
                                -wannier_centres_translated(:,tran_sorted_idx(num_wann-tran_num_ll+j))
-                    dist=dsqrt(dot_product(dist_vec,dist_vec))
-                endif
-                PL_length=max(PL_length,dist)
-            endif
-        enddo
-    enddo
-    write(stdout,'(1x,a,f12.6,a)')'Approximate effective principal layer length is: ',PL_length,' Ang.'
+                       dist=dsqrt(dot_product(dist_vec,dist_vec))
+                  endif
+                  PL_length=max(PL_length,dist)
+               endif
+           enddo
+       enddo
+       write(stdout,'(1x,a,f12.6,a)')'Approximate effective principal layer length is: ',PL_length,' Ang.'
+    endif
 
     deallocate(sub_block,stat=ierr)
     if (ierr/=0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham')
@@ -3239,4 +3290,5 @@ loop_n1: do n1 = -irvec_max, irvec_max
   end subroutine tran_lcr_2c2_build_ham
 
 end module w90_transport
+
 
