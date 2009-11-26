@@ -128,7 +128,7 @@ contains
     end if
 ![ysl-e]
 
-    if(index(devel_flag,'memory')>0) then
+    if(optimisation<=0) then
        page_unit=io_file_unit()
        open(unit=page_unit,form='unformatted',status='scratch')
        ! Update the m_matrix accordingly

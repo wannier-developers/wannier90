@@ -61,7 +61,7 @@ contains
          num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
-         wannier_spreads,omega_total,omega_tilde,devel_flag
+         wannier_spreads,omega_total,omega_tilde,devel_flag,optimisation
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -113,7 +113,7 @@ contains
     if (ierr/=0) call io_error('Error allocating history in wann_main')
 
     ! module data
-    if(index(devel_flag,'memory')==0) then
+    if(optimisation>0) then
        allocate(  m0 (num_wann, num_wann, nntot, num_kpts),stat=ierr)
     end if
     if (ierr/=0) call io_error('Error in allocating m0 in wann_main')
@@ -240,7 +240,7 @@ contains
     lconverged=.false. ; lfirst=.true. ; lrandom=.false.
     conv_count=0 ; noise_count=0
 
-    if(.not.lfixstep .and.index(devel_flag,'memory')>0) then
+    if(.not.lfixstep .and.optimisation<=0) then
        page_unit=io_file_unit()
        open(unit=page_unit,status='scratch',form='unformatted')
     endif
@@ -289,7 +289,7 @@ contains
           ! store original U and M before rotating
           u0=u_matrix 
 
-          if(index(devel_flag,'memory')>0) then
+          if(optimisation<=0) then
              write(page_unit)   m_matrix
              rewind(page_unit)
           else
@@ -336,7 +336,7 @@ contains
           ! if doing a line search then restore original U and M before rotating 
           if (.not.lfixstep) then 
              u_matrix=u0
-             if(index(devel_flag,'memory')>0) then
+             if(optimisation<=0) then
                 read(page_unit)  m_matrix
                 rewind(page_unit)
              else
@@ -490,7 +490,7 @@ contains
 
     deallocate(u0, stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating u0 in wann_main')
-    if(index(devel_flag,'memory')==0) then
+    if(optimisation>0) then
        deallocate(m0, stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating m0 in wann_main')
     end if

@@ -120,6 +120,7 @@ module w90_parameters
   real(kind=dp),     public, save :: wannier_plot_radius
   integer,           public, save :: search_shells   !for kmesh
   real(kind=dp),     public, save :: kmesh_tol
+  integer,           public, save :: optimisation
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -287,6 +288,10 @@ contains
 
     iprint          =  1             ! Verbosity
     call param_get_keyword('iprint',found,i_value=iprint)
+
+    optimisation    =  3             ! Verbosity
+    call param_get_keyword('optimisation',found,i_value=optimisation)
+
 
     if (transport .and. tran_read_ht) goto 301 
 
@@ -1142,6 +1147,7 @@ contains
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :',num_bands,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :',timing_level,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :',optimisation,'|'
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :',postproc_setup,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :',gamma_only,'|'
@@ -3345,7 +3351,8 @@ contains
        mem_dis1=mem_dis1+num_bands*num_bands*num_kpts*size_cmplx    !cham
        mem_dis2=mem_dis2+num_wann*num_wann*nntot*num_kpts*size_cmplx!m_matrix
 
-       if(index(devel_flag,'memory')>0) then
+
+      if(optimisation<=0) then
           mem_dis=mem_dis+mem_dis1
        else
           mem_dis=mem_dis+max(mem_dis1,mem_dis2)
@@ -3359,7 +3366,7 @@ contains
     !Wannierise
 
     mem_wan1=mem_wan1+(num_wann*num_wann*nntot*num_kpts)*size_cmplx     !  'm0' 
-    if(index(devel_flag,'memory')==0) then
+    if(optimisation>0) then
        mem_wan=mem_wan+mem_wan1
     endif
     mem_wan=mem_wan+(num_wann* num_wann* num_kpts)*size_cmplx           !  'u0' 
@@ -3397,12 +3404,14 @@ contains
      if(disentanglement) &
           write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:',(mem_param+mem_dis)/(1024**2),' Mb'
      write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan)/(1024**2),' Mb'
-     if(index(devel_flag,'memory')==0.and. iprint>1) then
+     if(optimisation>0 .and. iprint>1) then
         write(stdout,'(1x,a)')  '|                                                                            |'
-        write(stdout,'(1x,a)')  '| N.B. by setting the page file option memory usage will be reduced to:      |'
+        write(stdout,'(1x,a)')  '|   N.B. by setting optimisation=0 memory usage will be reduced to:          |'
+        if (disentanglement) &
         write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:',(mem_param+mem_dis- &
              max(mem_dis1,mem_dis2)+mem_dis1)/(1024**2),' Mb'
         write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan-mem_wan1)/(1024**2),' Mb'
+     write(stdout,'(1x,a)')  '|   However, this will result in more i/o and slow down the calculation      |'
      endif
 
      write(stdout,'(1x,a)')  '*----------------------------------------------------------------------------*'
