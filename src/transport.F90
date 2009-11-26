@@ -1707,7 +1707,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
 !!$    integer                                           :: l,max_i,iterator !aam: unused variables
     integer                                           :: i,j,k,PL_selector,sort_iterator,sort_iterator2,ierr,&
-                                                         temp_coord_2,temp_coord_3,n,num_wann_cell_ll,num_wf_group1,num_wf_last_group
+                                                        temp_coord_2,temp_coord_3,n,num_wann_cell_ll,num_wf_group1,num_wf_last_group
     integer,allocatable,dimension(:)                  :: PL_groups,PL1_groups,PL2_groups,PL3_groups,PL4_groups,central_region_groups
     integer,allocatable,dimension(:,:)                :: PL_subgroup_info,PL1_subgroup_info,PL2_subgroup_info,PL3_subgroup_info,&
                                                          PL4_subgroup_info,central_subgroup_info,temp_subgroup
@@ -1758,7 +1758,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Check
     !
-    if (num_wann < 4*tran_num_ll) then 
+    if (num_wann .le. 4*tran_num_ll) then 
         call io_error('Principle layers are too big.')
     endif
 
@@ -1920,12 +1920,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Build the sorted index array
     !
-    tran_sorted_idx                                                     =centres_initial_sorted(1,:)
-    tran_sorted_idx(1:tran_num_ll)                                      =PL1(1,:)
-    tran_sorted_idx(tran_num_ll+1:2*tran_num_ll)                        =PL2(1,:)
-    tran_sorted_idx(2*tran_num_ll+1:num_wann-(2*tran_num_ll))           =central_region(1,:)
-    tran_sorted_idx(num_wann-(2*tran_num_ll-1):num_wann-(tran_num_ll))  =PL3(1,:)
-    tran_sorted_idx(num_wann-(tran_num_ll-1):)                          =PL4(1,:)
+    tran_sorted_idx                                                     =nint(centres_initial_sorted(1,:))
+    tran_sorted_idx(1:tran_num_ll)                                      =nint(PL1(1,:))
+    tran_sorted_idx(tran_num_ll+1:2*tran_num_ll)                        =nint(PL2(1,:))
+    tran_sorted_idx(2*tran_num_ll+1:num_wann-(2*tran_num_ll))           =nint(central_region(1,:))
+    tran_sorted_idx(num_wann-(2*tran_num_ll-1):num_wann-(tran_num_ll))  =nint(PL3(1,:))
+    tran_sorted_idx(num_wann-(tran_num_ll-1):)                          =nint(PL4(1,:))
 
     sort_iterator=sort_iterator+1
     !
@@ -2134,7 +2134,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     pl_warning=.false.
     num_wf_group1=size(PL1_subgroup_info(1,:))
-    if (size(PL1_groups .ge. 1)) then
+    if (size(PL1_groups) .ge. 1) then
         num_wf_last_group=size(PL1_subgroup_info(size(PL1_groups),:)) 
     else
         !
