@@ -1705,10 +1705,10 @@ contains
                ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
                ! COMPLEMENT SPACE
                
-               allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
-               if (ierr/=0) call io_error('Error allocating camp in dis_extract')
-               
                if (iter.eq.dis_num_iter) then  
+                  allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
+                  if (ierr/=0) call io_error('Error allocating camp in dis_extract')
+
                   if (ndimwin(nkp).gt.num_wann) then  
                      do j = 1, ndimwin(nkp) - num_wann  
                         if ( num_wann.gt.ndimfroz(nkp) ) then  
@@ -2318,12 +2318,6 @@ contains
 
       allocate(wkomegai1(num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating wkomegai1 in dis_extract_gamma')
-      allocate(ceamp(num_bands,num_bands,num_kpts),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating ceamp in dis_extract_gamma')
-      allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating camp in dis_extract_gamma')
-      allocate(cham(num_bands,num_bands,num_kpts),stat=ierr)
-      if (ierr/=0) call io_error('Error allocating cham in dis_extract_gamma')
 !@@@
       allocate(rzmat_in(num_bands,num_bands,num_kpts),stat=ierr)
       if (ierr/=0) call io_error('Error allocating rzmat_in in dis_extract')
@@ -2497,26 +2491,31 @@ contains
 
             ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
             ! COMPLEMENT SPACE
-            if (iter.eq.dis_num_iter) then  
-               if (ndimwin(nkp).gt.num_wann) then  
-                  do j = 1, ndimwin(nkp) - num_wann  
-                     if ( num_wann.gt.ndimfroz(nkp) ) then  
-                        ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
-                        camp(1:ndimwin(nkp),j,nkp)=cz(1:ndimwin(nkp),j)
-                     else  
-                        ! Then num_wann=NDIMFROZ(NKP)
-                        ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
-                        do i = 1,ndimwin(nkp)  
-                           camp(i,j,nkp) = cmplx_0  
-                           if (i.eq.indxnfroz(j,nkp)) camp(i,j,nkp) = cmplx_1
-                        enddo
-                     endif
-                  enddo
-               else  
-                  icompflag = 1
+            if (index(devel_flag,'compspace')>0) then
+               
+               if (iter.eq.dis_num_iter) then  
+                  allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
+                  if (ierr/=0) call io_error('Error allocating camp in dis_extract_gamma')
+                  if (ndimwin(nkp).gt.num_wann) then  
+                     do j = 1, ndimwin(nkp) - num_wann  
+                        if ( num_wann.gt.ndimfroz(nkp) ) then  
+                           ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
+                           camp(1:ndimwin(nkp),j,nkp)=cz(1:ndimwin(nkp),j)
+                        else  
+                           ! Then num_wann=NDIMFROZ(NKP)
+                           ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
+                           do i = 1,ndimwin(nkp)  
+                              camp(i,j,nkp) = cmplx_0  
+                              if (i.eq.indxnfroz(j,nkp)) camp(i,j,nkp) = cmplx_1
+                           enddo
+                        endif
+                     enddo
+                  else  
+                     icompflag = 1
+                  endif
                endif
-            endif
-            
+            end if
+
          enddo
          ! [Loop over k points (nkp)]
 
@@ -2610,6 +2609,17 @@ contains
 
       enddo
       ! [BIG ITERATION LOOP (iter)]
+
+      deallocate(rzmat_out,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating rzmat_out in dis_extract_gamma')
+      deallocate(rzmat_in,stat=ierr)
+      if (ierr/=0) call io_error('Error deallocating rzmat_in in dis_extract_gamma')
+
+      allocate(ceamp(num_bands,num_bands,num_kpts),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating ceamp in dis_extract_gamma')
+      allocate(cham(num_bands,num_bands,num_kpts),stat=ierr)
+      if (ierr/=0) call io_error('Error allocating cham in dis_extract_gamma')
+
 
       if (.not.dis_converged) then
          write(stdout,'(/5x,a)') '<<< Warning: Maximum number of disentanglement &
@@ -2796,14 +2806,12 @@ contains
       deallocate(history,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating history in dis_extract_gamma')
 
-      deallocate(rzmat_out,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating rzmat_out in dis_extract_gamma')
-      deallocate(rzmat_in,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating rzmat_in in dis_extract_gamma')
       deallocate(cham,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating cham in dis_extract_gamma')
-      deallocate(camp,stat=ierr)
-      if (ierr/=0) call io_error('Error deallocating camp in dis_extract_gamma')
+      if(allocated(camp)) then
+         deallocate(camp,stat=ierr)
+         if (ierr/=0) call io_error('Error deallocating camp in dis_extract_gamma')
+      end if
       deallocate(ceamp,stat=ierr)
       if (ierr/=0) call io_error('Error deallocating ceamp in dis_extract_gamma')
       deallocate(wkomegai1,stat=ierr)

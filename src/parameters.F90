@@ -3342,10 +3342,16 @@ contains
        mem_dis1=mem_dis1+5*num_bands*size_int                       !iwork
        mem_dis1=mem_dis1+num_bands*size_int                         !ifail
        mem_dis1=mem_dis1+num_bands*size_real                        !w
-       mem_dis1=mem_dis1+7*num_bands*size_real                      !rwork
-       mem_dis1=mem_dis1+(num_bands*(num_bands+1))/2*size_cmplx     !cap
-       mem_dis1=mem_dis1+2*num_bands*size_cmplx                     !cwork
-       mem_dis1=mem_dis1+num_bands*num_bands*size_cmplx             !cz
+       if(gamma_only) then
+         mem_dis1=mem_dis1+(num_bands*(num_bands+1))/2*size_real    !cap_r
+         mem_dis1=mem_dis1+8*num_bands*size_real                    !work
+         mem_dis1=mem_dis1+num_bands*num_bands*size_real            !rz
+       else
+         mem_dis1=mem_dis1+7*num_bands*size_real                    !rwork
+         mem_dis1=mem_dis1+(num_bands*(num_bands+1))/2*size_cmplx   !cap
+         mem_dis1=mem_dis1+2*num_bands*size_cmplx                   !cwork
+         mem_dis1=mem_dis1+num_bands*num_bands*size_cmplx           !cz
+       end if  
        mem_dis1=mem_dis1+num_kpts*size_real                         !wkomegai1
        mem_dis1=mem_dis1+num_bands*num_bands*num_kpts*size_cmplx    !ceamp
        mem_dis1=mem_dis1+num_bands*num_bands*num_kpts*size_cmplx    !cham
@@ -3373,27 +3379,40 @@ contains
     mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_real               !  'rnkb' 
     mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_real               !  'ln_tmp' 
     mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_cmplx              !  'csheet' 
-    mem_wan=mem_wan+(num_wann* num_wann* num_kpts) *size_cmplx          !  'cdodq' 
     mem_wan=mem_wan+(num_wann* nntot* num_kpts)*size_real               !  'sheet' 
     mem_wan=mem_wan+(3* num_wann)*size_real                             !  'rave' 
     mem_wan=mem_wan+(num_wann)  *size_real                              !  'r2ave' 
     mem_wan=mem_wan+(num_wann) *size_real                               !  'rave2' 
     mem_wan=mem_wan+(3* num_wann) *size_real                            !  'rguide' 
-    mem_wan=mem_wan+ (num_wann)*size_cmplx                              !  'cwschur1'
-    mem_wan=mem_wan+ (10 * num_wann) *size_cmplx                        !  'cwschur2'
-    mem_wan=mem_wan+ (num_wann)*size_cmplx                              !  'cwschur3'
-    mem_wan=mem_wan+ (num_wann) *size_cmplx                             !  'cwschur4'
-    mem_wan=mem_wan+ (num_wann* num_wann* num_kpts) *size_cmplx         !  'cdq'
     mem_wan=mem_wan+ (num_wann* num_wann)  *size_cmplx                  !  'cz'
-    mem_wan=mem_wan+ (num_wann* num_wann) *size_cmplx                   !  'cmtmp'
-    mem_wan=mem_wan+ (num_wann* num_wann* num_kpts) *size_cmplx         !  'cdqkeep'
-    mem_wan=mem_wan+(num_wann*num_wann)*size_cmplx                      !  'tmp_cdq'
-    mem_wan=mem_wan+ (num_wann)*size_real                               !  'evals'
-    mem_wan=mem_wan+ (4*num_wann)*size_cmplx                            !  'cwork'
-    mem_wan=mem_wan+ (3*num_wann-2)*size_real                           !  'rwork'
-    !d_omega
-    mem_wan=mem_wan+(num_wann* num_wann) *size_cmplx   !  'cr' 
-    mem_wan=mem_wan+(num_wann* num_wann)*size_cmplx    !  'crt' 
+    if(gamma_only) then
+     mem_wan=mem_wan +  num_wann*num_wann*nntot*2*size_cmplx    ! m_w
+     mem_wan=mem_wan +  num_wann*num_wann*size_cmplx            ! uc_rot 
+     mem_wan=mem_wan +  num_wann*num_wann*size_real             ! ur_rot 
+     !internal_svd_omega_i
+     mem_wan=mem_wan + 10*num_wann*size_cmplx                   ! cw1 
+     mem_wan=mem_wan + 10*num_wann*size_cmplx                   ! cw2
+     mem_wan=mem_wan +  num_wann*num_wann*size_cmplx             ! cv1 
+     mem_wan=mem_wan +  num_wann*num_wann*size_cmplx             ! cv2 
+     mem_wan=mem_wan +  num_wann*num_wann*size_real              ! cpad1 
+     mem_wan=mem_wan +  num_wann*size_cmplx                      ! singvd
+    else
+     mem_wan=mem_wan+ (num_wann)*size_cmplx                              !  'cwschur1'
+     mem_wan=mem_wan+ (10 * num_wann) *size_cmplx                        !  'cwschur2'
+     mem_wan=mem_wan+ (num_wann)*size_cmplx                              !  'cwschur3'
+     mem_wan=mem_wan+ (num_wann) *size_cmplx                             !  'cwschur4'
+     mem_wan=mem_wan+ (num_wann* num_wann* num_kpts) *size_cmplx         !  'cdq'
+     mem_wan=mem_wan+ (num_wann* num_wann) *size_cmplx                   !  'cmtmp'
+     mem_wan=mem_wan+ (num_wann* num_wann* num_kpts) *size_cmplx         !  'cdqkeep'
+     mem_wan=mem_wan+(num_wann*num_wann)*size_cmplx                      !  'tmp_cdq'
+     mem_wan=mem_wan+ (num_wann)*size_real                               !  'evals'
+     mem_wan=mem_wan+ (4*num_wann)*size_cmplx                            !  'cwork'
+     mem_wan=mem_wan+ (3*num_wann-2)*size_real                           !  'rwork'
+     !d_omega
+     mem_wan=mem_wan+(num_wann* num_wann) *size_cmplx   !  'cr' 
+     mem_wan=mem_wan+(num_wann* num_wann)*size_cmplx    !  'crt' 
+    end if
+
     if(disentanglement) &
          mem_wan= mem_wan+ num_wann*num_wann*nntot*num_kpts*size_cmplx       !m_matrix
 
@@ -3404,13 +3423,17 @@ contains
      if(disentanglement) &
           write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:',(mem_param+mem_dis)/(1024**2),' Mb'
      write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan)/(1024**2),' Mb'
-     if(optimisation>0 .and. iprint>1) then
+     if(optimisation>0 .and. iprint>1 ) then
         write(stdout,'(1x,a)')  '|                                                                            |'
         write(stdout,'(1x,a)')  '|   N.B. by setting optimisation=0 memory usage will be reduced to:          |'
         if (disentanglement) &
         write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:',(mem_param+mem_dis- &
              max(mem_dis1,mem_dis2)+mem_dis1)/(1024**2),' Mb'
-        write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan-mem_wan1)/(1024**2),' Mb'
+        if(gamma_only) then
+         write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan)/(1024**2),' Mb'
+        else
+         write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:',(mem_param+mem_wan-mem_wan1)/(1024**2),' Mb'
+        end if
      write(stdout,'(1x,a)')  '|   However, this will result in more i/o and slow down the calculation      |'
      endif
 
