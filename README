@@ -5,7 +5,7 @@
  The Maximally-Localised Generalised Wannier Functions Code 
                                                             
  Authors:      Arash A. Mostofi   (Imperial College London, UK)
-               Jonathan R. Yates  (University of Cambridge, UK)
+               Jonathan R. Yates  (University of Oxford, UK)
                Young-Su Lee       (KIST, S. Korea)
  Contributors: Matthew Shelley    (Imperial College London, UK)
                Nicolas Poilvert   (MIT, USA)
@@ -51,7 +51,7 @@ Further information can be found in the user guide and tutorial
         Phys. Rev. B 65 035109 (2001)             
                                                          
 
-Copyright (C) 1997-2008 Jonathan Yates, Arash Mostofi, Young-Su Lee, 
+Copyright (C) 1997-2009 Jonathan Yates, Arash Mostofi, Young-Su Lee, 
            Nicola Marzari, Ivo Souza, David Vanderbilt 
 
 All the material included in this distribution is free software;
