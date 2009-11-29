@@ -7,7 +7,7 @@
 !                                                            !
 !        Authors:                                            !
 !              Arash A. Mostofi   (Imperial College London)  !
-!              Jonathan R. Yates  (University of Cambridge)  !
+!              Jonathan R. Yates  (University of Oxford)     !
 !              Young-Su Lee       (KIST, S.Korea)            ! 
 !                                                            !
 !  Please cite                                               !
@@ -16,7 +16,7 @@
 !        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
 !        for Obtaining Maximally Localised Wannier           !
 !        Functions", Computer Physics Communications,        !
-!        accepted (2007); http//www.arxiv.org/abs/0708.0650  !
+!        178, 685 (2008)                                     !
 !                                                            !
 !  in any publications arising from the use of this code.    !
 !                                                            !
@@ -30,7 +30,7 @@
 !        Phys. Rev. B 65 035109 (2001)                       !
 !                                                            !
 !                                                            !
-! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
+! Copyright (C) 2009 Jonathan Yates, Arash Mostofi,          !
 !  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
