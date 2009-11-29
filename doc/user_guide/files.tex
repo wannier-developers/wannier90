@@ -488,7 +488,12 @@ visualiser ({\tt jmol}, {\tt gopenmol}, {\tt vmd}, etc.).
 \section{{\tt seedname\_hr.dat}}
 
 OUTPUT. Written if {\tt hr\_plot=.TRUE.}. The first line gives the date and
-time at which the file was created. The subsequent lines
+time at which the file was created. 
+The second line states the number of Wannier functions {\tt num\_wann}. The third
+line gives the number of Wigner-Seitz grid-points {\tt nrpts}. The next block of 
+{\tt nrpts} integers gives the degeneracy of each Wigner-Seitz grid point, with
+15 entries per line.
+Finally, the remaining {\tt num\_wann}$^2 \times$ {\tt nrpts} lines
 each contain, respectively, the components of the vector $\mathbf{R}$
 in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
 and $n$, and the real and imaginary parts of the Hamiltonian matrix element
@@ -496,6 +501,10 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
 
 \begin{verbatim}
  Created on 24May2007 at 23:32:09                            
+        20
+        17
+    4   1   2    1    4    1    1    2    1    4    6    1    1   1   2
+    1   2
     0   0  -2    1    1   -0.001013    0.000000
     0   0  -2    2    1    0.000270    0.000000
     0   0  -2    3    1   -0.000055    0.000000
