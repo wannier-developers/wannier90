@@ -6,6 +6,16 @@
 
 v1.2 (***DATE***)
 
+* The information written to the file seedname_hr.dat (the Hamiltonian
+  in the WF basis) has been extended to include the number of WF (num_wann),
+  the number of Wigner-Seitz points (nrpts) and the degeneracy of each point
+  (ndegen). 
+* The information contained in seedname.chk has been extended to
+  include the number of bands (num_bands), the number of excluded
+  bands (num_exclude_bands), the excluded band indices (exclude_bands)
+  and the Monkhorst-Pack grid dimensions (mp_grid). As a result
+  v1.2 is not compatible with checkfiles written with older versions of 
+  the code.
 * Automated lcr transport calculations from a single supercell.
   Includes robust sorting and Wannier function parity determination
   algorithms (new input variables: tran_num_cell_ll, tran_num_cell_rr,
