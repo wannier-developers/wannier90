@@ -30,7 +30,7 @@ General Public Licence. See the file {\tt LICENCE} that comes with the
 \subsection{Who wrote \wannier?}
 
 \wannier\ is written by Arash A. Mostofi (Imperial College London),
-Jonathan. R. Yates (University of Cambridge) and Young-Su Lee (Korea
+Jonathan. R. Yates (University of Oxford) and Young-Su Lee (Korea
 Institute of Science and Technology). \wannier\ is based on algorithms
 written in 1996-7 by Nicola Marzari (Massachusetts Institute of
 Technology) and David Vanderbilt (Rutgers University), and in 2000-1
@@ -117,10 +117,19 @@ Not at present.
 \subsection{Is there anything else I need?}
 
 Yes. \wannier\ works on top of an electronic structure
-calculation. At the time of writing, \wannier\ is interfaced to the
-\pwscf\ code, a plane-wave, pseudopotential, density-functional theory
-code, which is part of the {\tt quantum-espresso} package. You 
-will need to download it from the webpage {\tt
+calculation. 
+
+At the time of writing there are public, fully functioning, interfaces
+between \wannier\ and \pwscf,  {\sc abinit} ({\tt www.abinit.org}), {\sc siesta} ({\tt www.icmab.es/siesta/})
+and {\sc fleur} ({\tt www.fleur.de}). Interfaces to other
+electronic structure codes are in progress, e.g., {\sc castep} ({\tt
+  www.castep.org}), {\sc Wien2k} ({\tt www.wien2k.at}).
+
+To use 
+\wannier\ in combination with 
+\pwscf\ code (a plane-wave, pseudopotential, density-functional theory
+code, which is part of the {\tt quantum-espresso} package) you 
+will need to download \pwscf\ from the webpage {\tt
   www.quantum-espresso.org} or {\tt www.pwscf.org}. Then compile \pwscf\
 and the \wannier\ interface program {\tt pw2wannier90}. For
 instructions, please refer to the
@@ -129,11 +138,8 @@ documentation that comes with the {\tt quantum-espresso} distribution.
 For examples of how to use \pwscf\ and \wannier\ in conjunction with
 each other, see the \wannier\ Tutorial.
 
-Interfaces to other electronic structure codes, such as {\sc
-  castep},\footnote{{\tt www.castep.org}}
-{\sc fleur}\footnote{{\tt www.flapw.de}} and {\sc
-  abinit},\footnote{{\tt www.abinit.org}} are currently in
-progress and should become available in the near future. 
+
+
 
 %\section{Compile-time Problems}
 

@@ -379,13 +379,18 @@ E.g.,
 
 \section{Interface with {\sc pwscf}}
 
-There is a seamless interface between \wannier\ and \pwscf, a
+At the time of writing there are public, fully functioning, interfaces
+between \wannier\ and \pwscf,  {\sc abinit} ({\tt www.abinit.org}), {\sc siesta} ({\tt www.icmab.es/siesta/})
+and {\sc fleur} ({\tt www.fleur.de}). Interfaces to other
+electronic structure codes are in progress, e.g., {\sc castep} ({\tt
+  www.castep.org}), {\sc Wien2k} ({\tt www.wien2k.at}).
+
+Here we describe the
+seamless interface between \wannier\ and \pwscf, a
 plane-wave DFT code that comes as part of the {\tt quantum-espresso}
 package (see {\tt www.quantum-espresso.org} or {\tt
-  www.pwscf.org}). At the time of writing, interfaces to other
-electronic structure codes are in progress, e.g., {\sc castep} ({\tt
-  www.castep.org}), {\sc abinit} ({\tt www.abinit.org}) and {\sc
-  fleur} ({\tt www.fleur.de}). But, for the time being, you will need
+  www.pwscf.org}).
+You will need
 to download and compile \pwscf\ (i.e., the {\tt pw.x} code) and the
 post-processing interface {\tt pw2wannier90.x}. Please refer to the
 documentation that comes with the {\tt quantum-espresso} distribution

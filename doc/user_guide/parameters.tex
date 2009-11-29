@@ -100,6 +100,7 @@ Keyword & Type & Description \\
 {\sc devel\_flag }   & S & Flag for development use \\
 {\sc timing\_level } & I & Determines amount of timing information
 written to output \\
+{\sc optimisation } & I & Optimisation level \\ 
 {\sc translate\_home\_cell } & L & To translate final Wannier centres
 to home unit cell when writing xyz file\\
 {\sc write\_xyz }  & L & To write atomic positions and final centres in xyz file format \\
@@ -571,6 +572,19 @@ This indicates the level of verbosity of the output from 0,
 the bare minimum, to 3, which corresponds to full debugging output.
 
 The default value is 1.
+
+\subsection[optimisation]{\tt integer :: optimisation}
+
+This indicates the level of optimisation used in the code. This is a 
+trade between speed and memory. A positive number indicates fastest execution time at the cost
+of more memory. Zero or negative numbers indicates a smaller memory footprint - at increased
+execution time. 
+
+At the moment the only values that have an effect are \verb#optimisation<=0# (low memory) and \verb#optimisation>0# (fast)
+
+The default value is 3.
+
+
 
 \subsection[length\_unit]{\tt character(len=20) :: length\_unit}
 The length unit to be used for writing quantities in the output file
