@@ -32,7 +32,7 @@ module w90_parameters
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
   integer,           public, save :: mp_grid(3)
-  logical,           public, save :: automatic_mp_grid
+!  logical,           public, save :: automatic_mp_grid
   logical,           public, save :: gamma_only  
   real(kind=dp),     public, save :: dis_win_min
   real(kind=dp),     public, save :: dis_win_max
@@ -385,8 +385,9 @@ contains
     endif
 ![ysl-e]
 
-    automatic_mp_grid = .false.
-    call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
+!    aam: automatic_mp_grid no longer used
+!    automatic_mp_grid = .false.
+!    call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
 
     postproc_setup = .false.            ! set to true to write .nnkp file and exit
     call param_get_keyword('postproc_setup',found,l_value=postproc_setup)
@@ -1602,9 +1603,13 @@ contains
     open(unit=chk_unit,file=trim(seedname)//'.chk',form='unformatted')
 
     write(chk_unit) header                                   ! Date and time
+    write(chk_unit) num_bands                                ! Number of bands
+    write(chk_unit) num_exclude_bands                        ! Number of excluded bands
+    write(chk_unit) (exclude_bands(i),i=1,num_exclude_bands) ! Excluded bands 
     write(chk_unit) ((real_lattice(i,j),i=1,3),j=1,3)        ! Real lattice
     write(chk_unit) ((recip_lattice(i,j),i=1,3),j=1,3)       ! Reciprocal lattice
-    write(chk_unit) num_kpts
+    write(chk_unit) num_kpts                                 ! Number of k-points
+    write(chk_unit) (mp_grid(i),i=1,3)                       ! M-P grid
     write(chk_unit) ((kpt_latt(i,nkp),i=1,3),nkp=1,num_kpts) ! K-points
     write(chk_unit) nntot                  ! Number of nearest k-point neighbours
     write(chk_unit) num_wann               ! Number of wannier functions
@@ -1645,6 +1650,7 @@ contains
     integer :: chk_unit,nkp,i,j,k,l,ntmp,ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
+    integer :: tmp_excl_bands(1:num_exclude_bands),tmp_mp_grid(1:3)
 
     write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
 
@@ -1656,6 +1662,16 @@ contains
     write(stdout,'(1x,a)',advance='no') trim(header)
 
     ! Consistency checks
+    read(chk_unit) ntmp                           ! Number of bands
+    if (ntmp.ne.num_bands) call io_error('param_read_chk: Mismatch in num_bands')
+    read(chk_unit) ntmp                           ! Number of excluded bands
+    if (ntmp.ne.num_exclude_bands) &
+         call io_error('param_read_chk: Mismatch in num_exclude_bands')
+    read(chk_unit) (tmp_excl_bands(i),i=1,num_exclude_bands) ! Excluded bands
+    do i=1,num_exclude_bands
+       if (tmp_excl_bands(i).ne.exclude_bands(i)) &
+            call io_error('param_read_chk: Mismatch in exclude_bands')
+    enddo    
     read(chk_unit) ((tmp_latt(i,j),i=1,3),j=1,3)  ! Real lattice
     do j=1,3
        do i=1,3
@@ -1673,6 +1689,11 @@ contains
     read(chk_unit) ntmp                ! K-points
     if (ntmp.ne.num_kpts) &
          call io_error('param_read_chk: Mismatch in num_kpts')
+    read(chk_unit) (tmp_mp_grid(i),i=1,3)         ! M-P grid
+    do i=1,3
+       if (tmp_mp_grid(i).ne.mp_grid(i)) &
+            call io_error('param_read_chk: Mismatch in mp_grid')
+    enddo
     read(chk_unit) ((tmp_kpt_latt(i,nkp),i=1,3),nkp=1,num_kpts)
     do nkp=1,num_kpts
        do i=1,3
