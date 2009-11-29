@@ -419,7 +419,9 @@ contains
     header='written on '//cdate//' at '//ctime
 
     write(file_unit,*) header ! Date and time
-
+    write(file_unit,*) num_wann
+    write(file_unit,*) nrpts
+    write(file_unit,'(15I5)') (ndegen(i),i=1,nrpts)
     do loop_rpt=1,nrpts
        do i=1,num_wann
           do j=1,num_wann
