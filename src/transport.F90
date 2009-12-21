@@ -534,10 +534,13 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     n_e = floor((tran_win_max-tran_win_min)/tran_energy_step)+1
 
-    write(stdout,'(/1x,a)',advance='no') 'Calculating quantum conductance and density of states...'
+    write(stdout,'(/1x,a)',advance='no') 'Calculating quantum&
+        & conductance and density of states...'
 
     do n=1,n_e
        e_scan = tran_win_min + real(n-1,dp)*tran_energy_step
+
+!       if (mod(n,nint(0.1*n_e)).eq.0) write(stdout,'(a)',advance='no') '.' 
  
        ! compute conductance according to Fisher and Lee
        ! retarded Green
@@ -587,7 +590,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     end do
 
-    write(stdout,'(a)') ' done'
+    write(stdout,'(a/)') ' done'
 
     close(qc_unit)
     close(dos_unit)
@@ -2805,8 +2808,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     use w90_constants,          only : dp
     use w90_io,                 only : io_error,stdout,io_stopwatch
-    use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll,timing_level,iprint, &
-                                       easy_fix
+    use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll, &
+                                       timing_level,iprint, tran_easy_fix
 
     implicit none
 
@@ -2823,7 +2826,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     ! is found negative. Then updating the signature and the Hamiltonian
     ! matrix element for the corresponding line and column
     !
-    if ( easy_fix ) then
+    if ( tran_easy_fix ) then
         do i=1,num_wann
             if ( real(signatures(1,i)) .lt. 0.d0 ) then
                 signatures(:,i) = -signatures(:,i)
