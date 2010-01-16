@@ -53,12 +53,24 @@ dist:
 		./examples/example1[0-3]/*.nscf \
 		./examples/example0[5-9]/*.pw2wan \
 		./examples/example1[0-3]/*.pw2wan \
+		./examples/example1[4-5]/defected/*.scf \
+		./examples/example1[4-5]/defected/*.nscf \
+		./examples/example1[4-5]/defected/*.win \
+		./examples/example1[4-5]/defected/*.pw2wan \
+                ./examples/example1[4-5]/periodic/*.scf \
+                ./examples/example1[4-5]/periodic/*.nscf \
+                ./examples/example1[4-5]/periodic/*.win \
+                ./examples/example1[4-5]/periodic/*.pw2wan \
 		./examples/example08/README \
 		./pseudo/*.UPF \
 		./pwscf/README \
 		./pwscf/v3.2.3/*.f90 \
+		./pwscf/v4.0/*.f90 \
+		./pwscf/v4.1/*.f90 \
 		./config/make.sys* \
 		./utility/*.pl \
+		./utility/PL_assessment/*.f90 \
+		./utility/PL_assessment/README \
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
