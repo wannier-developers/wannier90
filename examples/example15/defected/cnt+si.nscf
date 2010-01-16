@@ -14,17 +14,14 @@
     nat  = 220
     ntyp = 2
     nbnd = 1100
-    ecutwfc = 30
-    ecutrho = 240
-    occupations = "smearing" 
-    smearing = "cold"
-    degauss = 0.007
+    ecutwfc = 60
+    occupations = smearing 
+    degauss = 0.02
 /
 &electrons
-    mixing_beta = 0.6
-    conv_thr =  1.0d-10
+    mixing_beta = 0.2
+    conv_thr =  1.0d-9
     diagonalization = 'cg'
-    startingwfc = 'random'
 /
 ATOMIC_SPECIES
  C   12.00   C.pz-vbc.UPF

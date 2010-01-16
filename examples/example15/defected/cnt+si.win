@@ -6,7 +6,7 @@ conv_window     = 20
 translate_home_cell = .true.
 
 dis_win_max     = 7.5
-dis_froz_max    = -2.3179   # Fermi energy
+dis_froz_max    = -2.30
 dis_conv_tol    = 1.0d-9
 dis_conv_window = 20
 guiding_centres = .true.
@@ -17,13 +17,16 @@ transport = .true.
 transport_mode = lcr
 tran_read_ht = .false.
 one_dim_axis = z
-fermi_energy = -2.3000
+fermi_energy = -2.30
 tran_win_min = -25
 tran_win_max = 6
 tran_energy_step = 0.01
 translation_centre_frac = 0.0 0.0 0.5
 tran_num_cell_ll = 2
 tran_num_ll = 100
+
+dist_cutoff = 13.35
+dist_cutoff_mode = one_dim
 
 ! SYSTEM
 begin unit_cell_cart

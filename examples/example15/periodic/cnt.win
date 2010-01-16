@@ -4,7 +4,7 @@ conv_tol        = 1.0d-9
 conv_window     = 20
 
 dis_win_max     = 7.5
-dis_froz_max    = -2.3162   # Fermi energy
+dis_froz_max    = -2.4651   # Enter Fermi energy here
 dis_conv_tol    = 1.0d-9
 dis_conv_window = 20
 guiding_centres = .true.
@@ -18,7 +18,7 @@ End Kpoint_Path
 transport = .true.
 transport_mode = bulk
 one_dim_axis = z
-fermi_energy = -2.3162
+fermi_energy = -2.4651    # Enter Fermi energy here
 tran_win_min = -25
 tran_win_max = 6
 tran_energy_step = 0.01
@@ -26,6 +26,7 @@ translation_centre_frac = 0.0 0.0 0.5
 tran_num_bb=50
 
 dist_cutoff = 13.35
+dist_cutoff_mode = one_dim
 
 ! SYSTEM
 

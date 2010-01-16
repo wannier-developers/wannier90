@@ -14,7 +14,6 @@
     nat  = 13 
     ntyp = 1 
     ecutwfc = 30 
-    ecutrho = 300 
     occupations = 'smearing' 
     smearing = 'cold' 
     degauss = 0.007 

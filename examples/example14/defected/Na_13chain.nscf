@@ -15,13 +15,12 @@
     ntyp = 1 
     nbnd = 39 
     ecutwfc = 30 
-    ecutrho = 300 
     occupations = 'smearing' 
     smearing = 'cold' 
     degauss = 0.007 
 / 
 &electrons 
-    mixing_beta = 0.55 
+    mixing_beta = 0.2
     conv_thr =  1.0d-10 
     diagonalization = 'cg' 
     startingwfc = 'random' 
