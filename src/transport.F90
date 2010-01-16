@@ -1468,7 +1468,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
      !Read unkg file
      !
      unkg=cmplx_0
-     write(stdout,*)'    Reading '//trim(seedname)//'.unkg  file'
+     write(stdout,'(3a)')' Reading '//trim(seedname)//'.unkg  file'
      read(file_unit,*)num_G
 
      allocate(signatures(20,num_bands),stat=ierr)
@@ -1773,7 +1773,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         centres_non_sorted(1,i)=i
         centres_non_sorted(2,i)=wannier_centres_translated(coord(1),i)
     enddo
-    write(stdout,*)' Sorting WFs into principal layers'
+    write(stdout,'(/a)')' Sorting WFs into principal layers'
     !
     !Initial sorting according to coord(1).
     !
@@ -2610,11 +2610,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
           endif
        enddo
        if ((count(has_similar_centres) .eq. 0) .and. (i .eq. 1)) then
-          write(stdout,*)'No wannier functions found with similar centres: sorting completed'
+          write(stdout,'(a)')' No wannier functions found with similar centres: sorting completed'
           exit
        elseif (i .eq. 1) then
-            write(stdout,*)'Wannier functions found with similar centres: '
-            write(stdout,*)' -> using signatures to complete sorting '
+            write(stdout,*)' Wannier functions found with similar centres: '
+            write(stdout,*)'  -> using signatures to complete sorting '
        endif
        !
        !Save number of group of WFs in each unit cell and compare to previous unit cell
@@ -2626,8 +2626,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
              if (write_xyz) call tran_write_xyz()
              call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells')
           elseif (i .eq. 4*tran_num_cell_ll) then
-             write(stdout,*)'Consistent groups of similar centred wannier functions between '
-             write(stdout,*)'unit cells found'
+             write(stdout,*)' Consistent groups of similar centred wannier functions between '
+             write(stdout,*)' unit cells found'
              write(stdout,*)' '
           endif
        endif
@@ -2655,8 +2655,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
                 endif
             enddo
         enddo
-        write(stdout,*)'Consistent number of wannier functions between equivalent groups of similar'
-        write(stdout,*)'centred wannier functions'
+        write(stdout,*)' Consistent number of wannier functions between equivalent groups of similar'
+        write(stdout,*)' centred wannier functions'
         write(stdout,*)' '
         !
         write(stdout,*)' Fixing order of similar centred wannier functions using parity signatures'
