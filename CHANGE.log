@@ -4,7 +4,7 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
-v1.2 (***DATE***)
+v1.2 (14th Jan 2010)
 
 * The information written to the file seedname_hr.dat (the Hamiltonian
   in the WF basis) has been extended to include the number of WF (num_wann),
@@ -22,8 +22,7 @@ v1.2 (***DATE***)
   tran_group_threshold, easy_fix)
 * Added examples 14, 15 to tutorial to displaying new lcr transport
   functionality
-* Updated pw2wannier90 interface to allow new lcr calculations
-  (new input variable: write_unkg)
+* Updated interface to PWscf v4.1.2 (new input variable write_unkg)
 * New utility: PL_assessment. Investigates principal layer size 
   from bulk transport, many k-point lead calculations.
 * Altered <seedname>_centres.xyz output file to include atomic
@@ -31,12 +30,8 @@ v1.2 (***DATE***)
 * Fixes for tran_num_cell_ll=1 in tran_hr_one_dim_cut
 * Minor bug fixes
 * Addition of Matthew Shelley and Nicolas Poilvert as contributors.
-
-v1.1.1 (10th May 2008)
-
 * Report of estimated memory usage
 * Improved memory efficiency
-* Interface to Quantum-Espresso v4.0
  
 v1.1 (21st Dec 2007)
 
