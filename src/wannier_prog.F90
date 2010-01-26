@@ -20,7 +20,7 @@
 !                                                            !
 !  in any publications arising from the use of this code.    !
 !                                                            !
-!  Wannier90 is based on routines written by N. Marzari,     !
+!  Wannier90 is based on Wannier77, written by N. Marzari,   !
 !  I. Souza and D. Vanderbilt. For the method please cite    !
 !                                                            !
 !  [ref] N. Marzari and D. Vanderbilt,                       !
