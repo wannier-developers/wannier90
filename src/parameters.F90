@@ -2937,7 +2937,7 @@ contains
                        ang_states(5,2)=1
                     case ('f')
                        ang_states(1:7,3)=1
-                    case ('fz2')
+                    case ('fz3')
                        ang_states(1,3)=1
                     case ('fxz2')
                        ang_states(2,3)=1
