@@ -53,8 +53,8 @@ contains
            if (all(kpt_latt(:,nkp)<eps6)) have_gamma=.true.       
        end do
        if(.not. have_gamma) &
-            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. &
-            &Interpolation may be incorrect. !!!!'
+            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. ',&
+            & ' Interpolation may be incorrect. !!!!'
        ! Transform Hamiltonian to WF basis
        !
        call hamiltonian_setup()

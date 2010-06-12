@@ -142,8 +142,8 @@ contains
                    nn_found=.true.
                    nn=inn
                 else
-                   call io_error('Error reading '//trim(seedname)//'.mmn.&
-                        & More than one matching nearest neighbour found')
+                   call io_error('Error reading '//trim(seedname)// &
+                        '.mmn. More than one matching nearest neighbour found')
                 endif
              endif
           end do

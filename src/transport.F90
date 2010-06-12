@@ -1706,14 +1706,18 @@ loop_n1: do n1 = -irvec_max, irvec_max
     real(dp),dimension(2,num_wann)                    :: centres_non_sorted,centres_initial_sorted
     real(dp),dimension(2,tran_num_ll)                 :: PL1,PL2,PL3,PL4,PL
     real(dp),dimension(2,num_wann-(4*tran_num_ll))    :: central_region
-    real(dp)                                          :: reference_position,cell_length,distance,PL_max_val,PL_min_val
+    real(dp)                                          :: reference_position,&
+      cell_length,distance,PL_max_val,PL_min_val
 
 !!$    integer                                           :: l,max_i,iterator !aam: unused variables
-    integer                                           :: i,j,k,PL_selector,sort_iterator,sort_iterator2,ierr,&
-                                                        temp_coord_2,temp_coord_3,n,num_wann_cell_ll,num_wf_group1,num_wf_last_group
-    integer,allocatable,dimension(:)                  :: PL_groups,PL1_groups,PL2_groups,PL3_groups,PL4_groups,central_region_groups
-    integer,allocatable,dimension(:,:)                :: PL_subgroup_info,PL1_subgroup_info,PL2_subgroup_info,PL3_subgroup_info,&
-                                                         PL4_subgroup_info,central_subgroup_info,temp_subgroup
+    integer                                           :: i,j,k,PL_selector,&
+      sort_iterator,sort_iterator2,ierr,temp_coord_2,temp_coord_3,n,&
+      num_wann_cell_ll,num_wf_group1,num_wf_last_group
+    integer,allocatable,dimension(:)                  :: PL_groups,&
+      PL1_groups,PL2_groups,PL3_groups,PL4_groups,central_region_groups
+    integer,allocatable,dimension(:,:)                :: PL_subgroup_info,&
+      PL1_subgroup_info,PL2_subgroup_info,PL3_subgroup_info,&
+      PL4_subgroup_info,central_subgroup_info,temp_subgroup
 
     character(30)                                     :: fmt_1
     
@@ -1972,8 +1976,9 @@ loop_n1: do n1 = -irvec_max, irvec_max
                 ('Sorting techniques exhausted: Inconsitent number of wannier function among &
                   & similar groups within principal layers')
             endif
-            write(stdout,*) 'Inconsitent number of wannier function among similar groups within&
-                 & principal layers: restarting sorting...'
+            write(stdout,*) 'Inconsitent number of wannier function among &
+              &similar groups within& principal layers: restarting sorting...'
+
             deallocate(PL1_groups,stat=ierr)
             if (ierr/=0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
             deallocate(PL2_groups,stat=ierr)
@@ -2123,8 +2128,9 @@ loop_n1: do n1 = -irvec_max, irvec_max
                                                           wannier_centres_translated(3,tran_sorted_idx(n)), &
                                                           wannier_spreads(tran_sorted_idx(n))*lenconfac**2
           enddo
-          if (i .ne. tran_num_cell_ll) write(stdout,*)'---------------------------------------------&
-               &---------------------------------'
+          if (i .ne. tran_num_cell_ll) write(stdout,*)'---------------------&
+            &---------------------------------------------------------'
+
        enddo         
     enddo
  
@@ -2650,7 +2656,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
                 if (iprint .ge. 4) write(stdout,'(a3,i4,a9,i4,a7,i4)')'   ',i,'         ',j,'       ',wf_verifier(i,j)
                 if (i .ne. 1) then
                     if (wf_verifier(i,j) .ne. wf_verifier(i-1,j)) &
-                        call io_error('Inconsitent number of wannier functions between equivalent groups of similar &
+                        call io_error('Inconsitent number of wannier &
+                          &functions between equivalent groups of similar &
                         &centred wannier functions')
                 endif
             enddo

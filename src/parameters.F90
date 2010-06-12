@@ -1090,8 +1090,9 @@ contains
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_species
           do nat=1,atoms_species_num(nsp)
-             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|',atoms_symbol(nsp),nat,atoms_pos_frac(:,nat,nsp),&
-                  '|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
+             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+&                 '|',atoms_symbol(nsp),nat,atoms_pos_frac(:,nat,nsp),&
+&                 '|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
           end do
        end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
@@ -1109,8 +1110,8 @@ contains
        write(stdout,'(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
        do nsp=1,num_proj
-          write(stdout,'(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),&
-               & 2x,f4.1,1x,a1)')  '|',proj_site(1,nsp),proj_site(2,nsp),&
+          write(stdout,'(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
+&              '|',proj_site(1,nsp),proj_site(2,nsp),&
                proj_site(3,nsp),proj_l(nsp), proj_m(nsp),proj_radial(nsp),&
                proj_z(1,nsp),proj_z(2,nsp),proj_z(3,nsp),proj_x(1,nsp),&
                proj_x(2,nsp),proj_x(3,nsp),proj_zona(nsp),'|'
@@ -2806,8 +2807,8 @@ contains
            dummy=utility_strip(in_data(line))
            dummy=adjustl(dummy)
            pos1=index(dummy,':')
-           if(pos1==0) call io_error('param_read_projection: malformed projection &
-                &definition: '//trim(dummy))
+           if(pos1==0) &
+              call io_error('param_read_projection: malformed projection definition: '//trim(dummy))
            sites=0
            ctemp=dummy(:pos1-1)
            ! Read the atomic site
@@ -3048,11 +3049,11 @@ contains
               endif
            end if
            if(sites==-1) then
-              if(counter+sum(ang_states) > num_proj) call io_error('param_get_projection: &
-                   &too many projections defined')
+              if(counter+sum(ang_states) > num_proj) &
+                 call io_error('param_get_projection: too many projections defined')
            else
-              if(counter+sites*sum(ang_states) > num_proj) call io_error('param_get_projection:&
-                   & too many projections defined')
+              if(counter+sites*sum(ang_states) > num_proj) &
+                 call io_error('param_get_projection: too many projections defined')
            end if
            !
            if(sites==-1) then
@@ -3093,8 +3094,8 @@ contains
 
         ! check there are enough projections and add random projections if required
         if (.not. lpartrandom) then
-              if (counter.ne.num_proj) call io_error('param_get_projections:&
-                   & Fewer projections defined than the number of Wannier functions requested')
+              if (counter.ne.num_proj) call io_error(&
+               'param_get_projections: Fewer projections defined than the number of Wannier functions requested')
         else
            call random_seed()
            do loop=counter+1,num_proj

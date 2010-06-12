@@ -1838,9 +1838,9 @@ contains
       if (ierr/=0) call io_error('Error allocating cham in dis_extract')
 
       if (.not.dis_converged) then
-         write(stdout,'(/5x,a)') '<<< Warning: Maximum number of disentanglement &
-              &iterations reached >>>'
-         write(stdout,'(10x,a)')  '<<< Disentanglement convergence criteria not satisfied >>>'
+         write(stdout,'(/5x,a)') &
+          '<<< Warning: Maximum number of disentanglement iterations reached >>>'
+         write(stdout,'(10x,a)') '<<< Disentanglement convergence criteria not satisfied >>>'
       endif
 
       if(index(devel_flag,'compspace')>0) then
@@ -2622,8 +2622,8 @@ contains
 
 
       if (.not.dis_converged) then
-         write(stdout,'(/5x,a)') '<<< Warning: Maximum number of disentanglement &
-              &iterations reached >>>'
+         write(stdout,'(/5x,a)') &
+           '<<< Warning: Maximum number of disentanglement iterations reached >>>'
          write(stdout,'(10x,a)')  '<<< Disentanglement convergence criteria not satisfied >>>'
       endif
 

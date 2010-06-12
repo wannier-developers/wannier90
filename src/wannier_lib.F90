@@ -166,6 +166,12 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
      exclude_bands_loc(1:num_exclude_bands) = exclude_bands(1:num_exclude_bands)
   end if
 
+  if (postproc_setup) then
+   call kmesh_write()
+   write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
+   write(stdout,'(/a)') ' '//trim(seedname)//'.nnkp written.'
+  endif
+
 
   call kmesh_dealloc()
   call param_dealloc()
