@@ -543,7 +543,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
      write(gnuunit,'(a)') '#set pointsize 0.275'
     end if
     !
-701 format('set data style dots',/,'set nokey',/, 'set xrange [0:',F8.5,']',/,'set yrange [',F9.5,' :',F9.5,']')
+701 format('set style data dots',/,'set nokey',/, 'set xrange [0:',F8.5,']',/,'set yrange [',F9.5,' :',F9.5,']')
 702 format('set xtics (',:20('"',A3,'" ',F8.5,','))
 703 format(A3,'" ',F8.5,')')
 705 format('set arrow from ',F8.5,',',F10.5,' to ',F8.5,',',F10.5, ' nohead')
