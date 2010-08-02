@@ -745,7 +745,7 @@ contains
           if(.not. eig_found) then
              if ( disentanglement) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot) ) then
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot) ) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
           else
