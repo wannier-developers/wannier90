@@ -17,6 +17,9 @@ lib:
 
 libs: lib
 
+wanpar:
+	(cd src ; make wanpar)
+
 clean:
 	cd src ; rm -f *.o *.mod *.MOD *.obj ;\
 	cd ../tests ; make clean ; \

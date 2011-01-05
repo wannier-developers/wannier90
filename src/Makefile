@@ -8,10 +8,17 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 
 OBJS2  =  wannier_lib.o
 
+OBJS_PAR  = constants.o io.o utility.o parameters.o hamiltonian.o overlap.o kmesh.o comms.o wanint_common.o 
+
+
 LIBRARY = ../libwannier.a
 
 prog: $(OBJS) 
 	$(F90) wannier_prog.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../wannier90.x
+
+wanpar: $(OBJS_PAR)
+	$(F90) wanpar.F90 $(LDOPTS) $(OBJS_PAR) $(LIBS) -o ../wanpar.mpi
+
 
 libs:     $(LIBRARY)
 
@@ -55,6 +62,12 @@ plot.o: plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o
 
 transport.o: transport.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(F90) $(FCOPTS) -c transport.F90
+
+comms.o: comms.F90 constants.o
+	 $(F90) $(FCOPTS) -c comms.F90
+
+wanint_common.o: wanint_common.F90 comms.o parameters.o utility.o constants.o io.o 
+	$(F90) $(FCOPTS) -c wanint_common.F90
 
 wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 	./hamiltonian.o ./kmesh.o ./overlap.o ./disentangle.o \
