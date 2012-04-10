@@ -26,7 +26,7 @@ module w90_wanint_common
 
   ! Parameters describing the direct lattice points R on a 
   ! Wigner-Seitz supercell
-  !
+  !!
   real(kind=dp), allocatable :: invdegen(:)
   integer, allocatable       :: irvec(:,:)
   real(kind=dp), allocatable :: crvec(:,:)
