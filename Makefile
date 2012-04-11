@@ -9,19 +9,16 @@ doc: thedoc
 wannier: 
 	(cd src ; make prog)
 
-debug: $(OBJS) 
-	$(F90) wannier_prog.f90 $(LDOPTS) $(OBJS) $(LIBS) -o wannier90.x
-
 lib:
 	(cd src ; make libs)
 
 libs: lib
 
-wanpar:
-	(cd src ; make wanpar)
+post:
+	(cd src ; make post)
 
 clean:
-	cd src ; rm -f *.o *.mod *.MOD *.obj ;\
+	cd src ; make clean ;\
 	cd ../tests ; make clean ; \
 	cd ../doc/user_guide ; make clean ; \
 	cd ../tutorial ; make clean 	
@@ -39,6 +36,7 @@ thedoc:
 dist:
 	@(tar cf - \
 		./src/*.?90 \
+		./src/postw90/*.?90 \
 		./tests/run_test.pl \
 		./tests/test*/wannier.win \
 		./tests/test*/des.dat \

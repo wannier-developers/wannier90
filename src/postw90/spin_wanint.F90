@@ -1,0 +1,240 @@
+!-*- mode: F90; mode: font-lock -*-!
+
+module w90_spin_wanint
+
+  use w90_constants, only : dp
+
+  implicit none
+
+  private
+
+  public :: spin_moment,get_spn_nk
+
+  real(kind=dp), parameter :: eps=1.0e-7
+
+  contains
+
+  !===========================================================!
+  !                   PUBLIC PROCEDURES                       ! 
+  !===========================================================!
+
+  subroutine spin_moment
+  !============================================================!
+  !                                                            !
+  ! Computes the spin magnetic moment by Wannier interpolation !
+  !                                                            !
+  !============================================================!
+
+    use w90_constants, only     : dp,pi,cmplx_i
+    use w90_comms
+    use w90_io, only            : io_error,stdout
+    use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
+    use w90_parameters, only    : optics_num_points,wanint_kpoint_file
+    use w90_get_oper, only      : get_SS_R
+
+#ifdef MPI 
+    include 'mpif.h'
+#endif
+
+    integer       :: loop_x,loop_y,loop_z,loop_tot,ierr 
+    real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_node(3),spn_all(3),&
+                     spn_mom(3),magnitude,theta,phi,conv
+
+    call get_SS_R
+
+    if(on_root) then
+       write(stdout,'(/,/,1x,a)') '------------'
+       write(stdout,'(1x,a)')     'Calculating:'
+       write(stdout,'(1x,a)')     '------------'
+       write(stdout,'(/,3x,a)') '* Spin magnetic moment'
+    end if
+
+    spn_node=0.0_dp
+    if(wanint_kpoint_file) then
+       
+       if(on_root) then
+         write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
+          write(stdout,'(5x,a)')&
+           'WARNING: - IBZ implementation is currently limited to simple cases:'
+          write(stdout,'(5x,a)')&
+           '               Check results agains a full BZ calculation!'
+       end if
+       !
+       ! Loop over k-points on the irreducible wedge of the Brillouin zone,
+       ! read from file 'kpoint.dat'
+       !
+       do loop_tot=1,num_int_kpts_on_node(my_node_id)
+          kpt(:)=int_kpts(:,loop_tot)
+          kweight=weight(loop_tot)
+          call spin_moment_k(kpt,spn_k)
+          spn_node=spn_node+spn_k*kweight
+       end do
+
+    else
+
+       if (on_root)&
+            write(stdout,'(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
+       
+       kweight=1.0_dp/optics_num_points**3
+       do loop_tot=my_node_id,optics_num_points**3-1,num_nodes
+          loop_x=loop_tot/optics_num_points**2
+          loop_y=(loop_tot-loop_x*optics_num_points**2)/optics_num_points
+          loop_z=loop_tot-loop_x*optics_num_points**2-loop_y*optics_num_points
+          kpt(1)=real(loop_x,dp)/optics_num_points
+          kpt(2)=real(loop_y,dp)/optics_num_points
+          kpt(3)=real(loop_z,dp)/optics_num_points
+          call spin_moment_k(kpt,spn_k)
+          spn_node=spn_node+spn_k*kweight
+       end do
+
+    end if
+
+! Collect contributions from all nodes    
+!
+#ifdef MPI
+       call MPI_reduce(spn_node,spn_all,3,MPI_double_precision,MPI_SUM,0,&
+            mpi_comm_world,ierr)
+#else
+       spn_all=spn_node
+#endif    
+    
+       ! No factor of g=2 because the spin variable spans [-1,1], not 
+       ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)
+       !
+       spn_mom(1:3)=-spn_all(1:3)
+       
+    if(on_root) then
+       write(stdout,'(/,1x,a)')   'Spin magnetic moment (Bohr magn./cell)'
+       write(stdout,'(1x,a,/)')   '===================='
+       write(stdout,'(1x,a18,f11.6)') 'x component:',spn_mom(1)
+       write(stdout,'(1x,a18,f11.6)') 'y component:',spn_mom(2)
+       write(stdout,'(1x,a18,f11.6)') 'z component:',spn_mom(3)
+
+       ! Polar and azimuthal angles of the magnetization (defined as in pwscf)
+       !
+       conv=180.0_dp/pi
+       magnitude=sqrt(spn_mom(1)**2+spn_mom(2)**2+spn_mom(3)**2)
+       theta=acos(spn_mom(3)/magnitude)*conv
+       phi=atan(spn_mom(2)/spn_mom(1))*conv
+       write(stdout,'(/,1x,a18,f11.6)') 'Polar theta (deg):',theta
+       write(stdout,'(1x,a18,f11.6)') 'Azim. phi (deg):',phi
+    end if
+
+  end subroutine spin_moment
+
+! =========================================================================
+
+  subroutine get_spn_nk(kpt,spn_nk)
+  !=============================================================!
+  !                                                             !
+  ! Computes <psi_{nk}^(H)|S.n|psi_{nk}^(H)> (n=1,...,num_wann) !
+  ! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z                     !
+  !                                                             !
+  ! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit  !
+  ! vector along the chosen quantization axis                   !
+  !                                                             !
+  !============================================================ !
+
+    use w90_constants, only     : dp,pi,cmplx_0,cmplx_i
+    use w90_io, only            : io_error
+    use w90_utility, only       : utility_diagonalize,utility_rotate_diag
+    use w90_parameters, only    : num_wann,theta_quantaxis,phi_quantaxis
+    use w90_wanint_common, only : fourier_R_to_k
+    use w90_get_oper, only      : HH_R,get_HH_R,SS_R,get_SS_R
+
+    ! Arguments
+    !
+    real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), intent(out) :: spn_nk(num_wann)
+
+    ! Physics
+    !
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: SS(:,:,:),SS_n(:,:)
+     
+    ! Misc/Dummy
+    !
+    integer          :: is
+    real(kind=dp)    :: eig(num_wann),alpha(3),conv
+
+    allocate(HH(num_wann,num_wann))
+    allocate(UU(num_wann,num_wann))
+    allocate(SS(num_wann,num_wann,3))
+    allocate(SS_n(num_wann,num_wann))
+    
+    call get_HH_R
+    call fourier_R_to_k(kpt,HH_R,HH,0)
+    call utility_diagonalize(HH,num_wann,eig,UU)
+
+    call get_SS_R
+    do is=1,3
+       call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
+    enddo
+ 
+    ! Unit vector along the direction of the magnetization
+    !
+    conv=180.0_dp/pi
+    alpha(1)=sin(theta_quantaxis/conv)*cos(phi_quantaxis/conv)
+    alpha(2)=sin(theta_quantaxis/conv)*sin(phi_quantaxis/conv)
+    alpha(3)=cos(theta_quantaxis/conv)
+
+    ! Vector of spin matrices projected along the quantization axis
+    !
+    SS_n(:,:)=alpha(1)*SS(:,:,1)+alpha(2)*SS(:,:,2)+alpha(3)*SS(:,:,3)
+
+    spn_nk(:)=aimag(cmplx_i*utility_rotate_diag(SS_n,UU,num_wann))
+
+  end subroutine get_spn_nk
+
+  !===========================================================!
+  !                   PRIVATE PROCEDURES                      ! 
+  !===========================================================!
+
+  subroutine spin_moment_k(kpt,spn_k)
+
+    use w90_constants, only     : dp,cmplx_0,cmplx_i
+    use w90_io, only            : io_error
+    use w90_utility, only       : utility_diagonalize,utility_rotate_diag
+    use w90_parameters, only    : num_wann,fermi_energy
+    use w90_wanint_common, only : fourier_R_to_k,get_occ
+    use w90_get_oper, only      : HH_R,get_HH_R,SS_R,get_SS_R
+    ! Arguments
+    !
+    real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), intent(out) :: spn_k(3)
+
+    ! Physics
+    !
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: SS(:,:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    real(kind=dp)                 :: spn_nk(num_wann,3)   
+     
+    ! Misc/Dummy
+    !
+    integer          :: i,is
+    real(kind=dp)    :: eig(num_wann),occ(num_wann)
+    
+    allocate(HH(num_wann,num_wann))
+    allocate(UU(num_wann,num_wann))
+    allocate(SS(num_wann,num_wann,3))
+    
+    call get_HH_R
+    call fourier_R_to_k(kpt,HH_R,HH,0)
+    call utility_diagonalize(HH,num_wann,eig,UU)
+    call get_occ(eig,occ,fermi_energy)
+
+    call get_SS_R
+    spn_k(1:3)=0.0_dp
+    do is=1,3
+       call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
+       spn_nk(:,is)=aimag(cmplx_i*utility_rotate_diag(SS(:,:,is),UU,num_wann))
+       do i=1,num_wann
+          spn_k(is)=spn_k(is)+occ(i)*spn_nk(i,is)
+       end do
+    enddo
+
+  end subroutine spin_moment_k
+
+end module w90_spin_wanint

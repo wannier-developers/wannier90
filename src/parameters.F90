@@ -29,6 +29,30 @@ module w90_parameters
   integer,           public, save :: num_dump_cycles
   integer,           public, save :: num_print_cycles
   character(len=50), public, save :: devel_flag
+  !IVO
+    real(kind=dp),              public, save :: degen_skip_thr
+!  real(kind=dp),              public, save :: smear_temp
+!  real(kind=dp),              public, save :: eps_occ
+  integer,                    public, save :: alpha
+  integer,                    public, save :: beta
+  integer,                    public, save :: gamma
+  integer,                    public, save :: adpt_smr_steps
+  real(kind=dp), allocatable, public, save :: adpt_smr_width(:)
+  logical,                    public, save :: evaluate_spin_moment
+  real(kind=dp),              public, save :: theta_quantaxis
+  real(kind=dp),              public, save :: phi_quantaxis
+  logical,                    public, save :: use_degen_pert
+  real(kind=dp),              public, save :: degen_thr
+  logical,                    public, save :: band_by_band
+  logical,                    public, save :: spn_decomp
+  logical,                    public, save :: kpath_plot
+  character(len=20),          public, save :: kpath_task
+  integer,                    public, save :: kpath_num_points
+  character(len=4),           public, save :: bands_color
+  real(kind=dp),              public, save :: num_elec_cell
+  logical,                    public, save :: found_fermi_energy
+  logical,                    public, save :: omega_from_ff
+  !IVO_END
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
   integer,           public, save :: mp_grid(3)
@@ -67,13 +91,39 @@ module w90_parameters
   character(len=20), public, save :: fermi_surface_plot_format
   real(kind=dp),     public, save :: fermi_energy
   logical,           public, save :: slice_plot
-  integer,           public, save :: slice_num_points
+  !IVO
+  character(len=20), public, save :: slice_task
   character(len=20), public, save :: slice_plot_format
-  logical,           public, save :: dos_plot
+  integer,           public, save :: slice_num_points
+  real(kind=dp),     public, save :: slice_corner(3)
+  real(kind=dp),     public, save :: slice_b1(3)
+  real(kind=dp),     public, save :: slice_b2(3)
+  logical,           public, save :: do_dos
+! No need to save 'dos_plot', only used here (introduced 'dos_task')
+  logical,           public       :: dos_plot
+  character(len=20), public, save :: dos_task 
   integer,           public, save :: dos_num_points
   real(kind=dp),     public, save :: dos_energy_step
-  real(kind=dp),     public, save :: dos_gaussian_width
+  real(kind=dp),     public, save :: dos_max_energy
+  real(kind=dp),     public, save :: dos_min_energy
+
+!  real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
+  logical,           public, save :: optics_plot
+  integer,           public, save :: optics_num_points
+  integer,           public, save :: optics_adaptive_pts
+  real(kind=dp),     public, save :: optics_adaptive_thresh
+  real(kind=dp),     public, save :: optics_energy_step
+  real(kind=dp),     public, save :: optics_max_energy
+  real(kind=dp),     public, save :: optics_min_energy
+  real(kind=dp),     public, save :: ecut_spectralsum
+  character(len=20), public, save :: optics_plot_format
+  logical,           public, save :: wanint_kpoint_file
+  character(len=20), public, save :: optics_task
+  logical,           public, save :: sigma_abc_onlyorb
+  logical,           public, save :: transl_inv
+  !IVO_END
+
   logical,           public, save :: transport
   logical,           public, save :: tran_easy_fix ! a boolean that tells the code to use the "easy_fix" method for fixing the WF parities
   character(len=20), public, save :: transport_mode
@@ -610,8 +660,142 @@ contains
     slice_plot_format         = 'plotmv'
     call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
 
-    dos_plot                  = .false.
-    call param_get_keyword('dos_plot',found,l_value=dos_plot)
+    !IVO
+
+    do_dos                  = .false.
+    call param_get_keyword('do_dos',found,l_value=do_dos)
+
+
+    optics_plot                  = .false.
+    call param_get_keyword('optics_plot',found,l_value=optics_plot)
+
+    transl_inv                  = .false.
+    call param_get_keyword('transl_inv',found,l_value=transl_inv)
+
+    optics_num_points            = 50
+    call param_get_keyword('optics_num_points',found,i_value=optics_num_points)
+    if (optics_num_points<0) call io_error('Error: optics_num_points must be positive')       
+
+    optics_adaptive_pts           = 3
+    call param_get_keyword('optics_adaptive_pts',found,i_value=optics_adaptive_pts)
+    if (optics_adaptive_pts<0) call io_error('Error:  optics_adaptive_ptsmust be positive')       
+
+    optics_energy_step           = 0.01_dp
+    call param_get_keyword('optics_energy_step',found,r_value=optics_energy_step)
+
+    optics_adaptive_thresh           = 100.0_dp
+    call param_get_keyword('optics_adaptive_thresh',found,r_value=optics_adaptive_thresh)
+
+    optics_plot_format           = 'gnuplot'
+    call param_get_keyword('optics_plot_format',found,c_value=optics_plot_format)
+
+    wanint_kpoint_file = .false.
+    call param_get_keyword('wanint_kpoint_file',found,l_value=wanint_kpoint_file)
+
+    optics_task =' '
+    call param_get_keyword('optics_task',found,c_value=optics_task)
+    if(optics_plot) then
+       if(index(optics_task,'mcd')==0 .and. index(optics_task,'ord')==0&
+            .and. index(optics_task,'ahe')==0 .and. index(optics_task,'orb')==0&
+            .and. index(optics_task,'gyro')==0&
+            .and. index(optics_task,'noa')==0&
+            .and. index(optics_task,'mespn')==0)&
+            call io_error&
+            ('Error: value of optics_task not recognised in param_read')
+    end if
+
+
+    degen_skip_thr      =   -1.0_dp                 
+    call param_get_keyword('degen_skip_thr',found,r_value=degen_skip_thr)
+
+!    smear_temp = -1.0_dp
+!    call param_get_keyword('smear_temp',found,r_value=smear_temp)
+
+!    eps_occ = -1.0_dp
+!    call param_get_keyword('eps_occ',found,r_value=eps_occ)
+
+    alpha=0
+    call param_get_keyword('alpha',found,i_value=alpha)
+
+    beta=0
+    call param_get_keyword('beta',found,i_value=beta)
+
+    gamma=0
+    call param_get_keyword('gamma',found,i_value=gamma)
+
+    adpt_smr_steps=1
+    call param_get_keyword('adpt_smr_steps',found,i_value=adpt_smr_steps)
+    if(adpt_smr_steps>6) call io_error ('adpt_smr_steps cannot exceed 6')
+
+    allocate(adpt_smr_width(adpt_smr_steps),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating adpt_smr_width in param_read')
+    adpt_smr_width(1)=2.0
+    call param_get_keyword('adpt_smr_width1',found,r_value=adpt_smr_width(1))
+    if(adpt_smr_steps>1) then
+       adpt_smr_width(2)=1.6
+       call param_get_keyword('adpt_smr_width2',found,r_value=adpt_smr_width(2))
+    end if
+    if(adpt_smr_steps>2) then
+       adpt_smr_width(3)=1.3
+       call param_get_keyword('adpt_smr_width3',found,r_value=adpt_smr_width(3))
+    end if
+    if(adpt_smr_steps>3) then
+       adpt_smr_width(4)=1.0
+       call param_get_keyword('adpt_smr_width4',found,r_value=adpt_smr_width(4))
+    end if
+    if(adpt_smr_steps>4) then
+       adpt_smr_width(5)=0.8
+       call param_get_keyword('adpt_smr_width5',found,r_value=adpt_smr_width(5))
+    end if
+    if(adpt_smr_steps>5) then
+       adpt_smr_width(6)=0.6
+       call param_get_keyword('adpt_smr_width6',found,r_value=adpt_smr_width(6))
+    end if
+
+    evaluate_spin_moment = .false.
+    call param_get_keyword('evaluate_spin_moment',found,&
+         l_value=evaluate_spin_moment)   
+
+    theta_quantaxis=0.0_dp
+    call param_get_keyword('theta_quantaxis',found,r_value=theta_quantaxis)
+
+    phi_quantaxis=0.0_dp
+    call param_get_keyword('phi_quantaxis',found,r_value=phi_quantaxis)
+
+    spn_decomp = .false.
+    call param_get_keyword('spn_decomp',found,l_value=spn_decomp)   
+
+    use_degen_pert = .false.
+    call param_get_keyword('use_degen_pert',found,&
+         l_value=use_degen_pert)
+
+    degen_thr      =   1.0d-4               
+    call param_get_keyword('degen_thr',found,r_value=degen_thr)
+
+    band_by_band = .false.
+    call param_get_keyword('band_by_band',found,l_value=band_by_band)   
+
+    kpath_plot = .false.
+    call param_get_keyword('kpath_plot',found,&
+         l_value=kpath_plot)   
+
+    ! 'bands', 'curv', 'orb', 'bands+curv' etc
+    kpath_task='bands'                 
+    call param_get_keyword('kpath_task',found,c_value=kpath_task)
+
+    kpath_num_points=100
+    call param_get_keyword('kpath_num_points',found,&
+         i_value=kpath_num_points)
+    if (kpath_num_points<0)&
+         call io_error('Error: kpath_num_points must be positive')       
+
+    ! 'spin', 'curv', or 'none' (default)
+    bands_color      =   'none'                 
+    call param_get_keyword('bands_color',found,c_value=bands_color)
+
+    call param_get_keyword('num_elec_cell',found,r_value=num_elec_cell)
+
+    !IVO_END
 
     dos_num_points            = 50
     call param_get_keyword('dos_num_points',found,i_value=dos_num_points)
@@ -620,8 +804,8 @@ contains
     dos_energy_step           = 0.01_dp
     call param_get_keyword('dos_energy_step',found,r_value=dos_energy_step)
 
-    dos_gaussian_width        = 0.1_dp
-    call param_get_keyword('dos_gaussian_width',found,r_value=dos_gaussian_width)
+!    dos_gaussian_width        = 0.1_dp
+!    call param_get_keyword('dos_gaussian_width',found,r_value=dos_gaussian_width)
 
     dos_plot_format           = 'gnuplot'
     call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)

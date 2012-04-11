@@ -32,4 +32,19 @@ module w90_constants
   real(kind=dp), parameter, public    :: eps8  = 1.0e-8_dp
   real(kind=dp), parameter, public    :: eps10 = 1.0e-10_dp
 
+
+  ! Added by Ivo, to be used in interpolation code
+  !
+  ! Values of the fundamental constants taken from 
+  ! http://physics.nist.gov/cuu/Constants/index.html
+  ! 
+  real(kind=dp), parameter, public :: elem_charge_SI=1.602176487e-19_dp
+  real(kind=dp), parameter, public :: elec_mass_SI=9.10938215e-31_dp
+  real(kind=dp), parameter, public :: hbar_SI=1.054571628e-34_dp
+  real(kind=dp), parameter, public :: k_B_SI=1.3806504e-23_dp
+  real(kind=dp), parameter, public :: bohr_magn_SI=927.400915e-26_dp
+  real(kind=dp), parameter, public :: eps0_SI=8.854187817e-12_dp
+  real(kind=dp), parameter, public :: speedlight_SI=299792458.0_dp
+  real(kind=dp), parameter, public :: eV_au=3.674932540e-2_dp
+
 end module w90_constants
