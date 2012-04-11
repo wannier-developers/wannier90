@@ -665,7 +665,6 @@ contains
     do_dos                  = .false.
     call param_get_keyword('do_dos',found,l_value=do_dos)
 
-
     optics_plot                  = .false.
     call param_get_keyword('optics_plot',found,l_value=optics_plot)
 
@@ -794,6 +793,43 @@ contains
     call param_get_keyword('bands_color',found,c_value=bands_color)
 
     call param_get_keyword('num_elec_cell',found,r_value=num_elec_cell)
+
+
+    dos_task =' '
+    dos_plot=.false.
+    call param_get_keyword('dos_task',found,c_value=dos_task)
+    if(do_dos) then
+       if(index(dos_task,'dos_plot')==0 .and.&
+          index(dos_task,'find_fermi_energy')==0) call io_error&
+            ('Error: value of dos_task not recognised in param_read')
+       if(index(dos_task,'dos_plot')>0) dos_plot=.true.
+       if(index(dos_task,'find_fermi_energy')>0 .and. found_fermi_energy)&
+            call io_error&
+  ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"') 
+    end if
+
+    slice_task         = 'curv' ! 'orb'
+    call param_get_keyword('slice_task',found,c_value=slice_task)
+
+    slice_corner=0.0_dp
+    call param_get_keyword_vector('slice_corner',found,3,r_value=slice_corner)
+
+    slice_b1(1)=1.0_dp
+    slice_b1(2)=0.0_dp
+    slice_b1(3)=0.0_dp
+    call param_get_keyword_vector('slice_b1',found,3,r_value=slice_b1)
+
+    slice_b2(1)=0.0_dp
+    slice_b2(2)=1.0_dp
+    slice_b2(3)=0.0_dp
+    call param_get_keyword_vector('slice_b2',found,3,r_value=slice_b2)
+
+    omega_from_FF=.false.
+    call param_get_keyword('omega_from_ff',found,l_value=omega_from_FF)
+
+    sigma_abc_onlyorb=.false.
+    call param_get_keyword('sigma_abc_onlyorb',found,l_value=sigma_abc_onlyorb)
+! -------------------------------------------------------------------
 
     !IVO_END
 
@@ -1005,6 +1041,41 @@ contains
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
+
+
+    if(frozen_states) then
+       dos_max_energy        = dis_froz_max+0.6667_dp
+    elseif(allocated(eigval)) then
+       dos_max_energy        = maxval(eigval)+0.6667_dp
+    else
+       dos_max_energy        = 0.0_dp
+    end if
+    call param_get_keyword('dos_max_energy',found,r_value=dos_max_energy)
+
+
+    if(allocated(eigval)) then
+       dos_min_energy        = minval(eigval)-0.6667_dp
+    else
+       dos_min_energy        = 0.0_dp
+    end if
+    call param_get_keyword('dos_min_energy',found,r_value=dos_min_energy)
+
+
+    if(frozen_states) then
+       optics_max_energy        = dis_froz_max-fermi_energy+0.6667_dp
+    elseif(allocated(eigval)) then
+       optics_max_energy        = maxval(eigval)-minval(eigval)+0.6667_dp
+    else
+       optics_max_energy        = 0.0_dp
+    end if
+    call param_get_keyword('optics_max_energy',found,r_value=optics_max_energy)
+
+    optics_min_energy        = 0.0_dp
+    call param_get_keyword('optics_min_energy',found,r_value=optics_min_energy)
+
+    ecut_spectralsum        = 0.0_dp
+    call param_get_keyword('ecut_spectralsum',found,r_value=ecut_spectralsum)
+
 
     automatic_translation=.true.
     translation_centre_frac=0.0_dp
