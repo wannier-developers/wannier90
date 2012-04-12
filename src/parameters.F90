@@ -660,7 +660,9 @@ contains
     call param_get_keyword('fermi_surface_plot_format',found,c_value=fermi_surface_plot_format)
 
     fermi_energy=0.0_dp
+    found_fermi_energy=.false.
     call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
+    if(found) found_fermi_energy=.true.
 
     ! checks
     if (fermi_surface_plot) then
@@ -712,6 +714,8 @@ contains
 
     optics_task =' '
     call param_get_keyword('optics_task',found,c_value=optics_task)
+    if(optics_plot.and..not.found) call io_error &
+         ('Error: optics_task=T and optics_plot is not set')
     if(optics_plot) then
        if(index(optics_task,'mcd')==0 .and. index(optics_task,'ord')==0&
             .and. index(optics_task,'ahe')==0 .and. index(optics_task,'orb')==0&

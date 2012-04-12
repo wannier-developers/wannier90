@@ -297,6 +297,7 @@ module w90_wanint_common
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points) 
     call comms_bcast(bands_color,len(bands_color)) 
     call comms_bcast(kpath_task,len(kpath_task)) 
+    call comms_bcast(slice_task,len(slice_task)) 
 ! ----------------------------------------------
 
 

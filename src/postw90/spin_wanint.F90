@@ -26,18 +26,14 @@ module w90_spin_wanint
   !============================================================!
 
     use w90_constants, only     : dp,pi,cmplx_i
-    use w90_comms
+    use w90_comms, only         : on_root,my_node_id,num_nodes,comms_reduce
     use w90_io, only            : io_error,stdout
     use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
     use w90_parameters, only    : optics_num_points,wanint_kpoint_file
     use w90_get_oper, only      : get_SS_R
 
-#ifdef MPI 
-    include 'mpif.h'
-#endif
-
     integer       :: loop_x,loop_y,loop_z,loop_tot,ierr 
-    real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_node(3),spn_all(3),&
+    real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_all(3),&
                      spn_mom(3),magnitude,theta,phi,conv
 
     call get_SS_R
@@ -49,7 +45,7 @@ module w90_spin_wanint
        write(stdout,'(/,3x,a)') '* Spin magnetic moment'
     end if
 
-    spn_node=0.0_dp
+    spn_all=0.0_dp
     if(wanint_kpoint_file) then
        
        if(on_root) then
@@ -67,7 +63,7 @@ module w90_spin_wanint
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
           call spin_moment_k(kpt,spn_k)
-          spn_node=spn_node+spn_k*kweight
+          spn_all=spn_all+spn_k*kweight
        end do
 
     else
@@ -84,19 +80,14 @@ module w90_spin_wanint
           kpt(2)=real(loop_y,dp)/optics_num_points
           kpt(3)=real(loop_z,dp)/optics_num_points
           call spin_moment_k(kpt,spn_k)
-          spn_node=spn_node+spn_k*kweight
+          spn_all=spn_all+spn_k*kweight
        end do
 
     end if
 
-! Collect contributions from all nodes    
-!
-#ifdef MPI
-       call MPI_reduce(spn_node,spn_all,3,MPI_double_precision,MPI_SUM,0,&
-            mpi_comm_world,ierr)
-#else
-       spn_all=spn_node
-#endif    
+    ! Collect contributions from all nodes    
+    !
+    call comms_reduce(spn_all(1),3,'SUM')
     
        ! No factor of g=2 because the spin variable spans [-1,1], not 
        ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)

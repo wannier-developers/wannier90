@@ -41,10 +41,6 @@ module w90_slice_plot
     use w90_utility, only      : utility_recip_lattice
     use w90_constants, only    : bohr,ev_au
 
-#ifdef MPI 
-    include 'mpif.h'
-#endif
-
     integer           :: loop_kpt,loop_x,loop_y
     integer           :: xdataunit,ydataunit,zdataunit,bandsunit
     real(kind=dp)     :: avec(3,3),bvec(3,3),recip_vol,b1mod,b2mod,cosb1b2,&
@@ -79,9 +75,9 @@ module w90_slice_plot
       ! Find the reciprocal of bvec, store in avec
        call utility_recip_lattice(bvec,avec,recip_vol)
        a2mod=sqrt(avec(2,1)**2+avec(2,2)**2+avec(2,3)**2)
-
-       got_it=.false.
-       plot_curv=.false.
+    endif
+    got_it=.false.
+    plot_curv=.false.
        if(index(slice_task,'curv')>0) then
           plot_curv=.true.
           got_it=.true.
@@ -107,13 +103,15 @@ module w90_slice_plot
           stop
        end if
 
-       ! Set up the needed Wannier matrix elements
-       call get_HH_R
-       if(plot_curv .or. plot_orb) call get_AA_R
-       if(plot_orb) then
-          call get_BB_R
-          call get_CC_R
-       endif
+    ! Set up the needed Wannier matrix elements
+    call get_HH_R
+    if(plot_curv .or. plot_orb) call get_AA_R
+    if(plot_orb) then
+       call get_BB_R
+       call get_CC_R
+    endif
+    
+    if(on_root) then
 
        write(stdout,'(/,/,1x,a)') '============================'
        write(stdout,'(1x,a)')     'Plotting on a k-point slice:'
