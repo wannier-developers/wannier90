@@ -18,22 +18,8 @@ ifdef COMMS
 COMMS := $(strip $(COMMS))
 else
 COMMS = serial
-#COMPILER = $(F90)
 endif
-#ifeq ($(COMMS),mpi)
-#POSTOPTS = -DMPI
-#COMPILER = $(MPIF90)
-#else
-#POSTOPTS =
-#COMPILER = $(F90)
-#endif
 
-#comms_test_prog:
-#POSTOPTS = 
-#COMPILER = $(F90)
-
-#comms_test_post:
-#	$(eval 
 ifeq ($(COMMS),mpi)
 TEMP1 = -DMPI
 TEMP2 = $(MPIF90)
@@ -42,14 +28,6 @@ TEMP1 =
 TEMP2 = $(F90)
 endif
 
-
-#	@( if [ $(COMMS) == "mpi" ] ; \ 
-#		then TEMP1 = $(MPIF90) ; \
-#		TEMP2 = -DMPI ; \
-#	else 
-#		TEMP1 =  ; \
-#		TEMP2 =  ; \
-#	fi ) ;
 
 prog libs: POSTOPTS = 
 prog libs: COMPILER = $(F90)
@@ -156,7 +134,4 @@ wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 
 
 .PHONY : test_mpi 
-
-
-
 
