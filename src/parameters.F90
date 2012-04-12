@@ -124,6 +124,25 @@ module w90_parameters
   logical,           public, save :: transl_inv
   !IVO_END
 
+  ! [gp-begin, Apr 12, 2012]
+  logical,           public, save :: boltzwann
+  logical,           public, save :: boltz_calc_also_dos
+  real(kind=dp),     public, save :: boltz_dos_energy_step
+  real(kind=dp),     public, save :: boltz_dos_min_energy
+  real(kind=dp),     public, save :: boltz_dos_max_energy
+  real(kind=dp),     public, save :: boltz_mu_min
+  real(kind=dp),     public, save :: boltz_mu_max
+  real(kind=dp),     public, save :: boltz_mu_step
+  real(kind=dp),     public, save :: boltz_temp_min
+  real(kind=dp),     public, save :: boltz_temp_max
+  real(kind=dp),     public, save :: boltz_temp_step
+  integer,           public, save :: boltz_kmeshsize(3)
+  real(kind=dp),     public, save :: boltz_tdf_energy_step
+  logical,           public, save :: boltz_bandshift
+  integer,           public, save :: boltz_bandshift_firstband
+  real(kind=dp),     public, save :: boltz_bandshift_energyshift
+  ! [gp-end, Apr 12, 2012]
+
   logical,           public, save :: transport
   logical,           public, save :: tran_easy_fix ! a boolean that tells the code to use the "easy_fix" method for fixing the WF parities
   character(len=20), public, save :: transport_mode
@@ -1038,6 +1057,104 @@ contains
     call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
     if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
 
+
+    ! [gp-begin, Apr 12, 2012]
+    !%%%%%%%%%%%%%%%%%%%%
+    ! Boltzmann transport
+    !%%%%%%%%%%%%%%%%%%%%
+    ! Note: to be put AFTER the disentanglement routines!
+
+    boltzwann = .false.
+    call param_get_keyword('boltzwann',found,l_value=boltzwann)       
+
+    boltz_calc_also_dos = .false.
+    call param_get_keyword('boltz_calc_also_dos',found,l_value=boltz_calc_also_dos)
+
+    boltz_calc_also_dos = boltz_calc_also_dos .and. boltzwann
+
+    boltz_dos_energy_step=0._dp
+    call param_get_keyword('boltz_dos_energy_step',found,r_value=boltz_dos_energy_step)
+    if ((.not.found).and.boltz_calc_also_dos) call &
+         io_error('Error: boltz_calc_also_dos required but no boltz_dos_energy_step provided')   
+    if (found .and. (boltz_dos_energy_step <= 0._dp)) &
+         call io_error('Error: boltz_dos_energy_step must be positive')       
+    boltz_dos_min_energy = dis_win_min
+    call param_get_keyword('boltz_dos_min_energy',found,r_value=boltz_dos_min_energy)
+    boltz_dos_max_energy = dis_win_max
+    call param_get_keyword('boltz_dos_max_energy',found,r_value=boltz_dos_max_energy)
+    if (boltz_dos_max_energy <= boltz_dos_min_energy) &
+         call io_error('Error: boltz_dos_max_energy must be greater than boltz_dos_min_energy')         
+        
+    boltz_mu_min=-999._dp
+    call param_get_keyword('boltz_mu_min',found,r_value=boltz_mu_min)
+    if ((.not.found).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_mu_min provided')
+    boltz_mu_max=-999._dp
+    call param_get_keyword('boltz_mu_max',found2,r_value=boltz_mu_max)
+    if ((.not.found2).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_mu_max provided') 
+    if (found .and. found2 .and. (boltz_mu_max <= boltz_mu_min)) &
+         call io_error('Error: boltz_mu_max must be greater than boltz_mu_min')
+    boltz_mu_step=0._dp
+    call param_get_keyword('boltz_mu_step',found,r_value=boltz_mu_step)
+    if ((.not.found).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_mu_step provided')
+    if (found .and. (boltz_mu_step <= 0._dp)) &
+         call io_error('Error: boltz_mu_step must be greater than zero')
+
+    boltz_temp_min=-999._dp
+    call param_get_keyword('boltz_temp_min',found,r_value=boltz_temp_min)
+    if ((.not.found).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_temp_min provided')         
+    boltz_temp_max=-999._dp
+    call param_get_keyword('boltz_temp_max',found2,r_value=boltz_temp_max)
+    if ((.not.found2).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_temp_max provided') 
+    if (found .and. found2 .and. (boltz_temp_max <= boltz_temp_min)) &
+         call io_error('Error: boltz_temp_max must be greater than boltz_temp_min')
+    if (found .and. (boltz_temp_min <= 0._dp)) &
+         call io_error('Error: boltz_temp_min must be greater than zero')
+    boltz_temp_step=0._dp
+    call param_get_keyword('boltz_temp_step',found,r_value=boltz_temp_step)
+    if ((.not.found).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_temp_step provided')
+    if (found .and. (boltz_temp_step <= 0._dp)) &
+         call io_error('Error: boltz_temp_step must be greater than zero')
+
+    boltz_kmeshsize=0
+    call param_get_vector_length('boltz_kmeshsize',found,length=i)
+    if ((.not.found).and.boltzwann) &
+         call io_error('Error: boltz_kmeshsize must be provided as a vector of 3 integers')
+    if (found) then
+       if (i /= 3) &
+            call io_error('Error: boltz_kmeshsize must be provided as a vector of 3 integers')
+       call param_get_keyword_vector('boltz_kmeshsize',found,3,i_value=boltz_kmeshsize)
+       if (any(boltz_kmeshsize<=0)) &
+            call io_error('Error: boltz_kmeshsize elements must be greater than zero')
+    end if
+
+    boltz_tdf_energy_step=0._dp
+    call param_get_keyword('boltz_tdf_energy_step',found,r_value=boltz_tdf_energy_step)
+    if ((.not.found).and.boltzwann) &
+         call io_error('Error: BoltzWann required but no boltz_tdf_energy_step provided')
+    if (found.and.(boltz_tdf_energy_step <= 0._dp)) &
+         call io_error('Error: boltz_tdf_energy_step must be greater than zero')
+
+    boltz_bandshift = .false.
+    call param_get_keyword('boltz_bandshift',found,l_value=boltz_bandshift)
+    boltz_bandshift = boltz_bandshift .and. boltzwann
+
+    boltz_bandshift_firstband=0
+    call param_get_keyword('boltz_bandshift_firstband',found,i_value=boltz_bandshift_firstband)
+    if (boltz_bandshift .and. (.not.found)) &
+         call io_error('Error: boltz_bandshift required but no boltz_bandshift_firstband provided')
+    boltz_bandshift_firstband=0._dp
+    call param_get_keyword('boltz_bandshift_energyshift',found,r_value=boltz_bandshift_energyshift)
+    if (boltz_bandshift .and. (.not.found)) &
+         call io_error('Error: boltz_bandshift required but no boltz_bandshift_energyshift provided')
+    ! [gp-end, Apr 12, 2012]
+    
+
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
@@ -1542,7 +1659,6 @@ contains
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        !
     endif
-
 
 101 format(20x,a3,2x,3F11.6)
 

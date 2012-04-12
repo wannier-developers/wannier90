@@ -296,6 +296,27 @@ module w90_wanint_common
 !    call comms_bcast(bands_color,len(bands_color)) 
 ! ----------------------------------------------
 
+
+    ! [gp-begin, Apr 12, 2012]
+    ! BoltzWann variables
+    call comms_bcast(boltzwann,1) 
+    call comms_bcast(boltz_calc_also_dos,1) 
+    call comms_bcast(boltz_dos_energy_step,1) 
+    call comms_bcast(boltz_dos_min_energy,1) 
+    call comms_bcast(boltz_dos_max_energy,1) 
+    call comms_bcast(boltz_mu_min,1) 
+    call comms_bcast(boltz_mu_max,1) 
+    call comms_bcast(boltz_mu_step,1) 
+    call comms_bcast(boltz_temp_min,1) 
+    call comms_bcast(boltz_temp_max,1) 
+    call comms_bcast(boltz_temp_step,1) 
+    call comms_bcast(boltz_kmeshsize(1),3) 
+    call comms_bcast(boltz_tdf_energy_step,1) 
+    call comms_bcast(boltz_bandshift,1) 
+    call comms_bcast(boltz_bandshift_firstband,1) 
+    call comms_bcast(boltz_bandshift_energyshift,1) 
+    ! [gp-end]
+
     ! 'eigval' 'kpt_latt' 'adpt_smr_width' are different from
     ! the variables above in that they are allocatable, and in param_read they 
     ! were only allocated on the root node
