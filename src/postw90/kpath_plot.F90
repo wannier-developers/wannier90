@@ -14,7 +14,7 @@ module w90_kpath_plot
 
   public
 
-  contains
+contains
 
   !===========================================================!
   !                   PUBLIC PROCEDURES                       ! 
@@ -25,68 +25,65 @@ module w90_kpath_plot
     use w90_comms
     use w90_constants,  only   : dp,cmplx_0,cmplx_i,twopi
     use w90_io,         only   : io_error,io_file_unit,seedname,&
-                                 io_time,io_stopwatch,stdout
+         io_time,io_stopwatch,stdout
     use w90_utility, only      : utility_diagonalize
     use w90_wanint_common, only : fourier_R_to_k
     use w90_parameters, only   : num_wann,recip_metric,kpath_task,&
-                                 kpath_num_points,bands_num_spec_points,&
-                                 bands_spec_points,bands_label,bands_color,&
-                                 band_by_band,found_fermi_energy,fermi_energy,&
-                                 omega_from_FF
+         kpath_num_points,bands_num_spec_points,&
+         bands_spec_points,bands_label,bands_color,&
+         band_by_band,found_fermi_energy,fermi_energy,&
+         omega_from_FF
     use w90_get_oper, only     : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
-                                 get_FF_R,get_SS_R
+         get_FF_R,get_SS_R
     use w90_spin_wanint, only  : get_spn_nk
     use w90_berry_wanint, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
     use w90_constants, only    : bohr,ev_au
 
-#ifdef MPI 
-    include 'mpif.h'
-#endif
-
     integer           :: i,num_paths,num_spts,loop_path,loop_kpt,&
-                         total_pts,ierr,counter,loop_i,dataunit,gnuunit,&
-                         kpath_pts(bands_num_spec_points/2)
+         total_pts,ierr,counter,loop_i,dataunit,gnuunit,&
+         kpath_pts(bands_num_spec_points/2)
     real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_nk(num_wann),&
-                         imf_ab_k(3),img_ab_k(3),imh_ab_k(3),&
-                         LCtil(3),ICtil(3),&
-                         kpath_len(bands_num_spec_points/2),range 
+         imf_ab_k(3),img_ab_k(3),imh_ab_k(3),&
+         LCtil(3),ICtil(3),&
+         kpath_len(bands_num_spec_points/2),range 
     logical           :: plot_bands,plot_curv,plot_orb,got_it
     character(len=20) :: file_name
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     real(kind=dp), allocatable    :: xval(:),curv_au(:),curv_decomp_au(:,:),&
-                                     orb_au(:,:),orb_decomp_au(:,:),eig_n(:,:),&
-                                     color_n(:,:),plot_kpoint(:,:)
+         orb_au(:,:),orb_decomp_au(:,:),eig_n(:,:),&
+         color_n(:,:),plot_kpoint(:,:)
     character(len=3),allocatable  :: glabel(:)
 
     ! Everything is done on the root node (not worthwhile parallelizing) 
-    !
-    if(on_root) then
-       
-       got_it=.false.
-       plot_bands=.false.
-       if(index(kpath_task,'bands')>0) then
-          plot_bands=.true.
-          got_it=.true.
-       end if
-       plot_curv=.false.
-       if(index(kpath_task,'curv')>0) then
-          plot_curv=.true.
-          got_it=.true.
-       end if
-       plot_orb=.false.
-       if(index(kpath_task,'orb')>0) then
-          plot_orb=.true.
-          got_it=.true.
-       end if
-       if(.not.got_it) then
-          call io_error(&
-'(kpath_task must include one or more of the keywords "bands" "curv" and "orb"'&
-                       )
-          stop
-       end if
+    ! However, we still have to read and distribute the data if we 
+    ! are in parallel. So calls to get_oper are done on all nodes at the moment
 
+    got_it=.false.
+    plot_bands=.false.
+    if(index(kpath_task,'bands')>0) then
+       plot_bands=.true.
+       got_it=.true.
+    end if
+    plot_curv=.false.
+    if(index(kpath_task,'curv')>0) then
+       plot_curv=.true.
+       got_it=.true.
+    end if
+    plot_orb=.false.
+    if(index(kpath_task,'orb')>0) then
+       plot_orb=.true.
+       got_it=.true.
+    end if
+    if(.not.got_it) then
+       call io_error(&
+            '(kpath_task must include one or more of the keywords "bands" "curv" and "orb"'&
+            )
+       stop
+    end if
+
+    if(on_root) then
        write(stdout,'(/,/,1x,a)') '=============================='
        write(stdout,'(1x,a)')     'Plotting along a k-point path:'
        write(stdout,'(1x,a)')     '=============================='
@@ -103,42 +100,45 @@ module w90_kpath_plot
           write(stdout,'(/,3x,a)') '* Total Berry curvature in a.u.'
           if(.not.found_fermi_energy) call io_error&
                (&
- 'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv=T'&
+               'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv=T'&
                )
        end if
        if(plot_orb) then
           write(stdout,'(/,3x,a)')& 
-              '* LC_tilde, IC_tilde  and total magnetization in a.u.'
+               '* LC_tilde, IC_tilde  and total magnetization in a.u.'
           if(.not.found_fermi_energy) call io_error&
                (&
- 'Need to set either "fermi_energy" or "num_elec_cell" when plot_orb=T'&
+               'Need to set either "fermi_energy" or "num_elec_cell" when plot_orb=T'&
                )
        end if
+    endif
 
-       ! Set up the needed Wannier matrix elements
-       call get_HH_R
-       if(plot_curv.or.plot_orb) then
-          call get_AA_R
-          if(omega_from_FF) call get_FF_R
-       endif
-       if(plot_orb) then
-          call get_BB_R
-          call get_CC_R
-       endif
-       if(plot_bands .and. bands_color=='spin') call get_SS_R
+    ! Set up the needed Wannier matrix elements
+    call get_HH_R
+    if(plot_curv.or.plot_orb) then
+       call get_AA_R
+       if(omega_from_FF) call get_FF_R
+    endif
+    if(plot_orb) then
+       call get_BB_R
+       call get_CC_R
+    endif
+    if(plot_bands .and. bands_color=='spin') call get_SS_R
+
+    if(on_root) then
 
        ! Work out how many points there are in the total path, and the 
        ! positions of the special points
        !
        num_paths=bands_num_spec_points/2 ! number of straigh line segments 
-                                         ! (paths)
+       ! (paths)
        num_spts=num_paths+1 ! number of path endpoints (special pts)
        do loop_path=1,num_paths
           vec=bands_spec_points(:,2*loop_path)&
-             -bands_spec_points(:,2*loop_path-1)
+               -bands_spec_points(:,2*loop_path-1)
           kpath_len(loop_path)=sqrt(&
-                                   dot_product(vec,(matmul(recip_metric,vec)))&
-                                   )
+               dot_product(vec,(matmul(recip_metric,vec)))&
+               )
           !
           ! kpath_pts(loop_path) is the number of points in path number 
           ! loop_path (all segments have the same density of points)
@@ -151,11 +151,11 @@ module w90_kpath_plot
           end if
        end do
        total_pts=sum(kpath_pts)+1
-       
+
        ! Reciprocal-lattice coordinates of the k-points along the path
        !
        allocate(plot_kpoint(3,total_pts))
-       
+
        ! Value of the horizontal coordinate in the actual plots (units of 
        ! distance in k-space)
        !
@@ -163,7 +163,7 @@ module w90_kpath_plot
 
        allocate(HH(num_wann,num_wann))
        allocate(UU(num_wann,num_wann))
-       
+
        ! Value of the vertical coordinate in the actual plots: energy bands 
        !
        if(plot_bands) then
@@ -172,7 +172,7 @@ module w90_kpath_plot
              allocate(color_n(num_wann,total_pts))
           end if
        end if
-          
+
        ! Value of the vertical coordinate in the actual plots: total Berry
        ! curvature summed over occupied states
        !
@@ -184,9 +184,9 @@ module w90_kpath_plot
           allocate(orb_au(total_pts,3))
           allocate(orb_decomp_au(total_pts,9))
        end if
-          
+
        allocate(glabel(num_spts))
-       
+
        ! Find the position of each kpoint along the path
        !
        counter=0
@@ -201,8 +201,8 @@ module w90_kpath_plot
              endif
              plot_kpoint(:,counter)=bands_spec_points(:,2*loop_path-1)&
                   +( bands_spec_points(:,2*loop_path)&
-                    -bands_spec_points(:,2*loop_path-1)&
-                   )&
+                  -bands_spec_points(:,2*loop_path-1)&
+                  )&
                   *(real(loop_i-1,dp)/real(kpath_pts(loop_path),dp))
           end do
        end do
@@ -211,7 +211,7 @@ module w90_kpath_plot
        !
        xval(total_pts)=sum(kpath_len)
        plot_kpoint(:,total_pts)=bands_spec_points(:,bands_num_spec_points)
-              
+
        ! Write out the kpoints in the path in a format that can be inserted
        ! directly in the pwscf input file (the '1.0_dp' in the second column is 
        ! a k-point weight, expected by pwscf)
@@ -224,12 +224,12 @@ module w90_kpath_plot
                (plot_kpoint(loop_i,loop_kpt),loop_i=1,3),1.0_dp
        end do
        close(dataunit)
-       
+
        ! Loop over k-points on the path and evaluate the requested quantities
        !
        do loop_kpt=1,total_pts       
           kpt(:)=plot_kpoint(:,loop_kpt)
-          
+
           ! Energy bands
           !
           if(plot_bands) then
@@ -244,7 +244,7 @@ module w90_kpath_plot
                 color_n(:,loop_kpt)=spn_nk(:)
              end if
           endif
-          
+
           ! Berry curvature summed over occupied states
           !
           if(plot_curv) then
@@ -260,7 +260,7 @@ module w90_kpath_plot
              curv_decomp_au(loop_kpt,2)=imf_ab_k(2)/bohr**2
              curv_decomp_au(loop_kpt,3)=imf_ab_k(3)/bohr**2
           end if
-          
+
           if(plot_orb) then
 
              call get_imf_ab_k(kpt,imf_ab_k)
@@ -318,20 +318,20 @@ module w90_kpath_plot
        end do
        glabel(num_spts)=' '//bands_label(bands_num_spec_points)//' '
 
-       
+
        ! Now write the plotting files
- 
+
        write(stdout,'(/,/,1x,a)') '------------------'
        write(stdout,'(1x,a)')     'Output data files:'
        write(stdout,'(1x,a)')     '------------------'
-      
+
        ! This file (created earlier) is written no matter which task
        !
        file_name=trim(seedname)//'_band.kpt'
        write(stdout,'(/,3x,a)') file_name
 
        if(plot_bands) then
-          
+
           ! Data file, gnuplot format
           !
           dataunit=io_file_unit()
@@ -353,7 +353,7 @@ module w90_kpath_plot
 
           ymin=minval(eig_n)-1.0_dp
           ymax=maxval(eig_n)+1.0_dp
-          
+
           ! Gnuplot script
           !
           gnuunit=io_file_unit()
@@ -395,7 +395,7 @@ module w90_kpath_plot
                   '" with dots palette' 
           end if
           close(gnuunit)
-       
+
        end if ! plot_bands
 
        if(plot_curv) then
@@ -446,7 +446,7 @@ module w90_kpath_plot
        end if ! plot_curv
 
        if(plot_orb) then
-          
+
           dataunit=io_file_unit()
           file_name=trim(seedname)//'_orb.dat'
           write(stdout,'(/,3x,a)') file_name
@@ -467,7 +467,7 @@ module w90_kpath_plot
           enddo
           write(dataunit,*) ' '
           close(dataunit)
-          
+
           ymin=minval(orb_au(:,:))
           ymax=maxval(orb_au(:,:))
           range=ymax-ymin
@@ -491,7 +491,7 @@ module w90_kpath_plot
           close(gnuunit)
 
        end if ! plot_orb
-    
+
     end if ! on_root
 
 701 format('set style data dots',/,'set nokey',/,&
@@ -504,7 +504,7 @@ module w90_kpath_plot
          'set xrange [0:',F9.5,']',/,'set yrange [',F16.8,' :',F16.8,']')
 707 format('set style data lines',/,'set nokey',/,&
          'set xrange [0:',F8.5,']',/,'set yrange [',F16.8,' :',F16.8,']')
- 
+
   end subroutine k_path
 
 end module w90_kpath_plot

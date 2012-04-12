@@ -1,13 +1,13 @@
 !-*- mode: F90; mode: font-lock -*-!
 
-program wanint
+program postw90
 
   use w90_constants, only : dp
   use w90_parameters
   use w90_io
 
   use w90_kmesh
-  use w90_comms
+  use w90_comms, only : on_root,num_nodes, comms_setup, comms_end
   use w90_wanint_common
 
   ! These modules deal with the interpolation of specific physical properties
@@ -20,10 +20,6 @@ program wanint
 
   implicit none
 
-#ifdef MPI 
-    include 'mpif.h'
-#endif
- 
   integer       :: nkp
   logical       :: have_gamma
   real(kind=dp) :: time0,time1,time2
@@ -38,12 +34,12 @@ program wanint
      stdout=io_file_unit()
      open(unit=stdout,file=trim(seedname)//'.wpout')
      call param_write_header
-#ifdef MPI
-     write(stdout,'(/,1x,a,i3,a/)')&
-          'Running in parallel on ',num_nodes,' CPUs'
-#else
-     write(stdout,'(/,1x,a)') 'Running in serial'
-#endif
+     if(num_nodes==1) then
+        write(stdout,'(/,1x,a)') 'Running in serial'
+     else
+        write(stdout,'(/,1x,a,i3,a/)')&
+             'Running in parallel on ',num_nodes,' CPUs'
+     endif
   end if
 
   ! Read onto the root node all the input parameters from seendame.wanint, 
@@ -168,6 +164,6 @@ program wanint
 
   call comms_end
 
-end program wanint
+end program postw90
   
 
