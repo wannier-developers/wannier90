@@ -32,6 +32,8 @@ module w90_comms
   public :: comms_recv       ! accept data from one node to another
   public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce) 
 
+  public :: comms_array_split
+
   interface comms_bcast
      module procedure comms_bcast_int
      module procedure comms_bcast_logical
@@ -86,6 +88,44 @@ contains
     if(my_node_id==root_id) on_root=.true.
     
   end subroutine comms_setup
+
+  !> Given an array of size numpoints, we want to split on num_nodes nodes. This function returns
+  !> two arrays: count and displs.
+  !> The i-th element of the count array gives the number of elements
+  !> that must be calculated by the process with id (i-1).
+  !> The i-th element of the displs array gives the displacement of the array calculated locally on
+  !> the process with id (i-1) with respect to the global array.
+  !>
+  !> \note These values are those to be passed to the functions MPI_Scatterv, MPI_Gatherv and MPI_Alltoallv.
+  !>
+  !> \note one can use the following do loop to run over the needed elements, if the full array is stored
+  !> on all nodes:
+  !> do i=displs(my_node_id)+1,displs(my_node_id)+counts(my_node_id)
+  !> 
+  !> \param numpoints Number of elements of the array to be scattered
+  !> \param counts    Array (of size num_nodes) with the number of elements of the array on each node
+  !> \param displs    Array (of size num_nodes) with the displacement relative to the global array
+  subroutine comms_array_split(numpoints,counts,displs)
+    integer, intent(in) :: numpoints
+    integer, dimension(0:num_nodes-1), intent(out) :: counts
+    integer, dimension(0:num_nodes-1), intent(out) :: displs
+
+    integer :: ratio, remainder, i
+
+    ratio = numpoints / num_nodes
+    remainder = MOD(numpoints, num_nodes)
+
+    do i=0,num_nodes-1
+       if (i < remainder) then
+          counts(i) = ratio+1
+          displs(i) = i*(ratio+1)
+       else
+          counts(i) = ratio
+          displs(i) = remainder*(ratio+1) + (i-remainder)*ratio
+       end if
+    end do
+
+  end subroutine comms_array_split
 
   subroutine comms_end
  
@@ -529,9 +569,9 @@ contains
     select case(op)
 
     case ('SUM')
-       call MPI_reduce(array,array_red,size,MPI_integer,MPI_sum,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_integer,MPI_sum,root_id,mpi_comm_world,error)
     case ('PRD')
-       call MPI_reduce(array,array_red,size,MPI_integer,MPI_prod,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_integer,MPI_prod,root_id,mpi_comm_world,error)
     case default
        print*,'Unknown operation in comms_reduce_int'
        call comms_error
@@ -574,13 +614,13 @@ contains
     select case(op)
 
     case ('SUM')
-       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_sum,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_sum,root_id,mpi_comm_world,error)
     case ('PRD')
-       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_prod,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_prod,root_id,mpi_comm_world,error)
     case ('MIN')
-       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_MIN,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_MIN,root_id,mpi_comm_world,error)
     case ('MAX')
-       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_max,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_double_precision,MPI_max,root_id,mpi_comm_world,error)
     case default
        print*,'Unknown operation in comms_reduce_real'
        call comms_error
@@ -623,9 +663,9 @@ contains
     select case(op)
 
     case ('SUM')
-       call MPI_reduce(array,array_red,size,MPI_double_complex,MPI_sum,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_double_complex,MPI_sum,root_id,mpi_comm_world,error)
     case ('PRD')
-       call MPI_reduce(array,array_red,size,MPI_double_complex,MPI_prod,0,mpi_comm_world,error)
+       call MPI_reduce(array,array_red,size,MPI_double_complex,MPI_prod,root_id,mpi_comm_world,error)
     case default
        print*,'Unknown operation in comms_reduce_cmplx'
        call comms_error
