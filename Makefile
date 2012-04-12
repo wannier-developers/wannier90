@@ -1,33 +1,42 @@
+ROOTDIR = $(PWD)
 
+default: wannier post
 
-default: wannier
-
-all: wannier lib
+all: wannier lib post
 
 doc: thedoc
 
-wannier: 
-	(cd src ; make prog)
+wannier: objdir
+	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile prog)
 
-lib:
-	(cd src ; make libs)
+lib: objdir
+	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile libs)
 
 libs: lib
 
-post:
-	(cd src ; make post)
+post: objdirp
+	(cd src/objp ; make -f $(ROOTDIR)/src/Makefile post)
 
 clean:
-	cd src ; make clean ;\
-	cd ../tests ; make clean ; \
+	@( if [ -d src/obj ] ; \
+		then cd src/obj ; \
+		make -f $(ROOTDIR)/src/Makefile clean ; \
+		cd ../ ; rm -rf obj ; cd ../ ; \
+	fi ; \
+	if [ -d src/objp ] ; \
+		then cd src/objp ; \
+		make -f $(ROOTDIR)/src/Makefile clean ; \
+		cd ../ ; rm -rf objp ; \
+	fi ) ; \
+	cd $(ROOTDIR)/tests ; make clean ; \
 	cd ../doc/user_guide ; make clean ; \
 	cd ../tutorial ; make clean 	
 
 veryclean: clean
-	rm -f wannier90.x libwannier.a ; \
+	rm -f wannier90.x postw90.x libwannier.a ; \
 	cd doc ; rm -f user_guide.pdf tutorial.pdf ; \
 	cd user_guide ; rm -f user_guide.ps ; \
-	cd ../tutorial ; rm -f tutorial.ps
+	cd ../tutorial ; rm -f tutorial.ps 
 
 thedoc:
 	cd doc/user_guide ; make guide ; \
@@ -106,4 +115,13 @@ dist-lite:
 	| gzip -c > \
 		./wannier90.tar.gz)
 
+objdir: 
+	@( if [ ! -d src/obj ] ; \
+		then mkdir src/obj ; \
+	fi ) ;
+
+objdirp: 
+	@( if [ ! -d src/objp ] ; \
+		then mkdir src/objp ; \
+	fi ) ;
 
