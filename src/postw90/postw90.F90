@@ -18,6 +18,8 @@ program postw90
   use w90_kpath_plot
   use w90_slice_plot
 
+  use w90_boltzwann
+
   implicit none
 
   integer       :: nkp
@@ -152,6 +154,8 @@ program postw90
   ! -----------------------------------------------------------------
   !
   if(optics_plot) call berry
+
+  if(boltzwann) call boltzwann_main
 
   if(on_root) then
      write(stdout,'(/,1x,a25,f11.3,a)')&

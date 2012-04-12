@@ -8,7 +8,7 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 
 OBJS2  =  wannier_lib.o
 
-OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o wanint_common.o wan_ham.o spin_wanint.o dos_wanint.o berry_wanint.o kpath_plot.o slice_plot.o
+OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o wanint_common.o wan_ham.o spin_wanint.o dos_wanint.o berry_wanint.o kpath_plot.o slice_plot.o boltzwann.o
 
 LIBRARY = ../../libwannier.a
 
@@ -29,14 +29,18 @@ TEMP2 = $(F90)
 endif
 
 
-prog libs: POSTOPTS = 
-prog libs: COMPILER = $(F90)
-prog: $(OBJS) 
+wannier libs: POSTOPTS = 
+wannier libs: COMPILER = $(F90)
+wannier: ../../wannier90.x
+
+../../wannier90.x: $(OBJS) 
 	$(COMPILER) ../wannier_prog.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
 
 post: POSTOPTS = $(TEMP1)
 post: COMPILER = $(TEMP2)
-post: mpi_test $(OBJS_POST)
+post: mpi_test ../../postw90.x
+
+../../postw90.x: $(OBJS_POST)
 	$(COMPILER) $(POSTDIR)postw90.F90 $(POSTOPTS) $(LDOPTS) $(OBJS_POST) $(LIBS) -o ../../postw90.x
 
 mpi_test :
@@ -103,6 +107,9 @@ transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 comms.o: $(POSTDIR)comms.F90 constants.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90
 
+boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o wanint_common.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
+
 get_oper.o: $(POSTDIR)get_oper.F90 parameters.o constants.o comms.o wanint_common.o io.o utility.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)get_oper.F90
 
@@ -133,5 +140,5 @@ wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 	 $(COMPILER) $(FCOPTS) -c ../wannier_lib.F90
 
 
-.PHONY : test_mpi 
+.PHONY : wannier libs post clean mpi_test
 

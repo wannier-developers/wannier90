@@ -7,7 +7,7 @@ all: wannier lib post
 doc: thedoc
 
 wannier: objdir
-	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile prog)
+	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile wannier)
 
 lib: objdir
 	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile libs)
@@ -31,6 +31,7 @@ clean:
 	cd $(ROOTDIR)/tests ; make clean ; \
 	cd ../doc/user_guide ; make clean ; \
 	cd ../tutorial ; make clean 	
+	rm -f *~
 
 veryclean: clean
 	rm -f wannier90.x postw90.x libwannier.a ; \
@@ -125,3 +126,4 @@ objdirp:
 		then mkdir src/objp ; \
 	fi ) ;
 
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test dist-lite objdir objdirp

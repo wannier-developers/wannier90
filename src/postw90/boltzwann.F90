@@ -124,6 +124,17 @@ contains
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * ps / angstrom
 
+    ! I print on file the TDF
+    if (on_root) then
+       ! TODO: Write more complete header with authors, ...
+       write(*,'(A)') "# Transport distribution function (in units of 1/hbar^2 * eV * ps / angstrom)" // &
+            " vs energy in eV"
+       write(*,'(A)') "# Energy TDF_xx TDF_xy TDF_yy TDF_xz TDF_yz TDF_zz"
+       do i=1,size(TDFEnergyArray)
+          write(*,101) TDFEnergyArray(i), TDF(:,i)
+       end do
+    end if
+
     ! I allocate the arrays for the spectra
     allocate(ElCond(6,TempNumPoints,MuNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main')
@@ -265,6 +276,8 @@ contains
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main',2)
 
+101 FORMAT(7G18.10)
+
   end subroutine boltzwann_main
 
   !> This routine calculates the Transport Distribution Function \f$ \Sigma_{ij}(\eps) \f$ (TDF)
@@ -294,14 +307,58 @@ contains
     ! comments on smearing
     ! PARTODO: comments on which processor the TDF is actually stored at the end
 
-    if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',1)
+    real(kind=dp), dimension(3) :: kpt
+    integer :: loop_tot, loop_x, loop_y, loop_z
     
+
+    if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',1)
+
+    ! Some initial checks
     if (size(TDF,1)/=6 .or. size(TDF,2)/=size(TDFEnergyArray)) then
        call io_error('Wrong size for the TDF array in calcTDF')
     end if
 
+    ! I zero the TDF array before starting
     TDF = 0._dp
     
+    ! I loop over all kpoints
+    do loop_tot=0,PRODUCT(boltz_kmeshsize)-1
+
+       ! I get the coordinates for the x,y,z components starting from a single loop variable
+       ! (which is better for parallelization purposes)
+       ! Important! This works only if loop_tot starts from ZERO and ends with 
+       !            PRODUCT(boltz_kmeshsize)-1
+       loop_x=loop_tot/(boltz_kmeshsize(2)*boltz_kmeshsize(3))
+       loop_y=(loop_tot-loop_x*(boltz_kmeshsize(2)*boltz_kmeshsize(3)))/boltz_kmeshsize(3)
+       loop_z=loop_tot-loop_x*(boltz_kmeshsize(2)*boltz_kmeshsize(3))-loop_y*boltz_kmeshsize(3)
+
+       ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_kmeshsize(i)
+       kpt(1)=(real(loop_x,dp)/real(boltz_kmeshsize(1),dp))
+       kpt(2)=(real(loop_y,dp)/real(boltz_kmeshsize(2),dp))
+       kpt(3)=(real(loop_z,dp)/real(boltz_kmeshsize(3),dp))
+       
+       if (boltz_calc_also_dos) then
+          !TODO!!
+       end if
+       
+       ! Here I have to get the velocity!
+!!$    use w90_get_oper, only      : HH_R
+!!$    allocate(HH(num_wann,num_wann))
+!!$    allocate(delHH(num_wann,num_wann,3))
+!!$    allocate(UU(num_wann,num_wann))
+!!$
+!!$    call fourier_R_to_k(kpt,HH_R,HH,0) 
+!!$    call utility_diagonalize(HH,num_wann,eig,UU) 
+!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+!!$    call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+!!$    call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+!!$    call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+
+    end do
+   
+    stop
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',2)
 
