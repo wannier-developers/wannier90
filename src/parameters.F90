@@ -905,7 +905,9 @@ contains
     if (index(one_dim_axis,'y')>0 ) one_dim_dir = 2
     if (index(one_dim_axis,'z')>0 ) one_dim_dir = 3
     if ( transport.and. .not.tran_read_ht .and.(one_dim_dir.eq.0) ) call io_error('Error: one_dim_axis not recognised')
-    if ( bands_plot.and.(index(bands_plot_mode,'cut').ne.0).and.(one_dim_dir.eq.0) ) &
+    if ( bands_plot.and.(index(bands_plot_mode,'cut').ne.0)&
+	& .and.((bands_plot_dim.ne.3).or.(index(dist_cutoff_mode,'three_dim').eq.0))&
+	& .and.(one_dim_dir.eq.0) ) &
          call io_error('Error: one_dim_axis not recognised')
 
 301  continue
