@@ -85,6 +85,7 @@ module w90_parameters
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
+  real(kind=dp),     public, save :: dist_cutoff_hc
   character(len=20), public, save :: one_dim_axis
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
@@ -893,8 +894,9 @@ contains
         .and. (index(dist_cutoff_mode,'one_dim')  .eq.0)) &
        call io_error('Error: dist_cutoff_mode not recognised')
 
-    dist_cutoff                 = 1000.0_dp
-    call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
+! aam_2012-04-13: moved later
+!    dist_cutoff                 = 1000.0_dp
+!    call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
 
     one_dim_axis                = 'none'
     call param_get_keyword('one_dim_axis',found,c_value=one_dim_axis)
@@ -962,6 +964,12 @@ contains
 
     tran_group_threshold   = 0.15_dp
     call param_get_keyword('tran_group_threshold',found,r_value=tran_group_threshold)
+
+    dist_cutoff            = 1000.0_dp
+    call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
+
+    dist_cutoff_hc         = dist_cutoff
+    call param_get_keyword('dist_cutoff_hc',found,r_value=dist_cutoff_hc)
 
     ! checks
     if (transport) then

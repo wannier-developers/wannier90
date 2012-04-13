@@ -16,7 +16,10 @@ module w90_constants
 
   private
 
-  integer, parameter, public          :: dp = selected_real_kind(15,300)
+!aam_2012-04-11; fix to run on MacBook Air 
+  integer, parameter, public          :: dp = kind(1.0d0)
+!  integer, parameter, public          :: dp = selected_real_kind(14,200)
+!  integer, parameter, public          :: dp = selected_real_kind(15,300)
   real(kind=dp), parameter, public    :: pi=3.141592653589793238462643383279_dp
   real(kind=dp), parameter, public    :: twopi = 2*pi
   complex(kind=dp), parameter, public :: cmplx_i = (0.0_dp,1.0_dp)

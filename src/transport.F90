@@ -62,7 +62,7 @@ module w90_transport
   private
 
 ! small complex number 
-  complex(kind=dp), parameter :: eta=(0.d0,0.0005d0)
+  complex(kind=dp), parameter :: eta=(0.0_dp,0.0005_dp)
 
 ! nterx  = # of maximum iteration to calculate transfer matrix
   integer, parameter :: nterx=50
@@ -90,6 +90,7 @@ module w90_transport
 
 
   public :: tran_main
+  public :: transport_dealloc
 
 contains
   !==================================================================!
@@ -248,7 +249,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_parameters,  only : num_wann,mp_grid,timing_level,real_lattice,&
                                 hr_cutoff,dist_cutoff,dist_cutoff_mode, &
                                 one_dim_dir,length_unit,transport_mode,&
-                                tran_num_cell_ll,tran_num_ll,hr_plot
+                                tran_num_cell_ll,tran_num_ll,hr_plot,dist_cutoff_hc
     use w90_hamiltonian, only : wannier_centres_translated
 
     implicit none
@@ -272,6 +273,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if ( dist_cutoff .gt. dist ) then
        write(stdout,'(1x,a,1x,F10.5,1x,a)') 'dist_cutoff',dist_cutoff,trim(length_unit),'is too large'
        dist_cutoff = dist
+       ! aam_2012-04-13
+       dist_cutoff_hc = dist
        write(stdout,'(4x,a,1x,F10.5,1x,a)') 'reset to',dist_cutoff,trim(length_unit)
     end if
 
@@ -579,14 +582,15 @@ loop_n1: do n1 = -irvec_max, irvec_max
        do i=1,tran_num_bb
           qc = qc + real(c1(i,i),dp)
        end do
-       write(qc_unit,'(f12.6,f15.6)') e_scan, qc
+!       write(qc_unit,'(f12.6,f15.6)') e_scan, qc
+       write(qc_unit,'(f15.9,f18.9)') e_scan, qc
 
        dos = 0.0_dp
        do i=1,tran_num_bb
           dos = dos - aimag(g_B(i,i))
        end do
        dos = dos / pi
-       write(dos_unit,'(f12.6,f15.6)') e_scan, dos
+       write(dos_unit,'(f15.9,f18.9)') e_scan, dos
 
     end do
 
@@ -876,7 +880,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
              qc = qc + real(s1(i,j)*s2(j,i),dp)
           end do
        end do
-       write(qc_unit,'(f12.6,f15.6)') e_scan, qc
+       write(qc_unit,'(f15.9,f18.9)') e_scan, qc
 
        ! compute density of states for the conductor layer
 
@@ -885,7 +889,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
           dos = dos - aimag(g_C(i,i))
        end do
        dos = dos / pi
-       write(dos_unit,'(f12.6,f15.6)') e_scan, dos
+       write(dos_unit,'(f15.9,f18.9)') e_scan, dos
 
     end do
 
@@ -1115,24 +1119,24 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if (conver.gt.eps7 .or. conver2.gt.eps7) &
        call io_error('Error in converging transfer matrix in tran_transfer') 
 
-    deallocate(ipiv,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating ipiv in tran_transfer')
-    deallocate(tsum,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating tsum in tran_transfer')
-    deallocate(tsumt,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating tsumt in tran_transfer')
-    deallocate(t11,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating t11 in tran_transfer')
-    deallocate(t12,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating t12 in tran_transfer')
-    deallocate(s1,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating s1 in tran_transfer')
-    deallocate(s2,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating s2 in tran_transfer')
-    deallocate(tau,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating tau in tran_transfer')
     deallocate(taut,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating taut in tran_transfer')
+    deallocate(tau,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating tau in tran_transfer')
+    deallocate(s2,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating s2 in tran_transfer')
+    deallocate(s1,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating s1 in tran_transfer')
+    deallocate(t12,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating t12 in tran_transfer')
+    deallocate(t11,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating t11 in tran_transfer')
+    deallocate(tsumt,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating tsumt in tran_transfer')
+    deallocate(tsum,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating tsum in tran_transfer')
+    deallocate(ipiv,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating ipiv in tran_transfer')
 
     return 
 
@@ -1467,9 +1471,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
      !
      !Read unkg file
      !
-     unkg=cmplx_0
      write(stdout,'(3a)')' Reading '//trim(seedname)//'.unkg  file'
-     read(file_unit,*)num_G
+     read(file_unit,*) num_G
 
      allocate(signatures(20,num_bands),stat=ierr)
      if (ierr/=0) call io_error('Error in allocating signatures in tran_find_sigs_unkg_int')
@@ -1485,6 +1488,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         if (ierr/=0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
      endif
      !
+     unkg=cmplx_0
      do m=1,num_bands
          do i=1,num_G
             read(file_unit,*) ibnd,ig,a,b,c,r_unkg,i_unkg
@@ -1520,7 +1524,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
      !
      !Loop over wannier functions to compute generalised U matrix
      !
-     signatures=0.d0
+     signatures=0.0_dp
      tran_u_matrix=cmplx_0
      do n=1,num_wann
         !
@@ -1548,7 +1552,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         ! Find fraction coordinate of wannier function in lattice vector basis
         ! wf_frac(:)=(transpose(real_lattice))^(-1) * wannier_centres_translated(:,n)
         !
-        wf_frac=0.d0
+        wf_frac=0.0_dp
         wf_frac=matmul(inv_t_rl,wannier_centres_translated(:,n))
         !
         ! Loop over all g vectors, find a,b,c's required
@@ -1648,11 +1652,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !
         !Normalise signature of each wannier function to a unit vector
         !
-        mag_signature_sq=0.d0
+        mag_signature_sq=0.0_dp
         do ig=1,20
            mag_signature_sq=mag_signature_sq+abs(signatures(ig,n))**2
         enddo
-        signatures(:,n)=signatures(:,n)/dsqrt(mag_signature_sq)
+        signatures(:,n)=signatures(:,n)/sqrt(mag_signature_sq)
         !
      enddo ! Wannier Function loop
 
@@ -1661,12 +1665,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
      !
      num_G=20
 
-     deallocate(unkg,stat=ierr )
-     if (ierr/=0) call io_error('Error deallocating unkg in tran_find_signatures')
      deallocate(tran_u_matrix,stat=ierr )
      if (ierr/=0) call io_error('Error deallocating tran_u_matrix in tran_find_signatures')
      deallocate(g_abc,stat=ierr )
      if (ierr/=0) call io_error('Error deallocating g_abc in tran_find_signatures')
+     deallocate(unkg,stat=ierr )
+     if (ierr/=0) call io_error('Error deallocating unkg in tran_find_signatures')
 
      if (timing_level>1) call io_stopwatch('tran: find_sigs_unkg_int',2)
 
@@ -2287,10 +2291,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
             !Update the subgroup_increment
             !
             subgroup_increment=subgroup_increment+group_subgroups(k)
-            deallocate(subgroup_array,stat=ierr)
-            if (ierr/=0) call io_error('Error deallocating subgroup_array in master_sort_and_group')
             deallocate(sorted_subgroup_array,stat=ierr)
             if (ierr/=0) call io_error('Error deallocating sorted_subgroup_array in master_sort_and_group')
+            deallocate(subgroup_array,stat=ierr)
+            if (ierr/=0) call io_error('Error deallocating subgroup_array in master_sort_and_group')
         enddo
         !
         !Update Array with the sorted group array
@@ -2690,7 +2694,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
                !
                sorted_idx=0
                do k=1,wf_verifier(1,j)
-                   dot_p=0.0d0
+                   dot_p=0.0_dp
                    !
                    ! building the array of positive dot products of signatures between unsorted_similar_centres(j,k)
                    ! and all the ref_similar_centres(j,:)
@@ -2717,10 +2721,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
               if (ierr/=0) call io_error('Error in deallocating dot_p in check_and_sort_similar_centres')
               deallocate(sorted_idx,stat=ierr)
               if (ierr/=0) call io_error('Error in deallocating sorted_idx in check_and_sort_similar_centres')
-              deallocate(ref_similar_centres,stat=ierr)
-              if (ierr/=0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres')
               deallocate(unsorted_similar_centres,stat=ierr)
               if (ierr/=0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres')
+              deallocate(ref_similar_centres,stat=ierr)
+              if (ierr/=0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres')
            enddo
         enddo
         !
@@ -2741,8 +2745,25 @@ loop_n1: do n1 = -irvec_max, irvec_max
            &poor wannierisation and/or disentanglement')
            !write(stdout,*) ' WF : ',k,' appears ',iterator,' time(s)'
         enddo
+        deallocate(wf_verifier,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating wf_verifier in check_and_sort_similar_centres')
     endif
     
+    deallocate(centre_id,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating centre_id in check_and_sort_similar_centres')
+    deallocate(first_group_element,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating first_group_element in check_and_sort_similar_centres')
+    deallocate(group_verifier,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating group_verifier in check_and_sort_similar_centres')
+    deallocate(tmp_wf_verifier,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating tmp_wf_verifier in check_and_sort_similar_centres')
+    deallocate(has_similar_centres,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating has_similar_centres in check_and_sort_similar_centres')
+    deallocate(idx_similar_wf,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating idx_similar_wf in check_and_sort_similar_centres')
+    deallocate(wf_similar_centres,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating wf_similar_centre in check_and_sort_similar_centres')
+
     if (timing_level>2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres',2)
 
     return
@@ -2835,7 +2856,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     if ( tran_easy_fix ) then
         do i=1,num_wann
-            if ( real(signatures(1,i)) .lt. 0.d0 ) then
+            if ( real(signatures(1,i)) .lt. 0.0_dp ) then
                 signatures(:,i) = -signatures(:,i)
                 do k=1,num_wann
                     hr_one_dim(k,i,0)=-hr_one_dim(k,i,0)
@@ -2866,12 +2887,12 @@ loop_n1: do n1 = -irvec_max, irvec_max
                 write(stdout,'(2x,i4,3(13x,i5),12x,f20.17)')&
                 i,wf_idx,tran_sorted_idx(wf_idx),tran_sorted_idx(j),signature_dot_p
             endif
-            if (abs(signature_dot_p) .le. 0.8d0) then
+            if (abs(signature_dot_p) .le. 0.8_dp) then
               write(stdout,'(a28,i4,a64,i4,a20)') ' WARNING: Wannier function (',tran_sorted_idx(wf_idx),&
                    ') seems to has poor resemblance to equivalent wannier function (',tran_sorted_idx(j),') in first unit cell'
               if (iprint .lt. 5) write(stdout,*)'Dot product of signatures: ',signature_dot_p
             endif
-            if (signature_dot_p .lt. 0.d0) then
+            if (signature_dot_p .lt. 0.0_dp) then
                 do k=1,num_wann
                     hr_one_dim(k,tran_sorted_idx(wf_idx),0)=-hr_one_dim(k,tran_sorted_idx(wf_idx),0)
                     hr_one_dim(tran_sorted_idx(wf_idx),k,0)=-hr_one_dim(tran_sorted_idx(wf_idx),k,0)
@@ -2897,18 +2918,19 @@ loop_n1: do n1 = -irvec_max, irvec_max
     ! leads.                                       !
     !==============================================!
 
-    use w90_constants,          only : dp
+    use w90_constants,          only : dp,eps5
     use w90_io,                 only : io_error,stdout,seedname,io_file_unit,io_date,io_stopwatch
     use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll,kpt_cart,fermi_energy,&
                                        tran_write_ht,tran_num_rr,tran_num_lc,tran_num_cr,tran_num_cc,&
-                                       timing_level,dist_cutoff_mode
+                                       tran_num_bandc,timing_level,dist_cutoff_mode,dist_cutoff,&
+                                       dist_cutoff_hc
     use w90_hamiltonian,        only : wannier_centres_translated
     
     implicit none
 
     logical,intent(in)                     :: pl_warning
 
-    integer                                :: i,j,k,num_wann_cell_ll,file_unit,ierr
+    integer                                :: i,j,k,num_wann_cell_ll,file_unit,ierr,band_size
     
     real(dp),allocatable,dimension(:,:)    :: sub_block
     real(dp)                               :: PL_length,dist,dist_vec(3)
@@ -2925,20 +2947,20 @@ loop_n1: do n1 = -irvec_max, irvec_max
     if (ierr/=0) call io_error('Error in allocating hR0 in tran_lcr_2c2_build_ham')
     allocate(hR1(tran_num_ll,tran_num_ll),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating hR1 in tran_lcr_2c2_build_ham')
-    allocate(hC(num_wann-(2*tran_num_ll),num_wann-(2*tran_num_ll)),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham')
     allocate(hLC(tran_num_ll,tran_num_ll),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating hLC in tran_lcr_2c2_build_ham')
     allocate(hCR(tran_num_ll,tran_num_ll),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating hCR in tran_lcr_2c2_build_ham')
+    allocate(hC(num_wann-(2*tran_num_ll),num_wann-(2*tran_num_ll)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham')
     !
     !This checks that only the gamma point is used in wannierisation
     !This is necessary since this calculation only makes sense if we
     !have periodicity over the supercell.
     !
-    if ((size(kpt_cart,2) .ne. 1 ) .and. (kpt_cart(1,1) .eq. 0.d0) &
-                                   .and. (kpt_cart(2,1) .eq. 0.d0) &
-                                   .and. (kpt_cart(3,1) .eq. 0.d0) ) then 
+    if ((size(kpt_cart,2) .ne. 1 ) .and. (kpt_cart(1,1) .eq. 0.0_dp) &
+                                   .and. (kpt_cart(2,1) .eq. 0.0_dp) &
+                                   .and. (kpt_cart(3,1) .eq. 0.0_dp) ) then 
         call io_error('Calculation must be performed at gamma only')
     endif
     
@@ -2950,8 +2972,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Build hL0 & hL1
     !
-    hL0=0.d0
-    hL1=0.d0
+    hL0=0.0_dp
+    hL1=0.0_dp
     !    
     !Loop over the sub_blocks corresponding to distinct unit cells inside the principal layer
     !
@@ -2959,7 +2981,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !
         !Each sub_block will be duplicated along the corresponding diagonal. This ensures the correct symmetry for the leads.
         !
-        sub_block=0.d0
+        sub_block=0.0_dp
         !
         !Extract matrix elements from hr_one_dim needed for hL0 (and lower triangular sub_blocks of hL1)
         !
@@ -2997,7 +3019,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !       
         ! MS: Get diagonal and upper triangular sublocks for hL1 - use periodic image of PL4
         !
-        sub_block=0.d0
+        sub_block=0.0_dp
         !
         if (i==1) then !Do diagonal only
             do j=1,num_wann_cell_ll
@@ -3028,8 +3050,8 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Build hR0 & hR1
     !
-    hR0=0.d0
-    hR1=0.d0
+    hR0=0.0_dp
+    hR1=0.0_dp
     !
     !Loop over the sub_blocks corresponding to distinct unit cells inside the principal layer
     !
@@ -3037,7 +3059,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !
         !Each sub_block will be duplicated along the corresponding diagonal. This ensures the correct symmetry for the leads.
         !
-        sub_block=0.d0
+        sub_block=0.0_dp
         !
         !Extract matrix elements from hr_one_dim needed for hR0 (and lower triangular sub_blocks of hR1)
         !
@@ -3076,7 +3098,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
         !
         ! MS: Get diagonal and upper triangular sublocks for hR1 - use periodic image of PL1
         !
-        sub_block=0.d0
+        sub_block=0.0_dp
         !
         if (i==1) then  !Do diagonal only
             do j=1,num_wann_cell_ll
@@ -3107,7 +3129,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Building hLC
     !
-    hLC=0.d0
+    hLC=0.0_dp
     do i=1,tran_num_ll
         do j=tran_num_ll+1,2*tran_num_ll
             hLC(i,j-tran_num_ll)=hr_one_dim(tran_sorted_idx(i),tran_sorted_idx(j),0)
@@ -3120,7 +3142,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 !        do j=1,tran_num_cell_ll
 !            do k=1,tran_num_cell_ll
 !                if (k .ge. j) then
-!                    hLC((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.d0
+!                    hLC((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.0_dp
 !                endif
 !            enddo
 !        enddo
@@ -3132,16 +3154,34 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !
     !Building hC
     !
-    hC=0.d0
+    hC=0.0_dp
+    !
+    band_size=0
+    if (dist_cutoff_hc .ne. dist_cutoff) then
+        dist_cutoff=dist_cutoff_hc
+        write(stdout,*)'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
+        deallocate(hr_one_dim,stat=ierr)
+        if (ierr/=0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+        call tran_reduce_hr()
+        call tran_cut_hr_one_dim()
+    endif
+ 
     do i=tran_num_ll+1,num_wann-tran_num_ll
         do j=tran_num_ll+1,num_wann-tran_num_ll
             hC(i-tran_num_ll,j-tran_num_ll)=hr_one_dim(tran_sorted_idx(i),tran_sorted_idx(j),0)
+            !
+            ! Impose a ham_cutoff of 1e-4 eV to reduce tran_num_bandc (and in turn hCband, and speed up transport)
+            ! 
+            if (abs(hC(i-tran_num_ll,j-tran_num_ll)) .lt. 10.0_dp*eps5) then
+               hC(i-tran_num_ll,j-tran_num_ll)=0.0_dp
+               band_size=max(band_size,abs(i-j))
+            endif
         enddo
     enddo
     !
     !Building hCR
     !
-    hCR=0.d0
+    hCR=0.0_dp
     do i=num_wann-2*tran_num_ll+1,num_wann-tran_num_ll
         do j=num_wann-tran_num_ll+1,num_wann
             hCR(i-(num_wann-2*tran_num_ll),j-(num_wann-tran_num_ll))=hr_one_dim(tran_sorted_idx(i),tran_sorted_idx(j),0)
@@ -3154,7 +3194,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 !        do j=1,tran_num_cell_ll
 !            do k=1,tran_num_cell_ll
 !                if (k .ge. j) then
-!                    hCR((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.d0
+!                    hCR((j-1)*num_wann_cell_ll+1:j*num_wann_cell_ll,(k-1)*num_wann_cell_ll+1:k*num_wann_cell_ll)=0.0_dp
 !                endif
 !            enddo
 !        enddo
@@ -3182,31 +3222,38 @@ loop_n1: do n1 = -irvec_max, irvec_max
     tran_num_cc=num_wann-(2*tran_num_ll)
 
     !
+    ! Set appropriate tran_num_bandc if has not been set (0.0_dp is default value)
+    !
+    if (tran_num_bandc .eq. 0.0_dp) then
+       tran_num_bandc = min(band_size+1,(tran_num_cc+1)/2 + 1)
+    endif
+ 
+    !
     ! MS: Find and print effective PL length
     !
     if (.not. pl_warning) then
-    PL_length=0.d0
+    PL_length=0.0_dp
        do i=1,tran_num_ll
            do j=1,tran_num_ll
-               if (abs(hL1(i,j)) .gt. 0.d0) then
+               if (abs(hL1(i,j)) .gt. 0.0_dp) then
                    if (index(dist_cutoff_mode,'one_dim') .gt. 0) then
                        dist=abs(wannier_centres_translated(coord(1),tran_sorted_idx(i))&
                                -wannier_centres_translated(coord(1),tran_sorted_idx(j+tran_num_ll)))
                    else
                        dist_vec(:)=wannier_centres_translated(:,tran_sorted_idx(i))&
                                   -wannier_centres_translated(:,tran_sorted_idx(j+tran_num_ll))
-                       dist=dsqrt(dot_product(dist_vec,dist_vec))
+                       dist=sqrt(dot_product(dist_vec,dist_vec))
                    endif
                    PL_length=max(PL_length,dist)
                endif
-               if (abs(hR1(i,j)) .gt. 0.d0) then
+               if (abs(hR1(i,j)) .gt. 0.0_dp) then
                   if (index(dist_cutoff_mode,'one_dim') .gt. 0) then
                        dist=abs(wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-2*tran_num_ll+i))&
                                -wannier_centres_translated(coord(1),tran_sorted_idx(num_wann-tran_num_ll+j)))
                   else
                        dist_vec(:)=wannier_centres_translated(:,tran_sorted_idx(num_wann-2*tran_num_ll+i))&
                                -wannier_centres_translated(:,tran_sorted_idx(num_wann-tran_num_ll+j))
-                       dist=dsqrt(dot_product(dist_vec,dist_vec))
+                       dist=sqrt(dot_product(dist_vec,dist_vec))
                   endif
                   PL_length=max(PL_length,dist)
                endif
@@ -3215,8 +3262,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
        write(stdout,'(1x,a,f12.6,a)')'Approximate effective principal layer length is: ',PL_length,' Ang.'
     endif
 
-    deallocate(sub_block,stat=ierr)
-    if (ierr/=0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham')
     !
     !Writing to file:
     !
@@ -3293,11 +3338,54 @@ loop_n1: do n1 = -irvec_max, irvec_max
         write(stdout,*)'------------------------------------------------------------------------------'
     end if
 
+    deallocate(sub_block,stat=ierr)
+    if (ierr/=0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham')
+
     if (timing_level>1) call io_stopwatch('tran: lcr_2c2_build_ham',2)
 
     return 
 
   end subroutine tran_lcr_2c2_build_ham
+
+  !======================================!
+  subroutine transport_dealloc()
+  !====================================!
+
+    use w90_io, only : io_error
+    
+    implicit none
+    
+    integer :: ierr
+    
+    if( allocated( hR1 ) ) then
+       deallocate( hR1, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating hR1 in transport_dealloc')
+    end if
+    if( allocated( hR0 ) ) then
+       deallocate( hR0, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating hR0 in transport_dealloc')
+    end if
+    if( allocated( hL1 ) ) then
+       deallocate( hL1, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating hL1 in transport_dealloc')
+    end if  
+    if( allocated( hB1 ) ) then
+       deallocate( hB1, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating hB1 in transport_dealloc')
+    end if  
+    if( allocated( hB0 ) ) then
+       deallocate( hB0, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating hB0 in transport_dealloc')
+    end if
+    if( allocated( hr_one_dim ) ) then
+       deallocate( hr_one_dim, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating hr_one_dim in transport_dealloc')
+    end if
+
+    return
+
+  end subroutine transport_dealloc
+
 
 end module w90_transport
 
