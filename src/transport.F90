@@ -1460,7 +1460,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
      logical                                                :: have_file
 
      integer,allocatable,dimension(:,:)                     :: g_abc
-     integer                                                :: i,j,ibnd,file_unit,ierr,p,p_max,n,m,ig,a,b,c,ig_idx(32)
+     integer                                                :: i,ibnd,file_unit,ierr,p,p_max,n,m,ig,a,b,c,ig_idx(32)
 
      if (timing_level>1) call io_stopwatch('tran: find_sigs_unkg_int',1)
      !

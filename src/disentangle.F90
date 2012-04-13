@@ -439,7 +439,7 @@ contains
 
       implicit none
 
-      integer                       :: i,j,info,ierr
+      integer                       :: info,ierr
       real(kind=dp),    allocatable :: u_opt_r(:,:)
       real(kind=dp),    allocatable :: a_matrix_r(:,:)
       real(kind=dp),    allocatable :: raa(:,:)
@@ -471,13 +471,6 @@ contains
      
 
       u_opt_r(:,:)=real(u_matrix_opt(1:ndimwin(1),1:num_wann,1),dp)
-
-!!$      ! Take real part of a matrix - a matrix is realized in overlap_symmetrize
-!!$      do i=1,num_wann
-!!$         do j=1,ndimwin(1) 
-!!$            a_matrix_r(j,i)=real(a_matrix(j,i,1),dp)
-!!$         end do
-!!$      end do
 
       a_matrix_r(:,:)=real(a_matrix(:,:,1),kind=dp)
 
@@ -2060,7 +2053,7 @@ contains
 
         implicit none
 
-        integer :: j,ierr
+        integer :: ierr
         real(kind=dp), allocatable :: temp_hist(:)
         
         allocate(temp_hist(dis_conv_window),stat=ierr)
@@ -2075,12 +2068,7 @@ contains
 
         dis_converged = .false.
         if (iter.ge.dis_conv_window) then
-!           write(stdout,*) (history(j),j=1,dis_conv_window)
            dis_converged=all(abs(history).lt.dis_conv_tol)
-!           do j=1,dis_conv_window
-!              if ( abs(history(j)).gt.dis_conv_tol ) exit
-!              dis_converged = .true.
-!           enddo
         endif
 
         deallocate(temp_hist,stat=ierr)
@@ -2856,7 +2844,7 @@ contains
 
         implicit none
 
-        integer :: j,ierr
+        integer :: ierr
         real(kind=dp), allocatable :: temp_hist(:)
         
         allocate(temp_hist(dis_conv_window),stat=ierr)
@@ -2871,7 +2859,6 @@ contains
 
         dis_converged = .false.
         if (iter.ge.dis_conv_window) then
-!           write(stdout,*) (history(j),j=1,dis_conv_window)
             dis_converged=all(abs(history).lt.dis_conv_tol)
         endif
 
