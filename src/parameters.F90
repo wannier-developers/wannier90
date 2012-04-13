@@ -2192,6 +2192,8 @@ contains
 
     integer           :: in_unit,tot_num_lines,ierr,line_counter,loop,in1,in2
     character(len=maxlen) :: dummy
+    integer           :: pos
+    character, parameter :: TABCHAR = char(9)
 
     in_unit=io_file_unit( )
     open (in_unit, file=trim(seedname)//'.win',form='formatted',status='old',err=101)
@@ -2199,6 +2201,13 @@ contains
     num_lines=0;tot_num_lines=0
     do
        read(in_unit, '(a)', iostat = ierr, err= 200, end =210 ) dummy
+       ! [GP-begin, Apr13, 2012]: I convert all tabulation characters to spaces
+       pos = index(dummy,TABCHAR)
+       do while (pos .ne. 0)
+          dummy(pos:pos) = ' '
+          pos = index(dummy,TABCHAR)
+       end do
+       ! [GP-end]
        dummy=adjustl(dummy)
        tot_num_lines=tot_num_lines+1
        if( .not.dummy(1:1)=='!'  .and. .not. dummy(1:1)=='#' ) then
@@ -2218,6 +2227,13 @@ contains
     line_counter=0
     do loop=1,tot_num_lines
        read(in_unit, '(a)', iostat = ierr, err= 200 ) dummy
+       ! [GP-begin, Apr13, 2012]: I convert all tabulation characters to spaces
+       pos = index(dummy,TABCHAR)
+       do while (pos .ne. 0)
+          dummy(pos:pos) = ' '
+          pos = index(dummy,TABCHAR)
+       end do
+       ! [GP-end]
        dummy=utility_lowercase(dummy)
        dummy=adjustl(dummy)
        if( dummy(1:1)=='!' .or.  dummy(1:1)=='#' ) cycle
