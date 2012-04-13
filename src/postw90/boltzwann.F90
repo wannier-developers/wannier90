@@ -14,14 +14,15 @@
 ! * in the documentation, say that it also uses the parameters of the ham. interpolation, as
 !   for instance those to choose if we want to take into account degeneracies when calculating the
 !   velocities
-! * check that we get the same results with and without spin-orbit!
+! * check that we get the same results with and without spin-orbit! 
+! * document that for spin-degeneracy one has to use spinors=.true. in input of one gets a factor of 2 error
 
 module w90_boltzwann
   use w90_constants
   use w90_parameters, only : &
        boltz_calc_also_dos, boltz_dos_energy_step, boltz_dos_min_energy, boltz_dos_max_energy, &
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
-       boltz_kmeshsize, boltz_tdf_energy_step, &
+       boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
        timing_level, dis_win_min, dis_win_max 
   use w90_io, only : io_error,stdout,io_stopwatch,io_file_unit,seedname  
@@ -64,26 +65,27 @@ contains
     ! TODO here: (only on node 0): print initial banner
 
     ! I open the output files
-    ! PARTODO: only on node 0
-    tdf_unit=io_file_unit()
-    open(unit=tdf_unit,file=trim(seedname)//'.tdf')  
-    
-    elcond_unit = io_file_unit()
-    open(unit=elcond_unit,file=trim(seedname)//'.elcond')  
-
-    seebeck_unit =io_file_unit()
-    open(unit=seebeck_unit,file=trim(seedname)//'.seebeck')  
-
-    thermcond_unit =io_file_unit()
-    open(unit=thermcond_unit,file=trim(seedname)//'.thermcond')  
-
-    if (boltz_calc_also_dos) then
-       boltzdos_unit=io_file_unit()
-       open(unit=boltzdos_unit,file=trim(seedname)//'.boltzdos')  
+    if (on_root) then
+       tdf_unit=io_file_unit()
+       open(unit=tdf_unit,file=trim(seedname)//'.tdf')  
+       
+       elcond_unit = io_file_unit()
+       open(unit=elcond_unit,file=trim(seedname)//'.elcond')  
+       
+       seebeck_unit =io_file_unit()
+       open(unit=seebeck_unit,file=trim(seedname)//'.seebeck')  
+       
+       thermcond_unit =io_file_unit()
+       open(unit=thermcond_unit,file=trim(seedname)//'.thermcond')  
+       
+       if (boltz_calc_also_dos) then
+          boltzdos_unit=io_file_unit()
+          open(unit=boltzdos_unit,file=trim(seedname)//'.boltzdos')  
+       end if
     end if
 
     ! I precalculate the TempArray and the MuArray
-    TempNumPoints = floor((boltz_temp_max-boltz_temp_min)/boltz_temp_step)+1
+    TempNumPoints = int(floor((boltz_temp_max-boltz_temp_min)/boltz_temp_step))+1
     allocate(TempArray(TempNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating TempArray in boltzwann_main')
     do i=1,TempNumPoints
@@ -96,7 +98,7 @@ contains
     ! (k_B in eV/kelvin is equal to k_B_SI / elem_charge_SI)
     KTArray = TempArray * k_B_SI / elem_charge_SI
 
-    MuNumPoints = floor((boltz_mu_max-boltz_mu_min)/boltz_mu_step)+1
+    MuNumPoints = int(floor((boltz_mu_max-boltz_mu_min)/boltz_mu_step))+1
     allocate(MuArray(MuNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating MuArray in boltzwann_main')
     do i=1,MuNumPoints
@@ -108,7 +110,7 @@ contains
     ! This is true if the .eig file is present. I can assume its presence since we need it to interpolate the
     ! bands.
     ! TODO: when we put smearing, understand if we want to enlarge the window by some multiple of the smearing
-    TDFEnergyNumPoints = floor((dis_win_max-dis_win_min)/boltz_tdf_energy_step)+1
+    TDFEnergyNumPoints = int(floor((dis_win_max-dis_win_min)/boltz_tdf_energy_step))+1
     allocate(TDFEnergyArray(TDFEnergyNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main')
     do i=1,TDFEnergyNumPoints
@@ -131,11 +133,11 @@ contains
     ! I print on file the TDF
     if (on_root) then
        ! TODO: Write more complete header with authors, ...
-       write(*,'(A)') "# Transport distribution function (in units of 1/hbar^2 * eV * ps / angstrom)" // &
+       write(tdf_unit,'(A)') "# Transport distribution function (in units of 1/hbar^2 * eV * ps / angstrom)" // &
             " vs energy in eV"
-       write(*,'(A)') "# Energy TDF_xx TDF_xy TDF_yy TDF_xz TDF_yz TDF_zz"
+       write(tdf_unit,'(A)') "# Energy TDF_xx TDF_xy TDF_yy TDF_xz TDF_yz TDF_zz"
        do i=1,size(TDFEnergyArray)
-          write(*,101) TDFEnergyArray(i), TDF(:,i)
+          write(tdf_unit,101) TDFEnergyArray(i), TDF(:,i)
        end do
     end if
 
@@ -254,10 +256,12 @@ contains
     ! TODO: printing here!
       
     ! Before ending, I close files and deallocate memory
-    close(tdf_unit)
-    close(elcond_unit)
-    close(seebeck_unit)
-    if (boltz_calc_also_dos) close(boltzdos_unit)
+    if (on_root) then
+       close(tdf_unit)
+       close(elcond_unit)
+       close(seebeck_unit)
+       if (boltz_calc_also_dos) close(boltzdos_unit)
+    end if
 
     deallocate(TempArray,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating TempArray in boltzwann_main')
@@ -339,6 +343,7 @@ contains
     TDF = 0._dp
     
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
+    ! TODO: to be checked: if I have to check for the presence of the .eig file
     call get_HH_R()
 
     allocate(HH(num_wann,num_wann),stat=ierr)
@@ -348,21 +353,25 @@ contains
     allocate(UU(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating UU in calcTDF')    
 
+    ! TODO: print on output the grid that I am using (and min_ksep value, if boltz_interp_mesh_spacing >0)
+    
+    print*, my_node_id, boltz_interp_mesh, boltz_interp_mesh_spacing
+
     ! I loop over all kpoints
-    do loop_tot=0,PRODUCT(boltz_kmeshsize)-1
+    do loop_tot=0,PRODUCT(boltz_interp_mesh)-1
 
        ! I get the coordinates for the x,y,z components starting from a single loop variable
        ! (which is better for parallelization purposes)
        ! Important! This works only if loop_tot starts from ZERO and ends with 
-       !            PRODUCT(boltz_kmeshsize)-1, so be careful when parallelizing
-       loop_x=loop_tot/(boltz_kmeshsize(2)*boltz_kmeshsize(3))
-       loop_y=(loop_tot-loop_x*(boltz_kmeshsize(2)*boltz_kmeshsize(3)))/boltz_kmeshsize(3)
-       loop_z=loop_tot-loop_x*(boltz_kmeshsize(2)*boltz_kmeshsize(3))-loop_y*boltz_kmeshsize(3)
+       !            PRODUCT(boltz_interp_mesh)-1, so be careful when parallelizing
+       loop_x=loop_tot/(boltz_interp_mesh(2)*boltz_interp_mesh(3))
+       loop_y=(loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3)))/boltz_interp_mesh(3)
+       loop_z=loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3))-loop_y*boltz_interp_mesh(3)
 
-       ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_kmeshsize(i)
-       kpt(1)=(real(loop_x,dp)/real(boltz_kmeshsize(1),dp))
-       kpt(2)=(real(loop_y,dp)/real(boltz_kmeshsize(2),dp))
-       kpt(3)=(real(loop_z,dp)/real(boltz_kmeshsize(3),dp))
+       ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_interp_mesh(i)
+       kpt(1)=(real(loop_x,dp)/real(boltz_interp_mesh(1),dp))
+       kpt(2)=(real(loop_y,dp)/real(boltz_interp_mesh(2),dp))
+       kpt(3)=(real(loop_z,dp)/real(boltz_interp_mesh(3),dp))
        
        if (boltz_calc_also_dos) then
           !TODO!!
@@ -393,6 +402,7 @@ contains
 !!$          MaxEnIdx = min(size(TDFEnergyArray),MaxEnIdx)
 !!$          do EnIdx=MinEnIdx, MaxEnIdx
 !!$             ! TODO: Factors must contain: tau; spin-degeneracy; dos in k space; ...
+!!$             ! for spin-degeneracy: use spinors=.true. in input and elec_per_state variable
 !!$             ! TDF_xx
 !!$             TDF(EnIdx,1) = TDF(EndIdx,1) + Factors * & 
 !!$                  ! normGauss gives the value of a normalized gaussian of proper width with center the origin
@@ -403,8 +413,6 @@ contains
 !!$
 
     end do
-   
-    stop
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',2)
 

@@ -125,7 +125,17 @@ module w90_parameters
   logical,           public, save :: transl_inv
   !IVO_END
 
+  ! [gp-begin, Apr 13, 2012]
+  !! Global interpolation k mesh variables
+  !! These don't need to be public, since their values are copied in the variables of the
+  !! local interpolation meshes
+  real(kind=dp)                   :: interp_mesh_spacing
+  integer                         :: interp_mesh(3)
+  logical                         :: global_interp_mesh_set
+  !! [gp-end]
+
   ! [gp-begin, Apr 12, 2012]
+  ! BoltzWann variables
   logical,           public, save :: boltzwann
   logical,           public, save :: boltz_calc_also_dos
   real(kind=dp),     public, save :: boltz_dos_energy_step
@@ -137,7 +147,8 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_temp_min
   real(kind=dp),     public, save :: boltz_temp_max
   real(kind=dp),     public, save :: boltz_temp_step
-  integer,           public, save :: boltz_kmeshsize(3)
+  real(kind=dp),     public, save :: boltz_interp_mesh_spacing
+  integer,           public, save :: boltz_interp_mesh(3)
   real(kind=dp),     public, save :: boltz_tdf_energy_step
   logical,           public, save :: boltz_bandshift
   integer,           public, save :: boltz_bandshift_firstband
@@ -1009,7 +1020,7 @@ contains
           if(.not. eig_found) then
              if ( disentanglement) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot) ) then
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. boltzwann) ) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
           else
@@ -1146,17 +1157,7 @@ contains
     if (found .and. (boltz_temp_step <= 0._dp)) &
          call io_error('Error: boltz_temp_step must be greater than zero')
 
-    boltz_kmeshsize=0
-    call param_get_vector_length('boltz_kmeshsize',found,length=i)
-    if ((.not.found).and.boltzwann) &
-         call io_error('Error: boltz_kmeshsize must be provided as a vector of 3 integers')
-    if (found) then
-       if (i /= 3) &
-            call io_error('Error: boltz_kmeshsize must be provided as a vector of 3 integers')
-       call param_get_keyword_vector('boltz_kmeshsize',found,3,i_value=boltz_kmeshsize)
-       if (any(boltz_kmeshsize<=0)) &
-            call io_error('Error: boltz_kmeshsize elements must be greater than zero')
-    end if
+    ! The interpolation mesh is read later on
 
     boltz_tdf_energy_step=0._dp
     call param_get_keyword('boltz_tdf_energy_step',found,r_value=boltz_tdf_energy_step)
@@ -1290,6 +1291,84 @@ contains
        kpt_cart(:,nkp)=matmul(kpt_latt(:,nkp),recip_lattice(:,:))
     end do
 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! k meshes
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! [GP-begin, Apr13, 2012]
+    !! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
+    !! This bit of code must appear *before* all other codes for the local interpolation meshes,
+    !! BUT *after* having calculated the reciprocal-space vectors.
+    global_interp_mesh_set = .false.
+    interp_mesh_spacing=-1._dp
+    interp_mesh = 0
+    call param_get_keyword('interp_mesh_spacing',found,r_value=interp_mesh_spacing)
+    if (found) then
+       if (interp_mesh_spacing .le. 0._dp) &
+            call io_error('Error: interp_mesh_spacing must be greater than zero')
+       global_interp_mesh_set = .true.
+       
+       call internal_set_interp_mesh(interp_mesh_spacing,recip_lattice,interp_mesh)
+    end if
+    call param_get_vector_length('interp_mesh',found,length=i)
+    if (found) then
+       if (global_interp_mesh_set) &
+            call io_error('Error: cannot set both interp_mesh and interp_mesh_spacing')
+       if (i.eq.1) then
+          global_interp_mesh_set = .true.
+          call param_get_keyword_vector('interp_mesh',found,1,i_value=interp_mesh)
+          interp_mesh(2) = interp_mesh(1)
+          interp_mesh(3) = interp_mesh(1)
+       elseif (i.eq.3) then
+          global_interp_mesh_set = .true.          
+          call param_get_keyword_vector('interp_mesh',found,3,i_value=interp_mesh)
+       else
+         call io_error('Error: interp_mesh must be provided as either one integer or a vector of 3 integers')
+       end if
+       if (any(interp_mesh<=0)) &
+            call io_error('Error: interp_mesh elements must be greater than zero')
+    end if
+
+    !! Now I read the BoltzWann interpolation mesh
+    boltz_interp_mesh_spacing=-1._dp
+    boltz_interp_mesh = 0
+    call param_get_keyword('boltz_interp_mesh_spacing',found,r_value=boltz_interp_mesh_spacing)
+    if (found) then
+       if (boltz_interp_mesh_spacing .le. 0._dp) &
+            call io_error('Error: boltz_interp_mesh_spacing must be greater than zero')
+       
+       call internal_set_interp_mesh(boltz_interp_mesh_spacing,recip_lattice,boltz_interp_mesh)
+    end if
+    call param_get_vector_length('boltz_interp_mesh',found2,length=i)
+    if (found2) then
+       if (found) &
+            call io_error('Error: cannot set both boltz_interp_mesh and boltz_interp_mesh_spacing')
+       if (i.eq.1) then
+          call param_get_keyword_vector('boltz_interp_mesh',found2,1,i_value=boltz_interp_mesh)
+          boltz_interp_mesh(2) = boltz_interp_mesh(1)
+          boltz_interp_mesh(3) = boltz_interp_mesh(1)
+       elseif (i.eq.3) then
+          call param_get_keyword_vector('boltz_interp_mesh',found2,3,i_value=boltz_interp_mesh)
+       else
+         call io_error('Error: boltz_interp_mesh must be provided as either one integer or a vector of 3 integers')
+       end if
+       if (any(boltz_interp_mesh<=0)) &
+            call io_error('Error: boltz_interp_mesh elements must be greater than zero')
+    end if
+
+    if ((found.eqv..false.).and.(found2.eqv..false.)) then
+       ! This is the case where no BoltzWann "local" interpolation k-mesh is provided in the input
+       if (global_interp_mesh_set) then
+          boltz_interp_mesh = interp_mesh
+          ! I set also boltz_interp_mesh_spacing so that I can check if it is < 0 or not, and if it is
+          ! > 0 I can print on output the mesh spacing that was chosen
+          boltz_interp_mesh_spacing = interp_mesh_spacing 
+       else
+            if (boltzwann) &
+                 call io_error('Error: BoltzWann required, but no interpolation mesh given.')          
+       end if
+    end if
+    ! [GP-end]
+
     ! Atoms
     if (.not.library) num_atoms=0
     call param_get_block_length('atoms_frac',found,i_temp)
@@ -1383,9 +1462,40 @@ contains
 
 105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
 106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
-
+    
   end subroutine param_read
 
+  !> This routines returns the three integers that define the interpolation k-mesh, satisfying
+  !> the condition that the spacing between two neighboring points along each of the three
+  !> k_x, k_y and k_z directions is at smaller than a given spacing.
+  !>
+  !> \note The reclat is defined as:
+  !>   * 'b_1' = (recip_lattice(1,I), i=1,3)
+  !>   * 'b_2' = (recip_lattice(2,I), i=1,3)
+  !>   * 'b_3' = (recip_lattice(3,I), i=1,3)
+  !>
+  !> \note spacing must be > 0 (and in particular different from zero). We don't check this here.
+  !> 
+  !> \param spacing Minimum spacing between neighboring points, in angstrom^(-1)
+  !> \param reclat  Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
+  !> \param mesh    output, will contain the three integers defining the interpolation k-mesh.
+  subroutine internal_set_interp_mesh(spacing,reclat,mesh)
+    real(kind=dp),                 intent(in) :: spacing
+    real(kind=dp), dimension(3,3), intent(in) :: reclat
+    integer,       dimension(3),  intent(out) :: mesh
+
+    real(kind=dp), dimension(3) :: blen
+    integer :: i
+    
+    do i=1,3
+       blen(i) = sqrt(sum(recip_lattice(i,:)**2))
+    end do
+
+    do i=1,3
+       mesh(i) = int(floor(blen(i) / spacing))+1
+    end do
+
+  end subroutine internal_set_interp_mesh
 
   !===================================================================
   subroutine param_uppercase

@@ -573,7 +573,6 @@ contains
 
 #ifdef MPI
 
-    integer :: status(MPI_status_size)
     integer, allocatable :: array_red(:)
 
     allocate(array_red(size),stat=ierr)
@@ -618,7 +617,6 @@ contains
 
 #ifdef MPI
 
-    integer :: status(MPI_status_size)
     real(kind=dp), allocatable :: array_red(:)
 
     allocate(array_red(size),stat=ierr)
@@ -667,7 +665,6 @@ contains
 
 #ifdef MPI
 
-    integer :: status(MPI_status_size)
     complex(kind=dp), allocatable :: array_red(:)
 
     allocate(array_red(size),stat=ierr)

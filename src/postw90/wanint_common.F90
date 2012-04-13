@@ -300,7 +300,6 @@ module w90_wanint_common
     call comms_bcast(slice_task,len(slice_task)) 
 ! ----------------------------------------------
 
-
     ! [gp-begin, Apr 12, 2012]
     ! BoltzWann variables
     call comms_bcast(boltzwann,1) 
@@ -314,7 +313,8 @@ module w90_wanint_common
     call comms_bcast(boltz_temp_min,1) 
     call comms_bcast(boltz_temp_max,1) 
     call comms_bcast(boltz_temp_step,1) 
-    call comms_bcast(boltz_kmeshsize(1),3) 
+    call comms_bcast(boltz_interp_mesh_spacing,1) 
+    call comms_bcast(boltz_interp_mesh(1),3) 
     call comms_bcast(boltz_tdf_energy_step,1) 
     call comms_bcast(boltz_bandshift,1) 
     call comms_bcast(boltz_bandshift_firstband,1) 
