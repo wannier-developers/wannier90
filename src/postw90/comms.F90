@@ -27,6 +27,7 @@ module w90_comms
 
   public :: comms_setup
   public :: comms_end
+  public :: comms_abort
   public :: comms_bcast      ! send data from the root node
   public :: comms_send       ! send data from one node to another
   public :: comms_recv       ! accept data from one node to another
@@ -141,6 +142,21 @@ contains
 #endif
     
   end subroutine comms_end
+
+  subroutine comms_abort
+
+    implicit none
+
+    integer :: ierr
+
+#ifdef MPI
+    call MPI_abort(MPI_comm_world,1,ierr)
+#else
+    STOP
+#endif
+
+  end subroutine comms_abort
+
 
   subroutine comms_bcast_int(array,size)
 

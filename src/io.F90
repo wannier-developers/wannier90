@@ -18,6 +18,11 @@ module w90_io
 
   private
 
+
+#ifdef MPI
+  include 'mpif.h'
+#endif
+
   integer, public, save           :: stdout
   character(len=50), public, save :: seedname
   integer, parameter, public :: maxlen = 120  ! Max column width of input file
@@ -189,8 +194,29 @@ contains
     !                                                                  !
     !===================================================================  
 
+
          implicit none
          character(len=*), intent(in) :: error_msg
+
+#ifdef MPI
+         character(len=50) :: filename
+         integer           :: stderr,ierr,whoami
+
+         call mpi_comm_rank(mpi_comm_world, whoami, ierr)
+         if(whoami>99999) then
+            write(filename,'(a,a,I0,a)')trim(seedname),'.node_',whoami,'.werr'
+         else
+            write(filename,'(a,a,I5.5,a)')trim(seedname),'.node_',whoami,'.werr'
+         endif
+         stderr=io_file_unit()
+         open(unit=stderr,file=trim(filename),form='formatted',err=105)
+         write(stderr, '(1x,a)') trim(error_msg)
+         close(stderr)
+         call MPI_abort(MPI_comm_world,1,ierr)
+
+105      STOP
+
+#else
 
          write(stdout,*)  'Exiting.......' 
          write(stdout, '(1x,a)') trim(error_msg)
@@ -198,6 +224,9 @@ contains
          close(stdout)
          
          stop "wannier90 error: examine the output/error file for details" 
+
+#endif
+
          
        end subroutine io_error
 
