@@ -82,7 +82,10 @@ contains
                  subroutine utility_inv3 (a, b, det)                   !
     !==================================================================!
     !                                                                  !
-    !    Return the inverse of a 3x3 matrix and its determinant        !
+    !    Return in b the adjoint of the 3x3 matrix a, and its          !
+    !    determinant.                                                  !
+    !    The inverse is defined as the adjoind divided by the          !
+    !    determinant, so that inverse(a) = b/det                       !
     !                                                                  !
     !===================================================================
 

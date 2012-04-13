@@ -206,7 +206,7 @@ contains
     open(bndunit,file=trim(seedname)//'_band.kpt',form='formatted')
     write(bndunit,*) total_pts
     do loop_spts=1,total_pts
-       write(bndunit,'(3f12.6,3x,f3.1)') (plot_kpoint(loop_i,loop_spts),loop_i=1,3),1.0_dp
+       write(bndunit,'(3f12.6,3x,a)') (plot_kpoint(loop_i,loop_spts),loop_i=1,3),"1.0"
     end do
     close(bndunit)
     !

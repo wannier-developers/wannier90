@@ -889,188 +889,190 @@ contains
     end subroutine internal_new_u_and_m
 
 
-    !========================================!
-    subroutine internal_check_unitarity()
-    !========================================!
-
-      implicit none
-
-      integer :: nkp,i,j,m
-      complex(kind=dp) :: ctmp1,ctmp2
-
-      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',1)
-
-      do nkp = 1, num_kpts  
-         do i = 1, num_wann  
-            do j = 1, num_wann  
-               ctmp1 = cmplx_0  
-               ctmp2 = cmplx_0  
-               do m = 1, num_wann  
-                  ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
-                  ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
-               enddo
-               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
-                    then
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp1
-                  call io_error('wann_main: unitariety error 1')  
-               endif
-               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
-                    then
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp2
-                  call io_error('wann_main: unitariety error 2')  
-               endif
-               if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp1
-                  call io_error('wann_main: unitariety error 3')  
-               endif
-               if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp2
-                  call io_error('wann_main: unitariety error 4')  
-               endif
-            enddo
-         enddo
-      enddo
-
-      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',2)
-
-      return
-
-    end subroutine internal_check_unitarity
-
-
-    !========================================!
-    subroutine internal_write_r2mn()
-    !========================================!
-    !                                        !
-    ! Write seedname.r2mn file               !
-    !                                        !
-    !========================================!
-      use w90_io, only: seedname,io_file_unit,io_error
-      
-      implicit none
-
-      integer :: r2mnunit,nw1,nw2,nkp,nn
-      real(kind=dp) :: r2ave_mn,delta
-
-      ! note that here I use formulas analogue to Eq. 23, and not to the
-      ! shift-invariant Eq. 32 .
-      r2mnunit=io_file_unit()
-      open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
-      do nw1 = 1, num_wann  
-         do nw2 = 1, num_wann  
-            r2ave_mn = 0.0_dp  
-            delta = 0.0_dp  
-            if (nw1.eq.nw2) delta = 1.0_dp  
-            do nkp = 1, num_kpts  
-               do nn = 1, nntot
-                  r2ave_mn = r2ave_mn + wb(nn) * &
-                       ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) - &
-                       conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
-               enddo
-            enddo
-            r2ave_mn = r2ave_mn / real(num_kpts,dp)  
-            write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
-         enddo
-      enddo
-      close(r2mnunit)  
-      
-      return
-      
-158   call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_main')
-      
-    end subroutine internal_write_r2mn
+!!$    !========================================!
+!!$    subroutine internal_check_unitarity()
+!!$    !========================================!
+!!$
+!!$      implicit none
+!!$
+!!$      integer :: nkp,i,j,m
+!!$      complex(kind=dp) :: ctmp1,ctmp2
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',1)
+!!$
+!!$      do nkp = 1, num_kpts  
+!!$         do i = 1, num_wann  
+!!$            do j = 1, num_wann  
+!!$               ctmp1 = cmplx_0  
+!!$               ctmp2 = cmplx_0  
+!!$               do m = 1, num_wann  
+!!$                  ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
+!!$                  ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
+!!$               enddo
+!!$               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
+!!$                    then
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp1
+!!$                  call io_error('wann_main: unitariety error 1')  
+!!$               endif
+!!$               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
+!!$                    then
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp2
+!!$                  call io_error('wann_main: unitariety error 2')  
+!!$               endif
+!!$               if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp1
+!!$                  call io_error('wann_main: unitariety error 3')  
+!!$               endif
+!!$               if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp2
+!!$                  call io_error('wann_main: unitariety error 4')  
+!!$               endif
+!!$            enddo
+!!$         enddo
+!!$      enddo
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',2)
+!!$
+!!$      return
+!!$
+!!$    end subroutine internal_check_unitarity
 
 
+!!$    !========================================!
+!!$    subroutine internal_write_r2mn()
+!!$    !========================================!
+!!$    !                                        !
+!!$    ! Write seedname.r2mn file               !
+!!$    !                                        !
+!!$    !========================================!
+!!$      use w90_io, only: seedname,io_file_unit,io_error
+!!$      
+!!$      implicit none
+!!$
+!!$      integer :: r2mnunit,nw1,nw2,nkp,nn
+!!$      real(kind=dp) :: r2ave_mn,delta
+!!$
+!!$      ! note that here I use formulas analogue to Eq. 23, and not to the
+!!$      ! shift-invariant Eq. 32 .
+!!$      r2mnunit=io_file_unit()
+!!$      open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
+!!$      do nw1 = 1, num_wann  
+!!$         do nw2 = 1, num_wann  
+!!$            r2ave_mn = 0.0_dp  
+!!$            delta = 0.0_dp  
+!!$            if (nw1.eq.nw2) delta = 1.0_dp  
+!!$            do nkp = 1, num_kpts  
+!!$               do nn = 1, nntot
+!!$                  r2ave_mn = r2ave_mn + wb(nn) * &
+!!$                       ! [GP-begin, Apr13, 2012: corrected sign inside "real"]
+!!$                       ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) + &
+!!$                       conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
+!!$                       ! [GP-end]
+!!$               enddo
+!!$            enddo
+!!$            r2ave_mn = r2ave_mn / real(num_kpts,dp)  
+!!$            write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
+!!$         enddo
+!!$      enddo
+!!$      close(r2mnunit)  
+!!$      
+!!$      return
+!!$      
+!!$158   call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_main')
+!!$      
+!!$    end subroutine internal_write_r2mn
 
-    !========================================!
-    subroutine internal_svd_omega_i()
-    !========================================!
 
-      implicit none
 
-      complex(kind=dp), allocatable  :: cv1(:,:),cv2(:,:)
-      complex(kind=dp), allocatable  :: cw1(:),cw2(:)  
-      complex(kind=dp), allocatable  :: cpad1 (:)  
-      real(kind=dp),    allocatable  :: singvd (:)  
-
-      integer :: nkp,nn,nb,na,ind
-      real(kind=dp) :: omt1,omt2,omt3
-
-      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',1)
-
-      allocate( cw1 (10 * num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cw1 in wann_main')
-      allocate( cw2 (10 * num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cw2 in wann_main')
-      allocate( cv1 (num_wann, num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cv1 in wann_main')
-      allocate( cv2 (num_wann, num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cv2 in wann_main')
-      allocate( singvd (num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating singvd in wann_main')
-      allocate( cpad1 (num_wann * num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cpad1 in wann_main')
-
-      cw1=cmplx_0; cw2=cmplx_0; cv1=cmplx_0; cv2=cmplx_0; cpad1=cmplx_0 
-      singvd=0.0_dp
-
-      ! singular value decomposition
-      omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
-      do nkp = 1, num_kpts  
-         do nn = 1, nntot  
-            ind = 1  
-            do nb = 1, num_wann  
-               do na = 1, num_wann  
-                  cpad1 (ind) = m_matrix (na, nb, nn, nkp)  
-                  ind = ind+1  
-               enddo
-            enddo
-            call zgesvd ('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
-                 num_wann, cv2, num_wann, cw1, 10 * num_wann, cw2, info)
-            if (info.ne.0) then  
-               call io_error('ERROR: Singular value decomp. zgesvd failed')  
-            endif
-
-            do nb = 1, num_wann  
-               omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
-               omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
-               omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
-            enddo
-         enddo
-      enddo
-      omt1 = omt1 / real(num_kpts,dp)  
-      omt2 = omt2 / real(num_kpts,dp)  
-      omt3 = omt3 / real(num_kpts,dp)  
-      write ( stdout , * ) ' '  
-      write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
-           omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
-      write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
-           omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
-      write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
-           omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
-
-      deallocate(cpad1,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_main')
-      deallocate(singvd,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating singvd in wann_main')
-      deallocate(cv2,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cv2 in wann_main')
-      deallocate(cv1,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cv1 in wann_main')
-      deallocate(cw2,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cw2 in wann_main')
-      deallocate(cw1,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cw1 in wann_main')
-
-      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',2)
-
-      return
-      
-    end subroutine internal_svd_omega_i
+!!$    !========================================!
+!!$    subroutine internal_svd_omega_i()
+!!$    !========================================!
+!!$
+!!$      implicit none
+!!$
+!!$      complex(kind=dp), allocatable  :: cv1(:,:),cv2(:,:)
+!!$      complex(kind=dp), allocatable  :: cw1(:),cw2(:)  
+!!$      complex(kind=dp), allocatable  :: cpad1 (:)  
+!!$      real(kind=dp),    allocatable  :: singvd (:)  
+!!$
+!!$      integer :: nkp,nn,nb,na,ind
+!!$      real(kind=dp) :: omt1,omt2,omt3
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',1)
+!!$
+!!$      allocate( cw1 (10 * num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cw1 in wann_main')
+!!$      allocate( cw2 (10 * num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cw2 in wann_main')
+!!$      allocate( cv1 (num_wann, num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cv1 in wann_main')
+!!$      allocate( cv2 (num_wann, num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cv2 in wann_main')
+!!$      allocate( singvd (num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating singvd in wann_main')
+!!$      allocate( cpad1 (num_wann * num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cpad1 in wann_main')
+!!$
+!!$      cw1=cmplx_0; cw2=cmplx_0; cv1=cmplx_0; cv2=cmplx_0; cpad1=cmplx_0 
+!!$      singvd=0.0_dp
+!!$
+!!$      ! singular value decomposition
+!!$      omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
+!!$      do nkp = 1, num_kpts  
+!!$         do nn = 1, nntot  
+!!$            ind = 1  
+!!$            do nb = 1, num_wann  
+!!$               do na = 1, num_wann  
+!!$                  cpad1 (ind) = m_matrix (na, nb, nn, nkp)  
+!!$                  ind = ind+1  
+!!$               enddo
+!!$            enddo
+!!$            call zgesvd ('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
+!!$                 num_wann, cv2, num_wann, cw1, 10 * num_wann, cw2, info)
+!!$            if (info.ne.0) then  
+!!$               call io_error('ERROR: Singular value decomp. zgesvd failed')  
+!!$            endif
+!!$
+!!$            do nb = 1, num_wann  
+!!$               omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
+!!$               omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
+!!$               omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
+!!$            enddo
+!!$         enddo
+!!$      enddo
+!!$      omt1 = omt1 / real(num_kpts,dp)  
+!!$      omt2 = omt2 / real(num_kpts,dp)  
+!!$      omt3 = omt3 / real(num_kpts,dp)  
+!!$      write ( stdout , * ) ' '  
+!!$      write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
+!!$           omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
+!!$      write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
+!!$           omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
+!!$      write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
+!!$           omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
+!!$
+!!$      deallocate(cpad1,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_main')
+!!$      deallocate(singvd,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating singvd in wann_main')
+!!$      deallocate(cv2,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cv2 in wann_main')
+!!$      deallocate(cv1,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cv1 in wann_main')
+!!$      deallocate(cw2,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cw2 in wann_main')
+!!$      deallocate(cw1,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cw1 in wann_main')
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',2)
+!!$
+!!$      return
+!!$      
+!!$    end subroutine internal_svd_omega_i
 
 
   end subroutine wann_main
@@ -1306,6 +1308,7 @@ contains
     do nkp = 1, num_kpts
        do nn = 1, nntot
           do n = 1, num_wann
+             ! Note that this ln_tmp is defined differently wrt the one in wann_domega
              ln_tmp(n,nn,nkp)=( aimag(log(csheet(n,nn,nkp) &
                      * m_matrix(n,n,nn,nkp))) - sheet(n,nn,nkp) )
           end do
@@ -1475,9 +1478,9 @@ contains
     implicit none
 
     complex(kind=dp), intent(in)  :: csheet (:,:,:)    
-    complex(kind=dp), intent(out) :: cdodq (:,:,:)     
     real(kind=dp),    intent(in)  :: sheet (:,:,:)     
     real(kind=dp),    intent(out) :: rave (:,:)        
+    complex(kind=dp), intent(out) :: cdodq (:,:,:)     
 
     !local
     complex(kind=dp), allocatable  :: cr (:,:)   
@@ -1498,6 +1501,7 @@ contains
     do nkp = 1, num_kpts
        do nn = 1, nntot
           do n = 1, num_wann
+             ! Note that this ln_tmp is defined differently wrt the one in wann_omega
              ln_tmp(n,nn,nkp)=wb(nn)*( aimag(log(csheet(n,nn,nkp) &
                      * m_matrix(n,n,nn,nkp))) - sheet(n,nn,nkp) )
           end do
@@ -1696,7 +1700,7 @@ contains
     
     return
 
-888 format(2x,'WF centre and spread',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
+888 format(2x,'WF centre',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
     
   end subroutine wann_write_xyz
 
@@ -1789,8 +1793,10 @@ contains
           do nkp = 1, num_kpts  
              do nn = 1, nntot
                 r2ave_mn = r2ave_mn + wb(nn) * &
-                     ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) - &
+                     ! [GP-begin, Apr13, 2012: corrected sign inside "real"]
+                     ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) + &
                      conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
+                     ! [GP-end]
              enddo
           enddo
           r2ave_mn = r2ave_mn / real(num_kpts,dp)  
@@ -1808,7 +1814,7 @@ contains
 
   !========================================!
   subroutine wann_svd_omega_i()
-    !========================================!
+  !========================================!
   
     use w90_constants,  only : dp,cmplx_0
     use w90_io,         only : io_stopwatch,io_error,stdout
@@ -2396,188 +2402,189 @@ loop_nw2: do nw2=nw1+1,num_wann
 
 
 
-    !========================================!
-    subroutine internal_check_unitarity()
-    !========================================!
-
-      implicit none
-
-      integer :: nkp,i,j,m
-      complex(kind=dp) :: ctmp1,ctmp2
-
-      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',1)
-
-      do nkp = 1, num_kpts  
-         do i = 1, num_wann  
-            do j = 1, num_wann  
-               ctmp1 = cmplx_0  
-               ctmp2 = cmplx_0  
-               do m = 1, num_wann  
-                  ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
-                  ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
-               enddo
-               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
-                    then
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp1
-                  call io_error('wann_main: unitariety error 1')  
-               endif
-               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
-                    then
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp2
-                  call io_error('wann_main: unitariety error 2')  
-               endif
-               if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp1
-                  call io_error('wann_main: unitariety error 3')  
-               endif
-               if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
-                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
-                       ctmp2
-                  call io_error('wann_main: unitariety error 4')  
-               endif
-            enddo
-         enddo
-      enddo
-
-      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',2)
-
-      return
-
-    end subroutine internal_check_unitarity
-
-
-    !========================================!
-    subroutine internal_write_r2mn()
-    !========================================!
-    !                                        !
-    ! Write seedname.r2mn file               !
-    !                                        !
-    !========================================!
-      use w90_io, only: seedname,io_file_unit,io_error
-      
-      implicit none
-
-      integer :: r2mnunit,nw1,nw2,nkp,nn
-      real(kind=dp) :: r2ave_mn,delta
-
-      ! note that here I use formulas analogue to Eq. 23, and not to the
-      ! shift-invariant Eq. 32 .
-      r2mnunit=io_file_unit()
-      open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
-      do nw1 = 1, num_wann  
-         do nw2 = 1, num_wann  
-            r2ave_mn = 0.0_dp  
-            delta = 0.0_dp  
-            if (nw1.eq.nw2) delta = 1.0_dp  
-            do nkp = 1, num_kpts  
-               do nn = 1, nntot
-                  r2ave_mn = r2ave_mn + wb(nn) * &
-                       ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) - &
-                       conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
-               enddo
-            enddo
-            r2ave_mn = r2ave_mn / real(num_kpts,dp)  
-            write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
-         enddo
-      enddo
-      close(r2mnunit)  
-      
-      return
-      
-158   call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_main')
-      
-    end subroutine internal_write_r2mn
+!!$    !========================================!
+!!$    subroutine internal_check_unitarity()
+!!$    !========================================!
+!!$
+!!$      implicit none
+!!$
+!!$      integer :: nkp,i,j,m
+!!$      complex(kind=dp) :: ctmp1,ctmp2
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',1)
+!!$
+!!$      do nkp = 1, num_kpts  
+!!$         do i = 1, num_wann  
+!!$            do j = 1, num_wann  
+!!$               ctmp1 = cmplx_0  
+!!$               ctmp2 = cmplx_0  
+!!$               do m = 1, num_wann  
+!!$                  ctmp1 = ctmp1 + u_matrix (i, m, nkp) * conjg (u_matrix (j, m, nkp) )  
+!!$                  ctmp2 = ctmp2 + u_matrix (m, j, nkp) * conjg (u_matrix (m, i, nkp) )  
+!!$               enddo
+!!$               if ( (i.eq.j) .and. (abs (ctmp1 - cmplx_1 ) .gt. eps5) ) &
+!!$                    then
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp1
+!!$                  call io_error('wann_main: unitariety error 1')  
+!!$               endif
+!!$               if ( (i.eq.j) .and. (abs (ctmp2 - cmplx_1 ) .gt. eps5) ) &
+!!$                    then
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp2
+!!$                  call io_error('wann_main: unitariety error 2')  
+!!$               endif
+!!$               if ( (i.ne.j) .and. (abs (ctmp1) .gt. eps5) ) then  
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp1
+!!$                  call io_error('wann_main: unitariety error 3')  
+!!$               endif
+!!$               if ( (i.ne.j) .and. (abs (ctmp2) .gt. eps5) ) then  
+!!$                  write ( stdout , * ) ' ERROR: unitariety of final U', nkp, i, j, &
+!!$                       ctmp2
+!!$                  call io_error('wann_main: unitariety error 4')  
+!!$               endif
+!!$            enddo
+!!$         enddo
+!!$      enddo
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: check_unitarity',2)
+!!$
+!!$      return
+!!$
+!!$    end subroutine internal_check_unitarity
 
 
+!!$    !========================================!
+!!$    subroutine internal_write_r2mn()
+!!$    !========================================!
+!!$    !                                        !
+!!$    ! Write seedname.r2mn file               !
+!!$    !                                        !
+!!$    !========================================!
+!!$      use w90_io, only: seedname,io_file_unit,io_error
+!!$      
+!!$      implicit none
+!!$
+!!$      integer :: r2mnunit,nw1,nw2,nkp,nn
+!!$      real(kind=dp) :: r2ave_mn,delta
+!!$
+!!$      ! note that here I use formulas analogue to Eq. 23, and not to the
+!!$      ! shift-invariant Eq. 32 .
+!!$      r2mnunit=io_file_unit()
+!!$      open(r2mnunit,file=trim(seedname)//'.r2mn',form='formatted',err=158)
+!!$      do nw1 = 1, num_wann  
+!!$         do nw2 = 1, num_wann  
+!!$            r2ave_mn = 0.0_dp  
+!!$            delta = 0.0_dp  
+!!$            if (nw1.eq.nw2) delta = 1.0_dp  
+!!$            do nkp = 1, num_kpts  
+!!$               do nn = 1, nntot
+!!$                  r2ave_mn = r2ave_mn + wb(nn) * &
+!!$                       ! [GP-begin, Apr13, 2012: corrected sign inside "real"]
+!!$                       ( 2.0_dp * delta - real(m_matrix(nw1,nw2,nn,nkp) + &
+!!$                       conjg(m_matrix(nw2,nw1,nn,nkp)),kind=dp) )
+!!$               enddo
+!!$            enddo
+!!$            r2ave_mn = r2ave_mn / real(num_kpts,dp)  
+!!$            write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn  
+!!$         enddo
+!!$      enddo
+!!$      close(r2mnunit)  
+!!$      
+!!$      return
+!!$      
+!!$158   call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_main')
+!!$      
+!!$    end subroutine internal_write_r2mn
 
-    !========================================!
-    subroutine internal_svd_omega_i()
-    !========================================!
 
-      implicit none
 
-      complex(kind=dp), allocatable  :: cv1(:,:),cv2(:,:)
-      complex(kind=dp), allocatable  :: cw1(:),cw2(:)  
-      complex(kind=dp), allocatable  :: cpad1 (:)  
-      real(kind=dp),    allocatable  :: singvd (:)  
-
-      integer :: nkp,nn,nb,na,ind
-      real(kind=dp) :: omt1,omt2,omt3
-
-      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',1)
-
-      allocate( cw1 (10 * num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cw1 in wann_main')
-      allocate( cw2 (10 * num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cw2 in wann_main')
-      allocate( cv1 (num_wann, num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cv1 in wann_main')
-      allocate( cv2 (num_wann, num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cv2 in wann_main')
-      allocate( singvd (num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating singvd in wann_main')
-      allocate( cpad1 (num_wann * num_wann),stat=ierr  )
-      if (ierr/=0) call io_error('Error in allocating cpad1 in wann_main')
-
-      cw1=cmplx_0; cw2=cmplx_0; cv1=cmplx_0; cv2=cmplx_0; cpad1=cmplx_0 
-      singvd=0.0_dp
-
-      ! singular value decomposition
-      omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
-      do nkp = 1, num_kpts  
-         do nn = 1, nntot  
-            ind = 1  
-            do nb = 1, num_wann  
-               do na = 1, num_wann  
-                  cpad1 (ind) = m_matrix (na, nb, nn, nkp)  
-                  ind = ind+1  
-               enddo
-            enddo
-            call zgesvd ('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
-                 num_wann, cv2, num_wann, cw1, 10 * num_wann, cw2, info)
-            if (info.ne.0) then  
-               call io_error('ERROR: Singular value decomp. zgesvd failed')  
-            endif
-
-            do nb = 1, num_wann  
-               omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
-               omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
-               omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
-            enddo
-         enddo
-      enddo
-      omt1 = omt1 / real(num_kpts,dp)  
-      omt2 = omt2 / real(num_kpts,dp)  
-      omt3 = omt3 / real(num_kpts,dp)  
-      write ( stdout , * ) ' '  
-      write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
-           omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
-      write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
-           omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
-      write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
-           omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
-
-      deallocate(cpad1,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_main')
-      deallocate(singvd,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating singvd in wann_main')
-      deallocate(cv2,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cv2 in wann_main')
-      deallocate(cv1,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cv1 in wann_main')
-      deallocate(cw2,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cw2 in wann_main')
-      deallocate(cw1,stat=ierr)
-      if (ierr/=0) call io_error('Error in deallocating cw1 in wann_main')
-
-      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',2)
-
-      return
-      
-    end subroutine internal_svd_omega_i
+!!$    !========================================!
+!!$    subroutine internal_svd_omega_i()
+!!$    !========================================!
+!!$
+!!$      implicit none
+!!$
+!!$      complex(kind=dp), allocatable  :: cv1(:,:),cv2(:,:)
+!!$      complex(kind=dp), allocatable  :: cw1(:),cw2(:)  
+!!$      complex(kind=dp), allocatable  :: cpad1 (:)  
+!!$      real(kind=dp),    allocatable  :: singvd (:)  
+!!$
+!!$      integer :: nkp,nn,nb,na,ind
+!!$      real(kind=dp) :: omt1,omt2,omt3
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',1)
+!!$
+!!$      allocate( cw1 (10 * num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cw1 in wann_main')
+!!$      allocate( cw2 (10 * num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cw2 in wann_main')
+!!$      allocate( cv1 (num_wann, num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cv1 in wann_main')
+!!$      allocate( cv2 (num_wann, num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cv2 in wann_main')
+!!$      allocate( singvd (num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating singvd in wann_main')
+!!$      allocate( cpad1 (num_wann * num_wann),stat=ierr  )
+!!$      if (ierr/=0) call io_error('Error in allocating cpad1 in wann_main')
+!!$
+!!$      cw1=cmplx_0; cw2=cmplx_0; cv1=cmplx_0; cv2=cmplx_0; cpad1=cmplx_0 
+!!$      singvd=0.0_dp
+!!$
+!!$      ! singular value decomposition
+!!$      omt1 = 0.0_dp ; omt2 = 0.0_dp ; omt3 = 0.0_dp
+!!$      do nkp = 1, num_kpts  
+!!$         do nn = 1, nntot  
+!!$            ind = 1  
+!!$            do nb = 1, num_wann  
+!!$               do na = 1, num_wann  
+!!$                  cpad1 (ind) = m_matrix (na, nb, nn, nkp)  
+!!$                  ind = ind+1  
+!!$               enddo
+!!$            enddo
+!!$            call zgesvd ('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
+!!$                 num_wann, cv2, num_wann, cw1, 10 * num_wann, cw2, info)
+!!$            if (info.ne.0) then  
+!!$               call io_error('ERROR: Singular value decomp. zgesvd failed')  
+!!$            endif
+!!$
+!!$            do nb = 1, num_wann  
+!!$               omt1 = omt1 + wb(nn) * (1.0_dp - singvd (nb) **2)  
+!!$               omt2 = omt2 - wb(nn) * (2.0_dp * log (singvd (nb) ) )  
+!!$               omt3 = omt3 + wb(nn) * (acos (singvd (nb) ) **2)  
+!!$            enddo
+!!$         enddo
+!!$      enddo
+!!$      omt1 = omt1 / real(num_kpts,dp)  
+!!$      omt2 = omt2 / real(num_kpts,dp)  
+!!$      omt3 = omt3 / real(num_kpts,dp)  
+!!$      write ( stdout , * ) ' '  
+!!$      write(stdout,'(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ',&
+!!$           omt1*lenconfac**2,'('//trim(length_unit)//'^2)'
+!!$      write(stdout,'(2x,a,f15.9,1x,a)') '                 -2log s = ',&
+!!$           omt2*lenconfac**2,'('//trim(length_unit)//'^2)'
+!!$      write(stdout,'(2x,a,f15.9,1x,a)') '                  acos^2 = ',&
+!!$           omt3*lenconfac**2,'('//trim(length_unit)//'^2)'
+!!$
+!!$      deallocate(cpad1,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cpad1 in wann_main')
+!!$      deallocate(singvd,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating singvd in wann_main')
+!!$      deallocate(cv2,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cv2 in wann_main')
+!!$      deallocate(cv1,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cv1 in wann_main')
+!!$      deallocate(cw2,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cw2 in wann_main')
+!!$      deallocate(cw1,stat=ierr)
+!!$      if (ierr/=0) call io_error('Error in deallocating cw1 in wann_main')
+!!$
+!!$      if (timing_level>1) call io_stopwatch('wann: main: svd_omega_i',2)
+!!$
+!!$      return
+!!$      
+!!$    end subroutine internal_svd_omega_i
 
 
   end subroutine wann_main_gamma

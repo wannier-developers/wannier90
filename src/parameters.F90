@@ -182,6 +182,7 @@ module w90_parameters
   logical,           public, save :: write_proj
   integer,           public, save :: timing_level
   logical,           public, save :: spinors   !are our WF spinors?
+  integer,           public, save :: num_elec_per_state
   logical,           public, save :: translate_home_cell
   logical,           public, save :: write_xyz
   real(kind=dp),     public, save :: conv_noise_amp
@@ -482,7 +483,7 @@ contains
                call io_error('Error: restart requested but '//trim(seedname)//'.chk file not found')
        endif
     endif
-    !post processing takes priority (must warn user of this)
+    !post processing takes priority (user is not warned of this)
     if (postproc_setup) restart = ' '
 
     write_r2mn = .false.
@@ -500,7 +501,17 @@ contains
        if (found) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
     if(spinors .and. (2*(num_wann/2))/=num_wann) &
-       call io_error('Error: For spinor WF num_wann ust be even')
+       call io_error('Error: For spinor WF num_wann must be even')
+    
+    ! [GP-begin Apr 13, 2012]
+    ! Added this flag since we need to know if the bands are double degenerate due to spin, e.g. when
+    ! calculating the DOS
+    if (spinors) then
+       num_elec_per_state = 1
+    else
+       num_elec_per_state = 2
+    end if
+    ! [GP-end]
 
     translate_home_cell = .false.
     call param_get_keyword('translate_home_cell',found,l_value=translate_home_cell)
@@ -2334,6 +2345,7 @@ contains
        if( present(l_value) ) then
           ! I don't think we need this. Maybe read into a dummy charater
           ! array and convert each element to logical
+          call io_error('param_get_keyword_vector unimplemented for logicals')
        endif
        if( present(i_value) ) read(dummy,*,err=230,end=230) (i_value(i),i=1,length)
        if( present(r_value) ) read(dummy,*,err=230,end=230) (r_value(i),i=1,length)
@@ -2531,6 +2543,7 @@ contains
        if( present(l_value) ) then
           ! I don't think we need this. Maybe read into a dummy charater
           ! array and convert each element to logical
+          call io_error('param_get_keyword_block unimplemented for logicals')
        endif
        if( present(i_value) ) read(dummy,*,err=240,end=240) (i_value(i,counter),i=1,columns)
        if( present(r_value) ) read(dummy,*,err=240,end=240) (r_value(i,counter),i=1,columns)

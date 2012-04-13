@@ -155,6 +155,7 @@ contains
           if (disentanglement) then
              m_matrix_orig(:,:,nn,nkp) = mmn_tmp(:,:)
           else
+             ! disentanglement=.false. means numbands=numwann, so no the dimensions are the same
              m_matrix(:,:,nn,nkp) = mmn_tmp(:,:)
           end if
        end do

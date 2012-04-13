@@ -195,7 +195,7 @@ contains
     write(stdout,'(a)') ' This is probably caused by an error in your unit cell specification'
     write(stdout,'(a)') ' '
     write(stdout,'(a)') ' If you think this is not the problem; please send your *.win file to the '
-    write(stdout,'(a)') ' wanner90 developers'
+    write(stdout,'(a)') ' wannier90 developers'
     write(stdout,'(a)') ' '
     write(stdout,'(a)') ' The problem may be caused by having accidentally degenerate shells of '
     write(stdout,'(a)') ' kpoints. The solution is then to rerun wannier90 specifying the b-vectors '

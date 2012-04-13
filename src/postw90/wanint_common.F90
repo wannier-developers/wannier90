@@ -701,7 +701,11 @@ module w90_wanint_common
      !n1
   enddo
   !
-  if(count_pts) return
+  if(count_pts) then
+     if (timing_level>1.and.on_root)&
+          call io_stopwatch('wanint_common: wigner_seitz',2)
+     return
+  end if
 
   if(iprint>=3.and.on_root) then
      write(stdout,'(1x,i4,a,/)') nrpts,&

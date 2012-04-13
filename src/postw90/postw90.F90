@@ -29,6 +29,8 @@ program postw90
   ! Put some descriptive comments here
   !
   call comms_setup
+
+  library = .false.
   
   if(on_root) then
      time0=io_time()

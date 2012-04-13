@@ -61,6 +61,8 @@ program wannier
 
   time0=io_time()
 
+  library = .false.
+
   call io_get_seedname()
 
   stdout=io_file_unit()
