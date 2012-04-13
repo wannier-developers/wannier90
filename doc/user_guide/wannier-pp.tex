@@ -174,7 +174,7 @@ begin exclude_bands
 end exclude_bands
 \end{verbatim}
 To exclude bands (independent of k-point) from the calculation of the 
-overlap and projection matricies, for example to ignore shallow-core states.
+overlap and projection matrices, for example to ignore shallow-core states.
 The first line is the number of states to exclude, the following lines give
 the states for be excluded.
 
@@ -220,33 +220,6 @@ code, then reads \verb#seedname.nnkp# file, calculates the projections
 and writes them to \verb#seedname.amn#. 
 
 
-
-
-%\subsection{Things to add}
-%
-%\begin{itemize}
-%\item List of states to exclude from the calculation
-%  (\verb#exclude_bands#)
-%\end{itemize}
-%
-%Notes:
-%
-%It would be desirable to be able to control which bands to include. One
-%might perform a `nscf' calculation for 16 bands and want to
-%\begin{enumerate}
-%\item ignore the lowest $n$ bands (e.g., only look at conduction states)
-%\item take the lowest $n$ bands (e.g., only look at valence states)
-%\item ignore an isolated set of bands in the middle of the energy
-% range (e.g., the d orbitals in ZnTe)
-%\end{enumerate}
-%As calculating overlaps and projections is time consuming we want to
-%cut out these states at the \verb#pw2wannier90# stage, not in
-%\verb#wannier90#. 
-%We can probably specify all this in \verb#seedname.win# and pass
-%an explicit list of states to include (or exclude) in
-%\verb#seedname.nnkp#.
-%
-
 \section{{\tt seedname.mmn} file} 
 
 INPUT. 
@@ -268,7 +241,7 @@ specify $\mathbf{k+b}$. The  2nd integer, in particular, points to the
 k-point on the list that is a  periodic image of $\mathbf{k+b}$, and
 in particular is the image that is actually mentioned in the list. The 
 last three integers specify the $\mathbf{G}$ vector, in  reciprocal
-lattice units, that brings the k-point specified by the fourth
+lattice units, that brings the k-point specified by the second
 integer, and that thus lives inside the first BZ zone, to the actual
 $\mathbf{k+b}$ that we need.
 
