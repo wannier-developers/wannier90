@@ -29,11 +29,13 @@ TEMP2 = $(F90)
 endif
 
 
-wannier libs: POSTOPTS = 
-wannier libs: COMPILER = $(F90)
-wannier: ../../wannier90.x
+wannier libs serialobjs: POSTOPTS = 
+wannier libs serialobjs: COMPILER = $(F90)
+wannier: ../../wannier90.x 
 
-../../wannier90.x: $(OBJS) 
+serialobjs: $(OBJS)
+
+../../wannier90.x: serialobjs
 	$(COMPILER) ../wannier_prog.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
 
 post: POSTOPTS = $(TEMP1)
@@ -65,7 +67,7 @@ endif
 
 libs:     $(LIBRARY)
 
-$(LIBRARY): $(OBJS) $(OBJS2) 
+$(LIBRARY): serialobjs $(OBJS2) 
 	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS2) $(OBJS)
 
 clean:
@@ -140,5 +142,5 @@ wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 	 $(COMPILER) $(FCOPTS) -c ../wannier_lib.F90
 
 
-.PHONY : wannier libs post clean mpi_test
+.PHONY : wannier libs post clean mpi_test serialobjs
 

@@ -6,10 +6,13 @@ all: wannier lib post
 
 doc: thedoc
 
-wannier: objdir
+serialobjs: objdir
+	(cd src/obj ; make -f $(REALMAKEFILE) serialobjs)
+
+wannier: objdir serialobjs
 	(cd src/obj ; make -f $(REALMAKEFILE) wannier)
 
-lib: objdir
+lib: objdir serialobjs
 	(cd src/obj ; make -f $(REALMAKEFILE) libs)
 
 libs: lib
@@ -127,4 +130,4 @@ objdirp:
 		then mkdir src/objp ; \
 	fi ) ;
 
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test dist-lite objdir objdirp
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test dist-lite objdir objdirp serialobjs
