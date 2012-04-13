@@ -421,7 +421,8 @@ contains
                 !
                 ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
                 !
-                rdum=w0gauss(arg)/smear
+                ! hard code for M-P (1)
+                rdum=w0gauss(arg,1)/smear
              end if
              !
              ! Contribution to total DOS

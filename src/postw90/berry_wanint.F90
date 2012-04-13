@@ -1770,7 +1770,8 @@ module w90_berry_wanint
                    !
                    ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
                    !
-                   rdum=w0gauss(arg)/smear
+                   ! hard code for M-P
+                   rdum=w0gauss(arg,1)/smear
                    !
                    ! Fermi occupancy factor
                    !
