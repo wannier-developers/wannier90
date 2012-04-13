@@ -85,6 +85,7 @@ module w90_get_oper
     if(.not.allocated(HH_R)) then
        allocate(HH_R(num_wann,num_wann,nrpts))
     else
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_HH_R',2)
        return !been here before
     end if
     allocate(HH_q(num_wann,num_wann,num_kpts))

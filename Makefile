@@ -1,4 +1,4 @@
-ROOTDIR = $(PWD)
+REALMAKEFILE=../../src/Makefile.2
 
 default: wannier post
 
@@ -7,31 +7,32 @@ all: wannier lib post
 doc: thedoc
 
 wannier: objdir
-	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile wannier)
+	(cd src/obj ; make -f $(REALMAKEFILE) wannier)
 
 lib: objdir
-	(cd src/obj ; make -f $(ROOTDIR)/src/Makefile libs)
+	(cd src/obj ; make -f $(REALMAKEFILE) libs)
 
 libs: lib
 
 post: objdirp
-	(cd src/objp ; make -f $(ROOTDIR)/src/Makefile post)
+	(cd src/objp ; make -f $(REALMAKEFILE) post)
 
 clean:
+	rm -f *~
+	rm -f src/*~
 	@( if [ -d src/obj ] ; \
 		then cd src/obj ; \
-		make -f $(ROOTDIR)/src/Makefile clean ; \
+		make -f $(REALMAKEFILE) clean ; \
 		cd ../ ; rm -rf obj ; cd ../ ; \
 	fi ; \
 	if [ -d src/objp ] ; \
 		then cd src/objp ; \
-		make -f $(ROOTDIR)/src/Makefile clean ; \
-		cd ../ ; rm -rf objp ; \
-	fi ) ; \
-	cd $(ROOTDIR)/tests ; make clean ; \
-	cd ../doc/user_guide ; make clean ; \
-	cd ../tutorial ; make clean 	
-	rm -f *~
+		make -f $(REALMAKEFILE) clean ; \
+		cd ../ ; rm -rf objp ; cd ../ ; \
+	fi )
+	make -C tests clean
+	make -C doc/user_guide clean
+	make -C doc/tutorial clean
 
 veryclean: clean
 	rm -f wannier90.x postw90.x libwannier.a ; \

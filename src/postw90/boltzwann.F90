@@ -11,6 +11,10 @@
 ! * check comments
 ! * implement rigid bandshift
 ! * parameters related to smearing (2x, DOS and TDF)
+! * in the documentation, say that it also uses the parameters of the ham. interpolation, as
+!   for instance those to choose if we want to take into account degeneracies when calculating the
+!   velocities
+! * check that we get the same results with and without spin-orbit!
 
 module w90_boltzwann
   use w90_constants
@@ -288,6 +292,8 @@ contains
   !> 
   !> \note The TDF array must be already allocated with dimensions 6*N before calling this routine, where
   !>       N is the dimension of the TDFEnergyArray array. 
+  !>
+  !> \note We assume that the TDFEnergyArray is uniformely spaced (no checks are performed on this).
   !> 
   !> \param TDF The TDF(i,EnIdx) output array, where:
   !>  - i is an index from 1 to 6 giving the component of the symmetric tensor \f$ Sigma_{ij}(\eps) \f$,
@@ -298,6 +304,12 @@ contains
   !>    TDFEnergyArray(EndIdx) array (in eV).
   !> \param TDFEnergyArray The array with the energies for which the TDF is calculated, in eV
   subroutine calcTDF(TDF,TDFEnergyArray)
+    use w90_get_oper, only: get_HH_R, HH_R
+    use w90_parameters, only    : num_wann
+    use w90_utility, only : utility_diagonalize
+    use w90_wanint_common, only: fourier_R_to_k
+    use w90_wan_ham, only: get_deleig_a
+
     real(kind=dp), dimension(:,:), intent(out)   :: TDF ! (coordinate,Energy)
     real(kind=dp), dimension(:), intent(in)      :: TDFEnergyArray
     ! Comments:
@@ -308,8 +320,13 @@ contains
     ! PARTODO: comments on which processor the TDF is actually stored at the end
 
     real(kind=dp), dimension(3) :: kpt
-    integer :: loop_tot, loop_x, loop_y, loop_z
-    
+    integer :: loop_tot, loop_x, loop_y, loop_z, ierr
+
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    real(kind=dp) :: del_eig(num_wann,3)
+    real(kind=dp) :: eig(num_wann)
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',1)
 
@@ -321,13 +338,23 @@ contains
     ! I zero the TDF array before starting
     TDF = 0._dp
     
+    ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
+    call get_HH_R()
+
+    allocate(HH(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating HH in calcTDF')
+    allocate(delHH(num_wann,num_wann,3),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating delHH in calcTDF')
+    allocate(UU(num_wann,num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating UU in calcTDF')    
+
     ! I loop over all kpoints
     do loop_tot=0,PRODUCT(boltz_kmeshsize)-1
 
        ! I get the coordinates for the x,y,z components starting from a single loop variable
        ! (which is better for parallelization purposes)
        ! Important! This works only if loop_tot starts from ZERO and ends with 
-       !            PRODUCT(boltz_kmeshsize)-1
+       !            PRODUCT(boltz_kmeshsize)-1, so be careful when parallelizing
        loop_x=loop_tot/(boltz_kmeshsize(2)*boltz_kmeshsize(3))
        loop_y=(loop_tot-loop_x*(boltz_kmeshsize(2)*boltz_kmeshsize(3)))/boltz_kmeshsize(3)
        loop_z=loop_tot-loop_x*(boltz_kmeshsize(2)*boltz_kmeshsize(3))-loop_y*boltz_kmeshsize(3)
@@ -341,26 +368,52 @@ contains
           !TODO!!
        end if
        
-       ! Here I have to get the velocity!
-!!$    use w90_get_oper, only      : HH_R
-!!$    allocate(HH(num_wann,num_wann))
-!!$    allocate(delHH(num_wann,num_wann,3))
-!!$    allocate(UU(num_wann,num_wann))
+       ! Here I have to get the band energies and the velocities
+       call fourier_R_to_k(kpt,HH_R,HH,0) 
+       call utility_diagonalize(HH,num_wann,eig,UU) 
+       call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+       call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+       call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+       call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+       call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+       call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+       
+
+!!$       do BandIdx=1, num_wann
+!!$          ! Maybe we should check once and for all if it makes sense to broaden or if the broadening
+!!$          ! is too small!
+!!$          MinEn=eig(BandIdx)-constant*broadening
+!!$          MaxEn=eig(BandIdx)+constant*broadening
+!!$          ! We assume here that the TDFEnergyArray is uniformely spaced
+!!$          MinEnIdx = int((MinEn-TDFEnergyArray(1))/(TDFEnergyArray(size(TDFEnergyArray))-TDFEnergyArray(1)) * &
+!!$               (size(TDFEnergyArray)-1)) + 1
+!!$          MaxEnIdx = int((MaxEn-TDFEnergyArray(1))/(TDFEnergyArray(size(TDFEnergyArray))-TDFEnergyArray(1)) * &
+!!$               (size(TDFEnergyArray)-1)) + 1
+!!$          MinEnIdx = max(1,MinEnIdx)
+!!$          MaxEnIdx = min(size(TDFEnergyArray),MaxEnIdx)
+!!$          do EnIdx=MinEnIdx, MaxEnIdx
+!!$             ! TODO: Factors must contain: tau; spin-degeneracy; dos in k space; ...
+!!$             ! TDF_xx
+!!$             TDF(EnIdx,1) = TDF(EndIdx,1) + Factors * & 
+!!$                  ! normGauss gives the value of a normalized gaussian of proper width with center the origin
+!!$                  normalizedGaussian(TDFEnergyArray(EnIdx)-eig(BandIdx)) * &
+!!$                  del_eig(BandIdx, 1) * del_eig (BandIdx, 1)  
+!!$          ! TODO: repeat the same for the other 5 components
+!!$       end do
 !!$
-!!$    call fourier_R_to_k(kpt,HH_R,HH,0) 
-!!$    call utility_diagonalize(HH,num_wann,eig,UU) 
-!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
-!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
-!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
-!!$    call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
-!!$    call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
-!!$    call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
 
     end do
    
     stop
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',2)
+
+    deallocate(HH,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating HH in calcTDF')
+    deallocate(delHH,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating delHH in calcTDF')
+    deallocate(UU,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating UU in calcTDF')
 
   end subroutine calcTDF
 
