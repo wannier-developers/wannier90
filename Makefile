@@ -90,6 +90,7 @@ dist:
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
 		./*/Makefile \
+		./*/Makefile.2 \
 		./*/*/Makefile \
 		./Makefile \
 		./LICENCE \
