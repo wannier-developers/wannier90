@@ -51,17 +51,17 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                                                                  !
     !===================================================================  
-    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps5
+    use w90_constants,  only : dp,cmplx_1,cmplx_0
     use w90_io,         only : stdout,io_error,io_time,io_stopwatch &
-         ,io_file_unit,seedname
-    use w90_parameters, only : num_wann,num_cg_steps,num_iter,wb,nnlist, &
+         ,io_file_unit
+    use w90_parameters, only : num_wann,num_cg_steps,num_iter,nnlist, &
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
          num_dump_cycles,omega_invariant,param_write_chkpt,length_unit, &
          lenconfac,proj_site,real_lattice,write_r2mn,guiding_centres, &
          num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
-         wannier_spreads,omega_total,omega_tilde,devel_flag,optimisation
+         wannier_spreads,omega_total,omega_tilde,optimisation
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -1913,7 +1913,7 @@ contains
     !            Maximally Localised Wannier Functions                 !
     !                      Gamma version                               !
     !===================================================================  
-    use w90_constants,  only : dp,cmplx_1,cmplx_0,eps5
+    use w90_constants,  only : dp,cmplx_1,cmplx_0
     use w90_io,         only : stdout,io_error,io_time,io_stopwatch
     use w90_parameters, only : num_wann,num_iter,wb, &
          nntot,u_matrix,m_matrix,num_kpts,iprint, &
@@ -1948,7 +1948,7 @@ contains
     complex(kind=dp), allocatable  :: cz (:,:)  
 
     real(kind=dp) :: sqwb
-    integer       :: i,n,nn,iter,ind,ierr,iw,info
+    integer       :: i,n,nn,iter,ind,ierr,iw
     integer       :: tnntot
     logical       :: lprint,ldump
     real(kind=dp), allocatable :: history(:)

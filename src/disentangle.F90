@@ -12,7 +12,7 @@
 
 module w90_disentangle
 
-  use w90_constants, only: dp,twopi,cmplx_i,cmplx_0,cmplx_1
+  use w90_constants, only: dp,cmplx_0,cmplx_1
   use w90_io, only: io_error,stdout,io_stopwatch
   use w90_parameters
 
@@ -44,7 +44,7 @@ contains
   !                                                                  !
   !                                                                  !
   !==================================================================!  
-  use w90_io, only: io_file_unit,seedname
+  use w90_io, only: io_file_unit
 
     ! internal variables
     integer                       :: nkp,nkp2,nn,j,ierr,page_unit

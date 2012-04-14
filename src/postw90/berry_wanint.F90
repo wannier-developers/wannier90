@@ -865,11 +865,13 @@ module w90_berry_wanint
 !          open(AA_unit,FILE=file_name,FORM='FORMATTED')
           
           if(T_odd) then
-             file_name= trim(trim(seedname)//'-sigA_'//&
-                  achar(119+alpha)//achar(119+beta)//'.dat')
+             file_name= trim(seedname)//'-sigA_'//&
+                  achar(119+alpha)//achar(119+beta)//'.dat'
+             file_name=trim(file_name)
           else
-             file_name= trim(trim(seedname)//'-sigS_'//&
-                  achar(119+alpha)//achar(119+beta)//'.dat')
+             file_name= trim(seedname)//'-sigS_'//&
+                  achar(119+alpha)//achar(119+beta)//'.dat'
+             file_name=trim(file_name)
           end if
           write(stdout,'(/,3x,a)') '* '//file_name
           tot_unit=io_file_unit()
@@ -1020,11 +1022,13 @@ module w90_berry_wanint
              '-----------------------------------------------------------------'
 
           if(T_odd) then
-             file_name= trim(trim(seedname)//'-sigS_'//&
-                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat')
+             file_name= trim(seedname)//'-sigS_'//&
+                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
+             file_name=trim(file_name)
           else
-             file_name= trim(trim(seedname)//'-rhobw2_'//&
-                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat')
+             file_name= trim(seedname)//'-rhobw2_'//&
+                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
+             file_name=trim(file_name)
           end if
           write(stdout,'(/,3x,a)') '* '//file_name
           tot_unit=io_file_unit()
@@ -1073,11 +1077,13 @@ module w90_berry_wanint
           ! Now write the cumulative contribution as a function of frequency
           !
           if(T_odd) then
-             file_name= trim(trim(seedname)//'-cutsigS_'//&
-                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat')
+             file_name= trim(seedname)//'-cutsigS_'//&
+                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
+             file_name=trim(file_name)
           else
-             file_name= trim(trim(seedname)//'-cutrhobw2_'//&
-                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat')
+             file_name= trim(seedname)//'-cutrhobw2_'//&
+                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
+             file_name=trim(file_name)
           end if
           write(stdout,'(/,3x,a)') '* '//file_name
           tot_unit=io_file_unit()

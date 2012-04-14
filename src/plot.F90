@@ -12,7 +12,6 @@
 
 module w90_plot
 
-  use w90_constants, only : dp
   implicit none
 
   private
@@ -26,7 +25,7 @@ contains
   subroutine plot_main( )
     !============================================!
 
-    use w90_constants,   only : cmplx_0,eps6
+    use w90_constants,   only : eps6
     use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
                                 kpt_latt,fermi_surface_plot, &
@@ -475,7 +474,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     !           in gnuplot format                !
     !============================================!
 
-    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_constants,  only : dp
     use w90_io,         only : io_file_unit,seedname
     use w90_parameters, only : num_wann,bands_num_spec_points, &
                                bands_label,num_bands_project
@@ -557,7 +556,6 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     !         in Xmgrace format                  !
     !============================================!
 
-    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
     use w90_io,         only : io_file_unit,seedname,io_date
     use w90_parameters, only : num_wann,bands_num_spec_points
 

@@ -829,7 +829,7 @@ contains
     !     for abs(x) le 0.47 erf is calculated directly
     !     for abs(x) gt 0.47 erf is calculated via erf(x)=1-erfc(x)
     !
-    use w90_constants, only : dp,pi
+    use w90_constants, only : dp
 
     implicit none  
     real(kind=dp), intent(in) :: x
@@ -864,7 +864,7 @@ contains
     !
     !     erfc(x) = 1-erf(x)  - See comments in erf
     !
-    use w90_constants, only : dp,pi
+    use w90_constants, only : dp
     implicit none  
     real(kind=dp),intent(in) :: x
     real(kind=dp)            :: qe_erfc
@@ -924,7 +924,7 @@ contains
     !     gauss_freq(x) = (1+erf(x/sqrt(2)))/2 = erfc(-x/sqrt(2))/2
     !             - See comments in erf
     !
-    use w90_constants, only : dp,pi
+    use w90_constants, only : dp
 
     implicit none
     real(kind=dp),intent(in) :: x

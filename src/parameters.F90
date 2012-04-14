@@ -156,7 +156,8 @@ module w90_parameters
   ! [gp-end, Apr 12, 2012]
 
   logical,           public, save :: transport
-  logical,           public, save :: tran_easy_fix ! a boolean that tells the code to use the "easy_fix" method for fixing the WF parities
+  logical,           public, save :: tran_easy_fix ! a boolean that tells the code 
+                          !to use the "easy_fix" method for fixing the WF parities
   character(len=20), public, save :: transport_mode
   real(kind=dp),     public, save :: tran_win_min
   real(kind=dp),     public, save :: tran_win_max
