@@ -99,7 +99,7 @@ dist:
         | gzip -c > \
                 ./wannier90.tar.gz)
 
-test:   wannier
+test:   default
 	(cd tests ; make test )
 
 dist-lite:

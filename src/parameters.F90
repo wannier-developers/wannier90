@@ -1488,7 +1488,7 @@ contains
     integer :: i
     
     do i=1,3
-       blen(i) = sqrt(sum(recip_lattice(i,:)**2))
+       blen(i) = sqrt(sum(reclat(i,:)**2))
     end do
 
     do i=1,3
