@@ -28,6 +28,7 @@ module w90_boltzwann
   use w90_io, only : io_error,stdout,io_stopwatch,io_file_unit,seedname  
   use w90_utility,    only : utility_inv3
   use w90_wanint_common
+  use w90_comms
   implicit none
 
   private 
@@ -355,29 +356,25 @@ contains
 
     ! TODO: print on output the grid that I am using (and min_ksep value, if boltz_interp_mesh_spacing >0)
     
-    print*, my_node_id, boltz_interp_mesh, boltz_interp_mesh_spacing
+!       print*, my_node_id, boltz_interp_mesh, boltz_interp_mesh_spacing
 
     ! I loop over all kpoints
-    do loop_tot=0,PRODUCT(boltz_interp_mesh)-1
+    do loop_tot=my_node_id,PRODUCT(boltz_interp_mesh)-1,num_nodes
 
        ! I get the coordinates for the x,y,z components starting from a single loop variable
        ! (which is better for parallelization purposes)
        ! Important! This works only if loop_tot starts from ZERO and ends with 
        !            PRODUCT(boltz_interp_mesh)-1, so be careful when parallelizing
-       loop_x=loop_tot/(boltz_interp_mesh(2)*boltz_interp_mesh(3))
+       loop_x= loop_tot/(boltz_interp_mesh(2)*boltz_interp_mesh(3))
        loop_y=(loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3)))/boltz_interp_mesh(3)
-       loop_z=loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3))-loop_y*boltz_interp_mesh(3)
+       loop_z= loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3)) -loop_y*boltz_interp_mesh(3)
 
        ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_interp_mesh(i)
        kpt(1)=(real(loop_x,dp)/real(boltz_interp_mesh(1),dp))
        kpt(2)=(real(loop_y,dp)/real(boltz_interp_mesh(2),dp))
        kpt(3)=(real(loop_z,dp)/real(boltz_interp_mesh(3),dp))
-       
-       if (boltz_calc_also_dos) then
-          !TODO!!
-       end if
-       
-       ! Here I have to get the band energies and the velocities
+              
+       ! Here I get the band energies and the velocities
        call fourier_R_to_k(kpt,HH_R,HH,0) 
        call utility_diagonalize(HH,num_wann,eig,UU) 
        call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
@@ -386,7 +383,11 @@ contains
        call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
        call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
        call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
-       
+
+       if (boltz_calc_also_dos) then
+          ! TODO!
+       end if
+
 
 !!$       do BandIdx=1, num_wann
 !!$          ! Maybe we should check once and for all if it makes sense to broaden or if the broadening
@@ -413,6 +414,8 @@ contains
 !!$
 
     end do
+
+!    print*,"Missing allreduce yet!", my_node_id
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',2)
 

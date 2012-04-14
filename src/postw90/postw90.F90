@@ -75,7 +75,6 @@ program postw90
   end if
 
   ! We now distribute a subset of the parameters to the other nodes
-  ! The subset is defined in the USE statement
   !
   call wanint_param_dist
 
@@ -157,6 +156,10 @@ program postw90
   !
   if(optics_plot) call berry
 
+  ! -----------------------------------------------------------------
+  ! Boltzmann transport coefficients (BoltzWann module)
+  ! -----------------------------------------------------------------
+  !
   if(boltzwann) call boltzwann_main
 
   if(on_root) then
@@ -164,7 +167,7 @@ program postw90
           'Total Execution Time     ',io_time(),' (sec)'
      if (timing_level>0) call io_print_timings()
      write(stdout,*) 
-     write(stdout,'(/,1x,a)') 'All done: wanint exiting'
+     write(stdout,'(/,1x,a)') 'All done: postw90 exiting'
      close(stdout)
   end if
 
