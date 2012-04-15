@@ -1,4 +1,8 @@
-REALMAKEFILE=../../src/Makefile.2
+ifndef ROOTDIR
+ROOTDIR=.
+endif
+
+REALMAKEFILE=../Makefile.2
 
 default: wannier post
 
@@ -7,48 +11,48 @@ all: wannier lib post
 doc: thedoc
 
 serialobjs: objdir
-	(cd src/obj ; make -f $(REALMAKEFILE) serialobjs)
+	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) serialobjs)
 
 wannier: objdir serialobjs
-	(cd src/obj ; make -f $(REALMAKEFILE) wannier)
+	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) wannier)
 
 lib: objdir serialobjs
-	(cd src/obj ; make -f $(REALMAKEFILE) libs)
+	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) libs)
 
 libs: lib
 
 post: objdirp
-	(cd src/objp ; make -f $(REALMAKEFILE) post)
+	(cd $(ROOTDIR)/src/objp ; make -f $(REALMAKEFILE) post)
 
 clean:
-	rm -f *~
-	rm -f src/*~
-	@( if [ -d src/obj ] ; \
-		then cd src/obj ; \
-		make -f $(REALMAKEFILE) clean ; \
-		cd ../ ; rm -rf obj ; cd ../ ; \
-	fi ; \
-	if [ -d src/objp ] ; \
-		then cd src/objp ; \
-		make -f $(REALMAKEFILE) clean ; \
-		cd ../ ; rm -rf objp ; cd ../ ; \
+	cd $(ROOTDIR) && rm -f *~
+	cd $(ROOTDIR) && rm -f src/*~
+	@( cd $(ROOTDIR) && if [ -d src/obj ] ; \
+		then cd src/obj && \
+		make -f $(REALMAKEFILE) clean && \
+		cd ../ && rm -rf obj ; \
 	fi )
-	make -C tests clean
-	make -C doc/user_guide clean
-	make -C doc/tutorial clean
+	@( cd $(ROOTDIR) && if [ -d src/objp ] ; \
+		then cd src/objp && \
+		make -f $(REALMAKEFILE) clean && \
+		cd ../ && rm -rf objp ; \
+	fi )
+	make -C $(ROOTDIR)/tests clean
+	make -C $(ROOTDIR)/doc/user_guide clean
+	make -C $(ROOTDIR)/doc/tutorial clean
 
 veryclean: clean
-	rm -f wannier90.x postw90.x libwannier.a ; \
-	cd doc ; rm -f user_guide.pdf tutorial.pdf ; \
-	cd user_guide ; rm -f user_guide.ps ; \
-	cd ../tutorial ; rm -f tutorial.ps 
+	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a
+	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
+	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
+	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
 
 thedoc:
-	cd doc/user_guide ; make guide ; \
-	cd ../tutorial ; make tutorial
+	cd $(ROOTDIR)/doc/user_guide && make guide
+	cd $(ROOTDIR)/doc/tutorial && make tutorial
 
 dist:
-	@(tar cf - \
+	@(cd $(ROOTDIR) && tar cf - \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./tests/run_test.pl \
@@ -100,10 +104,10 @@ dist:
                 ./wannier90.tar.gz)
 
 test:   default
-	(cd tests ; make test )
+	(cd $(ROOTDIR)/tests && make test )
 
 dist-lite:
-	@(tar cf - \
+	@(cd $(ROOTDIR) && tar cf - \
 		./src/*.?90 \
 		./tests/run_test.pl \
 		./tests/test*/wannier.win \
@@ -122,12 +126,12 @@ dist-lite:
 		./wannier90.tar.gz)
 
 objdir: 
-	@( if [ ! -d src/obj ] ; \
+	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
 		then mkdir src/obj ; \
 	fi ) ;
 
 objdirp: 
-	@( if [ ! -d src/objp ] ; \
+	@( cd $(ROOTDIR) && if [ ! -d src/objp ] ; \
 		then mkdir src/objp ; \
 	fi ) ;
 
