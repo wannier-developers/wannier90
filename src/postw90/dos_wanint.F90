@@ -49,8 +49,8 @@ contains
     integer          :: i,loop_x,loop_y,loop_z,loop_kpt,loop_f
     integer          :: dos_unit,ndim,ierr
 
-    num_freq=nint((dos_max_energy-dos_min_energy)/dos_energy_step)
-    if(num_freq==0) num_freq=1
+    num_freq=nint((dos_max_energy-dos_min_energy)/dos_energy_step)+1
+    if(num_freq==1) num_freq=2
     d_omega=(dos_max_energy-dos_min_energy)/(num_freq-1)
 
     call get_HH_R
