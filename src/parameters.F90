@@ -2145,7 +2145,7 @@ contains
 
 
   !=======================================!
-  subroutine param_read_chkpt
+  subroutine param_read_chkpt(postw90flag)
     !=======================================!
     ! Read checkpoint file                  !
     !=======================================!
@@ -2155,10 +2155,17 @@ contains
 
     implicit none
 
+    logical, optional, intent(in) :: postw90flag
+
     integer :: chk_unit,nkp,i,j,k,l,ntmp,ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands),tmp_mp_grid(1:3)
+
+    logical :: isrun_by_postw90
+
+    isrun_by_postw90 = .false.
+    if (present(postw90flag)) isrun_by_postw90 = postw90flag
 
     write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
 
@@ -2275,7 +2282,11 @@ contains
 
     return
 
-121 call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt')
+121 if (isrun_by_postw90) then
+       call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt: did you run wannier90.x first?')
+    else
+       call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt')     
+    end if
 122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in param_read_chkpt')
 123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in param_read_chkpt')
 124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt')

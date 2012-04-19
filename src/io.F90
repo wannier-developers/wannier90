@@ -25,7 +25,7 @@ module w90_io
 
   integer, public, save           :: stdout
   character(len=50), public, save :: seedname
-  integer, parameter, public :: maxlen = 120  ! Max column width of input file
+  integer, parameter, public      :: maxlen = 120  ! Max column width of input file
   logical, public, save           :: post_proc_flag  ! Set post_processing from cmd line
 
   type timing_data
@@ -219,9 +219,14 @@ contains
          open(unit=stderr,file=trim(filename),form='formatted',err=105)
          write(stderr, '(1x,a)') trim(error_msg)
          close(stderr)
-         call MPI_abort(MPI_comm_world,1,ierr)
+         goto 106
 
-105      STOP
+105      write(*,'(1x,a)') trim(error_msg)
+106      write(*,'(1x,a,I0,a)') "Error on node ", &
+              whoami, ": examine the output/error files for details"
+         
+         call MPI_abort(MPI_comm_world,1,ierr)
+         STOP
 
 #else
 
@@ -230,7 +235,7 @@ contains
          
          close(stdout)
          
-         stop "wannier90 error: examine the output/error file for details" 
+         stop "Error: examine the output/error file for details" 
 
 #endif
 

@@ -27,11 +27,12 @@ module w90_comms
 
   public :: comms_setup
   public :: comms_end
-  public :: comms_abort
+!  public :: comms_abort     ! [GP]: do not use, use io_error instead
   public :: comms_bcast      ! send data from the root node
   public :: comms_send       ! send data from one node to another
   public :: comms_recv       ! accept data from one node to another
   public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce) 
+  public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
 
   public :: comms_array_split
 
@@ -143,19 +144,34 @@ contains
     
   end subroutine comms_end
 
-  subroutine comms_abort
-
+  subroutine comms_barrier
+ 
     implicit none
 
     integer :: ierr
 
+
 #ifdef MPI
-    call MPI_abort(MPI_comm_world,1,ierr)
+    call mpi_barrier(mpi_comm_world, ierr)
 #else
     STOP
 #endif
+    
+  end subroutine comms_barrier
 
-  end subroutine comms_abort
+!  subroutine comms_abort
+!
+!    implicit none
+!
+!    integer :: ierr
+!
+!#ifdef MPI
+!    call MPI_abort(MPI_comm_world,1,ierr)
+!#else
+!    STOP
+!#endif
+!
+!  end subroutine comms_abort
 
 
   subroutine comms_bcast_int(array,size)

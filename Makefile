@@ -109,6 +109,7 @@ test:   default
 dist-lite:
 	@(cd $(ROOTDIR) && tar cf - \
 		./src/*.?90 \
+		./src/postw90/*.?90 \
 		./tests/run_test.pl \
 		./tests/test*/wannier.win \
 		./tests/test*/des.dat \
@@ -118,6 +119,9 @@ dist-lite:
 		./config/* \
 		./*/Makefile \
 		./utility/*.pl \
+		./*/Makefile \
+		./*/Makefile.2 \
+		./*/*/Makefile \
 		./Makefile \
 		./LICENCE \
 		./README.* \

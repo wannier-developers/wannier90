@@ -39,7 +39,11 @@ program postw90
      open(unit=stdout,file=trim(seedname)//'.wpout')
      call param_write_header
      if(num_nodes==1) then
-        write(stdout,'(/,1x,a)') 'Running in serial'
+#ifdef MPI        
+        write(stdout,'(/,1x,a)') 'Running in serial (with parallel executable)'
+#else
+        write(stdout,'(/,1x,a)') 'Running in serial (with serial executable)'
+#endif
      else
         write(stdout,'(/,1x,a,i3,a/)')&
              'Running in parallel on ',num_nodes,' CPUs'
@@ -82,7 +86,7 @@ program postw90
   ! disentanglement and maximal localization, etc.)
   !
   if(on_root) then 
-     call param_read_chkpt
+     call param_read_chkpt(postw90flag=.true.)
   end if
 
   ! Distribute the information in the um and chk files to the other nodes
@@ -161,6 +165,8 @@ program postw90
   ! -----------------------------------------------------------------
   !
   if(boltzwann) call boltzwann_main
+
+  call comms_barrier
 
   if(on_root) then
      write(stdout,'(/,1x,a25,f11.3,a)')&
