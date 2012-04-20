@@ -137,7 +137,7 @@ module w90_berry_wanint
     real(kind=dp)     :: kweight,kweight_adpt,kpt(3),freq,adpt_trigger
     integer           :: i,j,p,loop_x,loop_y,loop_z,loop_kpt,loop_adpt,&
                          loop_f,adpt_counter,ndim,&
-                         ierr,jdos_unit,AA_unit,DA_unit,DD_unit,&
+                         jdos_unit,AA_unit,DA_unit,DD_unit,&
                          tot_unit,alpha_unit(3,3),gamma_unit(10)
     character(len=20) :: file_name
     logical           :: eval_ahe,eval_orb,eval_sig_ab,eval_sig_abc,eval_ME_EQ,eval_MEspn
@@ -2241,7 +2241,7 @@ module w90_berry_wanint
 
     integer                       :: i,j,n,m,loop_f,a,b,c,d,p
     real(kind=dp)                 :: eig(num_wann),del_eig(num_wann,3),&
-                                     eig_cut,occ(num_wann),sig_matel(2),&
+                                     eig_cut,sig_matel(2),&
                                      sig_en,freq,omega_mn,eps_abc,&
                                      omega_fac_matel,omega_fac_en
     complex(kind=dp)              :: cdum
@@ -2495,7 +2495,7 @@ module w90_berry_wanint
 
     integer                       :: i,j,n,m,loop_f
     real(kind=dp)                 :: eig(num_wann),eig_cut,fac
-    complex(kind=dp)              :: cdum
+!    complex(kind=dp)              :: cdum
 
     allocate(HH(num_wann,num_wann))
     allocate(UU(num_wann,num_wann))

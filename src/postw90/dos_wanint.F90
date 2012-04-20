@@ -47,7 +47,7 @@ contains
 
     real(kind=dp)    :: kweight,kpt(3),omega
     integer          :: i,loop_x,loop_y,loop_z,loop_kpt,loop_f
-    integer          :: dos_unit,ndim,ierr
+    integer          :: dos_unit,ndim
 
     num_freq=nint((dos_max_energy-dos_min_energy)/dos_energy_step)+1
     if(num_freq==1) num_freq=2

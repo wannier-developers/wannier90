@@ -106,7 +106,7 @@ plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o
 transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../transport.F90
 
-comms.o: $(POSTDIR)comms.F90 constants.o
+comms.o: $(POSTDIR)comms.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o wanint_common.o get_oper.o utility.o wanint_common.o wan_ham.o comms.o

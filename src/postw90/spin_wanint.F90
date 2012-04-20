@@ -32,7 +32,7 @@ module w90_spin_wanint
     use w90_parameters, only    : optics_num_points,wanint_kpoint_file
     use w90_get_oper, only      : get_SS_R
 
-    integer       :: loop_x,loop_y,loop_z,loop_tot,ierr 
+    integer       :: loop_x,loop_y,loop_z,loop_tot
     real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_all(3),&
                      spn_mom(3),magnitude,theta,phi,conv
 

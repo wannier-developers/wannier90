@@ -40,7 +40,7 @@ contains
     use w90_constants, only    : bohr,ev_au
 
     integer           :: i,num_paths,num_spts,loop_path,loop_kpt,&
-         total_pts,ierr,counter,loop_i,dataunit,gnuunit,&
+         total_pts,counter,loop_i,dataunit,gnuunit,&
          kpath_pts(bands_num_spec_points/2)
     real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_nk(num_wann),&
          imf_ab_k(3),img_ab_k(3),imh_ab_k(3),&
