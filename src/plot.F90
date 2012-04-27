@@ -52,7 +52,7 @@ contains
            if (all(kpt_latt(:,nkp)<eps6)) have_gamma=.true.       
        end do
        if(.not. have_gamma) &
-            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. ',&
+            write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. ' // &
             & ' Interpolation may be incorrect. !!!!'
        ! Transform Hamiltonian to WF basis
        !
@@ -578,10 +578,10 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     end do
 
 
-    xlabel(1)=' '//ctemp(1)//' '
+    xlabel(1)=' '//trim(ctemp(1))//' '
     do i=2,num_paths
        if(ctemp(2*(i-1))/=ctemp(2*(i-1)+1)) then
-          xlabel(i)=ctemp(2*(i-1))//'/'//ctemp(2*(i-1)+1)
+          xlabel(i)=trim(ctemp(2*(i-1)))//'/'//trim(ctemp(2*(i-1)+1))
        else
           xlabel(i)=ctemp(2*(i-1))
        end if
