@@ -8,7 +8,7 @@ module w90_dos_wanint
 
   private
 
-  public :: dos,find_fermi_level
+  public :: dos,find_fermi_level, get_eig_levelspacing_k
 
   integer       :: num_freq
   real(kind=dp) :: d_omega

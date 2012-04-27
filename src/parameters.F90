@@ -53,6 +53,12 @@ module w90_parameters
   logical,                    public, save :: found_fermi_energy
   logical,                    public, save :: omega_from_ff
   !IVO_END
+  ! [gp-begin, Apr 20, 2012] Smearing type
+  ! For the moment, we always use the adaptive smearing
+  ! The prefactor is given with the above parameters adpt_smr_...
+  ! This is an internal variable, obtained from the input string adpt_smr_type
+  integer,                    public, save :: smr_index
+  ! [gp-end]
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
   integer,           public, save :: mp_grid(3)
@@ -150,6 +156,10 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_interp_mesh_spacing
   integer,           public, save :: boltz_interp_mesh(3)
   real(kind=dp),     public, save :: boltz_tdf_energy_step
+  integer,           public, save :: boltz_TDF_smr_index
+  integer,           public, save :: boltz_dos_smr_index
+  real(kind=dp),     public, save :: boltz_relax_time
+  real(kind=dp),     public, save :: boltz_TDF_smr_en_width
   logical,           public, save :: boltz_bandshift
   integer,           public, save :: boltz_bandshift_firstband
   real(kind=dp),     public, save :: boltz_bandshift_energyshift
@@ -195,7 +205,7 @@ module w90_parameters
   logical,           public, save :: write_proj
   integer,           public, save :: timing_level
   logical,           public, save :: spinors   !are our WF spinors?
-  integer,           public, save :: num_elec_per_state
+  real(kind=dp),     public, save :: num_elec_per_state
   logical,           public, save :: translate_home_cell
   logical,           public, save :: write_xyz
   real(kind=dp),     public, save :: conv_noise_amp
@@ -311,6 +321,7 @@ module w90_parameters
   ! Private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
+  character(len=maxlen)              :: ctmp
   logical                            :: ltmp
 
   public :: param_read
@@ -321,6 +332,7 @@ module w90_parameters
   public :: param_read_chkpt
   public :: param_lib_set_atoms
   public :: param_memory_estimate
+  public :: param_get_smearing_type
 
 contains
 
@@ -520,9 +532,9 @@ contains
     ! Added this flag since we need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
     if (spinors) then
-       num_elec_per_state = 1
+       num_elec_per_state = 1._dp
     else
-       num_elec_per_state = 2
+       num_elec_per_state = 2._dp
     end if
     ! [GP-end]
 
@@ -798,6 +810,15 @@ contains
        call param_get_keyword('adpt_smr_width6',found,r_value=adpt_smr_width(6))
     end if
 
+    ! [gp-begin, Apr 20, 2012]
+    
+    ! By default: Gaussian
+    smr_index = 0
+    call param_get_keyword('smr_type',found,c_value=ctmp)
+    if (found) smr_index = get_smearing_index(ctmp,'smr_type')
+
+    ! [gp-end]
+  
     evaluate_spin_moment = .false.
     call param_get_keyword('evaluate_spin_moment',found,&
          l_value=evaluate_spin_moment)   
@@ -1130,7 +1151,7 @@ contains
     call param_get_keyword('boltz_mu_max',found2,r_value=boltz_mu_max)
     if ((.not.found2).and.boltzwann) &
          call io_error('Error: BoltzWann required but no boltz_mu_max provided') 
-    if (found .and. found2 .and. (boltz_mu_max <= boltz_mu_min)) &
+    if (found .and. found2 .and. (boltz_mu_max < boltz_mu_min)) &
          call io_error('Error: boltz_mu_max must be greater than boltz_mu_min')
     boltz_mu_step=0._dp
     call param_get_keyword('boltz_mu_step',found,r_value=boltz_mu_step)
@@ -1147,7 +1168,7 @@ contains
     call param_get_keyword('boltz_temp_max',found2,r_value=boltz_temp_max)
     if ((.not.found2).and.boltzwann) &
          call io_error('Error: BoltzWann required but no boltz_temp_max provided') 
-    if (found .and. found2 .and. (boltz_temp_max <= boltz_temp_min)) &
+    if (found .and. found2 .and. (boltz_temp_max < boltz_temp_min)) &
          call io_error('Error: boltz_temp_max must be greater than boltz_temp_min')
     if (found .and. (boltz_temp_min <= 0._dp)) &
          call io_error('Error: boltz_temp_min must be greater than zero')
@@ -1160,12 +1181,30 @@ contains
 
     ! The interpolation mesh is read later on
 
-    boltz_tdf_energy_step=0._dp
+    ! By default, the energy step for the TDF is 1 meV
+    boltz_tdf_energy_step=0.001_dp
     call param_get_keyword('boltz_tdf_energy_step',found,r_value=boltz_tdf_energy_step)
-    if ((.not.found).and.boltzwann) &
-         call io_error('Error: BoltzWann required but no boltz_tdf_energy_step provided')
-    if (found.and.(boltz_tdf_energy_step <= 0._dp)) &
+    if (boltz_tdf_energy_step <= 0._dp) &
          call io_error('Error: boltz_tdf_energy_step must be greater than zero')
+
+    ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
+    ! (i.e., no smearing)
+    boltz_TDF_smr_en_width = 0._dp
+    call param_get_keyword('boltz_tdf_smr_en_width',found,r_value=boltz_TDF_smr_en_width)
+
+    ! By default: use the "global" smearing index 
+    boltz_TDF_smr_index = smr_index
+    call param_get_keyword('boltz_tdf_smr_type',found,c_value=ctmp)
+    if (found) boltz_TDF_smr_index = get_smearing_index(ctmp,'boltz_tdf_smr_type')
+
+    ! By default: use the "global" smearing index 
+    boltz_dos_smr_index = smr_index
+    call param_get_keyword('boltz_dos_smr_type',found,c_value=ctmp)
+    if (found) boltz_dos_smr_index = get_smearing_index(ctmp,'boltz_dos_smr_type')
+
+    ! By default: 10 fs relaxation time
+    boltz_relax_time = 10._dp
+    call param_get_keyword('boltz_relax_time',found,r_value=boltz_relax_time)
 
     boltz_bandshift = .false.
     call param_get_keyword('boltz_bandshift',found,l_value=boltz_bandshift)
@@ -1175,7 +1214,7 @@ contains
     call param_get_keyword('boltz_bandshift_firstband',found,i_value=boltz_bandshift_firstband)
     if (boltz_bandshift .and. (.not.found)) &
          call io_error('Error: boltz_bandshift required but no boltz_bandshift_firstband provided')
-    boltz_bandshift_firstband=0._dp
+    boltz_bandshift_energyshift=0._dp
     call param_get_keyword('boltz_bandshift_energyshift',found,r_value=boltz_bandshift_energyshift)
     if (boltz_bandshift .and. (.not.found)) &
          call io_error('Error: boltz_bandshift required but no boltz_bandshift_energyshift provided')
@@ -1409,7 +1448,7 @@ contains
           end if
        end do
        write(stdout,*) 
-       call io_error('Unrecognised keyword(s) in input file')
+       call io_error('Unrecognised keyword(s) in input file, see also output file')
     end if
 
     if (transport .and. tran_read_ht) goto 303 
@@ -1497,6 +1536,82 @@ contains
     end do
 
   end subroutine internal_set_interp_mesh
+
+  !> This function returns a string describing the type of smearing
+  !> associated to a given smr_index integer value.
+  !>
+  !> \param smearing_index The integer index for which we want to get
+  !>        the string
+  !> \return returns a string which describes the type of smearing
+  function param_get_smearing_type(smearing_index)
+    integer, intent(in) :: smearing_index
+    character(len=80)   :: param_get_smearing_type
+
+    character(len=4)   :: orderstr
+
+    if (smearing_index > 0) then
+       write(orderstr,'(I0)') smearing_index
+       param_get_smearing_type = "Methfessel-Paxton of order " // trim(orderstr)
+    else if (smearing_index .eq. 0) then
+       param_get_smearing_type = "Gaussian (i.e., Methfessel-Paxton of order 0)"
+    else if (smearing_index .eq. -1) then
+       param_get_smearing_type = "Marzari-Vanderbilt cold smearing"
+    else if (smearing_index .eq. -99) then
+       param_get_smearing_type = "Fermi-Dirac smearing"
+    else
+       param_get_smearing_type = "Unknown type of smearing"
+    end if
+
+  end function param_get_smearing_type
+
+
+  !> This function parses a string containing the type of 
+  !> smearing and returns the correct index for the smearing_index variable
+  !>
+  !> If the string is not valid, an io_error is issued
+  !>
+  !> \param string The string read from input 
+  !> \param keyword The keyword that was read (e.g., adpt_smr_type), so that
+  !>        we can print a more useful error message
+  function get_smearing_index(string,keyword)
+    use w90_io, only: io_error
+    character(len=*), intent(in) :: string
+    character(len=*), intent(in) :: keyword
+    integer :: get_smearing_index
+
+    integer :: pos
+
+    get_smearing_index = 0 ! To avoid warnings of unset variables
+
+    if (index(string,'m-v')>0) then
+       get_smearing_index = -1
+    elseif(index(string,'m-p')>0) then
+       pos = index(string,'m-p')
+       if (len(trim(string(pos+3:))).eq.0) then
+          ! If the string is only 'm-p', we assume that 'm-p1' was intended
+          get_smearing_index = 1 
+       else
+          read(string(pos+3:),*,err=337) get_smearing_index
+          if (get_smearing_index < 0) &
+               call io_error('Wrong m-p smearing order in keyword ' // trim(keyword))
+       end if
+    elseif(index(string,'f-d')>0) then
+       get_smearing_index = -99
+    ! Some aliases
+    elseif(index(string,'cold')>0) then
+       get_smearing_index = -1
+    elseif(index(string,'gauss')>0) then
+       get_smearing_index = 0     
+    ! Unrecognised keyword
+    else
+       call io_error('Unrecognised value for keyword ' // trim(keyword))
+    end if
+
+    return
+
+337 call io_error('Wrong m-p smearing order in keyword ' // trim(keyword))
+
+  end function get_smearing_index
 
   !===================================================================
   subroutine param_uppercase

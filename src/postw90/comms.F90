@@ -36,6 +36,7 @@ module w90_comms
                              ! note that on all other nodes, the data is lost
   public :: comms_allreduce  ! reduce data onto all nodes
   public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
+  public :: comms_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
 
   public :: comms_array_split
 
@@ -74,6 +75,12 @@ module w90_comms
      module procedure comms_allreduce_real
      module procedure comms_allreduce_cmplx
   end interface comms_allreduce
+
+  interface comms_gatherv
+!     module procedure comms_allreduce_int    ! to be done
+     module procedure comms_gatherv_real
+!     module procedure comms_allreduce_cmplx
+  end interface comms_gatherv
 
 
 contains
@@ -771,6 +778,32 @@ contains
     return
 
   end subroutine comms_allreduce_cmplx
+
+  subroutine comms_gatherv_real(array,localcount,rootglobalarray,counts,displs)
+
+    implicit none
+
+    real(kind=dp), intent(inout)              :: array
+    integer, intent(in)                       :: localcount
+    real(kind=dp), intent(inout)              :: rootglobalarray
+    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in) :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_precision,rootglobalarray,counts,&
+         displs,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_allreduce_real')
+    end if
+
+#endif
+
+    return
+
+  end subroutine comms_gatherv_real
 
 end module w90_comms
 

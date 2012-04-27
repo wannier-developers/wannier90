@@ -1,38 +1,76 @@
-!******
-! HEADER HERE:
-!******
-! TODOs:
-! * check results for thermal conductivity
-! * Check input variables name consistency with DOS module
-! * put timings and memory allocations
-! * undestand behavior if the number of steps is zero! (as it is: division by zero)
-! * add check of inputs somewhere
-! * read for TODOs
-! * check comments
-! * implement rigid bandshift
-! * parameters related to smearing (2x, DOS and TDF)
-! * in the documentation, say that it also uses the parameters of the ham. interpolation, as
-!   for instance those to choose if we want to take into account degeneracies when calculating the
-!   velocities
-! * check that we get the same results with and without spin-orbit! 
-! * document that for spin-degeneracy one has to use spinors=.true. in input of one gets a factor of 2 error
+!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!                                                            !
+! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
+!  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
+!                                                            !
+! This file is distributed under the terms of the GNU        !
+! General Public License. See the file `LICENSE' in          !
+! the root directory of the present distribution, or         !
+! http://www.gnu.org/copyleft/gpl.txt .                      !
+!                                                            !
+!------------------------------------------------------------!
+!============================================================!
+!                                                            !
+! Boltzwann routines by                                      !
+! G. Pizzi, D. Volja, M. Fornari, B. Kozinsky and N. Marzari ! 
+! April, 2012                                                !
+!                                                            !
+! Affiliations:                                              !
+! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
+! DMSE, MIT, 77 Massachusetts Ave, Cambridge, MA, 02139      !
+! Central Michigan University, Mount Pleasant, MI 48859      !
+! Robert Bosch LLC, Cambridge, MA, 02139                     !
+!                                                            !
+!------------------------------------------------------------!
+! For references on the transport equations, see:            !
+! [1] J. Ziman, "Principles of the Theory of Solids",        !
+!     2nd ed., Cambridge University Press (1972)             !
+! [2] G. Grosso, G. Pastori Parravicini,                     !
+!     "Solid State Physics", Academic Press (2000)           !
+! [3] G. Mahan, "Transport Properties", in                   !
+!     "International Tables for Crystallography" (2006)      !
+!     Vol. D, Chapter 1.8, pp. 220-227                       !
+!============================================================!
 
+! TODOs:
+! * Debug results with different compilers
+! * check that we get the same results with and without spin-orbit! 
+! * Check input variables name consistency with DOS module
+! * Debug with spin decomposition
+! * parameters related to smearing (2x, DOS and TDF)
+! * test all input variables
+! * move back the dos_kpt routine to the other module
+! * zero determinant for sigma??
 module w90_boltzwann
+
   use w90_constants
   use w90_parameters, only : &
-       boltz_calc_also_dos, boltz_dos_energy_step, boltz_dos_min_energy, boltz_dos_max_energy, &
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
-       boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, &
+       boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
-       timing_level, dis_win_min, dis_win_max 
-  use w90_io, only : io_error,stdout,io_stopwatch,io_file_unit,seedname  
-  use w90_utility,    only : utility_inv3
+       timing_level, dis_win_min, dis_win_max, spn_decomp, adpt_smr_steps, adpt_smr_width, &
+       cell_volume, num_elec_per_state, iprint
+  use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
+  use w90_utility, only    : utility_inv3
   use w90_wanint_common
   use w90_comms
+  ! TODO NOTE: in the future, the dos_kpt routine here will be moved back to dos_wanint: so, we will remove the dependency
+  ! to get_spn_nk here, and instead depend on w90_dos_wanint, only: dos_kpt
+  use w90_spin_wanint, only   : get_spn_nk
+  ! TODO To be removed
+  use w90_dos_wanint, only    : get_eig_levelspacing_k
   implicit none
 
   private 
   public :: boltzwann_main
+
+  ! Constants to identify the six components of a tensor when it is stored in packed form
+  integer, parameter :: XX = 1
+  integer, parameter :: XY = 2
+  integer, parameter :: YY = 3
+  integer, parameter :: XZ = 4
+  integer, parameter :: YZ = 5
+  integer, parameter :: ZZ = 6
 
 contains 
 
@@ -40,7 +78,7 @@ contains
   !> It calculates the transport coefficients using the Boltzmann transport equation.
   !>
   !> It produces five files that contain:
-  !> 1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*ps/angstrom
+  !> 1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*fs/angstrom
   !> 2. the electrical conductivity in SI units (1/Ohm/m)
   !> 3. the Seebeck coefficient in SI units (V/K)
   !> 4. the thermal conductivity in SI units (W/meter/K)
@@ -50,39 +88,40 @@ contains
   subroutine boltzwann_main()
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
-    real(kind=dp), dimension(:),     allocatable :: TempArray, MuArray, KTArray
-    real(kind=dp), dimension(:,:),   allocatable :: TDF ! (coordinate,Energy)
-    real(kind=dp), dimension(:),     allocatable :: TDFEnergyArray
-    real(kind=dp), dimension(:,:),   allocatable :: IntegrandArray ! (coordinate, Energy) at a given T and mu
-    real(kind=dp), dimension(3,3)                :: ElCondTimesSeebeckFP, ThisElCond, ElCondInverse, ThisSeebeck
-    real(kind=dp), dimension(6)                  :: ElCondTimesSeebeck
-    real(kind=dp), dimension(:,:,:), allocatable :: ElCond ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:,:,:), allocatable :: Seebeck ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:,:,:), allocatable :: ThermCond ! (coordinate,Temp, mu)
-    real(kind=dp)                                :: Determinant
-    integer :: tdf_unit, elcond_unit, seebeck_unit, boltzdos_unit, thermcond_unit
+    real(kind=dp), dimension(:),       allocatable :: TempArray, MuArray, KTArray
+    real(kind=dp), dimension(:,:,:),   allocatable :: TDF ! (coordinate,Energy)
+    real(kind=dp), dimension(:),       allocatable :: TDFEnergyArray
+    real(kind=dp), dimension(:,:),     allocatable :: IntegrandArray ! (coordinate, Energy) at a given T and mu
+    real(kind=dp), dimension(3,3)                  :: ElCondTimesSeebeckFP, ThisElCond, ElCondInverse, ThisSeebeck
+    real(kind=dp), dimension(6)                    :: ElCondTimesSeebeck
+    real(kind=dp), dimension(:,:,:),   allocatable :: ElCond ! (coordinate,Temp, mu)
+    real(kind=dp), dimension(:,:,:),   allocatable :: Seebeck ! (coordinate,Temp, mu)
+    real(kind=dp), dimension(:,:,:),   allocatable :: ThermCond ! (coordinate,Temp, mu)
+    real(kind=dp), dimension(:,:),     allocatable :: LocalElCond ! (coordinate,Temp+mu combined index)
+    real(kind=dp), dimension(:,:),     allocatable :: LocalSeebeck ! (coordinate,Temp+mu combined index)
+    real(kind=dp), dimension(:,:),     allocatable :: LocalThermCond ! (coordinate,Temp+mu combined index)
+    real(kind=dp)                                  :: Determinant
+    integer :: tdf_unit, elcond_unit, seebeck_unit, thermcond_unit, ndim
+
+    ! Needed to split an array on different nodes
+    integer, dimension(0:num_nodes-1) :: counts
+    integer, dimension(0:num_nodes-1) :: displs
+    integer :: LocalIdx, GlobalIdx
+    ! I also add 0.5 eV on each side of the TDF energy array to take into account also possible smearing effects
+    real(kind=dp), parameter :: TDF_exceeding_energy = 0.5_dp
+
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main',1)
-    ! TODO here: (only on node 0): print initial banner
 
-    ! I open the output files
-    if (on_root) then
-       tdf_unit=io_file_unit()
-       open(unit=tdf_unit,file=trim(seedname)//'.tdf')  
-       
-       elcond_unit = io_file_unit()
-       open(unit=elcond_unit,file=trim(seedname)//'.elcond')  
-       
-       seebeck_unit =io_file_unit()
-       open(unit=seebeck_unit,file=trim(seedname)//'.seebeck')  
-       
-       thermcond_unit =io_file_unit()
-       open(unit=thermcond_unit,file=trim(seedname)//'.thermcond')  
-       
-       if (boltz_calc_also_dos) then
-          boltzdos_unit=io_file_unit()
-          open(unit=boltzdos_unit,file=trim(seedname)//'.boltzdos')  
-       end if
+    if(on_root) then
+       write(stdout,*) 
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '|                   Boltzmann Transport (BoltzWann module)                  |'
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '| BoltzWann routines by                                                     |'
+       write(stdout,'(1x,a)') '| G. Pizzi, D. Volja, M. Fornari, B. Kozinsky and N. Marzari                |'
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+       write(stdout,*) 
     end if
 
     ! I precalculate the TempArray and the MuArray
@@ -110,160 +149,261 @@ contains
     ! I assume that dis_win_min and dis_win_max are set to sensible values, related to the max and min energy
     ! This is true if the .eig file is present. I can assume its presence since we need it to interpolate the
     ! bands.
-    ! TODO: when we put smearing, understand if we want to enlarge the window by some multiple of the smearing
-    TDFEnergyNumPoints = int(floor((dis_win_max-dis_win_min)/boltz_tdf_energy_step))+1
+    ! I also add 0.5 eV on each side to take into account also possible smearing effects
+    TDFEnergyNumPoints = int(floor((dis_win_max-dis_win_min+2._dp*TDF_exceeding_energy)/boltz_tdf_energy_step))+1
+    if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate(TDFEnergyArray(TDFEnergyNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main')
     do i=1,TDFEnergyNumPoints
-       TDFEnergyArray(i) = dis_win_min + real(i-1,dp)*boltz_tdf_energy_step
+       TDFEnergyArray(i) = dis_win_min - TDF_exceeding_energy + real(i-1,dp)*boltz_tdf_energy_step
     end do
 
+    if(spn_decomp) then
+       ndim=3
+    else
+       ndim=1
+    end if
+
     ! I allocate the array for the TDF
-    allocate(TDF(6,TDFEnergyNumPoints),stat=ierr)
+    allocate(TDF(6,TDFEnergyNumPoints,ndim),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating TDF in boltzwann_main')
+
+    ! I call the subroutine that calculates the Transport Distribution Function
+    call calcTDFandDOS(TDF,TDFEnergyArray)
+    ! The TDF array contains now the TDF, or more precisely
+    ! hbar^2 * TDF in units of eV * fs / angstrom
+
+    ! I print on file the TDF
+    if (on_root) then
+       tdf_unit=io_file_unit()
+       open(unit=tdf_unit,file=trim(seedname)//'_tdf.dat')                
+       write(tdf_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(tdf_unit,'(A)') "# Transport distribution function (in units of 1/hbar^2 * eV * fs / angstrom)" // &
+            " vs energy in eV"
+       write(tdf_unit,'(A)') "# Content of the columns:"
+       write(tdf_unit,'(A)') "# Energy TDF_xx TDF_xy TDF_yy TDF_xz TDF_yz TDF_zz"
+       write(tdf_unit,'(A)') '#   (if spin decomposition is required, 12 further columns are provided, with the 6'
+       write(tdf_unit,'(A)') '#    components of the TDF for the spin up, followed by those for the spin down)'
+       do i=1,size(TDFEnergyArray)
+          if (ndim .eq. 1) then
+             write(tdf_unit,101) TDFEnergyArray(i), TDF(:,i,1)
+          else
+             write(tdf_unit,102) TDFEnergyArray(i), TDF(:,i,:)
+          end if
+       end do
+       close(tdf_unit)
+       if (iprint > 1) write(stdout,'(3X,A)') "Transport distribution function written on the " // trim(seedname)//"_tdf.dat file."
+    end if
+
+    !! *********************************************************************************
+    !! I got the TDF and I printed it. Now I use it to calculate the transport properties.
+
+    if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main: calc_props',1)
+
+    ! I obtain the counts and displs arrays, which tell how I should partition a big array
+    ! on the different nodes.
+    call comms_array_split(TempNumPoints * MuNumPoints,counts,displs)
+
+    ! I allocate the arrays for the spectra
+    allocate(LocalElCond(6,counts(my_node_id)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating LocalElCond in boltzwann_main')
+    allocate(LocalSeebeck(6,counts(my_node_id)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
+    allocate(LocalThermCond(6,counts(my_node_id)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
+    ElCond = 0._dp
+    Seebeck = 0._dp
+    ThermCond = 0._dp
 
     ! I allocate the array that I will use to store the functions to be integrated
     allocate(IntegrandArray(6,TDFEnergyNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating FermiDerivArray in boltzwann_main')
 
-    ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDF(TDF,TDFEnergyArray)
-    ! The TDF array contains now the TDF, or more precisely
-    ! hbar^2 * TDF in units of eV * ps / angstrom
-
-    ! I print on file the TDF
-    if (on_root) then
-       ! TODO: Write more complete header with authors, ...
-       write(tdf_unit,'(A)') "# Transport distribution function (in units of 1/hbar^2 * eV * ps / angstrom)" // &
-            " vs energy in eV"
-       write(tdf_unit,'(A)') "# Energy TDF_xx TDF_xy TDF_yy TDF_xz TDF_yz TDF_zz"
-       do i=1,size(TDFEnergyArray)
-          write(tdf_unit,101) TDFEnergyArray(i), TDF(:,i)
-       end do
-    end if
-
-    ! I allocate the arrays for the spectra
-    allocate(ElCond(6,TempNumPoints,MuNumPoints),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main')
-    allocate(Seebeck(6,TempNumPoints,MuNumPoints),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
-    allocate(ThermCond(6,TempNumPoints,MuNumPoints),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
-    ElCond = 0._dp
-    Seebeck = 0._dp
-    ThermCond = 0._dp
-
     ! Now, I calculate the various spectra for all mu and T values
-    do MuIdx=1,MuNumPoints
-!       write(0,*) MuIdx, '/', MuNumPoints, TDFEnergyNumPoints
-       do TempIdx = 1,TempNumPoints
-          IntegrandArray = TDF
-          do EnIdx=1,TDFEnergyNumPoints
-             IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * &
-                  MinusFermiDerivative(E=TDFEnergyArray(EnIdx),mu=MuArray(MuIdx),KT=KTArray(TempIdx))
-          end do
-          ! Now, IntegrandArray contains (-dn/dE) * TDF_ij(E), where n is the Fermi distribution function
-          ! Its integral is ElCond_ij/e^2
-          ElCond(:,TempIdx,MuIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step
-          ! ElCond contains now (hbar^2/e^2) * sigma in eV*ps/angstrom, where sigma is the conductivity tensor 
-          ! (note that MinusFermiDerivative is in units of 1/eV, so that when I perform the integration
-          ! ElCond has the same units of TDF)
-          
-          ! I store in ThisElCond the conductivity tensor in standard format
-          do j=1,3
-             do i=1,j
-                ThisElCond(i,j)=ElCond(i+((j-1)*j)/2,TempIdx,MuIdx)
-             end do
-          end do
-          ! I calculate the inverse matrix of the conductivity 
-          call utility_inv3(ThisElCond,ElCondInverse,Determinant)
-          ! TODO: check if Determinant == 0!
-          ! The routine returns the adjoint of ThisElCond; in order to get 
-          ! the inverse, I have to calculate ElCondInverse / Determinant
-          ElCondInverse = ElCondInverse / Determinant
+    do LocalIdx = 1, counts(my_node_id)
+       ! GlobalIdx is an index from 0 to TempNumPoints*MuNumPoints-1
+       GlobalIdx = displs(my_node_id)+ (LocalIdx-1)
+       ! MuIdx goes from 1 to MuNumPoints
+       MuIdx = GlobalIdx/TempNumPoints + 1
+       ! TempIdx goes from 1 to TempNumPoints
+       TempIdx = GlobalIdx - TempNumPoints * (MuIdx-1) + 1
 
-          ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
-          ! (-dn/dE) * TDF_ij(E) * (E-mu) and its integral is (ElCond*Seebeck)_ij * T / e, where
-          ! T is the temperature
-          do EnIdx=1,TDFEnergyNumPoints
-             IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
-          end do
-
-          ! I store in ElCondTimesSeebeckFP the product of the two tensors in full-packed format
-          ElCondTimesSeebeck = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
-          do j=1,3
-             do i=1,j
-                ElCondTimesSeebeckFP(i,j)=ElCondTimesSeebeck(i+((j-1)*j)/2)
-             end do
-          end do
-          ! Now, ElCondTimesSeebeck (and ElCondTimesSeebeckFP) contain
-          ! [ElCond*Seebeck] * hbar^2/e in units of eV^2*ps/angstrom/kelvin
-
-          ! I calculate ElCond^(-1) . (ElCondTimesSeebeck) = Seebeck in standard format, and then
-          ! store it in the Seebeck array (in packed format)
-          ThisSeebeck = matmul(ElCondInverse,ElCondTimesSeebeckFP) 
-          do j=1,3
-             do i=1,j
-                Seebeck(i+((j-1)*j)/2,TempIdx,MuIdx) = ThisSeebeck(i,j)
-             end do
-          end do
-          ! Now, Seebeck contains the Seebeck coefficient in volt / Kelvin. In fact:
-          ! - ElCond contains (hbar^2/e^2) * sigma in eV*ps/angstrom, where sigma is the value of the
-          !   conductivity, i.e. it is the conductivity in units of (e^2/hbar^2) * eV * ps / angstrom
-          ! - ElCondInverse is in thus in units of (hbar^2/e^2) / eV / ps * angstrom
-          ! - ElCondTimesSeebeck is in units of  e / hbar^2 * eV^2 * ps / angstrom / Kelvin
-          ! therefore ThisSeebeck, which has the units of ElCondInverse * ElCondTimesSeebeck, i.e.
-          ! [(hbar^2/e^2) / eV / ps * angstrom] * [ e / hbar^2 * eV^2 * ps / angstrom / kelvin] = 
-          ! eV/e/kelvin = volt/kelvin
-          
-          ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
-          ! (-dn/dE) * TDF_ij(E) * (E-mu)^2 and its integral is (ThermCond)_ij * T
-          do EnIdx=1,TDFEnergyNumPoints
-             IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
-          end do
-          ThermCond(:,TempIdx,MuIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
-          ! ThermCond contains now the thermal conductivity in units of
-          ! 1/hbar^2 * eV^3*ps/angstrom/kelvin
+       ! For the calculation of the properties, I only use the total TDF (i.e., unresolved for spin)
+       IntegrandArray = TDF(:,:,1)
+       do EnIdx=1,TDFEnergyNumPoints
+          IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * &
+               MinusFermiDerivative(E=TDFEnergyArray(EnIdx),mu=MuArray(MuIdx),KT=KTArray(TempIdx))
        end do
+       ! Now, IntegrandArray contains (-dn/dE) * TDF_ij(E), where n is the Fermi distribution function
+       ! Its integral is ElCond_ij/e^2
+       LocalElCond(:,LocalIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step
+       ! ElCond contains now (hbar^2/e^2) * sigma in eV*fs/angstrom, where sigma is the conductivity tensor 
+       ! (note that MinusFermiDerivative is in units of 1/eV, so that when I perform the integration
+       ! ElCond has the same units of TDF)
+       
+       ! I store in ThisElCond the conductivity tensor in standard format
+       do j=1,3
+          do i=1,j
+             ThisElCond(i,j)=LocalElCond(i+((j-1)*j)/2,LocalIdx)
+          end do
+       end do
+       ! I calculate the inverse matrix of the conductivity 
+       call utility_inv3(ThisElCond,ElCondInverse,Determinant)
+!       if (Determinant .eq. 0._dp) then
+!          call io_error("Determinant of the el. cond. matrix is zero in boltzwann_main")
+!          write(*,*) "Determinant of the el. cond. matrix is zero in boltzwann_main"
+!       end if
+
+!       write(*,*) Determinant
+
+       ! The routine returns the adjoint of ThisElCond; in order to get 
+       ! the inverse, I have to calculate ElCondInverse / Determinant
+       ElCondInverse = ElCondInverse / Determinant
+       
+       ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
+       ! (-dn/dE) * TDF_ij(E) * (E-mu) and its integral is (ElCond*Seebeck)_ij * T / e, where
+       ! T is the temperature
+       do EnIdx=1,TDFEnergyNumPoints
+          IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
+       end do
+       
+       ! I store in ElCondTimesSeebeckFP the product of the two tensors in full-packed format
+       ElCondTimesSeebeck = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
+       do j=1,3
+          do i=1,j
+             ElCondTimesSeebeckFP(i,j)=ElCondTimesSeebeck(i+((j-1)*j)/2)
+          end do
+       end do
+       ! Now, ElCondTimesSeebeck (and ElCondTimesSeebeckFP) contain
+       ! [ElCond*Seebeck] * hbar^2/e in units of eV^2*fs/angstrom/kelvin
+       
+       ! I calculate ElCond^(-1) . (ElCondTimesSeebeck) = Seebeck in standard format, and then
+       ! store it in the Seebeck array (in packed format)
+
+       ThisSeebeck = matmul(ElCondInverse,ElCondTimesSeebeckFP) 
+       ! I invert the sign because the electron charge is < 0
+       ThisSeebeck = -ThisSeebeck
+
+       do j=1,3
+          do i=1,j
+             LocalSeebeck(i+((j-1)*j)/2,LocalIdx) = ThisSeebeck(i,j)
+          end do
+       end do
+       ! Now, Seebeck contains the Seebeck coefficient in volt / Kelvin. In fact:
+       ! - ElCond contains (hbar^2/e^2) * sigma in eV*fs/angstrom, where sigma is the value of the
+       !   conductivity, i.e. it is the conductivity in units of (e^2/hbar^2) * eV * fs / angstrom
+       ! - ElCondInverse is in thus in units of (hbar^2/e^2) / eV / fs * angstrom
+       ! - ElCondTimesSeebeck is in units of  e / hbar^2 * eV^2 * fs / angstrom / Kelvin
+       ! therefore ThisSeebeck, which has the units of ElCondInverse * ElCondTimesSeebeck, i.e.
+       ! [(hbar^2/e^2) / eV / fs * angstrom] * [ e / hbar^2 * eV^2 * fs / angstrom / kelvin] = 
+       ! eV/e/kelvin = volt/kelvin
+       
+       ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
+       ! (-dn/dE) * TDF_ij(E) * (E-mu)^2 and its integral is (ThermCond)_ij * T
+       do EnIdx=1,TDFEnergyNumPoints
+          IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
+       end do
+       LocalThermCond(:,LocalIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
+       ! ThermCond contains now the thermal conductivity in units of
+       ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
     ! Now, I multiply by the correct factors to obtain the tensors in SI units
     
     ! **** Electrical conductity ****
-    ! Now, ElCond is in units of (e^2/hbar^2) * eV * ps / angstrom
+    ! Now, ElCond is in units of (e^2/hbar^2) * eV * fs / angstrom
     ! I want the conductivity in units of 1/Ohm/meter (i.e., SI units). The conversion factor is then
-    ! e^2/hbar^2 * eV*ps/angstrom * Ohm * meter; we use the constants in constants.F90 by noting that:
+    ! e^2/hbar^2 * eV*fs/angstrom * Ohm * meter; we use the constants in constants.F90 by noting that:
     ! Ohm = V/A = V*s/C, where A=ampere, C=coulomb
-    ! Then we have: (e/C)^3/hbar^2 * V*s^2 * V * C^2 * (meter / angstrom)  * (ps / s)
+    ! Then we have: (e/C)^3/hbar^2 * V*s^2 * V * C^2 * (meter / angstrom)  * (fs / s)
     ! Now: e/C = elem_charge_SI; CV=Joule, CV/s=Watt, hbar/Watt = hbar_SI;
-    ! moreover meter / angstrom = 1e10, ps / s = 1e-12 so that we finally get the
-    ! CONVERSION FACTOR: elem_charge_SI**3 / (hbar_SI**2) * 1.e-2_dp
-    ElCond = ElCond * elem_charge_SI**3 / (hbar_SI**2) * 1.e-2_dp
+    ! moreover meter / angstrom = 1e10, fs / s = 1e-15 so that we finally get the
+    ! CONVERSION FACTOR: elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
+    LocalElCond = LocalElCond * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
     ! THIS IS NOW THE ELECTRICAL CONDUCTIVITY IN SI UNITS, i.e. in 1/Ohm/meter
 
     ! **** Seebeck coefficient ****
     ! THE SEEECK COEFFICIENTS IS ALREADY IN volt/kelvin, so nothing has to be done
 
     ! **** Thermal conductivity ****
-    ! Now, ThermCond is in units of 1/hbar^2 * eV^3*ps/angstrom/K
+    ! Now, ThermCond is in units of 1/hbar^2 * eV^3*fs/angstrom/K
     ! I want it to be in units of W/m/K (i.e., SI units). Then conversion factor is then
-    ! 1/hbar^2 * eV^3*ps/angstrom/K / W * m * K =
-    ! 1/hbar^2 * eV^3 * ps / W * (m/angstrom) =
-    ! 1/hbar^2 * C^3 * V^3 * s / W * [e/C]^3 * (m/angstrom) * (ps / s) =
-    ! 1/hbar^2 * J^2 * [e/C]^3 * (m/angstrom) * (ps / s) =
-    ! elem_charge_SI**3 / (hbar_SI**2) * 1.e-2_dp, i.e. the same conversion factor as above
-    ThermCond = ThermCond * elem_charge_SI**3 / (hbar_SI**2) * 1.e-2_dp
+    ! 1/hbar^2 * eV^3 * fs/angstrom/K / W * m * K =
+    ! 1/hbar^2 * eV^3 * fs / W * (m/angstrom) =
+    ! 1/hbar^2 * C^3 * V^3 * s / W * [e/C]^3 * (m/angstrom) * (fs / s) =
+    ! 1/hbar^2 * J^2 * [e/C]^3 * (m/angstrom) * (fs / s) =
+    ! elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp, i.e. the same conversion factor as above
+    LocalThermCond = LocalThermCond * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
     ! THIS IS NOW THE THERMAL CONDUCTIVITY IN SI UNITS, i.e. in W/meter/K
-    
-    ! TODO: printing here!
-      
-    ! Before ending, I close files and deallocate memory
+
+    ! Now I send the different pieces to the local node
     if (on_root) then
-       close(tdf_unit)
+       allocate(ElCond(6,TempNumPoints,MuNumPoints),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main')
+       allocate(Seebeck(6,TempNumPoints,MuNumPoints),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
+       allocate(ThermCond(6,TempNumPoints,MuNumPoints),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
+    end if
+    
+    ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
+    call comms_gatherv(LocalElCond(1,1),6*counts(my_node_id),ElCond(1,1,1),6*counts,6*displs)
+    call comms_gatherv(LocalSeebeck(1,1),6*counts(my_node_id),Seebeck(1,1,1),6*counts,6*displs)
+    call comms_gatherv(LocalThermCond(1,1),6*counts(my_node_id),ThermCond(1,1,1),6*counts,6*displs)
+
+    if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main: calc_props',2)
+
+    ! Open files and print
+    if (on_root) then
+       elcond_unit = io_file_unit()
+       open(unit=elcond_unit,file=trim(seedname)//'_elcond.dat')  
+       write(elcond_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(elcond_unit,'(A)') "# [Electrical conductivity in SI units, i.e. in 1/Ohm/m]"
+       write(elcond_unit,'(A)') "# Mu(eV) Temp(K) ElCond_xx ElCond_xy ElCond_yy ElCond_xz ElCond_yz ElCond_zz"
+       do MuIdx=1,MuNumPoints
+          do TempIdx = 1,TempNumPoints
+             write(elcond_unit,103) MuArray(MuIdx), TempArray(TempIdx), ElCond(:,TempIdx,MuIdx)
+          end do
+       end do
        close(elcond_unit)
+       if (iprint > 1) write(stdout,'(3X,A)') "Electrical conductivity written on the " // trim(seedname)//"_elcond.dat file."
+
+       seebeck_unit =io_file_unit()
+       open(unit=seebeck_unit,file=trim(seedname)//'_seebeck.dat')  
+       write(seebeck_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(seebeck_unit,'(A)') "# [Seebeck coefficient in SI units, i.e. in V/K]"
+       write(seebeck_unit,'(A)') "# Mu(eV) Temp(K) Seebeck_xx Seebeck_xy Seebeck_yy Seebeck_xz Seebeck_yz Seebeck_zz"
+       do MuIdx=1,MuNumPoints
+          do TempIdx = 1,TempNumPoints
+             write(seebeck_unit,103) MuArray(MuIdx), TempArray(TempIdx), Seebeck(:,TempIdx,MuIdx)
+          end do
+       end do
        close(seebeck_unit)
-       if (boltz_calc_also_dos) close(boltzdos_unit)
+       if (iprint > 1)  write(stdout,'(3X,A)') "Seebeck coefficient written on the " // trim(seedname)//"_seebeck.dat file."
+
+       thermcond_unit =io_file_unit()
+       open(unit=thermcond_unit,file=trim(seedname)//'_thermcond.dat')  
+       write(thermcond_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(thermcond_unit,'(A)') "# [Thermal Conductivity in SI units, i.e. in W/m/K]"
+       write(thermcond_unit,'(A)') "# Mu(eV) Temp(K) ThermCond_xx ThermCond_xy ThermCond_yy ThermCond_xz ThermCond_yz ThermCond_zz"
+       do MuIdx=1,MuNumPoints
+          do TempIdx = 1,TempNumPoints
+             write(thermcond_unit,103) MuArray(MuIdx), TempArray(TempIdx), ThermCond(:,TempIdx,MuIdx)
+          end do
+       end do
+       close(thermcond_unit)
+       if (iprint > 1) write(stdout,'(3X,A)') "Thermal conductivity written on the " // trim(seedname)//"_thermcond.dat file."
     end if
 
+    if (on_root) then
+       write(stdout,'(3X,A)') "Transport properties calculated."
+       write(stdout,*)
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '|                        End of the BoltzWann module                        |'
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+       write(stdout,*)
+    end if
+
+    ! Before ending, I deallocate memory
     deallocate(TempArray,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating TempArray in boltzwann_main')
     deallocate(KTArray,stat=ierr)
@@ -274,56 +414,82 @@ contains
     if (ierr/=0) call io_error('Error in deallocating TDFEnergyArray in boltzwann_main')
     deallocate(TDF,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating TDF in boltzwann_main')
-    deallocate(ElCond,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating ElCond in boltzwann_main')
-    deallocate(Seebeck,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating Seebeck in boltzwann_main')
-    deallocate(ThermCond,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating ThermCond in boltzwann_main')
+    deallocate(LocalElCond,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating LocalElCond in boltzwann_main')
+    deallocate(LocalSeebeck,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating LocalSeebeck in boltzwann_main')
+    deallocate(LocalThermCond,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating LocalThermCond in boltzwann_main')
+
+    if (on_root) then
+       deallocate(ElCond,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating ElCond in boltzwann_main')
+       deallocate(Seebeck,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating Seebeck in boltzwann_main')
+       deallocate(ThermCond,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating ThermCond in boltzwann_main')
+    end if
+
     deallocate(IntegrandArray,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating IntegrandArray in boltzwann_main')
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main',2)
 
 101 FORMAT(7G18.10)
+102 FORMAT(19G18.10)
+103 FORMAT(8G18.10)
 
   end subroutine boltzwann_main
 
   !> This routine calculates the Transport Distribution Function \f$ \Sigma_{ij}(\eps) \f$ (TDF)
-  !> in units of 1/hbar^2 * eV*ps/angstrom.
+  !> in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
   !> 
-  !> \note The TDFEnergyArray must be already allocated and initialized with the energies in eV before calling
-  !>       this routine
+  !> \note The TDFEnergyArray must be already allocated and initialized with the
+  !> energies in eV before calling this routine.
   !> 
-  !> \note The TDF array must be already allocated with dimensions 6*N before calling this routine, where
-  !>       N is the dimension of the TDFEnergyArray array. 
+  !> \note The TDF array must be already allocated with dimensions 6 * size(TDFEnergyArray) * ndim, before calling
+  !> this routine, where ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
   !>
-  !> \note We assume that the TDFEnergyArray is uniformely spaced (no checks are performed on this).
+  !> \note If run in parallel, at the end each processor will have a copy of the full TDF array
+  !>
+  !> \note We assume that the TDFEnergyArray is uniformely spaced and that it has at least
+  !>       two elements (no checks are performed on this).
   !> 
-  !> \param TDF The TDF(i,EnIdx) output array, where:
-  !>  - i is an index from 1 to 6 giving the component of the symmetric tensor \f$ Sigma_{ij}(\eps) \f$,
-  !>    where 1=xx, 2=xy, 3=yy, 4=xz, 5=yz, 6=zz
-  !>    (in this way the mapping (i,j) -> i+((j-1)*j)/2 is satisfied for the packed storage of the
-  !>    upper triangle [i<=j]).
-  !>  - EnIdx is the index of the energies; the corresponding energy is given by
-  !>    TDFEnergyArray(EndIdx) array (in eV).
+  !> \note Note that the order of indices of TDF is different w.r.t. the DOS array (the energy is not the first but
+  !>       the second index)
+  !> 
+  !> \note If the input flag boltz_bandshift is set to .true., the code will also shift the
+  !>       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
+  !>       and boltz_bandshift_firstband input flags.
+  !> 
+  !> \param TDF The TDF(i,EnIdx,spin) output array, where:
+  !>        - i is an index from 1 to 6 giving the component of the symmetric tensor
+  !>          \f$ Sigma_{ij}(\eps) \f$,
+  !>          where 1=xx, 2=xy, 3=yy, 4=xz, 5=yz, 6=zz
+  !>          as defined by the module constants XX, XY, ...
+  !>          (in this way the mapping (i,j) -> i+((j-1)*j)/2 is satisfied for the packed storage of the
+  !>          upper triangle [i<=j]).
+  !>        - EnIdx is the index of the energies; the corresponding energy is given by
+  !>          TDFEnergyArray(EndIdx) array (in eV).
+  !>        - Spin may be only 1 if spn_decomp=.false. If it is instead true, 1 contains the total TDF, 
+  !>          2 the spin-up component and 3 the spin-up component
   !> \param TDFEnergyArray The array with the energies for which the TDF is calculated, in eV
-  subroutine calcTDF(TDF,TDFEnergyArray)
-    use w90_get_oper, only: get_HH_R, HH_R
-    use w90_parameters, only    : num_wann
-    use w90_utility, only : utility_diagonalize
-    use w90_wanint_common, only: fourier_R_to_k
-    use w90_wan_ham, only: get_deleig_a
+  subroutine calcTDFandDOS(TDF,TDFEnergyArray)
+    use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
+    use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
+         boltz_dos_energy_step, boltz_dos_min_energy, boltz_dos_max_energy, &
+         param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index, &
+         boltz_tdf_smr_en_width
+    use w90_utility, only       : utility_diagonalize
+    use w90_wanint_common, only : fourier_R_to_k
+    use w90_wan_ham, only       : get_deleig_a
 
-    real(kind=dp), dimension(:,:), intent(out)   :: TDF ! (coordinate,Energy)
+    real(kind=dp), dimension(:,:,:), intent(out)   :: TDF ! (coordinate,Energy,spin)
     real(kind=dp), dimension(:), intent(in)      :: TDFEnergyArray
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
-    ! TODO: should I also calc the DOS?
-    ! comments on smearing
-    ! PARTODO: comments on which processor the TDF is actually stored at the end
-
+ 
     real(kind=dp), dimension(3) :: kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
 
@@ -331,21 +497,68 @@ contains
     complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     real(kind=dp) :: del_eig(num_wann,3)
-    real(kind=dp) :: eig(num_wann)
+    real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
 
-    if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',1)
+    
+    real(kind=dp), allocatable :: DOS_EnergyArray(:)
+    real(kind=dp), allocatable :: DOS_k(:,:,:), TDF_k(:,:,:)
+    real(kind=dp), allocatable :: DOS_all(:,:,:)
+    real(kind=dp)              :: kweight
+    integer                    :: ndim, DOS_NumPoints, i, EnIdx
+
+    character(len=20)          :: numfieldsstr
+    integer :: boltzdos_unit
+
+    if (on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',1)
+    if (on_root) then
+       if (boltz_calc_also_dos) then
+          write(stdout,'(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
+       else
+          write(stdout,'(3X,A)') "Calculating Transport Distribution function (TDF)..."
+       end if
+    end if
+
+    ! I open the output files  
+    if (boltz_calc_also_dos.and.on_root) then
+       boltzdos_unit=io_file_unit()
+       open(unit=boltzdos_unit,file=trim(seedname)//'_boltzdos.dat')  
+    end if
+
+    if (boltz_calc_also_dos.and.on_root.and.(iprint>1)) then
+       write(stdout,'(5X,A)') "Smearing for DOS: "
+       write(stdout,'(7X,A)') trim(param_get_smearing_type(boltz_dos_smr_index)) // ", adaptive"
+    end if
+    if (on_root.and.(iprint>1)) then
+       if (boltz_TDF_smr_en_width/(TDFEnergyArray(2)-TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
+          write(stdout,'(5X,A)') "Smearing for TDF: "
+          write(stdout,'(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
+       else
+          write(stdout,'(5X,A)') "Smearing for TDF: "
+          write(stdout,'(7X,A,G10.3)') &
+               trim(param_get_smearing_type(boltz_TDF_smr_index)) // ", non-adaptive, width (eV) =", &
+               boltz_TDF_smr_en_width
+       end if
+    end if
+
+    ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
+    call get_HH_R
+    if(spn_decomp) then
+       ndim=3
+       call get_SS_R
+    else
+       ndim=1
+    end if
 
     ! Some initial checks
-    if (size(TDF,1)/=6 .or. size(TDF,2)/=size(TDFEnergyArray)) then
+    if (size(TDF,1)/=6 .or. size(TDF,2)/=size(TDFEnergyArray) .or. size(TDF,3)/=ndim) then
        call io_error('Wrong size for the TDF array in calcTDF')
     end if
 
     ! I zero the TDF array before starting
     TDF = 0._dp
-    
-    ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    ! TODO: to be checked: if I have to check for the presence of the .eig file
-    call get_HH_R()
+
+    allocate(TDF_k(6,size(TDFEnergyArray),ndim),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating TDF_k in calcTDF')  
 
     allocate(HH(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating HH in calcTDF')
@@ -354,9 +567,33 @@ contains
     allocate(UU(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating UU in calcTDF')    
 
-    ! TODO: print on output the grid that I am using (and min_ksep value, if boltz_interp_mesh_spacing >0)
-    
-!       print*, my_node_id, boltz_interp_mesh, boltz_interp_mesh_spacing
+    DOS_NumPoints = int(floor((boltz_dos_max_energy - boltz_dos_min_energy)/boltz_dos_energy_step))+1
+    if (DOS_NumPoints .eq. 1) DOS_NumPoints = 2
+    allocate(DOS_EnergyArray(DOS_NumPoints),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating DOS_EnergyArray in calcTDF')
+    do i=1,DOS_NumPoints
+       DOS_EnergyArray(i) = boltz_dos_min_energy + real(i-1,dp)*boltz_dos_energy_step
+    end do
+
+    allocate(DOS_k(size(DOS_EnergyArray),adpt_smr_steps,ndim),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating DOS_k in calcTDF')    
+    allocate(DOS_all(size(DOS_EnergyArray),adpt_smr_steps,ndim),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating DOS_all in calcTDF')    
+    dos_all = 0.0_dp
+
+    if (on_root) then
+       write(stdout,'(5X,A,I0,A,I0,A,I0)') "k-grid used for band interpolation in BoltzWann: ",&
+            boltz_interp_mesh(1),'x',boltz_interp_mesh(2),'x',boltz_interp_mesh(3)
+       write(stdout,'(5X,A,I1)') "Number of electrons per state: ", nint(num_elec_per_state)
+       write(stdout,'(7X,A)') "(If this is not what was intended, change the value of"
+       write(stdout,'(7X,A)') " the spinor input flag)"
+    end if
+    kweight = 1.0_dp / real(PRODUCT(boltz_interp_mesh),kind=dp)
+
+    if (boltz_bandshift.and.on_root) then
+       write(stdout,'(5X,A,I0,A,G18.10,A)') "Shifting energy bands with index >= ", boltz_bandshift_firstband, " by ", &
+            boltz_bandshift_energyshift, " eV."
+    end if
 
     ! I loop over all kpoints
     do loop_tot=my_node_id,PRODUCT(boltz_interp_mesh)-1,num_nodes
@@ -384,40 +621,76 @@ contains
        call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
        call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
 
-       if (boltz_calc_also_dos) then
-          ! TODO!
+       call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
+
+       ! Here I apply a scissor operator to the conduction bands, if required in the input
+       if (boltz_bandshift) then
+          eig(boltz_bandshift_firstband:) = eig(boltz_bandshift_firstband:) + boltz_bandshift_energyshift
        end if
 
+       if (boltz_calc_also_dos) then
+          call dos_kpt(kpt,DOS_EnergyArray,eig,levelspacing_k,dos_k)
+          ! This sum multiplied by kweight amounts to calculate
+          ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
+          ! So that the DOS will be in units of 1/eV, normalized so that
+          ! \int_{-\infty}^{\infty} DOS(E) dE = Num.Electrons
+          dos_all = dos_all + dos_k * kweight
+       end if
 
-!!$       do BandIdx=1, num_wann
-!!$          ! Maybe we should check once and for all if it makes sense to broaden or if the broadening
-!!$          ! is too small!
-!!$          MinEn=eig(BandIdx)-constant*broadening
-!!$          MaxEn=eig(BandIdx)+constant*broadening
-!!$          ! We assume here that the TDFEnergyArray is uniformely spaced
-!!$          MinEnIdx = int((MinEn-TDFEnergyArray(1))/(TDFEnergyArray(size(TDFEnergyArray))-TDFEnergyArray(1)) * &
-!!$               (size(TDFEnergyArray)-1)) + 1
-!!$          MaxEnIdx = int((MaxEn-TDFEnergyArray(1))/(TDFEnergyArray(size(TDFEnergyArray))-TDFEnergyArray(1)) * &
-!!$               (size(TDFEnergyArray)-1)) + 1
-!!$          MinEnIdx = max(1,MinEnIdx)
-!!$          MaxEnIdx = min(size(TDFEnergyArray),MaxEnIdx)
-!!$          do EnIdx=MinEnIdx, MaxEnIdx
-!!$             ! TODO: Factors must contain: tau; spin-degeneracy; dos in k space; ...
-!!$             ! for spin-degeneracy: use spinors=.true. in input and elec_per_state variable
-!!$             ! TDF_xx
-!!$             TDF(EnIdx,1) = TDF(EndIdx,1) + Factors * & 
-!!$                  ! normGauss gives the value of a normalized gaussian of proper width with center the origin
-!!$                  normalizedGaussian(TDFEnergyArray(EnIdx)-eig(BandIdx)) * &
-!!$                  del_eig(BandIdx, 1) * del_eig (BandIdx, 1)  
-!!$          ! TODO: repeat the same for the other 5 components
-!!$       end do
-!!$
-
+       call TDF_kpt(kpt,TDFEnergyArray,eig,del_eig,TDF_k)
+       ! As above, the sum of TDF_k * kweight amounts to calculate
+       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
+       ! so that we divide by the cell_volume (in Angstrom^3) to have
+       ! the correct integral
+       TDF = TDF + TDF_k * kweight / cell_volume
     end do
 
-!    print*,"Missing allreduce yet!", my_node_id
+    ! I sum the results of the calculation for the DOS on the root node only
+    ! (I have to print the results only)
+    if (boltz_calc_also_dos) then
+       call comms_reduce(DOS_all(1,1,1),size(DOS_all),'SUM')
+    end if
+    ! I sum the results of the calculation on all nodes, and I store them on all
+    ! nodes (because for the following, each node will do a different calculation,
+    ! each of which will require the whole knowledge of the TDF array)
+    call comms_allreduce(TDF(1,1,1),size(TDF),'SUM')
 
-    if(on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',2)
+    if (on_root) then
+       write(boltzdos_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(boltzdos_unit, '(A)') '# The different columns from the second on are the DOS for different'
+       write(boltzdos_unit, '(A)') '# adaptive smearing coefficients a (see Yates et al., PRB 75, 195121 (2007)'
+       if (spn_decomp) then
+          write(boltzdos_unit, '(A,I0,A)') '# The first ', adpt_smr_steps, ' are the total DOS, then follows the spin-up'
+          write(boltzdos_unit, '(A)') '# The spin-down components'
+       end if
+       write(numfieldsstr, '(I0)') adpt_smr_steps
+       write(boltzdos_unit, '(A,1X,'//trim(numfieldsstr)//'G14.6)') '# Smearing coefficients: ', adpt_smr_width
+
+       write(boltzdos_unit, '(A)') '# Energy(eV) DOS [DOS DOS ...]'
+
+       ! I save a string with the number of fields to print
+       write(numfieldsstr, '(I0)') 1 + ndim * adpt_smr_steps
+       do EnIdx=1,size(DOS_EnergyArray)
+          write(boltzdos_unit,'(1X,'//trim(numfieldsstr)//'G18.10)') &
+               DOS_EnergyArray(EnIdx),dos_all(EnIdx,:,:)
+       end do
+    end if
+
+    if (on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',2)
+    if (on_root) then
+       if (boltz_calc_also_dos) then
+          write(stdout,'(3X,A)') "TDF and DOS calculated."
+       else
+          write(stdout,'(1X,A)') "TDF calculated."
+       end if
+    end if
+    if (on_root) write(stdout,*) 
+
+    if (on_root .and. boltz_calc_also_dos) then
+       close(boltzdos_unit)
+       if (iprint > 1) write(stdout,'(3X,A)') "DOS written on the " // trim(seedname)//"_boltzdos.dat file."
+    end if
+
 
     deallocate(HH,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating HH in calcTDF')
@@ -425,24 +698,32 @@ contains
     if (ierr/=0) call io_error('Error in deallocating delHH in calcTDF')
     deallocate(UU,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating UU in calcTDF')
+    deallocate(DOS_EnergyArray,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating DOS_EnergyArray in calcTDF')
+    deallocate(DOS_k,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating DOS_k in calcTDF')
+    deallocate(DOS_all,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating DOS_all in calcTDF')
+    deallocate(TDF_k,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating TDF_k in calcTDF')
 
-  end subroutine calcTDF
+  end subroutine calcTDFandDOS
 
   !> This function calculates -dn(E)/dE, where n(E) is the Fermi distribution function.
   !>
-  !> \note I do not put stopwatches here because it would slow down the calculation by orders of magnitude
-  !> 
-  !> \param E  Energy at which we want to calculate -dn(E)/dE, in eV
+  !> \param E  Energy at which we want to calculate -dn(E)/dE, in 1/eV
   !> \param mu Chemical potential in eV
-  !> \param KT k_Boltzmann * Temperature in eV
+  !> \param KT k_Boltzmann * Temperature, in eV
   function MinusFermiDerivative(E,mu,KT)
     real(kind=dp), intent(in) :: E
     real(kind=dp), intent(in) :: mu
     real(kind=dp), intent(in) :: KT
     real(kind=dp) :: MinusFermiDerivative
 
-    ! This is used as the maximum value to be used for the exp function. 
-    ! exp(-x) for x>MaxExp is assumed to be zero. This value si chose so that
+    ! I do not put stopwatches here because it would slow down the calculation by orders of magnitude
+
+    ! MaxExp is the maximum value to be used for the exp function. 
+    ! The function is taken to be zero for x>MaxExp. This value is chosen so that
     ! the function is truncated when its value is smaller than about 1.e-16
     real(kind=dp), parameter :: MaxExp = 36._dp
     real(kind=dp) :: MyExp
@@ -451,30 +732,328 @@ contains
     if (abs(MyExp) > MaxExp) then
        MinusFermiDerivative = 0._dp
     else
-       MinusFermiDerivative = 1/KT * exp(MyExp)/((exp(MyExp)+1)**2)
+       MinusFermiDerivative = 1._dp/KT * exp(MyExp)/((exp(MyExp)+1._dp)**2)
     end if
 
   end function MinusFermiDerivative
 
-!!$  ! This happens to be slower
-!!$  function MinusFermiDerivative2(EArray,mu,KT)
-!!$    real(kind=dp), dimension(:), intent(in) :: EArray
-!!$    real(kind=dp), intent(in) :: mu
-!!$    real(kind=dp), intent(in) :: KT
-!!$    real(kind=dp), dimension(size(EArray)) :: MinusFermiDerivative2
-!!$
-!!$    ! This is used as the maximum value to be used for the exp function. 
-!!$    ! exp(-x) for x>MaxExp is assumed to be zero. This value si chose so that
-!!$    ! the function is truncated when its value is smaller than about 1.e-16
-!!$    real(kind=dp), parameter :: MaxExp = 36._dp
-!!$    real(kind=dp), dimension(size(EArray)) :: MyExpArray
-!!$    
-!!$    MyExpArray = (EArray - mu) / KT
-!!$
-!!$    MinusFermiDerivative2 = 0._dp
-!!$    where (abs(MyExpArray) < MaxExp) &
-!!$         MinusFermiDerivative2 = 1/KT * exp(MyExpArray)/((exp(MyExpArray)+1)**2)
-!!$
-!!$  end function MinusFermiDerivative2
+
+  !> This subroutine calculates the contribution to the DOS of a single k point
+  !> 
+  !> This is basically a modified copy of the dos routine inside the dos_wanint module.
+  !> Modifications:
+  !> - the levelspacing is now given as an input
+  !> - it does multiply by 2 if spinors=.false. (using the num_elec_per_state internal variable)
+  !> - it requires in input also the energy array
+  !> 
+  !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
+  !> 
+  !> \note This routine simply provides the dos contribution of a given
+  !>       point. This must be externally summed after proper weighting.
+  !>       The weight factor (for a full BZ sampling with N^3 points) is 1/N^3 if we want
+  !>       the final DOS to be normalized to the total number of electrons.
+  !> \note The only factor that is included INSIDE this routine is the spin degeneracy
+  !>       factor (=2 if spinors is .false., =1 if spinors is .true.)
+  !> \note The EnergyArray is assumed to be evenly spaced (and the energy spacing
+  !>       is taken from EnergyArray(2)-EnergyArray(1))
+  !> \note The routine is assuming that EnergyArray has at least two elements.
+  !> \note The TDF_k array must have dimensions size(EnergyArray) * adpt_smr_steps * ndim, where
+  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
+  !> 
+  !> \param kpt         the three coordinates of the k point vector whose DOS contribution we
+  !>                    want to calculate (in relative coordinates)
+  !> \param EnergyArray array with the energy grid on which to calculate the DOS (in eV)
+  !>                    It must have at least two elements
+  !> \param eig_k       array with the eigenvalues at the given k point (in eV)
+  !> \param levelspacing_k array with the level spacings, i.e. how much each level changes
+  !>                    near a given point of the interpolation mesh, as given by the
+  !>                    get_levelspacing() routine
+  !> \param             dos_k array in which the contribution is stored. Three dimensions:
+  !>                    dos_k(energyidx, smearingidx, spinidx), where:
+  !>                    - energyidx is the index of the energies, corresponding to the one
+  !>                      of the EnergyArray array; 
+  !>                    - smearingidx is an index running over the different possible smearings
+  !>                      (from 1 to adpt_smr_steps)
+  !>                    - spinidx=1 contains the total dos; if if spn_decomp==.true., then
+  !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
+  subroutine dos_kpt(kpt,EnergyArray,eig_k,levelspacing_k,dos_k)
+
+    use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
+    use w90_utility, only       : w0gauss
+    use w90_parameters, only    : num_wann,dos_min_energy,dos_num_points,&
+         adpt_smr_steps,adpt_smr_width,spn_decomp,num_elec_per_state,&
+         boltz_dos_smr_index
+    use w90_spin_wanint, only   : get_spn_nk
+
+    ! Arguments
+    !
+    real(kind=dp), dimension(3), intent(in)      :: kpt
+    real(kind=dp), dimension(:), intent(in)      :: EnergyArray
+    real(kind=dp), dimension(:), intent(in)      :: eig_k
+    real(kind=dp), dimension(:), intent(in)      :: levelspacing_k
+    real(kind=dp), dimension(:,:,:), intent(out) :: dos_k
+
+    ! Adaptive smearing
+    !
+    real(kind=dp) :: smear,arg
+
+    ! Misc/Dummy
+    !
+    integer          :: i,loop_f,loop_s,min_f,max_f
+    real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
+    real(kind=dp)    :: binwidth
+    
+    ! Get spin projections for every band
+    !
+    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
+
+    binwidth = EnergyArray(2) - EnergyArray(1)
+
+    dos_k=0.0_dp
+    do i=1,num_wann
+       if(spn_decomp) then
+          ! Contribution to spin-up DOS of Bloch spinor with component 
+          ! (alpha,beta) with respect to the chosen quantization axis
+          alpha_sq=(1.0_dp+spn_nk(i))/2.0_dp ! |alpha|^2
+          ! Contribution to spin-down DOS 
+          beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
+       end if
+
+       do loop_s=1,adpt_smr_steps
+          !
+          ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
+          ! !!!UNDERSTAND THAT FACTOR!!!
+          !
+          smear=levelspacing_k(i)*adpt_smr_width(loop_s)/sqrt(2.0_dp)
+
+          ! TODO: check again this part (next line). Probably, for coarse k sampling and big bin widths it provides good results
+          ! If however the k sampling is fine and the bin width is also small, narrow peaks may appear, where instead
+          ! a calculation of the second derivative may give a better estimate for the spread.
+!          if (smear/binwidth < min_smearing_binwidth_ratio) smear = min_smearing_binwidth_ratio * binwidth
+
+          ! Faster optimization: I precalculate the indices
+          min_f= max(nint((eig_k(i) - smearing_cutoff * smear - EnergyArray(1))/&
+                      (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+                      * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
+          max_f= min(nint((eig_k(i) + smearing_cutoff * smear - EnergyArray(1))/&
+                      (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+                      * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
+          do loop_f=min_f, max_f
+             arg=(EnergyArray(loop_f)-eig_k(i))/smear
+             
+             ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
+             !
+             ! kind of smearing read from input (internal smearing_index variable)
+             rdum=w0gauss(arg,boltz_dos_smr_index)/smear
+             !
+             ! Contribution to total DOS
+             !
+             dos_k(loop_f,loop_s,1)=dos_k(loop_f,loop_s,1)+rdum * num_elec_per_state
+             
+             ! [GP] I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
+             ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
+             if(spn_decomp) then
+                ! Spin-up contribution
+                dos_k(loop_f,loop_s,2)=dos_k(loop_f,loop_s,2)+rdum*alpha_sq
+                ! Spin-down contribution
+                dos_k(loop_f,loop_s,3)=dos_k(loop_f,loop_s,3)+rdum*beta_sq
+             end if
+          end do
+       end do
+    end do !loop over bands
+
+  end subroutine dos_kpt
+
+  !> This subroutine calculates the contribution to the TDF of a single k point
+  !> 
+  !> \note This routine does not use the adaptive smearing; in fact, for non-zero temperatures
+  !>       one often doesn't even need to smear. It simply uses a standard smearing as defined by
+  !>       the variables boltz_TDF_smr_en_width and boltz_TDF_smr_index
+  !> 
+  !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
+  !> 
+  !> \note This routine simply provides the dos contribution of a given
+  !>       point. This must be externally summed after proper weighting.
+  !>       The weight factor (for a full BZ sampling with N^3 points) is 1/N^3/cell_volume
+  !>       if we want to calculate 1/(2*pi)^3 * \int_{BZ} d^3 k
+  !> \note The only factor that is included INSIDE this routine is the spin degeneracy
+  !>       factor (=2 if spinors is .false., =1 if spinors is .true.)
+  !> \note The EnergyArray is assumed to be evenly spaced (and the energy spacing
+  !>       is taken from EnergyArray(2)-EnergyArray(1))
+  !> \note The routine is assuming that EnergyArray has at least two elements.
+  !> \note The meaning of the three indices of the TDF_k array is different with respect to
+  !>       those of the dos_k array returned by the DOS_kpt routine
+  !> \note The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
+  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
+  !> 
+  !> \param kpt         the three coordinates of the k point vector whose DOS contribution we
+  !>                    want to calculate (in relative coordinates)
+  !> \param EnergyArray array with the energy grid on which to calculate the DOS (in eV)
+  !>                    It must have at least two elements
+  !> \param eig_k       array with the eigenvalues at the given k point (in eV)
+  !> \param deleig_k    array with the band derivatives at the given k point (in eV/angstrom)
+  !>                    already corrected in case of degeneracies, as returned by the 
+  !>                    get_deleig_a routine
+  !> \param             TDF_k array in which the contribution is stored. Three dimensions:
+  !>                    TDF_k(ij, energyidx, spinidx), where:
+  !>                    - ij indexes the components of the TDF (symmetric) tensor (1=XX, 2=XY, ...);
+  !>                      see the global constants defined in the module
+  !>                    - energyidx is the index of the energies, corresponding to the one
+  !>                      of the EnergyArray array; 
+  !>                    - spinidx=1 contains the total dos; if if spn_decomp==.true., then
+  !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
+  subroutine TDF_kpt(kpt,EnergyArray,eig_k,deleig_k,TDF_k)
+
+    use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
+    use w90_utility, only       : w0gauss
+    use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
+         boltz_TDF_smr_en_width, boltz_TDF_smr_index, boltz_relax_time
+    use w90_spin_wanint, only   : get_spn_nk
+
+    ! Arguments
+    !
+    real(kind=dp), dimension(3), intent(in)      :: kpt
+    real(kind=dp), dimension(:), intent(in)      :: EnergyArray
+    real(kind=dp), dimension(:), intent(in)      :: eig_k
+    real(kind=dp), dimension(:,:), intent(in)    :: deleig_k
+    real(kind=dp), dimension(:,:,:), intent(out) :: TDF_k
+
+    ! Adaptive smearing
+    !
+    real(kind=dp) :: smear,arg
+
+    ! Misc/Dummy
+    !
+    integer          :: BandIdx,loop_f,min_f,max_f
+    real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
+    real(kind=dp)    :: binwidth
+    logical          :: DoSmearing
+    
+    ! Get spin projections for every band
+    !
+    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
+
+    binwidth = EnergyArray(2) - EnergyArray(1)
+
+    TDF_k=0.0_dp
+    do BandIdx=1,num_wann
+       if(spn_decomp) then
+          ! Contribution to spin-up DOS of Bloch spinor with component 
+          ! (alpha,beta) with respect to the chosen quantization axis
+          alpha_sq=(1.0_dp+spn_nk(BandIdx))/2.0_dp ! |alpha|^2
+          ! Contribution to spin-down DOS 
+          beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
+       end if
+
+       ! Do not use an adaptive smearing here, it would require the knowledge of second derivatives
+       ! And typically, when working at not too small temperatures, smearing is not needed
+
+       ! Faster optimization: I precalculate the indices
+       ! Value of the smearing in eV; default = 0 eV, i.e. no smearing
+       smear = boltz_TDF_smr_en_width
+       if (smear/binwidth < min_smearing_binwidth_ratio) then
+          min_f= max(nint((eig_k(BandIdx) - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
+          max_f= min(nint((eig_k(BandIdx) - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
+          DoSmearing=.false.
+       else      
+          min_f= max(nint((eig_k(BandIdx) - smearing_cutoff * smear - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
+          max_f= min(nint((eig_k(BandIdx) + smearing_cutoff * smear - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
+          DoSmearing=.true.
+       end if
+
+       do loop_f=min_f,max_f
+          if (DoSmearing) then
+             arg=(EnergyArray(loop_f)-eig_k(BandIdx))/smear
+             rdum=w0gauss(arg,boltz_TDF_smr_index)/smear
+          else
+             rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
+          end if
+          !
+          ! Contribution to total DOS
+          !
+          TDF_k(XX,loop_f,1)=TDF_k(XX,loop_f,1) + rdum * &
+               num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 1)  
+          TDF_k(XY,loop_f,1)=TDF_k(XY,loop_f,1) + rdum * &
+               num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 2)  
+          TDF_k(YY,loop_f,1)=TDF_k(YY,loop_f,1) + rdum * &
+               num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 2)  
+          TDF_k(XZ,loop_f,1)=TDF_k(XZ,loop_f,1) + rdum * &
+               num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 3)  
+          TDF_k(YZ,loop_f,1)=TDF_k(YZ,loop_f,1) + rdum * &
+               num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 3)  
+          TDF_k(ZZ,loop_f,1)=TDF_k(ZZ,loop_f,1) + rdum * &
+               num_elec_per_state * deleig_k(BandIdx, 3) * deleig_k (BandIdx, 3)  
+          
+          ! I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
+          ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
+          if(spn_decomp) then
+             ! Spin-up contribution
+             TDF_k(XX,loop_f,2)=TDF_k(XX,loop_f,2) + rdum * &
+                  alpha_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 1)  
+             TDF_k(XY,loop_f,2)=TDF_k(XY,loop_f,2) + rdum * &
+                  alpha_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 2)  
+             TDF_k(YY,loop_f,2)=TDF_k(YY,loop_f,2) + rdum * &
+                  alpha_sq * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 2)  
+             TDF_k(XZ,loop_f,2)=TDF_k(XZ,loop_f,2) + rdum * &
+                  alpha_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 3)  
+             TDF_k(YZ,loop_f,2)=TDF_k(YZ,loop_f,2) + rdum * &
+                  alpha_sq * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 3)  
+             TDF_k(ZZ,loop_f,2)=TDF_k(ZZ,loop_f,2) + rdum * &
+                  alpha_sq * deleig_k(BandIdx, 3) * deleig_k (BandIdx, 3)  
+             ! Spin-down contribution
+             TDF_k(XX,loop_f,3)=TDF_k(XX,loop_f,3) + rdum * &
+                  beta_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 1)  
+             TDF_k(XY,loop_f,3)=TDF_k(XY,loop_f,3) + rdum * &
+                  beta_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 2)  
+             TDF_k(YY,loop_f,3)=TDF_k(YY,loop_f,3) + rdum * &
+                  beta_sq * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 2)  
+             TDF_k(XZ,loop_f,3)=TDF_k(XZ,loop_f,3) + rdum * &
+                  beta_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 3)  
+             TDF_k(YZ,loop_f,3)=TDF_k(YZ,loop_f,3) + rdum * &
+                  beta_sq * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 3)  
+             TDF_k(ZZ,loop_f,3)=TDF_k(ZZ,loop_f,3) + rdum * &
+                  beta_sq * deleig_k(BandIdx, 3) * deleig_k (BandIdx, 3)  
+          end if
+       end do
+    end do !loop over bands
+    
+    ! I multiply it here, since I am assuming a constant relaxation time, independent of the band index
+    ! (actually, it is also independent of k)
+    TDF_k = TDF_k * boltz_relax_time
+
+  end subroutine TDF_kpt
+
+
+  !> This subroutine calculates the level spacing, i.e. how much the level changes
+  !> near a given point of the interpolation mesh
+  !>
+  !> \param del_eig Band velocities, already corrected when degeneracies occur
+  !> \param interp_mesh array of three integers, giving the number of k points along
+  !>        each of the three directions defined by the reciprocal lattice vectors
+  !> \param levelspacing On output, the spacing for each of the bands (in eV)
+  subroutine get_levelspacing(del_eig,interp_mesh,levelspacing)
+    use w90_parameters, only: num_wann
+    real(kind=dp), dimension(num_wann,3), intent(in) :: del_eig
+    integer, dimension(3), intent(in)                :: interp_mesh
+    real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
+  
+    real(kind=dp) :: Delta_k
+    integer :: i
+
+    Delta_k=kmesh_spacing(interp_mesh)
+    do i=1,num_wann
+       levelspacing(i)=&
+            sqrt(dot_product(del_eig(i,:),del_eig(i,:)))*Delta_k
+    end do
+
+  end subroutine get_levelspacing
 
 end module w90_boltzwann

@@ -16,6 +16,7 @@ module w90_constants
 
   private
 
+  !!! GENERIC CONSTANTS !!!
 !aam_2012-04-11; fix to run on MacBook Air 
   integer, parameter, public          :: dp = kind(1.0d0)
 !  integer, parameter, public          :: dp = selected_real_kind(14,200)
@@ -26,15 +27,22 @@ module w90_constants
   complex(kind=dp), parameter, public :: cmplx_0 = (0.0_dp,0.0_dp)
   complex(kind=dp), parameter, public :: cmplx_1 = (1.0_dp,0.0_dp)
 
-  real(kind=dp), parameter, public :: bohr = 0.5291772108_dp
-
+  !!! NUMERICAL CONVERGENCE CONSTANTS !!!
   real(kind=dp), parameter, public    :: eps2  = 1.0e-2_dp
   real(kind=dp), parameter, public    :: eps5  = 1.0e-5_dp
   real(kind=dp), parameter, public    :: eps6  = 1.0e-6_dp
   real(kind=dp), parameter, public    :: eps7  = 1.0e-7_dp
   real(kind=dp), parameter, public    :: eps8  = 1.0e-8_dp
   real(kind=dp), parameter, public    :: eps10 = 1.0e-10_dp
+  ! Cutoff for the smearing functions
+  real(kind=dp), parameter, public    :: smearing_cutoff = 10._dp 
+  ! [GP, Apr 20, 2012] Don't smear but simply add the contribution to the
+  ! relevant bin if the smearing/binwidth ratio is smaller than this value
+  real(kind=dp), parameter, public    :: min_smearing_binwidth_ratio = 2._dp 
 
+
+  !!! PHYSICAL CONSTANTS !!!
+  real(kind=dp), parameter, public :: bohr = 0.5291772108_dp
 
   ! Added by Ivo, to be used in interpolation code
   !

@@ -24,6 +24,13 @@ module w90_wanint_common
   !
   private :: wigner_seitz
 
+  private :: kmesh_spacing_singleinteger, kmesh_spacing_mesh
+  
+  interface kmesh_spacing
+     module procedure kmesh_spacing_singleinteger
+     module procedure kmesh_spacing_mesh
+  end interface kmesh_spacing
+
   ! Parameters describing the direct lattice points R on a 
   ! Wigner-Seitz supercell
   !
@@ -150,7 +157,7 @@ module w90_wanint_common
   subroutine wanint_get_kpoint_file
   !===========================================================!
   !                                                           !
-  ! read kpoints from kpoint.dat and distribute              !
+  ! read kpoints from kpoint.dat and distribute               !
   !                                                           !
   !===========================================================!
 
@@ -258,6 +265,8 @@ module w90_wanint_common
     call comms_bcast(ecut_spectralsum,1)
     call comms_bcast(optics_task,len(optics_task))
     call comms_bcast(wanint_kpoint_file,1)
+    call comms_bcast(dis_win_min,1)
+    call comms_bcast(dis_win_max,1)
 ! ----------------------------------------------
 !
 ! New input variables in development 
@@ -285,7 +294,9 @@ module w90_wanint_common
     call comms_bcast(slice_plot,1) 
     call comms_bcast(transl_inv,1) 
     call comms_bcast(omega_from_FF,1) 
-    call comms_bcast(sigma_abc_onlyorb,1) 
+    call comms_bcast(sigma_abc_onlyorb,1)
+    call comms_bcast(smr_index,1)
+    call comms_bcast(num_elec_per_state,1)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -316,6 +327,10 @@ module w90_wanint_common
     call comms_bcast(boltz_interp_mesh_spacing,1) 
     call comms_bcast(boltz_interp_mesh(1),3) 
     call comms_bcast(boltz_tdf_energy_step,1) 
+    call comms_bcast(boltz_relax_time,1) 
+    call comms_bcast(boltz_TDF_smr_en_width,1)
+    call comms_bcast(boltz_TDF_smr_index,1)
+    call comms_bcast(boltz_dos_smr_index,1)
     call comms_bcast(boltz_bandshift,1) 
     call comms_bcast(boltz_bandshift_firstband,1) 
     call comms_bcast(boltz_bandshift_energyshift,1) 
@@ -532,7 +547,7 @@ module w90_wanint_common
 
 !=======================================================================
 
-  function kmesh_spacing(num_points)
+  function kmesh_spacing_singleinteger(num_points)
 
   ! Set up the value of the interpolation mesh spacing, neede for
   ! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of 
@@ -540,8 +555,8 @@ module w90_wanint_common
   
     use w90_parameters, only : recip_lattice
 
-    integer       :: num_points
-    real(kind=dp) :: kmesh_spacing
+    integer, intent(in) :: num_points
+    real(kind=dp)       :: kmesh_spacing_singleinteger
 
     integer        :: i
     real(kind=dp ) :: Delta_k_i(3)
@@ -555,9 +570,28 @@ module w90_wanint_common
        Delta_k_i(i)=sqrt(dot_product(recip_lattice(i,:),recip_lattice(i,:)))&
             /num_points
     end do
-    kmesh_spacing=maxval(Delta_k_i)
+    kmesh_spacing_singleinteger=maxval(Delta_k_i)
   
-  end function kmesh_spacing
+  end function kmesh_spacing_singleinteger
+
+  ! Same as kmesh_spacing_singleinteger, but for a kmesh with three
+  ! different mesh samplings along the three directions
+  function kmesh_spacing_mesh(mesh)  
+    use w90_parameters, only : recip_lattice
+
+    integer, dimension(3), intent(in) :: mesh
+    real(kind=dp)                     :: kmesh_spacing_mesh
+
+    integer        :: i
+    real(kind=dp ) :: Delta_k_i(3)
+
+    do i=1,3
+       Delta_k_i(i)=sqrt(dot_product(recip_lattice(i,:),recip_lattice(i,:)))&
+            /mesh(i)
+    end do
+    kmesh_spacing_mesh=maxval(Delta_k_i)
+  
+  end function kmesh_spacing_mesh
 
 
   !=========================================================!

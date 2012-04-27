@@ -159,15 +159,25 @@ program postw90
   ! -----------------------------------------------------------------
   !
   if(optics_plot) call berry
-
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
   !
+  if(on_root) then
+     time1=io_time()
+  endif
+
   if(boltzwann) call boltzwann_main
 
-  call comms_barrier
+  if(on_root) then
+     time2=io_time()
+     write(stdout,'(/1x,a,f11.3,a)')&
+          'Time for BoltzWann (Boltzmann transport) ',time2-time1,' (sec)'
+  endif
 
+  ! I put a barrier here before calling the final time printing routines,
+  ! just to be sure that all processes have arrived here.
+  call comms_barrier
   if(on_root) then
      write(stdout,'(/,1x,a25,f11.3,a)')&
           'Total Execution Time     ',io_time(),' (sec)'
