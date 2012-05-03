@@ -109,7 +109,7 @@ contains
     integer :: LocalIdx, GlobalIdx
     ! I also add 0.5 eV on each side of the TDF energy array to take into account also possible smearing effects
     real(kind=dp), parameter :: TDF_exceeding_energy = 0.5_dp
-
+    integer :: NumberZeroDet
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main',1)
 
@@ -211,14 +211,15 @@ contains
     if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
     allocate(LocalThermCond(6,counts(my_node_id)),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
-    ElCond = 0._dp
-    Seebeck = 0._dp
-    ThermCond = 0._dp
+    LocalElCond = 0._dp
+    LocalSeebeck = 0._dp
+    LocalThermCond = 0._dp
 
     ! I allocate the array that I will use to store the functions to be integrated
     allocate(IntegrandArray(6,TDFEnergyNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating FermiDerivArray in boltzwann_main')
 
+   NumberZeroDet=0
     ! Now, I calculate the various spectra for all mu and T values
     do LocalIdx = 1, counts(my_node_id)
        ! GlobalIdx is an index from 0 to TempNumPoints*MuNumPoints-1
@@ -249,16 +250,17 @@ contains
        end do
        ! I calculate the inverse matrix of the conductivity 
        call utility_inv3(ThisElCond,ElCondInverse,Determinant)
-!       if (Determinant .eq. 0._dp) then
-!          call io_error("Determinant of the el. cond. matrix is zero in boltzwann_main")
-!          write(*,*) "Determinant of the el. cond. matrix is zero in boltzwann_main"
-!       end if
-
-!       write(*,*) Determinant
-
-       ! The routine returns the adjoint of ThisElCond; in order to get 
-       ! the inverse, I have to calculate ElCondInverse / Determinant
-       ElCondInverse = ElCondInverse / Determinant
+       if (Determinant .eq. 0._dp) then
+          NumberZeroDet = NumberZeroDet + 1
+          ! If the determinant is zero (i.e., zero conductivity along a given direction)
+          ! I set the Inverse to zero, so that the Seebeck is zero. I will also issue
+          ! a warning.
+          ElCondInverse = 0._dp
+       else
+          ! The routine returns the adjoint of ThisElCond; in order to get 
+          ! the inverse, I have to calculate ElCondInverse / Determinant
+          ElCondInverse = ElCondInverse / Determinant
+       end if
        
        ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
        ! (-dn/dE) * TDF_ij(E) * (E-mu) and its integral is (ElCond*Seebeck)_ij * T / e, where
@@ -307,6 +309,16 @@ contains
        ! ThermCond contains now the thermal conductivity in units of
        ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
+    ! I check if there were (mu,T) pairs for which we got sigma = 0
+    call comms_reduce(NumberZeroDet,1,'SUM')
+    if (on_root) then
+       if ((NumberZeroDet.gt.0)) then
+          write(stdout,'(3X,A,I0,A)') "* Warning! there are ",NumberZeroDet," (mu,T) pairs for which the electrical"
+          write(stdout,'(3X,A)') "* conductivity has zero determinant. Seebeck coefficient set to zero for those pairs."
+          write(stdout,'(3X,A)') "* Check if this is physical or not."
+       end if
+    end if
+
     ! Now, I multiply by the correct factors to obtain the tensors in SI units
     
     ! **** Electrical conductity ****
