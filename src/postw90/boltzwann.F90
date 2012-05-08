@@ -33,14 +33,9 @@
 !============================================================!
 
 ! TODOs:
-! * Debug results with different compilers
-! * check that we get the same results with and without spin-orbit! 
-! * Check input variables name consistency with DOS module
 ! * Debug with spin decomposition
-! * parameters related to smearing (2x, DOS and TDF)
 ! * test all input variables
 ! * move back the dos_kpt routine to the other module
-! * zero determinant for sigma??
 module w90_boltzwann
 
   use w90_constants
@@ -599,6 +594,10 @@ contains
        write(stdout,'(5X,A,I1)') "Number of electrons per state: ", nint(num_elec_per_state)
        write(stdout,'(7X,A)') "(If this is not what was intended, change the value of"
        write(stdout,'(7X,A)') " the spinor input flag)"
+       write(stdout,'(5X,A,G18.10)') "Relaxation time (fs): ", boltz_relax_time
+       if (iprint>1) then
+          write(stdout,'(5X,A,G18.10)') "Energy step for TDF (eV): ", boltz_tdf_energy_step
+       end if
     end if
     kweight = 1.0_dp / real(PRODUCT(boltz_interp_mesh),kind=dp)
 
