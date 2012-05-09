@@ -56,7 +56,7 @@ module w90_parameters
   ! [gp-begin, Apr 20, 2012] Smearing type
   ! For the moment, we always use the adaptive smearing
   ! The prefactor is given with the above parameters adpt_smr_...
-  ! This is an internal variable, obtained from the input string adpt_smr_type
+  ! This is an internal variable, obtained from the input string smr_type
   integer,                    public, save :: smr_index
   ! [gp-end]
   integer, allocatable, public,save :: exclude_bands(:)  
@@ -145,8 +145,8 @@ module w90_parameters
   logical,           public, save :: boltzwann
   logical,           public, save :: boltz_calc_also_dos
   real(kind=dp),     public, save :: boltz_dos_energy_step
-  real(kind=dp),     public, save :: boltz_dos_min_energy
-  real(kind=dp),     public, save :: boltz_dos_max_energy
+  real(kind=dp),     public, save :: boltz_dos_energy_min
+  real(kind=dp),     public, save :: boltz_dos_energy_max
   real(kind=dp),     public, save :: boltz_mu_min
   real(kind=dp),     public, save :: boltz_mu_max
   real(kind=dp),     public, save :: boltz_mu_step
@@ -1130,18 +1130,25 @@ contains
 
     boltz_calc_also_dos = boltz_calc_also_dos .and. boltzwann
 
-    boltz_dos_energy_step=0._dp
+    boltz_dos_energy_step=0.001_dp
     call param_get_keyword('boltz_dos_energy_step',found,r_value=boltz_dos_energy_step)
-    if ((.not.found).and.boltz_calc_also_dos) call &
-         io_error('Error: boltz_calc_also_dos required but no boltz_dos_energy_step provided')   
     if (found .and. (boltz_dos_energy_step <= 0._dp)) &
          call io_error('Error: boltz_dos_energy_step must be positive')       
-    boltz_dos_min_energy = dis_win_min
-    call param_get_keyword('boltz_dos_min_energy',found,r_value=boltz_dos_min_energy)
-    boltz_dos_max_energy = dis_win_max
-    call param_get_keyword('boltz_dos_max_energy',found,r_value=boltz_dos_max_energy)
-    if (boltz_dos_max_energy <= boltz_dos_min_energy) &
-         call io_error('Error: boltz_dos_max_energy must be greater than boltz_dos_min_energy')         
+
+    if(allocated(eigval)) then
+       boltz_dos_energy_min  = minval(eigval)-0.6667_dp
+    else
+       boltz_dos_energy_min  = dis_win_min-0.6667_dp
+    end if
+    call param_get_keyword('boltz_dos_energy_min',found,r_value=boltz_dos_energy_min)
+    if(allocated(eigval)) then
+       boltz_dos_energy_max  = maxval(eigval)+0.6667_dp
+    else
+       boltz_dos_energy_max  = dis_win_max+0.6667_dp
+    end if
+    call param_get_keyword('boltz_dos_energy_max',found,r_value=boltz_dos_energy_max)
+    if (boltz_dos_energy_max <= boltz_dos_energy_min) &
+         call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min')         
         
     boltz_mu_min=-999._dp
     call param_get_keyword('boltz_mu_min',found,r_value=boltz_mu_min)
@@ -1571,7 +1578,7 @@ contains
   !> If the string is not valid, an io_error is issued
   !>
   !> \param string The string read from input 
-  !> \param keyword The keyword that was read (e.g., adpt_smr_type), so that
+  !> \param keyword The keyword that was read (e.g., smr_type), so that
   !>        we can print a more useful error message
   function get_smearing_index(string,keyword)
     use w90_io, only: io_error

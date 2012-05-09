@@ -11,7 +11,7 @@
 !------------------------------------------------------------!
 !============================================================!
 !                                                            !
-! Boltzwann routines by                                      !
+! BoltzWann routines by                                      !
 ! G. Pizzi, D. Volja, M. Fornari, B. Kozinsky and N. Marzari ! 
 ! April, 2012                                                !
 !                                                            !
@@ -34,7 +34,6 @@
 
 ! TODOs:
 ! * Debug with spin decomposition
-! * test all input variables
 ! * move back the dos_kpt routine to the other module
 module w90_boltzwann
 
@@ -484,7 +483,7 @@ contains
   subroutine calcTDFandDOS(TDF,TDFEnergyArray)
     use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
-         boltz_dos_energy_step, boltz_dos_min_energy, boltz_dos_max_energy, &
+         boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index, &
          boltz_tdf_smr_en_width
     use w90_utility, only       : utility_diagonalize
@@ -574,12 +573,12 @@ contains
     allocate(UU(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating UU in calcTDF')    
 
-    DOS_NumPoints = int(floor((boltz_dos_max_energy - boltz_dos_min_energy)/boltz_dos_energy_step))+1
+    DOS_NumPoints = int(floor((boltz_dos_energy_max - boltz_dos_energy_min)/boltz_dos_energy_step))+1
     if (DOS_NumPoints .eq. 1) DOS_NumPoints = 2
     allocate(DOS_EnergyArray(DOS_NumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating DOS_EnergyArray in calcTDF')
     do i=1,DOS_NumPoints
-       DOS_EnergyArray(i) = boltz_dos_min_energy + real(i-1,dp)*boltz_dos_energy_step
+       DOS_EnergyArray(i) = boltz_dos_energy_min + real(i-1,dp)*boltz_dos_energy_step
     end do
 
     allocate(DOS_k(size(DOS_EnergyArray),adpt_smr_steps,ndim),stat=ierr)
@@ -791,7 +790,7 @@ contains
 
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
-    use w90_parameters, only    : num_wann,dos_min_energy,dos_num_points,&
+    use w90_parameters, only    : num_wann,&
          adpt_smr_steps,adpt_smr_width,spn_decomp,num_elec_per_state,&
          boltz_dos_smr_index
     use w90_spin_wanint, only   : get_spn_nk
