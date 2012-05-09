@@ -6,5 +6,6 @@ guide :
 	ps2pdf user_guide.ps ../user_guide.pdf
  
 clean :
-	/bin/rm -f *.aux *.log *.lot *.lof *.toc *.dvi *.bak *~
+	/bin/rm -f *.aux *.log *.lot *.lof *.toc *.dvi *.bak *~ *.bbl *.blg user_guide.ps
+
 

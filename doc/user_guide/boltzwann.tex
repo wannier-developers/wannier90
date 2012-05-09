@@ -1,0 +1,261 @@
+\chapter{Electronic transport calculations with the \bw\ module}\label{ch:boltzwann}
+
+By setting $\verb#boltzwann#=\verb#TRUE#$, \postw\ will call the \bw\ routines to calculate some transport coefficients using the Boltzmann transport equation in the relaxation time approximation.
+
+In particular, the transport coefficients that are calculated are: the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the thermal conductivity $\bvec K$.
+
+An example of a Boltzmann transport calculation can be found in the \wannier\ Tutorial. 
+
+%Reference: [BoltzWann paper]
+\section{Theory}
+The theory of the electronic transport using the Boltzmann transport equations can be found for instance in Refs.~\cite{Ziman,Grosso,Mahan}. Here we briefly summarize only the main results. 
+
+The current density $\bvec J$ and the heat current (or energy flux density) $\bvec J_Q$ can be written, respectively, as
+\begin{align*}
+  \bvec J   &= \bvec \sigma(\bvec E - \bvec S \bvec \nabla T) \\
+  \bvec J_Q &= T \bvec S \bvec J - \bvec K \bvec \nabla T,
+\end{align*}
+where the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the thermal conductivity $\bvec K$ are $3\times 3$ tensors, in general.
+
+These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows\footnote{%
+Eq.~\eqref{eq:boltz-thermcond} is the one used to calculate the thermal conductivity (or more precisely the electronic contribution to the thermal conductivity).
+Actually, the thermal conductivity contains a correction term equal to $\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
+However, this term is usually small and can be disregarded.
+If one needs, one can calculate the magnitude of this correction term from the output $\bvec \sigma$ and $\bvec S$ tensors.}:
+\begin{align}
+  [\bvec \sigma]_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
+  [\bvec \sigma \bvec S]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon), \\
+  [\bvec K]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),\label{eq:boltz-thermcond}
+\end{align}
+where $[\bvec \sigma \bvec S]$ denotes the product of the two tensors $\bvec \sigma$ and $\bvec S$, $f(\varepsilon,\mu,T)$ is the usual Fermi--Dirac distribution function 
+\begin{equation*}
+  f(\varepsilon,\mu,T) = \frac{1}{e^{(\varepsilon-\mu)/K_B T}+1}
+\end{equation*}
+and $\Sigma_{ij}(\varepsilon)$ is the Transport Distribution Function (TDF) tensor, defined as
+\begin{equation*}
+  \Sigma_{ij}(\varepsilon) = \frac 1 V \sum_{n,\bvec k} v_i(n,\bvec k) v_j(n,\bvec k) \tau(n,\bvec k) \delta(\varepsilon - E_{n,k}).
+\end{equation*}
+
+In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (including spin, even if the spin index is not explicitly written here). $E_{n,\bvec k}$ is the energy of the $n-$th band at $\bvec k$, $v_i(n,\bvec k)$ is the $i-$th component of the band velocity at $(n,\bvec k)$, $\delta$ is the Dirac's delta function, $V$ is the cell volume, and finally $\tau$ is the relaxation time. In the \emph{relaxation-time approximation} adopted here, $\tau$ is assumed as a constant, i.e., it is independent of $n$ and $\bvec k$ and its value (in fs) is read from the input variable \verb#boltz_relax_time#.
+
+\section{Files}
+\subsection{{\tt seedname\_boltzdos.dat}}
+OUTPUT. Written by \postw\ if {\tt boltz\_calc\_also\_dos} is \verb#true#.
+
+The first lines are comments (starting with \# characters) which describe the content of the file.
+Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$, the followings are the DOS at the given energy $\varepsilon$ for each smearing coefficient, as defined by the input variables {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+If spin decomposition is required (input flag {\tt spn\_decomp}), further columns are printed, with the spin-up projection of the DOS, followed by spin-down projection (for all smearings).
+
+\subsection{{\tt seedname\_tdf.dat}}
+OUTPUT. This file contains the Transport Distribution Function (TDF) tensor $\bvec \Sigma$ on a grid of energies. 
+
+The first lines are comments (starting with \# characters) which describe the content of the file.
+Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first is the energy $\varepsilon$, the followings are the components if $\bvec \Sigma(\varepsilon)$ in the following order: $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$, $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input flag {\tt spn\_decomp}), 12 further columns are provided, with the 6 components of $\bvec \Sigma$ for the spin up, followed by those for the spin down.
+
+The energy $\varepsilon$ is in eV, while $\bvec \Sigma$ is in 
+ $\displaystyle\frac{1}{\hbar^2}\cdot\frac{\text{eV}\cdot\text{fs}}{\text{\AA}}$.
+
+\subsection{{\tt seedname\_elcond.dat}}
+OUTPUT. This file contains the electrical conductivity tensor $\bvec \sigma$ on the grid of $T$ and $\mu$ points. 
+
+The first lines are comments (starting with \# characters) which describe the content of the file.
+Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $\sigma_{xx}$, $\sigma_{xy}$, $\sigma_{yy}$, $\sigma_{xz}$, $\sigma_{yz}$, $\sigma_{zz}$.
+
+The chemical potential is in eV, the temperature is in K, and the components of the electrical conductivity tensor ar in SI units, i.e. in 1/$\Omega$/m.
+\subsection{{\tt seedname\_seebeck.dat}}
+OUTPUT. This file contains the Seebeck tensor $\bvec S$ on the grid of $T$ and $\mu$ points. 
+
+The first lines are comments (starting with \# characters) which describe the content of the file.
+Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $S_{xx}$, $S_{xy}$, $S_{yy}$, $S_{xz}$, $S_{yz}$, $S_{zz}$.
+
+The chemical potential is in eV, the temperature is in K, and the components of the Seebeck tensor ar in SI units, i.e. in V/K.
+
+\subsection{{\tt seedname\_thermcond.dat}}
+OUTPUT. This file contains the thermal conductivity tensor $\bvec K$ on the grid of $T$ and $\mu$ points. 
+
+The first lines are comments (starting with \# characters) which describe the content of the file.
+Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $K_{xx}$, $K_{xy}$, $K_{yy}$, $K_{xz}$, $K_{yz}$, $K_{zz}$.
+
+The chemical potential is in eV, the temperature is in K, and the components of the thermal conductivity tensor ar in SI units, i.e. in W/m/K.
+\section{Parameters}
+The list of parameters of the \bw\ module are summarized in Table~\ref{parameter_keywords_bw}. 
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{BoltzWann Parameters} \\
+\hline
+{\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
+{\sc boltz\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
+{\sc boltz\_interp\_mesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+{\sc boltz\_relax\_time} & P & Relaxation time in fs\\
+{\sc boltz\_mu\_min} & P & Minimum value of the chemical potential $\mu$ in eV\\
+{\sc boltz\_mu\_max} & P & Minimum value of the chemical potential $\mu$ in eV\\
+{\sc boltz\_mu\_step} & R & Step for $\mu$ in eV\\
+{\sc boltz\_temp\_min} & P & Minimum value of the temperature $T$ in K \\
+{\sc boltz\_temp\_max} & P & Maximum value of the temperature $T$ in K \\
+{\sc boltz\_temp\_step} & R & Step for $T$ in K \\
+{\sc boltz\_tdf\_energy\_step} & R & Energy step for the TDF (eV) \\
+{\sc boltz\_tdf\_smr\_en\_width} & P & Energy smearing for the TDF (eV) \\
+{\sc boltz\_tdf\_smr\_type} & S & Smearing type for the TDF \\
+{\sc boltz\_calc\_also\_dos} & L & Calculate also DOS while calculating the TDF\\
+{\sc boltz\_dos\_energy\_min} & P & Minimum value of the energy for the DOS in eV \\
+{\sc boltz\_dos\_energy\_max} & P & Maximum value of the energy for the DOS in eV \\
+{\sc boltz\_dos\_energy\_step} & R & Step for the DOS in eV\\
+{\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS (adaptive) \\
+{\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
+{\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
+{\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the \bw\ module.]
+{{\tt seedname.win} file keywords controlling the \bw\ module (calculation of the Boltzmann transport coefficients in the Wannier basis). Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_bw}
+\end{center}
+\end{table}
+
+Here follows a description of all parameters.
+
+\subsection[boltzwann]{\tt logical :: boltzwann}
+Determines whether to enter the \bw\ routines.
+
+The default value is \verb#false#.
+
+\subsection[boltz\_interp\_mesh]{\tt integer :: boltz\_interp\_mesh(:)}
+It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used also for the DOS.
+
+If three integers $l$ $m$ $n$ are given, a $l\times m\times n$ grid is used. If only one integer $m$ is given, a $m\times m\times m$ grid is used.
+
+{\tt boltz\_interp\_mesh\_spacing} and  {\tt boltz\_interp\_mesh} may not both be defined in the same input file.
+
+If neither {\tt boltz\_interp\_mesh\_spacing} nor  {\tt boltz\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+
+\subsection[boltz\_interp\_mesh\_spacing]{\tt real(kind=dp) :: boltz\_interp\_mesh\_spacing}
+It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). This flag defines the minimum distance for neighboring $k$ points along each of the three directions in $k$ space. If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used for the DOS.
+
+The units are \AA$^{-1}$.
+
+{\tt boltz\_interp\_mesh\_spacing} and  {\tt boltz\_interp\_mesh} may not both be defined in the same input file.
+
+If neither {\tt boltz\_interp\_mesh\_spacing} nor  {\tt boltz\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+
+\subsection[boltz\_relax\_time]{\tt real(kind=dp) :: boltz\_relax\_time}
+The relaxation time to be used for the calculation of the TDF and the transport coefficients.
+
+The units are fs.
+The default value is 10~fs.
+
+\subsection[boltz\_mu\_min]{\tt real(kind=dp) :: boltz\_mu\_min}
+Minimum value for the chemical potential $\mu$ for which we want to calculate the transport coefficients.
+
+The units are eV.
+No default value.
+
+\subsection[boltz\_mu\_max]{\tt real(kind=dp) :: boltz\_mu\_max}
+Maximum value for the chemical potential $\mu$ for which we want to calculate the transport coefficients.
+
+The units are eV.
+No default value.
+
+\subsection[boltz\_mu\_step]{\tt real(kind=dp) :: boltz\_mu\_step}
+Energy step for the grid of chemical potentials $\mu$ for which we want to calculate the transport coefficients.
+
+The units are eV.
+No default value.
+
+\subsection[boltz\_temp\_min]{\tt real(kind=dp) :: boltz\_temp\_min}
+Minimum value for the temperature $T$ for which we want to calculate the transport coefficients.
+
+The units are K.
+No default value.
+
+\subsection[boltz\_temp\_max]{\tt real(kind=dp) :: boltz\_temp\_max}
+Maximum value for the temperature $T$ for which we want to calculate the transport coefficients.
+
+The units are K.
+No default value.
+
+\subsection[boltz\_temp\_step]{\tt real(kind=dp) :: boltz\_temp\_step}
+Energy step for the grid of temperatures $T$ for which we want to calculate the transport coefficients.
+
+The units are K.
+No default value.
+
+\subsection[boltz\_tdf\_energy\_step]{\tt real(kind=dp) :: boltz\_tdf\_energy\_step}
+Energy step for the grid of energies for the TDF.
+
+The units are eV.
+The default value is 0.001~eV.
+
+\subsection[boltz\_tdf\_smr\_type]{\tt character(len=120) :: boltz\_tdf\_smr\_type}
+The type of smearing function to be used for the TDF. The available strings are the same of the global {\tt smr\_type} input flag. 
+
+The default value is the one given via the {\tt smr\_type} input flag (if defined).
+
+\subsection[boltz\_tdf\_smr\_en\_width]{\tt real(kind=dp) :: boltz\_tdf\_smr\_en\_width}
+Energy width for the smearing function. Note that for the TDF, a standard (non-adaptive) smearing scheme is used.
+
+The units are eV.
+The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_tdf\_energy\_step}, the TDF will be unsmeared (thus the default is to have an unsmeared TDF).
+
+\subsection[boltz\_calc\_also\_dos]{\tt logical :: boltz\_calc\_also\_dos}
+Whether to calculate also the DOS while calculating the TDF.
+
+If one needs also the DOS, it is faster to calculate the DOS using this flag instead of using the routines for the DOS, since in this way the interpolation on the $k$ points will be performed only once.
+
+The default value is \verb#false#.
+
+\subsection[boltz\_dos\_energy\_min]{\tt real(kind=dp) :: boltz\_dos\_energy\_min}
+The minimum value for the energy grid for the calculation of the DOS.
+
+Note that if one needs to integrate the DOS to obtain the number of electrons, one has to be sure that {\tt boltz\_dos\_energy\_min} is below the lowest energy of all bands (minus something due to the smearing).
+
+The units are eV.
+The default value is {\tt minval(eigval)-0.6667}, where  {\tt minval(eigval)} is the minimum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
+
+\subsection[boltz\_dos\_energy\_max]{\tt real(kind=dp) :: boltz\_dos\_energy\_max}
+The maximum value for the energy grid for the calculation of the DOS.
+
+The units are eV.
+The default value is {\tt maxval(eigval)+0.6667}, where  {\tt maxval(eigval)} is the maximum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
+
+\subsection[boltz\_dos\_energy\_step]{\tt real(kind=dp) :: boltz\_dos\_energy\_step}
+Energy step for the grid of energies for the DOS.
+
+The units are eV.
+The default value is 0.001~eV.
+
+\subsection[boltz\_dos\_smr\_type]{\tt character(len=120) :: boltz\_dos\_smr\_type}
+The type of smearing function to be used for the DOS. The available strings are the same of the global {\tt smr\_type} input flag. 
+
+Note that for the DOS, an adaptive smearing scheme is used, and the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+
+The default value is the one given via the {\tt smr\_type} input flag. 
+
+\subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
+Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
+
+The default value is \verb#false#.
+
+\subsection[boltz\_bandshift\_firstband]{\tt integer :: boltz\_bandshift\_firstband}
+Index of the first conduction band to shift.
+
+That means that all bands with index $i\ge {\tt boltz\_bandshift\_firstband}$ will be shifted by  {\tt boltz\_bandshift\_energyshift}, if {\tt boltz\_bandshift} is \verb#true#.
+
+The units are eV.
+No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+
+\subsection[boltz\_bandshift\_energyshift]{\tt real(kind=dp) :: boltz\_bandshift\_energyshift}
+Energy shift of the conduction bands.
+
+The units are eV.
+No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+
+
+
