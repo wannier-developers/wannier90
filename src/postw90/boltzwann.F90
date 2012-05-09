@@ -43,7 +43,7 @@ module w90_boltzwann
        boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
        timing_level, dis_win_min, dis_win_max, spn_decomp, adpt_smr_steps, adpt_smr_width, &
-       cell_volume, num_elec_per_state, iprint
+       boltz_tdf_smr_en_width, cell_volume, num_elec_per_state, iprint
   use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
   use w90_utility, only    : utility_inv3
   use w90_wanint_common
@@ -101,8 +101,9 @@ contains
     integer, dimension(0:num_nodes-1) :: counts
     integer, dimension(0:num_nodes-1) :: displs
     integer :: LocalIdx, GlobalIdx
-    ! I also add 0.5 eV on each side of the TDF energy array to take into account also possible smearing effects
-    real(kind=dp), parameter :: TDF_exceeding_energy = 0.5_dp
+    ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects
+    real(kind=dp), parameter :: TDF_exceeding_energy_times_smearing = 3._dp
+    real(kind=dp) :: TDF_exceeding_energy
     integer :: NumberZeroDet
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main',1)
@@ -143,7 +144,9 @@ contains
     ! I assume that dis_win_min and dis_win_max are set to sensible values, related to the max and min energy
     ! This is true if the .eig file is present. I can assume its presence since we need it to interpolate the
     ! bands.
-    ! I also add 0.5 eV on each side to take into account also possible smearing effects
+    ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
+    ! or at least 0.2 eV
+    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smearing * boltz_TDF_smr_en_width,0.2_dp)
     TDFEnergyNumPoints = int(floor((dis_win_max-dis_win_min+2._dp*TDF_exceeding_energy)/boltz_tdf_energy_step))+1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate(TDFEnergyArray(TDFEnergyNumPoints),stat=ierr)
@@ -307,9 +310,10 @@ contains
     call comms_reduce(NumberZeroDet,1,'SUM')
     if (on_root) then
        if ((NumberZeroDet.gt.0)) then
-          write(stdout,'(3X,A,I0,A)') "* Warning! there are ",NumberZeroDet," (mu,T) pairs for which the electrical"
-          write(stdout,'(3X,A)') "* conductivity has zero determinant. Seebeck coefficient set to zero for those pairs."
-          write(stdout,'(3X,A)') "* Check if this is physical or not."
+          write(stdout,'(3X,A,I0,A)') "* WARNING! There are ",NumberZeroDet," (mu,T) pairs for which the electrical"
+          write(stdout,'(3X,A)')      "*          conductivity has zero determinant."
+          write(stdout,'(3X,A)')      "*          Seebeck coefficient set to zero for those pairs."
+          write(stdout,'(3X,A)')      "*          Check if this is physical or not."
        end if
     end if
 
@@ -484,8 +488,7 @@ contains
     use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
          boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
-         param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index, &
-         boltz_tdf_smr_en_width
+         param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
     use w90_wanint_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_deleig_a
@@ -665,7 +668,7 @@ contains
     ! each of which will require the whole knowledge of the TDF array)
     call comms_allreduce(TDF(1,1,1),size(TDF),'SUM')
 
-    if (on_root) then
+    if (boltz_calc_also_dos .and. on_root) then
        write(boltzdos_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
        write(boltzdos_unit, '(A)') '# The different columns from the second on are the DOS for different'
        write(boltzdos_unit, '(A)') '# adaptive smearing coefficients a (see Yates et al., PRB 75, 195121 (2007)'
@@ -675,6 +678,17 @@ contains
        end if
        write(numfieldsstr, '(I0)') adpt_smr_steps
        write(boltzdos_unit, '(A,1X,'//trim(numfieldsstr)//'G14.6)') '# Smearing coefficients: ', adpt_smr_width
+       write(boltzdos_unit, '(A,1X,G14.6)') '# Cell volume (ang^3): ', cell_volume
+       ! I just write a warning with a (mild) test to give a hint to the user that
+       ! he could have cut out of the DOS the lowest energy states
+       ! I write this both on the output file with the log (stdout) and on the
+       ! boltzdos file.
+       if (boltz_dos_energy_min > dis_win_min) then
+          write(boltzdos_unit, '(A)') '# WARNING! If you need to integrate the DOS to get the number of electrons,'
+          write(boltzdos_unit, '(A)') '#          the value you chose for boltz_dos_energy_min may be too large.'
+          write(stdout, '(3X,A)') '* WARNING! If you need to integrate the DOS to get the number of electrons,'
+          write(stdout, '(3X,A)') '*          the value you chose for boltz_dos_energy_min may be too large.'
+       end if
 
        write(boltzdos_unit, '(A)') '# Energy(eV) DOS [DOS DOS ...]'
 
