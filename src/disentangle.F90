@@ -2350,7 +2350,6 @@ contains
       ! alphafixe         mixing parameter for the iterative procedure
       ! nitere            total number of iterations
 
-      camp=cmplx_0
       ! DEBUG
       if (iprint>2) then
          write(stdout,'(a,/)') '  Original eigenvalues inside outer window:'  
@@ -2483,6 +2482,7 @@ contains
                
                if (iter.eq.dis_num_iter) then  
                   allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
+                  camp=cmplx_0
                   if (ierr/=0) call io_error('Error allocating camp in dis_extract_gamma')
                   if (ndimwin(nkp).gt.num_wann) then  
                      do j = 1, ndimwin(nkp) - num_wann  
