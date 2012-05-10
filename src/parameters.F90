@@ -304,8 +304,11 @@ module w90_parameters
   integer, parameter, public :: max_shells=6
   integer, parameter, public :: num_nnmax=12
 
-  ! Are we running as a libarary
-  logical, save, public :: library
+  ! Are we running as a library
+  logical, save, public :: library = .false.
+
+  ! Are we running postw90?
+  logical, save, public :: ispostw90 = .false.
 
   ! Wannier centres and spreads
   real(kind=dp), public, save, allocatable :: wannier_centres(:,:)
@@ -2267,7 +2270,7 @@ contains
 
 
   !=======================================!
-  subroutine param_read_chkpt(postw90flag)
+  subroutine param_read_chkpt()
     !=======================================!
     ! Read checkpoint file                  !
     !=======================================!
@@ -2277,17 +2280,10 @@ contains
 
     implicit none
 
-    logical, optional, intent(in) :: postw90flag
-
     integer :: chk_unit,nkp,i,j,k,l,ntmp,ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands),tmp_mp_grid(1:3)
-
-    logical :: isrun_by_postw90
-
-    isrun_by_postw90 = .false.
-    if (present(postw90flag)) isrun_by_postw90 = postw90flag
 
     write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
 
@@ -2404,7 +2400,7 @@ contains
 
     return
 
-121 if (isrun_by_postw90) then
+121 if (ispostw90) then
        call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt: did you run wannier90.x first?')
     else
        call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt')     
@@ -3952,6 +3948,9 @@ contains
     real(kind=dp), parameter :: size_real=8.0_dp
     real(kind=dp), parameter :: size_cmplx=16.0_dp
     real(kind=dp) :: mem_wan,mem_wan1,mem_param,mem_dis,mem_dis2,mem_dis1
+    real(kind=dp) :: mem_bw
+    integer :: NumPoints1,NumPoints2,NumPoints3,ndim
+    real(kind=dp) :: TDF_exceeding_energy
 
     mem_param=0    
     mem_dis=0    
@@ -3959,7 +3958,7 @@ contains
     mem_dis2=0    
     mem_wan=0    
     mem_wan1=0    
-
+    mem_bw=0
 
     ! First the data stored in the parameters module
     mem_param= mem_param+num_wann*num_wann*num_kpts*size_cmplx                   !u_matrix
@@ -4093,6 +4092,51 @@ contains
      mem_wan=mem_wan+(num_wann* num_wann)*size_cmplx    !  'crt' 
     end if
 
+    if(ispostw90) then
+       if (boltzwann) then
+          if(spn_decomp) then
+             ndim=3
+          else
+             ndim=1
+          end if
+          
+
+          ! I set a big value to have a rough estimate
+          TDF_exceeding_energy = 2._dp
+          NumPoints1 = int(floor((boltz_temp_max-boltz_temp_min)/boltz_temp_step))+1 ! temperature array
+          NumPoints2 = int(floor((boltz_mu_max-boltz_mu_min)/boltz_mu_step))+1  ! mu array
+          NumPoints3 = int(floor((dis_win_max-dis_win_min+2._dp*TDF_exceeding_energy)/boltz_tdf_energy_step))+1 ! tdfenergyarray
+          mem_bw=mem_bw+NumPoints1*size_real                         !TempArray
+          mem_bw=mem_bw+NumPoints1*size_real                         !KTArray
+          mem_bw=mem_bw+NumPoints2*size_real                         !MuArray
+          mem_bw=mem_bw+NumPoints3*size_real                         !TDFEnergyArray
+          mem_bw=mem_bw+6*NumPoints3*ndim*size_real                  !TDFArray
+          mem_bw=mem_bw+6*NumPoints3*size_real                       !IntegrandArray
+          mem_bw=mem_bw+(9*4+6)*size_real                            !ElCondTimesSeebeckFP,ThisElCond,ElCondInverse,ThisSeebeck,ElCondTimesSeebeck
+          mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !ElCond
+          mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !Seebeck
+          mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !ThermCond
+          ! I put a upper bound here below (as if there was only 1 node), because I do not have any knowledge at this point
+          ! of the number of processors, so I cannot have a correct estimate
+          mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !LocalElCond
+          mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !LocalSeebeck
+          mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !LocalThermCond
+
+          mem_bw=mem_bw+num_wann*num_wann*size_cmplx                 !HH
+          mem_bw=mem_bw+3*num_wann*num_wann*size_cmplx               !delHH
+          mem_bw=mem_bw+num_wann*num_wann*size_cmplx                 !UU
+          mem_bw=mem_bw+3*num_wann*size_real                         !del_eig
+          mem_bw=mem_bw+num_wann*size_real                           !eig
+          mem_bw=mem_bw+num_wann*size_real                           !levelspacing_k
+
+          NumPoints1 = int(floor((boltz_dos_energy_max - boltz_dos_energy_min)/boltz_dos_energy_step))+1!dosnumpoints
+          mem_bw=mem_bw+NumPoints1*size_real                         !DOS_EnergyArray
+          mem_bw=mem_bw+6*ndim*NumPoints3*size_real                  !TDF_k
+          mem_bw=mem_bw+adpt_smr_steps*ndim*NumPoints1*size_real     !DOS_k
+          mem_bw=mem_bw+adpt_smr_steps*ndim*NumPoints1*size_real     !DOS_all
+       end if
+    end if
+
     if(disentanglement) &
          mem_wan= mem_wan+ num_wann*num_wann*nntot*num_kpts*size_cmplx       !m_matrix
 
@@ -4116,6 +4160,11 @@ contains
         end if
      write(stdout,'(1x,a)')  '|   However, this will result in more i/o and slow down the calculation      |'
      endif
+
+     if (ispostw90) then
+        if (boltzwann) &
+             write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'BoltzWann:',(mem_param+mem_bw)/(1024**2),' Mb'
+     end if
 
      write(stdout,'(1x,a)')  '*----------------------------------------------------------------------------*'
      write(stdout,*) ' '

@@ -31,6 +31,7 @@ program postw90
   call comms_setup
 
   library = .false.
+  ispostw90 = .true.
   
   if(on_root) then
      time0=io_time()
@@ -76,6 +77,13 @@ program postw90
        time2=io_time()
        write(stdout,'(1x,a25,f11.3,a)')&
             'Time to get kmesh        ',time2-time1,' (sec)'
+
+       ! GP, May 10, 2012: for the moment I leave this commented 
+       ! since we need first to tune that routine so that it doesn't
+       ! print the memory information related to wannier90.x.
+       ! Note that the code for the memory estimation for the
+       ! Boltzwann routine is already there.
+       !       call param_memory_estimate
   end if
 
   ! We now distribute a subset of the parameters to the other nodes
@@ -86,7 +94,7 @@ program postw90
   ! disentanglement and maximal localization, etc.)
   !
   if(on_root) then 
-     call param_read_chkpt(postw90flag=.true.)
+     call param_read_chkpt()
   end if
 
   ! Distribute the information in the um and chk files to the other nodes
