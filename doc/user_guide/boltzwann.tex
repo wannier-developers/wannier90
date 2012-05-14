@@ -17,11 +17,12 @@ The current density $\bvec J$ and the heat current (or energy flux density) $\bv
 \end{align*}
 where the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the thermal conductivity $\bvec K$ are $3\times 3$ tensors, in general.
 
-These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows\footnote{%
-Eq.~\eqref{eq:boltz-thermcond} is the one used to calculate the thermal conductivity (or more precisely the electronic contribution to the thermal conductivity).
-Actually, the thermal conductivity contains a correction term equal to $\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
-However, this term is usually small and can be disregarded.
-If one needs, one can calculate the magnitude of this correction term from the output $\bvec \sigma$ and $\bvec S$ tensors.}:
+These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows\footnote{\label{ftn:thermcond}%
+Eq.~\eqref{eq:boltz-thermcond} is the one used in the code to calculate the thermal conductivity (or more precisely the electronic contribution to the thermal conductivity), which is then printed on the {\tt seedname\_thermcond.dat} file.
+Actually, the thermal conductivity is not precisely $K$, but  $K-\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
+However, the correction term is usually small and can be disregarded.
+If one needs, one can calculate the magnitude of this correction term from the
+output $\bvec \sigma$ and $\bvec S$ tensors.}:
 \begin{align}
   [\bvec \sigma]_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
   [\bvec \sigma \bvec S]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon), \\
@@ -40,7 +41,7 @@ In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (in
 
 \section{Files}
 \subsection{{\tt seedname\_boltzdos.dat}}
-OUTPUT. Written by \postw\ if {\tt boltz\_calc\_also\_dos} is \verb#true#.
+OUTPUT. Written by \postw\ if {\tt boltz\_calc\_also\_dos} is \verb#true#. Note that even if there are other general routines in \postw\ which specifically calculate the DOS, it may be convenient to use the routines in \bw\ setting {\tt boltz\_calc\_also\_dos = true} if one must also calculate the transport coefficients. In this way, the (time-demanding) band interpolation on the $k$ mesh is performed only once, resulting in a much shorter execution time.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
 Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$, the followings are the DOS at the given energy $\varepsilon$ for each smearing coefficient, as defined by the input variables {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
@@ -65,13 +66,15 @@ The chemical potential is in eV, the temperature is in K, and the components of 
 \subsection{{\tt seedname\_seebeck.dat}}
 OUTPUT. This file contains the Seebeck tensor $\bvec S$ on the grid of $T$ and $\mu$ points. 
 
+Note that in the code the Seebeck coefficient is defined as zero when the determinant of the electrical conductivity $\bvec \sigma$ is zero. If there is at least one $(\mu, T)$ pair for which $\det \bvec \sigma=0$, a warning is issued on the output file.
+
 The first lines are comments (starting with \# characters) which describe the content of the file.
 Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $S_{xx}$, $S_{xy}$, $S_{yy}$, $S_{xz}$, $S_{yz}$, $S_{zz}$.
 
 The chemical potential is in eV, the temperature is in K, and the components of the Seebeck tensor ar in SI units, i.e. in V/K.
 
 \subsection{{\tt seedname\_thermcond.dat}}
-OUTPUT. This file contains the thermal conductivity tensor $\bvec K$ on the grid of $T$ and $\mu$ points. 
+OUTPUT. This file contains the thermal conductivity tensor $\bvec K$ on the grid of $T$ and $\mu$ points (see also footnote~\ref{ftn:thermcond} on page~\pageref{ftn:thermcond} for more details).
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
 Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $K_{xx}$, $K_{xy}$, $K_{yy}$, $K_{xz}$, $K_{yz}$, $K_{zz}$.
