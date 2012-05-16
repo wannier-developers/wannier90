@@ -217,8 +217,6 @@ The default value is \verb#false#.
 \subsection[boltz\_dos\_energy\_min]{\tt real(kind=dp) :: boltz\_dos\_energy\_min}
 The minimum value for the energy grid for the calculation of the DOS.
 
-Note that if one needs to integrate the DOS to obtain the number of electrons, one has to be sure that {\tt boltz\_dos\_energy\_min} is below the lowest energy of all bands (minus something due to the smearing).
-
 The units are eV.
 The default value is {\tt minval(eigval)-0.6667}, where  {\tt minval(eigval)} is the minimum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
 

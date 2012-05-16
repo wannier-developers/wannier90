@@ -679,16 +679,6 @@ contains
        write(numfieldsstr, '(I0)') adpt_smr_steps
        write(boltzdos_unit, '(A,1X,'//trim(numfieldsstr)//'G14.6)') '# Smearing coefficients: ', adpt_smr_width
        write(boltzdos_unit, '(A,1X,G14.6)') '# Cell volume (ang^3): ', cell_volume
-       ! I just write a warning with a (mild) test to give a hint to the user that
-       ! he could have cut out of the DOS the lowest energy states
-       ! I write this both on the output file with the log (stdout) and on the
-       ! boltzdos file.
-       if (boltz_dos_energy_min > dis_win_min) then
-          write(boltzdos_unit, '(A)') '# WARNING! If you need to integrate the DOS to get the number of electrons,'
-          write(boltzdos_unit, '(A)') '#          the value you chose for boltz_dos_energy_min may be too large.'
-          write(stdout, '(3X,A)') '* WARNING! If you need to integrate the DOS to get the number of electrons,'
-          write(stdout, '(3X,A)') '*          the value you chose for boltz_dos_energy_min may be too large.'
-       end if
 
        write(boltzdos_unit, '(A)') '# Energy(eV) DOS [DOS DOS ...]'
 
