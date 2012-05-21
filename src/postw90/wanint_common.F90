@@ -318,6 +318,8 @@ module w90_wanint_common
     call comms_bcast(boltz_dos_energy_step,1) 
     call comms_bcast(boltz_dos_energy_min,1) 
     call comms_bcast(boltz_dos_energy_max,1) 
+    call comms_bcast(boltz_dos_smr_adaptive,1)
+    call comms_bcast(boltz_dos_smr_en_width,1)
     call comms_bcast(boltz_mu_min,1) 
     call comms_bcast(boltz_mu_max,1) 
     call comms_bcast(boltz_mu_step,1) 

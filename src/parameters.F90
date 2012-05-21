@@ -147,6 +147,8 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_dos_energy_step
   real(kind=dp),     public, save :: boltz_dos_energy_min
   real(kind=dp),     public, save :: boltz_dos_energy_max
+  logical,           public, save :: boltz_dos_smr_adaptive
+  real(kind=dp),     public, save :: boltz_dos_smr_en_width
   real(kind=dp),     public, save :: boltz_mu_min
   real(kind=dp),     public, save :: boltz_mu_max
   real(kind=dp),     public, save :: boltz_mu_step
@@ -1153,6 +1155,14 @@ contains
     if (boltz_dos_energy_max <= boltz_dos_energy_min) &
          call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min')         
         
+    boltz_dos_smr_adaptive = .false.
+    call param_get_keyword('boltz_dos_smr_adaptive',found,l_value=boltz_dos_smr_adaptive)
+
+    boltz_dos_smr_en_width = 0._dp
+    call param_get_keyword('boltz_dos_smr_en_width',found,r_value=boltz_dos_smr_en_width)
+    if (found .and. (boltz_dos_smr_en_width <= 0._dp)) &
+         call io_error('Error: boltz_dos_smr_en_width must be greater than zero')    
+
     boltz_mu_min=-999._dp
     call param_get_keyword('boltz_mu_min',found,r_value=boltz_mu_min)
     if ((.not.found).and.boltzwann) &
