@@ -44,7 +44,7 @@ In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (in
 OUTPUT. Written by \postw\ if {\tt boltz\_calc\_also\_dos} is \verb#true#. Note that even if there are other general routines in \postw\ which specifically calculate the DOS, it may be convenient to use the routines in \bw\ setting {\tt boltz\_calc\_also\_dos = true} if one must also calculate the transport coefficients. In this way, the (time-demanding) band interpolation on the $k$ mesh is performed only once, resulting in a much shorter execution time.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$, the followings are the DOS at the given energy $\varepsilon$ for each smearing coefficient, as defined by the input variables {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$. The followings are the DOS at the given energy $\varepsilon$ for each smearing coefficient, as defined by the input variables {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}, if {\tt boltz\_dos\_smr\_adaptive} is \verb#true#. Otherwise, the DOS for the given fixed smearing, defined by {\tt boltz\_dos\_smr\_en\_width}, is printed on the second column.
 If spin decomposition is required (input flag {\tt spn\_decomp}), further columns are printed, with the spin-up projection of the DOS, followed by spin-down projection (for all smearings).
 
 \subsection{{\tt seedname\_tdf.dat}}
@@ -109,7 +109,9 @@ Keyword & Type & Description \\
 {\sc boltz\_dos\_energy\_min} & P & Minimum value of the energy for the DOS in eV \\
 {\sc boltz\_dos\_energy\_max} & P & Maximum value of the energy for the DOS in eV \\
 {\sc boltz\_dos\_energy\_step} & R & Step for the DOS in eV\\
-{\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS (adaptive) \\
+{\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS \\
+{\sc boltz\_dos\_smr\_adaptive} & L & Use adaptive smearing for the DOS \\
+{\sc boltz\_dos\_smr\_en\_width} & P  & Energy smearing for the DOS (eV) \\
 {\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
 {\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
 {\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
@@ -235,9 +237,20 @@ The default value is 0.001~eV.
 \subsection[boltz\_dos\_smr\_type]{\tt character(len=120) :: boltz\_dos\_smr\_type}
 The type of smearing function to be used for the DOS. The available strings are the same of the global {\tt smr\_type} input flag. 
 
-Note that for the DOS, an adaptive smearing scheme is used, and the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
-
 The default value is the one given via the {\tt smr\_type} input flag. 
+
+
+\subsection[boltz\_dos\_smr\_adaptive]{\tt logical :: boltz\_dos\_smr\_adaptive}
+Determines whether to use an adaptive scheme for the broadening of the DOS. If \verb#true#, the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+
+The default value is \verb#true#.
+
+\subsection[boltz\_dos\_smr\_en\_width]{\tt logical :: boltz\_dos\_smr\_en\_width}
+Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos\_smr\_adaptive} is \verb#false#.
+
+The units are eV.
+The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_dos\_energy\_step}, the DOS will be unsmeared (thus the default is to have an unsmeared DOS).
+
 
 \subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
 Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
