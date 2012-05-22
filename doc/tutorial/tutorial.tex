@@ -30,7 +30,9 @@
 \date{15th January 2010}
 
 \begin{document}
-\newcommand{\wannier}{\texttt{wannier90}}
+\newcommand{\wannier}{{\rm\texttt{wannier90}}}
+\newcommand{\postw}{{\rm\texttt{postw90}}}
+\newcommand{\bw}{{\rm\texttt{BoltzWann}}}
 \newcommand{\pwscf}{\textsc{pwscf}}
 \newcommand{\QE}{\textsc{quantum-espresso}}
 \newcommand{\Mkb}{\mathbf{M}^{(\mathbf{k},\mathbf{b})}}
@@ -1262,6 +1264,99 @@ defect (red).}
 \end{itemize}
 
 \cleardoublepage
+
+\section*{16: Silicon -- Boltzmann transport}
+\begin{itemize}
+\item{Outline: \it{Obtain MLWF for the valence and low-lying
+    conduction states of Si. Calculate the electrical conductivity, the
+    Seebeck coefficient and the thermal conductivity in the constant
+    relaxation time approximation using the \bw\ module.}} 
+\item{Directory: {\tt examples/example16/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt Si.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt Si.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Si.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt Si.win}  {\it The \wannier\ and \postw\ input file}}
+\end{itemize}
+
+\end{itemize}
+
+Note the first five steps in the following are the same of Example~11.
+If you have already run Example~11 (in particular, the section ``\emph{Valence + Conduction States}'')
+you can start from those files and continue from point 6, after adding the \bw\ flags to the
+input file.
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of silicon\\
+{\tt pw.x < Si.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point
+  grid. Details on the disentanglement procedure are discussed in Example~11.\\ 
+{\tt pw.x < Si.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Si.nnkp} file).\\
+{\tt wannier90.x -pp Si}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt Si.mmn} and {\tt  Si.amn} files).\\
+{\tt pw2wannier90.x < Si.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWF.\\
+{\tt wannier90.x Si}
+
+\item Run \postw\ to calculate the transport coefficients.\\
+For serial execution use: {\tt postw90.x Si}  \\
+For parallel execution use: {\tt mpirun -np 8 postw90.x Si} \\
+Note that the {\tt mpirun} command-line flags may be different in your MPI implementation: read your MPI manual. You may also want to change the number of processors (8 in this example).
+
+\end{enumerate}
+
+Inspect the output file {\tt Si.wout} and check if the convergence was reached both in the
+disentanglement and in the wannierisation steps (as discussed in further detail in Example~11).
+You may also want to plot the Wannier functions and the interpolated band structure.
+
+Inspect the output file {\tt Si.wpout}. It summarizes the main details of the calculation (more details can be obtained by setting a larger value of the \verb#iprint# flag). 
+Check if no warnings are issued. Note that if no special flags are passed to \bw, it assumes that
+the ab-initio calculation did not include magnetization effects, and thus it sets to 2 the
+number of electrons per state.
+
+Note also that the value of the relaxation time $\tau=10$~fs in the example is set only as an exemplificative value; note also that only the electrical and thermal conductivity depend on $\tau$, while the Seebeck coefficient is independent of $\tau$.
+
+Using your favourite plotting program, plot the {\tt Si\_boltzdos.dat} file to inspect the DOS.
+
+Using your favourite plotting program, plot columns 1 and 3 of the {\tt Si\_seebeck.dat} file to inspect the $S_{xx}$ component of the Seebeck coefficient as a function of the chemical potential $\mu$, at $T=300$~K.
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+\item Change the interpolation to a $60\times 60\times 60$ mesh and run again \postw\ to check if the results for the transport properties are converged. 
+
+\item Change the {\tt Si.win} input file so that it calculates the transport coefficients for temperatures from 300 to 700~K, with steps of 200~K. Rerun \postw\ and verify that the increase in execution time is neglibile (in fact, most of the time is spent to interpolate the band structure on the $k$ mesh).
+
+Plot the Seebeck coefficient for the three temperatures $T=300$~K, $T=500$~K and $T=700$~K. To do this, you have to filter the {\tt Si\_seebeck.dat} to select only those lines where the second column is equal to the required temperature. A possible script to select the $S_{xx}$ component of the Seebeck coefficient for $T=500$~K using the {\tt awk/gawk} command line program is the following:
+\begin{verbatim}
+awk '{if ($2 == 500) {print $1, $3;}}' < Si_seebeck.dat \
+    > Si_seebeck_xx_500K.dat
+\end{verbatim}
+Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.dat#.
+\item Try to calculate the Seebeck coefficient as a function of the temperature, for a $n-$doped sample with, e.g., $n=10^{18}$ cm$^{-3}$. Note that to this aim, you need to calculate consistently the value $\mu(T)$ of the chemical potential as a function of the temperature, so as to reproduce the given value of $n$. Then, you have to write a small program/script to interpolate the output of \bw, that you should have run on a suitable grid of $(\mu,T)$ points.
+\end{itemize}
+
+%\begin{figure}[h]
+%\begin{center}
+%\includegraphics{si.eps}
+%\caption{Band Structure of Silicon showing the position of the outer
+%and inner energy windows.}
+%\label{fig:si.bnd}
+%\end{center}
+%\end{figure}
+
+\cleardoublepage
+
 
 \begin{thebibliography}{99}
 

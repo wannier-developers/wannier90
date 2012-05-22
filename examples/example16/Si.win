@@ -1,24 +1,29 @@
 !!! -- Begin of BoltzWann input -- !!!
-boltzwann = true
-boltz_calc_also_dos=true
-boltz_dos_energy_step=0.01
-smr_type = cold
+boltzwann              = true
+boltz_calc_also_dos    = true
+boltz_dos_energy_step  = 0.01
+smr_type               = gauss
 boltz_dos_smr_adaptive = false
 boltz_dos_smr_en_width = 0.03
-interp_mesh=40
-boltz_mu_min=5.
-boltz_mu_max=8.
-boltz_mu_step=0.01
-boltz_temp_min=300
-boltz_temp_max=300
-boltz_temp_step=1
+interp_mesh            = 40
+boltz_mu_min           = 5.
+boltz_mu_max           = 8.
+boltz_mu_step          = 0.01
+boltz_temp_min         = 300.
+boltz_temp_max         = 300.
+boltz_temp_step        = 50
+boltz_relax_time       = 10.
 !!! --- End of BoltzWann input --- !!!
 
-num_bands         =   12       
-num_wann          =   8
+#restart           = plot
+#bands_plot        = true
+#bands_plot_format = xmgr
+
+num_bands         = 12       
+num_wann          = 8
 dis_win_max       = 17.d0
-dis_froz_max      =  6.4d0
-dis_num_iter      =  120
+dis_froz_max      = 6.4d0
+dis_num_iter      = 120
 dis_mix_ratio     = 1.d0
 
 num_iter          = 500

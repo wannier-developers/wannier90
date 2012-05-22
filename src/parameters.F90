@@ -1160,7 +1160,7 @@ contains
 
     boltz_dos_smr_en_width = 0._dp
     call param_get_keyword('boltz_dos_smr_en_width',found,r_value=boltz_dos_smr_en_width)
-    if (found .and. (boltz_dos_smr_en_width <= 0._dp)) &
+    if (found .and. (boltz_dos_smr_en_width < 0._dp)) &
          call io_error('Error: boltz_dos_smr_en_width must be greater than zero')    
 
     boltz_mu_min=-999._dp

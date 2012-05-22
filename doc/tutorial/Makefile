@@ -5,5 +5,5 @@ tutorial :
 	ps2pdf tutorial.ps ../tutorial.pdf
  
 clean :
-	/bin/rm -f *.aux *.log *.lot *.lof *.toc *.dvi *.bak *~
+	/bin/rm -f *.aux *.log *.lot *.lof *.toc *.dvi *.bak *~ *.ps
 
