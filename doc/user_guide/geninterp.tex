@@ -1,0 +1,98 @@
+\chapter{Generic Band interpolator}\label{ch:geninterp}
+
+By setting $\verb#geninterp#=\verb#TRUE#$, \postw\ will calculate the
+band energies (and possibly the band derivatives, if also
+\verb#geninterp_alsofirstder# is set to \verb#TRUE#) on a generic list
+of $k$ points provided by the user.
+
+The list of input $k$ points for which the band have to be calculated
+is read from the file named {\tt seedname\_geninterp.kpt}. The format
+of this file is
+described below. The interpolated bands (and velocities) are written on the {\tt
+  seedname\_geninterp.dat} file.
+
+\section{Files}
+\subsection{{\tt seedname\_geninterp.kpt}}
+INPUT. Read by \postw\ if {\tt geninterp} is \verb#true#. 
+
+The first line is a comment (its maximum allowed length is 500
+characters).
+
+The second line must contain \verb#crystal# (or \verb#rel#) if the
+$k$-point coordinates are given in relative (crystallographic) units,
+i.e., in fractional units with respect to the primitive reciprocal
+lattice vectors.
+Otherwise, it must contain \verb#frac# (or \verb#abs#) if instead the
+$k-$point coordinates are given in absolute 
+coordinates (in units of $2\pi/$\AA) along the $k_x$, $k_y$ and $k_z$
+axes.
+
+The third line must contain the number $n$ of following $k$ points.
+
+The following $n$ lines must contain the list of $k$ points in the
+format
+\begin{verbatim}
+kpointidx k1 k2 k3
+\end{verbatim}
+where \verb#kpointidx# is an integer identifying the given $k$ point,
+and \verb#k1#, \verb#k2# and \verb#k3# are the three coordinates of the
+$k$ points in the chosen units.
+
+
+\subsection{{\tt seedname\_geninterp.dat}}
+OUTPUT. This file contains the interpolated band energies (and also the band
+velocities if the input flag \verb#geninterp_alsofirstder# is \verb#true#).
+
+The first two lines are comments (starting with \#), containing the
+comment line as it is read from the input file, and a header.
+The following lines contain the band energies (and
+derivatives) for each band and $k$ point (the energy
+index runs faster than the $k$-point index).
+For each of these lines, the first four columns contain the $k$-point index as provided in the
+input, and the $k$ coordinates (always in absolute coordinates, in
+units of $2\pi/$\AA).
+The fifth column contains the band energy.
+
+If \verb#geninterp_alsofirstder# is \verb#true#, three further columns
+are printed, containing the three first derivatives of the bands along the $k_x$, $k_y$
+and $k_z$ directions.
+
+The $k$ point coordinates are in units of $2\pi/$\AA, the band energy is in eV.
+
+\section{Parameters}
+The list of parameters of the Generic Band Interpolation module are summarized in Table~\ref{parameter_keywords_geninterp}. 
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{Generic Band Interpolation Parameters} \\
+\hline
+{\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
+{\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the Generic Band Interpolation module.]
+{{\tt seedname.win} file keywords controlling the Generic Band Interpolation module. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_geninterp}
+\end{center}
+\end{table}
+
+Here follows a description of all parameters.
+
+\subsection[boltzwann]{\tt logical :: geninterp}
+Determines whether to enter the Generic Band Interpolation routines.
+
+The default value is \verb#false#.
+
+\subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_alsofirstder}
+Whether to calculate also the first derivatives of the bands at the
+given $k$ points.
+
+The default value is \verb#false#.
+
