@@ -310,7 +310,8 @@ module w90_wanint_common
     call comms_bcast(kpath_task,len(kpath_task)) 
     call comms_bcast(slice_task,len(slice_task)) 
 ! ----------------------------------------------
-
+    call comms_bcast(geninterp,1)
+    call comms_bcast(geninterp_alsofirstder,1)
     ! [gp-begin, Apr 12, 2012]
     ! BoltzWann variables
     call comms_bcast(boltzwann,1) 

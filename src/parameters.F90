@@ -140,6 +140,12 @@ module w90_parameters
   logical                         :: global_interp_mesh_set
   !! [gp-end]
 
+  ! [gp-begin, Jun 1, 2012]
+  ! GeneralInterpolator variables
+  logical,           public, save :: geninterp
+  logical,           public, save :: geninterp_alsofirstder
+  ! [gp-end, Jun 1, 2012]
+
   ! [gp-begin, Apr 12, 2012]
   ! BoltzWann variables
   logical,           public, save :: boltzwann
@@ -1036,6 +1042,13 @@ contains
     disentanglement=.false.
     if(num_bands>num_wann) disentanglement=.true.
 
+    ! These must be read here, before the check on the existence of the .eig file!
+    geninterp = .false.
+    call param_get_keyword('geninterp', found, l_value=geninterp)
+    boltzwann = .false.
+    call param_get_keyword('boltzwann',found,l_value=boltzwann)       
+
+
     ! Read the eigenvalues from wannier.eig
     eig_found=.false.
     if(.not. library) then
@@ -1047,7 +1060,8 @@ contains
           if(.not. eig_found) then
              if ( disentanglement) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. boltzwann) ) then
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. boltzwann &
+                  .or. geninterp) ) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
           else
@@ -1120,15 +1134,19 @@ contains
     call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
     if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
 
+    ! [gp-begin, Jun 1, 2012]
+    !%%%%%%%%%%%%%%%%%%%%
+    ! General band interpolator (geninterp)
+    !%%%%%%%%%%%%%%%%%%%%
+    geninterp_alsofirstder = .false.
+    call param_get_keyword('geninterp_alsofirstder', found, l_value=geninterp_alsofirstder)
+    ! [gp-end, Jun 1, 2012]
 
     ! [gp-begin, Apr 12, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! Boltzmann transport
     !%%%%%%%%%%%%%%%%%%%%
     ! Note: to be put AFTER the disentanglement routines!
-
-    boltzwann = .false.
-    call param_get_keyword('boltzwann',found,l_value=boltzwann)       
 
     boltz_calc_also_dos = .false.
     call param_get_keyword('boltz_calc_also_dos',found,l_value=boltz_calc_also_dos)

@@ -8,7 +8,7 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 
 OBJS2  =  wannier_lib.o
 
-OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o wanint_common.o wan_ham.o spin_wanint.o dos_wanint.o berry_wanint.o kpath_plot.o slice_plot.o boltzwann.o
+OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o wanint_common.o wan_ham.o spin_wanint.o dos_wanint.o berry_wanint.o kpath_plot.o slice_plot.o boltzwann.o geninterp.o
 
 LIBRARY = ../../libwannier.a
 
@@ -111,6 +111,9 @@ comms.o: $(POSTDIR)comms.F90 constants.o io.o
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o wanint_common.o get_oper.o wan_ham.o comms.o spin_wanint.o dos_wanint.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
+
+geninterp.o: $(POSTDIR)geninterp.F90 constants.o parameters.o io.o wanint_common.o comms.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)geninterp.F90
 
 get_oper.o: $(POSTDIR)get_oper.F90 parameters.o constants.o comms.o wanint_common.o io.o utility.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)get_oper.F90

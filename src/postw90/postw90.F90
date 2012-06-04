@@ -19,6 +19,7 @@ program postw90
   use w90_slice_plot
 
   use w90_boltzwann
+  use w90_geninterp
 
   implicit none
 
@@ -175,9 +176,11 @@ program postw90
      time1=io_time()
   endif
 
+  if(geninterp) call geninterp_main
+
   if(boltzwann) call boltzwann_main
 
-  if(on_root) then
+  if(on_root.and.boltzwann) then
      time2=io_time()
      write(stdout,'(/1x,a,f11.3,a)')&
           'Time for BoltzWann (Boltzmann transport) ',time2-time1,' (sec)'
