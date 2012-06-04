@@ -112,7 +112,7 @@ comms.o: $(POSTDIR)comms.F90 constants.o io.o
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o wanint_common.o get_oper.o wan_ham.o comms.o spin_wanint.o dos_wanint.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
 
-geninterp.o: $(POSTDIR)geninterp.F90 constants.o parameters.o io.o wanint_common.o comms.o
+geninterp.o: $(POSTDIR)geninterp.F90 constants.o parameters.o io.o get_oper.o wanint_common.o comms.o utility.o wan_ham.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)geninterp.F90
 
 get_oper.o: $(POSTDIR)get_oper.F90 parameters.o constants.o comms.o wanint_common.o io.o utility.o
