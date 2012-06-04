@@ -707,7 +707,8 @@ contains
           if (boltz_dos_smr_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
              write(boltzdos_unit, '(A)') '# The second column is the unsmeared DOS.'
           else
-             write(boltzdos_unit, '(A,G14.6,A)') '# The second column is the DOS for a fixed smearing of ',boltz_dos_smr_en_width,' eV.'
+             write(boltzdos_unit, '(A,G14.6,A)') '# The second column is the DOS for a fixed smearing of ',&
+                  boltz_dos_smr_en_width,' eV.'
           end if
        end if
        write(boltzdos_unit, '(A,1X,G14.6)') '# Cell volume (ang^3): ', cell_volume
@@ -966,7 +967,8 @@ contains
   !> \param EnergyArray array with the energy grid on which to calculate the DOS (in eV)
   !>                    It must have at least two elements
   !> \param eig_k       array with the eigenvalues at the given k point (in eV)
-  !> \param deleig_k    array with the band derivatives at the given k point (in eV/angstrom)
+  !> \param deleig_k    array with the band derivatives at the given k point
+  !>                    (in eV * angstrom / (2pi) as internally given by the code)
   !>                    already corrected in case of degeneracies, as returned by the 
   !>                    get_deleig_a routine
   !> \param             TDF_k array in which the contribution is stored. Three dimensions:
