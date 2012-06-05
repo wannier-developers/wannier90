@@ -20,8 +20,9 @@
 module w90_geninterp
 
   use w90_constants
-  use w90_parameters, only : geninterp_alsofirstder, num_wann, recip_lattice, real_lattice
-  use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
+  use w90_parameters, only : geninterp_alsofirstder, num_wann, recip_lattice, real_lattice, &
+       timing_level
+  use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname,io_stopwatch
   use w90_get_oper, only      : get_HH_R, HH_R
   use w90_comms
   use w90_utility, only       : utility_diagonalize
@@ -34,67 +35,94 @@ module w90_geninterp
 
 contains 
 
+  !> This routine prints the band energies (and possibly the band derivatives) 
+  !>
+  !> This routine is parallel, even if ***the scaling is very bad*** since at the moment
+  !> everything must be written by the root node (we need that the output is sorted).
+  !> But at least if works independently of the number of processors.
+  !> I think that a way to write in parallel to the output would help a lot,
+  !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
-    integer :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
+    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
     character(len=500) :: commentline
-    character(len=50) :: cdum
-    integer, dimension(:), allocatable :: kpointidx
-    real(kind=dp), dimension(:,:), allocatable :: kpoints
-    complex(kind=dp), dimension(:,:), allocatable :: HH
-    complex(kind=dp), dimension(:,:), allocatable :: UU
+    character(len=50)  :: cdum
+    integer, dimension(:), allocatable              :: kpointidx
+    real(kind=dp), dimension(:,:), allocatable      :: kpoints, localkpoints
+    complex(kind=dp), dimension(:,:), allocatable   :: HH
+    complex(kind=dp), dimension(:,:), allocatable   :: UU
     complex(kind=dp), dimension(:,:,:), allocatable :: delHH
     real(kind=dp), dimension(3) :: kpt, frac
-    real(kind=dp) :: del_eig(num_wann,3)
-    real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
-    logical :: absoluteCoords
+    real(kind=dp), dimension(:,:,:), allocatable   :: localdeleig
+    real(kind=dp), dimension(:,:,:), allocatable   :: globaldeleig
+    real(kind=dp), dimension(:,:), allocatable     :: localeig
+    real(kind=dp), dimension(:,:), allocatable     :: globaleig
+    logical            :: absoluteCoords
 
-    kpt_unit=io_file_unit()
-    open(unit=kpt_unit,file=trim(seedname)//'_geninterp.kpt',form='formatted',status='old',err=105)
+    !! Local variables for single k-point not used anymore
+    !    real(kind=dp)      :: eig(num_wann)
+    !    real(kind=dp)      :: del_eig(num_wann,3)
 
-    ! First line: comment (e.g. creation date, author, ...)
-    read(kpt_unit,'(A500)',err=106,end=106) commentline
-    read(kpt_unit,*,err=106,end=106) cdum
+    integer :: proc_chunk_size
 
-    if (index(cdum,'crystal')>0) then
-       absoluteCoords = .false.
-    elseif (index(cdum,'rel')>0) then
-       absoluteCoords = .false.       
-    elseif (index(cdum,'frac')>0) then
-       absoluteCoords = .true.
-    elseif (index(cdum,'abs')>0) then
-       absoluteCoords = .true.
-    else
-       call io_error('Error on second line of file '//trim(seedname)//'_geninterp.kpt: ' // &
-            'unable to recognize keyword')
+    integer            :: numpoints_thischunk, num_kpts_processed
+    integer, dimension(0:num_nodes-1)               :: counts
+    integer, dimension(0:num_nodes-1)               :: displs
+
+    if(on_root .and. (timing_level>0)) call io_stopwatch('geninterp_main',1)
+
+    if (on_root) then
+       write(stdout,*) 
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '|                      Generic Band Interpolation routines                  |'
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+
+       ! For the moment, this is defined statically here
+       ! this is the number of points each processors receives at a given time 
+       ! I leave it statically here because putting 20 or 1000 didn't change much the running time (for
+       ! hundreds of thousands of k points)
+       proc_chunk_size = 20
+       kpt_unit=io_file_unit()
+       open(unit=kpt_unit,file=trim(seedname)//'_geninterp.kpt',form='formatted',status='old',err=105)
+       
+       ! First line: comment (e.g. creation date, author, ...)
+       read(kpt_unit,'(A500)',err=106,end=106) commentline
+       read(kpt_unit,*,err=106,end=106) cdum
+       
+       if (index(cdum,'crystal')>0) then
+          absoluteCoords = .false.
+       elseif (index(cdum,'rel')>0) then
+          absoluteCoords = .false.       
+       elseif (index(cdum,'frac')>0) then
+          absoluteCoords = .true.
+       elseif (index(cdum,'abs')>0) then
+          absoluteCoords = .true.
+       else
+          call io_error('Error on second line of file '//trim(seedname)//'_geninterp.kpt: ' // &
+               'unable to recognize keyword')
+       end if
+
+       ! Third line: number of following kpoints
+       read(kpt_unit,*,err=106,end=106) num_kpts
+
+       ! Before going on, I also prepare the output file
+       outdat_unit=io_file_unit()
+       open(unit=outdat_unit,file=trim(seedname)//'_geninterp.dat',form='formatted',err=107)
+       
+       ! I rewrite the comment line on the output
+       write(outdat_unit, '(A)') "# Input file comment: " // trim(commentline)
+       
+       if (geninterp_alsofirstder) then
+          write(outdat_unit, '(A)') "#  Kpt_idx   K_x (2pi/ang)     K_y (2pi/ang)     K_z (2pi/ang)     Energy (eV)" // &
+               "      EnergyDer_x       EnergyDer_y       EnergyDer_z"
+       else
+          write(outdat_unit, '(A)') "#  Kpt_idx   K_x (2pi/ang)     K_y (2pi/ang)     K_z (2pi/ang)     Energy (eV)"
+       end if
+
+       
     end if
 
-    ! Third line: number of following kpoints
-    read(kpt_unit,*,err=106,end=106) num_kpts
-
-    allocate(kpointidx(num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating kpointidx in geinterp_main.')
-
-    allocate(kpoints(3,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating kpoints in geinterp_main.')
-
-    ! Lines with integer identifier and three coordinates
-    ! (in crystallographic coordinates relative to the reciprocal lattice vectors)
-    do i=1,num_kpts
-       read(kpt_unit,*,err=106,end=106) kpointidx(i), kpt
-       ! Internally, I need the relative (fractional) coordinates in units of the reciprocal-lattice vectors
-       if (absoluteCoords.eqv..false.) then
-          kpoints(:,i) = kpt
-       else
-          kpoints(:,i) = 0._dp
-          ! I use the real_lattice (transposed) and a factor of 2pi instead of inverting again recip_lattice
-          do j=1,3
-             kpoints(j,i)=real_lattice(j,1)*kpt(1) + real_lattice(j,2)*kpt(2) + real_lattice(j,3)*kpt(3) 
-          end do
-          kpoints(:,i) = kpoints(:,i) / (2._dp * pi)
-       end if
-    end do
-
-    close(kpt_unit)
+    call comms_bcast(num_kpts,1)
+    call comms_bcast(proc_chunk_size, 1)
 
     allocate(HH(num_wann,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating HH in calcTDF')
@@ -108,54 +136,140 @@ contains
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
     call get_HH_R
 
-    ! outuput band structure
-    outdat_unit=io_file_unit()
-    open(unit=outdat_unit,file=trim(seedname)//'_geninterp.dat',form='formatted',err=107)
-
-    ! I rewrite the comment line on the output
-    write(outdat_unit, '(A)') "# Input file comment: " // trim(commentline)
-
-    if (geninterp_alsofirstder) then
-       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (2pi/ang)     K_y (2pi/ang)     K_z (2pi/ang)     Energy (eV)" // &
-            "      EnergyDer_x       EnergyDer_y       EnergyDer_z"
-    else
-       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (2pi/ang)     K_y (2pi/ang)     K_z (2pi/ang)     Energy (eV)"
+    if (on_root) then
+       allocate(kpointidx(proc_chunk_size*num_nodes),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpointidx in geinterp_main.')
+       allocate(kpoints(3,proc_chunk_size*num_nodes),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpoints in geinterp_main.')
+       allocate(globaleig(num_wann,proc_chunk_size*num_nodes),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating globaleig in geinterp_main.')
+       allocate(globaldeleig(num_wann,3,proc_chunk_size*num_nodes),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating globaldeleig in geinterp_main.')
     end if
+    allocate(localkpoints(3,proc_chunk_size),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating localkpoints in geinterp_main.')       
+    
+    allocate(localeig(num_wann,proc_chunk_size),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating localeig in geinterp_main.')
+    allocate(localdeleig(num_wann,3,proc_chunk_size),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating localdeleig in geinterp_main.')
 
-    do i=1, num_kpts
-       kpt = kpoints(:,i)
-       frac = 0._dp
-       do j=1,3
-          frac(j)=recip_lattice(1,j)*kpt(1) + recip_lattice(2,j)*kpt(2) + recip_lattice(3,j)*kpt(3) 
-       end do
-       ! Here I get the band energies and the velocities (if required)
-       call fourier_R_to_k(kpt,HH_R,HH,0) 
-       call utility_diagonalize(HH,num_wann,eig,UU) 
-       if (geninterp_alsofirstder) then
-          call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
-          call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
-          call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
-          call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
-          call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
-          call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
-          do enidx=1,num_wann
-             write(outdat_unit, '(I10,7G18.10)') kpointidx(i), frac, eig(enidx), del_eig(enidx,:)
-          end do
+
+    ! Number of k points already processed
+    num_kpts_processed = 0
+
+    ! Main loop to distribute k points and process data
+    do while (num_kpts_processed < num_kpts)
+       if (num_kpts_processed + proc_chunk_size * num_nodes > num_kpts) then
+          ! Clever way to split last points
+          numpoints_thischunk = num_kpts - num_kpts_processed
+          num_kpts_processed = num_kpts
        else
-          do enidx=1,num_wann
-             write(outdat_unit, '(I10,4G18.10)') kpointidx(i), frac, eig(enidx)
+          ! I can read proc_chunk_size * num_nodes points and send  proc_chunk_size to each node
+          numpoints_thischunk = proc_chunk_size * num_nodes
+          num_kpts_processed = num_kpts_processed + proc_chunk_size * num_nodes
+       end if
+       
+       ! I precalculate how to split on different nodes
+       call comms_array_split(numpoints_thischunk,counts,displs)
+       
+       ! On root, I read numpoints_thischunk points
+       if (on_root) then
+          ! Lines with integer identifier and three coordinates
+          ! (in crystallographic coordinates relative to the reciprocal lattice vectors)
+          do i=1,numpoints_thischunk
+             read(kpt_unit,*,err=106,end=106) kpointidx(i), kpt
+             ! Internally, I need the relative (fractional) coordinates in units of the reciprocal-lattice vectors
+             if (absoluteCoords.eqv..false.) then
+                kpoints(:,i) = kpt
+             else
+                kpoints(:,i) = 0._dp
+                ! I use the real_lattice (transposed) and a factor of 2pi instead of inverting again recip_lattice
+                do j=1,3
+                   kpoints(j,i)=real_lattice(j,1)*kpt(1) + real_lattice(j,2)*kpt(2) + &
+                        real_lattice(j,3)*kpt(3) 
+                end do
+                kpoints(:,i) = kpoints(:,i) / (2._dp * pi)
+             end if
           end do
        end if
+
+       ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
+       call comms_scatterv(localkpoints(1,1),3*counts(my_node_id),kpoints(1,1),3*counts, 3*displs)
+
+       ! And now, each node calculates its own k points
+       do i=1, counts(my_node_id)
+          kpt = localkpoints(:,i)
+          ! Here I get the band energies and the velocities (if required)
+          call fourier_R_to_k(kpt,HH_R,HH,0) 
+          call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
+          if (geninterp_alsofirstder) then
+             call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+             call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+             call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+             call get_deleig_a(localdeleig(:,1,i),localeig(:,i),delHH(:,:,1),UU)
+             call get_deleig_a(localdeleig(:,2,i),localeig(:,i),delHH(:,:,2),UU)
+             call get_deleig_a(localdeleig(:,3,i),localeig(:,i),delHH(:,:,3),UU)
+          end if
+       end do
+       
+       ! Now, I get the results from the different nodes
+       call comms_gatherv(localeig(1,1),num_wann*counts(my_node_id),globaleig(1,1), &
+            num_wann*counts, num_wann*displs)
+
+       if (geninterp_alsofirstder) then
+          call comms_gatherv(localdeleig(1,1,1),3*num_wann*counts(my_node_id),globaldeleig(1,1,1), &
+               3*num_wann*counts, 3*num_wann*displs)          
+       end if
+       
+       ! Now the printing, only on root node
+       if (on_root) then
+          do i=1,numpoints_thischunk
+             kpt = kpoints(:,i)
+             ! First calculate the absolute coordinates for printing
+             frac = 0._dp
+             do j=1,3
+                frac(j)=recip_lattice(1,j)*kpt(1) + recip_lattice(2,j)*kpt(2) + recip_lattice(3,j)*kpt(3) 
+             end do
+             
+             ! I print each line
+             if (geninterp_alsofirstder) then
+                do enidx=1,num_wann
+                   write(outdat_unit, '(I10,7G18.10)') kpointidx(i), frac, &
+                        globaleig(enidx,i), globaldeleig(enidx,:,i)
+                end do
+             else
+                do enidx=1,num_wann
+                   write(outdat_unit, '(I10,4G18.10)') kpointidx(i), frac, globaleig(enidx,i)
+                end do
+             end if
+          end do
+       end if
+
     end do
 
-    close(outdat_unit)
+    ! All k points processed: Final processing/deallocations
 
-    ! Final deallocations
+    if (on_root) then
+       close(kpt_unit)
+       close(outdat_unit)
+       write(stdout,'(1x,a)') '|                                All done.                                  |'
+       write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+
+    end if
+
     if (allocated(kpointidx)) deallocate(kpointidx)
     if (allocated(kpoints)) deallocate(kpoints)
+    if (allocated(localkpoints)) deallocate(localkpoints)
     if (allocated(HH)) deallocate(HH)
     if (allocated(UU)) deallocate(UU)
     if (allocated(delHH)) deallocate(delHH)
+    if (allocated(localeig)) deallocate(localeig)
+    if (allocated(localdeleig)) deallocate(localdeleig)
+    if (allocated(globaleig)) deallocate(globaleig)
+    if (allocated(globaldeleig)) deallocate(globaldeleig)
+
+    if(on_root .and. (timing_level>0)) call io_stopwatch('geninterp_main',2)
 
     return
 
