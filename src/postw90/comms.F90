@@ -37,6 +37,7 @@ module w90_comms
   public :: comms_allreduce  ! reduce data onto all nodes
   public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
   public :: comms_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
+  public :: comms_scatterv    ! sends chunks of an array to all nodes scattering them from the root node
 
   public :: comms_array_split
 
@@ -77,11 +78,16 @@ module w90_comms
   end interface comms_allreduce
 
   interface comms_gatherv
-!     module procedure comms_allreduce_int    ! to be done
+!     module procedure comms_gatherv_int    ! to be done
      module procedure comms_gatherv_real
-!     module procedure comms_allreduce_cmplx
+!     module procedure comms_gatherv_cmplx
   end interface comms_gatherv
 
+  interface comms_scatterv
+!     module procedure comms_scatterv_int    ! to be done
+     module procedure comms_scatterv_real
+!     module procedure comms_scatterv_cmplx
+  end interface comms_scatterv
 
 contains
 
@@ -779,6 +785,11 @@ contains
 
   end subroutine comms_allreduce_cmplx
 
+  ! Array: local array for sending data; localcount elements will be sent
+  !        to the root node
+  ! rootglobalarray: array on the root node to which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
   subroutine comms_gatherv_real(array,localcount,rootglobalarray,counts,displs)
 
     implicit none
@@ -796,7 +807,7 @@ contains
          displs,MPI_double_precision,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_allreduce_real')
+       call io_error('Error in comms_gatherv_real')
     end if
 
 #endif
@@ -804,6 +815,41 @@ contains
     return
 
   end subroutine comms_gatherv_real
+
+
+  ! Array: local array for getting data; localcount elements will be fetched
+  !        from the root node
+  ! rootglobalarray: array on the root node from which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
+  subroutine comms_scatterv_real(array,localcount,rootglobalarray,counts,displs)
+
+    implicit none
+
+    real(kind=dp), intent(inout)              :: array
+    integer, intent(in)                       :: localcount
+    real(kind=dp), intent(inout)              :: rootglobalarray
+    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in) :: displs
+
+#ifdef MPI
+    integer :: error
+
+!    call MPI_scatterv(array,localcount,MPI_double_precision,rootglobalarray,counts,&
+!         displs,MPI_double_precision,root_id,mpi_comm_world,error)
+    call MPI_scatterv(rootglobalarray,counts,displs,MPI_double_precision,&
+         array,localcount,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_scatterv_real')
+    end if
+
+#endif
+
+    return
+
+  end subroutine comms_scatterv_real
+
 
 end module w90_comms
 
