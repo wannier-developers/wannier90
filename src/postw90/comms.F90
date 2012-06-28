@@ -594,10 +594,10 @@ contains
 
     end select
 
-    call my_icopy(size,array,1,array_red,1)
+    call my_icopy(size,array_red,1,array,1)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_reduce_real')
+       call io_error('Error in comms_reduce_int')
     end if
 
     if (allocated(array_red)) deallocate(array_red)
