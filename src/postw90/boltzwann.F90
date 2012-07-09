@@ -613,9 +613,7 @@ contains
     if (on_root) then
        write(stdout,'(5X,A,I0,A,I0,A,I0)') "k-grid used for band interpolation in BoltzWann: ",&
             boltz_interp_mesh(1),'x',boltz_interp_mesh(2),'x',boltz_interp_mesh(3)
-       write(stdout,'(5X,A,I1)') "Number of electrons per state: ", nint(num_elec_per_state)
-       write(stdout,'(7X,A)') "(If this is not what was intended, change the value of"
-       write(stdout,'(7X,A)') " the spinor input flag)"
+       write(stdout,'(5X,A,I1)') "Number of electrons per state: ", num_elec_per_state
        write(stdout,'(5X,A,G18.10)') "Relaxation time (fs): ", boltz_relax_time
        if (iprint>1) then
           write(stdout,'(5X,A,G18.10)') "Energy step for TDF (eV): ", boltz_tdf_energy_step
@@ -790,7 +788,7 @@ contains
   !> This is basically a modified copy of the dos routine inside the dos_wanint module.
   !> Modifications:
   !> - the levelspacing is now given as an input
-  !> - it does multiply by 2 if spinors=.false. (using the num_elec_per_state internal variable)
+  !> - it multiplies by the num_elec_per_state variable
   !> - it requires in input also the energy array
   !> - it has an optional parameter for a fixed (non adaptive smearing)
   !> 
@@ -853,9 +851,11 @@ contains
     !
     integer          :: i,loop_f,loop_s,min_f,max_f, num_s_steps
     real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
-    real(kind=dp)    :: binwidth
+    real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
    
+    r_num_elec_per_state = real(num_elec_per_state,kind=dp)
+
     ! Get spin projections for every band
     !
     if(spn_decomp) call get_spn_nk(kpt,spn_nk)
@@ -923,7 +923,7 @@ contains
              !
              ! Contribution to total DOS
              !
-             dos_k(loop_f,loop_s,1)=dos_k(loop_f,loop_s,1)+rdum * num_elec_per_state
+             dos_k(loop_f,loop_s,1)=dos_k(loop_f,loop_s,1)+rdum * r_num_elec_per_state
              
              ! [GP] I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
              ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
@@ -1003,14 +1003,18 @@ contains
     !
     integer          :: BandIdx,loop_f,min_f,max_f
     real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
-    real(kind=dp)    :: binwidth
+    real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
     
+    r_num_elec_per_state = real(num_elec_per_state, kind=dp)
+
     ! Get spin projections for every band
     !
     if(spn_decomp) call get_spn_nk(kpt,spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
+
+    
 
     TDF_k=0.0_dp
     do BandIdx=1,num_wann
@@ -1057,17 +1061,17 @@ contains
           ! Contribution to total DOS
           !
           TDF_k(XX,loop_f,1)=TDF_k(XX,loop_f,1) + rdum * &
-               num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 1)  
+               r_num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 1)  
           TDF_k(XY,loop_f,1)=TDF_k(XY,loop_f,1) + rdum * &
-               num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 2)  
+               r_num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 2)  
           TDF_k(YY,loop_f,1)=TDF_k(YY,loop_f,1) + rdum * &
-               num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 2)  
+               r_num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 2)  
           TDF_k(XZ,loop_f,1)=TDF_k(XZ,loop_f,1) + rdum * &
-               num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 3)  
+               r_num_elec_per_state * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 3)  
           TDF_k(YZ,loop_f,1)=TDF_k(YZ,loop_f,1) + rdum * &
-               num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 3)  
+               r_num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 3)  
           TDF_k(ZZ,loop_f,1)=TDF_k(ZZ,loop_f,1) + rdum * &
-               num_elec_per_state * deleig_k(BandIdx, 3) * deleig_k (BandIdx, 3)  
+               r_num_elec_per_state * deleig_k(BandIdx, 3) * deleig_k (BandIdx, 3)  
           
           ! I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
           ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!

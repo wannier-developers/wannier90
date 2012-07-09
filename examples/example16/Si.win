@@ -13,6 +13,8 @@ boltz_temp_min         = 300.
 boltz_temp_max         = 300.
 boltz_temp_step        = 50
 boltz_relax_time       = 10.
+!! Next variable is commented because 2 is its default value
+!num_elec_per_state     = 2
 !!! --- End of BoltzWann input --- !!!
 
 #restart           = plot

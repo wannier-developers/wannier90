@@ -213,7 +213,7 @@ module w90_parameters
   logical,           public, save :: write_proj
   integer,           public, save :: timing_level
   logical,           public, save :: spinors   !are our WF spinors?
-  real(kind=dp),     public, save :: num_elec_per_state
+  integer,           public, save :: num_elec_per_state
   logical,           public, save :: translate_home_cell
   logical,           public, save :: write_xyz
   real(kind=dp),     public, save :: conv_noise_amp
@@ -539,15 +539,12 @@ contains
     if(spinors .and. (2*(num_wann/2))/=num_wann) &
        call io_error('Error: For spinor WF num_wann must be even')
     
-    ! [GP-begin Apr 13, 2012]
-    ! Added this flag since we need to know if the bands are double degenerate due to spin, e.g. when
+    ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
-    if (spinors) then
-       num_elec_per_state = 1._dp
-    else
-       num_elec_per_state = 2._dp
-    end if
-    ! [GP-end]
+    num_elec_per_state = 2
+    call param_get_keyword('num_elec_per_state',found,i_value=num_elec_per_state)
+    if ((num_elec_per_state /= 1) .and. (num_elec_per_state /= 2)) &
+       call io_error('Error: num_elec_per_state can be only 1 or 2')
 
     translate_home_cell = .false.
     call param_get_keyword('translate_home_cell',found,l_value=translate_home_cell)
