@@ -219,14 +219,12 @@ contains
          open(unit=stderr,file=trim(filename),form='formatted',err=105)
          write(stderr, '(1x,a)') trim(error_msg)
          close(stderr)
-         goto 106
 
 105      write(*,'(1x,a)') trim(error_msg)
 106      write(*,'(1x,a,I0,a)') "Error on node ", &
               whoami, ": examine the output/error files for details"
          
          call MPI_abort(MPI_comm_world,1,ierr)
-         STOP
 
 #else
 
@@ -235,10 +233,15 @@ contains
          
          close(stdout)
          
-         stop "Error: examine the output/error file for details" 
-
+         write(*, '(1x,a)') trim(error_msg)
+         write(*,'(A)') "Error: examine the output/error file for details" 
 #endif
 
+#ifdef EXIT_FLAG
+         call exit(1)
+#else
+         STOP
+#endif
          
        end subroutine io_error
 

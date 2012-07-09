@@ -11,6 +11,10 @@ of this file is
 described below. The interpolated bands (and velocities) are written on the {\tt
   seedname\_geninterp.dat} file.
 
+A note on parallelization: the routine works correctly for any number of processors,
+however it doesn't scale well because all the I/O is done by the root node. In practice,
+it is not useful with the present version to use more than one processor.
+
 \section{Files}
 \subsection{{\tt seedname\_geninterp.kpt}}
 INPUT. Read by \postw\ if {\tt geninterp} is \verb#true#. 
