@@ -2239,6 +2239,8 @@ contains
   subroutine param_write_chkpt(chkpt)
     !=================================================!
     ! Write checkpoint file                           !
+    ! IMPORTANT! If you change the chkpt format, adapt!
+    ! accordingly also the w90chk2chk.x utility!      !
     !=================================================!
 
     use w90_io, only : io_file_unit,io_date,seedname
@@ -2294,11 +2296,13 @@ contains
   end subroutine param_write_chkpt
 
 
-  !=======================================!
+    !=================================================!
   subroutine param_read_chkpt()
-    !=======================================!
-    ! Read checkpoint file                  !
-    !=======================================!
+    !=================================================!
+    ! Read checkpoint file                            !
+    ! IMPORTANT! If you change the chkpt format, adapt!
+    ! accordingly also the w90chk2chk.x utility!      !
+    !=================================================!
 
     use w90_constants, only : eps6
     use w90_io,        only : io_error,io_file_unit,stdout,seedname

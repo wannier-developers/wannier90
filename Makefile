@@ -6,12 +6,15 @@ REALMAKEFILE=../Makefile.2
 
 default: wannier post
 
-all: wannier lib post
+all: wannier lib post w90chk2chk
 
 doc: thedoc
 
 serialobjs: objdir
 	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) serialobjs)
+
+w90chk2chk: objdir serialobjs
+	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) w90chk2chk)
 
 wannier: objdir serialobjs
 	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) wannier)

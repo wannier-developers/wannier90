@@ -29,11 +29,15 @@ TEMP2 = $(F90)
 endif
 
 
-wannier libs serialobjs: POSTOPTS = 
-wannier libs serialobjs: COMPILER = $(F90)
+wannier libs w90chk2chk serialobjs: POSTOPTS = 
+wannier libs w90chk2chk serialobjs: COMPILER = $(F90)
 wannier: ../../wannier90.x 
+w90chk2chk: ../../w90chk2chk.x
 
 serialobjs: $(OBJS)
+
+../../w90chk2chk.x: $(OBJS) ../w90chk2chk.F90
+	$(COMPILER) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
 
 ../../wannier90.x: $(OBJS) ../wannier_prog.F90
 	$(COMPILER) ../wannier_prog.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
