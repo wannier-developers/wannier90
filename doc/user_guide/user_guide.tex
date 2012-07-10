@@ -13,6 +13,9 @@
 %\setlength{\parskip}{0.05in}
 \setlength{\parskip}{0.1in}
 
+% Print only chapters in the Table Of Contents
+\setcounter{tocdepth}{0} 
+
 %\usepackage{a4wide}
 \usepackage{color}
 \def\red{\textcolor{red}}
@@ -63,7 +66,7 @@
 
 \maketitle
 
-%\tableofcontents
+\tableofcontents
 
 %\listoftables
 
@@ -88,6 +91,8 @@
 \include{geninterp}
 
 \include{files}
+
+\include{utilities}
 
 \include{faq}
 

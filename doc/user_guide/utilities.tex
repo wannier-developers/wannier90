@@ -1,0 +1,118 @@
+\chapter{Utilities}\label{ch:utilities}
+
+The \wannier\ code is shipped with a few utility programs that may be
+useful in some occasions. In this chapter, we describe their use.
+
+\section{kmesh.pl}
+The \wannier\ code requires the definition of a full Monkhorst--Pack
+grid of $k$ points.
+In the input file 
+the size of this mesh is given by means of the \texttt{mp\_grid} variable. E.g.,
+setting
+\begin{verbatim}
+mp_grid = 4 4 4
+\end{verbatim}
+tells \wannier\ that we want to use a $4\times 4\times 4$ $k$ grid.
+
+One has then to specify (inside the \texttt{kpoints} block in the 
+the \texttt{seedname.win} file) the list of $k$ points of the grid.
+Here, the \texttt{kmesh.pl} Perl script becomes 
+useful, being able to generate the required list.
+
+The script can be be found in the
+\texttt{utility} directory of the \wannier\ distribution.
+To use it, simply type:
+\begin{verbatim}
+./kmesh.pl nx ny nz
+\end{verbatim}
+where \verb|nx|, \verb|ny| and \verb|nz| define the size of the
+Monkhorst--Pack grid that we want to use (for instance, in the above example of the
+$4\times 4\times 4$ $k$ grid, 
+ \verb|nx|$=$\verb|ny|$=$\verb|nz|$=$4).
+
+This produces on output the list of $k$ points in Quantum
+Espresso format, where (apart from a header) the first three columns
+of each line are the $k$ coordinates, and the fourth column is the weight
+of each $k$ point. This list can be used to create the input file
+for the ab-initio \verb|nscf| calculation.
+
+If one wants instead to generate the list of the $k$ coordinates
+without the weight (in order to copy and paste the output inside the
+\texttt{seedname.win} file), one simply has to provide a fourth
+argument on the command line. For instance, for a $4\times 4\times 4$
+$k$ grid,
+use
+\begin{verbatim}
+./kmesh.pl 4 4 4 wannier
+\end{verbatim}
+and then copy the output inside the in the \texttt{kpoints} block in the \texttt{seedname.win} file.
+
+We suggest to always use this utility to generate the $k$ grids. This
+allows to
+provide the $k$ point coordinates with the accuracy required by
+\wannier, and moreover it
+makes sure that the $k$ grid used in the ab-initio code and in
+\wannier\ are the same.
+
+\section{w90chk2chk.x}
+During the calculation of the Wannier functions, \wannier\ produces a
+\verb|.chk| file that contains some information to restart the
+calculation.
+
+This file is also required by the \postw\ code. 
+In particular, the \postw\ code requires at least the \verb|.chk| file, the
+\verb|.win| input file, and (almost always) the \verb|.eig|
+file. Specific modules may require further files: see the
+documentation of each module.
+
+However, the \verb|.chk| file is
+written in a machine-dependent format. If one wants to run \wannier\
+on a machine, and then continue the calculation with \postw\ on a
+different machine (or with \postw\ compiled with a different compiler), the file has to be
+converted first in a machine-independent ``formatted'' format on the
+first machine, and
+then converted back on the second machine.
+
+To this aim, use the \verb|w90chk2chk.x| executable. Note that this
+executable is not compiled by default: you can obtain it by executing 
+\begin{verbatim}
+make w90chk2chk
+\end{verbatim}
+in the main \wannier\ directory.
+
+A typical use is the following:
+\begin{enumerate}
+\item Calculate the Wannier functions with \wannier
+\item At the end of the calculation you will find a \verb|seedname.chk|
+  file. Run (in the folder with this file) the command
+\begin{verbatim}
+w90chk2chk.x -export seedname
+\end{verbatim}
+or equivalently
+\begin{verbatim}
+w90chk2chk.x -u2f seedname
+\end{verbatim}
+(replacing \verb|seedname| with the seedname of your calculation).
+
+This command reads the \verb|seedname.chk| file and creates a
+formatted file  \verb|seedname.chk.fmt| that is safe to be transferred
+between different machines.
+\item Copy the \verb|seedname.chk.fmt| file (together with the
+  \verb|seedname.win| and \verb|seedname.eig| files) on the machine on
+  which you want to run \postw.
+\item On this second machine (after having compiled
+  \verb|w90chk2chk.x|) run
+\begin{verbatim}
+w90chk2chk.x -import seedname
+\end{verbatim}
+or equivalently
+\begin{verbatim}
+w90chk2chk.x -f2u seedname
+\end{verbatim}
+
+This command reads the \verb|seedname.chk.fmt| file and creates an
+unformatted file  \verb|seedname.chk| ready to be used by \postw.
+
+\item Run the \postw\ code.
+
+\end{enumerate}
