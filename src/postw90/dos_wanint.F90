@@ -46,7 +46,7 @@ contains
     real(kind=dp), allocatable :: dos_all(:,:,:)
 
     real(kind=dp)    :: kweight,kpt(3),omega
-    integer          :: i,loop_x,loop_y,loop_z,loop_kpt,loop_f
+    integer          :: i,loop_x,loop_y,loop_z,loop_kpt,ifreq
     integer          :: dos_unit,ndim
 
     num_freq=nint((dos_max_energy-dos_min_energy)/dos_energy_step)+1
@@ -127,7 +127,7 @@ contains
        !
        do loop_kpt=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_kpt)
-          call dos_kpt(kpt,dos_k)
+          call get_dos_k(kpt,dos_k)
           dos_all=dos_all+dos_k*weight(loop_kpt)
        end do
 
@@ -143,7 +143,7 @@ contains
           kpt(1)=real(loop_x,dp)/dos_num_points
           kpt(2)=real(loop_y,dp)/dos_num_points
           kpt(3)=real(loop_z,dp)/dos_num_points
-          call dos_kpt(kpt,dos_k)
+          call get_dos_k(kpt,dos_k)
           dos_all=dos_all+dos_k*kweight
        end do
 
@@ -161,9 +161,9 @@ contains
        dos_unit=io_file_unit()
        open(dos_unit,FILE=trim(seedname)//'_dos.dat',STATUS='UNKNOWN',&
             FORM='FORMATTED')
-       do loop_f=1,num_freq
-          omega=dos_min_energy+(loop_f-1)*d_omega
-          write(dos_unit,'(20E16.8)') omega,dos_all(loop_f,:,:)
+       do ifreq=1,num_freq
+          omega=dos_min_energy+(ifreq-1)*d_omega
+          write(dos_unit,'(20E16.8)') omega,dos_all(ifreq,:,:)
        enddo
        close(dos_unit)
        if (timing_level>1) call io_stopwatch('dos_wanint: dos',2)
@@ -305,7 +305,8 @@ contains
        if(on_root) then
           if(num_elec_cell>sum_max_all) then
              write(stdout,*) 'Something wrong in find_fermi_level:'
-             write(stdout,*) '   Fermi level does not lie within projected subspace'
+             write(stdout,*)&
+                  '   Fermi level does not lie within projected subspace'
              write(stdout,*) 'num_elec_cell= ',num_elec_cell
              write(stdout,*) 'sum_max_all= ',sum_max_all
              stop 'Stopped: see output file'
@@ -371,7 +372,7 @@ contains
   !                   PRIVATE PROCEDURES                    ! 
   !=========================================================!
 
-  subroutine dos_kpt(kpt,dos_k)
+  subroutine get_dos_k(kpt,dos_k)
     !=========================================================!
     !                                                         !
     ! Calculates the contribution from one k-point to the DOS !
@@ -395,7 +396,7 @@ contains
 
     ! Misc/Dummy
     !
-    integer          :: i,loop_f,loop_s
+    integer          :: i,ifreq,loop_s
     real(kind=dp)    :: rdum,omega,spn_nk(num_wann),alpha_sq,beta_sq 
 
     call get_eig_levelspacing_k(kpt,eig_k,levelspacing_k)
@@ -412,8 +413,8 @@ contains
           ! !!!UNDERSTAND THAT FACTOR!!!
           !
           smear=levelspacing_k(i)*adpt_smr_width(loop_s)/sqrt(2.0_dp)
-          do loop_f=1,num_freq
-             omega=dos_min_energy+(loop_f-1)*d_omega
+          do ifreq=1,num_freq
+             omega=dos_min_energy+(ifreq-1)*d_omega
              arg=(omega-eig_k(i))/smear
              if(abs(arg) > 10.0_dp) then ! optimization
                 cycle
@@ -427,25 +428,25 @@ contains
              !
              ! Contribution to total DOS
              !
-             dos_k(loop_f,loop_s,1)=dos_k(loop_f,loop_s,1)+rdum
+             dos_k(ifreq,loop_s,1)=dos_k(ifreq,loop_s,1)+rdum
              if(spn_decomp) then
                 !
                 ! Contribution to spin-up DOS of Bloch spinor with component 
                 ! (alpha,beta) with respect to the chosen quantization axis
                 !
                 alpha_sq=(1.0_dp+spn_nk(i))/2.0_dp ! |alpha|^2
-                dos_k(loop_f,loop_s,2)=dos_k(loop_f,loop_s,2)+rdum*alpha_sq
+                dos_k(ifreq,loop_s,2)=dos_k(ifreq,loop_s,2)+rdum*alpha_sq
                 !
                 ! Contribution to spin-down DOS 
                 !
                 beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
-                dos_k(loop_f,loop_s,3)=dos_k(loop_f,loop_s,3)+rdum*beta_sq
+                dos_k(ifreq,loop_s,3)=dos_k(ifreq,loop_s,3)+rdum*beta_sq
              end if
           end do
        end do
     end do !loop over bands
 
-  end subroutine dos_kpt
+  end subroutine get_dos_k
 
   ! =========================================================================
 
