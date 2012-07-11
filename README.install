@@ -33,6 +33,9 @@
        GNU Make 3.81
      Refer to your local system administrator for further information.
 
+   See at the end of this file for some preprocessor flags that may be used
+   to change some behavior of the code.
+
    Options to make include:
 
    make wannier    build the wannier90 executable
@@ -155,3 +158,23 @@ Windows
     Compiler: Portland Group (pgf90)
     Libaries: pg supplied lapack and blas
  
+PREPROCESSOR FLAGS
+------------------
+To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the 
+make.sys file.
+For instance, if the flag is called EXIT_FLAG, you can simply add
+  -DEXIT_FLAG
+(note that -D is prepended to the name of the flag)
+to the FCOPTS list, separating it with a space from what is already defined.
+Alternatively, after the definition of the flag, you can add a line
+  FCOPTS+=-DEXIT_FLAG
+
+Flags
+-----
+
+* EXIT_FLAG 
+  If defined (and if your compiler supports it), returns an exit status =/= 0 when the
+  code exits due to an error (while it returns 0 on correct completion).
+  By default, when this flag is not present, the value of the exit code is not sensible.
+
+
