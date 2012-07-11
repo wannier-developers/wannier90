@@ -24,6 +24,15 @@
          cp ./config/make.sys.intel ./make.sys
          make 
 
+   IMPORTANT NOTE: a GNU version of the make utility is needed to compile
+     Wannier90.
+     To know if your make version is GNU, type
+       make -v
+     If you have a GNU make utility, the first line of the output should
+     read somethink like
+       GNU Make 3.81
+     Refer to your local system administrator for further information.
+
    Options to make include:
 
    make wannier    build the wannier90 executable
