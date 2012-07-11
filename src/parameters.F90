@@ -865,7 +865,7 @@ contains
     if (kpath_num_points<0)&
          call io_error('Error: kpath_num_points must be positive')       
 
-    ! 'spin', 'curv', or 'none' (default)
+    ! 'spin' or 'none' (default)
     bands_color      =   'none'                 
     call param_get_keyword('bands_color',found,c_value=bands_color)
 
