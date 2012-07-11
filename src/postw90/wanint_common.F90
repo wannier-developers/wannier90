@@ -262,7 +262,6 @@ module w90_wanint_common
     call comms_bcast(dos_min_energy,1)
     call comms_bcast(optics_max_energy,1)
     call comms_bcast(optics_min_energy,1)
-    call comms_bcast(ecut_spectralsum,1)
     call comms_bcast(optics_task,len(optics_task))
     call comms_bcast(wanint_kpoint_file,1)
     call comms_bcast(dis_win_min,1)

@@ -123,7 +123,6 @@ module w90_parameters
   real(kind=dp),     public, save :: optics_energy_step
   real(kind=dp),     public, save :: optics_max_energy
   real(kind=dp),     public, save :: optics_min_energy
-  real(kind=dp),     public, save :: ecut_spectralsum
   character(len=20), public, save :: optics_plot_format
   logical,           public, save :: wanint_kpoint_file
   character(len=20), public, save :: optics_task
@@ -1293,9 +1292,6 @@ contains
 
     optics_min_energy        = 0.0_dp
     call param_get_keyword('optics_min_energy',found,r_value=optics_min_energy)
-
-    ecut_spectralsum        = 0.0_dp
-    call param_get_keyword('ecut_spectralsum',found,r_value=ecut_spectralsum)
 
 
     automatic_translation=.true.
