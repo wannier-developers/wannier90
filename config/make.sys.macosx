@@ -1,0 +1,57 @@
+
+#=================================================
+# For Mac Os X (tested on 10.7 Lion)
+#=================================================
+## The following requires a working gfortran compiler.
+## You can use for instance MacPorts to obtain it
+## (http://www.macports.org/).
+## After installation and configuration of MacPorts,
+## install a recent version of gcc to get (also)
+## gfortran.
+## For instance:
+##  sudo port install gcc45
+## Note that this may take a lot of time (hours!)
+## Note: the executable may be called something like
+## gfortran-mp-4.5
+##
+F90 = gfortran
+
+
+## The next two lines are needed if you want a
+## parallel version of postw90.x. If you are OK
+## with a serial version, simply comment the next
+## two lines.
+## To get openmpi with MacPorts, use for instance
+##  sudo port install openmpi
+## Note that with MacPorts, the 
+## 'mpirun' executable needed to run the code
+## may be called 'openmpirun'
+##
+COMMS=mpi
+MPIF90=openmpif90
+
+
+
+## IMPORTANT!! the -ff2c is needed if one wants to
+## use the BLAS and LAPACK libraries shipped with
+## Apple Mac OS X (using -framework Accelerate).
+## (at least on recent Mac OS X versions).
+## This is beacause some routines (as ZDOTC) in the
+## libraries provided by Apple are compiled with the
+## C interface instead of the Fortran interface.
+## Instead, remove the -ff2c flags (both from FCOPTS
+## and from LDOPTS) if you have downloaded and 
+## compiled the BLAS and LAPACK libraries from netlib.org.
+##
+## IF YOU DON'T DO THE CORRECT THING, THE CODE COMPILES BUT
+## THEN EITHER CRASHES OR GIVES WRONG RESULTS!
+##
+## THUS: ALWAYS TRY AT LEAST THE PROVIDED TEST EXAMPLES
+## TO SEE IF YOUR EXECUTABLE IS PROVIDING SENSIBLE RESULTS!
+## (i.e.: run
+##  make test
+## and then compare the results)
+FCOPTS=-O2 -ff2c
+LDOPTS=-O2 -ff2c
+LIBS   =  -framework Accelerate
+

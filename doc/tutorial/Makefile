@@ -8,6 +8,6 @@ clean :
 	/bin/rm -f *.aux *.log *.lot *.lof *.toc *.dvi *.bak *~ *.ps
 
 veryclean : clean
-        rm -f user_guide.pdf
+	rm -f user_guide.pdf
 
 .PHONY:	clean veryclean
