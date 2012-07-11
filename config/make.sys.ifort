@@ -1,17 +1,19 @@
 
 #=================================================
-# For Linux with intel version 8/9 
+# For Linux with intel version 11
 #=================================================
 F90 = ifort
-FCOPTS = -O2
-LDOPTS = -O2 -Vaxlib 
+COMMS=mpi
+MPIF90=mpiifort
+FCOPTS=-O2 
+LDOPTS=-O2 
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path
 #========================================================
 
-LIBDIR = /opt/intel/mkl721/lib/32
-LIBS   =  -L$(LIBDIR) -lmkl_lapack  -lmkl_ia32 -lguide -lpthread
+LIBDIR = /opt/intel/mkl/lib/intel64
+LIBS   =  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
 
 #=======================
 # ATLAS Blas and LAPACK
