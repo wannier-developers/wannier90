@@ -4,7 +4,7 @@ module w90_kpath_plot
 
   ! Calculates one of the following along a specified k-path:
   ! 
-  !  - Energy eigenvalues 
+  !  - Energy bands (eventually colored by the spin) 
   !
   !  - Berry curvature summed over occupied bands
   !
@@ -384,15 +384,15 @@ contains
              write(gnuunit,*) 'set zrange [-1:1]'
              write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
                   '" with dots palette' 
-          elseif(bands_color=='curv') then
-             write(gnuunit,706) xval(total_pts),ymin,ymax
-             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
-                  (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
-             write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
-             write(gnuunit,704) minval(color_n),maxval(color_n)
-             write(gnuunit,*) 'set pm3d map'
-             write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
-                  '" with dots palette' 
+!          elseif(bands_color=='curv') then
+!             write(gnuunit,706) xval(total_pts),ymin,ymax
+!             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
+!                  (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
+!             write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
+!             write(gnuunit,704) minval(color_n),maxval(color_n)
+!             write(gnuunit,*) 'set pm3d map'
+!             write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
+!                  '" with dots palette' 
           end if
           close(gnuunit)
 
