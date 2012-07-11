@@ -8,52 +8,49 @@ module w90_dos_wanint
 
   private
 
-  public :: dos,find_fermi_level
+  public :: dos,find_fermi_level, get_eig_levelspacing_k
 
   integer       :: num_freq
   real(kind=dp) :: d_omega
 
-  contains
+contains
 
   !=========================================================!
   !                   PUBLIC PROCEDURES                     ! 
   !=========================================================!
 
   subroutine dos
-  !=========================================================!
-  !                                                         !
-  ! Computes the electronic density of states using         !
-  ! adaptive broadening: PRB 75, 195121 (2007) [YWVS07].    !
-  ! Can resolve the DOS into up-spin and down-spin parts    !
-  !                                                         !
-  !=========================================================!
+    !=========================================================!
+    !                                                         !
+    ! Computes the electronic density of states using         !
+    ! adaptive broadening: PRB 75, 195121 (2007) [YWVS07].    !
+    ! Can resolve the DOS into up-spin and down-spin parts    !
+    !                                                         !
+    !=========================================================!
 
     use w90_io, only            : io_error,io_file_unit,io_date,io_stopwatch,&
-                                  seedname,stdout
-    use w90_comms, only         : on_root,num_nodes,my_node_id
+         seedname,stdout
+    use w90_comms, only         : on_root,num_nodes,my_node_id,comms_reduce
     use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
     use w90_parameters, only    : num_wann,dos_num_points,dos_min_energy,&
-                                  dos_max_energy,dos_energy_step,timing_level,&
-                                  wanint_kpoint_file,adpt_smr_steps,&
-                                  adpt_smr_width,spn_decomp
+         dos_max_energy,dos_energy_step,timing_level,&
+         wanint_kpoint_file,adpt_smr_steps,&
+         adpt_smr_width,spn_decomp
     use w90_get_oper, only      : get_HH_R,get_SS_R
 
-#ifdef MPI 
-    include 'mpif.h'
-#endif
 
     ! 'dos_k' contains contrib. from one k-point, 'dos_node' from k-points
     ! in one node, 'dos_all' from all nodes/k-points
     !
     real(kind=dp), allocatable :: dos_k(:,:,:)
-    real(kind=dp), allocatable :: dos_node(:,:,:)
     real(kind=dp), allocatable :: dos_all(:,:,:)
 
     real(kind=dp)    :: kweight,kpt(3),omega
-    integer          :: i,loop_x,loop_y,loop_z,loop_kpt,ifreq
-    integer          :: dos_unit,ndim,ierr
+    integer          :: i,loop_x,loop_y,loop_z,loop_kpt,loop_f
+    integer          :: dos_unit,ndim
 
-    num_freq=max(nint((dos_max_energy-dos_min_energy)/dos_energy_step),2)
+    num_freq=nint((dos_max_energy-dos_min_energy)/dos_energy_step)+1
+    if(num_freq==1) num_freq=2
     d_omega=(dos_max_energy-dos_min_energy)/(num_freq-1)
 
     call get_HH_R
@@ -65,7 +62,6 @@ module w90_dos_wanint
     end if
 
     allocate(dos_k(num_freq,adpt_smr_steps,ndim))
-    allocate(dos_node(num_freq,adpt_smr_steps,ndim))
     allocate(dos_all(num_freq,adpt_smr_steps,ndim))
 
     if(on_root) then
@@ -106,17 +102,17 @@ module w90_dos_wanint
                dos_num_points,'x',dos_num_points,'x',&
                dos_num_points,'=',dos_num_points**3,' points'
        end if
-  
+
     end if
 
-    dos_node=0.0_dp
+    dos_all=0.0_dp
 
     if(wanint_kpoint_file) then
        !
        ! Unlike for optical properties, this should always work for DOS
        !
        if(on_root)  write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
-       
+
        ! Loop over k-points on the irreducible wedge of the Brillouin zone,
        ! read from file 'kpoint.dat'
        !
@@ -131,12 +127,12 @@ module w90_dos_wanint
        !
        do loop_kpt=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_kpt)
-          call get_dos_k(kpt,dos_k)
-          dos_node=dos_node+dos_k*weight(loop_kpt)
+          call dos_kpt(kpt,dos_k)
+          dos_all=dos_all+dos_k*weight(loop_kpt)
        end do
 
     else
-              
+
        if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
 
        kweight=1.0_dp/dos_num_points**3
@@ -147,21 +143,16 @@ module w90_dos_wanint
           kpt(1)=real(loop_x,dp)/dos_num_points
           kpt(2)=real(loop_y,dp)/dos_num_points
           kpt(3)=real(loop_z,dp)/dos_num_points
-          call get_dos_k(kpt,dos_k)
-          dos_node=dos_node+dos_k*kweight
-       end do   
-       
+          call dos_kpt(kpt,dos_k)
+          dos_all=dos_all+dos_k*kweight
+       end do
+
     end if
 
-! Collect contributions from all nodes
-!
-#ifdef MPI
-    call MPI_reduce(dos_node,dos_all,num_freq*adpt_smr_steps*ndim,&
-         MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-#else
-    dos_all=dos_node
-#endif
-    
+    ! Collect contributions from all nodes
+    !
+    call comms_reduce(dos_all(1,1,1),num_freq*adpt_smr_steps*ndim,'SUM')
+
     if(on_root) then
        write(stdout,'(/,/,1x,a)') '------------------'
        write(stdout,'(1x,a)')     'Output data files:'
@@ -170,9 +161,9 @@ module w90_dos_wanint
        dos_unit=io_file_unit()
        open(dos_unit,FILE=trim(seedname)//'_dos.dat',STATUS='UNKNOWN',&
             FORM='FORMATTED')
-       do ifreq=1,num_freq
-          omega=dos_min_energy+(ifreq-1)*d_omega
-          write(dos_unit,'(20E16.8)') omega,dos_all(ifreq,:,:)
+       do loop_f=1,num_freq
+          omega=dos_min_energy+(loop_f-1)*d_omega
+          write(dos_unit,'(20E16.8)') omega,dos_all(loop_f,:,:)
        enddo
        close(dos_unit)
        if (timing_level>1) call io_stopwatch('dos_wanint: dos',2)
@@ -180,42 +171,42 @@ module w90_dos_wanint
 
   end subroutine dos
 
-! =========================================================================
+  ! =========================================================================
 
   subroutine find_fermi_level
-  !==============================================!
-  !                                              !
-  ! Finds the Fermi level by integrating the DOS !
-  !                                              !
-  !==============================================!
+    !==============================================!
+    !                                              !
+    ! Finds the Fermi level by integrating the DOS !
+    !                                              !
+    !==============================================!
 
     use w90_io, only            : stdout,io_error
     use w90_comms
     use w90_wanint_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
-                                  int_kpts,weight
+         int_kpts,weight
     use w90_parameters, only    : fermi_energy,found_fermi_energy,&
-                                  num_elec_cell,&
-                                  num_wann,dos_num_points,dos_min_energy,&
-                                  dos_max_energy,dos_energy_step,&
-                                  wanint_kpoint_file,&
-                                  adpt_smr_steps,adpt_smr_width
+         num_elec_cell,&
+         num_wann,dos_num_points,dos_min_energy,&
+         dos_max_energy,dos_energy_step,&
+         wanint_kpoint_file,&
+         adpt_smr_steps,adpt_smr_width
 
 #ifdef MPI 
     include 'mpif.h'
 #endif
 
     real(kind=dp) :: kpt(3),sum_max_node,sum_max_all,&
-                     sum_mid_node,sum_mid_all,emin,emax,emid,&
-                     emin_node(0:num_nodes-1),emax_node(0:num_nodes-1),&
-                     ef(adpt_smr_steps)
+         sum_mid_node,sum_mid_all,emin,emax,emid,&
+         emin_node(0:num_nodes-1),emax_node(0:num_nodes-1),&
+         ef(adpt_smr_steps)
     integer       :: loop_x,loop_y,loop_z,loop_kpt,loop_s,loop_nodes,&
-                     loop_iter,ierr,num_int_kpts,ikp
+         loop_iter,ierr,num_int_kpts,ikp
 
     real(kind=dp), allocatable :: eig_node(:,:)
     real(kind=dp), allocatable :: levelspacing_node(:,:)
 
     if(on_root) write(stdout,'(/,a)') 'Finding the value of the Fermi level'
-    
+
     if(.not.wanint_kpoint_file) then
        !
        ! Already done in wanint_get_kpoint_file if 
@@ -249,7 +240,7 @@ module w90_dos_wanint
     if (ierr/=0)&
          call io_error('Error in allocating levelspacing in find_fermi_level')
     levelspacing_node=0.0_dp
-       
+
     if(wanint_kpoint_file) then
        if(on_root) write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
        do loop_kpt=1,num_int_kpts_on_node(my_node_id)
@@ -314,8 +305,7 @@ module w90_dos_wanint
        if(on_root) then
           if(num_elec_cell>sum_max_all) then
              write(stdout,*) 'Something wrong in find_fermi_level:'
-             write(stdout,*)&
-                  '   Fermi level does not lie within projected subspace'
+             write(stdout,*) '   Fermi level does not lie within projected subspace'
              write(stdout,*) 'num_elec_cell= ',num_elec_cell
              write(stdout,*) 'sum_max_all= ',sum_max_all
              stop 'Stopped: see output file'
@@ -381,31 +371,31 @@ module w90_dos_wanint
   !                   PRIVATE PROCEDURES                    ! 
   !=========================================================!
 
-  subroutine get_dos_k(kpt,dos_k)
-  !=========================================================!
-  !                                                         !
-  ! Calculates the contribution from one k-point to the DOS !
-  !                                                         !
-  !=========================================================!
+  subroutine dos_kpt(kpt,dos_k)
+    !=========================================================!
+    !                                                         !
+    ! Calculates the contribution from one k-point to the DOS !
+    !                                                         !
+    !=========================================================!
 
     use w90_constants, only     : dp
-    use w90_math_wanint, only   : w0gauss
+    use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,dos_min_energy,dos_num_points,&
-                                  adpt_smr_steps,adpt_smr_width,spn_decomp
+         adpt_smr_steps,adpt_smr_width,spn_decomp
     use w90_spin_wanint, only   : get_spn_nk
 
     ! Arguments
     !
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), dimension(:,:,:), intent(out) :: dos_k
-    
+
     ! Adaptive smearing
     !
     real(kind=dp) :: eig_k(num_wann),levelspacing_k(num_wann),smear,arg
 
     ! Misc/Dummy
     !
-    integer          :: i,ifreq,loop_s
+    integer          :: i,loop_f,loop_s
     real(kind=dp)    :: rdum,omega,spn_nk(num_wann),alpha_sq,beta_sq 
 
     call get_eig_levelspacing_k(kpt,eig_k,levelspacing_k)
@@ -422,8 +412,8 @@ module w90_dos_wanint
           ! !!!UNDERSTAND THAT FACTOR!!!
           !
           smear=levelspacing_k(i)*adpt_smr_width(loop_s)/sqrt(2.0_dp)
-          do ifreq=1,num_freq
-             omega=dos_min_energy+(ifreq-1)*d_omega
+          do loop_f=1,num_freq
+             omega=dos_min_energy+(loop_f-1)*d_omega
              arg=(omega-eig_k(i))/smear
              if(abs(arg) > 10.0_dp) then ! optimization
                 cycle
@@ -431,53 +421,54 @@ module w90_dos_wanint
                 !
                 ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
                 !
-                rdum=w0gauss(arg)/smear
+                ! hard code for M-P (1)
+                rdum=w0gauss(arg,1)/smear
              end if
              !
              ! Contribution to total DOS
              !
-             dos_k(ifreq,loop_s,1)=dos_k(ifreq,loop_s,1)+rdum
+             dos_k(loop_f,loop_s,1)=dos_k(loop_f,loop_s,1)+rdum
              if(spn_decomp) then
                 !
                 ! Contribution to spin-up DOS of Bloch spinor with component 
                 ! (alpha,beta) with respect to the chosen quantization axis
                 !
                 alpha_sq=(1.0_dp+spn_nk(i))/2.0_dp ! |alpha|^2
-                dos_k(ifreq,loop_s,2)=dos_k(ifreq,loop_s,2)+rdum*alpha_sq
+                dos_k(loop_f,loop_s,2)=dos_k(loop_f,loop_s,2)+rdum*alpha_sq
                 !
                 ! Contribution to spin-down DOS 
                 !
                 beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
-                dos_k(ifreq,loop_s,3)=dos_k(ifreq,loop_s,3)+rdum*beta_sq
+                dos_k(loop_f,loop_s,3)=dos_k(loop_f,loop_s,3)+rdum*beta_sq
              end if
           end do
        end do
     end do !loop over bands
 
-  end subroutine get_dos_k
+  end subroutine dos_kpt
 
-! =========================================================================
-    
+  ! =========================================================================
+
   subroutine get_eig_levelspacing_k(kpt,eig,levelspacing)
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_io, only            : io_error
-    use w90_math_wanint, only   : diagonalize
+    use w90_utility, only   : utility_diagonalize
     use w90_parameters, only    : num_wann,dos_num_points
     use w90_wanint_common, only : fourier_R_to_k,kmesh_spacing
     use w90_get_oper, only      : HH_R
-    use w90_hamiltonian, only   : get_deleig_a
-    
+    use w90_wan_ham, only   : get_deleig_a
+
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(out) :: eig(num_wann)
     real(kind=dp), intent(out) :: levelspacing(num_wann)
-   
+
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
- 
+
     ! Adaptive smearing
     !
     real(kind=dp) :: del_eig(num_wann,3),Delta_k
@@ -489,14 +480,14 @@ module w90_dos_wanint
     allocate(UU(num_wann,num_wann))
 
     call fourier_R_to_k(kpt,HH_R,HH,0) 
-    call diagonalize(HH,num_wann,eig,UU) 
+    call utility_diagonalize(HH,num_wann,eig,UU) 
     call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
     call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
     call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
     call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
     call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
     call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
-    
+
     Delta_k=kmesh_spacing(dos_num_points)
     do i=1,num_wann
        levelspacing(i)=&
@@ -505,12 +496,12 @@ module w90_dos_wanint
 
   end subroutine get_eig_levelspacing_k
 
-! =========================================================================
+  ! =========================================================================
 
   function count_states(energy,eig,levelspacing,loop_s,npts)
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_math_wanint, only   : wgauss
+    use w90_utility, only       : wgauss
     use w90_wanint_common, only : weight
     use w90_parameters, only    : num_wann,adpt_smr_steps,adpt_smr_width
 
@@ -539,7 +530,7 @@ module w90_dos_wanint
           ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P
           ! smearing, and E_f=12.6512 with F-D smearing
           !
-!          sum=sum+wgauss(arg,-99) ! Fermi-Dirac
+          !          sum=sum+wgauss(arg,-99) ! Fermi-Dirac
           sum=sum+wgauss(arg,1)    ! Methfessel-Paxton case
        end do
        count_states=count_states+weight(loop_k)*sum
