@@ -1,0 +1,349 @@
+\chapter{Parameters}
+
+\section{Introduction}
+The \texttt{wannier90.x} code described in Part~\ref{part:w90}
+calculates the maximally-localized Wannier functions. The \texttt{wannier90.x} code is a
+serial executable (i.e., it cannot be executed in parallel on different
+CPUs).
+
+For users of the previous \wannier\ 1.2 release, the
+\texttt{wannier90.x} executable has only a few minor changes with
+respect to the 1.2 release (a major one being that part of the
+transport routines have been moved to the \texttt{postw90.x}
+executable).
+
+The \texttt{postw90.x} executable contains instead a series of modules
+that use the Wannier functions calculated by \texttt{wannier90.x} and
+uses them to calculate different properties. 
+This executable is parallel (by means of MPI libraries), so it can be run on multiple CPUs.
+The information on the
+calculated Wannier functions is read from the checkpoint 
+\verb|seedname.chk| file. Note that this is written in an unformatted
+machine-dependent format. If you need to use this file on a different
+machine, or you want to use a version of \texttt{postw90.x} compiled
+with a different compiler, refer to Sec.~\ref{sec:w90chk2chk} in the Appendices for a description
+of how to export/import this file.
+
+\section{Usage}
+For serial execution use: {\tt postw90.x [seedname]} 
+
+\begin{itemize} \item 
+{\tt seedname}: If a seedname string is given the code
+will read its input from a file {\tt seedname.win}. The default
+  value is {\tt wannier}. One can also equivalently provide the string
+  {\tt seedname.win} instead of  {\tt seedname}.
+\end{itemize}
+
+For parallel execution use: {\tt mpirun -np NUMPROCS postw90.x [seedname]}
+
+\begin{itemize} \item 
+{\tt NUMPROCS}: substitute with the number of processors that you want
+to use.
+\end{itemize}
+
+Note that this requires that the {\tt postw90.x} executable has been
+compiled in its parallel version (see Sec.~\ref{sec:installation}) and
+that the MPI libraries and binaries are installed and correctly
+configured on your machine.
+
+Note also that the {\tt mpirun} command-line flags may be different in your MPI implementation: read your MPI manual.
+
+
+\section{\text{seedname.win} File}
+The \texttt{postw90.x} uses the same \texttt{seedname.win} input file
+of \texttt{wannier90.x}. The input keywords of \texttt{postw90.x} must
+thus be added to this file, using the same syntax described in
+Sec.~\ref{sec:seednamefile}. 
+
+Note that \texttt{wannier90.x} checks if the syntax of the input file
+is correct, but then ignores the value of the flags that refer only to
+modules of \texttt{postw90.x}, so one can safely run
+\texttt{wannier90.x} on a file that contains also \texttt{postw90.x}
+flags.
+
+Similarly, \texttt{postw90.x} ignores flags that refer only to
+\texttt{wannier90.x} (as number of iterations, restart flags,
+\ldots). However, some parts of the input file must be there, as for
+instance the number of Wannier functions, etc.
+
+The easiest thing to do
+is therefore to simply \emph{add} the \texttt{postw90} input keywords to
+the \texttt{seedname.win} file that was used
+to obtain the Wannier functions.
+
+\section{List of available modules}
+The currently available modules in \texttt{postw90.x} are:
+\begin{itemize}
+\item \texttt{BoltzWann}: Calculation of electronic transport
+  properties using the semiclassical Boltzmann transport equation (see Chap.~\ref{ch:boltzwann}).
+\item \emph{Generic Band Interpolation}: Calculation band energies (and band
+  derivatives) on a generic list of $k$ points (see Chap.~\ref{ch:geninterp}).
+\end{itemize}
+
+\section{Keyword List}
+On the next pages the list of available
+\postw\ input keywords is reported.
+In particular, Table~\ref{parameter_keywords_postw90} reports keywords
+that affect the generic behavior of all modules of
+\postw. Often, these are ``global'' variables that can be overridden
+by module-specific keywords (as for instance the {\tt interp\_mesh} flag).
+
+The subsequent tables describe input parameters relative to specific modules.
+
+\clearpage
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{Generic Band Interpolation Parameters} \\
+\hline
+{\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling \postw.]
+{{\tt seedname.win} file keywords controlling the general behaviour of
+  the modules of \postw. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_postw90}
+\end{center}
+\end{table}
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{BoltzWann Parameters} \\
+\hline
+{\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
+{\sc boltz\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
+{\sc boltz\_interp\_mesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+{\sc boltz\_relax\_time} & P & Relaxation time in fs\\
+{\sc boltz\_mu\_min} & P & Minimum value of the chemical potential $\mu$ in eV\\
+{\sc boltz\_mu\_max} & P & Maximum value of the chemical potential $\mu$ in eV\\
+{\sc boltz\_mu\_step} & R & Step for $\mu$ in eV\\
+{\sc boltz\_temp\_min} & P & Minimum value of the temperature $T$ in K \\
+{\sc boltz\_temp\_max} & P & Maximum value of the temperature $T$ in K \\
+{\sc boltz\_temp\_step} & R & Step for $T$ in K \\
+{\sc boltz\_tdf\_energy\_step} & R & Energy step for the TDF (eV) \\
+{\sc boltz\_tdf\_smr\_en\_width} & P & Energy smearing for the TDF (eV) \\
+{\sc boltz\_tdf\_smr\_type} & S & Smearing type for the TDF \\
+{\sc boltz\_calc\_also\_dos} & L & Calculate also DOS while calculating the TDF\\
+{\sc boltz\_dos\_energy\_min} & P & Minimum value of the energy for the DOS in eV \\
+{\sc boltz\_dos\_energy\_max} & P & Maximum value of the energy for the DOS in eV \\
+{\sc boltz\_dos\_energy\_step} & R & Step for the DOS in eV\\
+{\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS \\
+{\sc boltz\_dos\_smr\_adaptive} & L & Use adaptive smearing for the DOS \\
+{\sc boltz\_dos\_smr\_en\_width} & P  & Energy smearing for the DOS (eV) \\
+{\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
+{\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
+{\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the \bw\ module.]
+{{\tt seedname.win} file keywords controlling the \bw\ module (calculation of the Boltzmann transport coefficients in the Wannier basis). Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_bw}
+\end{center}
+\end{table}
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{Generic Band Interpolation Parameters} \\
+\hline
+{\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
+{\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
+{\sc geninterp\_single\_file} & L & Write a single file or one for each
+process\\ 
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the Generic Band Interpolation module.]
+{{\tt seedname.win} file keywords controlling the Generic Band Interpolation module. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_geninterp}
+\end{center}
+\end{table}
+
+\clearpage
+
+\section{BoltzWann}
+\subsection[boltzwann]{\tt logical :: boltzwann}
+Determines whether to enter the \bw\ routines.
+
+The default value is \verb#false#.
+
+\subsection[boltz\_interp\_mesh]{\tt integer :: boltz\_interp\_mesh(:)}
+It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used also for the DOS.
+
+If three integers $l$ $m$ $n$ are given, a $l\times m\times n$ grid is used. If only one integer $m$ is given, a $m\times m\times m$ grid is used.
+
+{\tt boltz\_interp\_mesh\_spacing} and  {\tt boltz\_interp\_mesh} may not both be defined in the same input file.
+
+If neither {\tt boltz\_interp\_mesh\_spacing} nor  {\tt boltz\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+
+\subsection[boltz\_interp\_mesh\_spacing]{\tt real(kind=dp) :: boltz\_interp\_mesh\_spacing}
+It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). This flag defines the minimum distance for neighboring $k$ points along each of the three directions in $k$ space. If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used for the DOS.
+
+The units are \AA$^{-1}$.
+
+{\tt boltz\_interp\_mesh\_spacing} and  {\tt boltz\_interp\_mesh} may not both be defined in the same input file.
+
+If neither {\tt boltz\_interp\_mesh\_spacing} nor  {\tt boltz\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+
+\subsection[boltz\_relax\_time]{\tt real(kind=dp) :: boltz\_relax\_time}
+The relaxation time to be used for the calculation of the TDF and the transport coefficients.
+
+The units are fs.
+The default value is 10~fs.
+
+\subsection[boltz\_mu\_min]{\tt real(kind=dp) :: boltz\_mu\_min}
+Minimum value for the chemical potential $\mu$ for which we want to calculate the transport coefficients.
+
+The units are eV.
+No default value.
+
+\subsection[boltz\_mu\_max]{\tt real(kind=dp) :: boltz\_mu\_max}
+Maximum value for the chemical potential $\mu$ for which we want to calculate the transport coefficients.
+
+The units are eV.
+No default value.
+
+\subsection[boltz\_mu\_step]{\tt real(kind=dp) :: boltz\_mu\_step}
+Energy step for the grid of chemical potentials $\mu$ for which we want to calculate the transport coefficients.
+
+The units are eV.
+No default value.
+
+\subsection[boltz\_temp\_min]{\tt real(kind=dp) :: boltz\_temp\_min}
+Minimum value for the temperature $T$ for which we want to calculate the transport coefficients.
+
+The units are K.
+No default value.
+
+\subsection[boltz\_temp\_max]{\tt real(kind=dp) :: boltz\_temp\_max}
+Maximum value for the temperature $T$ for which we want to calculate the transport coefficients.
+
+The units are K.
+No default value.
+
+\subsection[boltz\_temp\_step]{\tt real(kind=dp) :: boltz\_temp\_step}
+Energy step for the grid of temperatures $T$ for which we want to calculate the transport coefficients.
+
+The units are K.
+No default value.
+
+\subsection[boltz\_tdf\_energy\_step]{\tt real(kind=dp) :: boltz\_tdf\_energy\_step}
+Energy step for the grid of energies for the TDF.
+
+The units are eV.
+The default value is 0.001~eV.
+
+\subsection[boltz\_tdf\_smr\_type]{\tt character(len=120) :: boltz\_tdf\_smr\_type}
+The type of smearing function to be used for the TDF. The available strings are the same of the global {\tt smr\_type} input flag. 
+
+The default value is the one given via the {\tt smr\_type} input flag (if defined).
+
+\subsection[boltz\_tdf\_smr\_en\_width]{\tt real(kind=dp) :: boltz\_tdf\_smr\_en\_width}
+Energy width for the smearing function. Note that for the TDF, a standard (non-adaptive) smearing scheme is used.
+
+The units are eV.
+The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_tdf\_energy\_step}, the TDF will be unsmeared (thus the default is to have an unsmeared TDF).
+
+\subsection[boltz\_calc\_also\_dos]{\tt logical :: boltz\_calc\_also\_dos}
+Whether to calculate also the DOS while calculating the TDF.
+
+If one needs also the DOS, it is faster to calculate the DOS using this flag instead of using the routines for the DOS, since in this way the interpolation on the $k$ points will be performed only once.
+
+The default value is \verb#false#.
+
+\subsection[boltz\_dos\_energy\_min]{\tt real(kind=dp) :: boltz\_dos\_energy\_min}
+The minimum value for the energy grid for the calculation of the DOS.
+
+The units are eV.
+The default value is {\tt minval(eigval)-0.6667}, where  {\tt minval(eigval)} is the minimum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
+
+\subsection[boltz\_dos\_energy\_max]{\tt real(kind=dp) :: boltz\_dos\_energy\_max}
+The maximum value for the energy grid for the calculation of the DOS.
+
+The units are eV.
+The default value is {\tt maxval(eigval)+0.6667}, where  {\tt maxval(eigval)} is the maximum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
+
+\subsection[boltz\_dos\_energy\_step]{\tt real(kind=dp) :: boltz\_dos\_energy\_step}
+Energy step for the grid of energies for the DOS.
+
+The units are eV.
+The default value is 0.001~eV.
+
+\subsection[boltz\_dos\_smr\_type]{\tt character(len=120) :: boltz\_dos\_smr\_type}
+The type of smearing function to be used for the DOS. The available strings are the same of the global {\tt smr\_type} input flag. 
+
+The default value is the one given via the {\tt smr\_type} input flag. 
+
+
+\subsection[boltz\_dos\_smr\_adaptive]{\tt logical :: boltz\_dos\_smr\_adaptive}
+Determines whether to use an adaptive scheme for the broadening of the DOS. If \verb#true#, the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+
+The default value is \verb#true#.
+
+\subsection[boltz\_dos\_smr\_en\_width]{\tt logical :: boltz\_dos\_smr\_en\_width}
+Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos\_smr\_adaptive} is \verb#false#.
+
+The units are eV.
+The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_dos\_energy\_step}, the DOS will be unsmeared (thus the default is to have an unsmeared DOS).
+
+
+\subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
+Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
+
+The default value is \verb#false#.
+
+\subsection[boltz\_bandshift\_firstband]{\tt integer :: boltz\_bandshift\_firstband}
+Index of the first conduction band to shift.
+
+That means that all bands with index $i\ge {\tt boltz\_bandshift\_firstband}$ will be shifted by  {\tt boltz\_bandshift\_energyshift}, if {\tt boltz\_bandshift} is \verb#true#.
+
+The units are eV.
+No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+
+\subsection[boltz\_bandshift\_energyshift]{\tt real(kind=dp) :: boltz\_bandshift\_energyshift}
+Energy shift of the conduction bands.
+
+The units are eV.
+No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+
+
+\section{Generic Band Interpolation}
+\subsection[boltzwann]{\tt logical :: geninterp}
+Determines whether to enter the Generic Band Interpolation routines.
+
+The default value is \verb#false#.
+
+\subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_alsofirstder}
+Whether to calculate also the first derivatives of the bands at the
+given $k$ points.
+
+The default value is \verb#false#.
+
+\subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_single\_file}
+Whether to write a single  {\tt seedname\_geninterp.dat} file (all I/O is done by the root node); or
+instead multiple files (one for each node) with
+name {\tt seedname\_geninterp\_00000.dat}, {\tt
+  seedname\_geninterp\_00001.dat}, \ldots
+See also the discussion in Sec.~\ref{sec:seedname.geninterp.dat} on
+how to use this flag.
+
+The default value is \verb#true#.

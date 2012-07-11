@@ -1,14 +1,17 @@
-\chapter{Generic Band interpolator}\label{ch:geninterp}
+\chapter{Generic Band interpolation}\label{ch:geninterp}
 
 By setting $\verb#geninterp#=\verb#TRUE#$, \postw\ will calculate the
 band energies (and possibly the band derivatives, if also
 \verb#geninterp_alsofirstder# is set to \verb#TRUE#) on a generic list
 of $k$ points provided by the user.
 
+The list of parameters of the Generic Band Interpolation module are
+summarized in Table~\ref{parameter_keywords_geninterp}. 
 The list of input $k$ points for which the band have to be calculated
 is read from the file named {\tt seedname\_geninterp.kpt}. The format
 of this file is
 described below. 
+
 
 \section{Files}
 \subsection{{\tt seedname\_geninterp.kpt}}
@@ -98,52 +101,6 @@ and $k_z$ directions.
 
 The $k$ point coordinates are in units of $2\pi/$\AA, the band energy is in eV.
 
-\section{Parameters}
-The list of parameters of the Generic Band Interpolation module are summarized in Table~\ref{parameter_keywords_geninterp}. 
 
-\begin{table}
-\begin{center}
-\begin{tabular}{|c|c|p{6cm}|}
-\hline
-Keyword & Type & Description \\
-        &      &             \\
-\hline\hline
-\multicolumn{3}{|c|}{Generic Band Interpolation Parameters} \\
-\hline
-{\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
-{\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
-{\sc geninterp\_single\_file} & L & Write a single file or one for each
-process\\ 
-\hline
-\end{tabular}
-\caption[Parameter file keywords controlling the Generic Band Interpolation module.]
-{{\tt seedname.win} file keywords controlling the Generic Band Interpolation module. Argument types
-are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
-\label{parameter_keywords_geninterp}
-\end{center}
-\end{table}
 
-Here follows a description of all parameters.
-
-\subsection[boltzwann]{\tt logical :: geninterp}
-Determines whether to enter the Generic Band Interpolation routines.
-
-The default value is \verb#false#.
-
-\subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_alsofirstder}
-Whether to calculate also the first derivatives of the bands at the
-given $k$ points.
-
-The default value is \verb#false#.
-
-\subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_single\_file}
-Whether to write a single  {\tt seedname\_geninterp.dat} file (all I/O is done by the root node); or
-instead multiple files (one for each node) with
-name {\tt seedname\_geninterp\_00000.dat}, {\tt
-  seedname\_geninterp\_00001.dat}, \ldots
-See also the discussion in Sec.~\ref{sec:seedname.geninterp.dat} on
-how to use this flag.
-
-The default value is \verb#true#.
 

@@ -13,7 +13,7 @@
                LAPACK and BLAS libraries
 
  Configuration:
-   The system dependant parameters (eg compiler name) are contained in a file
+   The system dependent parameters (e.g. compiler name) are contained in a file
    called 'make.sys'. Sample files may be found in the ./config/ directory.
    Choose one that is nearest to your setup and copy it to make.sys. You may 
    need to edit it, for example to give the correct library path for your 
@@ -26,14 +26,24 @@
 
    Options to make include:
 
-   make wannier    (default) build the wannier90 executable
+   make wannier    build the wannier90 executable
+   make post       bulks the postw90 executable
+   make default    (default) builds wannier90.x and postw90.x
    make lib        build the wannier90 library
+   make w90chk2chk build the w90chk2chk.x utility (see utility section of
+                   the user guide)
    make test       run test cases
    make doc        build the documentation
    make dist       make a tar-ball of the distribution
    make dist-lite  make a tar-ball of the src and tests only
    make clean      remove object files etc
 
+ In order to compile the postw90.x executable in its parallel version, you have
+ to specify 
+  COMMS=mpi
+ inside the make.sys file (some of the example files already contain this line)
+ and moreover define the parallel compiler using the MPIF90 flag, for instance:
+  MPIF90=mpiifort
  
  Compiler: If your operating system came with a Fortran compiler or you have a
  commercial compiler (such as ifort) this should give the best performance.

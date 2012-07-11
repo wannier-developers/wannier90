@@ -44,12 +44,42 @@
 \setlength{\footskip}{0.25in}
 \setlength{\parindent}{0in}
 
+
+%% This part slightly modifies the default definition of \chapter
+%% (found in book.cls) to add a \hspace{2em} before numbered chapters.
+\makeatletter
+\def\@chapter[#1]#2{\ifnum \c@secnumdepth >\m@ne
+                       \if@mainmatter
+                         \refstepcounter{chapter}%
+                         \typeout{\@chapapp\space\thechapter.}%
+                         \addcontentsline{toc}{chapter}%
+                                   {\hspace{2em}\protect\numberline{\thechapter}#1}%
+                       \else
+                         \addcontentsline{toc}{chapter}{#1}%
+                       \fi
+                    \else
+                      \addcontentsline{toc}{chapter}{#1}%
+                    \fi
+                    \chaptermark{#1}%
+                    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+                    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+                    \if@twocolumn
+                      \@topnewpage[\@makechapterhead{#2}]%
+                    \else
+                      \@makechapterhead{#2}%
+                      \@afterheading
+                    \fi}
+\makeatother
+
 \title{{\tt wannier90}: User Guide}
 
 \author{Version 1.2}
 
 \date{15th January 2010}
 
+% should be the last one to be loaded
+\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,
+            pdftitle={Wannier90 User Guide}]{hyperref}
 \begin{document}
 \newcommand{\wannier}{\texttt{wannier90}}
 \newcommand{\postw}{\texttt{postw90}}
@@ -72,7 +102,13 @@
 
 %\listoffigures
 
+\part{Introduction}
+
 \include{overview}
+
+\part{\texttt{wannier90.x}\label{part:w90}}
+
+\include{wannier90}
 
 \include{parameters}
 
@@ -86,17 +122,24 @@
 
 \include{transport}
 
+\include{files}
+
+\include{sample_input_files}
+
+\part{\texttt{postw90.x}}
+
+\include{postw90params}
+
 \include{boltzwann}
 
 \include{geninterp}
 
-\include{files}
+\appendix
+\part{Appendices}
 
 \include{utilities}
 
 \include{faq}
-
-\include{sample_input_files}
 
 %\include{other_thoughts}
 

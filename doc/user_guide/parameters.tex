@@ -7,13 +7,14 @@ wannier90.x [-pp] [seedname]
 \end{quote} }
 \begin{itemize}
 \item{ {\tt seedname}: If a seedname string is given the code will read its input
-from a file {\tt seedname.win}. The default value is {\tt wannier}.}
+from a file {\tt seedname.win}. The default value is {\tt wannier}. One can also equivalently provide the string
+  {\tt seedname.win} instead of  {\tt seedname}.}
 \item { {\tt -pp}: This optional flag tells the code to generate
 a list of the required overlaps and then exit. 
 This information is written to the file {\tt seedname.nnkp}.}
 \end{itemize}
 
-\section{{\tt seedname.win} File}
+\section{{\tt seedname.win} File\label{sec:seednamefile}}
 The \wannier\ input file {\tt seedname.win} has a flexible free-form
 structure. 
 
