@@ -84,7 +84,7 @@ module w90_comms
   end interface comms_gatherv
 
   interface comms_scatterv
-!     module procedure comms_scatterv_int    ! to be done
+     module procedure comms_scatterv_int  
      module procedure comms_scatterv_real
 !     module procedure comms_scatterv_cmplx
   end interface comms_scatterv
@@ -849,6 +849,37 @@ contains
     return
 
   end subroutine comms_scatterv_real
+
+  ! Array: local array for getting data; localcount elements will be fetched
+  !        from the root node
+  ! rootglobalarray: array on the root node from which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
+  subroutine comms_scatterv_int(array,localcount,rootglobalarray,counts,displs)
+
+    implicit none
+
+    integer, intent(inout)                    :: array
+    integer, intent(in)                       :: localcount
+    integer, intent(inout)                    :: rootglobalarray
+    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in) :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_scatterv(rootglobalarray,counts,displs,MPI_Integer,&
+         Array,localcount,MPI_Integer,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_scatterv_real')
+    end if
+
+#endif
+
+    return
+
+  end subroutine comms_scatterv_int
 
 
 end module w90_comms

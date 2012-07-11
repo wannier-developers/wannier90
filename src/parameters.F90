@@ -144,6 +144,7 @@ module w90_parameters
   ! GeneralInterpolator variables
   logical,           public, save :: geninterp
   logical,           public, save :: geninterp_alsofirstder
+  logical,           public, save :: geninterp_single_file
   ! [gp-end, Jun 1, 2012]
 
   ! [gp-begin, Apr 12, 2012]
@@ -1137,6 +1138,8 @@ contains
     !%%%%%%%%%%%%%%%%%%%%
     geninterp_alsofirstder = .false.
     call param_get_keyword('geninterp_alsofirstder', found, l_value=geninterp_alsofirstder)
+    geninterp_single_file = .true.
+    call param_get_keyword('geninterp_single_file', found, l_value=geninterp_single_file)
     ! [gp-end, Jun 1, 2012]
 
     ! [gp-begin, Apr 12, 2012]
