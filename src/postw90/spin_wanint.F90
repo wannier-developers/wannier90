@@ -30,12 +30,13 @@ module w90_spin_wanint
     use w90_io, only            : io_error,stdout
     use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
     use w90_parameters, only    : optics_num_points,wanint_kpoint_file
-    use w90_get_oper, only      : get_SS_R
+    use w90_get_oper, only      : get_HH_R,get_SS_R
 
     integer       :: loop_x,loop_y,loop_z,loop_tot
     real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_all(3),&
                      spn_mom(3),magnitude,theta,phi,conv
 
+    call get_HH_R
     call get_SS_R
 
     if(on_root) then
@@ -131,7 +132,7 @@ module w90_spin_wanint
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann,theta_quantaxis,phi_quantaxis
     use w90_wanint_common, only : fourier_R_to_k
-    use w90_get_oper, only      : HH_R,get_HH_R,SS_R,get_SS_R
+    use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
 
     ! Arguments
     !
@@ -154,11 +155,11 @@ module w90_spin_wanint
     allocate(SS(num_wann,num_wann,3))
     allocate(SS_n(num_wann,num_wann))
     
-    call get_HH_R
+!    call get_HH_R
     call fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
 
-    call get_SS_R
+!    call get_SS_R
     do is=1,3
        call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
     enddo
@@ -189,7 +190,7 @@ module w90_spin_wanint
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann,fermi_energy
     use w90_wanint_common, only : fourier_R_to_k,get_occ
-    use w90_get_oper, only      : HH_R,get_HH_R,SS_R,get_SS_R
+    use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -211,12 +212,12 @@ module w90_spin_wanint
     allocate(UU(num_wann,num_wann))
     allocate(SS(num_wann,num_wann,3))
     
-    call get_HH_R
+!    call get_HH_R
     call fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
     call get_occ(eig,occ,fermi_energy)
 
-    call get_SS_R
+!    call get_SS_R
     spn_k(1:3)=0.0_dp
     do is=1,3
        call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
