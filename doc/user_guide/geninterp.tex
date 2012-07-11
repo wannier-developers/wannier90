@@ -8,12 +8,7 @@ of $k$ points provided by the user.
 The list of input $k$ points for which the band have to be calculated
 is read from the file named {\tt seedname\_geninterp.kpt}. The format
 of this file is
-described below. The interpolated bands (and velocities) are written on the {\tt
-  seedname\_geninterp.dat} file.
-
-A note on parallelization: the routine works correctly for any number of processors,
-however it doesn't scale well because all the I/O is done by the root node. In practice,
-it is not useful with the present version to use more than one processor.
+described below. 
 
 \section{Files}
 \subsection{{\tt seedname\_geninterp.kpt}}
@@ -43,11 +38,51 @@ and \verb#k1#, \verb#k2# and \verb#k3# are the three coordinates of the
 $k$ points in the chosen units.
 
 
-\subsection{{\tt seedname\_geninterp.dat}}
-OUTPUT. This file contains the interpolated band energies (and also the band
+\subsection{{\tt seedname\_geninterp.dat} or {\tt
+    seedname\_geninterp\_NNNNN.dat}}
+\label{sec:seedname.geninterp.dat}
+OUTPUT. This file/these files contain the interpolated band energies (and also the band
 velocities if the input flag \verb#geninterp_alsofirstder# is \verb#true#).
 
-The first two lines are comments (starting with \#), containing the
+If the flag \verb|geninterp_single_file| is \verb|true|, then a single
+file {\tt seedname\_geninterp.dat} is written by the code at the end
+of the calculation. If instead one sets \verb|geninterp_single_file|
+to \verb|false|, each process writes its own output file, named 
+{\tt seedname\_geninterp\_00000.dat}, {\tt
+  seedname\_geninterp\_00001.dat}, \ldots
+
+This flag is useful when one wants to parallelize the calculation on
+many nodes, and it should be used especially for systems with a small
+number of Wannier functions, when one wants to compute the bands on a
+large number of $k$ points (if the flag \verb|geninterp_single_file|
+is \verb|true|, instead, all the I/O is made by the root node, which
+is a significant bottleneck).
+
+{\bf Important!} The files are not deleted before the start of a
+calculation, but only the relevant files are overwritten. Therefore,
+if one first performs a calculation and then a second one on a smaller
+number of processors, care is needed to avoid to mix the results of
+the older calculations with those of the new one. In case of doubt,
+either check the date stamp in the first line of the {\tt
+    seedname\_geninterp\_*.dat} files, or simply
+delete the  {\tt
+    seedname\_geninterp\_*.dat} files before starting the new
+  calculation.
+
+To join the files, on can simply use the following command:
+\begin{verbatim}
+cat seedname_geninterp_*.dat > seedname_geninterp.dat
+\end{verbatim}
+or, if one wants to remove the comment lines:
+\begin{verbatim}
+rm seedname_geninterp.dat
+for i in seedname_geninterp_*.dat ; do grep -v \# "$i" >> \
+seedname_geninterp.dat ; done
+\end{verbatim}
+
+
+The first few lines of each files are comments (starting with \#),
+containing a datestamp, the
 comment line as it is read from the input file, and a header.
 The following lines contain the band energies (and
 derivatives) for each band and $k$ point (the energy
@@ -77,6 +112,8 @@ Keyword & Type & Description \\
 \hline
 {\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
 {\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
+{\sc geninterp\_single\_file} & L & Write a single file or one for each
+process\\ 
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Generic Band Interpolation module.]
@@ -99,4 +136,14 @@ Whether to calculate also the first derivatives of the bands at the
 given $k$ points.
 
 The default value is \verb#false#.
+
+\subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_single\_file}
+Whether to write a single  {\tt seedname\_geninterp.dat} file (all I/O is done by the root node); or
+instead multiple files (one for each node) with
+name {\tt seedname\_geninterp\_00000.dat}, {\tt
+  seedname\_geninterp\_00001.dat}, \ldots
+See also the discussion in Sec.~\ref{sec:seedname.geninterp.dat} on
+how to use this flag.
+
+The default value is \verb#true#.
 
