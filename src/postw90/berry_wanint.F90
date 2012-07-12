@@ -62,7 +62,8 @@ module w90_berry_wanint
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   optics_task,optics_min_energy,&
                                   optics_max_energy,optics_energy_step,&
-                                  adpt_smr_steps,adpt_smr_width,band_by_band,&
+                                  !adpt_smr_steps,adpt_smr_width,&
+                                  berry_smr_adpt_factor,&
                                   spn_decomp,found_fermi_energy,fermi_energy,&
                                   omega_from_FF,sigma_abc_onlyorb
     use w90_get_oper, only      : get_HH_R,get_AA_R,get_BB_R,get_CC_R,get_FF_R,&
@@ -74,8 +75,13 @@ module w90_berry_wanint
     real(kind=dp) :: imh_ab_k(3),imh_ab(3)
     real(kind=dp) :: ahc(3),LCtil(3),ICtil(3)
 
-    ! Repeat for optical conductivity
+    ! Repeat for JDOS & optical conductivity
+    !    
+    ! Joint density of states
     !
+    real(kind=dp), allocatable :: jdos_k(:,:)
+    real(kind=dp), allocatable :: jdos(:,:)
+
     ! 'sig_ab_k' is the contrib to the optical conductivity from one k-point,
     ! 'sig_ab_node' from k-points in one node, 'sig_ab' is the BZ average.
     ! 'ahc_kk' is the cumulative Kramers-Kronig transform of the MCD spectrum
@@ -85,21 +91,16 @@ module w90_berry_wanint
     !   sig_ab_(2,:,:,:) is the 'DA' term
     !   sig_ab_(3,:,:,:) is the 'AA' term
 
-    real(kind=dp), allocatable :: sig_ab_k(:,:,:,:)
-    real(kind=dp), allocatable :: sig_ab(:,:,:,:)
-    real(kind=dp), allocatable :: ahc_kk(:,:,:)
-    real(kind=dp), allocatable :: m_orb_sr(:,:)
+    real(kind=dp), allocatable :: sig_ab_k(:,:,:)
+    real(kind=dp), allocatable :: sig_ab(:,:,:)
+    real(kind=dp), allocatable :: ahc_kk(:,:)
+    real(kind=dp)              :: m_orb_sr(3)
 
     ! Optical conductivity divided by the frequency
     ! (used to compute the anomalous Hall conductivity via Kramers-Kronig)
     !
-    real(kind=dp), allocatable :: sig_ab_over_freq_k(:,:,:,:)
-    real(kind=dp), allocatable :: sig_ab_over_freq(:,:,:,:)
-    
-    ! Joint density of states
-    !
-    real(kind=dp), allocatable :: jdos_k(:,:,:)
-    real(kind=dp), allocatable :: jdos(:,:,:)
+    real(kind=dp), allocatable :: sig_ab_over_freq_k(:,:,:)
+    real(kind=dp), allocatable :: sig_ab_over_freq(:,:,:)
 
     ! Spatially-dispersive optical conductivity
     ! sig_abc_(:,1) is the "matrix element term" part of the orbital contrib
@@ -237,9 +238,12 @@ module w90_berry_wanint
               '(file '//trim(seedname)//'-sigS_'//&
              achar(119+alpha)//achar(119+beta)//'.dat)'
           end if
-          write(stdout,'(/,1x,a,6(f6.3,1x))')&
-            'Adaptive smearing width prefactors for optical properties: ',&
-            (adpt_smr_width(i),i=1,adpt_smr_steps)
+!          write(stdout,'(/,1x,a,6(f6.3,1x))')&
+!            'Adaptive smearing width prefactors for optical properties: ',&
+!            (adpt_smr_width(i),i=1,adpt_smr_steps)
+          write(stdout,'(/,1x,a,f6.3)')&
+            'Adaptive smearing width prefactor for optical properties: ',&
+            berry_smr_adpt_factor
       
           write(stdout,'(/,1x,a,f8.4)')&
                'Frequency step for optical properties (eV): ',d_freq
@@ -330,17 +334,17 @@ module w90_berry_wanint
        else
           ndim=1
        end if
-       allocate(sig_ab_k(3,nfreq,adpt_smr_steps,ndim))
-       allocate(sig_ab(3,nfreq,adpt_smr_steps,ndim))
+       allocate(sig_ab_k(3,nfreq,ndim))
+       allocate(sig_ab(3,nfreq,ndim))
        sig_ab=0.0_dp
-       allocate(sig_ab_over_freq_k(3,nfreq,adpt_smr_steps,ndim))
-       allocate(sig_ab_over_freq(3,nfreq,adpt_smr_steps,ndim))
+       allocate(sig_ab_over_freq_k(3,nfreq,ndim))
+       allocate(sig_ab_over_freq(3,nfreq,ndim))
        sig_ab_over_freq=0.0_dp
-       allocate(jdos_k(nfreq,adpt_smr_steps,ndim))
-       allocate(jdos(nfreq,adpt_smr_steps,ndim))
+       allocate(jdos_k(nfreq,ndim))
+       allocate(jdos(nfreq,ndim))
        jdos=0.0_dp
-       allocate(ahc_kk(3,adpt_smr_steps,ndim))
-       allocate(m_orb_sr(3,adpt_smr_steps))
+       allocate(ahc_kk(3,ndim))
+!       allocate(m_orb_sr(3))
     elseif(eval_sig_abc) then
        call get_HH_R 
        call get_AA_R
@@ -608,8 +612,7 @@ module w90_berry_wanint
              end if
              if(eval_sig_ab) then
                 sig_ab=sig_ab+sig_ab_k*kweight
-                sig_ab_over_freq=sig_ab_over_freq&
-                     +sig_ab_over_freq_k*kweight
+                sig_ab_over_freq=sig_ab_over_freq+sig_ab_over_freq_k*kweight
                 jdos=jdos+jdos_k*kweight
              elseif(eval_sig_abc) then
                 sig_abc=sig_abc+sig_abc_k*kweight
@@ -640,10 +643,10 @@ module w90_berry_wanint
        call comms_reduce(adpt_counter,1,'SUM')
     end if
     if(eval_sig_ab) then
-       call comms_reduce(sig_ab(1,1,1,1),3*nfreq*adpt_smr_steps*ndim,'SUM')
-       call comms_reduce(sig_ab_over_freq(1,1,1,1),&
-            3*nfreq*adpt_smr_steps*ndim,'SUM')
-       call comms_reduce(jdos(1,1,1),nfreq*adpt_smr_steps*ndim,'SUM')
+       call comms_reduce(sig_ab(1,1,1),3*nfreq*ndim,'SUM')
+       call comms_reduce(sig_ab_over_freq(1,1,1),&
+            3*nfreq*ndim,'SUM')
+       call comms_reduce(jdos(1,1),nfreq*ndim,'SUM')
     endif
     if(eval_sig_abc) then
        call comms_reduce(sig_abc(1,1),3*nfreq,'SUM')
@@ -781,7 +784,7 @@ module w90_berry_wanint
           open(jdos_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
           do ifreq=1,nfreq
              freq=optics_min_energy+ifreq*d_freq
-             write(jdos_unit,'(20E16.8)') freq,jdos(ifreq,:,:)
+             write(jdos_unit,'(5E16.8)') freq,jdos(ifreq,:)
           enddo
           close(jdos_unit)
 
@@ -881,9 +884,8 @@ module w90_berry_wanint
 !             write(DD_unit,'(20E16.8)') freq,sig_ab(1,ifreq,:,:)
 !             write(DA_unit,'(20E16.8)') freq,sig_ab(2,ifreq,:,:)
 !             write(AA_unit,'(20E16.8)') freq,sig_ab(3,ifreq,:,:)
-             write(tot_unit,'(20E16.8)') freq,sig_ab(1,ifreq,:,:)&
-                                             +sig_ab(2,ifreq,:,:)&
-                                             +sig_ab(3,ifreq,:,:)
+             write(tot_unit,'(5E16.8)') freq,&
+                  sig_ab(1,ifreq,:)+sig_ab(2,ifreq,:)+sig_ab(3,ifreq,:)
              
           enddo
           
@@ -921,12 +923,12 @@ module w90_berry_wanint
 
              ahc_kk=0.0_dp
              do ifreq=nfreq,1,-1
-                ahc_kk(1,:,:)=ahc_kk(1,:,:)&
-                     +(2.0_dp/pi)*sig_ab_over_freq(1,ifreq,:,:)*d_freq
-                ahc_kk(2,:,:)=ahc_kk(2,:,:)&
-                     +(2.0_dp/pi)*sig_ab_over_freq(2,ifreq,:,:)*d_freq
-                ahc_kk(3,:,:)=ahc_kk(3,:,:)&
-                     +(2.0_dp/pi)*sig_ab_over_freq(3,ifreq,:,:)*d_freq
+                ahc_kk(1,:)=ahc_kk(1,:)&
+                     +(2.0_dp/pi)*sig_ab_over_freq(1,ifreq,:)*d_freq
+                ahc_kk(2,:)=ahc_kk(2,:)&
+                     +(2.0_dp/pi)*sig_ab_over_freq(2,ifreq,:)*d_freq
+                ahc_kk(3,:)=ahc_kk(3,:)&
+                     +(2.0_dp/pi)*sig_ab_over_freq(3,ifreq,:)*d_freq
                 freq=optics_min_energy+ifreq*d_freq
                 !
                 ! Since the factor (1/freq)*d_freq in Eq.(43) YWVS07 is 
@@ -936,9 +938,8 @@ module w90_berry_wanint
 !                write(DD_unit,'(20E16.8)') freq,ahc_kk(1,:,:)*sig_ab_conv
 !                write(DA_unit,'(20E16.8)') freq,ahc_kk(2,:,:)*sig_ab_conv
 !                write(AA_unit,'(20E16.8)') freq,ahc_kk(3,:,:)*sig_ab_conv
-                write(tot_unit,'(20E16.8)')freq,sig_ab_conv*(ahc_kk(1,:,:)&
-                                                            +ahc_kk(2,:,:)&
-                                                            +ahc_kk(3,:,:))
+                write(tot_unit,'(5E16.8)') freq,&
+                     sig_ab_conv*(ahc_kk(1,:)+ahc_kk(2,:)+ahc_kk(3,:))
              end do
              
 !             close(DD_unit)
@@ -985,16 +986,15 @@ module w90_berry_wanint
              
              m_orb_sr=0.0_dp             
              do ifreq=1,nfreq
-                m_orb_sr(1,:)=m_orb_sr(1,:)+sig_ab(1,ifreq,:,1)*d_freq
-                m_orb_sr(2,:)=m_orb_sr(2,:)+sig_ab(2,ifreq,:,1)*d_freq
-                m_orb_sr(3,:)=m_orb_sr(3,:)+sig_ab(3,ifreq,:,1)*d_freq
+                m_orb_sr(1)=m_orb_sr(1)+sig_ab(1,ifreq,1)*d_freq
+                m_orb_sr(2)=m_orb_sr(2)+sig_ab(2,ifreq,1)*d_freq
+                m_orb_sr(3)=m_orb_sr(3)+sig_ab(3,ifreq,1)*d_freq
                 freq=optics_min_energy+ifreq*d_freq
 !                write(DD_unit,'(10E16.8)') freq,m_orb_sr(1,:)*Morb_conv
 !                write(DA_unit,'(10E16.8)') freq,m_orb_sr(2,:)*Morb_conv
 !                write(AA_unit,'(10E16.8)') freq,m_orb_sr(3,:)*Morb_conv
-                write(tot_unit,'(10E16.8)') freq,Morb_conv*(m_orb_sr(1,:)&
-                                                           +m_orb_sr(2,:)&
-                                                           +m_orb_sr(3,:))
+                write(tot_unit,'(2E16.8)') freq,&
+                     Morb_conv*(m_orb_sr(1)+m_orb_sr(2)+m_orb_sr(3))
              end do
              
 !             close(DD_unit)
@@ -1660,7 +1660,8 @@ module w90_berry_wanint
     use w90_utility, only       : utility_diagonalize,utility_rotate,w0gauss
     use w90_parameters, only    : num_wann,optics_min_energy,&
                                   optics_num_points,alpha,beta,&
-                                  adpt_smr_steps,adpt_smr_width,&
+                                 ! adpt_smr_steps,adpt_smr_width,&
+                                  berry_smr_adpt_factor,&
                                   spn_decomp,fermi_energy
     use w90_wanint_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only   : get_D_h_a,get_deleig_a
@@ -1669,10 +1670,10 @@ module w90_berry_wanint
 
     ! Arguments
     !
-    real(kind=dp),                     intent(in)  :: kpt(3)
-    real(kind=dp), dimension(:,:,:,:), intent(out) :: sig_ab_k
-    real(kind=dp), dimension(:,:,:,:), intent(out) :: sig_ab_over_freq_k
-    real(kind=dp), dimension(:,:,:),   intent(out) :: jdos_k
+    real(kind=dp),                   intent(in)  :: kpt(3)
+    real(kind=dp), dimension(:,:,:), intent(out) :: sig_ab_k
+    real(kind=dp), dimension(:,:,:), intent(out) :: sig_ab_over_freq_k
+    real(kind=dp), dimension(:,:),   intent(out) :: jdos_k
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
@@ -1687,7 +1688,8 @@ module w90_berry_wanint
  
     ! Misc/Dummy
     !
-    integer          :: i,j,ifreq,loop_s,case
+    integer          :: i,j,ifreq,case
+         !loop_s
     real(kind=dp)    :: rdum,rvdum(3),eig(num_wann),occ(num_wann),occ_prod,&
                         freq,A2_ij(3),spn_nk(num_wann) 
 
@@ -1756,12 +1758,13 @@ module w90_berry_wanint
              ! Ordinary
              call get_A2(D_h,AA_bar,i,j,A2_ij,'re')
           end if
-          do loop_s=1,adpt_smr_steps
+!          do loop_s=1,adpt_smr_steps
              
              ! Except for the factor 1/sqrt(2), this is Eq.(35) YWVS07
              ! !!!UNDERSTAND THAT FACTOR!!!
              !
-             smear=joint_level_spacing*adpt_smr_width(loop_s)/sqrt(2.0_dp)
+!             smear=joint_level_spacing*adpt_smr_width(loop_s)/sqrt(2.0_dp)
+             smear=joint_level_spacing*berry_smr_adpt_factor/sqrt(2.0_dp)
              do ifreq=1,nfreq   
                 
                 ! NOTE: Skipping optics_min_energy. When it is zero can give
@@ -1785,9 +1788,9 @@ module w90_berry_wanint
                 !
                 ! Joint density of states
                 !
-                jdos_k(ifreq,loop_s,1)=jdos_k(ifreq,loop_s,1)+rdum
-                if(spn_decomp) jdos_k(ifreq,loop_s,1+case)&
-                              =jdos_k(ifreq,loop_s,1+case)+rdum
+                jdos_k(ifreq,1)=jdos_k(ifreq,1)+rdum
+                if(spn_decomp) jdos_k(ifreq,1+case)&
+                              =jdos_k(ifreq,1+case)+rdum
                 !
                 ! Optical conductivity
                 !
@@ -1795,40 +1798,37 @@ module w90_berry_wanint
                 
                 ! sigma(freq)/freq: Exclude factor of freq in Eq.(39) YWVS07
                 !
-                sig_ab_over_freq_k(1,ifreq,loop_s,1)&
-                     =sig_ab_over_freq_k(1,ifreq,loop_s,1)+A2_ij(1)*rdum
-                sig_ab_over_freq_k(2,ifreq,loop_s,1)&
-                     =sig_ab_over_freq_k(2,ifreq,loop_s,1)+A2_ij(2)*rdum
-                sig_ab_over_freq_k(3,ifreq,loop_s,1)&
-                     =sig_ab_over_freq_k(3,ifreq,loop_s,1)+A2_ij(3)*rdum
+                sig_ab_over_freq_k(1,ifreq,1)&
+                     =sig_ab_over_freq_k(1,ifreq,1)+A2_ij(1)*rdum
+                sig_ab_over_freq_k(2,ifreq,1)&
+                     =sig_ab_over_freq_k(2,ifreq,1)+A2_ij(2)*rdum
+                sig_ab_over_freq_k(3,ifreq,1)&
+                     =sig_ab_over_freq_k(3,ifreq,1)+A2_ij(3)*rdum
                 if(spn_decomp) then
-                   sig_ab_over_freq_k(1,ifreq,loop_s,1+case)&
-                       =sig_ab_over_freq_k(1,ifreq,loop_s,1+case)+A2_ij(1)*rdum
-                   sig_ab_over_freq_k(2,ifreq,loop_s,1+case)&
-                       =sig_ab_over_freq_k(2,ifreq,loop_s,1+case)+A2_ij(2)*rdum
-                   sig_ab_over_freq_k(3,ifreq,loop_s,1+case)&
-                       =sig_ab_over_freq_k(3,ifreq,loop_s,1+case)+A2_ij(3)*rdum
+                   sig_ab_over_freq_k(1,ifreq,1+case)&
+                       =sig_ab_over_freq_k(1,ifreq,1+case)+A2_ij(1)*rdum
+                   sig_ab_over_freq_k(2,ifreq,1+case)&
+                       =sig_ab_over_freq_k(2,ifreq,1+case)+A2_ij(2)*rdum
+                   sig_ab_over_freq_k(3,ifreq,1+case)&
+                       =sig_ab_over_freq_k(3,ifreq,1+case)+A2_ij(3)*rdum
                 end if
                 !
                 ! sigma(freq): Include factor of freq in Eq.(39) YWVS07
                 !
                 rdum=rdum*(eig(j)-eig(i))
-                sig_ab_k(1,ifreq,loop_s,1)=sig_ab_k(1,ifreq,loop_s,1)&
-                     +A2_ij(1)*rdum
-                sig_ab_k(2,ifreq,loop_s,1)=sig_ab_k(2,ifreq,loop_s,1)&
-                     +A2_ij(2)*rdum
-                sig_ab_k(3,ifreq,loop_s,1)=sig_ab_k(3,ifreq,loop_s,1)&
-                     +A2_ij(3)*rdum
+                sig_ab_k(1,ifreq,1)=sig_ab_k(1,ifreq,1)+A2_ij(1)*rdum
+                sig_ab_k(2,ifreq,1)=sig_ab_k(2,ifreq,1)+A2_ij(2)*rdum
+                sig_ab_k(3,ifreq,1)=sig_ab_k(3,ifreq,1)+A2_ij(3)*rdum
                 if(spn_decomp) then
-                   sig_ab_k(1,ifreq,loop_s,1+case)&
-                        =sig_ab_k(1,ifreq,loop_s,1+case)+A2_ij(1)*rdum
-                   sig_ab_k(2,ifreq,loop_s,1+case)&
-                        =sig_ab_k(2,ifreq,loop_s,1+case)+A2_ij(2)*rdum
-                   sig_ab_k(3,ifreq,loop_s,1+case)&
-                        =sig_ab_k(3,ifreq,loop_s,1+case)+A2_ij(3)*rdum
+                   sig_ab_k(1,ifreq,1+case)&
+                        =sig_ab_k(1,ifreq,1+case)+A2_ij(1)*rdum
+                   sig_ab_k(2,ifreq,1+case)&
+                        =sig_ab_k(2,ifreq,1+case)+A2_ij(2)*rdum
+                   sig_ab_k(3,ifreq,1+case)&
+                        =sig_ab_k(3,ifreq,1+case)+A2_ij(3)*rdum
                 end if
              end do !ifreq
-          end do !loop_s
+          !end do !loop_s
        end do !j
     end do !i
 
