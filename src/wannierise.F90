@@ -61,7 +61,7 @@ contains
          num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
-         wannier_spreads,omega_total,omega_tilde,optimisation
+         wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -445,6 +445,9 @@ contains
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
+
+    ! aam: write data required for vdW utility
+    if (write_vdw_data) call wann_write_vdw_data()
 
     ! deallocate sub vars not passed into other subs
     deallocate(rwork,stat=ierr)
@@ -1696,13 +1699,167 @@ contains
     end do
     close(xyz_unit)
 
-    write(stdout,*) ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
+    write(stdout,'(/a)') ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
     
     return
 
 888 format(2x,'WF centre',i5,2x,'(',f10.6,',',f10.6,',',f10.6,' )')
     
   end subroutine wann_write_xyz
+
+
+    !=================================================================!
+     subroutine wann_write_vdw_data()
+    !=================================================================!
+    !                                                                 !
+    ! Write a file with Wannier centres, spreads and occupations for  !
+    ! post-processing computation of vdW C6 coeffients.               !
+    !                                                                 !
+    ! Based on code written by Lampros Andrinopoulos.                 !
+    !=================================================================!
+
+    use w90_io,         only: seedname,io_file_unit,io_date,stdout,io_error
+    use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
+                              lenconfac,real_lattice,recip_lattice,iprint, &
+                              atoms_symbol,atoms_pos_cart,num_species, &
+                              atoms_species_num,wannier_spreads,u_matrix, &
+                              u_matrix_opt,num_kpts,have_disentangled, &
+                              num_elec_cell,num_elec_per_state,write_vdw_data
+    use w90_utility,    only :  utility_translate_home
+    use w90_constants,  only :  cmplx_0,eps6
+!!$    use w90_disentangle, only : ndimfroz
+
+    implicit none
+    
+    integer          :: iw,vdw_unit,file_unit,r,s,nkp,k,l,m,ierr,ndim
+    character(len=9) :: cdate, ctime
+    real(kind=dp)    :: wc(3,num_wann)
+    real(kind=dp)    :: ws(num_wann)
+    complex(kind=dp), allocatable :: f_w(:,:),v_matrix(:,:) !f_w2(:,:)
+ 
+    wc = wannier_centres
+    ws = wannier_spreads 
+
+    ! translate Wannier centres to the home unit cell
+    do iw=1,num_wann
+       call utility_translate_home(wc(:,iw),real_lattice,recip_lattice)
+    enddo
+
+    allocate(f_w(num_wann, num_wann),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating f_w in wann_write_vdw_data')
+    
+!!$    ! aam: remove f_w2 at end
+!!$    allocate(f_w2(num_wann, num_wann),stat=ierr)
+!!$    if (ierr/=0) call io_error('Error in allocating f_w2 in wann_write_vdw_data')
+
+    if (have_disentangled) then
+
+       ! dimension of occupied subspace
+       if (num_elec_cell.le.0) call io_error('Please set num_elec_cell in seedname.win')
+       ndim=num_elec_cell/num_elec_per_state
+
+       allocate(v_matrix(ndim, num_wann),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating V_matrix in wann_write_vdw_data')
+       
+       ! aam: initialise
+       f_w(:,:) = cmplx_0
+       v_matrix(:,:) = cmplx_0
+!!$       f_w2(:,:) = cmplx_0
+
+       ! aam: IN THE END ONLY NEED DIAGONAL PART, SO COULD SIMPLIFY...
+       ! aam: calculate V = U_opt . U    
+       do s=1,num_wann
+          do k=1,ndim
+             do m=1,num_wann
+                v_matrix(k,s) = v_matrix(k,s) + u_matrix_opt(k,m,1) * u_matrix(m,s,1)
+             enddo
+          enddo
+       enddo
+       
+       ! aam: calculate f = V^dagger . V
+       do r=1,num_wann
+          do s=1,num_wann
+             do k=1,ndim
+                f_w(r,s) = f_w(r,s) + v_matrix(k,s) * conjg(v_matrix(k,r))
+             enddo
+          enddo
+       enddo
+       
+!!$       ! original formulation
+!!$       do r=1,num_wann
+!!$          do s=1,num_wann
+!!$             do nkp=1,num_kpts
+!!$                do k=1,ndimfroz(nkp)
+!!$                   do m=1,num_wann
+!!$                      do l=1,num_wann
+!!$                         f_w2(r,s) = f_w2(r,s) + &
+!!$                              u_matrix_opt(k,m,nkp) * u_matrix(m,s,nkp) * &
+!!$                              conjg(u_matrix_opt(k,l,nkp)) * conjg(u_matrix(l,r,nkp))
+!!$                      end do
+!!$                   end do
+!!$                end do
+!!$             end do
+!!$          end do
+!!$       end do
+
+!!$       ! test equivalence
+!!$       do r=1,num_wann
+!!$          do s=1,num_wann
+!!$             if (abs(real(f_w(r,s),dp)-real(f_w2(r,s),dp)).gt.eps6) then
+!!$                write(*,'(i6,i6,f16.10,f16.10)') r,s,real(f_w(r,s),dp),real(f_w2(r,s),dp)
+!!$             endif
+!!$             if (abs(aimag(f_w(r,s))-aimag(f_w2(r,s))).gt.eps6) then
+!!$                write(*,'(a,i6,i6,f16.10,f16.10)') 'Im: ',r,s,aimag(f_w(r,s)),aimag(f_w2(r,s))
+!!$             endif
+!!$          enddo
+!!$       enddo
+!!$       write(*,*) ' done vdw ' 
+
+    else
+       ! for valence only, all occupancies are unity
+       f_w(:,:) = 1.0_dp
+    endif
+
+    ! aam: write the seedname.vdw file directly here
+    vdw_unit=io_file_unit()
+    open(unit=vdw_unit,file=trim(seedname)//'.vdw',action='write')
+    if (have_disentangled) then
+       write(vdw_unit,'(a)') 'disentangle T'
+    else
+       write(vdw_unit,'(a)') 'disentangle F'
+    endif
+    write(vdw_unit,'(a)') 'amalgamate F'
+    write(vdw_unit,'(a,i3)') 'degeneracy', num_elec_per_state
+    write(vdw_unit,'(a)') 'num_frag 2'
+    write(vdw_unit,'(a)') 'num_wann'
+    write(vdw_unit,'(i3,x,i3)') num_wann/2, num_wann/2
+    write(vdw_unit,'(a)') 'tol_occ 0.9'
+    write(vdw_unit,'(a)') 'pxyz'
+    write(vdw_unit,'(a)') 'F F F'
+    write(vdw_unit,'(a)') 'F F F'
+    write(vdw_unit,'(a)') 'tol_dist 0.05'
+    write(vdw_unit,'(a)') 'centres_spreads_occ'
+    write(vdw_unit,'(a)') 'ang'
+    do iw=1,num_wann
+       write(vdw_unit,'(4(f13.10,x),x,f11.8)') wc(1:3,iw),ws(iw),real(f_w(iw,iw))
+    end do
+    close(vdw_unit)
+
+    write(stdout,'(/a/)') ' vdW data written to file '//trim(seedname)//'.vdw'
+
+    if (have_disentangled) then
+       deallocate(v_matrix,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating v_matrix in wann_write_vdw_data')
+    endif
+
+!!$    deallocate(f_w2,stat=ierr)
+!!$    if (ierr/=0) call io_error('Error in deallocating f_w2 in wann_write_vdw_data')
+    deallocate(f_w,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating f_w in wann_write_vdw_data')
+    
+    return
+    
+  end subroutine wann_write_vdw_data
 
 
   !========================================!
@@ -1923,7 +2080,7 @@ contains
          num_guide_cycles,num_no_guide_iter,timing_level, &
          write_proj,have_disentangled,conv_tol,conv_window, &
          wannier_centres,write_xyz,wannier_spreads,omega_total, &
-         omega_tilde
+         omega_tilde,write_vdw_data
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
 
     implicit none
@@ -2238,6 +2395,9 @@ contains
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
+
+    ! aam: write data required for vdW utility
+    if (write_vdw_data) call wann_write_vdw_data()
 
     ! deallocate sub vars not passed into other subs
     deallocate(cz,stat=ierr)

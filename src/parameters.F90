@@ -186,8 +186,7 @@ module w90_parameters
   ! [gp-end, Apr 12, 2012]
 
   logical,           public, save :: transport
-  logical,           public, save :: tran_easy_fix ! a boolean that tells the code 
-                          !to use the "easy_fix" method for fixing the WF parities
+  logical,           public, save :: tran_easy_fix
   character(len=20), public, save :: transport_mode
   real(kind=dp),     public, save :: tran_win_min
   real(kind=dp),     public, save :: tran_win_max
@@ -203,8 +202,8 @@ module w90_parameters
   logical,           public, save :: tran_read_ht 
   logical,           public, save :: tran_use_same_lead
   integer,           public, save :: tran_num_cell_ll      
-  integer,           public, save :: tran_num_cell_rr      
-  real(kind=dp),     public, save :: tran_group_threshold  !used in sorting wannier centres for lcr conductance calculations
+  integer,           public, save :: tran_num_cell_rr     
+  real(kind=dp),     public, save :: tran_group_threshold  
   real(kind=dp),     public, save :: translation_centre_frac(3)
   integer,           public, save :: num_shells    !no longer an input keyword
   integer, allocatable, public,save :: shell_list(:)
@@ -234,6 +233,8 @@ module w90_parameters
   integer,           public, save :: search_shells   !for kmesh
   real(kind=dp),     public, save :: kmesh_tol
   integer,           public, save :: optimisation
+  ! aam: for WF-based calculation of vdW C6 coefficients 
+  logical,           public, save :: write_vdw_data
 
   ! Restarts
   real(kind=dp),     public, save :: omega_invariant
@@ -878,8 +879,11 @@ contains
     bands_color      =   'none'                 
     call param_get_keyword('bands_color',found,c_value=bands_color)
 
+    ! set to a negative default value
+    num_elec_cell=-99
     call param_get_keyword('num_elec_cell',found,r_value=num_elec_cell)
-
+    if (found.and.(num_elec_cell.le.0)) &
+         call io_error('Error: num_elec_cell should be greater than zero')
 
     dos_task =' '
     dos_plot=.false.
@@ -1292,6 +1296,13 @@ contains
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
 
+    ! aam: vdW
+    write_vdw_data           = .false.
+    call param_get_keyword('write_vdw_data',found,l_value=write_vdw_data)
+    if (write_vdw_data) then
+       if ((.not.gamma_only).or.(num_kpts.ne.1)) &
+            call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma')
+    endif
 
     if(frozen_states) then
        dos_max_energy        = dis_froz_max+0.6667_dp
