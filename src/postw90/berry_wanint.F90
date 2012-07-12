@@ -898,23 +898,23 @@ module w90_berry_wanint
              ! transform of the magnetic circular dichroism spectrum: 
              ! Fig. 5b & Eq. (43) of YWVS07 
           
-             file_name=trim( trim(seedname)//'_ahc_kk_DD.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             DD_unit=io_file_unit()
-             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+!             file_name=trim( trim(seedname)//'_ahc_kk_DD.dat')
+!             write(stdout,'(/,3x,a)') '* '//file_name
+!             DD_unit=io_file_unit()
+!             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
                              
-             file_name=trim(trim(seedname)//'_ahc_kk_DA.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             DA_unit=io_file_unit()
-             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',&
-                  FORM='FORMATTED')
+!             file_name=trim(trim(seedname)//'_ahc_kk_DA.dat')
+!             write(stdout,'(/,3x,a)') '* '//file_name
+!             DA_unit=io_file_unit()
+!             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',&
+!                  FORM='FORMATTED')
              
-             file_name=trim(trim(seedname)//'_ahc_kk_AA.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             AA_unit=io_file_unit()
-             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+!             file_name=trim(trim(seedname)//'_ahc_kk_AA.dat')
+!             write(stdout,'(/,3x,a)') '* '//file_name
+!             AA_unit=io_file_unit()
+!             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-             file_name=trim( trim(seedname)//'_ahc_kk_tot.dat')
+             file_name=trim(trim(seedname)//'_ahc_kk.dat')
              write(stdout,'(/,3x,a)') '* '//file_name
              tot_unit=io_file_unit()
              open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
@@ -933,38 +933,37 @@ module w90_berry_wanint
                 ! dimensionless, the conversion factor to obtain the AHC in 
                 ! S/cm is the same as above for sig_ab
                 !
-                write(DD_unit,'(20E16.8)') freq,ahc_kk(1,:,:)*sig_ab_conv
-                write(DA_unit,'(20E16.8)') freq,ahc_kk(2,:,:)*sig_ab_conv
-                write(AA_unit,'(20E16.8)') freq,ahc_kk(3,:,:)*sig_ab_conv
+!                write(DD_unit,'(20E16.8)') freq,ahc_kk(1,:,:)*sig_ab_conv
+!                write(DA_unit,'(20E16.8)') freq,ahc_kk(2,:,:)*sig_ab_conv
+!                write(AA_unit,'(20E16.8)') freq,ahc_kk(3,:,:)*sig_ab_conv
                 write(tot_unit,'(20E16.8)')freq,sig_ab_conv*(ahc_kk(1,:,:)&
-                                                               +ahc_kk(2,:,:)&
-                                                               +ahc_kk(3,:,:))
+                                                            +ahc_kk(2,:,:)&
+                                                            +ahc_kk(3,:,:))
              end do
              
-             close(DD_unit)
-             close(DA_unit)
-             close(AA_unit)
+!             close(DD_unit)
+!             close(DA_unit)
+!             close(AA_unit)
              close(tot_unit)
              
              ! Dichroic f-sum rule
              !
-             file_name=trim( trim(seedname)//'_m_orb_sr_DD.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             DD_unit=io_file_unit()
-             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+!             file_name=trim( trim(seedname)//'_m_orb_sr_DD.dat')
+!             write(stdout,'(/,3x,a)') '* '//file_name
+!             DD_unit=io_file_unit()
+!             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-             file_name=trim(trim(seedname)//'_m_orb_sr_DA.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             DA_unit=io_file_unit()
-             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',&
-                  FORM='FORMATTED')
+!             file_name=trim(trim(seedname)//'_m_orb_sr_DA.dat')
+!             write(stdout,'(/,3x,a)') '* '//file_name
+!             DA_unit=io_file_unit()
+!             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-             file_name=trim(trim(seedname)//'_m_orb_sr_AA.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             AA_unit=io_file_unit()
-             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+!             file_name=trim(trim(seedname)//'_m_orb_sr_AA.dat')
+!             write(stdout,'(/,3x,a)') '* '//file_name
+!             AA_unit=io_file_unit()
+!             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-             file_name=trim( trim(seedname)//'_m_orb_sr_tot.dat')
+             file_name=trim( trim(seedname)//'_m_orb_sr.dat')
              write(stdout,'(/,3x,a)') '* '//file_name
              tot_unit=io_file_unit()
              open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
@@ -990,17 +989,17 @@ module w90_berry_wanint
                 m_orb_sr(2,:)=m_orb_sr(2,:)+sig_ab(2,ifreq,:,1)*d_freq
                 m_orb_sr(3,:)=m_orb_sr(3,:)+sig_ab(3,ifreq,:,1)*d_freq
                 freq=optics_min_energy+ifreq*d_freq
-                write(DD_unit,'(10E16.8)') freq,m_orb_sr(1,:)*Morb_conv
-                write(DA_unit,'(10E16.8)') freq,m_orb_sr(2,:)*Morb_conv
-                write(AA_unit,'(10E16.8)') freq,m_orb_sr(3,:)*Morb_conv
+!                write(DD_unit,'(10E16.8)') freq,m_orb_sr(1,:)*Morb_conv
+!                write(DA_unit,'(10E16.8)') freq,m_orb_sr(2,:)*Morb_conv
+!                write(AA_unit,'(10E16.8)') freq,m_orb_sr(3,:)*Morb_conv
                 write(tot_unit,'(10E16.8)') freq,Morb_conv*(m_orb_sr(1,:)&
-                                                                +m_orb_sr(2,:)&
-                                                                +m_orb_sr(3,:))
+                                                           +m_orb_sr(2,:)&
+                                                           +m_orb_sr(3,:))
              end do
              
-             close(DD_unit)
-             close(DA_unit)
-             close(AA_unit)
+!             close(DD_unit)
+!             close(DA_unit)
+!             close(AA_unit)
              close(tot_unit)
              
           end if !T_odd
