@@ -162,19 +162,37 @@ PREPROCESSOR FLAGS
 ------------------
 To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the 
 make.sys file.
-For instance, if the flag is called EXIT_FLAG, you can simply add
+For instance, if the flag is called EXIT_FLAG, you can simply append
   -DEXIT_FLAG
 (note that -D is prepended to the name of the flag)
-to the FCOPTS list, separating it with a space from what is already defined.
-Alternatively, after the definition of the flag, you can add a line
+to the FCOPTS variable and LDOPTS variable, separating it with a space from
+what is already defined. Example:
+FCOPTS=-O2 -DEXIT_FLAG
+LDOPTS=-O2 -DEXIT_FLAG
+
+Alternatively, after the definition of the FCOPTS and LDOPTS variables,
+at the end of the make.sys file, you can add the lines
   FCOPTS+=-DEXIT_FLAG
+  LDOPTS+=-DEXIT_FLAG
 
 Flags
 -----
 
 * EXIT_FLAG 
-  If defined (and if your compiler supports it), returns an exit status =/= 0 when the
-  code exits due to an error (while it returns 0 on correct completion).
-  By default, when this flag is not present, the value of the exit code is not sensible.
-
-
+  If defined (and if your compiler supports it), returns an exit status =/= 0
+  when the code exits due to an error (while it returns 0 on correct
+  completion).
+  By default, when this flag is not present, the value of the exit code is
+  not sensible.
+* CODATA2006
+  Use physical constants from 2006 version of CODATA tables
+  (http://physics.nist.gov/cuu/Constants/index.html)
+  (Note that this is the default choice if nothing is specified)
+* CODATA2010
+  Use physical constants from 2010 version of CODATA tables
+  (http://physics.nist.gov/cuu/Constants/index.html)
+* USE_WANNIER90_V1_BOHR
+  Use the value of the bohr radius (expressed in angstrom) that
+  was adopted in versions 1.x of the Wannier90 code, instead of
+  the values taken from the CODATA database.
+  (This is intended for backward compatibility only)

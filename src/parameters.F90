@@ -1951,6 +1951,7 @@ contains
 
   subroutine param_write_header
     use w90_io, only : io_date
+    use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
     implicit none
 
 
@@ -2031,6 +2032,14 @@ contains
     write(stdout,*)  '            +---------------------------------------------------+'
     write(stdout,*)  '            |    Execution started on ',cdate,' at ',ctime,'    |'
     write(stdout,*)  '            +---------------------------------------------------+'
+    write(stdout,*)  ''
+    write(stdout,'(1X,A)')  '******************************************************************************'
+    write(stdout,'(1X,A)')  '* ' // constants_version_str1 // '*'
+    write(stdout,'(1X,A)')  '* ' // constants_version_str2 // '*'
+    write(stdout,'(1X,A)')  '* ' // bohr_version_str // '*'
+    write(stdout,'(1X,A)')  '******************************************************************************'
+    write(stdout,*)  ''
+
 
   end subroutine param_write_header
 
