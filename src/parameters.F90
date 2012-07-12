@@ -749,7 +749,7 @@ contains
 
     smr_adpt_factor=1.0_dp
     call param_get_keyword('smr_adpt_factor',found,r_value=smr_adpt_factor)
-    if (found .and. (boltz_dos_smr_adpt_factor <= 0._dp)) &
+    if (found .and. (smr_adpt_factor <= 0._dp)) &
          call io_error('Error: smr_adpt_factor must be greater than zero')  
 
     smr_fixed_en_width=0.0_dp

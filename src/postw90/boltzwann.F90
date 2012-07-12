@@ -661,10 +661,12 @@ contains
        if (boltz_calc_also_dos) then
           if (boltz_dos_smr_adpt) then
              call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                  smr_index=boltz_dos_smr_index,&
                   smr_adpt_factor=boltz_dos_smr_adpt_factor,&
                   levelspacing_k=levelspacing_k)
           else
              call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                  smr_index=boltz_dos_smr_index,&
                   smr_fixed_en_width=boltz_dos_smr_fixed_en_width)
           end if
           ! This sum multiplied by kweight amounts to calculate
@@ -847,7 +849,7 @@ contains
     real(kind=dp), dimension(:), intent(in)          :: EnergyArray
     real(kind=dp), dimension(:), intent(in)          :: eig_k
     real(kind=dp), dimension(:,:), intent(out)       :: dos_k
-    integer, intent(in),                             :: smr_index
+    integer, intent(in)                              :: smr_index
     real(kind=dp), intent(in),optional               :: smr_fixed_en_width
     real(kind=dp), intent(in),optional               :: smr_adpt_factor
     real(kind=dp), dimension(:), intent(in),optional :: levelspacing_k
