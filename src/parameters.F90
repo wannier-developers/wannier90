@@ -36,9 +36,6 @@ module w90_parameters
   real(kind=dp)                   :: smr_adpt_factor
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
-  logical,                    public, save :: berry_smr_adpt
-  real(kind=dp),              public, save :: berry_smr_adpt_factor
-  real(kind=dp),              public, save :: berry_smr_fixed_en_width
     real(kind=dp),              public, save :: degen_skip_thr
 !  real(kind=dp),              public, save :: smear_temp
 !  real(kind=dp),              public, save :: eps_occ
@@ -106,7 +103,6 @@ module w90_parameters
   character(len=20), public, save :: fermi_surface_plot_format
   real(kind=dp),     public, save :: fermi_energy
   logical,           public, save :: slice_plot
-  !IVO
   character(len=20), public, save :: slice_task
   character(len=20), public, save :: slice_plot_format
   integer,           public, save :: slice_num_points
@@ -127,19 +123,28 @@ module w90_parameters
 
 !  real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
-  logical,           public, save :: optics_plot
-  integer,           public, save :: optics_num_points
-  integer,           public, save :: optics_adaptive_pts
-  real(kind=dp),     public, save :: optics_adaptive_thresh
+
+! Variables for module 'berry'
+  logical,           public, save :: berry
+  character(len=20), public, save :: berry_task
+  real(kind=dp),     public, save :: berry_interp_mesh_spacing
+  integer,           public, save :: berry_interp_mesh(3)
+  integer,           public, save :: berry_adaptive_mesh
+  real(kind=dp),     public, save :: berry_adaptive_thresh
+  logical,           public, save :: berry_smr_adpt
+  real(kind=dp),     public, save :: berry_smr_adpt_factor
+  real(kind=dp),     public, save :: berry_smr_fixed_en_width
   real(kind=dp),     public, save :: optics_energy_step
   real(kind=dp),     public, save :: optics_max_energy
   real(kind=dp),     public, save :: optics_min_energy
-  character(len=20), public, save :: optics_plot_format
   logical,           public, save :: wanint_kpoint_file
-  character(len=20), public, save :: optics_task
   logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
-  !IVO_END
+
+
+! Variables for module 'spin'
+  real(kind=dp),     public, save :: spin_interp_mesh_spacing
+  integer,           public, save :: spin_interp_mesh(3)
 
   ! [gp-begin, Apr 13, 2012]
   !! Global interpolation k mesh variables
@@ -769,44 +774,41 @@ contains
     do_dos                  = .false.
     call param_get_keyword('do_dos',found,l_value=do_dos)
 
-    optics_plot                  = .false.
-    call param_get_keyword('optics_plot',found,l_value=optics_plot)
+    berry                  = .false.
+    call param_get_keyword('berry',found,l_value=berry)
 
     transl_inv                  = .false.
     call param_get_keyword('transl_inv',found,l_value=transl_inv)
 
-    optics_num_points            = 50
-    call param_get_keyword('optics_num_points',found,i_value=optics_num_points)
-    if (optics_num_points<0) call io_error('Error: optics_num_points must be positive')       
+!    optics_num_points            = 50
+!    call param_get_keyword('optics_num_points',found,i_value=optics_num_points)
+!    if (optics_num_points<0) call io_error('Error: optics_num_points must be positive')       
 
-    optics_adaptive_pts           = 3
-    call param_get_keyword('optics_adaptive_pts',found,i_value=optics_adaptive_pts)
-    if (optics_adaptive_pts<0) call io_error('Error:  optics_adaptive_ptsmust be positive')       
+    berry_adaptive_mesh           = 3
+    call param_get_keyword('berry_adaptive_mesh',found,i_value=berry_adaptive_mesh)
+    if (berry_adaptive_mesh<0) call io_error('Error:  berry_adaptive_mesh must be positive')       
 
     optics_energy_step           = 0.01_dp
     call param_get_keyword('optics_energy_step',found,r_value=optics_energy_step)
 
-    optics_adaptive_thresh           = 100.0_dp
-    call param_get_keyword('optics_adaptive_thresh',found,r_value=optics_adaptive_thresh)
-
-    optics_plot_format           = 'gnuplot'
-    call param_get_keyword('optics_plot_format',found,c_value=optics_plot_format)
+    berry_adaptive_thresh           = 100.0_dp
+    call param_get_keyword('berry_adaptive_thresh',found,r_value=berry_adaptive_thresh)
 
     wanint_kpoint_file = .false.
     call param_get_keyword('wanint_kpoint_file',found,l_value=wanint_kpoint_file)
 
-    optics_task =' '
-    call param_get_keyword('optics_task',found,c_value=optics_task)
-    if(optics_plot.and..not.found) call io_error &
-         ('Error: optics_task=T and optics_plot is not set')
-    if(optics_plot) then
-       if(index(optics_task,'mcd')==0 .and. index(optics_task,'ord')==0&
-            .and. index(optics_task,'ahe')==0 .and. index(optics_task,'orb')==0&
-            .and. index(optics_task,'gyro')==0&
-            .and. index(optics_task,'noa')==0&
-            .and. index(optics_task,'mespn')==0)&
+    berry_task =' '
+    call param_get_keyword('berry_task',found,c_value=berry_task)
+    if(berry.and..not.found) call io_error &
+         ('Error: berry_task=T and berry is not set')
+    if(berry) then
+       if(index(berry_task,'mcd')==0 .and. index(berry_task,'ord')==0&
+            .and. index(berry_task,'ahe')==0 .and. index(berry_task,'orb')==0&
+            .and. index(berry_task,'gyro')==0&
+            .and. index(berry_task,'noa')==0&
+            .and. index(berry_task,'mespn')==0)&
             call io_error&
-            ('Error: value of optics_task not recognised in param_read')
+            ('Error: value of berry_task not recognised in param_read')
     end if
 
 
@@ -1452,6 +1454,17 @@ contains
          should_be_defined=boltzwann, &
          module_interp_mesh=boltz_interp_mesh, &
          module_interp_mesh_spacing=boltz_interp_mesh_spacing)
+
+    call get_module_interp_mesh(moduleprefix='berry', &
+         should_be_defined=berry, &
+         module_interp_mesh=berry_interp_mesh, &
+         module_interp_mesh_spacing=berry_interp_mesh_spacing)
+
+    call get_module_interp_mesh(moduleprefix='berry', &
+         should_be_defined=berry, &
+         module_interp_mesh=spin_interp_mesh, &
+         module_interp_mesh_spacing=spin_interp_mesh_spacing)
+
 
     ! Atoms
     if (.not.library) num_atoms=0

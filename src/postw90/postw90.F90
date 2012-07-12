@@ -195,7 +195,7 @@ program postw90
   ! Orbital magnetization
   ! -----------------------------------------------------------------
   !
-  if(optics_plot) call berry
+  if(berry) call berry_properties
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------

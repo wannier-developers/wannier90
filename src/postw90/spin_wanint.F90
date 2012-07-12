@@ -29,7 +29,7 @@ module w90_spin_wanint
     use w90_comms, only         : on_root,my_node_id,num_nodes,comms_reduce
     use w90_io, only            : io_error,stdout
     use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
-    use w90_parameters, only    : optics_num_points,wanint_kpoint_file
+    use w90_parameters, only    : spin_interp_mesh,wanint_kpoint_file
     use w90_get_oper, only      : get_HH_R,get_SS_R
 
     integer       :: loop_x,loop_y,loop_z,loop_tot
@@ -72,14 +72,28 @@ module w90_spin_wanint
        if (on_root)&
             write(stdout,'(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
        
-       kweight=1.0_dp/optics_num_points**3
-       do loop_tot=my_node_id,optics_num_points**3-1,num_nodes
-          loop_x=loop_tot/optics_num_points**2
-          loop_y=(loop_tot-loop_x*optics_num_points**2)/optics_num_points
-          loop_z=loop_tot-loop_x*optics_num_points**2-loop_y*optics_num_points
-          kpt(1)=real(loop_x,dp)/optics_num_points
-          kpt(2)=real(loop_y,dp)/optics_num_points
-          kpt(3)=real(loop_z,dp)/optics_num_points
+
+
+
+!       kweight=1.0_dp/optics_num_points**3
+!       do loop_tot=my_node_id,optics_num_points**3-1,num_nodes
+!          loop_x=loop_tot/optics_num_points**2
+!          loop_y=(loop_tot-loop_x*optics_num_points**2)/optics_num_points
+!          loop_z=loop_tot-loop_x*optics_num_points**2-loop_y*optics_num_points
+!          kpt(1)=real(loop_x,dp)/optics_num_points
+!          kpt(2)=real(loop_y,dp)/optics_num_points
+!          kpt(3)=real(loop_z,dp)/optics_num_points
+
+       kweight = 1.0_dp / real(PRODUCT(spin_interp_mesh),kind=dp)
+       do loop_tot=my_node_id,PRODUCT(spin_interp_mesh)-1,num_nodes
+          loop_x= loop_tot/(spin_interp_mesh(2)*spin_interp_mesh(3))
+          loop_y=(loop_tot-loop_x*(spin_interp_mesh(2)*spin_interp_mesh(3)))/spin_interp_mesh(3)
+          loop_z= loop_tot-loop_x*(spin_interp_mesh(2)*spin_interp_mesh(3)) -loop_y*spin_interp_mesh(3)
+          kpt(1)=(real(loop_x,dp)/real(spin_interp_mesh(1),dp))
+          kpt(2)=(real(loop_y,dp)/real(spin_interp_mesh(2),dp))
+          kpt(3)=(real(loop_z,dp)/real(spin_interp_mesh(3),dp))
+
+
           call spin_moment_k(kpt,spn_k)
           spn_all=spn_all+spn_k*kweight
        end do

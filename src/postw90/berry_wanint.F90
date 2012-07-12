@@ -20,7 +20,7 @@ module w90_berry_wanint
 
   private
 
-  public :: berry,get_imf_ab_k,get_img_ab_k,get_imh_ab_k
+  public :: berry_properties,get_imf_ab_k,get_img_ab_k,get_imh_ab_k
   real(kind=dp), parameter :: eps=1.0e-7
 
   integer       :: nfreq,nfreq_cut,aa(10),bb(10),cc(10)
@@ -33,7 +33,7 @@ module w90_berry_wanint
   !                   PUBLIC PROCEDURES                       ! 
   !===========================================================!
 
-  subroutine berry
+  subroutine berry_properties
   !=============================================================!
   !                                                             !
   ! Computes the following quantities:                          !
@@ -59,9 +59,11 @@ module w90_berry_wanint
     use w90_parameters, only    : timing_level,alpha,beta,gamma,num_wann,&
 !                                  optics_num_points,&
                                   berry_interp_mesh,&
-                                  optics_adaptive_pts,optics_adaptive_thresh,&
+                                  berry_adaptive_mesh,berry_adaptive_thresh,&
                                   wanint_kpoint_file,cell_volume,transl_inv,&
-                                  optics_task,optics_min_energy,&
+                                  !optics_task,
+                                  berry_task,&
+                                  optics_min_energy,&
                                   optics_max_energy,optics_energy_step,&
                                   !adpt_smr_steps,adpt_smr_width,&
                                   berry_smr_adpt_factor,&
@@ -171,32 +173,32 @@ module w90_berry_wanint
     eval_ME_EQ=.false.
     eval_MEspn=.false.
     T_odd=.false.
-    if(index(optics_task,'ahe')>0) then
+    if(index(berry_task,'ahe')>0) then
        eval_ahe=.true.
-    elseif(index(optics_task,'orb')>0) then
+    elseif(index(berry_task,'orb')>0) then
        eval_orb=.true.
     end if
-    if(index(optics_task,'mcd')>0) then
+    if(index(berry_task,'mcd')>0) then
        T_odd=.true.
        eval_sig_ab=.true.
-    elseif(index(optics_task,'ord')>0) then
+    elseif(index(berry_task,'ord')>0) then
        T_odd=.false.
        eval_sig_ab=.true.
-    elseif(index(optics_task,'gyro')>0) then
+    elseif(index(berry_task,'gyro')>0) then
        T_odd=.true.
        eval_sig_abc=.true.
        eval_ME_EQ=.true.
-    elseif(index(optics_task,'noa')>0) then
+    elseif(index(berry_task,'noa')>0) then
        T_odd=.false.
        eval_sig_abc=.true.
     end if
-    if(index(optics_task,'mespn')>0) eval_MEspn=.true.
+    if(index(berry_task,'mespn')>0) eval_MEspn=.true.
 
     ! NOTE: This may change, if eval_ME_EQ is done separately from eval_sig_abc
     if(alpha==0.or.beta==0) call io_error&
      ('Must specify cartesian directions alpha and beta for optical properties')
     if(gamma==0.and.eval_sig_abc) call io_error&
-         ('Must specify cartesian direction gamma for optics_task=gyro,noa')
+         ('Must specify cartesian direction gamma for berry_task=gyro,noa')
 
     if(on_root) then
 
@@ -445,7 +447,7 @@ module w90_berry_wanint
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
-          kweight_adpt=kweight/optics_adaptive_pts**3
+          kweight_adpt=kweight/berry_adaptive_mesh**3
           if(eval_ahe) then 
              call get_imf_ab_k(kpt,imf_ab_k)
              adpt_trigger=abs(sum(imf_ab_k))
@@ -456,7 +458,7 @@ module w90_berry_wanint
              adpt_trigger=abs(sum(img_ab_k)+sum(imh_ab_k)&
                   -2.0_dp*fermi_energy*sum(imf_ab_k))
           else ! Ensure that adaptive refinement is not triggered
-             adpt_trigger=optics_adaptive_thresh-1.0_dp
+             adpt_trigger=berry_adaptive_thresh-1.0_dp
           end if
           if(eval_sig_ab) then
                call get_sig_ab_k(kpt,sig_ab_k,sig_ab_over_freq_k,jdos_k)
@@ -469,9 +471,9 @@ module w90_berry_wanint
           ! Decide whether or not to trigger adaptive refinement of 
           ! integration k-mesh, when computing AHC (and possibly MCD) or Morb
           !
-          if(adpt_trigger>optics_adaptive_thresh) then
+          if(adpt_trigger>berry_adaptive_thresh) then
              adpt_counter=adpt_counter+1
-             do loop_adpt=1,optics_adaptive_pts**3
+             do loop_adpt=1,berry_adaptive_mesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
                 if(eval_ahe) then
                    call get_imf_ab_k(kpt_ad,imf_ab_k)
@@ -539,7 +541,7 @@ module w90_berry_wanint
        if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
 !       kweight=1.0_dp/optics_num_points**3
        kweight = 1.0_dp / real(PRODUCT(berry_interp_mesh),kind=dp)
-       kweight_adpt=kweight/optics_adaptive_pts**3
+       kweight_adpt=kweight/berry_adaptive_mesh**3
 
        do loop_tot=my_node_id,PRODUCT(berry_interp_mesh)-1,num_nodes
           loop_x= loop_tot/(berry_interp_mesh(2)*berry_interp_mesh(3))
@@ -572,7 +574,7 @@ module w90_berry_wanint
              adpt_trigger=abs(sum(img_ab_k)&
                   +sum(imh_ab_k)-2.0_dp*fermi_energy*sum(imf_ab_k))
           else ! Ensure that adaptive refinement is not triggered
-             adpt_trigger=optics_adaptive_thresh-1.0_dp
+             adpt_trigger=berry_adaptive_thresh-1.0_dp
           end if
           if(eval_sig_ab) then
              call get_sig_ab_k(kpt,sig_ab_k,sig_ab_over_freq_k,jdos_k)
@@ -581,9 +583,9 @@ module w90_berry_wanint
           endif
           if(eval_ME_EQ) call get_ME_EQ_k(kpt,alphaME_k,imgamma_k)
           if(eval_MEspn) call get_MEspn_k(kpt,alphaspn_k,alphaspn_cut_k)
-          if(adpt_trigger>optics_adaptive_thresh) then
+          if(adpt_trigger>berry_adaptive_thresh) then
              adpt_counter=adpt_counter+1
-             do loop_adpt=1,optics_adaptive_pts**3
+             do loop_adpt=1,berry_adaptive_mesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
                  if(eval_ahe) then
                    call get_imf_ab_k(kpt_ad,imf_ab_k)
@@ -1284,32 +1286,32 @@ module w90_berry_wanint
              if(eval_ahe) then
                 write(stdout,'(1x,a47,3x,f8.4,a)')&
                      'Adaptive refinement triggered when Omega(k) >',&
-                     optics_adaptive_thresh,' Ang^2'
+                     berry_adaptive_thresh,' Ang^2'
              else
                 write(stdout,'(1x,a48,f8.4,a)')&
                      'Adaptive refinement triggered when k-integrand >',&
-                     optics_adaptive_thresh,' eV.Ang^2'
+                     berry_adaptive_thresh,' eV.Ang^2'
              end if
              write(stdout,'(1x,a47,i7,a,f8.4,a)')&
                   'How many points triggered adaptive refinement: ',&
                   adpt_counter,' (',&
                   100*real(adpt_counter,dp)/sum(num_int_kpts_on_node),' %)'
-             if(optics_adaptive_pts < 10) then
+             if(berry_adaptive_mesh < 10) then
                 write(stdout,'(1x,a47,4x,i1,a,i1,a,i1)')&
-                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                     optics_adaptive_pts,'x',optics_adaptive_pts
-             elseif(optics_adaptive_pts < 100) then
+                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                     berry_adaptive_mesh,'x',berry_adaptive_mesh
+             elseif(berry_adaptive_mesh < 100) then
                 write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
-                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                     optics_adaptive_pts,'x',optics_adaptive_pts
+                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                     berry_adaptive_mesh,'x',berry_adaptive_mesh
              else
                 write(stdout,'(1x,a47,i3,a,i1,a,i1)')&
-                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                     optics_adaptive_pts,'x',optics_adaptive_pts
+                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                     berry_adaptive_mesh,'x',berry_adaptive_mesh
              end if
              write(stdout,'(1x,a47,i10)') 'Total number of points: ',&
                   sum(num_int_kpts_on_node)-adpt_counter+&
-                  adpt_counter*optics_adaptive_pts**3
+                  adpt_counter*berry_adaptive_mesh**3
           end if
 
        else
@@ -1345,31 +1347,31 @@ module w90_berry_wanint
              if(eval_ahe) then
                 write(stdout,'(1x,a47,f8.4,a)')&
                      'Adaptive refinement triggered when Omega(k) >',&
-                     optics_adaptive_thresh,' Ang^2'
+                     berry_adaptive_thresh,' Ang^2'
              else
                 write(stdout,'(1x,a48,f8.4,a)')&
                      'Adaptive refinement triggered when k-integrand >',&
-                     optics_adaptive_thresh,' eV.Ang^2'
+                     berry_adaptive_thresh,' eV.Ang^2'
              end if
              write(stdout,'(1x,a47,i7,a,f8.4,a)')&
                   'How many points triggered adaptive refinement: ',&
                   adpt_counter,' (',&
                   100*real(adpt_counter,dp)/product(berry_interp_mesh),' %)'
-!             if(optics_adaptive_pts < 10) then
+!             if(berry_adaptive_mesh < 10) then
 !                write(stdout,'(1x,a47,i1,a,i1,a,i1)')&
-!                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-!                     optics_adaptive_pts,'x',optics_adaptive_pts
-!             elseif(optics_adaptive_pts < 100) then
+!                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+!                     berry_adaptive_mesh,'x',berry_adaptive_mesh
+!             elseif(berry_adaptive_mesh < 100) then
 !                write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
-!                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-!                     optics_adaptive_pts,'x',optics_adaptive_pts
+!                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+!                     berry_adaptive_mesh,'x',berry_adaptive_mesh
 !             else
              write(stdout,'(1x,a,i0,a,i0,a,i0)')&
-                  'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                  optics_adaptive_pts,'x',optics_adaptive_pts
+                  'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                  berry_adaptive_mesh,'x',berry_adaptive_mesh
              write(stdout,'(1x,a,i0)') 'Total number of points: ',&
                   product(berry_interp_mesh)-adpt_counter+&
-                  adpt_counter*optics_adaptive_pts**3
+                  adpt_counter*berry_adaptive_mesh**3
 !             end if
           end if
 
@@ -1379,7 +1381,7 @@ module w90_berry_wanint
 
     end if !on_root
 
-  end subroutine berry
+  end subroutine berry_properties
 
   subroutine get_imf_ab_k(kpt,imf)
   !=====================================!
