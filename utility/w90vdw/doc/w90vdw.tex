@@ -1,0 +1,242 @@
+\documentclass{report}
+
+\usepackage{color}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{esint}
+
+\newcommand{\ket}[1]{\vert{#1}\rangle}
+\newcommand{\bra}[1]{\langle{#1}\vert}
+\newcommand{\rr}{{\bf r}}
+\newcommand{\wvdw}{{$\tt{w90vdw}$}}
+\newcommand{\wannier}{{$\tt{wannier90}$}}
+
+\begin{document}
+
+\normalsize
+
+\chapter*{Calculating van der Waals energies using MLWFs}
+\addtocounter {chapter} {1}
+
+\section{Introduction}
+
+This document describes the implementation of a method for calculating
+van der Waals energies based on the idea of density decomposition. For
+theoretical details, we refer the user to the following publication:\\
+
+Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi,
+``Calculating dispersion interactions using maximally localized Wannier functions'',
+\emph{J. Chem. Phys.} \textbf{135}, 154105 (2011) [hereafter referred
+to as ``AHM11'']. \\
+
+The code that calculates the van der Waals energy is called
+\wvdw\ and should be run separately after a \wannier\ run.\\
+
+Please report comments, bugs or suggestions to the \wannier\ mailing
+list. 
+
+\section{Compilation}
+
+\wvdw\ does not use any special mathematical libraries and may be
+compiled simply using
+
+\begin{verbatim}
+$> ifort -o w90vdw.x w90vdw.f90
+\end{verbatim}
+
+or equivalent.
+
+\section{Additional parameters in \wannier}
+
+\subsection{$\tt{logical :: write\_vdw\_data}$}
+ 
+Default value is $\tt{false}$. If $\tt{true}$, then \wannier\ will
+write a prototype input file, $\tt{seedname.vdw}$, for
+\wvdw. 
+
+Dependencies: 
+\begin{itemize}
+\item Gamma-only sampling
+\item If disentanglement is being used, then $\tt{num\_elec\_cell}$
+  must be set in $\tt{seedname.win}$.
+\item If the system is spin-polarised, then
+  $\tt{num\_elec\_per\_state}$ should be set to $\tt{1}$ in
+  $\tt{seedname.win}$ (default value is $\tt{2}$.
+\end{itemize}
+
+
+\section{The \wvdw\ utility}
+The \wvdw\ utility can be used to calculate the van der Waals energy
+using the centres, spreads and diagonal occupations obtained from
+\wannier. This information is written by \wannier\ to
+$\tt{seedname.vdw}$ if $\tt{write\_vdw\_data = true}$. 
+ 
+With only a few required modifications by the user (see below),
+\wvdw\ reads $\tt{seedname.vdw}$ as an input file and outputs 
+the vdW energy and $C_{6\rm {eff}}$ of the system in atomic units (Ha
+and Ha$\times$ a$_0^6$, respectively).
+
+\subsection{Input file}
+
+\wvdw reads the input file line by line, so care must be taken with
+the ordering of the keywords and values! 
+
+The format of the input file is
+
+\begin{verbatim}
+disentangle T
+amalgamate F
+degeneracy  2
+num_frag 2
+num_wann
+ 18  18
+tol_occ 0.9
+pxyz
+F F T
+F F T
+tol_dist 0.05
+centres_spreads_occ
+ang
+ 6.8742130670  9.1496672772  7.9865298439  0.5940909695   0.99883400
+ 5.8247042551  7.3317119345  7.9865426308  0.5941494255   0.99883324
+ .
+ .
+ .
+\end{verbatim}
+
+Each line is described in more detail below:
+
+\begin{itemize}
+\item $\tt{disentangle}$: logical; allowed values $\tt{T}$ or
+  $\tt{F}$; whether MLWFs are disentangled (ie, partially occupied) or
+  not
+\item $\tt{amalgamate}$: logical; allowed values $\tt{T}$ or
+  $\tt{F}$; whether to amalgamate co-centric MLWFs into a single MLWF
+  with averaged centre and spread 
+\item $\tt{degeneracy}$: real; for spin-polarised systems should be 1,
+  for spin-degenerate systems 2
+\item $\tt{num\_frag}$: integer; the number of molecular fragments in
+    the system
+\item $\tt{num\_wann}$: a list of $\tt{num\_frag}$ integers that
+  specify the number of MLWFs in each molecular fragment
+\item $\tt{tol\_occ}$: real; MLWFs with occupancy less than this value
+  will be assumed to be $p$-like atomic orbitals and will be split
+  into two separate $s$-like orbitals. Only used if $\tt{disentangle
+    T}$. 
+\item $\tt{pxyz}$: logical vector; a list of $\tt{num\_frag}$ entries,
+  each on a separate line, that specify the direction in which
+  $p$-splitting should be performed for each molecular fragment (e.g.,
+  $\tt{F F T}$ corresponds to the z-direction). Only used if $\tt{disentangle
+    T}$.
+\item $\tt{tol\_dist}$: real; distance threshold (in bohr) determining whether
+  MLWFs are co-centric. Only used if $\tt{amalgamate T}$.
+\item $\tt{units}$: character; units in which the following centres
+  and spreads are specified. Allowed values are $\tt{ang}$,
+  $\tt{bohr}$. 
+\item $\tt{centres\_spreads\_occ}$: real; one entry for each MLWF,
+  specifying the Cartesian co-ordinates of the centre, the quadratic
+  spread, and the occupancy. \textbf{Must be ordered by molecular
+    fragment, i.e., the MLWFs of the first fragment grouped together
+    first, those of the second fragment grouped next, etc.}
+\end{itemize}
+
+While \wannier\ will write the $\tt{seedname.vdw}$ file
+automatically, a number of the parameters must checked and modified by hand
+prior to running \wvdw. In particular, $\tt{amalgamate}$,
+$\tt{num\_frag}$, $\tt{num\_wann}$, $\tt{tol\_occ}$, $\tt{pxyz}$,
+  $\tt{tol\_dist}$ and the ordering of the
+  $\tt{centres\_spreads\_occ}$ block of data. 
+
+The programme is then run simply as
+
+$\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.vdw}$
+
+and the output is written to a file $\tt{seedname.vdw.out}$. 
+
+\section{Example: benzene dimer}
+
+We use the example of a benzene dimer in the ``S''
+configuration.
+
+\subsection{Valence (fully occupied) MLWFs}
+
+Directory for files: $\tt{utility/wvdw/examples/benzene\_s\_val/}$
+
+Each benzene molecule has 15 valence MLWFs (see Fig.~8 of AHM11).  The
+$\tt{.mmn}$, $\tt{.amn}$, $\tt{.eig}$ and $\tt{.win}$ files are
+provided. The $\tt{.mmn}$ file will need to be gunzipped.
+
+First, run 
+
+$\tt{\$>}$ \wannier\ $\tt{seedname}$
+
+This will generate $\tt{seedname.vdw}$. Copy this to a new file
+$\tt{seedname.in.vdw}$:
+
+$\tt{\$> cp seedname.vdw seedname.in.vdw}$
+
+and edit $\tt{seedname.in.vdw}$ to check that the two molecular
+fragments are specified correctly, and to group the data corresponding
+to the MLWF centres, spreads and occupancies by molecular fragment. 
+
+Then run 
+
+$\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.in.vdw}$
+
+The output is written to a file $\tt{seedname.in.vdw.out}$ and the van der Waals
+energy and effective $C_6$ coefficient appears towards the bottom.
+
+Reference output files can be found in  $\tt{utility/wvdw/examples/benzene\_s\_val/ref/}$.
+
+\subsection{Disentangled (partially occupied) MLWFs}
+
+Directory for files: $\tt{utility/wvdw/examples/benzene\_s\_cond/}$
+
+If we now consider higher-lying states (keeping the valence manifold
+explicitly included using a frozen window), we may disentangle 18
+partially occupied MLWFs per molecule that, unlike the valence-only
+case, retain the symmetry of the molecule. 
+
+First, run 
+
+$\tt{\$>}$ \wannier\ $\tt{seedname}$
+
+This will generate $\tt{seedname.vdw}$. Copy this to a new file
+$\tt{seedname.in.vdw}$:
+
+$\tt{\$> cp seedname.vdw seedname.in.vdw}$
+
+and edit $\tt{seedname.in.vdw}$ to check that the two molecular
+fragments are specified correctly and to group the data corresponding
+to the MLWF centres, spreads and occupancies by molecular fragment. 
+
+In addition, as disentanglement is being used, the direction for
+$p$-orbital splitting for each fragment and occupancy threshold for
+applying the splitting on MLWFs will need to be modified. 
+
+The MLWFs centred on the C atoms are of atomic $p$-like character and, 
+according to the methods described in AHM11, they are split into two
+lobes of $s$-like character. This is done by specifying the direction
+of $p$-splitting in the input file. In this case the molecules are in
+the $x$-$y$ plane and the $p$-orbitals point along the $z$-direction,
+hence this is the direction in which all the $p$-orbitals must be
+split. Hence, the directions should be of the form $\tt{F F T}$. The
+orbitals that need to be split are easily identified in
+$\tt{seedname.vdw}$ by their occupancies, which tend to be around
+0.5. Hence a value of between 0.6 and 0.9 for $\tt{tol\_occ}$ should
+enable the code to apply the splitting algorithms to the appropriate
+orbitals. 
+
+Once $\tt{seedname.in.vdw}$ has been correctly modified, run
+
+$\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.in.vdw}$
+
+As before, the output is written to a file $\tt{seedname.in.vdw.out}$ and the van der Waals
+energy and effective $C_6$ coefficient appears towards the bottom.
+
+Reference output files can be found in  $\tt{utility/wvdw/examples/benzene\_s\_cond/ref/}$.
+
+
+\end{document}

@@ -1,0 +1,14 @@
+Implementation of a method for calculating van der Waals 
+energies based on the idea of density decomposition. 
+
+For theoretical details, please see the following publication
+and references therein:
+
+Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi, 
+Calculating dispersion interactions using maximally localized
+Wannier functions, J. Chem. Phys. 135, 154105 (2011).
+
+For further details of this program, please see the documentation
+in /doc and the related examples in /examples.
+
+(c) 2012, L Andrinopoulos, NDM Hine, AA Mostofi
