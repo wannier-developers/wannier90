@@ -105,10 +105,11 @@ written to output \\
 {\sc translate\_home\_cell } & L & To translate final Wannier centres
 to home unit cell when writing xyz file\\
 {\sc write\_xyz }  & L & To write atomic positions and final centres in xyz file format \\
+{\sc write\_vdw\_data }  & L & To write data for futher processing by w90vdw utility\\
 \hline
 \end{tabular}
 \caption[win file keywords.]
-{{\tt seedname.win} file keywords defining the system.  Argument types
+{{\tt seedname.win} file keywords defining job control.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. {\sc
   translate\_home\_cell } only relevant if {\sc write\_xyz} is
@@ -694,6 +695,15 @@ visualisation.
 
 The default value is \verb#false#.
 
+\subsection[write\_vdw\_data]{\tt logical :: write\_vdw\_data}
+
+Determines whether to write \verb#seedname.vdw# for
+subsequent post-processing by the \verb#w90vdw# utility
+(in the \verb#utility/w90vdw/# directory of the
+distribution) for calculating van der Waals energies.
+Brillouin zone sampling must be at the Gamma-point only.
+
+The default value is \verb#false#.
 
 \section{Disentanglement}
 These keywords control the disentanglement routine of
