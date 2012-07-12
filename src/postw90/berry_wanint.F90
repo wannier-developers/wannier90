@@ -57,7 +57,8 @@ module w90_berry_wanint
     use w90_wanint_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
                                   adkpt,weight,rpt_origin
     use w90_parameters, only    : timing_level,alpha,beta,gamma,num_wann,&
-                                  optics_num_points,&
+!                                  optics_num_points,&
+                                  berry_interp_mesh,&
                                   optics_adaptive_pts,optics_adaptive_thresh,&
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   optics_task,optics_min_energy,&
@@ -85,7 +86,7 @@ module w90_berry_wanint
     ! 'sig_ab_k' is the contrib to the optical conductivity from one k-point,
     ! 'sig_ab_node' from k-points in one node, 'sig_ab' is the BZ average.
     ! 'ahc_kk' is the cumulative Kramers-Kronig transform of the MCD spectrum
-    ! 'm_orb_sr' is the cumulative dichroic f-sum rule
+    ! 'morb_sr' is the cumulative dichroic f-sum rule
     !
     !   sig_ab_(1,:,:,:) is the 'DD' term in the notation of YWSV07 
     !   sig_ab_(2,:,:,:) is the 'DA' term
@@ -94,7 +95,7 @@ module w90_berry_wanint
     real(kind=dp), allocatable :: sig_ab_k(:,:,:)
     real(kind=dp), allocatable :: sig_ab(:,:,:)
     real(kind=dp), allocatable :: ahc_kk(:,:)
-    real(kind=dp)              :: m_orb_sr(3)
+    real(kind=dp)              :: morb_sr(3)
 
     ! Optical conductivity divided by the frequency
     ! (used to compute the anomalous Hall conductivity via Kramers-Kronig)
@@ -135,7 +136,7 @@ module w90_berry_wanint
     real(kind=dp), allocatable :: alphaspn_cut(:,:,:)
 
     real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),freq,adpt_trigger
-    integer           :: i,j,p,loop_x,loop_y,loop_z,loop_kpt,loop_adpt,&
+    integer           :: i,j,p,loop_x,loop_y,loop_z,loop_tot,loop_adpt,&
                          ifreq,adpt_counter,ndim,&
                          jdos_unit,AA_unit,DA_unit,DD_unit,&
                          tot_unit,alpha_unit(3,3),gamma_unit(10)
@@ -228,7 +229,7 @@ module w90_berry_wanint
              '(file '//trim(trim(seedname))//'-ahc_kk.dat)'
              write(stdout,'(/,3x,a)') '* Dichroic f-sum rule'
              write(stdout,'(5x,a)') 'in units of (Bohr magn)/cell'//&
-             '(file '//trim(trim(seedname))//'-m_orb_sr.dat)' 
+             '(file '//trim(trim(seedname))//'-morb_sr.dat)' 
           else
              write(stdout,'(/,3x,a)') '* Re[sigma_{S,'//&
                   achar(119+alpha)//achar(119+beta)//&
@@ -344,7 +345,6 @@ module w90_berry_wanint
        allocate(jdos(nfreq,ndim))
        jdos=0.0_dp
        allocate(ahc_kk(3,ndim))
-!       allocate(m_orb_sr(3))
     elseif(eval_sig_abc) then
        call get_HH_R 
        call get_AA_R
@@ -442,9 +442,9 @@ module w90_berry_wanint
        ! Loop over k-points on the irreducible wedge of the Brillouin zone,
        ! read from file 'kpoint.dat'
        !
-       do loop_kpt=1,num_int_kpts_on_node(my_node_id)
-          kpt(:)=int_kpts(:,loop_kpt)
-          kweight=weight(loop_kpt)
+       do loop_tot=1,num_int_kpts_on_node(my_node_id)
+          kpt(:)=int_kpts(:,loop_tot)
+          kweight=weight(loop_tot)
           kweight_adpt=kweight/optics_adaptive_pts**3
           if(eval_ahe) then 
              call get_imf_ab_k(kpt,imf_ab_k)
@@ -537,15 +537,31 @@ module w90_berry_wanint
     else ! Do not read 'kpoint.dat'. Loop over a uniform grid in the full BZ
 
        if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
-       kweight=1.0_dp/optics_num_points**3
+!       kweight=1.0_dp/optics_num_points**3
+       kweight = 1.0_dp / real(PRODUCT(berry_interp_mesh),kind=dp)
        kweight_adpt=kweight/optics_adaptive_pts**3
-       do loop_kpt=my_node_id,optics_num_points**3-1,num_nodes
-          loop_x=loop_kpt/optics_num_points**2
-          loop_y=(loop_kpt-loop_x*optics_num_points**2)/optics_num_points
-          loop_z=loop_kpt-loop_x*optics_num_points**2-loop_y*optics_num_points
-          kpt(1)=real(loop_x,dp)/optics_num_points
-          kpt(2)=real(loop_y,dp)/optics_num_points
-          kpt(3)=real(loop_z,dp)/optics_num_points
+
+       do loop_tot=my_node_id,PRODUCT(berry_interp_mesh)-1,num_nodes
+          loop_x= loop_tot/(berry_interp_mesh(2)*berry_interp_mesh(3))
+          loop_y=(loop_tot-loop_x*(berry_interp_mesh(2)*berry_interp_mesh(3)))/berry_interp_mesh(3)
+          loop_z= loop_tot-loop_x*(berry_interp_mesh(2)*berry_interp_mesh(3)) -loop_y*berry_interp_mesh(3)
+          kpt(1)=(real(loop_x,dp)/real(berry_interp_mesh(1),dp))
+          kpt(2)=(real(loop_y,dp)/real(berry_interp_mesh(2),dp))
+          kpt(3)=(real(loop_z,dp)/real(berry_interp_mesh(3),dp))
+
+
+
+!       do loop_tot=my_node_id,optics_num_points**3-1,num_nodes
+!          loop_x=loop_tot/optics_num_points**2
+!          loop_y=(loop_tot-loop_x*optics_num_points**2)/optics_num_points
+!          loop_z=loop_tot-loop_x*optics_num_points**2-loop_y*optics_num_points
+!          kpt(1)=real(loop_x,dp)/optics_num_points
+!          kpt(2)=real(loop_y,dp)/optics_num_points
+!          kpt(3)=real(loop_z,dp)/optics_num_points
+
+
+
+
           if(eval_ahe) then
              call get_imf_ab_k(kpt,imf_ab_k)
              adpt_trigger=abs(sum(imf_ab_k))
@@ -627,7 +643,7 @@ module w90_berry_wanint
                 alphaspn_cut=alphaspn_cut+alphaspn_cut_k*kweight
              endif
           end if
-       end do !loop_kpt
+       end do !loop_tot
        
     end if !wanint_kpoint_file
 
@@ -949,22 +965,22 @@ module w90_berry_wanint
              
              ! Dichroic f-sum rule
              !
-!             file_name=trim( trim(seedname)//'_m_orb_sr_DD.dat')
+!             file_name=trim( trim(seedname)//'_morb_sr_DD.dat')
 !             write(stdout,'(/,3x,a)') '* '//file_name
 !             DD_unit=io_file_unit()
 !             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-!             file_name=trim(trim(seedname)//'_m_orb_sr_DA.dat')
+!             file_name=trim(trim(seedname)//'_morb_sr_DA.dat')
 !             write(stdout,'(/,3x,a)') '* '//file_name
 !             DA_unit=io_file_unit()
 !             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-!             file_name=trim(trim(seedname)//'_m_orb_sr_AA.dat')
+!             file_name=trim(trim(seedname)//'_morb_sr_AA.dat')
 !             write(stdout,'(/,3x,a)') '* '//file_name
 !             AA_unit=io_file_unit()
 !             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
              
-             file_name=trim( trim(seedname)//'_m_orb_sr.dat')
+             file_name=trim( trim(seedname)//'_morb_sr.dat')
              write(stdout,'(/,3x,a)') '* '//file_name
              tot_unit=io_file_unit()
              open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
@@ -984,17 +1000,17 @@ module w90_berry_wanint
              ! 
              Morb_conv=100.0_dp*(cell_volume*1.0e-30_dp)/bohr_magn_SI/pi
              
-             m_orb_sr=0.0_dp             
+             morb_sr=0.0_dp             
              do ifreq=1,nfreq
-                m_orb_sr(1)=m_orb_sr(1)+sig_ab(1,ifreq,1)*d_freq
-                m_orb_sr(2)=m_orb_sr(2)+sig_ab(2,ifreq,1)*d_freq
-                m_orb_sr(3)=m_orb_sr(3)+sig_ab(3,ifreq,1)*d_freq
+                morb_sr(1)=morb_sr(1)+sig_ab(1,ifreq,1)*d_freq
+                morb_sr(2)=morb_sr(2)+sig_ab(2,ifreq,1)*d_freq
+                morb_sr(3)=morb_sr(3)+sig_ab(3,ifreq,1)*d_freq
                 freq=optics_min_energy+ifreq*d_freq
-!                write(DD_unit,'(10E16.8)') freq,m_orb_sr(1,:)*Morb_conv
-!                write(DA_unit,'(10E16.8)') freq,m_orb_sr(2,:)*Morb_conv
-!                write(AA_unit,'(10E16.8)') freq,m_orb_sr(3,:)*Morb_conv
+!                write(DD_unit,'(10E16.8)') freq,morb_sr(1,:)*Morb_conv
+!                write(DA_unit,'(10E16.8)') freq,morb_sr(2,:)*Morb_conv
+!                write(AA_unit,'(10E16.8)') freq,morb_sr(3,:)*Morb_conv
                 write(tot_unit,'(2E16.8)') freq,&
-                     Morb_conv*(m_orb_sr(1)+m_orb_sr(2)+m_orb_sr(3))
+                     Morb_conv*(morb_sr(1)+morb_sr(2)+morb_sr(3))
              end do
              
 !             close(DD_unit)
@@ -1298,27 +1314,32 @@ module w90_berry_wanint
 
        else
 
-          if(optics_num_points < 10) then
-             write(stdout,'(1x,a47,i1,a,i1,a,i1,a,i12,a)')&
-                  'Nominal interpolation mesh in full BZ: ',&
-                  optics_num_points,'x',optics_num_points,'x',&
-                  optics_num_points,'=',optics_num_points**3,' points'
-          elseif(optics_num_points < 100) then
-             write(stdout,'(1x,a47,i2,a,i2,a,i2,a,i10,a)')&
-                  'Nominal interpolation mesh in full BZ: ',&
-                  optics_num_points,'x',optics_num_points,'x',&
-                  optics_num_points,'=',optics_num_points**3,' points'
-          elseif(optics_num_points < 1000) then
-             write(stdout,'(1x,a47,i3,a,i3,a,i3,a,i12,a)')&
-                  'Nominal interpolation mesh in full BZ: ',&
-                  optics_num_points,'x',optics_num_points,'x',&
-                  optics_num_points,'=',optics_num_points**3,' points'
-          else
-             write(stdout,'(1x,a47,i4,a,i4,a,i4,a,i12,a)')&
-                  'Nominal interpolation mesh in full BZ: ',&
-                  optics_num_points,'x',optics_num_points,'x',&
-                  optics_num_points,'=',optics_num_points**3,' points'
-          end if
+!          if(optics_num_points < 10) then
+!             write(stdout,'(1x,a47,i1,a,i1,a,i1,a,i12,a)')&
+!                  'Nominal interpolation mesh in full BZ: ',&
+!                  optics_num_points,'x',optics_num_points,'x',&
+!                  optics_num_points,'=',optics_num_points**3,' points'
+!          elseif(optics_num_points < 100) then
+!             write(stdout,'(1x,a47,i2,a,i2,a,i2,a,i10,a)')&
+!                  'Nominal interpolation mesh in full BZ: ',&
+!                  optics_num_points,'x',optics_num_points,'x',&
+!                  optics_num_points,'=',optics_num_points**3,' points'
+!          elseif(optics_num_points < 1000) then
+!             write(stdout,'(1x,a47,i3,a,i3,a,i3,a,i12,a)')&
+!                  'Nominal interpolation mesh in full BZ: ',&
+!                  optics_num_points,'x',optics_num_points,'x',&
+!                  optics_num_points,'=',optics_num_points**3,' points'
+!          else
+!             write(stdout,'(1x,a47,i4,a,i4,a,i4,a,i12,a)')&
+!                  'Nominal interpolation mesh in full BZ: ',&
+!                  optics_num_points,'x',optics_num_points,'x',&
+!                  optics_num_points,'=',optics_num_points**3,' points'
+!          end if
+          write(stdout,'(1x,a,i0,a,i0,a,i0,a,i0,a)')&
+               'Nominal interpolation mesh in full BZ: ',&
+               berry_interp_mesh(1),'x',berry_interp_mesh(2),'x',&
+               berry_interp_mesh(3),'=',product(berry_interp_mesh),' points'
+          
 
           if(eval_ahe .or. eval_orb) then
              if(eval_ahe) then
@@ -1333,23 +1354,23 @@ module w90_berry_wanint
              write(stdout,'(1x,a47,i7,a,f8.4,a)')&
                   'How many points triggered adaptive refinement: ',&
                   adpt_counter,' (',&
-                  100*real(adpt_counter,dp)/optics_num_points**3,' %)'
-             if(optics_adaptive_pts < 10) then
-                write(stdout,'(1x,a47,i1,a,i1,a,i1)')&
-                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                     optics_adaptive_pts,'x',optics_adaptive_pts
-             elseif(optics_adaptive_pts < 100) then
-                write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
-                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                     optics_adaptive_pts,'x',optics_adaptive_pts
-             else
-                write(stdout,'(1x,a47,i3,a,i1,a,i1)')&
-                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
-                     optics_adaptive_pts,'x',optics_adaptive_pts
-                write(stdout,'(1x,a47,i12)') 'Total number of points: ',&
-                     optics_num_points**3-adpt_counter+&
-                     adpt_counter*optics_adaptive_pts**3
-             end if
+                  100*real(adpt_counter,dp)/product(berry_interp_mesh),' %)'
+!             if(optics_adaptive_pts < 10) then
+!                write(stdout,'(1x,a47,i1,a,i1,a,i1)')&
+!                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
+!                     optics_adaptive_pts,'x',optics_adaptive_pts
+!             elseif(optics_adaptive_pts < 100) then
+!                write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
+!                     'Adaptive mesh: ',optics_adaptive_pts,'x',&
+!                     optics_adaptive_pts,'x',optics_adaptive_pts
+!             else
+             write(stdout,'(1x,a,i0,a,i0,a,i0)')&
+                  'Adaptive mesh: ',optics_adaptive_pts,'x',&
+                  optics_adaptive_pts,'x',optics_adaptive_pts
+             write(stdout,'(1x,a,i0)') 'Total number of points: ',&
+                  product(berry_interp_mesh)-adpt_counter+&
+                  adpt_counter*optics_adaptive_pts**3
+!             end if
           end if
 
        end if !wanint_kpoint_file
@@ -1659,9 +1680,9 @@ module w90_berry_wanint
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_utility, only       : utility_diagonalize,utility_rotate,w0gauss
     use w90_parameters, only    : num_wann,optics_min_energy,&
-                                  optics_num_points,alpha,beta,&
+                                  berry_interp_mesh,alpha,beta,&
                                  ! adpt_smr_steps,adpt_smr_width,&
-                                  berry_smr_adpt_factor,&
+                                  berry_smr_adpt_factor,berry_interp_mesh,&
                                   spn_decomp,fermi_energy
     use w90_wanint_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only   : get_D_h_a,get_deleig_a
@@ -1723,7 +1744,7 @@ module w90_berry_wanint
 
     ! Find spacing of interpolation mesh 
     !
-    Delta_k=kmesh_spacing(optics_num_points)
+    Delta_k=kmesh_spacing(berry_interp_mesh)
     
     ! Get spin projections along chosen quantization axis for every band
     !
@@ -1915,8 +1936,7 @@ module w90_berry_wanint
     use w90_utility, only       : utility_diagonalize,utility_rotate
     use w90_parameters, only    : num_wann,fermi_energy,&
                                   optics_min_energy,optics_max_energy,&
-                                  optics_num_points,alpha,beta,gamma,&
-                                  sigma_abc_onlyorb
+                                  alpha,beta,gamma,sigma_abc_onlyorb
     use w90_wanint_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R,FF_R,SS_R
@@ -2193,8 +2213,7 @@ module w90_berry_wanint
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
     use w90_parameters, only    : num_wann,fermi_energy,optics_min_energy,&
-                                  optics_max_energy,optics_num_points,&
-                                  sigma_abc_onlyorb
+                                  optics_max_energy,sigma_abc_onlyorb
     use w90_wanint_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R,FF_R,SS_R
