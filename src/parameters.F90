@@ -745,19 +745,22 @@ contains
     call param_get_keyword('smr_type',found,c_value=ctmp)
     if (found) smr_index = get_smearing_index(ctmp,'smr_type')
 
+    ! By default: adaptive smearing
     smr_adpt=.true.
     call param_get_keyword('smr_adpt',found,l_value=smr_adpt)
 
-    smr_adpt_factor=1.0_dp
+    ! By default: a=2
+    smr_adpt_factor=2.0_dp
     call param_get_keyword('smr_adpt_factor',found,r_value=smr_adpt_factor)
     if (found .and. (smr_adpt_factor <= 0._dp)) &
          call io_error('Error: smr_adpt_factor must be greater than zero')  
 
+    ! By default: if smr_adpt is manually set to false by the user, but he/she doesn't
+    ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
     smr_fixed_en_width=0.0_dp
     call param_get_keyword('smr_fixed_en_width',found,r_value=smr_fixed_en_width)
     if (found .and. (smr_fixed_en_width < 0._dp)) &
          call io_error('Error: smr_fixed_en_width must be greater than or equal to zero')    
-
     ! [gp-end]
 
 
@@ -1442,47 +1445,13 @@ contains
        if (any(interp_mesh<=0)) &
             call io_error('Error: interp_mesh elements must be greater than zero')
     end if
-
-    !! Now I read the BoltzWann interpolation mesh
-    boltz_interp_mesh_spacing=-1._dp
-    boltz_interp_mesh = 0
-    call param_get_keyword('boltz_interp_mesh_spacing',found,r_value=boltz_interp_mesh_spacing)
-    if (found) then
-       if (boltz_interp_mesh_spacing .le. 0._dp) &
-            call io_error('Error: boltz_interp_mesh_spacing must be greater than zero')
-       
-       call internal_set_interp_mesh(boltz_interp_mesh_spacing,recip_lattice,boltz_interp_mesh)
-    end if
-    call param_get_vector_length('boltz_interp_mesh',found2,length=i)
-    if (found2) then
-       if (found) &
-            call io_error('Error: cannot set both boltz_interp_mesh and boltz_interp_mesh_spacing')
-       if (i.eq.1) then
-          call param_get_keyword_vector('boltz_interp_mesh',found2,1,i_value=boltz_interp_mesh)
-          boltz_interp_mesh(2) = boltz_interp_mesh(1)
-          boltz_interp_mesh(3) = boltz_interp_mesh(1)
-       elseif (i.eq.3) then
-          call param_get_keyword_vector('boltz_interp_mesh',found2,3,i_value=boltz_interp_mesh)
-       else
-         call io_error('Error: boltz_interp_mesh must be provided as either one integer or a vector of 3 integers')
-       end if
-       if (any(boltz_interp_mesh<=0)) &
-            call io_error('Error: boltz_interp_mesh elements must be greater than zero')
-    end if
-
-    if ((found.eqv..false.).and.(found2.eqv..false.)) then
-       ! This is the case where no BoltzWann "local" interpolation k-mesh is provided in the input
-       if (global_interp_mesh_set) then
-          boltz_interp_mesh = interp_mesh
-          ! I set also boltz_interp_mesh_spacing so that I can check if it is < 0 or not, and if it is
-          ! > 0 I can print on output the mesh spacing that was chosen
-          boltz_interp_mesh_spacing = interp_mesh_spacing 
-       else
-            if (boltzwann) &
-                 call io_error('Error: BoltzWann required, but no interpolation mesh given.')          
-       end if
-    end if
     ! [GP-end]
+
+    ! To be called after having read the global flag
+    call get_module_interp_mesh(moduleprefix='boltz', &
+         should_be_defined=boltzwann, &
+         module_interp_mesh=boltz_interp_mesh, &
+         module_interp_mesh_spacing=boltz_interp_mesh_spacing)
 
     ! Atoms
     if (.not.library) num_atoms=0
@@ -1611,6 +1580,76 @@ contains
     end do
 
   end subroutine internal_set_interp_mesh
+
+  !> This function reads and sets the interpolation mesh variables needed by a given module
+  !> 
+  !> \note This function MUST be called after having read the global interp_mesh and interp_mesh_spacing!!
+  !> \note if the user didn't provide an interpolation_mesh_spacing, it is set to -1, so that
+  !>       one can check in the code what the user asked for
+  !> \note The function takes care also of setting the default value to the global one if no local 
+  !>       keyword is defined
+  !> 
+  !> \param moduleprefix   The prefix that is appended before the name of the variables. In particular,
+  !>                       if the prefix is for instance XXX, the two variables that are read from the
+  !>                       input file are XXX_interp_mesh and XXX_interp_mesh_spacing.
+  !> \param should_be_defined A logical flag: if it is true, at the end the code stops if no value is specified.
+  !>                       Define it to .false. if no check should be performed.
+  !>                       Often, you can simply pass the flag that activates the module itself.
+  !> \param module_interp_mesh the integer array (length 3) where the interpolation mesh will be saved
+  !> \param module_interp_mesh_spacing the real number on which the min mesh spacing is saved. -1 if it the
+  !>                       user specifies in input the mesh and not the mesh_spacing
+  subroutine get_module_interp_mesh(moduleprefix,should_be_defined,module_interp_mesh,module_interp_mesh_spacing)
+    use w90_io, only : io_error
+    character(len=*), intent(in)       :: moduleprefix
+    logical, intent(in)                :: should_be_defined
+    integer, dimension(3), intent(out) :: module_interp_mesh
+    real(kind=dp), intent(out)         :: module_interp_mesh_spacing
+
+    logical :: found, found2
+    integer :: i
+
+    ! Default values
+    module_interp_mesh_spacing=-1._dp
+    module_interp_mesh = 0
+    call param_get_keyword(trim(moduleprefix)//'_interp_mesh_spacing',found,r_value=module_interp_mesh_spacing)
+    if (found) then
+       if (module_interp_mesh_spacing .le. 0._dp) &
+            call io_error('Error: ' // trim(moduleprefix)//'_interp_mesh_spacing must be greater than zero')
+       
+       call internal_set_interp_mesh(module_interp_mesh_spacing,recip_lattice,module_interp_mesh)
+    end if
+    call param_get_vector_length(trim(moduleprefix)//'_interp_mesh',found2,length=i)
+    if (found2) then
+       if (found) &
+            call io_error('Error: cannot set both ' // trim(moduleprefix)//'_interp_mesh and ' &
+            // trim(moduleprefix)//'_interp_mesh_spacing')
+       if (i.eq.1) then
+          call param_get_keyword_vector(trim(moduleprefix)//'_interp_mesh',found2,1,i_value=module_interp_mesh)
+          module_interp_mesh(2) = module_interp_mesh(1)
+          module_interp_mesh(3) = module_interp_mesh(1)
+       elseif (i.eq.3) then
+          call param_get_keyword_vector(trim(moduleprefix)//'_interp_mesh',found2,3,i_value=module_interp_mesh)
+       else
+         call io_error('Error: ' // trim(moduleprefix)// &
+              '_interp_mesh must be provided as either one integer or a vector of 3 integers')
+       end if
+       if (any(module_interp_mesh<=0)) &
+            call io_error('Error: ' // trim(moduleprefix)//'_interp_mesh elements must be greater than zero')
+    end if
+
+    if ((found.eqv..false.).and.(found2.eqv..false.)) then
+       ! This is the case where no  "local" interpolation k-mesh is provided in the input
+       if (global_interp_mesh_set) then
+          module_interp_mesh = interp_mesh
+          ! I set also boltz_interp_mesh_spacing so that I can check if it is < 0 or not, and if it is
+          ! > 0 I can print on output the mesh spacing that was chosen
+          module_interp_mesh_spacing = interp_mesh_spacing 
+       else
+            if (should_be_defined) &
+                 call io_error('Error: ' // trim(moduleprefix) //' module required, but no interpolation mesh given.')          
+       end if
+    end if
+  end subroutine get_module_interp_mesh
 
   !> This function returns a string describing the type of smearing
   !> associated to a given smr_index integer value.
