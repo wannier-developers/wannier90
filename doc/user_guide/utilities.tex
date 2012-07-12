@@ -3,7 +3,7 @@
 The \wannier\ code is shipped with a few utility programs that may be
 useful in some occasions. In this chapter, we describe their use.
 
-\section{kmesh.pl}
+\section{$\tt{kmesh.pl}$}
 The \wannier\ code requires the definition of a full Monkhorst--Pack
 grid of $k$ points.
 In the input file 
@@ -54,7 +54,7 @@ provide the $k$ point coordinates with the accuracy required by
 makes sure that the $k$ grid used in the ab-initio code and in
 \wannier\ are the same.
 
-\section{w90chk2chk.x\label{sec:w90chk2chk}}
+\section{$\tt{w90chk2chk.x}$\label{sec:w90chk2chk}}
 During the calculation of the Wannier functions, \wannier\ produces a
 \verb|.chk| file that contains some information to restart the
 calculation.
@@ -116,3 +116,68 @@ unformatted file  \verb|seedname.chk| ready to be used by \postw.
 \item Run the \postw\ code.
 
 \end{enumerate}
+
+
+\section{$\tt{PL_assessment}$}
+\label{sec:pl_assessment}
+
+The function of this utility is to assess the length of a principal
+layer (in the context of a Landauer-Buttiker quantum conductance
+calculation) of a periodic system using a calculation on a single unit
+cell with a dense k-point mesh.
+
+The utility requires the real-space Hamiltonian in the MLWF basis,
+\verb|seedname_hr.dat|. 
+
+The \verb|seedname_hr.dat| file should be copied to a directory containing
+executable for the utility. Within that directory, run:
+
+\begin{verbatim}
+\$> ./PL_assess.x  nk1 nk2 nk3 num_wann 
+\end{verbatim}
+
+where:
+
+ \verb|nk1| is the number of k-points in x-direction
+ \verb|nk2| is the number of k-points in y-direction
+ \verb|nk3| is the number of k-points in z-direction
+ \verb|num_wann| is the number of wannier functions of your system
+
+e.g.,
+
+\begin{verbatim} 
+\$> ./PL_assess.x  1 1 20 16
+\end{verbatim}
+
+Note that the current implementation only allows for a single k-point
+in the direction transverse to the transport direction.
+
+When prompted, enter the seedname.
+
+The programme will return an output file \verb|seedname_pl.dat|, containing four columns
+\begin{enumerate}
+        \item Unit cell number, $R$
+        \item Average 'on-site' matrix element between MLWFs in 
+             the home unit cell, and the unit cell $R$ lattice
+             vectors away
+        \item Standard devaition of the quantity in (2)
+        \item Maximum absolute value in (2)
+\end{enumerate}
+
+\section{$\tt{w90vdw}$}
+\label{sec:w90vdw}
+
+This utility provides an implementation of a method for calculating
+van der Waals energies based on the idea of density decomposition via
+MLWFs. 
+
+For theoretical details, please see the following publication
+and references therein:
+
+Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi, 
+``Calculating dispersion interactions using maximally localized
+Wannier functions'', \emph{J. Chem. Phys.} \textbf{135}, 154105 (2011).
+
+For further details of this program, please see the documentation
+in \verb|utility/w90vdw/doc/| and the related examples in
+\verb|utility/w90vdw/examples/|.
