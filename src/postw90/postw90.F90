@@ -156,7 +156,8 @@ program postw90
   !
   if(do_dos .and. index(dos_task,'dos_plot')>0) call dos
 
-  if(do_dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
+! find_fermi_level commented for the moment in dos_wanint.F90
+!  if(do_dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
 
   ! --------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path

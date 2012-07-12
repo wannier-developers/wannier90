@@ -42,8 +42,9 @@ module w90_boltzwann
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
        boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
-       timing_level, dis_win_min, dis_win_max, spn_decomp, adpt_smr_steps, adpt_smr_width, &
-       boltz_tdf_smr_en_width, cell_volume, num_elec_per_state, iprint
+       timing_level, dis_win_min, dis_win_max, spn_decomp, boltz_dos_smr_adpt, &
+       boltz_dos_smr_adpt_factor, boltz_dos_smr_fixed_en_width, &
+       boltz_tdf_smr_fixed_en_width, cell_volume, num_elec_per_state, iprint
   use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
   use w90_utility, only    : utility_inv3
   use w90_wanint_common
@@ -146,7 +147,7 @@ contains
     ! bands.
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
     ! or at least 0.2 eV
-    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smearing * boltz_TDF_smr_en_width,0.2_dp)
+    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smearing * boltz_TDF_smr_fixed_en_width,0.2_dp)
     TDFEnergyNumPoints = int(floor((dis_win_max-dis_win_min+2._dp*TDF_exceeding_energy)/boltz_tdf_energy_step))+1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate(TDFEnergyArray(TDFEnergyNumPoints),stat=ierr)
@@ -488,7 +489,7 @@ contains
     use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
          boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
-         boltz_dos_smr_adaptive, boltz_dos_smr_en_width, &
+         boltz_dos_smr_adpt, boltz_dos_smr_fixed_en_width, boltz_dos_smr_adpt_factor, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
     use w90_wanint_common, only : fourier_R_to_k
@@ -511,8 +512,8 @@ contains
 
     
     real(kind=dp), allocatable :: DOS_EnergyArray(:)
-    real(kind=dp), allocatable :: DOS_k(:,:,:), TDF_k(:,:,:)
-    real(kind=dp), allocatable :: DOS_all(:,:,:)
+    real(kind=dp), allocatable :: DOS_k(:,:), TDF_k(:,:,:)
+    real(kind=dp), allocatable :: DOS_all(:,:)
     real(kind=dp)              :: kweight
     integer                    :: ndim, DOS_NumPoints, i, EnIdx
 
@@ -563,12 +564,9 @@ contains
        DOS_EnergyArray(i) = boltz_dos_energy_min + real(i-1,dp)*boltz_dos_energy_step
     end do
 
-    num_s_steps = adpt_smr_steps
-    if (boltz_dos_smr_adaptive.eqv..false.) num_s_steps = 1
-
-    allocate(DOS_k(size(DOS_EnergyArray),num_s_steps,ndim),stat=ierr)
+    allocate(DOS_k(size(DOS_EnergyArray),ndim),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating DOS_k in calcTDF')    
-    allocate(DOS_all(size(DOS_EnergyArray),num_s_steps,ndim),stat=ierr)
+    allocate(DOS_all(size(DOS_EnergyArray),ndim),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating DOS_all in calcTDF')    
     dos_all = 0.0_dp
 
@@ -582,31 +580,32 @@ contains
 
     if (boltz_calc_also_dos.and.on_root.and.(iprint>1)) then
        write(stdout,'(5X,A)') "Smearing for DOS: "
-       if (boltz_dos_smr_adaptive) then
+       if (boltz_dos_smr_adpt) then
           write(stdout,'(7X,A)') trim(param_get_smearing_type(boltz_dos_smr_index)) // ", adaptive"
        else
-          if (boltz_dos_smr_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
+          if (boltz_dos_smr_fixed_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < &
+               min_smearing_binwidth_ratio) then
              write(stdout,'(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
           else
              write(stdout,'(7X,A)') trim(param_get_smearing_type(boltz_dos_smr_index)) // &
-                  ", non-adaptive, width (eV) =", boltz_dos_smr_en_width
+                  ", non-adaptive, width (eV) =", boltz_dos_smr_fixed_en_width
           end if
        end if
     end if
-    if(boltz_calc_also_dos.and.boltz_dos_smr_adaptive.and.(boltz_dos_smr_en_width.ne.0._dp).and.on_root) then
-       write(stdout,'(5X,A)') "*** WARNING! boltz_dos_smr_en_width ignored since you chose"
+    if(boltz_calc_also_dos.and.boltz_dos_smr_adpt.and.(boltz_dos_smr_fixed_en_width.ne.0._dp).and.on_root) then
+       write(stdout,'(5X,A)') "*** WARNING! boltz_dos_smr_fixed_en_width ignored since you chose"
        write(stdout,'(5X,A)') "             an adaptive smearing."
     end if
        
     if (on_root.and.(iprint>1)) then
-       if (boltz_TDF_smr_en_width/(TDFEnergyArray(2)-TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
+       if (boltz_TDF_smr_fixed_en_width/(TDFEnergyArray(2)-TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
           write(stdout,'(5X,A)') "Smearing for TDF: "
           write(stdout,'(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
        else
           write(stdout,'(5X,A)') "Smearing for TDF: "
           write(stdout,'(7X,A,G10.3)') &
                trim(param_get_smearing_type(boltz_TDF_smr_index)) // ", non-adaptive, width (eV) =", &
-               boltz_TDF_smr_en_width
+               boltz_TDF_smr_fixed_en_width
        end if
     end if
 
@@ -660,10 +659,13 @@ contains
        end if
 
        if (boltz_calc_also_dos) then
-          if (boltz_dos_smr_adaptive) then
-             call dos_kpt(kpt,DOS_EnergyArray,eig,levelspacing_k,dos_k)
+          if (boltz_dos_smr_adpt) then
+             call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                  smr_adpt_factor=boltz_dos_smr_adpt_factor,&
+                  levelspacing_k=levelspacing_k)
           else
-             call dos_kpt(kpt,DOS_EnergyArray,eig,levelspacing_k,dos_k,fixedsmearing=boltz_dos_smr_en_width)
+             call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                  smr_fixed_en_width=boltz_dos_smr_fixed_en_width)
           end if
           ! This sum multiplied by kweight amounts to calculate
           ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
@@ -683,7 +685,7 @@ contains
     ! I sum the results of the calculation for the DOS on the root node only
     ! (I have to print the results only)
     if (boltz_calc_also_dos) then
-       call comms_reduce(DOS_all(1,1,1),size(DOS_all),'SUM')
+       call comms_reduce(DOS_all(1,1),size(DOS_all),'SUM')
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
@@ -692,21 +694,21 @@ contains
 
     if (boltz_calc_also_dos .and. on_root) then
        write(boltzdos_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
-       if (boltz_dos_smr_adaptive) then
-          write(boltzdos_unit, '(A)') '# The different columns from the second on are the DOS for different'
-          write(boltzdos_unit, '(A)') '# adaptive smearing coefficients a (see Yates et al., PRB 75, 195121 (2007)'
+       write(boltzdos_unit,'(A)') "# The first column."
+       if (boltz_dos_smr_adpt) then
+          write(boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
+          write(boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
           if (spn_decomp) then
-             write(boltzdos_unit, '(A,I0,A)') '# The first ', adpt_smr_steps, ' are the total DOS, then follows the spin-up'
-             write(boltzdos_unit, '(A)') '# The spin-down components'
+             write(boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
+             write(boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
           end if
-          write(numfieldsstr, '(I0)') adpt_smr_steps
-          write(boltzdos_unit, '(A,1X,'//trim(numfieldsstr)//'G14.6)') '# Smearing coefficients: ', adpt_smr_width
+          write(boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz_dos_smr_adpt_factor
        else          
-          if (boltz_dos_smr_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
+          if (boltz_dos_smr_fixed_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
              write(boltzdos_unit, '(A)') '# The second column is the unsmeared DOS.'
           else
              write(boltzdos_unit, '(A,G14.6,A)') '# The second column is the DOS for a fixed smearing of ',&
-                  boltz_dos_smr_en_width,' eV.'
+                  boltz_dos_smr_fixed_en_width,' eV.'
           end if
        end if
        write(boltzdos_unit, '(A,1X,G14.6)') '# Cell volume (ang^3): ', cell_volume
@@ -714,10 +716,10 @@ contains
        write(boltzdos_unit, '(A)') '# Energy(eV) DOS [DOS DOS ...]'
 
        ! I save a string with the number of fields to print
-       write(numfieldsstr, '(I0)') 1 + ndim * num_s_steps
+       write(numfieldsstr, '(I0)') 1 + ndim
        do EnIdx=1,size(DOS_EnergyArray)
           write(boltzdos_unit,'(1X,'//trim(numfieldsstr)//'G18.10)') &
-               DOS_EnergyArray(EnIdx),dos_all(EnIdx,:,:)
+               DOS_EnergyArray(EnIdx),dos_all(EnIdx,:)
        end do
     end if
 
@@ -791,6 +793,7 @@ contains
   !> - it multiplies by the num_elec_per_state variable
   !> - it requires in input also the energy array
   !> - it has an optional parameter for a fixed (non adaptive smearing)
+  !> - only one column now, for one value of the adpt_ratio (names of variables still to be changed)
   !> 
   !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
   !> 
@@ -799,49 +802,55 @@ contains
   !>       The weight factor (for a full BZ sampling with N^3 points) is 1/N^3 if we want
   !>       the final DOS to be normalized to the total number of electrons.
   !> \note The only factor that is included INSIDE this routine is the spin degeneracy
-  !>       factor (=2 if spinors is .false., =1 if spinors is .true.)
+  !>       factor (=num_elec_per_state variable)
   !> \note The EnergyArray is assumed to be evenly spaced (and the energy spacing
   !>       is taken from EnergyArray(2)-EnergyArray(1))
   !> \note The routine is assuming that EnergyArray has at least two elements.
-  !> \note The TDF_k array must have dimensions size(EnergyArray) * adpt_smr_steps * ndim, where
-  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
-  !> 
+  !> \note The dos_k array must have dimensions size(EnergyArray) * ndim, where
+  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked. 
+  !> \note If smearing/binwidth < min_smearing_binwidth_ratio, 
+  !>       no smearing is applied (for that k point)
+  !>
   !> \param kpt         the three coordinates of the k point vector whose DOS contribution we
   !>                    want to calculate (in relative coordinates)
   !> \param EnergyArray array with the energy grid on which to calculate the DOS (in eV)
   !>                    It must have at least two elements
   !> \param eig_k       array with the eigenvalues at the given k point (in eV)
-  !> \param levelspacing_k array with the level spacings, i.e. how much each level changes
-  !>                    near a given point of the interpolation mesh, as given by the
-  !>                    get_levelspacing() routine
   !> \param dos_k       array in which the contribution is stored. Three dimensions:
-  !>                    dos_k(energyidx, smearingidx, spinidx), where:
+  !>                    dos_k(energyidx, spinidx), where:
   !>                    - energyidx is the index of the energies, corresponding to the one
   !>                      of the EnergyArray array; 
-  !>                    - smearingidx is an index running over the different possible smearings
-  !>                      (from 1 to adpt_smr_steps)
   !>                    - spinidx=1 contains the total dos; if if spn_decomp==.true., then
   !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
-  !> \param fixedsmearing If present, a non-adaptive smearing scheme is adopted. The values of the smearing is taken
-  !>                   this value (in eV). If fixedsmearing/binwidth < min_smearing_binwidth_ratio, 
-  !>                   no smearing is applied
-  subroutine dos_kpt(kpt,EnergyArray,eig_k,levelspacing_k,dos_k,fixedsmearing)
+  !> \param smr_index  index that tells the kind of smearing
+  !> \param smr_fixed_en_width optional parameter with the fixed energy for smearing, in eV. Can be provided only if the
+  !>                    levelspacing_k parameter is NOT given
+  !> \param smr_adpt_factor optional parameter with the factor for the adaptive smearing. Can be provided only if the
+  !>                    levelspacing_k parameter IS given
+  !> \param levelspacing_k optional array with the level spacings, i.e. how much each level changes
+  !>                    near a given point of the interpolation mesh, as given by the
+  !>                    get_levelspacing() routine
+  !>                    If present: adaptive smearing
+  !>                    If not present: fixed-energy-width smearing
+  subroutine dos_kpt(kpt,EnergyArray,eig_k,dos_k,smr_index,&
+       smr_fixed_en_width,smr_adpt_factor,levelspacing_k)
 
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,&
-         adpt_smr_steps,adpt_smr_width,spn_decomp,num_elec_per_state,&
-         boltz_dos_smr_index
+         spn_decomp,num_elec_per_state
     use w90_spin_wanint, only   : get_spn_nk
 
     ! Arguments
     !
-    real(kind=dp), dimension(3), intent(in)      :: kpt
-    real(kind=dp), dimension(:), intent(in)      :: EnergyArray
-    real(kind=dp), dimension(:), intent(in)      :: eig_k
-    real(kind=dp), dimension(:), intent(in)      :: levelspacing_k
-    real(kind=dp), dimension(:,:,:), intent(out) :: dos_k
-    real(kind=dp), optional, intent(in)          :: fixedsmearing
+    real(kind=dp), dimension(3), intent(in)          :: kpt
+    real(kind=dp), dimension(:), intent(in)          :: EnergyArray
+    real(kind=dp), dimension(:), intent(in)          :: eig_k
+    real(kind=dp), dimension(:,:), intent(out)       :: dos_k
+    integer, intent(in),                             :: smr_index
+    real(kind=dp), intent(in),optional               :: smr_fixed_en_width
+    real(kind=dp), intent(in),optional               :: smr_adpt_factor
+    real(kind=dp), dimension(:), intent(in),optional :: levelspacing_k
 
     ! Adaptive smearing
     !
@@ -849,11 +858,23 @@ contains
 
     ! Misc/Dummy
     !
-    integer          :: i,loop_f,loop_s,min_f,max_f, num_s_steps
+    integer          :: i,loop_f,min_f,max_f, num_s_steps
     real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
     real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
    
+    if (present(levelspacing_k)) then
+       if (present(smr_fixed_en_width)) &
+            call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters')
+       if (.not.(present(smr_adpt_factor))) &
+            call io_error('Cannot call doskpt with levelspacing_k and without smr_adpt_factor parameter')
+    else
+       if (present(smr_adpt_factor)) &
+            call io_error('Cannot call doskpt without levelspacing_k and with smr_adpt_factor parameters')
+       if (.not.(present(smr_fixed_en_width))) &
+            call io_error('Cannot call doskpt without levelspacing_k and without smr_fixed_en_width parameter')
+    end if
+
     r_num_elec_per_state = real(num_elec_per_state,kind=dp)
 
     ! Get spin projections for every band
@@ -861,9 +882,6 @@ contains
     if(spn_decomp) call get_spn_nk(kpt,spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
-
-    num_s_steps = adpt_smr_steps
-    if (present(fixedsmearing)) num_s_steps = 1
     
     dos_k=0.0_dp
     do i=1,num_wann
@@ -875,65 +893,58 @@ contains
           beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
        end if
 
-       do loop_s=1,num_s_steps
-          !
-          ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
-          ! !!!UNDERSTAND THAT FACTOR!!!
-          !
-          if (present(fixedsmearing)) then
-             smear=fixedsmearing
+       !
+       ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
+       ! !!!UNDERSTAND THAT FACTOR!!!
+       !
+       if (.not.present(levelspacing_k)) then
+          smear=smr_fixed_en_width
+       else
+          smear=levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp)
+       end if
+
+       ! Faster optimization: I precalculate the indices
+       if (smear/binwidth < min_smearing_binwidth_ratio) then
+          min_f= max(nint((eig_k(i) - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
+          max_f= min(nint((eig_k(i) - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
+          DoSmearing=.false.
+       else      
+          min_f= max(nint((eig_k(i) - smearing_cutoff * smear - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
+          max_f= min(nint((eig_k(i) + smearing_cutoff * smear - EnergyArray(1))/&
+               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
+               * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
+          DoSmearing=.true.
+       end if
+
+
+       do loop_f=min_f, max_f
+          ! kind of smearing read from input (internal smearing_index variable)
+          if (DoSmearing) then
+             arg=(EnergyArray(loop_f)-eig_k(i))/smear
+             rdum=w0gauss(arg,smr_index)/smear
           else
-             smear=levelspacing_k(i)*adpt_smr_width(loop_s)/sqrt(2.0_dp)
+             rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
           end if
-
-          ! TODO: check again this part (next line). Probably, for coarse k sampling and big bin widths it provides good results
-          ! If however the k sampling is fine and the bin width is also small, narrow peaks may appear, where instead
-          ! a calculation of the second derivative may give a better estimate for the spread.
-!          if (smear/binwidth < min_smearing_binwidth_ratio) smear = min_smearing_binwidth_ratio * binwidth
-
-          ! Faster optimization: I precalculate the indices
-          if (smear/binwidth < min_smearing_binwidth_ratio) then
-             min_f= max(nint((eig_k(i) - EnergyArray(1))/&
-                  (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-                  * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
-             max_f= min(nint((eig_k(i) - EnergyArray(1))/&
-                  (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-                  * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
-             DoSmearing=.false.
-          else      
-             min_f= max(nint((eig_k(i) - smearing_cutoff * smear - EnergyArray(1))/&
-                  (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-                  * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
-             max_f= min(nint((eig_k(i) + smearing_cutoff * smear - EnergyArray(1))/&
-                  (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-                  * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
-             DoSmearing=.true.
+          
+          !
+          ! Contribution to total DOS
+          !
+          dos_k(loop_f,1)=dos_k(loop_f,1)+rdum * r_num_elec_per_state
+          
+          ! [GP] I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
+          ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
+          if(spn_decomp) then
+             ! Spin-up contribution
+             dos_k(loop_f,2)=dos_k(loop_f,2)+rdum*alpha_sq
+             ! Spin-down contribution
+             dos_k(loop_f,3)=dos_k(loop_f,3)+rdum*beta_sq
           end if
-
-
-          do loop_f=min_f, max_f
-             ! kind of smearing read from input (internal smearing_index variable)
-             if (DoSmearing) then
-                arg=(EnergyArray(loop_f)-eig_k(i))/smear
-                rdum=w0gauss(arg,boltz_dos_smr_index)/smear
-             else
-                rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
-             end if
-
-             !
-             ! Contribution to total DOS
-             !
-             dos_k(loop_f,loop_s,1)=dos_k(loop_f,loop_s,1)+rdum * r_num_elec_per_state
-             
-             ! [GP] I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
-             ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
-             if(spn_decomp) then
-                ! Spin-up contribution
-                dos_k(loop_f,loop_s,2)=dos_k(loop_f,loop_s,2)+rdum*alpha_sq
-                ! Spin-down contribution
-                dos_k(loop_f,loop_s,3)=dos_k(loop_f,loop_s,3)+rdum*beta_sq
-             end if
-          end do
        end do
     end do !loop over bands
 
@@ -944,7 +955,7 @@ contains
   !> 
   !> \note This routine does not use the adaptive smearing; in fact, for non-zero temperatures
   !>       one often doesn't even need to smear. It simply uses a standard smearing as defined by
-  !>       the variables boltz_TDF_smr_en_width and boltz_TDF_smr_index
+  !>       the variables boltz_TDF_smr_fixed_en_width and boltz_TDF_smr_index
   !> 
   !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
   !> 
@@ -984,7 +995,7 @@ contains
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
-         boltz_TDF_smr_en_width, boltz_TDF_smr_index, boltz_relax_time
+         boltz_TDF_smr_fixed_en_width, boltz_TDF_smr_index, boltz_relax_time
     use w90_spin_wanint, only   : get_spn_nk
 
     ! Arguments
@@ -1031,7 +1042,7 @@ contains
 
        ! Faster optimization: I precalculate the indices
        ! Value of the smearing in eV; default = 0 eV, i.e. no smearing
-       smear = boltz_TDF_smr_en_width
+       smear = boltz_TDF_smr_fixed_en_width
        if (smear/binwidth < min_smearing_binwidth_ratio) then
           min_f= max(nint((eig_k(BandIdx) - EnergyArray(1))/&
                (EnergyArray(size(EnergyArray))-EnergyArray(1)) &

@@ -252,11 +252,17 @@ module w90_wanint_common
     call comms_bcast(cell_volume,1)
     call comms_bcast(dos_num_points,1)
     call comms_bcast(dos_energy_step,1)
+    call comms_bcast(dos_smr_adpt,1)
+    call comms_bcast(dos_smr_fixed_en_width,1)
+    call comms_bcast(dos_smr_adpt_factor,1)
     call comms_bcast(optics_plot,1)
     call comms_bcast(optics_num_points,1)
     call comms_bcast(optics_adaptive_pts,1)
     call comms_bcast(optics_adaptive_thresh,1)
     call comms_bcast(optics_energy_step,1)
+    call comms_bcast(berry_smr_adpt,1)
+    call comms_bcast(berry_smr_fixed_en_width,1)
+    call comms_bcast(berry_smr_adpt_factor,1)
     call comms_bcast(fermi_energy,1)
     call comms_bcast(dos_max_energy,1)
     call comms_bcast(dos_min_energy,1)
@@ -277,7 +283,6 @@ module w90_wanint_common
     call comms_bcast(alpha,1) 
     call comms_bcast(beta,1) 
     call comms_bcast(gamma,1) 
-    call comms_bcast(adpt_smr_steps,1) 
     call comms_bcast(evaluate_spin_moment,1) 
     call comms_bcast(theta_quantaxis,1) 
     call comms_bcast(phi_quantaxis,1) 
@@ -294,7 +299,6 @@ module w90_wanint_common
     call comms_bcast(transl_inv,1) 
     call comms_bcast(omega_from_FF,1) 
     call comms_bcast(sigma_abc_onlyorb,1)
-    call comms_bcast(smr_index,1)
     call comms_bcast(num_elec_per_state,1)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
@@ -319,8 +323,9 @@ module w90_wanint_common
     call comms_bcast(boltz_dos_energy_step,1) 
     call comms_bcast(boltz_dos_energy_min,1) 
     call comms_bcast(boltz_dos_energy_max,1) 
-    call comms_bcast(boltz_dos_smr_adaptive,1)
-    call comms_bcast(boltz_dos_smr_en_width,1)
+    call comms_bcast(boltz_dos_smr_adpt,1)
+    call comms_bcast(boltz_dos_smr_fixed_en_width,1)
+    call comms_bcast(boltz_dos_smr_adpt_factor,1)
     call comms_bcast(boltz_mu_min,1) 
     call comms_bcast(boltz_mu_max,1) 
     call comms_bcast(boltz_mu_step,1) 
@@ -331,7 +336,7 @@ module w90_wanint_common
     call comms_bcast(boltz_interp_mesh(1),3) 
     call comms_bcast(boltz_tdf_energy_step,1) 
     call comms_bcast(boltz_relax_time,1) 
-    call comms_bcast(boltz_TDF_smr_en_width,1)
+    call comms_bcast(boltz_TDF_smr_fixed_en_width,1)
     call comms_bcast(boltz_TDF_smr_index,1)
     call comms_bcast(boltz_dos_smr_index,1)
     call comms_bcast(boltz_bandshift,1) 
@@ -339,7 +344,7 @@ module w90_wanint_common
     call comms_bcast(boltz_bandshift_energyshift,1) 
     ! [gp-end]
 
-    ! 'eigval' 'kpt_latt' 'adpt_smr_width' are different from
+    ! 'eigval' 'kpt_latt'  are different from
     ! the variables above in that they are allocatable, and in param_read they 
     ! were only allocated on the root node
     !
@@ -350,13 +355,9 @@ module w90_wanint_common
        allocate(kpt_latt(3,num_kpts),stat=ierr)
        if (ierr/=0)&
             call io_error('Error allocating kpt_latt in wanint_param_dist')
-       allocate(adpt_smr_width(adpt_smr_steps),stat=ierr)
-       if (ierr/=0)&
-           call io_error('Error allocating adpt_smr_width in wanint_param_dist')
     end if
     call comms_bcast(eigval(1,1),num_bands*num_kpts)
     call comms_bcast(kpt_latt(1,1),3*num_kpts)
-    call comms_bcast(adpt_smr_width(1),adpt_smr_steps)
        
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix 
     ! elements of the position operator in reciprocal space. For the

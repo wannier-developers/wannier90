@@ -29,15 +29,22 @@ module w90_parameters
   integer,           public, save :: num_dump_cycles
   integer,           public, save :: num_print_cycles
   character(len=50), public, save :: devel_flag
+  ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
+  ! Only internal, always use the local variables defined by each module
+  ! that take this value as default
+  logical                         :: smr_adpt
+  real(kind=dp)                   :: smr_adpt_factor
+  real(kind=dp)                   :: smr_fixed_en_width
   !IVO
+  logical,                    public, save :: berry_smr_adpt
+  real(kind=dp),              public, save :: berry_smr_adpt_factor
+  real(kind=dp),              public, save :: berry_smr_fixed_en_width
     real(kind=dp),              public, save :: degen_skip_thr
 !  real(kind=dp),              public, save :: smear_temp
 !  real(kind=dp),              public, save :: eps_occ
   integer,                    public, save :: alpha
   integer,                    public, save :: beta
   integer,                    public, save :: gamma
-  integer,                    public, save :: adpt_smr_steps
-  real(kind=dp), allocatable, public, save :: adpt_smr_width(:)
   logical,                    public, save :: evaluate_spin_moment
   real(kind=dp),              public, save :: theta_quantaxis
   real(kind=dp),              public, save :: phi_quantaxis
@@ -54,10 +61,11 @@ module w90_parameters
   logical,                    public, save :: omega_from_ff
   !IVO_END
   ! [gp-begin, Apr 20, 2012] Smearing type
-  ! For the moment, we always use the adaptive smearing
-  ! The prefactor is given with the above parameters adpt_smr_...
+  ! The prefactor is given with the above parameters smr_...
   ! This is an internal variable, obtained from the input string smr_type
-  integer,                    public, save :: smr_index
+  ! Only internal, always use the local variables defined by each module
+  ! that take this value as default
+  integer                          :: smr_index
   ! [gp-end]
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
@@ -111,6 +119,9 @@ module w90_parameters
   character(len=20), public, save :: dos_task 
   integer,           public, save :: dos_num_points
   real(kind=dp),     public, save :: dos_energy_step
+  logical,           public, save :: dos_smr_adpt
+  real(kind=dp),     public, save :: dos_smr_fixed_en_width
+  real(kind=dp),     public, save :: dos_smr_adpt_factor
   real(kind=dp),     public, save :: dos_max_energy
   real(kind=dp),     public, save :: dos_min_energy
 
@@ -153,8 +164,9 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_dos_energy_step
   real(kind=dp),     public, save :: boltz_dos_energy_min
   real(kind=dp),     public, save :: boltz_dos_energy_max
-  logical,           public, save :: boltz_dos_smr_adaptive
-  real(kind=dp),     public, save :: boltz_dos_smr_en_width
+  logical,           public, save :: boltz_dos_smr_adpt
+  real(kind=dp),     public, save :: boltz_dos_smr_fixed_en_width
+  real(kind=dp),     public, save :: boltz_dos_smr_adpt_factor
   real(kind=dp),     public, save :: boltz_mu_min
   real(kind=dp),     public, save :: boltz_mu_max
   real(kind=dp),     public, save :: boltz_mu_step
@@ -167,7 +179,7 @@ module w90_parameters
   integer,           public, save :: boltz_TDF_smr_index
   integer,           public, save :: boltz_dos_smr_index
   real(kind=dp),     public, save :: boltz_relax_time
-  real(kind=dp),     public, save :: boltz_TDF_smr_en_width
+  real(kind=dp),     public, save :: boltz_TDF_smr_fixed_en_width
   logical,           public, save :: boltz_bandshift
   integer,           public, save :: boltz_bandshift_firstband
   real(kind=dp),     public, save :: boltz_bandshift_energyshift
@@ -725,6 +737,29 @@ contains
     slice_plot_format         = 'plotmv'
     call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
 
+    ! [gp-begin, Apr 20, 2012]
+    
+    ! By default: Gaussian
+    smr_index = 0
+    call param_get_keyword('smr_type',found,c_value=ctmp)
+    if (found) smr_index = get_smearing_index(ctmp,'smr_type')
+
+    smr_adpt=.true.
+    call param_get_keyword('smr_adpt',found,l_value=smr_adpt)
+
+    smr_adpt_factor=1.0_dp
+    call param_get_keyword('smr_adpt_factor',found,r_value=smr_adpt_factor)
+    if (found .and. (boltz_dos_smr_adpt_factor <= 0._dp)) &
+         call io_error('Error: smr_adpt_factor must be greater than zero')  
+
+    smr_fixed_en_width=0.0_dp
+    call param_get_keyword('smr_fixed_en_width',found,r_value=smr_fixed_en_width)
+    if (found .and. (smr_fixed_en_width < 0._dp)) &
+         call io_error('Error: smr_fixed_en_width must be greater than or equal to zero')    
+
+    ! [gp-end]
+
+
     !IVO
 
     do_dos                  = .false.
@@ -789,44 +824,19 @@ contains
     gamma=0
     call param_get_keyword('gamma',found,i_value=gamma)
 
-    adpt_smr_steps=1
-    call param_get_keyword('adpt_smr_steps',found,i_value=adpt_smr_steps)
-    if(adpt_smr_steps>6) call io_error ('adpt_smr_steps cannot exceed 6')
+    berry_smr_adpt = smr_adpt
+    call param_get_keyword('berry_smr_adpt',found,l_value=berry_smr_adpt)
 
-    allocate(adpt_smr_width(adpt_smr_steps),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating adpt_smr_width in param_read')
-    adpt_smr_width(1)=2.0
-    call param_get_keyword('adpt_smr_width1',found,r_value=adpt_smr_width(1))
-    if(adpt_smr_steps>1) then
-       adpt_smr_width(2)=1.6
-       call param_get_keyword('adpt_smr_width2',found,r_value=adpt_smr_width(2))
-    end if
-    if(adpt_smr_steps>2) then
-       adpt_smr_width(3)=1.3
-       call param_get_keyword('adpt_smr_width3',found,r_value=adpt_smr_width(3))
-    end if
-    if(adpt_smr_steps>3) then
-       adpt_smr_width(4)=1.0
-       call param_get_keyword('adpt_smr_width4',found,r_value=adpt_smr_width(4))
-    end if
-    if(adpt_smr_steps>4) then
-       adpt_smr_width(5)=0.8
-       call param_get_keyword('adpt_smr_width5',found,r_value=adpt_smr_width(5))
-    end if
-    if(adpt_smr_steps>5) then
-       adpt_smr_width(6)=0.6
-       call param_get_keyword('adpt_smr_width6',found,r_value=adpt_smr_width(6))
-    end if
+    berry_smr_adpt_factor = smr_adpt_factor
+    call param_get_keyword('berry_smr_adpt_factor',found,r_value=berry_smr_adpt_factor)
+    if (found .and. (berry_smr_adpt_factor <= 0._dp)) &
+         call io_error('Error: berry_smr_adpt_factor must be greater than zero')    
 
-    ! [gp-begin, Apr 20, 2012]
-    
-    ! By default: Gaussian
-    smr_index = 0
-    call param_get_keyword('smr_type',found,c_value=ctmp)
-    if (found) smr_index = get_smearing_index(ctmp,'smr_type')
+    berry_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('berry_smr_fixed_en_width',found,r_value=berry_smr_fixed_en_width)
+    if (found .and. (berry_smr_fixed_en_width < 0._dp)) &
+         call io_error('Error: berry_smr_fixed_en_width must be greater than or equal to zero')    
 
-    ! [gp-end]
-  
     evaluate_spin_moment = .false.
     call param_get_keyword('evaluate_spin_moment',found,&
          l_value=evaluate_spin_moment)   
@@ -915,6 +925,19 @@ contains
 
     dos_energy_step           = 0.01_dp
     call param_get_keyword('dos_energy_step',found,r_value=dos_energy_step)
+
+    dos_smr_adpt = smr_adpt
+    call param_get_keyword('dos_smr_adpt',found,l_value=dos_smr_adpt)
+
+    dos_smr_adpt_factor = smr_adpt_factor
+    call param_get_keyword('dos_smr_adpt_factor',found,r_value=dos_smr_adpt_factor)
+    if (found .and. (dos_smr_adpt_factor <= 0._dp)) &
+         call io_error('Error: dos_smr_adpt_factor must be greater than zero')    
+
+    dos_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('dos_smr_fixed_en_width',found,r_value=dos_smr_fixed_en_width)
+    if (found .and. (dos_smr_fixed_en_width < 0._dp)) &
+         call io_error('Error: dos_smr_fixed_en_width must be greater than or equal to zero')    
 
 !    dos_gaussian_width        = 0.1_dp
 !    call param_get_keyword('dos_gaussian_width',found,r_value=dos_gaussian_width)
@@ -1172,13 +1195,18 @@ contains
     if (boltz_dos_energy_max <= boltz_dos_energy_min) &
          call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min')         
         
-    boltz_dos_smr_adaptive = .false.
-    call param_get_keyword('boltz_dos_smr_adaptive',found,l_value=boltz_dos_smr_adaptive)
+    boltz_dos_smr_adpt = smr_adpt
+    call param_get_keyword('boltz_dos_smr_adpt',found,l_value=boltz_dos_smr_adpt)
 
-    boltz_dos_smr_en_width = 0._dp
-    call param_get_keyword('boltz_dos_smr_en_width',found,r_value=boltz_dos_smr_en_width)
-    if (found .and. (boltz_dos_smr_en_width < 0._dp)) &
-         call io_error('Error: boltz_dos_smr_en_width must be greater than zero')    
+    boltz_dos_smr_adpt_factor = smr_adpt_factor
+    call param_get_keyword('boltz_dos_smr_adpt_factor',found,r_value=boltz_dos_smr_adpt_factor)
+    if (found .and. (boltz_dos_smr_adpt_factor <= 0._dp)) &
+         call io_error('Error: boltz_dos_smr_adpt_factor must be greater than zero')    
+
+    boltz_dos_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('boltz_dos_smr_fixed_en_width',found,r_value=boltz_dos_smr_fixed_en_width)
+    if (found .and. (boltz_dos_smr_fixed_en_width < 0._dp)) &
+         call io_error('Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero')    
 
     boltz_mu_min=-999._dp
     call param_get_keyword('boltz_mu_min',found,r_value=boltz_mu_min)
@@ -1226,8 +1254,10 @@ contains
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
-    boltz_TDF_smr_en_width = 0._dp
-    call param_get_keyword('boltz_tdf_smr_en_width',found,r_value=boltz_TDF_smr_en_width)
+    boltz_TDF_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('boltz_tdf_smr_fixed_en_width',found,r_value=boltz_TDF_smr_fixed_en_width)
+    if (found .and. (boltz_TDF_smr_fixed_en_width < 0._dp)) &
+         call io_error('Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero')    
 
     ! By default: use the "global" smearing index 
     boltz_TDF_smr_index = smr_index
@@ -4169,8 +4199,8 @@ contains
           NumPoints1 = int(floor((boltz_dos_energy_max - boltz_dos_energy_min)/boltz_dos_energy_step))+1!dosnumpoints
           mem_bw=mem_bw+NumPoints1*size_real                         !DOS_EnergyArray
           mem_bw=mem_bw+6*ndim*NumPoints3*size_real                  !TDF_k
-          mem_bw=mem_bw+adpt_smr_steps*ndim*NumPoints1*size_real     !DOS_k
-          mem_bw=mem_bw+adpt_smr_steps*ndim*NumPoints1*size_real     !DOS_all
+          mem_bw=mem_bw+ndim*NumPoints1*size_real                    !DOS_k
+          mem_bw=mem_bw+ndim*NumPoints1*size_real                    !DOS_all
        end if
     end if
 
