@@ -134,9 +134,9 @@ module w90_parameters
   logical,           public, save :: berry_smr_adpt
   real(kind=dp),     public, save :: berry_smr_adpt_factor
   real(kind=dp),     public, save :: berry_smr_fixed_en_width
-  real(kind=dp),     public, save :: optics_energy_step
-  real(kind=dp),     public, save :: optics_max_energy
-  real(kind=dp),     public, save :: optics_min_energy
+  real(kind=dp),     public, save :: berry_energy_step
+  real(kind=dp),     public, save :: berry_max_energy
+  real(kind=dp),     public, save :: berry_min_energy
   logical,           public, save :: wanint_kpoint_file
   logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
@@ -788,8 +788,8 @@ contains
     call param_get_keyword('berry_adaptive_mesh',found,i_value=berry_adaptive_mesh)
     if (berry_adaptive_mesh<0) call io_error('Error:  berry_adaptive_mesh must be positive')       
 
-    optics_energy_step           = 0.01_dp
-    call param_get_keyword('optics_energy_step',found,r_value=optics_energy_step)
+    berry_energy_step           = 0.01_dp
+    call param_get_keyword('berry_energy_step',found,r_value=berry_energy_step)
 
     berry_adaptive_thresh           = 100.0_dp
     call param_get_keyword('berry_adaptive_thresh',found,r_value=berry_adaptive_thresh)
@@ -1328,16 +1328,16 @@ contains
 
 
     if(frozen_states) then
-       optics_max_energy        = dis_froz_max-fermi_energy+0.6667_dp
+       berry_max_energy        = dis_froz_max-fermi_energy+0.6667_dp
     elseif(allocated(eigval)) then
-       optics_max_energy        = maxval(eigval)-minval(eigval)+0.6667_dp
+       berry_max_energy        = maxval(eigval)-minval(eigval)+0.6667_dp
     else
-       optics_max_energy        = 0.0_dp
+       berry_max_energy        = 0.0_dp
     end if
-    call param_get_keyword('optics_max_energy',found,r_value=optics_max_energy)
+    call param_get_keyword('berry_max_energy',found,r_value=berry_max_energy)
 
-    optics_min_energy        = 0.0_dp
-    call param_get_keyword('optics_min_energy',found,r_value=optics_min_energy)
+    berry_min_energy        = 0.0_dp
+    call param_get_keyword('berry_min_energy',found,r_value=berry_min_energy)
 
 
     automatic_translation=.true.

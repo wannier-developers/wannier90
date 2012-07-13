@@ -4,7 +4,7 @@
 !
 ! CHANGE INPUT VARIABLES AS FOLLOWS
 !
-! optics_task = ahc, morb, spectrum
+! berry_task = ahc, morb, spectrum
 ! spectrum_type = sigma_ab, sigma_abc 
 !                         (currently mcd, ord, ahe, orb, gyro, noa, mespn)
 ! time_parity = even, odd
@@ -63,8 +63,8 @@ module w90_berry_wanint
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   !optics_task,
                                   berry_task,&
-                                  optics_min_energy,&
-                                  optics_max_energy,optics_energy_step,&
+                                  berry_min_energy,&
+                                  berry_max_energy,berry_energy_step,&
                                   !adpt_smr_steps,adpt_smr_width,&
                                   berry_smr_adpt_factor,&
                                   spn_decomp,found_fermi_energy,fermi_energy,&
@@ -114,7 +114,7 @@ module w90_berry_wanint
     real(kind=dp), allocatable :: sig_abc(:,:)
 
     ! Same as above, but contrib to the static value from optical transitions 
-    ! below a given frequency, scanned between zero and optics_max_energy
+    ! below a given frequency, scanned between zero and berry_max_energy
     !
     real(kind=dp), allocatable :: sig_abc_cut_k(:,:)
     real(kind=dp), allocatable :: sig_abc_cut(:,:)
@@ -129,7 +129,7 @@ module w90_berry_wanint
     
     ! Static spin-electronic magnetoelectric tensor alphaspn_ij, and 
     ! contribution from optical transitions below a given frequency, scanned
-    ! between zero and optics_max_energy
+    ! between zero and berry_max_energy
     !
     real(kind=dp) :: alphaspn_k(3,3)
     real(kind=dp) :: alphaspn(3,3)
@@ -158,11 +158,11 @@ module w90_berry_wanint
     if (timing_level>1.and.on_root)&
          call io_stopwatch('berry_wanint: berry (prelims)',1)
 
-    nfreq=max(nint((optics_max_energy-optics_min_energy)/optics_energy_step),2)
-    d_freq=(optics_max_energy-optics_min_energy)/(nfreq-1)
+    nfreq=max(nint((berry_max_energy-berry_min_energy)/berry_energy_step),2)
+    d_freq=(berry_max_energy-berry_min_energy)/(nfreq-1)
 
-    nfreq_cut=max(nint(optics_max_energy/optics_energy_step),2)
-    d_freq_cut=optics_max_energy/(nfreq_cut-1)
+    nfreq_cut=max(nint(berry_max_energy/berry_energy_step),2)
+    d_freq_cut=berry_max_energy/(nfreq_cut-1)
     
     ! Must initialize to .false. all eval_ flags
     !
@@ -173,9 +173,9 @@ module w90_berry_wanint
     eval_ME_EQ=.false.
     eval_MEspn=.false.
     T_odd=.false.
-    if(index(berry_task,'ahe')>0) then
+    if(index(berry_task,'ahc')>0) then
        eval_ahe=.true.
-    elseif(index(berry_task,'orb')>0) then
+    elseif(index(berry_task,'morb')>0) then
        eval_orb=.true.
     end if
     if(index(berry_task,'mcd')>0) then
@@ -801,7 +801,7 @@ module w90_berry_wanint
           jdos_unit=io_file_unit()
           open(jdos_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
           do ifreq=1,nfreq
-             freq=optics_min_energy+ifreq*d_freq
+             freq=berry_min_energy+ifreq*d_freq
              write(jdos_unit,'(5E16.8)') freq,jdos(ifreq,:)
           enddo
           close(jdos_unit)
@@ -898,7 +898,7 @@ module w90_berry_wanint
           open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
 
           do ifreq=1,nfreq
-             freq=optics_min_energy+ifreq*d_freq
+             freq=berry_min_energy+ifreq*d_freq
 !             write(DD_unit,'(20E16.8)') freq,sig_ab(1,ifreq,:,:)
 !             write(DA_unit,'(20E16.8)') freq,sig_ab(2,ifreq,:,:)
 !             write(AA_unit,'(20E16.8)') freq,sig_ab(3,ifreq,:,:)
@@ -947,7 +947,7 @@ module w90_berry_wanint
                      +(2.0_dp/pi)*sig_ab_over_freq(2,ifreq,:)*d_freq
                 ahc_kk(3,:)=ahc_kk(3,:)&
                      +(2.0_dp/pi)*sig_ab_over_freq(3,ifreq,:)*d_freq
-                freq=optics_min_energy+ifreq*d_freq
+                freq=berry_min_energy+ifreq*d_freq
                 !
                 ! Since the factor (1/freq)*d_freq in Eq.(43) YWVS07 is 
                 ! dimensionless, the conversion factor to obtain the AHC in 
@@ -1007,7 +1007,7 @@ module w90_berry_wanint
                 morb_sr(1)=morb_sr(1)+sig_ab(1,ifreq,1)*d_freq
                 morb_sr(2)=morb_sr(2)+sig_ab(2,ifreq,1)*d_freq
                 morb_sr(3)=morb_sr(3)+sig_ab(3,ifreq,1)*d_freq
-                freq=optics_min_energy+ifreq*d_freq
+                freq=berry_min_energy+ifreq*d_freq
 !                write(DD_unit,'(10E16.8)') freq,morb_sr(1,:)*Morb_conv
 !                write(DA_unit,'(10E16.8)') freq,morb_sr(2,:)*Morb_conv
 !                write(AA_unit,'(10E16.8)') freq,morb_sr(3,:)*Morb_conv
@@ -1080,7 +1080,7 @@ module w90_berry_wanint
           sig_abc=fac*sig_abc
 
          do ifreq=1,nfreq
-             freq=optics_min_energy+(ifreq-1)*d_freq
+             freq=berry_min_energy+(ifreq-1)*d_freq
              write(tot_unit,'(5E18.8)') freq,&
                   sig_abc(ifreq,1),&   !orbital, matrix-element-term
                   sig_abc(ifreq,2),&   !orbital, energy-term
@@ -1159,7 +1159,7 @@ module w90_berry_wanint
           alphaME=alphaME*4.0_dp*pi*1.0e-7_dp*1.0e12_dp
 
           do ifreq=1,nfreq
-             freq=optics_min_energy+(ifreq-1)*d_freq
+             freq=berry_min_energy+(ifreq-1)*d_freq
              do j=1,3
                 do i=1,3
                    write(alpha_unit(i,j),'(5E18.8)') freq,&
@@ -1195,7 +1195,7 @@ module w90_berry_wanint
           imgamma=imgamma*speedlight_SI*4.0_dp*pi*1.0e-7
 
          do ifreq=1,nfreq
-             freq=optics_min_energy+(ifreq-1)*d_freq
+             freq=berry_min_energy+(ifreq-1)*d_freq
              do p=1,10
                 !*******************************
                 ! eventually change to 1,2 below
@@ -1681,7 +1681,7 @@ module w90_berry_wanint
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_utility, only       : utility_diagonalize,utility_rotate,w0gauss
-    use w90_parameters, only    : num_wann,optics_min_energy,&
+    use w90_parameters, only    : num_wann,berry_min_energy,&
                                   berry_interp_mesh,alpha,beta,&
                                  ! adpt_smr_steps,adpt_smr_width,&
                                   berry_smr_adpt_factor,berry_interp_mesh,&
@@ -1790,10 +1790,10 @@ module w90_berry_wanint
              smear=joint_level_spacing*berry_smr_adpt_factor/sqrt(2.0_dp)
              do ifreq=1,nfreq   
                 
-                ! NOTE: Skipping optics_min_energy. When it is zero can give
+                ! NOTE: Skipping berry_min_energy. When it is zero can give
                 !       problems in the case of ordinary spectrum 
                 !
-                freq=optics_min_energy+ifreq*d_freq
+                freq=berry_min_energy+ifreq*d_freq
                 arg=(eig(j)-eig(i)-freq)/smear
                 if(abs(arg) > 10.0_dp) then !optimisation
                    cycle
@@ -1937,7 +1937,7 @@ module w90_berry_wanint
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
     use w90_parameters, only    : num_wann,fermi_energy,&
-                                  optics_min_energy,optics_max_energy,&
+                                  berry_min_energy,berry_max_energy,&
                                   alpha,beta,gamma,sigma_abc_onlyorb
     use w90_wanint_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
@@ -2090,10 +2090,10 @@ module w90_berry_wanint
     do n=1,num_wann !valence
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann !conduction, inside frozen window
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
           omega_mn=eig(m)-eig(n)
           do ifreq=1,nfreq
-             freq=optics_min_energy+(ifreq-1)*d_freq
+             freq=berry_min_energy+(ifreq-1)*d_freq
              if(T_odd) then
                 !
                 ! ------------------------------
@@ -2159,13 +2159,13 @@ module w90_berry_wanint
 
     ! Now recalculate the dc (static) value sig_abc_k(omega=0), 
     ! including only transitions *below* a given energy, scanned 
-    ! between zero and optics_max_energy
+    ! between zero and berry_max_energy
     !
     sig_abc_cut_k=0.0_dp
     do n=1,num_wann
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
           omega_mn=eig(m)-eig(n)
           do ifreq=nfreq_cut,1,-1
              !---------------------------------------!
@@ -2214,8 +2214,8 @@ module w90_berry_wanint
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
-    use w90_parameters, only    : num_wann,fermi_energy,optics_min_energy,&
-                                  optics_max_energy,sigma_abc_onlyorb
+    use w90_parameters, only    : num_wann,fermi_energy,berry_min_energy,&
+                                  berry_max_energy,sigma_abc_onlyorb
     use w90_wanint_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R,FF_R,SS_R
@@ -2371,13 +2371,13 @@ module w90_berry_wanint
     do n=1,num_wann !valence
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann !conduction, inside frozen window
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
           omega_mn=eig(m)-eig(n)
           do c=1,3
           do b=1,3
           do a=1,b ! Will symmetrize at the end
              do ifreq=1,nfreq
-                freq=optics_min_energy+(ifreq-1)*d_freq
+                freq=berry_min_energy+(ifreq-1)*d_freq
                 omega_fac_matel=2.0_dp*omega_mn/(omega_mn**2-freq**2)
                 omega_fac_en=2.0_dp*omega_mn**3/(omega_mn**2-freq**2)**2
                 !
@@ -2473,7 +2473,7 @@ module w90_berry_wanint
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
-    use w90_parameters, only    : num_wann,fermi_energy,optics_max_energy,&
+    use w90_parameters, only    : num_wann,fermi_energy,berry_max_energy,&
                                   cell_volume
     use w90_wanint_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a
@@ -2519,7 +2519,7 @@ module w90_berry_wanint
 
     ! Compute alphaspn_k (dimensionless due to multiplication by fac). Also,
     ! recalculate it including only transitions below a given energy, scanned 
-    ! between zero and optics_max_energy
+    ! between zero and berry_max_energy
     !
     alphaspn_k=0.0_dp
     alphaspn_cut_k=0.0_dp
@@ -2527,7 +2527,7 @@ module w90_berry_wanint
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann !conduction, inside frozen window
 !         if(eig(m)<fermi_energy.or.eig(m)>eig_max) cycle
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
           do j=1,3
              do i=1,3
                 rdum=fac*aimag(cmplx_i*SS_h(n,m,j)*AA_h(m,n,i))/(eig(m)-eig(n))
