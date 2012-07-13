@@ -135,8 +135,8 @@ module w90_parameters
   real(kind=dp),     public, save :: berry_smr_adpt_factor
   real(kind=dp),     public, save :: berry_smr_fixed_en_width
   real(kind=dp),     public, save :: berry_energy_step
-  real(kind=dp),     public, save :: berry_max_energy
   real(kind=dp),     public, save :: berry_min_energy
+  real(kind=dp),     public, save :: berry_max_energy
   logical,           public, save :: wanint_kpoint_file
   logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
@@ -1460,8 +1460,8 @@ contains
          module_interp_mesh=berry_interp_mesh, &
          module_interp_mesh_spacing=berry_interp_mesh_spacing)
 
-    call get_module_interp_mesh(moduleprefix='berry', &
-         should_be_defined=berry, &
+    call get_module_interp_mesh(moduleprefix='spin', &
+         should_be_defined=evaluate_spin_moment, &
          module_interp_mesh=spin_interp_mesh, &
          module_interp_mesh_spacing=spin_interp_mesh_spacing)
 

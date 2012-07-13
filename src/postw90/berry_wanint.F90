@@ -57,15 +57,11 @@ module w90_berry_wanint
     use w90_wanint_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
                                   adkpt,weight,rpt_origin
     use w90_parameters, only    : timing_level,alpha,beta,gamma,num_wann,&
-!                                  optics_num_points,&
                                   berry_interp_mesh,&
                                   berry_adaptive_mesh,berry_adaptive_thresh,&
                                   wanint_kpoint_file,cell_volume,transl_inv,&
-                                  !optics_task,
-                                  berry_task,&
-                                  berry_min_energy,&
+                                  berry_task,berry_min_energy,&
                                   berry_max_energy,berry_energy_step,&
-                                  !adpt_smr_steps,adpt_smr_width,&
                                   berry_smr_adpt_factor,&
                                   spn_decomp,found_fermi_energy,fermi_energy,&
                                   omega_from_FF,sigma_abc_onlyorb
@@ -78,15 +74,14 @@ module w90_berry_wanint
     real(kind=dp) :: imh_ab_k(3),imh_ab(3)
     real(kind=dp) :: ahc(3),LCtil(3),ICtil(3)
 
-    ! Repeat for JDOS & optical conductivity
-    !    
     ! Joint density of states
     !
     real(kind=dp), allocatable :: jdos_k(:,:)
     real(kind=dp), allocatable :: jdos(:,:)
-
+    
+    ! Optical conductivity and sum rules
+    !
     ! 'sig_ab_k' is the contrib to the optical conductivity from one k-point,
-    ! 'sig_ab_node' from k-points in one node, 'sig_ab' is the BZ average.
     ! 'ahc_kk' is the cumulative Kramers-Kronig transform of the MCD spectrum
     ! 'morb_sr' is the cumulative dichroic f-sum rule
     !
