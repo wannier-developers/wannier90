@@ -74,6 +74,14 @@ to obtain the Wannier functions.
 \section{List of available modules}
 The currently available modules in \texttt{postw90.x} are:
 \begin{itemize}
+\item \texttt{Dos}: Calculation of Density of States, Projected
+  density of states, net spin etc.
+\item \texttt{Berry}: Calculation of properties related to Berry phase
+  including Anomalous Hall conductivity, orbital magnetisation and
+  dichroic spectra.
+ (see Chap.~\ref{ch:boltzwann}).
+\item \texttt{kpath}: Calculation of properties along a path in the BZ 
+\item \texttt{kslice}: Calculation of properties within a slice in the BZ 
 \item \texttt{BoltzWann}: Calculation of electronic transport
   properties using the semiclassical Boltzmann transport equation (see Chap.~\ref{ch:boltzwann}).
 \item \emph{Generic Band Interpolation}: Calculation band energies (and band
@@ -112,6 +120,123 @@ physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords_postw90}
 \end{center}
 \end{table}
+
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{DOS Parameters} \\
+\hline
+{\sc dos}  & L & Calculate density of States \\
+{\sc evaluate\_spin\_moment}& L & Determines whether to evaluate the spin moment\\
+{\sc spin\_formatted}& L & Read a formatted spn file\\
+{\sc dos\_energy\_step}& R & Energy step for the grid of energies
+used to compute the dos\\
+{\sc dos\_win\_min} & R & The lower bound of the energy window used
+to compute the dos\\
+{\sc dos\_win\_max}& R & The upper bound of the energy window used
+to compute the dos\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the DOS module.]
+{{\tt seedname.win} file keywords controlling the DOS module. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_dos}
+\end{center}
+\end{table}
+
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{kpath Parameters} \\
+\hline
+{\sc kpath}  & L & Calculate properties along a path in the BZ \\
+{\sc kpath\_task}& L & Property to calculate\\
+{\sc kpath\_num\_points}& I & Number of points in the first kpath segment\\
+{\sc kpath\_bands\_colour}& C & Ivo\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the kpath module.]
+{{\tt seedname.win} file keywords controlling the kpath module. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_kpath}
+\end{center}
+\end{table}
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{kslice Parameters} \\
+\hline
+{\sc kslice}  & L & Calculate properties on a slice in the BZ \\
+{\sc kslice\_task}& C & Property to evaluate\\
+{\sc kslice\_corner}& R & Position of the corner of the slice\\
+{\sc kslice\_b1}& R & first vector defining the slice\\
+{\sc kslice\_b2}& R & second vector defining the slice\\
+{\sc kslice\_num\_points}& I & number of points along B1\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the kslice module.]
+{{\tt seedname.win} file keywords controlling the kslice module. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_kslice}
+\end{center}
+\end{table}
+
+
+
+\begin{table}[hH!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+\hline
+Keyword & Type & Description \\
+        &      &             \\
+\hline\hline
+\multicolumn{3}{|c|}{Berry Parameters} \\
+\hline
+{\sc berry}  & L & Calculate Berry derived quantities \\
+{\sc berry\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
+{\sc berry\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+{\sc berry\_task}& C  & List of properties to compute \\
+{\sc berry\_spectrum\_type}& C & Type of spectrum to compute\\
+{\sc berry\_spectrum\_time\_parity}& C & Parity of spectrum to compute\\ 
+{\sc berry\_energy\_step}& R & Energy step for the grid of energies
+used to plot spectra (eV)\\
+{\sc berry\_win\_min} & R & The lower bound of the energy window used
+to plot spectra (eV) \\
+{\sc berry\_win\_max}& R & The upper bound of the energy window used
+to plot spectra (eV) \\
+{\sc uHu\_formatted}& L & Read a formatted uHu file \\
+{\sc uIu\_formatted}& L & Read a formatted uIu file\\
+{\sc berry\_alpha}& L & description\\
+{\sc berry\_beta}& L & description\\
+\hline
+\end{tabular}
+\caption[Parameter file keywords controlling the Berry module.]
+{{\tt seedname.win} file keywords controlling the Berry module. Argument types
+are represented by, I for a integer, R for a real number, P for a
+physical value, L for a logical value and S for a text string.}
+\label{parameter_keywords_berry}
+\end{center}
+\end{table}
+
+
 
 \begin{table}[hH!]
 \begin{center}
@@ -179,8 +304,265 @@ physical value, L for a logical value and S for a text string.}
 \end{table}
 
 \clearpage
+\section{DOS}
+\subsection[dos]{\tt logical :: dos}
+Determines whether to enter the DOS routines.
 
-\section{BoltzWann}
+The default value is \verb#false#.
+
+
+\subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
+Determines whether to evaluate the spin moment.
+
+The default value is \verb#false#.
+
+\subsection[spin\_formated]{\tt character(len=20) :: spin\_formatted}
+
+If \verb#spin_formatted#=\verb#TRUE#, then the spin matrix elements will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files. Unformatted is generally preferable as the
+files will take less disk space and I/O is significantly
+faster. However such files will not be transferable between all
+machine architectures and formatted files should be used if
+transferability is required (i.e., for test cases).
+
+The default value of this parameter is $\verb#FALSE#$.
+
+\subsection[berry\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
+Energy step for the grid of energies used to plot the dos
+
+The units are eV.
+The default value is 0.001~eV.
+
+\subsection[dos\_win\_min]{\tt real(kind=dp) :: dos\_win\_min}
+The lower bound of the energy window  used to plot the dos
+Units are eV.
+
+The default value is **
+
+\subsection[dos\_win\_max]{\tt real(kind=dp) :: dos\_win\_max}
+The upper bound of the energy window used to plot dos
+Units are eV.
+
+The default value is **
+
+
+
+\clearpage
+\section{kpath}
+
+\subsection[berry]{\tt logical :: kpath}
+Determines whether to enter the kpath routines.
+
+The default value is \verb#false#.
+
+
+\subsection[kpath\_task]{\tt character(len=120) ::  kpath\_task} 
+The quantity to compute when {\tt kpath=.true.} 
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#bands# Energy Eigenvalues
+\item[{\bf --}]  \verb#curve# Berry curvature summed over occupied bands
+\item[{\bf --}] \verb#orb#  Integrand of orbital magnetization
+\end{itemize}
+There is no default value
+
+\subsection[kpath\_colour]{\tt character(len=120) ::  kpath\_bands\_colour}
+Colour code the energy bands according to the specified quantity
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#spin# Spin projection
+\item[{\bf --}]  \verb#none# no colour coding (default)
+\end{itemize}
+There is no default value
+
+
+\subsection[kpath\_num\_points]{\tt integer :: kpath\_num\_points}
+
+If $\verb#kpath#=\verb#TRUE#$, then the number of points along
+the first section of the bandstructure plot given by
+\verb#kpoint_path#. Other sections will have the same density of
+k-points. 
+
+The default value for \verb#kpath_num_points# is 100.
+
+
+
+
+\clearpage
+\section{kslice}
+
+\subsection[berry]{\tt logical :: kslice}
+Determines whether to enter the kslice routines.
+
+The default value is \verb#false#.
+
+\subsection[kslice\_task]{\tt character(len=120) ::  kslice\_task}
+The quantity to compute when {\tt kslice=.true.} 
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#bands# Energy Eigenvalues
+\item[{\bf --}]  \verb#curve# Berry curvature summed over occupied bands
+\item[{\bf --}] \verb#orb#  Integrand of orbital magnetization
+\end{itemize}
+There is no default value
+
+\subsection[kslice\_corner]{\tt real(kind=dp) :: kslice\_corner(3)}
+IVO
+
+There is no default value
+
+\subsection[kslice\_corner]{\tt real(kind=dp) :: kslice\_b1(3)}
+IVO
+
+There is no default value
+
+\subsection[kslice\_corner]{\tt real(kind=dp) :: kslice\_b2(3)}
+IVO
+
+There is no default value
+
+\subsection[kslice\_num\_points]{\tt integer :: kslice\_num\_points}
+
+If $\verb#kslice#=\verb#TRUE#$, then the number of points along
+the first section of the bandstructure plot given by
+\verb#kpoint_path#. Other sections will have the same density of
+k-points. 
+
+The default value for \verb#kslice_num_points# is 100.
+
+
+\clearpage
+\section{Berry}
+
+\subsection[berry]{\tt logical :: berry}
+Determines whether to enter the berry routines.
+
+The default value is \verb#false#.
+
+\subsection[berry\_interp\_mesh]{\tt integer :: berry\_interp\_mesh(:)}
+It determines the interpolation $k$ mesh used to calculate the berry
+dervived quantities.
+
+If three integers $l$ $m$ $n$ are given, a $l\times m\times n$ grid is used. If only one integer $m$ is given, a $m\times m\times m$ grid is used.
+
+{\tt berry\_interp\_mesh\_spacing} and  {\tt berry\_interp\_mesh} may not both be defined in the same input file.
+
+If neither {\tt berry\_interp\_mesh\_spacing} nor  {\tt berry\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+
+\subsection[berry\_interp\_mesh\_spacing]{\tt real(kind=dp) :: berry\_interp\_mesh\_spacing}
+It determines the interpolation $k$ mesh used to calculate the berry
+derived quantities. This flag
+defines the minimum distance for neighboring $k$ points along each of
+the three directions in $k$ space. 
+
+
+The units are \AA$^{-1}$.
+
+{\tt berry\_interp\_mesh\_spacing} and  {\tt berry\_interp\_mesh} may not both be defined in the same input file.
+
+If neither {\tt berry\_interp\_mesh\_spacing} nor  {\tt berry\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+
+
+
+\subsection[berry\_task]{\tt character(len=120) ::  berry\_task}
+The quantity to compute when {\tt berry=.true.}
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#ahc# Anomalous Hall Conductivity
+\item[{\bf --}]  \verb#morb# Orbital Magnetisation
+\item[{\bf --}] \verb#spectrum# 
+\end{itemize}
+There is no default value
+
+
+
+\subsection[berry\_spectrum\_type]{\tt character(len=120) ::  berry\_spectrum\_type}
+The type of spectrum to compute when {\tt berry\_task=spectrum}. 
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#sigma_ab# (default) 
+\item[{\bf --}]  \verb#sigma_abc#  
+\end{itemize}
+
+\subsection[berry\_spectrum\_time\_parity]{\tt character(len=120) ::  berry\_spectrum\_time\_parity}
+The type of spectrum to compute when {\tt berry\_task=spectrum}. 
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#odd# (default) 
+\item[{\bf --}]  \verb#even#  
+\end{itemize}
+
+\subsection[berry\_energy\_step]{\tt real(kind=dp) :: berry\_energy\_step}
+Energy step for the grid of energies used to plot spectra when {\tt berry\_task=spectum}.
+
+The units are eV.
+The default value is 0.001~eV.
+
+\subsection[berry\_win\_min]{\tt real(kind=dp) :: berry\_win\_min}
+The lower bound of the energy window  used to plot spectra when {\tt berry\_task=spectum}.
+Units are eV.
+
+The default value is **
+
+\subsection[berry\_win\_max]{\tt real(kind=dp) :: berry\_win\_max}
+The upper bound of the energy window used to plot spectra when {\tt berry\_task=spectum}.
+Units are eV.
+
+The default value is **
+
+
+\subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
+Determines whether to evaluate the spin moment.
+
+The default value is \verb#false#.
+
+\subsection[spin\_formated]{\tt character(len=20) :: spin\_formatted}
+
+If \verb#spin_formatted#=\verb#TRUE#, then the spin matrix elements will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files. Unformatted is generally preferable as the
+files will take less disk space and I/O is significantly
+faster. However such files will not be transferable between all
+machine architectures and formatted files should be used if
+transferability is required (i.e., for test cases).
+
+The default value of this parameter is $\verb#FALSE#$.
+
+\subsection[uHu\_formated]{\tt character(len=20) :: uHu\_formatted}
+
+If \verb#uHu_formatted#=\verb#TRUE#, then the uHu matrix elements will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files.
+
+The default value of this parameter is $\verb#FALSE#$.
+
+\subsection[uIu\_formated]{\tt character(len=20) :: uIu\_formatted}
+
+If \verb#uIu_formatted#=\verb#TRUE#, then the uIu matrix elements will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files.
+
+The default value of this parameter is $\verb#FALSE#$.
+
+\subsection[berry\_alpha]{\tt integer :: berry\_alpha}
+define here
+No default.
+
+\subsection[berry\_alpha]{\tt integer :: berry\_beta}
+define here
+No default.
+
+
+
+
+\clearpage
 \subsection[boltzwann]{\tt logical :: boltzwann}
 Determines whether to enter the \bw\ routines.
 
