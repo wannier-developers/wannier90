@@ -133,7 +133,7 @@ module w90_spin_wanint
   subroutine get_spn_nk(kpt,spn_nk)
   !=============================================================!
   !                                                             !
-  ! Computes <psi_{nk}^(H)|S.n|psi_{nk}^(H)> (n=1,...,num_wann) !
+  ! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann) !
   ! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z                     !
   !                                                             !
   ! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit  !
