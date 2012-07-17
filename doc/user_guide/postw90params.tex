@@ -13,16 +13,16 @@ transport routines have been moved to the \texttt{postw90.x}
 executable).
 
 The \texttt{postw90.x} executable contains instead a series of modules
-that use the Wannier functions calculated by \texttt{wannier90.x} and
-uses them to calculate different properties. 
-This executable is parallel (by means of MPI libraries), so it can be run on multiple CPUs.
-The information on the
-calculated Wannier functions is read from the checkpoint 
-\verb|seedname.chk| file. Note that this is written in an unformatted
-machine-dependent format. If you need to use this file on a different
-machine, or you want to use a version of \texttt{postw90.x} compiled
-with a different compiler, refer to Sec.~\ref{sec:w90chk2chk} in the Appendices for a description
-of how to export/import this file.
+that take the Wannier functions calculated by \texttt{wannier90.x} and
+use them to calculate different properties.  This executable is
+parallel (by means of MPI libraries), so it can be run on multiple
+CPUs.  The information on the calculated Wannier functions is read
+from the checkpoint \verb|seedname.chk| file. Note that this is
+written in an unformatted machine-dependent format. If you need to use
+this file on a different machine, or you want to use a version of
+\texttt{postw90.x} compiled with a different compiler, refer to
+Sec.~\ref{sec:w90chk2chk} in the Appendices for a description of how
+to export/import this file.
 
 \section{Usage}
 For serial execution use: {\tt postw90.x [seedname]} 
@@ -76,17 +76,28 @@ The currently available modules in \texttt{postw90.x} are:
 \begin{itemize}
 \item \texttt{Dos}: Calculation of Density of States, Projected
   density of states, net spin etc.
-\item \texttt{Berry}: Calculation of properties related to Berry phase
-  including Anomalous Hall conductivity, orbital magnetisation and
-  dichroic spectra.
- (see Chap.~\ref{ch:boltzwann}).
-\item \texttt{kpath}: Calculation of properties along a path in the BZ 
-\item \texttt{kslice}: Calculation of properties within a slice in the BZ 
+\item \texttt{Berry}: Calculation of properties related to the
+  $k$-space Berry curvature and Berry connection, including anomalous
+  Hall conductivity, orbital magnetisation, and interband optical
+  spectrum.  (see Chap.~\ref{ch:boltzwann}).
+\item \texttt{kpath}: Calculation of $k$-space quantities along a path
+  in the BZ
+\item \texttt{kslice}: Calculation of $k$-space quantities within a
+  slice in the BZ
 \item \texttt{BoltzWann}: Calculation of electronic transport
   properties using the semiclassical Boltzmann transport equation (see Chap.~\ref{ch:boltzwann}).
 \item \emph{Generic Band Interpolation}: Calculation band energies (and band
   derivatives) on a generic list of $k$ points (see Chap.~\ref{ch:geninterp}).
 \end{itemize}
+
+\textcolor{red}{(Ivo) Would it make sense to move
+  \texttt{evaluate\_spin\_moment} (renamining it, e.g.,
+  \texttt{spin\_cell\_avg}) to a separate \texttt{Spin} module, which
+  would also include the input variables
+  \texttt{spin\_axis\_polar\_angle} and
+  \texttt{spin\_axis\_azimuthal\_angle} defining the spin quantization
+  axis? The latter would then be used in the modules \texttt{kpath}
+  and \texttt{kslice}, for example.}
 
 \section{Keyword List}
 On the next pages the list of available
@@ -145,7 +156,11 @@ to compute the dos\\
 \caption[Parameter file keywords controlling the DOS module.]
 {{\tt seedname.win} file keywords controlling the DOS module. Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+physical value, L for a logical value and S for a text string.
+\textcolor{red}{(Ivo) Will we bring back the spin decomposition of the DOS?
+What about the ability to find the Fermi level given the number of
+electrons per cell? Both can be useful, I think.}
+}
 \label{parameter_keywords_dos}
 \end{center}
 \end{table}
@@ -363,8 +378,10 @@ The quantity to compute when {\tt kpath=.true.}
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#bands# Energy Eigenvalues
-\item[{\bf --}]  \verb#curve# Berry curvature summed over occupied bands
-\item[{\bf --}] \verb#orb#  Integrand of orbital magnetization
+\item[{\bf --}] \verb#curv# $k$-space Berry curvature summed over
+  occupied bands
+\item[{\bf --}] \verb#morb#  Integrand of the $k$-space orbital
+  magnetization formula
 \end{itemize}
 There is no default value
 
@@ -373,10 +390,10 @@ Colour code the energy bands according to the specified quantity
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#spin# Spin projection
+\item[{\bf --}]  \verb#spin# Spin projection along the quantization axis
+defined by the variables $\ldots$
 \item[{\bf --}]  \verb#none# no colour coding (default)
 \end{itemize}
-There is no default value
 
 
 \subsection[kpath\_num\_points]{\tt integer :: kpath\_num\_points}
@@ -405,8 +422,11 @@ The quantity to compute when {\tt kslice=.true.}
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#bands# Energy Eigenvalues
-\item[{\bf --}]  \verb#curve# Berry curvature summed over occupied bands
-\item[{\bf --}] \verb#orb#  Integrand of orbital magnetization
+\textcolor{red}{(Ivo) Fermi contours, really? (CHECK)}
+\item[{\bf --}] \verb#curv# $k$-space Berry curvature summed over
+  occupied bands
+\item[{\bf --}] \verb#morb# Integrand of the $k$-space orbital
+  magnetization formula
 \end{itemize}
 There is no default value
 
@@ -430,7 +450,7 @@ There is no default value
 If $\verb#kslice#=\verb#TRUE#$, then the number of points along
 the first section of the bandstructure plot given by
 \verb#kpoint_path#. Other sections will have the same density of
-k-points. 
+k-points. \textcolor{red}{(Ivo) Is this correct? (CHECK)}
 
 The default value for \verb#kslice_num_points# is 100.
 
@@ -475,7 +495,7 @@ The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#ahc# Anomalous Hall Conductivity
 \item[{\bf --}]  \verb#morb# Orbital Magnetisation
-\item[{\bf --}] \verb#spectrum# 
+\item[{\bf --}] \verb#spectrum# Frequency-dependent interband conductivity 
 \end{itemize}
 There is no default value
 
@@ -487,17 +507,24 @@ The type of spectrum to compute when {\tt berry\_task=spectrum}.
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#sigma_ab# (default) 
-\item[{\bf --}]  \verb#sigma_abc#  
+\item[{\bf --}]  \verb#sigma_abc# 
+\item [{\bf --}]  \verb#jdos# \textcolor{red}{(Ivo) This is a proposal}
 \end{itemize}
 
 \subsection[berry\_spectrum\_time\_parity]{\tt character(len=120) ::  berry\_spectrum\_time\_parity}
-The type of spectrum to compute when {\tt berry\_task=spectrum}. 
+The type of spectrum to compute when {\tt berry\_task=spectrum=.true.} 
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#odd# (default) 
 \item[{\bf --}]  \verb#even#  
 \end{itemize}
+
+\verb#odd# (\verb#even#) gives the antisymmetric (symmetric) part of
+the tensor $\sigma_{ab}(\omega)$, or the symmetric (antisymmetric)
+part under $a\leftrightarrow b$ of the tensor $\sigma_{abc}(\omega)$.
+When \texttt{berry\_spectrum\_type=jdos}, the variable
+\texttt{berry\_spectrum\_time\_parity} is ignored.
 
 \subsection[berry\_energy\_step]{\tt real(kind=dp) :: berry\_energy\_step}
 Energy step for the grid of energies used to plot spectra when {\tt berry\_task=spectum}.
