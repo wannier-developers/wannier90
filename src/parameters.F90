@@ -47,7 +47,6 @@ module w90_parameters
   real(kind=dp),              public, save :: phi_quantaxis
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
-  logical,                    public, save :: band_by_band
   logical,                    public, save :: spn_decomp
   logical,                    public, save :: kpath_plot
   character(len=20),          public, save :: kpath_task
@@ -862,9 +861,6 @@ contains
 
     degen_thr      =   1.0d-4               
     call param_get_keyword('degen_thr',found,r_value=degen_thr)
-
-    band_by_band = .false.
-    call param_get_keyword('band_by_band',found,l_value=band_by_band)   
 
     kpath_plot = .false.
     call param_get_keyword('kpath_plot',found,&

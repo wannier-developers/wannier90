@@ -297,7 +297,6 @@ module w90_wanint_common
     call comms_bcast(spn_decomp,1)
     call comms_bcast(use_degen_pert,1) 
     call comms_bcast(degen_thr,1)
-    call comms_bcast(band_by_band,1) 
     call comms_bcast(num_elec_cell,1)
     call comms_bcast(found_fermi_energy,1)
     call comms_bcast(do_dos,1)

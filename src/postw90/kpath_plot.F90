@@ -31,8 +31,7 @@ contains
     use w90_parameters, only   : num_wann,recip_metric,kpath_task,&
          kpath_num_points,bands_num_spec_points,&
          bands_spec_points,bands_label,bands_color,&
-         band_by_band,found_fermi_energy,fermi_energy,&
-         omega_from_FF
+         found_fermi_energy,fermi_energy,omega_from_FF
     use w90_get_oper, only     : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
          get_FF_R,get_SS_R
     use w90_spin_wanint, only  : get_spn_nk
