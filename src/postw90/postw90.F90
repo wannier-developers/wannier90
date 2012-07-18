@@ -12,7 +12,7 @@ program postw90
 
   ! These modules deal with the interpolation of specific physical properties
   !
-  use w90_dos_wanint
+  use w90_dos
   use w90_berry
   use w90_spin
   use w90_kpath
@@ -156,7 +156,7 @@ program postw90
   !
   if(do_dos .and. index(dos_task,'dos_plot')>0) call dos
 
-! find_fermi_level commented for the moment in dos_wanint.F90
+! find_fermi_level commented for the moment in dos.F90
 !  if(do_dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
 
   ! --------------------------------------------------------------------

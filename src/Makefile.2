@@ -8,7 +8,7 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 
 OBJS2  =  wannier_lib.o
 
-OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o postw90_common.o wan_ham.o spin.o dos_wanint.o berry.o kpath.o kslice.o boltzwann.o geninterp.o
+OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o postw90_common.o wan_ham.o spin.o dos.o berry.o kpath.o kslice.o boltzwann.o geninterp.o
 
 LIBRARY = ../../libwannier.a
 
@@ -113,7 +113,7 @@ transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 comms.o: $(POSTDIR)comms.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90
 
-boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos_wanint.o
+boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
 
 geninterp.o: $(POSTDIR)geninterp.F90 constants.o parameters.o io.o get_oper.o postw90_common.o comms.o utility.o wan_ham.o
@@ -125,8 +125,8 @@ get_oper.o: $(POSTDIR)get_oper.F90 parameters.o constants.o comms.o postw90_comm
 spin.o: $(POSTDIR)spin.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o wan_ham.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)spin.F90
 
-dos_wanint.o: $(POSTDIR)dos_wanint.F90 comms.o parameters.o constants.o utility.o io.o wan_ham.o postw90_common.o get_oper.o spin.o
-	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)dos_wanint.F90
+dos.o: $(POSTDIR)dos.F90 comms.o parameters.o constants.o utility.o io.o wan_ham.o postw90_common.o get_oper.o spin.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)dos.F90
 
 kpath.o: $(POSTDIR)kpath.F90 comms.o parameters.o constants.o io.o spin.o berry.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)kpath.F90
