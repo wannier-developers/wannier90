@@ -299,7 +299,7 @@ module w90_wanint_common
     call comms_bcast(found_fermi_energy,1)
     call comms_bcast(do_dos,1)
     call comms_bcast(dos_task,len(dos_task)) 
-    call comms_bcast(kpath_plot,1) 
+    call comms_bcast(kpath,1) 
     call comms_bcast(kslice,1) 
     call comms_bcast(transl_inv,1) 
     call comms_bcast(omega_from_FF,1) 

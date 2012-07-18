@@ -46,7 +46,7 @@ module w90_parameters
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spn_decomp
-  logical,                    public, save :: kpath_plot
+  logical,                    public, save :: kpath
   character(len=20),          public, save :: kpath_task
   integer,                    public, save :: kpath_num_points
   character(len=4),           public, save :: bands_color
@@ -863,11 +863,10 @@ contains
     degen_thr      =   1.0d-4               
     call param_get_keyword('degen_thr',found,r_value=degen_thr)
 
-    kpath_plot = .false.
-    call param_get_keyword('kpath_plot',found,&
-         l_value=kpath_plot)   
+    kpath = .false.
+    call param_get_keyword('kpath',found,l_value=kpath)   
 
-    ! 'bands', 'curv', 'orb', 'bands+curv' etc
+    ! 'bands', 'curv', 'morb', 'bands+curv' etc
     kpath_task='bands'                 
     call param_get_keyword('kpath_task',found,c_value=kpath_task)
 

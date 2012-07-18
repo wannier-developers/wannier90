@@ -12,7 +12,7 @@
 !
 ! =================================
 
-module w90_berry_wanint
+module w90_berry
 
   use w90_constants, only : dp
 
@@ -151,7 +151,7 @@ module w90_berry_wanint
          )
 
     if (timing_level>1.and.on_root)&
-         call io_stopwatch('berry_wanint: berry (prelims)',1)
+         call io_stopwatch('berry: prelims',1)
 
     nfreq=max(nint((berry_max_energy-berry_min_energy)/berry_energy_step),2)
     d_freq=(berry_max_energy-berry_min_energy)/(nfreq-1)
@@ -412,8 +412,8 @@ module w90_berry_wanint
     endif
 
     if (timing_level>1.and.on_root) then
-         call io_stopwatch('berry_wanint: berry (prelims)',2)
-         call io_stopwatch('berry_wanint: berry (kpts)',1)
+         call io_stopwatch('berry: prelims',2)
+         call io_stopwatch('berry: kpts',1)
       endif
        
     ! Loop over interpolation k-points
@@ -1372,7 +1372,7 @@ module w90_berry_wanint
 
        end if !wanint_kpoint_file
 
-       if (timing_level>1) call io_stopwatch('berry_wanint: berry (kpts)',2)
+       if (timing_level>1) call io_stopwatch('berry: kpts',2)
 
     end if !on_root
 
@@ -2541,4 +2541,4 @@ module w90_berry_wanint
 
   end subroutine get_MEspn_k
 
-end module w90_berry_wanint
+end module w90_berry

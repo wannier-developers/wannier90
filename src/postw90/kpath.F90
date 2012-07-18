@@ -1,6 +1,6 @@
 !-*- mode: F90; mode: font-lock -*-!
 
-module w90_kpath_plot
+module w90_kpath
 
   ! Calculates one of the following along a specified k-path:
   ! 
@@ -506,4 +506,4 @@ contains
 
   end subroutine k_path
 
-end module w90_kpath_plot
+end module w90_kpath

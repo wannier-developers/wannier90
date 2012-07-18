@@ -15,7 +15,7 @@ program postw90
   use w90_dos_wanint
   use w90_berry_wanint
   use w90_spin_wanint
-  use w90_kpath_plot
+  use w90_kpath
   use w90_kslice
 
   use w90_boltzwann
@@ -163,7 +163,7 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   !
-  if(kpath_plot) call k_path
+  if(kpath) call k_path
 
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
