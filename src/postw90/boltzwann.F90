@@ -49,11 +49,11 @@ module w90_boltzwann
   use w90_utility, only    : utility_inv3
   use w90_postw90_common
   use w90_comms
-  ! TODO NOTE: in the future, the dos_kpt routine here will be moved back to dos_wanint: so, we will remove the dependency
-  ! to get_spn_nk here, and instead depend on w90_dos_wanint, only: dos_kpt
+  ! TODO NOTE: in the future, the dos_kpt routine here will be moved back to dos.F90: so, we will remove the dependency
+  ! to get_spn_nk here, and instead depend on w90_dos, only: dos_kpt
   use w90_spin, only   : get_spn_nk
   ! TODO To be removed
-  use w90_dos_wanint, only    : get_eig_levelspacing_k
+  use w90_dos, only    : get_eig_levelspacing_k
   implicit none
 
   private 
@@ -789,7 +789,7 @@ contains
 
   !> This subroutine calculates the contribution to the DOS of a single k point
   !> 
-  !> This is basically a modified copy of the dos routine inside the dos_wanint module.
+  !> This is basically a modified copy of the dos routine inside the w90_dos module.
   !> Modifications:
   !> - the levelspacing is now given as an input
   !> - it multiplies by the num_elec_per_state variable

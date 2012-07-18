@@ -1,6 +1,6 @@
 !-*- mode: F90; mode: font-lock -*-!
 
-module w90_dos_wanint
+module w90_dos
 
   use w90_constants, only : dp
 
@@ -66,7 +66,7 @@ contains
 
     if(on_root) then
 
-       if (timing_level>1) call io_stopwatch('dos_wanint: dos',1)
+       if (timing_level>1) call io_stopwatch('dos',1)
 
        write(stdout,'(/,1x,a)') '============'
        write(stdout,'(1x,a)')   'Calculating:'
@@ -166,7 +166,7 @@ contains
           write(dos_unit,'(4E16.8)') omega,dos_all(ifreq,:)
        enddo
        close(dos_unit)
-       if (timing_level>1) call io_stopwatch('dos_wanint: dos',2)
+       if (timing_level>1) call io_stopwatch('dos',2)
     end if
 
   end subroutine dos
@@ -526,5 +526,5 @@ contains
 
   end function count_states
 
-end module w90_dos_wanint
+end module w90_dos
 
