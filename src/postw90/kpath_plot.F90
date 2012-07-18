@@ -236,7 +236,7 @@ contains
              call utility_diagonalize(HH,num_wann,eig_n(:,loop_kpt),UU)
              !
              ! Color-code energy bands with the spin projection along the
-             ! chosen quantization axis
+             ! chosen spin quantization axis
              !
              if(bands_color=='spin') then
                 call get_spn_nk(kpt,spn_nk)

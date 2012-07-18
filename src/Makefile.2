@@ -8,7 +8,7 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 
 OBJS2  =  wannier_lib.o
 
-OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o wanint_common.o wan_ham.o spin_wanint.o dos_wanint.o berry_wanint.o kpath_plot.o slice_plot.o boltzwann.o geninterp.o
+OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o wanint_common.o wan_ham.o spin_wanint.o dos_wanint.o berry_wanint.o kpath_plot.o kslice.o boltzwann.o geninterp.o
 
 LIBRARY = ../../libwannier.a
 
@@ -131,8 +131,8 @@ dos_wanint.o: $(POSTDIR)dos_wanint.F90 comms.o parameters.o constants.o utility.
 kpath_plot.o: $(POSTDIR)kpath_plot.F90 comms.o parameters.o constants.o io.o spin_wanint.o berry_wanint.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)kpath_plot.F90
 
-slice_plot.o: $(POSTDIR)slice_plot.F90 comms.o parameters.o constants.o io.o spin_wanint.o berry_wanint.o
-	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)slice_plot.F90
+kslice.o: $(POSTDIR)kslice.F90 comms.o parameters.o constants.o io.o spin_wanint.o berry_wanint.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)kslice.F90
 
 berry_wanint.o: $(POSTDIR)berry_wanint.F90 comms.o parameters.o constants.o utility.o wanint_common.o get_oper.o io.o spin_wanint.o wan_ham.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)berry_wanint.F90

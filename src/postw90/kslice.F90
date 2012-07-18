@@ -1,6 +1,6 @@
   !-*- mode: F90; mode: font-lock -*-!
 
-module w90_slice_plot
+module w90_kslice
 
   ! Makes a color plot on a slice in k-space of one of the following:
   ! 
@@ -32,9 +32,9 @@ module w90_slice_plot
                                  io_time,io_stopwatch,stdout
     use w90_utility, only     : utility_diagonalize
     use w90_wanint_common, only : fourier_R_to_k
-    use w90_parameters, only   : num_wann,slice_plot,slice_task,&
-                                 slice_plot_format,slice_num_points,&
-                                 slice_corner,slice_b1,slice_b2,&
+    use w90_parameters, only   : num_wann,kslice,kslice_task,&
+                                 kslice_num_points,&
+                                 kslice_corner,kslice_b1,kslice_b2,&
                                  recip_lattice,found_fermi_energy,fermi_energy
     use w90_get_oper, only     : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R
     use w90_berry_wanint, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
@@ -61,8 +61,8 @@ module w90_slice_plot
        ! Set Cartesian components of the vectors (b_1,b_2) spanning the slice, 
        ! and their reciprocals. Store as *rows* in bvec and avec
        !
-       bvec(1,:)=matmul(slice_b1(:),recip_lattice(:,:))
-       bvec(2,:)=matmul(slice_b2(:),recip_lattice(:,:))
+       bvec(1,:)=matmul(kslice_b1(:),recip_lattice(:,:))
+       bvec(2,:)=matmul(kslice_b2(:),recip_lattice(:,:))
        ! Need also b_3 = b_1 \times b_2
        bvec(3,1)=bvec(1,2)*bvec(2,3)-bvec(1,3)*bvec(2,2)
        bvec(3,2)=bvec(1,3)*bvec(2,1)-bvec(1,1)*bvec(2,3)
@@ -78,28 +78,28 @@ module w90_slice_plot
     endif
     got_it=.false.
     plot_curv=.false.
-       if(index(slice_task,'curv')>0) then
+       if(index(kslice_task,'curv')>0) then
           plot_curv=.true.
           got_it=.true.
        end if
        plot_orb=.false.
-       if(index(slice_task,'orb')>0) then
+       if(index(kslice_task,'orb')>0) then
           plot_orb=.true.
           got_it=.true.
        end if
        plot_bands=.false.
-       if(index(slice_task,'bands')>0) then
+       if(index(kslice_task,'bands')>0) then
           plot_bands=.true.
           got_it=.true.
        end if
        if(plot_curv .and. plot_orb)  then
           call io_error(&
-  '(slice_task cannot include both "curv" and "orb"')
+  '(kslice_task cannot include both "curv" and "orb"')
           stop
        endif
        if(.not.got_it) then
           call io_error(&
-  '(slice_task must include only one of the keywords "curv" and "orb" and/or "bands"')
+  '(kslice_task must include only one of the keywords "curv" and "morb" and/or "bands"')
           stop
        end if
 
@@ -169,15 +169,18 @@ module w90_slice_plot
      
        ! Loop over uniform mesh of k-points on the slice
        !
-       do loop_kpt=0,slice_num_points**2-1
-          loop_x=loop_kpt/slice_num_points
-          loop_y=loop_kpt-loop_x*slice_num_points
-          kpt(1)=slice_corner(1)+slice_b1(1)*real(loop_x,dp)/slice_num_points&
-                                +slice_b2(1)*real(loop_y,dp)/slice_num_points
-          kpt(2)=slice_corner(2)+slice_b1(2)*real(loop_x,dp)/slice_num_points&
-                                +slice_b2(2)*real(loop_y,dp)/slice_num_points
-          kpt(3)=slice_corner(3)+slice_b1(3)*real(loop_x,dp)/slice_num_points&
-                                +slice_b2(3)*real(loop_y,dp)/slice_num_points
+       do loop_kpt=0,kslice_num_points**2-1
+          loop_x=loop_kpt/kslice_num_points
+          loop_y=loop_kpt-loop_x*kslice_num_points
+          kpt(1)=kslice_corner(1)&
+               +kslice_b1(1)*real(loop_x,dp)/kslice_num_points&
+               +kslice_b2(1)*real(loop_y,dp)/kslice_num_points
+          kpt(2)=kslice_corner(2)&
+               +kslice_b1(2)*real(loop_x,dp)/kslice_num_points&
+               +kslice_b2(2)*real(loop_y,dp)/kslice_num_points
+          kpt(3)=kslice_corner(3)&
+               +kslice_b1(3)*real(loop_x,dp)/kslice_num_points&
+               +kslice_b2(3)*real(loop_y,dp)/kslice_num_points
 
           ! Convert to (x,y) Cartesian coordinates, with slice_b1 along x and
           ! (slice_b1,slice_b2) in the xy-plane
@@ -266,4 +269,4 @@ module w90_slice_plot
  
 end subroutine k_slice
 
-end module w90_slice_plot
+end module w90_kslice

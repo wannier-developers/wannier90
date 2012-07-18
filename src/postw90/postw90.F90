@@ -16,7 +16,7 @@ program postw90
   use w90_berry_wanint
   use w90_spin_wanint
   use w90_kpath_plot
-  use w90_slice_plot
+  use w90_kslice
 
   use w90_boltzwann
   use w90_geninterp
@@ -169,7 +169,7 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
   ! ---------------------------------------------------------------------------
   !
-  if(slice_plot) call k_slice
+  if(kslice) call k_slice
 
   ! --------------------
   ! Spin magnetic moment

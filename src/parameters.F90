@@ -37,14 +37,12 @@ module w90_parameters
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
     real(kind=dp),              public, save :: degen_skip_thr
-!  real(kind=dp),              public, save :: smear_temp
-!  real(kind=dp),              public, save :: eps_occ
   integer,                    public, save :: alpha
   integer,                    public, save :: beta
   integer,                    public, save :: gamma
   logical,                    public, save :: evaluate_spin_moment
-  real(kind=dp),              public, save :: theta_quantaxis
-  real(kind=dp),              public, save :: phi_quantaxis
+  real(kind=dp),              public, save :: spin_axis_polar_angle
+  real(kind=dp),              public, save :: spin_axis_azimuthal_angle
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spn_decomp
@@ -101,13 +99,13 @@ module w90_parameters
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
   real(kind=dp),     public, save :: fermi_energy
-  logical,           public, save :: slice_plot
-  character(len=20), public, save :: slice_task
-  character(len=20), public, save :: slice_plot_format
-  integer,           public, save :: slice_num_points
-  real(kind=dp),     public, save :: slice_corner(3)
-  real(kind=dp),     public, save :: slice_b1(3)
-  real(kind=dp),     public, save :: slice_b2(3)
+  logical,           public, save :: kslice
+  character(len=20), public, save :: kslice_task
+!  character(len=20), public, save :: slice_plot_format
+  integer,           public, save :: kslice_num_points
+  real(kind=dp),     public, save :: kslice_corner(3)
+  real(kind=dp),     public, save :: kslice_b1(3)
+  real(kind=dp),     public, save :: kslice_b2(3)
   logical,           public, save :: do_dos
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical,           public       :: dos_plot
@@ -732,15 +730,16 @@ contains
        if ( fermi_surface_num_points < 0 ) call io_error('Error: fermi_surface_num_points must be positive')
     endif
 
-    slice_plot                = .false.
-    call param_get_keyword('slice_plot',found,l_value=slice_plot)
+    kslice                = .false.
+    call param_get_keyword('kslice',found,l_value=kslice)
 
-    slice_num_points          = 50
-    call param_get_keyword('slice_num_points',found,i_value=slice_num_points)
-    if (slice_num_points<0) call io_error('Error: slice_num_points must be positive')       
+    kslice_num_points          = 50
+    call param_get_keyword('kslice_num_points',found,i_value=kslice_num_points)
+    if (kslice_num_points<0)&
+         call io_error('Error: kslice_num_points must be positive')       
 
-    slice_plot_format         = 'plotmv'
-    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
+!    slice_plot_format         = 'plotmv'
+!    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
 
     ! [gp-begin, Apr 20, 2012]
     
@@ -846,11 +845,13 @@ contains
     call param_get_keyword('evaluate_spin_moment',found,&
          l_value=evaluate_spin_moment)   
 
-    theta_quantaxis=0.0_dp
-    call param_get_keyword('theta_quantaxis',found,r_value=theta_quantaxis)
+    spin_axis_polar_angle=0.0_dp
+    call param_get_keyword('spin_axis_polar_angle',found,&
+         r_value=spin_axis_polar_angle)
 
-    phi_quantaxis=0.0_dp
-    call param_get_keyword('phi_quantaxis',found,r_value=phi_quantaxis)
+    spin_axis_azimuthal_angle=0.0_dp
+    call param_get_keyword('spin_axis_azimuthal_angle',found,&
+         r_value=spin_axis_azimuthal_angle)
 
     spn_decomp = .false.
     call param_get_keyword('spn_decomp',found,l_value=spn_decomp)   
@@ -899,21 +900,21 @@ contains
   ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"') 
     end if
 
-    slice_task         = 'curv' ! 'orb'
-    call param_get_keyword('slice_task',found,c_value=slice_task)
+    kslice_task         = 'curv' ! 'morb'
+    call param_get_keyword('kslice_task',found,c_value=kslice_task)
 
-    slice_corner=0.0_dp
-    call param_get_keyword_vector('slice_corner',found,3,r_value=slice_corner)
+    kslice_corner=0.0_dp
+    call param_get_keyword_vector('kslice_corner',found,3,r_value=kslice_corner)
 
-    slice_b1(1)=1.0_dp
-    slice_b1(2)=0.0_dp
-    slice_b1(3)=0.0_dp
-    call param_get_keyword_vector('slice_b1',found,3,r_value=slice_b1)
+    kslice_b1(1)=1.0_dp
+    kslice_b1(2)=0.0_dp
+    kslice_b1(3)=0.0_dp
+    call param_get_keyword_vector('kslice_b1',found,3,r_value=kslice_b1)
 
-    slice_b2(1)=0.0_dp
-    slice_b2(2)=1.0_dp
-    slice_b2(3)=0.0_dp
-    call param_get_keyword_vector('slice_b2',found,3,r_value=slice_b2)
+    kslice_b2(1)=0.0_dp
+    kslice_b2(2)=1.0_dp
+    kslice_b2(3)=0.0_dp
+    call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
 
     omega_from_FF=.false.
     call param_get_keyword('omega_from_ff',found,l_value=omega_from_FF)
@@ -1952,7 +1953,7 @@ contains
     !
     ! Plotting
     !
-    if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. slice_plot &
+    if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. kslice &
          .or. dos_plot .or. hr_plot .or. iprint>2) then
        !
        write(stdout,'(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
