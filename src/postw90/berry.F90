@@ -1684,7 +1684,7 @@ module w90_berry
     use w90_wanint_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only   : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R
-    use w90_spin_wanint, only   : get_spn_nk
+    use w90_spin, only          : get_spn_nk
 
     ! Arguments
     !

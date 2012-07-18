@@ -373,7 +373,7 @@ contains
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,dos_min_energy,dos_num_points,&
          dos_smr_adpt_factor,spn_decomp
-    use w90_spin_wanint, only   : get_spn_nk
+    use w90_spin, only          : get_spn_nk
 
     ! Arguments
     !

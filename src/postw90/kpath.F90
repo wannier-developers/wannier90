@@ -23,20 +23,20 @@ contains
   subroutine k_path
 
     use w90_comms
-    use w90_constants,  only   : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only   : io_error,io_file_unit,seedname,&
-         io_time,io_stopwatch,stdout
-    use w90_utility, only      : utility_diagonalize
+    use w90_constants,  only    : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only    : io_error,io_file_unit,seedname,&
+                                  io_time,io_stopwatch,stdout
+    use w90_utility, only       : utility_diagonalize
     use w90_wanint_common, only : fourier_R_to_k
-    use w90_parameters, only   : num_wann,recip_metric,kpath_task,&
-         kpath_num_points,bands_num_spec_points,&
-         bands_spec_points,bands_label,bands_color,&
-         found_fermi_energy,fermi_energy,omega_from_FF
-    use w90_get_oper, only     : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
-         get_FF_R,get_SS_R
-    use w90_spin_wanint, only  : get_spn_nk
-    use w90_berry, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
-    use w90_constants, only    : bohr,ev_au
+    use w90_parameters, only    : num_wann,recip_metric,kpath_task,&
+                                  kpath_num_points,bands_num_spec_points,&
+                                  bands_spec_points,bands_label,bands_color,&
+                                  found_fermi_energy,fermi_energy,omega_from_FF
+    use w90_get_oper, only      : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
+                                  get_FF_R,get_SS_R
+    use w90_spin, only          : get_spn_nk
+    use w90_berry, only         : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
+    use w90_constants, only     : bohr,ev_au
 
     integer           :: i,num_paths,num_spts,loop_path,loop_kpt,&
          total_pts,counter,loop_i,dataunit,gnuunit,&

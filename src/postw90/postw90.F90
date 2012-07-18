@@ -14,7 +14,7 @@ program postw90
   !
   use w90_dos_wanint
   use w90_berry
-  use w90_spin_wanint
+  use w90_spin
   use w90_kpath
   use w90_kslice
 

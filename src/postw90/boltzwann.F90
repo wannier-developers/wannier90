@@ -51,7 +51,7 @@ module w90_boltzwann
   use w90_comms
   ! TODO NOTE: in the future, the dos_kpt routine here will be moved back to dos_wanint: so, we will remove the dependency
   ! to get_spn_nk here, and instead depend on w90_dos_wanint, only: dos_kpt
-  use w90_spin_wanint, only   : get_spn_nk
+  use w90_spin, only   : get_spn_nk
   ! TODO To be removed
   use w90_dos_wanint, only    : get_eig_levelspacing_k
   implicit none
@@ -841,7 +841,7 @@ contains
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,&
          spn_decomp,num_elec_per_state
-    use w90_spin_wanint, only   : get_spn_nk
+    use w90_spin, only          : get_spn_nk
 
     ! Arguments
     !
@@ -998,7 +998,7 @@ contains
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
          boltz_TDF_smr_fixed_en_width, boltz_TDF_smr_index, boltz_relax_time
-    use w90_spin_wanint, only   : get_spn_nk
+    use w90_spin, only          : get_spn_nk
 
     ! Arguments
     !
