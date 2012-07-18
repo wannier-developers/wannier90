@@ -28,7 +28,7 @@ module w90_spin
     use w90_constants, only     : dp,pi,cmplx_i
     use w90_comms, only         : on_root,my_node_id,num_nodes,comms_reduce
     use w90_io, only            : io_error,stdout
-    use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
+    use w90_postw90_common, only : num_int_kpts_on_node,int_kpts,weight
     use w90_parameters, only    : spin_interp_mesh,wanint_kpoint_file
     use w90_get_oper, only      : get_HH_R,get_SS_R
 
@@ -146,7 +146,7 @@ module w90_spin
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann,spin_axis_polar_angle,&
                                   spin_axis_azimuthal_angle
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
 
     ! Arguments
@@ -204,7 +204,7 @@ module w90_spin
     use w90_io, only            : io_error
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann,fermi_energy
-    use w90_wanint_common, only : fourier_R_to_k,get_occ
+    use w90_postw90_common, only : fourier_R_to_k,get_occ
     use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
     ! Arguments
     !

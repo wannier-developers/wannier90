@@ -54,7 +54,7 @@ module w90_berry
     use w90_comms, only         : on_root,num_nodes,my_node_id,comms_reduce
     use w90_io, only            : io_error,stdout,io_file_unit,seedname,&
                                   io_stopwatch
-    use w90_wanint_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
+    use w90_postw90_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
                                   adkpt,weight,rpt_origin
     use w90_parameters, only    : timing_level,alpha,beta,gamma,num_wann,&
                                   berry_interp_mesh,&
@@ -1390,7 +1390,7 @@ module w90_berry
     use w90_utility, only       : utility_diagonalize,utility_re_tr,&
                                   utility_im_tr
     use w90_parameters, only    : alpha,beta,num_wann,omega_from_FF
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_JJplus,get_JJminus,get_occ_mat
     use w90_get_oper, only      : HH_R,AA_R,FF_R
 
@@ -1489,7 +1489,7 @@ module w90_berry
     use w90_utility, only       : utility_diagonalize,utility_re_tr,&
                                   utility_im_tr
     use w90_parameters, only    : alpha,beta,num_wann,omega_from_FF
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_JJplus,get_JJminus,get_occ_mat
     use w90_get_oper, only      : HH_R,AA_R,FF_R
 
@@ -1582,7 +1582,7 @@ module w90_berry
     use w90_utility, only       : utility_diagonalize,utility_re_tr,&
                                   utility_im_tr
     use w90_parameters, only    : alpha,beta,num_wann
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_JJplus,get_JJminus,get_occ_mat
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R
 
@@ -1681,7 +1681,7 @@ module w90_berry
                                  ! adpt_smr_steps,adpt_smr_width,&
                                   berry_smr_adpt_factor,berry_interp_mesh,&
                                   spn_decomp,fermi_energy
-    use w90_wanint_common, only : get_occ,kmesh_spacing,fourier_R_to_k
+    use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only   : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R
     use w90_spin, only          : get_spn_nk
@@ -1934,7 +1934,7 @@ module w90_berry
     use w90_parameters, only    : num_wann,fermi_energy,&
                                   berry_min_energy,berry_max_energy,&
                                   alpha,beta,gamma,sigma_abc_onlyorb
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R,FF_R,SS_R
 
@@ -2211,7 +2211,7 @@ module w90_berry
     use w90_utility, only       : utility_diagonalize,utility_rotate
     use w90_parameters, only    : num_wann,fermi_energy,berry_min_energy,&
                                   berry_max_energy,sigma_abc_onlyorb
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R,FF_R,SS_R
 
@@ -2470,7 +2470,7 @@ module w90_berry
     use w90_utility, only       : utility_diagonalize,utility_rotate
     use w90_parameters, only    : num_wann,fermi_energy,berry_max_energy,&
                                   cell_volume
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only: fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a
     use w90_get_oper, only      : HH_R,AA_R,SS_R
 

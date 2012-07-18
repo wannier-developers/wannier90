@@ -8,7 +8,7 @@ program postw90
 
   use w90_kmesh
   use w90_comms, only : on_root,num_nodes, comms_setup, comms_end, comms_bcast
-  use w90_wanint_common
+  use w90_postw90_common
 
   ! These modules deal with the interpolation of specific physical properties
   !

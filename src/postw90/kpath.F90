@@ -27,7 +27,7 @@ contains
     use w90_io,         only    : io_error,io_file_unit,seedname,&
                                   io_time,io_stopwatch,stdout
     use w90_utility, only       : utility_diagonalize
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_parameters, only    : num_wann,recip_metric,kpath_task,&
                                   kpath_num_points,bands_num_spec_points,&
                                   bands_spec_points,bands_label,bands_color,&

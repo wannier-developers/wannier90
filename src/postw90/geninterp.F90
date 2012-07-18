@@ -26,7 +26,7 @@ module w90_geninterp
   use w90_get_oper, only      : get_HH_R, HH_R
   use w90_comms
   use w90_utility, only       : utility_diagonalize
-  use w90_wanint_common, only : fourier_R_to_k
+  use w90_postw90_common, only : fourier_R_to_k
   use w90_wan_ham, only       : get_deleig_a
   use w90_io, only            : io_date
   implicit none

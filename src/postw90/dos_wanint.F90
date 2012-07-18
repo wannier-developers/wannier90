@@ -31,7 +31,7 @@ contains
     use w90_io, only            : io_error,io_file_unit,io_date,io_stopwatch,&
          seedname,stdout
     use w90_comms, only         : on_root,num_nodes,my_node_id,comms_reduce
-    use w90_wanint_common, only : num_int_kpts_on_node,int_kpts,weight
+    use w90_postw90_common, only : num_int_kpts_on_node,int_kpts,weight
     use w90_parameters, only    : num_wann,dos_num_points,dos_min_energy,&
          dos_max_energy,dos_energy_step,timing_level,&
          wanint_kpoint_file, dos_smr_adpt_factor ,spn_decomp
@@ -185,7 +185,7 @@ contains
 !!$
 !!$    use w90_io, only            : stdout,io_error
 !!$    use w90_comms
-!!$    use w90_wanint_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
+!!$    use w90_postw90_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
 !!$         int_kpts,weight
 !!$    use w90_parameters, only    : fermi_energy,found_fermi_energy,&
 !!$         num_elec_cell,&
@@ -444,7 +444,7 @@ contains
     use w90_io, only            : io_error
     use w90_utility, only   : utility_diagonalize
     use w90_parameters, only    : num_wann,dos_num_points
-    use w90_wanint_common, only : fourier_R_to_k,kmesh_spacing
+    use w90_postw90_common, only : fourier_R_to_k,kmesh_spacing
     use w90_get_oper, only      : HH_R
     use w90_wan_ham, only   : get_deleig_a
 
@@ -491,7 +491,7 @@ contains
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_utility, only       : wgauss
-    use w90_wanint_common, only : weight
+    use w90_postw90_common, only : weight
     use w90_parameters, only    : num_wann,dos_smr_adpt_factor
 
     real(kind=dp) :: count_states

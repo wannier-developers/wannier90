@@ -24,7 +24,7 @@ module w90_wan_ham
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_parameters, only    : num_wann,fermi_energy
     use w90_utility, only       : utility_rotate
-    use w90_wanint_common, only : get_occ
+    use w90_postw90_common, only : get_occ
     use w90_io, only            : stdout !debug
 
     ! Arguments
@@ -135,7 +135,7 @@ module w90_wan_ham
     
     use w90_constants, only     : dp,cmplx_0
     use w90_parameters, only    : fermi_energy,num_wann
-    use w90_wanint_common, only : get_occ
+    use w90_postw90_common, only : get_occ
 
     ! Arguments
     !

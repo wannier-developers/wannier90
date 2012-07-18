@@ -47,7 +47,7 @@ module w90_boltzwann
        boltz_tdf_smr_fixed_en_width, cell_volume, num_elec_per_state, iprint
   use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
   use w90_utility, only    : utility_inv3
-  use w90_wanint_common
+  use w90_postw90_common
   use w90_comms
   ! TODO NOTE: in the future, the dos_kpt routine here will be moved back to dos_wanint: so, we will remove the dependency
   ! to get_spn_nk here, and instead depend on w90_dos_wanint, only: dos_kpt
@@ -492,7 +492,7 @@ contains
          boltz_dos_smr_adpt, boltz_dos_smr_fixed_en_width, boltz_dos_smr_adpt_factor, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_deleig_a
 
     real(kind=dp), dimension(:,:,:), intent(out)   :: TDF ! (coordinate,Energy,spin)

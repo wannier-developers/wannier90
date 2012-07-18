@@ -31,7 +31,7 @@ module w90_kslice
     use w90_io,         only   : io_error,io_file_unit,seedname,&
                                  io_time,io_stopwatch,stdout
     use w90_utility, only     : utility_diagonalize
-    use w90_wanint_common, only : fourier_R_to_k
+    use w90_postw90_common, only : fourier_R_to_k
     use w90_parameters, only   : num_wann,kslice,kslice_task,&
                                  kslice_num_points,&
                                  kslice_corner,kslice_b1,kslice_b2,&

@@ -68,7 +68,7 @@ module w90_get_oper
                                  !ivo: (need to know number of occupied 
                                  !bands to apply the scissors operator)
                                  num_elec_cell
-    use w90_wanint_common, only: nrpts,rpt_origin,v_matrix
+    use w90_postw90_common, only: nrpts,rpt_origin,v_matrix
     use w90_comms, only        : on_root
 
     integer                       :: i,j,n,m,ii,ik,winmin_q
@@ -163,7 +163,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,num_wann,wb,bk,timing_level,&
                                   num_bands,ndimwin,nnlist,have_disentangled,&
                                   transl_inv,nncell
-    use w90_wanint_common, only : nrpts,v_matrix
+    use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_file_unit,io_error,io_stopwatch,&
                                   seedname
     use w90_comms, only         : on_root,comms_bcast
@@ -369,7 +369,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,num_bands,&
                                   ndimwin,eigval,wb,bk,&
                                   have_disentangled,timing_level,nncell
-    use w90_wanint_common, only : nrpts,v_matrix
+    use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_file_unit,io_error,io_stopwatch,&
                                   seedname
     use w90_comms, only         : on_root,comms_bcast
@@ -522,7 +522,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
                                   num_bands,ndimwin,wb,bk,&
                                   have_disentangled,timing_level
-    use w90_wanint_common, only : nrpts,v_matrix
+    use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
                                   seedname
     use w90_comms, only         : on_root,comms_bcast
@@ -664,7 +664,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
                                   num_bands,ndimwin,wb,bk,&
                                   have_disentangled,timing_level
-    use w90_wanint_common, only : nrpts,v_matrix
+    use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
                                   seedname
     use w90_comms, only         : on_root,comms_bcast
@@ -807,7 +807,7 @@ module w90_get_oper
     use w90_parameters, only    : num_wann,ndimwin,num_kpts,num_bands,&
                                   timing_level,&
                                   have_disentangled
-    use w90_wanint_common, only : nrpts,v_matrix
+    use w90_postw90_common, only : nrpts,v_matrix
     use w90_comms, only         : on_root,comms_bcast    
 
     implicit none
@@ -922,7 +922,7 @@ module w90_get_oper
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_parameters, only    : num_kpts,kpt_latt
-    use w90_wanint_common, only : nrpts,irvec
+    use w90_postw90_common, only : nrpts,irvec
 
     implicit none
 
