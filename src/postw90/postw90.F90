@@ -13,7 +13,7 @@ program postw90
   ! These modules deal with the interpolation of specific physical properties
   !
   use w90_dos_wanint
-  use w90_berry_wanint
+  use w90_berry
   use w90_spin_wanint
   use w90_kpath
   use w90_kslice

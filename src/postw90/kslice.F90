@@ -37,7 +37,7 @@ module w90_kslice
                                  kslice_corner,kslice_b1,kslice_b2,&
                                  recip_lattice,found_fermi_energy,fermi_energy
     use w90_get_oper, only     : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R
-    use w90_berry_wanint, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
+    use w90_berry, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
     use w90_utility, only      : utility_recip_lattice
     use w90_constants, only    : bohr,ev_au
 

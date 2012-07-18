@@ -35,7 +35,7 @@ contains
     use w90_get_oper, only     : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
          get_FF_R,get_SS_R
     use w90_spin_wanint, only  : get_spn_nk
-    use w90_berry_wanint, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
+    use w90_berry, only : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
     use w90_constants, only    : bohr,ev_au
 
     integer           :: i,num_paths,num_spts,loop_path,loop_kpt,&
