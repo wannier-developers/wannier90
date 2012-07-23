@@ -655,11 +655,11 @@ module w90_postw90_common
   !================================!
   subroutine wigner_seitz(count_pts)
   !================================!
-  ! Calculates a grid of R-vectors that fall inside of (and eventually on the !
-  ! surface of) the Wigner-Seitz supercell centered on the origin of the      !
-  ! Bravais lattice with primitive translations                               !
-  ! mp_grid(1)*a_1+mp_grid(2)*a_2+mp_grid(3)*a_3                              !
-  !===========================================================================!
+  ! Calculates a grid of lattice vectors r that fall inside (and eventually  !
+  ! on the surface of) the Wigner-Seitz supercell centered on the            ! 
+  ! origin of the Bravais superlattice with primitive translations           !
+  ! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3                       !
+  !==========================================================================!
 
     use w90_constants, only  : dp
     use w90_io, only         : stdout,io_error,io_stopwatch
@@ -679,19 +679,27 @@ module w90_postw90_common
   if (timing_level>1.and.on_root)&
        call io_stopwatch('postw90_common: wigner_seitz',1)
 
-  ! The Wannier functions live in a supercell of the real space unit cell.
-  ! This supercell is mp_grid unit cells long in each direction
+  ! The Wannier functions live in a periodic supercell of the real space unit 
+  ! cell. This supercell is mp_grid(i) unit cells long along each primitive
+  ! translation vector a_i of the unit cell
   !
-  ! We loop over grid points r on a unit cell that is 8 times larger than this
-  ! primitive supercell. 
+  ! We loop over grid points r on a cell that is (approx.?) 8 times larger than 
+  ! this "primitive supercell." 
   !
-  ! One of these points is in the W-S cell if it is closer to R=0 than any of 
-  ! the other points R (where R are the translation vectors of the supercell)
+  ! One of these points is in the W-S supercell if it is closer to R=0 than any
+  ! of the other points R (where R are the translation vectors of the 
+  ! supercell). In practice it is sufficient to inspect only 125 R-points.
 
-  ! In the end nrpts contains the total number of grid
-  ! points that have been found in the Wigner-Seitz cell
+  ! In the end, nrpts contains the total number of grid points that have been 
+  ! found in the Wigner-Seitz cell
 
   nrpts = 0  
+  ! ivo: Should the following loops read instead
+  !  do n1 = -mp_grid(1) , mp_grid(1)-1
+  !   do n2 = -mp_grid(2), mp_grid(2)-1  
+  !      do n3 = -mp_grid(3),  mp_grid(3)-1  
+  !? This would correspond to a cell that is exactly 8 times larger than the
+  ! primitive supercell.
   do n1 = -mp_grid(1) , mp_grid(1)  
      do n2 = -mp_grid(2), mp_grid(2)  
         do n3 = -mp_grid(3),  mp_grid(3)  
@@ -710,12 +718,11 @@ module w90_postw90_common
                     do i = 1, 3  
                        do j = 1, 3  
                           dist(icnt)=dist(icnt)+&
-                          real(ndiff(i),dp)*real_metric(i,j)*real(ndiff(j),dp)
+                            real(ndiff(i),dp)*real_metric(i,j)*real(ndiff(j),dp)
                        enddo
                     enddo
                  enddo
               enddo
-
            enddo
            dist_min=minval(dist)
            if (abs(dist(63) - dist_min ) .lt.1.e-7_dp) then
