@@ -12,8 +12,8 @@
 !============================================================!
 !                                                            !
 ! BoltzWann routines by                                      !
-! G. Pizzi, D. Volja, M. Fornari, B. Kozinsky and N. Marzari ! 
-! April, 2012                                                !
+! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari ! 
+! August, 2012                                                !
 !                                                            !
 ! Affiliations:                                              !
 ! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
@@ -115,7 +115,7 @@ contains
        write(stdout,'(1x,a)') '|                   Boltzmann Transport (BoltzWann module)                  |'
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,'(1x,a)') '| BoltzWann routines by                                                     |'
-       write(stdout,'(1x,a)') '| G. Pizzi, D. Volja, M. Fornari, B. Kozinsky and N. Marzari                |'
+       write(stdout,'(1x,a)') '| G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari                |'
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,*) 
     end if
@@ -501,7 +501,7 @@ contains
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
  
-    real(kind=dp), dimension(3) :: kpt
+    real(kind=dp), dimension(3) :: kpt, orig_kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
 
     complex(kind=dp), allocatable :: HH(:,:)
@@ -515,10 +515,13 @@ contains
     real(kind=dp), allocatable :: DOS_k(:,:), TDF_k(:,:,:)
     real(kind=dp), allocatable :: DOS_all(:,:)
     real(kind=dp)              :: kweight
-    integer                    :: ndim, DOS_NumPoints, i, EnIdx
+    integer                    :: ndim, DOS_NumPoints, i, j, k, EnIdx
 
     character(len=20)          :: numfieldsstr
-    integer :: boltzdos_unit, num_s_steps
+    integer :: boltzdos_unit, num_s_steps, NumPtsRefined
+
+    real(kind=dp), parameter :: SPACING_THRESHOLD = 1.e-3
+    real(kind=dp) :: min_spacing, max_spacing
 
     if (on_root .and. (timing_level>0)) call io_stopwatch('calcTDF',1)
     if (on_root) then
@@ -625,6 +628,9 @@ contains
             boltz_bandshift_energyshift, " eV."
     end if
 
+    NumPtsRefined = 0
+    min_spacing = 1.e10_dp ! very large initial value
+    max_spacing = 0.e0_dp
     ! I loop over all kpoints
     do loop_tot=my_node_id,PRODUCT(boltz_interp_mesh)-1,num_nodes
 
@@ -658,36 +664,80 @@ contains
           eig(boltz_bandshift_firstband:) = eig(boltz_bandshift_firstband:) + boltz_bandshift_energyshift
        end if
 
-       if (boltz_calc_also_dos) then
-          if (boltz_dos_smr_adpt) then
-             call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
-                  smr_index=boltz_dos_smr_index,&
-                  smr_adpt_factor=boltz_dos_smr_adpt_factor,&
-                  levelspacing_k=levelspacing_k)
-          else
-             call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
-                  smr_index=boltz_dos_smr_index,&
-                  smr_fixed_en_width=boltz_dos_smr_fixed_en_width)
-          end if
-          ! This sum multiplied by kweight amounts to calculate
-          ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
-          ! So that the DOS will be in units of 1/eV, normalized so that
-          ! \int_{-\infty}^{\infty} DOS(E) dE = Num.Electrons
-          dos_all = dos_all + dos_k * kweight
-       end if
-
        call TDF_kpt(kpt,TDFEnergyArray,eig,del_eig,TDF_k)
        ! As above, the sum of TDF_k * kweight amounts to calculate
        ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
        ! so that we divide by the cell_volume (in Angstrom^3) to have
        ! the correct integral
        TDF = TDF + TDF_k * kweight / cell_volume
+
+
+       !! DOS part
+
+       if (boltz_calc_also_dos) then
+          if (boltz_dos_smr_adpt) then
+             
+             ! This may happen if at least one band has zero derivative (along all three directions)
+             ! Then I substitute this point with its 8 neighbors (+/- 1/4 of the spacing with the next point on the grid
+             ! on each of the three directions)
+             min_spacing = min(min_spacing,minval(abs(levelspacing_k)))
+             max_spacing = max(max_spacing,maxval(abs(levelspacing_k)))
+             if (any(abs(levelspacing_k)<SPACING_THRESHOLD)) then
+                orig_kpt = kpt
+                NumPtsRefined = NumPtsRefined + 1
+                do i=-1,1,2
+                   do j=-1,1,2
+                      do k=-1,1,2
+                         kpt=orig_kpt + &
+                              (/ real(i,kind=dp)/real(boltz_interp_mesh(1),dp)/ 4._dp, &
+                              real(j,kind=dp)/real(boltz_interp_mesh(2),dp)/ 4._dp, &
+                              real(k,kind=dp)/real(boltz_interp_mesh(3),dp)/ 4._dp /)
+                         call fourier_R_to_k(kpt,HH_R,HH,0) 
+                         call utility_diagonalize(HH,num_wann,eig,UU) 
+                         call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+                         call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+                         call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+                         call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+                         call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+                         call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+                         call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
+                         call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                              smr_index=boltz_dos_smr_index,&
+                              smr_adpt_factor=boltz_dos_smr_adpt_factor,&
+                              levelspacing_k=levelspacing_k)
+                         ! I divide by 8 because I'm substituting a point with its 8 neighbors
+                         dos_all = dos_all + dos_k * kweight / 8.               
+                      end do
+                   end do
+                end do
+             else
+                call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                     smr_index=boltz_dos_smr_index,&
+                     smr_adpt_factor=boltz_dos_smr_adpt_factor,&
+                     levelspacing_k=levelspacing_k)
+                dos_all = dos_all + dos_k * kweight                
+             end if
+          else
+             call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                  smr_index=boltz_dos_smr_index,&
+                  smr_fixed_en_width=boltz_dos_smr_fixed_en_width)
+             ! This sum multiplied by kweight amounts to calculate
+             ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
+             ! So that the DOS will be in units of 1/eV, normalized so that
+             ! \int_{-\infty}^{\infty} DOS(E) dE = Num.Electrons
+             dos_all = dos_all + dos_k * kweight
+          end if
+       end if
+
     end do
 
     ! I sum the results of the calculation for the DOS on the root node only
     ! (I have to print the results only)
     if (boltz_calc_also_dos) then
        call comms_reduce(DOS_all(1,1),size(DOS_all),'SUM')
+       call comms_reduce(NumPtsRefined,1,'SUM')
+       call comms_reduce(min_spacing,1,'MIN')
+       call comms_reduce(max_spacing,1,'MAX')
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
@@ -705,6 +755,10 @@ contains
              write(boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
           end if
           write(boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz_dos_smr_adpt_factor
+          write(boltzdos_unit, '(A,I0,A,I0)') '# Number of points refined: ', NumPtsRefined, &
+               ' out of ', product(boltz_interp_mesh)
+          write(boltzdos_unit, '(A,G18.10,A,G18.10,A)') '# (Min spacing: ', min_spacing, &
+               ', max spacing: ', max_spacing, ')'
        else          
           if (boltz_dos_smr_fixed_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < min_smearing_binwidth_ratio) then
              write(boltzdos_unit, '(A)') '# The second column is the unsmeared DOS.'
@@ -796,6 +850,9 @@ contains
   !> - it requires in input also the energy array
   !> - it has an optional parameter for a fixed (non adaptive smearing)
   !> - only one column now, for one value of the adpt_ratio (names of variables still to be changed)
+  !> - faster: I precalculate the min/max indices for which the dos contrib of the present kpt must be added
+  !>
+  !> \todo move max_allowed_smearing into parameters
   !> 
   !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
   !> 
@@ -865,6 +922,8 @@ contains
     real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
    
+    real(kind=dp), parameter :: max_allowed_smearing = 1._dp
+
     if (present(levelspacing_k)) then
        if (present(smr_fixed_en_width)) &
             call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters')
@@ -902,7 +961,8 @@ contains
        if (.not.present(levelspacing_k)) then
           smear=smr_fixed_en_width
        else
-          smear=levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp)
+          smear=min(levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp),max_allowed_smearing)
+!          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
        end if
 
        ! Faster optimization: I precalculate the indices
@@ -1135,17 +1195,19 @@ contains
   !> \param levelspacing On output, the spacing for each of the bands (in eV)
   subroutine get_levelspacing(del_eig,interp_mesh,levelspacing)
     use w90_parameters, only: num_wann
+    
     real(kind=dp), dimension(num_wann,3), intent(in) :: del_eig
     integer, dimension(3), intent(in)                :: interp_mesh
     real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
-  
+    
     real(kind=dp) :: Delta_k
-    integer :: i
+    integer :: band
+    
 
     Delta_k=kmesh_spacing(interp_mesh)
-    do i=1,num_wann
-       levelspacing(i)=&
-            sqrt(dot_product(del_eig(i,:),del_eig(i,:)))*Delta_k
+    do band=1,num_wann
+       levelspacing(band)=&
+            sqrt(dot_product(del_eig(band,:),del_eig(band,:)))*Delta_k
     end do
 
   end subroutine get_levelspacing
