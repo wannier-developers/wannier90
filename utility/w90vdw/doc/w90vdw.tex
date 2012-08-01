@@ -233,10 +233,38 @@ Once $\tt{seedname.in.vdw}$ has been correctly modified, run
 
 $\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.in.vdw}$
 
-As before, the output is written to a file $\tt{seedname.in.vdw.out}$ and the van der Waals
-energy and effective $C_6$ coefficient appears towards the bottom.
+As before, the output is written to a file $\tt{seedname.in.vdw.out}$ 
+and the van der Waals energy and effective $C_6$ coefficient appears 
+towards the bottom.
 
-Reference output files can be found in  $\tt{utility/wvdw/examples/benzene\_s\_cond/ref/}$.
+Reference output files can be found in  
+$\tt{utility/wvdw/examples/benzene\_s\_cond/ref/}$.
+
+
+\subsection{Spin polarised systems} 
+
+For spin-polarised systems, two separate W90 runs are required for 
+each spin channel (up/down), so care must be taken with the following:
+
+\begin{itemize}
+\item The number of electrons per cell, $\tt{num\_elec\_cell}$, 
+may differ in the up/down cases.
+
+\item The number of electrons per state, $\tt{num\_elec\_per\_state}$, 
+has to be set to $\tt{1}$ ($\tt{2}$ is the default value).
+
+\item There will be two input files generated, namely 
+$\tt{seedname\_up.vdw}$ and $\tt{seedname\_dn.vdw}$.
+These have to be merged into one input file for the 
+vdW utility, and the centres sorted by fragment as before. 
+
+\item The $\tt{amalgamate}$ keyword in the input file has to be set 
+to $\tt{T}$ so that cocentric MLWFs are amalgamated into one.
+
+\item The number of MLWFs per fragment, $\tt{num\_wann}$, should 
+be changed in the input file to the original number of MLWFs used 
+in Wannier90 for both up/down calculations.
+\end{itemize}
 
 
 \end{document}
