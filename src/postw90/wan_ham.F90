@@ -161,7 +161,6 @@ module w90_wan_ham
 
   end subroutine get_occ_mat
 
-
   subroutine get_deleig_a(deleig_a,eig,delHH_a,UU)
   !==========================!
   !                          !
@@ -257,5 +256,45 @@ module w90_wan_ham
     end if
     
   end subroutine get_deleig_a
+
+  !> Given a k point, this function returns eigenvalues E and
+  !> derivatives of the eigenvalues dE/dk_a, using get_deleig_a
+  !> \param kpt the three coordinates of the k point vector
+  !>            (in relative coordinates)
+  !> \param eig the calculated eigenvalues at kpt
+  !> \param deleig the calculated derivatives of the eigenvalues
+  !>        at kpt [first component: band; second component: 1,2,3
+  !>        for the derivatives along the three k directions]
+  !> \param HH the Hamiltonian matrix at kpt
+  !> \param delHH the delHH matrix (derivative of H) at kpt
+  !> \param UU the rotation matrix that gives the eigenvectors of HH
+  subroutine get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+    use w90_parameters, only: num_wann
+    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_postw90_common, only : fourier_R_to_k
+    use w90_utility, only : utility_diagonalize
+
+    real(kind=dp), dimension(3), intent(in) :: kpt
+    real(kind=dp), intent(out) :: eig(num_wann)
+    real(kind=dp), intent(out) :: del_eig(num_wann,3)
+    complex(kind=dp), dimension(:,:), intent(out) :: HH
+    complex(kind=dp), dimension(:,:,:), intent(out) :: delHH
+    complex(kind=dp), dimension(:,:), intent(out) :: UU
+   
+    ! I call it to be sure that it has been called already once, 
+    ! and that HH_R contains the actual matrix. 
+    ! Further calls should return very fast.
+    call get_HH_R
+
+    call fourier_R_to_k(kpt,HH_R,HH,0) 
+    call utility_diagonalize(HH,num_wann,eig,UU) 
+    call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+    call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+    call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+    call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+    call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+    call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+
+  end subroutine get_eig_deleig
   
 end module w90_wan_ham

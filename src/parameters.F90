@@ -113,8 +113,10 @@ module w90_parameters
   integer,           public, save :: dos_num_points
   real(kind=dp),     public, save :: dos_energy_step
   logical,           public, save :: dos_smr_adpt
+  integer,           public, save :: dos_smr_index
   real(kind=dp),     public, save :: dos_smr_fixed_en_width
   real(kind=dp),     public, save :: dos_smr_adpt_factor
+  real(kind=dp),     public, save :: dos_max_allowed_smearing
   real(kind=dp),     public, save :: dos_max_energy
   real(kind=dp),     public, save :: dos_min_energy
 
@@ -142,6 +144,11 @@ module w90_parameters
 ! Variables for module 'spin'
   real(kind=dp),     public, save :: spin_interp_mesh_spacing
   integer,           public, save :: spin_interp_mesh(3)
+
+! Interpolation mesh for DOS
+  real(kind=dp),     public, save :: dos_interp_mesh_spacing
+  integer,           public, save :: dos_interp_mesh(3)
+
 
   ! [gp-begin, Apr 13, 2012]
   !! Global interpolation k mesh variables
@@ -856,6 +863,10 @@ contains
     spn_decomp = .false.
     call param_get_keyword('spn_decomp',found,l_value=spn_decomp)   
 
+    if ((spn_decomp .eq. .true.) .and. (num_elec_per_state .ne. 1)) then
+       call io_error('spn_decomp can be true only if num_elec_per_state is 1')
+    end if
+
     use_degen_pert = .false.
     call param_get_keyword('use_degen_pert',found,&
          l_value=use_degen_pert)
@@ -938,7 +949,9 @@ contains
     call param_get_keyword('dos_smr_adpt_factor',found,r_value=dos_smr_adpt_factor)
     if (found .and. (dos_smr_adpt_factor <= 0._dp)) &
          call io_error('Error: dos_smr_adpt_factor must be greater than zero')    
-
+    dos_max_allowed_smearing = 1._dp
+    call param_get_keyword('dos_max_allowed_smearing',found,r_value=dos_max_allowed_smearing)
+    
     dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('dos_smr_fixed_en_width',found,r_value=dos_smr_fixed_en_width)
     if (found .and. (dos_smr_fixed_en_width < 0._dp)) &
@@ -1274,6 +1287,11 @@ contains
     call param_get_keyword('boltz_dos_smr_type',found,c_value=ctmp)
     if (found) boltz_dos_smr_index = get_smearing_index(ctmp,'boltz_dos_smr_type')
 
+    ! By default: use the "global" smearing index 
+    dos_smr_index = smr_index
+    call param_get_keyword('dos_smr_type',found,c_value=ctmp)
+    if (found) dos_smr_index = get_smearing_index(ctmp,'dos_smr_type')
+
     ! By default: 10 fs relaxation time
     boltz_relax_time = 10._dp
     call param_get_keyword('boltz_relax_time',found,r_value=boltz_relax_time)
@@ -1461,6 +1479,10 @@ contains
          module_interp_mesh=spin_interp_mesh, &
          module_interp_mesh_spacing=spin_interp_mesh_spacing)
 
+    call get_module_interp_mesh(moduleprefix='dos', &
+         should_be_defined=do_dos, &
+         module_interp_mesh=dos_interp_mesh, &
+         module_interp_mesh_spacing=dos_interp_mesh_spacing)
 
     ! Atoms
     if (.not.library) num_atoms=0

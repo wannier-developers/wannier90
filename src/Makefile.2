@@ -137,7 +137,7 @@ kslice.o: $(POSTDIR)kslice.F90 comms.o parameters.o constants.o io.o spin.o berr
 berry.o: $(POSTDIR)berry.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)berry.F90
 
-wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o constants.o utility.o postw90_common.o 
+wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o constants.o utility.o postw90_common.o get_oper.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)wan_ham.F90
 
 postw90_common.o: $(POSTDIR)postw90_common.F90 comms.o parameters.o utility.o constants.o io.o 

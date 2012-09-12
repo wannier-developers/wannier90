@@ -13,7 +13,7 @@
 !                                                            !
 ! BoltzWann routines by                                      !
 ! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari ! 
-! August, 2012                                                !
+! August, 2012                                               !
 !                                                            !
 ! Affiliations:                                              !
 ! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
@@ -32,9 +32,6 @@
 !     Vol. D, Chapter 1.8, pp. 220-227                       !
 !============================================================!
 
-! TODOs:
-! * Debug with spin decomposition
-! * move back the dos_kpt routine to the other module
 module w90_boltzwann
 
   use w90_constants
@@ -49,11 +46,7 @@ module w90_boltzwann
   use w90_utility, only    : utility_inv3
   use w90_postw90_common
   use w90_comms
-  ! TODO NOTE: in the future, the dos_kpt routine here will be moved back to dos.F90: so, we will remove the dependency
-  ! to get_spn_nk here, and instead depend on w90_dos, only: dos_kpt
-  use w90_spin, only   : get_spn_nk
-  ! TODO To be removed
-  use w90_dos, only    : get_eig_levelspacing_k
+  use w90_dos, only    : get_dos_k, get_levelspacing
   implicit none
 
   private 
@@ -492,8 +485,7 @@ contains
          boltz_dos_smr_adpt, boltz_dos_smr_fixed_en_width, boltz_dos_smr_adpt_factor, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
-    use w90_postw90_common, only : fourier_R_to_k
-    use w90_wan_ham, only       : get_deleig_a
+    use w90_wan_ham, only       : get_eig_deleig
 
     real(kind=dp), dimension(:,:,:), intent(out)   :: TDF ! (coordinate,Energy,spin)
     real(kind=dp), dimension(:), intent(in)      :: TDFEnergyArray
@@ -648,15 +640,7 @@ contains
        kpt(3)=(real(loop_z,dp)/real(boltz_interp_mesh(3),dp))
               
        ! Here I get the band energies and the velocities
-       call fourier_R_to_k(kpt,HH_R,HH,0) 
-       call utility_diagonalize(HH,num_wann,eig,UU) 
-       call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
-       call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
-       call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
-       call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
-       call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
-       call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
-
+       call get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
        call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
 
        ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -692,16 +676,9 @@ contains
                               (/ real(i,kind=dp)/real(boltz_interp_mesh(1),dp)/ 4._dp, &
                               real(j,kind=dp)/real(boltz_interp_mesh(2),dp)/ 4._dp, &
                               real(k,kind=dp)/real(boltz_interp_mesh(3),dp)/ 4._dp /)
-                         call fourier_R_to_k(kpt,HH_R,HH,0) 
-                         call utility_diagonalize(HH,num_wann,eig,UU) 
-                         call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
-                         call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
-                         call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
-                         call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
-                         call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
-                         call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+                         call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
                          call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
-                         call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                         call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                               smr_index=boltz_dos_smr_index,&
                               smr_adpt_factor=boltz_dos_smr_adpt_factor,&
                               levelspacing_k=levelspacing_k)
@@ -711,14 +688,14 @@ contains
                    end do
                 end do
              else
-                call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+                call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                      smr_index=boltz_dos_smr_index,&
                      smr_adpt_factor=boltz_dos_smr_adpt_factor,&
                      levelspacing_k=levelspacing_k)
                 dos_all = dos_all + dos_k * kweight                
              end if
           else
-             call dos_kpt(kpt,DOS_EnergyArray,eig,dos_k,&
+             call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                   smr_index=boltz_dos_smr_index,&
                   smr_fixed_en_width=boltz_dos_smr_fixed_en_width)
              ! This sum multiplied by kweight amounts to calculate
@@ -841,177 +818,6 @@ contains
   end function MinusFermiDerivative
 
 
-  !> This subroutine calculates the contribution to the DOS of a single k point
-  !> 
-  !> This is basically a modified copy of the dos routine inside the w90_dos module.
-  !> Modifications:
-  !> - the levelspacing is now given as an input
-  !> - it multiplies by the num_elec_per_state variable
-  !> - it requires in input also the energy array
-  !> - it has an optional parameter for a fixed (non adaptive smearing)
-  !> - only one column now, for one value of the adpt_ratio (names of variables still to be changed)
-  !> - faster: I precalculate the min/max indices for which the dos contrib of the present kpt must be added
-  !>
-  !> \todo move max_allowed_smearing into parameters
-  !> 
-  !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
-  !> 
-  !> \note This routine simply provides the dos contribution of a given
-  !>       point. This must be externally summed after proper weighting.
-  !>       The weight factor (for a full BZ sampling with N^3 points) is 1/N^3 if we want
-  !>       the final DOS to be normalized to the total number of electrons.
-  !> \note The only factor that is included INSIDE this routine is the spin degeneracy
-  !>       factor (=num_elec_per_state variable)
-  !> \note The EnergyArray is assumed to be evenly spaced (and the energy spacing
-  !>       is taken from EnergyArray(2)-EnergyArray(1))
-  !> \note The routine is assuming that EnergyArray has at least two elements.
-  !> \note The dos_k array must have dimensions size(EnergyArray) * ndim, where
-  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked. 
-  !> \note If smearing/binwidth < min_smearing_binwidth_ratio, 
-  !>       no smearing is applied (for that k point)
-  !>
-  !> \param kpt         the three coordinates of the k point vector whose DOS contribution we
-  !>                    want to calculate (in relative coordinates)
-  !> \param EnergyArray array with the energy grid on which to calculate the DOS (in eV)
-  !>                    It must have at least two elements
-  !> \param eig_k       array with the eigenvalues at the given k point (in eV)
-  !> \param dos_k       array in which the contribution is stored. Three dimensions:
-  !>                    dos_k(energyidx, spinidx), where:
-  !>                    - energyidx is the index of the energies, corresponding to the one
-  !>                      of the EnergyArray array; 
-  !>                    - spinidx=1 contains the total dos; if if spn_decomp==.true., then
-  !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
-  !> \param smr_index  index that tells the kind of smearing
-  !> \param smr_fixed_en_width optional parameter with the fixed energy for smearing, in eV. Can be provided only if the
-  !>                    levelspacing_k parameter is NOT given
-  !> \param smr_adpt_factor optional parameter with the factor for the adaptive smearing. Can be provided only if the
-  !>                    levelspacing_k parameter IS given
-  !> \param levelspacing_k optional array with the level spacings, i.e. how much each level changes
-  !>                    near a given point of the interpolation mesh, as given by the
-  !>                    get_levelspacing() routine
-  !>                    If present: adaptive smearing
-  !>                    If not present: fixed-energy-width smearing
-  subroutine dos_kpt(kpt,EnergyArray,eig_k,dos_k,smr_index,&
-       smr_fixed_en_width,smr_adpt_factor,levelspacing_k)
-
-    use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
-    use w90_utility, only       : w0gauss
-    use w90_parameters, only    : num_wann,&
-         spn_decomp,num_elec_per_state
-    use w90_spin, only          : get_spn_nk
-
-    ! Arguments
-    !
-    real(kind=dp), dimension(3), intent(in)          :: kpt
-    real(kind=dp), dimension(:), intent(in)          :: EnergyArray
-    real(kind=dp), dimension(:), intent(in)          :: eig_k
-    real(kind=dp), dimension(:,:), intent(out)       :: dos_k
-    integer, intent(in)                              :: smr_index
-    real(kind=dp), intent(in),optional               :: smr_fixed_en_width
-    real(kind=dp), intent(in),optional               :: smr_adpt_factor
-    real(kind=dp), dimension(:), intent(in),optional :: levelspacing_k
-
-    ! Adaptive smearing
-    !
-    real(kind=dp) :: smear,arg
-
-    ! Misc/Dummy
-    !
-    integer          :: i,loop_f,min_f,max_f, num_s_steps
-    real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
-    real(kind=dp)    :: binwidth, r_num_elec_per_state
-    logical          :: DoSmearing
-   
-    real(kind=dp), parameter :: max_allowed_smearing = 1._dp
-
-    if (present(levelspacing_k)) then
-       if (present(smr_fixed_en_width)) &
-            call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters')
-       if (.not.(present(smr_adpt_factor))) &
-            call io_error('Cannot call doskpt with levelspacing_k and without smr_adpt_factor parameter')
-    else
-       if (present(smr_adpt_factor)) &
-            call io_error('Cannot call doskpt without levelspacing_k and with smr_adpt_factor parameters')
-       if (.not.(present(smr_fixed_en_width))) &
-            call io_error('Cannot call doskpt without levelspacing_k and without smr_fixed_en_width parameter')
-    end if
-
-    r_num_elec_per_state = real(num_elec_per_state,kind=dp)
-
-    ! Get spin projections for every band
-    !
-    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
-
-    binwidth = EnergyArray(2) - EnergyArray(1)
-    
-    dos_k=0.0_dp
-    do i=1,num_wann
-       if(spn_decomp) then
-          ! Contribution to spin-up DOS of Bloch spinor with component 
-          ! (alpha,beta) with respect to the chosen quantization axis
-          alpha_sq=(1.0_dp+spn_nk(i))/2.0_dp ! |alpha|^2
-          ! Contribution to spin-down DOS 
-          beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
-       end if
-
-       !
-       ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
-       ! !!!UNDERSTAND THAT FACTOR!!!
-       !
-       if (.not.present(levelspacing_k)) then
-          smear=smr_fixed_en_width
-       else
-          smear=min(levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp),max_allowed_smearing)
-!          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
-       end if
-
-       ! Faster optimization: I precalculate the indices
-       if (smear/binwidth < min_smearing_binwidth_ratio) then
-          min_f= max(nint((eig_k(i) - EnergyArray(1))/&
-               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-               * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
-          max_f= min(nint((eig_k(i) - EnergyArray(1))/&
-               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-               * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
-          DoSmearing=.false.
-       else      
-          min_f= max(nint((eig_k(i) - smearing_cutoff * smear - EnergyArray(1))/&
-               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-               * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
-          max_f= min(nint((eig_k(i) + smearing_cutoff * smear - EnergyArray(1))/&
-               (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
-               * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
-          DoSmearing=.true.
-       end if
-
-
-       do loop_f=min_f, max_f
-          ! kind of smearing read from input (internal smearing_index variable)
-          if (DoSmearing) then
-             arg=(EnergyArray(loop_f)-eig_k(i))/smear
-             rdum=w0gauss(arg,smr_index)/smear
-          else
-             rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
-          end if
-          
-          !
-          ! Contribution to total DOS
-          !
-          dos_k(loop_f,1)=dos_k(loop_f,1)+rdum * r_num_elec_per_state
-          
-          ! [GP] I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
-          ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
-          if(spn_decomp) then
-             ! Spin-up contribution
-             dos_k(loop_f,2)=dos_k(loop_f,2)+rdum*alpha_sq
-             ! Spin-down contribution
-             dos_k(loop_f,3)=dos_k(loop_f,3)+rdum*beta_sq
-          end if
-       end do
-    end do !loop over bands
-
-  end subroutine dos_kpt
-
 
   !> This subroutine calculates the contribution to the TDF of a single k point
   !> 
@@ -1031,7 +837,7 @@ contains
   !>       is taken from EnergyArray(2)-EnergyArray(1))
   !> \note The routine is assuming that EnergyArray has at least two elements.
   !> \note The meaning of the three indices of the TDF_k array is different with respect to
-  !>       those of the dos_k array returned by the DOS_kpt routine
+  !>       those of the dos_k array returned by the get_dos_k routine
   !> \note The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
   !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
   !> 
@@ -1085,9 +891,7 @@ contains
     !
     if(spn_decomp) call get_spn_nk(kpt,spn_nk)
 
-    binwidth = EnergyArray(2) - EnergyArray(1)
-
-    
+    binwidth = EnergyArray(2) - EnergyArray(1)   
 
     TDF_k=0.0_dp
     do BandIdx=1,num_wann
@@ -1184,32 +988,5 @@ contains
     TDF_k = TDF_k * boltz_relax_time
 
   end subroutine TDF_kpt
-
-
-  !> This subroutine calculates the level spacing, i.e. how much the level changes
-  !> near a given point of the interpolation mesh
-  !>
-  !> \param del_eig Band velocities, already corrected when degeneracies occur
-  !> \param interp_mesh array of three integers, giving the number of k points along
-  !>        each of the three directions defined by the reciprocal lattice vectors
-  !> \param levelspacing On output, the spacing for each of the bands (in eV)
-  subroutine get_levelspacing(del_eig,interp_mesh,levelspacing)
-    use w90_parameters, only: num_wann
-    
-    real(kind=dp), dimension(num_wann,3), intent(in) :: del_eig
-    integer, dimension(3), intent(in)                :: interp_mesh
-    real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
-    
-    real(kind=dp) :: Delta_k
-    integer :: band
-    
-
-    Delta_k=kmesh_spacing(interp_mesh)
-    do band=1,num_wann
-       levelspacing(band)=&
-            sqrt(dot_product(del_eig(band,:),del_eig(band,:)))*Delta_k
-    end do
-
-  end subroutine get_levelspacing
 
 end module w90_boltzwann
