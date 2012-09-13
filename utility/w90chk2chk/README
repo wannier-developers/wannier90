@@ -1,0 +1,6 @@
+The w90chk2chk utility (to convert to a machine-independent format the checkpoint file) sits in the main trunk folder of the Wannier90 distribution.
+To get it, just go in the main Wannier90 folder and execute
+make w90chk2chk
+which will produce the w90chk2chk.x file.
+
+For any further information on this utility, please refer to relevant section of the 'Utilities' appendix of the User Guide.
