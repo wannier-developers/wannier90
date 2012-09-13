@@ -863,7 +863,7 @@ contains
     spn_decomp = .false.
     call param_get_keyword('spn_decomp',found,l_value=spn_decomp)   
 
-    if ((spn_decomp .eq. .true.) .and. (num_elec_per_state .ne. 1)) then
+    if (spn_decomp .and. (num_elec_per_state .ne. 1)) then
        call io_error('spn_decomp can be true only if num_elec_per_state is 1')
     end if
 
