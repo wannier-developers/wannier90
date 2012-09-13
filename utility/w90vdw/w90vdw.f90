@@ -29,12 +29,13 @@ program vdw
        rc_coeff, degeneracy,tol_dist,tol_occ
   integer :: n,l,num_frag,iwann,iwann2,ifrag,ifrag2
   real(dp), allocatable :: r(:,:,:),rc(:,:),s(:,:),rvdw(:,:),fw(:,:),&
-       num_orb(:),num_proxim(:,:),s_amalg(:,:),r_amalg(:,:),distance(:,:,:)
+       num_proxim(:,:),distance(:,:,:)
+!!  real(dp), allocatable :: s_amalg(:,:),r_amalg(:,:)
   real(dp), parameter :: pi=3.141592653589793238462643383279d0
   real(dp), parameter :: ang2a0=0.52917720859d0 ! NIST CODATA 2006 value
-!  real(dp), parameter :: ang2a0=0.5291772108d0 ! old W90 value
+!!  real(dp), parameter :: ang2a0=0.5291772108d0 ! old W90 value
   character(len=30) :: filename, units, dummy
-  integer, allocatable :: num_wann(:),num_wann_new(:)
+  integer, allocatable :: num_wann(:),num_wann_new(:),num_orb(:)
   integer :: num_wann_old,num_wann_tot
   integer :: max_num_wann
   logical, allocatable :: p(:,:)
