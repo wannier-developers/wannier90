@@ -1,20 +1,20 @@
 !!! -- Begin of BoltzWann input -- !!!
-boltzwann              = true
-boltz_calc_also_dos    = true
-boltz_dos_energy_step  = 0.01
-smr_type               = gauss
-boltz_dos_smr_adaptive = false
-boltz_dos_smr_en_width = 0.03
-interp_mesh            = 40
-boltz_mu_min           = 5.
-boltz_mu_max           = 8.
-boltz_mu_step          = 0.01
-boltz_temp_min         = 300.
-boltz_temp_max         = 300.
-boltz_temp_step        = 50
-boltz_relax_time       = 10.
+boltzwann                    = true
+boltz_calc_also_dos          = true
+boltz_dos_energy_step        = 0.01
+smr_type                     = gauss
+boltz_dos_smr_adpt           = false
+boltz_dos_smr_fixed_en_width = 0.03
+interp_mesh                  = 40
+boltz_mu_min                 = 5.
+boltz_mu_max                 = 8.
+boltz_mu_step                = 0.01
+boltz_temp_min               = 300.
+boltz_temp_max               = 300.
+boltz_temp_step              = 50
+boltz_relax_time             = 10.
 !! Next variable is commented because 2 is its default value
-!num_elec_per_state     = 2
+!num_elec_per_state          = 2
 !!! --- End of BoltzWann input --- !!!
 
 #restart           = plot
