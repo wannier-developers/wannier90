@@ -1503,7 +1503,9 @@ kslice\_b2 =     0.5  0.5  0.5
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=9cm]{Fe_fermicontours}
+%\includegraphics[width=6.5cm]{Fe_fermicontours}
+%\includegraphics{Fe_fermicontours}
+\scalebox{0.85}{\includegraphics[width=6.5cm]{Fe_fermicontours}}
 \caption{Fermi-surface contours on the (010) plane of bcc Fe.} 
 \label{fig:fe-fermicontours}
 \end{center}
@@ -1670,7 +1672,7 @@ bcc Fe with the magnetization along [001], the only nonzero components
 of the AHC tensor $\sigma_{\alpha\beta}$ are
 $\sigma_{xy}=-\sigma_{yx}$.  In order to evaluate $\sigma_{xy}$ by
 integrating $-\Omega^z({\bf k})$ over a $25\times 25\times 25$
-$k$-point mesh, we uncomment the following instructions in {\tt Fe.win},
+$k$-point mesh, we uncomment the following lines in {\tt Fe.win},
 \smallskip {\tt
 \begin{quote}
 berry = T
@@ -1691,7 +1693,7 @@ units of S/cm .
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=10cm]{Fe_curvbands}
+\scalebox{0.5}{\includegraphics{Fe_curvbands}}
 \caption{Berry curvature $-\Omega^z({\bf k})$ on the (010) plane of
   bcc Fe, in atomic units.  The color scale is as follows:
   a positive value, e.g., 2, means $10^2$~bohr$^2$, while a negative value,
