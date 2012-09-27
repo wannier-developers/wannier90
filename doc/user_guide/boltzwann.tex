@@ -2,28 +2,28 @@
 
 By setting $\verb#boltzwann#=\verb#TRUE#$, \postw\ will call the \bw\ routines to calculate some transport coefficients using the Boltzmann transport equation in the relaxation time approximation.
 
-In particular, the transport coefficients that are calculated are: the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the thermal conductivity $\bvec K$.
+In particular, the transport coefficients that are calculated are: the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the coefficient $\bvec K$ (defined below; it is the main ingredient of the thermal conductivity). 
+
 
 The list of parameters of the \bw\ module are summarized in Table~\ref{parameter_keywords_bw}. 
 An example of a Boltzmann transport calculation can be found in the \wannier\ Tutorial. 
 
 %Reference: [BoltzWann paper]
 \section{Theory}
+\label{sec:boltzwann-theory}
 The theory of the electronic transport using the Boltzmann transport equations can be found for instance in Refs.~\cite{Ziman,Grosso,Mahan}. Here we briefly summarize only the main results. 
 
 The current density $\bvec J$ and the heat current (or energy flux density) $\bvec J_Q$ can be written, respectively, as
 \begin{align*}
   \bvec J   &= \bvec \sigma(\bvec E - \bvec S \bvec \nabla T) \\
-  \bvec J_Q &= T \bvec S \bvec J - \bvec K \bvec \nabla T,
+  \bvec J_Q &= T \bvec \sigma \bvec S \bvec E - \bvec K \bvec \nabla T,
 \end{align*}
-where the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the thermal conductivity $\bvec K$ are $3\times 3$ tensors, in general.
+where the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and $\bvec K$ are $3\times 3$ tensors, in general.
 
-These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows\footnote{\label{ftn:thermcond}%
-Eq.~\eqref{eq:boltz-thermcond} is the one used in the code to calculate the thermal conductivity (or more precisely the electronic contribution to the thermal conductivity), which is then printed on the {\tt seedname\_thermcond.dat} file.
-Note that the thermal conductivity that is measured in open-circuit experiments is not precisely $K$, but  $K-\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
-However, the correction term is usually small and can be disregarded.
-If one needs, one can calculate the magnitude of this correction term from the
-output $\bvec \sigma$ and $\bvec S$ tensors.}:
+Note: the thermal conductivity $\bvec \kappa$ (actually, the electronic part of the thermal conductivity), which is defined as the heat current per unit of temperature gradient in open-circuit experiments (i.e., with $\bvec J=0$) is not precisely $\bvec K$, but  $\bvec\kappa = \bvec K-\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
+The thermal conductivity $\bvec \kappa$ can be then calculated from the $\bvec \sigma$, $\bvec S$ and $\bvec K$ tensors output by the code.
+
+These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows:
 \begin{align}
   [\bvec \sigma]_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
   [\bvec \sigma \bvec S]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon), \\
@@ -45,8 +45,8 @@ In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (in
 OUTPUT. Written by \postw\ if {\tt boltz\_calc\_also\_dos} is \verb#true#. Note that even if there are other general routines in \postw\ which specifically calculate the DOS, it may be convenient to use the routines in \bw\ setting {\tt boltz\_calc\_also\_dos = true} if one must also calculate the transport coefficients. In this way, the (time-demanding) band interpolation on the $k$ mesh is performed only once, resulting in a much shorter execution time.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$. The followings are the DOS at the given energy $\varepsilon$ for each smearing coefficient, as defined by the input variables {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}, if {\tt boltz\_dos\_smr\_adaptive} is \verb#true#. Otherwise, the DOS for the given fixed smearing, defined by {\tt boltz\_dos\_smr\_en\_width}, is printed on the second column.
-If spin decomposition is required (input flag {\tt spn\_decomp}), further columns are printed, with the spin-up projection of the DOS, followed by spin-down projection (for all smearings).
+Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$. The following is the DOS at the given energy $\varepsilon$. The DOS can either be calculated using the adaptive smearing scheme if {\tt boltz\_dos\_smr\_adpt} is \verb#true#, or using a ``standard'' fixed smearing, whose type and value are defined by {\tt boltz\_dos\_smr\_type} and {\tt boltz\_dos\_smr\_fixed\_en\_width}, respectively.
+If spin decomposition is required (input flag {\tt spn\_decomp}), further columns are printed, with the spin-up projection of the DOS, followed by spin-down projection.
 
 \subsection{{\tt seedname\_tdf.dat}}
 OUTPUT. This file contains the Transport Distribution Function (TDF) tensor $\bvec \Sigma$ on a grid of energies. 
@@ -74,13 +74,13 @@ Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are r
 
 The chemical potential is in eV, the temperature is in K, and the components of the Seebeck tensor ar in SI units, i.e. in V/K.
 
-\subsection{{\tt seedname\_thermcond.dat}}
-OUTPUT. This file contains the thermal conductivity tensor $\bvec K$ on the grid of $T$ and $\mu$ points (see also footnote~\ref{ftn:thermcond} on page~\pageref{ftn:thermcond} for more details).
+\subsection{{\tt seedname\_kappa.dat}}
+OUTPUT. This file contains the tensor $\bvec K$ defined in Sec.~\ref{sec:boltzwann-theory} on the grid of $T$ and $\mu$ points.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
 Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $K_{xx}$, $K_{xy}$, $K_{yy}$, $K_{xz}$, $K_{yz}$, $K_{zz}$.
 
-The chemical potential is in eV, the temperature is in K, and the components of the thermal conductivity tensor ar in SI units, i.e. in W/m/K.
+The chemical potential is in eV, the temperature is in K, and the components of the $\bvec K$ tensor are the SI units for the thermal conductivity, i.e. in W/m/K.
 
 
 

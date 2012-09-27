@@ -84,12 +84,12 @@ contains
     real(kind=dp), dimension(6)                    :: ElCondTimesSeebeck
     real(kind=dp), dimension(:,:,:),   allocatable :: ElCond ! (coordinate,Temp, mu)
     real(kind=dp), dimension(:,:,:),   allocatable :: Seebeck ! (coordinate,Temp, mu)
-    real(kind=dp), dimension(:,:,:),   allocatable :: ThermCond ! (coordinate,Temp, mu)
+    real(kind=dp), dimension(:,:,:),   allocatable :: Kappa ! (coordinate,Temp, mu)
     real(kind=dp), dimension(:,:),     allocatable :: LocalElCond ! (coordinate,Temp+mu combined index)
     real(kind=dp), dimension(:,:),     allocatable :: LocalSeebeck ! (coordinate,Temp+mu combined index)
-    real(kind=dp), dimension(:,:),     allocatable :: LocalThermCond ! (coordinate,Temp+mu combined index)
+    real(kind=dp), dimension(:,:),     allocatable :: LocalKappa ! (coordinate,Temp+mu combined index)
     real(kind=dp)                                  :: Determinant
-    integer :: tdf_unit, elcond_unit, seebeck_unit, thermcond_unit, ndim
+    integer :: tdf_unit, elcond_unit, seebeck_unit, kappa_unit, ndim
 
     ! Needed to split an array on different nodes
     integer, dimension(0:num_nodes-1) :: counts
@@ -200,11 +200,11 @@ contains
     if (ierr/=0) call io_error('Error in allocating LocalElCond in boltzwann_main')
     allocate(LocalSeebeck(6,counts(my_node_id)),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
-    allocate(LocalThermCond(6,counts(my_node_id)),stat=ierr)
+    allocate(LocalKappa(6,counts(my_node_id)),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
     LocalElCond = 0._dp
     LocalSeebeck = 0._dp
-    LocalThermCond = 0._dp
+    LocalKappa = 0._dp
 
     ! I allocate the array that I will use to store the functions to be integrated
     allocate(IntegrandArray(6,TDFEnergyNumPoints),stat=ierr)
@@ -292,12 +292,12 @@ contains
        ! eV/e/kelvin = volt/kelvin
        
        ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
-       ! (-dn/dE) * TDF_ij(E) * (E-mu)^2 and its integral is (ThermCond)_ij * T
+       ! (-dn/dE) * TDF_ij(E) * (E-mu)^2 and its integral is (Kappa)_ij * T
        do EnIdx=1,TDFEnergyNumPoints
           IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
        end do
-       LocalThermCond(:,LocalIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
-       ! ThermCond contains now the thermal conductivity in units of
+       LocalKappa(:,LocalIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
+       ! Kappa contains now the thermal conductivity in units of
        ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
     ! I check if there were (mu,T) pairs for which we got sigma = 0
@@ -328,15 +328,15 @@ contains
     ! **** Seebeck coefficient ****
     ! THE SEEECK COEFFICIENTS IS ALREADY IN volt/kelvin, so nothing has to be done
 
-    ! **** Thermal conductivity ****
-    ! Now, ThermCond is in units of 1/hbar^2 * eV^3*fs/angstrom/K
+    ! **** K coefficient (approx. the Thermal conductivity) ****
+    ! Now, Kappa is in units of 1/hbar^2 * eV^3*fs/angstrom/K
     ! I want it to be in units of W/m/K (i.e., SI units). Then conversion factor is then
     ! 1/hbar^2 * eV^3 * fs/angstrom/K / W * m * K =
     ! 1/hbar^2 * eV^3 * fs / W * (m/angstrom) =
     ! 1/hbar^2 * C^3 * V^3 * s / W * [e/C]^3 * (m/angstrom) * (fs / s) =
     ! 1/hbar^2 * J^2 * [e/C]^3 * (m/angstrom) * (fs / s) =
     ! elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp, i.e. the same conversion factor as above
-    LocalThermCond = LocalThermCond * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
+    LocalKappa = LocalKappa * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
     ! THIS IS NOW THE THERMAL CONDUCTIVITY IN SI UNITS, i.e. in W/meter/K
 
     ! Now I send the different pieces to the local node
@@ -345,14 +345,14 @@ contains
        if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main')
        allocate(Seebeck(6,TempNumPoints,MuNumPoints),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
-       allocate(ThermCond(6,TempNumPoints,MuNumPoints),stat=ierr)
+       allocate(Kappa(6,TempNumPoints,MuNumPoints),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
     end if
     
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     call comms_gatherv(LocalElCond(1,1),6*counts(my_node_id),ElCond(1,1,1),6*counts,6*displs)
     call comms_gatherv(LocalSeebeck(1,1),6*counts(my_node_id),Seebeck(1,1,1),6*counts,6*displs)
-    call comms_gatherv(LocalThermCond(1,1),6*counts(my_node_id),ThermCond(1,1,1),6*counts,6*displs)
+    call comms_gatherv(LocalKappa(1,1),6*counts(my_node_id),Kappa(1,1,1),6*counts,6*displs)
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main: calc_props',2)
 
@@ -384,18 +384,20 @@ contains
        close(seebeck_unit)
        if (iprint > 1)  write(stdout,'(3X,A)') "Seebeck coefficient written on the " // trim(seedname)//"_seebeck.dat file."
 
-       thermcond_unit =io_file_unit()
-       open(unit=thermcond_unit,file=trim(seedname)//'_thermcond.dat')  
-       write(thermcond_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
-       write(thermcond_unit,'(A)') "# [Thermal Conductivity in SI units, i.e. in W/m/K]"
-       write(thermcond_unit,'(A)') "# Mu(eV) Temp(K) ThermCond_xx ThermCond_xy ThermCond_yy ThermCond_xz ThermCond_yz ThermCond_zz"
+       kappa_unit =io_file_unit()
+       open(unit=kappa_unit,file=trim(seedname)//'_kappa.dat')  
+       write(kappa_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(kappa_unit,'(A)') "# [K coefficient in SI units, i.e. in W/m/K]"
+       write(kappa_unit,'(A)') "# [the K coefficient is defined in the documentation, and is an ingredient of"
+       write(kappa_unit,'(A)') "#  the thermal conductivity. See the docs for further information.]"
+       write(kappa_unit,'(A)') "# Mu(eV) Temp(K) Kappa_xx Kappa_xy Kappa_yy Kappa_xz Kappa_yz Kappa_zz"
        do MuIdx=1,MuNumPoints
           do TempIdx = 1,TempNumPoints
-             write(thermcond_unit,103) MuArray(MuIdx), TempArray(TempIdx), ThermCond(:,TempIdx,MuIdx)
+             write(kappa_unit,103) MuArray(MuIdx), TempArray(TempIdx), Kappa(:,TempIdx,MuIdx)
           end do
        end do
-       close(thermcond_unit)
-       if (iprint > 1) write(stdout,'(3X,A)') "Thermal conductivity written on the " // trim(seedname)//"_thermcond.dat file."
+       close(kappa_unit)
+       if (iprint > 1) write(stdout,'(3X,A)') "K coefficient written on the " // trim(seedname)//"_kappa.dat file."
     end if
 
     if (on_root) then
@@ -422,16 +424,16 @@ contains
     if (ierr/=0) call io_error('Error in deallocating LocalElCond in boltzwann_main')
     deallocate(LocalSeebeck,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating LocalSeebeck in boltzwann_main')
-    deallocate(LocalThermCond,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating LocalThermCond in boltzwann_main')
+    deallocate(LocalKappa,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating LocalKappa in boltzwann_main')
 
     if (on_root) then
        deallocate(ElCond,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating ElCond in boltzwann_main')
        deallocate(Seebeck,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating Seebeck in boltzwann_main')
-       deallocate(ThermCond,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating ThermCond in boltzwann_main')
+       deallocate(Kappa,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating Kappa in boltzwann_main')
     end if
 
     deallocate(IntegrandArray,stat=ierr)
