@@ -7,5 +7,4 @@
    write_amn = .true.
    write_spn = .true.
    write_unk = .false.
-   write_uHu = .false.
 /

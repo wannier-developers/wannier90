@@ -5,7 +5,6 @@
    spin_component = 'ncll'
    write_mmn = .true.
    write_amn = .true.
-   write_spn = .true.
+   write_spn = .false.
    write_unk = .false.
-   write_uHu = .false.
 /
