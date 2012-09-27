@@ -1358,6 +1358,380 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
 \cleardoublepage
 
 
+\section*{17: Iron -- Spin-orbit effects}
+
+Note: You should go through Example 8 (iron without spin-orbit) before
+doing this Example.
+
+\begin{itemize}
+\item{Outline: \it{Plot the spin-orbit-coupled bands of ferromagnetic
+      iron.  Plot the Fermi-surface contours on a plane in the
+      Brillouin zone.}}
+\item{Directory: {\tt examples/example17/}}
+\item{Input files}
+\begin{itemize}
+\item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
+    calculation}}
+\item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ferromagnetic ground state of
+  iron\footnote{Please note the following counterintiutive feature in
+    {\tt pwscf}: in order to obtain a ground state with magnetization
+    along the {\it positive} $z$-axis, one must use a {\it negative}
+    value for the variable {\tt starting\_magnetization}.}\\
+  {\tt pw.x < Fe.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point
+  grid\\ 
+{\tt pw.x < Fe.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Fe.nnkp} file).\\
+{\tt wannier90.x -pp Fe}
+
+\item Run {\tt pw2wannier90} to compute:
+  \begin{itemize}
+  \item{The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
+          b}}\rangle$ between Bloch states (written in the {\tt
+        Fe.mmn} file)}
+    \item{The projections for the starting guess (written in the {\tt  Fe.amn} file)}
+    \item{The spin matrix elements $\langle \psi_{n{\bf k}}\vert
+        \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the {\tt
+          Fe.spn} file)}
+%\item{The matrix elements  $\langle u_{n{\bf k}+{\bf b}_1}\vert H_{\bf k}\vert
+%u_{m{\bf k}+{\bf
+%          b}_2}\rangle$ (written in the {\tt
+%        Fe.uHu} file)}
+  \end{itemize}
+{\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWF.\\
+{\tt wannier90.x Fe}
+
+\item Run \postw\ to compute the energy bands and spin expectation value 
+by Wannier interpolation.\\
+{\tt postw90.x Fe}
+
+\end{enumerate}
+
+ In this example we use the module {\tt kpath} to plot the energy
+  bands coloured by the expectation value of the spin along [001]:
+  \smallskip {\tt
+\begin{quote}
+kpath = T
+
+kpath\_task = bands
+
+bands\_color = spin     
+
+kpath\_num\_points=1000
+\end{quote} }
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=12cm]{Fe_bands}
+\caption{Relativistic bandstructure of bcc iron with the magnetization
+  along the positive [001] direction. Majority bands (with $\langle
+  S_z\rangle=-\hbar/2$) are in red, minority bands ($\langle
+  S_z\rangle =+\hbar/2$) in blue. Because of spin-orbit coupling $S_z$
+  is not a good quantum number, and intermediate colors occur in the
+  vicinity of (avoided) crossings between up- and down-spin bands.}
+\label{fig:fe-bnd}
+\end{center}
+\end{figure}
+
+
+A suitable path is
+\smallskip
+{\tt
+\begin{quote}
+begin kpoint\_path
+
+G 0.0000 0.0000 0.0000   H 0.500 -0.5000 -0.5000
+
+H 0.500 -0.5000 -0.5000  P 0.7500 0.2500 -0.2500
+
+P 0.7500 0.2500 -0.2500  N 0.5000 0.0000 -0.5000
+
+N 0.5000 0.0000 -0.5000  G 0.0000 0.0000 0.000
+
+G 0.0000 0.0000 0.000    H 0.5 0.5 0.5
+
+H 0.5 0.5 0.5            N 0.5 0.0 0.0
+
+N 0.5 0.0 0.0            G 0.0 0.0 0.0
+
+G 0.0 0.0 0.0            P 0.75 0.25 -0.25
+
+P 0.75 0.25 -0.25        N 0.5 0.0 0.0
+
+end kpoint\_path
+\end{quote} }
+
+To plot the spin-colored bandstructure using gnuplot (version 4.2 or
+higher), issue \smallskip {\tt
+\begin{quote}
+myshell> gnuplot
+
+gnuplot> load `Fe\_band.gnu'
+\end{quote} }
+
+We can also inspect the energy bands across an entire plane, using the
+module {\tt kslice}.  In order to evaluate the energy eigenvalues on
+the (010) plane in the BZ, uncomment the following ibnstructions in
+{\tt Fe.win}, 
+\smallskip {\tt
+\begin{quote}
+kslice = T
+
+kslice\_task = bands
+
+kslice\_num\_points=200
+
+kslice\_corner = 0.0  0.0  0.0
+
+kslice\_b1 =     0.5 -0.5 -0.5
+
+kslice\_b2 =     0.5  0.5  0.5
+\end{quote} }
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=9cm]{Fe_fermicontours}
+\caption{Fermi-surface contours on the (010) plane of bcc Fe.} 
+\label{fig:fe-fermicontours}
+\end{center}
+\end{figure}
+
+The Fermi contours on the (010) plane can be visualized with the {\tt
+  octave} script {\tt bands.m}, 
+\smallskip
+{\tt
+\begin{quote}
+myshell> octave
+
+octave:1> bands
+\end{quote} }
+\smallskip 
+
+or with the {\tt python+pylab+numpy} script {\tt bands.py},
+\smallskip {\tt
+\begin{quote}
+myshell> python bands.py
+\end{quote} }
+\smallskip 
+
+
+
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+\item Redraw the Fermi-surface contours on the (010) plane starting
+  from an {\it ab initio} calculation without spin-orbit coupling, and
+  compare with Fig.~\ref{fig:fe-fermicontours} (bcc Fe without
+  spin-orbit was considered in Example~8). Note how the spin-orbit
+  interaction changes the connectivity of the Fermi surface.
+
+\end{itemize}
+
+\cleardoublepage
+
+\section*{18: Iron -- Berry curvature and anomalous Hall 
+conductivity}
+
+\begin{itemize}
+\item{Outline: \it{Calculate the $k$-space Berry curvature and
+      anomalous Hall conductivity by Wannier interpolation, as
+      described in Ref.~\cite{wang-prb06}.}}
+\item{Directory: {\tt examples/example18/}}
+\item{Input files}
+\begin{itemize}
+\item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
+    calculation}}
+\item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
+\end{itemize}
+\end{itemize}
+
+Note the sequence of steps in the following is the same of Example~17.
+If you have already run Example~17 you can reuse the output files from
+steps 1--5, and only step 6 must be carried out again using the new
+input file {\tt Fe.win}.
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of iron\\
+{\tt pw.x < Fe.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point
+  grid\\ 
+{\tt pw.x < Fe.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Fe.nnkp} file).\\
+{\tt wannier90.x -pp Fe}
+
+\item Run {\tt pw2wannier90} to compute the overlaps between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt Si.mmn} and {\tt  Si.amn} files).\\
+{\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWF.\\
+{\tt wannier90.x Fe}
+
+\item Run \postw\ to compute the Berry curvature.\\
+{\tt postw90.x Fe}
+
+\end{enumerate}
+
+The  Berry curvature of a Bloch state is defined as
+$$
+\Omega_n^z({\bf k})=-2{\rm Im}
+\langle \nabla_{k_x} u_{n{\bf k}}\vert \nabla_{k_y} u_{n{\bf k}}\rangle.
+$$
+%
+We are interested in the Berry curvature summed over the occupied
+states,
+$$
+\Omega^z({\bf k})=\sum_n^{\rm occ}\,\Omega_n^z({\bf k}).
+$$
+%
+The following instructions in {\tt Fe.win} are used to
+calculate $-\Omega^z({\bf k})$ along high symmetry lines 
+in
+$k$-space, 
+\smallskip {\tt
+\begin{quote}
+fermi\_energy = 12.6285
+
+kpath = T
+
+kpath\_task = curv
+
+kpath\_num\_points=1000
+\end{quote} }
+
+The path specification in {\tt Fe.win} is the same as in Example~17,
+and the value of the Fermi energy, 12.6285~eV, was taken from {\tt
+  scf.out}. {\bf [[Check: does it change with the new pseudopotential?]}
+
+Carry out the calculation by executing {\tt postw90} (step 6 above),
+plot the Berry curvature using the {\tt gnuplot} script {\tt
+  Fe\_curv.gnu}, \smallskip {\tt
+\begin{quote}
+myshell> gnuplot
+
+gnuplot> load `Fe\_curv.gnu'
+\end{quote} }
+
+and compare with the lower panel in Fig.~2 of Ref.~\cite{yao-prl04}.
+
+In Fig.~\ref{fig:fe-fermicontours} of Example~17 we plotted the Fermi
+contours on the (010) plane in $k$-space. 
+If in addition we want to
+visualize the Berry curvature across the plane, we uncomment the following
+instructions in {\tt Fe.win}, 
+\smallskip {\tt
+\begin{quote}
+kslice = T
+
+kslice\_task = bands+curv
+
+kslice\_num\_points=200
+
+kslice\_corner = 0.0  0.0  0.0
+
+kslice\_b1 =     0.5 -0.5 -0.5
+
+kslice\_b2 =     0.5  0.5  0.5
+\end{quote} }
+
+and re-run {\tt postw90}.  For the visualization we use the {\tt
+  python+pylab+numpy} script {\tt curvbands.py}, 
+\smallskip {\tt
+\begin{quote}
+myshell> python curvbands.py
+\end{quote} }
+
+which generates a heatmap plot of the Berry curvature (compare with
+Fig.~3 in Ref.~\cite{yao-prl04}).
+
+The intrinsic anomalous Hall conductivity (AHC) is proportional to the
+integral of the Berry curvature over the entire Brillouin zone. For
+bcc Fe with the magnetization along [001], the only nonzero components
+of the AHC tensor $\sigma_{\alpha\beta}$ are
+$\sigma_{xy}=-\sigma_{yx}$.  In order to evaluate $\sigma_{xy}$ by
+integrating $-\Omega^z({\bf k})$ over a $25\times 25\times 25$
+$k$-point mesh, we uncomment the following instructions in {\tt Fe.win},
+\smallskip {\tt
+\begin{quote}
+berry = T
+
+berry\_task = ahc                
+
+alpha = 1                       
+
+beta = 2
+
+berry\_interp\_mesh = 25 25 25
+
+\end{quote} } 
+\smallskip 
+
+and re-run {\tt postw90}.  The AHC is given in the output file {\tt Fe.wpout} in
+units of S/cm .
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=10cm]{Fe_curvbands}
+\caption{Berry curvature $-\Omega^z({\bf k})$ on the (010) plane of
+  bcc Fe, in atomic units.  The color scale is as follows:
+  a positive value, e.g., 2, means $10^2$~bohr$^2$, while a negative value,
+  e.g., -2, means $-10^2$~bohr$^2$.}
+\label{fig:fe-curv-slice}
+\end{center}
+\end{figure}
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+\item Study the convergence of the AHC with respect to the density of
+  the integration mesh by progressively increasing the value of the
+  parameter {\tt berry\_interp\_mesh}.
+
+\item Instead of simply increasing the mesh density uniformly across
+  the BZ, it is more efficient to adaptively refine the mesh in
+  regions where the Berry curvature is large and rapidly varying (see
+  Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt Fe.win} the lines
+  \smallskip {\tt
+\begin{quote}
+berry\_adaptive\_mesh = 5  
+
+berry\_adaptive\_thresh = 27.98
+\end{quote} }
+\smallskip
+
+in order to add a $5\times 5\times 5$ fine grid around those points
+where $\vert\Omega^z({\bf k})\vert$ exceeds 27.98~\AA$^2\simeq
+100$~bohr$^2$. The percentage of points on the uniform mesh triggering
+adaptive refinement is given in {\tt Fe.wpout}.
+
+\item Compare the converged value for the AHC with the values reported
+in Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
+
+\end{itemize}
+
+\cleardoublepage
+
+
 \begin{thebibliography}{99}
 
 \bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
@@ -1392,6 +1766,14 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
   Structure and Quantum Conductance of Nanostructures from Maximally
   Localized Wannier Functions: The Case of Functionalized carbon
   nanotubes, {\it Phys. Rev. Lett.} {\bf 95}, 076804 (2005).
+
+\bibitem{wang-prb06} X.~Wang {\it et al.}, Ab-initio calculation of
+  the anomalous Hall conductivity by Wannier interpolation,
+{\it Phys. rev. B} {\bf 74}, 195118 (2006).
+
+\bibitem{yao-prl04} Y.~Yao {\it et al.}, First Principles Calculation
+  of Anomalous Hall Conductivity in Ferromagnetic bcc Fe,
+{\it Phys. Rev. Lett.} {\bf 92}, 037204 (2004).
 
 \end{thebibliography}
 
