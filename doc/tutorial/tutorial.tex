@@ -1414,9 +1414,10 @@ doing this Example.
 \item Run \wannier\ to compute the MLWF.\\
 {\tt wannier90.x Fe}
 
-\item Run \postw\ to compute the energy bands and spin expectation value 
-by Wannier interpolation.\\
-{\tt postw90.x Fe}
+\item Run \postw\ to compute the energy eigenvalues and spin
+  expectation values
+  by Wannier interpolation.\\
+  {\tt postw90.x Fe}
 
 \end{enumerate}
 
@@ -1483,10 +1484,9 @@ gnuplot> load `Fe\_band.gnu'
 \end{quote} }
 
 We can also inspect the energy bands across an entire plane, using the
-module {\tt kslice}.  In order to evaluate the energy eigenvalues on
-the (010) plane in the BZ, uncomment the following ibnstructions in
-{\tt Fe.win}, 
-{\tt
+module {\tt kslice}.  To obtain the energy eigenvalues on a $200\times
+200$ grid covering the (010) plane in the BZ, uncomment the following
+instructions in {\tt Fe.win}, {\tt
 \begin{quote}
 kslice = T
 
@@ -1503,17 +1503,15 @@ kslice\_b2 =     0.5  0.5  0.5
 
 \begin{figure}[h]
 \begin{center}
-%\includegraphics[width=6.5cm]{Fe_fermicontours}
-%\includegraphics{Fe_fermicontours}
 \scalebox{0.85}{\includegraphics[width=6.5cm]{Fe_fermicontours}}
 \caption{Fermi-surface contours on the (010) plane of bcc Fe.} 
 \label{fig:fe-fermicontours}
 \end{center}
 \end{figure}
 
-The Fermi contours on the (010) plane can be visualized with the {\tt
-  octave} script {\tt bands.m}, 
-{\tt
+The lines of intersection between the Fermi surface and the chosen
+plane (``Fermi-surface contours''), can be visualized with the {\tt
+  octave} script {\tt bands.m}, {\tt
 \begin{quote}
 myshell> octave
 
@@ -1531,11 +1529,17 @@ myshell> python bands.py
 \subsection*{Further ideas}
 
 \begin{itemize}
+
+\item Generate the Fermi-surface contours on the (001) plane
+perpendicular to the magnetization. Note the higher symmetry compared
+to Fig.~\ref{fig:fe-fermicontours}.
+
 \item Redraw the Fermi-surface contours on the (010) plane starting
   from an {\it ab initio} calculation without spin-orbit coupling, and
-  compare with Fig.~\ref{fig:fe-fermicontours} (bcc Fe without
-  spin-orbit was considered in Example~8). Note how the spin-orbit
-  interaction changes the connectivity of the Fermi surface.
+  compare with Fig.~\ref{fig:fe-fermicontours} to see how the
+  spin-orbit interaction changes the connectivity of the Fermi
+  surface.  You can start from the input files of Example~8, which
+  dealt with bcc Fe without spin-orbit.
 
 \end{itemize}
 
@@ -1560,10 +1564,10 @@ conductivity}
 \end{itemize}
 \end{itemize}
 
-Note the sequence of steps in the following is the same of Example~17.
-If you have already run Example~17 you can reuse the output files from
-steps 1--5, and only step 6 must be carried out again using the new
-input file {\tt Fe.win}.
+Note that the sequence of steps in the following is the same of
+Example~17.  If you have already run that example, you can reuse the
+output files from steps 1--5, and only step 6 must be carried out
+again using the new input file {\tt Fe.win}.
 
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of iron\\
@@ -1633,12 +1637,10 @@ gnuplot> load `Fe\_curv.gnu'
 
 and compare with the lower panel in Fig.~2 of Ref.~\cite{yao-prl04}.
 
-In Fig.~\ref{fig:fe-fermicontours} of Example~17 we plotted the Fermi
-contours on the (010) plane in $k$-space. 
-If in addition we want to
-visualize the Berry curvature across the plane, we uncomment the following
-instructions in {\tt Fe.win}, 
-\smallskip {\tt
+In Fig.~\ref{fig:fe-fermicontours} of Example~17 we plotted the
+Fermi-surface contours on the (010) plane in $k$-space.  If in
+addition we want to visualize the Berry curvature across the plane, we
+uncomment the following instructions in {\tt Fe.win}, \smallskip {\tt
 \begin{quote}
 kslice = T
 
@@ -1724,6 +1726,21 @@ adaptive refinement is given in {\tt Fe.wpout}.
 
 \item Compare the converged value for the AHC with the values reported
 in Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
+
+\item {\bf [\underline{POSSIBLE ADDITION:}]} Plot the MCD spectrum,
+  check numerically the Kramers-Kronig relation between MCD and AHC.
+Refer to Ref.~\cite{WanInt}
+
+
+\item {\bf [\underline{POSSIBLE ADDITION:}]} Explain how to modify the
+  input files in this example to calculate the orbital magnetization
+  instead of the AHC as a BZ integral, and to visualize the integrand
+  along lines and planes in $k$-space. Basically, need to replace {\tt
+    curv} with {\tt orb} everywhere in {\tt kpath}, {\tt kslice}, and
+  {\tt berry}, and to add {\tt write\_uHu = .true.} to {\tt Fe.pw2wan}
+  in order to evaluate the matrix elements $\langle u_{n{\bf k}+{\bf
+      b}_1}\vert H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$, and
+  re-run steps~4 and~6.
 
 \end{itemize}
 
