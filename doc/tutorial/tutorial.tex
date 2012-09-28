@@ -1362,7 +1362,6 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
 
 Note: You should go through Example 8 (iron without spin-orbit) before
 doing this Example.
-
 \begin{itemize}
 \item{Outline: \it{Plot the spin-orbit-coupled bands of ferromagnetic
       iron.  Plot the Fermi-surface contours on a plane in the
@@ -1442,7 +1441,8 @@ kpath\_num\_points=500
   S_z\rangle=-\hbar/2$) are in red, minority bands ($\langle
   S_z\rangle =+\hbar/2$) in blue. Because of spin-orbit coupling $S_z$
   is not a good quantum number, and intermediate colors occur in the
-  vicinity of (avoided) crossings between up- and down-spin bands.}
+  vicinity of (avoided) crossings between up- and down-spin bands.
+  The Fermi level is at 12.6~eV.}
 \label{fig:fe-bnd}
 \end{center}
 \end{figure}
@@ -1529,6 +1529,12 @@ myshell> python bands.py
 \subsection*{Further ideas}
 
 \begin{itemize}
+
+\item Plot the energy bands over a single line segment in $k$-space,
+  e.g., $\Gamma$--H, to see more clerly a spin-orbit-induced avoided
+  crossing between majority and minority bands. [Hint: When using {\tt
+    gnuplot} you can zoom in by right-clicking to select a region of
+  the plot.]
 
 \item Generate the Fermi-surface contours on the (001) plane
 perpendicular to the magnetization. Note the higher symmetry compared
