@@ -730,12 +730,12 @@ Fe:s;p;d
   1+3+5: one $s$, three $p$, and five $d$.  Now look at the MLWFs at
   the end of the file.  Thee spreads have re-organized in two groups,
   6+3.  Moreover, the centers of the six more diffuse WFs are shifted
-  along ${\bf \hat{x}}$, ${\bf \hat{y}}$, and ${\bf \hat{z}}$.  There
-  has been a {\it hybridization} of the atomic-like orbitals, leading
-  to more localized WFs!}
+  along one of the Cartesian directions. There has been a {\it
+    hybridization} of the atomic-like orbitals, leading to more
+  localized WFs!}
 
-\tent{To see when the hybridization took place, let us splot the
-evolution of the total spread~$\Omega$,}
+\tent{To see when the hybridization took place, let us plot the
+  evolution of the total spread~$\Omega$,} 
 {\tt
 \begin{quote}
 myshell> grep SPRD iron\_up.wout >sprd\_up
@@ -760,11 +760,12 @@ gnuplot> plot 'sprd\_up' u 6  w l
 
 
 \tent{The first plateau corresponds to atom-centered WFs of separate
-  $s$, $p$, and $d$ character. The sharp drop at around iteration
-  $120$ signals the onset of the hybridization (for more details, see
-  Sec.~IV.B of Ref.~\cite{wang-prb06}).  With hindsight, we can redo
-  steps~4 and~5 more efficiently using trial orbitals with the same
-  character as the final MLWFs,} {\tt
+  $s$, $p$, and $d$ character, same as the trial orbitals. The
+  sharp drop at around iteration $120$ signals the onset of the
+  hybridization (for more details, see Sec.~IV.B of
+  Ref.~\cite{wang-prb06}).  With hindsight, we can redo steps~4 and~5
+  more efficiently using trial orbitals with the same character as the
+  final MLWFs,} {\tt
 \begin{quote}
 Fe:sp3d2;dxy;dxz,dyz
 \end{quote}
@@ -804,7 +805,7 @@ write\_hr\_diag = T
   file the diagonal (``on-site'') Wannier matrix elements of the
   Hamiltonian. The difference between corresponding values in {\tt
     iron\_up.wout} and in {\tt iron\_dn.wout} gives the the exchange
-  splittings for the $s$, $p$, and $d$ states separately. Compare
+  splittings for the individual $s$, $p$, and $d$ states. Compare
   their magnitudes with those observed in the total and partial DOS.}
 
 \end{itemize}
