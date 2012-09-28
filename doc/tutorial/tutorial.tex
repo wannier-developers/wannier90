@@ -1430,7 +1430,7 @@ kpath\_task = bands
 
 bands\_color = spin     
 
-kpath\_num\_points=1000
+kpath\_num\_points=500
 \end{quote} }
 
 \begin{figure}[h]
@@ -1623,11 +1623,11 @@ kpath\_num\_points=1000
 
 The path specification in {\tt Fe.win} is the same as in Example~17,
 and the value of the Fermi energy, 12.6285~eV, was taken from {\tt
-  scf.out}. {\bf [[Check: does it change with the new pseudopotential?]}
+  scf.out}. 
 
 Carry out the calculation by executing {\tt postw90} (step 6 above),
 plot the Berry curvature using the {\tt gnuplot} script {\tt
-  Fe\_curv.gnu}, \smallskip {\tt
+  Fe\_curv.gnu} that is generated at runtime, \smallskip {\tt
 \begin{quote}
 myshell> gnuplot
 
