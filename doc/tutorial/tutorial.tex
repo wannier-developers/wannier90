@@ -750,9 +750,10 @@ gnuplot> plot 'sprd\_up' u 6  w l
 \begin{figure}[h]
 \begin{center}
 \scalebox{0.4}{\includegraphics{Fe-spread}}
-\caption{Evolution of the Wannier spred $\Omega$ in bcc Fe during the
-iterative minimization of the gauge-dependent part $\widetilde{\Omega}$,
-starting from trial orbitals of $s$, $p$, and $d$ character.} 
+\caption{Evolution of the Wannier spread $\Omega$ of bcc Fe during the
+  iterative minimization of the gauge-dependent part
+  $\widetilde{\Omega}$, starting from $s$, $p$, and $d$-type trial
+  orbitals.}
 \label{fig:Fe-sprd}
 \end{center}
 \end{figure}
@@ -761,9 +762,9 @@ starting from trial orbitals of $s$, $p$, and $d$ character.}
 \tent{The first plateau corresponds to atom-centered WFs of separate
   $s$, $p$, and $d$ character. The sharp drop at around iteration
   $120$ signals the onset of the hybridization (for more details, see
-  Sec.~IV.B of Ref.~\cite{wang-prb06}).  With hindsight, the
-  minimization of $\widetilde{\Omega}$ can be accelerated if we start
-  from trial orbitals having the same character as the MLWFs,} {\tt
+  Sec.~IV.B of Ref.~\cite{wang-prb06}).  With hindsight, we can redo
+  steps~4 and~5 more efficiently using trial orbitals with the same
+  character as the final MLWFs,} {\tt
 \begin{quote}
 Fe:sp3d2;dxy;dxz,dyz
 \end{quote}
@@ -772,18 +773,41 @@ Fe:sp3d2;dxy;dxz,dyz
 
 \tent{Physical quantities should come out essentially the same
   computed with any ``reasonable'' set of WFs, not necessarily MLWFs.
-  To check this, let us re-run step 5 starting from the original $s$,
+  To check this, let us re-run steps~4 and~5 using the original $s$,
   $p$, $d$ trial orbitals, but stopping the minimization of
-  $\widetilde{\Omega}$ before the onset of hybridization,} 
-{\tt
+  $\widetilde{\Omega}$ before the onset of hybridization,} {\tt
 \begin{quote}
 num\_iter = 50
 \end{quote}
 }
 
-and recalculating the DOS.
+\tent{and recalculate the DOS.}
 
 
+\subsection*{Further ideas}
+\begin{itemize}
+
+\item
+\tent{Repeat step~5 above starting from $s$,
+  $p$, and $d$ trial orbitals, and using}
+{\tt
+\begin{quote}
+num\_iter = 50
+
+write\_hr\_diag = T
+\end{quote}
+}
+
+\tent{The second line instructs {\tt wannier90} to write in the output
+  file the diagonal (``on-site'') Wannier matrix elements of the
+  Hamiltonian. The difference between corresponding values in {\tt
+    iron\_up.wout} and in {\tt iron\_dn.wout} gives the the exchange
+  splittings for the $s$, $p$, and $d$ states separately. Compare
+  their magnitudes with that observed in the DOS.}
+
+\item \tent{Partial DOS {\bf [TO BE DONE!]}}
+
+\end{itemize}
 
 \cleardoublepage
 
