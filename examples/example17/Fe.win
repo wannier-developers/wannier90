@@ -20,7 +20,7 @@ fermi_energy = 12.6285
 kpath = T
 kpath_task = bands
 bands_color = spin     
-kpath_num_points=1000
+kpath_num_points=500
 begin kpoint_path
 G 0.0000 0.0000 0.0000   H 0.500 -0.5000 -0.5000
 H 0.500 -0.5000 -0.5000  P 0.7500 0.2500 -0.2500

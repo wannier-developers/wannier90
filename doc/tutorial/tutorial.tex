@@ -1422,7 +1422,7 @@ by Wannier interpolation.\\
 
  In this example we use the module {\tt kpath} to plot the energy
   bands coloured by the expectation value of the spin along [001]:
-  \smallskip {\tt
+  {\tt
 \begin{quote}
 kpath = T
 
@@ -1448,7 +1448,6 @@ kpath\_num\_points=500
 
 
 A suitable path is
-\smallskip
 {\tt
 \begin{quote}
 begin kpoint\_path
@@ -1475,7 +1474,8 @@ end kpoint\_path
 \end{quote} }
 
 To plot the spin-colored bandstructure using gnuplot (version 4.2 or
-higher), issue \smallskip {\tt
+higher), issue
+{\tt
 \begin{quote}
 myshell> gnuplot
 
@@ -1486,7 +1486,7 @@ We can also inspect the energy bands across an entire plane, using the
 module {\tt kslice}.  In order to evaluate the energy eigenvalues on
 the (010) plane in the BZ, uncomment the following ibnstructions in
 {\tt Fe.win}, 
-\smallskip {\tt
+{\tt
 \begin{quote}
 kslice = T
 
@@ -1513,7 +1513,6 @@ kslice\_b2 =     0.5  0.5  0.5
 
 The Fermi contours on the (010) plane can be visualized with the {\tt
   octave} script {\tt bands.m}, 
-\smallskip
 {\tt
 \begin{quote}
 myshell> octave
@@ -1523,13 +1522,10 @@ octave:1> bands
 \smallskip 
 
 or with the {\tt python+pylab+numpy} script {\tt bands.py},
-\smallskip {\tt
+{\tt
 \begin{quote}
 myshell> python bands.py
 \end{quote} }
-\smallskip 
-
-
 
 
 \subsection*{Further ideas}
@@ -1610,7 +1606,7 @@ The following instructions in {\tt Fe.win} are used to
 calculate $-\Omega^z({\bf k})$ along high symmetry lines 
 in
 $k$-space, 
-\smallskip {\tt
+{\tt
 \begin{quote}
 fermi\_energy = 12.6285
 
@@ -1627,7 +1623,8 @@ and the value of the Fermi energy, 12.6285~eV, was taken from {\tt
 
 Carry out the calculation by executing {\tt postw90} (step 6 above),
 plot the Berry curvature using the {\tt gnuplot} script {\tt
-  Fe\_curv.gnu} that is generated at runtime, \smallskip {\tt
+  Fe\_curv.gnu} that is generated at runtime,
+{\tt
 \begin{quote}
 myshell> gnuplot
 
@@ -1658,10 +1655,11 @@ kslice\_b2 =     0.5  0.5  0.5
 
 and re-run {\tt postw90}.  For the visualization we use the {\tt
   python+pylab+numpy} script {\tt curvbands.py}, 
-\smallskip {\tt
+{\tt
 \begin{quote}
 myshell> python curvbands.py
 \end{quote} }
+\smallskip
 
 which generates a heatmap plot of the Berry curvature (compare with
 Fig.~3 in Ref.~\cite{yao-prl04}).
@@ -1673,7 +1671,7 @@ of the AHC tensor $\sigma_{\alpha\beta}$ are
 $\sigma_{xy}=-\sigma_{yx}$.  In order to evaluate $\sigma_{xy}$ by
 integrating $-\Omega^z({\bf k})$ over a $25\times 25\times 25$
 $k$-point mesh, we uncomment the following lines in {\tt Fe.win},
-\smallskip {\tt
+{\tt
 \begin{quote}
 berry = T
 
@@ -1686,7 +1684,6 @@ beta = 2
 berry\_interp\_mesh = 25 25 25
 
 \end{quote} } 
-\smallskip 
 
 and re-run {\tt postw90}.  The AHC is given in the output file {\tt Fe.wpout} in
 units of S/cm .
@@ -1719,7 +1716,6 @@ berry\_adaptive\_mesh = 5
 
 berry\_adaptive\_thresh = 27.98
 \end{quote} }
-\smallskip
 
 in order to add a $5\times 5\times 5$ fine grid around those points
 where $\vert\Omega^z({\bf k})\vert$ exceeds 27.98~\AA$^2\simeq
