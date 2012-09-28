@@ -6,7 +6,7 @@ dis_win_max       = 70.0d0
 dis_froz_max      =  30.0d0
 dis_num_iter      =  500 
 
-num_iter          = 100
+num_iter          = 400
 mp_grid           = 8 8 8 
 
 dis_mix_ratio = 1.0
@@ -17,10 +17,8 @@ Fe  0.000  0.000  0.000
 end atoms_frac
 
 begin projections
-Fe:sp3d2;dxy;dxz,dyz
+Fe:s;p;d
 end projections
-
-Fermi_energy     12.6363
 
 begin kpoint_path  
 G 0.0000 0.0000 0.0000	 H 0.500 -0.5000 -0.5000	 
