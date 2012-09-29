@@ -1879,12 +1879,12 @@ Refer to Ref.~\cite{WanInt}
 \item {\bf [\underline{POSSIBLE ADDITION:}]} Explain how to modify the
   input files in this example to calculate the orbital magnetization
   instead of the AHC as a BZ integral, and to visualize the integrand
-  along lines and planes in $k$-space. Basically, need to replace {\tt
-    curv} with {\tt orb} everywhere in {\tt kpath}, {\tt kslice}, and
-  {\tt berry}, and to add {\tt write\_uHu = .true.} to {\tt Fe.pw2wan}
-  in order to evaluate the matrix elements $\langle u_{n{\bf k}+{\bf
-      b}_1}\vert H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$, and
-  re-run steps~4 and~6.
+  along lines and planes in $k$-space. Basically, need to add {\tt
+    write\_uHu = .true.} to {\tt Fe.pw2wan} in order to evaluate the
+  matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert H_{\bf k}\vert
+  u_{m{\bf k}+{\bf b}_2}\rangle$, and re-run step~4. Then replace {\tt
+    curv/ahc} with {\tt morb} everywhere in the {\tt kpath}, {\tt
+    kslice}, and {\tt berry} input variables, and re-run step~6.
 
 \end{itemize}
 
