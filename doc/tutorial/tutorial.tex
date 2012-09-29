@@ -635,8 +635,8 @@ end kpoint\_path
 \section*{8: Iron \tent{-- Spin-polarized WFs and DOS}}
 \begin{itemize}
 \item{Outline: \it{\sout{Obtain MLWF to describe the states around the
-        Fermi-level in iron.} \tent{Obtain MLWFs for ferromagnetic
-        iron, and calculate the density of states (DOS) by Wannier
+        Fermi-level in iron.} \tent{Generate Wannier functions for ferromagnetic
+        iron, and use them to calculate the density of states (DOS) by Wannier
         interpolation.}}}
 \item{Directory: {\tt examples/example8/}}
 \item{Input Files}
@@ -716,23 +716,21 @@ the value of the Fermi energy taken from
 
 \end{enumerate}
 
-\tent{In this example we chose $s$, $p$, and $d$-type trial orbitals,
-  via the instruction} {\tt
+\tent{In the calculations above we chose $s$, $p$, and $d$-type trial
+  orbitals (see {\tt .win} files),} {\tt
 \begin{quote}
 Fe:s;p;d
 
 \end{quote}
-} \tent{in the {\tt .win} files. Let us analyze the evolution of the
-  WFs during the gauge-selection iterations. Open one of the {\tt
-    .wout} files and look for the sentence ``{\tt Initial state}'';
-  these are the {\it projected} WFs. As expected, they are
-  atom-centered, and their spreads are organized in three groups,
-  1+3+5: one $s$, three $p$, and five $d$.  Now look at the MLWFs at
-  the end of the file.  Thee spreads have re-organized in two groups,
-  6+3.  Moreover, the centers of the six more diffuse WFs are shifted
-  along one of the Cartesian directions. There has been a {\it
-    hybridization} of the atomic-like orbitals, leading to more
-  localized WFs!}
+}\tent{Let us analyze the evolution of the WFs during the
+  gauge-selection step. Open one of the {\tt .wout} files and search
+  for ``{\tt Initial state}''; those are the {\it projected} WFs. As
+  expected, they are atom-centered, with spreads organized in three
+  groups, 1+3+5: one $s$, three $p$, and five $d$.  Now look at the
+  final state at the end of the file.  The Wannier spreads have
+  re-organized in two groups, 6+3; moreover, the six more diffuse WFs
+  are now off-centered. The initial atomic-like orbitals hybridized
+  with one another, becoming more localized in the process.}
 
 \tent{To see when the hybridization took place, let us plot the
   evolution of the total spread~$\Omega$,} 
@@ -760,10 +758,10 @@ gnuplot> plot 'sprd\_up' u 6  w l
 
 
 \tent{The first plateau corresponds to atom-centered WFs of separate
-  $s$, $p$, and $d$ character, same as the trial orbitals. The
+  $s$, $p$, and $d$ character, same as the trial orbitals, and the
   sharp drop at around iteration $120$ signals the onset of the
-  hybridization (for more details, see Sec.~IV.B of
-  Ref.~\cite{wang-prb06}).  With hindsight, we can redo steps~4 and~5
+  hybridization. For more details, see Sec.~IV.B of
+  Ref.~\cite{wang-prb06}. With hindsight, we can redo steps~4 and~5
   more efficiently using trial orbitals with the same character as the
   final MLWFs,} {\tt
 \begin{quote}
@@ -773,16 +771,18 @@ Fe:sp3d2;dxy;dxz,dyz
 
 
 \tent{Physical quantities should come out essentially the same
-  computed with any ``reasonable'' set of WFs, not necessarily MLWFs.
-  To check this, let us re-run steps~4 and~5 using the original $s$,
-  $p$, $d$ trial orbitals, but stopping the minimization of
-  $\widetilde{\Omega}$ before the onset of hybridization,} {\tt
+  computed with any ``reasonable'' set of localized WFs, not
+  necessarily maximally-localized.  Let us re-run steps~4 and~5 again
+  starting from $s$, $p$, and $d$-type trial orbitals, but stopping
+  the minimization of $\widetilde{\Omega}$ before the onset of
+  hybridization,} {\tt
 \begin{quote}
 num\_iter = 50
 \end{quote}
 }
 
-\tent{and recalculate the DOS.}
+\tent{Now recalculate the DOS, and check that it is almost identical to
+  the one computed earlier using the hybridized set of MLWFs.}
 
 
 \subsection*{Further ideas}
@@ -805,7 +805,7 @@ write\_hr\_diag = T
   file the diagonal (``on-site'') Wannier matrix elements of the
   Hamiltonian. The difference between corresponding values in {\tt
     iron\_up.wout} and in {\tt iron\_dn.wout} gives the the exchange
-  splittings for the individual $s$, $p$, and $d$ states. Compare
+  splittings for the individual $s$, $p$, and $d$-type WFs. Compare
   their magnitudes with those observed in the total and partial DOS.}
 
 \end{itemize}
@@ -1520,7 +1520,7 @@ doing this Example.
 \item Run \pwscf\ to obtain the ferromagnetic ground state of
   iron\footnote{Please note the following counterintiutive feature in
     {\tt pwscf}: in order to obtain a ground state with magnetization
-    along the {\it positive} $z$-axis, one must use a {\it negative}
+    along the {\it positive} $z$-axis, one should use a {\it negative}
     value for the variable {\tt starting\_magnetization}.}\\
   {\tt pw.x < Fe.scf > scf.out}
 
@@ -1682,8 +1682,8 @@ to Fig.~\ref{fig:fe-fermicontours}.
   from an {\it ab initio} calculation without spin-orbit coupling, and
   compare with Fig.~\ref{fig:fe-fermicontours} to see how the
   spin-orbit interaction changes the connectivity of the Fermi
-  surface.  You can start from the input files of Example~8, which
-  dealt with bcc Fe without spin-orbit.
+  surface.  You can start from the input files of Example~8.
+%, which dealt with bcc Fe without spin-orbit.
 
 \end{itemize}
 
@@ -1708,10 +1708,10 @@ conductivity}
 \end{itemize}
 \end{itemize}
 
-Note that the sequence of steps in the following is the same of
-Example~17.  If you have already run that example, you can reuse the
-output files from steps 1--5, and only step 6 must be carried out
-again using the new input file {\tt Fe.win}.
+Note that the sequence of steps below is the same of Example~17.  If
+you have already run that example, you can reuse the output files from
+steps 1--5, and only step 6 must be carried out again using the new
+input file {\tt Fe.win}.
 
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of iron\\
@@ -1738,7 +1738,7 @@ again using the new input file {\tt Fe.win}.
 
 \end{enumerate}
 
-The  Berry curvature of a Bloch state is defined as
+The  Berry curvature along $z$ of a Bloch state $\psi_{n{\bf k}}=e^{i{\bf k}\cdot {\bf r}}u_{n{\bf k}}$ is defined as
 $$
 \Omega_n^z({\bf k})=-2{\rm Im}
 \langle \nabla_{k_x} u_{n{\bf k}}\vert \nabla_{k_y} u_{n{\bf k}}\rangle.
@@ -1782,9 +1782,9 @@ gnuplot> load `Fe\_curv.gnu'
 and compare with the lower panel in Fig.~2 of Ref.~\cite{yao-prl04}.
 
 In Fig.~\ref{fig:fe-fermicontours} of Example~17 we plotted the
-Fermi-surface contours on the (010) plane in $k$-space.  If in
-addition we want to visualize the Berry curvature across the plane, we
-uncomment the following instructions in {\tt Fe.win}, \smallskip {\tt
+Fermi-surface contours on the (010) plane in $k$-space.  To visualize
+$-\Omega^z({\bf k})$ across the plane, uncomment the following
+instructions in {\tt Fe.win}, \smallskip {\tt
 \begin{quote}
 kslice = T
 
@@ -1814,9 +1814,9 @@ The intrinsic anomalous Hall conductivity (AHC) is proportional to the
 integral of the Berry curvature over the entire Brillouin zone. For
 bcc Fe with the magnetization along [001], the only nonzero components
 of the AHC tensor $\sigma_{\alpha\beta}$ are
-$\sigma_{xy}=-\sigma_{yx}$.  In order to evaluate $\sigma_{xy}$ by
+$\sigma_{xy}=-\sigma_{yx}$.  To evaluate $\sigma_{xy}$ by
 integrating $-\Omega^z({\bf k})$ over a $25\times 25\times 25$
-$k$-point mesh, we uncomment the following lines in {\tt Fe.win},
+$k$-point mesh, uncomment the following lines in {\tt Fe.win},
 {\tt
 \begin{quote}
 berry = T
