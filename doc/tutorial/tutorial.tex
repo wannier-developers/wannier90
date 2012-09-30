@@ -1849,28 +1849,34 @@ units of S/cm .
 
 \begin{itemize}
 \item Study the convergence of the AHC with respect to the density of
-  the integration mesh by progressively increasing the value of the
-  parameter {\tt berry\_interp\_mesh}.
+  the integration mesh:
 
-\item Instead of simply increasing the mesh density uniformly across
-  the BZ, it is more efficient to adaptively refine the mesh in
-  regions where the Berry curvature is large and rapidly varying (see
-  Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt Fe.win} the lines
-  \smallskip {\tt
-\begin{quote}
-berry\_adaptive\_mesh = 5  
+  \begin{itemize}
 
-berry\_adaptive\_thresh = 27.98
-\end{quote} }
+  \item Progressively increase the value of the
+    parameter {\tt berry\_interp\_mesh}.
 
-in order to add a $5\times 5\times 5$ fine grid around those points
-where $\vert\Omega^z({\bf k})\vert$ exceeds 27.98~\AA$^2\simeq
-100$~bohr$^2$. The percentage of points on the uniform mesh triggering
-adaptive refinement is given in {\tt Fe.wpout}.
+  \item In addition to increasing the mesh density uniformly across
+    the BZ, it helps to adaptively refine it in regions where the
+    Berry curvature is large and rapidly varying (see
+    Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt Fe.win} the lines
+    \smallskip {\tt
+      \begin{quote}
+        berry\_adaptive\_mesh = 5  
+        
+        berry\_adaptive\_thresh = 27.98
+      \end{quote} }
+    
+    in order to add a $5\times 5\times 5$ fine grid around those
+    points where $\vert\Omega^z({\bf k})\vert$ exceeds
+    27.98~\AA$^2\simeq 100$~bohr$^2$. The percentage of mesh points
+    triggering adaptive refinement is given in {\tt Fe.wpout}.
 
-\item Compare the converged value for the AHC with the values reported
-in Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
+  \item Compare the converged value for the AHC of bcc Fe with the
+    values reported in Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
 
+  \end{itemize}
+  
 \item {\bf [\underline{POSSIBLE ADDITION:}]} Plot the MCD spectrum,
   check numerically the Kramers-Kronig relation between MCD and AHC.
 Refer to Ref.~\cite{WanInt}
