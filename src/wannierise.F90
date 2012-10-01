@@ -1657,7 +1657,7 @@ contains
 
     use w90_io,         only: seedname,io_file_unit,io_date,stdout
     use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
-                              lenconfac,real_lattice,recip_lattice,iprint, &
+                              lenconfac,real_lattice,recip_lattice,iprint,num_atoms, &
                               atoms_symbol,atoms_pos_cart,num_species,atoms_species_num
     use w90_utility,    only : utility_translate_home
 
@@ -1686,7 +1686,7 @@ contains
 
     xyz_unit=io_file_unit()
     open(xyz_unit,file=trim(seedname)//'_centres.xyz',form='formatted')
-    write(xyz_unit,'(i6)') num_wann
+    write(xyz_unit,'(i6)') num_wann + num_atoms
     call io_date(cdate,ctime)
     write(xyz_unit,*) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
     do iw=1,num_wann
