@@ -35,6 +35,10 @@ module w90_hamiltonian
   !
   integer,          public, save              :: nrpts
   !
+  ! ivo
+  ! rpt_origin        index of R=0
+  integer,          public, save              :: rpt_origin
+  !
   ! translated Wannier centres
   !
   real(kind=dp),    public, save, allocatable :: wannier_centres_translated(:,:)
@@ -519,7 +523,10 @@ contains
                    end do
                    irvec(1, nrpts) = n1  
                    irvec(2, nrpts) = n2   
-                   irvec(3, nrpts) = n3   
+                   irvec(3, nrpts) = n3
+                   !
+                   ! Record index of R=0
+                   if (n1==0 .and. n2==0 .and. n3==0) rpt_origin=nrpts
                 endif
              end if
 
