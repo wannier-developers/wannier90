@@ -793,30 +793,31 @@ above.]
 
 \begin{itemize}
 
-\item \tent{In order to obtain the DOS projected onto the $p$-type WFs
-    (in the same spirit as done in Example~4 for the energy bands),
-    add to the {\tt .win} files the lines} {\tt
+\item \tent{In order to obtain the DOS projected onto the $p$-type
+    WFs, add to the {\tt .win} files the lines} {\tt
 \begin{quote}
 dos\_project = 2,3,4
 \end{quote}
 }
 
-and re-run {\tt postw90}. Plot the projected DOS for both up- and
+(compare with Example~4)
+and re-run {\tt postw90}. Plot the $p$-projected DOS for both up- and
 down-spin bands. Repeat for the $s$ and and $d$ projections.
 
-\item \tent{Add to the {\tt .win} files the instruction}
-{\tt
+\item \tent{Re-run {\tt wannier90} after adding to the {\tt .win}
+    files the instruction} {\tt
 \begin{quote}
 write\_hr\_diag = T
 \end{quote}
 }
 
-\tent{This tells {\tt wannier90} to write in the output
-  file the diagonal (``on-site'') Wannier matrix elements of the
+\tent{This tells {\tt wannier90} to write in the output file the
+  diagonal (``on-site'') Wannier matrix elements of the
   Hamiltonian. The difference between corresponding values in {\tt
-    iron\_up.wout} and in {\tt iron\_dn.wout} gives the the exchange
-  splittings for the individual $s$, $p$, and $d$-type WFs. Compare
-  their magnitudes with those observed in the total and partial DOS.}
+    iron\_up.wout} and in {\tt iron\_dn.wout} can be interpreted as
+  the exchange splittings for the individual $s$, $p$, and $d$-type
+  WFs. Compare their magnitudes with the splittings displayed by the
+  total and orbital-projected DOS.}
 
 \end{itemize}
 
@@ -1879,9 +1880,9 @@ units of S/cm .
 
   \item In addition to increasing the mesh density uniformly across
     the BZ, it helps to adaptively refine it in regions where the
-    Berry curvature is large and rapidly varying (see
-    Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt Fe.win} the lines
-    \smallskip {\tt
+    Berry curvature is large and rapidly varying (such regions can be
+    seen in Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt Fe.win} the
+    lines \smallskip {\tt
       \begin{quote}
         berry\_adaptive\_mesh = 5  
         
