@@ -34,7 +34,7 @@ module w90_postw90_common
   ! Parameters describing the direct lattice points R on a 
   ! Wigner-Seitz supercell
   !
-  real(kind=dp), allocatable :: invdegen(:)
+!  real(kind=dp), allocatable :: invdegen(:)
   integer, allocatable       :: irvec(:,:),negirvec(:)
   real(kind=dp), allocatable :: crvec(:,:)
   integer, allocatable       :: ndegen(:)
@@ -83,9 +83,9 @@ module w90_postw90_common
   allocate(ndegen(nrpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating ndegen in wanint_setup')
   ndegen=0
-  allocate(invdegen(nrpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating invdegen in wanint_setup')
-  invdegen=0.0_dp
+!  allocate(invdegen(nrpts),stat=ierr)
+!  if (ierr/=0) call io_error('Error in allocating invdegen in wanint_setup')
+!  invdegen=0.0_dp
 
   ! ----------------------------------------------------------------------
   ! Adaptive refinement is not always used (e.g., not used in DOS).
@@ -259,12 +259,11 @@ module w90_postw90_common
     call comms_bcast(dos_max_allowed_smearing,1)
     call comms_bcast(dos_smr_fixed_en_width,1)
     call comms_bcast(dos_smr_adpt_factor,1)
-!    call comms_bcast(optics_plot,1)
+    call comms_bcast(num_dos_project,1)
+    call comms_bcast(dos_project(1),num_dos_project)
 
     call comms_bcast(berry,1)
-!    call comms_bcast(optics_task,len(optics_task))
     call comms_bcast(berry_task,len(berry_task))
-!    call comms_bcast(optics_num_points,1)
     call comms_bcast(berry_interp_mesh_spacing,1)
     call comms_bcast(berry_interp_mesh(1),3)
     call comms_bcast(berry_adaptive_mesh,1)
@@ -318,9 +317,9 @@ module w90_postw90_common
 !         call comms_bcast(bands_spec_points(1,1),3*bands_num_spec_points) 
 !    if(allocated(bands_label)) &
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points) 
-    call comms_bcast(bands_color,len(bands_color)) 
-    call comms_bcast(kpath_task,len(kpath_task)) 
-    call comms_bcast(kslice_task,len(kslice_task)) 
+!    call comms_bcast(kpath_bands_color,len(kpath_bands_color)) 
+!    call comms_bcast(kpath_task,len(kpath_task)) 
+!    call comms_bcast(kslice_task,len(kslice_task)) 
 ! ----------------------------------------------
     call comms_bcast(geninterp,1)
     call comms_bcast(geninterp_alsofirstder,1)
@@ -639,7 +638,8 @@ module w90_postw90_common
     OO(:,:)=cmplx_0
     do ir=1,nrpts
        rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)*invdegen(ir)
+!       phase_fac=exp(cmplx_i*rdotk)*invdegen(ir)
+       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
        if(alpha==0) then
           OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
        elseif(alpha==1.or.alpha==2.or.alpha==3) then
@@ -678,7 +678,7 @@ module w90_postw90_common
 
   integer       :: ndiff (3)
   real(kind=dp) :: dist(125),tot,dist_min
-  integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j
+  integer       :: n1,n2,n3,i1,i2,i3,icnt,i,j,ir
 
   if (timing_level>1.and.on_root)&
        call io_stopwatch('postw90_common: wigner_seitz',1)
@@ -764,24 +764,24 @@ module w90_postw90_common
   if(iprint>=3.and.on_root) then
      write(stdout,'(1x,i4,a,/)') nrpts,&
           ' lattice points in Wigner-Seitz supercell:'
-     do i=1,nrpts
-        write(stdout,'(4x,a,3(i3,1x),a,i2)') '  vector ',irvec(1,i),irvec(2,i),&
-             irvec(3,i),'  degeneracy: ',ndegen(i)
+     do ir=1,nrpts
+        write(stdout,'(4x,a,3(i3,1x),a,i2)') '  vector ',irvec(1,ir),&
+             irvec(2,ir),irvec(3,ir),'  degeneracy: ',ndegen(ir)
      enddo
   endif
   ! Check the "sum rule"
   tot = 0.0_dp  
-  do i = 1, nrpts  
+  do ir = 1, nrpts  
      !
      ! Corrects weights in Fourier sums for R-vectors on the boundary of the 
      ! W-S supercell 
      !
-     invdegen(i)=1.0_dp/ndegen(i)
-     tot = tot + invdegen(i)
+!     invdegen(i)=1.0_dp/ndegen(i)
+!     tot = tot + invdegen(i)
+     tot=tot+1.0_dp/real(ndegen(ir),dp)
   enddo
-  if (abs(tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > 1.e-8_dp) then
-     call io_error('ERROR in wigner_seitz: error in finding Wigner-Seitz points')
-  endif
+  if (abs(tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > 1.e-8_dp)&
+    call io_error('ERROR in wigner_seitz: error in finding Wigner-Seitz points')
 
   if (timing_level>1.and.on_root)&
        call io_stopwatch('postw90_common: wigner_seitz',2)

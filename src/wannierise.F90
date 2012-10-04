@@ -61,8 +61,13 @@ contains
          num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
-         wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data
+         wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
+         write_hr_diag
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
+
+    !ivo
+    use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
+                                rpt_origin
 
     implicit none
 
@@ -428,6 +433,19 @@ contains
     write(stdout,'(1x,a78)') repeat('-',78) 
 
     if (write_xyz) call wann_write_xyz()
+
+    if(write_hr_diag) then
+       call hamiltonian_setup()
+       call hamiltonian_get_hr()
+       write(stdout,*)
+       write(stdout,'(1x,a)') 'On-site Hamiltonian matrix elements'
+       write(stdout,'(3x,a)') '  n        <0n|H|0n> (eV)'
+       write(stdout,'(3x,a)') '-------------------------'
+       do i=1,num_wann
+          write(stdout,'(3x,i3,5x,f12.6)') i,real(ham_r(i,i,rpt_origin),kind=dp)
+       enddo
+       write(stdout,*)
+    endif
 
     if (guiding_centres) call wann_phases(csheet,sheet,rguide,irguide)
 
@@ -1657,8 +1675,9 @@ contains
 
     use w90_io,         only: seedname,io_file_unit,io_date,stdout
     use w90_parameters, only: translate_home_cell,num_wann,wannier_centres, &
-                              lenconfac,real_lattice,recip_lattice,iprint,num_atoms, &
-                              atoms_symbol,atoms_pos_cart,num_species,atoms_species_num
+                              lenconfac,real_lattice,recip_lattice,iprint, &
+                              num_atoms,atoms_symbol,atoms_pos_cart,&
+                              num_species,atoms_species_num
     use w90_utility,    only : utility_translate_home
 
     implicit none

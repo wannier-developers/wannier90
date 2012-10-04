@@ -49,7 +49,7 @@ module w90_parameters
   logical,                    public, save :: kpath
   character(len=20),          public, save :: kpath_task
   integer,                    public, save :: kpath_num_points
-  character(len=4),           public, save :: bands_color
+  character(len=4),           public, save :: kpath_bands_color
   real(kind=dp),              public, save :: num_elec_cell
   logical,                    public, save :: found_fermi_energy
   logical,                    public, save :: omega_from_ff
@@ -106,6 +106,8 @@ module w90_parameters
   real(kind=dp),     public, save :: kslice_corner(3)
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
+  real(kind=dp),     public, save :: kslice_cntr_energy
+  logical,                    public, save :: found_kslice_cntr_energy
   logical,           public, save :: do_dos
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical,           public       :: dos_plot
@@ -119,6 +121,8 @@ module w90_parameters
   real(kind=dp),     public, save :: dos_max_allowed_smearing
   real(kind=dp),     public, save :: dos_max_energy
   real(kind=dp),     public, save :: dos_min_energy
+  integer,           public, save :: num_dos_project
+  integer, allocatable, public, save :: dos_project(:)
 
 !  real(kind=dp),     public, save :: dos_gaussian_width
   character(len=20), public, save :: dos_plot_format
@@ -236,6 +240,7 @@ module w90_parameters
   integer,           public, save :: num_elec_per_state
   logical,           public, save :: translate_home_cell
   logical,           public, save :: write_xyz
+  logical,           public, save :: write_hr_diag
   real(kind=dp),     public, save :: conv_noise_amp
   integer,           public, save :: conv_noise_num
   real(kind=dp),     public, save :: wannier_plot_radius
@@ -574,6 +579,9 @@ contains
     write_xyz = .false.
     call param_get_keyword('write_xyz',found,l_value=write_xyz)
 
+    write_hr_diag = .false.
+    call param_get_keyword('write_hr_diag',found,l_value=write_hr_diag)
+
     !%%%%%%%%%%%
     ! Wannierise
     !%%%%%%%%%%%
@@ -808,7 +816,7 @@ contains
          ('Error: berry_task=T and berry is not set')
     if(berry) then
        if(index(berry_task,'mcd')==0 .and. index(berry_task,'ord')==0&
-            .and. index(berry_task,'ahe')==0 .and. index(berry_task,'orb')==0&
+            .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
             .and. index(berry_task,'gyro')==0&
             .and. index(berry_task,'noa')==0&
             .and. index(berry_task,'mespn')==0)&
@@ -888,8 +896,8 @@ contains
          call io_error('Error: kpath_num_points must be positive')       
 
     ! 'spin' or 'none' (default)
-    bands_color      =   'none'                 
-    call param_get_keyword('bands_color',found,c_value=bands_color)
+    kpath_bands_color      =   'none'                 
+    call param_get_keyword('kpath_bands_color',found,c_value=kpath_bands_color)
 
     ! set to a negative default value
     num_elec_cell=-99
@@ -910,8 +918,12 @@ contains
   ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"') 
     end if
 
-    kslice_task         = 'curv' ! 'morb'
+    kslice_task='energy_cntr'
     call param_get_keyword('kslice_task',found,c_value=kslice_task)
+       if(index(kslice_task,'energy_cntr')==0 .and.&
+          index(kslice_task,'curv_heatmap')==0 .and.&
+          index(kslice_task,'morb_heatmap')==0) call io_error&
+            ('Error: value of kslice_task not recognised in param_read')
 
     kslice_corner=0.0_dp
     call param_get_keyword_vector('kslice_corner',found,3,r_value=kslice_corner)
@@ -925,6 +937,11 @@ contains
     kslice_b2(2)=1.0_dp
     kslice_b2(3)=0.0_dp
     call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
+
+    kslice_cntr_energy=fermi_energy
+    found_kslice_cntr_energy=.false.
+    call param_get_keyword('kslice_cntr_energy',found,r_value=fermi_energy)
+    if(found.or.found_fermi_energy) found_kslice_cntr_energy=.true.
 
     omega_from_FF=.false.
     call param_get_keyword('omega_from_ff',found,l_value=omega_from_FF)
@@ -962,6 +979,18 @@ contains
 
     dos_plot_format           = 'gnuplot'
     call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
+
+    num_dos_project=num_wann
+    call param_get_range_vector('dos_project',found,num_dos_project,&
+         lcount=.true.)
+    allocate(dos_project(num_dos_project),stat=ierr)
+    if (ierr/=0) call io_error('Error allocating dos_project in param_read')
+    if(found) then
+       call param_get_range_vector('dos_project',found,num_dos_project,&
+            .false.,dos_project)
+       if (any(dos_project<1) .or. any(dos_project>num_wann) ) call io_error&
+    ('Error: dos_project asks for a non-valid wannier function to be projected')
+    endif 
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
@@ -1953,6 +1982,7 @@ contains
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between backing up to disk     :',num_dump_cycles,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write r^2_nm to file                      :',write_r2mn,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write xyz WF centres to file              :',write_xyz,'|'
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write on-site energies <0n|H|0n> to file  :',write_hr_diag,'|'    
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Use guiding centre to control phases      :',guiding_centres,'|'
     if(guiding_centres .or. iprint>2) then
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations before starting guiding centres:',num_no_guide_iter,'|'

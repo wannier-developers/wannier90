@@ -20,7 +20,7 @@ module w90_berry
 
   private
 
-  public :: berry_properties,get_imf_ab_k,get_img_ab_k,get_imh_ab_k
+  public :: berry_main,get_imf_ab_k,get_img_ab_k,get_imh_ab_k
   real(kind=dp), parameter :: eps=1.0e-7
 
   integer       :: nfreq,nfreq_cut,aa(10),bb(10),cc(10)
@@ -33,7 +33,7 @@ module w90_berry
   !                   PUBLIC PROCEDURES                       ! 
   !===========================================================!
 
-  subroutine berry_properties
+  subroutine berry_main
   !=============================================================!
   !                                                             !
   ! Computes the following quantities:                          !
@@ -138,7 +138,7 @@ module w90_berry
                          jdos_unit,AA_unit,DA_unit,DD_unit,&
                          tot_unit,alpha_unit(3,3),gamma_unit(10)
     character(len=20) :: file_name
-    logical           :: eval_ahe,eval_orb,eval_sig_ab,eval_sig_abc,&
+    logical           :: eval_ahc,eval_orb,eval_sig_ab,eval_sig_abc,&
                          eval_ME_EQ,eval_MEspn
 
     ! Units conversion factors (TODO: use a single variable for all?)
@@ -161,7 +161,7 @@ module w90_berry
     
     ! Must initialize to .false. all eval_ flags
     !
-    eval_ahe=.false.
+    eval_ahc=.false.
     eval_orb=.false.
     eval_sig_ab=.false.
     eval_sig_abc=.false.
@@ -169,7 +169,7 @@ module w90_berry
     eval_MEspn=.false.
     T_odd=.false.
     if(index(berry_task,'ahc')>0) then
-       eval_ahe=.true.
+       eval_ahc=.true.
     elseif(index(berry_task,'morb')>0) then
        eval_orb=.true.
     end if
@@ -201,7 +201,7 @@ module w90_berry
        write(stdout,'(1x,a)')     'Optical/transport properties:'
        write(stdout,'(1x,a)')     '============================='
 
-       if(eval_ahe) write(stdout,'(/,3x,a)') '* Re[sigma_{A,'//&
+       if(eval_ahc) write(stdout,'(/,3x,a)') '* Re[sigma_{A,'//&
             achar(119+alpha)//achar(119+beta)//&
       '}(0)]: dc anomalous Hall (antisymm) conductivity'
 
@@ -303,7 +303,7 @@ module w90_berry
     ! Wannier matrix elements, allocations and initializations
     !
     adpt_counter=0
-    if(eval_ahe) then
+    if(eval_ahc) then
        call get_HH_R 
        call get_AA_R
        if(omega_from_FF) call get_FF_R
@@ -443,7 +443,7 @@ module w90_berry
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
           kweight_adpt=kweight/berry_adaptive_mesh**3
-          if(eval_ahe) then 
+          if(eval_ahc) then 
              call get_imf_ab_k(kpt,imf_ab_k)
              adpt_trigger=abs(sum(imf_ab_k))
           elseif(eval_orb) then
@@ -470,7 +470,7 @@ module w90_berry
              adpt_counter=adpt_counter+1
              do loop_adpt=1,berry_adaptive_mesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
-                if(eval_ahe) then
+                if(eval_ahc) then
                    call get_imf_ab_k(kpt_ad,imf_ab_k)
                    imf_ab=imf_ab+imf_ab_k*kweight_adpt
                 elseif(eval_orb) then
@@ -504,7 +504,7 @@ module w90_berry
                 end if
              end do
           else
-             if(eval_ahe) then
+             if(eval_ahc) then
                 imf_ab=imf_ab+imf_ab_k*kweight
              elseif(eval_orb) then 
                 imf_ab=imf_ab+imf_ab_k*kweight
@@ -559,7 +559,7 @@ module w90_berry
 
 
 
-          if(eval_ahe) then
+          if(eval_ahc) then
              call get_imf_ab_k(kpt,imf_ab_k)
              adpt_trigger=abs(sum(imf_ab_k))
           elseif(eval_orb) then
@@ -582,7 +582,7 @@ module w90_berry
              adpt_counter=adpt_counter+1
              do loop_adpt=1,berry_adaptive_mesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
-                 if(eval_ahe) then
+                 if(eval_ahc) then
                    call get_imf_ab_k(kpt_ad,imf_ab_k)
                    imf_ab=imf_ab+imf_ab_k*kweight_adpt
                 elseif(eval_orb) then
@@ -616,7 +616,7 @@ module w90_berry
                 end if
              end do
           else
-             if(eval_ahe) then
+             if(eval_ahc) then
                 imf_ab=imf_ab+imf_ab_k*kweight
              elseif(eval_orb) then 
                 imf_ab=imf_ab+imf_ab_k*kweight
@@ -646,7 +646,7 @@ module w90_berry
 
 ! Collect contributions from all nodes    
 !
-    if(eval_ahe) then
+    if(eval_ahc) then
        call comms_reduce(imf_ab(1),3,'SUM')
        call comms_reduce(adpt_counter,1,'SUM')
     elseif(eval_orb) then
@@ -682,7 +682,7 @@ module w90_berry
     
     if(on_root) then
 
-       if(eval_ahe) then
+       if(eval_ahc) then
 
           ! --------------------------------------------------------------------
           ! At this point ms_imf_ab contains 
@@ -698,7 +698,7 @@ module w90_berry
           ! sigma_{alpha beta}=-(e^2/hbar) int dk/(2.pi)^3 Omega(k) dk 
           !
           ! Hence need to multiply by -(e^2/hbar.V_c). 
-          ! To get a conductivity in units of (Ohm. cm)^{-1},
+          ! To get a conductivity in units of S/cm,
           !
           ! (i)   Divide by V_c to obtain (1/N) sum_k omega(k)/V_c, which has 
           !       units of [L]^{-1} (Berry curvature Omega(k) has units of 
@@ -776,7 +776,7 @@ module w90_berry
           write(stdout,'(1x,a,1x,e13.6,3(1x,a,1x,e13.6))')&
                'ICtil=',sum(ICtil),'=',ICtil(1),'+',ICtil(2),'+',ICtil(3)
 
-       end if ! eval_ahe or eval_orb
+       end if ! eval_ahc or eval_orb
 
        ! ---------!
        ! sigma_ab !
@@ -1277,8 +1277,8 @@ module w90_berry
                'Nominal interpolation mesh in IBZ: ',&
                sum(num_int_kpts_on_node),' points'
 
-          if(eval_ahe .or. eval_orb) then
-             if(eval_ahe) then
+          if(eval_ahc .or. eval_orb) then
+             if(eval_ahc) then
                 write(stdout,'(1x,a47,3x,f8.4,a)')&
                      'Adaptive refinement triggered when Omega(k) >',&
                      berry_adaptive_thresh,' Ang^2'
@@ -1338,8 +1338,8 @@ module w90_berry
                berry_interp_mesh(3),'=',product(berry_interp_mesh),' points'
           
 
-          if(eval_ahe .or. eval_orb) then
-             if(eval_ahe) then
+          if(eval_ahc .or. eval_orb) then
+             if(eval_ahc) then
                 write(stdout,'(1x,a47,f8.4,a)')&
                      'Adaptive refinement triggered when Omega(k) >',&
                      berry_adaptive_thresh,' Ang^2'
@@ -1376,7 +1376,7 @@ module w90_berry
 
     end if !on_root
 
-  end subroutine berry_properties
+  end subroutine berry_main
 
   subroutine get_imf_ab_k(kpt,imf)
   !=====================================!

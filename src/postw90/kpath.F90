@@ -6,13 +6,16 @@ module w90_kpath
   ! 
   !  - Energy bands (eventually colored by the spin) 
   !
-  !  - Berry curvature summed over occupied bands
+  !  - (Berry curvature)x(-1) summed over occupied bands
   !
   !  - Integrand of orbital magnetization Morb=LCtil+ICtil
+
+  use w90_constants, only : dp
 
   implicit none
 
   public
+  real(kind=dp), parameter :: eps=1.0e-7
 
 contains
 
@@ -30,7 +33,7 @@ contains
     use w90_postw90_common, only : fourier_R_to_k
     use w90_parameters, only    : num_wann,recip_metric,kpath_task,&
                                   kpath_num_points,bands_num_spec_points,&
-                                  bands_spec_points,bands_label,bands_color,&
+                                  bands_spec_points,bands_label,kpath_bands_color,&
                                   found_fermi_energy,fermi_energy,omega_from_FF
     use w90_get_oper, only      : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                   get_FF_R,get_SS_R
@@ -38,20 +41,20 @@ contains
     use w90_berry, only         : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
     use w90_constants, only     : bohr,ev_au
 
-    integer           :: i,num_paths,num_spts,loop_path,loop_kpt,&
+    integer           :: i,n,num_paths,num_spts,loop_path,loop_kpt,&
          total_pts,counter,loop_i,dataunit,gnuunit,&
          kpath_pts(bands_num_spec_points/2)
     real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_nk(num_wann),&
          imf_ab_k(3),img_ab_k(3),imh_ab_k(3),&
          LCtil(3),ICtil(3),&
          kpath_len(bands_num_spec_points/2),range 
-    logical           :: plot_bands,plot_curv,plot_orb,got_it
+    logical           :: plot_bands,plot_curv,plot_morb,got_it
     character(len=20) :: file_name
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     real(kind=dp), allocatable    :: xval(:),curv_au(:),curv_decomp_au(:,:),&
-         orb_au(:,:),orb_decomp_au(:,:),eig_n(:,:),&
+         morb_au(:,:),morb_decomp_au(:,:),eig_n(:,:),&
          color_n(:,:),plot_kpoint(:,:)
     character(len=3),allocatable  :: glabel(:)
 
@@ -70,14 +73,14 @@ contains
        plot_curv=.true.
        got_it=.true.
     end if
-    plot_orb=.false.
-    if(index(kpath_task,'orb')>0) then
-       plot_orb=.true.
+    plot_morb=.false.
+    if(index(kpath_task,'morb')>0) then
+       plot_morb=.true.
        got_it=.true.
     end if
     if(.not.got_it) then
        call io_error(&
-            '(kpath_task must include one or more of the keywords "bands" "curv" and "orb"'&
+            '(kpath_task must include one or more of the keywords "bands" "curv" and "morb"'&
             )
        stop
     end if
@@ -88,7 +91,7 @@ contains
        write(stdout,'(1x,a)')     '=============================='
 
        if(plot_bands) then
-          select case(bands_color)
+          select case(kpath_bands_color)
           case("none")
              write(stdout,'(/,3x,a)') '* Energy bands in eV'
           case("spin")
@@ -96,33 +99,33 @@ contains
           end select
        end if
        if(plot_curv) then
-          write(stdout,'(/,3x,a)') '* Total Berry curvature in a.u.'
+          write(stdout,'(/,3x,a)') '* Minus the total Berry curvature in a.u.'
           if(.not.found_fermi_energy) call io_error&
                (&
-               'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv=T'&
+        'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv=T'&
                )
        end if
-       if(plot_orb) then
+       if(plot_morb) then
           write(stdout,'(/,3x,a)')& 
                '* LC_tilde, IC_tilde  and total magnetization in a.u.'
           if(.not.found_fermi_energy) call io_error&
                (&
-               'Need to set either "fermi_energy" or "num_elec_cell" when plot_orb=T'&
+         'Need to set either "fermi_energy" or "num_elec_cell" when plot_morb=T'&
                )
        end if
     endif
 
     ! Set up the needed Wannier matrix elements
     call get_HH_R
-    if(plot_curv.or.plot_orb) then
+    if(plot_curv.or.plot_morb) then
        call get_AA_R
        if(omega_from_FF) call get_FF_R
     endif
-    if(plot_orb) then
+    if(plot_morb) then
        call get_BB_R
        call get_CC_R
     endif
-    if(plot_bands .and. bands_color=='spin') call get_SS_R
+    if(plot_bands .and. kpath_bands_color=='spin') call get_SS_R
 
     if(on_root) then
 
@@ -167,7 +170,7 @@ contains
        !
        if(plot_bands) then
           allocate(eig_n(num_wann,total_pts))
-          if(bands_color/='none') then
+          if(kpath_bands_color/='none') then
              allocate(color_n(num_wann,total_pts))
           end if
        end if
@@ -179,9 +182,9 @@ contains
           allocate(curv_au(total_pts))
           allocate(curv_decomp_au(total_pts,3))
        end if
-       if(plot_orb) then
-          allocate(orb_au(total_pts,3))
-          allocate(orb_decomp_au(total_pts,9))
+       if(plot_morb) then
+          allocate(morb_au(total_pts,3))
+          allocate(morb_decomp_au(total_pts,9))
        end if
 
        allocate(glabel(num_spts))
@@ -238,9 +241,22 @@ contains
              ! Color-code energy bands with the spin projection along the
              ! chosen spin quantization axis
              !
-             if(bands_color=='spin') then
+             if(kpath_bands_color=='spin') then
                 call get_spn_nk(kpt,spn_nk)
                 color_n(:,loop_kpt)=spn_nk(:)
+                !
+                ! The following is needed to prevent bands from disappearing 
+                ! when the magnitude of the Wannier interpolated spn_nk (very 
+                ! slightly) exceeds 1.0 (this happens in bcc Fe along N--G--H, 
+                ! for example)
+                !
+                do n=1,num_wann
+                   if(color_n(n,loop_kpt)>1.0_dp-eps) then
+                      color_n(n,loop_kpt)=1.0_dp-eps
+                   elseif(color_n(n,loop_kpt)<-1.0_dp+eps) then
+                      color_n(n,loop_kpt)=-1.0_dp+eps
+                   endif
+                enddo
              end if
           endif
 
@@ -260,47 +276,47 @@ contains
              curv_decomp_au(loop_kpt,3)=imf_ab_k(3)/bohr**2
           end if
 
-          if(plot_orb) then
+          if(plot_morb) then
 
              call get_imf_ab_k(kpt,imf_ab_k)
              call get_img_ab_k(kpt,img_ab_k)
              call get_imh_ab_k(kpt,imh_ab_k)
 
              LCtil(:)=img_ab_k(:)-fermi_energy*imf_ab_k(:)
-             orb_au(loop_kpt,1)=sum(LCtil)
+             morb_au(loop_kpt,1)=sum(LCtil)
              ICtil(:)=imh_ab_k(:)-fermi_energy*imf_ab_k(:)
-             orb_au(loop_kpt,2)=sum(ICtil)
-             orb_au(loop_kpt,3)=orb_au(loop_kpt,1)+orb_au(loop_kpt,2)
+             morb_au(loop_kpt,2)=sum(ICtil)
+             morb_au(loop_kpt,3)=morb_au(loop_kpt,1)+morb_au(loop_kpt,2)
 
              ! Decompose each into J0, J1, and J2 parts
              !
              ! J0 part of LCtil
-             orb_decomp_au(loop_kpt,1)=LCtil(1)
+             morb_decomp_au(loop_kpt,1)=LCtil(1)
              ! J1 part of LCtil
-             orb_decomp_au(loop_kpt,2)=LCtil(2)
+             morb_decomp_au(loop_kpt,2)=LCtil(2)
              ! J2 part of LCtil
-             orb_decomp_au(loop_kpt,3)=LCtil(3)
+             morb_decomp_au(loop_kpt,3)=LCtil(3)
              !
              ! J0 part of ICtil
-             orb_decomp_au(loop_kpt,4)=ICtil(1)
+             morb_decomp_au(loop_kpt,4)=ICtil(1)
              ! J1 part of ICtil
-             orb_decomp_au(loop_kpt,5)=ICtil(2)
+             morb_decomp_au(loop_kpt,5)=ICtil(2)
              ! J2 part of ICtil
-             orb_decomp_au(loop_kpt,6)=ICtil(3)
+             morb_decomp_au(loop_kpt,6)=ICtil(3)
              !
              ! J0 part of M_tot
-             orb_decomp_au(loop_kpt,7)=LCtil(1)+ICtil(1)
+             morb_decomp_au(loop_kpt,7)=LCtil(1)+ICtil(1)
              ! J1 part of M_tot
-             orb_decomp_au(loop_kpt,8)=LCtil(2)+ICtil(2)
+             morb_decomp_au(loop_kpt,8)=LCtil(2)+ICtil(2)
              ! J2 part of M_tot
-             orb_decomp_au(loop_kpt,9)=LCtil(3)+ICtil(3)
+             morb_decomp_au(loop_kpt,9)=LCtil(3)+ICtil(3)
 
              ! Convert to atomic units (right now it is an energy in eV
              ! times a Berry curvature in Ang^2)
              !
-             orb_au(loop_kpt,:)=orb_au(loop_kpt,:)*eV_au/bohr**2
-             orb_decomp_au(loop_kpt,:)=&
-                  orb_decomp_au(loop_kpt,:)*eV_au/bohr**2
+             morb_au(loop_kpt,:)=morb_au(loop_kpt,:)*eV_au/bohr**2
+             morb_decomp_au(loop_kpt,:)=&
+                  morb_decomp_au(loop_kpt,:)*eV_au/bohr**2
           end if
 
        end do !loop_kpt
@@ -339,7 +355,7 @@ contains
           open(dataunit,file=file_name,form='formatted')
           do i=1,num_wann
              do loop_kpt=1,total_pts
-                if(bands_color=='none') then
+                if(kpath_bands_color=='none') then
                    write(dataunit,'(2E16.8)') xval(loop_kpt),eig_n(i,loop_kpt)
                 else
                    write(dataunit,'(3E16.8)') xval(loop_kpt),&
@@ -363,15 +379,15 @@ contains
              write(gnuunit,705) sum(kpath_len(1:i)),ymin,sum(kpath_len(1:i)),&
                   ymax
           enddo
-          if(bands_color=='none') then
+          if(kpath_bands_color=='none') then
              write(gnuunit,701) xval(total_pts),ymin,ymax
              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
                   (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
              write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
              write(gnuunit,*) 'plot ','"'//trim(seedname)//'_band.dat','"' 
-          elseif(bands_color=='spin') then
+          elseif(kpath_bands_color=='spin') then
              !
-             ! Only works with gnuplot v4 (4.2?) and higher
+             ! Only works with gnuplot v4.2 and higher
              !
              write(gnuunit,706) xval(total_pts),ymin,ymax
              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
@@ -383,7 +399,7 @@ contains
              write(gnuunit,*) 'set zrange [-1:1]'
              write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
                   '" with dots palette' 
-!          elseif(bands_color=='curv') then
+!          elseif(kpath_bands_color=='curv') then
 !             write(gnuunit,706) xval(total_pts),ymin,ymax
 !             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
 !                  (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
@@ -398,6 +414,12 @@ contains
        end if ! plot_bands
 
        if(plot_curv) then
+          
+          ! It is conventional to plot (-1).Omega(k) rather than Omega(k): 
+          ! see Yao et al, PRL 92, 037204 (2004)
+          !
+          curv_au=-curv_au
+          curv_decomp_au=-curv_decomp_au
 
           dataunit=io_file_unit()
           file_name=trim(seedname)//'_curv.dat'
@@ -405,7 +427,7 @@ contains
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
              write(dataunit,'(2E16.8)') xval(loop_kpt),&
-                  curv_au(loop_kpt)
+                  curv_au(loop_kpt) 
           enddo
           write(dataunit,*) ' '
           close(dataunit)
@@ -416,7 +438,7 @@ contains
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
              write(dataunit,'(4E16.8)')&
-                  xval(loop_kpt),curv_decomp_au(loop_kpt,:)
+                  xval(loop_kpt),curv_decomp_au(loop_kpt,:) 
           enddo
           write(dataunit,*) ' '
           close(dataunit)
@@ -444,37 +466,37 @@ contains
 
        end if ! plot_curv
 
-       if(plot_orb) then
+       if(plot_morb) then
 
           dataunit=io_file_unit()
-          file_name=trim(seedname)//'_orb.dat'
+          file_name=trim(seedname)//'_morb.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
-             write(dataunit,'(4E16.8)') xval(loop_kpt),orb_au(loop_kpt,:)
+             write(dataunit,'(4E16.8)') xval(loop_kpt),morb_au(loop_kpt,:)
           enddo
           write(dataunit,*) ' '
           close(dataunit)
           !
           dataunit=io_file_unit()
-          file_name=trim(seedname)//'_orb_decomp.dat'
+          file_name=trim(seedname)//'_morb_decomp.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
              write(dataunit,'(10E16.8)')&
-                  xval(loop_kpt),orb_decomp_au(loop_kpt,:)
+                  xval(loop_kpt),morb_decomp_au(loop_kpt,:)
           enddo
           write(dataunit,*) ' '
           close(dataunit)
 
-          ymin=minval(orb_au(:,:))
-          ymax=maxval(orb_au(:,:))
+          ymin=minval(morb_au(:,:))
+          ymax=maxval(morb_au(:,:))
           range=ymax-ymin
           ymin=ymin-0.02_dp*range
           ymax=ymax+0.02_dp*range
 
           gnuunit=io_file_unit()
-          file_name=trim(seedname)//'_orb.gnu'
+          file_name=trim(seedname)//'_morb.gnu'
           write(stdout,'(/,3x,a)') file_name
           open(gnuunit,file=file_name,form='formatted')
           write(gnuunit,707) xval(total_pts),ymin,ymax
@@ -486,10 +508,10 @@ contains
                (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
           write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
           ! u 1:4 plots the total M(k) along the path (LCtil+ICtil)
-          write(gnuunit,*) 'plot ','"'//trim(seedname)//'_orb.dat','" u 1:4' 
+          write(gnuunit,*) 'plot ','"'//trim(seedname)//'_morb.dat','" u 1:4' 
           close(gnuunit)
 
-       end if ! plot_orb
+       end if ! plot_morb
 
     end if ! on_root
 

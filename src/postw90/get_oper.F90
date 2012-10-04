@@ -845,14 +845,19 @@ module w90_get_oper
        if (nkp_tmp.ne.num_kpts) &
             call io_error(trim(seedname)//'.spn has wrong number of k-points')
 
-       ! Read from .spn file the original spin matrices <psi_nk|sigma_i|psi_nk> 
-       ! (sigma_i = Pauli matrix) between ab initio eigenstates
+       ! Read from .spn file the upper-triangular part of the original spin matrices 
+       ! <psi_nk|sigma_i|psi_mk> (sigma_i = Pauli matrix) between 
+       ! ab initio eigenstates, and reconstruct lower-triangular part
        !
        do ik=1,num_kpts
           do m=1,num_bands
-             do n=1,num_bands
+!             do n=1,num_bands
+             do n=1,m
                 read(spn_in,err=110,end=110) spn_o(n,m,ik,1),&
                      spn_o(n,m,ik,2),spn_o(n,m,ik,3)
+                spn_o(m,n,ik,1)=conjg(spn_o(n,m,ik,1))
+                spn_o(m,n,ik,2)=conjg(spn_o(n,m,ik,2))
+                spn_o(m,n,ik,3)=conjg(spn_o(n,m,ik,3))
              end do
           end do
        enddo

@@ -28,16 +28,18 @@ contains
     !                                                         !
     !=========================================================!
 
-    use w90_io, only            : io_error,io_file_unit,io_date,io_stopwatch,&
-         seedname,stdout
-    use w90_comms, only         : on_root,num_nodes,my_node_id,comms_reduce
+    use w90_io, only             : io_error,io_file_unit,io_date,io_stopwatch,&
+                                   seedname,stdout
+    use w90_comms, only          : on_root,num_nodes,my_node_id,comms_reduce
     use w90_postw90_common, only : num_int_kpts_on_node,int_kpts,weight,&
-         fourier_R_to_k
-    use w90_parameters, only    : num_wann,dos_num_points,dos_min_energy,&
-         dos_max_energy,dos_energy_step,timing_level,&
-         wanint_kpoint_file, dos_interp_mesh,dos_smr_index,&
-         dos_smr_adpt_factor ,spn_decomp, dos_smr_adpt, &
-         dos_smr_fixed_en_width
+                                   fourier_R_to_k
+    use w90_parameters, only     : num_wann,dos_num_points,dos_min_energy,&
+                                   dos_max_energy,dos_energy_step,timing_level,&
+                                   wanint_kpoint_file,dos_interp_mesh,&
+                                   dos_smr_index,dos_smr_adpt_factor ,&
+                                   spn_decomp, dos_smr_adpt, &
+                                   dos_smr_fixed_en_width,&
+                                   dos_project,num_dos_project
     ! TODO! Implement non-adaptive smearing also here
     use w90_get_oper, only      : get_HH_R,get_SS_R,HH_R
     use w90_wan_ham, only: get_eig_deleig
@@ -98,7 +100,16 @@ contains
        write(stdout,'(1x,a)')   'Calculating:'
        write(stdout,'(1x,a)')   '============'
 
-       write(stdout,'(/,3x,a)') '* Density of states (_dos)'
+       if(num_dos_project==num_wann) then
+          write(stdout,'(/,3x,a)') '* Total density of states (_dos)'
+       else
+          write(stdout,'(/,3x,a)')&
+               '* Density of states projected onto selected WFs (_dos)'
+          write(stdout,'(3x,a)') 'Selected WFs |Rn> are:'
+          do i=1,num_dos_project
+             write(stdout,'(5x,a,2x,i3)') 'n =',dos_project(i)
+          enddo
+       endif
 
        write(stdout,'(/,5x,a,f9.4,a,f9.4,a)')&
             'Energy range: [',dos_min_energy,',',dos_max_energy,'] eV'
@@ -142,13 +153,15 @@ contains
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   smr_adpt_factor=dos_smr_adpt_factor,&
-                  levelspacing_k=levelspacing_k)
+                  levelspacing_k=levelspacing_k,&
+                  UU=UU)
           else
              call fourier_R_to_k(kpt,HH_R,HH,0) 
              call utility_diagonalize(HH,num_wann,eig,UU) 
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
-                  smr_fixed_en_width=dos_smr_fixed_en_width)
+                  smr_fixed_en_width=dos_smr_fixed_en_width,&
+                  UU=UU)
           end if
           dos_all=dos_all+dos_k*weight(loop_kpt)
        end do
@@ -171,13 +184,15 @@ contains
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   smr_adpt_factor=dos_smr_adpt_factor,&
-                  levelspacing_k=levelspacing_k)
+                  levelspacing_k=levelspacing_k,&
+                  UU=UU)
           else
              call fourier_R_to_k(kpt,HH_R,HH,0) 
              call utility_diagonalize(HH,num_wann,eig,UU) 
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
-                  smr_fixed_en_width=dos_smr_fixed_en_width)             
+                  smr_fixed_en_width=dos_smr_fixed_en_width,&
+                  UU=UU)             
           end if
           dos_all=dos_all+dos_k*kweight
        end do
@@ -441,25 +456,28 @@ contains
   !>                    get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
+
   subroutine get_dos_k(kpt,EnergyArray,eig_k,dos_k,smr_index,&
-       smr_fixed_en_width,smr_adpt_factor,levelspacing_k)
+       smr_fixed_en_width,smr_adpt_factor,levelspacing_k,UU)
     use w90_io, only            : io_error
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
-         dos_max_allowed_smearing
+                                  dos_max_allowed_smearing,&
+                                  num_dos_project,dos_project
     use w90_spin, only          : get_spn_nk
 
     ! Arguments
     !
-    real(kind=dp), dimension(3), intent(in)          :: kpt
-    real(kind=dp), dimension(:), intent(in)          :: EnergyArray
-    real(kind=dp), dimension(:), intent(in)          :: eig_k
-    real(kind=dp), dimension(:,:), intent(out)       :: dos_k
-    integer, intent(in)                              :: smr_index
-    real(kind=dp), intent(in),optional               :: smr_fixed_en_width
-    real(kind=dp), intent(in),optional               :: smr_adpt_factor
-    real(kind=dp), dimension(:), intent(in),optional :: levelspacing_k
+    real(kind=dp), dimension(3), intent(in)               :: kpt
+    real(kind=dp), dimension(:), intent(in)               :: EnergyArray
+    real(kind=dp), dimension(:), intent(in)               :: eig_k
+    real(kind=dp), dimension(:,:), intent(out)            :: dos_k
+    integer, intent(in)                                   :: smr_index
+    real(kind=dp), intent(in),optional                    :: smr_fixed_en_width
+    real(kind=dp), intent(in),optional                    :: smr_adpt_factor
+    real(kind=dp), dimension(:), intent(in),optional      :: levelspacing_k
+    complex(kind=dp), dimension(:,:), intent(in),optional :: UU
 
     ! Adaptive smearing
     !
@@ -467,7 +485,7 @@ contains
 
     ! Misc/Dummy
     !
-    integer          :: i,loop_f,min_f,max_f, num_s_steps
+    integer          :: i,j,loop_f,min_f,max_f, num_s_steps
     real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
     real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
@@ -545,17 +563,39 @@ contains
           !
           ! Contribution to total DOS
           !
-          dos_k(loop_f,1)=dos_k(loop_f,1)+rdum * r_num_elec_per_state
-          
-          ! [GP] I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
-          ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
-          if(spn_decomp) then
-             ! Spin-up contribution
-             dos_k(loop_f,2)=dos_k(loop_f,2)+rdum*alpha_sq
-             ! Spin-down contribution
-             dos_k(loop_f,3)=dos_k(loop_f,3)+rdum*beta_sq
-          end if
-       end do
+          if(num_dos_project==num_wann) then 
+             !
+             ! Total DOS (default): do not loop over j, to save time
+             !
+             dos_k(loop_f,1)=dos_k(loop_f,1)+rdum * r_num_elec_per_state
+             ! [GP] I don't put num_elec_per_state here below: if we are 
+             ! calculating the spin decomposition, we should be doing a 
+             ! calcultation with spin-orbit, and thus num_elec_per_state=1!
+             if(spn_decomp) then
+                ! Spin-up contribution
+                dos_k(loop_f,2)=dos_k(loop_f,2)+rdum*alpha_sq
+                ! Spin-down contribution
+                dos_k(loop_f,3)=dos_k(loop_f,3)+rdum*beta_sq
+             end if
+          else ! 0<num_dos_project<num_wann
+             !
+             ! Partial DOS, projected onto the WFs with indices 
+             ! n=dos_project(1:num_dos_project)
+             !
+             do j=1,num_dos_project 
+                dos_k(loop_f,1)=dos_k(loop_f,1)+rdum * r_num_elec_per_state&
+                     *abs(UU(dos_project(j),i))**2
+                if(spn_decomp) then
+                   ! Spin-up contribution
+                   dos_k(loop_f,2)=dos_k(loop_f,2)&
+                        +rdum*alpha_sq*abs(UU(dos_project(j),i))**2
+                   ! Spin-down contribution
+                   dos_k(loop_f,3)=dos_k(loop_f,3)&
+                        +rdum*beta_sq*abs(UU(dos_project(j),i))**2
+                end if
+             enddo
+          endif
+       enddo !loop_f
     end do !loop over bands
 
   end subroutine get_dos_k
