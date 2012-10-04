@@ -1674,17 +1674,16 @@ module w90_berry
   !                                                                           !
   !===========================================================================!
 
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_utility, only       : utility_diagonalize,utility_rotate,w0gauss
-    use w90_parameters, only    : num_wann,berry_min_energy,&
-                                  berry_interp_mesh,alpha,beta,&
-                                 ! adpt_smr_steps,adpt_smr_width,&
-                                  berry_smr_adpt_factor,berry_interp_mesh,&
-                                  spn_decomp,fermi_energy
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
+    use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
+    use w90_parameters, only     : num_wann,berry_min_energy,&
+                                   berry_interp_mesh,alpha,beta,&
+                                   berry_smr_adpt_factor,berry_interp_mesh,&
+                                   spn_decomp,fermi_energy
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
-    use w90_wan_ham, only   : get_D_h_a,get_deleig_a
-    use w90_get_oper, only      : HH_R,AA_R
-    use w90_spin, only          : get_spn_nk
+    use w90_wan_ham, only        : get_D_h_a,get_eig_deleig   !get_deleig_a
+    use w90_get_oper, only       : HH_R,AA_R
+    use w90_spin, only           : get_spn_nk
 
     ! Arguments
     !
@@ -1694,6 +1693,7 @@ module w90_berry
     real(kind=dp), dimension(:,:),   intent(out) :: jdos_k
 
     complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     complex(kind=dp), allocatable :: AA_bar(:,:,:)
     complex(kind=dp), allocatable :: D_h(:,:,:)
@@ -1712,25 +1712,34 @@ module w90_berry
                         freq,A2_ij(3),spn_nk(num_wann) 
 
     allocate(HH(num_wann,num_wann))
+    allocate(delHH(num_wann,num_wann,3))
     allocate(D_h(num_wann,num_wann,2))
     allocate(UU(num_wann,num_wann))
     allocate(AA_bar(num_wann,num_wann,2))
     allocate(mdum(num_wann,num_wann))
 
-    call fourier_R_to_k(kpt,HH_R,HH,0) 
-    call utility_diagonalize(HH,num_wann,eig,UU) 
-    call fourier_R_to_k(kpt,HH_R,mdum,alpha) 
-    call get_D_h_a(mdum,UU,eig,D_h(:,:,1))
-    call fourier_R_to_k(kpt,HH_R,mdum,beta) 
-    call get_D_h_a(mdum,UU,eig,D_h(:,:,2))
+! *****************************OLD*******************************
+!    call fourier_R_to_k(kpt,HH_R,HH,0) 
+!    call utility_diagonalize(HH,num_wann,eig,UU) 
+!    call fourier_R_to_k(kpt,HH_R,mdum,alpha) 
+!    call get_D_h_a(mdum,UU,eig,D_h(:,:,1))
+!    call fourier_R_to_k(kpt,HH_R,mdum,beta) 
+!    call get_D_h_a(mdum,UU,eig,D_h(:,:,2))
 
     ! band gradients
-    call fourier_R_to_k(kpt,HH_R,mdum,1) 
-    call get_deleig_a(del_eig(:,1),eig,mdum,UU)
-    call fourier_R_to_k(kpt,HH_R,mdum,2) 
-    call get_deleig_a(del_eig(:,2),eig,mdum,UU)
-    call fourier_R_to_k(kpt,HH_R,mdum,3) 
-    call get_deleig_a(del_eig(:,3),eig,mdum,UU)
+!    call fourier_R_to_k(kpt,HH_R,mdum,1) 
+!    call get_deleig_a(del_eig(:,1),eig,mdum,UU)
+!    call fourier_R_to_k(kpt,HH_R,mdum,2) 
+!    call get_deleig_a(del_eig(:,2),eig,mdum,UU)
+!    call fourier_R_to_k(kpt,HH_R,mdum,3) 
+!    call get_deleig_a(del_eig(:,3),eig,mdum,UU)
+! *****************************OLD*******************************
+
+! *****************************NEW*******************************
+    call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+    call get_D_h_a(delHH(:,:,alpha),UU,eig,D_h(:,:,1))
+    call get_D_h_a(delHH(:,:,beta),UU,eig,D_h(:,:,2))
+! *****************************NEW*******************************
 
     call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),mdum(:,:),0)
     AA_bar(:,:,1)=utility_rotate(mdum,UU,num_wann)
