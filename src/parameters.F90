@@ -384,7 +384,7 @@ contains
   !                                                                  !
   !===================================================================  
     use w90_constants, only : bohr, eps6
-    use w90_utility,   only : utility_recip_lattice,utility_compute_metric
+    use w90_utility,   only : utility_recip_lattice,utility_metric
     use w90_io,        only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
 
@@ -1433,7 +1433,7 @@ contains
 
     if(.not. library) &
          call utility_recip_lattice(real_lattice,recip_lattice,cell_volume)
-    call utility_compute_metric(real_lattice,recip_lattice,real_metric,recip_metric)
+    call utility_metric(real_lattice,recip_lattice,real_metric,recip_metric)
 
     allocate ( kpt_cart(3,num_kpts) ,stat=ierr)
     if (ierr/=0) call io_error('Error allocating kpt_cart in param_read')

@@ -20,8 +20,8 @@ module w90_utility
 
   public :: utility_inv3
   public :: utility_recip_lattice
+  public :: utility_metric
   public :: utility_compar
-  public :: utility_compute_metric
   public :: utility_cart_to_frac
   public :: utility_frac_to_cart
   public :: utility_string_to_coord
@@ -206,7 +206,7 @@ contains
 
 
   !===================================================================
-  subroutine utility_compute_metric(real_lat,recip_lat, &
+  subroutine utility_metric(real_lat,recip_lat, &
        real_metric,recip_metric)
     !==================================================================!
     !                                                                  !
@@ -237,7 +237,7 @@ contains
        enddo
     enddo
 
-  end subroutine utility_compute_metric
+  end subroutine utility_metric
 
 
 
@@ -269,7 +269,7 @@ contains
   subroutine utility_cart_to_frac(cart,frac,recip_lat)
     !==================================================================!
     !                                                                  !
-    !  Convert from fractional to Cartesian coordinates                !
+    !  Convert from Cartesian to fractional coordinates                !
     !                                                                  !
     !===================================================================  
     use w90_constants, only : twopi
