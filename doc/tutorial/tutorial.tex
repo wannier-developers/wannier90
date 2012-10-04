@@ -632,7 +632,7 @@ end kpoint\_path
 
 \cleardoublepage
 
-\section*{8: Iron \tent{-- Spin-polarized WFs and DOS}}
+\section*{8: Iron \tent{-- Spin-polarized WFs, total and orbital-projected DOS}}
 \begin{itemize}
 \item{Outline: \it{\sout{Obtain MLWF to describe the states around the
         Fermi-level in iron.} \tent{Generate Wannier functions for ferromagnetic
@@ -681,13 +681,15 @@ end kpoint\_path
 {\tt wannier90.x iron\_up}\\
 {\tt wannier90.x iron\_dn}
 
-\item \tent{Compute the DOS. First add the following
+\item \tent{Compute the DOS on a $25\times 25 \times 25$ $k$-point grid. First add the following
 lines to the two {\tt .win} input files,}
 {\tt
 \begin{quote}
-do\_dos = T
+dos = T
 
 dos\_task = dos\_plot
+
+dos\_interp\_mesh = 25
 \end{quote}
 }
 
@@ -707,12 +709,10 @@ gnuplot> plot 'iron\_up\_dos.dat' u (-\$2):(\$1-12.6256) w l,'iron\_dn\_dos.dat'
 }
 
 \tent{We have set the zero of the energy scale at the Fermi level by
-  subtracting %12.6256~eV, 
-the value of the Fermi energy taken from
-  {\tt scf.out}. 
-%Note the exchange splitting between the majority- and
-%  minority-spin DOS.
-}
+  subtracting %12.6256~eV,
+  the value of the Fermi energy taken from {\tt scf.out}.  Check if
+  the DOS is sufficiently well-converged by increasing the parameter
+  {\tt dos\_interp\_mesh}.  }
 
 \end{enumerate}
 
@@ -786,22 +786,32 @@ num\_iter = 50
 
 
 \subsection*{Further ideas}
+
+[In the following it is assumed that {\it non-hybridized} WFs of
+separate $s$, $p$, and $d$ character have been obtained as described
+above.]
+
 \begin{itemize}
 
-\item \tent{Partial DOS {\bf [TO BE DONE!]}}
+\item \tent{In order to obtain the DOS projected onto the $p$-type WFs
+    (in the same spirit as done in Example~4 for the energy bands),
+    add to the {\tt .win} files the lines} {\tt
+\begin{quote}
+dos\_project = 2,3,4
+\end{quote}
+}
 
-\item
-\tent{Repeat step~5 above starting from $s$,
-  $p$, and $d$ trial orbitals, and using}
+and re-run {\tt postw90}. Plot the projected DOS for both up- and
+down-spin bands. Repeat for the $s$ and and $d$ projections.
+
+\item \tent{Add to the {\tt .win} files the instruction}
 {\tt
 \begin{quote}
-num\_iter = 50
-
 write\_hr\_diag = T
 \end{quote}
 }
 
-\tent{The second line instructs {\tt wannier90} to write in the output
+\tent{This tells {\tt wannier90} to write in the output
   file the diagonal (``on-site'') Wannier matrix elements of the
   Hamiltonian. The difference between corresponding values in {\tt
     iron\_up.wout} and in {\tt iron\_dn.wout} gives the the exchange
