@@ -8,7 +8,7 @@ module w90_dos
 
   private
 
-  public :: dos, get_levelspacing, get_dos_k
+  public :: dos_main, get_levelspacing, get_dos_k
 
   integer       :: num_freq
   real(kind=dp) :: d_omega
@@ -19,14 +19,15 @@ contains
   !                   PUBLIC PROCEDURES                     ! 
   !=========================================================!
 
-  subroutine dos
-    !=========================================================!
-    !                                                         !
-    ! Computes the electronic density of states using         !
-    ! adaptive broadening: PRB 75, 195121 (2007) [YWVS07].    !
-    ! Can resolve the DOS into up-spin and down-spin parts    !
-    !                                                         !
-    !=========================================================!
+  subroutine dos_main
+    !=======================================================!
+    !                                                       !
+    ! Computes the electronic density of states using       !
+    ! adaptive broadening: PRB 75, 195121 (2007) [YWVS07].  !
+    ! Can resolve into up-spin and down-spin parts,         !
+    ! and project onto selected Wannier orbitals.           !
+    !                                                       !
+    !=======================================================!
 
     use w90_io, only             : io_error,io_file_unit,io_date,io_stopwatch,&
                                    seedname,stdout
@@ -227,7 +228,7 @@ contains
     if (ierr/=0) call io_error('Error in deallocating UU in calcTDF')
 
 
-  end subroutine dos
+  end subroutine dos_main
 
   ! =========================================================================
 

@@ -300,7 +300,7 @@ module w90_postw90_common
     call comms_bcast(degen_thr,1)
     call comms_bcast(num_elec_cell,1)
     call comms_bcast(found_fermi_energy,1)
-    call comms_bcast(do_dos,1)
+    call comms_bcast(dos,1)
     call comms_bcast(dos_task,len(dos_task)) 
     call comms_bcast(kpath,1) 
     call comms_bcast(kslice,1) 

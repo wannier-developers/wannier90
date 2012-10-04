@@ -108,7 +108,7 @@ module w90_parameters
   real(kind=dp),     public, save :: kslice_b2(3)
   real(kind=dp),     public, save :: kslice_cntr_energy
   logical,                    public, save :: found_kslice_cntr_energy
-  logical,           public, save :: do_dos
+  logical,           public, save :: dos
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical,           public       :: dos_plot
   character(len=20), public, save :: dos_task 
@@ -784,8 +784,8 @@ contains
 
     !IVO
 
-    do_dos                  = .false.
-    call param_get_keyword('do_dos',found,l_value=do_dos)
+    dos                  = .false.
+    call param_get_keyword('dos',found,l_value=dos)
 
     berry                  = .false.
     call param_get_keyword('berry',found,l_value=berry)
@@ -908,7 +908,7 @@ contains
     dos_task =' '
     dos_plot=.false.
     call param_get_keyword('dos_task',found,c_value=dos_task)
-    if(do_dos) then
+    if(dos) then
        if(index(dos_task,'dos_plot')==0 .and.&
           index(dos_task,'find_fermi_energy')==0) call io_error&
             ('Error: value of dos_task not recognised in param_read')
@@ -1509,7 +1509,7 @@ contains
          module_interp_mesh_spacing=spin_interp_mesh_spacing)
 
     call get_module_interp_mesh(moduleprefix='dos', &
-         should_be_defined=do_dos, &
+         should_be_defined=dos, &
          module_interp_mesh=dos_interp_mesh, &
          module_interp_mesh_spacing=dos_interp_mesh_spacing)
 

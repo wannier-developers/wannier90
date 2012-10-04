@@ -11,7 +11,6 @@ mp_grid           = 8 8 8
 
 dis_mix_ratio = 1.0
 
-
 begin atoms_frac
 Fe  0.000  0.000  0.000
 end atoms_frac
@@ -31,7 +30,6 @@ N 0.5 0.0 0.0		 G 0.0 0.0 0.0
 G 0.0 0.0 0.0		 P 0.75 0.25 -0.25	 
 P 0.75 0.25 -0.25	 N 0.5 0.0 0.0            
 end kpoint_path
-
 
 begin unit_cell_cart
 bohr

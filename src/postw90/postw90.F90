@@ -154,10 +154,10 @@ program postw90
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
   !
-  if(do_dos .and. index(dos_task,'dos_plot')>0) call dos
+  if(dos .and. index(dos_task,'dos_plot')>0) call dos_main
 
 ! find_fermi_level commented for the moment in dos.F90
-!  if(do_dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
+!  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
 
   ! --------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
