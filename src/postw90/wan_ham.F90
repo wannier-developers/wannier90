@@ -274,12 +274,12 @@ module w90_wan_ham
     use w90_postw90_common, only : fourier_R_to_k
     use w90_utility, only : utility_diagonalize
 
-    real(kind=dp), dimension(3), intent(in) :: kpt
-    real(kind=dp), intent(out) :: eig(num_wann)
-    real(kind=dp), intent(out) :: del_eig(num_wann,3)
-    complex(kind=dp), dimension(:,:), intent(out) :: HH
+    real(kind=dp), dimension(3), intent(in)         :: kpt
+    real(kind=dp), intent(out)                      :: eig(num_wann)
+    real(kind=dp), intent(out)                      :: del_eig(num_wann,3)
+    complex(kind=dp), dimension(:,:), intent(out)   :: HH
     complex(kind=dp), dimension(:,:,:), intent(out) :: delHH
-    complex(kind=dp), dimension(:,:), intent(out) :: UU
+    complex(kind=dp), dimension(:,:), intent(out)   :: UU
    
     ! I call it to be sure that it has been called already once, 
     ! and that HH_R contains the actual matrix. 
