@@ -34,8 +34,8 @@ P 0.75 0.25 -0.25        N 0.5 0.0 0.0
 end kpoint_path
 
 #kslice = T
-#kslice_task = energy\_isocontours
-#kslice\_isocontour\_energy = 12.6285
+#kslice_task = energy\_cntr
+#kslice\_cntr\_energy = 12.6285
 #kslice_num_points=200
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5
