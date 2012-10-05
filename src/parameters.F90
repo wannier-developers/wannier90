@@ -99,15 +99,17 @@ module w90_parameters
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
   real(kind=dp),     public, save :: fermi_energy
+
   logical,           public, save :: kslice
-  character(len=20), public, save :: kslice_task
-!  character(len=20), public, save :: slice_plot_format
-  integer,           public, save :: kslice_num_points
+  character(len=25), public, save :: kslice_task
+!  character(len=20), public, save :: kslice_plot_format
   real(kind=dp),     public, save :: kslice_corner(3)
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
+  integer,           public, save :: kslice_interp_mesh(2)
   real(kind=dp),     public, save :: kslice_cntr_energy
-  logical,                    public, save :: found_kslice_cntr_energy
+  logical,           public, save :: found_kslice_cntr_energy
+
   logical,           public, save :: dos
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical,           public       :: dos_plot
@@ -748,10 +750,47 @@ contains
     kslice                = .false.
     call param_get_keyword('kslice',found,l_value=kslice)
 
-    kslice_num_points          = 50
-    call param_get_keyword('kslice_num_points',found,i_value=kslice_num_points)
-    if (kslice_num_points<0)&
-         call io_error('Error: kslice_num_points must be positive')       
+    kslice_interp_mesh(1:2) = 50
+    call param_get_vector_length('kslice_interp_mesh',found,length=i)
+    if(found) then
+       if(i==1) then
+          call param_get_keyword_vector('kslice_interp_mesh',found,1,&
+               i_value=kslice_interp_mesh)
+          kslice_interp_mesh(2)=kslice_interp_mesh(1)
+       elseif(i==2) then
+          call param_get_keyword_vector('kslice_interp_mesh',found,2,&
+               i_value=kslice_interp_mesh)
+       else
+          call io_error('Error: kslice_interp_mesh must be provided as either one integer or a vector of two integers')
+       endif
+       if (any(kslice_interp_mesh<=0)) &
+            call io_error('Error: kslice_interp_mesh elements must be greater than zero')
+    endif
+
+    kslice_task='energy_cntr'
+    call param_get_keyword('kslice_task',found,c_value=kslice_task)
+       if(index(kslice_task,'energy_cntr')==0 .and.&
+          index(kslice_task,'curv_heatmap')==0 .and.&
+          index(kslice_task,'morb_heatmap')==0) call io_error&
+            ('Error: value of kslice_task not recognised in param_read')
+
+    kslice_corner=0.0_dp
+    call param_get_keyword_vector('kslice_corner',found,3,r_value=kslice_corner)
+
+    kslice_b1(1)=1.0_dp
+    kslice_b1(2)=0.0_dp
+    kslice_b1(3)=0.0_dp
+    call param_get_keyword_vector('kslice_b1',found,3,r_value=kslice_b1)
+
+    kslice_b2(1)=0.0_dp
+    kslice_b2(2)=1.0_dp
+    kslice_b2(3)=0.0_dp
+    call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
+
+    kslice_cntr_energy=fermi_energy
+    found_kslice_cntr_energy=.false.
+    call param_get_keyword('kslice_cntr_energy',found,r_value=fermi_energy)
+    if(found.or.found_fermi_energy) found_kslice_cntr_energy=.true.
 
 !    slice_plot_format         = 'plotmv'
 !    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
@@ -918,30 +957,6 @@ contains
   ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"') 
     end if
 
-    kslice_task='energy_cntr'
-    call param_get_keyword('kslice_task',found,c_value=kslice_task)
-       if(index(kslice_task,'energy_cntr')==0 .and.&
-          index(kslice_task,'curv_heatmap')==0 .and.&
-          index(kslice_task,'morb_heatmap')==0) call io_error&
-            ('Error: value of kslice_task not recognised in param_read')
-
-    kslice_corner=0.0_dp
-    call param_get_keyword_vector('kslice_corner',found,3,r_value=kslice_corner)
-
-    kslice_b1(1)=1.0_dp
-    kslice_b1(2)=0.0_dp
-    kslice_b1(3)=0.0_dp
-    call param_get_keyword_vector('kslice_b1',found,3,r_value=kslice_b1)
-
-    kslice_b2(1)=0.0_dp
-    kslice_b2(2)=1.0_dp
-    kslice_b2(3)=0.0_dp
-    call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
-
-    kslice_cntr_energy=fermi_energy
-    found_kslice_cntr_energy=.false.
-    call param_get_keyword('kslice_cntr_energy',found,r_value=fermi_energy)
-    if(found.or.found_fermi_energy) found_kslice_cntr_energy=.true.
 
     omega_from_FF=.false.
     call param_get_keyword('omega_from_ff',found,l_value=omega_from_FF)
@@ -1485,7 +1500,7 @@ contains
           global_interp_mesh_set = .true.          
           call param_get_keyword_vector('interp_mesh',found,3,i_value=interp_mesh)
        else
-         call io_error('Error: interp_mesh must be provided as either one integer or a vector of 3 integers')
+         call io_error('Error: interp_mesh must be provided as either one integer or a vector of three integers')
        end if
        if (any(interp_mesh<=0)) &
             call io_error('Error: interp_mesh elements must be greater than zero')

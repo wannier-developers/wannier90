@@ -13,6 +13,7 @@ outfile = 'Fe_curvbands.pdf'
 
 x = np.loadtxt('fe_slice_x.dat')
 dimx=x.size
+
 y = np.loadtxt('fe_slice_y.dat')
 dimy=y.size
 

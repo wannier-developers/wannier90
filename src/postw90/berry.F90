@@ -540,25 +540,13 @@ module w90_berry
 
        do loop_tot=my_node_id,PRODUCT(berry_interp_mesh)-1,num_nodes
           loop_x= loop_tot/(berry_interp_mesh(2)*berry_interp_mesh(3))
-          loop_y=(loop_tot-loop_x*(berry_interp_mesh(2)*berry_interp_mesh(3)))/berry_interp_mesh(3)
-          loop_z= loop_tot-loop_x*(berry_interp_mesh(2)*berry_interp_mesh(3)) -loop_y*berry_interp_mesh(3)
-          kpt(1)=(real(loop_x,dp)/real(berry_interp_mesh(1),dp))
-          kpt(2)=(real(loop_y,dp)/real(berry_interp_mesh(2),dp))
-          kpt(3)=(real(loop_z,dp)/real(berry_interp_mesh(3),dp))
-
-
-
-!       do loop_tot=my_node_id,optics_num_points**3-1,num_nodes
-!          loop_x=loop_tot/optics_num_points**2
-!          loop_y=(loop_tot-loop_x*optics_num_points**2)/optics_num_points
-!          loop_z=loop_tot-loop_x*optics_num_points**2-loop_y*optics_num_points
-!          kpt(1)=real(loop_x,dp)/optics_num_points
-!          kpt(2)=real(loop_y,dp)/optics_num_points
-!          kpt(3)=real(loop_z,dp)/optics_num_points
-
-
-
-
+          loop_y=(loop_tot-loop_x*(berry_interp_mesh(2)&
+               *berry_interp_mesh(3)))/berry_interp_mesh(3)
+          loop_z=loop_tot-loop_x*(berry_interp_mesh(2)*berry_interp_mesh(3))&
+                -loop_y*berry_interp_mesh(3)
+          kpt(1)=real(loop_x,dp)/real(berry_interp_mesh(1),dp)
+          kpt(2)=real(loop_y,dp)/real(berry_interp_mesh(2),dp)
+          kpt(3)=real(loop_z,dp)/real(berry_interp_mesh(3),dp)
           if(eval_ahc) then
              call get_imf_ab_k(kpt,imf_ab_k)
              adpt_trigger=abs(sum(imf_ab_k))

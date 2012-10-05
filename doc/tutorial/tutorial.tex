@@ -1643,7 +1643,7 @@ kslice\_task = energy\_cntr
 
 kslice\_cntr\_energy = 12.6285
 
-kslice\_num\_points=200
+kslice\_interp\_mesh = 200 200
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1664,12 +1664,15 @@ where we chose the Fermi energy 12.6285~eV (taken from {\tt scf.out})
 as the energy level for the isocontours.  The lines of intersection
 between the Fermi surface and the chosen plane (``Fermi-surface
 contours''), can be visualized with the script {\tt
-  Fe\_energy\_cntr.gnu} generated during runtime, {\tt
+  Fe\_energy\_cntr.gnu} generated at runtime, {\tt
 \begin{quote}
 myshell> gnuplot
 
 gnuplot> load `Fe\_energy\_cntr.gnu'
 \end{quote} }
+
+(Do not be concerned by the warning messages, they are caused by the fact that
+not all bands cross the Fermi energy.)
 %{\tt
 %  octave} script {\tt bands.m}, 
 %{\tt
@@ -1812,7 +1815,7 @@ kslice = T
 
 kslice\_task = energy\_cntr+curv\_heatmap
 
-kslice\_num\_points=200
+kslice\_interp\_mesh = 200
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1822,15 +1825,15 @@ kslice\_b2 =     0.5  0.5  0.5
 \end{quote} }
 
 and re-run {\tt postw90}.  For the visualization we use the {\tt
-  python+pylab+numpy} script {\tt curvbands.py}, 
+  python} script {\tt Fe\_curv\_heatmap.py} generated at runtime, 
 {\tt
 \begin{quote}
-myshell> python curvbands.py
+myshell> python Fe\_curv\_heatmap.py
 \end{quote} }
 \smallskip
 
-which generates a heatmap plot of the Berry curvature (compare with
-Fig.~3 in Ref.~\cite{yao-prl04}).
+which produces a heatmap plot of the Berry curvature, similar to
+Fig.~3 in Ref.~\cite{yao-prl04}.
 
 The intrinsic anomalous Hall conductivity (AHC) is proportional to the
 integral of the Berry curvature over the entire Brillouin zone. For

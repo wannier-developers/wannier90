@@ -78,12 +78,20 @@ contains
        plot_morb=.true.
        got_it=.true.
     end if
-    if(.not.got_it) then
-       call io_error(&
-            '(kpath_task must include one or more of the keywords "bands" "curv" and "morb"'&
-            )
-       stop
-    end if
+    if(.not.got_it) call io_error(&
+         '(kpath_task must include one or more of the keywords "bands" "curv" and "morb"')
+
+    ! Set up the needed Wannier matrix elements
+    call get_HH_R
+    if(plot_curv.or.plot_morb) then
+       call get_AA_R
+       if(omega_from_FF) call get_FF_R
+    endif
+    if(plot_morb) then
+       call get_BB_R
+       call get_CC_R
+    endif
+    if(plot_bands .and. kpath_bands_color=='spin') call get_SS_R
 
     if(on_root) then
        write(stdout,'(/,/,1x,a)') '=============================='
@@ -99,7 +107,7 @@ contains
           end select
        end if
        if(plot_curv) then
-          write(stdout,'(/,3x,a)') '* Minus the total Berry curvature in a.u.'
+          write(stdout,'(/,3x,a)') '* Minus the Berry curvature in a.u.'
           if(.not.found_fermi_energy) call io_error&
                (&
         'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv=T'&
@@ -114,18 +122,6 @@ contains
                )
        end if
     endif
-
-    ! Set up the needed Wannier matrix elements
-    call get_HH_R
-    if(plot_curv.or.plot_morb) then
-       call get_AA_R
-       if(omega_from_FF) call get_FF_R
-    endif
-    if(plot_morb) then
-       call get_BB_R
-       call get_CC_R
-    endif
-    if(plot_bands .and. kpath_bands_color=='spin') call get_SS_R
 
     if(on_root) then
 

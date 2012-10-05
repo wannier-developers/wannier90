@@ -34,7 +34,7 @@ end kpoint_path
 
 #kslice = T
 #kslice_task = energy_cntr+curv_heatmap
-#kslice_num_points=200
+#kslice_interp_mesh = 200
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5
 #kslice_b2 =     0.5  0.5  0.5
