@@ -87,32 +87,33 @@ module w90_kslice
        call utility_recip_lattice(bvec,avec,recip_vol)
        a2mod=sqrt(avec(2,1)**2+avec(2,2)**2+avec(2,3)**2)
     endif
+
     got_it=.false.
     plot_curv_heatmap=.false.
-       if(index(kslice_task,'curv_heatmap')>0) then
-          plot_curv_heatmap=.true.
-          got_it=.true.
-       end if
-       plot_morb_heatmap=.false.
-       if(index(kslice_task,'morb_heatmap')>0) then
-          plot_morb_heatmap=.true.
-          got_it=.true.
-       end if
-       plot_energy_cntr=.false.
-       if(index(kslice_task,'energy_cntr')>0) then
-          plot_energy_cntr=.true.
-          got_it=.true.
-       end if
-       if(plot_curv_heatmap .and. plot_morb_heatmap)  then
-          call io_error(&
-  '(kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
-          stop
-       endif
-       if(.not.got_it) then
-          call io_error(&
-  '(kslice_task must include only one of the keywords "curv_heatmap" and "morb_heatmap," and/or "energy_cntr"')
-          stop
-       end if
+    if(index(kslice_task,'curv_heatmap')>0) then
+       plot_curv_heatmap=.true.
+       got_it=.true.
+    end if
+    plot_morb_heatmap=.false.
+    if(index(kslice_task,'morb_heatmap')>0) then
+       plot_morb_heatmap=.true.
+       got_it=.true.
+    end if
+    plot_energy_cntr=.false.
+    if(index(kslice_task,'energy_cntr')>0) then
+       plot_energy_cntr=.true.
+       got_it=.true.
+    end if
+    if(plot_curv_heatmap .and. plot_morb_heatmap)  then
+       call io_error(&
+           '(kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
+       stop
+    endif
+    if(.not.got_it) then
+       call io_error(&
+            '(kslice_task must include only one of the keywords "curv_heatmap" and "morb_heatmap," and/or "energy_cntr"')
+       stop
+    end if
 
     ! Set up the needed Wannier matrix elements
     call get_HH_R
@@ -130,7 +131,7 @@ module w90_kslice
 
        ! ***TO DO*** Write in stdout vectors defining slice, in latt and cart
 
-       ! octave: write the x- and y-axis mesh values
+       ! octave and python+matplotlib: write the x- and y-axis mesh values
        xdataunit=io_file_unit() 
        filename=trim(seedname)//'_slice_x.dat'
        write(stdout,'(/,3x,a)') filename
@@ -141,7 +142,7 @@ module w90_kslice
        open(ydataunit,file=filename,form='formatted')
 
        if(plot_curv_heatmap) then
-          write(stdout,'(/,3x,a)') '* Total Berry curvature in a.u.'
+          write(stdout,'(/,3x,a)') '* Berry curvature in a.u.'
           if(.not.found_fermi_energy) call io_error&
                (&
  'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv_heatmap=T'&
@@ -150,7 +151,6 @@ module w90_kslice
           filename=trim(seedname)//'_slice_curv.dat'
           write(stdout,'(/,3x,a)') filename
           open(zdataunit,file=filename,form='formatted')
-!       end if
        elseif(plot_morb_heatmap) then
           write(stdout,'(/,3x,a)')&
   '* LC_tilde-mu.Omega, IC_tilde-mu.Omega, and their sum (total M_orb) in a.u.'
@@ -188,7 +188,7 @@ module w90_kslice
              write(stdout,'(/,3x,a)') filename
              open(xyzdataunit(n),file=filename,form='formatted')
           enddo
-      endif
+       endif
      
        ! Loop over uniform mesh of k-points on the slice
        !
