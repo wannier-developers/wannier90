@@ -295,7 +295,6 @@ module w90_kslice
        write(gnuunit,'(a)') 'unset surface'
        write(gnuunit,'(a)') 'set contour'
        write(gnuunit,'(a)') 'set view map'
-       ! ***CHANGE TO VALUE OF INPUT VARIABLE***
        write(gnuunit,'(a,f9.5)') 'set cntrparam levels discrete ',&
             kslice_cntr_energy
        write(gnuunit,'(a)') 'set cntrparam bspline'
@@ -309,12 +308,15 @@ module w90_kslice
                //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat"'
           write(gnuunit,'(a)') 'unset table'
        enddo
-       write(gnuunit,'(a)') 'set term post eps enh'
-       write(gnuunit,'(a)') 'set output "'//trim(seedname)//'_econtour.eps"'
+       write(gnuunit,'(a)') '#Uncomment next two lines to create postscript'
+       write(gnuunit,'(a)') '#set term post eps enh'
+       write(gnuunit,'(a)') '#set output "'//trim(seedname)//'_econtour.eps"'
        write(gnuunit,'(a)') 'set size ratio -1'
        write(gnuunit,'(a)') 'unset tics'
        write(gnuunit,'(a)') 'set nokey'
-       write(gnuunit,'(a)') 'set style line 1 lt 1 lw 2'
+       write(gnuunit,'(a)')&
+            '#For postscript try changing lw 1 --> lw 2 in the next line'
+       write(gnuunit,'(a)') 'set style line 1 lt 1 lw 1'
        if(num_wann==1) then
           write(gnuunit,'(a)') 'plot "xyz_001.dat" using 1:2 w lines ls 1'
        else
