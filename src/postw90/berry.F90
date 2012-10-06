@@ -1393,7 +1393,7 @@ module w90_berry
     ! Physics
     !
     complex(kind=dp), allocatable :: HH(:,:)
-    complex(kind=dp), allocatable :: delHH(:,:,:)
+!    complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     complex(kind=dp), allocatable :: f(:,:)
     complex(kind=dp), allocatable :: g(:,:)
@@ -1407,7 +1407,7 @@ module w90_berry
 
 
     allocate(HH(num_wann,num_wann))
-    allocate(delHH(num_wann,num_wann,2))
+!    allocate(delHH(num_wann,num_wann,2))
     allocate(UU(num_wann,num_wann))
     allocate(f(num_wann,num_wann))
     allocate(g(num_wann,num_wann))
