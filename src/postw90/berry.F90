@@ -4,10 +4,13 @@
 !
 ! CHANGE INPUT VARIABLES AS FOLLOWS
 !
-! berry_task = ahc, morb, spectrum
+! berry_task = ahc, morb, optics
 ! spectrum_type = sigma_ab, sigma_abc 
+! (optics_type?)
 !                         (currently mcd, ord, ahe, orb, gyro, noa, mespn)
-! time_parity = even, odd
+! optics_time_parity = even, odd
+! tensor_components = 1   (gives yz if time-odd)
+!                   = 2 3 (gives yz)
 ! sigma_abc_onlyorb = F,T (default F)
 !
 ! =================================
