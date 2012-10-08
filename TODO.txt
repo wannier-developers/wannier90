@@ -1,13 +1,17 @@
-
+Upcoming release:
 + Duplication of "Fermi energy" variable (AAM)
-+ chk2chk utility (GP) [it's just to move it in the utility directory]
 + Minimum k-spacing (debug only) (JRY)
 + Projection-only WFs (document, improve output) (JRY)
 + AHE/Orb-Mag - keywords, documentation, examples (IS)
-+ Merge dos_kpt, spin_decomp (GP)
 + Update documentation: input variables, FAQ, credits, version number, 
                         CHANGE.LOG, installation instructions (ALL)
-+ Update checks on parameters (ALL)
+  * I have a parser that lists all variables in the code (GP)
++ Update checks on parameters (ALL)  
+  * update param_write with new params
+  * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning)
++ pw2wannier90 (JRY, IS)
+
+
 
 And to postpone to 2.1: 
 + Testsuite (AAM) 
@@ -18,18 +22,16 @@ And to postpone to 2.1:
 + Jmol interface (JRY) 
 + Parallel timing routines (ALL) [maybe for 2.0 we should just check that 
   the current parallel timing provides results that make sense]
++ improvement: supercell for real-space wannier function plot with different size on different axes (see David Strubbe's mail/patches) (GP)
++ Improve adaptive smearing (GP) (see if the adaptive k-mesh implemented in BoltzWann works correctly)
 
-While for the following I do not know, either because I do not
-remember exactly what they were, or because I am not sure if we need
-to do them now; see comments below:
 
+
+
+To discuss:
 + Parity issue in pw2wan90 in spin-polarized, Gamma-only branch (AAM) 
   [if it is a bug fix probably it should be done for 2.0]
 + Update ballistic transport (AAM) [if it is just moving the code to 
   postw90.x, it should be done for 2.0]
-+ Improve adaptive smearing (GP) [I have to read again my previous mails
-  with the results of my tests; probably, there is something that can be 
-  done for 2.0, and possibly further improvements can be done in 2.1]
-+ PDOS (JRY) [I don't know/remember if/how much this is urgent] ***DONE***
-+ Spinor projections (JRY) [I don't know/remember if/how much this is urgent]
++ Spinor projections (JRY) [I don't know/remember if/how much this is urgent]
 + Scissors operator: input variables, call from Boltzwann
