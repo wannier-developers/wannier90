@@ -1,3 +1,7 @@
+Deadlines:
+* Oct. 25th: main modifications + documentation
+* Nov. 11th: get feedback and prepare pre-release
+
 Upcoming release:
 + Add own changes on the CHANGE.log (ALL)
 + Duplication of "Fermi energy" variable (AAM)
@@ -8,8 +12,8 @@ Upcoming release:
                         CHANGE.LOG, installation instructions (ALL)
   * I have a parser that lists all variables in the code (GP)
 + Update checks on parameters (ALL)  
-  * update param_write with new params
-  * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning)
+  * update param_write with new params (ALL)
+  * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning) (ALL)
 + pw2wannier90 (JRY, IS)
 + POVRay plotting (AAM)
 + Parity issue in pw2wan90 in spin-polarized, Gamma-only branch (AAM) 
@@ -29,8 +33,5 @@ And to postpone to 2.1:
   the current parallel timing provides results that make sense]
 + Improve adaptive smearing (GP) (see if the adaptive k-mesh implemented in BoltzWann works correctly)
 + BoltzWann: use scissor operator of Ivo
-
-Deadlines:
-* Oct. 25th: main modifications + documentation
-* Nov. 11th: get feedback and prepare pre-release
++ Fermi_energy finding routine (IS)
 
