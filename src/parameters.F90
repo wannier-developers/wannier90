@@ -80,7 +80,7 @@ module w90_parameters
   integer,           public, save :: conv_window
   logical,           public, save :: wannier_plot
   integer, allocatable, public,save :: wannier_plot_list(:)
-  integer,           public, save :: wannier_plot_supercell
+  integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
   logical,           public, save :: bands_plot
@@ -639,7 +639,23 @@ contains
     call param_get_keyword('wannier_plot',found,l_value=wannier_plot)
 
     wannier_plot_supercell    = 2
-    call param_get_keyword('wannier_plot_supercell',found,i_value=wannier_plot_supercell)
+
+    call param_get_vector_length('wannier_plot_supercell',found,length=i)
+    if (found) then
+       if (i.eq.1) then
+          call param_get_keyword_vector('wannier_plot_supercell',found,1, &
+               i_value=wannier_plot_supercell)
+          wannier_plot_supercell(2) = wannier_plot_supercell(1)
+          wannier_plot_supercell(3) = wannier_plot_supercell(1)
+       elseif (i.eq.3) then
+          call param_get_keyword_vector('wannier_plot_supercell',found,3, &
+               i_value=wannier_plot_supercell)
+       else
+         call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers')
+       end if
+       if (any(wannier_plot_supercell<=0)) &
+            call io_error('Error: wannier_plot_supercell elements must be greater than zero')
+    end if
 
     wannier_plot_format       = 'xcrysden'
     call param_get_keyword('wannier_plot_format',found,c_value=wannier_plot_format)
@@ -675,7 +691,6 @@ contains
        if ( (index(wannier_plot_mode,'crys').eq.0) .and. (index(wannier_plot_mode,'mol').eq.0) ) &
             call io_error('Error: wannier_plot_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
-       if ( wannier_plot_supercell < 0 ) call io_error('Error: wannier_plot_supercell must be positive')       
     endif
 
     bands_plot                = .false.
@@ -2026,7 +2041,10 @@ contains
        !
        if (wannier_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :',wannier_plot,'|'
-          write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Size of supercell for plotting           :',wannier_plot_supercell,'|'
+          write(stdout,'(1x,a46,10x,I6,a1,I6,a1,I6,a1)') &
+               '|   Size of supercell for plotting           :', &
+               wannier_plot_supercell(1),'x',wannier_plot_supercell(2),'x', &
+               wannier_plot_supercell(3),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
