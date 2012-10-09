@@ -21,7 +21,6 @@ Upcoming release:
 + Command-line option to check input file and
   stop with result after reading parameters and finding b-vectors (eg,
   -validate) (GP) 
-+ improvement: supercell for real-space wannier function plot with different size on different axes (see David Strubbe's mail/patches) (GP)
 + Scissors operator: input variables (IS)
 
 And to postpone to 2.1: 
