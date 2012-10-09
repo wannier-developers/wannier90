@@ -922,8 +922,8 @@ Th default value is \verb#false#.
 \subsection[wannier\_plot]{\tt logical :: wannier\_plot}
 
 If $\verb#wannier_plot#=\verb#TRUE#$, then the code will write out the
-wannier functions in a super-cell \verb#wannier_plot_supercell# times
-the original unit cell in a format specified by
+Wannier functions in a super-cell whose size is defined by the
+variable \verb#wannier_plot_supercell#, and in a format specified by
 \verb#wannier_plot_format#
 
 The default value of this parameter is \verb#FALSE#.
@@ -933,9 +933,14 @@ The default value of this parameter is \verb#FALSE#.
 Dimension of the `super-unit-cell' in which the WF are
 plotted. The super-unit-cell is \verb#wannier_plot_supercell# times
 the unit cell along all three linear dimensions (the `home' unit cell
-is kept approximately in the middle).
+is kept approximately in the middle) if \verb#wannier_plot_supercell#
+is provided as a single integer.
 
-The default value is 2.
+Otherwise, if three integers are
+provided, the super-unit-cell is \verb#wannier_plot_supercell(i)#
+times the unit cell along the $i-$th linear dimension.
+
+The default value is 2$\times$2$\times$2.
 
 \subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
 
