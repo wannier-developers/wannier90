@@ -2041,7 +2041,7 @@ contains
        !
        if (wannier_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :',wannier_plot,'|'
-          write(stdout,'(1x,a46,10x,I6,a1,I6,a1,I6,a1)') &
+          write(stdout,'(1x,a46,1x,I5,a1,I5,a1,I5,13x,a1)') &
                '|   Size of supercell for plotting           :', &
                wannier_plot_supercell(1),'x',wannier_plot_supercell(2),'x', &
                wannier_plot_supercell(3),'|'
