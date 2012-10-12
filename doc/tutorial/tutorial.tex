@@ -5,6 +5,7 @@
 \usepackage{amsbsy}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
+\usepackage{bm}% bold math
 %\setlength{\parindent}{0in}
 %\setlength{\parskip}{0.05in}
 \setlength{\parskip}{0.1in}
@@ -1527,6 +1528,18 @@ doing this Example.
 \end{itemize}
 \end{itemize}
 
+Note that {\tt num\_wann =18} in {\tt Fe.win}, but only nine trial
+orbitals are provided. The line
+  {\tt
+\begin{quote}
+spinors = T
+\end{quote}
+}tells {\tt wannier90} to use in step~3 below the specified trial
+orbitals on both the up- and down-spin channels, effectively doubling
+their number.
+
+\tent{\bf [Jonathan, is the above explanation accurate?]}
+
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ferromagnetic ground state of
   iron\footnote{Please note the following counterintiutive feature in
@@ -1540,13 +1553,13 @@ doing this Example.
 {\tt pw.x < Fe.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
-  into the {\tt Fe.nnkp} file).\\
+  into the {\tt Fe.nnkp} file)\\
 {\tt wannier90.x -pp Fe}
 
 \item Run {\tt pw2wannier90} to compute:
   \begin{itemize}
   \item{The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
-          b}}\rangle$ between Bloch states (written in the {\tt
+          b}}\rangle$ between {\it spinor} Bloch states (written in the {\tt
         Fe.mmn} file)}
     \item{The projections for the starting guess (written in the {\tt  Fe.amn} file)}
     \item{The spin matrix elements $\langle \psi_{n{\bf k}}\vert
@@ -1629,7 +1642,7 @@ higher), issue
 \begin{quote}
 myshell> gnuplot
 
-gnuplot> load `Fe\_band.gnu'
+gnuplot> load `Fe-band.gnu'
 \end{quote} }
 
 We can also inspect the constant-energy surfaces across an entire
@@ -1664,11 +1677,11 @@ where we chose the Fermi energy 12.6285~eV (taken from {\tt scf.out})
 as the energy level for the isocontours.  The lines of intersection
 between the Fermi surface and the chosen plane (``Fermi-surface
 contours''), can be visualized with the script {\tt
-  Fe\_energy\_cntr.gnu} generated at runtime, {\tt
+  Fe-energy\_cntr.gnu} generated at runtime, {\tt
 \begin{quote}
 myshell> gnuplot
 
-gnuplot> load `Fe\_energy\_cntr.gnu'
+gnuplot> load `Fe-energy\_cntr.gnu'
 \end{quote} }
 
 (Do not be concerned by the warning messages, they are caused by the fact that
@@ -1694,11 +1707,11 @@ not all bands cross the Fermi energy.)
 
 \begin{itemize}
 
-\item Plot the energy bands over a single line segment in $k$-space,
-  e.g., $\Gamma$--H, to see in detail a spin-orbit-induced avoided
-  crossing between majority and minority bands. [Hint: When using {\tt
-    gnuplot} you can zoom in by right-clicking to select a region of
-  the plot.]
+%\item Plot the energy bands over a single line segment in $k$-space,
+%  e.g., $\Gamma$--H, to see in detail a spin-orbit-induced avoided
+%  crossing between majority and minority bands. [Hint: When using {\tt
+%    gnuplot} you can zoom in by right-clicking to select a region of
+%  the plot.]
 
 \item Generate the Fermi-surface contours on the (001) plane
 perpendicular to the magnetization. Note the higher symmetry compared
@@ -1706,9 +1719,8 @@ to Fig.~\ref{fig:fe-fermicontours}.
 
 \item Redraw the Fermi-surface contours on the (010) plane starting
   from an {\it ab initio} calculation without spin-orbit coupling (as
-  in Example~8). Compare with Fig.~\ref{fig:fe-fermicontours} to see
-  how the spin-orbit interaction changes the connectivity of the Fermi
-  surface.
+  in Example~8). Note how the connectivity of the Fermi contours
+  changes.
 
 \end{itemize}
 
@@ -1763,23 +1775,20 @@ input file {\tt Fe.win}.
 
 \end{enumerate}
 
-The  Berry curvature along $z$ of a Bloch state $\psi_{n{\bf k}}=e^{i{\bf k}\cdot {\bf r}}u_{n{\bf k}}$ is defined as
+The  Berry curvature of a Bloch state $\psi_{n{\bf k}}=e^{i{\bf k}\cdot {\bf r}}u_{n{\bf k}}$ is a vector property defined as
 $$
-\Omega_n^z({\bf k})=-2{\rm Im}
-\langle \nabla_{k_x} u_{n{\bf k}}\vert \nabla_{k_y} u_{n{\bf k}}\rangle.
-$$
-%
-We are interested in the Berry curvature summed over the occupied
-states,
-$$
-\Omega^z({\bf k})=\sum_n^{\rm occ}\,\Omega_n^z({\bf k}).
+\bm{\Omega}_n({\bf k})=-{\rm Im}
+\langle \bm{\nabla}_{\bf k} u_{n{\bf k}}\vert \times
+\vert\bm{\nabla}_{\bf k} u_{n{\bf k}}\rangle.
 $$
 %
-The following instructions in {\tt Fe.win} are used to
-calculate $-\Omega^z({\bf k})$ along high symmetry lines 
-in
-$k$-space, 
-{\tt
+We are interested in the sum over occupied states,
+$$
+\bm{\Omega}({\bf k})=\sum_n^{\rm occ}\,\bm{\Omega}_n({\bf k}).
+$$
+%
+The following instructions in {\tt Fe.win} are used to calculate
+$-\bm{\Omega}({\bf k})$ along lines in $k$-space, {\tt
 \begin{quote}
 fermi\_energy = 12.6285
 
@@ -1794,22 +1803,23 @@ The path specification in {\tt Fe.win} is the same as in Example~17,
 and the value of the Fermi energy, 12.6285~eV, was taken from {\tt
   scf.out}. 
 
-Carry out the calculation by executing {\tt postw90} (step 6 above),
-plot the Berry curvature using the {\tt gnuplot} script {\tt
-  Fe\_curv.gnu} that is generated at runtime,
+Carry out the calculation by executing {\tt postw90} (step 6
+above). To plot the $z$ component $-\Omega^z({\bf k})$, use the {\tt
+  gnuplot} script {\tt Fe-curv\_z.gnu} generated at runtime, 
 {\tt
 \begin{quote}
 myshell> gnuplot
 
-gnuplot> load `Fe\_curv.gnu'
+gnuplot> load `Fe-curv\_z.gnu'
 \end{quote} }
 
-and compare with the lower panel in Fig.~2 of Ref.~\cite{yao-prl04}.
+(compare with Fig.~2 of Ref.~\cite{yao-prl04}).  You can similarly
+plot the $x$ and $y$ components.
 
-In Fig.~\ref{fig:fe-fermicontours} of Example~17 we plotted the
-Fermi-surface contours on the (010) plane in $k$-space.  To visualize
-$-\Omega^z({\bf k})$ across the plane, uncomment the following
-instructions in {\tt Fe.win}, \smallskip {\tt
+In Example~17 we plotted the Fermi-surface contours on the (010) plane
+in $k$-space.  To visualize both the Fermi contours and
+$-\bm{\Omega}({\bf k})$, uncomment the following instructions in {\tt
+  Fe.win}, \smallskip {\tt
 \begin{quote}
 kslice = T
 
@@ -1824,40 +1834,40 @@ kslice\_b1 =     0.5 -0.5 -0.5
 kslice\_b2 =     0.5  0.5  0.5
 \end{quote} }
 
-and re-run {\tt postw90}.  For the visualization we use the {\tt
-  python} script {\tt Fe\_curv\_heatmap.py} generated at runtime, 
+and re-run {\tt postw90}.  For the visualization we use the three {\tt
+  python} scripts generated at runtime. To plot the $z$ component,
+for example, issue 
 {\tt
 \begin{quote}
-myshell> python Fe\_curv\_heatmap.py
+myshell> python Fe-curv\_z-heatmap.py
 \end{quote} }
 \smallskip
 
-which produces a heatmap plot of the Berry curvature, similar to
+which produces a heatmap plot of $-\Omega^z({\bf k})$, similar to
 Fig.~3 in Ref.~\cite{yao-prl04}.
 
-The intrinsic anomalous Hall conductivity (AHC) is proportional to the
-integral of the Berry curvature over the entire Brillouin zone. For
-bcc Fe with the magnetization along [001], the only nonzero components
-of the AHC tensor $\sigma_{\alpha\beta}$ are
-$\sigma_{xy}=-\sigma_{yx}$.  To evaluate $\sigma_{xy}$ by
-integrating $-\Omega^z({\bf k})$ over a $25\times 25\times 25$
-$k$-point mesh, uncomment the following lines in {\tt Fe.win},
+The intrinsic anomalous Hall conductivity (AHC) $\sigma^{\rm
+  AH}_{\alpha\beta}=-\sigma^{\rm AH}_{\beta\alpha}$ is proportional to
+the integral of the Berry curvature over the entire Brillouin zone.
+To evaluate the AHC using a $25\times 25\times 25$ $k$-point mesh,
+uncomment the following lines in {\tt Fe.win}, 
 {\tt
 \begin{quote}
 berry = T
 
 berry\_task = ahc                
 
-alpha = 1                       
-
-beta = 2
-
 berry\_interp\_mesh = 25 25 25
 
 \end{quote} } 
-
-and re-run {\tt postw90}.  The AHC is given in the output file {\tt Fe.wpout} in
-units of S/cm .
+(the last line can be simplified to {\tt berry\_interp\_mesh = 25}) 
+and re-run {\tt postw90}.  The AHC in S/cm is written in the output
+file {\tt Fe.wpout} in (pseudo)vector form. The $x$, $y$, and $z$
+components correspond to $\sigma^{\rm AH}_{yz}$, $\sigma^{\rm
+  AH}_{zx}$, and $\sigma^{\rm AH}_{xy}$ respectively. For bcc Fe with
+the magnetization along [001] the only nonzero component is
+$\sigma_{xy}$. 
+%(the tiny values of the other two components are numerical noise).
 
 \begin{figure}[h]
 \begin{center}
@@ -1878,14 +1888,13 @@ units of S/cm .
 
   \begin{itemize}
 
-  \item Progressively increase the value of the
-    parameter {\tt berry\_interp\_mesh}.
+  \item Increase the mesh density uniformly by
+    changing {\tt berry\_interp\_mesh}.
 
-  \item In addition to increasing the mesh density uniformly across
-    the BZ, it helps to adaptively refine it in regions where the
-    Berry curvature is large and rapidly varying (such regions can be
-    seen in Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt Fe.win} the
-    lines \smallskip {\tt
+  \item In addition, it helps to adaptively refine the mesh in regions
+    where the Berry curvature is large and rapidly varying (such
+    regions can be seen in Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt
+      Fe.win} the lines \smallskip {\tt
       \begin{quote}
         berry\_adaptive\_mesh = 5  
         
@@ -1897,28 +1906,48 @@ units of S/cm .
     27.98~\AA$^2\simeq 100$~bohr$^2$. The percentage of mesh points
     triggering adaptive refinement is given in {\tt Fe.wpout}.
 
-  \item Compare the converged value for the AHC of bcc Fe with the
-    values reported in Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
+  \item Compare the converged AHC value with those reported in
+    Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
 
   \end{itemize}
+
+\item The Berry curvature in bcc Fe results from the magnetic order
+  which, together with spin-orbit, breaks time-reversal in the orbital
+  wavefunctions. Another way of inducing a Berry curvature is to break
+  spatial inversion (no spin-orbit needed).
+
+  Plot the Berry curvature of the valence bands of GaAs over selected
+  planes in the BZ. Note that while locally nonzero, its BZ integral
+  vanishes because $\bm{\Omega}(-{\bf k})=-\bm{\Omega}({\bf k})$.
   
-\item {\bf [\underline{POSSIBLE ADDITION:}]} Plot the MCD spectrum,
-  check numerically the Kramers-Kronig relation between MCD and AHC.
-Refer to Ref.~\cite{WanInt}
+\tent{{\bf [Need to provide input files for GaAs?]}}
+
+%\item {\bf [\underline{POSSIBLE ADDITION:}]} Plot the MCD spectrum,
+%  check numerically the Kramers-Kronig relation between MCD and AHC.
+%Refer to Ref.~\cite{WanInt}
 
 
-\item {\bf [\underline{POSSIBLE ADDITION:}]} Explain how to modify the
-  input files in this example to calculate the orbital magnetization
-  instead of the AHC as a BZ integral, and to visualize the integrand
-  along lines and planes in $k$-space. Basically, need to add {\tt
-    write\_uHu = .true.} to {\tt Fe.pw2wan} in order to evaluate the
-  matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert H_{\bf k}\vert
-  u_{m{\bf k}+{\bf b}_2}\rangle$, and re-run step~4. Then replace {\tt
-    curv/curv\_heatmap/ahc} with {\tt morb} everywhere in the {\tt
-    kpath}, {\tt kslice}, and {\tt berry} input variables, and re-run
-  step~6.
+%\item {\bf [\underline{POSSIBLE ADDITION:}]} Explain how to modify the
+%  input files in this example to calculate the orbital magnetization
+%  instead of the AHC as a BZ integral, and to visualize the integrand
+%  along lines and planes in $k$-space. Basically, need to add {\tt
+%    write\_uHu = .true.} to {\tt Fe.pw2wan} in order to evaluate the
+%  matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert H_{\bf k}\vert
+%  u_{m{\bf k}+{\bf b}_2}\rangle$, and re-run step~4. Then replace {\tt
+%    curv/curv\_heatmap/ahc} with {\tt morb} everywhere in the {\tt
+%    kpath}, {\tt kslice}, and {\tt berry} input variables, and re-run
+%  step~6.
 
 \end{itemize}
+
+
+\cleardoublepage
+
+\section*{19: Iron -- Orbital magnetization}
+
+\cleardoublepage
+
+\section*{20: Iron -- Optical conductivity and joint density-of-states}
 
 \cleardoublepage
 

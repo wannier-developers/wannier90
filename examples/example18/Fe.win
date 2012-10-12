@@ -41,11 +41,7 @@ end kpoint_path
 
 #berry = T
 #berry_task = ahc                
-#alpha = 1                       
-#beta = 2
 #berry_interp_mesh = 25 25 25
-#berry_adaptive_mesh = 5  
-#berry_adaptive_thresh = 27.98
 
 begin unit_cell_cart
 bohr
