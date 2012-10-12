@@ -1817,7 +1817,7 @@ gnuplot> load `Fe-curv\_z.gnu'
 plot the $x$ and $y$ components.
 
 In Example~17 we plotted the Fermi-surface contours on the (010) plane
-in $k$-space.  To visualize both the Fermi contours and
+in $k$-space.  To add on top a heatmap plot of
 $-\bm{\Omega}({\bf k})$, uncomment the following instructions in {\tt
   Fe.win}, \smallskip {\tt
 \begin{quote}
@@ -1835,16 +1835,14 @@ kslice\_b2 =     0.5  0.5  0.5
 \end{quote} }
 
 and re-run {\tt postw90}.  For the visualization we use the three {\tt
-  python} scripts generated at runtime. To plot the $z$ component,
-for example, issue 
+  python} scripts generated at runtime. To plot the $z$ component $-\Omega^z({\bf k})$, issue 
 {\tt
 \begin{quote}
 myshell> python Fe-curv\_z-heatmap.py
 \end{quote} }
 \smallskip
 
-which produces a heatmap plot of $-\Omega^z({\bf k})$, similar to
-Fig.~3 in Ref.~\cite{yao-prl04}.
+Compare the plot with Fig.~3 in Ref.~\cite{yao-prl04}.
 
 The intrinsic anomalous Hall conductivity (AHC) $\sigma^{\rm
   AH}_{\alpha\beta}=-\sigma^{\rm AH}_{\beta\alpha}$ is proportional to
@@ -1859,14 +1857,13 @@ berry\_task = ahc
 
 berry\_interp\_mesh = 25 25 25
 
-\end{quote} } 
-(the last line can be simplified to {\tt berry\_interp\_mesh = 25}) 
-and re-run {\tt postw90}.  The AHC in S/cm is written in the output
-file {\tt Fe.wpout} in (pseudo)vector form. The $x$, $y$, and $z$
-components correspond to $\sigma^{\rm AH}_{yz}$, $\sigma^{\rm
-  AH}_{zx}$, and $\sigma^{\rm AH}_{xy}$ respectively. For bcc Fe with
-the magnetization along [001] the only nonzero component is
-$\sigma_{xy}$. 
+\end{quote} } (the last instruction can be simplified to {\tt
+berry\_interp\_mesh = 25}) and re-run {\tt postw90}.  The AHC in S/cm
+is written in the output file {\tt Fe.wpout} in (pseudo)vector
+form. The $x$, $y$, and $z$ components correspond to $\sigma^{\rm
+  AH}_{yz}$, $\sigma^{\rm AH}_{zx}$, and $\sigma^{\rm AH}_{xy}$
+respectively. For bcc Fe with the magnetization along [001], only the
+last component is nonzero.
 %(the tiny values of the other two components are numerical noise).
 
 \begin{figure}[h]
@@ -1917,8 +1914,9 @@ $\sigma_{xy}$.
   spatial inversion (no spin-orbit needed).
 
   Plot the Berry curvature of the valence bands of GaAs over selected
-  planes in the BZ. Note that while locally nonzero, its BZ integral
-  vanishes because $\bm{\Omega}(-{\bf k})=-\bm{\Omega}({\bf k})$.
+  planes in the BZ. Note that while locally nonzero, the BZ integral
+  of the Berry curvature vanishes because $\bm{\Omega}(-{\bf
+    k})=-\bm{\Omega}({\bf k})$.
   
 \tent{{\bf [Need to provide input files for GaAs?]}}
 
