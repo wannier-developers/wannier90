@@ -36,23 +36,15 @@ module w90_parameters
   real(kind=dp)                   :: smr_adpt_factor
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
-    real(kind=dp),              public, save :: degen_skip_thr
-  integer,                    public, save :: alpha
-  integer,                    public, save :: beta
-  integer,                    public, save :: gamma
   logical,                    public, save :: evaluate_spin_moment
   real(kind=dp),              public, save :: spin_axis_polar_angle
   real(kind=dp),              public, save :: spin_axis_azimuthal_angle
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spn_decomp
-  logical,                    public, save :: kpath
-  character(len=20),          public, save :: kpath_task
-  integer,                    public, save :: kpath_num_points
-  character(len=4),           public, save :: kpath_bands_color
   real(kind=dp),              public, save :: num_elec_cell
   logical,                    public, save :: found_fermi_energy
-  logical,                    public, save :: omega_from_ff
+  real(kind=dp),              public, save :: scissors_shift
   !IVO_END
   ! [gp-begin, Apr 20, 2012] Smearing type
   ! The prefactor is given with the above parameters smr_...
@@ -80,7 +72,7 @@ module w90_parameters
   integer,           public, save :: conv_window
   logical,           public, save :: wannier_plot
   integer, allocatable, public,save :: wannier_plot_list(:)
-  integer,           public, save :: wannier_plot_supercell(3)
+  integer,           public, save :: wannier_plot_supercell
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
   logical,           public, save :: bands_plot
@@ -100,9 +92,16 @@ module w90_parameters
   character(len=20), public, save :: fermi_surface_plot_format
   real(kind=dp),     public, save :: fermi_energy
 
+  ! module  k p a t h
+  logical,                    public, save :: kpath
+  character(len=20),          public, save :: kpath_task
+  integer,                    public, save :: kpath_num_points
+  character(len=4),           public, save :: kpath_bands_color
+
+  ! module  k s l i c e
   logical,           public, save :: kslice
   character(len=25), public, save :: kslice_task
-!  character(len=20), public, save :: kslice_plot_format
+!  character(len=20), public, save :: kslice_plot_format ! use in the future
   real(kind=dp),     public, save :: kslice_corner(3)
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
@@ -110,51 +109,53 @@ module w90_parameters
   real(kind=dp),     public, save :: kslice_cntr_energy
   logical,           public, save :: found_kslice_cntr_energy
 
-  logical,           public, save :: dos
+  ! module  d o s
+  logical,           public, save    :: dos
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
-  logical,           public       :: dos_plot
-  character(len=20), public, save :: dos_task 
-  integer,           public, save :: dos_num_points
-  real(kind=dp),     public, save :: dos_energy_step
-  logical,           public, save :: dos_smr_adpt
-  integer,           public, save :: dos_smr_index
-  real(kind=dp),     public, save :: dos_smr_fixed_en_width
-  real(kind=dp),     public, save :: dos_smr_adpt_factor
-  real(kind=dp),     public, save :: dos_max_allowed_smearing
-  real(kind=dp),     public, save :: dos_max_energy
-  real(kind=dp),     public, save :: dos_min_energy
-  integer,           public, save :: num_dos_project
+  logical,           public          :: dos_plot
+  character(len=20), public, save    :: dos_task 
+  integer,           public, save    :: dos_num_points
+  real(kind=dp),     public, save    :: dos_energy_step
+  logical,           public, save    :: dos_smr_adpt
+  integer,           public, save    :: dos_smr_index
+  real(kind=dp),     public, save    :: dos_smr_fixed_en_width
+  real(kind=dp),     public, save    :: dos_smr_adpt_factor
+  real(kind=dp),     public, save    :: dos_max_allowed_smearing
+  real(kind=dp),     public, save    :: dos_max_energy
+  real(kind=dp),     public, save    :: dos_min_energy
+  integer,           public, save    :: num_dos_project
   integer, allocatable, public, save :: dos_project(:)
-
+  character(len=20), public, save    :: dos_plot_format
+  real(kind=dp),     public, save    :: dos_interp_mesh_spacing
+  integer,           public, save    :: dos_interp_mesh(3)
 !  real(kind=dp),     public, save :: dos_gaussian_width
-  character(len=20), public, save :: dos_plot_format
 
-! Variables for module 'berry'
+! Module  b e r r y
   logical,           public, save :: berry
   character(len=20), public, save :: berry_task
   real(kind=dp),     public, save :: berry_interp_mesh_spacing
   integer,           public, save :: berry_interp_mesh(3)
+  ! --------------remove eventually----------------
+  integer,           public, save :: alpha
+  integer,           public, save :: beta
+  integer,           public, save :: gamma
+  ! --------------remove eventually----------------
   integer,           public, save :: berry_adaptive_mesh
   real(kind=dp),     public, save :: berry_adaptive_thresh
   logical,           public, save :: berry_smr_adpt
   real(kind=dp),     public, save :: berry_smr_adpt_factor
   real(kind=dp),     public, save :: berry_smr_fixed_en_width
-  real(kind=dp),     public, save :: berry_energy_step
-  real(kind=dp),     public, save :: berry_min_energy
-  real(kind=dp),     public, save :: berry_max_energy
+  character(len=20), public, save :: optics_time_parity
+  real(kind=dp),     public, save :: optics_energy_step
+  real(kind=dp),     public, save :: optics_min_energy
+  real(kind=dp),     public, save :: optics_max_energy
   logical,           public, save :: wanint_kpoint_file
   logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
 
-
-! Variables for module 'spin'
+! Module  s p i n
   real(kind=dp),     public, save :: spin_interp_mesh_spacing
   integer,           public, save :: spin_interp_mesh(3)
-
-! Interpolation mesh for DOS
-  real(kind=dp),     public, save :: dos_interp_mesh_spacing
-  integer,           public, save :: dos_interp_mesh(3)
-
 
   ! [gp-begin, Apr 13, 2012]
   !! Global interpolation k mesh variables
@@ -639,23 +640,7 @@ contains
     call param_get_keyword('wannier_plot',found,l_value=wannier_plot)
 
     wannier_plot_supercell    = 2
-
-    call param_get_vector_length('wannier_plot_supercell',found,length=i)
-    if (found) then
-       if (i.eq.1) then
-          call param_get_keyword_vector('wannier_plot_supercell',found,1, &
-               i_value=wannier_plot_supercell)
-          wannier_plot_supercell(2) = wannier_plot_supercell(1)
-          wannier_plot_supercell(3) = wannier_plot_supercell(1)
-       elseif (i.eq.3) then
-          call param_get_keyword_vector('wannier_plot_supercell',found,3, &
-               i_value=wannier_plot_supercell)
-       else
-         call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers')
-       end if
-       if (any(wannier_plot_supercell<=0)) &
-            call io_error('Error: wannier_plot_supercell elements must be greater than zero')
-    end if
+    call param_get_keyword('wannier_plot_supercell',found,i_value=wannier_plot_supercell)
 
     wannier_plot_format       = 'xcrysden'
     call param_get_keyword('wannier_plot_format',found,c_value=wannier_plot_format)
@@ -691,6 +676,7 @@ contains
        if ( (index(wannier_plot_mode,'crys').eq.0) .and. (index(wannier_plot_mode,'mol').eq.0) ) &
             call io_error('Error: wannier_plot_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
+       if ( wannier_plot_supercell < 0 ) call io_error('Error: wannier_plot_supercell must be positive')       
     endif
 
     bands_plot                = .false.
@@ -784,10 +770,13 @@ contains
 
     kslice_task='energy_cntr'
     call param_get_keyword('kslice_task',found,c_value=kslice_task)
-       if(index(kslice_task,'energy_cntr')==0 .and.&
+       if(kslice .and. index(kslice_task,'energy_cntr')==0 .and.&
           index(kslice_task,'curv_heatmap')==0 .and.&
           index(kslice_task,'morb_heatmap')==0) call io_error&
             ('Error: value of kslice_task not recognised in param_read')
+       if(kslice .and. index(kslice_task,'curv_heatmap')>0 .and.&
+            index(kslice_task,'morb_heatmap')>0) call io_error&
+          ('Error: kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
 
     kslice_corner=0.0_dp
     call param_get_keyword_vector('kslice_corner',found,3,r_value=kslice_corner)
@@ -847,47 +836,37 @@ contains
     transl_inv                  = .false.
     call param_get_keyword('transl_inv',found,l_value=transl_inv)
 
-!    optics_num_points            = 50
-!    call param_get_keyword('optics_num_points',found,i_value=optics_num_points)
-!    if (optics_num_points<0) call io_error('Error: optics_num_points must be positive')       
-
-    berry_adaptive_mesh           = 3
-    call param_get_keyword('berry_adaptive_mesh',found,i_value=berry_adaptive_mesh)
-    if (berry_adaptive_mesh<0) call io_error('Error:  berry_adaptive_mesh must be positive')       
-
-    berry_energy_step           = 0.01_dp
-    call param_get_keyword('berry_energy_step',found,r_value=berry_energy_step)
-
-    berry_adaptive_thresh           = 100.0_dp
-    call param_get_keyword('berry_adaptive_thresh',found,r_value=berry_adaptive_thresh)
-
-    wanint_kpoint_file = .false.
-    call param_get_keyword('wanint_kpoint_file',found,l_value=wanint_kpoint_file)
-
     berry_task =' '
     call param_get_keyword('berry_task',found,c_value=berry_task)
-    if(berry.and..not.found) call io_error &
-         ('Error: berry_task=T and berry is not set')
-    if(berry) then
-       if(index(berry_task,'mcd')==0 .and. index(berry_task,'ord')==0&
-            .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-            .and. index(berry_task,'gyro')==0&
-            .and. index(berry_task,'noa')==0&
-            .and. index(berry_task,'mespn')==0)&
-            call io_error&
-            ('Error: value of berry_task not recognised in param_read')
-    end if
+    if(berry .and. .not.found) call io_error &
+         ('Error: berry=T and berry_task is not set')
+!    if(berry) then
+!       if(index(berry_task,'mcd')==0 .and. index(berry_task,'ord')==0&
+!            .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
+!            .and. index(berry_task,'gyro')==0&
+!            .and. index(berry_task,'noa')==0&
+!            .and. index(berry_task,'mespn')==0)&
+!            call io_error&
+!            ('Error: value of berry_task not recognised in param_read')
+!    end if
+    if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
+         .and. index(berry_task,'optics')==0) call io_error&
+         ('Error: value of berry_task not recognised in param_read')
 
+    optics_time_parity =' '
+    call param_get_keyword('optics_time_parity',found,c_value=optics_time_parity)
+    if(berry .and. index(berry_task,'optics')>0) then
+       if(.not.found) then
+          call io_error &
+               ('Error: berry=T and berry_task=optics and optics_time_parity is not set')
+       elseif(index(optics_time_parity,'even')==0 .and.&
+            index(optics_time_parity,'odd')==0) then
+          call io_error&
+               ('Error: value of optics_time_parity not recognised in param_read')
+       endif
+    endif
 
-    degen_skip_thr      =   -1.0_dp                 
-    call param_get_keyword('degen_skip_thr',found,r_value=degen_skip_thr)
-
-!    smear_temp = -1.0_dp
-!    call param_get_keyword('smear_temp',found,r_value=smear_temp)
-
-!    eps_occ = -1.0_dp
-!    call param_get_keyword('eps_occ',found,r_value=eps_occ)
-
+!-------------------------------------------------------
     alpha=0
     call param_get_keyword('alpha',found,i_value=alpha)
 
@@ -896,6 +875,28 @@ contains
 
     gamma=0
     call param_get_keyword('gamma',found,i_value=gamma)
+!-------------------------------------------------------
+
+    berry_adaptive_mesh           = 1
+    call param_get_keyword('berry_adaptive_mesh',found,&
+         i_value=berry_adaptive_mesh)
+    if (berry_adaptive_mesh<0)&
+         call io_error('Error:  berry_adaptive_mesh must be positive')       
+
+    optics_energy_step           = 0.01_dp
+    call param_get_keyword('optics_energy_step',found,&
+         r_value=optics_energy_step)
+
+    berry_adaptive_thresh           = 100.0_dp
+    call param_get_keyword('berry_adaptive_thresh',found,&
+         r_value=berry_adaptive_thresh)
+
+    wanint_kpoint_file = .false.
+    call param_get_keyword('wanint_kpoint_file',found,&
+         l_value=wanint_kpoint_file)
+
+!    smear_temp = -1.0_dp
+!    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
     berry_smr_adpt = smr_adpt
     call param_get_keyword('berry_smr_adpt',found,l_value=berry_smr_adpt)
@@ -909,6 +910,10 @@ contains
     call param_get_keyword('berry_smr_fixed_en_width',found,r_value=berry_smr_fixed_en_width)
     if (found .and. (berry_smr_fixed_en_width < 0._dp)) &
          call io_error('Error: berry_smr_fixed_en_width must be greater than or equal to zero')    
+
+    scissors_shift=0.0_dp
+    call param_get_keyword('scissors_shift',found,&
+         r_value=scissors_shift)   
 
     evaluate_spin_moment = .false.
     call param_get_keyword('evaluate_spin_moment',found,&
@@ -939,9 +944,12 @@ contains
     kpath = .false.
     call param_get_keyword('kpath',found,l_value=kpath)   
 
-    ! 'bands', 'curv', 'morb', 'bands+curv' etc
     kpath_task='bands'                 
     call param_get_keyword('kpath_task',found,c_value=kpath_task)
+    if(kpath .and. index(kpath_task,'bands')==0 .and.&
+         index(kpath_task,'curv')==0 .and.&
+         index(kpath_task,'morb')==0) call io_error&
+         ('Error: value of kpath_task not recognised in param_read')
 
     kpath_num_points=100
     call param_get_keyword('kpath_num_points',found,&
@@ -949,9 +957,11 @@ contains
     if (kpath_num_points<0)&
          call io_error('Error: kpath_num_points must be positive')       
 
-    ! 'spin' or 'none' (default)
-    kpath_bands_color      =   'none'                 
+    kpath_bands_color='none'                 
     call param_get_keyword('kpath_bands_color',found,c_value=kpath_bands_color)
+    if(kpath .and. index(kpath_bands_color,'none')==0 .and.&
+         index(kpath_bands_color,'spin')==0) call io_error&
+         ('Error: value of kpath_bands_color not recognised in param_read')
 
     ! set to a negative default value
     num_elec_cell=-99
@@ -971,10 +981,6 @@ contains
             call io_error&
   ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"') 
     end if
-
-
-    omega_from_FF=.false.
-    call param_get_keyword('omega_from_ff',found,l_value=omega_from_FF)
 
     sigma_abc_onlyorb=.false.
     call param_get_keyword('sigma_abc_onlyorb',found,l_value=sigma_abc_onlyorb)
@@ -1013,14 +1019,21 @@ contains
     num_dos_project=num_wann
     call param_get_range_vector('dos_project',found,num_dos_project,&
          lcount=.true.)
-    allocate(dos_project(num_dos_project),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating dos_project in param_read')
     if(found) then
+       if(num_dos_project<1) call io_error('Error: problem reading dps_project')
+       allocate(dos_project(num_dos_project),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating dos_project in param_read')
        call param_get_range_vector('dos_project',found,num_dos_project,&
             .false.,dos_project)
-       if (any(dos_project<1) .or. any(dos_project>num_wann) ) call io_error&
-    ('Error: dos_project asks for a non-valid wannier function to be projected')
-    endif 
+       if (any(dos_project<1) .or. any(dos_project>num_wann)) call io_error&
+            ('Error: dos_project asks for out-of-range Wannier functions')
+    else
+       allocate(dos_project(num_dos_project),stat=ierr) 
+       if (ierr/=0) call io_error('Error allocating dos_project in param_read')
+       do i=1,num_dos_project
+          dos_project(i)=i
+       end do
+    endif
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
@@ -1401,16 +1414,16 @@ contains
 
 
     if(frozen_states) then
-       berry_max_energy        = dis_froz_max-fermi_energy+0.6667_dp
+       optics_max_energy        = dis_froz_max-fermi_energy+0.6667_dp
     elseif(allocated(eigval)) then
-       berry_max_energy        = maxval(eigval)-minval(eigval)+0.6667_dp
+       optics_max_energy        = maxval(eigval)-minval(eigval)+0.6667_dp
     else
-       berry_max_energy        = 0.0_dp
+       optics_max_energy        = 0.0_dp
     end if
-    call param_get_keyword('berry_max_energy',found,r_value=berry_max_energy)
+    call param_get_keyword('optics_max_energy',found,r_value=optics_max_energy)
 
-    berry_min_energy        = 0.0_dp
-    call param_get_keyword('berry_min_energy',found,r_value=berry_min_energy)
+    optics_min_energy        = 0.0_dp
+    call param_get_keyword('optics_min_energy',found,r_value=optics_min_energy)
 
 
     automatic_translation=.true.
@@ -2041,10 +2054,7 @@ contains
        !
        if (wannier_plot .or. iprint>2) then
           write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :',wannier_plot,'|'
-          write(stdout,'(1x,a46,1x,I5,a1,I5,a1,I5,13x,a1)') &
-               '|   Size of supercell for plotting           :', &
-               wannier_plot_supercell(1),'x',wannier_plot_supercell(2),'x', &
-               wannier_plot_supercell(3),'|'
+          write(stdout,'(1x,a46,10x,I8,13x,a1)') '|   Size of supercell for plotting           :',wannier_plot_supercell,'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
