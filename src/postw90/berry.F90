@@ -1,19 +1,26 @@
 !-*- mode: F90; mode: font-lock -*-!
 
-! =================================
+! ---------------------------------------------------------------
+! REFERENCES
 !
-! CHANGE INPUT VARIABLES AS FOLLOWS
+!   WYSV06 = PRB 74, 195118 (2006)  (Anomalous Hall conductivity)
+!   YWVS07 = PRB 75, 195121 (2007)  (Optical absorption)
+!   LVTS12 = PRB 85, 014435 (2012)  (Orbital magnetization)
+!   CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
 !
-! berry_task = ahc, morb, optics
-! spectrum_type = sigma_ab, sigma_abc 
-! (optics_type?)
-!                         (currently mcd, ord, ahe, orb, gyro, noa, mespn)
-! optics_time_parity = even, odd
-! tensor_components = 1   (gives yz if time-odd)
-!                   = 2 3 (gives yz)
-! sigma_abc_onlyorb = F,T (default F)
+!   Note: AHC is now coded using the trace formulation of LVTS12
+!         instead of the original formulation of WYSV06
+! ---------------------------------------------------------------
 !
-! =================================
+! * Implementation in progress (undocumented, largely untested):
+!
+!   MV10   = PRB 82, 245118 (2010)  (Spatial dispersion)
+!     -- Add logical input keyword 'optics_spatial_dispersion' (default F)
+!        If 'T', calculate sig_abc, and the conversion into
+!        optical rotatory power (if time-even), or into
+!        magnetoelectric + electric-quadrupole tensors (if time-odd)
+!
+! * Also undocumented (needs re-testing): reading k-points and weights from file
 
 module w90_berry
 
@@ -23,8 +30,29 @@ module w90_berry
 
   private
 
-  public :: berry_main,get_imf_ab_k,get_img_ab_k,get_imh_ab_k
+  public :: berry_main,get_imf_k,get_img_k,get_imh_k
   real(kind=dp), parameter :: eps=1.0e-7
+  !
+  ! Pseudovector <--> antisymmetric tensor
+  !
+  ! x <--> (y,z)
+  ! y <--> (z,x)
+  ! z <--> (x,y)
+  !
+  integer, dimension(3), parameter :: alp=(/ 2,3,1 /)
+  integer, dimension(3), parameter :: bet=(/ 3,1,2 /)
+
+  ! Independent components of a symmetric tensor
+  !
+  ! 1 <--> xx
+  ! 2 <--> yy
+  ! 3 <--> zz
+  ! 4 <--> xy
+  ! 5 <--> xz
+  ! 6 <--> yz
+  !
+  integer, dimension(6), parameter :: alps=(/ 1,2,3,1,1,2 /)
+  integer, dimension(6), parameter :: bets=(/ 1,2,3,2,3,3 /)
 
   integer       :: nfreq,nfreq_cut,aa(10),bb(10),cc(10)
   real(kind=dp) :: d_freq,d_freq_cut
@@ -42,12 +70,13 @@ module w90_berry
   ! Computes the following quantities:                          !
   !                                                             !
   !   (i) Intrinsic anomalous Hall conductivity                 ! 
-  !  (ii) Interband optical conductivity in the electric-dipole ! 
-  !       approximation (order q^0)                             !
+  !  (ii) Interband optical conductivity in the long-wavelength ! 
+  !       limit (order q^0)                                     !
   ! (iii) Joint density of states                               !
-  ! (iii) Orbital magnetization                                 !
-  !  (iv) Interband optical conductivity in the magnetic-dipole !
-  !       electric-quadrupole approximation (order q^1)         !
+  !  (iv) Orbital magnetization                                 !
+  !                                                             !
+  !   -------------- WORK IN PROGRESS ---------------           !
+  !   (v) Interband optical conductivity at order q^1           !
   !                                                             !
   !=============================================================!
 
@@ -59,49 +88,41 @@ module w90_berry
                                   io_stopwatch
     use w90_postw90_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
                                   adkpt,weight,rpt_origin
-    use w90_parameters, only    : timing_level,alpha,beta,gamma,num_wann,&
-                                  berry_interp_mesh,&
+    use w90_parameters, only    : timing_level,num_wann,berry_interp_mesh,&
+                                  !---------remove eventually---------
+                                  alpha,beta,gamma,sigma_abc_onlyorb,&
+                                  !-----------------------------------
                                   berry_adaptive_mesh,berry_adaptive_thresh,&
                                   wanint_kpoint_file,cell_volume,transl_inv,&
-                                  berry_task,berry_min_energy,&
-                                  berry_max_energy,berry_energy_step,&
-                                  berry_smr_adpt_factor,&
-                                  spn_decomp,found_fermi_energy,fermi_energy,&
-                                  omega_from_FF,sigma_abc_onlyorb
-    use w90_get_oper, only      : get_HH_R,get_AA_R,get_BB_R,get_CC_R,get_FF_R,&
-                                  get_SS_R
+                                  berry_task,optics_time_parity,&
+                                  optics_min_energy,optics_max_energy,&
+                                  optics_energy_step,berry_smr_adpt_factor,&
+                                  spn_decomp,found_fermi_energy,fermi_energy
+    use w90_get_oper, only      : get_HH_R,get_AA_R,get_BB_R,get_CC_R,&
+                                  get_FF_R,get_SS_R
 
-
-    real(kind=dp) :: imf_ab_k(3),imf_ab(3)
-    real(kind=dp) :: img_ab_k(3),img_ab(3)
-    real(kind=dp) :: imh_ab_k(3),imh_ab(3)
-    real(kind=dp) :: ahc(3),LCtil(3),ICtil(3)
+    ! AHC and orbital magnetization
+    !
+    ! Second index is the Cartesian component, first labels J0,J1,J2 terms
+    ! (in the notation of LVTS12)
+    !
+    real(kind=dp) :: imf_k(3,3),imf(3,3)
+    real(kind=dp) :: img_k(3,3),img(3,3)
+    real(kind=dp) :: imh_k(3,3),imh(3,3)
+    real(kind=dp) :: ahc(3,3)
+    real(kind=dp) :: LCtil(3,3),ICtil(3,3),Morb(3,3) 
 
     ! Joint density of states
     !
     real(kind=dp), allocatable :: jdos_k(:,:)
     real(kind=dp), allocatable :: jdos(:,:)
     
-    ! Optical conductivity and sum rules
+    ! Optical conductivity
     !
-    ! 'sig_ab_k' is the contrib to the optical conductivity from one k-point,
-    ! 'ahc_kk' is the cumulative Kramers-Kronig transform of the MCD spectrum
-    ! 'morb_sr' is the cumulative dichroic f-sum rule
-    !
-    !   sig_ab_(1,:,:,:) is the 'DD' term in the notation of YWSV07 
-    !   sig_ab_(2,:,:,:) is the 'DA' term
-    !   sig_ab_(3,:,:,:) is the 'AA' term
-
-    real(kind=dp), allocatable :: sig_ab_k(:,:,:)
-    real(kind=dp), allocatable :: sig_ab(:,:,:)
+    integer                    :: ncomp ! number of components (3 or 6)
+    real(kind=dp), allocatable :: sig_k(:,:,:,:)
+    real(kind=dp), allocatable :: sig(:,:,:,:)
     real(kind=dp), allocatable :: ahc_kk(:,:)
-    real(kind=dp)              :: morb_sr(3)
-
-    ! Optical conductivity divided by the frequency
-    ! (used to compute the anomalous Hall conductivity via Kramers-Kronig)
-    !
-    real(kind=dp), allocatable :: sig_ab_over_freq_k(:,:,:)
-    real(kind=dp), allocatable :: sig_ab_over_freq(:,:,:)
 
     ! Spatially-dispersive optical conductivity
     ! sig_abc_(:,1) is the "matrix element term" part of the orbital contrib
@@ -112,7 +133,7 @@ module w90_berry
     real(kind=dp), allocatable :: sig_abc(:,:)
 
     ! Same as above, but contrib to the static value from optical transitions 
-    ! below a given frequency, scanned between zero and berry_max_energy
+    ! below a given frequency, scanned between zero and optics_max_energy
     !
     real(kind=dp), allocatable :: sig_abc_cut_k(:,:)
     real(kind=dp), allocatable :: sig_abc_cut(:,:)
@@ -127,7 +148,7 @@ module w90_berry
     
     ! Static spin-electronic magnetoelectric tensor alphaspn_ij, and 
     ! contribution from optical transitions below a given frequency, scanned
-    ! between zero and berry_max_energy
+    ! between zero and optics_max_energy
     !
     real(kind=dp) :: alphaspn_k(3,3)
     real(kind=dp) :: alphaspn(3,3)
@@ -135,18 +156,14 @@ module w90_berry
     real(kind=dp), allocatable :: alphaspn_cut_k(:,:,:)
     real(kind=dp), allocatable :: alphaspn_cut(:,:,:)
 
-    real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),freq,adpt_trigger
+    real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),freq,&
+                         adpt_trigger,fac,vdum(3)
     integer           :: i,j,p,loop_x,loop_y,loop_z,loop_tot,loop_adpt,&
-                         ifreq,adpt_counter,ndim,&
-                         jdos_unit,AA_unit,DA_unit,DD_unit,&
+                         ifreq,adpt_counter,ndim,jdos_unit,file_unit,&
                          tot_unit,alpha_unit(3,3),gamma_unit(10)
     character(len=20) :: file_name
-    logical           :: eval_ahc,eval_orb,eval_sig_ab,eval_sig_abc,&
+    logical           :: eval_ahc,eval_morb,eval_sig_ab,eval_sig_abc,&
                          eval_ME_EQ,eval_MEspn
-
-    ! Units conversion factors (TODO: use a single variable for all?)
-    !
-    real(kind=dp) :: ahc_conv,orb_conv,sig_ab_conv,Morb_conv,fac
 
     if(.not.found_fermi_energy) call io_error&
          (&
@@ -156,16 +173,16 @@ module w90_berry
     if (timing_level>1.and.on_root)&
          call io_stopwatch('berry: prelims',1)
 
-    nfreq=max(nint((berry_max_energy-berry_min_energy)/berry_energy_step),2)
-    d_freq=(berry_max_energy-berry_min_energy)/(nfreq-1)
+    nfreq=max(nint((optics_max_energy-optics_min_energy)/optics_energy_step),2)
+    d_freq=(optics_max_energy-optics_min_energy)/(nfreq-1)
 
-    nfreq_cut=max(nint(berry_max_energy/berry_energy_step),2)
-    d_freq_cut=berry_max_energy/(nfreq_cut-1)
+    nfreq_cut=max(nint(optics_max_energy/optics_energy_step),2)
+    d_freq_cut=optics_max_energy/(nfreq_cut-1)
     
     ! Must initialize to .false. all eval_ flags
     !
     eval_ahc=.false.
-    eval_orb=.false.
+    eval_morb=.false.
     eval_sig_ab=.false.
     eval_sig_abc=.false.
     eval_ME_EQ=.false.
@@ -174,14 +191,11 @@ module w90_berry
     if(index(berry_task,'ahc')>0) then
        eval_ahc=.true.
     elseif(index(berry_task,'morb')>0) then
-       eval_orb=.true.
+       eval_morb=.true.
     end if
-    if(index(berry_task,'mcd')>0) then
-       T_odd=.true.
+    if(index(berry_task,'optics')>0) then
        eval_sig_ab=.true.
-    elseif(index(berry_task,'ord')>0) then
-       T_odd=.false.
-       eval_sig_ab=.true.
+       if(index(optics_time_parity,'odd')>0) T_odd=.true.
     elseif(index(berry_task,'gyro')>0) then
        T_odd=.true.
        eval_sig_abc=.true.
@@ -193,111 +207,12 @@ module w90_berry
     if(index(berry_task,'mespn')>0) eval_MEspn=.true.
 
     ! NOTE: This may change, if eval_ME_EQ is done separately from eval_sig_abc
-    if(alpha==0.or.beta==0) call io_error&
-     ('Must specify cartesian directions alpha and beta for optical properties')
+!--------------------------------------------
+!    if(alpha==0.or.beta==0) call io_error&
+!('Must specify cartesian directions alpha and beta for optical properties')
+!--------------------------------------------
     if(gamma==0.and.eval_sig_abc) call io_error&
          ('Must specify cartesian direction gamma for berry_task=gyro,noa')
-
-    if(on_root) then
-
-       write(stdout,'(/,/,1x,a)') '============================='
-       write(stdout,'(1x,a)')     'Optical/transport properties:'
-       write(stdout,'(1x,a)')     '============================='
-
-       if(eval_ahc) write(stdout,'(/,3x,a)') '* Re[sigma_{A,'//&
-            achar(119+alpha)//achar(119+beta)//&
-      '}(0)]: dc anomalous Hall (antisymm) conductivity'
-
-       if(eval_orb) write(stdout,'(/,3x,a)') '* M^orb_{'//&
-            achar(119+alpha)//achar(119+beta)//&
-      '}: Orbital magnetization'
-
-       if(eval_sig_ab) then
-          write(stdout,'(/,3x,a)') '* Joint density of states '//&
-             '(file '//trim(trim(seedname))//'-jdos.dat)'
-          if(T_odd) then
-             write(stdout,'(/,3x,a)') '* Im[sigma_{A,'//&
-                  achar(119+alpha)//achar(119+beta)//&
-                  '}(omega)]: Dichroic (antisymm) interband'
-             write(stdout,'(5x,a)')&
-                  'absorptive conductivity in units of S/cm '//&
-              '(file '//trim(seedname)//'-sigA_'//&
-             achar(119+alpha)//achar(119+beta)//'.dat)'
-             write(stdout,'(/,3x,a)')&
-                  '* Cumulative anomalous Hall conductivity from Kramers-Kronig'
-             write(stdout,'(5x,a)') 'in units of S/cm '//&
-             '(file '//trim(trim(seedname))//'-ahc_kk.dat)'
-             write(stdout,'(/,3x,a)') '* Dichroic f-sum rule'
-             write(stdout,'(5x,a)') 'in units of (Bohr magn)/cell'//&
-             '(file '//trim(trim(seedname))//'-morb_sr.dat)' 
-          else
-             write(stdout,'(/,3x,a)') '* Re[sigma_{S,'//&
-                  achar(119+alpha)//achar(119+beta)//&
-                  '}(omega)]: Ordinary (symm) interband' 
-             write(stdout,'(5x,a)')&
-                  'absorptive conductivity in units of S/cm '//&
-              '(file '//trim(seedname)//'-sigS_'//&
-             achar(119+alpha)//achar(119+beta)//'.dat)'
-          end if
-!          write(stdout,'(/,1x,a,6(f6.3,1x))')&
-!            'Adaptive smearing width prefactors for optical properties: ',&
-!            (adpt_smr_width(i),i=1,adpt_smr_steps)
-          write(stdout,'(/,1x,a,f6.3)')&
-            'Adaptive smearing width prefactor for optical properties: ',&
-            berry_smr_adpt_factor
-      
-          write(stdout,'(/,1x,a,f8.4)')&
-               'Frequency step for optical properties (eV): ',d_freq
-       end if
-
-       if(eval_sig_abc) then
-          if(T_odd) then
-             write(stdout,'(/,3x,a)')&
-                  '* Interband spatially dispersive conductance Im[sigma_{S,'//&
-                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//&
-                  '}(omega)]'
-             write(stdout,'(5x,a)')
-             write(stdout,'(5x,a)')&
-                  'Time-odd (symm) reactive part in e^2/h units '
-              write(stdout,'(5x,a)') 'File: '//&
-                   trim(trim(seedname))//'-sigS_'//&
-             achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
-          else
-             write(stdout,'(/,3x,a)')&
-                  '* Optical rotatory power rho divided by (hbar.omega)^2'
-             write(stdout,'(5x,a)') 'Units: deg/[mm.(eV)^2]'
-             write(stdout,'(5x,a)') 'File: '//trim(trim(seedname))//&
-                  '-rhobw2_'//&
-             achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
-             write(stdout,'(/,5x,a)') 'rho/(hbar omega)^2=Re[sigma_{A,'//&
-                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//&
-                  '}(omega)]/(hbar omega)/(2.hbar.c^2.eps_0)'
-          endif
-       endif
-
-       if(eval_ME_EQ) write(stdout,'(/,3x,a)')&
-            '* Optical magnetoelectric and electric-quadrupole responses'
-
-       if(eval_MEspn) write(stdout,'(/,3x,a)')&
-            '* Static spin-electronic magnetoelectric tensor'
-
-       write(stdout,'(/,1x,a,f10.6,1x,a)') 'Fermi level: ',&
-            fermi_energy,'eV'
-       if(transl_inv) then
-          if(eval_orb.or.eval_sig_abc.or.eval_ME_EQ)&
-            call io_error('transl_inv=T disabled for orb, sig_abc, eval_ME_EQ')
-          write(stdout,'(/,1x,a)')&
-               'Using a translationally-invariant discretization for the'
-          write(stdout,'(1x,a)')&
-               'band-diagonal Wannier matrix elements of r, etc.'
-!       else
-!          write(stdout,'(/,1x,a)')&
-!               'Using the discretization in Appendix B of MV97 for the'
-!          write(stdout,'(1x,a)')&
-!               'Wannier matrix elements containing the position operator'
-       endif
-
-    end if !on_root
 
     ! ---------------------------------------
     ! TO DO: Calculate here the adaptive grid (?)
@@ -309,42 +224,42 @@ module w90_berry
     if(eval_ahc) then
        call get_HH_R 
        call get_AA_R
-       if(omega_from_FF) call get_FF_R
-       imf_ab=0.0_dp
+       imf=0.0_dp
     endif
-    if(eval_orb) then
+    if(eval_morb) then
        call get_HH_R 
        call get_AA_R
        call get_BB_R
        call get_CC_R
-       if(omega_from_FF) call get_FF_R
-       imf_ab=0.0_dp
-       img_ab=0.0_dp
-       imh_ab=0.0_dp
+       imf=0.0_dp
+       img=0.0_dp
+       imh=0.0_dp
     endif
     if(eval_sig_ab) then
        call get_HH_R 
        call get_AA_R
+       if(T_odd) then
+          ncomp=3 ! antisymmetric conductivity, 3 indep. components
+       else
+          ncomp=6 ! symmetric conductivity, 6 indep. components
+       endif
        if(spn_decomp) then
           call get_SS_R
           !
-          ! The extra three entries contain the decomposition
-          ! into up-->up, down-->down, and spin-flip transitions
+          ! Extra entries contain the decomposition into 
+          ! up-->up, down-->down, and spin-flip transitions
           !
           ndim=4
        else
           ndim=1
        end if
-       allocate(sig_ab_k(3,nfreq,ndim))
-       allocate(sig_ab(3,nfreq,ndim))
-       sig_ab=0.0_dp
-       allocate(sig_ab_over_freq_k(3,nfreq,ndim))
-       allocate(sig_ab_over_freq(3,nfreq,ndim))
-       sig_ab_over_freq=0.0_dp
+       allocate(sig_k(3,ncomp,nfreq,ndim))
+       allocate(sig(3,ncomp,nfreq,ndim)) 
+       if(T_odd) allocate(ahc_kk(3,ndim))
        allocate(jdos_k(nfreq,ndim))
        allocate(jdos(nfreq,ndim))
+       sig=0.0_dp
        jdos=0.0_dp
-       allocate(ahc_kk(3,ndim))
     elseif(eval_sig_abc) then
        call get_HH_R 
        call get_AA_R
@@ -354,9 +269,9 @@ module w90_berry
        if(.not.sigma_abc_onlyorb) call get_SS_R
        allocate(sig_abc_k(nfreq,3))
        allocate(sig_abc(nfreq,3))
-       sig_abc=0.0_dp
        allocate(sig_abc_cut_k(nfreq_cut,3))
        allocate(sig_abc_cut(nfreq_cut,3))
+       sig_abc=0.0_dp
        sig_abc_cut=0.0_dp
     endif
     if(eval_ME_EQ) then
@@ -368,7 +283,6 @@ module w90_berry
        call get_SS_R
        allocate(alphaME_k(3,nfreq,3,3))
        allocate(alphaME(3,nfreq,3,3))
-       alphaME=0.0_dp
        !
        ! N.B.: There should be no spin contribution to gamma, so ultimately want
        !       to use the dimensions (2,nfreq,10). For the moment include spin
@@ -376,6 +290,7 @@ module w90_berry
        !
        allocate(imgamma_k(3,nfreq,10))
        allocate(imgamma(3,nfreq,10))
+       alphaME=0.0_dp
        imgamma=0.0_dp
        !
        ! Convention for totally symmetric gamma_abc --> gamma_p
@@ -408,11 +323,107 @@ module w90_berry
        call get_HH_R 
        call get_AA_R
        call get_SS_R
-       alphaspn=0.0_dp
        allocate(alphaspn_cut_k(nfreq_cut,3,3))
        allocate(alphaspn_cut(nfreq_cut,3,3))
+       alphaspn=0.0_dp
        alphaspn_cut=0.0_dp
     endif
+
+    if(on_root) then
+
+       write(stdout,'(/,/,1x,a)')&
+            'Properties calculated in module  b e r r y'
+       write(stdout,'(1x,a)')&
+            '------------------------------------------'
+
+       if(eval_ahc) write(stdout,'(/,3x,a)')&
+            '* Anomalous Hall conductivity (AHC)'
+
+       if(eval_morb) write(stdout,'(/,3x,a)')&
+            '* Orbital magnetization'
+
+       if(eval_sig_ab) then
+          write(stdout,'(/,3x,a)') '* Joint density of states'
+          write(stdout,'(6x,a)')&
+               '-- File '//trim(trim(seedname))//'-jdos.dat'
+          if(T_odd) then
+             write(stdout,'(/,3x,a)')&
+             '* Interband optical conductivity'
+             write(stdout,'(6x,a)')&
+                  '-- Imaginary, antisymmetric part (dichroic absorption)'
+             write(stdout,'(6x,a)')&
+                  '-- omega*sigma^A_{ij}(omega) in units of 10^29 sec^{-2}'
+             write(stdout,'(6x,a)')&
+                  '-- Files '//trim(trim(seedname))//'-sigA_ij.dat'
+             write(stdout,'(/,3x,a)')&
+        '* Cumulative anomalous Hall conductivity from Kramers-Kronig in S/cm '
+             write(stdout,'(6x,a)')&
+                  '-- Files '//trim(trim(seedname))//'-kk_ij.dat'
+          else
+             write(stdout,'(/,3x,a)')&
+                  '* Dielectric function epsilon^r_{ij}(omega)'
+             write(stdout,'(6x,a)')&
+                  '-- Imaginary, symmetric part (ordinary absorption)'
+             write(stdout,'(6x,a)')&
+                  '-- Files '//trim(trim(seedname))//'-epsS_ij.dat'
+             write(stdout,'(/,3x,a)')&
+                  '* Interband optical conductivity epsilon'
+             write(stdout,'(6x,a)')&
+                  '-- Real, symmetric part (ordinary absorption)'
+             write(stdout,'(6x,a)')&
+                  '-- Sigma^S_{ij}(omega) in units of 10^15 sec^{-1}'
+             write(stdout,'(6x,a)')&
+                  '-- Files '//trim(trim(seedname))//'-sigS_ij.dat'
+          end if
+
+       end if !eval_sig_ab
+
+       if(eval_sig_abc) then
+          if(T_odd) then
+             write(stdout,'(/,3x,a)')&
+                  '* Interband spatially dispersive conductance Im[sigma_{S,'//&
+                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//&
+                  '}(omega)]'
+             write(stdout,'(5x,a)')
+             write(stdout,'(5x,a)')&
+                  'Time-odd (symm) reactive part in e^2/h units '
+              write(stdout,'(5x,a)') 'File: '//&
+                   trim(trim(seedname))//'-sigS_'//&
+             achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
+          else
+             write(stdout,'(/,3x,a)')&
+                  '* Optical rotatory power rho divided by (hbar.omega)^2'
+             write(stdout,'(5x,a)') 'Units: deg/[mm.(eV)^2]'
+             write(stdout,'(5x,a)') 'File: '//trim(trim(seedname))//&
+                  '-rhobw2_'//&
+             achar(119+alpha)//achar(119+beta)//achar(119+gamma)//'.dat'
+             write(stdout,'(/,5x,a)') 'rho/(hbar omega)^2=Re[sigma_{A,'//&
+                  achar(119+alpha)//achar(119+beta)//achar(119+gamma)//&
+                  '}(omega)]/(hbar omega)/(2.hbar.c^2.eps_0)'
+          endif
+       endif
+
+       if(eval_ME_EQ) write(stdout,'(/,3x,a)')&
+            '* Optical magnetoelectric and electric-quadrupole responses'
+
+       if(eval_MEspn) write(stdout,'(/,3x,a)')&
+            '* Static spin-electronic magnetoelectric tensor'
+
+       if(transl_inv) then
+          if(eval_morb.or.eval_sig_abc.or.eval_ME_EQ)&
+            call io_error('transl_inv=T disabled for orb, sig_abc, eval_ME_EQ')
+          write(stdout,'(/,1x,a)')&
+               'Using a translationally-invariant discretization for the'
+          write(stdout,'(1x,a)')&
+               'band-diagonal Wannier matrix elements of r, etc.'
+!       else
+!          write(stdout,'(/,1x,a)')&
+!               'Using the discretization in Appendix B of MV97 for the'
+!          write(stdout,'(1x,a)')&
+!               'Wannier matrix elements containing the position operator'
+       endif
+
+    end if !on_root
 
     if (timing_level>1.and.on_root) then
          call io_stopwatch('berry: prelims',2)
@@ -423,21 +434,14 @@ module w90_berry
     !
     if(wanint_kpoint_file) then
        
-       if(on_root) then
+!       if(on_root) then
           !
-          ! As implemented, this does not always work. For example,
-          ! it gives the wrong ordinary absorption sigma_{S,xx}(omega) for bcc
-          ! iron with magnetization along z (but it does give the correct
-          ! sigma_{S,zz}(omega), as well as the dichroic sigma_{A,xy}. The 
-          ! correct general implementation would be as outlines in, e.g., the 
-          ! 3rd paragraph of Sec. III.C of PRB 60, 14105 (1999).
-          !
-          write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
-          write(stdout,'(3x,a)')&
-          'WARNING: - IBZ implementation is currently limited to simple cases:'
-          write(stdout,'(3x,a)')&
-           '           Check results agains a full BZ calculation!'
-       end if
+!          write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
+!          write(stdout,'(3x,a)')&
+!          'WARNING: - IBZ implementation is currently limited to simple cases:'
+!          write(stdout,'(3x,a)')&
+!           '           Check results agains a full BZ calculation!'
+!       end if
 
        ! Loop over k-points on the irreducible wedge of the Brillouin zone,
        ! read from file 'kpoint.dat'
@@ -447,19 +451,25 @@ module w90_berry
           kweight=weight(loop_tot)
           kweight_adpt=kweight/berry_adaptive_mesh**3
           if(eval_ahc) then 
-             call get_imf_ab_k(kpt,imf_ab_k)
-             adpt_trigger=abs(sum(imf_ab_k))
-          elseif(eval_orb) then
-             call get_imf_ab_k(kpt,imf_ab_k)
-             call get_img_ab_k(kpt,img_ab_k)
-             call get_imh_ab_k(kpt,imh_ab_k)
-             adpt_trigger=abs(sum(img_ab_k)+sum(imh_ab_k)&
-                  -2.0_dp*fermi_energy*sum(imf_ab_k))
+             call get_imf_k(kpt,imf_k)
+             do i=1,3
+                vdum(i)=sum(imf_k(1:3,i))
+             enddo
+             adpt_trigger=sqrt(dot_product(vdum,vdum))
+          elseif(eval_morb) then
+             call get_imf_k(kpt,imf_k)
+             call get_img_k(kpt,img_k)
+             call get_imh_k(kpt,imh_k)
+             do i=1,3
+                vdum(i)=sum(img_k(1:3,i))+sum(imh_k(1:3,i))&
+                     -2.0_dp*fermi_energy*sum(imf_k(1:3,i))
+             enddo
+             adpt_trigger=sqrt(dot_product(vdum,vdum))
           else ! Ensure that adaptive refinement is not triggered
              adpt_trigger=berry_adaptive_thresh-1.0_dp
           end if
           if(eval_sig_ab) then
-               call get_sig_ab_k(kpt,sig_ab_k,sig_ab_over_freq_k,jdos_k)
+               call get_sig_k(kpt,sig_k,jdos_k)
           elseif(eval_sig_abc) then
              call get_sig_abc_k(kpt,sig_abc_k,sig_abc_cut_k)
           endif
@@ -474,21 +484,19 @@ module w90_berry
              do loop_adpt=1,berry_adaptive_mesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
                 if(eval_ahc) then
-                   call get_imf_ab_k(kpt_ad,imf_ab_k)
-                   imf_ab=imf_ab+imf_ab_k*kweight_adpt
-                elseif(eval_orb) then
-                   call get_imf_ab_k(kpt_ad,imf_ab_k)
-                   imf_ab=imf_ab+imf_ab_k*kweight_adpt
-                   call get_img_ab_k(kpt_ad,img_ab_k)
-                   img_ab=img_ab+img_ab_k*kweight_adpt
-                   call get_imh_ab_k(kpt_ad,imh_ab_k)
-                   imh_ab=imh_ab+imh_ab_k*kweight_adpt
+                   call get_imf_k(kpt_ad,imf_k)
+                   imf=imf+imf_k*kweight_adpt
+                elseif(eval_morb) then
+                   call get_imf_k(kpt_ad,imf_k)
+                   imf=imf+imf_k*kweight_adpt
+                   call get_img_k(kpt_ad,img_k)
+                   img=img+img_k*kweight_adpt
+                   call get_imh_k(kpt_ad,imh_k)
+                   imh=imh+imh_k*kweight_adpt
                 end if
                 if(eval_sig_ab) then
-                   call get_sig_ab_k(kpt_ad,sig_ab_k,sig_ab_over_freq_k,jdos_k)
-                   sig_ab=sig_ab+sig_ab_k*kweight_adpt
-                   sig_ab_over_freq=sig_ab_over_freq&
-                        +sig_ab_over_freq_k*kweight_adpt
+                   call get_sig_k(kpt_ad,sig_k,jdos_k)
+                   sig=sig+sig_k*kweight_adpt
                    jdos=jdos+jdos_k*kweight_adpt
                 elseif(eval_sig_abc) then
                    call get_sig_abc_k(kpt_ad,sig_abc_k,sig_abc_cut_k)
@@ -508,16 +516,14 @@ module w90_berry
              end do
           else
              if(eval_ahc) then
-                imf_ab=imf_ab+imf_ab_k*kweight
-             elseif(eval_orb) then 
-                imf_ab=imf_ab+imf_ab_k*kweight
-                img_ab=img_ab+img_ab_k*kweight
-                imh_ab=imh_ab+imh_ab_k*kweight
+                imf=imf+imf_k*kweight
+             elseif(eval_morb) then 
+                imf=imf+imf_k*kweight
+                img=img+img_k*kweight
+                imh=imh+imh_k*kweight
              end if
              if(eval_sig_ab) then
-                sig_ab=sig_ab+sig_ab_k*kweight
-                sig_ab_over_freq=sig_ab_over_freq&
-                     +sig_ab_over_freq_k*kweight
+                sig=sig+sig_k*kweight
                 jdos=jdos+jdos_k*kweight
              elseif(eval_sig_abc) then
                 sig_abc=sig_abc+sig_abc_k*kweight
@@ -536,7 +542,7 @@ module w90_berry
 
     else ! Do not read 'kpoint.dat'. Loop over a uniform grid in the full BZ
 
-       if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
+!       if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
 !       kweight=1.0_dp/optics_num_points**3
        kweight = 1.0_dp / real(PRODUCT(berry_interp_mesh),kind=dp)
        kweight_adpt=kweight/berry_adaptive_mesh**3
@@ -551,19 +557,25 @@ module w90_berry
           kpt(2)=real(loop_y,dp)/real(berry_interp_mesh(2),dp)
           kpt(3)=real(loop_z,dp)/real(berry_interp_mesh(3),dp)
           if(eval_ahc) then
-             call get_imf_ab_k(kpt,imf_ab_k)
-             adpt_trigger=abs(sum(imf_ab_k))
-          elseif(eval_orb) then
-             call get_imf_ab_k(kpt,imf_ab_k)
-             call get_img_ab_k(kpt,img_ab_k)
-             call get_imh_ab_k(kpt,imh_ab_k)
-             adpt_trigger=abs(sum(img_ab_k)&
-                  +sum(imh_ab_k)-2.0_dp*fermi_energy*sum(imf_ab_k))
+             call get_imf_k(kpt,imf_k)
+             do i=1,3
+                vdum(i)=sum(imf_k(1:3,i))
+             enddo
+             adpt_trigger=sqrt(dot_product(vdum,vdum))
+          elseif(eval_morb) then
+             call get_imf_k(kpt,imf_k)
+             call get_img_k(kpt,img_k)
+             call get_imh_k(kpt,imh_k)
+             do i=1,3
+                vdum(i)=sum(img_k(1:3,i))+sum(imh_k(1:3,i))&
+                     -2.0_dp*fermi_energy*sum(imf_k(1:3,i))
+             enddo
+             adpt_trigger=sqrt(dot_product(vdum,vdum))
           else ! Ensure that adaptive refinement is not triggered
              adpt_trigger=berry_adaptive_thresh-1.0_dp
           end if
           if(eval_sig_ab) then
-             call get_sig_ab_k(kpt,sig_ab_k,sig_ab_over_freq_k,jdos_k)
+             call get_sig_k(kpt,sig_k,jdos_k)
           elseif(eval_sig_abc) then
              call get_sig_abc_k(kpt,sig_abc_k,sig_abc_cut_k)
           endif
@@ -574,21 +586,19 @@ module w90_berry
              do loop_adpt=1,berry_adaptive_mesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
                  if(eval_ahc) then
-                   call get_imf_ab_k(kpt_ad,imf_ab_k)
-                   imf_ab=imf_ab+imf_ab_k*kweight_adpt
-                elseif(eval_orb) then
-                   call get_imf_ab_k(kpt_ad,imf_ab_k)
-                   imf_ab=imf_ab+imf_ab_k*kweight_adpt
-                   call get_img_ab_k(kpt_ad,img_ab_k)
-                   img_ab=img_ab+img_ab_k*kweight_adpt
-                   call get_imh_ab_k(kpt_ad,imh_ab_k)
-                   imh_ab=imh_ab+imh_ab_k*kweight_adpt
+                   call get_imf_k(kpt_ad,imf_k)
+                   imf=imf+imf_k*kweight_adpt
+                elseif(eval_morb) then
+                   call get_imf_k(kpt_ad,imf_k)
+                   imf=imf+imf_k*kweight_adpt
+                   call get_img_k(kpt_ad,img_k)
+                   img=img+img_k*kweight_adpt
+                   call get_imh_k(kpt_ad,imh_k)
+                   imh=imh+imh_k*kweight_adpt
                 end if
                 if(eval_sig_ab) then
-                   call get_sig_ab_k(kpt_ad,sig_ab_k,sig_ab_over_freq_k,jdos_k)
-                   sig_ab=sig_ab+sig_ab_k*kweight_adpt
-                   sig_ab_over_freq=sig_ab_over_freq&
-                        +sig_ab_over_freq_k*kweight_adpt
+                   call get_sig_k(kpt_ad,sig_k,jdos_k)
+                   sig=sig+sig_k*kweight_adpt
                    jdos=jdos+jdos_k*kweight_adpt
                 elseif(eval_sig_abc) then
                    call get_sig_abc_k(kpt_ad,sig_abc_k,sig_abc_cut_k)
@@ -608,15 +618,14 @@ module w90_berry
              end do
           else
              if(eval_ahc) then
-                imf_ab=imf_ab+imf_ab_k*kweight
-             elseif(eval_orb) then 
-                imf_ab=imf_ab+imf_ab_k*kweight
-                img_ab=img_ab+img_ab_k*kweight
-                imh_ab=imh_ab+imh_ab_k*kweight
+                imf=imf+imf_k*kweight
+             elseif(eval_morb) then 
+                imf=imf+imf_k*kweight
+                img=img+img_k*kweight
+                imh=imh+imh_k*kweight
              end if
              if(eval_sig_ab) then
-                sig_ab=sig_ab+sig_ab_k*kweight
-                sig_ab_over_freq=sig_ab_over_freq+sig_ab_over_freq_k*kweight
+                sig=sig+sig_k*kweight
                 jdos=jdos+jdos_k*kweight
              elseif(eval_sig_abc) then
                 sig_abc=sig_abc+sig_abc_k*kweight
@@ -638,18 +647,16 @@ module w90_berry
 ! Collect contributions from all nodes    
 !
     if(eval_ahc) then
-       call comms_reduce(imf_ab(1),3,'SUM')
+       call comms_reduce(imf(1,1),3*3,'SUM')
        call comms_reduce(adpt_counter,1,'SUM')
-    elseif(eval_orb) then
-       call comms_reduce(imf_ab(1),3,'SUM')
-       call comms_reduce(img_ab(1),3,'SUM')
-       call comms_reduce(imh_ab(1),3,'SUM')
+    elseif(eval_morb) then
+       call comms_reduce(imf(1,1),3*3,'SUM')
+       call comms_reduce(img(1,1),3*3,'SUM')
+       call comms_reduce(imh(1,1),3*3,'SUM')
        call comms_reduce(adpt_counter,1,'SUM')
     end if
     if(eval_sig_ab) then
-       call comms_reduce(sig_ab(1,1,1),3*nfreq*ndim,'SUM')
-       call comms_reduce(sig_ab_over_freq(1,1,1),&
-            3*nfreq*ndim,'SUM')
+       call comms_reduce(sig(1,1,1,1),3*ncomp*nfreq*ndim,'SUM')
        call comms_reduce(jdos(1,1),nfreq*ndim,'SUM')
     endif
     if(eval_sig_abc) then
@@ -666,17 +673,74 @@ module w90_berry
        call comms_reduce(imgamma(1,1,1),3*nfreq*10,'SUM')
     endif
     if(eval_MEspn) then
-!jry corrected alphasp_node to alphaspn_node !! check!! ivo: OK
        call comms_reduce(alphaspn(1,1),3*3,'SUM')
        call comms_reduce(alphaspn_cut(1,1,1),nfreq_cut*3*3,'SUM')
     endif
     
     if(on_root) then
 
+       write(stdout,'(1x,a)') ' '
+       if(wanint_kpoint_file) then
+
+          write(stdout,'(1x,a47,i10,a)')&
+               'Nominal interpolation mesh in IBZ: ',&
+               sum(num_int_kpts_on_node),' points'
+
+          if(eval_ahc .or. eval_morb) then
+             if(eval_ahc) then
+                write(stdout,'(1x,a47,3x,f8.4,a)')&
+                     'Adaptive refinement triggered when Omega(k) >',&
+                     berry_adaptive_thresh,' Ang^2'
+             else
+                write(stdout,'(1x,a48,f8.4,a)')&
+                     'Adaptive refinement triggered when k-integrand >',&
+                     berry_adaptive_thresh,' eV.Ang^2'
+             end if
+             write(stdout,'(1x,a47,i7,a,f8.4,a)')&
+                  'How many points triggered adaptive refinement: ',&
+                  adpt_counter,' (',&
+                  100*real(adpt_counter,dp)/sum(num_int_kpts_on_node),' %)'
+             if(berry_adaptive_mesh < 10) then
+                write(stdout,'(1x,a47,4x,i1,a,i1,a,i1)')&
+                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                     berry_adaptive_mesh,'x',berry_adaptive_mesh
+             elseif(berry_adaptive_mesh < 100) then
+                write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
+                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                     berry_adaptive_mesh,'x',berry_adaptive_mesh
+             else
+                write(stdout,'(1x,a47,i3,a,i1,a,i1)')&
+                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
+                     berry_adaptive_mesh,'x',berry_adaptive_mesh
+             end if
+             write(stdout,'(1x,a47,i10)') 'Total number of points: ',&
+                  sum(num_int_kpts_on_node)-adpt_counter+&
+                  adpt_counter*berry_adaptive_mesh**3
+          end if
+
+       else
+
+          write(stdout,*) ' '
+          if((eval_ahc .or. eval_morb) .and. berry_adaptive_mesh.ne.1) then
+             write(stdout, '(1x,a30,3(i0,1x))')&
+                  'Interpolation grid (nominal): ',&
+                  berry_interp_mesh(1),berry_interp_mesh(2),berry_interp_mesh(3)
+             write(stdout, '(1x,a30,i0,a)') 'Adaptive refinement grid: ',&
+                  berry_adaptive_mesh,'^3'
+             write(stdout, '(1x,a30,f6.2,a)')&
+                  'Points triggering refinement: ',&
+                  100*real(adpt_counter,dp)/product(berry_interp_mesh),'%'
+          else
+             write(stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ',&
+                  berry_interp_mesh(1),berry_interp_mesh(2),berry_interp_mesh(3)
+          endif
+
+       end if !wanint_kpoint_file
+
        if(eval_ahc) then
 
           ! --------------------------------------------------------------------
-          ! At this point ms_imf_ab contains 
+          ! At this point imf contains 
           !
           ! (1/N) sum_k Omega_{alpha beta}(k), 
           !
@@ -700,30 +764,32 @@ module w90_berry
           !       conductance, (Ohm)^{-1}, or Siemens (S), to get the final 
           !       result in S/cm
           !
-          ! ================================
-          ! ahc_conv = -e^2/(hbar.V_c*10^-8) 
-          ! ================================
+          ! ===========================
+          ! fac = -e^2/(hbar.V_c*10^-8) 
+          ! ===========================
           !
           ! with 'V_c' in Angstroms^3, and 'e' and 'hbar' in SI units.
           ! --------------------------------------------------------------------
           !
-          ahc_conv=-1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
-          ahc(:)=imf_ab(:)*ahc_conv
+          fac=-1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+          ahc(:,:)=imf(:,:)*fac
 
-          write(stdout,'(/,/,1x,a)') 'Integrated AHC (S/cm)'
-          write(stdout,'(1x,a)')     '=============='
-          write(stdout,'(/,1x,a)') 'Using new trace formulation'
-          write(stdout,'(1x,a,f14.5,2x,f10.5,a)') 'Omega term :',&
-               ahc(1),ahc(1)*100.0_dp/sum(ahc),' %'
-          write(stdout,'(1x,a,f14.5,2x,f10.5,a)') 'J.AA term  :',&
-               ahc(2),ahc(2)*100.0_dp/sum(ahc),' %'
-          write(stdout,'(1x,a,f14.5,2x,f10.5,a)') 'J.J term   :',&
-               ahc(3),ahc(3)*100.0_dp/sum(ahc),' %'
+          write(stdout,'(/,/,1x,a)')&
+               'AHC (S/cm)       x          y          z'
           write(stdout,'(1x,a)')&
-               '--------------------------------------------'
-          write(stdout,'(1x,a,f14.5,2x)')         'Total AHC  :',sum(ahc)
+               '=========='
+          write(stdout,'(1x,a9,2x,3(f10.4,1x))') 'J0 term :',&
+               ahc(1,1),ahc(1,2),ahc(1,3)
+          write(stdout,'(1x,a9,2x,3(f10.4,1x))') 'J1 term :',&
+               ahc(2,1),ahc(2,2),ahc(2,3)
+          write(stdout,'(1x,a9,2x,3(f10.4,1x))') 'J2 term :',&
+               ahc(3,1),ahc(3,2),ahc(3,3)
+          write(stdout,'(1x,a)')&
+               '-------------------------------------------'
+          write(stdout,'(1x,a9,2x,3(f10.4,1x),/)') 'Total   :',&
+               sum(ahc(:,1)),sum(ahc(:,2)),sum(ahc(:,3))
           
-       elseif(eval_orb) then
+       elseif(eval_morb) then
 
           ! --------------------------------------------------------------------
           ! At this point X=img_ab(:)-fermi_energy*imf_ab(:) and
@@ -751,49 +817,61 @@ module w90_berry
           !       by 2 to convert it to Bohr magnetons
           ! --------------------------------------------------------------------
           !
-          orb_conv=-eV_au/bohr**2
-          LCtil(:)=(img_ab(:)-fermi_energy*imf_ab(:))*orb_conv
-          ICtil(:)=(imh_ab(:)-fermi_energy*imf_ab(:))*orb_conv
+          fac=-eV_au/bohr**2
+          LCtil(:,:)=(img(:,:)-fermi_energy*imf(:,:))*fac
+          ICtil(:,:)=(imh(:,:)-fermi_energy*imf(:,:))*fac
+          Morb=LCtil+ICtil
 
-          write(stdout,'(/,/,1x,a)')        '============================'
-          write(stdout,'(1x,a,1x,e13.6,a)') 'Orbital magnetization M_orb:',&
-               sum(LCtil)+sum(ICtil),   ' bohr magn/cell'
-          write(stdout,'(1x,a)')            '============================'
-          write(stdout,'(/,1x,a)')&
-               'M_orb = LCtil + ICtil'
+          write(stdout,'(/,/,1x,a)')&
+               'M_orb (bohr magn/cell)        x          y          z'
+          write(stdout,'(1x,a)')&
+               '======================'
+          write(stdout,'(1x,a22,2x,3(f10.4,1x))') 'Local circulation :',&
+               sum(LCtil(1:3,1)),sum(LCtil(1:3,2)),sum(LCtil(1:3,3))
+          write(stdout,'(1x,a22,2x,3(f10.4,1x))') 'Itinerant circulation:',&
+               sum(ICtil(1:3,1)),sum(ICtil(1:3,2)),sum(ICtil(1:3,3))
+          write(stdout,'(1x,a)')&
+               '--------------------------------------------------------'
+          write(stdout,'(1x,a22,2x,3(f10.4,1x),/)') 'Total   :',&
+               sum(Morb(1:3,1)),sum(Morb(1:3,2)),sum(Morb(1:3,3))
+
+          !DEBUG
+          write(stdout,'(/,/,1x,a)') 'DEBUG: Breakdown of z-component'
+          write(stdout,'(1x,a)') 'M_orb = LCtil + ICtil'
           write(stdout,'(/,29x,a4,12x,a4,12x,a4)') '(J0)','(J1)','(J2)'
           write(stdout,'(1x,a,1x,e13.6,3(1x,a,1x,e13.6))')&
-               'LCtil=',sum(LCtil),'=',LCtil(1),'+',LCtil(2),'+',LCtil(3)
+            'LCtil=',sum(LCtil(:,3)),'=',LCtil(1,3),'+',LCtil(2,3),'+',LCtil(3,3)
           write(stdout,'(1x,a,1x,e13.6,3(1x,a,1x,e13.6))')&
-               'ICtil=',sum(ICtil),'=',ICtil(1),'+',ICtil(2),'+',ICtil(3)
+            'ICtil=',sum(ICtil(:,3)),'=',ICtil(1,3),'+',ICtil(2,3),'+',ICtil(3,3)
+          !ENDDEBUG
 
-       end if ! eval_ahc or eval_orb
+       end if ! eval_ahc or eval_morb
 
-       ! ---------!
-       ! sigma_ab !
-       ! ---------!
+       ! ---------------------!
+       ! Optical conductivity !
+       ! ---------------------!
        !
        if(eval_sig_ab) then
 
           write(stdout,'(/,1x,a)')&
-               '--------------------------------------------------------------'
+               '--------------------------------------------------'
           write(stdout,'(1x,a)')&
-               'Output data files related to long-wavelength optical spectrum:'
+               'Output data files related to optical conductivity:'
           write(stdout,'(1x,a)')&
-               '--------------------------------------------------------------'
+               '--------------------------------------------------'
 
-          file_name=trim(seedname)//'_jdos.dat'
+          file_name=trim(seedname)//'-jdos.dat'
           write(stdout,'(/,3x,a)') '* '//file_name
           jdos_unit=io_file_unit()
           open(jdos_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
           do ifreq=1,nfreq
-             freq=berry_min_energy+ifreq*d_freq
+             freq=optics_min_energy+(ifreq-1)*d_freq
              write(jdos_unit,'(5E16.8)') freq,jdos(ifreq,:)
           enddo
           close(jdos_unit)
 
           ! --------------------------------------------------------------------
-          ! At this point sig_ab contains 
+          ! At this point sig contains 
           !
           ! (1/N) sum_k Optical_matrix_elem_{alpha beta}(k), 
           !
@@ -804,209 +882,147 @@ module w90_berry
           ! (V_c is the cell volume). We want the absorptive optical 
           ! conductivity
           !
-          ! sigma=(pi.e^2/hbar)int dk/(2.pi)^3 Optical_matrix_elem(k)dk,
+          ! sigma=(pi.e^2/hbar)(omega)int dk/(2.pi)^3 Optical_matrix_elem(k)dk,
           !  
           ! where the optical matrix element is (for MCD; replace "Im" by "Re" 
           ! for ordinary absorption)
           !
-          ! sum_n^occ sum_m^empty Im(A_{nm,alpha}A_{mn,beta}).omega_{mn}.
+          ! sum_n^occ sum_m^empty Im(A_{nm,alpha}A_{mn,beta}).
           !                       .delta(omega-omega_{mn}),
           !
-          ! which has the same units as Im(...), i.e., [L]^2
+          ! which has units of [L]^2[t]
           ! (Berry connection has units of length, and delta(...) has units of
-          ! inverse frequency)
+          ! time)
           !
-          ! Hence need to multiply by pi.e^2/(hbar.V_c). To get a conductivity,
+          ! Hence need to multiply by pi*omega*e^2/(hbar.V_c) to get a 
+          ! conductivity,
           !
           ! (i)   Divide by V_c to obtain 
-          !                             (1/N) sum_k Optical_matrix_elem(k)/V_c, 
-          !       which has units of 1/[L] 
+          !       (1/N) sum_k Optical_matrix_elem(k)/V_c (units of 1/[L]) 
           ! (ii)  I am assuming the working unit of length is Angstroms. 
           !       Multiply by 10^8 to convert to centimeters
           ! (iii) Multiply by pi.e^2/hbar expressed in SI (e^2/hbar is the 
           !       quantum of conductance, which has SI units of Siemens) to 
-          !       get the final result for the conductivity in units of 
-          !       Siemens/cm
+          !       get the final result for the conductivity in units of S/cm
           !
-          ! ========================================================
-          ! sig_ab_conv = pi*10^8*elem_charge_SI^2/(hbar_SI*V_c_ang) 
-          ! ========================================================
+          ! ================================================
+          ! fac = pi*10^8*elem_charge_SI^2/(hbar_SI*V_c_ang) 
+          ! ================================================
           !
+          ! (iv)   Multiply by omega 
           ! --------------------------------------------------------------------
           !
-          sig_ab_conv=pi*1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
-          sig_ab=sig_ab*sig_ab_conv
-          
-!          if(T_odd) then
-!             file_name=trim(trim(seedname)//'-sig_ab^A_'//&
-!                  achar(119+alpha)//achar(119+beta)//'_DD.dat')
-!          else
-!             file_name= trim(trim(seedname)//'-sig_ab^S_'//&
-!                  achar(119+alpha)//achar(119+beta)//'_DD.dat')
-!          end if
-!          write(stdout,'(/,3x,a)') '* '//file_name
-!          DD_unit=io_file_unit()
-!          open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-
-!          if(T_odd) then
-!             file_name= trim(trim(seedname)//'-sig_ab^A_'//&
-!                  achar(119+alpha)//achar(119+beta)//'_DA.dat')
-!          else
-!             file_name= trim(trim(seedname)//'-sig_ab^S_'//&
-!                  achar(119+alpha)//achar(119+beta)//'_DA.dat')
-!          end if
-!          write(stdout,'(/,3x,a)') '* '//file_name
-!          DA_unit=io_file_unit()
-!          open(DA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-          
-!          if(T_odd) then
-!             file_name= trim(trim(seedname)//'-sig_ab^A_'//&
-!                  achar(119+alpha)//achar(119+beta)//'_AA.dat')
-!          else
-!             file_name= trim(trim(seedname)//'-sig_ab^S_'//&
-!                  achar(119+alpha)//achar(119+beta)//'_AA.dat')
-!          end if
-!          write(stdout,'(/,3x,a)') '* '//file_name
-!          AA_unit=io_file_unit()
-!          open(AA_unit,FILE=file_name,FORM='FORMATTED')
-          
+          ! Steps (i-iii) combined (do (iv) later, after Kramers-Kronig):
+          fac=pi*1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+          sig=sig*fac
+       
           if(T_odd) then
-             file_name= trim(seedname)//'-sigA_'//&
-                  achar(119+alpha)//achar(119+beta)//'.dat'
-             file_name=trim(file_name)
-          else
-             file_name= trim(seedname)//'-sigS_'//&
-                  achar(119+alpha)//achar(119+beta)//'.dat'
-             file_name=trim(file_name)
-          end if
-          write(stdout,'(/,3x,a)') '* '//file_name
-          tot_unit=io_file_unit()
-          open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
+             fac=9.0e-18_dp*elem_charge_SI/hbar_SI ! ~0.0137
+             do i=1,ncomp
+                ! Anomalous Hall conductivity as cumulative Kramers-Kronig 
+                ! transform of the magnetic circular dichroism spectrum: 
+                ! Fig. 5b & Eq. (43) of YWVS07 
+                file_name= trim(seedname)//'-kk_'//&
+                     achar(119+alp(i))//achar(119+bet(i))//'.dat'
+                file_name=trim(file_name)
+                file_unit=io_file_unit()
+                write(stdout,'(/,3x,a)') '* '//file_name
+                open(file_unit,FILE=file_name,STATUS='UNKNOWN',&
+                     FORM='FORMATTED')   
+                ahc_kk=0.0_dp
+                do ifreq=nfreq,1,-1
+                   ahc_kk(1,:)=ahc_kk(1,:)+(2.0_dp/pi)*sig(1,i,ifreq,:)*d_freq
+                   ahc_kk(2,:)=ahc_kk(2,:)+(2.0_dp/pi)*sig(2,i,ifreq,:)*d_freq
+                   ahc_kk(3,:)=ahc_kk(3,:)+(2.0_dp/pi)*sig(3,i,ifreq,:)*d_freq
+                   freq=optics_min_energy+(ifreq-1)*d_freq
+                   !
+                   ! Since the factor (1/freq)*d_freq in Eq.(43) YWVS07 is 
+                   ! dimensionless, the conversion factor to obtain the AHC in 
+                   ! S/cm is the same as for sig
+                   !
+                   write(file_unit,'(5E16.8)') freq,&
+                        ahc_kk(1,:)+ahc_kk(2,:)+ahc_kk(3,:)
+                end do
+                close(file_unit)
+                file_name= trim(seedname)//'-sigA_'//&
+                     achar(119+alp(i))//achar(119+bet(i))//'.dat'
+                file_name=trim(file_name)
+                file_unit=io_file_unit()
+                write(stdout,'(/,3x,a)') '* '//file_name
+                open(file_unit,FILE=file_name,STATUS='UNKNOWN',&
+                     FORM='FORMATTED')   
+                do ifreq=1,nfreq
+                   freq=optics_min_energy+(ifreq-1)*d_freq
+                   !
+                   ! After Kramers-Kronig can multiply by omega (step (iv) 
+                   ! above). To write to file sigma^A_{ij}(omega) in S/cm, use
+                   ! -----------------------------------------------------------
+                   ! write(sig_unit,'(5E16.8)') freq,&
+                   !   freq*(sig(1,i,ifreq,:)+sig(2,i,ifreq,:)+sig(3,i,ifreq,:))
+                   ! -----------------------------------------------------------
+                   !
+                   ! To convert a conductivity from S/cm to 1/sec (Gaussian 
+                   ! units), multiply by 9E11. For the MCD spectrum it is 
+                   ! customary to plot omega*sigma(omega), in units of 
+                   ! 10^29 sec^{-2}. Using omega= E(ev)(e/hbar) sec^{-1}, we 
+                   ! find the conversion factor given above, 
+                   ! fac=9.0e-18_dp*elem_charge_SI/hbar_SI
+                   !
+                   write(file_unit,'(5E16.8)') freq,fac*freq**2&
+                        *(sig(1,i,ifreq,:)+sig(2,i,ifreq,:)+sig(3,i,ifreq,:))
+                enddo
+                close(file_unit)
+             enddo !ncomp
+          else ! time-even
+             !
+             ! epsilon^r = 1+ 4.pi.i.sigma/omega
+             !
+             ! ------------------------------------
+             ! Im[epsilon^r] = 4.pi.Re[sigma]/omega (for insulators)
+             ! ------------------------------------
+             !
+             ! sig contains Re[sigma] in S/cm divided by energy in eV. Want 
+             ! Re[sigma] in 1/sec divided by omega in 1/sec (dimensionless),
+             ! then converted to Im[epsilon^r]
+             !
+             fac=4.0_dp*pi*9.0e11_dp*hbar_SI/elem_charge_SI ! ~0.0137
+             !
+             do i=1,ncomp
+                file_name= trim(seedname)//'-epsS_'//&
+                     achar(119+alps(i))//achar(119+bets(i))//'.dat'
+                file_name=trim(file_name)
+                file_unit=io_file_unit()
+                write(stdout,'(/,3x,a)') '* '//file_name
+                open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+                do ifreq=1,nfreq
+                   freq=optics_min_energy+(ifreq-1)*d_freq
+                   write(file_unit,'(5E16.8)') freq,&
+                        fac*(sig(1,i,ifreq,:)+sig(2,i,ifreq,:)+sig(3,i,ifreq,:))
+                enddo
+             enddo
+             !
+             ! ------------------------------------
+             ! Re[sigma] in units of 10^15 sec^{-1} (for metals)
+             ! ------------------------------------
+             !
+             fac=9.0e-4_dp
+             !
+             do i=1,ncomp
+                file_name= trim(seedname)//'-sigS_'//&
+                     achar(119+alps(i))//achar(119+bets(i))//'.dat'
+                file_name=trim(file_name)
+                file_unit=io_file_unit()
+                write(stdout,'(/,3x,a)') '* '//file_name
+                open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+                do ifreq=1,nfreq
+                   freq=optics_min_energy+(ifreq-1)*d_freq
+                   write(file_unit,'(5E16.8)') freq,fac*freq*&
+                        (sig(1,i,ifreq,:)+sig(2,i,ifreq,:)+sig(3,i,ifreq,:))
+                enddo
+             enddo
+          endif !Todd
 
-          do ifreq=1,nfreq
-             freq=berry_min_energy+ifreq*d_freq
-!             write(DD_unit,'(20E16.8)') freq,sig_ab(1,ifreq,:,:)
-!             write(DA_unit,'(20E16.8)') freq,sig_ab(2,ifreq,:,:)
-!             write(AA_unit,'(20E16.8)') freq,sig_ab(3,ifreq,:,:)
-             write(tot_unit,'(5E16.8)') freq,&
-                  sig_ab(1,ifreq,:)+sig_ab(2,ifreq,:)+sig_ab(3,ifreq,:)
-             
-          enddo
-          
- !         close(DD_unit)
- !         close(DA_unit)
- !         close(AA_unit)
-          close(tot_unit)
-          
-          if(T_odd) then
-             
-             ! Anomalous Hall conductivity as cumulative Kramers-Kronig 
-             ! transform of the magnetic circular dichroism spectrum: 
-             ! Fig. 5b & Eq. (43) of YWVS07 
-          
-!             file_name=trim( trim(seedname)//'_ahc_kk_DD.dat')
-!             write(stdout,'(/,3x,a)') '* '//file_name
-!             DD_unit=io_file_unit()
-!             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-                             
-!             file_name=trim(trim(seedname)//'_ahc_kk_DA.dat')
-!             write(stdout,'(/,3x,a)') '* '//file_name
-!             DA_unit=io_file_unit()
-!             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',&
-!                  FORM='FORMATTED')
-             
-!             file_name=trim(trim(seedname)//'_ahc_kk_AA.dat')
-!             write(stdout,'(/,3x,a)') '* '//file_name
-!             AA_unit=io_file_unit()
-!             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-             
-             file_name=trim(trim(seedname)//'_ahc_kk.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             tot_unit=io_file_unit()
-             open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
-
-             ahc_kk=0.0_dp
-             do ifreq=nfreq,1,-1
-                ahc_kk(1,:)=ahc_kk(1,:)&
-                     +(2.0_dp/pi)*sig_ab_over_freq(1,ifreq,:)*d_freq
-                ahc_kk(2,:)=ahc_kk(2,:)&
-                     +(2.0_dp/pi)*sig_ab_over_freq(2,ifreq,:)*d_freq
-                ahc_kk(3,:)=ahc_kk(3,:)&
-                     +(2.0_dp/pi)*sig_ab_over_freq(3,ifreq,:)*d_freq
-                freq=berry_min_energy+ifreq*d_freq
-                !
-                ! Since the factor (1/freq)*d_freq in Eq.(43) YWVS07 is 
-                ! dimensionless, the conversion factor to obtain the AHC in 
-                ! S/cm is the same as above for sig_ab
-                !
-!                write(DD_unit,'(20E16.8)') freq,ahc_kk(1,:,:)*sig_ab_conv
-!                write(DA_unit,'(20E16.8)') freq,ahc_kk(2,:,:)*sig_ab_conv
-!                write(AA_unit,'(20E16.8)') freq,ahc_kk(3,:,:)*sig_ab_conv
-                write(tot_unit,'(5E16.8)') freq,&
-                     sig_ab_conv*(ahc_kk(1,:)+ahc_kk(2,:)+ahc_kk(3,:))
-             end do
-             
-!             close(DD_unit)
-!             close(DA_unit)
-!             close(AA_unit)
-             close(tot_unit)
-             
-             ! Dichroic f-sum rule
-             !
-!             file_name=trim( trim(seedname)//'_morb_sr_DD.dat')
-!             write(stdout,'(/,3x,a)') '* '//file_name
-!             DD_unit=io_file_unit()
-!             open(DD_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-             
-!             file_name=trim(trim(seedname)//'_morb_sr_DA.dat')
-!             write(stdout,'(/,3x,a)') '* '//file_name
-!             DA_unit=io_file_unit()
-!             open(DA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-             
-!             file_name=trim(trim(seedname)//'_morb_sr_AA.dat')
-!             write(stdout,'(/,3x,a)') '* '//file_name
-!             AA_unit=io_file_unit()
-!             open(AA_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-             
-             file_name=trim( trim(seedname)//'_morb_sr.dat')
-             write(stdout,'(/,3x,a)') '* '//file_name
-             tot_unit=io_file_unit()
-             open(tot_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
- 
-             ! At this point sig_ab contains the conductivity in S/cm (see 
-             ! above). Multiply by 100 to convert to S/m (SI). The sum rule is
-             !
-             ! M_SR^(I)=(hbar/pi.e)int_0^infty sigma(omega).d(omega)
-             !         =(1/pi)int_0^infty sigma(E).dE
-             !
-             ! with the energy in eV (converted from angular freq. to energy
-             ! by multiplying by hbar), and converted energy to eV when
-             ! dividing by the elementary charge). To get a magnetic moment
-             ! per unit cell in units of the bohr magneton, multiply by the
-             ! cell volume (in Ang^3), convert to m^3, divide by bohr_magn_SI,
-             ! and finally divide by pi:
-             ! 
-             Morb_conv=100.0_dp*(cell_volume*1.0e-30_dp)/bohr_magn_SI/pi
-             
-             morb_sr=0.0_dp             
-             do ifreq=1,nfreq
-                morb_sr(1)=morb_sr(1)+sig_ab(1,ifreq,1)*d_freq
-                morb_sr(2)=morb_sr(2)+sig_ab(2,ifreq,1)*d_freq
-                morb_sr(3)=morb_sr(3)+sig_ab(3,ifreq,1)*d_freq
-                freq=berry_min_energy+ifreq*d_freq
-!                write(DD_unit,'(10E16.8)') freq,morb_sr(1,:)*Morb_conv
-!                write(DA_unit,'(10E16.8)') freq,morb_sr(2,:)*Morb_conv
-!                write(AA_unit,'(10E16.8)') freq,morb_sr(3,:)*Morb_conv
-                write(tot_unit,'(2E16.8)') freq,&
-                     Morb_conv*(morb_sr(1)+morb_sr(2)+morb_sr(3))
-             end do
-             
-!             close(DD_unit)
-!             close(DA_unit)
-!             close(AA_unit)
-             close(tot_unit)
-             
-          end if !T_odd
+          write(stdout,*) ' '
 
        end if !eval_sig_ab
 
@@ -1059,14 +1075,14 @@ module w90_berry
              !                 Re[sigma_{A,abc}]/(2.hbar^2.c^2.eps_0.omega)
              ! 
              ! In SI units: rad/(m.J^2)
-             fac=elem_charge_SI/(2* hbar_SI**2*speedlight_SI**2*eps0_SI)
+             fac=elem_charge_SI/(2*hbar_SI**2*speedlight_SI**2*eps0_SI)
              ! Now convert to deg/[mm.(eV)^2]
              fac=fac*(180.0_dp/pi)*elem_charge_SI**2/1000.0_dp
           endif
           sig_abc=fac*sig_abc
 
          do ifreq=1,nfreq
-             freq=berry_min_energy+(ifreq-1)*d_freq
+             freq=optics_min_energy+(ifreq-1)*d_freq
              write(tot_unit,'(5E18.8)') freq,&
                   sig_abc(ifreq,1),&   !orbital, matrix-element-term
                   sig_abc(ifreq,2),&   !orbital, energy-term
@@ -1145,7 +1161,7 @@ module w90_berry
           alphaME=alphaME*4.0_dp*pi*1.0e-7_dp*1.0e12_dp
 
           do ifreq=1,nfreq
-             freq=berry_min_energy+(ifreq-1)*d_freq
+             freq=optics_min_energy+(ifreq-1)*d_freq
              do j=1,3
                 do i=1,3
                    write(alpha_unit(i,j),'(5E18.8)') freq,&
@@ -1181,7 +1197,7 @@ module w90_berry
           imgamma=imgamma*speedlight_SI*4.0_dp*pi*1.0e-7
 
          do ifreq=1,nfreq
-             freq=berry_min_energy+(ifreq-1)*d_freq
+             freq=optics_min_energy+(ifreq-1)*d_freq
              do p=1,10
                 !*******************************
                 ! eventually change to 1,2 below
@@ -1261,107 +1277,6 @@ module w90_berry
                 
        endif !eval_MEspn
        
-       write(stdout,'(1x,a)') ' '
-       if(wanint_kpoint_file) then
-
-          write(stdout,'(1x,a47,i10,a)')&
-               'Nominal interpolation mesh in IBZ: ',&
-               sum(num_int_kpts_on_node),' points'
-
-          if(eval_ahc .or. eval_orb) then
-             if(eval_ahc) then
-                write(stdout,'(1x,a47,3x,f8.4,a)')&
-                     'Adaptive refinement triggered when Omega(k) >',&
-                     berry_adaptive_thresh,' Ang^2'
-             else
-                write(stdout,'(1x,a48,f8.4,a)')&
-                     'Adaptive refinement triggered when k-integrand >',&
-                     berry_adaptive_thresh,' eV.Ang^2'
-             end if
-             write(stdout,'(1x,a47,i7,a,f8.4,a)')&
-                  'How many points triggered adaptive refinement: ',&
-                  adpt_counter,' (',&
-                  100*real(adpt_counter,dp)/sum(num_int_kpts_on_node),' %)'
-             if(berry_adaptive_mesh < 10) then
-                write(stdout,'(1x,a47,4x,i1,a,i1,a,i1)')&
-                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
-                     berry_adaptive_mesh,'x',berry_adaptive_mesh
-             elseif(berry_adaptive_mesh < 100) then
-                write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
-                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
-                     berry_adaptive_mesh,'x',berry_adaptive_mesh
-             else
-                write(stdout,'(1x,a47,i3,a,i1,a,i1)')&
-                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
-                     berry_adaptive_mesh,'x',berry_adaptive_mesh
-             end if
-             write(stdout,'(1x,a47,i10)') 'Total number of points: ',&
-                  sum(num_int_kpts_on_node)-adpt_counter+&
-                  adpt_counter*berry_adaptive_mesh**3
-          end if
-
-       else
-
-!          if(optics_num_points < 10) then
-!             write(stdout,'(1x,a47,i1,a,i1,a,i1,a,i12,a)')&
-!                  'Nominal interpolation mesh in full BZ: ',&
-!                  optics_num_points,'x',optics_num_points,'x',&
-!                  optics_num_points,'=',optics_num_points**3,' points'
-!          elseif(optics_num_points < 100) then
-!             write(stdout,'(1x,a47,i2,a,i2,a,i2,a,i10,a)')&
-!                  'Nominal interpolation mesh in full BZ: ',&
-!                  optics_num_points,'x',optics_num_points,'x',&
-!                  optics_num_points,'=',optics_num_points**3,' points'
-!          elseif(optics_num_points < 1000) then
-!             write(stdout,'(1x,a47,i3,a,i3,a,i3,a,i12,a)')&
-!                  'Nominal interpolation mesh in full BZ: ',&
-!                  optics_num_points,'x',optics_num_points,'x',&
-!                  optics_num_points,'=',optics_num_points**3,' points'
-!          else
-!             write(stdout,'(1x,a47,i4,a,i4,a,i4,a,i12,a)')&
-!                  'Nominal interpolation mesh in full BZ: ',&
-!                  optics_num_points,'x',optics_num_points,'x',&
-!                  optics_num_points,'=',optics_num_points**3,' points'
-!          end if
-          write(stdout,'(1x,a,i0,a,i0,a,i0,a,i0,a)')&
-               'Nominal interpolation mesh in full BZ: ',&
-               berry_interp_mesh(1),'x',berry_interp_mesh(2),'x',&
-               berry_interp_mesh(3),'=',product(berry_interp_mesh),' points'
-          
-
-          if(eval_ahc .or. eval_orb) then
-             if(eval_ahc) then
-                write(stdout,'(1x,a47,f8.4,a)')&
-                     'Adaptive refinement triggered when Omega(k) >',&
-                     berry_adaptive_thresh,' Ang^2'
-             else
-                write(stdout,'(1x,a48,f8.4,a)')&
-                     'Adaptive refinement triggered when k-integrand >',&
-                     berry_adaptive_thresh,' eV.Ang^2'
-             end if
-             write(stdout,'(1x,a47,i7,a,f8.4,a)')&
-                  'How many points triggered adaptive refinement: ',&
-                  adpt_counter,' (',&
-                  100*real(adpt_counter,dp)/product(berry_interp_mesh),' %)'
-!             if(berry_adaptive_mesh < 10) then
-!                write(stdout,'(1x,a47,i1,a,i1,a,i1)')&
-!                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
-!                     berry_adaptive_mesh,'x',berry_adaptive_mesh
-!             elseif(berry_adaptive_mesh < 100) then
-!                write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
-!                     'Adaptive mesh: ',berry_adaptive_mesh,'x',&
-!                     berry_adaptive_mesh,'x',berry_adaptive_mesh
-!             else
-             write(stdout,'(1x,a,i0,a,i0,a,i0)')&
-                  'Adaptive mesh: ',berry_adaptive_mesh,'x',&
-                  berry_adaptive_mesh,'x',berry_adaptive_mesh
-             write(stdout,'(1x,a,i0)') 'Total number of points: ',&
-                  product(berry_interp_mesh)-adpt_counter+&
-                  adpt_counter*berry_adaptive_mesh**3
-!             end if
-          end if
-
-       end if !wanint_kpoint_file
 
        if (timing_level>1) call io_stopwatch('berry: kpts',2)
 
@@ -1369,317 +1284,290 @@ module w90_berry
 
   end subroutine berry_main
 
-  subroutine get_imf_ab_k(kpt,imf)
-  !=====================================!
-  !                                     !
-  ! Calculates -2Im[f_{alpha beta}(k)], !
-  ! Eq.33 Ceresoli et al PRB 74, 024408 !
-  !                                     !
-  !=====================================!
 
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_utility, only       : utility_diagonalize,utility_re_tr,&
-                                  utility_im_tr
-    use w90_parameters, only    : alpha,beta,num_wann,omega_from_FF
+  subroutine get_imf_k(kpt,imf_k)
+  !======================================!
+  !                                      !
+  ! Calculates -2Im[f_{alpha beta}(k)],  !
+  ! Eq.33 CTVR06, Eq.6 LVTS12, stores it !
+  ! in axial-vector form                 !
+  !                                      !
+  !===================================== !
+
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
+    use w90_utility, only        : utility_diagonalize,utility_re_tr,&
+                                   utility_im_tr
+    use w90_parameters, only     : num_wann
     use w90_postw90_common, only : fourier_R_to_k
-    use w90_wan_ham, only       : get_JJplus,get_JJminus,get_occ_mat
-    use w90_get_oper, only      : HH_R,AA_R,FF_R
+    use w90_wan_ham, only        : get_eig_UU_JJ_HH,get_occ_mat
+    use w90_get_oper, only       : HH_R,AA_R,FF_R
 
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
-    real(kind=dp), intent(out) :: imf(3)
+    real(kind=dp), intent(out) :: imf_k(3,3)
 
-    ! Physics
+    complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: f(:,:)
+    complex(kind=dp), allocatable :: g(:,:)
+    complex(kind=dp), allocatable :: AA(:,:,:)
+    complex(kind=dp), allocatable :: OOmega_i(:,:)
+    complex(kind=dp), allocatable :: JJp(:,:,:)
+    complex(kind=dp), allocatable :: JJm(:,:,:)
+    complex(kind=dp), allocatable :: mdum(:,:)
+    real(kind=dp)                 :: eig(num_wann)
+    integer                       :: i
+
+    allocate(UU(num_wann,num_wann))
+    allocate(f(num_wann,num_wann))
+    allocate(g(num_wann,num_wann))
+    allocate(JJp(num_wann,num_wann,3))
+    allocate(JJm(num_wann,num_wann,3))
+    allocate(AA(num_wann,num_wann,3))
+    allocate(OOmega_i(num_wann,num_wann))
+    allocate(mdum(num_wann,num_wann))
+
+    ! Gather W-gauge matrix objects
     !
+    call get_eig_UU_JJ_HH(kpt,eig,UU,JJp,JJm,mdum)
+    ! occupation f, and g=1-f
+    call get_occ_mat(eig,UU,f,g)
+    ! AA_a = i<u|del_a u> [Eq. (28) LVTS12]
+    call fourier_R_to_k(kpt,AA_R(:,:,:,1),AA(:,:,1),0)
+    call fourier_R_to_k(kpt,AA_R(:,:,:,2),AA(:,:,2),0)
+    call fourier_R_to_k(kpt,AA_R(:,:,:,3),AA(:,:,3),0)
+
+    ! Cartesian components of the Berry curvature pseudovector
+    !
+    do i=1,3
+       !
+       call fourier_R_to_k(kpt,AA_R(:,:,:,bet(i)),mdum,alp(i))
+       Oomega_i=mdum
+       call fourier_R_to_k(kpt,AA_R(:,:,:,alp(i)),mdum,bet(i))
+       OOmega_i=Oomega_i-mdum
+       !
+       ! Trace formula, Eq.(51) LVTS12
+       !
+       ! J0 (Omega_bar) term
+       mdum=matmul(f,OOmega_i)
+       imf_k(1,i)=utility_re_tr(mdum)
+       !
+       ! J1 (DA) term
+       mdum =matmul(AA(:,:,alp(i)),JJp(:,:,bet(i)))&
+            +matmul(JJm(:,:,alp(i)),AA(:,:,bet(i)))
+       imf_k(2,i)=-2.0_dp*utility_im_tr(mdum)
+       !
+       ! J2 (DD) term
+       mdum=matmul(JJm(:,:,alp(i)),JJp(:,:,bet(i)))
+       imf_k(3,i)=-2.0_dp*utility_im_tr(mdum)
+       !
+    end do
+
+  end subroutine get_imf_k
+
+
+  subroutine get_imh_k(kpt,imh_k)
+  !======================================!
+  !                                      !
+  ! Calculates -2Im[h_{alpha beta}(k)],  !
+  ! Eq.35 CTVR06, Eq.8 LVTS12, stores it !
+  ! in axial-vector form                 !
+  !                                      !
+  !======================================!
+
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
+    use w90_utility, only        : utility_diagonalize,utility_re_tr,&
+                                   utility_im_tr
+    use w90_parameters, only     : num_wann
+    use w90_postw90_common, only : fourier_R_to_k
+    use w90_wan_ham, only        : get_eig_UU_JJ_HH,get_occ_mat
+    use w90_get_oper, only       : HH_R,AA_R,FF_R
+
+    ! Arguments
+    !
+    real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), intent(out) :: imh_k(3,3)
+
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     complex(kind=dp), allocatable :: f(:,:)
     complex(kind=dp), allocatable :: g(:,:)
     complex(kind=dp), allocatable :: AA(:,:,:)
-    complex(kind=dp), allocatable :: FF(:,:)
-    complex(kind=dp), allocatable :: OOmega(:,:)
-    complex(kind=dp), allocatable :: JJminus_a(:,:)
-    complex(kind=dp), allocatable :: JJplus_b(:,:)
+!    complex(kind=dp), allocatable :: FF(:,:)
+    complex(kind=dp), allocatable :: OOmega_i(:,:)
+    complex(kind=dp), allocatable :: JJp(:,:,:)
+    complex(kind=dp), allocatable :: JJm(:,:,:)
     complex(kind=dp), allocatable :: mdum(:,:)
     real(kind=dp)                 :: eig(num_wann)
-
+    integer                       :: i
 
     allocate(HH(num_wann,num_wann))
     allocate(UU(num_wann,num_wann))
     allocate(f(num_wann,num_wann))
     allocate(g(num_wann,num_wann))
-    allocate(JJminus_a(num_wann,num_wann))
-    allocate(JJplus_b(num_wann,num_wann))
-    allocate(AA(num_wann,num_wann,2))
-    allocate(OOmega(num_wann,num_wann))
+    allocate(JJp(num_wann,num_wann,3))
+    allocate(JJm(num_wann,num_wann,3))
+    allocate(AA(num_wann,num_wann,3))
+    allocate(OOmega_i(num_wann,num_wann))
     allocate(mdum(num_wann,num_wann))
 
-    if(omega_from_FF) allocate(FF(num_wann,num_wann))
-
-    ! gather W-gauge matrix objects
-
-    ! hamiltonian
-    call fourier_R_to_k(kpt,HH_R,HH,0)
-    call utility_diagonalize(HH,num_wann,eig,UU)
-
+    ! Gather W-gauge matrix objects
+    !
+    call get_eig_UU_JJ_HH(kpt,eig,UU,JJp,JJm,HH)
     ! occupation f, and g=1-f
     call get_occ_mat(eig,UU,f,g)
+    ! AA_a = i<u|del_a u> [Eq. (28) LVTS12]
+    call fourier_R_to_k(kpt,AA_R(:,:,:,1),AA(:,:,1),0)
+    call fourier_R_to_k(kpt,AA_R(:,:,:,2),AA(:,:,2),0)
+    call fourier_R_to_k(kpt,AA_R(:,:,:,3),AA(:,:,3),0)
 
-    ! JJminus_a and JJplus_b
-    call fourier_R_to_k(kpt,HH_R,mdum,alpha) 
-    call get_JJminus(mdum,UU,eig,JJminus_a(:,:))
-    call fourier_R_to_k(kpt,HH_R,mdum,beta)
-    call get_JJplus(mdum,UU,eig,JJplus_b(:,:))
+    do i=1,3
+       call fourier_R_to_k(kpt,AA_R(:,:,:,bet(i)),mdum,alp(i))
+       Oomega_i=mdum
+       call fourier_R_to_k(kpt,AA_R(:,:,:,alp(i)),mdum,bet(i))
+       OOmega_i=Oomega_i-mdum
+       !
+       ! Trace formula, Eq.(56) LVTS12
+       !
+       ! J0 term
+       mdum=matmul(f,matmul(HH,OOmega_i))
+       imh_k(1,i)=utility_re_tr(mdum)
+       mdum=matmul(f,matmul(HH,matmul(AA(:,:,alp(i)),&
+            matmul(f,AA(:,:,bet(i))))))
+       imh_k(1,i)=imh_k(1,i)+2.0_dp*utility_im_tr(mdum)
+       !
+       ! J1 term
+       mdum=matmul(HH,matmul(AA(:,:,alp(i)),JJp(:,:,bet(i))))&
+           +matmul(HH,matmul(JJm(:,:,alp(i)),AA(:,:,bet(i))))
+       imh_k(2,i)=-2.0_dp*utility_im_tr(mdum)
+       !
+       ! J2 term
+       mdum=matmul(HH,matmul(JJm(:,:,alp(i)),JJp(:,:,bet(i))))
+       imh_k(3,i)=-2.0_dp*utility_im_tr(mdum)
+       !
+    enddo
 
-    ! AA_a = i<u|del_a u> (a=alpha,beta)
-    call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),AA(:,:,1),0)
-    call fourier_R_to_k(kpt,AA_R(:,:,:,beta),AA(:,:,2),0)
-
-    if(omega_from_FF) then
-       ! First equality in Eq.(31) LVTS12: OOmega = i(F-F^dag)
-       call fourier_R_to_k(kpt,FF_R(:,:,:,alpha,beta),FF(:,:),0)
-       OOmega=cmplx_i*(FF-conjg(transpose(FF)))
-    else
-       ! Second equality in Eq.(31) LVTS12:
-       ! OOmega = del_alpha AA_beta - del_beta AA_alpha
-       call fourier_R_to_k(kpt,AA_R(:,:,:,beta),mdum,alpha)
-       Oomega=mdum
-       call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),mdum,beta)
-       OOmega=Oomega-mdum
-    endif
-
-    ! Berry curvature of occ. states as a trace, Eq.(51) LVTS12
-
-    ! J0 (Omega_bar) term
-    mdum=matmul(f,OOmega)
-    imf(1)=utility_re_tr(mdum)
-
-    ! J1 (DA) term
-    mdum=matmul(AA(:,:,1),JJplus_b)+matmul(JJminus_a,AA(:,:,2))
-    imf(2)=-2.0_dp*utility_im_tr(mdum)
-
-    ! J2 (DD) term
-    mdum=matmul(JJminus_a,JJplus_b)
-    imf(3)=-2.0_dp*utility_im_tr(mdum)
-
-  end subroutine get_imf_ab_k
+  end subroutine get_imh_k
 
 
-  subroutine get_imh_ab_k(kpt,imh)
-  !=====================================!
-  !                                     !
-  ! Calculates -2Im[h_{alpha beta}(k)], !
-  ! Eq.35 Ceresoli et al PRB 74, 024408 !
-  !                                     !
-  !=====================================!
+  subroutine get_img_k(kpt,img_k)
+  !======================================!
+  !                                      !
+  ! Calculates -2Im[g_{alpha beta}(k)],  !
+  ! Eq.34 CTVR06, Eq.7 LVTS12, stores it !
+  ! in axial-vector form                 !
+  !                                      !
+  !======================================!
 
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_utility, only       : utility_diagonalize,utility_re_tr,&
-                                  utility_im_tr
-    use w90_parameters, only    : alpha,beta,num_wann,omega_from_FF
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
+    use w90_utility, only        : utility_diagonalize,utility_re_tr,&
+                                   utility_im_tr
+    use w90_parameters, only     : num_wann
     use w90_postw90_common, only : fourier_R_to_k
-    use w90_wan_ham, only       : get_JJplus,get_JJminus,get_occ_mat
-    use w90_get_oper, only      : HH_R,AA_R,FF_R
+    use w90_wan_ham, only        : get_eig_UU_JJ_HH,get_occ_mat
+    use w90_get_oper, only       : HH_R,AA_R,BB_R,CC_R
 
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
-    real(kind=dp), intent(out) :: imh(3)
+    real(kind=dp), intent(out) :: img_k(3,3)
 
-    ! Physics
-    !
-    complex(kind=dp), allocatable :: HH(:,:)
-    complex(kind=dp), allocatable :: UU(:,:)
-    complex(kind=dp), allocatable :: f(:,:)
-    complex(kind=dp), allocatable :: g(:,:)
-    complex(kind=dp), allocatable :: AA(:,:,:)
-    complex(kind=dp), allocatable :: FF(:,:)
-    complex(kind=dp), allocatable :: OOmega(:,:)
-    complex(kind=dp), allocatable :: JJminus_a(:,:)
-    complex(kind=dp), allocatable :: JJplus_b(:,:)
-    complex(kind=dp), allocatable :: mdum(:,:)
-    real(kind=dp)                 :: eig(num_wann)
-
-
-    allocate(HH(num_wann,num_wann))
-    allocate(UU(num_wann,num_wann))
-    allocate(f(num_wann,num_wann))
-    allocate(g(num_wann,num_wann))
-    allocate(JJminus_a(num_wann,num_wann))
-    allocate(JJplus_b(num_wann,num_wann))
-    allocate(AA(num_wann,num_wann,2))
-    allocate(OOmega(num_wann,num_wann))
-    allocate(mdum(num_wann,num_wann))
-
-    if(omega_from_FF) allocate(FF(num_wann,num_wann))
-
-    ! hamiltonian
-    call fourier_R_to_k(kpt,HH_R,HH,0)
-    call utility_diagonalize(HH,num_wann,eig,UU)
-
-    ! occupation f, and g=1-f
-    call get_occ_mat(eig,UU,f,g)
-
-    ! JJminus_a and JJplus_b
-    call fourier_R_to_k(kpt,HH_R,mdum,alpha)
-    call get_JJminus(mdum,UU,eig,JJminus_a(:,:))
-    call fourier_R_to_k(kpt,HH_R,mdum,beta)
-    call get_JJplus(mdum,UU,eig,JJplus_b(:,:))
-
-    ! AA_a = i<u|del_a u> (a=alpha,beta)
-    call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),AA(:,:,1),0)
-    call fourier_R_to_k(kpt,AA_R(:,:,:,beta),AA(:,:,2),0)
-
-    if(omega_from_FF) then
-       ! First equality in Eq.(31) LVTS12: OOmega = i(F-F^dag)
-       call fourier_R_to_k(kpt,FF_R(:,:,:,alpha,beta),FF(:,:),0)
-       OOmega=cmplx_i*(FF-conjg(transpose(FF)))
-    else
-       ! Second equality in Eq.(31) LVTS12:
-       ! OOmega = del_alpha AA_beta - del_beta AA_alpha
-       call fourier_R_to_k(kpt,AA_R(:,:,:,beta),mdum,alpha)
-       Oomega=mdum
-       call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),mdum,beta)
-       OOmega=Oomega-mdum
-    endif
-
-    mdum=matmul(f,matmul(HH,OOmega))
-    imh(1)=utility_re_tr(mdum)
-    mdum=matmul(f,matmul(HH,matmul(AA(:,:,1),matmul(f,AA(:,:,2)))))
-    imh(1)=imh(1)+2.0_dp*utility_im_tr(mdum)
-
-    mdum=matmul(HH,matmul(AA(:,:,1),JJplus_b))&
-        +matmul(HH,matmul(JJminus_a,AA(:,:,2)))
-    imh(2)=-2.0_dp*utility_im_tr(mdum)
-
-    mdum=matmul(HH,matmul(JJminus_a,JJplus_b))
-    imh(3)=-2.0_dp*utility_im_tr(mdum)
-
-  end subroutine get_imh_ab_k
-
-
-  subroutine get_img_ab_k(kpt,img)
-  !=====================================!
-  !                                     !
-  ! Calculates -2Im[g_{alpha beta}(k)], !
-  ! Eq.34 Ceresoli et al PRB 74, 024408 !
-  !                                     !
-  !=====================================!
-
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_utility, only       : utility_diagonalize,utility_re_tr,&
-                                  utility_im_tr
-    use w90_parameters, only    : alpha,beta,num_wann
-    use w90_postw90_common, only : fourier_R_to_k
-    use w90_wan_ham, only       : get_JJplus,get_JJminus,get_occ_mat
-    use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R
-
-    ! Arguments
-    !
-    real(kind=dp), intent(in)  :: kpt(3)
-    real(kind=dp), intent(out) :: img(3)
-
-    ! Physics
-    !
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     complex(kind=dp), allocatable :: f(:,:)
     complex(kind=dp), allocatable :: g(:,:)
     complex(kind=dp), allocatable :: AA(:,:,:)
     complex(kind=dp), allocatable :: BB(:,:,:)
-    complex(kind=dp), allocatable :: CC(:,:)
-    complex(kind=dp), allocatable :: LLambda(:,:)
-    complex(kind=dp), allocatable :: JJminus_a(:,:)
-    complex(kind=dp), allocatable :: JJminus_b(:,:)
-    complex(kind=dp), allocatable :: JJplus_b(:,:)
+    complex(kind=dp), allocatable :: CC(:,:,:,:)
+    complex(kind=dp), allocatable :: LLambda_i(:,:)
+    complex(kind=dp), allocatable :: JJp(:,:,:)
+    complex(kind=dp), allocatable :: JJm(:,:,:)
     complex(kind=dp), allocatable :: mdum(:,:)
     real(kind=dp)                 :: eig(num_wann)
+    integer                       :: i,j
 
     allocate(HH(num_wann,num_wann))
     allocate(UU(num_wann,num_wann))
     allocate(f(num_wann,num_wann))
     allocate(g(num_wann,num_wann))
-    allocate(JJminus_a(num_wann,num_wann))
-    allocate(JJminus_b(num_wann,num_wann))
-    allocate(JJplus_b(num_wann,num_wann))
-    allocate(AA(num_wann,num_wann,2))
-    allocate(BB(num_wann,num_wann,2))
-    allocate(CC(num_wann,num_wann))
-    allocate(LLambda(num_wann,num_wann))
+    allocate(JJp(num_wann,num_wann,3))
+    allocate(JJm(num_wann,num_wann,3))
+    allocate(AA(num_wann,num_wann,3))
+    allocate(BB(num_wann,num_wann,3))
+    allocate(CC(num_wann,num_wann,3,3))
+    allocate(LLambda_i(num_wann,num_wann))
     allocate(mdum(num_wann,num_wann))
 
-    ! hamiltonian
-    call fourier_R_to_k(kpt,HH_R,HH,0)
-    call utility_diagonalize(HH,num_wann,eig,UU)
-
+    ! Gather W-gauge matrix objects
+    !
+    call get_eig_UU_JJ_HH(kpt,eig,UU,JJp,JJm,HH)
     ! occupation f, and g=1-f
     call get_occ_mat(eig,UU,f,g)
+    do j=1,3
+       !
+       ! AA_j = i<u|del_j u> [Eq. (28) LVTS12]
+       call fourier_R_to_k(kpt,AA_R(:,:,:,j),AA(:,:,j),0)
+       ! BB_j = i<u|H|del_j u> [Eq. (34) LVTS12]
+       call fourier_R_to_k(kpt,BB_R(:,:,:,j),BB(:,:,j),0)
+       do i=1,3
+          ! CC_ij = i<del_i u|H|del_j u> [Eq. (35) LVTS12]
+          call fourier_R_to_k(kpt,CC_R(:,:,:,i,j),CC(:,:,i,j),0)
+       enddo
+    enddo
 
-    ! JJminus_a, JJminus_b, and JJplus_b
-    call fourier_R_to_k(kpt,HH_R,mdum,alpha)
-    call get_JJminus(mdum,UU,eig,JJminus_a(:,:))
-    call fourier_R_to_k(kpt,HH_R,mdum,beta)
-    call get_JJminus(mdum,UU,eig,JJminus_b(:,:))
-    call get_JJplus(mdum,UU,eig,JJplus_b(:,:))
+    ! Trace formula, Eq.(66) LVTS12
+    !
+    do i=1,3
+       !
+       ! J0 term
+       ! LLambda_ij [Eq. (37) LVTS12] in pseudovector form
+       LLambda_i=cmplx_i*(CC(:,:,alp(i),bet(i))&
+              -conjg(transpose(CC(:,:,alp(i),bet(i)))))
+       mdum=matmul(f,LLambda_i)
+       img_k(1,i)=utility_re_tr(mdum)
+       mdum=matmul(f,matmul(HH,matmul(AA(:,:,alp(i)),&
+            matmul(f,AA(:,:,bet(i))))))
+       img_k(1,i)=img_k(1,i)-2.0_dp*utility_im_tr(mdum)
+       !
+       ! J1 term
+       mdum=matmul(JJm(:,:,alp(i)),BB(:,:,bet(i)))&
+           -matmul(JJm(:,:,bet(i)),BB(:,:,alp(i)))
+       img_k(2,i)=-2.0_dp*utility_im_tr(mdum)
+       !
+       ! J2 term
+       mdum=matmul(JJm(:,:,alp(i)),matmul(HH,JJp(:,:,bet(i))))
+       img_k(3,i)=-2.0_dp*utility_im_tr(mdum)
+    enddo
 
-    ! AA_a = i<u|del_a u> 
-    call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),AA(:,:,1),0)
-    call fourier_R_to_k(kpt,AA_R(:,:,:,beta),AA(:,:,2),0)
-
-    ! BB_a = i<u|H|del_a u>
-    call fourier_R_to_k(kpt,BB_R(:,:,:,alpha),BB(:,:,1),0)
-    call fourier_R_to_k(kpt,BB_R(:,:,:,beta),BB(:,:,2),0)
-
-    ! CC_ab = i<del_a u|H|del_b u>
-    call fourier_R_to_k(kpt,CC_R(:,:,:,alpha,beta),CC(:,:),0)
-
-    ! LLambda_ab = [CC - CC^dag]_ab
-    LLambda=cmplx_i*(CC-conjg(transpose(CC)))
-
-    mdum=matmul(f,LLambda)
-    img(1)=utility_re_tr(mdum)
-    mdum=matmul(f,matmul(HH,matmul(AA(:,:,1),matmul(f,AA(:,:,2)))))
-    img(1)=img(1)-2.0_dp*utility_im_tr(mdum)
-
-    mdum=matmul(JJminus_a,BB(:,:,2))-matmul(JJminus_b,BB(:,:,1))
-    img(2)=-2.0_dp*utility_im_tr(mdum)
-
-    mdum=matmul(JJminus_a,matmul(HH,JJplus_b))
-    img(3)=-2.0_dp*utility_im_tr(mdum)
-
-  end subroutine get_img_ab_k
-
+  end subroutine get_img_k
 
   !===========================================================!
   !                   PRIVATE PROCEDURES                      ! 
   !===========================================================!
 
-  subroutine get_sig_ab_k(kpt,sig_ab_k,sig_ab_over_freq_k,jdos_k)
-  !===========================================================================!
-  !                                                                           !
-  ! Interband optical conductivity (absorptive) in the long-wavelength limit, !
-  ! calculated in the independent-particle approximation (no local fields)    !
-  !                                                                           !
-  !===========================================================================!
+  subroutine get_sig_k(kpt,sig_k,jdos_k)
+  !======================================================!
+  !                                                      !
+  ! Interband optical conductivity (absorptive), in the  !
+  ! independent-particle approximation (no local fields) !
+  !                                                      !
+  !======================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
-    use w90_parameters, only     : num_wann,berry_min_energy,&
-                                   berry_interp_mesh,alpha,beta,&
+    use w90_parameters, only     : num_wann,optics_min_energy,berry_interp_mesh,&
                                    berry_smr_adpt_factor,berry_interp_mesh,&
                                    spn_decomp,fermi_energy
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
-    use w90_wan_ham, only        : get_D_h_a,get_eig_deleig   !get_deleig_a
+    use w90_wan_ham, only        : get_D_h,get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
     use w90_spin, only           : get_spn_nk
 
     ! Arguments
     !
-    real(kind=dp),                   intent(in)  :: kpt(3)
-    real(kind=dp), dimension(:,:,:), intent(out) :: sig_ab_k
-    real(kind=dp), dimension(:,:,:), intent(out) :: sig_ab_over_freq_k
-    real(kind=dp), dimension(:,:),   intent(out) :: jdos_k
+    real(kind=dp),                   intent(in)    :: kpt(3)
+    real(kind=dp), dimension(:,:,:,:), intent(out) :: sig_k
+    real(kind=dp), dimension(:,:),   intent(out)   :: jdos_k
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: delHH(:,:,:)
@@ -1693,219 +1581,125 @@ module w90_berry
     real(kind=dp) :: del_eig(num_wann,3),joint_level_spacing,&
                      smear,Delta_k,arg
  
-    ! Misc/Dummy
-    !
-    integer          :: i,j,ifreq,case
-         !loop_s
+    integer          :: i,n,m,ifreq,case,ncomp
     real(kind=dp)    :: rdum,rvdum(3),eig(num_wann),occ(num_wann),occ_prod,&
-                        freq,A2_ij(3),spn_nk(num_wann) 
+                        freq,spn_nk(num_wann)
+
+    real(kind=dp), allocatable :: Aprod(:,:)
+
+    if(T_odd) then
+       ncomp=3
+    else
+       ncomp=6
+    endif
+    allocate(Aprod(3,ncomp))
 
     allocate(HH(num_wann,num_wann))
     allocate(delHH(num_wann,num_wann,3))
-    allocate(D_h(num_wann,num_wann,2))
     allocate(UU(num_wann,num_wann))
-    allocate(AA_bar(num_wann,num_wann,2))
+    allocate(D_h(num_wann,num_wann,3))
+    allocate(AA_bar(num_wann,num_wann,3))
     allocate(mdum(num_wann,num_wann))
 
-! *****************************OLD*******************************
-!    call fourier_R_to_k(kpt,HH_R,HH,0) 
-!    call utility_diagonalize(HH,num_wann,eig,UU) 
-!    call fourier_R_to_k(kpt,HH_R,mdum,alpha) 
-!    call get_D_h_a(mdum,UU,eig,D_h(:,:,1))
-!    call fourier_R_to_k(kpt,HH_R,mdum,beta) 
-!    call get_D_h_a(mdum,UU,eig,D_h(:,:,2))
-
-    ! band gradients
-!    call fourier_R_to_k(kpt,HH_R,mdum,1) 
-!    call get_deleig_a(del_eig(:,1),eig,mdum,UU)
-!    call fourier_R_to_k(kpt,HH_R,mdum,2) 
-!    call get_deleig_a(del_eig(:,2),eig,mdum,UU)
-!    call fourier_R_to_k(kpt,HH_R,mdum,3) 
-!    call get_deleig_a(del_eig(:,3),eig,mdum,UU)
-! *****************************OLD*******************************
-
-! *****************************NEW*******************************
     call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-    call get_D_h_a(delHH(:,:,alpha),UU,eig,D_h(:,:,1))
-    call get_D_h_a(delHH(:,:,beta),UU,eig,D_h(:,:,2))
-! *****************************NEW*******************************
-
-    call fourier_R_to_k(kpt,AA_R(:,:,:,alpha),mdum(:,:),0)
-    AA_bar(:,:,1)=utility_rotate(mdum,UU,num_wann)
-    call fourier_R_to_k(kpt,AA_R(:,:,:,beta),mdum(:,:),0)
-    AA_bar(:,:,2)=utility_rotate(mdum,UU,num_wann)
-
     call get_occ(eig,occ,fermi_energy)
+    call get_D_h(delHH,UU,eig,D_h)
+    do i=1,3
+       call fourier_R_to_k(kpt,AA_R(:,:,:,i),mdum(:,:),0)
+       AA_bar(:,:,i)=utility_rotate(mdum,UU,num_wann)
+    enddo
 
-    ! Find spacing of interpolation mesh 
-    !
     Delta_k=kmesh_spacing(berry_interp_mesh)
-    
-    ! Get spin projections along chosen quantization axis for every band
-    !
     if(spn_decomp) call get_spn_nk(kpt,spn_nk)
 
-    sig_ab_k=0.0_dp
-    sig_ab_over_freq_k=0.0_dp
+    sig_k=0.0_dp
     jdos_k=0.0_dp
-    case=0 ! just so that compilation with 'g95 -Wall' doesn't complain!
-           ! the value 0 for 'case' is actually meaningless
-    do i=1,num_wann
-       do j=1,num_wann
+    case=0
+    do n=1,num_wann
+       do m=1,num_wann
+          occ_prod=occ(n)*(1.0_dp-occ(m))
+          if(occ_prod < 1.0e-7_dp) cycle
           if(spn_decomp) then
-             if(spn_nk(i)>=0 .and. spn_nk(j)>=0) then 
+             if(spn_nk(n)>=0 .and. spn_nk(m)>=0) then 
                 case=1 ! up --> up transition 
-                       ! NOTE: These are *minority* spins if magnetization 
-                       !       is positive
-             elseif(spn_nk(i)<0 .and. spn_nk(j)<0) then 
+             elseif(spn_nk(n)<0 .and. spn_nk(m)<0) then 
                 case=2 ! down --> down
              else
-                case=3 ! spin-flip transition
+                case=3 ! spin-flip
              end if
           end if
-          occ_prod=occ(i)*(1.0_dp-occ(j))
-!          if(occ_prod < eps_occ) cycle
-          rvdum(:)=del_eig(j,:)-del_eig(i,:)
+          rvdum(:)=del_eig(m,:)-del_eig(n,:)
           joint_level_spacing=sqrt(dot_product(rvdum(:),rvdum(:)))*Delta_k
-          if(T_odd) then 
-             ! Dichoric [Eqs.(39),(42) YWVS07]
-             call get_A2(D_h,AA_bar,i,j,A2_ij,'im')
+          !
+          ! Optical matrix elements
+          !
+          if(T_odd) then ! Eqs.(39,42) YWVS07
+             do i=1,ncomp !ncomp=3
+                Aprod(1,i)=-aimag(D_h(n,m,alp(i))*D_h(m,n,bet(i)))
+                Aprod(2,i)=aimag(cmplx_i*(AA_bar(n,m,alp(i))*D_h(m,n,bet(i))&
+                     +D_h(n,m,alp(i))*AA_bar(m,n,bet(i))))
+                Aprod(3,i)=aimag(AA_bar(n,m,alp(i))*AA_bar(m,n,bet(i)))
+             enddo
           else
-             ! Ordinary
-             call get_A2(D_h,AA_bar,i,j,A2_ij,'re')
+             do i=1,ncomp !ncomp=6
+                Aprod(1,i)=-aimag(cmplx_i*D_h(n,m,alps(i))*D_h(m,n,bets(i)))
+                Aprod(2,i)=-aimag(D_h(n,m,alps(i))*AA_bar(m,n,bets(i))&
+                                 +AA_bar(n,m,alps(i))*D_h(m,n,bets(i)))
+                Aprod(3,i)=aimag(cmplx_i*AA_bar(n,m,alps(i))*AA_bar(m,n,bets(i)))
+             enddo
           end if
-!          do loop_s=1,adpt_smr_steps
              
-             ! Except for the factor 1/sqrt(2), this is Eq.(35) YWVS07
-             ! !!!UNDERSTAND THAT FACTOR!!!
+          ! Eq.(35) YWVS07, except for the factor 1/sqrt(2) (understand!)
+          !
+          smear=joint_level_spacing*berry_smr_adpt_factor/sqrt(2.0_dp)
+          do ifreq=1,nfreq   
+             
+             freq=optics_min_energy+(ifreq-1)*d_freq
+             arg=(eig(m)-eig(n)-freq)/smear
+             if(abs(arg)>10.0_dp) then !optimisation
+                cycle
+             else
+                !
+                ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
+                ! (hard code for M-P)
+                rdum=w0gauss(arg,1)/smear
+                !
+                rdum=rdum*occ_prod ! Fermi occupancy factor
+             end if
              !
-!             smear=joint_level_spacing*adpt_smr_width(loop_s)/sqrt(2.0_dp)
-             smear=joint_level_spacing*berry_smr_adpt_factor/sqrt(2.0_dp)
-             do ifreq=1,nfreq   
-                
-                ! NOTE: Skipping berry_min_energy. When it is zero can give
-                !       problems in the case of ordinary spectrum 
-                !
-                freq=berry_min_energy+ifreq*d_freq
-                arg=(eig(j)-eig(i)-freq)/smear
-                if(abs(arg) > 10.0_dp) then !optimisation
-                   cycle
-                else
-                   !
-                   ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
-                   !
-                   ! hard code for M-P
-                   rdum=w0gauss(arg,1)/smear
-                   !
-                   ! Fermi occupancy factor
-                   !
-                   rdum=rdum*occ_prod
-                end if
-                !
-                ! Joint density of states
-                !
-                jdos_k(ifreq,1)=jdos_k(ifreq,1)+rdum
-                if(spn_decomp) jdos_k(ifreq,1+case)&
-                              =jdos_k(ifreq,1+case)+rdum
-                !
-                ! Optical conductivity
-                !
-                ! NOTE: Minus sign in Eq.(39) YWVS07 is *wrong*
-                
-                ! sigma(freq)/freq: Exclude factor of freq in Eq.(39) YWVS07
-                !
-                sig_ab_over_freq_k(1,ifreq,1)&
-                     =sig_ab_over_freq_k(1,ifreq,1)+A2_ij(1)*rdum
-                sig_ab_over_freq_k(2,ifreq,1)&
-                     =sig_ab_over_freq_k(2,ifreq,1)+A2_ij(2)*rdum
-                sig_ab_over_freq_k(3,ifreq,1)&
-                     =sig_ab_over_freq_k(3,ifreq,1)+A2_ij(3)*rdum
+             ! Joint density of states
+             !
+             jdos_k(ifreq,1)=jdos_k(ifreq,1)+rdum
+             if(spn_decomp) jdos_k(ifreq,1+case)&
+                  =jdos_k(ifreq,1+case)+rdum
+             !
+             ! Optical conductivity sigma(omega)/omega 
+             ! (exclude factor of omega in Eq.(39) YWVS07)
+             ! NOTE: Minus sign therein is a typo
+             !
+             do i=1,ncomp
+                sig_k(1,i,ifreq,1)=sig_k(1,i,ifreq,1)+Aprod(1,i)*rdum
+                sig_k(2,i,ifreq,1)=sig_k(2,i,ifreq,1)+Aprod(2,i)*rdum
+                sig_k(3,i,ifreq,1)=sig_k(3,i,ifreq,1)+Aprod(3,i)*rdum
                 if(spn_decomp) then
-                   sig_ab_over_freq_k(1,ifreq,1+case)&
-                       =sig_ab_over_freq_k(1,ifreq,1+case)+A2_ij(1)*rdum
-                   sig_ab_over_freq_k(2,ifreq,1+case)&
-                       =sig_ab_over_freq_k(2,ifreq,1+case)+A2_ij(2)*rdum
-                   sig_ab_over_freq_k(3,ifreq,1+case)&
-                       =sig_ab_over_freq_k(3,ifreq,1+case)+A2_ij(3)*rdum
+                   sig_k(1,i,ifreq,1+case)&
+                        =sig_k(1,i,ifreq,1+case)+Aprod(1,i)*rdum
+                   sig_k(2,i,ifreq,1+case)&
+                        =sig_k(2,i,ifreq,1+case)+Aprod(2,i)*rdum
+                   sig_k(3,i,ifreq,1+case)&
+                        =sig_k(3,i,ifreq,1+case)+Aprod(3,i)*rdum
                 end if
-                !
-                ! sigma(freq): Include factor of freq in Eq.(39) YWVS07
-                !
-                rdum=rdum*(eig(j)-eig(i))
-                sig_ab_k(1,ifreq,1)=sig_ab_k(1,ifreq,1)+A2_ij(1)*rdum
-                sig_ab_k(2,ifreq,1)=sig_ab_k(2,ifreq,1)+A2_ij(2)*rdum
-                sig_ab_k(3,ifreq,1)=sig_ab_k(3,ifreq,1)+A2_ij(3)*rdum
-                if(spn_decomp) then
-                   sig_ab_k(1,ifreq,1+case)&
-                        =sig_ab_k(1,ifreq,1+case)+A2_ij(1)*rdum
-                   sig_ab_k(2,ifreq,1+case)&
-                        =sig_ab_k(2,ifreq,1+case)+A2_ij(2)*rdum
-                   sig_ab_k(3,ifreq,1+case)&
-                        =sig_ab_k(3,ifreq,1+case)+A2_ij(3)*rdum
-                end if
-             end do !ifreq
-          !end do !loop_s
-       end do !j
-    end do !i
+             enddo
+          end do !ifreq
+       end do !m
+    end do !n
 
-  end subroutine get_sig_ab_k
+  end subroutine get_sig_k
 
 
-  subroutine get_A2(D_h,AA_bar,i,j,A2_ij,imre)
-  !=================================================================!
-  !                                                                 !
-  ! Evaluate the real or imaginary part of A_{ij,alpha}A_{ji,beta}, !
-  ! Eq.(42) YWVS07                                                  !
-  !                                                                 !
-  ! A2_ij(1) is the DD term                                         !
-  ! A2_ij(2) is the DA term                                         !
-  ! A2_ij(3) is the AA term                                         !
-  !=================================================================!
-
-    use w90_constants, only     : dp,cmplx_i,cmplx_0
-    use w90_io, only            : io_error
-
-    ! Arguments
-    !
-    complex(kind=dp), dimension(:,:,:), intent(in)  :: D_h
-    complex(kind=dp), dimension(:,:,:), intent(in)  :: AA_bar
-    integer,                            intent(in)  :: i,j
-    real(kind=dp),    dimension(:,:,:), intent(out) :: A2_ij(3)
-    character(len=2),                   intent(in)  :: imre
- 
-    ! Misc/Dummy
-    !
-    complex(kind=dp) :: D_ji_a,D_ji_b,A_ji_a,A_ji_b
-
-    D_ji_a=D_h(j,i,1)
-    D_ji_b=D_h(j,i,2)
-    A_ji_a=AA_bar(j,i,1)
-    A_ji_b=AA_bar(j,i,2)
-    
-    if(imre=='im') then
-       !
-       ! DD term in Eq.(42) YWVS07
-       !
-       A2_ij(1)=aimag(conjg(D_ji_a)*D_ji_b) 
-       !
-       ! DA terms
-       !
-       A2_ij(2)=aimag(cmplx_i*(conjg(A_ji_a)*D_ji_b&
-                              -conjg(D_ji_a)*A_ji_b))
-       !
-       ! AA term
-       !
-       A2_ij(3)=aimag(conjg(A_ji_a)*A_ji_b)   
-    elseif(imre=='re') then
-       A2_ij(1)=aimag(cmplx_i*conjg(D_ji_a)*D_ji_b)
-       A2_ij(2)=aimag(conjg(D_ji_a)*A_ji_b&
-            -conjg(A_ji_a)*D_ji_b)
-       A2_ij(3)=aimag(cmplx_i*conjg(A_ji_a)*A_ji_b) 
-    else 
-       call io_error('error in value of variable imre in get_A2')
-    end if
-
-  end subroutine get_A2
+  !################################################
+  ! EVERYTHING BELOW THIS POINT IS WORK IN PROGRESS
+  !################################################
 
 
   subroutine get_sig_abc_k(kpt,sig_abc_k,sig_abc_cut_k)
@@ -1930,7 +1724,7 @@ module w90_berry
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
     use w90_parameters, only    : num_wann,fermi_energy,&
-                                  berry_min_energy,berry_max_energy,&
+                                  optics_min_energy,optics_max_energy,&
                                   alpha,beta,gamma,sigma_abc_onlyorb
     use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
@@ -2083,10 +1877,10 @@ module w90_berry
     do n=1,num_wann !valence
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann !conduction, inside frozen window
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
           omega_mn=eig(m)-eig(n)
           do ifreq=1,nfreq
-             freq=berry_min_energy+(ifreq-1)*d_freq
+             freq=optics_min_energy+(ifreq-1)*d_freq
              if(T_odd) then
                 !
                 ! ------------------------------
@@ -2152,13 +1946,13 @@ module w90_berry
 
     ! Now recalculate the dc (static) value sig_abc_k(omega=0), 
     ! including only transitions *below* a given energy, scanned 
-    ! between zero and berry_max_energy
+    ! between zero and optics_max_energy
     !
     sig_abc_cut_k=0.0_dp
     do n=1,num_wann
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
           omega_mn=eig(m)-eig(n)
           do ifreq=nfreq_cut,1,-1
              !---------------------------------------!
@@ -2207,8 +2001,8 @@ module w90_berry
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
-    use w90_parameters, only    : num_wann,fermi_energy,berry_min_energy,&
-                                  berry_max_energy,sigma_abc_onlyorb
+    use w90_parameters, only    : num_wann,fermi_energy,optics_min_energy,&
+                                  optics_max_energy,sigma_abc_onlyorb
     use w90_postw90_common, only : fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a,get_deleig_a
     use w90_get_oper, only      : HH_R,AA_R,BB_R,CC_R,FF_R,SS_R
@@ -2364,13 +2158,13 @@ module w90_berry
     do n=1,num_wann !valence
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann !conduction, inside frozen window
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
           omega_mn=eig(m)-eig(n)
           do c=1,3
           do b=1,3
           do a=1,b ! Will symmetrize at the end
              do ifreq=1,nfreq
-                freq=berry_min_energy+(ifreq-1)*d_freq
+                freq=optics_min_energy+(ifreq-1)*d_freq
                 omega_fac_matel=2.0_dp*omega_mn/(omega_mn**2-freq**2)
                 omega_fac_en=2.0_dp*omega_mn**3/(omega_mn**2-freq**2)**2
                 !
@@ -2466,7 +2260,7 @@ module w90_berry
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,bohr,eV_au
     use w90_utility, only       : utility_diagonalize,utility_rotate
-    use w90_parameters, only    : num_wann,fermi_energy,berry_max_energy,&
+    use w90_parameters, only    : num_wann,fermi_energy,optics_max_energy,&
                                   cell_volume
     use w90_postw90_common, only: fourier_R_to_k
     use w90_wan_ham, only       : get_D_h_a
@@ -2512,7 +2306,7 @@ module w90_berry
 
     ! Compute alphaspn_k (dimensionless due to multiplication by fac). Also,
     ! recalculate it including only transitions below a given energy, scanned 
-    ! between zero and berry_max_energy
+    ! between zero and optics_max_energy
     !
     alphaspn_k=0.0_dp
     alphaspn_cut_k=0.0_dp
@@ -2520,7 +2314,7 @@ module w90_berry
        if(eig(n)>fermi_energy) cycle
        do m=1,num_wann !conduction, inside frozen window
 !         if(eig(m)<fermi_energy.or.eig(m)>eig_max) cycle
-          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>berry_max_energy) cycle
+          if(eig(m)<fermi_energy.or.eig(m)-eig(n)>optics_max_energy) cycle
           do j=1,3
              do i=1,3
                 rdum=fac*aimag(cmplx_i*SS_h(n,m,j)*AA_h(m,n,i))/(eig(m)-eig(n))
