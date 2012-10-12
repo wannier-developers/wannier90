@@ -55,13 +55,54 @@ module w90_wan_ham
 
   end subroutine get_D_h_a
 
+  subroutine get_D_h(delHH,UU,eig,D_h)
+  !=========================================!
+  !                                         !
+  ! Compute D^H_a=UU^dag.del_a UU (a=x,y,z) !
+  ! using Eq.(24) of WYSV06                 !
+  !                                         !
+  !=========================================!
+
+    ! TO DO: Implement version where energy denominators only connect
+    !        occupied and empty states. In this case probably do not need
+    !        to worry about avoiding small energy denominators
+
+    use w90_constants, only     : dp,cmplx_0,cmplx_i
+    use w90_parameters, only    : num_wann,fermi_energy
+    use w90_utility, only       : utility_rotate
+
+    ! Arguments
+    !
+    complex(kind=dp), dimension(:,:,:), intent(in)  :: delHH
+    complex(kind=dp), dimension(:,:), intent(in)    :: UU
+    real(kind=dp),    dimension(:),   intent(in)    :: eig
+    complex(kind=dp), dimension(:,:,:), intent(out) :: D_h
+
+    complex(kind=dp), allocatable :: delHH_bar_i(:,:)
+    real(kind=dp)                 :: occ(num_wann)
+    integer                       :: n,m,i
+
+    allocate(delHH_bar_i(num_wann,num_wann))
+    D_h=cmplx_0
+    do i=1,3
+       delHH_bar_i(:,:)=utility_rotate(delHH(:,:,i),UU,num_wann)
+       do m=1,num_wann
+          do n=1,num_wann
+             if(n==m .or. abs(eig(m)-eig(n))<1.0e-7_dp) cycle
+             D_h(n,m,i)=delHH_bar_i(n,m)/(eig(m)-eig(n))
+          end do
+       end do
+    enddo
+
+  end subroutine get_D_h
+
 
   subroutine get_JJplus(delHH,UU,eig,JJplus)
-  !==================================!
-  !                                  !
-  ! Compute JJ^+_a (a=alpha or beta) !
-  !                                  !
-  !==================================!
+  !====================================!
+  !                                    !
+  ! Compute JJ^+_a (a=Cartesian index) !
+  !                                    !
+  !====================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_parameters, only    : num_wann,fermi_energy
@@ -92,11 +133,11 @@ module w90_wan_ham
 
 
   subroutine get_JJminus(delHH,UU,eig,JJminus)
-  !==================================!
-  !                                  !
-  ! Compute JJ^-_a (a=alpha or beta) !
-  !                                  !
-  !==================================!
+  !====================================!
+  !                                    !
+  ! Compute JJ^-_a (a=Cartesian index) !
+  !                                    !
+  !====================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_parameters, only    : num_wann,fermi_energy
@@ -296,5 +337,44 @@ module w90_wan_ham
     call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
 
   end subroutine get_eig_deleig
+
   
+  subroutine get_eig_UU_JJ_HH(kpt,eig,UU,JJp,JJm,HH)
+  !========================================================!
+  !                                                        ! 
+  ! Wrapper routine used to reduce number of Fourier calls !
+  !                                                        ! 
+  !========================================================!
+
+    use w90_parameters, only: num_wann
+    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_postw90_common, only : fourier_R_to_k
+    use w90_utility, only : utility_diagonalize
+
+    real(kind=dp), dimension(3), intent(in)         :: kpt
+    real(kind=dp), intent(out)                      :: eig(num_wann)
+    complex(kind=dp), dimension(:,:), intent(out)   :: UU
+    complex(kind=dp), dimension(:,:,:), intent(out) :: JJp
+    complex(kind=dp), dimension(:,:,:), intent(out) :: JJm
+    !!!
+    complex(kind=dp), dimension(:,:), intent(out)   :: HH
+
+    integer                       :: i
+!!    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
+
+    call get_HH_R
+
+!!    allocate(HH(num_wann,num_wann))
+    allocate(delHH(num_wann,num_wann,3))
+    call fourier_R_to_k(kpt,HH_R,HH,0) 
+    call utility_diagonalize(HH,num_wann,eig,UU) 
+    do i=1,3
+       call fourier_R_to_k(kpt,HH_R,delHH(:,:,i),i) 
+       call get_JJplus(delHH(:,:,i),UU,eig,JJp(:,:,i))
+       call get_JJminus(delHH(:,:,i),UU,eig,JJm(:,:,i))
+    enddo
+
+  end subroutine get_eig_UU_JJ_HH
+
 end module w90_wan_ham

@@ -26,66 +26,59 @@ contains
   subroutine k_path
 
     use w90_comms
-    use w90_constants,  only    : dp,cmplx_0,cmplx_i,twopi
-    use w90_io,         only    : io_error,io_file_unit,seedname,&
-                                  io_time,io_stopwatch,stdout
-    use w90_utility, only       : utility_diagonalize
+    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only     : io_error,io_file_unit,seedname,&
+                                   io_time,io_stopwatch,stdout
+    use w90_utility, only        : utility_diagonalize
     use w90_postw90_common, only : fourier_R_to_k
-    use w90_parameters, only    : num_wann,recip_metric,kpath_task,&
-                                  kpath_num_points,bands_num_spec_points,&
-                                  bands_spec_points,bands_label,kpath_bands_color,&
-                                  found_fermi_energy,fermi_energy,omega_from_FF
-    use w90_get_oper, only      : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
-                                  get_FF_R,get_SS_R
-    use w90_spin, only          : get_spn_nk
-    use w90_berry, only         : get_imf_ab_k,get_img_ab_k,get_imh_ab_k
-    use w90_constants, only     : bohr,ev_au
+    use w90_parameters, only     : num_wann,recip_metric,kpath_task,&
+                                   kpath_num_points,bands_num_spec_points,&
+                                   bands_spec_points,bands_label,&
+                                   kpath_bands_color,found_fermi_energy,&
+                                   fermi_energy
+    use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
+                                   get_FF_R,get_SS_R
+    use w90_spin, only           : get_spn_nk
+    use w90_berry, only          : get_imf_k,get_img_k,get_imh_k
+    use w90_constants, only      : bohr,ev_au
 
-    integer           :: i,n,num_paths,num_spts,loop_path,loop_kpt,&
+    integer           :: i,j,n,num_paths,num_spts,loop_path,loop_kpt,&
          total_pts,counter,loop_i,dataunit,gnuunit,&
          kpath_pts(bands_num_spec_points/2)
     real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_nk(num_wann),&
-         imf_ab_k(3),img_ab_k(3),imh_ab_k(3),&
-         LCtil(3),ICtil(3),&
-         kpath_len(bands_num_spec_points/2),range 
-    logical           :: plot_bands,plot_curv,plot_morb,got_it
+                         imf_k(3,3),img_k(3,3),imh_k(3,3),Morb_k(3,3),&
+                         kpath_len(bands_num_spec_points/2),range 
+    logical           :: plot_bands,plot_curv,plot_morb
     character(len=20) :: file_name
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
-    real(kind=dp), allocatable    :: xval(:),curv_au(:),curv_decomp_au(:,:),&
-         morb_au(:,:),morb_decomp_au(:,:),eig_n(:,:),&
-         color_n(:,:),plot_kpoint(:,:)
+    real(kind=dp), allocatable    :: xval(:),eig(:,:),curv_au(:,:),& 
+                                     morb_au(:,:),color_n(:,:),&
+                                     plot_kpoint(:,:) 
+                                     !curv_decomp_au(:,:,:)
     character(len=3),allocatable  :: glabel(:)
 
     ! Everything is done on the root node (not worthwhile parallelizing) 
     ! However, we still have to read and distribute the data if we 
     ! are in parallel. So calls to get_oper are done on all nodes at the moment
-
-    got_it=.false.
+    !
     plot_bands=.false.
     if(index(kpath_task,'bands')>0) then
        plot_bands=.true.
-       got_it=.true.
     end if
     plot_curv=.false.
     if(index(kpath_task,'curv')>0) then
        plot_curv=.true.
-       got_it=.true.
     end if
     plot_morb=.false.
     if(index(kpath_task,'morb')>0) then
        plot_morb=.true.
-       got_it=.true.
     end if
-    if(.not.got_it) call io_error(&
-         '(kpath_task must include one or more of the keywords "bands" "curv" and "morb"')
-
     ! Set up the needed Wannier matrix elements
     call get_HH_R
     if(plot_curv.or.plot_morb) then
        call get_AA_R
-       if(omega_from_FF) call get_FF_R
     endif
     if(plot_morb) then
        call get_BB_R
@@ -94,20 +87,22 @@ contains
     if(plot_bands .and. kpath_bands_color=='spin') call get_SS_R
 
     if(on_root) then
-       write(stdout,'(/,/,1x,a)') '=============================='
-       write(stdout,'(1x,a)')     'Plotting along a k-point path:'
-       write(stdout,'(1x,a)')     '=============================='
+
+       write(stdout,'(/,/,1x,a)')&
+            'Properties calculated in module  k p a t h'
+       write(stdout,'(1x,a)')&
+            '------------------------------------------'
 
        if(plot_bands) then
           select case(kpath_bands_color)
           case("none")
              write(stdout,'(/,3x,a)') '* Energy bands in eV'
           case("spin")
-             write(stdout,'(/,3x,a)') '* Energy bands in eV colored by spin'
+             write(stdout,'(/,3x,a)') '* Energy bands in eV, colored by spin'
           end select
        end if
        if(plot_curv) then
-          write(stdout,'(/,3x,a)') '* Minus the Berry curvature in a.u.'
+          write(stdout,'(/,3x,a)') '* Negative Berry curvature in a.u. (bohr^2)'
           if(.not.found_fermi_energy) call io_error&
                (&
         'Need to set either "fermi_energy" or "num_elec_cell" when plot_curv=T'&
@@ -115,15 +110,12 @@ contains
        end if
        if(plot_morb) then
           write(stdout,'(/,3x,a)')& 
-               '* LC_tilde, IC_tilde  and total magnetization in a.u.'
+               '* Orbital magnetization in a.u. (Ha.bohr^2)'
           if(.not.found_fermi_energy) call io_error&
                (&
-         'Need to set either "fermi_energy" or "num_elec_cell" when plot_morb=T'&
+       'Need to set either "fermi_energy" or "num_elec_cell" when plot_morb=T'&
                )
        end if
-    endif
-
-    if(on_root) then
 
        ! Work out how many points there are in the total path, and the 
        ! positions of the special points
@@ -165,22 +157,21 @@ contains
        ! Value of the vertical coordinate in the actual plots: energy bands 
        !
        if(plot_bands) then
-          allocate(eig_n(num_wann,total_pts))
+          allocate(eig(num_wann,total_pts))
           if(kpath_bands_color/='none') then
              allocate(color_n(num_wann,total_pts))
           end if
        end if
 
-       ! Value of the vertical coordinate in the actual plots: total Berry
-       ! curvature summed over occupied states
+       ! Value of the vertical coordinate in the actual plots
        !
        if(plot_curv) then
-          allocate(curv_au(total_pts))
-          allocate(curv_decomp_au(total_pts,3))
+          ! Berry curvature summed over occupied states
+          allocate(curv_au(total_pts,3))
+!          allocate(curv_decomp_au(total_pts,3,3))
        end if
        if(plot_morb) then
           allocate(morb_au(total_pts,3))
-          allocate(morb_decomp_au(total_pts,9))
        end if
 
        allocate(glabel(num_spts))
@@ -228,11 +219,9 @@ contains
        do loop_kpt=1,total_pts       
           kpt(:)=plot_kpoint(:,loop_kpt)
 
-          ! Energy bands
-          !
           if(plot_bands) then
              call fourier_R_to_k(kpt,HH_R,HH,0)
-             call utility_diagonalize(HH,num_wann,eig_n(:,loop_kpt),UU)
+             call utility_diagonalize(HH,num_wann,eig(:,loop_kpt),UU)
              !
              ! Color-code energy bands with the spin projection along the
              ! chosen spin quantization axis
@@ -243,8 +232,7 @@ contains
                 !
                 ! The following is needed to prevent bands from disappearing 
                 ! when the magnitude of the Wannier interpolated spn_nk (very 
-                ! slightly) exceeds 1.0 (this happens in bcc Fe along N--G--H, 
-                ! for example)
+                ! slightly) exceeds 1.0 (e.g. in bcc Fe along N--G--H)
                 !
                 do n=1,num_wann
                    if(color_n(n,loop_kpt)>1.0_dp-eps) then
@@ -256,63 +244,36 @@ contains
              end if
           endif
 
-          ! Berry curvature summed over occupied states
-          !
           if(plot_curv) then
-             call get_imf_ab_k(kpt,imf_ab_k)
+             call get_imf_k(kpt,imf_k)
              ! 
-             ! Use atomic units, to facilitate comparison with WYSV06
+             ! Convert from Ang^2 to atomic units (bohr^2)
              !
-             curv_au(loop_kpt)=sum(imf_ab_k)/bohr**2
+             curv_au(loop_kpt,1)=sum(imf_k(:,1))/bohr**2
+             curv_au(loop_kpt,2)=sum(imf_k(:,2))/bohr**2
+             curv_au(loop_kpt,3)=sum(imf_k(:,3))/bohr**2
              !
              ! Decompose into J0 (Omega_bar), J1 (DA) and J2 (DD) parts
              !
-             curv_decomp_au(loop_kpt,1)=imf_ab_k(1)/bohr**2
-             curv_decomp_au(loop_kpt,2)=imf_ab_k(2)/bohr**2
-             curv_decomp_au(loop_kpt,3)=imf_ab_k(3)/bohr**2
+!             curv_decomp_au(loop_kpt,1,:)=imf_k(1,:)/bohr**2 !J0
+!             curv_decomp_au(loop_kpt,2,:)=imf_k(2,:)/bohr**2 !J1
+!             curv_decomp_au(loop_kpt,3,:)=imf_k(3,:)/bohr**2 !J2
           end if
 
           if(plot_morb) then
 
-             call get_imf_ab_k(kpt,imf_ab_k)
-             call get_img_ab_k(kpt,img_ab_k)
-             call get_imh_ab_k(kpt,imh_ab_k)
+             call get_imf_k(kpt,imf_k)
+             call get_img_k(kpt,img_k)
+             call get_imh_k(kpt,imh_k)
+             
+             Morb_k=img_k+imh_k-2.0_dp*fermi_energy*imf_k
+             morb_au(loop_kpt,1)=sum(Morb_k(:,1))
+             morb_au(loop_kpt,2)=sum(Morb_k(:,2))
+             morb_au(loop_kpt,3)=sum(Morb_k(:,3))
 
-             LCtil(:)=img_ab_k(:)-fermi_energy*imf_ab_k(:)
-             morb_au(loop_kpt,1)=sum(LCtil)
-             ICtil(:)=imh_ab_k(:)-fermi_energy*imf_ab_k(:)
-             morb_au(loop_kpt,2)=sum(ICtil)
-             morb_au(loop_kpt,3)=morb_au(loop_kpt,1)+morb_au(loop_kpt,2)
-
-             ! Decompose each into J0, J1, and J2 parts
-             !
-             ! J0 part of LCtil
-             morb_decomp_au(loop_kpt,1)=LCtil(1)
-             ! J1 part of LCtil
-             morb_decomp_au(loop_kpt,2)=LCtil(2)
-             ! J2 part of LCtil
-             morb_decomp_au(loop_kpt,3)=LCtil(3)
-             !
-             ! J0 part of ICtil
-             morb_decomp_au(loop_kpt,4)=ICtil(1)
-             ! J1 part of ICtil
-             morb_decomp_au(loop_kpt,5)=ICtil(2)
-             ! J2 part of ICtil
-             morb_decomp_au(loop_kpt,6)=ICtil(3)
-             !
-             ! J0 part of M_tot
-             morb_decomp_au(loop_kpt,7)=LCtil(1)+ICtil(1)
-             ! J1 part of M_tot
-             morb_decomp_au(loop_kpt,8)=LCtil(2)+ICtil(2)
-             ! J2 part of M_tot
-             morb_decomp_au(loop_kpt,9)=LCtil(3)+ICtil(3)
-
-             ! Convert to atomic units (right now it is an energy in eV
-             ! times a Berry curvature in Ang^2)
+             ! Convert from eV.Ang^2 to atomic units (Ha.bohr^2)
              !
              morb_au(loop_kpt,:)=morb_au(loop_kpt,:)*eV_au/bohr**2
-             morb_decomp_au(loop_kpt,:)=&
-                  morb_decomp_au(loop_kpt,:)*eV_au/bohr**2
           end if
 
        end do !loop_kpt
@@ -328,7 +289,6 @@ contains
           end if
        end do
        glabel(num_spts)=' '//bands_label(bands_num_spec_points)//' '
-
 
        ! Now write the plotting files
 
@@ -352,23 +312,23 @@ contains
           do i=1,num_wann
              do loop_kpt=1,total_pts
                 if(kpath_bands_color=='none') then
-                   write(dataunit,'(2E16.8)') xval(loop_kpt),eig_n(i,loop_kpt)
+                   write(dataunit,'(2E16.8)') xval(loop_kpt),eig(i,loop_kpt)
                 else
                    write(dataunit,'(3E16.8)') xval(loop_kpt),&
-                        eig_n(i,loop_kpt),color_n(i,loop_kpt)  
+                        eig(i,loop_kpt),color_n(i,loop_kpt)  
                 end if
              enddo
              write(dataunit,*) ' '
           enddo
           close(dataunit)
 
-          ymin=minval(eig_n)-1.0_dp
-          ymax=maxval(eig_n)+1.0_dp
+          ymin=minval(eig)-1.0_dp
+          ymax=maxval(eig)+1.0_dp
 
           ! Gnuplot script
           !
           gnuunit=io_file_unit()
-          file_name=trim(seedname)//'_band.gnu'
+          file_name=trim(seedname)//'-band.gnu'
           write(stdout,'(/,3x,a)') file_name
           open(gnuunit,file=file_name,form='formatted')
           do i = 1,num_paths-1
@@ -411,61 +371,65 @@ contains
 
        if(plot_curv) then
           
-          ! It is conventional to plot (-1).Omega(k) rather than Omega(k): 
-          ! see Yao et al, PRL 92, 037204 (2004)
+          ! It is conventional to plot (-1).Omega(k) rather than Omega(k)
           !
           curv_au=-curv_au
-          curv_decomp_au=-curv_decomp_au
+!          curv_decomp_au=-curv_decomp_au
 
           dataunit=io_file_unit()
-          file_name=trim(seedname)//'_curv.dat'
+          file_name=trim(seedname)//'-curv.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
-             write(dataunit,'(2E16.8)') xval(loop_kpt),&
-                  curv_au(loop_kpt) 
-          enddo
-          write(dataunit,*) ' '
-          close(dataunit)
-          !
-          dataunit=io_file_unit()
-          file_name=trim(seedname)//'_curv_decomp.dat'
-          write(stdout,'(/,3x,a)') file_name
-          open(dataunit,file=file_name,form='formatted')
-          do loop_kpt=1,total_pts
-             write(dataunit,'(4E16.8)')&
-                  xval(loop_kpt),curv_decomp_au(loop_kpt,:) 
+             write(dataunit,'(4E16.8)') xval(loop_kpt),&
+                  curv_au(loop_kpt,:) 
           enddo
           write(dataunit,*) ' '
           close(dataunit)
 
-          ymin=minval(curv_au)
-          ymax=maxval(curv_au)
-          range=ymax-ymin
-          ymin=ymin-0.02_dp*range
-          ymax=ymax+0.02_dp*range
-
-          gnuunit=io_file_unit()
-          file_name=trim(seedname)//'_curv.gnu'
-          write(stdout,'(/,3x,a)') file_name
-          open(gnuunit,file=file_name,form='formatted')
-          write(gnuunit,707) xval(total_pts),ymin,ymax
-          do i = 1, num_paths-1
-             write(gnuunit,705) sum(kpath_len(1:i)),ymin,sum(kpath_len(1:i)),&
-                  ymax
+          do i=1,3
+             gnuunit=io_file_unit()
+             file_name=trim(seedname)//'-curv_'//achar(119+i)//'.gnu'
+             write(stdout,'(/,3x,a)') file_name
+             open(gnuunit,file=file_name,form='formatted')
+             ymin=minval(curv_au(:,i))
+             ymax=maxval(curv_au(:,i))
+             range=ymax-ymin
+             ymin=ymin-0.02_dp*range
+             ymax=ymax+0.02_dp*range
+             write(gnuunit,707) xval(total_pts),ymin,ymax
+             do j=1,num_paths-1
+                write(gnuunit,705) sum(kpath_len(1:j)),ymin,sum(kpath_len(1:j)),&
+                     ymax
+             enddo
+             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
+                  (glabel(j+1),sum(kpath_len(1:j)),j=1,num_paths-1)
+             write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
+             write(gnuunit,*)&
+                  'plot ','"'//trim(seedname)//'-curv.dat','" u 1:'//achar(49+i)
+             close(gnuunit)
           enddo
-          write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
-               (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
-          write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
-          write(gnuunit,*) 'plot ','"'//trim(seedname)//'_curv.dat','"' 
-          close(gnuunit)
+
+!          do i=1,3
+!             !
+!             dataunit=io_file_unit()
+!             file_name=trim(seedname)//'-curv_'//achar(119+i)//'.decomp.dat'
+!             write(stdout,'(/,3x,a)') file_name
+!             open(dataunit,file=file_name,form='formatted')
+!             do loop_kpt=1,total_pts
+!                write(dataunit,'(4E16.8)')&
+!                     xval(loop_kpt),curv_decomp_au(loop_kpt,:,i) 
+!             enddo
+!             write(dataunit,*) ' '
+!             close(dataunit)
+!          enddo
 
        end if ! plot_curv
 
        if(plot_morb) then
 
           dataunit=io_file_unit()
-          file_name=trim(seedname)//'_morb.dat'
+          file_name=trim(seedname)//'-morb.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
@@ -473,39 +437,29 @@ contains
           enddo
           write(dataunit,*) ' '
           close(dataunit)
-          !
-          dataunit=io_file_unit()
-          file_name=trim(seedname)//'_morb_decomp.dat'
-          write(stdout,'(/,3x,a)') file_name
-          open(dataunit,file=file_name,form='formatted')
-          do loop_kpt=1,total_pts
-             write(dataunit,'(10E16.8)')&
-                  xval(loop_kpt),morb_decomp_au(loop_kpt,:)
-          enddo
-          write(dataunit,*) ' '
-          close(dataunit)
 
-          ymin=minval(morb_au(:,:))
-          ymax=maxval(morb_au(:,:))
-          range=ymax-ymin
-          ymin=ymin-0.02_dp*range
-          ymax=ymax+0.02_dp*range
-
-          gnuunit=io_file_unit()
-          file_name=trim(seedname)//'_morb.gnu'
-          write(stdout,'(/,3x,a)') file_name
-          open(gnuunit,file=file_name,form='formatted')
-          write(gnuunit,707) xval(total_pts),ymin,ymax
-          do i = 1, num_paths-1
-             write(gnuunit,705) sum(kpath_len(1:i)),ymin,sum(kpath_len(1:i)),&
-                  ymax
+          do i=1,3
+             gnuunit=io_file_unit()
+             file_name=trim(seedname)//'-morb_'//achar(119+i)//'.gnu'
+             write(stdout,'(/,3x,a)') file_name
+             open(gnuunit,file=file_name,form='formatted')
+             ymin=minval(morb_au(:,i))
+             ymax=maxval(morb_au(:,i))
+             range=ymax-ymin
+             ymin=ymin-0.02_dp*range
+             ymax=ymax+0.02_dp*range
+             write(gnuunit,707) xval(total_pts),ymin,ymax
+             do j=1,num_paths-1
+                write(gnuunit,705) sum(kpath_len(1:j)),ymin,sum(kpath_len(1:j)),&
+                     ymax
+             enddo
+             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
+                  (glabel(j+1),sum(kpath_len(1:j)),j=1,num_paths-1)
+             write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
+             write(gnuunit,*)&
+                  'plot ','"'//trim(seedname)//'-morb.dat','" u 1:'//achar(49+i)
+             close(gnuunit)
           enddo
-          write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
-               (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
-          write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
-          ! u 1:4 plots the total M(k) along the path (LCtil+ICtil)
-          write(gnuunit,*) 'plot ','"'//trim(seedname)//'_morb.dat','" u 1:4' 
-          close(gnuunit)
 
        end if ! plot_morb
 

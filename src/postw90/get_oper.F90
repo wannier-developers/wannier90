@@ -60,16 +60,13 @@ module w90_get_oper
   !                                                      !
   !======================================================!
 
-    use w90_constants, only    : dp,cmplx_0
-    use w90_io, only           : io_error,stdout,io_stopwatch
-    use w90_parameters, only   : num_wann,ndimwin,num_kpts,num_bands,&
-                                 eigval,u_matrix,have_disentangled,&
-                                 timing_level,&
-                                 !ivo: (need to know number of occupied 
-                                 !bands to apply the scissors operator)
-                                 num_elec_cell
-    use w90_postw90_common, only: nrpts,rpt_origin,v_matrix
-    use w90_comms, only        : on_root
+    use w90_constants, only      : dp,cmplx_0
+    use w90_io, only             : io_error,stdout,io_stopwatch
+    use w90_parameters, only     : num_wann,ndimwin,num_kpts,num_bands,&
+                                   eigval,u_matrix,have_disentangled,&
+                                   timing_level,scissors_shift,num_elec_cell
+    use w90_postw90_common, only : nrpts,rpt_origin,v_matrix
+    use w90_comms, only          : on_root
 
     integer                       :: i,j,n,m,ii,ik,winmin_q
     integer, allocatable          :: num_states(:)
@@ -89,8 +86,6 @@ module w90_get_oper
        return !been here before
     end if
     allocate(HH_q(num_wann,num_wann,num_kpts))
-    allocate(sciss_R(num_wann,num_wann,nrpts))
-    allocate(sciss_q(num_wann,num_wann,num_kpts))
     allocate(num_states(num_kpts))
 
     HH_q=cmplx_0
@@ -115,35 +110,30 @@ module w90_get_oper
     enddo
     call fourier_q_to_R(HH_q,HH_R)
 
-    ! -------------------
-    ! Scissors correction  ***WORK IN PROGRESS***
-    ! -------------------
+    ! Scissors correction: shift conduction bands upwards by scissors_shift eV
     !
-    ! Calculate <0n|S|Rm>, the Wannier representation 
-    ! of the scissors correction operator (see my notes from 03Oct2010)
-    !
-    sciss_shift =0.0_dp  ! Upward shift of conduction bands in eV
-                         ! TO DO: Make it an input parameter
-    sciss_q=cmplx_0
-    do ik=1,num_kpts
-       do j=1,num_wann
-          do i=1,j
-             ! same as number of valence bands (insulator)
-             do m=1,nint(num_elec_cell)
-                sciss_q(i,j,ik)=sciss_q(i,j,ik)-&
-                     conjg(u_matrix(m,i,ik))*u_matrix(m,j,ik)
+    if(abs(scissors_shift)>1.0e-7_dp) then
+       allocate(sciss_R(num_wann,num_wann,nrpts))
+       allocate(sciss_q(num_wann,num_wann,num_kpts))
+       sciss_q=cmplx_0
+       do ik=1,num_kpts
+          do j=1,num_wann
+             do i=1,j
+                do m=1,nint(num_elec_cell) ! = # valence bands (insulator)
+                   sciss_q(i,j,ik)=sciss_q(i,j,ik)-&
+                        conjg(u_matrix(m,i,ik))*u_matrix(m,j,ik)
+                enddo
+                sciss_q(j,i,ik)=conjg(sciss_q(i,j,ik))
              enddo
-             sciss_q(j,i,ik)=conjg(sciss_q(i,j,ik))
           enddo
        enddo
-    enddo
-    call fourier_q_to_R(sciss_q,sciss_R)
-    do n=1,num_wann
-       sciss_R(n,n,rpt_origin)=sciss_R(n,n,rpt_origin)+1.0_dp
-    end do
-    sciss_R=sciss_R*sciss_shift
- 
-    HH_R=HH_R+sciss_R
+       call fourier_q_to_R(sciss_q,sciss_R)
+       do n=1,num_wann
+          sciss_R(n,n,rpt_origin)=sciss_R(n,n,rpt_origin)+1.0_dp
+       end do
+       sciss_R=sciss_R*scissors_shift
+       HH_R=HH_R+sciss_R
+    endif
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_HH_R',2)
 
@@ -367,8 +357,8 @@ module w90_get_oper
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,num_bands,&
-                                  ndimwin,eigval,wb,bk,&
-                                  have_disentangled,timing_level,nncell
+                                  ndimwin,eigval,wb,bk,have_disentangled,&
+                                  timing_level,nncell,scissors_shift
     use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_file_unit,io_error,io_stopwatch,&
                                   seedname
@@ -395,6 +385,9 @@ module w90_get_oper
     end if
  
     if(on_root) then
+
+       if(abs(scissors_shift)>1.0e-7_dp)&
+            call io_error('Error: scissors correction not yet implemented for BB_R')
 
        allocate(BB_q(num_wann,num_wann,num_kpts,3))
        allocate(S_o(num_bands,num_bands))
@@ -521,7 +514,8 @@ module w90_get_oper
     use w90_constants, only     : dp,cmplx_0
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
                                   num_bands,ndimwin,wb,bk,&
-                                  have_disentangled,timing_level
+                                  have_disentangled,timing_level,&
+                                  scissors_shift
     use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
                                   seedname
@@ -545,6 +539,9 @@ module w90_get_oper
     end if
 
     if(on_root) then
+
+       if(abs(scissors_shift)>1.0e-7_dp)&
+            call io_error('Error: scissors correction not yet implemented for CC_R')
 
        allocate(Ho_qb1_q_qb2(num_bands,num_bands))
        allocate(H_qb1_q_qb2(num_wann,num_wann))
