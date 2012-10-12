@@ -260,7 +260,6 @@ module w90_postw90_common
     call comms_bcast(dos_smr_fixed_en_width,1)
     call comms_bcast(dos_smr_adpt_factor,1)
     call comms_bcast(num_dos_project,1)
-    call comms_bcast(dos_project(1),num_dos_project)
 
     call comms_bcast(berry,1)
     call comms_bcast(berry_task,len(berry_task))
@@ -271,9 +270,10 @@ module w90_postw90_common
     call comms_bcast(berry_smr_adpt,1)
     call comms_bcast(berry_smr_fixed_en_width,1)
     call comms_bcast(berry_smr_adpt_factor,1)
-    call comms_bcast(berry_min_energy,1)
-    call comms_bcast(berry_max_energy,1)
-    call comms_bcast(berry_energy_step,1)
+    call comms_bcast(optics_time_parity,len(optics_time_parity))
+    call comms_bcast(optics_min_energy,1)
+    call comms_bcast(optics_max_energy,1)
+    call comms_bcast(optics_energy_step,1)
 
     call comms_bcast(fermi_energy,1)
     call comms_bcast(dos_min_energy,1)
@@ -288,7 +288,6 @@ module w90_postw90_common
 ! New input variables in development 
 !
     call comms_bcast(devel_flag,len(devel_flag))
-    call comms_bcast(degen_skip_thr,1)
     call comms_bcast(alpha,1) 
     call comms_bcast(beta,1) 
     call comms_bcast(gamma,1) 
@@ -303,11 +302,14 @@ module w90_postw90_common
     call comms_bcast(dos,1)
     call comms_bcast(dos_task,len(dos_task)) 
     call comms_bcast(kpath,1) 
+    call comms_bcast(kpath_task,len(kpath_task)) 
+    call comms_bcast(kpath_bands_color,len(kpath_bands_color)) 
     call comms_bcast(kslice,1) 
+    call comms_bcast(kslice_task,len(kslice_task)) 
     call comms_bcast(transl_inv,1) 
-    call comms_bcast(omega_from_FF,1) 
     call comms_bcast(sigma_abc_onlyorb,1)
     call comms_bcast(num_elec_per_state,1)
+    call comms_bcast(scissors_shift,1)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -317,9 +319,6 @@ module w90_postw90_common
 !         call comms_bcast(bands_spec_points(1,1),3*bands_num_spec_points) 
 !    if(allocated(bands_label)) &
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points) 
-!    call comms_bcast(kpath_bands_color,len(kpath_bands_color)) 
-!    call comms_bcast(kpath_task,len(kpath_task)) 
-!    call comms_bcast(kslice_task,len(kslice_task)) 
 ! ----------------------------------------------
     call comms_bcast(geninterp,1)
     call comms_bcast(geninterp_alsofirstder,1)
@@ -352,20 +351,23 @@ module w90_postw90_common
     call comms_bcast(boltz_bandshift_energyshift,1) 
     ! [gp-end]
 
-    ! 'eigval' 'kpt_latt'  are different from
-    ! the variables above in that they are allocatable, and in param_read they 
-    ! were only allocated on the root node
+    ! These variables are different from the ones above in that they are 
+    ! allocatable, and in param_read they were allocated on the root node only
     !
     if(.not.on_root) then
        allocate(eigval(num_bands,num_kpts),stat=ierr)
        if (ierr/=0)&
-            call io_error('Error allocating eigval in wanint_param_dist')
+            call io_error('Error allocating eigval in postw90_param_dist')
        allocate(kpt_latt(3,num_kpts),stat=ierr)
        if (ierr/=0)&
-            call io_error('Error allocating kpt_latt in wanint_param_dist')
+            call io_error('Error allocating kpt_latt in postw90_param_dist')
+       allocate(dos_project(num_dos_project),stat=ierr) 
+       if (ierr/=0)&
+            call io_error('Error allocating dos_project in postw90_param_dist')
     end if
     call comms_bcast(eigval(1,1),num_bands*num_kpts)
     call comms_bcast(kpt_latt(1,1),3*num_kpts)
+    call comms_bcast(dos_project(1),num_dos_project)
        
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix 
     ! elements of the position operator in reciprocal space. For the
