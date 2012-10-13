@@ -1745,10 +1745,10 @@ conductivity}
 \end{itemize}
 \end{itemize}
 
-Note that the sequence of steps below is the same of Example~17.  If
-you have already run that example, you can reuse the output files from
-steps 1--5, and only step 6 must be carried out again using the new
-input file {\tt Fe.win}.
+The sequence of steps below is the same of Example~17.  If you have
+already run that example, you can reuse the output files from steps
+1--5, and only step 6 must be carried out again using the new input
+file {\tt Fe.win}.
 
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of iron\\
@@ -1947,7 +1947,7 @@ last component is nonzero.
 
 
 \begin{itemize}
-\item{Outline: \it{Calculate the orbital magnetization by Wannier
+\item{Outline: \it{Calculate the bulk orbital magnetization by Wannier
       interpolation, as described in Ref.~\cite{lopez-prb12}.}}
 \item{Directory: {\tt examples/example19/}}
 \item{Input files}
@@ -1961,10 +1961,10 @@ last component is nonzero.
 \end{itemize}
 \end{itemize}
 
-Note that the sequence of steps below is the same of Examples~17 and
-18.  If you have already run one of those examples, you can reuse the
-output files from steps 1--3 and 5. Steps~4 and 6 should be carried out
-again using the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
+The sequence of steps below is the same of Examples~17 and 18.  If you
+have already run one of those examples, you can reuse the output files
+from steps 1--3 and 5. Steps~4 and 6 should be carried out again using
+the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of iron\\
@@ -2003,7 +2003,9 @@ again using the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 The orbital magnetization is computed in the {\tt berry} module of
 {\tt postw90} as the BZ integral of a quantity ${\bf M}_{\rm orb}({\bf
   k})$ similar to the Berry curvature (see Ref.~\cite{lopez-prb12} for
-its definition), {\tt
+its definition), 
+%
+{\tt
 \begin{quote}
 berry = T
 
@@ -2013,10 +2015,19 @@ berry\_interp\_mesh = 25 25 25
 
 \end{quote} }
 
-Compare the value of the orbital magnetization in {\tt Fe.wpout} with
-the spin magnetization in {\tt scf.out}. Both point along $\hat{\bf
-  z}$, but the orbital moment is strongly quenched by the crystal
-field.
+As in the case of the AHC, it is necessary to specify the Fermi level
+in order to compute ${\bf M}_{\rm orb}$,
+%
+{\tt
+\begin{quote}
+fermi\_energy = 12.6285
+\end{quote}
+} 
+%
+Compare the value of the orbital magnetization in {\tt Fe.wpout}
+with the spin magnetization in {\tt scf.out}. Both point along
+$\hat{\bf z}$, but the orbital moment is much smaller (it is strongly
+quenched by the crystal field).
 
 Similarly to the AHC in Example~18, the $k$-space contributions to the
 orbital magnetization can be plotted along lines or planes in the BZ.
@@ -2050,15 +2061,181 @@ re-run {\tt postw90}, and issue
 {\tt
 \begin{quote}
 myshell> python Fe-morb\_z-heatmap.py
-\end{quote} } The orbital magnetization is distributed more evenly in
-$k$-space than the AHC, and therefore converges more rapidly with the
-number of $k$-points.
+\end{quote} } The orbital magnetization is more evenly distributed in
+$k$-space than the AHC (Fig.~\ref{fig:fe-curv-slice}), and therefore
+converges more rapidly with the number of $k$-points used to sample
+the BZ.
 
 
 
 \cleardoublepage
 
 \section*{20: Iron -- Optical conductivity and joint density-of-states}
+
+\begin{itemize}
+\item{Outline: \it{Calculate the joint density-of-states (JDOS) and
+      interband optical conductivity by Wannier interpolation, as
+      described in Ref.~\cite{WanInt}.}}
+\item{Directory: {\tt examples/example20/}}
+\item{Input files}
+\begin{itemize}
+\item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
+    calculation}}
+\item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
+\end{itemize}
+\end{itemize}
+
+The sequence of steps below is the same of Examples~17--19.  If you
+have already run one of those examples, you can reuse the output files
+from steps 1--5, and only step 6 must be carried out again using the
+new input file {\tt Fe.win}.
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of iron\\
+{\tt pw.x < Fe.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point
+  grid\\ 
+{\tt pw.x < Fe.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Fe.nnkp} file).\\
+{\tt wannier90.x -pp Fe}
+
+\item Run {\tt pw2wannier90} to compute the overlaps between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt Si.mmn} and {\tt  Si.amn} files).\\
+{\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWF.\\
+{\tt wannier90.x Fe}
+
+\item Run \postw\ to compute the JDOS and optical conductivity.\\
+{\tt postw90.x Fe}
+
+\end{enumerate}
+
+The following lines in {\tt Fe.win}
+%
+{\tt
+\begin{quote}
+berry = T
+
+berry\_interp\_mesh = 25
+
+berry\_task = optics
+
+optics\_max\_energy = 7.0
+
+optics\_time\_parity = even 
+
+\end{quote} }
+%
+instruct {\tt postw90} to calculate the time-even (symmetric) part
+${\rm Re}\,\sigma^{\rm S}_{\alpha\beta}(\omega)={\rm Re}\,\sigma^{\rm
+  S}_{\beta\alpha}(\omega)$ of the absorptive optical conductivity
+tensor in the range $\omega\in [0,7]$~eV, using a $25^3$ $k$-point
+mesh. The JDOS is also calculated over the same spectral
+range. Similarly to the AHC (Example~18) and orbital magnetization
+(Example~19), the value of the Fermi energy must be specified in {\tt
+  Fe.win},
+%
+{\tt
+\begin{quote}
+fermi\_energy = 12.6285
+\end{quote}
+}
+
+To plot the DOS using {\tt gnuplot}, issue
+%
+{\tt
+\begin{quote}
+myshell> gnuplot
+
+gnuplot> plot 'Fe-jdos.dat' w l
+\end{quote} }
+
+In general ${\rm Re}\,\sigma^{\rm S}_{\alpha\beta}(\omega)$ has six independent
+components, but in bcc Fe only the diagonal components are nonzero. 
+To plot ${\rm Re}\,\sigma^{\rm S}_{xx}(\omega)$ with {\tt gnuplot},
+use
+%
+{\tt
+\begin{quote} myshell> gnuplot
+
+gnuplot> plot 'Fe-sigS\_xx.dat' w l
+\end{quote} }
+%
+(As indicated in {\tt Fe.wpout}, the symmetric conductivity is plotted
+in units of $10^{15}$~sec$^{-1}$.) The difference in shape between the
+JDOS and the optical conductivity can be attributed to the variability
+in the dipole matrix elements describing the optical transitions.
+Note also that the calculate spectrum is ``sharp,'' while experimental
+spectra are broadened by lifetime effects which are not taken into
+account in the calculation.
+
+The optical conductivity tensor of iron also has an antisymmetric
+(time-odd) part associated with magneto-optical effects. To calculate
+the absorptive part ${\rm Im}\,\sigma^{\rm A}_{\alpha\beta}(\omega)$,
+modify one line in {\tt Fe.win},
+%
+{\tt
+\begin{quote}
+optics\_time\_parity = odd
+\end{quote} }
+%
+and re-run {\tt postw90}. The only nonzero component is ${\rm
+  Im}\,\sigma^{\rm A}_{xy}(\omega)=-{\rm Im}\,\sigma^{\rm
+  A}_{yx}(\omega)$.  It describes the differential absorption of left-
+anf right-circularly-polarized light travelling along the
+magnetization direction $\hat{\bf z}$. To plot the
+magnetic circular dichroism (MCD) spectrum, issue
+%
+{\tt
+\begin{quote} myshell> gnuplot
+
+gnuplot> plot 'Fe-sigA\_xy.dat' w l
+\end{quote} }
+%
+Following a common convention in the literature, what is plotted is
+$\omega{\rm Im}\,\sigma^{\rm A}_{xy}(\omega)$, in units of
+$10^{29}$~sec$^{-2}$. Compare the spectrum with the one displayed
+in Ref.~\cite{yao-prl04}. To improve the agreement, you need to increase
+the number of $k$-points from $25^3$ to, e.g., $125^3$.
+
+
+
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+\item The MCD spectrum is related to the AHC by a Kramers-Kronig
+relation,
+%
+$$
+\sigma^{\rm AH}_{xy}=\frac{2}{\pi}\int_0^\infty\,
+\frac{1}{\omega}{\rm Im}\,\sigma^{\rm A}_{xy}(\omega)\,d\omega
+$$
+
+This integral is evaluated numerically by {\tt postw90} by replacing
+the limits of integration with $\int_{\omega_{\rm min}}^{\omega_{\rm
+    max}}$, where $\omega_{\rm max}$ equals {\tt optics\_max\_energy}
+and $\omega_{\rm min}$ is scanned in the range $[0,\omega_{\rm
+  max}]$. To plot the result (in S/cm) versus $\omega_{\rm min}$, issue
+%
+{\tt
+\begin{quote} myshell> gnuplot
+
+gnuplot> plot 'Fe-kk\_xy.dat' w l
+\end{quote} }
+%
+Compare the value for $\omega_{\rm min}=0$ with the value of the AHC
+calculated in Example~18 by directly integrating the Berry curvature.
+
+\end{itemize}
 
 \cleardoublepage
 
