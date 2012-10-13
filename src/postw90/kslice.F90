@@ -393,11 +393,10 @@ module w90_kslice
                 write(scriptunit,'(a)') ' '
                 write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
                "-morb_"//achar(119+i)//"-heatmap.pdf'"
-!                write(scriptunit,'(a)')&
-!                     "z = np.loadtxt('"//trim(seedname)//"-slice_morb.dat')"
+                write(scriptunit,'(a)') ' '
                 write(scriptunit,'(a)')&
                      "z = np.loadtxt('"//trim(seedname)//&
-                     "-slice_morb.dat', usecols("//achar(47+i)//"))"
+                     "-slice_morb.dat', usecols=("//achar(47+i)//",))"
              endif
              write(scriptunit,'(a)') 'zz=z.reshape((dimx,dimy)).transpose()'
              write(scriptunit,'(a)') ' '
@@ -408,7 +407,7 @@ module w90_kslice
              elseif(plot_morb_heatmap) then
                 ! Gradual color scale
                 write(scriptunit,'(a)')&
-                     "imshow(zz,interpolation='bicubic',origin='lower')"
+                     "pl.imshow(zz,interpolation='bicubic',origin='lower')"
              endif
 
              write(scriptunit,'(a)') 'pl.colorbar()'

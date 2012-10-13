@@ -1508,7 +1508,7 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
 \cleardoublepage
 
 
-\section*{17: Iron -- Spin-orbit effects}
+\section*{17: Iron -- Spin-orbit effects on the energy bands}
 
 Note: You should go through Example 8 (iron without spin-orbit) before
 doing this Example.
@@ -1788,7 +1788,8 @@ $$
 $$
 %
 The following instructions in {\tt Fe.win} are used to calculate
-$-\bm{\Omega}({\bf k})$ along lines in $k$-space, {\tt
+$-\bm{\Omega}({\bf k})$ along lines in $k$-space, 
+{\tt
 \begin{quote}
 fermi\_energy = 12.6285
 
@@ -1857,7 +1858,8 @@ berry\_task = ahc
 
 berry\_interp\_mesh = 25 25 25
 
-\end{quote} } (the last instruction can be simplified to {\tt
+\end{quote} } 
+(the last instruction can be simplified to {\tt
 berry\_interp\_mesh = 25}) and re-run {\tt postw90}.  The AHC in S/cm
 is written in the output file {\tt Fe.wpout} in (pseudo)vector
 form. The $x$, $y$, and $z$ components correspond to $\sigma^{\rm
@@ -1898,9 +1900,9 @@ last component is nonzero.
         berry\_adaptive\_thresh = 27.98
       \end{quote} }
     
-    in order to add a $5\times 5\times 5$ fine grid around those
+    in order to interpose a $5\times 5\times 5$ fine mesh around those
     points where $\vert\Omega^z({\bf k})\vert$ exceeds
-    27.98~\AA$^2\simeq 100$~bohr$^2$. The percentage of mesh points
+    27.98~\AA$^2\simeq 100$~bohr$^2$. The percentage of points
     triggering adaptive refinement is given in {\tt Fe.wpout}.
 
   \item Compare the converged AHC value with those reported in
@@ -1908,17 +1910,17 @@ last component is nonzero.
 
   \end{itemize}
 
-\item The Berry curvature in bcc Fe results from the magnetic order
-  which, together with spin-orbit, breaks time-reversal in the orbital
-  wavefunctions. Another way of inducing a Berry curvature is to break
-  spatial inversion (no spin-orbit needed).
+\item The Berry curvature in ferromagnets results from broken
+  time-reversal in the orbital wavefunctions, induced by the magnetic
+  order combined with spin-orbit coupling. Another source of Berry
+  curvature in crystals is lack of spatial inversion symmetry.
 
-  Plot the Berry curvature of the valence bands of GaAs over selected
-  planes in the BZ. Note that while locally nonzero, the BZ integral
-  of the Berry curvature vanishes because $\bm{\Omega}(-{\bf
-    k})=-\bm{\Omega}({\bf k})$.
+  Plot the Berry curvature of the valence bands of GaAs along selected
+  lines and planes in the BZ. Note that $\bm{\Omega}(-{\bf
+    k})=-\bm{\Omega}({\bf k})$, so that $\int_{\rm
+    BZ}\bm{\Omega}({\bf k})d{\bf k}=0$.
   
-\tent{{\bf [Need to provide input files for GaAs?]}}
+\tent{{\bf [Need to provide input files for GaAs and test them]}}
 
 %\item {\bf [\underline{POSSIBLE ADDITION:}]} Plot the MCD spectrum,
 %  check numerically the Kramers-Kronig relation between MCD and AHC.
@@ -1942,6 +1944,117 @@ last component is nonzero.
 \cleardoublepage
 
 \section*{19: Iron -- Orbital magnetization}
+
+
+\begin{itemize}
+\item{Outline: \it{Calculate the orbital magnetization by Wannier
+      interpolation, as described in Ref.~\cite{lopez-prb12}.}}
+\item{Directory: {\tt examples/example19/}}
+\item{Input files}
+\begin{itemize}
+\item{ {\tt Fe.scf} {\it The \pwscf\ input file for ground state
+    calculation}}
+\item{ {\tt Fe.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
+\end{itemize}
+\end{itemize}
+
+Note that the sequence of steps below is the same of Examples~17 and
+18.  If you have already run one of those examples, you can reuse the
+output files from steps 1--3 and 5. Steps~4 and 6 should be carried out
+again using the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of iron\\
+{\tt pw.x < Fe.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point
+  grid\\ 
+{\tt pw.x < Fe.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Fe.nnkp} file).\\
+{\tt wannier90.x -pp Fe}
+
+
+\item Run {\tt pw2wannier90} to compute:
+  \begin{itemize}
+  \item{The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
+          b}}\rangle$ (written in the {\tt Fe.mmn} file)}
+  \item{The projections for the starting guess (written in the {\tt
+        Fe.amn} file)}
+  \item{The matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert
+      H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$ (written in the
+      {\tt Fe.uHu} file)}
+  \end{itemize}
+{\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWF.\\
+{\tt wannier90.x Fe}
+
+\item Run \postw\ to compute the orbital magnetization.\\
+{\tt postw90.x Fe}
+
+
+\end{enumerate}
+
+The orbital magnetization is computed in the {\tt berry} module of
+{\tt postw90} as the BZ integral of a quantity ${\bf M}_{\rm orb}({\bf
+  k})$ similar to the Berry curvature (see Ref.~\cite{lopez-prb12} for
+its definition), {\tt
+\begin{quote}
+berry = T
+
+berry\_task = morb
+
+berry\_interp\_mesh = 25 25 25
+
+\end{quote} }
+
+Compare the value of the orbital magnetization in {\tt Fe.wpout} with
+the spin magnetization in {\tt scf.out}. Both point along $\hat{\bf
+  z}$, but the orbital moment is strongly quenched by the crystal
+field.
+
+Similarly to the AHC in Example~18, the $k$-space contributions to the
+orbital magnetization can be plotted along lines or planes in the BZ.
+To plot $M^z_{\rm orb}({\bf k})$ along high-symmetry lines, uncomment
+in {\tt Fe.win} the block of instructions containing {\tt
+\begin{quote}
+kpath\_task = morb
+\end{quote}
+}
+After running {\tt postw90}, issue from the terminal
+{\tt
+\begin{quote}
+myshell> gnuplot
+
+gnuplot> load `Fe-bands.gnu'
+
+gnuplot> load `Fe-morb\_z.gnu'
+\end{quote} }
+Compare the two plots with Fig.~2 of Ref.~\cite{lopez-prb12}.
+
+
+To plot $M^z_{\rm orb}({\bf k})$ together with the Fermi contours on the
+(010) BZ plane, uncomment in {\tt
+  Fe.win} the block of instructions containing 
+{\tt
+\begin{quote}
+kslice\_task = energy\_cntr+morb\_heatmap
+\end{quote}
+} 
+re-run {\tt postw90}, and issue
+{\tt
+\begin{quote}
+myshell> python Fe-morb\_z-heatmap.py
+\end{quote} } The orbital magnetization is distributed more evenly in
+$k$-space than the AHC, and therefore converges more rapidly with the
+number of $k$-points.
+
+
 
 \cleardoublepage
 
@@ -1992,6 +2105,9 @@ last component is nonzero.
 \bibitem{yao-prl04} Y.~Yao {\it et al.}, First Principles Calculation
   of Anomalous Hall Conductivity in Ferromagnetic bcc Fe,
 {\it Phys. Rev. Lett.} {\bf 92}, 037204 (2004).
+
+\bibitem{lopez-prb12} M.~G.~Lopez, D.~Vanderbilt, T.~Thonhauser, and I.~Souza,
+Phys. Rev. B {\bf 85}, 014435 (2012).
 
 \end{thebibliography}
 

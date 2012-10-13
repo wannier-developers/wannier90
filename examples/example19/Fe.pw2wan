@@ -1,0 +1,10 @@
+&inputpp 
+   outdir = './'
+   prefix = 'fe'
+   seedname = 'fe'
+   spin_component = 'ncll'
+   write_mmn = .true.
+   write_amn = .true.
+   write_spn = .false.
+   write_unk = .false.
+/
