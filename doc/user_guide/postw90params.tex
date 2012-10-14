@@ -203,7 +203,7 @@ Keyword & Type & Description \\
 {\sc kslice\_corner}& R & Position of the corner of the slice\\
 {\sc kslice\_b1}& R & First vector defining the slice\\
 {\sc kslice\_b2}& R & Second vector defining the slice\\
-{\sc kslice\_num\_points}& I & Number of points along B1\\
+\textcolor{red}{\sc kslice\_num\_points}& I & Number of points along B1\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the kslice module.]
@@ -399,6 +399,8 @@ defined by the variables $\ldots$
 
 \subsection[kpath\_num\_points]{\tt integer :: kpath\_num\_points}
 
+\textcolor{red}{CHANGE!}
+
 If $\verb#kpath#=\verb#TRUE#$, then the number of points along
 the first section of the bandstructure plot given by
 \verb#kpoint_path#. Other sections will have the same density of
@@ -448,6 +450,8 @@ There is no default value
 
 \subsection[kslice\_num\_points]{\tt integer :: kslice\_num\_points}
 
+\textcolor{red}{CHANGE!}
+
 If $\verb#kslice#=\verb#TRUE#$, then the number of points along
 the first section of the bandstructure plot given by
 \verb#kpoint_path#. Other sections will have the same density of
@@ -496,7 +500,8 @@ The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#ahc# Anomalous Hall Conductivity
 \item[{\bf --}]  \verb#morb# Orbital Magnetisation
-\item[{\bf --}] \verb#spectrum# Frequency-dependent interband conductivity 
+\item[{\bf --}] \verb#spectrum# Frequency-dependent interband conductivity \textcolor{red}{CHANGE!}
+
 \end{itemize}
 There is no default value
 

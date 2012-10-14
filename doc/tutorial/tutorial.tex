@@ -717,7 +717,7 @@ dos\_interp\_mesh = 25
 \begin{quote}
 myshell> gnuplot
 
-gnuplot> plot 'iron\_up\_dos.dat' u (-\$2):(\$1-12.6256) w l,'iron\_dn\_dos.dat' u 2:(\$1-12.6256) w l
+gnuplot> plot `iron\_up\_dos.dat' u (-\$2):(\$1-12.6256) w l,`iron\_dn\_dos.dat' u 2:(\$1-12.6256) w l
 
 \end{quote} 
 }
@@ -754,7 +754,7 @@ myshell> grep SPRD iron\_up.wout >sprd\_up
 
 myshell> gnuplot
 
-gnuplot> plot 'sprd\_up' u 6  w l
+gnuplot> plot `sprd\_up' u 6  w l
 
 \end{quote}
 }
@@ -1523,7 +1523,7 @@ Using your favourite plotting program, plot columns 1 and 3 of the {\tt Si\_seeb
 
 Plot the Seebeck coefficient for the three temperatures $T=300$~K, $T=500$~K and $T=700$~K. To do this, you have to filter the {\tt Si\_seebeck.dat} to select only those lines where the second column is equal to the required temperature. A possible script to select the $S_{xx}$ component of the Seebeck coefficient for $T=500$~K using the {\tt awk/gawk} command line program is the following:
 \begin{verbatim}
-awk '{if ($2 == 500) {print $1, $3;}}' < Si_seebeck.dat \
+awk `{if ($2 == 500) {print $1, $3;}}' < Si_seebeck.dat \
     > Si_seebeck_xx_500K.dat
 \end{verbatim}
 Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.dat#.
@@ -2058,7 +2058,7 @@ in {\tt Fe.win} the block of instructions containing {\tt
 kpath\_task = morb
 \end{quote}
 }
-After running {\tt postw90}, issue from the terminal
+After running {\tt postw90}, do
 {\tt
 \begin{quote}
 myshell> gnuplot
@@ -2170,13 +2170,13 @@ fermi\_energy = 12.6285
 \end{quote}
 }
 
-To plot the DOS using {\tt gnuplot}, issue
+To plot the DOS using {\tt gnuplot}, do
 %
 {\tt
 \begin{quote}
 myshell> gnuplot
 
-gnuplot> plot 'Fe-jdos.dat' w l
+gnuplot> plot `Fe-jdos.dat' w l
 \end{quote} }
 
 In general ${\rm Re}\,\sigma^{\rm S}_{\alpha\beta}(\omega)$ has six independent
@@ -2187,7 +2187,7 @@ use
 {\tt
 \begin{quote} myshell> gnuplot
 
-gnuplot> plot 'Fe-sigS\_xx.dat' w l
+gnuplot> plot `Fe-sigS\_xx.dat' w l
 \end{quote} }
 %
 (As indicated in {\tt Fe.wpout}, the conductivity is plotted in units
@@ -2218,7 +2218,7 @@ magnetization direction $\hat{\bf z}$. To plot this
 {\tt
 \begin{quote} myshell> gnuplot
 
-gnuplot> plot 'Fe-sigA\_xy.dat' w l
+gnuplot> plot `Fe-sigA\_xy.dat' w l
 \end{quote} }
 %
 Following a common convention in the literature, what is plotted is
@@ -2228,11 +2228,26 @@ Ref.~\cite{yao-prl04}. To improve the agreement, you need to increase
 the number of $k$-points from $25^3$ to, e.g., $125^3$.
 
 
-
+\newpage
 
 \subsection*{Further ideas}
 
 \begin{itemize}
+
+\item Recompute the ordinary and dichroic optical conductivities after
+  adding to the input file the line
+%
+{\tt
+\begin{quote}
+
+spn\_decomp = T
+\end{quote} }
+%
+This adds three extra columns to the *sig*.dat output files,
+containing the breakdown of $\sigma(\omega)$ into
+up~$\rightarrow$~up, down~$\rightarrow$~down, and spin-flip
+transitions.
+
 \item The MCD spectrum is related to the AHC by a Kramers-Kronig
 relation,
 %
@@ -2245,15 +2260,15 @@ This integral is evaluated numerically by {\tt postw90} by replacing
 the limits of integration with $\int_{\omega_{\rm min}}^{\omega_{\rm
     max}}$, where $\omega_{\rm max}$ equals {\tt optics\_max\_energy}
 and $\omega_{\rm min}$ is scanned in the range $[0,\omega_{\rm
-  max}]$. To plot the result (in S/cm) versus $\omega_{\rm min}$, issue
+  max}]$. To plot the result (in S/cm) versus $\omega_{\rm min}$, do
 %
 {\tt
 \begin{quote} myshell> gnuplot
 
-gnuplot> plot 'Fe-kk\_xy.dat' w l
+gnuplot> plot `Fe-kk\_xy.dat' w l
 \end{quote} }
 %
-Compare the value for $\omega_{\rm min}=0$ with the value of the AHC
+Compare the value at $\omega_{\rm min}=0$ with the AHC value
 calculated in Example~18 by directly integrating the $k$-space Berry
 curvature.
 

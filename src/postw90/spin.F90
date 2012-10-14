@@ -137,7 +137,7 @@ module w90_spin
   ! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z                     !
   !                                                             !
   ! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit  !
-  ! vector along the chosen quantization axis                   !
+  ! vector along the chosen spin quantization axis              !
   !                                                             !
   !============================================================ !
 

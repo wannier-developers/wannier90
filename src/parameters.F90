@@ -571,10 +571,16 @@ contains
     
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
-    num_elec_per_state = 2
+    if(spinors) then
+       num_elec_per_state = 1
+    else
+       num_elec_per_state = 2
+    endif
     call param_get_keyword('num_elec_per_state',found,i_value=num_elec_per_state)
     if ((num_elec_per_state /= 1) .and. (num_elec_per_state /= 2)) &
        call io_error('Error: num_elec_per_state can be only 1 or 2')
+    if(spinors.and.num_elec_per_state /= 1)&
+          call io_error('Error: when spinors = T num_elec_per_state must be 1')
 
     translate_home_cell = .false.
     call param_get_keyword('translate_home_cell',found,l_value=translate_home_cell)

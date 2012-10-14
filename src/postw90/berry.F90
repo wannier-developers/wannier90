@@ -978,31 +978,31 @@ module w90_berry
              ! epsilon^r = 1+ 4.pi.i.sigma/omega
              !
              ! ------------------------------------
-             ! Im[epsilon^r] = 4.pi.Re[sigma]/omega (for insulators)
+             ! Im[epsilon^r] = 4.pi.Re[sigma]/omega
              ! ------------------------------------
              !
              ! sig contains Re[sigma] in S/cm divided by energy in eV. Want 
              ! Re[sigma] in 1/sec divided by omega in 1/sec (dimensionless),
              ! then converted to Im[epsilon^r]
              !
-             fac=4.0_dp*pi*9.0e11_dp*hbar_SI/elem_charge_SI ! ~0.0137
-             !
-             do i=1,ncomp
-                file_name= trim(seedname)//'-epsS_'//&
-                     achar(119+alps(i))//achar(119+bets(i))//'.dat'
-                file_name=trim(file_name)
-                file_unit=io_file_unit()
-                write(stdout,'(/,3x,a)') '* '//file_name
-                open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-                do ifreq=1,nfreq
-                   freq=optics_min_energy+(ifreq-1)*d_freq
-                   write(file_unit,'(5E16.8)') freq,&
-                        fac*(sig(1,i,ifreq,:)+sig(2,i,ifreq,:)+sig(3,i,ifreq,:))
-                enddo
-             enddo
+!             fac=4.0_dp*pi*9.0e11_dp*hbar_SI/elem_charge_SI ! ~0.0137
+!             !
+!             do i=1,ncomp
+!                file_name= trim(seedname)//'-epsS_'//&
+!                     achar(119+alps(i))//achar(119+bets(i))//'.dat'
+!                file_name=trim(file_name)
+!                file_unit=io_file_unit()
+!                write(stdout,'(/,3x,a)') '* '//file_name
+!                open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+!                do ifreq=1,nfreq
+!                   freq=optics_min_energy+(ifreq-1)*d_freq
+!                   write(file_unit,'(5E16.8)') freq,&
+!                        fac*(sig(1,i,ifreq,:)+sig(2,i,ifreq,:)+sig(3,i,ifreq,:))
+!                enddo
+!             enddo
              !
              ! ------------------------------------
-             ! Re[sigma] in units of 10^15 sec^{-1} (for metals)
+             ! Re[sigma] in units of 10^15 sec^{-1}
              ! ------------------------------------
              !
              fac=9.0e-4_dp
@@ -1546,12 +1546,13 @@ module w90_berry
   !===========================================================!
 
   subroutine get_sig_k(kpt,sig_k,jdos_k)
-  !======================================================!
-  !                                                      !
-  ! Interband optical conductivity (absorptive), in the  !
-  ! independent-particle approximation (no local fields) !
-  !                                                      !
-  !======================================================!
+  !=======================================================!
+  !                                                       !
+  ! Interband optical conductivity (absorptive), in the   !
+  ! independent-particle approximation (no local fields), !
+  ! and joint density of states (JDOS)                    !
+  !                                                       !
+  !====================================================== !
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
