@@ -247,7 +247,7 @@ contains
 !!$    use w90_postw90_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
 !!$         int_kpts,weight
 !!$    use w90_parameters, only    : fermi_energy,found_fermi_energy,&
-!!$         num_elec_cell,&
+!!$         num_valence_bands,&
 !!$         num_wann,dos_num_points,dos_min_energy,&
 !!$         dos_max_energy,dos_energy_step,&
 !!$         wanint_kpoint_file
@@ -362,11 +362,11 @@ contains
 !!$    sum_max_all=sum_max_node
 !!$#endif
 !!$    if(on_root) then
-!!$       if(num_elec_cell>sum_max_all) then
+!!$       if(num_valence_bands>sum_max_all) then
 !!$          write(stdout,*) 'Something wrong in find_fermi_level:'
 !!$          write(stdout,*)&
 !!$               '   Fermi level does not lie within projected subspace'
-!!$          write(stdout,*) 'num_elec_cell= ',num_elec_cell
+!!$          write(stdout,*) 'num_valence_bands= ',num_valence_bands
 !!$          write(stdout,*) 'sum_max_all= ',sum_max_all
 !!$          stop 'Stopped: see output file'
 !!$       end if
@@ -388,7 +388,7 @@ contains
 !!$       ! root (To understand: could we use MPI_Allreduce instead?)
 !!$       !
 !!$       call comms_bcast(sum_mid_all,1)
-!!$       if(abs(sum_mid_all-num_elec_cell) < 1.e-10_dp) then
+!!$       if(abs(sum_mid_all-num_valence_bands) < 1.e-10_dp) then
 !!$          !
 !!$          ! NOTE: Here should assign a value to an entry in a fermi-level 
 !!$          !       vector. Then at the end average over adaptive smearing 
@@ -396,7 +396,7 @@ contains
 !!$          !
 !!$          ef=emid
 !!$          exit
-!!$       elseif((sum_mid_all-num_elec_cell) < -1.e-10_dp) then
+!!$       elseif((sum_mid_all-num_valence_bands) < -1.e-10_dp) then
 !!$          emin=emid
 !!$       else
 !!$          emax=emid

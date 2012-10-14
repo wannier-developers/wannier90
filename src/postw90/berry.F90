@@ -167,7 +167,7 @@ module w90_berry
 
     if(.not.found_fermi_energy) call io_error&
          (&
-    'Must set either "fermi_energy" or "num_elec_cell" for optical properties'&
+ 'Must set either "fermi_energy" or "num_valence_bands" for optical properties'&
          )
 
     if (timing_level>1.and.on_root)&

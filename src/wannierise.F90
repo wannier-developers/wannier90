@@ -1743,7 +1743,7 @@ contains
                               atoms_symbol,atoms_pos_cart,num_species, &
                               atoms_species_num,wannier_spreads,u_matrix, &
                               u_matrix_opt,num_kpts,have_disentangled, &
-                              num_elec_cell,num_elec_per_state,write_vdw_data
+                              num_valence_bands,num_elec_per_state,write_vdw_data
     use w90_utility,    only :  utility_translate_home
     use w90_constants,  only :  cmplx_0,eps6
 !!$    use w90_disentangle, only : ndimfroz
@@ -1774,8 +1774,8 @@ contains
     if (have_disentangled) then
 
        ! dimension of occupied subspace
-       if (num_elec_cell.le.0) call io_error('Please set num_elec_cell in seedname.win')
-       ndim=num_elec_cell/num_elec_per_state
+       if (num_valence_bands.le.0) call io_error('Please set num_valence_bands in seedname.win')
+       ndim=num_valence_bands/num_elec_per_state
 
        allocate(v_matrix(ndim, num_wann),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating V_matrix in wann_write_vdw_data')

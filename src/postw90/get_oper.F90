@@ -64,7 +64,7 @@ module w90_get_oper
     use w90_io, only             : io_error,stdout,io_stopwatch
     use w90_parameters, only     : num_wann,ndimwin,num_kpts,num_bands,&
                                    eigval,u_matrix,have_disentangled,&
-                                   timing_level,scissors_shift,num_elec_cell
+                                   timing_level,scissors_shift,num_valence_bands
     use w90_postw90_common, only : nrpts,rpt_origin,v_matrix
     use w90_comms, only          : on_root
 
@@ -110,16 +110,17 @@ module w90_get_oper
     enddo
     call fourier_q_to_R(HH_q,HH_R)
 
-    ! Scissors correction: shift conduction bands upwards by scissors_shift eV
+    ! Scissors correction for an insulator: shift conduction bands upwards by 
+    ! scissors_shift eV
     !
-    if(abs(scissors_shift)>1.0e-7_dp) then
+    if(num_valence_bands>0 .and. abs(scissors_shift)>1.0e-7_dp) then
        allocate(sciss_R(num_wann,num_wann,nrpts))
        allocate(sciss_q(num_wann,num_wann,num_kpts))
        sciss_q=cmplx_0
        do ik=1,num_kpts
           do j=1,num_wann
              do i=1,j
-                do m=1,nint(num_elec_cell) ! = # valence bands (insulator)
+                do m=1,nint(num_valence_bands)
                    sciss_q(i,j,ik)=sciss_q(i,j,ik)-&
                         conjg(u_matrix(m,i,ik))*u_matrix(m,j,ik)
                 enddo

@@ -128,13 +128,13 @@ module w90_kslice
           write(stdout,'(/,3x,a)') '* Negative Berry curvature in a.u. (bohr^2)'
           if(.not.found_fermi_energy) call io_error&
                (&
- 'Need to specify either "fermi_energy" or "num_elec_cell" when plot_curv_heatmap=T'&
+ 'Need to specify either "fermi_energy" or "num_valence_bands" when plot_curv_heatmap=T'&
                )
        elseif(plot_morb_heatmap) then
           write(stdout,'(/,3x,a)') '* Orbital magnetization in a.u. (Ha.bohr^2)'
           if(.not.found_fermi_energy) call io_error&
                (&
-'Need to set either "fermi_energy" or "num_elec_cell" when plot_morb_heatmap=T'&
+'Need to set either "fermi_energy" or "num_valence_bands" when plot_morb_heatmap=T'&
                )
        endif
 

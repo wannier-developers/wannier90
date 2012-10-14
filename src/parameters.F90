@@ -42,7 +42,7 @@ module w90_parameters
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spn_decomp
-  real(kind=dp),              public, save :: num_elec_cell
+  real(kind=dp),              public, save :: num_valence_bands
   logical,                    public, save :: found_fermi_energy
   real(kind=dp),              public, save :: scissors_shift
   !IVO_END
@@ -980,10 +980,10 @@ contains
          ('Error: value of kpath_bands_color not recognised in param_read')
 
     ! set to a negative default value
-    num_elec_cell=-99
-    call param_get_keyword('num_elec_cell',found,r_value=num_elec_cell)
-    if (found.and.(num_elec_cell.le.0)) &
-         call io_error('Error: num_elec_cell should be greater than zero')
+    num_valence_bands=-99
+    call param_get_keyword('num_valence_bands',found,r_value=num_valence_bands)
+    if (found.and.(num_valence_bands.le.0)) &
+         call io_error('Error: num_valence_bands should be greater than zero')
 
     dos_task =' '
     dos_plot=.false.

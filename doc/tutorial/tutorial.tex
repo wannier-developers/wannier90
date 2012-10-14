@@ -50,36 +50,45 @@
 
 \maketitle
 
+\tent{
+{\bf TO DO:}\\
+$\bullet$ Add an index? (and make titles more descriptive)\\
+$\bullet$ Use bibtex for references?\\
+$\bullet$ Replace MLWF $\rightarrow$ MLWFs?
+}
+
 \section*{Preliminaries}
 
 Welcome to \wannier! The examples contained in this tutorial are
-designed to help you to become familiar with the procedure of
-generating, analysing and using maximally-localised Wannier functions
-(MLWF). As a first step, install \wannier\ following the
-instructions in the {\tt README} file of the \wannier\ distribution.
-For an introduction to the theory underlying MLWF, you are encouraged
-to refer to the brief overview given in the \wannier\ User
-Guide~\cite{UserGuide}, to the two seminal papers of
-Refs.~\cite{MV,SMV}, and to a recent paper~\cite{W90} describing
-\wannier.
+designed to help you become familiar with the procedure of generating,
+analysing and using maximally-localised Wannier functions (MLWF). As a
+first step, install \wannier\ following the instructions in the {\tt
+  README} file of the \wannier\ distribution.  For an introduction to
+the theory underlying MLWF, you are encouraged to refer to the brief
+overview given in the \wannier\ User Guide~\cite{UserGuide}, to the
+two seminal papers of Refs.~\cite{MV,SMV}, and to a recent
+paper~\cite{W90} describing \wannier.
+
+\tent{[Add reference to RMP paper?]}
 
 The following additional programs should be installed in order to
 visualise the output of \wannier\ 
 \begin{itemize}
 \item {\tt gnuplot} is used to plot bandstructures. It is 
 available for many operating systems and is often installed by default on
- unix/Linux distributions\\
+ Unix/Linux distributions\\
 {\tt http://www.gnuplot.info}
 \item {\tt xmgrace} may also be used to plot bandstructures.\\
 {\tt http://plasma-gate.weizmann.ac.il/Grace}
 \item {\tt XCrySDen} is used to visualise crystal structures, MLWF,
-  and Fermi surfaces. It is available for unix/Linux, 
+  and Fermi surfaces. It is available for Unix/Linux, 
   Windows (using cygwin), and OSX. To correctly display 
 files from \wannier, version 1.4 or later must be used.\\
 {\tt http://www.xcrysden.org}
 \item {\tt vmd} can also be used to visualise crystal structures and
   MLWF.\\
 {\tt http://www.ks.uiuc.edu/Research/vmd}
+\item{\tent{Add python+numpy+matplotlib} here}
 \end{itemize}
 
 
@@ -105,7 +114,7 @@ writing, interfaces to a number of other electronic structure codes,
 such as {\sc 
   castep} ({\tt www.castep.org}), {\sc abinit} ({\tt
   www.abinit.org}), and {\sc fleur} ({\tt
-  www.flapw.de}), are in progress.
+  www.flapw.de}), are in progress \tent{{\bf [CHECK: still in progress?]}}.
 
 For images of MLWF, see our gallery at {\tt
   http://www.wannier.org/gallery.html}. If you have any images that
@@ -128,7 +137,7 @@ deleted automatically. You can register by following the links at\\
 
 \cleardoublepage
 
-\section*{1: Gallium Arsenide}
+\section*{1: Gallium Arsenide \tent{-- MLWFs for the valence bands}}
 
 \begin{itemize}
 \item{Outline: \it{Obtain and plot MLWF for the four valence
@@ -209,11 +218,11 @@ unit cell.
 
 
 
-\section*{2: Lead}
+\section*{2: Lead \tent{-- Wannier-interpolated Fermi surface}}
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the four lowest states
-    in lead. Use Wannier interpolation to plot the Fermi surface}}
+    in lead. Use Wannier interpolation to plot the Fermi surface.}}
 \item{Generation Details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 4$\times$4$\times$4 k-point grid. Starting
     guess: atom-centred sp$^3$ hybrid orbitals}} 
@@ -241,12 +250,11 @@ states would be poorly localised.
 wannier90.x lead
 \end{quote} }
 Inspect the output file {\tt lead.wout}.
-\item Use Wannier interpolation to obtain the Fermi surface of
+\item Use Wannier interpolation to generate the Fermi surface of
   lead. Rather than re-running the whole calculation we can use the
-  unitary transformations obtained in the first calculation and restart
-  from the plotting routine. Add the following keywords to the {\tt
-    lead.win} file: 
-{\tt
+  unitary transformations obtained in the first calculation and
+  restart from the plotting routine. Add the following keywords to the
+  {\tt lead.win} file: {\tt
 \begin{quote}
 restart = plot
 
@@ -349,7 +357,8 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \cleardoublepage
 
 
-\section*{4: Copper \tent{-- Orbital character of energy bands}}
+\section*{4: Copper \tent{-- Fermi surface, orbital character of
+    energy bands}}
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF to describe the states around the
@@ -406,10 +415,10 @@ end kpoint\_path
 {\tt
 \begin{quote}
 bands\_plot\_project = 6,7
-\end{quote} }
-The resulting file {\tt copper\_band\_proj.gnu} can be opened with
-gnuplot. Red lines correspond to a large contribution from the
-interstitial WF (blue line are a small contribution; ie a large `d' contribution).
+\end{quote} } The resulting file {\tt copper\_band\_proj.gnu} can be
+opened with gnuplot. Red lines correspond to a large contribution from
+the interstitial WF (blue line are a small contribution; ie a large
+$d$ contribution).
 
 
 \end{enumerate}
@@ -448,7 +457,7 @@ instructions on how to incorporate it into \pwscf.
 
 \cleardoublepage
 
-\section*{5: Diamond}
+\section*{5: Diamond \tent{-- MLWFs for the valence bands}}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the valence bands of diamond}}
 \item{Directory: {\tt examples/example5/}}
@@ -485,7 +494,7 @@ instructions on how to incorporate it into \pwscf.
 
 \cleardoublepage
 
-\section*{6: Copper}
+\section*{6: Copper \tent{-- Fermi surface}}
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF to describe the states around the
@@ -576,12 +585,14 @@ end kpoint\_path
 \subsection*{Further ideas}
 \begin{itemize}
 \item Compare the Wannier interpolated bandstructure with the full
-  \pwscf\ bandstructure. Obtain MLWF using a more dense k-point grid.
-\item Investigate the effect of the outer and inner energy window on
+  \pwscf\ bandstructure. Obtain MLWF using a denser k-point grid.
+\tent{{[Provide script for this? Link to Jonathan's URL?]}}
+\item Investigate the effects of the outer and inner energy windows on
   the interpolated bands. 
-\item Instead of extracting a subspace of seven states, we could extract a
-  nine dimensional space (i.e., with s, p and d character). Examine this case
-  and compare the projected bandstructures. 
+\item Instead of extracting a subspace of seven states, we could
+  extract a nine dimensional space (i.e., with $s$, $p$ and $d$
+  character). Examine this case and compare the interpolated
+  bandstructures.
 \end{itemize}
 
 %\begin{figure}[h]
@@ -595,7 +606,8 @@ end kpoint\_path
 
 \cleardoublepage
 
-\section*{7: Silane - SiH$_4$}
+\section*{7: Silane  (SiH$_4$) \tent{-- Molecular MLWFs using 
+$\Gamma$-point sampling}}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the occupied states of molecular
     silane. $\Gamma$-point sampling}} 
@@ -699,7 +711,8 @@ dos\_interp\_mesh = 25
 {\tt postw90.x iron\_dn}
 }
 
-\item \tent{Plot the DOS with {\tt gnuplot}}
+\item \tent{Plot the DOS with {\tt gnuplot}},
+%
 {\tt
 \begin{quote}
 myshell> gnuplot
@@ -772,10 +785,10 @@ Fe:sp3d2;dxy;dxz,dyz
 
 
 \tent{Physical quantities should come out essentially the same
-  computed with any ``reasonable'' set of localized WFs, not
-  necessarily maximally-localized.  Let us re-run steps~4 and~5 again
-  starting from $s$, $p$, and $d$-type trial orbitals, but stopping
-  the minimization of $\widetilde{\Omega}$ before the onset of
+  computed with any reasonable set of localized WFs, not necessarily
+  maximally-localized.  Let us re-run steps~4 and~5 again starting
+  from $s$, $p$, and $d$-type trial orbitals, but stopping the
+  minimization of $\widetilde{\Omega}$ before the onset of
   hybridization,} {\tt
 \begin{quote}
 num\_iter = 50
@@ -815,10 +828,10 @@ write\_hr\_diag = T
 \tent{This tells {\tt wannier90} to write in the output file the
   diagonal (``on-site'') Wannier matrix elements of the
   Hamiltonian. The difference between corresponding values in {\tt
-    iron\_up.wout} and in {\tt iron\_dn.wout} can be interpreted as
-  the exchange splittings for the individual $s$, $p$, and $d$-type
-  WFs. Compare their magnitudes with the splittings displayed by the
-  total and orbital-projected DOS.}
+    iron\_up.wout} and in {\tt iron\_dn.wout} gives the exchange
+  splittings for the individual $s$, $p$, and $d$-type WFs. Compare
+  their magnitudes with the splittings displayed by the total and
+  orbital-projected DOS.}
 
 \end{itemize}
 
@@ -944,10 +957,10 @@ the second MLWF.
 \cleardoublepage
 
 
-\section*{11: Silicon}
-\subsection*{Valence Bands}
+\section*{11: Silicon \tent{-- Valence and conduction states, scissors correction}}
+\subsection*{Valence States}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence bands of silicon}}
+\item{Outline: \it{Obtain MLWF for the valence bands of silicon.}}
 \item{Directory: {\tt examples/example11/}}
 \item{Input Files}
 \begin{itemize}
@@ -1002,11 +1015,13 @@ and re-running \wannier. Visualise them using XCrySDen, e.g.,
 xcrysden --xsf silicon\_00001.xsf
 \end{quote} }
 
-\subsection*{Valence + Conduction State}
+\subsection*{Valence + Conduction States}
 
 \begin{itemize}
 \item{Outline: \it{Obtain MLWF for the valence and low-lying
-    conduction states of Si. Plot the interpolated bandstructure}} 
+      conduction-band states of Si. Plot the interpolated
+      bandstructure. \tent{Apply a scissors correction to the
+        conduction bands.}}}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt silicon.scf}  {\it The \pwscf\ input file for ground state
@@ -1018,7 +1033,7 @@ xcrysden --xsf silicon\_00001.xsf
 \end{itemize}
 \end{itemize}
 The valence and lower conduction states can be represented by MLWF
-with sp$^3$-like symmetry. The lower conduction states are not 
+with $sp^3$-like symmetry. The lower conduction states are not 
 separated by an energy gap from the higher states. In order to form
 localised WF we use the disentanglement procedure
 introduced in Ref.~\cite{SMV}. The position of the inner and outer
@@ -1050,6 +1065,20 @@ gnuplot> load `silicon\_band.gnu'
 \end{quote} }
 The k-point path for the bandstructure interpolation is set in the {\tt
   kpoint\_path} block. Try plotting along different paths. 
+
+\item \tent{Shift the conduction bands upwards in energy by
+    0.65~eV. This {\it ad-hoc} ``scissors correction'' is applied to
+    the Hamiltonian in the Wannier basis using the instructions}
+%
+{\tt
+\begin{quote}
+num\_valence\_bands = 4
+
+scissors\_shift = 0.65
+\end{quote} }
+%
+\tent{Plot together the original and scissors-corrected bands.}
+
 \end{enumerate}
 
 \subsection*{Further ideas}
@@ -1059,7 +1088,8 @@ The k-point path for the bandstructure interpolation is set in the {\tt
   \pwscf\ bandstructure. Compute MLWF using a finer
   k-point grid (e.g., 6$\times$6$\times$6 or 8$\times$8$\times$8) and
   note how the accuracy of the interpolation increases~\cite{WanInt}.
-\item Compute MLWF for four conduction states (see Ref.~\cite{SMV}).
+\item Compute four MLWF spanning the low-lying conduction states (see
+  Ref.~\cite{SMV}).
 \end{itemize}
 
 %\begin{figure}[h]
@@ -1160,8 +1190,8 @@ and re-running \wannier. Visualise them using, e.g., XCrySDen.
 
 \cleardoublepage
 
-\section*{13: (5,5) Carbon Nanotube}
-\subsection*{Transport properties}
+\section*{13: (5,5) Carbon Nanotube \tent{-- Transport properties}}
+%\subsection*{Transport properties}
 
 \begin{itemize}
   \item{Outline: \it{Obtain the bandstructure, quantum conductance and
@@ -1245,7 +1275,7 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 
 \cleardoublepage
 
-\section*{14: Linear Sodium Chain}
+\section*{14: Linear Sodium Chain \tent{-- Transport properties}}
 
 \begin{itemize}
   \item{Outline: \it{Compare the quantum conductance of a periodic 
@@ -1379,10 +1409,10 @@ files {\tt cnt\_qc.dat} and {\tt cnt\_dos.dat}, respectively.
     \end{itemize}
 \end{itemize}
 
-In this calculation a 11 atom supercell is used with a single silicon 
-substitutional defect in the central unit cell. The supercell is chosen so that is 
-conforms to the 2c2 geometry (see User Guide for details) with principal 
-layers set to be 2 unit cells long.
+In this calculation an 11-atom supercell is used with a single silicon
+substitutional defect in the central unit cell. The supercell is
+chosen so that is conforms to the 2c2 geometry (see User Guide for
+details) with principal layers set to be two unit cells long.
 
 \begin{enumerate}
 \item Run \pwscf\ and \wannier. Again these are large calculations, progress
@@ -1474,7 +1504,11 @@ Check if no warnings are issued. Note that if no special flags are passed to \bw
 the ab-initio calculation did not include magnetization effects, and thus it sets to 2 the
 number of electrons per state.
 
-Note also that the value of the relaxation time $\tau=10$~fs in the example is set only as an exemplificative value; note also that only the electrical and thermal conductivity depend on $\tau$, while the Seebeck coefficient is independent of $\tau$.
+Note also that the value of the relaxation time $\tau=10$~fs in the
+example is set only as an \sout{exemplificative} \tent{representative}
+value; note also that only the electrical and thermal conductivity
+depend on $\tau$, while the Seebeck coefficient is independent of
+$\tau$.
 
 Using your favourite plotting program, plot the {\tt Si\_boltzdos.dat} file to inspect the DOS.
 
@@ -1881,8 +1915,9 @@ last component is nonzero.
 
 \subsection*{Further ideas}
 
-\begin{itemize}
-\item Study the convergence of the AHC with respect to the density of
+%\begin{itemize}
+%\item 
+Study the convergence of the AHC with respect to the density of
   the integration mesh:
 
   \begin{itemize}
@@ -1910,35 +1945,21 @@ last component is nonzero.
 
   \end{itemize}
 
-\item The Berry curvature in ferromagnets results from broken
-  time-reversal in the orbital wavefunctions, induced by the magnetic
-  order combined with spin-orbit coupling. Another source of Berry
-  curvature in crystals is lack of spatial inversion symmetry.
-
-  Plot the Berry curvature of the valence bands of GaAs along selected
-  lines and planes in the BZ. Note that $\bm{\Omega}(-{\bf
-    k})=-\bm{\Omega}({\bf k})$, so that $\int_{\rm
-    BZ}\bm{\Omega}({\bf k})d{\bf k}=0$.
+% ADD EVENTUALLY? AS A SEPARATE EXAMPLE?
+%
+%\item The Berry curvature in ferromagnets results from broken
+%  time-reversal in the orbital wavefunctions, induced by the magnetic
+%  order combined with spin-orbit coupling. Another source of Berry
+%  curvature in crystals is lack of spatial inversion symmetry.
+%
+%  Plot the Berry curvature of the valence bands of GaAs along selected
+%  lines and planes in the BZ. Note that $\bm{\Omega}(-{\bf
+%    k})=-\bm{\Omega}({\bf k})$, so that $\int_{\rm
+%    BZ}\bm{\Omega}({\bf k})d{\bf k}=0$.
   
-\tent{{\bf [Need to provide input files for GaAs and test them]}}
-
-%\item {\bf [\underline{POSSIBLE ADDITION:}]} Plot the MCD spectrum,
-%  check numerically the Kramers-Kronig relation between MCD and AHC.
-%Refer to Ref.~\cite{WanInt}
 
 
-%\item {\bf [\underline{POSSIBLE ADDITION:}]} Explain how to modify the
-%  input files in this example to calculate the orbital magnetization
-%  instead of the AHC as a BZ integral, and to visualize the integrand
-%  along lines and planes in $k$-space. Basically, need to add {\tt
-%    write\_uHu = .true.} to {\tt Fe.pw2wan} in order to evaluate the
-%  matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert H_{\bf k}\vert
-%  u_{m{\bf k}+{\bf b}_2}\rangle$, and re-run step~4. Then replace {\tt
-%    curv/curv\_heatmap/ahc} with {\tt morb} everywhere in the {\tt
-%    kpath}, {\tt kslice}, and {\tt berry} input variables, and re-run
-%  step~6.
-
-\end{itemize}
+%\end{itemize}
 
 
 \cleardoublepage
@@ -2169,18 +2190,18 @@ use
 gnuplot> plot 'Fe-sigS\_xx.dat' w l
 \end{quote} }
 %
-(As indicated in {\tt Fe.wpout}, the symmetric conductivity is plotted
-in units of $10^{15}$~sec$^{-1}$.) The difference in shape between the
-JDOS and the optical conductivity can be attributed to the variability
-in the dipole matrix elements describing the optical transitions.
-Note also that the calculate spectrum is ``sharp,'' while experimental
-spectra are broadened by lifetime effects which are not taken into
-account in the calculation.
+(As indicated in {\tt Fe.wpout}, the conductivity is plotted in units
+of $10^{15}$~sec$^{-1}$.) The difference in shape between the JDOS and
+the optical conductivity can be attributed to the variability in the
+dipole matrix elements describing the optical transitions.  Note also
+that the calculated spectrum is ``sharp,'' while experimental spectra
+are broadened by lifetime effects which are not taken into account in
+the calculation.
 
 The optical conductivity tensor of iron also has an antisymmetric
 (time-odd) part associated with magneto-optical effects. To calculate
 the absorptive part ${\rm Im}\,\sigma^{\rm A}_{\alpha\beta}(\omega)$,
-modify one line in {\tt Fe.win},
+change in {\tt Fe.win},
 %
 {\tt
 \begin{quote}
@@ -2191,8 +2212,8 @@ and re-run {\tt postw90}. The only nonzero component is ${\rm
   Im}\,\sigma^{\rm A}_{xy}(\omega)=-{\rm Im}\,\sigma^{\rm
   A}_{yx}(\omega)$.  It describes the differential absorption of left-
 anf right-circularly-polarized light travelling along the
-magnetization direction $\hat{\bf z}$. To plot the
-magnetic circular dichroism (MCD) spectrum, issue
+magnetization direction $\hat{\bf z}$. To plot this
+``magnetic circular dichroism'' (MCD) spectrum, issue
 %
 {\tt
 \begin{quote} myshell> gnuplot
@@ -2202,8 +2223,8 @@ gnuplot> plot 'Fe-sigA\_xy.dat' w l
 %
 Following a common convention in the literature, what is plotted is
 $\omega{\rm Im}\,\sigma^{\rm A}_{xy}(\omega)$, in units of
-$10^{29}$~sec$^{-2}$. Compare the spectrum with the one displayed
-in Ref.~\cite{yao-prl04}. To improve the agreement, you need to increase
+$10^{29}$~sec$^{-2}$. Compare the spectrum with the one displayed in
+Ref.~\cite{yao-prl04}. To improve the agreement, you need to increase
 the number of $k$-points from $25^3$ to, e.g., $125^3$.
 
 
@@ -2233,7 +2254,8 @@ gnuplot> plot 'Fe-kk\_xy.dat' w l
 \end{quote} }
 %
 Compare the value for $\omega_{\rm min}=0$ with the value of the AHC
-calculated in Example~18 by directly integrating the Berry curvature.
+calculated in Example~18 by directly integrating the $k$-space Berry
+curvature.
 
 \end{itemize}
 
@@ -2272,8 +2294,8 @@ calculated in Example~18 by directly integrating the Berry curvature.
 
 \bibitem{WanTran} Y.-S.~Lee, M.~B.~Nardelli and N.~Marzari, Band
   Structure and Quantum Conductance of Nanostructures from Maximally
-  Localized Wannier Functions: The Case of Functionalized carbon
-  nanotubes, {\it Phys. Rev. Lett.} {\bf 95}, 076804 (2005).
+  Localized Wannier Functions: The Case of Functionalized Carbon
+  Nanotubes, {\it Phys. Rev. Lett.} {\bf 95}, 076804 (2005).
 
 \bibitem{wang-prb06} X.~Wang {\it et al.}, Ab-initio calculation of
   the anomalous Hall conductivity by Wannier interpolation,
@@ -2284,6 +2306,7 @@ calculated in Example~18 by directly integrating the Berry curvature.
 {\it Phys. Rev. Lett.} {\bf 92}, 037204 (2004).
 
 \bibitem{lopez-prb12} M.~G.~Lopez, D.~Vanderbilt, T.~Thonhauser, and I.~Souza,
+Wannier-based calculation of the orbital magnetization in crystals,
 Phys. Rev. B {\bf 85}, 014435 (2012).
 
 \end{thebibliography}

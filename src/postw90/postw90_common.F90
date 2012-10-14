@@ -297,7 +297,7 @@ module w90_postw90_common
     call comms_bcast(spn_decomp,1)
     call comms_bcast(use_degen_pert,1) 
     call comms_bcast(degen_thr,1)
-    call comms_bcast(num_elec_cell,1)
+    call comms_bcast(num_valence_bands,1)
     call comms_bcast(found_fermi_energy,1)
     call comms_bcast(dos,1)
     call comms_bcast(dos_task,len(dos_task)) 
