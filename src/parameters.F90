@@ -773,6 +773,16 @@ contains
     kslice                = .false.
     call param_get_keyword('kslice',found,l_value=kslice)
 
+    kslice_task='energy_cntr'
+    call param_get_keyword('kslice_task',found,c_value=kslice_task)
+       if(kslice .and. index(kslice_task,'energy_cntr')==0 .and.&
+          index(kslice_task,'curv_heatmap')==0 .and.&
+          index(kslice_task,'morb_heatmap')==0) call io_error&
+            ('Error: value of kslice_task not recognised in param_read')
+       if(kslice .and. index(kslice_task,'curv_heatmap')>0 .and.&
+            index(kslice_task,'morb_heatmap')>0) call io_error&
+          ('Error: kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
+
     kslice_interp_mesh(1:2) = 50
     call param_get_vector_length('kslice_interp_mesh',found,length=i)
     if(found) then
@@ -789,16 +799,6 @@ contains
        if (any(kslice_interp_mesh<=0)) &
             call io_error('Error: kslice_interp_mesh elements must be greater than zero')
     endif
-
-    kslice_task='energy_cntr'
-    call param_get_keyword('kslice_task',found,c_value=kslice_task)
-       if(kslice .and. index(kslice_task,'energy_cntr')==0 .and.&
-          index(kslice_task,'curv_heatmap')==0 .and.&
-          index(kslice_task,'morb_heatmap')==0) call io_error&
-            ('Error: value of kslice_task not recognised in param_read')
-       if(kslice .and. index(kslice_task,'curv_heatmap')>0 .and.&
-            index(kslice_task,'morb_heatmap')>0) call io_error&
-          ('Error: kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
 
     kslice_corner=0.0_dp
     call param_get_keyword_vector('kslice_corner',found,3,r_value=kslice_corner)
