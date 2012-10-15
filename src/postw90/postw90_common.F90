@@ -250,7 +250,6 @@ module w90_postw90_common
     call comms_bcast(real_metric(1,1),9)
     call comms_bcast(recip_metric(1,1),9)
     call comms_bcast(cell_volume,1)
-    call comms_bcast(dos_num_points,1)
     call comms_bcast(dos_energy_step,1)
     call comms_bcast(dos_smr_adpt,1)
     call comms_bcast(dos_smr_index,1)
@@ -271,13 +270,13 @@ module w90_postw90_common
     call comms_bcast(berry_smr_fixed_en_width,1)
     call comms_bcast(berry_smr_adpt_factor,1)
     call comms_bcast(optics_time_parity,len(optics_time_parity))
-    call comms_bcast(optics_min_energy,1)
-    call comms_bcast(optics_max_energy,1)
+    call comms_bcast(optics_energy_min,1)
+    call comms_bcast(optics_energy_max,1)
     call comms_bcast(optics_energy_step,1)
 
     call comms_bcast(fermi_energy,1)
-    call comms_bcast(dos_min_energy,1)
-    call comms_bcast(dos_max_energy,1)
+    call comms_bcast(dos_energy_min,1)
+    call comms_bcast(dos_energy_max,1)
     call comms_bcast(spin_interp_mesh_spacing,1)
     call comms_bcast(spin_interp_mesh(1),3)
     call comms_bcast(wanint_kpoint_file,1)
@@ -563,7 +562,7 @@ module w90_postw90_common
 
   function kmesh_spacing_singleinteger(num_points)
 
-  ! Set up the value of the interpolation mesh spacing, neede for
+  ! Set up the value of the interpolation mesh spacing, needed for
   ! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of 
   ! the three Delta_k's for each of the primitive translations b1, b2, and b3
   

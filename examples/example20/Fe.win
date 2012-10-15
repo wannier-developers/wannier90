@@ -20,7 +20,7 @@ fermi_energy = 12.6285
 berry = T
 berry_interp_mesh = 25
 berry_task = optics
-optics_max_energy = 7.0
+optics_energy_max = 7.0
 optics_time_parity = even 
 
 begin unit_cell_cart

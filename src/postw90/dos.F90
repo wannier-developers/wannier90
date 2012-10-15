@@ -34,8 +34,8 @@ contains
     use w90_comms, only          : on_root,num_nodes,my_node_id,comms_reduce
     use w90_postw90_common, only : num_int_kpts_on_node,int_kpts,weight,&
                                    fourier_R_to_k
-    use w90_parameters, only     : num_wann,dos_num_points,dos_min_energy,&
-                                   dos_max_energy,dos_energy_step,timing_level,&
+    use w90_parameters, only     : num_wann,dos_energy_min,dos_energy_max,&
+                                   dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_interp_mesh,&
                                    dos_smr_index,dos_smr_adpt_factor ,&
                                    spn_decomp, dos_smr_adpt, &
@@ -46,7 +46,6 @@ contains
     use w90_wan_ham, only: get_eig_deleig
     use w90_utility, only: utility_diagonalize
 
-
     ! 'dos_k' contains contrib. from one k-point, 
     ! 'dos_all' from all nodes/k-points (first summed on one node and 
     ! then reduced (i.e. summed) over all nodes)
@@ -55,7 +54,7 @@ contains
     real(kind=dp), allocatable :: dos_all(:,:)
 
     real(kind=dp)    :: kweight,kpt(3),omega
-    integer          :: i,loop_x,loop_y,loop_z,loop_kpt,ifreq
+    integer          :: i,loop_x,loop_y,loop_z,loop_tot,ifreq
     integer          :: dos_unit,ndim, ierr
     real(kind=dp), dimension(:), allocatable :: dos_energyarray
 
@@ -65,14 +64,14 @@ contains
     real(kind=dp) :: del_eig(num_wann,3)
     real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
 
-    num_freq=nint((dos_max_energy-dos_min_energy)/dos_energy_step)+1
+    num_freq=nint((dos_energy_max-dos_energy_min)/dos_energy_step)+1
     if(num_freq==1) num_freq=2
-    d_omega=(dos_max_energy-dos_min_energy)/(num_freq-1)
+    d_omega=(dos_energy_max-dos_energy_min)/(num_freq-1)
 
     allocate(dos_energyarray(num_freq),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating dos_energyarray in dos subroutine')
     do ifreq=1,num_freq
-       dos_energyarray(ifreq) = dos_min_energy + real(ifreq-1,dp)*d_omega
+       dos_energyarray(ifreq) = dos_energy_min + real(ifreq-1,dp)*d_omega
     end do
 
     allocate(HH(num_wann,num_wann),stat=ierr)
@@ -97,9 +96,14 @@ contains
 
        if (timing_level>1) call io_stopwatch('dos',1)
 
-       write(stdout,'(/,1x,a)') '============'
-       write(stdout,'(1x,a)')   'Calculating:'
-       write(stdout,'(1x,a)')   '============'
+!       write(stdout,'(/,1x,a)') '============'
+!       write(stdout,'(1x,a)')   'Calculating:'
+!       write(stdout,'(1x,a)')   '============'
+
+       write(stdout,'(/,/,1x,a)')&
+            'Properties calculated in module  d o s'
+       write(stdout,'(1x,a)')&
+            '--------------------------------------'
 
        if(num_dos_project==num_wann) then
           write(stdout,'(/,3x,a)') '* Total density of states (_dos)'
@@ -113,16 +117,19 @@ contains
        endif
 
        write(stdout,'(/,5x,a,f9.4,a,f9.4,a)')&
-            'Energy range: [',dos_min_energy,',',dos_max_energy,'] eV'
+            'Energy range: [',dos_energy_min,',',dos_energy_max,'] eV'
 
        write(stdout,'(/,5x,a,(f6.3,1x))')&
             'Adaptive smearing width prefactor: ',&
             dos_smr_adpt_factor
 
-       write(stdout,'(5x,a,i0,a,i0,a,i0,a,i0,a)')&
-            'Interpolation mesh in full BZ: ',&
-            dos_num_points,'x',dos_num_points,'x',&
-            dos_num_points,'=',dos_num_points**3,' points'
+       write(stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ',&
+            dos_interp_mesh(1:3) !(1),berry_interp_mesh(2),berry_interp_mesh(3)
+
+!       write(stdout,'(5x,a,i0,a,i0,a,i0,a,i0,a)')&
+!            'Interpolation mesh in full BZ: ',&
+!            dos_num_points,'x',dos_num_points,'x',&
+!            dos_num_points,'=',dos_num_points**3,' points'
 
     end if
 
@@ -146,8 +153,8 @@ contains
        !       that they are equal
        ! ---------------------------------------------------------------------
        !
-       do loop_kpt=1,num_int_kpts_on_node(my_node_id)
-          kpt(:)=int_kpts(:,loop_kpt)
+       do loop_tot=1,num_int_kpts_on_node(my_node_id)
+          kpt(:)=int_kpts(:,loop_tot)
           if (dos_smr_adpt) then
              call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
              call get_levelspacing(del_eig,dos_interp_mesh,levelspacing_k)
@@ -164,21 +171,23 @@ contains
                   smr_fixed_en_width=dos_smr_fixed_en_width,&
                   UU=UU)
           end if
-          dos_all=dos_all+dos_k*weight(loop_kpt)
+          dos_all=dos_all+dos_k*weight(loop_tot)
        end do
 
     else
-
+       
        if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
-
-       kweight=1.0_dp/dos_num_points**3
-       do loop_kpt=my_node_id,dos_num_points**3-1,num_nodes
-          loop_x=loop_kpt/dos_num_points**2
-          loop_y=(loop_kpt-loop_x*dos_num_points**2)/dos_num_points
-          loop_z=loop_kpt-loop_x*dos_num_points**2-loop_y*dos_num_points
-          kpt(1)=real(loop_x,dp)/dos_num_points
-          kpt(2)=real(loop_y,dp)/dos_num_points
-          kpt(3)=real(loop_z,dp)/dos_num_points
+       
+       kweight = 1.0_dp / real(PRODUCT(dos_interp_mesh),kind=dp)
+       do loop_tot=my_node_id,PRODUCT(dos_interp_mesh)-1,num_nodes
+          loop_x= loop_tot/(dos_interp_mesh(2)*dos_interp_mesh(3))
+          loop_y=(loop_tot-loop_x*(dos_interp_mesh(2)&
+               *dos_interp_mesh(3)))/dos_interp_mesh(3)
+          loop_z=loop_tot-loop_x*(dos_interp_mesh(2)*dos_interp_mesh(3))&
+                -loop_y*dos_interp_mesh(3)
+          kpt(1)=real(loop_x,dp)/real(dos_interp_mesh(1),dp)
+          kpt(2)=real(loop_y,dp)/real(dos_interp_mesh(2),dp)
+          kpt(3)=real(loop_z,dp)/real(dos_interp_mesh(3),dp)
           if (dos_smr_adpt) then
              call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
              call get_levelspacing(del_eig,dos_interp_mesh,levelspacing_k)
@@ -232,9 +241,11 @@ contains
 
   ! =========================================================================
 
-!! The next routine is commented. It should be working (apart for a missing broadcast at the very end, see comments there).
-!! However, it should be debugged, and probably the best thing is to avoid to resample the BZ, but rather use the 
-!! calculated DOS (maybe it can be something that is done at the end of the DOS routine?)
+!! The next routine is commented. It should be working (apart for a
+!! missing broadcast at the very end, see comments there).  However,
+!! it should be debugged, and probably the best thing is to avoid to
+!! resample the BZ, but rather use the calculated DOS (maybe it can be
+!! something that is done at the end of the DOS routine?)
 !!$  subroutine find_fermi_level
 !!$    !==============================================!
 !!$    !                                              !
@@ -611,7 +622,7 @@ contains
 !!$
 !!$    use w90_constants, only     : dp
 !!$    use w90_utility, only       : w0gauss
-!!$    use w90_parameters, only    : num_wann,dos_min_energy,dos_num_points,&
+!!$    use w90_parameters, only    : num_wann,dos_energy_min,dos_num_points,&
 !!$         dos_smr_adpt_factor,spn_decomp
 !!$    use w90_spin, only          : get_spn_nk
 !!$
@@ -643,7 +654,7 @@ contains
 !!$          !
 !!$       smear=levelspacing_k(i)*dos_smr_adpt_factor/sqrt(2.0_dp)
 !!$       do ifreq=1,num_freq
-!!$          omega=dos_min_energy+(ifreq-1)*d_omega
+!!$          omega=dos_energy_min+(ifreq-1)*d_omega
 !!$          arg=(omega-eig_k(i))/smear
 !!$          if(abs(arg) > 10.0_dp) then ! optimization
 !!$             cycle

@@ -114,18 +114,17 @@ module w90_parameters
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical,           public          :: dos_plot
   character(len=20), public, save    :: dos_task 
-  integer,           public, save    :: dos_num_points
-  real(kind=dp),     public, save    :: dos_energy_step
   logical,           public, save    :: dos_smr_adpt
+  real(kind=dp),     public, save    :: dos_smr_adpt_factor
   integer,           public, save    :: dos_smr_index
   real(kind=dp),     public, save    :: dos_smr_fixed_en_width
-  real(kind=dp),     public, save    :: dos_smr_adpt_factor
   real(kind=dp),     public, save    :: dos_max_allowed_smearing
-  real(kind=dp),     public, save    :: dos_max_energy
-  real(kind=dp),     public, save    :: dos_min_energy
+  real(kind=dp),     public, save    :: dos_energy_max
+  real(kind=dp),     public, save    :: dos_energy_min
+  real(kind=dp),     public, save    :: dos_energy_step
   integer,           public, save    :: num_dos_project
   integer, allocatable, public, save :: dos_project(:)
-  character(len=20), public, save    :: dos_plot_format
+!  character(len=20), public, save    :: dos_plot_format
   real(kind=dp),     public, save    :: dos_interp_mesh_spacing
   integer,           public, save    :: dos_interp_mesh(3)
 !  real(kind=dp),     public, save :: dos_gaussian_width
@@ -147,8 +146,8 @@ module w90_parameters
   real(kind=dp),     public, save :: berry_smr_fixed_en_width
   character(len=20), public, save :: optics_time_parity
   real(kind=dp),     public, save :: optics_energy_step
-  real(kind=dp),     public, save :: optics_min_energy
-  real(kind=dp),     public, save :: optics_max_energy
+  real(kind=dp),     public, save :: optics_energy_min
+  real(kind=dp),     public, save :: optics_energy_max
   logical,           public, save :: wanint_kpoint_file
   logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
@@ -1010,10 +1009,6 @@ contains
 
     !IVO_END
 
-    dos_num_points            = 50
-    call param_get_keyword('dos_num_points',found,i_value=dos_num_points)
-    if (dos_num_points<0) call io_error('Error: dos_num_points must be positive')       
-
     dos_energy_step           = 0.01_dp
     call param_get_keyword('dos_energy_step',found,r_value=dos_energy_step)
 
@@ -1035,8 +1030,8 @@ contains
 !    dos_gaussian_width        = 0.1_dp
 !    call param_get_keyword('dos_gaussian_width',found,r_value=dos_gaussian_width)
 
-    dos_plot_format           = 'gnuplot'
-    call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
+!    dos_plot_format           = 'gnuplot'
+!    call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
     num_dos_project=num_wann
     call param_get_range_vector('dos_project',found,num_dos_project,&
@@ -1418,34 +1413,34 @@ contains
     endif
 
     if(frozen_states) then
-       dos_max_energy        = dis_froz_max+0.6667_dp
+       dos_energy_max        = dis_froz_max+0.6667_dp
     elseif(allocated(eigval)) then
-       dos_max_energy        = maxval(eigval)+0.6667_dp
+       dos_energy_max        = maxval(eigval)+0.6667_dp
     else
-       dos_max_energy        = 0.0_dp
+       dos_energy_max        = 0.0_dp
     end if
-    call param_get_keyword('dos_max_energy',found,r_value=dos_max_energy)
+    call param_get_keyword('dos_energy_max',found,r_value=dos_energy_max)
 
 
     if(allocated(eigval)) then
-       dos_min_energy        = minval(eigval)-0.6667_dp
+       dos_energy_min        = minval(eigval)-0.6667_dp
     else
-       dos_min_energy        = 0.0_dp
+       dos_energy_min        = 0.0_dp
     end if
-    call param_get_keyword('dos_min_energy',found,r_value=dos_min_energy)
+    call param_get_keyword('dos_energy_min',found,r_value=dos_energy_min)
 
 
     if(frozen_states) then
-       optics_max_energy        = dis_froz_max-fermi_energy+0.6667_dp
+       optics_energy_max        = dis_froz_max-fermi_energy+0.6667_dp
     elseif(allocated(eigval)) then
-       optics_max_energy        = maxval(eigval)-minval(eigval)+0.6667_dp
+       optics_energy_max        = maxval(eigval)-minval(eigval)+0.6667_dp
     else
-       optics_max_energy        = 0.0_dp
+       optics_energy_max        = 0.0_dp
     end if
-    call param_get_keyword('optics_max_energy',found,r_value=optics_max_energy)
+    call param_get_keyword('optics_energy_max',found,r_value=optics_energy_max)
 
-    optics_min_energy        = 0.0_dp
-    call param_get_keyword('optics_min_energy',found,r_value=optics_min_energy)
+    optics_energy_min        = 0.0_dp
+    call param_get_keyword('optics_energy_min',found,r_value=optics_energy_min)
 
 
     automatic_translation=.true.
