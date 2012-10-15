@@ -74,30 +74,22 @@ to obtain the Wannier functions.
 \section{List of available modules}
 The currently available modules in \texttt{postw90.x} are:
 \begin{itemize}
-\item \texttt{Dos}: Calculation of Density of States, Projected
+\item \texttt{dos}: Calculation of the Density of States, Projected
   density of states, net spin etc.
-\item \texttt{Berry}: Calculation of properties related to the
+\item \texttt{berry}: Calculation of properties related to the
   $k$-space Berry curvature and Berry connection, including anomalous
   Hall conductivity, orbital magnetisation, and interband optical
-  spectrum.  (see Chap.~\ref{ch:boltzwann}).
-\item \texttt{kpath}: Calculation of $k$-space quantities along a path
-  in the BZ
-\item \texttt{kslice}: Calculation of $k$-space quantities within a
-  slice in the BZ
+  conductivity (see Chap.~\ref{ch:berry}).
+\item \texttt{kpath}: Calculation of $k$-space quantities along a
+  piecewise linear path in the BZ
+\item \texttt{kslice}: Calculation of $k$-space quantities on a planar
+  slice of the BZ
 \item \texttt{BoltzWann}: Calculation of electronic transport
   properties using the semiclassical Boltzmann transport equation (see Chap.~\ref{ch:boltzwann}).
 \item \emph{Generic Band Interpolation}: Calculation band energies (and band
   derivatives) on a generic list of $k$ points (see Chap.~\ref{ch:geninterp}).
 \end{itemize}
 
-\textcolor{red}{(Ivo) Would it make sense to move
-  \texttt{evaluate\_spin\_moment} (renamining it, e.g.,
-  \texttt{spin\_cell\_avg}) to a separate \texttt{Spin} module, which
-  would also include the input variables
-  \texttt{spin\_axis\_polar\_angle} and
-  \texttt{spin\_axis\_azimuthal\_angle} defining the spin quantization
-  axis? The latter would then be used in the modules \texttt{kpath}
-  and \texttt{kslice}, for example.}
 
 \section{Keyword List}
 On the next pages the list of available
@@ -118,17 +110,19 @@ The subsequent tables describe input parameters relative to specific modules.
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{Generic Band Interpolation Parameters} \\
+\multicolumn{3}{|c|}{Global Interpolation Parameters} \\
 \hline
 {\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
 {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
 {\sc num\_valence\_bands}   & I & Number of valence bands \\
 {\sc scissors\_shift}   & I & Scissors shift applied to the conduction bands (eV) \\
+  {\sc spn\_decomp}& L & Decompose various properties into
+  up-spin, down-spin, and eventually spin-flip parts\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling \postw.]
 {{\tt seedname.win} file keywords controlling the general behaviour of
-  the modules of \postw. Argument types
+  the modules in \postw. Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords_postw90}
@@ -143,28 +137,36 @@ physical value, L for a logical value and S for a text string.}
   Keyword & Type & Description \\
   &      &             \\
   \hline\hline
-  \multicolumn{3}{|c|}{DOS Parameters} \\
+  \multicolumn{3}{|c|}{{\tt dos} Parameters} \\
   \hline
-  {\sc dos}  & L & Calculate the density of states \\
+  {\sc dos}  & L & Calculate the density of states and related properties\\
+  {\sc dos\_task}& C  & List of properties to compute \\
+  {\sc dos\_energy\_min} & R & Lower limit of the energy range for
+  computing the DOS (eV)\\
+  {\sc dos\_energy\_max}& R & Upper limit of the energy range for
+  computing the DOS (eV)\\
+  {\sc dos\_energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
+  {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
+  {\sc dos\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
+  {\sc dos\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+  {\sc dos\_smr\_adpt} & L & Use adaptive smearing for the DOS \\
+  {\sc dos\_smr\_adpt\_factor} & R & Factor for adaptive smearing \\
+  {\sc dos\_max\_allowed\_smearing} & R & Maximum allowed value for the adaptive energy smearing (eV) \\
+  {\sc dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
+{\sc dos\_smr\_index} & I & Analytical form used for the broadened delta function. \\
   {\sc evaluate\_spin\_moment}& L & Determines whether to evaluate the spin moment\\
   {\sc spin\_formatted}& L & Read a formatted spn file\\
   {\sc spn\_decomp}& L & Decompose the total DOS into
   up- and down-spin parts\\
-  {\sc dos\_min\_energy} & R & Lower limit of the energy range for
-  computing the dos\\
-  {\sc dos\_max\_energy}& R & Upper limit of the energy range for
-  computing the dos\\
-  {\sc dos\_energy\_step}& R & Energy step for the grid of energies
-  used for computing the dos\\
-  {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the DOS module.]  {{\tt
-    seedname.win} file keywords controlling the DOS module. Argument
-  types are represented by, I for a integer, R for a real number, P
-  for a physical value, L for a logical value and S for a text string.
-  \textcolor{red}{(Ivo) Will we bring back the ability to find the
-    Fermi level given the number of electrons per cell?}  }
+    seedname.win} file keywords controlling the {\tt dos}
+  module. Argument types are represented by, I for a integer, R for a
+  real number, P for a physical value, L for a logical value and S for
+  a text string.  \textcolor{red}{(Ivo) Will we bring back the ability
+    to find the Fermi level given the number of electrons per cell?}
+}
 \label{parameter_keywords_dos}
 \end{center}
 \end{table}
@@ -177,7 +179,7 @@ physical value, L for a logical value and S for a text string.}
   Keyword & Type & Description \\
   &      &             \\
   \hline\hline
-  \multicolumn{3}{|c|}{kpath Parameters} \\
+  \multicolumn{3}{|c|}{{\tt kpath} Parameters} \\
   \hline
   {\sc kpath}  & L & Calculate properties along a piecewise linear path in the BZ \\
   {\sc kpath\_task}& L & List of properties to evaluate\\
@@ -185,10 +187,11 @@ physical value, L for a logical value and S for a text string.}
   {\sc kpath\_bands\_colour}& C & Property used to color the energy bands along the path\\
   \hline
 \end{tabular}
-\caption[Parameter file keywords controlling the kpath module.]
-{{\tt seedname.win} file keywords controlling the kpath module. Argument types
-are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+\caption[Parameter file keywords controlling the kpath module.]  {{\tt
+    seedname.win} file keywords controlling the {\tt kpath}
+  module. Argument types are represented by, I for a integer, R for a
+  real number, P for a physical value, L for a logical value and S for
+  a text string.}
 \label{parameter_keywords_kpath}
 \end{center}
 \end{table}
@@ -200,7 +203,7 @@ physical value, L for a logical value and S for a text string.}
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{kslice Parameters} \\
+\multicolumn{3}{|c|}{{\tt kslice} Parameters} \\
 \hline
 {\sc kslice}  & L & Calculate properties on a slice in the BZ \\
 {\sc kslice\_task}& C & List of properties to evaluate\\
@@ -212,9 +215,10 @@ on the slice (one or two integers)\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the kslice module.]
-{{\tt seedname.win} file keywords controlling the kslice module. Argument types
-are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+{{\tt seedname.win} file keywords controlling the {\tt kslice}
+  module. Argument types are represented by, I for a integer, R for a
+  real number, P for a physical value, L for a logical value and S for
+  a text string.}
 \label{parameter_keywords_kslice}
 \end{center}
 \end{table}
@@ -228,30 +232,30 @@ physical value, L for a logical value and S for a text string.}
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{Berry Parameters} \\
+\multicolumn{3}{|c|}{{\tt berry} Parameters} \\
 \hline
 {\sc berry}  & L & Calculate Berry derived quantities \\
+{\sc berry\_task}& C  & List of properties to compute \\
 {\sc berry\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
 {\sc berry\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
-{\sc berry\_task}& C  & List of properties to compute \\
 %{\sc berry\_spectrum\_type}& C & Type of spectrum to compute\\
 {\sc optics\_time\_parity}& C & Time parity of the optical spectrum to compute\\ 
-{\sc optics\_min\_energy} & R & Lower limit of the energy range for
+{\sc optics\_energy\_min} & R & Lower limit of the energy range for
 optical spectra (eV) \\
-{\sc optics\_max\_energy}& R & Upper limit of the energy range for
+{\sc optics\_energy\_max}& R & Upper limit of the energy range for
 optical spectra (eV) \\
-{\sc optics\_energy\_step}& R & Energy step for the grid of energies
-used for optical spectra (eV)\\
+{\sc optics\_energy\_step}& R &  Step for increasing the energy in the specified range (eV)\\
 {\sc uHu\_formatted}& L & Read a formatted uHu file \\
 {\sc uIu\_formatted}& L & Read a formatted uIu file\\
 {\sc berry\_alpha}& L & description\\
 {\sc berry\_beta}& L & description\\
 \hline
 \end{tabular}
-\caption[Parameter file keywords controlling the Berry module.]
-{{\tt seedname.win} file keywords controlling the Berry module. Argument types
-are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+\caption[Parameter file keywords controlling the Berry module.]  {{\tt
+    seedname.win} file keywords controlling the {\tt berry}
+  module. Argument types are represented by, I for a integer, R for a
+  real number, P for a physical value, L for a logical value and S for
+  a text string.}
 \label{parameter_keywords_berry}
 \end{center}
 \end{table}
@@ -265,7 +269,7 @@ physical value, L for a logical value and S for a text string.}
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{BoltzWann Parameters} \\
+\multicolumn{3}{|c|}{{\tt BoltzWann} Parameters} \\
 \hline
 {\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
 {\sc boltz\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
@@ -308,7 +312,7 @@ physical value, L for a logical value and S for a text string.}
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{Generic Band Interpolation Parameters} \\
+\multicolumn{3}{|c|}{\emph{Generic Band Interpolation} Module Parameters} \\
 \hline
 {\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
 {\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
@@ -332,6 +336,158 @@ Determines whether to enter the DOS routines.
 The default value is \verb#false#.
 
 
+\subsection[berry\_task]{\tt character(len=120) ::  dos\_task}
+The quantity to compute when {\tt dos=.true.}
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#dos_plot# Density of states
+%\item[{\bf --}]  \verb#dos_plot# Density of states
+\end{itemize}
+
+
+The default value is \verb#dos_plot#.
+
+
+\subsection[dos\_win\_min]{\tt real(kind=dp) :: dos\_min\_energy}
+Lower limit of the energy range for computing the DOS.
+Units are eV.
+
+The default value is the minimum value of the energy eigenvalues
+stored in {\tt seedname.eig}, minus 0.6667.
+
+\subsection[dos\_win\_max]{\tt real(kind=dp) :: dos\_max\_energy}
+Upper limit of the energy range for computing the DOS.
+Units are eV.
+
+If an inner energy window was specified, 
+the default value is the upper bound of the innter energy window, plus 0.6667.
+Otherwise it is  the maximum value of the energy eigenvalues
+stored in {\tt seedname.eig}, plus 0.6667.
+
+\subsection[berry\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
+Energy step for the grid of energies used to plot the dos
+
+The units are eV.
+The default value is 0.01~eV.
+
+\subsection[berry\_energy\_step]{\tt integer :: dos\_project(:)}
+
+If present {\tt postw90} computes, instead of the total DOS, the
+partial DOS projected onto the WFs listed. The WFs are numbered
+according to the seedname.wout file.
+
+For example, to project onto WFs 2, 6, 7, 8, and 12:
+
+{\tt dos\_project : 2, 6-8, 12}
+
+
+\subsection[boltz\_interp\_mesh]{\tt integer :: dos\_interp\_mesh(:)}
+Number of interpolation grid points used for calculating the DOS-related tasks.
+
+If three integers $l$ $m$ $n$ are given, the reciprocal-space cell
+subtended by the three primitive translations is sampled on a uniform
+$l\times m\times n$ grid.  If only one integer $m$ is given, an
+$m\times m\times m$ grid is used.
+
+{\tt dos\_interp\_mesh\_spacing} and {\tt dos\_interp\_mesh} may not
+both be defined in the same input file.
+
+If neither {\tt dos\_interp\_mesh\_spacing} nor {\tt
+  dos\_interp\_mesh} are defined, then the grid defined either with
+{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+otherwise an error is issued).
+
+\subsection[boltz\_interp\_mesh\_spacing]{\tt real(kind=dp) :: dos\_interp\_mesh\_spacing}
+
+An alternative way of specifying the interpolation grid for
+DOS-related tasks. This flag defines the minimum distance for
+neighboring $k$ points along each of the three directions in $k$
+space. 
+
+The units are \AA$^{-1}$.
+
+{\tt dos\_interp\_mesh\_spacing} and {\tt dos\_interp\_mesh} may
+not both be defined in the same input file.
+
+If neither {\tt dos\_interp\_mesh\_spacing} nor {\tt
+  dos\_interp\_mesh} are defined, then the grid defined either with
+{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+otherwise an error is issued).
+
+
+\subsection[dos\_smr\_adaptive]{\tt logical :: dos\_smr\_adpt}
+Determines whether to use an adaptive scheme for broadening the
+DOS. If \verb#true#, the values for the smearing widths are those
+defined by the flags {\tt adpt\_smr\_steps} and {\tt
+  adpt\_smr\_width}.
+
+If {\tt dos\_smr\_adpt} is not specified, then the value of {\tt
+  smr\_adpt} is used.  
+
+The default value is \verb#true#.
+
+
+\subsection[dos\_smr\_adaptive]{\tt real(kind=dp) :: dos\_smr\_adpt\_factor}
+
+The width $W_{n{\bf k}}$ of the energy smearing used to determine the
+contribution to the DOS from band $n$ at point ${\bf k}$ is calculated
+as
+%
+$$
+W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
+\nabla_{\bf k} E_{n{\bf k}}\vert \Delta k,
+$$ 
+%
+\textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
+Confusing, and does not appear in the YWVS07 paper. May need to change
+{\tt dos\_max\_allowed\_smearing}]}}\\
+where the dimensionless factor $a$ is given by {\tt
+  dos\_smr\_adpt\_factor}. $\Delta k$ is taken to be the largest of
+the mesh spacings along the three reciprocal lattice vectors ${\bf
+  b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated value of
+$W_{n{\bf k}}$ exceeds {\tt dos\_max\_allowed\_smearing}, the latter
+value is used.
+
+If {\tt dos\_smr\_adpt\_factor} is not specified, then the value of {\tt
+  smr\_adpt\_factor} is used.  
+
+The default value is 2.0.
+
+
+\subsection[dos\_smr\_adaptive]{\tt real(kind=dp) :: dos\_max\_allowed\_smearing}
+
+See description given in the previous item.
+
+The default value is 1.0.
+
+\subsection[dos\_smr\_en\_width]{\tt logical :: dos\_smr\_en\_width}
+Energy width for the smearing function for the DOS. Used only if {\tt
+  dos\_smr\_adpt} is \verb#false#.
+
+The units are eV. The default value is 0~eV. Note that if the width is
+smaller than twice the energy step {\tt dos\_energy\_step}, the DOS
+will be unsmeared (thus the default is to have an unsmeared DOS).
+
+
+\subsection[dos\_smr\_en\_width]{\tt integer :: dos\_smr\_index}
+
+Defines the analytical form used for the broadened delta function in the computation of the DOS.
+
+\hspace{0.5cm}
+{\tt dos\_smr\_index}$\geq 0$: derivative of the corresponding Methfessel-Paxton function
+
+\hspace{0.5cm}
+{\tt dos\_smr\_index}$= -1$: derivative of the cold-smearing function
+
+\hspace{0.5cm}
+{\tt dos\_smr\_index}$= -99$: derivative of the Fermi-Dirac distribution function
+
+If {\tt dos\_smr\_index} is not specified, then the value of {\tt
+  smr\_index} is used.  
+
+The default value is 0.
+
 \subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
 Determines whether to evaluate the spin moment.
 
@@ -349,25 +505,6 @@ transferability is required (i.e., for test cases).
 
 The default value of this parameter is $\verb#FALSE#$.
 
-\subsection[berry\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
-Energy step for the grid of energies used to plot the dos
-
-The units are eV.
-The default value is 0.001~eV.
-
-\subsection[dos\_win\_min]{\tt real(kind=dp) :: dos\_win\_min}
-The lower bound of the energy window  used to plot the dos
-Units are eV.
-
-The default value is **
-
-\subsection[dos\_win\_max]{\tt real(kind=dp) :: dos\_win\_max}
-The upper bound of the energy window used to plot dos
-Units are eV.
-
-The default value is **
-
-
 
 \clearpage
 \section{kpath}
@@ -379,17 +516,25 @@ The default value is \verb#false#.
 
 
 \subsection[kpath\_task]{\tt character(len=120) ::  kpath\_task} 
-The quantity to compute when {\tt kpath=.true.} 
+The quantities to plot when {\tt kpath=.true.} 
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#bands# Energy Eigenvalues
+\item[{\bf --}]  \verb#bands# Energy bands
 \item[{\bf --}] \verb#curv# $k$-space Berry curvature summed over
   occupied bands
 \item[{\bf --}] \verb#morb#  Integrand of the $k$-space orbital
   magnetization formula
 \end{itemize}
-There is no default value
+
+or any combination of the above. For example,
+
+{\tt k\_path\_task = bands+curv}
+
+will generate the files for plotting both the energy bands and the Berry curvature
+along the specified path.
+
+There is no default value.
 
 \subsection[kpath\_colour]{\tt character(len=120) ::  kpath\_bands\_colour}
 Colour code the energy bands according to the specified quantity
@@ -465,7 +610,7 @@ The default value for \verb#kslice_num_points# is 100.
 
 
 \clearpage
-\section{Berry}
+\section{berry}
 
 \subsection[berry]{\tt logical :: berry}
 Determines whether to enter the berry routines.
@@ -602,6 +747,7 @@ No default.
 
 
 \clearpage
+\section{BoltzWann}
 \subsection[boltzwann]{\tt logical :: boltzwann}
 Determines whether to enter the \bw\ routines.
 
@@ -715,13 +861,13 @@ The type of smearing function to be used for the DOS. The available strings are 
 The default value is the one given via the {\tt smr\_type} input flag. 
 
 
-\subsection[boltz\_dos\_smr\_adaptive]{\tt logical :: boltz\_dos\_smr\_adaptive}
-Determines whether to use an adaptive scheme for the broadening of the DOS. If \verb#true#, the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+\subsection[boltz\_dos\_smr\_adaptive]{\tt logical :: boltz\_dos\_smr\_adpt}
+Determines whether to use an adaptive scheme for broadening the DOS. If \verb#true#, the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
 
 The default value is \verb#true#.
 
 \subsection[boltz\_dos\_smr\_en\_width]{\tt logical :: boltz\_dos\_smr\_en\_width}
-Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos\_smr\_adaptive} is \verb#false#.
+Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos\_smr\_adpt} is \verb#false#.
 
 The units are eV.
 The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_dos\_energy\_step}, the DOS will be unsmeared (thus the default is to have an unsmeared DOS).
