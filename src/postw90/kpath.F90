@@ -34,7 +34,7 @@ contains
     use w90_parameters, only     : num_wann,recip_metric,kpath_task,&
                                    kpath_num_points,bands_num_spec_points,&
                                    bands_spec_points,bands_label,&
-                                   kpath_bands_color,found_fermi_energy,&
+                                   kpath_bands_colour,found_fermi_energy,&
                                    fermi_energy
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_FF_R,get_SS_R
@@ -84,7 +84,7 @@ contains
        call get_BB_R
        call get_CC_R
     endif
-    if(plot_bands .and. kpath_bands_color=='spin') call get_SS_R
+    if(plot_bands .and. kpath_bands_colour=='spin') call get_SS_R
 
     if(on_root) then
 
@@ -94,7 +94,7 @@ contains
             '------------------------------------------'
 
        if(plot_bands) then
-          select case(kpath_bands_color)
+          select case(kpath_bands_colour)
           case("none")
              write(stdout,'(/,3x,a)') '* Energy bands in eV'
           case("spin")
@@ -158,7 +158,7 @@ contains
        !
        if(plot_bands) then
           allocate(eig(num_wann,total_pts))
-          if(kpath_bands_color/='none') then
+          if(kpath_bands_colour/='none') then
              allocate(color_n(num_wann,total_pts))
           end if
        end if
@@ -226,7 +226,7 @@ contains
              ! Color-code energy bands with the spin projection along the
              ! chosen spin quantization axis
              !
-             if(kpath_bands_color=='spin') then
+             if(kpath_bands_colour=='spin') then
                 call get_spn_nk(kpt,spn_nk)
                 color_n(:,loop_kpt)=spn_nk(:)
                 !
@@ -311,7 +311,7 @@ contains
           open(dataunit,file=file_name,form='formatted')
           do i=1,num_wann
              do loop_kpt=1,total_pts
-                if(kpath_bands_color=='none') then
+                if(kpath_bands_colour=='none') then
                    write(dataunit,'(2E16.8)') xval(loop_kpt),eig(i,loop_kpt)
                 else
                    write(dataunit,'(3E16.8)') xval(loop_kpt),&
@@ -335,13 +335,13 @@ contains
              write(gnuunit,705) sum(kpath_len(1:i)),ymin,sum(kpath_len(1:i)),&
                   ymax
           enddo
-          if(kpath_bands_color=='none') then
+          if(kpath_bands_colour=='none') then
              write(gnuunit,701) xval(total_pts),ymin,ymax
              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
                   (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
              write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
              write(gnuunit,*) 'plot ','"'//trim(seedname)//'_band.dat','"' 
-          elseif(kpath_bands_color=='spin') then
+          elseif(kpath_bands_colour=='spin') then
              !
              ! Only works with gnuplot v4.2 and higher
              !
@@ -355,7 +355,7 @@ contains
              write(gnuunit,*) 'set zrange [-1:1]'
              write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
                   '" with dots palette' 
-!          elseif(kpath_bands_color=='curv') then
+!          elseif(kpath_bands_colour=='curv') then
 !             write(gnuunit,706) xval(total_pts),ymin,ymax
 !             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
 !                  (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)

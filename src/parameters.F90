@@ -96,7 +96,7 @@ module w90_parameters
   logical,                    public, save :: kpath
   character(len=20),          public, save :: kpath_task
   integer,                    public, save :: kpath_num_points
-  character(len=4),           public, save :: kpath_bands_color
+  character(len=4),           public, save :: kpath_bands_colour
 
   ! module  k s l i c e
   logical,           public, save :: kslice
@@ -978,11 +978,12 @@ contains
     if (kpath_num_points<0)&
          call io_error('Error: kpath_num_points must be positive')       
 
-    kpath_bands_color='none'                 
-    call param_get_keyword('kpath_bands_color',found,c_value=kpath_bands_color)
-    if(kpath .and. index(kpath_bands_color,'none')==0 .and.&
-         index(kpath_bands_color,'spin')==0) call io_error&
-         ('Error: value of kpath_bands_color not recognised in param_read')
+    kpath_bands_colour='none'                 
+    call param_get_keyword('kpath_bands_colour',found,&
+         c_value=kpath_bands_colour)
+    if(kpath .and. index(kpath_bands_colour,'none')==0 .and.&
+         index(kpath_bands_colour,'spin')==0) call io_error&
+         ('Error: value of kpath_bands_colour not recognised in param_read')
 
     ! set to a negative default value
     num_valence_bands=-99

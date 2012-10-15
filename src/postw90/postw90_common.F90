@@ -302,7 +302,7 @@ module w90_postw90_common
     call comms_bcast(dos_task,len(dos_task)) 
     call comms_bcast(kpath,1) 
     call comms_bcast(kpath_task,len(kpath_task)) 
-    call comms_bcast(kpath_bands_color,len(kpath_bands_color)) 
+    call comms_bcast(kpath_bands_colour,len(kpath_bands_colour)) 
     call comms_bcast(kslice,1) 
     call comms_bcast(kslice_task,len(kslice_task)) 
     call comms_bcast(transl_inv,1) 
