@@ -144,8 +144,8 @@ module w90_spin
     use w90_constants, only     : dp,pi,cmplx_0,cmplx_i
     use w90_io, only            : io_error
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
-    use w90_parameters, only    : num_wann,spin_axis_polar_angle,&
-                                  spin_axis_azimuthal_angle
+    use w90_parameters, only    : num_wann,spn_axis_polar,&
+                                  spn_axis_azimuth
     use w90_postw90_common, only : fourier_R_to_k
     use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
 
@@ -182,9 +182,9 @@ module w90_spin
     ! Unit vector along the direction of the magnetization
     !
     conv=180.0_dp/pi
-    alpha(1)=sin(spin_axis_polar_angle/conv)*cos(spin_axis_azimuthal_angle/conv)
-    alpha(2)=sin(spin_axis_polar_angle/conv)*sin(spin_axis_azimuthal_angle/conv)
-    alpha(3)=cos(spin_axis_polar_angle/conv)
+    alpha(1)=sin(spn_axis_polar/conv)*cos(spn_axis_azimuth/conv)
+    alpha(2)=sin(spn_axis_polar/conv)*sin(spn_axis_azimuth/conv)
+    alpha(3)=cos(spn_axis_polar/conv)
 
     ! Vector of spin matrices projected along the quantization axis
     !

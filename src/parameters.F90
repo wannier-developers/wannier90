@@ -37,8 +37,8 @@ module w90_parameters
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
   logical,                    public, save :: evaluate_spin_moment
-  real(kind=dp),              public, save :: spin_axis_polar_angle
-  real(kind=dp),              public, save :: spin_axis_azimuthal_angle
+  real(kind=dp),              public, save :: spn_axis_polar
+  real(kind=dp),              public, save :: spn_axis_azimuth
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spn_decomp
@@ -940,13 +940,13 @@ contains
     call param_get_keyword('evaluate_spin_moment',found,&
          l_value=evaluate_spin_moment)   
 
-    spin_axis_polar_angle=0.0_dp
-    call param_get_keyword('spin_axis_polar_angle',found,&
-         r_value=spin_axis_polar_angle)
+    spn_axis_polar=0.0_dp
+    call param_get_keyword('spn_axis_polar',found,&
+         r_value=spn_axis_polar)
 
-    spin_axis_azimuthal_angle=0.0_dp
-    call param_get_keyword('spin_axis_azimuthal_angle',found,&
-         r_value=spin_axis_azimuthal_angle)
+    spn_axis_azimuth=0.0_dp
+    call param_get_keyword('spn_axis_azimuth',found,&
+         r_value=spn_axis_azimuth)
 
     spn_decomp = .false.
     call param_get_keyword('spn_decomp',found,l_value=spn_decomp)   

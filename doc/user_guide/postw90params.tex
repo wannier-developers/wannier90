@@ -106,19 +106,21 @@ The subsequent tables describe input parameters relative to specific modules.
 \begin{table}[hH!]
 \begin{center}
 \begin{tabular}{|c|c|p{6cm}|}
-\hline
-Keyword & Type & Description \\
-        &      &             \\
-\hline\hline
-\multicolumn{3}{|c|}{Global Interpolation Parameters} \\
-\hline
-{\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
-{\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
-{\sc num\_valence\_bands}   & I & Number of valence bands \\
-{\sc scissors\_shift}   & I & Scissors shift applied to the conduction bands (eV) \\
+  \hline
+  Keyword & Type & Description \\
+  &      &             \\
+  \hline\hline
+  \multicolumn{3}{|c|}{Global Interpolation Parameters} \\
+  \hline
+  {\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
+  {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
+  {\sc num\_valence\_bands}   & I & Number of valence bands \\
+  {\sc scissors\_shift}   & I & Scissors shift applied to the conduction bands (eV) \\
   {\sc spn\_decomp}& L & Decompose various properties into
   up-spin, down-spin, and eventually spin-flip parts\\
-\hline
+  {\sc spn\_axis\_polar}& R & Polar angle of the spin quantization axis (deg)\\
+  {\sc spn\_axis\_azimuth}& R & Azimuthal angle of the spin quantization axis (deg)\\
+  \hline
 \end{tabular}
 \caption[Parameter file keywords controlling \postw.]
 {{\tt seedname.win} file keywords controlling the general behaviour of
@@ -154,10 +156,10 @@ physical value, L for a logical value and S for a text string.}
   {\sc dos\_max\_allowed\_smearing} & R & Maximum allowed value for the adaptive energy smearing (eV) \\
   {\sc dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
 {\sc dos\_smr\_index} & I & Analytical form used for the broadened delta function. \\
-  {\sc evaluate\_spin\_moment}& L & Determines whether to evaluate the spin moment\\
-  {\sc spin\_formatted}& L & Read a formatted spn file\\
   {\sc spn\_decomp}& L & Decompose the total DOS into
   up- and down-spin parts\\
+  {\sc evaluate\_spin\_moment}& L & Determines whether to evaluate the spin moment\\
+  {\sc spin\_formatted}& L & Read a formatted spn file\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the DOS module.]  {{\tt
@@ -341,7 +343,9 @@ The quantity to compute when {\tt dos=.true.}
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#dos_plot# Density of states
+\item[{\bf --}] \verb#dos_plot# Density of states. An output data file
+  {\tt seedname\_dos.dat} is created, containing the energy values in
+  the first column and the DOS in the second.
 %\item[{\bf --}]  \verb#dos_plot# Density of states
 \end{itemize}
 
@@ -487,6 +491,16 @@ If {\tt dos\_smr\_index} is not specified, then the value of {\tt
   smr\_index} is used.  
 
 The default value is 0.
+
+\subsection[evaluate\_spin\_moment]{\tt logical :: spn\_decomp}
+If {\tt true}, two extra columns are added to {\tt seedname\_dos.dat},
+containing the decomposition of the total DOS of a spinor calculation
+into up-spin and down-spin parts (relative to the quantization axis
+defined by the input variables {\tt spn\_axis\_polar} and {\tt
+  spn\_axis\_azimuth}). The file {\tt seedname.spn} must be present at
+input.
+
+The default value is \verb#false#.
 
 \subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
 Determines whether to evaluate the spin moment.
