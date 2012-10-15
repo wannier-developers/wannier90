@@ -201,20 +201,20 @@ physical value, L for a logical value and S for a text string.}
 \begin{table}[hH!]
 \begin{center}
 \begin{tabular}{|c|c|p{6cm}|}
-\hline
-Keyword & Type & Description \\
-        &      &             \\
-\hline\hline
-\multicolumn{3}{|c|}{{\tt kslice} Parameters} \\
-\hline
-{\sc kslice}  & L & Calculate properties on a slice in the BZ \\
-{\sc kslice\_task}& S & List of properties to evaluate\\
-{\sc kslice\_corner}& R & Position of the corner of the slice\\
-{\sc kslice\_b1}& R & First vector defining the slice\\
-{\sc kslice\_b2}& R & Second vector defining the slice\\
-{\sc kslice\_interp\_mesh}& I & Interpolation $k$-mesh
-on the slice (one or two integers)\\
-\hline
+  \hline
+  Keyword & Type & Description \\
+  &      &             \\
+  \hline\hline
+  \multicolumn{3}{|c|}{{\tt kslice} Parameters} \\
+  \hline
+  {\sc kslice}  & L & Calculate properties on a slice in the BZ \\
+  {\sc kslice\_task}& S & List of properties to evaluate\\
+  {\sc kslice\_corner}& R & Position of the corner of the slice\\
+  {\sc kslice\_b1}& R & First vector defining the slice\\
+  {\sc kslice\_b2}& R & Second vector defining the slice\\
+  {\sc kslice\_interp\_mesh}& I & Interpolation $k$-mesh (one or two integers)\\
+  {\sc kslice\_cntr\_energy}& R & Energy level for  plotting isoenergy contour lines (eV)\\
+  \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the kslice module.]
 {{\tt seedname.win} file keywords controlling the {\tt kslice}
@@ -534,31 +534,51 @@ The quantities to plot when {\tt kpath=.true.}
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#bands# Energy bands
-\item[{\bf --}] \verb#curv# $k$-space Berry curvature summed over
-  occupied bands
-\item[{\bf --}] \verb#morb#  Integrand of the $k$-space orbital
-  magnetization formula
+
+\item[{\bf --}] \verb#bands# Energy bands. Two files are
+  created: 
+\begin{itemize}
+  
+   \item[$\cdot$] {\tt seedname\_band.dat} (data file)
+
+   \item[$\cdot$] {\tt seedname-band.gnu} ({\tt gnuplot} script)
+
 \end{itemize}
 
-or any combination of the above. For example,
+\item[{\bf --}] \verb#curv# Berry curvature summed over the occupied
+  bands. Four files are created:
+
+\begin{itemize}
+
+   \item[$\cdot$] {\tt seedname-curv.dat} (data file) 
+
+   \item[$\cdot$] {\tt seedname-curv\_\{x,y,z\}.gnu} ({\tt gnuplot} scripts)
+
+\end{itemize}
+
+\item[{\bf --}] \verb#morb# Integrand of the $k$-space orbital
+  magnetization formula. Four output files are created:
+
+\begin{itemize}
+
+   \item[$\cdot$] {\tt seedname-morb.dat} (data file)
+
+   \item[$\cdot$] {\tt seedname-morb\_\{x,y,z\}.gnu} ({\tt gnuplot}
+     scripts).
+
+\end{itemize}
+
+\item[{\bf --}] Any combination of the above. For example,
 
 {\tt k\_path\_task = bands+curv}
 
-will generate the files for plotting both the energy bands and the Berry curvature
-along the specified path.
+will generate the data files and scripts for plotting both the energy
+bands and the Berry curvature along the specified path.
 
-There is no default value.
 
-\subsection[kpath\_colour]{\tt character(len=120) ::  kpath\_bands\_colour}
-Colour code the energy bands according to the specified quantity
-
-The valid options for this parameter are:
-\begin{itemize}
-\item[{\bf --}]  \verb#spin# Spin projection along the quantization axis
-defined by the variables $\ldots$
-\item[{\bf --}]  \verb#none# no colour coding (default)
 \end{itemize}
+
+The default value is {\tt bands}.
 
 
 \subsection[kpath\_num\_points]{\tt integer :: kpath\_num\_points}
@@ -570,6 +590,19 @@ k-points.
 
 The default value for \verb#kpath_num_points# is 100.
 
+
+\subsection[kpath\_colour]{\tt character(len=120) ::
+  kpath\_bands\_colour}
+When {\tt kpath\_task = bands}, colour code the energy bands according
+to the specified quantity
+
+The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}]  \verb#spin# Spin projection along the quantization axis
+defined by the variables {\tt spn\_axis\_polar} and {\tt spn\_axis\_azimuth},
+for a spinor calculation
+\item[{\bf --}]  \verb#none# no colour coding (default)
+\end{itemize}
 
 
 
@@ -586,13 +619,62 @@ The quantity to plot when {\tt kslice=.true.}
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#energy_cntr# Constant energy contours (isolines)
+
+\item[{\bf --}] \verb#energy_cntr# Constant energy contours
+  (isolines). The following output files are created:
+
+  \begin{itemize}
+
+  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
+    of grid points ({\tt python} data files)
+
+  \item[$\cdot$] {\tt seedname\_slice\_bands.dat}: energy eigenvalues
+    on the grid for all bands ({\tt python} data file)
+
+  \item[$\cdot$] {\tt seedname-energy\_cntr.py}: {\tt python} script
+\textcolor{red}{{\bf [Need to code this!]}}
+
+  \item[$\cdot$] {\tt seedname\_xyz\_n.dat}: reduced coordinates of
+    grid points and energy eigenvalues, separately for each band {\tt
+      n} ({\tt gnuplot} data file)
+
+  \item[$\cdot$] {\tt seedname-energy\_cntr.gnu}: {\tt gnuplot} script
+
+  \end{itemize}
+
 \item[{\bf --}] \verb#curv_heatmap# $k$-space Berry curvature summed over
   occupied bands, as a heatmap
+
+  \begin{itemize}
+
+  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
+    of grid points 
+    
+  \item[$\cdot$] {\tt seedname-slice\_curv.dat}: Berry curvature 
+    on the grid
+    
+  \item[$\cdot$] {\tt seedname-curv\_\{x,y,z\}.py}: {\tt python} scripts
+    
+  \end{itemize}
+
 \item[{\bf --}] \verb#morb_heatmap# Integrand of the $k$-space orbital
   magnetization formula, as a heatmap
+
+  \begin{itemize}
+
+  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
+    of grid points 
+    
+  \item[$\cdot$] {\tt seedname-slice\_morb.dat}: Berry curvature 
+    on the grid
+    
+  \item[$\cdot$] {\tt seedname-morb\_\{x,y,z\}.py}: {\tt python} scripts
+    
+  \end{itemize}
+
 \end{itemize}
-There is no default value
+
+The default value is {\tt energy\_cntr}.
 
 \subsection[kslice\_corner]{\tt real(kind=dp) :: kslice\_corner(3)}
 Reduced coordinates of the lower-left corner of the slice in k-space.
@@ -613,15 +695,20 @@ The default value is $(0.0,1.0,0.0)$.
 
 \subsection[kslice\_num\_points]{\tt integer :: kslice\_interp\_mesh(2)}
 
-\textcolor{red}{CHANGE!}
+If two integers $m$ $n$ are given, the slice is sampled on a uniform
+$m\times n$ grid.  If only one integer $m$ is given, an $m\times
+m\times m$ grid is used.
 
-If $\verb#kslice#=\verb#TRUE#$, then the number of points along
-the first section of the bandstructure plot given by
-\verb#kpoint_path#. Other sections will have the same density of
-k-points. \textcolor{red}{(Ivo) Is this correct? (CHECK)}
+The default value for \verb#kslice_interp_mesh# is 50.
 
-The default value for \verb#kslice_num_points# is 100.
 
+\subsection[kslice\_cntr\_energy]{\tt real(kind=dp) :: kslice\_cntr\_energy}
+
+Energy level in eV for plotting isoenergy contour lines when {\tt
+  kslice\_task = energy\_cntr}.
+
+The default value is {\tt fermi\_energy}, if its value is
+defined. Otherwise, no default value is given.
 
 \clearpage
 \section{berry}
