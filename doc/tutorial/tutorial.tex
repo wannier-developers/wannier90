@@ -2049,15 +2049,16 @@ fermi\_energy = 12.6285
 \end{quote}
 } 
 %
-Compare the value of the orbital magnetization in {\tt Fe.wpout}
-with the spin magnetization in {\tt scf.out}. Both point along
-$\hat{\bf z}$, but the orbital moment is much smaller (it is strongly
+Compare the value of the orbital magnetization in {\tt Fe.wpout} with
+the spin magnetization in {\tt scf.out}. Both point along $\hat{\bf
+  z}$, but the orbital contribution is much smaller (it is strongly
 quenched by the crystal field).
 
-Similarly to the AHC in Example~18, the $k$-space contributions to the
-orbital magnetization can be plotted along lines or planes in the BZ.
-To plot $M^z_{\rm orb}({\bf k})$ along high-symmetry lines, uncomment
-in {\tt Fe.win} the block of instructions containing {\tt
+Similarly to the AHC in Example~18, the distribution of the orbital
+magnetization in $k$-space can be visualized by plotted along lines or
+planes in the BZ.  To plot $M^z_{\rm orb}({\bf k})$ along
+high-symmetry lines, uncomment in {\tt Fe.win} the block of
+instructions containing {\tt
 \begin{quote}
 kpath\_task = morb
 \end{quote}
