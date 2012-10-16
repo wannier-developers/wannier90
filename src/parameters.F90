@@ -143,6 +143,7 @@ module w90_parameters
   real(kind=dp),     public, save :: berry_adaptive_thresh
   logical,           public, save :: optics_smr_adpt
   real(kind=dp),     public, save :: optics_smr_adpt_factor
+  integer,           public, save :: optics_smr_index
   real(kind=dp),     public, save :: optics_smr_fixed_en_width
   character(len=20), public, save :: optics_time_parity
   real(kind=dp),     public, save :: optics_energy_step
@@ -1383,6 +1384,11 @@ contains
     dos_smr_index = smr_index
     call param_get_keyword('dos_smr_type',found,c_value=ctmp)
     if (found) dos_smr_index = get_smearing_index(ctmp,'dos_smr_type')
+
+    ! By default: use the "global" smearing index 
+    optics_smr_index = smr_index
+    call param_get_keyword('optics_smr_type',found,c_value=ctmp)
+    if (found) optics_smr_index = get_smearing_index(ctmp,'optics_smr_type')
 
     ! By default: 10 fs relaxation time
     boltz_relax_time = 10._dp

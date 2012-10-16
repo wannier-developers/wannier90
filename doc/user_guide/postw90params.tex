@@ -113,6 +113,7 @@ The subsequent tables describe input parameters relative to specific modules.
   \multicolumn{3}{|c|}{Global Interpolation Parameters} \\
   \hline
   {\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
+  {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
   {\sc num\_valence\_bands}   & I & Number of valence bands \\
   {\sc scissors\_shift}   & R & Scissors shift applied to the conduction bands (eV) \\
@@ -152,10 +153,11 @@ physical value, L for a logical value and S for a text string.}
   {\sc dos\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
   {\sc dos\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc dos\_smr\_adpt} & L & Use adaptive smearing for the DOS \\
-  {\sc dos\_smr\_adpt\_factor} & R & Factor for adaptive smearing \\
+  {\sc dos\_smr\_adpt\_factor} & R & Adaptive smearing prefactor\\
   {\sc dos\_max\_allowed\_smearing} & R & Maximum allowed value for the adaptive energy smearing (eV) \\
   {\sc dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
-{\sc dos\_smr\_index} & I & Analytical form used for the broadened delta function. \\
+  {\sc dos\_smr\_type} & S & Analytical form used for the broadened delta function
+when computing the DOS. \\
   {\sc spn\_decomp}& L & Decompose the total DOS into
   up- and down-spin parts\\
   {\sc evaluate\_spin\_moment}& L & Determines whether to evaluate the spin moment\\
@@ -230,28 +232,43 @@ physical value, L for a logical value and S for a text string.}
 \begin{table}[hH!]
 \begin{center}
 \begin{tabular}{|c|c|p{6cm}|}
-\hline
-Keyword & Type & Description \\
-        &      &             \\
-\hline\hline
-\multicolumn{3}{|c|}{{\tt berry} Parameters} \\
-\hline
-{\sc berry}  & L & Calculate Berry derived quantities \\
-{\sc berry\_task}& L  & List of properties to compute \\
-{\sc berry\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
-{\sc berry\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
-%{\sc berry\_spectrum\_type}& C & Type of spectrum to compute\\
-{\sc optics\_time\_parity}& L & Time parity of the optical spectrum to compute\\ 
-{\sc optics\_energy\_min} & R & Lower limit of the energy range for
-optical spectra (eV) \\
-{\sc optics\_energy\_max}& R & Upper limit of the energy range for
-optical spectra (eV) \\
-{\sc optics\_energy\_step}& R &  Step for increasing the energy in the specified range (eV)\\
-{\sc uHu\_formatted}& L & Read a formatted uHu file \\
-{\sc uIu\_formatted}& L & Read a formatted uIu file\\
-{\sc berry\_alpha}& L & description\\
-{\sc berry\_beta}& L & description\\
-\hline
+  \hline
+  Keyword & Type & Description \\
+  &      &             \\
+  \hline\hline
+  \multicolumn{3}{|c|}{{\tt berry} Parameters} \\
+  \hline
+  {\sc berry}  & L & Calculate Berry-type quantities \\
+  {\sc berry\_task}& L  & List of properties to compute \\
+  {\sc berry\_interp\_mesh} & I & Uniform interpolation $k$-mesh 
+  (one or three integers)\\ 
+  {\sc berry\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in 
+  \AA$^{-1}$\\
+  {\sc berry\_adaptive\_mesh} & I & Linear dimension of the adaptively refined 
+  $k$-mesh\\ 
+  {\sc berry\_adaptive\_thresh} & R & Threshold value of the Berry curvature or 
+  $k$-space orbital magnetization for adaptive refinement\\ 
+  {\sc optics\_time\_parity}& L & Time parity of the optical conductivity tensor\\ 
+  {\sc optics\_energy\_min} & R & Lower limit of the energy range for
+  optical spectra and JDOS (eV) \\
+  {\sc optics\_energy\_max}& R & Upper limit of the energy range for
+  optical spectra and JDOS (eV) \\
+  {\sc optics\_energy\_step}& R &  Step for increasing the energy in the 
+  specified range (eV)\\
+  {\sc optics\_smr\_adpt} & L & Use adaptive smearing for the 
+  optical conductivity and JDOS \\
+  {\sc optics\_smr\_adpt\_factor} & R & Adaptive smearing prefactor \\
+  {\sc optics\_smr\_type} & S & Analytical form used for the broadened delta function
+  when computing the optical conductivity and JDOS.\\  
+  {\sc optics\_max\_allowed\_smearing} & R & Maximum allowed value for the 
+  adaptive energy smearing (eV) \\
+  {\sc optics\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
+  for the optical conductivity and JDOS (eV) \\
+  {\sc uHu\_formatted}& L & Read a formatted uHu file \\
+  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
+  {\sc berry\_alpha}& L & description\\
+  {\sc berry\_beta}& L & description\\
+  \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
     seedname.win} file keywords controlling the {\tt berry}
@@ -292,7 +309,7 @@ Keyword & Type & Description \\
 {\sc boltz\_dos\_energy\_step} & R & Step for the DOS in eV\\
 {\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS \\
 {\sc boltz\_dos\_smr\_adpt} & L & Use adaptive smearing for the DOS \\
-{\sc boltz\_dos\_smr\_adpt\_factor} & R & Factor for adaptive smearing \\
+{\sc boltz\_dos\_smr\_adpt\_factor} & R & Adaptive smearing prefactor\\
 {\sc boltz\_dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
 {\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
 {\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
@@ -345,7 +362,8 @@ The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#dos_plot# Density of states. An output data file
   {\tt seedname\_dos.dat} is created, containing the energy values in
-  the first column and the DOS in the second.
+  the first column and the total DOS in the second (but see {\tt
+    spn\_decomp} below).
 %\item[{\bf --}]  \verb#dos_plot# Density of states
 \end{itemize}
 
@@ -473,21 +491,22 @@ smaller than twice the energy step {\tt dos\_energy\_step}, the DOS
 will be unsmeared (thus the default is to have an unsmeared DOS).
 
 
-\subsection[dos\_smr\_en\_width]{\tt integer :: dos\_smr\_index}
+\subsection[dos\_smr\_en\_width]{\tt  character(len=120) :: dos\_smr\_type}
 
-Defines the analytical form used for the broadened delta function in the computation of the DOS.
-
-\hspace{0.5cm}
-{\tt dos\_smr\_index}$\geq 0$: derivative of the corresponding Methfessel-Paxton function
+Defines the analytical form used for the broadened delta function in
+the computation of the DOS.
 
 \hspace{0.5cm}
-{\tt dos\_smr\_index}$= -1$: derivative of the cold-smearing function
+\textcolor{red}{bla: derivative of the corresponding Methfessel-Paxton function}
 
 \hspace{0.5cm}
-{\tt dos\_smr\_index}$= -99$: derivative of the Fermi-Dirac distribution function
+\textcolor{red}{bla: derivative of the cold-smearing function}
 
-If {\tt dos\_smr\_index} is not specified, then the value of {\tt
-  smr\_index} is used.  
+\hspace{0.5cm}
+\textcolor{red}{bla: derivative of the Fermi-Dirac distribution function}
+
+If {\tt dos\_smr\_type} is not specified, then the value of {\tt
+  smr\_type} is used.  
 
 The default value is 0.
 

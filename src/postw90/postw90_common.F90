@@ -269,6 +269,7 @@ module w90_postw90_common
     call comms_bcast(optics_smr_adpt,1)
     call comms_bcast(optics_smr_adpt_factor,1)
     call comms_bcast(optics_smr_fixed_en_width,1)
+    call comms_bcast(optics_smr_index,1)
     call comms_bcast(optics_time_parity,len(optics_time_parity))
     call comms_bcast(optics_energy_min,1)
     call comms_bcast(optics_energy_max,1)
