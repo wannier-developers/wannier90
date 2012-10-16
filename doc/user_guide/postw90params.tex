@@ -99,6 +99,13 @@ that affect the generic behavior of all modules of
 \postw. Often, these are ``global'' variables that can be overridden
 by module-specific keywords (as for instance the {\tt interp\_mesh} flag).
 
+\textcolor{red}{[Ivo: For conciseness, perhaps we should describe in
+  detail the ``global'' variables, and provide only give a minimal
+  description of the ``local'' counterparts later (focusing on what
+  functionalities of the module are affected), refering back to the
+  global definition for the generic properties. Right now there is a
+  lot of redundancy, which makes the text unnecessary lengthy.]}
+
 The subsequent tables describe input parameters relative to specific modules.
 
 \clearpage
@@ -134,9 +141,8 @@ magnetic moment per cell\\  \hline
   integer, R for a real number, P for a
   physical value, L for a logical value and S for a text string.\\
   \textcolor{red}{$^*$The keyword {\tt spn\_moment} does not affect
-    the behavior of the modules in \postw. It is listed here for lack
-    of a better place (it does not really belong to any of the
-    modules).}}
+    the behavior of the modules in \postw, and does not really belong
+    to any of them. It is listed here for lack of a better place.}}
 \label{parameter_keywords_postw90}
 \end{center}
 \end{table}
