@@ -63,7 +63,7 @@ module w90_kslice
     logical           :: plot_curv_heatmap,plot_morb_heatmap,plot_energy_cntr
     character(len=20) :: filename
 
-    integer, allocatable          :: xyzdataunit(:)
+    integer, allocatable          :: bnddataunit(:)
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     real(kind=dp),    allocatable :: eig(:)
@@ -158,16 +158,16 @@ module w90_kslice
           filename=trim(seedname)//'-slice_bands.dat'
           write(stdout,'(/,3x,a)') filename
           open(bandsunit,file=filename,form='formatted')
-          allocate(xyzdataunit(num_wann))
+          allocate(bnddataunit(num_wann))
           do n=1,num_wann
              n1=n/100
              n2=(n-n1*100)/10
              n3=n-n1*100-n2*10
-             xyzdataunit(n)=io_file_unit()
-             filename=trim(seedname)//'_xyz_'&
+             bnddataunit(n)=io_file_unit()
+             filename=trim(seedname)//'_bnd_'&
                   //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
              write(stdout,'(/,3x,a)') filename
-             open(xyzdataunit(n),file=filename,form='formatted')
+             open(bnddataunit(n),file=filename,form='formatted')
           enddo
        endif
 
@@ -259,9 +259,9 @@ module w90_kslice
                 ! For python/octave
                 write(bandsunit,'(E16.8)') eig(n)
                 ! For gnuplot, using 'grid data' format
-                write(xyzdataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
+                write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
                 if(loop_y==kslice_interp_mesh(2)-1 .and. &
-                   loop_x/=kslice_interp_mesh(1)-1) write (xyzdataunit(n),*) ' '
+                   loop_x/=kslice_interp_mesh(1)-1) write (bnddataunit(n),*) ' '
              enddo
           endif
 
@@ -279,12 +279,15 @@ module w90_kslice
           write(bandsunit,*) ' '
           close(bandsunit)
           do n=1,num_wann
-             write(xyzdataunit(n),*) ' '
-             close(xyzdataunit(n))
+             write(bnddataunit(n),*) ' '
+             close(bnddataunit(n))
           enddo
        endif
 
        if(plot_energy_cntr) then
+          !
+          ! gnuplot script for isoenergy contours
+          !
           scriptunit=io_file_unit()
           open(scriptunit,file=trim(seedname)//'-energy_cntr.gnu',&
                form='formatted')
@@ -298,9 +301,9 @@ module w90_kslice
              n1=n/100
              n2=(n-n1*100)/10
              n3=n-n1*100-n2*10
-             write(scriptunit,'(a)') 'set table "xyz_'&
+             write(scriptunit,'(a)') 'set table "bnd_'&
                   //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat"'
-             write(scriptunit,'(a)') 'splot "'//trim(seedname)//'_xyz_'&
+             write(scriptunit,'(a)') 'splot "'//trim(seedname)//'_bnd_'&
                   //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat"'
              write(scriptunit,'(a)') 'unset table'
           enddo
@@ -317,17 +320,17 @@ module w90_kslice
           write(scriptunit,'(a)') 'set style line 1 lt 1 lw 1'
           if(num_wann==1) then
              write(scriptunit,'(a)')&
-                  'plot "xyz_001.dat" using 1:2 w lines ls 1'
+                  'plot "bnd_001.dat" using 1:2 w lines ls 1'
           else
              write(scriptunit,'(a)')&
-                  'plot "xyz_001.dat" using 1:2 w lines ls 1,'&
+                  'plot "bnd_001.dat" using 1:2 w lines ls 1,'&
                   //achar(92)
           endif
           do n=2,num_wann-1
              n1=n/100
              n2=(n-n1*100)/10
              n3=n-n1*100-n2*10
-             write(scriptunit,'(a)') '     "xyz_'&
+             write(scriptunit,'(a)') '     "bnd_'&
                   //achar(48+n1)//achar(48+n2)//achar(48+n3)&
                   //'.dat" using 1:2 w lines ls 1,'//achar(92)
           enddo
@@ -335,14 +338,65 @@ module w90_kslice
           n1=n/100
           n2=(n-n1*100)/10
           n3=n-n1*100-n2*10
-          write(scriptunit,'(a)') '     "xyz_'&
+          write(scriptunit,'(a)') '     "bnd_'&
                //achar(48+n1)//achar(48+n2)//achar(48+n3)&
                //'.dat" using 1:2 w lines ls 1'
+          close(scriptunit)
+          if(.not.(plot_curv_heatmap .or. plot_morb_heatmap)) then
+             !
+             ! Python script for energy isocontours
+             !  
+             scriptunit=io_file_unit()
+             open(scriptunit,file=trim(seedname)//'-energy_cntr.py',&
+                  form='formatted')
+             write(scriptunit,'(a)') 'import pylab as pl'
+             write(scriptunit,'(a)') 'import numpy as np'
+             write(scriptunit,'(a)') 'import mpl_toolkits'
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') "x = np.loadtxt('"//trim(seedname)//&
+                  "_slice_x.dat')"
+             write(scriptunit,'(a)') 'dimx=x.size'
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') "y = np.loadtxt('"//trim(seedname)//&
+                  "_slice_y.dat')"
+             write(scriptunit,'(a)') 'dimy=y.size'
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)')&
+                  '# Energy level for isocontours (typically the Fermi level)'
+             write(scriptunit,'(a,f12.6)') 'ef=',kslice_cntr_energy
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)')&
+                  "bands=np.loadtxt('"//trim(seedname)//"-slice_bands.dat')"
+             write(scriptunit,'(a)') 'numbands=bands.size/dimx/dimy'
+             write(scriptunit,'(a)')&
+                  'bands2=bands.reshape((dimx,dimy,numbands))'
+             write(scriptunit,'(a)') 'for i in range(numbands):'
+             write(scriptunit,'(a)')&
+                  "    pl.contour(np.transpose(bands2[:,:,i]),[ef],colors='black')"
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') '# Remove the axes'
+             write(scriptunit,'(a)') 'ax = pl.gca()'
+             write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
+             write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') "pl.axes().set_aspect('equal')"
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
+                  "-energy_cntr.pdf'"
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') 'pl.savefig(outfile)'
+             write(scriptunit,'(a)') 'pl.show()'
+             close(scriptunit)
+          endif
+          !
        endif !plot_energy_cntr
 
-
        if(plot_curv_heatmap .or. plot_morb_heatmap) then
-          
+          !
+          ! python script for curvature/Morb heatmaps, eventually combined with
+          ! isoenergy contours
+          !
           do i=1,3
 
              scriptunit=io_file_unit()
@@ -420,8 +474,9 @@ module w90_kslice
              write(scriptunit,'(a)') 'pl.savefig(outfile)'
              write(scriptunit,'(a)') 'pl.show()'
 
+             close(scriptunit)
           enddo
-
+          !
        endif !plot_curv_heatmap .or. plot_morb_heatmap
               
     end if ! on_root

@@ -1542,7 +1542,8 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
 \cleardoublepage
 
 
-\section*{17: Iron -- Spin-orbit effects on the energy bands}
+\section*{17: Iron -- Spin-orbit-coupled bands and
+Fermi surface contours}
 
 Note: You should go through Example 8 (iron without spin-orbit) before
 doing this Example.
@@ -1596,13 +1597,17 @@ their number.
 
 \item Run {\tt pw2wannier90} to compute:
   \begin{itemize}
-  \item{The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
-          b}}\rangle$ between {\it spinor} Bloch states (written in the {\tt
-        Fe.mmn} file)}
-    \item{The projections for the starting guess (written in the {\tt  Fe.amn} file)}
-    \item{The spin matrix elements $\langle \psi_{n{\bf k}}\vert
-        \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the {\tt
-          Fe.spn} file)}
+
+  \item[{\bf --}] The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf
+        k}+{\bf b}}\rangle$ between {\it spinor} Bloch states (written
+    in the {\tt Fe.mmn} file)
+
+  \item[{\bf --}] The projections for the starting guess (written in
+    the {\tt Fe.amn} file)
+
+  \item[{\bf --}] The spin matrix elements $\langle \psi_{n{\bf
+        k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the
+    {\tt Fe.spn} file)
 %\item{The matrix elements  $\langle u_{n{\bf k}+{\bf b}_1}\vert H_{\bf k}\vert
 %u_{m{\bf k}+{\bf
 %          b}_2}\rangle$ (written in the {\tt
@@ -1616,7 +1621,8 @@ their number.
 \item Run \postw\ to compute the energy eigenvalues and spin
   expectation values
   by Wannier interpolation.\\
-  {\tt postw90.x Fe}
+  {\tt postw90.x Fe} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
 
 \end{enumerate}
 
@@ -1712,18 +1718,29 @@ kslice\_b2 =     0.5  0.5  0.5
 \end{figure}
 
 where we chose the Fermi energy 12.6285~eV (taken from {\tt scf.out})
-as the energy level for the isocontours.  The lines of intersection
-between the Fermi surface and the chosen plane (``Fermi-surface
-contours''), can be visualized with the script {\tt
-  Fe-energy\_cntr.gnu} generated at runtime, {\tt
+as the energy level for the isocontours.  The Fermi-surface contours
+(lines of intersection between the Fermi surface and the slice), can
+be visualized with the script {\tt Fe-energy\_cntr.gnu} generated at
+runtime,
+%
+{\tt
 \begin{quote}
 myshell> gnuplot
 
 gnuplot> load `Fe-energy\_cntr.gnu'
 \end{quote} }
+%
+(Do not be concerned by the warning messages, they are caused by the
+fact that not all bands cross the Fermi energy.) Alternative, one can
+use the python script {\tt Fe-energy\_cntr.py} that is also generated
+at runtime,
+%
+{\tt
+\begin{quote}
+myshell> python Fe-energy\_cntr.py
+\end{quote} }
 
-(Do not be concerned by the warning messages, they are caused by the fact that
-not all bands cross the Fermi energy.)
+
 %{\tt
 %  octave} script {\tt bands.m}, 
 %{\tt
@@ -1809,7 +1826,9 @@ file {\tt Fe.win}.
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the Berry curvature.\\
-{\tt postw90.x Fe}
+  {\tt postw90.x Fe} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
+
 
 \end{enumerate}
 
@@ -1872,9 +1891,11 @@ kslice\_b1 =     0.5 -0.5 -0.5
 
 kslice\_b2 =     0.5  0.5  0.5
 \end{quote} }
-
+%
 and re-run {\tt postw90}.  For the visualization we use the three {\tt
-  python} scripts generated at runtime. To plot the $z$ component $-\Omega^z({\bf k})$, issue 
+  python} scripts generated at runtime. To plot the $z$ component
+$-\Omega^z({\bf k})$, for example, issue
+%
 {\tt
 \begin{quote}
 myshell> python Fe-curv\_z-heatmap.py
@@ -1926,13 +1947,13 @@ Study the convergence of the AHC with respect to the density of
 
   \begin{itemize}
 
-  \item Increase the mesh density uniformly by
-    changing {\tt berry\_interp\_mesh}.
+  \item[{\bf --}] Increase the mesh density uniformly by changing {\tt
+      berry\_interp\_mesh}.
 
-  \item In addition, it helps to adaptively refine the mesh in regions
-    where the Berry curvature is large and rapidly varying (such
-    regions can be seen in Fig.~\ref{fig:fe-curv-slice}).  Add to {\tt
-      Fe.win} the lines \smallskip {\tt
+  \item[{\bf --}] In addition, it helps to adaptively refine the mesh
+    in regions where the Berry curvature is large and rapidly varying
+    (such regions can be seen in Fig.~\ref{fig:fe-curv-slice}).  Add
+    to {\tt Fe.win} the lines \smallskip {\tt
       \begin{quote}
         berry\_adaptive\_mesh = 5  
         
@@ -1944,8 +1965,8 @@ Study the convergence of the AHC with respect to the density of
     27.98~\AA$^2\simeq 100$~bohr$^2$. The percentage of points
     triggering adaptive refinement is given in {\tt Fe.wpout}.
 
-  \item Compare the converged AHC value with those reported in
-    Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
+  \item[{\bf --}] Compare the converged AHC value with those reported
+    in Refs.~\cite{wang-prb06} and~\cite{yao-prl04}.
 
   \end{itemize}
 
@@ -2006,13 +2027,17 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 
 \item Run {\tt pw2wannier90} to compute:
   \begin{itemize}
-  \item{The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
-          b}}\rangle$ (written in the {\tt Fe.mmn} file)}
-  \item{The projections for the starting guess (written in the {\tt
-        Fe.amn} file)}
-  \item{The matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert
+
+  \item[{\bf --}] The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
+          b}}\rangle$ (written in the {\tt Fe.mmn} file)
+
+  \item[{\bf --}] The projections for the starting guess (written in the {\tt
+        Fe.amn} file)
+
+  \item[{\bf --}] The matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert
       H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$ (written in the
-      {\tt Fe.uHu} file)}
+      {\tt Fe.uHu} file)
+
   \end{itemize}
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
@@ -2020,7 +2045,8 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the orbital magnetization.\\
-{\tt postw90.x Fe}
+  {\tt postw90.x Fe} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
 
 
 \end{enumerate}
@@ -2028,7 +2054,8 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 The orbital magnetization is computed in the {\tt berry} module of
 {\tt postw90} as the BZ integral of a quantity ${\bf M}_{\rm orb}({\bf
   k})$ similar to the Berry curvature (see Ref.~\cite{lopez-prb12} for
-its definition), 
+its definition) \tent{{\bf [eventually refer instead to the yet-to-be-written
+description of the {\tt berry} module in the user guide]}}, 
 %
 {\tt
 \begin{quote}
@@ -2140,7 +2167,8 @@ new input file {\tt Fe.win}.
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the JDOS and optical conductivity.\\
-{\tt postw90.x Fe}
+  {\tt postw90.x Fe} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
 
 \end{enumerate}
 
