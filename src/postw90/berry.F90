@@ -1560,8 +1560,9 @@ module w90_berry
     use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
     use w90_parameters, only     : num_wann,optics_energy_min,fermi_energy,&
                                    optics_smr_adpt,optics_smr_adpt_factor,&
-                                   optics_smr_fixed_en_width,berry_interp_mesh,&
-                                   spn_decomp
+                                   optics_smr_index,optics_smr_fixed_en_width,&
+                                   optics_max_allowed_smr,&
+                                   berry_interp_mesh,spn_decomp
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only        : get_D_h,get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
@@ -1663,7 +1664,8 @@ module w90_berry
              !
              rvdum(:)=del_eig(m,:)-del_eig(n,:)
              joint_level_spacing=sqrt(dot_product(rvdum(:),rvdum(:)))*Delta_k
-             smear=joint_level_spacing*optics_smr_adpt_factor/sqrt(2.0_dp)
+             smear=min(joint_level_spacing*optics_smr_adpt_factor/sqrt(2.0_dp),&
+                  optics_max_allowed_smr)
           else
              smear=optics_smr_fixed_en_width
           endif
@@ -1677,8 +1679,10 @@ module w90_berry
              else
                 !
                 ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
-                ! (hard code for M-P)
-                rdum=w0gauss(arg,1)/smear
+                ! 
+                ! Ivo: previously hard-coded for M-P, w0gauss(arg,1)
+                !
+                rdum=w0gauss(arg,optics_smr_index)/smear
                 !
                 rdum=rdum*occ_prod ! Fermi occupancy factor
              end if

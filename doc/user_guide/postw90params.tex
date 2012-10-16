@@ -112,22 +112,31 @@ The subsequent tables describe input parameters relative to specific modules.
   \hline\hline
   \multicolumn{3}{|c|}{Global Interpolation Parameters} \\
   \hline
-  {\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
+  {\sc interp\_mesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
+(one or three integers) \\
+  {\sc smr\_adpt}   & L & Use adaptive smearing\\
+  {\sc smr\_adpt\_factor}   & R & Adaptive smearing prefactor\\
   {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
+  {\sc smr\_fixed\_en\_width}   & P & Energy smearing (if non-adaptive)\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
   {\sc num\_valence\_bands}   & I & Number of valence bands \\
-  {\sc scissors\_shift}   & R & Scissors shift applied to the conduction bands (eV) \\
+  {\sc scissors\_shift}   & P & Scissors shift applied to the conduction bands (eV) \\
   {\sc spn\_decomp}& L & Decompose various properties into
   up-spin, down-spin, and eventually spin-flip parts\\
-  {\sc spn\_axis\_polar}& R & Polar angle of the spin quantization axis (deg)\\
-  {\sc spn\_axis\_azimuth}& R & Azimuthal angle of the spin quantization axis (deg)\\
-  \hline
+  {\sc spn\_axis\_polar}& P & Polar angle of the spin quantization axis (deg)\\
+  {\sc spn\_axis\_azimuth}& P & Azimuthal angle of the spin quantization axis (deg)\\
+  {\sc spn\_moment}$^*$& L & Determines whether to evaluate the spin 
+magnetic moment per cell\\  \hline
 \end{tabular}
-\caption[Parameter file keywords controlling \postw.]
-{{\tt seedname.win} file keywords controlling the general behaviour of
-  the modules in \postw. Argument types
-are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string.}
+\caption[Parameter file keywords controlling \postw.]  {{\tt
+    seedname.win} file keywords controlling the general behaviour of
+  the modules in \postw. Argument types are represented by, I for a
+  integer, R for a real number, P for a
+  physical value, L for a logical value and S for a text string.\\
+  \textcolor{red}{$^*$The keyword {\tt spn\_moment} does not affect
+    the behavior of the modules in \postw. It is listed here for lack
+    of a better place (it does not really belong to any of the
+    modules).}}
 \label{parameter_keywords_postw90}
 \end{center}
 \end{table}
@@ -144,24 +153,24 @@ physical value, L for a logical value and S for a text string.}
   \hline
   {\sc dos}  & L & Calculate the density of states and related properties\\
   {\sc dos\_task}& S  & List of properties to compute \\
-  {\sc dos\_energy\_min} & R & Lower limit of the energy range for
+  {\sc dos\_energy\_min} & P & Lower limit of the energy range for
   computing the DOS (eV)\\
-  {\sc dos\_energy\_max}& R & Upper limit of the energy range for
+  {\sc dos\_energy\_max}& P & Upper limit of the energy range for
   computing the DOS (eV)\\
   {\sc dos\_energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
   {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
-  {\sc dos\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
+  {\sc dos\_interp\_mesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
   {\sc dos\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc dos\_smr\_adpt} & L & Use adaptive smearing for the DOS \\
   {\sc dos\_smr\_adpt\_factor} & R & Adaptive smearing prefactor\\
-  {\sc dos\_max\_allowed\_smearing} & R & Maximum allowed value for the adaptive energy smearing (eV) \\
+  {\sc dos\_max\_allowed\_smr} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
   {\sc dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
   {\sc dos\_smr\_type} & S & Analytical form used for the broadened delta function
-when computing the DOS. \\
-  {\sc spn\_decomp}& L & Decompose the total DOS into
-  up- and down-spin parts\\
-  {\sc evaluate\_spin\_moment}& L & Determines whether to evaluate the spin moment\\
-  {\sc spin\_formatted}& L & Read a formatted spn file\\
+  when computing the DOS. \\
+  {\sc spn\_decomp} \textcolor{red}{({\sc dos\_spn\_decomp}?)}& L & 
+Decompose the total or projected DOS into up- and down-spin parts\\
+  {\sc spin\_formatted} \textcolor{red}{({\sc spn\_formatted}?)}& L & 
+  Read a formatted {\tt seedname.spn} file\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the DOS module.]  {{\tt
@@ -214,8 +223,10 @@ when computing the DOS. \\
   {\sc kslice\_corner}& R & Position of the corner of the slice\\
   {\sc kslice\_b1}& R & First vector defining the slice\\
   {\sc kslice\_b2}& R & Second vector defining the slice\\
-  {\sc kslice\_interp\_mesh}& I & Interpolation $k$-mesh (one or two integers)\\
-  {\sc kslice\_cntr\_energy}& R & Energy level for  plotting isoenergy contour lines (eV)\\
+  {\sc kslice\_interp\_mesh}& I & Dimensions of the uniform interpolation 
+$k$-mesh on the slice (one or two integers)\\
+  {\sc kslice\_cntr\_energy}& P & Energy level for  plotting 
+isoenergy contour lines (eV)\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the kslice module.]
@@ -240,18 +251,18 @@ when computing the DOS. \\
   \hline
   {\sc berry}  & L & Calculate Berry-type quantities \\
   {\sc berry\_task}& L  & List of properties to compute \\
-  {\sc berry\_interp\_mesh} & I & Uniform interpolation $k$-mesh 
+  {\sc berry\_interp\_mesh} & I & Dimensions of the uniform interpolation $k$-mesh 
   (one or three integers)\\ 
   {\sc berry\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in 
   \AA$^{-1}$\\
+  {\sc berry\_adaptive\_thresh} & P & Threshold value of the Berry curvature or 
+  $k$-space orbital magnetization for adaptive mesh refinement\\ 
   {\sc berry\_adaptive\_mesh} & I & Linear dimension of the adaptively refined 
   $k$-mesh\\ 
-  {\sc berry\_adaptive\_thresh} & R & Threshold value of the Berry curvature or 
-  $k$-space orbital magnetization for adaptive refinement\\ 
-  {\sc optics\_time\_parity}& L & Time parity of the optical conductivity tensor\\ 
-  {\sc optics\_energy\_min} & R & Lower limit of the energy range for
+  {\sc optics\_time\_parity}& S & Time parity of the optical conductivity tensor\\ 
+  {\sc optics\_energy\_min} & P & Lower limit of the energy range for
   optical spectra and JDOS (eV) \\
-  {\sc optics\_energy\_max}& R & Upper limit of the energy range for
+  {\sc optics\_energy\_max}& P & Upper limit of the energy range for
   optical spectra and JDOS (eV) \\
   {\sc optics\_energy\_step}& R &  Step for increasing the energy in the 
   specified range (eV)\\
@@ -259,15 +270,16 @@ when computing the DOS. \\
   optical conductivity and JDOS \\
   {\sc optics\_smr\_adpt\_factor} & R & Adaptive smearing prefactor \\
   {\sc optics\_smr\_type} & S & Analytical form used for the broadened delta function
-  when computing the optical conductivity and JDOS.\\  
-  {\sc optics\_max\_allowed\_smearing} & R & Maximum allowed value for the 
+  when computing the optical conductivity and JDOS\\  
+  {\sc optics\_max\_allowed\_smr} & P & Maximum allowed value for the 
   adaptive energy smearing (eV) \\
   {\sc optics\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
   for the optical conductivity and JDOS (eV) \\
-  {\sc uHu\_formatted}& L & Read a formatted uHu file \\
-  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
-  {\sc berry\_alpha}& L & description\\
-  {\sc berry\_beta}& L & description\\
+  {\sc spn\_decomp} \textcolor{red}{({\sc optics\_spn\_decomp}?)}& L & Decompose the optical conductivity into
+  up $\rightarrow$ up, down $\rightarrow$ down, and spin-flip parts\\
+  {\sc uHu\_formatted}& L & Read a formatted {\tt seedname.uHu} file \\
+  {\sc spin\_formatted} \textcolor{red}{({\sc spn\_formatted}?)}& L & Read a formatted {\tt seedname.spn} file \\
+%  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
@@ -291,7 +303,8 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{{\tt BoltzWann} Parameters} \\
 \hline
 {\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
-{\sc boltz\_interp\_mesh} & I & Interpolation $k$-mesh (one or three integers)\\ 
+{\sc boltz\_interp\_mesh} & I & Dimensions of the uniform interpolation 
+$k$-mesh (one or three integers)\\ 
 {\sc boltz\_interp\_mesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
 {\sc boltz\_relax\_time} & P & Relaxation time in fs\\
 {\sc boltz\_mu\_min} & P & Minimum value of the chemical potential $\mu$ in eV\\
@@ -355,7 +368,7 @@ Determines whether to enter the DOS routines.
 The default value is \verb#false#.
 
 
-\subsection[berry\_task]{\tt character(len=120) ::  dos\_task}
+\subsection[dos\_task]{\tt character(len=120) ::  dos\_task}
 The quantity to compute when {\tt dos=.true.}
 
 The valid options for this parameter are:
@@ -371,14 +384,14 @@ The valid options for this parameter are:
 The default value is \verb#dos_plot#.
 
 
-\subsection[dos\_win\_min]{\tt real(kind=dp) :: dos\_min\_energy}
+\subsection[dos\_min\_energy]{\tt real(kind=dp) :: dos\_min\_energy}
 Lower limit of the energy range for computing the DOS.
 Units are eV.
 
 The default value is the minimum value of the energy eigenvalues
 stored in {\tt seedname.eig}, minus 0.6667.
 
-\subsection[dos\_win\_max]{\tt real(kind=dp) :: dos\_max\_energy}
+\subsection[dos\_max\_energy]{\tt real(kind=dp) :: dos\_max\_energy}
 Upper limit of the energy range for computing the DOS.
 Units are eV.
 
@@ -387,13 +400,12 @@ the default value is the upper bound of the innter energy window, plus 0.6667.
 Otherwise it is  the maximum value of the energy eigenvalues
 stored in {\tt seedname.eig}, plus 0.6667.
 
-\subsection[berry\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
-Energy step for the grid of energies used to plot the dos
+\subsection[dos\_energy\_step]{\tt real(kind=dp) :: dos\_energy\_step}
+Energy step for the grid of energies used to plot the dos. Units are eV.
 
-The units are eV.
 The default value is 0.01~eV.
 
-\subsection[berry\_energy\_step]{\tt integer :: dos\_project(:)}
+\subsection[dos\_project]{\tt integer :: dos\_project(:)}
 
 If present {\tt postw90} computes, instead of the total DOS, the
 partial DOS projected onto the WFs listed. The WFs are numbered
@@ -404,8 +416,8 @@ For example, to project onto WFs 2, 6, 7, 8, and 12:
 {\tt dos\_project : 2, 6-8, 12}
 
 
-\subsection[boltz\_interp\_mesh]{\tt integer :: dos\_interp\_mesh(:)}
-Number of interpolation grid points used for calculating the DOS-related tasks.
+\subsection[dos\_interp\_mesh]{\tt integer :: dos\_interp\_mesh(:)}
+Dimensions of the interpolation grid used for calculating the DOS-related tasks.
 
 If three integers $l$ $m$ $n$ are given, the reciprocal-space cell
 subtended by the three primitive translations is sampled on a uniform
@@ -420,8 +432,7 @@ If neither {\tt dos\_interp\_mesh\_spacing} nor {\tt
 {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
 otherwise an error is issued).
 
-\subsection[boltz\_interp\_mesh\_spacing]{\tt real(kind=dp) :: dos\_interp\_mesh\_spacing}
-
+\subsection[dos\_interp\_mesh\_spacing]{\tt real(kind=dp) :: dos\_interp\_mesh\_spacing}
 An alternative way of specifying the interpolation grid for
 DOS-related tasks. This flag defines the minimum distance for
 neighboring $k$ points along each of the three directions in $k$
@@ -438,7 +449,7 @@ If neither {\tt dos\_interp\_mesh\_spacing} nor {\tt
 otherwise an error is issued).
 
 
-\subsection[dos\_smr\_adaptive]{\tt logical :: dos\_smr\_adpt}
+\subsection[dos\_smr\_adpt]{\tt logical :: dos\_smr\_adpt}
 Determines whether to use an adaptive scheme for broadening the
 DOS. If \verb#true#, the values for the smearing widths are 
 controlled by the flag {\tt dos\_smr\_adpt\_factor}.
@@ -449,7 +460,7 @@ If {\tt dos\_smr\_adpt} is not specified, then the value of {\tt
 The default value is \verb#true#.
 
 
-\subsection[dos\_smr\_adaptive]{\tt real(kind=dp) :: dos\_smr\_adpt\_factor}
+\subsection[dos\_smr\_adpt\_factor]{\tt real(kind=dp) :: dos\_smr\_adpt\_factor}
 
 The width $W_{n{\bf k}}$ of the broadened delta function used to
 determine the contribution to the DOS from band $n$ at point ${\bf k}$
@@ -461,13 +472,13 @@ W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
 $$ 
 %
 \textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
-Confusing, and does not appear in the YWVS07 paper. May need to change
-{\tt dos\_max\_allowed\_smearing}]}}\\
+Confusing, and does not appear in the YWVS07 paper. May need to change default value of
+{\tt dos\_max\_allowed\_smr}]}}\\
 where the dimensionless factor $a$ is given by {\tt
   dos\_smr\_adpt\_factor}. $\Delta k$ is taken to be the largest of
 the mesh spacings along the three reciprocal lattice vectors ${\bf
   b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated value of
-$W_{n{\bf k}}$ exceeds {\tt dos\_max\_allowed\_smearing}, the latter
+$W_{n{\bf k}}$ exceeds {\tt dos\_max\_allowed\_smr}, the latter
 value is used.
 
 If {\tt dos\_smr\_adpt\_factor} is not specified, then the value of {\tt
@@ -476,11 +487,15 @@ If {\tt dos\_smr\_adpt\_factor} is not specified, then the value of {\tt
 The default value is 2.0.
 
 
-\subsection[dos\_smr\_adaptive]{\tt real(kind=dp) :: dos\_max\_allowed\_smearing}
+\subsection[dos\_max\_allowed\_smr]{\tt real(kind=dp) ::
+  dos\_max\_allowed\_smr}
 
 See description given immediately above.
 
 The default value is 1.0.
+
+\textcolor{red}{[Create ``global'' variable {\tt max\_allowed\_smr} and then link
+{\tt dos\_} and {\tt optics\_} subvariables?]}
 
 \subsection[dos\_smr\_en\_width]{\tt logical :: dos\_smr\_en\_width}
 Energy width for the smearing function for the DOS. Used only if {\tt
@@ -491,37 +506,45 @@ smaller than twice the energy step {\tt dos\_energy\_step}, the DOS
 will be unsmeared (thus the default is to have an unsmeared DOS).
 
 
-\subsection[dos\_smr\_en\_width]{\tt  character(len=120) :: dos\_smr\_type}
+\subsection[dos\_smr\_type]{\tt  character(len=120) :: dos\_smr\_type}
 
 Defines the analytical form used for the broadened delta function in
 the computation of the DOS.
 
-\hspace{0.5cm}
-\textcolor{red}{bla: derivative of the corresponding Methfessel-Paxton function}
+\begin{itemize}
+  
+\item[{\bf --}]
+  {\tt gauss}: Gaussian smearing
 
-\hspace{0.5cm}
-\textcolor{red}{bla: derivative of the cold-smearing function}
+\item[{\bf --}]
+  \textcolor{red}{{\tt m-pn}: derivative of the $n$-th order
+    Methfessel-Paxton function ($n\geq 0$)}
 
-\hspace{0.5cm}
-\textcolor{red}{bla: derivative of the Fermi-Dirac distribution function}
+\item[{\bf --}]
+  {\tt m-v} or {\tt cold}: derivative of the Marzari--Vanderbilt cold-smearing function
+
+\item[{\bf --}]
+  {\tt f-d}: derivative of the Fermi-Dirac distribution function
+
+\end{itemize}
 
 If {\tt dos\_smr\_type} is not specified, then the value of {\tt
   smr\_type} is used.  
 
-The default value is 0.
+The default value is {\tt gauss}.
 
-\subsection[evaluate\_spin\_moment]{\tt logical :: spn\_decomp}
+\subsection[spn\_decomp]{\tt logical :: spn\_decomp}
 If {\tt true}, two extra columns are added to {\tt seedname\_dos.dat},
-containing the decomposition of the total DOS of a spinor calculation
-into up-spin and down-spin parts (relative to the quantization axis
-defined by the input variables {\tt spn\_axis\_polar} and {\tt
-  spn\_axis\_azimuth}). The file {\tt seedname.spn} must be present at
-input.
+containing the decomposition of the DOS (total or orbital-projected)
+of a spinor calculation into up-spin and down-spin parts (relative to
+the quantization axis defined by the input variables {\tt
+  spn\_axis\_polar} and {\tt spn\_axis\_azimuth}). The file {\tt
+  seedname.spn} must be present at input.
 
 The default value is \verb#false#.
 
-\subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
-Determines whether to evaluate the spin moment.
+%\subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
+%Determines whether to evaluate the spin moment.
 
 The default value is \verb#false#.
 
@@ -720,11 +743,16 @@ The default value is $(0.0,1.0,0.0)$.
 
 \subsection[kslice\_num\_points]{\tt integer :: kslice\_interp\_mesh(2)}
 
+Dimensions of the $k$-point grid covering the slice.
 If two integers $m$ $n$ are given, the slice is sampled on a uniform
 $m\times n$ grid.  If only one integer $m$ is given, an $m\times m$
 grid is used.
 
 The default value for \verb#kslice_interp_mesh# is 50.
+
+\textcolor{red}{{[Should we tie {\tt kslice\_interp\_mesh} the ``global''
+{\tt interp\_mesh}? Note that it is two-dimensional only. Take first
+two value from the three-dimensional{\tt interp\_mesh}?}}
 
 
 \subsection[kslice\_cntr\_energy]{\tt real(kind=dp) :: kslice\_cntr\_energy}
@@ -743,95 +771,216 @@ Determines whether to enter the berry routines.
 
 The default value is \verb#false#.
 
-\subsection[berry\_interp\_mesh]{\tt integer :: berry\_interp\_mesh(:)}
-It determines the interpolation $k$ mesh used to calculate the berry
-dervived quantities.
-
-If three integers $l$ $m$ $n$ are given, a $l\times m\times n$ grid is used. If only one integer $m$ is given, a $m\times m\times m$ grid is used.
-
-{\tt berry\_interp\_mesh\_spacing} and  {\tt berry\_interp\_mesh} may not both be defined in the same input file.
-
-If neither {\tt berry\_interp\_mesh\_spacing} nor  {\tt berry\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
-
-\subsection[berry\_interp\_mesh\_spacing]{\tt real(kind=dp) :: berry\_interp\_mesh\_spacing}
-It determines the interpolation $k$ mesh used to calculate the berry
-derived quantities. This flag
-defines the minimum distance for neighboring $k$ points along each of
-the three directions in $k$ space. 
-
-
-The units are \AA$^{-1}$.
-
-{\tt berry\_interp\_mesh\_spacing} and  {\tt berry\_interp\_mesh} may not both be defined in the same input file.
-
-If neither {\tt berry\_interp\_mesh\_spacing} nor  {\tt berry\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
-
-
 
 \subsection[berry\_task]{\tt character(len=120) ::  berry\_task}
 The quantity to compute when {\tt berry=.true.}
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#ahc# Anomalous Hall Conductivity
-\item[{\bf --}]  \verb#morb# Orbital Magnetisation
-\item[{\bf --}] \verb#spectrum# Frequency-dependent interband conductivity \textcolor{red}{CHANGE!}
+\item[{\bf --}] \verb#ahc# Anomalous Hall Conductivity components
+  $\sigma_{xy}=\sigma_z$, $\sigma_{yz}=\sigma_x$, and
+  $\sigma_{zx}=\sigma_y$
+\item[{\bf --}]  \verb#morb# Orbital magnetisation vector. Requires the
+presence of the file {\tt seedname.uHu} at input.
+
+\item[{\bf --}] \verb#optics# Absorptive part of the interband optical
+  conductivity, and joint density of states (JDOS).  The output data
+  files and scripts depend on {\tt optics\_time\_parity} (see below).
+
+\item[{\bf --}] The combinations {\tt curv+optics} and {\tt morb+optics}
+({\tt curv+morb} is {\it not} allowed)
 
 \end{itemize}
 There is no default value
 
 
+\subsection[berry\_interp\_mesh]{\tt integer :: berry\_interp\_mesh(:)}
+Dimensions of the interpolation grid used for carrying out the BZ
+integrals.
 
-\subsection[berry\_spectrum\_type]{\tt character(len=120) ::  berry\_spectrum\_type}
-The type of spectrum to compute when {\tt berry\_task=spectrum}. 
+If three integers $l$ $m$ $n$ are given, the reciprocal-space cell
+subtended by the three primitive translations is sampled on a uniform
+$l\times m\times n$ grid.  If only one integer $m$ is given, an
+$m\times m\times m$ grid is used.
+
+{\tt berry\_interp\_mesh\_spacing} and {\tt berry\_interp\_mesh} may not
+both be defined in the same input file.
+
+If neither {\tt berry\_interp\_mesh\_spacing} nor {\tt
+  berry\_interp\_mesh} are defined, then the grid defined either with
+{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+otherwise an error is issued).
+
+\subsection[berry\_interp\_mesh\_spacing]{\tt real(kind=dp) :: berry\_interp\_mesh\_spacing}
+An alternative way of specifying the BZ integration grid. This flag
+defines the minimum distance for neighboring $k$ points along each of
+the three directions in $k$ space.
+
+
+The units are \AA$^{-1}$.
+
+{\tt berry\_interp\_mesh\_spacing} and {\tt berry\_interp\_mesh} may
+not both be defined in the same input file.
+
+If neither {\tt berry\_interp\_mesh\_spacing} nor {\tt
+  berry\_interp\_mesh} are defined, then the grid defined either with
+{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+otherwise an error is issued).
+
+
+\subsection[berry\_adaptive\_thresh]{\tt real(kind=dp) :: berry\_adaptive\_thresh(:)}
+
+Magnitude of the Berry curvature in \AA$^2$, or of the $k$-space
+orbital magnetization in eV$\cdot$\AA$^2$, that triggers adaptive mesh
+refinement when {\tt berry\_task} contains either {\tt curv} or {\tt
+  morb}.
+
+Default value is 100.0.
+
+\subsection[berry\_adaptive\_mesh]{\tt integer :: berry\_adaptive\_mesh(:)}
+
+If a positive integer $n$ is given, an $n\times n\times n$ mesh is
+placed around points on the uniform mesh (defined by either {\tt
+  berry\_interp\_mesh} or {\tt berry\_interp\_mesh\_spacing}) where
+the magnitude of the $k$-space Berry curvature or orbital
+magnetization exceeds the threshold value specified in {\tt
+  berry\_adaptive\_thresh}. This can be used to densify the BZ
+integration mesh around spikes in the integrand.
+
+The default value is 1.
+
+\subsection[berry\_spectrum\_time\_parity]{\tt character(len=120) ::  optics\_time\_parity}
+The time parity of the optical conductivity tensor to compute when
+{\tt berry\_task=optics}
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#sigma_ab# (default) Interband optical conductivity
-in the long-wavelength limit.
-\item[{\bf --}]  \verb#sigma_abc# Interband optical conductivity
-at first order in the wavevector of light.
-\item [{\bf --}]  \verb#jdos# \textcolor{red}{(Ivo) This is a proposal}
+\item[{\bf --}]  \verb#even# Calculate ${\rm Re}\,\sigma_{\alpha\beta}(\omega)={\rm Re}\,\sigma_{\beta\alpha}(\omega)$ and the JDOS. \textcolor{red}{[Describe output files here]}
+\item[{\bf --}]  \verb#odd#  Calculate ${\rm Im}\,\sigma_{\alpha\beta}(\omega)=-{\rm Im}\,\sigma_{\beta\alpha}(\omega)$  and the JDOS. \textcolor{red}{[Describe output files here]}
 \end{itemize}
 
-\subsection[berry\_spectrum\_time\_parity]{\tt character(len=120) ::  berry\_spectrum\_time\_parity}
-The type of spectrum to compute when {\tt berry\_task=spectrum=.true.} 
+The default value is {\tt even}.
 
-The valid options for this parameter are:
+
+\subsection[optics\_energy\_min]{\tt real(kind=dp) :: optics\_energy\_min}
+Lower limit of the energy range for computing the optical conductivity
+and JDOS.  Units are eV.
+
+The default value is the minimum value of the energy eigenvalues
+stored in {\tt seedname.eig}, minus 0.6667.
+
+\subsection[optics\_energy\_max]{\tt real(kind=dp) :: optics\_energy\_max}
+Upper limit of the energy range for computing the optical conductivity
+and JDOS.  Units are eV.
+
+If an inner energy window was specified, the default value is the
+upper bound of the innter energy window, plus 0.6667.  Otherwise it is
+the maximum value of the energy eigenvalues stored in {\tt
+  seedname.eig}, plus 0.6667.
+
+\subsection[optics\_energy\_step]{\tt real(kind=dp) :: optics\_energy\_step}
+Energy step for the grid of energies used for computing the optical
+conductivity and JDOS. Units are eV.
+
+The default value is 0.01~eV.
+
+
+\subsection[optics\_smr\_adpt]{\tt logical :: optics\_smr\_adpt}
+Determines whether to use an adaptive scheme for broadening the
+optical spectrum and JDOS. If \verb#true#, the values for the smearing widths are 
+controlled by the flag {\tt optics\_smr\_adpt\_factor}.
+
+If {\tt optics\_smr\_adpt} is not specified, then the value of {\tt
+  smr\_adpt} is used.  
+
+The default value is \verb#true#.
+
+
+\subsection[optics\_smr\_adpt\_factor]{\tt real(kind=dp) ::
+  optics\_smr\_adpt\_factor}
+
+The width $W_{n{\bf k}}$ of the broadened delta function used to
+determine the contribution to the optical conductivity and JDOS from
+band $n$ at point ${\bf k}$ is calculated as
+%
+$$
+W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
+\nabla_{\bf k} E_{n{\bf k}}\vert \Delta k,
+$$ 
+%
+\textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
+Confusing, and does not appear in the YWVS07 paper. May need to change default value of
+{\tt optics\_max\_allowed\_smr}]}}\\
+where the dimensionless factor $a$ is given by {\tt
+  optics\_smr\_adpt\_factor}. $\Delta k$ is taken to be the largest of
+the mesh spacings along the three reciprocal lattice vectors ${\bf
+  b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated value of
+$W_{n{\bf k}}$ exceeds {\tt optics\_max\_allowed\_smr}, the latter
+value is used.
+
+If {\tt optics\_smr\_adpt\_factor} is not specified, then the value of {\tt
+  smr\_adpt\_factor} is used.  
+
+The default value is 2.0.
+
+
+\subsection[optics\_max\_allowed\_smr]{\tt real(kind=dp) ::
+  optics\_max\_allowed\_smr}
+
+See description given immediately above.
+
+The default value is 1.0.
+
+\textcolor{red}{[Create ``global'' variable {\tt max\_allowed\_smr} and then link
+{\tt dos\_} and {\tt optics\_} subvariables?]}
+
+\subsection[optics\_smr\_en\_width]{\tt logical :: optics\_smr\_en\_width}
+Energy width for the smearing function for the optical spectra
+and JDOS. Used only if {\tt optics\_smr\_adpt} is \verb#false#.
+
+The units are eV. The default value is 0~eV. Note that if the width is
+smaller than twice the energy step {\tt optics\_energy\_step}, the spectra
+will be unsmeared (thus the default is to have unsmeared spectra).
+
+
+\subsection[optics\_smr\_type]{\tt  character(len=120) :: optics\_smr\_type}
+
+Defines the analytical form used for the broadened delta function in
+the computation of the optical spectra and JDOS.
+
 \begin{itemize}
-\item[{\bf --}]  \verb#odd# (default) 
-\item[{\bf --}]  \verb#even#  
+  
+\item[{\bf --}]
+  {\tt gauss}: Gaussian smearing
+
+\item[{\bf --}]
+  \textcolor{red}{{\tt m-pn}: derivative of the $n$-th order
+    Methfessel-Paxton function ($n\geq 0$)}
+
+\item[{\bf --}]
+  {\tt m-v} or {\tt cold}: derivative of the Marzari--Vanderbilt cold-smearing function
+
+\item[{\bf --}]
+  {\tt f-d}: derivative of the Fermi-Dirac distribution function
+
 \end{itemize}
 
-\verb#odd# (\verb#even#) gives the antisymmetric (symmetric) part of
-the tensor $\sigma_{ab}(\omega)$, or the symmetric (antisymmetric)
-part under $a\leftrightarrow b$ of the tensor $\sigma_{abc}(\omega)$.
-When \texttt{berry\_spectrum\_type=jdos}, the variable
-\texttt{berry\_spectrum\_time\_parity} is ignored.
+If {\tt optics\_smr\_type} is not specified, then the value of {\tt
+  smr\_type} is used.  
 
-\subsection[berry\_energy\_step]{\tt real(kind=dp) :: berry\_energy\_step}
-Energy step for the grid of energies used to plot spectra when {\tt berry\_task=spectum}.
+The default value is {\tt gauss}.
 
-The units are eV.
-The default value is 0.001~eV.
-
-\subsection[berry\_win\_min]{\tt real(kind=dp) :: berry\_win\_min}
-The lower bound of the energy window  used to plot spectra when {\tt berry\_task=spectum}.
-Units are eV.
-
-The default value is **
-
-\subsection[berry\_win\_max]{\tt real(kind=dp) :: berry\_win\_max}
-The upper bound of the energy window used to plot spectra when {\tt berry\_task=spectum}.
-Units are eV.
-
-The default value is **
-
-
-\subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
-Determines whether to evaluate the spin moment.
+\subsection[spn\_decomp]{\tt logical :: spn\_decomp}
+If {\tt true}, three extra columns are added to the optical
+conductivity data files, containing the decomposition into up
+$\rightarrow$ up, down $\rightarrow$ down, and spin-flip transitions
+(relative to the quantization axis defined by the input variables {\tt
+  spn\_axis\_polar} and {\tt spn\_axis\_azimuth}). The file {\tt
+  seedname.spn} must be present at input.
 
 The default value is \verb#false#.
+
+
 
 \subsection[spin\_formated]{\tt character(len=20) :: spin\_formatted}
 
@@ -853,21 +1002,13 @@ read as unformatted files.
 
 The default value of this parameter is $\verb#FALSE#$.
 
-\subsection[uIu\_formated]{\tt character(len=20) :: uIu\_formatted}
+%\subsection[uIu\_formated]{\tt character(len=20) :: uIu\_formatted}
 
-If \verb#uIu_formatted#=\verb#TRUE#, then the uIu matrix elements will be
-read from disk as formatted (ie ASCII) files; otherwise they will be
-read as unformatted files.
+%If \verb#uIu_formatted#=\verb#TRUE#, then the uIu matrix elements will be
+%read from disk as formatted (ie ASCII) files; otherwise they will be
+%read as unformatted files.
 
-The default value of this parameter is $\verb#FALSE#$.
-
-\subsection[berry\_alpha]{\tt integer :: berry\_alpha}
-define here
-No default.
-
-\subsection[berry\_alpha]{\tt integer :: berry\_beta}
-define here
-No default.
+%The default value of this parameter is $\verb#FALSE#$.
 
 
 

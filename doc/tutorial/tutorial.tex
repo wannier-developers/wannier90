@@ -2046,6 +2046,10 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
       H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$ (written in the
       {\tt Fe.uHu} file)
 
+  \item[{\bf --}] The spin matrix elements $\langle \psi_{n{\bf
+        k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the
+    {\tt Fe.spn} file)
+
   \end{itemize}
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
@@ -2085,7 +2089,11 @@ fermi\_energy = 12.6285
 } 
 %
 Compare the value of the orbital magnetization in {\tt Fe.wpout} with
-the spin magnetization in {\tt scf.out}. Both point along $\hat{\bf
+the spin magnetization in {\tt scf.out}.\footnote{Alternatively, the
+spin magnetization can be computed by {\tt postw90}. This requires adding the
+instruction {\tt spn\_moment = T} to {\tt Fe.win}, assuming that {\tt pw2wannier90}
+was executed with {\tt write\_spn = .true.} in {\tt Fe.pw2wan}.} 
+Both point along $\hat{\bf
   z}$, but the orbital contribution is much smaller (it is strongly
 quenched by the crystal field).
 
@@ -2166,9 +2174,21 @@ new input file {\tt Fe.win}.
   into the {\tt Fe.nnkp} file).\\
 {\tt wannier90.x -pp Fe}
 
-\item Run {\tt pw2wannier90} to compute the overlaps between Bloch
-  states and the projections for the starting guess (written in the
-  {\tt Si.mmn} and {\tt  Si.amn} files).\\
+\item Run {\tt pw2wannier90} to compute:
+  \begin{itemize}
+
+  \item[{\bf --}] The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
+          b}}\rangle$ (written in the {\tt Fe.mmn} file)
+
+  \item[{\bf --}] The projections for the starting guess (written in the {\tt
+        Fe.amn} file)
+
+  \item[{\bf --}] The spin matrix elements $\langle \psi_{n{\bf
+        k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the
+    {\tt Fe.spn} file)\footnote{These are only used in connection with
+{\tt spn\_decomp} in ``Further ideas.''}
+
+  \end{itemize}
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWF.\\
@@ -2313,6 +2333,8 @@ Compare the value at $\omega_{\rm min}=0$ with the AHC value
 calculated in Example~18 by directly integrating the $k$-space Berry
 curvature.
 
+\item ac AHC from Kramers-Kronig \textcolor{red}{TO BE DONE}
+
 \end{itemize}
 
 \cleardoublepage
@@ -2322,6 +2344,7 @@ curvature.
 
 \bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
   Guide, available at {\tt http://www.wannier.org/user\_guide.html}.
+\textcolor{red}{Add Giovanni and Ivo as co-authors?}
 
 \bibitem{MV} N.~Marzari and D.~Vanderbilt, 
   Maximally Localized Generalized Wannier Functions for Composite

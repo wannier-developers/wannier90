@@ -474,7 +474,7 @@ contains
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
-                                  dos_max_allowed_smearing,&
+                                  dos_max_allowed_smr,&
                                   num_dos_project,dos_project
     use w90_spin, only          : get_spn_nk
 
@@ -538,7 +538,7 @@ contains
           smear=smr_fixed_en_width
        else
           smear=min(levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp),&
-               dos_max_allowed_smearing)
+               dos_max_allowed_smr)
 !          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
        end if
 

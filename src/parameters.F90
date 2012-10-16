@@ -36,7 +36,7 @@ module w90_parameters
   real(kind=dp)                   :: smr_adpt_factor
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
-  logical,                    public, save :: evaluate_spin_moment
+  logical,                    public, save :: spn_moment
   real(kind=dp),              public, save :: spn_axis_polar
   real(kind=dp),              public, save :: spn_axis_azimuth
   logical,                    public, save :: use_degen_pert
@@ -118,7 +118,7 @@ module w90_parameters
   real(kind=dp),     public, save    :: dos_smr_adpt_factor
   integer,           public, save    :: dos_smr_index
   real(kind=dp),     public, save    :: dos_smr_fixed_en_width
-  real(kind=dp),     public, save    :: dos_max_allowed_smearing
+  real(kind=dp),     public, save    :: dos_max_allowed_smr
   real(kind=dp),     public, save    :: dos_energy_max
   real(kind=dp),     public, save    :: dos_energy_min
   real(kind=dp),     public, save    :: dos_energy_step
@@ -145,6 +145,7 @@ module w90_parameters
   real(kind=dp),     public, save :: optics_smr_adpt_factor
   integer,           public, save :: optics_smr_index
   real(kind=dp),     public, save :: optics_smr_fixed_en_width
+  real(kind=dp),     public, save :: optics_max_allowed_smr
   character(len=20), public, save :: optics_time_parity
   real(kind=dp),     public, save :: optics_energy_step
   real(kind=dp),     public, save :: optics_energy_min
@@ -875,7 +876,7 @@ contains
          .and. index(berry_task,'optics')==0) call io_error&
          ('Error: value of berry_task not recognised in param_read')
 
-    optics_time_parity =' '
+    optics_time_parity ='even'
     call param_get_keyword('optics_time_parity',found,c_value=optics_time_parity)
     if(berry .and. index(berry_task,'optics')>0) then
        if(.not.found) then
@@ -929,6 +930,11 @@ contains
     if (found .and. (optics_smr_adpt_factor <= 0._dp)) call io_error&
          ('Error: optics_smr_adpt_factor must be greater than zero')
 
+
+    optics_max_allowed_smr = 1._dp
+    call param_get_keyword('optics_max_allowed_smr',found,&
+         r_value=optics_max_allowed_smr)
+
     optics_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('optics_smr_fixed_en_width',found,&
          r_value=optics_smr_fixed_en_width)
@@ -939,9 +945,9 @@ contains
     call param_get_keyword('scissors_shift',found,&
          r_value=scissors_shift)   
 
-    evaluate_spin_moment = .false.
-    call param_get_keyword('evaluate_spin_moment',found,&
-         l_value=evaluate_spin_moment)   
+    spn_moment = .false.
+    call param_get_keyword('spn_moment',found,&
+         l_value=spn_moment)   
 
     spn_axis_polar=0.0_dp
     call param_get_keyword('spn_axis_polar',found,&
@@ -1023,8 +1029,9 @@ contains
     call param_get_keyword('dos_smr_adpt_factor',found,r_value=dos_smr_adpt_factor)
     if (found .and. (dos_smr_adpt_factor <= 0._dp)) &
          call io_error('Error: dos_smr_adpt_factor must be greater than zero')    
-    dos_max_allowed_smearing = 1._dp
-    call param_get_keyword('dos_max_allowed_smearing',found,r_value=dos_max_allowed_smearing)
+
+    dos_max_allowed_smr = 1._dp
+    call param_get_keyword('dos_max_allowed_smr',found,r_value=dos_max_allowed_smr)
     
     dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('dos_smr_fixed_en_width',found,r_value=dos_smr_fixed_en_width)
@@ -1573,7 +1580,7 @@ contains
          module_interp_mesh_spacing=berry_interp_mesh_spacing)
 
     call get_module_interp_mesh(moduleprefix='spin', &
-         should_be_defined=evaluate_spin_moment, &
+         should_be_defined=spn_moment, &
          module_interp_mesh=spin_interp_mesh, &
          module_interp_mesh_spacing=spin_interp_mesh_spacing)
 
