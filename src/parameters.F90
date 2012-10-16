@@ -923,14 +923,17 @@ contains
     call param_get_keyword('berry_smr_adpt',found,l_value=berry_smr_adpt)
 
     berry_smr_adpt_factor = smr_adpt_factor
-    call param_get_keyword('berry_smr_adpt_factor',found,r_value=berry_smr_adpt_factor)
+    call param_get_keyword('berry_smr_adpt_factor',found,&
+         r_value=berry_smr_adpt_factor)
     if (found .and. (berry_smr_adpt_factor <= 0._dp)) &
-         call io_error('Error: berry_smr_adpt_factor must be greater than zero')    
+         call io_error('Error: berry_smr_adpt_factor must be greater than zero')
 
     berry_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('berry_smr_fixed_en_width',found,r_value=berry_smr_fixed_en_width)
+    call param_get_keyword('berry_smr_fixed_en_width',found,&
+         r_value=berry_smr_fixed_en_width)
     if (found .and. (berry_smr_fixed_en_width < 0._dp)) &
-         call io_error('Error: berry_smr_fixed_en_width must be greater than or equal to zero')    
+         call io_error&
+       ('Error: berry_smr_fixed_en_width must be greater than or equal to zero')
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&

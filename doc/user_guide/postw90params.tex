@@ -115,7 +115,7 @@ The subsequent tables describe input parameters relative to specific modules.
   {\sc interp\_mesh}   & I & Interpolation $k$-mesh (one or three integers) \\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
   {\sc num\_valence\_bands}   & I & Number of valence bands \\
-  {\sc scissors\_shift}   & I & Scissors shift applied to the conduction bands (eV) \\
+  {\sc scissors\_shift}   & R & Scissors shift applied to the conduction bands (eV) \\
   {\sc spn\_decomp}& L & Decompose various properties into
   up-spin, down-spin, and eventually spin-flip parts\\
   {\sc spn\_axis\_polar}& R & Polar angle of the spin quantization axis (deg)\\
@@ -422,9 +422,8 @@ otherwise an error is issued).
 
 \subsection[dos\_smr\_adaptive]{\tt logical :: dos\_smr\_adpt}
 Determines whether to use an adaptive scheme for broadening the
-DOS. If \verb#true#, the values for the smearing widths are those
-defined by the flags {\tt adpt\_smr\_steps} and {\tt
-  adpt\_smr\_width}.
+DOS. If \verb#true#, the values for the smearing widths are 
+controlled by the flag {\tt dos\_smr\_adpt\_factor}.
 
 If {\tt dos\_smr\_adpt} is not specified, then the value of {\tt
   smr\_adpt} is used.  
@@ -434,9 +433,9 @@ The default value is \verb#true#.
 
 \subsection[dos\_smr\_adaptive]{\tt real(kind=dp) :: dos\_smr\_adpt\_factor}
 
-The width $W_{n{\bf k}}$ of the energy smearing used to determine the
-contribution to the DOS from band $n$ at point ${\bf k}$ is calculated
-as
+The width $W_{n{\bf k}}$ of the broadened delta function used to
+determine the contribution to the DOS from band $n$ at point ${\bf k}$
+is calculated as
 %
 $$
 W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
@@ -461,7 +460,7 @@ The default value is 2.0.
 
 \subsection[dos\_smr\_adaptive]{\tt real(kind=dp) :: dos\_max\_allowed\_smearing}
 
-See description given in the previous item.
+See description given immediately above.
 
 The default value is 1.0.
 
@@ -629,10 +628,9 @@ The valid options for this parameter are:
     of grid points ({\tt python} data files)
 
   \item[$\cdot$] {\tt seedname\_slice\_bands.dat}: energy eigenvalues
-    on the grid for all bands ({\tt python} data file)
+    on the grid, for all bands ({\tt python} data file)
 
   \item[$\cdot$] {\tt seedname-energy\_cntr.py}: {\tt python} script
-\textcolor{red}{{\bf [Need to code this!]}}
 
   \item[$\cdot$] {\tt seedname\_xyz\_n.dat}: reduced coordinates of
     grid points and energy eigenvalues, separately for each band {\tt
@@ -651,9 +649,13 @@ The valid options for this parameter are:
     of grid points 
     
   \item[$\cdot$] {\tt seedname-slice\_curv.dat}: Berry curvature 
-    on the grid
+    on the grid, summed over bands
     
-  \item[$\cdot$] {\tt seedname-curv\_\{x,y,z\}.py}: {\tt python} scripts
+  \item[$\cdot$] {\tt seedname-curv\_\{x,y,z\}-heatmap.py}: {\tt
+      python} scripts, one for each Cartesian component of the Berry
+    curvature. If the string {\tt energy\_cntr} is also present, the
+    script plots both the curvature heatmap {\it and} the isoenergy
+    contours.
     
   \end{itemize}
 
@@ -665,10 +667,14 @@ The valid options for this parameter are:
   \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
     of grid points 
     
-  \item[$\cdot$] {\tt seedname-slice\_morb.dat}: Berry curvature 
-    on the grid
+  \item[$\cdot$] {\tt seedname-slice\_morb.dat}: $k$-space orbital
+    magnetization on the grid
     
-  \item[$\cdot$] {\tt seedname-morb\_\{x,y,z\}.py}: {\tt python} scripts
+  \item[$\cdot$] {\tt seedname-morb\_\{x,y,z\}-heatmap.py}: {\tt
+      python} scripts, one for each Cartesian component of the orbital
+    magnetization. If the string {\tt energy\_cntr} is also present,
+    the script plots both the magnetization heatmap {\it and} the
+    isoenergy contours.
     
   \end{itemize}
 
@@ -696,15 +702,15 @@ The default value is $(0.0,1.0,0.0)$.
 \subsection[kslice\_num\_points]{\tt integer :: kslice\_interp\_mesh(2)}
 
 If two integers $m$ $n$ are given, the slice is sampled on a uniform
-$m\times n$ grid.  If only one integer $m$ is given, an $m\times
-m\times m$ grid is used.
+$m\times n$ grid.  If only one integer $m$ is given, an $m\times m$
+grid is used.
 
 The default value for \verb#kslice_interp_mesh# is 50.
 
 
 \subsection[kslice\_cntr\_energy]{\tt real(kind=dp) :: kslice\_cntr\_energy}
 
-Energy level in eV for plotting isoenergy contour lines when {\tt
+Energy level in eV for plotting isoenergy contour when {\tt
   kslice\_task = energy\_cntr}.
 
 The default value is {\tt fermi\_energy}, if its value is
@@ -962,10 +968,45 @@ The type of smearing function to be used for the DOS. The available strings are 
 The default value is the one given via the {\tt smr\_type} input flag. 
 
 
-\subsection[boltz\_dos\_smr\_adaptive]{\tt logical :: boltz\_dos\_smr\_adpt}
-Determines whether to use an adaptive scheme for broadening the DOS. If \verb#true#, the values for the smearing widths are those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+\subsection[boltz\_dos\_smr\_adpt]{\tt logical :: boltz\_dos\_smr\_adpt}
+Determines whether to use an adaptive scheme for broadening the
+DOS. If \verb#true#, the values for the smearing widths are 
+%those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
+controlled by the flag {\tt boltz\_dos\_smr\_adpt\_factor}.
 
 The default value is \verb#true#.
+
+
+
+\subsection[boltz\_dos\_smr\_adaptive]{\tt real(kind=dp) :: boltz\_dos\_smr\_adpt\_factor}
+
+The width $W_{n{\bf k}}$ of the broadened delta function used to
+determine the contribution to the DOS from band $n$ at point ${\bf k}$
+is calculated as
+%
+$$
+W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
+\nabla_{\bf k} E_{n{\bf k}}\vert \Delta k,
+$$ 
+%
+\textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the
+    code?!  Confusing, and does not appear in the YWVS07 paper. May
+    need to change
+    {\tt dos\_max\_allowed\_smearing}]}}\\
+where the dimensionless factor $a$ is given by {\tt
+  boltz\_dos\_smr\_adpt\_factor}. $\Delta k$ is taken to be the
+largest of the mesh spacings along the three reciprocal lattice
+vectors ${\bf b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated
+value of $W_{n{\bf k}}$ exceeds {\tt dos\_max\_allowed\_smearing}, the
+latter value is used.  \textcolor{red}{[Ivo: Giovanni, is this correct? Or
+  should there be an additional variable {\tt
+    boltz\_dos\_max\_allowed\_smearing}?]}
+
+
+If {\tt boltz\_dos\_smr\_adpt\_factor} is not specified, then the value of {\tt
+  smr\_adpt\_factor} is used.  
+
+The default value is 2.0.
 
 \subsection[boltz\_dos\_smr\_en\_width]{\tt logical :: boltz\_dos\_smr\_en\_width}
 Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos\_smr\_adpt} is \verb#false#.
@@ -973,6 +1014,9 @@ Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos
 The units are eV.
 The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_dos\_energy\_step}, the DOS will be unsmeared (thus the default is to have an unsmeared DOS).
 
+\textcolor{red}{[Ivo: I believe the next three variables may not be
+  needed anymore, since I added ``global'' {\tt scissors\_shift} and
+  {\tt num\_valence\_bands} variables.]}
 
 \subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
 Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).

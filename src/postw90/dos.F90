@@ -37,14 +37,13 @@ contains
     use w90_parameters, only     : num_wann,dos_energy_min,dos_energy_max,&
                                    dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_interp_mesh,&
-                                   dos_smr_index,dos_smr_adpt_factor ,&
-                                   spn_decomp, dos_smr_adpt, &
+                                   dos_smr_index,dos_smr_adpt,&
+                                   dos_smr_adpt_factor ,spn_decomp,&
                                    dos_smr_fixed_en_width,&
                                    dos_project,num_dos_project
-    ! TODO! Implement non-adaptive smearing also here
-    use w90_get_oper, only      : get_HH_R,get_SS_R,HH_R
-    use w90_wan_ham, only: get_eig_deleig
-    use w90_utility, only: utility_diagonalize
+    use w90_get_oper, only       : get_HH_R,get_SS_R,HH_R
+    use w90_wan_ham, only        : get_eig_deleig
+    use w90_utility, only        : utility_diagonalize
 
     ! 'dos_k' contains contrib. from one k-point, 
     ! 'dos_all' from all nodes/k-points (first summed on one node and 
