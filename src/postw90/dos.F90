@@ -532,13 +532,13 @@ contains
        end if
 
        !
-       ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
-       ! !!!UNDERSTAND THAT FACTOR!!!
+       ! Eq.(35) YWVS07, except for the factor 1/sqrt(2) (understand!)
        !
        if (.not.present(levelspacing_k)) then
           smear=smr_fixed_en_width
        else
-          smear=min(levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp),dos_max_allowed_smearing)
+          smear=min(levelspacing_k(i)*smr_adpt_factor/sqrt(2.0_dp),&
+               dos_max_allowed_smearing)
 !          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
        end if
 

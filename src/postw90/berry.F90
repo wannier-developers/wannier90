@@ -96,15 +96,15 @@ module w90_berry
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   berry_task,optics_time_parity,&
                                   optics_energy_min,optics_energy_max,&
-                                  optics_energy_step,berry_smr_adpt_factor,&
-                                  spn_decomp,found_fermi_energy,fermi_energy
+                                  optics_energy_step,spn_decomp,&
+                                  found_fermi_energy,fermi_energy
     use w90_get_oper, only      : get_HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                   get_FF_R,get_SS_R
 
     ! AHC and orbital magnetization
     !
-    ! Second index is the Cartesian component, first labels J0,J1,J2 terms
-    ! (in the notation of LVTS12)
+    ! First index labels J0,J1,J2 terms (in the notation of LVTS12) 
+    ! Second index is the Cartesian component 
     !
     real(kind=dp) :: imf_k(3,3),imf(3,3)
     real(kind=dp) :: img_k(3,3),img(3,3)
@@ -117,14 +117,15 @@ module w90_berry
     real(kind=dp), allocatable :: jdos_k(:,:)
     real(kind=dp), allocatable :: jdos(:,:)
     
-    ! Optical conductivity
+    ! Optical conductivity (long wavelength limit)
     !
     integer                    :: ncomp ! number of components (3 or 6)
     real(kind=dp), allocatable :: sig_k(:,:,:,:)
     real(kind=dp), allocatable :: sig(:,:,:,:)
     real(kind=dp), allocatable :: ahc_kk(:,:)
 
-    ! Spatially-dispersive optical conductivity
+    ! Optical conductivity (spatial dispersion)
+    !
     ! sig_abc_(:,1) is the "matrix element term" part of the orbital contrib
     ! sig_abc_(:,2) is the "energy term" part of the orbital contribution
     ! sig_abc_(:,3) is the spin contribution ("matrix element term"-only)
@@ -1557,9 +1558,10 @@ module w90_berry
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
-    use w90_parameters, only     : num_wann,optics_energy_min,berry_interp_mesh,&
-                                   berry_smr_adpt_factor,berry_interp_mesh,&
-                                   spn_decomp,fermi_energy
+    use w90_parameters, only     : num_wann,optics_energy_min,fermi_energy,&
+                                   optics_smr_adpt,optics_smr_adpt_factor,&
+                                   optics_smr_fixed_en_width,berry_interp_mesh,&
+                                   spn_decomp
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only        : get_D_h,get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
@@ -1603,7 +1605,14 @@ module w90_berry
     allocate(AA_bar(num_wann,num_wann,3))
     allocate(mdum(num_wann,num_wann))
 
-    call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+    if(optics_smr_adpt) then
+       call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+       Delta_k=kmesh_spacing(berry_interp_mesh)
+    else
+       call fourier_R_to_k(kpt,HH_R,HH,0) 
+       call utility_diagonalize(HH,num_wann,eig,UU)
+    endif
+
     call get_occ(eig,occ,fermi_energy)
     call get_D_h(delHH,UU,eig,D_h)
     do i=1,3
@@ -1611,7 +1620,6 @@ module w90_berry
        AA_bar(:,:,i)=utility_rotate(mdum,UU,num_wann)
     enddo
 
-    Delta_k=kmesh_spacing(berry_interp_mesh)
     if(spn_decomp) call get_spn_nk(kpt,spn_nk)
 
     sig_k=0.0_dp
@@ -1630,8 +1638,6 @@ module w90_berry
                 case=3 ! spin-flip
              end if
           end if
-          rvdum(:)=del_eig(m,:)-del_eig(n,:)
-          joint_level_spacing=sqrt(dot_product(rvdum(:),rvdum(:)))*Delta_k
           !
           ! Optical matrix elements
           !
@@ -1651,9 +1657,17 @@ module w90_berry
              enddo
           end if
              
-          ! Eq.(35) YWVS07, except for the factor 1/sqrt(2) (understand!)
-          !
-          smear=joint_level_spacing*berry_smr_adpt_factor/sqrt(2.0_dp)
+          if(optics_smr_adpt) then
+             !
+             ! Eq.(35) YWVS07, except for the factor 1/sqrt(2) (understand!)
+             !
+             rvdum(:)=del_eig(m,:)-del_eig(n,:)
+             joint_level_spacing=sqrt(dot_product(rvdum(:),rvdum(:)))*Delta_k
+             smear=joint_level_spacing*optics_smr_adpt_factor/sqrt(2.0_dp)
+          else
+             smear=optics_smr_fixed_en_width
+          endif
+
           do ifreq=1,nfreq   
              
              freq=optics_energy_min+(ifreq-1)*d_freq

@@ -141,9 +141,9 @@ module w90_parameters
   ! --------------remove eventually----------------
   integer,           public, save :: berry_adaptive_mesh
   real(kind=dp),     public, save :: berry_adaptive_thresh
-  logical,           public, save :: berry_smr_adpt
-  real(kind=dp),     public, save :: berry_smr_adpt_factor
-  real(kind=dp),     public, save :: berry_smr_fixed_en_width
+  logical,           public, save :: optics_smr_adpt
+  real(kind=dp),     public, save :: optics_smr_adpt_factor
+  real(kind=dp),     public, save :: optics_smr_fixed_en_width
   character(len=20), public, save :: optics_time_parity
   real(kind=dp),     public, save :: optics_energy_step
   real(kind=dp),     public, save :: optics_energy_min
@@ -919,21 +919,20 @@ contains
 !    smear_temp = -1.0_dp
 !    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
-    berry_smr_adpt = smr_adpt
-    call param_get_keyword('berry_smr_adpt',found,l_value=berry_smr_adpt)
+    optics_smr_adpt = smr_adpt
+    call param_get_keyword('optics_smr_adpt',found,l_value=optics_smr_adpt)
 
-    berry_smr_adpt_factor = smr_adpt_factor
-    call param_get_keyword('berry_smr_adpt_factor',found,&
-         r_value=berry_smr_adpt_factor)
-    if (found .and. (berry_smr_adpt_factor <= 0._dp)) &
-         call io_error('Error: berry_smr_adpt_factor must be greater than zero')
+    optics_smr_adpt_factor = smr_adpt_factor
+    call param_get_keyword('optics_smr_adpt_factor',found,&
+         r_value=optics_smr_adpt_factor)
+    if (found .and. (optics_smr_adpt_factor <= 0._dp)) call io_error&
+         ('Error: optics_smr_adpt_factor must be greater than zero')
 
-    berry_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('berry_smr_fixed_en_width',found,&
-         r_value=berry_smr_fixed_en_width)
-    if (found .and. (berry_smr_fixed_en_width < 0._dp)) &
-         call io_error&
-       ('Error: berry_smr_fixed_en_width must be greater than or equal to zero')
+    optics_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('optics_smr_fixed_en_width',found,&
+         r_value=optics_smr_fixed_en_width)
+    if (found .and. (optics_smr_fixed_en_width < 0._dp)) call io_error&
+      ('Error: optics_smr_fixed_en_width must be greater than or equal to zero')
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
