@@ -710,7 +710,7 @@ dos = T
 
 dos\_task = dos\_plot
 
-dos\_interp\_mesh = 25
+dos\_kmesh = 25
 \end{quote}
 }
 
@@ -734,7 +734,7 @@ gnuplot> plot `iron\_up\_dos.dat' u (-\$2):(\$1-12.6256) w l,`iron\_dn\_dos.dat'
   subtracting %12.6256~eV,
   the value of the Fermi energy taken from {\tt scf.out}.  Check if
   the DOS is sufficiently well-converged by increasing the parameter
-  {\tt dos\_interp\_mesh}.  }
+  {\tt dos\_kmesh}.  }
 
 \end{enumerate}
 
@@ -802,6 +802,9 @@ Fe:sp3d2;dxy;dxz,dyz
 num\_iter = 50
 \end{quote}
 }
+
+\tent{{\bf[Jonathan: This may be a good place to use projected only WFs
+in the tutorial!]}}
 
 \tent{Now recalculate the DOS, and check that it is almost identical to
   the one computed earlier using the hybridized set of MLWFs.}
@@ -1708,7 +1711,7 @@ kslice\_task = energy\_cntr
 
 kslice\_cntr\_energy = 12.6285
 
-kslice\_interp\_mesh = 200 200
+kslice\_kmesh = 200 200
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1891,7 +1894,7 @@ kslice = T
 
 kslice\_task = energy\_cntr+curv\_heatmap
 
-kslice\_interp\_mesh = 200
+kslice\_kmesh = 200
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1923,11 +1926,11 @@ berry = T
 
 berry\_task = ahc                
 
-berry\_interp\_mesh = 25 25 25
+berry\_kmesh = 25 25 25
 
 \end{quote} } 
 (the last instruction can be simplified to {\tt
-berry\_interp\_mesh = 25}) and re-run {\tt postw90}.  The AHC in S/cm
+berry\_kmesh = 25}) and re-run {\tt postw90}.  The AHC in S/cm
 is written in the output file {\tt Fe.wpout} in (pseudo)vector
 form. The $x$, $y$, and $z$ components correspond to $\sigma^{\rm
   AH}_{yz}$, $\sigma^{\rm AH}_{zx}$, and $\sigma^{\rm AH}_{xy}$
@@ -1956,7 +1959,7 @@ Study the convergence of the AHC with respect to the density of
   \begin{itemize}
 
   \item[{\bf --}] Increase the mesh density uniformly by changing {\tt
-      berry\_interp\_mesh}.
+      berry\_kmesh}.
 
   \item[{\bf --}] In addition, it helps to adaptively refine the mesh
     in regions where the Berry curvature is large and rapidly varying
@@ -2075,7 +2078,7 @@ berry = T
 
 berry\_task = morb
 
-berry\_interp\_mesh = 25 25 25
+berry\_kmesh = 25 25 25
 
 \end{quote} }
 
@@ -2206,7 +2209,7 @@ The following lines in {\tt Fe.win}
 \begin{quote}
 berry = T
 
-berry\_interp\_mesh = 25
+berry\_kmesh = 25
 
 berry\_task = optics
 

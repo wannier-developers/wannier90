@@ -6,7 +6,7 @@ Upcoming release:
 + Add own changes on the CHANGE.log (ALL)
 + Duplication of "Fermi energy" variable (AAM)
 + Minimum k-spacing (debug only) (JRY)
-+ Projection-only WFs (document, improve output) (JRY)
++ Projection-only WFs (document, improve output, use in Example08) (JRY)
 + AHE/Orb-Mag - keywords, documentation, examples (IS)
 + Update documentation: input variables, FAQ, credits, version number, 
                         CHANGE.LOG, installation instructions (ALL)
@@ -21,7 +21,7 @@ Upcoming release:
 + Command-line option to check input file and
   stop with result after reading parameters and finding b-vectors (eg,
   -validate) (GP) 
-+ Scissors operator: input variables (IS)
++ Scissors operator: input variables (IS) ***DONE***
 
 And to postpone to 2.1: 
 + Testsuite (AAM) 
