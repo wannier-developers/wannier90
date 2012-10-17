@@ -1,2 +1,129 @@
 \chapter{ Overview of the {\tt berry} module}
 \label{ch:berry}
+
+Several electronic properties of crystals are naturally expressed in
+terms of ``Berry-type'' quantities in $k$-space~\cite{xiao-rmp10}.
+Three such properties are presently calculated in the {\tt berry}
+module using Wannier functions as a basis: anomalous Hall conductivity
+(AHC), orbital magnetization, and interband optical conductivity.
+
+\section{Theory}
+
+Let us begin by defining the $k$-space Berry connection
+%
+$$
+{\bf A}_n({\bf k})=\langle u_{n{\bf k}}\vert i\bm{\nabla}_{\bf k}\vert
+u_{n{\bf k}}\rangle
+$$
+%
+and the Berry curvature
+%
+$$
+\bm{\Omega}_n({\bf k})=\bm{\nabla}_{\bf k}\times {\bf A}_n({\bf k})=
+-{\rm Im}
+\langle \bm{\nabla}_{\bf k} u_{n{\bf k}}\vert \times
+\vert\bm{\nabla}_{\bf k} u_{n{\bf k}}\rangle.
+$$
+
+It is convenient to represent the axial Berry curvature
+vector as an antisymmetric tensor: $ \Omega_{n,\alpha\beta}({\bf k})
+=\epsilon_{\alpha\beta\gamma} \Omega_{n,\gamma}({\bf k})$.
+
+The
+intrinsic AHC $\sigma^{\rm AH}_{\alpha\beta}=-\sigma^{\rm
+  AH}_{\beta\alpha}$ is given by the BZ integral of the curvature
+summed over the occupied bands~\cite{xiao-rmp10},
+%
+$$
+\sigma^{\rm AH}_{\alpha\beta}=-\frac{e^2}{\hbar}
+\int_{\rm BZ}\frac{d{\bf k}}{(2\pi)^3}\sum_n\,f_{n{\bf
+    k}}\Omega_{n,\alpha\beta}({\bf k}),
+$$
+%
+where $f_{n{\bf k}}$ is the Fermi occupancy.
+
+The ground-state orbital magnetization of a crystal is given
+by~\cite{xiao-rmp10,ceresoli-prb06}
+%
+$$
+{\bf M}_{\rm orb}=\frac{e}{2\hbar}\int_{\rm BZ}\frac{d{\bf
+    k}}{(2\pi)^3}\sum_n\,f_{n{\bf k}}
+{\rm Im}\,\langle \bm{\nabla}_{\bf k}u_{n{\bf k}}\vert
+\times
+\left(H_{\bf k}+\varepsilon_{n{\bf k}}-2\varepsilon_F\right)
+\vert \bm{\nabla}_{\bf k}u_{n{\bf k}}\rangle,
+$$
+%
+where $\varepsilon_{n{\bf k}}$ and $\varepsilon_F$ are
+the band energies and the Fermi energy respectively.
+
+The absorptive (Hermitean) part of the interband optical conductivity
+can be expressed as
+%
+$$
+\sigma^{\rm H}_{\alpha\beta}(\omega)=\frac{\pi e^2}{\hbar}
+\int_{\rm BZ}\frac{d{\bf
+    k}}{(2\pi)^3}\sum_{n,m}f_{n{\bf k}}(1-f_{m{\bf k}})\omega_{mn,\bf k}
+A_{nm,\alpha}({\bf k})A_{mn,\beta}({\bf k})
+\delta(\omega-\omega_{mn,\bf k}),
+$$
+%
+where $\hbar\omega_{mn,\bf k}=\varepsilon_{m{\bf
+    k}}-\varepsilon_{n{\bf k}}$ and $ {\bf A}_{nm}({\bf k})=\langle
+u_{n{\bf k}}\vert i\bm{\nabla}_{\bf k}\vert u_{m{\bf k}}\rangle$ is a
+matrix generalization of the Berry connection (not to be confused with
+the projection matrix $A^{({\bf k})}_{mn}$ of Eq.~(1.8)).  This is the
+usual Kubo-Greenwood formula, with the interband velocity matrix
+elements recast in terms of off-diagonal elements of ${\bf
+  A}_{nm}({\bf k})$~\cite{blount}.
+
+\section{Implementation}
+
+The basic idea of the implementation in the {\tt berry} module is to
+calculate the needed Berry-type quantities very efficiently at
+arbitrarily points in the BZ, once certain real-space (Wannier) matrix
+elements are tabulated.
+
+As described in Refs.~\cite{wang-prb06,yates-prb07}, the connection
+${\bf A}_{nm}({\bf k})$ and curvature $\bm{\Omega}_n({\bf k})$
+entering the optical conductivity and AHC expressions require a
+knowledge of the Hamiltonian and position-operator Wannier matrix
+elements, $\langle {\bf 0}n\vert H\vert {\bf R}m\rangle$ and $\langle
+{\bf 0}n\vert {\bf r}\vert {\bf R}m\rangle$.  These are readily
+available (``for free'') at the end of a standard MLWF calculation
+with {\tt wannier90}. In particular, the position-operator matrix can
+be calculated as a Fourier transform of the overlap matrices in
+Eq.~(1.7).
+
+The presence of the Hamiltonian operator sandwiched in the middle of
+the integrand of the orbital magnetization formula complicates things
+a bit, and further Wannier matrix elements are
+needed~\cite{lopez-prb12}. In order to calculate them by Fourier
+transforms, one more piece of information must be passed on from the
+{\it ab-initio} calculation,
+%(via, e.g., {\tt pw2wannier90}). 
+namely, the matrix elements
+%
+$$\langle u_{n{\bf k}+{\bf b}_1}\vert
+H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle
+$$
+%
+%
+The evaluation of these matrix elements has been implemented in the
+interface routine {\tt pw2wannier90} between {\tt pwscf} and {\tt
+  wannier90}. To compute them, add the line
+%
+{\tt
+\begin{quote}
+write\_uHu = .true.
+\end{quote}
+}
+%
+to the input file {\tt seedname.pw2wan}.
+
+A final note: the optical conductivity and orbital magnetization are
+implemented in the {\tt berry} module in the manner described in
+Refs.~\cite{yates-prb07} and \cite{lopez-prb12} respectively. As for
+the AHC, it is currently implemented using the ``gauge-invariant''
+trace formulation of Ref.~\cite{lopez-prb12}, rather than the original
+formulation of Ref.~\cite{wang-prb06}.
