@@ -1571,9 +1571,6 @@ doing this Example.
     states on a uniform grid}} 
 \item{ {\tt Fe.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
 
-\tent{{\bf [Jonathan: Should {\tt spin\_component = 'ncll'
-} be there? Also for next two examples...]}}
-
 \item{ {\tt Fe.win}  {\it The {\tt wannier90} and {\tt postw90} input file}}
 \end{itemize}
 \end{itemize}
@@ -1742,9 +1739,8 @@ gnuplot> load `Fe-energy\_cntr.gnu'
 \end{quote} }
 %
 (Do not be concerned by the warning messages, they are caused by the
-fact that not all bands cross the Fermi energy.) Alternative, one can
-use the python script {\tt Fe-energy\_cntr.py} that is also generated
-at runtime,
+fact that not all bands cross the Fermi energy.) Alternative, the
+python script {\tt Fe-energy\_cntr.py} can be used,
 %
 {\tt
 \begin{quote}

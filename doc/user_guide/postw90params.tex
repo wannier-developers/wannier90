@@ -584,8 +584,8 @@ The quantities to plot when {\tt kpath=.true.}
 The valid options for this parameter are:
 \begin{itemize}
 
-\item[{\bf --}] \verb#bands# Energy bands. Two files are
-  created: 
+\item[{\bf --}] \verb#bands# Energy bands, in eV. Two files are
+  created:
 \begin{itemize}
   
    \item[$\cdot$] {\tt seedname\_band.dat} (data file)
@@ -594,8 +594,8 @@ The valid options for this parameter are:
 
 \end{itemize}
 
-\item[{\bf --}] \verb#curv# Berry curvature summed over the occupied
-  bands. Four files are created:
+\item[{\bf --}] \verb#curv# Negative Berry curvature summed over the occupied
+  bands, in atomic units (bohr$^2$). Four files are created:
 
 \begin{itemize}
 
@@ -606,7 +606,8 @@ The valid options for this parameter are:
 \end{itemize}
 
 \item[{\bf --}] \verb#morb# Integrand of the $k$-space orbital
-  magnetization formula. Four output files are created:
+  magnetization formula, in atomic units (Ha$\cdot$bohr$^2$). Four output files are
+  created:
 
 \begin{itemize}
 
@@ -647,12 +648,14 @@ to the specified quantity
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#spin# Spin projection along the quantization axis
-defined by the variables {\tt spn\_axis\_polar} and {\tt spn\_axis\_azimuth},
-for a spinor calculation
-\item[{\bf --}]  \verb#none# no colour coding (default)
+\item[{\bf --}] \verb#spin# Spin projection (in units of $\hbar/2$)
+  along the quantization axis defined by the variables {\tt
+    spn\_axis\_polar} and {\tt spn\_axis\_azimuth}, for a spinor
+  calculation
+\item[{\bf --}]  \verb#none# no colour coding
 \end{itemize}
 
+The default value for {\tt kpath\_bands\_colour} is {\tt none}.
 
 
 \clearpage
@@ -670,7 +673,8 @@ The valid options for this parameter are:
 \begin{itemize}
 
 \item[{\bf --}] \verb#energy_cntr# Constant energy contours
-  (isolines). Output files:
+  (isolines). The energy level is specified by the keyword {\tt
+    kslice\_cntr\_energy}. Output files:
 
   \begin{itemize}
 
@@ -690,8 +694,9 @@ The valid options for this parameter are:
 
   \end{itemize}
 
-\item[{\bf --}] \verb#curv_heatmap# Berry curvature of occupied bands,
-  as a heatmap. Output files:
+\item[{\bf --}] \verb#curv_heatmap# Negative Berry curvature of occupied bands,
+  as a heatmap. The meaning of the color scale is described in
+  Example~18 in the {\tt wannier90} tutorial. Output files:
 
   \begin{itemize}
 
@@ -784,12 +789,12 @@ The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#ahc# Anomalous Hall Conductivity components
   $\sigma_{xy}=\sigma_z$, $\sigma_{yz}=\sigma_x$, and
-  $\sigma_{zx}=\sigma_y$
-\item[{\bf --}]  \verb#morb# Orbital magnetisation vector
+  $\sigma_{zx}=\sigma_y$, in S/cm
+\item[{\bf --}]  \verb#morb# Orbital magnetisation vector, in bohr magnetons per cell.
 %Requires the presence of the file {\tt seedname.uHu} at input.
 
 \item[{\bf --}] \verb#optics# Interband optical conductivity
-  (absorptive part), and joint density of states (JDOS).  The output
+  (absorptive part), and joint density of states (JDOS).  The units and output
   files depend on {\tt optics\_time\_parity} (see below).
 
 \item[{\bf --}] The combinations {\tt curv+optics} and {\tt morb+optics}
@@ -862,31 +867,43 @@ when {\tt berry\_task=optics}
 The valid options for this parameter are:
 \begin{itemize}
 
-\item[{\bf --}] \verb#even# Calculate the ``ordinary'' (symmetric) conductivity
-  ${\rm Re}\,\sigma_{\alpha\beta}(\omega)={\rm
-    Re}\,\sigma_{\beta\alpha}(\omega)$ and the
-  JDOS. Output files:
+\item[{\bf --}] \verb#even# Calculate the ``ordinary'' (symmetric)
+  conductivity ${\rm Re}\,\sigma_{\alpha\beta}(\omega)={\rm
+    Re}\,\sigma_{\beta\alpha}(\omega)$ and the JDOS. Output files:
 
   \begin{itemize}
 
-  \item[$\cdot$] {\tt seedname-jdos.dat}: JDOS data file
+  \item[$\cdot$] {\tt seedname-jdos.dat}: JDOS data file. First column is the energy
+in eV, second is the DOS \textcolor{red}{(per unit volume?)} in \textcolor{red}{{[units?]}}
 
   \item[$\cdot$] {\tt seedname-sigS\_\{xx,yy,zz,xy,xz,yz\}.dat}:
-    Optical conductivity data files
+    Optical conductivity data files. First column is the energy in eV, second is
+the conductivity in units of $10^{15}$~sec$^{-1}$. Three additional columns are present if
+{\tt spn\_decomp = T} (see below)
 
   \end{itemize}
 
 \item[{\bf --}] \verb#odd# Calculate the ``dichroic'' (antisymmetric)
-  conductivity ${\rm Im}\,\sigma_{\alpha\beta}(\omega)=-{\rm
-    Im}\,\sigma_{\beta\alpha}(\omega)$ and the
-  JDOS. Output files:
+  conductivity multiplied by the frequency, $\omega{\rm
+    Im}\,\sigma_{\alpha\beta}(\omega)=-\omega{\rm
+    Im}\,\sigma_{\beta\alpha}(\omega)$, and the JDOS. Output files:
 
   \begin{itemize}
 
-  \item[$\cdot$] {\tt seedname-jdos.dat}: JDOS data file
+  \item[$\cdot$] {\tt seedname-jdos.dat}: JDOS data file, First column is the energy
+in eV, second is the DOS \textcolor{red}{(per unit volume?)} in \textcolor{red}{{[units?]}}
 
-  \item[$\cdot$] {\tt seedname-sigA\_\{xy,yz,zx\}.dat}: Optical
-    conductivity data files
+\item[$\cdot$] {\tt seedname-sigA\_\{xy,yz,zx\}.dat}: Optical
+  conductivity data files. First column is the energy in eV, second is
+  the conductivity times frequency in units of
+  $10^{29}$~sec$^{-2}$. Three additional columns are present if {\tt
+    spn\_decomp = T} (see below)
+
+\item[$\cdot$] {\tt seedname-kk\_\{xy,yz,zx\}.dat}: Cumulative
+  Kramers-Kronig transform of the dichroic absorption: see Example~20
+  in the {\tt wannier90} tutorial. First column is the energy in eV,
+  second is the cumulative Kramers-Kronig transform, in S/cm. Three
+  additional columns are present if {\tt spn\_decomp = T} (see below)
 
   \end{itemize}
 
