@@ -121,9 +121,10 @@ The subsequent tables describe input parameters relative to specific modules.
   \hline
   {\sc kmesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
 (one or three integers) \\
+  {\sc kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc adpt\_smr}   & L & Use adaptive smearing\\
   {\sc adpt\_smr\_fac}   & R & Adaptive smearing prefactor\\
-  {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
+  {\sc \textcolor{red}{adpt\_smr\_max} (add?)} & P & Maximum allowed value for the adaptive energy smearing (eV) \\  {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
   {\sc smr\_fixed\_en\_width}   & P & Energy smearing (if non-adaptive)\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
   {\sc num\_valence\_bands}   & I & Number of valence bands \\
@@ -159,21 +160,21 @@ magnetic moment per cell\\  \hline
   \hline
   {\sc dos}  & L & Calculate the density of states and related properties\\
   {\sc dos\_task}& S  & List of properties to compute \\
-  {\sc dos\_energy\_min} & P & Lower limit of the energy range for
+  {\sc [dos\_]energy\_min} & P & Lower limit of the energy range for
   computing the DOS (eV)\\
-  {\sc dos\_energy\_max}& P & Upper limit of the energy range for
+  {\sc [dos\_]energy\_max}& P & Upper limit of the energy range for
   computing the DOS (eV)\\
-  {\sc dos\_energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
+  {\sc [dos\_]energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
   {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
-  {\sc dos\_kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
-  {\sc dos\_kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
-  {\sc dos\_adpt\_smr} & L & Use adaptive smearing for the DOS \\
-  {\sc dos\_adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
-  {\sc dos\_adpt\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
-  {\sc dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
-  {\sc dos\_smr\_type} & S & Analytical form used for the broadened delta function
+  {\sc [dos\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
+  {\sc [dos\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+  {\sc [dos\_]adpt\_smr} & L & Use adaptive smearing for the DOS \\
+  {\sc [dos\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
+  {\sc \textcolor{red}{[}dos\_\textcolor{red}{]}adpt\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
+  {\sc [dos\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
+  {\sc [dos\_]smr\_type} & S & Analytical form used for the broadened delta function
   when computing the DOS. \\
-  {\sc spn\_decomp} \textcolor{red}{({\sc dos\_spn\_decomp}?)}& L & 
+  {\sc spn\_decomp} \textcolor{red}{({\sc [dos\_]spn\_decomp}?)}& L & 
 Decompose the total or projected DOS into up- and down-spin parts\\
   {\sc spin\_formatted} \textcolor{red}{({\sc spn\_formatted}?)}& L & 
   Read a formatted {\tt seedname.spn} file\\
@@ -257,31 +258,31 @@ isoenergy contour lines (eV)\\
   \hline
   {\sc berry}  & L & Calculate Berry-type quantities \\
   {\sc berry\_task}& L  & List of properties to compute \\
-  {\sc berry\_kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
+  {\sc [berry\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
   (one or three integers)\\ 
-  {\sc berry\_kmesh\_spacing}& R & Minimum spacing between $k$ points in 
+  {\sc [berry\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in 
   \AA$^{-1}$\\
   {\sc berry\_adpt\_kmesh} & I & Linear dimension of the adaptively refined 
   $k$-mesh\\ 
   {\sc berry\_adpt\_kmesh\_thresh} & P & Threshold value of the Berry 
   curvature or $k$-space orbital magnetization for adaptive mesh refinement\\ 
   {\sc optics\_time\_parity}& S & Time parity of the optical conductivity tensor\\ 
-  {\sc optics\_energy\_min} & P & Lower limit of the energy range for
+  {\sc [optics\_]energy\_min} & P & Lower limit of the energy range for
   optical spectra and JDOS (eV) \\
-  {\sc optics\_energy\_max}& P & Upper limit of the energy range for
+  {\sc [optics\_]energy\_max}& P & Upper limit of the energy range for
   optical spectra and JDOS (eV) \\
-  {\sc optics\_energy\_step}& R &  Step for increasing the energy in the 
+  {\sc [optics\_]energy\_step}& R &  Step for increasing the energy in the 
   specified range (eV)\\
-  {\sc optics\_adpt\_smr} & L & Use adaptive smearing for the 
+  {\sc [optics\_]adpt\_smr} & L & Use adaptive smearing for the 
   optical conductivity and JDOS \\
-  {\sc optics\_adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
-  {\sc optics\_adpt\_smr\_max} & P & Maximum allowed value for the 
+  {\sc [optics\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
+  {\sc \textcolor{red}{[}optics\_\textcolor{red}{]}adpt\_smr\_max} & P & Maximum allowed value for the 
   adaptive energy smearing (eV) \\
-  {\sc optics\_smr\_type} & S & Analytical form used for the broadened delta function
+  {\sc [optics\_]smr\_type} & S & Analytical form used for the broadened delta function
   when computing the optical conductivity and JDOS\\  
-  {\sc optics\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
+  {\sc [optics\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
   for the optical conductivity and JDOS (eV) \\
-  {\sc spn\_decomp} \textcolor{red}{({\sc optics\_spn\_decomp}?)}& L & Decompose the optical conductivity into
+  {\sc spn\_decomp} \textcolor{red}{({\sc [optics\_]spn\_decomp}?)}& L & Decompose the optical conductivity into
   up $\rightarrow$ up, down $\rightarrow$ down, and spin-flip parts\\
   {\sc uHu\_formatted}& L & Read a formatted {\tt seedname.uHu} file \\
   {\sc spin\_formatted} \textcolor{red}{({\sc spn\_formatted}?)}& L & Read a formatted {\tt seedname.spn} file \\
@@ -309,9 +310,9 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{{\tt BoltzWann} Parameters} \\
 \hline
 {\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
-{\sc boltz\_kmesh} & I & Dimensions of the uniform interpolation 
+{\sc [boltz\_]kmesh} & I & Dimensions of the uniform interpolation 
 $k$-mesh (one or three integers)\\ 
-{\sc boltz\_kmesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+{\sc [boltz\_]kmesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
 {\sc boltz\_relax\_time} & P & Relaxation time in fs\\
 {\sc boltz\_mu\_min} & P & Minimum value of the chemical potential $\mu$ in eV\\
 {\sc boltz\_mu\_max} & P & Maximum value of the chemical potential $\mu$ in eV\\
@@ -326,10 +327,10 @@ $k$-mesh (one or three integers)\\
 {\sc boltz\_dos\_energy\_min} & P & Minimum value of the energy for the DOS in eV \\
 {\sc boltz\_dos\_energy\_max} & P & Maximum value of the energy for the DOS in eV \\
 {\sc boltz\_dos\_energy\_step} & R & Step for the DOS in eV\\
-{\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS \\
-{\sc boltz\_dos\_adpt\_smr} & L & Use adaptive smearing for the DOS \\
-{\sc boltz\_dos\_adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
-{\sc boltz\_dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
+{\sc [boltz\_dos\_]smr\_type} & S & Smearing type for the DOS \\
+{\sc [boltz\_dos\_]adpt\_smr} & L & Use adaptive smearing for the DOS \\
+{\sc [boltz\_dos\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
+{\sc [boltz\_dos\_smr\_]fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
 {\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
 {\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
 {\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
@@ -501,7 +502,7 @@ See description given immediately above.
 The default value is 1.0.
 
 \textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
-{\tt dos\_} and {\tt optics\_} subvariables?]}
+{\tt dos\_} and {\tt optics\_} subvariables to it?]}
 
 \subsection[dos\_smr\_en\_width]{\tt logical :: dos\_smr\_en\_width}
 Energy width for the smearing function for the DOS. Used only if {\tt
@@ -544,8 +545,9 @@ If {\tt true}, two extra columns are added to {\tt seedname\_dos.dat},
 containing the decomposition of the DOS (total or orbital-projected)
 of a spinor calculation into up-spin and down-spin parts (relative to
 the quantization axis defined by the input variables {\tt
-  spn\_axis\_polar} and {\tt spn\_axis\_azimuth}). The file {\tt
-  seedname.spn} must be present at input.
+  spn\_axis\_polar} and {\tt spn\_axis\_azimuth}). 
+
+The file {\tt seedname.spn} must be present at input.
 
 The default value is \verb#false#.
 
@@ -668,61 +670,58 @@ The valid options for this parameter are:
 \begin{itemize}
 
 \item[{\bf --}] \verb#energy_cntr# Constant energy contours
-  (isolines). The following output files are created:
+  (isolines). Output files:
 
   \begin{itemize}
 
-  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
-    of grid points ({\tt python} data files)
+  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: grid-point
+    coordinates ({\tt python} data files)
 
   \item[$\cdot$] {\tt seedname\_slice\_bands.dat}: energy eigenvalues
-    on the grid, for all bands ({\tt python} data file)
+    on the grid ({\tt python} data file)
 
   \item[$\cdot$] {\tt seedname-energy\_cntr.py}: {\tt python} script
 
-  \item[$\cdot$] {\tt seedname\_xyz\_n.dat}: reduced coordinates of
-    grid points and energy eigenvalues, separately for each band {\tt
-      n} ({\tt gnuplot} data file)
+  \item[$\cdot$] {\tt seedname\_bnd\_n.dat}: grid-point coordinates
+    and energy eigenvalues for each band {\tt n} ({\tt
+      gnuplot} data file)
 
   \item[$\cdot$] {\tt seedname-energy\_cntr.gnu}: {\tt gnuplot} script
 
   \end{itemize}
 
-\item[{\bf --}] \verb#curv_heatmap# $k$-space Berry curvature summed over
-  occupied bands, as a heatmap
+\item[{\bf --}] \verb#curv_heatmap# Berry curvature of occupied bands,
+  as a heatmap. Output files:
 
   \begin{itemize}
 
-  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
-    of grid points 
+  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: grid-point coordinates 
     
   \item[$\cdot$] {\tt seedname-slice\_curv.dat}: Berry curvature 
-    on the grid, summed over bands
+    on the grid
     
   \item[$\cdot$] {\tt seedname-curv\_\{x,y,z\}-heatmap.py}: {\tt
-      python} scripts, one for each Cartesian component of the Berry
-    curvature. If the string {\tt energy\_cntr} is also present, the
-    script plots both the curvature heatmap {\it and} the isoenergy
-    contours.
+      python} scripts for each Cartesian component. If the string {\tt
+      energy\_cntr} is also present, the Berry curvature and isoenergy
+    contours are plotted together.
     
   \end{itemize}
 
-\item[{\bf --}] \verb#morb_heatmap# Integrand of the $k$-space orbital
-  magnetization formula, as a heatmap
+\item[{\bf --}] \verb#morb_heatmap# Orbital magnetization
+  $k$-integrand, as a heatmap. Output files:
 
   \begin{itemize}
 
-  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: reduced coordinates
-    of grid points 
+  \item[$\cdot$] {\tt seedname\_slice\_\{x,y\}.dat}: grid-point
+    coordinates
     
-  \item[$\cdot$] {\tt seedname-slice\_morb.dat}: $k$-space orbital
-    magnetization on the grid
+  \item[$\cdot$] {\tt seedname-slice\_morb.dat}: orbital magnetization
+    on the grid
     
   \item[$\cdot$] {\tt seedname-morb\_\{x,y,z\}-heatmap.py}: {\tt
-      python} scripts, one for each Cartesian component of the orbital
-    magnetization. If the string {\tt energy\_cntr} is also present,
-    the script plots both the magnetization heatmap {\it and} the
-    isoenergy contours.
+      python} scripts for each Cartesian component. If the string {\tt
+      energy\_cntr} is also present, the magnetization and isoenergy
+    contours are plotted together.
     
   \end{itemize}
 
@@ -758,7 +757,7 @@ The default value for \verb#kslice_interp_mesh# is 50.
 
 \textcolor{red}{{[Should we tie {\tt kslice\_kmesh} the ``global''
 {\tt kmesh}? Note that it is two-dimensional only. Take first
-two value from the three-dimensional{\tt kmesh}?}}
+two value from the three-dimensional {\tt kmesh}?}}
 
 
 \subsection[kslice\_cntr\_energy]{\tt real(kind=dp) :: kslice\_cntr\_energy}
@@ -766,8 +765,8 @@ two value from the three-dimensional{\tt kmesh}?}}
 Energy level in eV for plotting isoenergy contour when {\tt
   kslice\_task = energy\_cntr}.
 
-The default value is {\tt fermi\_energy}, if its value is
-defined. Otherwise, no default value is given.
+The default value is {\tt fermi\_energy}, if defined. Otherwise, no
+default value is given.
 
 \clearpage
 \section{berry}
@@ -786,12 +785,12 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#ahc# Anomalous Hall Conductivity components
   $\sigma_{xy}=\sigma_z$, $\sigma_{yz}=\sigma_x$, and
   $\sigma_{zx}=\sigma_y$
-\item[{\bf --}]  \verb#morb# Orbital magnetisation vector. Requires the
-presence of the file {\tt seedname.uHu} at input.
+\item[{\bf --}]  \verb#morb# Orbital magnetisation vector
+%Requires the presence of the file {\tt seedname.uHu} at input.
 
-\item[{\bf --}] \verb#optics# Absorptive part of the interband optical
-  conductivity, and joint density of states (JDOS).  The output data
-  files and scripts depend on {\tt optics\_time\_parity} (see below).
+\item[{\bf --}] \verb#optics# Interband optical conductivity
+  (absorptive part), and joint density of states (JDOS).  The output
+  files depend on {\tt optics\_time\_parity} (see below).
 
 \item[{\bf --}] The combinations {\tt curv+optics} and {\tt morb+optics}
 ({\tt curv+morb} is {\it not} allowed)
@@ -857,13 +856,41 @@ refinement when {\tt berry\_task} contains either {\tt curv} or {\tt
 Default value is 100.0.
 
 \subsection[berry\_spectrum\_time\_parity]{\tt character(len=120) ::  optics\_time\_parity}
-The time parity of the optical conductivity tensor to compute when
-{\tt berry\_task=optics}
+Time parity of the optical conductivity tensor components to compute
+when {\tt berry\_task=optics}
 
 The valid options for this parameter are:
 \begin{itemize}
-\item[{\bf --}]  \verb#even# Calculate ${\rm Re}\,\sigma_{\alpha\beta}(\omega)={\rm Re}\,\sigma_{\beta\alpha}(\omega)$ and the JDOS. \textcolor{red}{[Describe output files here]}
-\item[{\bf --}]  \verb#odd#  Calculate ${\rm Im}\,\sigma_{\alpha\beta}(\omega)=-{\rm Im}\,\sigma_{\beta\alpha}(\omega)$  and the JDOS. \textcolor{red}{[Describe output files here]}
+
+\item[{\bf --}] \verb#even# Calculate the ``ordinary'' (symmetric) conductivity
+  ${\rm Re}\,\sigma_{\alpha\beta}(\omega)={\rm
+    Re}\,\sigma_{\beta\alpha}(\omega)$ and the
+  JDOS. Output files:
+
+  \begin{itemize}
+
+  \item[$\cdot$] {\tt seedname-jdos.dat}: JDOS data file
+
+  \item[$\cdot$] {\tt seedname-sigS\_\{xx,yy,zz,xy,xz,yz\}.dat}:
+    Optical conductivity data files
+
+  \end{itemize}
+
+\item[{\bf --}] \verb#odd# Calculate the ``dichroic'' (antisymmetric)
+  conductivity ${\rm Im}\,\sigma_{\alpha\beta}(\omega)=-{\rm
+    Im}\,\sigma_{\beta\alpha}(\omega)$ and the
+  JDOS. Output files:
+
+  \begin{itemize}
+
+  \item[$\cdot$] {\tt seedname-jdos.dat}: JDOS data file
+
+  \item[$\cdot$] {\tt seedname-sigA\_\{xy,yz,zx\}.dat}: Optical
+    conductivity data files
+
+  \end{itemize}
+
+
 \end{itemize}
 
 The default value is {\tt even}.
@@ -939,7 +966,7 @@ See description given immediately above.
 The default value is 1.0.
 
 \textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
-{\tt dos\_} and {\tt optics\_} subvariables?]}
+{\tt dos\_} and {\tt optics\_} subvariables to it?]}
 
 \subsection[optics\_smr\_en\_width]{\tt logical :: optics\_smr\_en\_width}
 Energy width for the smearing function for the optical spectra
@@ -982,8 +1009,9 @@ If {\tt true}, three extra columns are added to the optical
 conductivity data files, containing the decomposition into up
 $\rightarrow$ up, down $\rightarrow$ down, and spin-flip transitions
 (relative to the quantization axis defined by the input variables {\tt
-  spn\_axis\_polar} and {\tt spn\_axis\_azimuth}). The file {\tt
-  seedname.spn} must be present at input.
+  spn\_axis\_polar} and {\tt spn\_axis\_azimuth}). 
+
+The file {\tt seedname.spn} must be present at input.
 
 The default value is \verb#false#.
 
