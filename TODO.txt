@@ -13,7 +13,7 @@ Upcoming release:
   * I have a parser that lists all variables in the code (GP)
 + Update checks on parameters (ALL)  
   * update param_write with new params (ALL)
-  * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning) (ALL)
+  * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning) (ALL) [Ivo: forced num_elec_per_state=1 when spinors = T]
 + pw2wannier90 (JRY, IS)
 + POVRay plotting (AAM)
 + Parity issue in pw2wan90 in spin-polarized, Gamma-only branch (AAM) 
