@@ -61,7 +61,7 @@ module w90_postw90_common
     use w90_io, only          : io_error,io_file_unit
     use w90_utility, only     : utility_cart_to_frac
     use w90_parameters, only  : berry_interp_mesh,&
-                                berry_adaptive_mesh,real_lattice
+                                berry_adpt_mesh,real_lattice
 
     integer        :: ierr,i,j,k,ikpt,ir
 
@@ -95,17 +95,17 @@ module w90_postw90_common
   ! both classical and anomalous low-field Hall are computed.)
   ! ----------------------------------------------------------------------
 
-  allocate(adkpt(3,berry_adaptive_mesh**3),stat=ierr)
+  allocate(adkpt(3,berry_adpt_mesh**3),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating adkpt in wanint_setup')
 
   ikpt=0
-   do i=-(berry_adaptive_mesh-1)/2,(berry_adaptive_mesh-1)/2
-     do j=-(berry_adaptive_mesh-1)/2,(berry_adaptive_mesh-1)/2
-        do k=-(berry_adaptive_mesh-1)/2,(berry_adaptive_mesh-1)/2
+   do i=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
+     do j=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
+        do k=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
            ikpt=ikpt+1 
-           adkpt(1,ikpt)=real(i,dp)/(berry_interp_mesh(1)*berry_adaptive_mesh)
-           adkpt(2,ikpt)=real(j,dp)/(berry_interp_mesh(2)*berry_adaptive_mesh)
-           adkpt(3,ikpt)=real(k,dp)/(berry_interp_mesh(3)*berry_adaptive_mesh)
+           adkpt(1,ikpt)=real(i,dp)/(berry_interp_mesh(1)*berry_adpt_mesh)
+           adkpt(2,ikpt)=real(j,dp)/(berry_interp_mesh(2)*berry_adpt_mesh)
+           adkpt(3,ikpt)=real(k,dp)/(berry_interp_mesh(3)*berry_adpt_mesh)
         end do
       end do
    end do
@@ -251,24 +251,24 @@ module w90_postw90_common
     call comms_bcast(recip_metric(1,1),9)
     call comms_bcast(cell_volume,1)
     call comms_bcast(dos_energy_step,1)
-    call comms_bcast(dos_smr_adpt,1)
+    call comms_bcast(dos_adpt_smr,1)
     call comms_bcast(dos_smr_index,1)
     call comms_bcast(dos_interp_mesh_spacing,1) 
     call comms_bcast(dos_interp_mesh(1),3) 
-    call comms_bcast(dos_max_allowed_smr,1)
+    call comms_bcast(dos_smr_max,1)
     call comms_bcast(dos_smr_fixed_en_width,1)
-    call comms_bcast(dos_smr_adpt_factor,1)
+    call comms_bcast(dos_adpt_smr_factor,1)
     call comms_bcast(num_dos_project,1)
 
     call comms_bcast(berry,1)
     call comms_bcast(berry_task,len(berry_task))
     call comms_bcast(berry_interp_mesh_spacing,1)
     call comms_bcast(berry_interp_mesh(1),3)
-    call comms_bcast(berry_adaptive_mesh,1)
-    call comms_bcast(berry_adaptive_thresh,1)
-    call comms_bcast(optics_smr_adpt,1)
-    call comms_bcast(optics_smr_adpt_factor,1)
-    call comms_bcast(optics_max_allowed_smr,1)
+    call comms_bcast(berry_adpt_mesh,1)
+    call comms_bcast(berry_adpt_thresh,1)
+    call comms_bcast(optics_adpt_smr,1)
+    call comms_bcast(optics_adpt_smr_factor,1)
+    call comms_bcast(optics_smr_max,1)
     call comms_bcast(optics_smr_fixed_en_width,1)
     call comms_bcast(optics_smr_index,1)
     call comms_bcast(optics_time_parity,len(optics_time_parity))
@@ -331,9 +331,9 @@ module w90_postw90_common
     call comms_bcast(boltz_dos_energy_step,1) 
     call comms_bcast(boltz_dos_energy_min,1) 
     call comms_bcast(boltz_dos_energy_max,1) 
-    call comms_bcast(boltz_dos_smr_adpt,1)
+    call comms_bcast(boltz_dos_adpt_smr,1)
     call comms_bcast(boltz_dos_smr_fixed_en_width,1)
-    call comms_bcast(boltz_dos_smr_adpt_factor,1)
+    call comms_bcast(boltz_dos_adpt_smr_factor,1)
     call comms_bcast(boltz_mu_min,1) 
     call comms_bcast(boltz_mu_max,1) 
     call comms_bcast(boltz_mu_step,1) 

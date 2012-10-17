@@ -32,8 +32,8 @@ module w90_parameters
   ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
   ! Only internal, always use the local variables defined by each module
   ! that take this value as default
-  logical                         :: smr_adpt
-  real(kind=dp)                   :: smr_adpt_factor
+  logical                         :: adpt_smr
+  real(kind=dp)                   :: adpt_smr_factor
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
   logical,                    public, save :: spn_moment
@@ -114,11 +114,11 @@ module w90_parameters
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
   logical,           public          :: dos_plot
   character(len=20), public, save    :: dos_task 
-  logical,           public, save    :: dos_smr_adpt
-  real(kind=dp),     public, save    :: dos_smr_adpt_factor
+  logical,           public, save    :: dos_adpt_smr
+  real(kind=dp),     public, save    :: dos_adpt_smr_factor
   integer,           public, save    :: dos_smr_index
   real(kind=dp),     public, save    :: dos_smr_fixed_en_width
-  real(kind=dp),     public, save    :: dos_max_allowed_smr
+  real(kind=dp),     public, save    :: dos_smr_max
   real(kind=dp),     public, save    :: dos_energy_max
   real(kind=dp),     public, save    :: dos_energy_min
   real(kind=dp),     public, save    :: dos_energy_step
@@ -139,13 +139,13 @@ module w90_parameters
   integer,           public, save :: beta
   integer,           public, save :: gamma
   ! --------------remove eventually----------------
-  integer,           public, save :: berry_adaptive_mesh
-  real(kind=dp),     public, save :: berry_adaptive_thresh
-  logical,           public, save :: optics_smr_adpt
-  real(kind=dp),     public, save :: optics_smr_adpt_factor
+  integer,           public, save :: berry_adpt_mesh
+  real(kind=dp),     public, save :: berry_adpt_thresh
+  logical,           public, save :: optics_adpt_smr
+  real(kind=dp),     public, save :: optics_adpt_smr_factor
   integer,           public, save :: optics_smr_index
   real(kind=dp),     public, save :: optics_smr_fixed_en_width
-  real(kind=dp),     public, save :: optics_max_allowed_smr
+  real(kind=dp),     public, save :: optics_smr_max
   character(len=20), public, save :: optics_time_parity
   real(kind=dp),     public, save :: optics_energy_step
   real(kind=dp),     public, save :: optics_energy_min
@@ -181,9 +181,9 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_dos_energy_step
   real(kind=dp),     public, save :: boltz_dos_energy_min
   real(kind=dp),     public, save :: boltz_dos_energy_max
-  logical,           public, save :: boltz_dos_smr_adpt
+  logical,           public, save :: boltz_dos_adpt_smr
   real(kind=dp),     public, save :: boltz_dos_smr_fixed_en_width
-  real(kind=dp),     public, save :: boltz_dos_smr_adpt_factor
+  real(kind=dp),     public, save :: boltz_dos_adpt_smr_factor
   real(kind=dp),     public, save :: boltz_mu_min
   real(kind=dp),     public, save :: boltz_mu_max
   real(kind=dp),     public, save :: boltz_mu_step
@@ -830,16 +830,16 @@ contains
     if (found) smr_index = get_smearing_index(ctmp,'smr_type')
 
     ! By default: adaptive smearing
-    smr_adpt=.true.
-    call param_get_keyword('smr_adpt',found,l_value=smr_adpt)
+    adpt_smr=.true.
+    call param_get_keyword('adpt_smr',found,l_value=adpt_smr)
 
     ! By default: a=2
-    smr_adpt_factor=2.0_dp
-    call param_get_keyword('smr_adpt_factor',found,r_value=smr_adpt_factor)
-    if (found .and. (smr_adpt_factor <= 0._dp)) &
-         call io_error('Error: smr_adpt_factor must be greater than zero')  
+    adpt_smr_factor=2.0_dp
+    call param_get_keyword('adpt_smr_factor',found,r_value=adpt_smr_factor)
+    if (found .and. (adpt_smr_factor <= 0._dp)) &
+         call io_error('Error: adpt_smr_factor must be greater than zero')  
 
-    ! By default: if smr_adpt is manually set to false by the user, but he/she doesn't
+    ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
     smr_fixed_en_width=0.0_dp
     call param_get_keyword('smr_fixed_en_width',found,r_value=smr_fixed_en_width)
@@ -900,19 +900,19 @@ contains
     call param_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
-    berry_adaptive_mesh           = 1
-    call param_get_keyword('berry_adaptive_mesh',found,&
-         i_value=berry_adaptive_mesh)
-    if (berry_adaptive_mesh<0)&
-         call io_error('Error:  berry_adaptive_mesh must be positive')       
+    berry_adpt_mesh           = 1
+    call param_get_keyword('berry_adpt_mesh',found,&
+         i_value=berry_adpt_mesh)
+    if (berry_adpt_mesh<0)&
+         call io_error('Error:  berry_adpt_mesh must be positive')       
 
     optics_energy_step           = 0.01_dp
     call param_get_keyword('optics_energy_step',found,&
          r_value=optics_energy_step)
 
-    berry_adaptive_thresh           = 100.0_dp
-    call param_get_keyword('berry_adaptive_thresh',found,&
-         r_value=berry_adaptive_thresh)
+    berry_adpt_thresh           = 100.0_dp
+    call param_get_keyword('berry_adpt_thresh',found,&
+         r_value=berry_adpt_thresh)
 
     wanint_kpoint_file = .false.
     call param_get_keyword('wanint_kpoint_file',found,&
@@ -921,19 +921,19 @@ contains
 !    smear_temp = -1.0_dp
 !    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
-    optics_smr_adpt = smr_adpt
-    call param_get_keyword('optics_smr_adpt',found,l_value=optics_smr_adpt)
+    optics_adpt_smr = adpt_smr
+    call param_get_keyword('optics_adpt_smr',found,l_value=optics_adpt_smr)
 
-    optics_smr_adpt_factor = smr_adpt_factor
-    call param_get_keyword('optics_smr_adpt_factor',found,&
-         r_value=optics_smr_adpt_factor)
-    if (found .and. (optics_smr_adpt_factor <= 0._dp)) call io_error&
-         ('Error: optics_smr_adpt_factor must be greater than zero')
+    optics_adpt_smr_factor = adpt_smr_factor
+    call param_get_keyword('optics_adpt_smr_factor',found,&
+         r_value=optics_adpt_smr_factor)
+    if (found .and. (optics_adpt_smr_factor <= 0._dp)) call io_error&
+         ('Error: optics_adpt_smr_factor must be greater than zero')
 
 
-    optics_max_allowed_smr = 1._dp
-    call param_get_keyword('optics_max_allowed_smr',found,&
-         r_value=optics_max_allowed_smr)
+    optics_smr_max = 1._dp
+    call param_get_keyword('optics_smr_max',found,&
+         r_value=optics_smr_max)
 
     optics_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('optics_smr_fixed_en_width',found,&
@@ -1022,16 +1022,16 @@ contains
     dos_energy_step           = 0.01_dp
     call param_get_keyword('dos_energy_step',found,r_value=dos_energy_step)
 
-    dos_smr_adpt = smr_adpt
-    call param_get_keyword('dos_smr_adpt',found,l_value=dos_smr_adpt)
+    dos_adpt_smr = adpt_smr
+    call param_get_keyword('dos_adpt_smr',found,l_value=dos_adpt_smr)
 
-    dos_smr_adpt_factor = smr_adpt_factor
-    call param_get_keyword('dos_smr_adpt_factor',found,r_value=dos_smr_adpt_factor)
-    if (found .and. (dos_smr_adpt_factor <= 0._dp)) &
-         call io_error('Error: dos_smr_adpt_factor must be greater than zero')    
+    dos_adpt_smr_factor = adpt_smr_factor
+    call param_get_keyword('dos_adpt_smr_factor',found,r_value=dos_adpt_smr_factor)
+    if (found .and. (dos_adpt_smr_factor <= 0._dp)) &
+         call io_error('Error: dos_adpt_smr_factor must be greater than zero')    
 
-    dos_max_allowed_smr = 1._dp
-    call param_get_keyword('dos_max_allowed_smr',found,r_value=dos_max_allowed_smr)
+    dos_smr_max = 1._dp
+    call param_get_keyword('dos_smr_max',found,r_value=dos_smr_max)
     
     dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('dos_smr_fixed_en_width',found,r_value=dos_smr_fixed_en_width)
@@ -1313,13 +1313,13 @@ contains
     if (boltz_dos_energy_max <= boltz_dos_energy_min) &
          call io_error('Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min')         
         
-    boltz_dos_smr_adpt = smr_adpt
-    call param_get_keyword('boltz_dos_smr_adpt',found,l_value=boltz_dos_smr_adpt)
+    boltz_dos_adpt_smr = adpt_smr
+    call param_get_keyword('boltz_dos_adpt_smr',found,l_value=boltz_dos_adpt_smr)
 
-    boltz_dos_smr_adpt_factor = smr_adpt_factor
-    call param_get_keyword('boltz_dos_smr_adpt_factor',found,r_value=boltz_dos_smr_adpt_factor)
-    if (found .and. (boltz_dos_smr_adpt_factor <= 0._dp)) &
-         call io_error('Error: boltz_dos_smr_adpt_factor must be greater than zero')    
+    boltz_dos_adpt_smr_factor = adpt_smr_factor
+    call param_get_keyword('boltz_dos_adpt_smr_factor',found,r_value=boltz_dos_adpt_smr_factor)
+    if (found .and. (boltz_dos_adpt_smr_factor <= 0._dp)) &
+         call io_error('Error: boltz_dos_adpt_smr_factor must be greater than zero')    
 
     boltz_dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('boltz_dos_smr_fixed_en_width',found,r_value=boltz_dos_smr_fixed_en_width)

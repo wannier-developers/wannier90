@@ -39,8 +39,8 @@ module w90_boltzwann
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
        boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
-       timing_level, dis_win_min, dis_win_max, spn_decomp, boltz_dos_smr_adpt, &
-       boltz_dos_smr_adpt_factor, boltz_dos_smr_fixed_en_width, &
+       timing_level, dis_win_min, dis_win_max, spn_decomp, boltz_dos_adpt_smr, &
+       boltz_dos_adpt_smr_factor, boltz_dos_smr_fixed_en_width, &
        boltz_tdf_smr_fixed_en_width, cell_volume, num_elec_per_state, iprint
   use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
   use w90_utility, only    : utility_inv3
@@ -484,7 +484,7 @@ contains
     use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
          boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
-         boltz_dos_smr_adpt, boltz_dos_smr_fixed_en_width, boltz_dos_smr_adpt_factor, &
+         boltz_dos_adpt_smr, boltz_dos_smr_fixed_en_width, boltz_dos_adpt_smr_factor, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
     use w90_wan_ham, only       : get_eig_deleig
@@ -577,7 +577,7 @@ contains
 
     if (boltz_calc_also_dos.and.on_root.and.(iprint>1)) then
        write(stdout,'(5X,A)') "Smearing for DOS: "
-       if (boltz_dos_smr_adpt) then
+       if (boltz_dos_adpt_smr) then
           write(stdout,'(7X,A)') trim(param_get_smearing_type(boltz_dos_smr_index)) // ", adaptive"
        else
           if (boltz_dos_smr_fixed_en_width/(DOS_EnergyArray(2)-DOS_EnergyArray(1)) < &
@@ -589,7 +589,7 @@ contains
           end if
        end if
     end if
-    if(boltz_calc_also_dos.and.boltz_dos_smr_adpt.and.(boltz_dos_smr_fixed_en_width.ne.0._dp).and.on_root) then
+    if(boltz_calc_also_dos.and.boltz_dos_adpt_smr.and.(boltz_dos_smr_fixed_en_width.ne.0._dp).and.on_root) then
        write(stdout,'(5X,A)') "*** WARNING! boltz_dos_smr_fixed_en_width ignored since you chose"
        write(stdout,'(5X,A)') "             an adaptive smearing."
     end if
@@ -661,7 +661,7 @@ contains
        !! DOS part
 
        if (boltz_calc_also_dos) then
-          if (boltz_dos_smr_adpt) then
+          if (boltz_dos_adpt_smr) then
              
              ! This may happen if at least one band has zero derivative (along all three directions)
              ! Then I substitute this point with its 8 neighbors (+/- 1/4 of the spacing with the next point on the grid
@@ -682,7 +682,7 @@ contains
                          call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
                          call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                               smr_index=boltz_dos_smr_index,&
-                              smr_adpt_factor=boltz_dos_smr_adpt_factor,&
+                              adpt_smr_factor=boltz_dos_adpt_smr_factor,&
                               levelspacing_k=levelspacing_k)
                          ! I divide by 8 because I'm substituting a point with its 8 neighbors
                          dos_all = dos_all + dos_k * kweight / 8.               
@@ -692,7 +692,7 @@ contains
              else
                 call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                      smr_index=boltz_dos_smr_index,&
-                     smr_adpt_factor=boltz_dos_smr_adpt_factor,&
+                     adpt_smr_factor=boltz_dos_adpt_smr_factor,&
                      levelspacing_k=levelspacing_k)
                 dos_all = dos_all + dos_k * kweight                
              end if
@@ -726,14 +726,14 @@ contains
     if (boltz_calc_also_dos .and. on_root) then
        write(boltzdos_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
        write(boltzdos_unit,'(A)') "# The first column."
-       if (boltz_dos_smr_adpt) then
+       if (boltz_dos_adpt_smr) then
           write(boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
           write(boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
           if (spn_decomp) then
              write(boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
              write(boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
           end if
-          write(boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz_dos_smr_adpt_factor
+          write(boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz_dos_adpt_smr_factor
           write(boltzdos_unit, '(A,I0,A,I0)') '# Number of points refined: ', NumPtsRefined, &
                ' out of ', product(boltz_interp_mesh)
           write(boltzdos_unit, '(A,G18.10,A,G18.10,A)') '# (Min spacing: ', min_spacing, &
