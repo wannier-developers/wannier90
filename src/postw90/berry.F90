@@ -1559,9 +1559,9 @@ module w90_berry
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
     use w90_parameters, only     : num_wann,optics_energy_min,fermi_energy,&
-                                   optics_adpt_smr,optics_adpt_smr_factor,&
+                                   optics_adpt_smr,optics_adpt_smr_fac,&
                                    optics_smr_index,optics_smr_fixed_en_width,&
-                                   optics_smr_max,&
+                                   optics_adpt_smr_max,&
                                    berry_kmesh,spn_decomp
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only        : get_D_h,get_eig_deleig
@@ -1664,8 +1664,8 @@ module w90_berry
              !
              rvdum(:)=del_eig(m,:)-del_eig(n,:)
              joint_level_spacing=sqrt(dot_product(rvdum(:),rvdum(:)))*Delta_k
-             smear=min(joint_level_spacing*optics_adpt_smr_factor/sqrt(2.0_dp),&
-                  optics_smr_max)
+             smear=min(joint_level_spacing*optics_adpt_smr_fac/sqrt(2.0_dp),&
+                  optics_adpt_smr_max)
           else
              smear=optics_smr_fixed_en_width
           endif

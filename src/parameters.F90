@@ -33,7 +33,7 @@ module w90_parameters
   ! Only internal, always use the local variables defined by each module
   ! that take this value as default
   logical                         :: adpt_smr
-  real(kind=dp)                   :: adpt_smr_factor
+  real(kind=dp)                   :: adpt_smr_fac
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
   logical,                    public, save :: spn_moment
@@ -115,10 +115,10 @@ module w90_parameters
   logical,           public          :: dos_plot
   character(len=20), public, save    :: dos_task 
   logical,           public, save    :: dos_adpt_smr
-  real(kind=dp),     public, save    :: dos_adpt_smr_factor
+  real(kind=dp),     public, save    :: dos_adpt_smr_fac
   integer,           public, save    :: dos_smr_index
   real(kind=dp),     public, save    :: dos_smr_fixed_en_width
-  real(kind=dp),     public, save    :: dos_smr_max
+  real(kind=dp),     public, save    :: dos_adpt_smr_max
   real(kind=dp),     public, save    :: dos_energy_max
   real(kind=dp),     public, save    :: dos_energy_min
   real(kind=dp),     public, save    :: dos_energy_step
@@ -142,10 +142,10 @@ module w90_parameters
   integer,           public, save :: berry_adpt_kmesh
   real(kind=dp),     public, save :: berry_adpt_kmesh_thresh
   logical,           public, save :: optics_adpt_smr
-  real(kind=dp),     public, save :: optics_adpt_smr_factor
+  real(kind=dp),     public, save :: optics_adpt_smr_fac
   integer,           public, save :: optics_smr_index
   real(kind=dp),     public, save :: optics_smr_fixed_en_width
-  real(kind=dp),     public, save :: optics_smr_max
+  real(kind=dp),     public, save :: optics_adpt_smr_max
   character(len=20), public, save :: optics_time_parity
   real(kind=dp),     public, save :: optics_energy_step
   real(kind=dp),     public, save :: optics_energy_min
@@ -183,7 +183,7 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_dos_energy_max
   logical,           public, save :: boltz_dos_adpt_smr
   real(kind=dp),     public, save :: boltz_dos_smr_fixed_en_width
-  real(kind=dp),     public, save :: boltz_dos_adpt_smr_factor
+  real(kind=dp),     public, save :: boltz_dos_adpt_smr_fac
   real(kind=dp),     public, save :: boltz_mu_min
   real(kind=dp),     public, save :: boltz_mu_max
   real(kind=dp),     public, save :: boltz_mu_step
@@ -834,10 +834,10 @@ contains
     call param_get_keyword('adpt_smr',found,l_value=adpt_smr)
 
     ! By default: a=2
-    adpt_smr_factor=2.0_dp
-    call param_get_keyword('adpt_smr_factor',found,r_value=adpt_smr_factor)
-    if (found .and. (adpt_smr_factor <= 0._dp)) &
-         call io_error('Error: adpt_smr_factor must be greater than zero')  
+    adpt_smr_fac=2.0_dp
+    call param_get_keyword('adpt_smr_fac',found,r_value=adpt_smr_fac)
+    if (found .and. (adpt_smr_fac <= 0._dp)) &
+         call io_error('Error: adpt_smr_fac must be greater than zero')  
 
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
@@ -924,16 +924,16 @@ contains
     optics_adpt_smr = adpt_smr
     call param_get_keyword('optics_adpt_smr',found,l_value=optics_adpt_smr)
 
-    optics_adpt_smr_factor = adpt_smr_factor
-    call param_get_keyword('optics_adpt_smr_factor',found,&
-         r_value=optics_adpt_smr_factor)
-    if (found .and. (optics_adpt_smr_factor <= 0._dp)) call io_error&
-         ('Error: optics_adpt_smr_factor must be greater than zero')
+    optics_adpt_smr_fac = adpt_smr_fac
+    call param_get_keyword('optics_adpt_smr_fac',found,&
+         r_value=optics_adpt_smr_fac)
+    if (found .and. (optics_adpt_smr_fac <= 0._dp)) call io_error&
+         ('Error: optics_adpt_smr_fac must be greater than zero')
 
 
-    optics_smr_max = 1._dp
-    call param_get_keyword('optics_smr_max',found,&
-         r_value=optics_smr_max)
+    optics_adpt_smr_max = 1._dp
+    call param_get_keyword('optics_adpt_smr_max',found,&
+         r_value=optics_adpt_smr_max)
 
     optics_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('optics_smr_fixed_en_width',found,&
@@ -1025,13 +1025,13 @@ contains
     dos_adpt_smr = adpt_smr
     call param_get_keyword('dos_adpt_smr',found,l_value=dos_adpt_smr)
 
-    dos_adpt_smr_factor = adpt_smr_factor
-    call param_get_keyword('dos_adpt_smr_factor',found,r_value=dos_adpt_smr_factor)
-    if (found .and. (dos_adpt_smr_factor <= 0._dp)) &
-         call io_error('Error: dos_adpt_smr_factor must be greater than zero')    
+    dos_adpt_smr_fac = adpt_smr_fac
+    call param_get_keyword('dos_adpt_smr_fac',found,r_value=dos_adpt_smr_fac)
+    if (found .and. (dos_adpt_smr_fac <= 0._dp)) &
+         call io_error('Error: dos_adpt_smr_fac must be greater than zero')    
 
-    dos_smr_max = 1._dp
-    call param_get_keyword('dos_smr_max',found,r_value=dos_smr_max)
+    dos_adpt_smr_max = 1._dp
+    call param_get_keyword('dos_adpt_smr_max',found,r_value=dos_adpt_smr_max)
     
     dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('dos_smr_fixed_en_width',found,r_value=dos_smr_fixed_en_width)
@@ -1316,10 +1316,10 @@ contains
     boltz_dos_adpt_smr = adpt_smr
     call param_get_keyword('boltz_dos_adpt_smr',found,l_value=boltz_dos_adpt_smr)
 
-    boltz_dos_adpt_smr_factor = adpt_smr_factor
-    call param_get_keyword('boltz_dos_adpt_smr_factor',found,r_value=boltz_dos_adpt_smr_factor)
-    if (found .and. (boltz_dos_adpt_smr_factor <= 0._dp)) &
-         call io_error('Error: boltz_dos_adpt_smr_factor must be greater than zero')    
+    boltz_dos_adpt_smr_fac = adpt_smr_fac
+    call param_get_keyword('boltz_dos_adpt_smr_fac',found,r_value=boltz_dos_adpt_smr_fac)
+    if (found .and. (boltz_dos_adpt_smr_fac <= 0._dp)) &
+         call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero')    
 
     boltz_dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('boltz_dos_smr_fixed_en_width',found,r_value=boltz_dos_smr_fixed_en_width)

@@ -38,7 +38,7 @@ contains
                                    dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_kmesh,&
                                    dos_smr_index,dos_adpt_smr,&
-                                   dos_adpt_smr_factor ,spn_decomp,&
+                                   dos_adpt_smr_fac ,spn_decomp,&
                                    dos_smr_fixed_en_width,&
                                    dos_project,num_dos_project
     use w90_get_oper, only       : get_HH_R,get_SS_R,HH_R
@@ -120,7 +120,7 @@ contains
 
        write(stdout,'(/,5x,a,(f6.3,1x))')&
             'Adaptive smearing width prefactor: ',&
-            dos_adpt_smr_factor
+            dos_adpt_smr_fac
 
        write(stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ',&
             dos_kmesh(1:3) !(1),berry_kmesh(2),berry_kmesh(3)
@@ -159,7 +159,7 @@ contains
              call get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
-                  adpt_smr_factor=dos_adpt_smr_factor,&
+                  adpt_smr_fac=dos_adpt_smr_fac,&
                   levelspacing_k=levelspacing_k,&
                   UU=UU)
           else
@@ -192,7 +192,7 @@ contains
              call get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
-                  adpt_smr_factor=dos_adpt_smr_factor,&
+                  adpt_smr_fac=dos_adpt_smr_fac,&
                   levelspacing_k=levelspacing_k,&
                   UU=UU)
           else
@@ -460,7 +460,7 @@ contains
   !> \param smr_index  index that tells the kind of smearing
   !> \param smr_fixed_en_width optional parameter with the fixed energy for smearing, in eV. Can be provided only if the
   !>                    levelspacing_k parameter is NOT given
-  !> \param adpt_smr_factor optional parameter with the factor for the adaptive smearing. Can be provided only if the
+  !> \param adpt_smr_fac optional parameter with the factor for the adaptive smearing. Can be provided only if the
   !>                    levelspacing_k parameter IS given
   !> \param levelspacing_k optional array with the level spacings, i.e. how much each level changes
   !>                    near a given point of the interpolation mesh, as given by the
@@ -469,12 +469,12 @@ contains
   !>                    If not present: fixed-energy-width smearing
 
   subroutine get_dos_k(kpt,EnergyArray,eig_k,dos_k,smr_index,&
-       smr_fixed_en_width,adpt_smr_factor,levelspacing_k,UU)
+       smr_fixed_en_width,adpt_smr_fac,levelspacing_k,UU)
     use w90_io, only            : io_error
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
-                                  dos_smr_max,&
+                                  dos_adpt_smr_max,&
                                   num_dos_project,dos_project
     use w90_spin, only          : get_spn_nk
 
@@ -486,7 +486,7 @@ contains
     real(kind=dp), dimension(:,:), intent(out)            :: dos_k
     integer, intent(in)                                   :: smr_index
     real(kind=dp), intent(in),optional                    :: smr_fixed_en_width
-    real(kind=dp), intent(in),optional                    :: adpt_smr_factor
+    real(kind=dp), intent(in),optional                    :: adpt_smr_fac
     real(kind=dp), dimension(:), intent(in),optional      :: levelspacing_k
     complex(kind=dp), dimension(:,:), intent(in),optional :: UU
 
@@ -504,11 +504,11 @@ contains
     if (present(levelspacing_k)) then
        if (present(smr_fixed_en_width)) &
             call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters')
-       if (.not.(present(adpt_smr_factor))) &
-            call io_error('Cannot call doskpt with levelspacing_k and without adpt_smr_factor parameter')
+       if (.not.(present(adpt_smr_fac))) &
+            call io_error('Cannot call doskpt with levelspacing_k and without adpt_smr_fac parameter')
     else
-       if (present(adpt_smr_factor)) &
-            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_factor parameters')
+       if (present(adpt_smr_fac)) &
+            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_fac parameters')
        if (.not.(present(smr_fixed_en_width))) &
             call io_error('Cannot call doskpt without levelspacing_k and without smr_fixed_en_width parameter')
     end if
@@ -537,8 +537,8 @@ contains
        if (.not.present(levelspacing_k)) then
           smear=smr_fixed_en_width
        else
-          smear=min(levelspacing_k(i)*adpt_smr_factor/sqrt(2.0_dp),&
-               dos_smr_max)
+          smear=min(levelspacing_k(i)*adpt_smr_fac/sqrt(2.0_dp),&
+               dos_adpt_smr_max)
 !          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
        end if
 
@@ -622,7 +622,7 @@ contains
 !!$    use w90_constants, only     : dp
 !!$    use w90_utility, only       : w0gauss
 !!$    use w90_parameters, only    : num_wann,dos_energy_min,dos_num_points,&
-!!$         dos_adpt_smr_factor,spn_decomp
+!!$         dos_adpt_smr_fac,spn_decomp
 !!$    use w90_spin, only          : get_spn_nk
 !!$
 !!$    ! Arguments
@@ -651,7 +651,7 @@ contains
 !!$          ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
 !!$          ! !!!UNDERSTAND THAT FACTOR!!!
 !!$          !
-!!$       smear=levelspacing_k(i)*dos_adpt_smr_factor/sqrt(2.0_dp)
+!!$       smear=levelspacing_k(i)*dos_adpt_smr_fac/sqrt(2.0_dp)
 !!$       do ifreq=1,num_freq
 !!$          omega=dos_energy_min+(ifreq-1)*d_omega
 !!$          arg=(omega-eig_k(i))/smear
@@ -773,7 +773,7 @@ contains
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_utility, only       : wgauss
     use w90_postw90_common, only : weight
-    use w90_parameters, only    : num_wann,dos_adpt_smr_factor
+    use w90_parameters, only    : num_wann,dos_adpt_smr_fac
 
     real(kind=dp) :: count_states
 
@@ -793,7 +793,7 @@ contains
     do loop_k=1,npts
        sum=0.0_dp
        do i=1,num_wann
-          smear=levelspacing(i,loop_k)*dos_adpt_smr_factor/sqrt(2.0_dp)
+          smear=levelspacing(i,loop_k)*dos_adpt_smr_fac/sqrt(2.0_dp)
           arg=(energy-eig(i,loop_k))/smear
           !
           ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P

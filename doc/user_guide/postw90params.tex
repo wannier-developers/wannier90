@@ -122,7 +122,7 @@ The subsequent tables describe input parameters relative to specific modules.
   {\sc kmesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
 (one or three integers) \\
   {\sc adpt\_smr}   & L & Use adaptive smearing\\
-  {\sc adpt\_smr\_factor}   & R & Adaptive smearing prefactor\\
+  {\sc adpt\_smr\_fac}   & R & Adaptive smearing prefactor\\
   {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
   {\sc smr\_fixed\_en\_width}   & P & Energy smearing (if non-adaptive)\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
@@ -168,8 +168,8 @@ magnetic moment per cell\\  \hline
   {\sc dos\_kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
   {\sc dos\_kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc dos\_adpt\_smr} & L & Use adaptive smearing for the DOS \\
-  {\sc dos\_adpt\_smr\_factor} & R & Adaptive smearing prefactor\\
-  {\sc dos\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
+  {\sc dos\_adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
+  {\sc dos\_adpt\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
   {\sc dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
   {\sc dos\_smr\_type} & S & Analytical form used for the broadened delta function
   when computing the DOS. \\
@@ -274,11 +274,11 @@ isoenergy contour lines (eV)\\
   specified range (eV)\\
   {\sc optics\_adpt\_smr} & L & Use adaptive smearing for the 
   optical conductivity and JDOS \\
-  {\sc optics\_adpt\_smr\_factor} & R & Adaptive smearing prefactor \\
+  {\sc optics\_adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
+  {\sc optics\_adpt\_smr\_max} & P & Maximum allowed value for the 
+  adaptive energy smearing (eV) \\
   {\sc optics\_smr\_type} & S & Analytical form used for the broadened delta function
   when computing the optical conductivity and JDOS\\  
-  {\sc optics\_smr\_max} & P & Maximum allowed value for the 
-  adaptive energy smearing (eV) \\
   {\sc optics\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
   for the optical conductivity and JDOS (eV) \\
   {\sc spn\_decomp} \textcolor{red}{({\sc optics\_spn\_decomp}?)}& L & Decompose the optical conductivity into
@@ -328,7 +328,7 @@ $k$-mesh (one or three integers)\\
 {\sc boltz\_dos\_energy\_step} & R & Step for the DOS in eV\\
 {\sc boltz\_dos\_smr\_type} & S & Smearing type for the DOS \\
 {\sc boltz\_dos\_adpt\_smr} & L & Use adaptive smearing for the DOS \\
-{\sc boltz\_dos\_adpt\_smr\_factor} & R & Adaptive smearing prefactor\\
+{\sc boltz\_dos\_adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
 {\sc boltz\_dos\_smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
 {\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
 {\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
@@ -458,7 +458,7 @@ otherwise an error is issued).
 \subsection[dos\_adpt\_smr]{\tt logical :: dos\_adpt\_smr}
 Determines whether to use an adaptive scheme for broadening the
 DOS. If \verb#true#, the values for the smearing widths are 
-controlled by the flag {\tt dos\_adpt\_smr\_factor}.
+controlled by the flag {\tt dos\_adpt\_smr\_fac}.
 
 If {\tt dos\_adpt\_smr} is not specified, then the value of {\tt
   adpt\_smr} is used.  
@@ -466,7 +466,7 @@ If {\tt dos\_adpt\_smr} is not specified, then the value of {\tt
 The default value is \verb#true#.
 
 
-\subsection[dos\_adpt\_smr\_factor]{\tt real(kind=dp) :: dos\_adpt\_smr\_factor}
+\subsection[dos\_adpt\_smr\_fac]{\tt real(kind=dp) :: dos\_adpt\_smr\_fac}
 
 The width $W_{n{\bf k}}$ of the broadened delta function used to
 determine the contribution to the DOS from band $n$ at point ${\bf k}$
@@ -479,28 +479,28 @@ $$
 %
 \textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
 Confusing, and does not appear in the YWVS07 paper. May need to change default value of
-{\tt dos\_smr\_max}]}}\\
+{\tt dos\_adpt\_smr\_max}]}}\\
 where the dimensionless factor $a$ is given by {\tt
-  dos\_adpt\_smr\_factor}. $\Delta k$ is taken to be the largest of
+  dos\_adpt\_smr\_fac}. $\Delta k$ is taken to be the largest of
 the mesh spacings along the three reciprocal lattice vectors ${\bf
   b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated value of
-$W_{n{\bf k}}$ exceeds {\tt dos\_smr\_max}, the latter
+$W_{n{\bf k}}$ exceeds {\tt dos\_adpt\_smr\_max}, the latter
 value is used.
 
-If {\tt dos\_adpt\_smr\_factor} is not specified, then the value of {\tt
-  adpt\_smr\_factor} is used.  
+If {\tt dos\_adpt\_smr\_fac} is not specified, then the value of {\tt
+  adpt\_smr\_fac} is used.  
 
 The default value is 2.0.
 
 
-\subsection[dos\_smr\_max]{\tt real(kind=dp) ::
-  dos\_smr\_max}
+\subsection[dos\_adpt\_smr\_max]{\tt real(kind=dp) ::
+  dos\_adpt\_smr\_max}
 
 See description given immediately above.
 
 The default value is 1.0.
 
-\textcolor{red}{[Create ``global'' variable {\tt smr\_max} and then link
+\textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
 {\tt dos\_} and {\tt optics\_} subvariables?]}
 
 \subsection[dos\_smr\_en\_width]{\tt logical :: dos\_smr\_en\_width}
@@ -895,7 +895,7 @@ The default value is 0.01~eV.
 \subsection[optics\_adpt\_smr]{\tt logical :: optics\_adpt\_smr}
 Determines whether to use an adaptive scheme for broadening the
 optical spectrum and JDOS. If \verb#true#, the values for the smearing widths are 
-controlled by the flag {\tt optics\_adpt\_smr\_factor}.
+controlled by the flag {\tt optics\_adpt\_smr\_fac}.
 
 If {\tt optics\_adpt\_smr} is not specified, then the value of {\tt
   adpt\_smr} is used.  
@@ -903,8 +903,8 @@ If {\tt optics\_adpt\_smr} is not specified, then the value of {\tt
 The default value is \verb#true#.
 
 
-\subsection[optics\_adpt\_smr\_factor]{\tt real(kind=dp) ::
-  optics\_adpt\_smr\_factor}
+\subsection[optics\_adpt\_smr\_fac]{\tt real(kind=dp) ::
+  optics\_adpt\_smr\_fac}
 
 The width $W_{n{\bf k}}$ of the broadened delta function used to
 determine the contribution to the optical conductivity and JDOS from
@@ -917,28 +917,28 @@ $$
 %
 \textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
 Confusing, and does not appear in the YWVS07 paper. May need to change default value of
-{\tt optics\_smr\_max}]}}\\
+{\tt optics\_adpt\_smr\_max}]}}\\
 where the dimensionless factor $a$ is given by {\tt
-  optics\_adpt\_smr\_factor}. $\Delta k$ is taken to be the largest of
+  optics\_adpt\_smr\_fac}. $\Delta k$ is taken to be the largest of
 the mesh spacings along the three reciprocal lattice vectors ${\bf
   b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated value of
-$W_{n{\bf k}}$ exceeds {\tt optics\_smr\_max}, the latter
+$W_{n{\bf k}}$ exceeds {\tt optics\_adpt\_smr\_max}, the latter
 value is used.
 
-If {\tt optics\_adpt\_smr\_factor} is not specified, then the value of {\tt
-  adpt\_smr\_factor} is used.  
+If {\tt optics\_adpt\_smr\_fac} is not specified, then the value of {\tt
+  adpt\_smr\_fac} is used.  
 
 The default value is 2.0.
 
 
-\subsection[optics\_smr\_max]{\tt real(kind=dp) ::
-  optics\_smr\_max}
+\subsection[optics\_adpt\_smr\_max]{\tt real(kind=dp) ::
+  optics\_adpt\_smr\_max}
 
 See description given immediately above.
 
 The default value is 1.0.
 
-\textcolor{red}{[Create ``global'' variable {\tt smr\_max} and then link
+\textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
 {\tt dos\_} and {\tt optics\_} subvariables?]}
 
 \subsection[optics\_smr\_en\_width]{\tt logical :: optics\_smr\_en\_width}
@@ -1139,13 +1139,13 @@ The default value is the one given via the {\tt smr\_type} input flag.
 Determines whether to use an adaptive scheme for broadening the
 DOS. If \verb#true#, the values for the smearing widths are 
 %those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
-controlled by the flag {\tt boltz\_dos\_adpt\_smr\_factor}.
+controlled by the flag {\tt boltz\_dos\_adpt\_smr\_fac}.
 
 The default value is \verb#true#.
 
 
 
-\subsection[boltz\_dos\_adpt\_smr\_factor]{\tt real(kind=dp) :: boltz\_dos\_adpt\_smr\_factor}
+\subsection[boltz\_dos\_adpt\_smr\_fac]{\tt real(kind=dp) :: boltz\_dos\_adpt\_smr\_fac}
 
 The width $W_{n{\bf k}}$ of the broadened delta function used to
 determine the contribution to the DOS from band $n$ at point ${\bf k}$
@@ -1159,19 +1159,19 @@ $$
 \textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the
     code?!  Confusing, and does not appear in the YWVS07 paper. May
     need to change
-    {\tt dos\_smr\_max}]}}\\
+    {\tt dos\_adpt\_smr\_max}]}}\\
 where the dimensionless factor $a$ is given by {\tt
-  boltz\_dos\_adpt\_smr\_factor}. $\Delta k$ is taken to be the
+  boltz\_dos\_adpt\_smr\_fac}. $\Delta k$ is taken to be the
 largest of the mesh spacings along the three reciprocal lattice
 vectors ${\bf b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated
-value of $W_{n{\bf k}}$ exceeds {\tt dos\_smr\_max}, the
+value of $W_{n{\bf k}}$ exceeds {\tt dos\_adpt\_smr\_max}, the
 latter value is used.  \textcolor{red}{[Ivo: Giovanni, is this correct? Or
   should there be an additional variable {\tt
-    boltz\_dos\_smr\_max}?]}
+    boltz\_dos\_adpt\_smr\_max}?]}
 
 
-If {\tt boltz\_dos\_adpt\_smr\_factor} is not specified, then the value of {\tt
-  adpt\_smr\_factor} is used.  
+If {\tt boltz\_dos\_adpt\_smr\_fac} is not specified, then the value of {\tt
+  adpt\_smr\_fac} is used.  
 
 The default value is 2.0.
 
