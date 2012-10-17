@@ -97,7 +97,7 @@ On the next pages the list of available
 In particular, Table~\ref{parameter_keywords_postw90} reports keywords
 that affect the generic behavior of all modules of
 \postw. Often, these are ``global'' variables that can be overridden
-by module-specific keywords (as for instance the {\tt interp\_mesh} flag).
+by module-specific keywords (as for instance the {\tt kmesh} flag).
 
 \textcolor{red}{[Ivo: For conciseness, perhaps we should describe in
   detail the ``global'' variables, and provide only give a minimal
@@ -119,7 +119,7 @@ The subsequent tables describe input parameters relative to specific modules.
   \hline\hline
   \multicolumn{3}{|c|}{Global Interpolation Parameters} \\
   \hline
-  {\sc interp\_mesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
+  {\sc kmesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
 (one or three integers) \\
   {\sc adpt\_smr}   & L & Use adaptive smearing\\
   {\sc adpt\_smr\_factor}   & R & Adaptive smearing prefactor\\
@@ -165,8 +165,8 @@ magnetic moment per cell\\  \hline
   computing the DOS (eV)\\
   {\sc dos\_energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
   {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
-  {\sc dos\_interp\_mesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
-  {\sc dos\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+  {\sc dos\_kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
+  {\sc dos\_kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc dos\_adpt\_smr} & L & Use adaptive smearing for the DOS \\
   {\sc dos\_adpt\_smr\_factor} & R & Adaptive smearing prefactor\\
   {\sc dos\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
@@ -229,7 +229,7 @@ Decompose the total or projected DOS into up- and down-spin parts\\
   {\sc kslice\_corner}& R & Position of the corner of the slice\\
   {\sc kslice\_b1}& R & First vector defining the slice\\
   {\sc kslice\_b2}& R & Second vector defining the slice\\
-  {\sc kslice\_interp\_mesh}& I & Dimensions of the uniform interpolation 
+  {\sc kslice\_kmesh}& I & Dimensions of the uniform interpolation 
 $k$-mesh on the slice (one or two integers)\\
   {\sc kslice\_cntr\_energy}& P & Energy level for  plotting 
 isoenergy contour lines (eV)\\
@@ -257,9 +257,9 @@ isoenergy contour lines (eV)\\
   \hline
   {\sc berry}  & L & Calculate Berry-type quantities \\
   {\sc berry\_task}& L  & List of properties to compute \\
-  {\sc berry\_interp\_mesh} & I & Dimensions of the uniform interpolation $k$-mesh 
+  {\sc berry\_kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
   (one or three integers)\\ 
-  {\sc berry\_interp\_mesh\_spacing}& R & Minimum spacing between $k$ points in 
+  {\sc berry\_kmesh\_spacing}& R & Minimum spacing between $k$ points in 
   \AA$^{-1}$\\
   {\sc berry\_adpt\_thresh} & P & Threshold value of the Berry curvature or 
   $k$-space orbital magnetization for adaptive mesh refinement\\ 
@@ -309,9 +309,9 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{{\tt BoltzWann} Parameters} \\
 \hline
 {\sc boltzwann}   & L & Calculate Boltzmann transport coefficients \\
-{\sc boltz\_interp\_mesh} & I & Dimensions of the uniform interpolation 
+{\sc boltz\_kmesh} & I & Dimensions of the uniform interpolation 
 $k$-mesh (one or three integers)\\ 
-{\sc boltz\_interp\_mesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+{\sc boltz\_kmesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
 {\sc boltz\_relax\_time} & P & Relaxation time in fs\\
 {\sc boltz\_mu\_min} & P & Minimum value of the chemical potential $\mu$ in eV\\
 {\sc boltz\_mu\_max} & P & Maximum value of the chemical potential $\mu$ in eV\\
@@ -422,7 +422,7 @@ For example, to project onto WFs 2, 6, 7, 8, and 12:
 {\tt dos\_project : 2, 6-8, 12}
 
 
-\subsection[dos\_interp\_mesh]{\tt integer :: dos\_interp\_mesh(:)}
+\subsection[dos\_kmesh]{\tt integer :: dos\_kmesh(:)}
 Dimensions of the interpolation grid used for calculating the DOS-related tasks.
 
 If three integers $l$ $m$ $n$ are given, the reciprocal-space cell
@@ -430,15 +430,15 @@ subtended by the three primitive translations is sampled on a uniform
 $l\times m\times n$ grid.  If only one integer $m$ is given, an
 $m\times m\times m$ grid is used.
 
-{\tt dos\_interp\_mesh\_spacing} and {\tt dos\_interp\_mesh} may not
+{\tt dos\_kmesh\_spacing} and {\tt dos\_kmesh} may not
 both be defined in the same input file.
 
-If neither {\tt dos\_interp\_mesh\_spacing} nor {\tt
-  dos\_interp\_mesh} are defined, then the grid defined either with
-{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+If neither {\tt dos\_kmesh\_spacing} nor {\tt
+  dos\_kmesh} are defined, then the grid defined either with
+{\tt kmesh\_spacing} or {\tt kmesh} is used (if defined,
 otherwise an error is issued).
 
-\subsection[dos\_interp\_mesh\_spacing]{\tt real(kind=dp) :: dos\_interp\_mesh\_spacing}
+\subsection[dos\_kmesh\_spacing]{\tt real(kind=dp) :: dos\_kmesh\_spacing}
 An alternative way of specifying the interpolation grid for
 DOS-related tasks. This flag defines the minimum distance for
 neighboring $k$ points along each of the three directions in $k$
@@ -446,12 +446,12 @@ space.
 
 The units are \AA$^{-1}$.
 
-{\tt dos\_interp\_mesh\_spacing} and {\tt dos\_interp\_mesh} may
+{\tt dos\_kmesh\_spacing} and {\tt dos\_kmesh} may
 not both be defined in the same input file.
 
-If neither {\tt dos\_interp\_mesh\_spacing} nor {\tt
-  dos\_interp\_mesh} are defined, then the grid defined either with
-{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+If neither {\tt dos\_kmesh\_spacing} nor {\tt
+  dos\_kmesh} are defined, then the grid defined either with
+{\tt kmesh\_spacing} or {\tt kmesh} is used (if defined,
 otherwise an error is issued).
 
 
@@ -747,7 +747,7 @@ defining the slice.
 
 The default value is $(0.0,1.0,0.0)$.
 
-\subsection[kslice\_num\_points]{\tt integer :: kslice\_interp\_mesh(2)}
+\subsection[kslice\_num\_points]{\tt integer :: kslice\_kmesh(2)}
 
 Dimensions of the $k$-point grid covering the slice.
 If two integers $m$ $n$ are given, the slice is sampled on a uniform
@@ -756,9 +756,9 @@ grid is used.
 
 The default value for \verb#kslice_interp_mesh# is 50.
 
-\textcolor{red}{{[Should we tie {\tt kslice\_interp\_mesh} the ``global''
-{\tt interp\_mesh}? Note that it is two-dimensional only. Take first
-two value from the three-dimensional{\tt interp\_mesh}?}}
+\textcolor{red}{{[Should we tie {\tt kslice\_kmesh} the ``global''
+{\tt kmesh}? Note that it is two-dimensional only. Take first
+two value from the three-dimensional{\tt kmesh}?}}
 
 
 \subsection[kslice\_cntr\_energy]{\tt real(kind=dp) :: kslice\_cntr\_energy}
@@ -800,7 +800,7 @@ presence of the file {\tt seedname.uHu} at input.
 There is no default value
 
 
-\subsection[berry\_interp\_mesh]{\tt integer :: berry\_interp\_mesh(:)}
+\subsection[berry\_kmesh]{\tt integer :: berry\_kmesh(:)}
 Dimensions of the interpolation grid used for carrying out the BZ
 integrals.
 
@@ -809,15 +809,15 @@ subtended by the three primitive translations is sampled on a uniform
 $l\times m\times n$ grid.  If only one integer $m$ is given, an
 $m\times m\times m$ grid is used.
 
-{\tt berry\_interp\_mesh\_spacing} and {\tt berry\_interp\_mesh} may not
+{\tt berry\_kmesh\_spacing} and {\tt berry\_kmesh} may not
 both be defined in the same input file.
 
-If neither {\tt berry\_interp\_mesh\_spacing} nor {\tt
-  berry\_interp\_mesh} are defined, then the grid defined either with
-{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+If neither {\tt berry\_kmesh\_spacing} nor {\tt
+  berry\_kmesh} are defined, then the grid defined either with
+{\tt kmesh\_spacing} or {\tt kmesh} is used (if defined,
 otherwise an error is issued).
 
-\subsection[berry\_interp\_mesh\_spacing]{\tt real(kind=dp) :: berry\_interp\_mesh\_spacing}
+\subsection[berry\_kmesh\_spacing]{\tt real(kind=dp) :: berry\_kmesh\_spacing}
 An alternative way of specifying the BZ integration grid. This flag
 defines the minimum distance for neighboring $k$ points along each of
 the three directions in $k$ space.
@@ -825,12 +825,12 @@ the three directions in $k$ space.
 
 The units are \AA$^{-1}$.
 
-{\tt berry\_interp\_mesh\_spacing} and {\tt berry\_interp\_mesh} may
+{\tt berry\_kmesh\_spacing} and {\tt berry\_kmesh} may
 not both be defined in the same input file.
 
-If neither {\tt berry\_interp\_mesh\_spacing} nor {\tt
-  berry\_interp\_mesh} are defined, then the grid defined either with
-{\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined,
+If neither {\tt berry\_kmesh\_spacing} nor {\tt
+  berry\_kmesh} are defined, then the grid defined either with
+{\tt kmesh\_spacing} or {\tt kmesh} is used (if defined,
 otherwise an error is issued).
 
 
@@ -847,7 +847,7 @@ Default value is 100.0.
 
 If a positive integer $n$ is given, an $n\times n\times n$ mesh is
 placed around points on the uniform mesh (defined by either {\tt
-  berry\_interp\_mesh} or {\tt berry\_interp\_mesh\_spacing}) where
+  berry\_kmesh} or {\tt berry\_kmesh\_spacing}) where
 the magnitude of the $k$-space Berry curvature or orbital
 magnetization exceeds the threshold value specified in {\tt
   berry\_adpt\_thresh}. This can be used to densify the BZ
@@ -1026,23 +1026,23 @@ Determines whether to enter the \bw\ routines.
 
 The default value is \verb#false#.
 
-\subsection[boltz\_interp\_mesh]{\tt integer :: boltz\_interp\_mesh(:)}
+\subsection[boltz\_kmesh]{\tt integer :: boltz\_kmesh(:)}
 It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used also for the DOS.
 
 If three integers $l$ $m$ $n$ are given, a $l\times m\times n$ grid is used. If only one integer $m$ is given, a $m\times m\times m$ grid is used.
 
-{\tt boltz\_interp\_mesh\_spacing} and  {\tt boltz\_interp\_mesh} may not both be defined in the same input file.
+{\tt boltz\_kmesh\_spacing} and  {\tt boltz\_kmesh} may not both be defined in the same input file.
 
-If neither {\tt boltz\_interp\_mesh\_spacing} nor  {\tt boltz\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+If neither {\tt boltz\_kmesh\_spacing} nor  {\tt boltz\_kmesh} are defined, then the grid defined either with {\tt kmesh\_spacing} or {\tt kmesh} is used (if defined, otherwise an error is issued).
 
-\subsection[boltz\_interp\_mesh\_spacing]{\tt real(kind=dp) :: boltz\_interp\_mesh\_spacing}
+\subsection[boltz\_kmesh\_spacing]{\tt real(kind=dp) :: boltz\_kmesh\_spacing}
 It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). This flag defines the minimum distance for neighboring $k$ points along each of the three directions in $k$ space. If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used for the DOS.
 
 The units are \AA$^{-1}$.
 
-{\tt boltz\_interp\_mesh\_spacing} and  {\tt boltz\_interp\_mesh} may not both be defined in the same input file.
+{\tt boltz\_kmesh\_spacing} and  {\tt boltz\_kmesh} may not both be defined in the same input file.
 
-If neither {\tt boltz\_interp\_mesh\_spacing} nor  {\tt boltz\_interp\_mesh} are defined, then the grid defined either with {\tt interp\_mesh\_spacing} or {\tt interp\_mesh} is used (if defined, otherwise an error is issued).
+If neither {\tt boltz\_kmesh\_spacing} nor  {\tt boltz\_kmesh} are defined, then the grid defined either with {\tt kmesh\_spacing} or {\tt kmesh} is used (if defined, otherwise an error is issued).
 
 \subsection[boltz\_relax\_time]{\tt real(kind=dp) :: boltz\_relax\_time}
 The relaxation time to be used for the calculation of the TDF and the transport coefficients.

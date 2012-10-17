@@ -60,7 +60,7 @@ module w90_postw90_common
     use w90_constants, only   : dp,cmplx_0
     use w90_io, only          : io_error,io_file_unit
     use w90_utility, only     : utility_cart_to_frac
-    use w90_parameters, only  : berry_interp_mesh,&
+    use w90_parameters, only  : berry_kmesh,&
                                 berry_adpt_mesh,real_lattice
 
     integer        :: ierr,i,j,k,ikpt,ir
@@ -103,9 +103,9 @@ module w90_postw90_common
      do j=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
         do k=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
            ikpt=ikpt+1 
-           adkpt(1,ikpt)=real(i,dp)/(berry_interp_mesh(1)*berry_adpt_mesh)
-           adkpt(2,ikpt)=real(j,dp)/(berry_interp_mesh(2)*berry_adpt_mesh)
-           adkpt(3,ikpt)=real(k,dp)/(berry_interp_mesh(3)*berry_adpt_mesh)
+           adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_adpt_mesh)
+           adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_adpt_mesh)
+           adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_adpt_mesh)
         end do
       end do
    end do
@@ -253,8 +253,8 @@ module w90_postw90_common
     call comms_bcast(dos_energy_step,1)
     call comms_bcast(dos_adpt_smr,1)
     call comms_bcast(dos_smr_index,1)
-    call comms_bcast(dos_interp_mesh_spacing,1) 
-    call comms_bcast(dos_interp_mesh(1),3) 
+    call comms_bcast(dos_kmesh_spacing,1) 
+    call comms_bcast(dos_kmesh(1),3) 
     call comms_bcast(dos_smr_max,1)
     call comms_bcast(dos_smr_fixed_en_width,1)
     call comms_bcast(dos_adpt_smr_factor,1)
@@ -262,8 +262,8 @@ module w90_postw90_common
 
     call comms_bcast(berry,1)
     call comms_bcast(berry_task,len(berry_task))
-    call comms_bcast(berry_interp_mesh_spacing,1)
-    call comms_bcast(berry_interp_mesh(1),3)
+    call comms_bcast(berry_kmesh_spacing,1)
+    call comms_bcast(berry_kmesh(1),3)
     call comms_bcast(berry_adpt_mesh,1)
     call comms_bcast(berry_adpt_thresh,1)
     call comms_bcast(optics_adpt_smr,1)
@@ -279,8 +279,8 @@ module w90_postw90_common
     call comms_bcast(fermi_energy,1)
     call comms_bcast(dos_energy_min,1)
     call comms_bcast(dos_energy_max,1)
-    call comms_bcast(spin_interp_mesh_spacing,1)
-    call comms_bcast(spin_interp_mesh(1),3)
+    call comms_bcast(spin_kmesh_spacing,1)
+    call comms_bcast(spin_kmesh(1),3)
     call comms_bcast(wanint_kpoint_file,1)
     call comms_bcast(dis_win_min,1)
     call comms_bcast(dis_win_max,1)
@@ -340,8 +340,8 @@ module w90_postw90_common
     call comms_bcast(boltz_temp_min,1) 
     call comms_bcast(boltz_temp_max,1) 
     call comms_bcast(boltz_temp_step,1) 
-    call comms_bcast(boltz_interp_mesh_spacing,1) 
-    call comms_bcast(boltz_interp_mesh(1),3) 
+    call comms_bcast(boltz_kmesh_spacing,1) 
+    call comms_bcast(boltz_kmesh(1),3) 
     call comms_bcast(boltz_tdf_energy_step,1) 
     call comms_bcast(boltz_relax_time,1) 
     call comms_bcast(boltz_TDF_smr_fixed_en_width,1)

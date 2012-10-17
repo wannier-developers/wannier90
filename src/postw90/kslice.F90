@@ -45,7 +45,7 @@ module w90_kslice
     use w90_utility, only        : utility_diagonalize
     use w90_postw90_common, only : fourier_R_to_k
     use w90_parameters, only     : num_wann,kslice,kslice_task,&
-                                   kslice_interp_mesh,kslice_corner,kslice_b1,&
+                                   kslice_kmesh,kslice_corner,kslice_b1,&
                                    kslice_b2,kslice_cntr_energy,&
                                    found_kslice_cntr_energy,recip_lattice,&
                                    found_fermi_energy,fermi_energy
@@ -185,18 +185,18 @@ module w90_kslice
      
        ! Loop over uniform mesh of k-points on the slice
        !
-       do loop_tot=0,product(kslice_interp_mesh)-1
-          loop_x=loop_tot/kslice_interp_mesh(2)
-          loop_y=loop_tot-loop_x*kslice_interp_mesh(2)
+       do loop_tot=0,product(kslice_kmesh)-1
+          loop_x=loop_tot/kslice_kmesh(2)
+          loop_y=loop_tot-loop_x*kslice_kmesh(2)
           kpt(1)=kslice_corner(1)&
-               +kslice_b1(1)*real(loop_x,dp)/real(kslice_interp_mesh(1),dp)&
-               +kslice_b2(1)*real(loop_y,dp)/real(kslice_interp_mesh(2),dp)
+               +kslice_b1(1)*real(loop_x,dp)/real(kslice_kmesh(1),dp)&
+               +kslice_b2(1)*real(loop_y,dp)/real(kslice_kmesh(2),dp)
           kpt(2)=kslice_corner(2)&
-               +kslice_b1(2)*real(loop_x,dp)/real(kslice_interp_mesh(1),dp)&
-               +kslice_b2(2)*real(loop_y,dp)/real(kslice_interp_mesh(2),dp)
+               +kslice_b1(2)*real(loop_x,dp)/real(kslice_kmesh(1),dp)&
+               +kslice_b2(2)*real(loop_y,dp)/real(kslice_kmesh(2),dp)
           kpt(3)=kslice_corner(3)&
-               +kslice_b1(3)*real(loop_x,dp)/real(kslice_interp_mesh(1),dp)&
-               +kslice_b2(3)*real(loop_y,dp)/real(kslice_interp_mesh(2),dp)
+               +kslice_b1(3)*real(loop_x,dp)/real(kslice_kmesh(1),dp)&
+               +kslice_b2(3)*real(loop_y,dp)/real(kslice_kmesh(2),dp)
 
           ! Convert to (x,y) Cartesian coordinates, with slice_b1 along x and
           ! (slice_b1,slice_b2) in the xy-plane
@@ -260,8 +260,8 @@ module w90_kslice
                 write(bandsunit,'(E16.8)') eig(n)
                 ! For gnuplot, using 'grid data' format
                 write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
-                if(loop_y==kslice_interp_mesh(2)-1 .and. &
-                   loop_x/=kslice_interp_mesh(1)-1) write (bnddataunit(n),*) ' '
+                if(loop_y==kslice_kmesh(2)-1 .and. &
+                   loop_x/=kslice_kmesh(1)-1) write (bnddataunit(n),*) ' '
              enddo
           endif
 

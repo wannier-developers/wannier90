@@ -34,14 +34,14 @@ end kpoint_path
 
 #kslice = T
 #kslice_task = energy_cntr+curv_heatmap
-#kslice_interp_mesh = 200
+#kslice_kmesh = 200
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5
 #kslice_b2 =     0.5  0.5  0.5
 
 #berry = T
 #berry_task = ahc                
-#berry_interp_mesh = 25 25 25
+#berry_kmesh = 25 25 25
 
 begin unit_cell_cart
 bohr

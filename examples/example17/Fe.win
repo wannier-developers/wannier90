@@ -36,7 +36,7 @@ end kpoint_path
 #kslice = T
 #kslice_task = energy\_cntr
 #kslice\_cntr\_energy = 12.6285
-#kslice_interp_mesh = 200 200
+#kslice_kmesh = 200 200
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5
 #kslice_b2 =     0.5  0.5  0.5

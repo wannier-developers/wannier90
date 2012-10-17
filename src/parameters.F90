@@ -105,7 +105,7 @@ module w90_parameters
   real(kind=dp),     public, save :: kslice_corner(3)
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
-  integer,           public, save :: kslice_interp_mesh(2)
+  integer,           public, save :: kslice_kmesh(2)
   real(kind=dp),     public, save :: kslice_cntr_energy
   logical,           public, save :: found_kslice_cntr_energy
 
@@ -125,15 +125,15 @@ module w90_parameters
   integer,           public, save    :: num_dos_project
   integer, allocatable, public, save :: dos_project(:)
 !  character(len=20), public, save    :: dos_plot_format
-  real(kind=dp),     public, save    :: dos_interp_mesh_spacing
-  integer,           public, save    :: dos_interp_mesh(3)
+  real(kind=dp),     public, save    :: dos_kmesh_spacing
+  integer,           public, save    :: dos_kmesh(3)
 !  real(kind=dp),     public, save :: dos_gaussian_width
 
 ! Module  b e r r y
   logical,           public, save :: berry
   character(len=20), public, save :: berry_task
-  real(kind=dp),     public, save :: berry_interp_mesh_spacing
-  integer,           public, save :: berry_interp_mesh(3)
+  real(kind=dp),     public, save :: berry_kmesh_spacing
+  integer,           public, save :: berry_kmesh(3)
   ! --------------remove eventually----------------
   integer,           public, save :: alpha
   integer,           public, save :: beta
@@ -155,16 +155,16 @@ module w90_parameters
   logical,           public, save :: transl_inv
 
 ! Module  s p i n
-  real(kind=dp),     public, save :: spin_interp_mesh_spacing
-  integer,           public, save :: spin_interp_mesh(3)
+  real(kind=dp),     public, save :: spin_kmesh_spacing
+  integer,           public, save :: spin_kmesh(3)
 
   ! [gp-begin, Apr 13, 2012]
   !! Global interpolation k mesh variables
   !! These don't need to be public, since their values are copied in the variables of the
   !! local interpolation meshes
-  real(kind=dp)                   :: interp_mesh_spacing
-  integer                         :: interp_mesh(3)
-  logical                         :: global_interp_mesh_set
+  real(kind=dp)                   :: kmesh_spacing
+  integer                         :: kmesh(3)
+  logical                         :: global_kmesh_set
   !! [gp-end]
 
   ! [gp-begin, Jun 1, 2012]
@@ -190,8 +190,8 @@ module w90_parameters
   real(kind=dp),     public, save :: boltz_temp_min
   real(kind=dp),     public, save :: boltz_temp_max
   real(kind=dp),     public, save :: boltz_temp_step
-  real(kind=dp),     public, save :: boltz_interp_mesh_spacing
-  integer,           public, save :: boltz_interp_mesh(3)
+  real(kind=dp),     public, save :: boltz_kmesh_spacing
+  integer,           public, save :: boltz_kmesh(3)
   real(kind=dp),     public, save :: boltz_tdf_energy_step
   integer,           public, save :: boltz_TDF_smr_index
   integer,           public, save :: boltz_dos_smr_index
@@ -784,21 +784,21 @@ contains
             index(kslice_task,'morb_heatmap')>0) call io_error&
           ('Error: kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
 
-    kslice_interp_mesh(1:2) = 50
-    call param_get_vector_length('kslice_interp_mesh',found,length=i)
+    kslice_kmesh(1:2) = 50
+    call param_get_vector_length('kslice_kmesh',found,length=i)
     if(found) then
        if(i==1) then
-          call param_get_keyword_vector('kslice_interp_mesh',found,1,&
-               i_value=kslice_interp_mesh)
-          kslice_interp_mesh(2)=kslice_interp_mesh(1)
+          call param_get_keyword_vector('kslice_kmesh',found,1,&
+               i_value=kslice_kmesh)
+          kslice_kmesh(2)=kslice_kmesh(1)
        elseif(i==2) then
-          call param_get_keyword_vector('kslice_interp_mesh',found,2,&
-               i_value=kslice_interp_mesh)
+          call param_get_keyword_vector('kslice_kmesh',found,2,&
+               i_value=kslice_kmesh)
        else
-          call io_error('Error: kslice_interp_mesh must be provided as either one integer or a vector of two integers')
+          call io_error('Error: kslice_kmesh must be provided as either one integer or a vector of two integers')
        endif
-       if (any(kslice_interp_mesh<=0)) &
-            call io_error('Error: kslice_interp_mesh elements must be greater than zero')
+       if (any(kslice_kmesh<=0)) &
+            call io_error('Error: kslice_kmesh elements must be greater than zero')
     endif
 
     kslice_corner=0.0_dp
@@ -1537,57 +1537,57 @@ contains
     !! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
     !! This bit of code must appear *before* all other codes for the local interpolation meshes,
     !! BUT *after* having calculated the reciprocal-space vectors.
-    global_interp_mesh_set = .false.
-    interp_mesh_spacing=-1._dp
-    interp_mesh = 0
-    call param_get_keyword('interp_mesh_spacing',found,r_value=interp_mesh_spacing)
+    global_kmesh_set = .false.
+    kmesh_spacing=-1._dp
+    kmesh = 0
+    call param_get_keyword('kmesh_spacing',found,r_value=kmesh_spacing)
     if (found) then
-       if (interp_mesh_spacing .le. 0._dp) &
-            call io_error('Error: interp_mesh_spacing must be greater than zero')
-       global_interp_mesh_set = .true.
+       if (kmesh_spacing .le. 0._dp) &
+            call io_error('Error: kmesh_spacing must be greater than zero')
+       global_kmesh_set = .true.
        
-       call internal_set_interp_mesh(interp_mesh_spacing,recip_lattice,interp_mesh)
+       call internal_set_kmesh(kmesh_spacing,recip_lattice,kmesh)
     end if
-    call param_get_vector_length('interp_mesh',found,length=i)
+    call param_get_vector_length('kmesh',found,length=i)
     if (found) then
-       if (global_interp_mesh_set) &
-            call io_error('Error: cannot set both interp_mesh and interp_mesh_spacing')
+       if (global_kmesh_set) &
+            call io_error('Error: cannot set both kmesh and kmesh_spacing')
        if (i.eq.1) then
-          global_interp_mesh_set = .true.
-          call param_get_keyword_vector('interp_mesh',found,1,i_value=interp_mesh)
-          interp_mesh(2) = interp_mesh(1)
-          interp_mesh(3) = interp_mesh(1)
+          global_kmesh_set = .true.
+          call param_get_keyword_vector('kmesh',found,1,i_value=kmesh)
+          kmesh(2) = kmesh(1)
+          kmesh(3) = kmesh(1)
        elseif (i.eq.3) then
-          global_interp_mesh_set = .true.          
-          call param_get_keyword_vector('interp_mesh',found,3,i_value=interp_mesh)
+          global_kmesh_set = .true.          
+          call param_get_keyword_vector('kmesh',found,3,i_value=kmesh)
        else
-         call io_error('Error: interp_mesh must be provided as either one integer or a vector of three integers')
+         call io_error('Error: kmesh must be provided as either one integer or a vector of three integers')
        end if
-       if (any(interp_mesh<=0)) &
-            call io_error('Error: interp_mesh elements must be greater than zero')
+       if (any(kmesh<=0)) &
+            call io_error('Error: kmesh elements must be greater than zero')
     end if
     ! [GP-end]
 
     ! To be called after having read the global flag
-    call get_module_interp_mesh(moduleprefix='boltz', &
+    call get_module_kmesh(moduleprefix='boltz', &
          should_be_defined=boltzwann, &
-         module_interp_mesh=boltz_interp_mesh, &
-         module_interp_mesh_spacing=boltz_interp_mesh_spacing)
+         module_kmesh=boltz_kmesh, &
+         module_kmesh_spacing=boltz_kmesh_spacing)
 
-    call get_module_interp_mesh(moduleprefix='berry', &
+    call get_module_kmesh(moduleprefix='berry', &
          should_be_defined=berry, &
-         module_interp_mesh=berry_interp_mesh, &
-         module_interp_mesh_spacing=berry_interp_mesh_spacing)
+         module_kmesh=berry_kmesh, &
+         module_kmesh_spacing=berry_kmesh_spacing)
 
-    call get_module_interp_mesh(moduleprefix='spin', &
+    call get_module_kmesh(moduleprefix='spin', &
          should_be_defined=spn_moment, &
-         module_interp_mesh=spin_interp_mesh, &
-         module_interp_mesh_spacing=spin_interp_mesh_spacing)
+         module_kmesh=spin_kmesh, &
+         module_kmesh_spacing=spin_kmesh_spacing)
 
-    call get_module_interp_mesh(moduleprefix='dos', &
+    call get_module_kmesh(moduleprefix='dos', &
          should_be_defined=dos, &
-         module_interp_mesh=dos_interp_mesh, &
-         module_interp_mesh_spacing=dos_interp_mesh_spacing)
+         module_kmesh=dos_kmesh, &
+         module_kmesh_spacing=dos_kmesh_spacing)
 
     ! Atoms
     if (.not.library) num_atoms=0
@@ -1699,7 +1699,7 @@ contains
   !> \param spacing Minimum spacing between neighboring points, in angstrom^(-1)
   !> \param reclat  Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
   !> \param mesh    output, will contain the three integers defining the interpolation k-mesh.
-  subroutine internal_set_interp_mesh(spacing,reclat,mesh)
+  subroutine internal_set_kmesh(spacing,reclat,mesh)
     real(kind=dp),                 intent(in) :: spacing
     real(kind=dp), dimension(3,3), intent(in) :: reclat
     integer,       dimension(3),  intent(out) :: mesh
@@ -1715,11 +1715,11 @@ contains
        mesh(i) = int(floor(blen(i) / spacing))+1
     end do
 
-  end subroutine internal_set_interp_mesh
+  end subroutine internal_set_kmesh
 
   !> This function reads and sets the interpolation mesh variables needed by a given module
   !> 
-  !> \note This function MUST be called after having read the global interp_mesh and interp_mesh_spacing!!
+  !> \note This function MUST be called after having read the global kmesh and kmesh_spacing!!
   !> \note if the user didn't provide an interpolation_mesh_spacing, it is set to -1, so that
   !>       one can check in the code what the user asked for
   !> \note The function takes care also of setting the default value to the global one if no local 
@@ -1727,65 +1727,65 @@ contains
   !> 
   !> \param moduleprefix   The prefix that is appended before the name of the variables. In particular,
   !>                       if the prefix is for instance XXX, the two variables that are read from the
-  !>                       input file are XXX_interp_mesh and XXX_interp_mesh_spacing.
+  !>                       input file are XXX_kmesh and XXX_kmesh_spacing.
   !> \param should_be_defined A logical flag: if it is true, at the end the code stops if no value is specified.
   !>                       Define it to .false. if no check should be performed.
   !>                       Often, you can simply pass the flag that activates the module itself.
-  !> \param module_interp_mesh the integer array (length 3) where the interpolation mesh will be saved
-  !> \param module_interp_mesh_spacing the real number on which the min mesh spacing is saved. -1 if it the
+  !> \param module_kmesh the integer array (length 3) where the interpolation mesh will be saved
+  !> \param module_kmesh_spacing the real number on which the min mesh spacing is saved. -1 if it the
   !>                       user specifies in input the mesh and not the mesh_spacing
-  subroutine get_module_interp_mesh(moduleprefix,should_be_defined,module_interp_mesh,module_interp_mesh_spacing)
+  subroutine get_module_kmesh(moduleprefix,should_be_defined,module_kmesh,module_kmesh_spacing)
     use w90_io, only : io_error
     character(len=*), intent(in)       :: moduleprefix
     logical, intent(in)                :: should_be_defined
-    integer, dimension(3), intent(out) :: module_interp_mesh
-    real(kind=dp), intent(out)         :: module_interp_mesh_spacing
+    integer, dimension(3), intent(out) :: module_kmesh
+    real(kind=dp), intent(out)         :: module_kmesh_spacing
 
     logical :: found, found2
     integer :: i
 
     ! Default values
-    module_interp_mesh_spacing=-1._dp
-    module_interp_mesh = 0
-    call param_get_keyword(trim(moduleprefix)//'_interp_mesh_spacing',found,r_value=module_interp_mesh_spacing)
+    module_kmesh_spacing=-1._dp
+    module_kmesh = 0
+    call param_get_keyword(trim(moduleprefix)//'_kmesh_spacing',found,r_value=module_kmesh_spacing)
     if (found) then
-       if (module_interp_mesh_spacing .le. 0._dp) &
-            call io_error('Error: ' // trim(moduleprefix)//'_interp_mesh_spacing must be greater than zero')
+       if (module_kmesh_spacing .le. 0._dp) &
+            call io_error('Error: ' // trim(moduleprefix)//'_kmesh_spacing must be greater than zero')
        
-       call internal_set_interp_mesh(module_interp_mesh_spacing,recip_lattice,module_interp_mesh)
+       call internal_set_kmesh(module_kmesh_spacing,recip_lattice,module_kmesh)
     end if
-    call param_get_vector_length(trim(moduleprefix)//'_interp_mesh',found2,length=i)
+    call param_get_vector_length(trim(moduleprefix)//'_kmesh',found2,length=i)
     if (found2) then
        if (found) &
-            call io_error('Error: cannot set both ' // trim(moduleprefix)//'_interp_mesh and ' &
-            // trim(moduleprefix)//'_interp_mesh_spacing')
+            call io_error('Error: cannot set both ' // trim(moduleprefix)//'_kmesh and ' &
+            // trim(moduleprefix)//'_kmesh_spacing')
        if (i.eq.1) then
-          call param_get_keyword_vector(trim(moduleprefix)//'_interp_mesh',found2,1,i_value=module_interp_mesh)
-          module_interp_mesh(2) = module_interp_mesh(1)
-          module_interp_mesh(3) = module_interp_mesh(1)
+          call param_get_keyword_vector(trim(moduleprefix)//'_kmesh',found2,1,i_value=module_kmesh)
+          module_kmesh(2) = module_kmesh(1)
+          module_kmesh(3) = module_kmesh(1)
        elseif (i.eq.3) then
-          call param_get_keyword_vector(trim(moduleprefix)//'_interp_mesh',found2,3,i_value=module_interp_mesh)
+          call param_get_keyword_vector(trim(moduleprefix)//'_kmesh',found2,3,i_value=module_kmesh)
        else
          call io_error('Error: ' // trim(moduleprefix)// &
-              '_interp_mesh must be provided as either one integer or a vector of 3 integers')
+              '_kmesh must be provided as either one integer or a vector of 3 integers')
        end if
-       if (any(module_interp_mesh<=0)) &
-            call io_error('Error: ' // trim(moduleprefix)//'_interp_mesh elements must be greater than zero')
+       if (any(module_kmesh<=0)) &
+            call io_error('Error: ' // trim(moduleprefix)//'_kmesh elements must be greater than zero')
     end if
 
     if ((found.eqv..false.).and.(found2.eqv..false.)) then
        ! This is the case where no  "local" interpolation k-mesh is provided in the input
-       if (global_interp_mesh_set) then
-          module_interp_mesh = interp_mesh
-          ! I set also boltz_interp_mesh_spacing so that I can check if it is < 0 or not, and if it is
+       if (global_kmesh_set) then
+          module_kmesh = kmesh
+          ! I set also boltz_kmesh_spacing so that I can check if it is < 0 or not, and if it is
           ! > 0 I can print on output the mesh spacing that was chosen
-          module_interp_mesh_spacing = interp_mesh_spacing 
+          module_kmesh_spacing = kmesh_spacing 
        else
             if (should_be_defined) &
                  call io_error('Error: ' // trim(moduleprefix) //' module required, but no interpolation mesh given.')          
        end if
     end if
-  end subroutine get_module_interp_mesh
+  end subroutine get_module_kmesh
 
   !> This function returns a string describing the type of smearing
   !> associated to a given smr_index integer value.

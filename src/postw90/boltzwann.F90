@@ -37,7 +37,7 @@ module w90_boltzwann
   use w90_constants
   use w90_parameters, only : &
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
-       boltz_interp_mesh_spacing, boltz_interp_mesh, boltz_tdf_energy_step, boltz_relax_time, &
+       boltz_kmesh_spacing, boltz_kmesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
        timing_level, dis_win_min, dis_win_max, spn_decomp, boltz_dos_adpt_smr, &
        boltz_dos_adpt_smr_factor, boltz_dos_smr_fixed_en_width, &
@@ -608,14 +608,14 @@ contains
 
     if (on_root) then
        write(stdout,'(5X,A,I0,A,I0,A,I0)') "k-grid used for band interpolation in BoltzWann: ",&
-            boltz_interp_mesh(1),'x',boltz_interp_mesh(2),'x',boltz_interp_mesh(3)
+            boltz_kmesh(1),'x',boltz_kmesh(2),'x',boltz_kmesh(3)
        write(stdout,'(5X,A,I1)') "Number of electrons per state: ", num_elec_per_state
        write(stdout,'(5X,A,G18.10)') "Relaxation time (fs): ", boltz_relax_time
        if (iprint>1) then
           write(stdout,'(5X,A,G18.10)') "Energy step for TDF (eV): ", boltz_tdf_energy_step
        end if
     end if
-    kweight = 1.0_dp / real(PRODUCT(boltz_interp_mesh),kind=dp)
+    kweight = 1.0_dp / real(PRODUCT(boltz_kmesh),kind=dp)
 
     if (boltz_bandshift.and.on_root) then
        write(stdout,'(5X,A,I0,A,G18.10,A)') "Shifting energy bands with index >= ", boltz_bandshift_firstband, " by ", &
@@ -626,24 +626,24 @@ contains
     min_spacing = 1.e10_dp ! very large initial value
     max_spacing = 0.e0_dp
     ! I loop over all kpoints
-    do loop_tot=my_node_id,PRODUCT(boltz_interp_mesh)-1,num_nodes
+    do loop_tot=my_node_id,PRODUCT(boltz_kmesh)-1,num_nodes
 
        ! I get the coordinates for the x,y,z components starting from a single loop variable
        ! (which is better for parallelization purposes)
        ! Important! This works only if loop_tot starts from ZERO and ends with 
-       !            PRODUCT(boltz_interp_mesh)-1, so be careful when parallelizing
-       loop_x= loop_tot/(boltz_interp_mesh(2)*boltz_interp_mesh(3))
-       loop_y=(loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3)))/boltz_interp_mesh(3)
-       loop_z= loop_tot-loop_x*(boltz_interp_mesh(2)*boltz_interp_mesh(3)) -loop_y*boltz_interp_mesh(3)
+       !            PRODUCT(boltz_kmesh)-1, so be careful when parallelizing
+       loop_x= loop_tot/(boltz_kmesh(2)*boltz_kmesh(3))
+       loop_y=(loop_tot-loop_x*(boltz_kmesh(2)*boltz_kmesh(3)))/boltz_kmesh(3)
+       loop_z= loop_tot-loop_x*(boltz_kmesh(2)*boltz_kmesh(3)) -loop_y*boltz_kmesh(3)
 
-       ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_interp_mesh(i)
-       kpt(1)=(real(loop_x,dp)/real(boltz_interp_mesh(1),dp))
-       kpt(2)=(real(loop_y,dp)/real(boltz_interp_mesh(2),dp))
-       kpt(3)=(real(loop_z,dp)/real(boltz_interp_mesh(3),dp))
+       ! kpt(i) is in in the [0,d-1]/d range, with d=boltz_kmesh(i)
+       kpt(1)=(real(loop_x,dp)/real(boltz_kmesh(1),dp))
+       kpt(2)=(real(loop_y,dp)/real(boltz_kmesh(2),dp))
+       kpt(3)=(real(loop_z,dp)/real(boltz_kmesh(3),dp))
               
        ! Here I get the band energies and the velocities
        call get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-       call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
+       call get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
 
        ! Here I apply a scissor operator to the conduction bands, if required in the input
        if (boltz_bandshift) then
@@ -675,11 +675,11 @@ contains
                    do j=-1,1,2
                       do k=-1,1,2
                          kpt=orig_kpt + &
-                              (/ real(i,kind=dp)/real(boltz_interp_mesh(1),dp)/ 4._dp, &
-                              real(j,kind=dp)/real(boltz_interp_mesh(2),dp)/ 4._dp, &
-                              real(k,kind=dp)/real(boltz_interp_mesh(3),dp)/ 4._dp /)
+                              (/ real(i,kind=dp)/real(boltz_kmesh(1),dp)/ 4._dp, &
+                              real(j,kind=dp)/real(boltz_kmesh(2),dp)/ 4._dp, &
+                              real(k,kind=dp)/real(boltz_kmesh(3),dp)/ 4._dp /)
                          call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-                         call get_levelspacing(del_eig,boltz_interp_mesh,levelspacing_k)
+                         call get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
                          call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                               smr_index=boltz_dos_smr_index,&
                               adpt_smr_factor=boltz_dos_adpt_smr_factor,&
@@ -735,7 +735,7 @@ contains
           end if
           write(boltzdos_unit, '(A,1X,G14.6)') '# Smearing coefficient: ', boltz_dos_adpt_smr_factor
           write(boltzdos_unit, '(A,I0,A,I0)') '# Number of points refined: ', NumPtsRefined, &
-               ' out of ', product(boltz_interp_mesh)
+               ' out of ', product(boltz_kmesh)
           write(boltzdos_unit, '(A,G18.10,A,G18.10,A)') '# (Min spacing: ', min_spacing, &
                ', max spacing: ', max_spacing, ')'
        else          

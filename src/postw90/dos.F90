@@ -36,7 +36,7 @@ contains
                                    fourier_R_to_k
     use w90_parameters, only     : num_wann,dos_energy_min,dos_energy_max,&
                                    dos_energy_step,timing_level,&
-                                   wanint_kpoint_file,dos_interp_mesh,&
+                                   wanint_kpoint_file,dos_kmesh,&
                                    dos_smr_index,dos_adpt_smr,&
                                    dos_adpt_smr_factor ,spn_decomp,&
                                    dos_smr_fixed_en_width,&
@@ -123,7 +123,7 @@ contains
             dos_adpt_smr_factor
 
        write(stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ',&
-            dos_interp_mesh(1:3) !(1),berry_interp_mesh(2),berry_interp_mesh(3)
+            dos_kmesh(1:3) !(1),berry_kmesh(2),berry_kmesh(3)
 
 !       write(stdout,'(5x,a,i0,a,i0,a,i0,a,i0,a)')&
 !            'Interpolation mesh in full BZ: ',&
@@ -156,7 +156,7 @@ contains
           kpt(:)=int_kpts(:,loop_tot)
           if (dos_adpt_smr) then
              call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-             call get_levelspacing(del_eig,dos_interp_mesh,levelspacing_k)
+             call get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   adpt_smr_factor=dos_adpt_smr_factor,&
@@ -177,19 +177,19 @@ contains
        
        if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
        
-       kweight = 1.0_dp / real(PRODUCT(dos_interp_mesh),kind=dp)
-       do loop_tot=my_node_id,PRODUCT(dos_interp_mesh)-1,num_nodes
-          loop_x= loop_tot/(dos_interp_mesh(2)*dos_interp_mesh(3))
-          loop_y=(loop_tot-loop_x*(dos_interp_mesh(2)&
-               *dos_interp_mesh(3)))/dos_interp_mesh(3)
-          loop_z=loop_tot-loop_x*(dos_interp_mesh(2)*dos_interp_mesh(3))&
-                -loop_y*dos_interp_mesh(3)
-          kpt(1)=real(loop_x,dp)/real(dos_interp_mesh(1),dp)
-          kpt(2)=real(loop_y,dp)/real(dos_interp_mesh(2),dp)
-          kpt(3)=real(loop_z,dp)/real(dos_interp_mesh(3),dp)
+       kweight = 1.0_dp / real(PRODUCT(dos_kmesh),kind=dp)
+       do loop_tot=my_node_id,PRODUCT(dos_kmesh)-1,num_nodes
+          loop_x= loop_tot/(dos_kmesh(2)*dos_kmesh(3))
+          loop_y=(loop_tot-loop_x*(dos_kmesh(2)&
+               *dos_kmesh(3)))/dos_kmesh(3)
+          loop_z=loop_tot-loop_x*(dos_kmesh(2)*dos_kmesh(3))&
+                -loop_y*dos_kmesh(3)
+          kpt(1)=real(loop_x,dp)/real(dos_kmesh(1),dp)
+          kpt(2)=real(loop_y,dp)/real(dos_kmesh(2),dp)
+          kpt(3)=real(loop_z,dp)/real(dos_kmesh(3),dp)
           if (dos_adpt_smr) then
              call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-             call get_levelspacing(del_eig,dos_interp_mesh,levelspacing_k)
+             call get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   adpt_smr_factor=dos_adpt_smr_factor,&
@@ -692,22 +692,22 @@ contains
   !> near a given point of the interpolation mesh
   !>
   !> \param del_eig Band velocities, already corrected when degeneracies occur
-  !> \param interp_mesh array of three integers, giving the number of k points along
+  !> \param kmesh array of three integers, giving the number of k points along
   !>        each of the three directions defined by the reciprocal lattice vectors
   !> \param levelspacing On output, the spacing for each of the bands (in eV)
-  subroutine get_levelspacing(del_eig,interp_mesh,levelspacing)
+  subroutine get_levelspacing(del_eig,kmesh,levelspacing)
     use w90_parameters, only: num_wann
     use w90_postw90_common, only : kmesh_spacing
     
     real(kind=dp), dimension(num_wann,3), intent(in) :: del_eig
-    integer, dimension(3), intent(in)                :: interp_mesh
+    integer, dimension(3), intent(in)                :: kmesh
     real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
     
     real(kind=dp) :: Delta_k
     integer :: band
     
 
-    Delta_k=kmesh_spacing(interp_mesh)
+    Delta_k=kmesh_spacing(kmesh)
     do band=1,num_wann
        levelspacing(band)=&
             sqrt(dot_product(del_eig(band,:),del_eig(band,:)))*Delta_k

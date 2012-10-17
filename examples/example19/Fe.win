@@ -19,7 +19,7 @@ fermi_energy = 12.6285
 
 berry = T
 berry_task = morb
-berry_interp_mesh = 25 25 25
+berry_kmesh = 25 25 25
 
 #kpath = T
 #kpath_task = bands+morb
@@ -31,7 +31,7 @@ berry_interp_mesh = 25 25 25
 
 #kslice = T
 #kslice_task = energy_cntr+morb_heatmap
-#kslice_interp_mesh = 50 50
+#kslice_kmesh = 50 50
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5
 #kslice_b2 =     0.5  0.5  0.5

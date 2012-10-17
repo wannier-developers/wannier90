@@ -88,7 +88,7 @@ module w90_berry
                                   io_stopwatch
     use w90_postw90_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
                                   adkpt,weight,rpt_origin
-    use w90_parameters, only    : timing_level,num_wann,berry_interp_mesh,&
+    use w90_parameters, only    : timing_level,num_wann,berry_kmesh,&
                                   !---------remove eventually---------
                                   alpha,beta,gamma,sigma_abc_onlyorb,&
                                   !-----------------------------------
@@ -545,18 +545,18 @@ module w90_berry
 
 !       if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
 !       kweight=1.0_dp/optics_num_points**3
-       kweight = 1.0_dp / real(PRODUCT(berry_interp_mesh),kind=dp)
+       kweight = 1.0_dp / real(PRODUCT(berry_kmesh),kind=dp)
        kweight_adpt=kweight/berry_adpt_mesh**3
 
-       do loop_tot=my_node_id,PRODUCT(berry_interp_mesh)-1,num_nodes
-          loop_x= loop_tot/(berry_interp_mesh(2)*berry_interp_mesh(3))
-          loop_y=(loop_tot-loop_x*(berry_interp_mesh(2)&
-               *berry_interp_mesh(3)))/berry_interp_mesh(3)
-          loop_z=loop_tot-loop_x*(berry_interp_mesh(2)*berry_interp_mesh(3))&
-                -loop_y*berry_interp_mesh(3)
-          kpt(1)=real(loop_x,dp)/real(berry_interp_mesh(1),dp)
-          kpt(2)=real(loop_y,dp)/real(berry_interp_mesh(2),dp)
-          kpt(3)=real(loop_z,dp)/real(berry_interp_mesh(3),dp)
+       do loop_tot=my_node_id,PRODUCT(berry_kmesh)-1,num_nodes
+          loop_x= loop_tot/(berry_kmesh(2)*berry_kmesh(3))
+          loop_y=(loop_tot-loop_x*(berry_kmesh(2)&
+               *berry_kmesh(3)))/berry_kmesh(3)
+          loop_z=loop_tot-loop_x*(berry_kmesh(2)*berry_kmesh(3))&
+                -loop_y*berry_kmesh(3)
+          kpt(1)=real(loop_x,dp)/real(berry_kmesh(1),dp)
+          kpt(2)=real(loop_y,dp)/real(berry_kmesh(2),dp)
+          kpt(3)=real(loop_z,dp)/real(berry_kmesh(3),dp)
           if(eval_ahc) then
              call get_imf_k(kpt,imf_k)
              do i=1,3
@@ -725,16 +725,16 @@ module w90_berry
           if((eval_ahc .or. eval_morb) .and. berry_adpt_mesh.ne.1) then
              write(stdout, '(1x,a30,3(i0,1x))')&
                   'Interpolation grid (nominal): ',&
-                  berry_interp_mesh(1),berry_interp_mesh(2),berry_interp_mesh(3)
+                  berry_kmesh(1),berry_kmesh(2),berry_kmesh(3)
              write(stdout, '(1x,a30,i0,a)') 'Adaptive refinement grid: ',&
                   berry_adpt_mesh,'^3'
              write(stdout, '(1x,a30,f6.2,a)')&
                   'Points triggering refinement: ',&
-                  100*real(adpt_counter,dp)/product(berry_interp_mesh),'%'
+                  100*real(adpt_counter,dp)/product(berry_kmesh),'%'
           else
              write(stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ',&
-                  berry_interp_mesh(1:3)
-             !,berry_interp_mesh(2),berry_interp_mesh(3)
+                  berry_kmesh(1:3)
+             !,berry_kmesh(2),berry_kmesh(3)
           endif
 
        end if !wanint_kpoint_file
@@ -1562,7 +1562,7 @@ module w90_berry
                                    optics_adpt_smr,optics_adpt_smr_factor,&
                                    optics_smr_index,optics_smr_fixed_en_width,&
                                    optics_smr_max,&
-                                   berry_interp_mesh,spn_decomp
+                                   berry_kmesh,spn_decomp
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only        : get_D_h,get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
@@ -1608,7 +1608,7 @@ module w90_berry
 
     if(optics_adpt_smr) then
        call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-       Delta_k=kmesh_spacing(berry_interp_mesh)
+       Delta_k=kmesh_spacing(berry_kmesh)
     else
        call fourier_R_to_k(kpt,HH_R,HH,0) 
        call utility_diagonalize(HH,num_wann,eig,UU)
