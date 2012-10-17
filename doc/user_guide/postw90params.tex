@@ -261,10 +261,10 @@ isoenergy contour lines (eV)\\
   (one or three integers)\\ 
   {\sc berry\_kmesh\_spacing}& R & Minimum spacing between $k$ points in 
   \AA$^{-1}$\\
-  {\sc berry\_adpt\_thresh} & P & Threshold value of the Berry curvature or 
-  $k$-space orbital magnetization for adaptive mesh refinement\\ 
-  {\sc berry\_adpt\_mesh} & I & Linear dimension of the adaptively refined 
+  {\sc berry\_adpt\_kmesh} & I & Linear dimension of the adaptively refined 
   $k$-mesh\\ 
+  {\sc berry\_adpt\_kmesh\_thresh} & P & Threshold value of the Berry 
+  curvature or $k$-space orbital magnetization for adaptive mesh refinement\\ 
   {\sc optics\_time\_parity}& S & Time parity of the optical conductivity tensor\\ 
   {\sc optics\_energy\_min} & P & Lower limit of the energy range for
   optical spectra and JDOS (eV) \\
@@ -834,7 +834,20 @@ If neither {\tt berry\_kmesh\_spacing} nor {\tt
 otherwise an error is issued).
 
 
-\subsection[berry\_adpt\_thresh]{\tt real(kind=dp) :: berry\_adpt\_thresh(:)}
+\subsection[berry\_adpt\_kmesh]{\tt integer :: berry\_adpt\_kmesh(:)}
+
+If a positive integer $n$ is given, an $n\times n\times n$ mesh is
+placed around points on the uniform mesh (defined by either {\tt
+  berry\_kmesh} or {\tt berry\_kmesh\_spacing}) where
+the magnitude of the $k$-space Berry curvature or orbital
+magnetization exceeds the threshold value specified in {\tt
+  berry\_adpt\_kmesh\_thresh}. This can be used to densify the BZ
+integration mesh around spikes in the integrand.
+
+The default value is 1.
+
+
+\subsection[berry\_adpt\_kmesh\_thresh]{\tt real(kind=dp) :: berry\_adpt\_kmesh\_thresh(:)}
 
 Magnitude of the Berry curvature in \AA$^2$, or of the $k$-space
 orbital magnetization in eV$\cdot$\AA$^2$, that triggers adaptive mesh
@@ -842,18 +855,6 @@ refinement when {\tt berry\_task} contains either {\tt curv} or {\tt
   morb}.
 
 Default value is 100.0.
-
-\subsection[berry\_adpt\_mesh]{\tt integer :: berry\_adpt\_mesh(:)}
-
-If a positive integer $n$ is given, an $n\times n\times n$ mesh is
-placed around points on the uniform mesh (defined by either {\tt
-  berry\_kmesh} or {\tt berry\_kmesh\_spacing}) where
-the magnitude of the $k$-space Berry curvature or orbital
-magnetization exceeds the threshold value specified in {\tt
-  berry\_adpt\_thresh}. This can be used to densify the BZ
-integration mesh around spikes in the integrand.
-
-The default value is 1.
 
 \subsection[berry\_spectrum\_time\_parity]{\tt character(len=120) ::  optics\_time\_parity}
 The time parity of the optical conductivity tensor to compute when

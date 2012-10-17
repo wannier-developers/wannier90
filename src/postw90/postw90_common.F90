@@ -61,7 +61,7 @@ module w90_postw90_common
     use w90_io, only          : io_error,io_file_unit
     use w90_utility, only     : utility_cart_to_frac
     use w90_parameters, only  : berry_kmesh,&
-                                berry_adpt_mesh,real_lattice
+                                berry_adpt_kmesh,real_lattice
 
     integer        :: ierr,i,j,k,ikpt,ir
 
@@ -95,17 +95,17 @@ module w90_postw90_common
   ! both classical and anomalous low-field Hall are computed.)
   ! ----------------------------------------------------------------------
 
-  allocate(adkpt(3,berry_adpt_mesh**3),stat=ierr)
+  allocate(adkpt(3,berry_adpt_kmesh**3),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating adkpt in wanint_setup')
 
   ikpt=0
-   do i=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
-     do j=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
-        do k=-(berry_adpt_mesh-1)/2,(berry_adpt_mesh-1)/2
+   do i=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
+     do j=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
+        do k=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
            ikpt=ikpt+1 
-           adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_adpt_mesh)
-           adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_adpt_mesh)
-           adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_adpt_mesh)
+           adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_adpt_kmesh)
+           adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_adpt_kmesh)
+           adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_adpt_kmesh)
         end do
       end do
    end do
@@ -264,8 +264,8 @@ module w90_postw90_common
     call comms_bcast(berry_task,len(berry_task))
     call comms_bcast(berry_kmesh_spacing,1)
     call comms_bcast(berry_kmesh(1),3)
-    call comms_bcast(berry_adpt_mesh,1)
-    call comms_bcast(berry_adpt_thresh,1)
+    call comms_bcast(berry_adpt_kmesh,1)
+    call comms_bcast(berry_adpt_kmesh_thresh,1)
     call comms_bcast(optics_adpt_smr,1)
     call comms_bcast(optics_adpt_smr_factor,1)
     call comms_bcast(optics_smr_max,1)

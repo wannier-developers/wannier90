@@ -32,5 +32,6 @@ And to postpone to 2.1:
   the current parallel timing provides results that make sense]
 + Improve adaptive smearing (GP) (see if the adaptive k-mesh implemented in BoltzWann works correctly)
 + BoltzWann: use scissor operator of Ivo
-+ Fermi_energy finding routine (IS)
++ Fermi_energy finding routine (re-introduce input var num_elec_cell, make
+it real, for, e.g., alloys in VCA, make found_fermi_energy work) (IS)
 

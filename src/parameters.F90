@@ -139,8 +139,8 @@ module w90_parameters
   integer,           public, save :: beta
   integer,           public, save :: gamma
   ! --------------remove eventually----------------
-  integer,           public, save :: berry_adpt_mesh
-  real(kind=dp),     public, save :: berry_adpt_thresh
+  integer,           public, save :: berry_adpt_kmesh
+  real(kind=dp),     public, save :: berry_adpt_kmesh_thresh
   logical,           public, save :: optics_adpt_smr
   real(kind=dp),     public, save :: optics_adpt_smr_factor
   integer,           public, save :: optics_smr_index
@@ -900,19 +900,19 @@ contains
     call param_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
-    berry_adpt_mesh           = 1
-    call param_get_keyword('berry_adpt_mesh',found,&
-         i_value=berry_adpt_mesh)
-    if (berry_adpt_mesh<0)&
-         call io_error('Error:  berry_adpt_mesh must be positive')       
+    berry_adpt_kmesh           = 1
+    call param_get_keyword('berry_adpt_kmesh',found,&
+         i_value=berry_adpt_kmesh)
+    if (berry_adpt_kmesh<0)&
+         call io_error('Error:  berry_adpt_kmesh must be positive')       
 
     optics_energy_step           = 0.01_dp
     call param_get_keyword('optics_energy_step',found,&
          r_value=optics_energy_step)
 
-    berry_adpt_thresh           = 100.0_dp
-    call param_get_keyword('berry_adpt_thresh',found,&
-         r_value=berry_adpt_thresh)
+    berry_adpt_kmesh_thresh           = 100.0_dp
+    call param_get_keyword('berry_adpt_kmesh_thresh',found,&
+         r_value=berry_adpt_kmesh_thresh)
 
     wanint_kpoint_file = .false.
     call param_get_keyword('wanint_kpoint_file',found,&

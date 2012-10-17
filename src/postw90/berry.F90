@@ -92,7 +92,7 @@ module w90_berry
                                   !---------remove eventually---------
                                   alpha,beta,gamma,sigma_abc_onlyorb,&
                                   !-----------------------------------
-                                  berry_adpt_mesh,berry_adpt_thresh,&
+                                  berry_adpt_kmesh,berry_adpt_kmesh_thresh,&
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   berry_task,optics_time_parity,&
                                   optics_energy_min,optics_energy_max,&
@@ -450,7 +450,7 @@ module w90_berry
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
-          kweight_adpt=kweight/berry_adpt_mesh**3
+          kweight_adpt=kweight/berry_adpt_kmesh**3
           if(eval_ahc) then 
              call get_imf_k(kpt,imf_k)
              do i=1,3
@@ -467,7 +467,7 @@ module w90_berry
              enddo
              adpt_trigger=sqrt(dot_product(vdum,vdum))
           else ! Ensure that adaptive refinement is not triggered
-             adpt_trigger=berry_adpt_thresh-1.0_dp
+             adpt_trigger=berry_adpt_kmesh_thresh-1.0_dp
           end if
           if(eval_sig_ab) then
                call get_sig_k(kpt,sig_k,jdos_k)
@@ -480,9 +480,9 @@ module w90_berry
           ! Decide whether or not to trigger adaptive refinement of 
           ! integration k-mesh, when computing AHC (and possibly MCD) or Morb
           !
-          if(adpt_trigger>berry_adpt_thresh) then
+          if(adpt_trigger>berry_adpt_kmesh_thresh) then
              adpt_counter=adpt_counter+1
-             do loop_adpt=1,berry_adpt_mesh**3
+             do loop_adpt=1,berry_adpt_kmesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
                 if(eval_ahc) then
                    call get_imf_k(kpt_ad,imf_k)
@@ -546,7 +546,7 @@ module w90_berry
 !       if (on_root) write(stdout,'(/,1x,a)') 'Sampling the full BZ'
 !       kweight=1.0_dp/optics_num_points**3
        kweight = 1.0_dp / real(PRODUCT(berry_kmesh),kind=dp)
-       kweight_adpt=kweight/berry_adpt_mesh**3
+       kweight_adpt=kweight/berry_adpt_kmesh**3
 
        do loop_tot=my_node_id,PRODUCT(berry_kmesh)-1,num_nodes
           loop_x= loop_tot/(berry_kmesh(2)*berry_kmesh(3))
@@ -573,7 +573,7 @@ module w90_berry
              enddo
              adpt_trigger=sqrt(dot_product(vdum,vdum))
           else ! Ensure that adaptive refinement is not triggered
-             adpt_trigger=berry_adpt_thresh-1.0_dp
+             adpt_trigger=berry_adpt_kmesh_thresh-1.0_dp
           end if
           if(eval_sig_ab) then
              call get_sig_k(kpt,sig_k,jdos_k)
@@ -582,9 +582,9 @@ module w90_berry
           endif
           if(eval_ME_EQ) call get_ME_EQ_k(kpt,alphaME_k,imgamma_k)
           if(eval_MEspn) call get_MEspn_k(kpt,alphaspn_k,alphaspn_cut_k)
-          if(adpt_trigger>berry_adpt_thresh) then
+          if(adpt_trigger>berry_adpt_kmesh_thresh) then
              adpt_counter=adpt_counter+1
-             do loop_adpt=1,berry_adpt_mesh**3
+             do loop_adpt=1,berry_adpt_kmesh**3
                 kpt_ad(:)=kpt(:)+adkpt(:,loop_adpt)
                  if(eval_ahc) then
                    call get_imf_k(kpt_ad,imf_k)
@@ -691,43 +691,43 @@ module w90_berry
              if(eval_ahc) then
                 write(stdout,'(1x,a47,3x,f8.4,a)')&
                      'Adaptive refinement triggered when Omega(k) >',&
-                     berry_adpt_thresh,' Ang^2'
+                     berry_adpt_kmesh_thresh,' Ang^2'
              else
                 write(stdout,'(1x,a48,f8.4,a)')&
                      'Adaptive refinement triggered when k-integrand >',&
-                     berry_adpt_thresh,' eV.Ang^2'
+                     berry_adpt_kmesh_thresh,' eV.Ang^2'
              end if
              write(stdout,'(1x,a47,i7,a,f8.4,a)')&
                   'How many points triggered adaptive refinement: ',&
                   adpt_counter,' (',&
                   100*real(adpt_counter,dp)/sum(num_int_kpts_on_node),' %)'
-             if(berry_adpt_mesh < 10) then
+             if(berry_adpt_kmesh < 10) then
                 write(stdout,'(1x,a47,4x,i1,a,i1,a,i1)')&
-                     'Adaptive mesh: ',berry_adpt_mesh,'x',&
-                     berry_adpt_mesh,'x',berry_adpt_mesh
-             elseif(berry_adpt_mesh < 100) then
+                     'Adaptive mesh: ',berry_adpt_kmesh,'x',&
+                     berry_adpt_kmesh,'x',berry_adpt_kmesh
+             elseif(berry_adpt_kmesh < 100) then
                 write(stdout,'(1x,a47,i2,a,i1,a,i1)')&
-                     'Adaptive mesh: ',berry_adpt_mesh,'x',&
-                     berry_adpt_mesh,'x',berry_adpt_mesh
+                     'Adaptive mesh: ',berry_adpt_kmesh,'x',&
+                     berry_adpt_kmesh,'x',berry_adpt_kmesh
              else
                 write(stdout,'(1x,a47,i3,a,i1,a,i1)')&
-                     'Adaptive mesh: ',berry_adpt_mesh,'x',&
-                     berry_adpt_mesh,'x',berry_adpt_mesh
+                     'Adaptive mesh: ',berry_adpt_kmesh,'x',&
+                     berry_adpt_kmesh,'x',berry_adpt_kmesh
              end if
              write(stdout,'(1x,a47,i10)') 'Total number of points: ',&
                   sum(num_int_kpts_on_node)-adpt_counter+&
-                  adpt_counter*berry_adpt_mesh**3
+                  adpt_counter*berry_adpt_kmesh**3
           end if
 
        else
 
           write(stdout,*) ' '
-          if((eval_ahc .or. eval_morb) .and. berry_adpt_mesh.ne.1) then
+          if((eval_ahc .or. eval_morb) .and. berry_adpt_kmesh.ne.1) then
              write(stdout, '(1x,a30,3(i0,1x))')&
                   'Interpolation grid (nominal): ',&
                   berry_kmesh(1),berry_kmesh(2),berry_kmesh(3)
              write(stdout, '(1x,a30,i0,a)') 'Adaptive refinement grid: ',&
-                  berry_adpt_mesh,'^3'
+                  berry_adpt_kmesh,'^3'
              write(stdout, '(1x,a30,f6.2,a)')&
                   'Points triggering refinement: ',&
                   100*real(adpt_counter,dp)/product(berry_kmesh),'%'
