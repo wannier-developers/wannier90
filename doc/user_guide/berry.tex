@@ -25,9 +25,10 @@ $$
 \vert\bm{\nabla}_{\bf k} u_{n{\bf k}}\rangle.
 $$
 
-It is convenient to represent the axial Berry curvature
-vector as an antisymmetric tensor: $ \Omega_{n,\alpha\beta}({\bf k})
-=\epsilon_{\alpha\beta\gamma} \Omega_{n,\gamma}({\bf k})$.
+It is convenient to represent the axial Berry curvature vector as an
+antisymmetric tensor: $ \Omega_{n,\alpha\beta}({\bf k})
+=\epsilon_{\alpha\beta\gamma} \Omega_{n,\gamma}({\bf k})$, where
+$\epsilon_{\alpha\beta\gamma}$ is the Levi-Civita tensor.
 
 The
 intrinsic AHC $\sigma^{\rm AH}_{\alpha\beta}=-\sigma^{\rm
@@ -35,9 +36,9 @@ intrinsic AHC $\sigma^{\rm AH}_{\alpha\beta}=-\sigma^{\rm
 summed over the occupied bands~\cite{xiao-rmp10},
 %
 $$
-\sigma^{\rm AH}_{\alpha\beta}=-\frac{e^2}{\hbar}
-\int_{\rm BZ}\frac{d{\bf k}}{(2\pi)^3}\sum_n\,f_{n{\bf
-    k}}\Omega_{n,\alpha\beta}({\bf k}),
+\sigma^{\rm AH}_{\alpha\beta}=-\frac{e^2}{\hbar} \int_{\rm
+  BZ}\frac{d{\bf k}}{(2\pi)^3}\sum_n\,f_{n{\bf
+    k}}\,\Omega_{n,\alpha\beta}({\bf k}),
 $$
 %
 where $f_{n{\bf k}}$ is the Fermi occupancy.
@@ -47,7 +48,7 @@ by~\cite{xiao-rmp10,ceresoli-prb06}
 %
 $$
 {\bf M}_{\rm orb}=\frac{e}{2\hbar}\int_{\rm BZ}\frac{d{\bf
-    k}}{(2\pi)^3}\sum_n\,f_{n{\bf k}}
+    k}}{(2\pi)^3}\sum_n\,f_{n{\bf k}}\,
 {\rm Im}\,\langle \bm{\nabla}_{\bf k}u_{n{\bf k}}\vert
 \times
 \left(H_{\bf k}+\varepsilon_{n{\bf k}}-2\varepsilon_F\right)
@@ -57,8 +58,8 @@ $$
 where $\varepsilon_{n{\bf k}}$ and $\varepsilon_F$ are
 the band energies and the Fermi energy respectively.
 
-The absorptive (Hermitean) part of the interband optical conductivity
-can be expressed as
+In the independent-particle approximation, the absorptive (Hermitean)
+part of the interband optical conductivity can be expressed as
 %
 $$
 \sigma^{\rm H}_{\alpha\beta}(\omega)=\frac{\pi e^2}{\hbar}
@@ -75,43 +76,59 @@ matrix generalization of the Berry connection (not to be confused with
 the projection matrix $A^{({\bf k})}_{mn}$ of Eq.~(1.8)).  This is the
 usual Kubo-Greenwood formula, with the interband velocity matrix
 elements recast in terms of off-diagonal elements of ${\bf
-  A}_{nm}({\bf k})$~\cite{blount}.
+  A}_{nm}({\bf k})$~\cite{blount}. Its real and imaginary parts are
+symmetric and antisymmetric under $\alpha\leftrightarrow\beta$
+respectively,
+%
+$$
+\sigma^{\rm H}_{\alpha\beta}(\omega)={\rm Re}\,\sigma^{\rm S}_{\alpha\beta}(\omega)+
+i{\rm Im}\, \sigma^{\rm A}_{\alpha\beta}(\omega).
+$$
+%
+The symmetric part is the ``ordinary'' optical conductivity; the
+antisymmetric part is the ``dichroic'' component, related to
+magneto-optical effects such as magnetic circular dichroism and the
+magneto-optical Kerr effect.
+
+Once the Hermitean (absorptive) part is calculated over a wide range
+of frequencies, the anti-Hermitean (reactive) part can be extracted
+from the Kramers-Kronig relations.
 
 \section{Implementation}
 
 The basic idea of the implementation in the {\tt berry} module is to
 calculate the needed Berry-type quantities very efficiently at
-arbitrarily points in the BZ, once certain real-space (Wannier) matrix
-elements are tabulated.
+arbitrarily points in the BZ by Wannier interpolation, once certain
+Wannier matrix elements have been tabulated.
 
 As described in Refs.~\cite{wang-prb06,yates-prb07}, the connection
 ${\bf A}_{nm}({\bf k})$ and curvature $\bm{\Omega}_n({\bf k})$
-entering the optical conductivity and AHC expressions require a
-knowledge of the Hamiltonian and position-operator Wannier matrix
-elements, $\langle {\bf 0}n\vert H\vert {\bf R}m\rangle$ and $\langle
-{\bf 0}n\vert {\bf r}\vert {\bf R}m\rangle$.  These are readily
-available (``for free'') at the end of a standard MLWF calculation
-with {\tt wannier90}. In particular, the position-operator matrix can
-be calculated as a Fourier transform of the overlap matrices in
+entering the optical conductivity and AHC expressions can be
+calculated at arbitrary points ${\bf k}$ once the matrix elements
+$\langle {\bf 0}n\vert H\vert {\bf R}m\rangle$ and $\langle {\bf
+  0}n\vert {\bf r}\vert {\bf R}m\rangle$ of the Hamiltonian and
+position operator are known.  Luckily, these matrix elements are
+readily available at the end of a standard MLWF calculation with {\tt
+  wannier90}. In particular, the position-operator matrix can be
+calculated as a Fourier transform of the overlap matrices in
 Eq.~(1.7).
 
-The presence of the Hamiltonian operator sandwiched in the middle of
-the integrand of the orbital magnetization formula complicates things
-a bit, and further Wannier matrix elements are
-needed~\cite{lopez-prb12}. In order to calculate them by Fourier
-transforms, one more piece of information must be passed on from the
-{\it ab-initio} calculation,
-%(via, e.g., {\tt pw2wannier90}). 
-namely, the matrix elements
+The presence of the Hamiltonian sandwiched in the middle of the
+orbital magnetization formula complicates things a bit, and further
+Wannier matrix elements are needed~\cite{lopez-prb12} which are not
+available ``for free'' at the end of a standard {\tt wannier90}
+run. In order to calculate them by Fourier transforms, one more piece
+of information must be passed on from the $k$-space {\it ab-initio}
+calculation, namely, the matrix elements
 %
 $$\langle u_{n{\bf k}+{\bf b}_1}\vert
 H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle
 $$
 %
-%
-The evaluation of these matrix elements has been implemented in the
-interface routine {\tt pw2wannier90} between {\tt pwscf} and {\tt
-  wannier90}. To compute them, add the line
+over the {\it ab-initio} $k$-point mesh.  The evaluation of these
+matrix elements has been implemented in {\tt pw2wannier90}, the
+interface routine between {\tt pwscf} and {\tt wannier90}. To compute
+them, add the line
 %
 {\tt
 \begin{quote}
@@ -121,9 +138,11 @@ write\_uHu = .true.
 %
 to the input file {\tt seedname.pw2wan}.
 
-A final note: the optical conductivity and orbital magnetization are
-implemented in the {\tt berry} module in the manner described in
-Refs.~\cite{yates-prb07} and \cite{lopez-prb12} respectively. As for
-the AHC, it is currently implemented using the ``gauge-invariant''
-trace formulation of Ref.~\cite{lopez-prb12}, rather than the original
-formulation of Ref.~\cite{wang-prb06}.
+A note on the implementation: the optical conductivity and orbital
+magnetization are implemented in the {\tt berry} module in the manner
+described in Refs.~\cite{yates-prb07} and \cite{lopez-prb12}
+respectively. As for the AHC, it is currently implemented using the
+``trace formulation'' of Ref.~\cite{lopez-prb12}, rather than the
+original formulation of Ref.~\cite{wang-prb06} (the two are
+equivalent, and should produce identical results to within numerical
+accuracy).
