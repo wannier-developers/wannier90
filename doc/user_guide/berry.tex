@@ -111,11 +111,14 @@ position operator are known.  Luckily, these matrix elements are
 readily available at the end of a standard MLWF calculation with {\tt
   wannier90}. In particular, the position-operator matrix can be
 calculated as a Fourier transform of the overlap matrices in
-Eq.~(1.7).
+Eq.~(1.7),
+%
+$$\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf b}}\rangle.
+$$
 
 The presence of the Hamiltonian sandwiched in the middle of the
 orbital magnetization formula complicates things a bit, and further
-Wannier matrix elements are needed~\cite{lopez-prb12} which are not
+Wannier matrix elements are needed which are not
 available ``for free'' at the end of a standard {\tt wannier90}
 run. In order to calculate them by Fourier transforms, one more piece
 of information must be passed on from the $k$-space {\it ab-initio}
@@ -125,10 +128,10 @@ $$\langle u_{n{\bf k}+{\bf b}_1}\vert
 H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle
 $$
 %
-over the {\it ab-initio} $k$-point mesh.  The evaluation of these
-matrix elements has been implemented in {\tt pw2wannier90}, the
-interface routine between {\tt pwscf} and {\tt wannier90}. To compute
-them, add the line
+over the {\it ab-initio} $k$-point mesh~\cite{lopez-prb12}.  The
+evaluation of these matrix elements has been implemented in {\tt
+  pw2wannier90}, the interface routine between {\tt pwscf} and {\tt
+  wannier90}. To compute them, add the line
 %
 {\tt
 \begin{quote}
