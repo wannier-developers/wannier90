@@ -1,5 +1,6 @@
 \documentclass[a4paper,11pt,twoside]{book}
 %\documentclass[11pt,twoside,letterpaper]{book}
+\usepackage[T1]{fontenc} % important for having searchable underscores
 \usepackage{a4wide}
 \usepackage{multirow}
 \usepackage{footnote}
@@ -74,13 +75,24 @@
 
 \title{{\tt wannier90}: User Guide}
 
-\author{Version 1.2}
+\author{Version 2.0}
 
-\date{15th January 2010}
+\date{\color{red} XXth November 2012}
 
-% should be the last one to be loaded
-\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,
-            pdftitle={Wannier90 User Guide}]{hyperref}
+%%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
+%hidelinks to remove colored borders from links
+%plainpages=false needed for the unnumbered pages
+%breaklinks=true to allow to break long links (e.g. long titles) on
+%more than one line
+%bookmarksopen open the bookmarks in the adobe reader plugin
+%bookmarksopenlevel decide the max level at which the bookmarks should
+%be open
+% pdfdisplaydoctitle=true to show the document title instead of the
+% filename in the titlebar of adobereader
+\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,pdftex,hidelinks,
+            pdftitle={Wannier90 User Guide},
+            pdfkeywords={wannier90;postw90;pwscf;user guide}]{hyperref}
+
 \begin{document}
 \newcommand{\wannier}{\texttt{wannier90}}
 \newcommand{\postw}{\texttt{postw90}}
@@ -149,7 +161,7 @@
 \begin{thebibliography}{99}
 
 %%\bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
-%%  Guide v1.0.3, available at {\tt http://www.wannier.org/user\_guide.html}.
+%%  Guide v1.0.3, available at \url{http://www.wannier.org/user\_guide.html}.
 
 \bibitem{MV} N.~Marzari and D.~Vanderbilt, 
   Maximally Localized Generalized Wannier Functions for Composite
@@ -167,7 +179,7 @@
 \bibitem{W90} A.~A.~Mostofi, J.~R.~Yates, Y.-S.~Lee, I.~Souza,
    D.~Vanderbilt and N.~Marzari, \wannier: A Tool for Obtaining
    Maximally-Localized Wannier Functions, {\it Comput. Phys. Commun.},
-   178, 685 (2008); {\tt http://arxiv.org/abs/0708.0650}.
+   178, 685 (2008); \url{http://arxiv.org/abs/0708.0650}.
 
 \bibitem{USPP} D.~Vanderbilt, Soft Self-Consistent Pseudopotentials in
   a Generalized Eigenvalue Formalism, {\it Phys. Rev. B} {\bf 41}
@@ -183,7 +195,7 @@
   (11), 7828 (1999).
 %%\bibitem{BaTiO3} N.~Marzari and D.~Vanderbilt, Maximally-Localized
 %%  Wannier Functions in Perovskites: BaTiO$_3$,
-%%  {\tt http://arxiv.org/abs/cond-mat/9802210}.
+%%  \url{http://arxiv.org/abs/cond-mat/9802210}.
 
 %%\bibitem{WanInt} J.~R.~Yates {\it et al.}, Spectral and Fermi
 %%  Surface Properties from Wannier Interpolation, {\it Phys. Rev. B}

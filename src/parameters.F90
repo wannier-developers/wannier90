@@ -36,12 +36,12 @@ module w90_parameters
   real(kind=dp)                   :: adpt_smr_fac
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
-  logical,                    public, save :: spn_moment
-  real(kind=dp),              public, save :: spn_axis_polar
-  real(kind=dp),              public, save :: spn_axis_azimuth
+  logical,                    public, save :: spin_moment
+  real(kind=dp),              public, save :: spin_axis_polar
+  real(kind=dp),              public, save :: spin_axis_azimuth
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
-  logical,                    public, save :: spn_decomp
+  logical,                    public, save :: spin_decomp
   real(kind=dp),              public, save :: num_valence_bands
   logical,                    public, save :: found_fermi_energy
   real(kind=dp),              public, save :: scissors_shift
@@ -945,23 +945,23 @@ contains
     call param_get_keyword('scissors_shift',found,&
          r_value=scissors_shift)   
 
-    spn_moment = .false.
-    call param_get_keyword('spn_moment',found,&
-         l_value=spn_moment)   
+    spin_moment = .false.
+    call param_get_keyword('spin_moment',found,&
+         l_value=spin_moment)   
 
-    spn_axis_polar=0.0_dp
-    call param_get_keyword('spn_axis_polar',found,&
-         r_value=spn_axis_polar)
+    spin_axis_polar=0.0_dp
+    call param_get_keyword('spin_axis_polar',found,&
+         r_value=spin_axis_polar)
 
-    spn_axis_azimuth=0.0_dp
-    call param_get_keyword('spn_axis_azimuth',found,&
-         r_value=spn_axis_azimuth)
+    spin_axis_azimuth=0.0_dp
+    call param_get_keyword('spin_axis_azimuth',found,&
+         r_value=spin_axis_azimuth)
 
-    spn_decomp = .false.
-    call param_get_keyword('spn_decomp',found,l_value=spn_decomp)   
+    spin_decomp = .false.
+    call param_get_keyword('spin_decomp',found,l_value=spin_decomp)   
 
-    if (spn_decomp .and. (num_elec_per_state .ne. 1)) then
-       call io_error('spn_decomp can be true only if num_elec_per_state is 1')
+    if (spin_decomp .and. (num_elec_per_state .ne. 1)) then
+       call io_error('spin_decomp can be true only if num_elec_per_state is 1')
     end if
 
     use_degen_pert = .false.
@@ -1580,7 +1580,7 @@ contains
          module_kmesh_spacing=berry_kmesh_spacing)
 
     call get_module_kmesh(moduleprefix='spin', &
-         should_be_defined=spn_moment, &
+         should_be_defined=spin_moment, &
          module_kmesh=spin_kmesh, &
          module_kmesh_spacing=spin_kmesh_spacing)
 
@@ -4351,7 +4351,7 @@ contains
 
     if(ispostw90) then
        if (boltzwann) then
-          if(spn_decomp) then
+          if(spin_decomp) then
              ndim=3
           else
              ndim=1

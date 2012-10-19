@@ -175,7 +175,7 @@ program postw90
   ! Spin magnetic moment
   ! --------------------
   !
-  if(spn_moment) call spin_moment
+  if(spin_moment) call get_spin_moment
 
   ! -------------------------------------------------------------------
   ! dc Anomalous Hall conductivity and eventually (if 'mcd' string also 

@@ -45,14 +45,14 @@ In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (in
 OUTPUT. Written by \postw\ if {\tt boltz\_calc\_also\_dos} is \verb#true#. Note that even if there are other general routines in \postw\ which specifically calculate the DOS, it may be convenient to use the routines in \bw\ setting {\tt boltz\_calc\_also\_dos = true} if one must also calculate the transport coefficients. In this way, the (time-demanding) band interpolation on the $k$ mesh is performed only once, resulting in a much shorter execution time.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$. The following is the DOS at the given energy $\varepsilon$. The DOS can either be calculated using the adaptive smearing scheme if {\tt boltz\_dos\_smr\_adpt} is \verb#true#, or using a ``standard'' fixed smearing, whose type and value are defined by {\tt boltz\_dos\_smr\_type} and {\tt boltz\_dos\_smr\_fixed\_en\_width}, respectively.
-If spin decomposition is required (input flag {\tt spn\_decomp}), further columns are printed, with the spin-up projection of the DOS, followed by spin-down projection.
+Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first column is the energy $\varepsilon$. The following is the DOS at the given energy $\varepsilon$. The DOS can either be calculated using the adaptive smearing scheme if {\tt boltz\_dos\_adpt\_smr} is \verb#true#, or using a ``standard'' fixed smearing, whose type and value are defined by {\tt boltz\_dos\_smr\_type} and {\tt boltz\_dos\_smr\_fixed\_en\_width}, respectively.
+If spin decomposition is required (input flag {\tt spin\_decomp}), further columns are printed, with the spin-up projection of the DOS, followed by spin-down projection.
 
 \subsection{{\tt seedname\_tdf.dat}}
 OUTPUT. This file contains the Transport Distribution Function (TDF) tensor $\bvec \Sigma$ on a grid of energies. 
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first is the energy $\varepsilon$, the followings are the components if $\bvec \Sigma(\varepsilon)$ in the following order: $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$, $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input flag {\tt spn\_decomp}), 12 further columns are provided, with the 6 components of $\bvec \Sigma$ for the spin up, followed by those for the spin down.
+Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first is the energy $\varepsilon$, the followings are the components if $\bvec \Sigma(\varepsilon)$ in the following order: $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$, $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input flag {\tt spin\_decomp}), 12 further columns are provided, with the 6 components of $\bvec \Sigma$ for the spin up, followed by those for the spin down.
 
 The energy $\varepsilon$ is in eV, while $\bvec \Sigma$ is in 
  $\displaystyle\frac{1}{\hbar^2}\cdot\frac{\text{eV}\cdot\text{fs}}{\text{\AA}}$.

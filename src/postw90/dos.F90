@@ -38,7 +38,7 @@ contains
                                    dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_kmesh,&
                                    dos_smr_index,dos_adpt_smr,&
-                                   dos_adpt_smr_fac ,spn_decomp,&
+                                   dos_adpt_smr_fac ,spin_decomp,&
                                    dos_smr_fixed_en_width,&
                                    dos_project,num_dos_project
     use w90_get_oper, only       : get_HH_R,get_SS_R,HH_R
@@ -81,7 +81,7 @@ contains
     if (ierr/=0) call io_error('Error in allocating UU in dos')    
 
     call get_HH_R
-    if(spn_decomp) then
+    if(spin_decomp) then
        ndim=3
        call get_SS_R
     else
@@ -430,7 +430,7 @@ contains
 
   !> This subroutine calculates the contribution to the DOS of a single k point
   !> 
-  !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
+  !> \todo still to do: adapt get_spin_nk to read in input the UU rotation matrix
   !> 
   !> \note This routine simply provides the dos contribution of a given
   !>       point. This must be externally summed after proper weighting.
@@ -442,7 +442,7 @@ contains
   !>       is taken from EnergyArray(2)-EnergyArray(1))
   !> \note The routine is assuming that EnergyArray has at least two elements.
   !> \note The dos_k array must have dimensions size(EnergyArray) * ndim, where
-  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked. 
+  !>       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked. 
   !> \note If smearing/binwidth < min_smearing_binwidth_ratio, 
   !>       no smearing is applied (for that k point)
   !>
@@ -455,7 +455,7 @@ contains
   !>                    dos_k(energyidx, spinidx), where:
   !>                    - energyidx is the index of the energies, corresponding to the one
   !>                      of the EnergyArray array; 
-  !>                    - spinidx=1 contains the total dos; if if spn_decomp==.true., then
+  !>                    - spinidx=1 contains the total dos; if if spin_decomp==.true., then
   !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
   !> \param smr_index  index that tells the kind of smearing
   !> \param smr_fixed_en_width optional parameter with the fixed energy for smearing, in eV. Can be provided only if the
@@ -473,10 +473,10 @@ contains
     use w90_io, only            : io_error
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
-    use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
+    use w90_parameters, only    : num_wann,spin_decomp,num_elec_per_state,&
                                   dos_adpt_smr_max,&
                                   num_dos_project,dos_project
-    use w90_spin, only          : get_spn_nk
+    use w90_spin, only          : get_spin_nk
 
     ! Arguments
     !
@@ -517,13 +517,13 @@ contains
 
     ! Get spin projections for every band
     !
-    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
+    if(spin_decomp) call get_spin_nk(kpt,spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
     
     dos_k=0.0_dp
     do i=1,num_wann
-       if(spn_decomp) then
+       if(spin_decomp) then
           ! Contribution to spin-up DOS of Bloch spinor with component 
           ! (alpha,beta) with respect to the chosen quantization axis
           alpha_sq=(1.0_dp+spn_nk(i))/2.0_dp ! |alpha|^2
@@ -582,7 +582,7 @@ contains
              ! [GP] I don't put num_elec_per_state here below: if we are 
              ! calculating the spin decomposition, we should be doing a 
              ! calcultation with spin-orbit, and thus num_elec_per_state=1!
-             if(spn_decomp) then
+             if(spin_decomp) then
                 ! Spin-up contribution
                 dos_k(loop_f,2)=dos_k(loop_f,2)+rdum*alpha_sq
                 ! Spin-down contribution
@@ -596,7 +596,7 @@ contains
              do j=1,num_dos_project 
                 dos_k(loop_f,1)=dos_k(loop_f,1)+rdum * r_num_elec_per_state&
                      *abs(UU(dos_project(j),i))**2
-                if(spn_decomp) then
+                if(spin_decomp) then
                    ! Spin-up contribution
                    dos_k(loop_f,2)=dos_k(loop_f,2)&
                         +rdum*alpha_sq*abs(UU(dos_project(j),i))**2
@@ -610,81 +610,6 @@ contains
     end do !loop over bands
 
   end subroutine get_dos_k
-
-!!!!! Next routine is commented; it is the older version
-!!$  subroutine get_dos_k(kpt,dos_k)
-!!$    !=========================================================!
-!!$    !                                                         !
-!!$    ! Calculates the contribution from one k-point to the DOS !
-!!$    !                                                         !
-!!$    !=========================================================!
-!!$
-!!$    use w90_constants, only     : dp
-!!$    use w90_utility, only       : w0gauss
-!!$    use w90_parameters, only    : num_wann,dos_energy_min,dos_num_points,&
-!!$         dos_adpt_smr_fac,spn_decomp
-!!$    use w90_spin, only          : get_spn_nk
-!!$
-!!$    ! Arguments
-!!$    !
-!!$    real(kind=dp), intent(in)                    :: kpt(3)
-!!$    real(kind=dp), dimension(:,:), intent(out) :: dos_k
-!!$
-!!$    ! Adaptive smearing
-!!$    !
-!!$    real(kind=dp) :: eig_k(num_wann),levelspacing_k(num_wann),smear,arg
-!!$
-!!$    ! Misc/Dummy
-!!$    !
-!!$    integer          :: i,ifreq
-!!$    real(kind=dp)    :: rdum,omega,spn_nk(num_wann),alpha_sq,beta_sq 
-!!$
-!!$    call get_eig_levelspacing_k(kpt,eig_k,levelspacing_k)
-!!$
-!!$    ! Get spin projections for every band
-!!$    !
-!!$    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
-!!$
-!!$    dos_k=0.0_dp
-!!$    do i=1,num_wann
-!!$          !
-!!$          ! Except for the factor 1/sqrt(2), this is Eq.(34) YWVS07
-!!$          ! !!!UNDERSTAND THAT FACTOR!!!
-!!$          !
-!!$       smear=levelspacing_k(i)*dos_adpt_smr_fac/sqrt(2.0_dp)
-!!$       do ifreq=1,num_freq
-!!$          omega=dos_energy_min+(ifreq-1)*d_omega
-!!$          arg=(omega-eig_k(i))/smear
-!!$          if(abs(arg) > 10.0_dp) then ! optimization
-!!$             cycle
-!!$          else
-!!$             !
-!!$             ! Adaptive broadening of the delta-function in Eq.(39) YWVS07
-!!$             !
-!!$             ! hard code for M-P (1)
-!!$             rdum=w0gauss(arg,1)/smear
-!!$          end if
-!!$          !
-!!$          ! Contribution to total DOS
-!!$          !
-!!$          dos_k(ifreq,1)=dos_k(ifreq,1)+rdum
-!!$          if(spn_decomp) then
-!!$             !
-!!$             ! Contribution to spin-up DOS of Bloch spinor with component 
-!!$             ! (alpha,beta) with respect to the chosen quantization axis
-!!$             !
-!!$             alpha_sq=(1.0_dp+spn_nk(i))/2.0_dp ! |alpha|^2
-!!$             dos_k(ifreq,2)=dos_k(ifreq,2)+rdum*alpha_sq
-!!$             !
-!!$             ! Contribution to spin-down DOS 
-!!$             !
-!!$             beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
-!!$             dos_k(ifreq,3)=dos_k(ifreq,3)+rdum*beta_sq
-!!$          end if
-!!$       end do
-!!$    end do !loop over bands
-!!$
-!!$  end subroutine get_dos_k
 
   ! =========================================================================
 

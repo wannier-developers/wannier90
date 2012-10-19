@@ -1,9 +1,5 @@
 !-*- mode: F90; mode: font-lock -*-!
 
-! ======
-! TO DO: scissors corrections for all matrix elements
-! ====== 
-
 module w90_get_oper
 
 !==========================================================!

@@ -8,7 +8,7 @@ module w90_spin
 
   private
 
-  public :: spin_moment,get_spn_nk
+  public :: get_spin_moment,get_spin_nk
 
   real(kind=dp), parameter :: eps=1.0e-7
 
@@ -18,7 +18,7 @@ module w90_spin
   !                   PUBLIC PROCEDURES                       ! 
   !===========================================================!
 
-  subroutine spin_moment
+  subroutine get_spin_moment
   !============================================================!
   !                                                            !
   ! Computes the spin magnetic moment by Wannier interpolation !
@@ -63,7 +63,7 @@ module w90_spin
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
-          call spin_moment_k(kpt,spn_k)
+          call get_spin_moment_k(kpt,spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
 
@@ -94,7 +94,7 @@ module w90_spin
           kpt(3)=(real(loop_z,dp)/real(spin_kmesh(3),dp))
 
 
-          call spin_moment_k(kpt,spn_k)
+          call get_spin_moment_k(kpt,spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
 
@@ -126,11 +126,11 @@ module w90_spin
        write(stdout,'(1x,a18,f11.6)') 'Azim. phi (deg):',phi
     end if
 
-  end subroutine spin_moment
+  end subroutine get_spin_moment
 
 ! =========================================================================
 
-  subroutine get_spn_nk(kpt,spn_nk)
+  subroutine get_spin_nk(kpt,spn_nk)
   !=============================================================!
   !                                                             !
   ! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann) !
@@ -144,8 +144,8 @@ module w90_spin
     use w90_constants, only     : dp,pi,cmplx_0,cmplx_i
     use w90_io, only            : io_error
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
-    use w90_parameters, only    : num_wann,spn_axis_polar,&
-                                  spn_axis_azimuth
+    use w90_parameters, only    : num_wann,spin_axis_polar,&
+                                  spin_axis_azimuth
     use w90_postw90_common, only : fourier_R_to_k
     use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
 
@@ -182,9 +182,9 @@ module w90_spin
     ! Unit vector along the direction of the magnetization
     !
     conv=180.0_dp/pi
-    alpha(1)=sin(spn_axis_polar/conv)*cos(spn_axis_azimuth/conv)
-    alpha(2)=sin(spn_axis_polar/conv)*sin(spn_axis_azimuth/conv)
-    alpha(3)=cos(spn_axis_polar/conv)
+    alpha(1)=sin(spin_axis_polar/conv)*cos(spin_axis_azimuth/conv)
+    alpha(2)=sin(spin_axis_polar/conv)*sin(spin_axis_azimuth/conv)
+    alpha(3)=cos(spin_axis_polar/conv)
 
     ! Vector of spin matrices projected along the quantization axis
     !
@@ -192,13 +192,13 @@ module w90_spin
 
     spn_nk(:)=aimag(cmplx_i*utility_rotate_diag(SS_n,UU,num_wann))
 
-  end subroutine get_spn_nk
+  end subroutine get_spin_nk
 
   !===========================================================!
   !                   PRIVATE PROCEDURES                      ! 
   !===========================================================!
 
-  subroutine spin_moment_k(kpt,spn_k)
+  subroutine get_spin_moment_k(kpt,spn_k)
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_io, only            : io_error
@@ -242,6 +242,6 @@ module w90_spin
        end do
     enddo
 
-  end subroutine spin_moment_k
+  end subroutine get_spin_moment_k
 
 end module w90_spin

@@ -96,7 +96,7 @@ module w90_berry
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   berry_task,optics_time_parity,&
                                   optics_energy_min,optics_energy_max,&
-                                  optics_energy_step,spn_decomp,&
+                                  optics_energy_step,spin_decomp,&
                                   found_fermi_energy,fermi_energy
     use w90_get_oper, only      : get_HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                   get_FF_R,get_SS_R
@@ -244,7 +244,7 @@ module w90_berry
        else
           ncomp=6 ! symmetric conductivity, 6 indep. components
        endif
-       if(spn_decomp) then
+       if(spin_decomp) then
           call get_SS_R
           !
           ! Extra entries contain the decomposition into 
@@ -1562,11 +1562,11 @@ module w90_berry
                                    optics_adpt_smr,optics_adpt_smr_fac,&
                                    optics_smr_index,optics_smr_fixed_en_width,&
                                    optics_adpt_smr_max,&
-                                   berry_kmesh,spn_decomp
+                                   berry_kmesh,spin_decomp
     use w90_postw90_common, only : get_occ,kmesh_spacing,fourier_R_to_k
     use w90_wan_ham, only        : get_D_h,get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
-    use w90_spin, only           : get_spn_nk
+    use w90_spin, only           : get_spin_nk
 
     ! Arguments
     !
@@ -1621,7 +1621,7 @@ module w90_berry
        AA_bar(:,:,i)=utility_rotate(mdum,UU,num_wann)
     enddo
 
-    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
+    if(spin_decomp) call get_spin_nk(kpt,spn_nk)
 
     sig_k=0.0_dp
     jdos_k=0.0_dp
@@ -1630,7 +1630,7 @@ module w90_berry
        do m=1,num_wann
           occ_prod=occ(n)*(1.0_dp-occ(m))
           if(occ_prod < 1.0e-7_dp) cycle
-          if(spn_decomp) then
+          if(spin_decomp) then
              if(spn_nk(n)>=0 .and. spn_nk(m)>=0) then 
                 case=1 ! up --> up transition 
              elseif(spn_nk(n)<0 .and. spn_nk(m)<0) then 
@@ -1690,7 +1690,7 @@ module w90_berry
              ! Joint density of states
              !
              jdos_k(ifreq,1)=jdos_k(ifreq,1)+rdum
-             if(spn_decomp) jdos_k(ifreq,1+case)&
+             if(spin_decomp) jdos_k(ifreq,1+case)&
                   =jdos_k(ifreq,1+case)+rdum
              !
              ! Optical conductivity sigma(omega)/omega 
@@ -1701,7 +1701,7 @@ module w90_berry
                 sig_k(1,i,ifreq,1)=sig_k(1,i,ifreq,1)+Aprod(1,i)*rdum
                 sig_k(2,i,ifreq,1)=sig_k(2,i,ifreq,1)+Aprod(2,i)*rdum
                 sig_k(3,i,ifreq,1)=sig_k(3,i,ifreq,1)+Aprod(3,i)*rdum
-                if(spn_decomp) then
+                if(spin_decomp) then
                    sig_k(1,i,ifreq,1+case)&
                         =sig_k(1,i,ifreq,1+case)+Aprod(1,i)*rdum
                    sig_k(2,i,ifreq,1+case)&

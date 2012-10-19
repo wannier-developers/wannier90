@@ -38,7 +38,7 @@ contains
                                    fermi_energy
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_FF_R,get_SS_R
-    use w90_spin, only           : get_spn_nk
+    use w90_spin, only           : get_spin_nk
     use w90_berry, only          : get_imf_k,get_img_k,get_imh_k
     use w90_constants, only      : bohr,ev_au
 
@@ -227,7 +227,7 @@ contains
              ! chosen spin quantization axis
              !
              if(kpath_bands_colour=='spin') then
-                call get_spn_nk(kpt,spn_nk)
+                call get_spin_nk(kpt,spn_nk)
                 color_n(:,loop_kpt)=spn_nk(:)
                 !
                 ! The following is needed to prevent bands from disappearing 

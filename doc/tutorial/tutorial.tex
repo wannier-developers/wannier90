@@ -1,10 +1,11 @@
 \documentclass[a4paper,11pt,twoside]{article}
-\usepackage{a4wide}
+\usepackage[top=3cm,bottom=3cm,left=2cm,right=2cm]{geometry}
 \usepackage{multirow}
 \usepackage{footnote}
 \usepackage{amsbsy}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
+\usepackage[T1]{fontenc} % important for having searchable underscores
 \usepackage{bm}% bold math
 %\setlength{\parindent}{0in}
 %\setlength{\parskip}{0.05in}
@@ -14,10 +15,11 @@
 \usepackage[usenames]{color} % colors
 \usepackage{ulem} % allows \sout (strikeout). Can remove at the end (Ivo)
 %\usepackage{soul} % allows \hl (highlight). Can remove at the end (Ivo)
-\def\tent#1{\textcolor{red}{#1}}     % for tentative changes
+\newcommand\tent[1]{\textcolor{red}{#1}}     % for tentative changes
+\newcommand\tentbis{\color{red}}     % for tentative changes
 %%%%%%%%%%%%%%%%%%%%%%%%%%% REMOVE AT THE END %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
+%\let\oldundercore=\_
+%\def\_{\oldunderscore}
 
 % set fancy headings
 
@@ -35,8 +37,23 @@
 
 \title{\wannier: Tutorial}
 
-\author{Version 1.2}
-\date{15th January 2010}
+\author{Version 2.0}
+\date{\tent{XXth November 2012}}
+
+%%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
+%hidelinks to remove colored borders from links
+%plainpages=false needed for the unnumbered pages
+%breaklinks=true to allow to break long links (e.g. long titles) on
+%more than one line
+%bookmarksopen open the bookmarks in the adobe reader plugin
+%bookmarksopenlevel decide the max level at which the bookmarks should
+%be open
+% pdfdisplaydoctitle=true to show the document title instead of the
+% filename in the titlebar of adobereader
+\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,pdftex,hidelinks,
+            pdftitle={Wannier90 Tutorial},
+            pdfkeywords={wannier90;postw90;pwscf;tutorial;examples}]{hyperref}
+
 
 \begin{document}
 \newcommand{\wannier}{{\rm\texttt{wannier90}}}
@@ -48,25 +65,60 @@
 \newcommand{\Ak}{\mathbf{A}^{(\mathbf{k})}}
 \newcommand{\Uk}{\mathbf{U}^{(\mathbf{k})}}
 
+\newcommand\sectiontitle[1]{\section*{#1}\addcontentsline{toc}{section}{#1}}
+
 \maketitle
 
-\tent{
-  {\bf TO DO:}\\ \\
-  $\bullet$ With the growing number of examples, it may be helpful to add an index, like we have for the User Guide (and make examples titles more descriptive: I started doing that...)\\ \\
-  $\bullet$ For same reason, we should think of using bibtex for the growing number references (to automatically order them)\\ \\
-  $\bullet$ Replace MLWF $\rightarrow$ MLWFs? (like in RMP paper)\\ \\
-  $\bullet$ Underscores are not searcheable in the pdf. Is there a way
-  of changing that (here and also in User Guide)? It's a pitty, since
-  most keywords have underscores in them. }
+\tableofcontents
 
-\section*{Preliminaries}
+\newpage
+
+{\tentbis
+  {\bf TO DO:}
+
+\begin{itemize}
+\item {\footnotesize[solved] IS: With the growing number of examples, it may be helpful
+  to add an index, like we have for the User Guide (and make examples
+  titles more descriptive: I started doing that...)
+
+GP: I added the
+  table of contents at the beginning. In the future, use the new
+  command \verb#\sectiontitle{blablabla}# instead of
+\verb#\section*{blablabla}#}
+\item IS: For same reason, we should think of using bibtex for the
+  growing number references (to automatically order them). GP: I agree.
+\item {\footnotesize [done] IS: Replace MLWF $\rightarrow$ MLWFs? (like in RMP
+  paper) GP: I changed it where appropriate.}
+\item {\footnotesize [solved]IS: Underscores are not searcheable in the pdf. Is there a way
+  of changing that (here and also in User Guide)? It's a pity, since
+  most keywords have underscores in them. 
+
+GP: I added the \verb#\usepackage[T1]{fontenc}# package that solved this
+issue to both documents.}
+
+\item {\footnotesize
+I added the hyperref package to have links from the TOC to the
+chapters. I also changed all links using the \verb#\url{}# command 
+(and including always http://) so that one can simply click on the
+link in the pdf to open the link.
+}
+
+\item GP: would it be good to reduce the number of pages, since now
+  manual and tutorials are becoming quite long? E.g., I was thinking
+  to remove the cleardoublepage commands (now that we also have a
+  table of contents). I also reduced the margins a little bit.
+\end{itemize}
+  }
+
+\sectiontitle{Preliminaries}
+\label{sec:preliminaries}
 
 Welcome to \wannier! The examples contained in this tutorial are
 designed to help you become familiar with the procedure of generating,
-analysing and using maximally-localised Wannier functions (MLWF). As a
+analysing and using maximally-localised Wannier functions (MLWFs). As a
 first step, install \wannier\ following the instructions in the {\tt
   README} file of the \wannier\ distribution.  For an introduction to
-the theory underlying MLWF, you are encouraged to refer to the brief
+the theory underlying MLWFs, you are encouraged to refer to the brief
 overview given in the \wannier\ User Guide~\cite{UserGuide}, to the
 two seminal papers of Refs.~\cite{MV,SMV}, and to a recent
 paper~\cite{W90} describing \wannier.
@@ -74,28 +126,57 @@ paper~\cite{W90} describing \wannier.
 \tent{[Add reference to RMP paper?]}
 
 The following additional programs should be installed in order to
-visualise the output of \wannier\ 
+visualise the output of \wannier\ (they are optional, not all of them
+are necessary)
 \begin{itemize}
 \item {\tt gnuplot} is used to plot bandstructures. It is 
 available for many operating systems and is often installed by default on
  Unix/Linux distributions\\
-{\tt http://www.gnuplot.info}
+\url{http://www.gnuplot.info}
 \item {\tt xmgrace} may also be used to plot bandstructures.\\
-{\tt http://plasma-gate.weizmann.ac.il/Grace}
-\item {\tt XCrySDen} is used to visualise crystal structures, MLWF,
+\url{http://plasma-gate.weizmann.ac.il/Grace}
+\item {\tt XCrySDen} is used to visualise crystal structures, MLWFs,
   and Fermi surfaces. It is available for Unix/Linux, 
   Windows (using cygwin), and OSX. To correctly display 
 files from \wannier, version 1.4 or later must be used.\\
-{\tt http://www.xcrysden.org}
+\url{http://www.xcrysden.org}
 \item {\tt vmd} can also be used to visualise crystal structures and
-  MLWF.\\
-{\tt http://www.ks.uiuc.edu/Research/vmd}
-\item{\tent{Add python+numpy+matplotlib} here}
+  MLWFs.\\
+\url{http://www.ks.uiuc.edu/Research/vmd}
+\item{\tt python} with the {\tt numpy} and {\tt matplotlib} modules
+  (used e.g. in example 18 on Berry curvature)\\
+\tent{add here links}
 \end{itemize}
 
+\sectiontitle{Parallel execution}
+\label{sec:parallel}
+{\tentbis GP: I added here this subsection, feel free to
+  edit/modify/move. If you move it, please update references to
+  sec:parallel later in the examples.
+
+Presently, the \wannier\ is instead a serial-only executable, so
+it \emph{cannot} be run in parallel using MPI libraries.
+
+On the contrary, the {\tt postw90} executable can be run in parallel
+to speed up the calculations, using the MPI libraries.
+
+To enable the parallel version, you must specify some flags in the
+{\tt make.sys} file of {\tt wannier90} and {\tt postw90}; for further information, please refer to the {\tt
+  README.install} file in the top directory of the {\tt wannier90}
+distribution.
+
+Then, to run e.g. with 8 processors, you typically need to run a
+command similar to {\tt postw90} as follows:
+\begin{verbatim}
+mpirun -np 8 postw90.x seedname
+\end{verbatim}
+(the {\tt mpirun} command and its flags may differ depending on the
+MPI libraries installed on your system: refer to your MPI manual and/or to
+your system administrator for further information).}
 
 
-\section*{About this tutorial}
+
+\sectiontitle{About this tutorial}
 
 The first part of this tutorial comprises four examples taken from
 Refs.~\cite{MV,SMV}: gallium arsenide, lead, silicon and copper. All
@@ -103,27 +184,26 @@ of the \wannier\ input files have been provided.
 
 The second part of the tutorial covers the generation of \wannier\
 input files starting from a full electronic structure calculation. We
-have provided input files for the \pwscf\ ({\tt
-  www.quantum-espresso.org}) interface to \wannier. Therefore, you
+have provided input files for the \pwscf\ interface (\url{http://www.quantum-espresso.org}) to \wannier. \tent{say that new
+versions of QE don't need to be patched? Say that new features that
+require uHu will not be ported back to QE prior to 5.0?} Therefore, you
 will need to install and compile elements of the {\tt
   quantum-espresso} package, namely {\tt pw.x} and {\tt
   pw2wannier90.x}, in order to run these
-examples. Please visit {\tt www.quantum-espresso.org} to download the
+examples. Please visit \url{http://www.quantum-espresso.org} to download the
 package, and for installation instructions. 
 
 At the time of
 writing, interfaces to a number of other electronic structure codes,
 such as {\sc 
-  castep} ({\tt www.castep.org}), {\sc abinit} ({\tt
-  www.abinit.org}), and {\sc fleur} ({\tt
-  www.flapw.de}), are in progress \tent{{\bf [CHECK: still in progress?]}}.
+  castep} (\url{http://www.castep.org}), {\sc abinit} (\url{http://www.abinit.org}), and {\sc fleur} (\url{http://www.flapw.de}), are in progress \tent{{\bf [CHECK: still in progress?]}}.
 
-For images of MLWF, see our gallery at {\tt
-  http://www.wannier.org/gallery.html}. If you have any images that
+For images of MLWFs, see our gallery at
+  \url{http://www.wannier.org/gallery.html}. If you have any images that
   you would like to submit to the gallery, please email us.
 % at\\ {\tt developers@wannier.org}.
 
-\section*{Contact us}
+\sectiontitle{Contact us}
 
 If you have any suggestions regarding ways in which this tutorial may
 be improved, then send us an email.
@@ -133,16 +213,16 @@ For other questions, email the \wannier\ forum at {\tt
   wannier@quantum-espresso.org}.  Note that first you will need to
 register in order to post emails. Emails from non-registered users are
 deleted automatically. You can register by following the links at\\
-{\tt http://www.wannier.org/forum.html}.
+\url{http://www.wannier.org/forum.html}.
 
 
 
 \cleardoublepage
 
-\section*{1: Gallium Arsenide \tent{-- MLWFs for the valence bands}}
+\sectiontitle{1: Gallium Arsenide \tent{-- MLWFs for the valence bands}}
 
 \begin{itemize}
-\item{Outline: \it{Obtain and plot MLWF for the four valence
+\item{Outline: \it{Obtain and plot MLWFs for the four valence
     bands of GaAs.}} 
 \item{Generation details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 2$\times$2$\times$2 k-point grid. Starting
@@ -160,7 +240,7 @@ deleted automatically. You can register by following the links at\\
 \end{itemize}
 
 \begin{enumerate}
-\item Run \wannier\ to minimise the MLWF spread
+\item Run \wannier\ to minimise the MLWFs spread
 {\tt
 \begin{quote}
 wannier90.x gaas
@@ -169,17 +249,17 @@ Inspect the output file {\tt gaas.wout}. The total spread converges to its
 minimum value after just a few iterations. Note that the geometric centre of
 each MLWF lies along a Ga-As bond, slightly closer to As
 than Ga. Note also that the memory requirement for the minimisation of
-the spread is very low as the MLWF are defined at each
+the spread is very low as the MLWFs are defined at each
 k-point by just the 4$\times$4 unitary matrices $\Uk$. 
-\item Plot the MLWF by adding the following keywords to
+\item Plot the MLWFs by adding the following keywords to
   the input file {\tt gaas.win} 
 {\tt
 \begin{quote}
-wannier\_plot = true
+wannier\_\-plot = true
 \end{quote} }
-and re-running \wannier. To visualise the MLWF we must
+and re-running \wannier. To visualise the MLWFs we must
 represent them explicitly on a real space grid (see
-Ref.~\cite{UserGuide}). As a consequence, plotting the MLWF is slower
+Ref.~\cite{UserGuide}). As a consequence, plotting the MLWFs is slower
 and uses more memory than the minimisation of the spread. The four
 files that are created ({\tt gaas\_00001.xsf}, etc.) can be viewed
 using XCrySDen,\footnote{Once XCrySDen starts, click on {\tt Tools}
@@ -190,28 +270,28 @@ using XCrySDen,\footnote{Once XCrySDen starts, click on {\tt Tools}
 xcrysden --xsf gaas\_00001.xsf
 \end{quote} }
 
-For large systems, plotting the MLWF may be time consuming
+For large systems, plotting the MLWFs may be time consuming
 and require a lot of memory. Use the keyword {\tt wannier\_plot\_list}
-to plot a subset of the MLWF. E.g., to plot the
-1st, 2nd and 7th MLWF use 
+to plot a subset of the MLWFs. E.g., to plot the
+1st, 2nd and 7th MLWFs use 
 {\tt
 \begin{quote}
 wannier\_plot\_list = 1 2 7
 \end{quote} }
-The MLWF are plotted in a supercell of the unit cell. The
+The MLWFs are plotted in a supercell of the unit cell. The
 size of this supercell is set through the keyword {\tt
   wannier\_plot\_supercell}. The default value is 2 (corresponding to a
 supercell with eight times the unit cell volume). We recommend not using
 values great than 3 as the memory and computational cost scales
 cubically with supercell size.  
 
-Plot the 3rd MLWF in a supercell of size 3. Choose a low
+Plot the 3rd MLWFs in a supercell of size 3. Choose a low
 value for the isosurface (say 0.5). Can you explain what you see? 
 
-{\it Hint:} For a finite k-point mesh, the MLWF are in fact
+{\it Hint:} For a finite k-point mesh, the MLWFs are in fact
 periodic and the period is related to the spacing of the k-point mesh. For
 mesh with $n$ divisions in the $i^{\mathrm{th}}$ direction in the
-Brillouin zone, the MLWF ``live'' in a supercell $n$ times the
+Brillouin zone, the MLWFs ``live'' in a supercell $n$ times the
 unit cell. 
 \end{enumerate}
 
@@ -220,10 +300,10 @@ unit cell.
 
 
 
-\section*{2: Lead \tent{-- Wannier-interpolated Fermi surface}}
+\sectiontitle{2: Lead \tent{-- Wannier-interpolated Fermi surface}}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the four lowest states
+\item{Outline: \it{Obtain MLWFs for the four lowest states
     in lead. Use Wannier interpolation to plot the Fermi surface.}}
 \item{Generation Details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 4$\times$4$\times$4 k-point grid. Starting
@@ -240,13 +320,14 @@ unit cell.
 \end{itemize}
 
 \end{itemize}
+
 The four lowest valence bands in lead are separated in energy from the
-higher conduction states (see Fig.~\ref{fig:pb-bnd}). The MLWF of
-these states have partial occupancy. MLWF describing only the occupied
+higher conduction states (see Fig.~\ref{fig:pb-bnd}). The MLWFs of
+these states have partial occupancy. MLWFs describing only the occupied
 states would be poorly localised.
 
 \begin{enumerate}
-\item Run \wannier\ to minimise the MLWF spread
+\item Run \wannier\ to minimise the MLWFs spread
 {\tt
 \begin{quote}
 wannier90.x lead
@@ -290,10 +371,10 @@ xcrysden --bxsf lead.bxsf
 \cleardoublepage
 
 
-\section*{3: Silicon \tent{-- Disentangled MLWFs}}
+\sectiontitle{3: Silicon \tent{-- Disentangled MLWFs}}
 
 \begin{itemize}
-\item{Outline: \it{Obtain \tent{disentangled} MLWF for the valence and low-lying
+\item{Outline: \it{Obtain \tent{disentangled} MLWFs for the valence and low-lying
     conduction states of Si. Plot the interpolated bandstructure}} 
 \item{Generation Details: \it{From \pwscf, using norm-conserving
     pseudopotentials and a 4$\times$4$\times$4 k-point grid. Starting
@@ -308,7 +389,7 @@ xcrysden --bxsf lead.bxsf
 \item{ {\tt silicon.eig}  {\it The Bloch eigenvalues at each k-point}}
 \end{itemize}
 \end{itemize}
-The valence and lower conduction states can be represented by MLWF
+The valence and lower conduction states can be represented by MLWFs
 with $sp^3$-like symmetry. The lower conduction states are not 
 separated from the higher states by an energy gap. In order to form
 localised WF, we use the disentanglement procedure
@@ -326,7 +407,7 @@ $\Omega_{\rm I}$ -- this is the extraction of the optimal subspace in
 the disentanglement procedure. Then, we minimise $\Omega_{\rm D} +
 \Omega_{{\rm OD}}$.
 
-\item Plot the \sout{MLWF} \tent{energy bands} by adding the following
+\item Plot the energy bands by adding the following
   commands to the input file {\tt silicon.win} {\tt
 \begin{quote}
 restart = plot
@@ -359,11 +440,11 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \cleardoublepage
 
 
-\section*{4: Copper \tent{-- Fermi surface, orbital character of
+\sectiontitle{4: Copper \tent{-- Fermi surface, orbital character of
     energy bands}}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF to describe the states around the
+\item{Outline: \it{Obtain MLWFs to describe the states around the
     Fermi-level in copper}} 
 \item{Generation Details: \it{From \pwscf, using ultrasoft
     pseudopotentials~\cite{USPP} and a
@@ -383,7 +464,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \end{itemize}
 
 \begin{enumerate}
-\item Run \wannier\ to minimise the MLWF spread
+\item Run \wannier\ to minimise the MLWFs spread
 {\tt
 \begin{quote}
 wannier90.x copper
@@ -444,30 +525,50 @@ interpolated bands.
 
 \cleardoublepage
 
-\begin{center}
-\Large{\bf Examples Using the {\sc pwscf} Interface}
-\end{center}
+\sectiontitle{Examples Using the {\sc pwscf} Interface}
+\label{sec:using pwscf}
 
 The \pwscf\ plane-wave, density-functional theory code, which is
-available as part of the \QE\ distribution ({\tt
-  www.quantum-espresso.org}), is fully interfaced to \wannier\ via the
+available as part of the \QE\ distribution (\url{http://www.quantum-espresso.org}), is fully interfaced to \wannier\ via the
 {\tt pw2wannier90} post-processing code that is also available as part
 of \QE. The latest version of {\tt pw2wannier90} is included as part of 
 the \wannier\ distribution. Please see the {\tt pwscf} directory for 
 instructions on how to incorporate it into \pwscf. 
 
-\textcolor{red}{Ivo: Should we explain somewhere in the tutorial
+\tent{Ivo: Should we explain somewhere in the tutorial
   (here?)  how to execute {\tt pw2wannier90} in parallel? (and also
   {\tt pw.x}) Note that in Example~16 Giovanni explained how to
   execute {\tt postw90} in parallel, and then I did the same for
   Examples~17--20. For 17--20 at least, running {\tt pw2wannier90} is
   even more time-consuming than running {\tt postw90}...}
 
+{\tentbis GP: I try to add the following, to decide if this is the
+  correct place. Feel free to modify/adapt/correct. I put here only
+  the discussion for the parallel execution of pw2wannier90, and
+  instead the part for wannier+postw90 in the preliminaries.
+
+ Note that, as {\tt pw.x}, also the {\tt pw2wannier90.x} executable can be run in
+parallel (and for large calculations, this is extremely useful to
+significantly reduce the computation time).
+This requires that the code is compiled in its parallel version, using
+the MPI libraries. Refer to the \QE\ package for the documentation on
+how to compile the code in parallel.
+Note that, unless you specify {\tt wf\_collect=.true.} in your {\tt pw.x}
+input file, you must run {\tt pw2wannier90} with the same number of
+processors as {\tt pw.x}.
+
+Moreover we remind here that as discussed in the ``Parallel execution'' section at page
+\pageref{sec:parallel}, while the \wannier\ executable is serial and cannot be run
+in parallel, the {\tt postw90.x} can be run in parallel and in this case any number of processors
+can be used, independently of what has been used for {\tt pw.x} and
+{\tt pw2wannier90.x}.
+}
+
 \cleardoublepage
 
-\section*{5: Diamond \tent{-- MLWFs for the valence bands}}
+\sectiontitle{5: Diamond \tent{-- MLWFs for the valence bands}}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence bands of diamond}}
+\item{Outline: \it{Obtain MLWFs for the valence bands of diamond}}
 \item{Directory: {\tt examples/example5/}}
 \item{Input Files}
 \begin{itemize}
@@ -496,16 +597,16 @@ instructions on how to incorporate it into \pwscf.
   {\tt diamond.mmn} and {\tt diamond.amn} files).\\  
 {\tt pw2wannier90.x < diamond.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x diamond}
 \end{enumerate}
 
 \cleardoublepage
 
-\section*{6: Copper \tent{-- Fermi surface}}
+\sectiontitle{6: Copper \tent{-- Fermi surface}}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF to describe the states around the
+\item{Outline: \it{Obtain MLWFs to describe the states around the
     Fermi-level in copper}}
 \item{Directory: {\tt examples/example6/}}
 \item{Input Files}
@@ -536,7 +637,7 @@ instructions on how to incorporate it into \pwscf.
   {\tt copper.mmn} and {\tt copper.amn} files).\\  
 {\tt pw2wannier90.x < copper.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x copper}
 \end{enumerate}
 
@@ -593,7 +694,7 @@ end kpoint\_path
 \subsection*{Further ideas}
 \begin{itemize}
 \item Compare the Wannier interpolated bandstructure with the full
-  \pwscf\ bandstructure. Obtain MLWF using a denser k-point grid.
+  \pwscf\ bandstructure. Obtain MLWFs using a denser k-point grid.
 \tent{{[Provide script for this? Link to Jonathan's URL?]}}
 \item Investigate the effects of the outer and inner energy windows on
   the interpolated bands. 
@@ -614,10 +715,10 @@ end kpoint\_path
 
 \cleardoublepage
 
-\section*{7: Silane  (SiH$_4$) \tent{-- Molecular MLWFs using 
+\sectiontitle{7: Silane  (SiH$_4$) \tent{-- Molecular MLWFs using 
 $\Gamma$-point sampling}}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the occupied states of molecular
+\item{Outline: \it{Obtain MLWFs for the occupied states of molecular
     silane. $\Gamma$-point sampling}} 
 \item{Directory: {\tt examples/example7/}}
 \item{Input Files}
@@ -647,15 +748,15 @@ $\Gamma$-point sampling}}
   {\tt silane.mmn} and {\tt silane.amn} files).\\  
 {\tt pw2wannier90.x < silane.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x silane}
 \end{enumerate}
 
 \cleardoublepage
 
-\section*{8: Iron \tent{-- Spin-polarized WFs, total and projected DOS}}
+\sectiontitle{8: Iron \tent{-- Spin-polarized WFs, total and projected DOS}}
 \begin{itemize}
-\item{Outline: \it{\sout{Obtain MLWF to describe the states around the
+\item{Outline: \it{\sout{Obtain MLWFs to describe the states around the
         Fermi-level in iron.} \tent{Generate Wannier functions for ferromagnetic
         iron, and use them to calculate the density of states (DOS) by Wannier
         interpolation.}}}
@@ -675,7 +776,7 @@ $\Gamma$-point sampling}}
 \item{ {\tt iron\_dn.win}  {\it The {\tt wannier90} \tent{and {\tt
           postw90}} input file - spin down}}
 \end{itemize}
-\item{Note that we obtain the MLWF for spin up and spin down in
+\item{Note that we obtain the MLWFs for spin up and spin down in
   separate calculations.} 
 \end{itemize}
 
@@ -698,7 +799,7 @@ $\Gamma$-point sampling}}
 {\tt pw2wannier90.x < iron\_up.pw2wan > pw2wan.out}\\
 {\tt pw2wannier90.x < iron\_dn.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x iron\_up}\\
 {\tt wannier90.x iron\_dn}
 
@@ -849,9 +950,9 @@ write\_hr\_diag = T
 \cleardoublepage
 
 
-\section*{9: Cubic BaTiO$_3$}
+\sectiontitle{9: Cubic BaTiO$_3$}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for a perovskite}}
+\item{Outline: \it{Obtain MLWFs for a perovskite}}
 \item{Directory: {\tt examples/example9/}}
 \item{Input Files}
 \begin{itemize}
@@ -864,7 +965,7 @@ write\_hr\_diag = T
 \end{itemize}
 \end{itemize}
 
- To start with, we are going to obtain MLWF for the oxygen 2p
+ To start with, we are going to obtain MLWFs for the oxygen 2p
   states. From the bandstructure~\cite{BaTiO3}, these form an isolated
   group of bands. We use the \wannier\ keyword {\tt exclude\_bands} to
   remove all but the 2p bands from the calculation of the overlap
@@ -886,7 +987,7 @@ write\_hr\_diag = T
   {\tt BaTiO3.mmn} and {\tt BaTiO3.amn} files).\\  
 {\tt pw2wannier90.x < BaTiO3.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x BaTiO3}
 \end{enumerate}
 
@@ -914,14 +1015,14 @@ We can now simulate the ferroelectric phase by displacing the Ti
 Ti 0.505 0.5 0.5
 \end{quote}
 }
-and regenerate the MLWF (i.e., compute the ground-state charge
+and regenerate the MLWFs (i.e., compute the ground-state charge
 density and Bloch states using \pwscf, etc.) and look at the change in
 the second MLWF.
 
 \subsection*{Further ideas}
 \begin{itemize}
-\item Look at MLWF for other groups of bands. What happens if you form
-  MLWF for the whole valence manifold?
+\item Look at MLWFs for other groups of bands. What happens if you form
+  MLWFs for the whole valence manifold?
 
 \item Following Ref.~\cite{BaTiO3}, compute the Born effective charges from the
   change in Wannier centres under an atomic displacement. 
@@ -929,9 +1030,9 @@ the second MLWF.
 
 \cleardoublepage
 
-\section*{10: Graphite}
+\sectiontitle{10: Graphite}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for graphite (AB, Bernal)}}
+\item{Outline: \it{Obtain MLWFs for graphite (AB, Bernal)}}
 \item{Directory: {\tt examples/example10/}}
 \item{Input Files}
 \begin{itemize}
@@ -960,7 +1061,7 @@ the second MLWF.
   {\tt graphite.mmn} and {\tt graphite.amn} files).\\  
 {\tt pw2wannier90.x < graphite.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x graphite}
 \end{enumerate}
 
@@ -968,10 +1069,10 @@ the second MLWF.
 \cleardoublepage
 
 
-\section*{11: Silicon \tent{-- Valence and conduction states, scissors correction}}
+\sectiontitle{11: Silicon \tent{-- Valence and conduction states, scissors correction}}
 \subsection*{Valence States}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence bands of silicon.}}
+\item{Outline: \it{Obtain MLWFs for the valence bands of silicon.}}
 \item{Directory: {\tt examples/example11/}}
 \item{Input Files}
 \begin{itemize}
@@ -1002,7 +1103,7 @@ the second MLWF.
   {\tt silicon.mmn} and {\tt  silicon.amn} files).\\
 {\tt pw2wannier90.x < silicon.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x silicon}
 
 \end{enumerate}
@@ -1011,10 +1112,10 @@ Inspect the output file {\tt silicon.wout}. The total spread converges to its
 minimum value after just a few iterations. Note that the geometric centre of
 each MLWF lies at the centre of the Si-Si bond.
 Note also that the memory requirement for the minimisation of
-the spread is very low as the MLWF are defined 
+the spread is very low as the MLWFs are defined 
 by just the 4$\times$4 unitary matrices $\Uk$. 
 
-Plot the MLWF by adding the following keywords to the input file {\tt
+Plot the MLWFs by adding the following keywords to the input file {\tt
   silicon.win} 
 {\tt
 \begin{quote}
@@ -1029,7 +1130,7 @@ xcrysden --xsf silicon\_00001.xsf
 \subsection*{Valence + Conduction States}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence and low-lying
+\item{Outline: \it{Obtain MLWFs for the valence and low-lying
       conduction-band states of Si. Plot the interpolated
       bandstructure. \tent{Apply a scissors correction to the
         conduction bands.}}}
@@ -1043,7 +1144,7 @@ xcrysden --xsf silicon\_00001.xsf
 \item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
 \end{itemize}
-The valence and lower conduction states can be represented by MLWF
+The valence and lower conduction states can be represented by MLWFs
 with $sp^3$-like symmetry. The lower conduction states are not 
 separated by an energy gap from the higher states. In order to form
 localised WF we use the disentanglement procedure
@@ -1096,10 +1197,10 @@ scissors\_shift = 0.65
 
 \begin{itemize}
 \item Compare the Wannier interpolated bandstructure with the full
-  \pwscf\ bandstructure. Compute MLWF using a finer
+  \pwscf\ bandstructure. Compute MLWFs using a finer
   k-point grid (e.g., 6$\times$6$\times$6 or 8$\times$8$\times$8) and
   note how the accuracy of the interpolation increases~\cite{WanInt}.
-\item Compute four MLWF spanning the low-lying conduction states (see
+\item Compute four MLWFs spanning the low-lying conduction states (see
   Ref.~\cite{SMV}).
 \end{itemize}
 
@@ -1115,10 +1216,10 @@ scissors\_shift = 0.65
 \cleardoublepage
 
 
-\section*{12: Benzene}
+\sectiontitle{12: Benzene}
 \subsection*{Valence States}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence states of benzene}}
+\item{Outline: \it{Obtain MLWFs for the valence states of benzene}}
 \item{Directory: {\tt examples/example12/}}
 \item{Input Files}
 \begin{itemize}
@@ -1143,7 +1244,7 @@ scissors\_shift = 0.65
   {\tt benzene.mmn} and {\tt  benzene.amn} files).\\
 {\tt pw2wannier90.x < benzene.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x benzene}
 
 \end{enumerate}
@@ -1151,7 +1252,7 @@ scissors\_shift = 0.65
 Inspect the output file {\tt benzene.wout}. The total spread converges
 to its minimum value after just a few iterations. 
 
-Plot the MLWF by adding the following keywords to the input file {\tt
+Plot the MLWFs by adding the following keywords to the input file {\tt
   benzene.win} 
 {\tt
 \begin{quote}
@@ -1165,7 +1266,7 @@ and re-running \wannier. Visualise them using, e.g., XCrySDen.
 \subsection*{Valence + Conduction States}
 
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence and low-lying
+\item{Outline: \it{Obtain MLWFs for the valence and low-lying
     conduction states of benzene.}} 
 \item{Input Files}
 \begin{itemize}
@@ -1187,7 +1288,7 @@ Inspect the output file {\tt benzene.wout}. The minimisation of the
 spread occurs in a two-step procedure. First, we minimise $\Omega_{\rm
   I}$. Then, we minimise $\Omega_{\rm O}+\Omega_{{\rm OD}}$.
 
-\item Plot the MLWF by adding the following commands to the
+\item Plot the MLWFs by adding the following commands to the
  input file {\tt benzene.win}
 {\tt
 \begin{quote}
@@ -1201,7 +1302,7 @@ and re-running \wannier. Visualise them using, e.g., XCrySDen.
 
 \cleardoublepage
 
-\section*{13: (5,5) Carbon Nanotube \tent{-- Transport properties}}
+\sectiontitle{13: (5,5) Carbon Nanotube \tent{-- Transport properties}}
 %\subsection*{Transport properties}
 
 \begin{itemize}
@@ -1267,7 +1368,7 @@ the data. You should get something that looks like Fig.~\ref{fig:cnt.tran}.
 
 \begin{figure}[h]
 \begin{center}
-\scalebox{0.75}{\includegraphics{cnt_win}}
+\includegraphics[width=10cm]{cnt_win}
 \caption{Bandstructure of (5,5) carbon nanotube showing the position
   of the outer and inner energy windows.}
 \label{fig:cnt.win}
@@ -1286,7 +1387,7 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 
 \cleardoublepage
 
-\section*{14: Linear Sodium Chain \tent{-- Transport properties}}
+\sectiontitle{14: Linear Sodium Chain \tent{-- Transport properties}}
 
 \begin{itemize}
   \item{Outline: \it{Compare the quantum conductance of a periodic 
@@ -1369,7 +1470,7 @@ defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
 
 \cleardoublepage
 
-\section*{15: (5,0) Carbon Nanotube}
+\sectiontitle{15: (5,0) Carbon Nanotube \tent{-- Transport properties}}
 
 \emph{Note that these systems require reasonably large-scale electronic 
 structure calculations.}
@@ -1456,9 +1557,9 @@ defect (red).}
 
 \cleardoublepage
 
-\section*{16: Silicon -- Boltzmann transport}
+\sectiontitle{16: Silicon -- Boltzmann transport}
 \begin{itemize}
-\item{Outline: \it{Obtain MLWF for the valence and low-lying
+\item{Outline: \it{Obtain MLWFs for the valence and low-lying
     conduction states of Si. Calculate the electrical conductivity, the
     Seebeck coefficient and the thermal conductivity in the constant
     relaxation time approximation using the \bw\ module.}} 
@@ -1477,8 +1578,13 @@ defect (red).}
 
 Note the first five steps in the following are the same of Example~11.
 If you have already run Example~11 (in particular, the section ``\emph{Valence + Conduction States}'')
-you can start from those files and continue from point 6, after adding the \bw\ flags to the
-input file.
+you can start from those files and continue from point 6, after having
+added the \bw\ flags to the input file.
+
+Note that in the following, steps 1, 2, 4 and 6 can be possibly run in parallel
+on multiple processors (using {\tt mpirun}), while steps 3 and 5 must
+be run in serial.
+
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of silicon\\
 {\tt pw.x < Si.scf > scf.out}
@@ -1496,19 +1602,17 @@ input file.
   {\tt Si.mmn} and {\tt  Si.amn} files).\\
 {\tt pw2wannier90.x < Si.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x Si}
-
-\item Run \postw\ to calculate the transport coefficients.\\
-For serial execution use: {\tt postw90.x Si}  \\
-For parallel execution use: {\tt mpirun -np 8 postw90.x Si} \\
-Note that the {\tt mpirun} command-line flags may be different in your MPI implementation: read your MPI manual. You may also want to change the number of processors (8 in this example).
-
-\end{enumerate}
 
 Inspect the output file {\tt Si.wout} and check if the convergence was reached both in the
 disentanglement and in the wannierisation steps (as discussed in further detail in Example~11).
 You may also want to plot the Wannier functions and the interpolated band structure.
+
+\item Run \postw\ to calculate the transport coefficients.\\
+{\tt postw90.x Si} (serial execution) \\
+{\tt mpirun -np 8 postw90.x Si} (example of parallel execution with 8 nodes) 
+\end{enumerate}
 
 Inspect the output file {\tt Si.wpout}. It summarizes the main details of the calculation (more details can be obtained by setting a larger value of the \verb#iprint# flag). 
 Check if no warnings are issued. Note that if no special flags are passed to \bw, it assumes that
@@ -1516,7 +1620,7 @@ the ab-initio calculation did not include magnetization effects, and thus it set
 number of electrons per state.
 
 Note also that the value of the relaxation time $\tau=10$~fs in the
-example is set only as an \sout{exemplificative} \tent{representative}
+example is set only as a representative
 value; note also that only the electrical and thermal conductivity
 depend on $\tau$, while the Seebeck coefficient is independent of
 $\tau$.
@@ -1553,7 +1657,7 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
 \cleardoublepage
 
 
-\section*{17: Iron -- Spin-orbit-coupled bands and
+\sectiontitle{17: Iron -- Spin-orbit-coupled bands and
 Fermi surface contours}
 
 Note: You should go through Example 8 (iron without spin-orbit) before
@@ -1623,14 +1727,14 @@ their number.
   \end{itemize}
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the energy eigenvalues and spin
   expectation values
   by Wannier interpolation.\\
   {\tt postw90.x Fe} (serial execution)\\
-  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with 8 nodes) 
 
 \end{enumerate}
 
@@ -1788,7 +1892,7 @@ to Fig.~\ref{fig:fe-fermicontours}.
 
 \cleardoublepage
 
-\section*{18: Iron -- Berry curvature and anomalous Hall 
+\sectiontitle{18: Iron -- Berry curvature and anomalous Hall 
 conductivity}
 
 \begin{itemize}
@@ -1829,12 +1933,12 @@ file {\tt Fe.win}.
   {\tt Si.mmn} and {\tt  Si.amn} files).\\
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the Berry curvature.\\
   {\tt postw90.x Fe} (serial execution)\\
-  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with 8 nodes) 
 
 
 \end{enumerate}
@@ -1940,7 +2044,7 @@ last component is nonzero.
 \caption{Berry curvature $-\Omega^z({\bf k})$ on the (010) plane of
   bcc Fe, in atomic units.  The color scale is as follows:
   a positive value, e.g., 2, means $10^2$~bohr$^2$, while a negative value,
-  e.g., -2, means $-10^2$~bohr$^2$.}
+  e.g., $-2$, means $-10^2$~bohr$^2$.}
 \label{fig:fe-curv-slice}
 \end{center}
 \end{figure}
@@ -1996,7 +2100,7 @@ Study the convergence of the AHC with respect to the density of
 
 \cleardoublepage
 
-\section*{19: Iron -- Orbital magnetization}
+\sectiontitle{19: Iron -- Orbital magnetization}
 
 
 \begin{itemize}
@@ -2052,12 +2156,12 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
   \end{itemize}
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the orbital magnetization.\\
   {\tt postw90.x Fe} (serial execution)\\
-  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with 8 nodes) 
 
 
 \end{enumerate}
@@ -2089,7 +2193,7 @@ fermi\_energy = 12.6285
 Compare the value of the orbital magnetization in {\tt Fe.wpout} with
 the spin magnetization in {\tt scf.out}.\footnote{Alternatively, the
 spin magnetization can be computed by {\tt postw90}. This requires adding the
-instruction {\tt spn\_moment = T} to {\tt Fe.win}, assuming that {\tt pw2wannier90}
+instruction {\tt spin\_moment = T} to {\tt Fe.win}, assuming that {\tt pw2wannier90}
 was executed with {\tt write\_spn = .true.} in {\tt Fe.pw2wan}.} 
 Both point along $\hat{\bf
   z}$, but the orbital contribution is much smaller (it is strongly
@@ -2137,7 +2241,7 @@ the BZ.
 
 \cleardoublepage
 
-\section*{20: Iron -- Optical conductivity and joint density-of-states}
+\sectiontitle{20: Iron -- Optical conductivity and joint density-of-states}
 
 \begin{itemize}
 \item{Outline: \it{Calculate the joint density-of-states (JDOS) and
@@ -2184,17 +2288,17 @@ new input file {\tt Fe.win}.
   \item[{\bf --}] The spin matrix elements $\langle \psi_{n{\bf
         k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the
     {\tt Fe.spn} file)\footnote{These are only used in connection with
-{\tt spn\_decomp} in ``Further ideas.''}
+{\tt spin\_decomp} in ``Further ideas.''}
 
   \end{itemize}
 {\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
 
-\item Run \wannier\ to compute the MLWF.\\
+\item Run \wannier\ to compute the MLWFs.\\
 {\tt wannier90.x Fe}
 
 \item Run \postw\ to compute the JDOS and optical conductivity.\\
   {\tt postw90.x Fe} (serial execution)\\
-  {\tt mpirun -np 8 postw90.x Fe} (parallel execution)
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with 8 nodes) 
 
 \end{enumerate}
 
@@ -2299,7 +2403,7 @@ the number of $k$-points from $25^3$ to, e.g., $125^3$.
 {\tt
 \begin{quote}
 
-spn\_decomp = T
+spin\_decomp = T
 \end{quote} }
 %
 This adds three extra columns to the *sig*.dat output files,
@@ -2352,7 +2456,7 @@ Ref.~\cite{yao-prl04}.
 \begin{thebibliography}{99}
 
 \bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
-  Guide, available at {\tt http://www.wannier.org/user\_guide.html}.
+  Guide, available at \url{http://www.wannier.org/user\_guide.html}.
 \textcolor{red}{Add Giovanni and Ivo as co-authors?}
 
 \bibitem{MV} N.~Marzari and D.~Vanderbilt, 
@@ -2366,7 +2470,7 @@ Ref.~\cite{yao-prl04}.
 \bibitem{W90} A.~A.~Mostofi, J.~R.~Yates, Y.-S.~Lee, I.~Souza,
    D.~Vanderbilt and N.~Marzari, \wannier: A Tool for Obtaining
    Maximally-Localized Wannier Functions, {\it Comput. Phys. Commun.},
-   178, 685 (2008) and {\tt http://arxiv.org/abs/0708.0650}.
+   178, 685 (2008) and \url{http://arxiv.org/abs/0708.0650}.
 
 \bibitem{USPP} D.~Vanderbilt, Soft Self-Consistent Pseudopotentials in
   a Generalized Eigenvalue Formalism, {\it Phys. Rev. B} {\bf 41}
@@ -2374,7 +2478,7 @@ Ref.~\cite{yao-prl04}.
 
 \bibitem{BaTiO3} N.~Marzari and D.~Vanderbilt, Maximally-Localized
   Wannier Functions in Perovskites: BaTiO$_3$,
-  {\tt http://arxiv.org/abs/cond-mat/9802210}.
+  \url{http://arxiv.org/abs/cond-mat/9802210}.
 
 \bibitem{WanInt} J.~R.~Yates {\it et al.}, Spectral and Fermi
   Surface Properties from Wannier Interpolation, {\it Phys. Rev. B}

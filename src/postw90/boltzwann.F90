@@ -39,7 +39,7 @@ module w90_boltzwann
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
        boltz_kmesh_spacing, boltz_kmesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
-       timing_level, dis_win_min, dis_win_max, spn_decomp, boltz_dos_adpt_smr, &
+       timing_level, dis_win_min, dis_win_max, spin_decomp, boltz_dos_adpt_smr, &
        boltz_dos_adpt_smr_fac, boltz_dos_smr_fixed_en_width, &
        boltz_tdf_smr_fixed_en_width, cell_volume, num_elec_per_state, iprint
   use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
@@ -149,7 +149,7 @@ contains
        TDFEnergyArray(i) = dis_win_min - TDF_exceeding_energy + real(i-1,dp)*boltz_tdf_energy_step
     end do
 
-    if(spn_decomp) then
+    if(spin_decomp) then
        ndim=3
     else
        ndim=1
@@ -454,7 +454,7 @@ contains
   !> energies in eV before calling this routine.
   !> 
   !> \note The TDF array must be already allocated with dimensions 6 * size(TDFEnergyArray) * ndim, before calling
-  !> this routine, where ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
+  !> this routine, where ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
   !>
   !> \note If run in parallel, at the end each processor will have a copy of the full TDF array
   !>
@@ -477,7 +477,7 @@ contains
   !>          upper triangle [i<=j]).
   !>        - EnIdx is the index of the energies; the corresponding energy is given by
   !>          TDFEnergyArray(EndIdx) array (in eV).
-  !>        - Spin may be only 1 if spn_decomp=.false. If it is instead true, 1 contains the total TDF, 
+  !>        - Spin may be only 1 if spin_decomp=.false. If it is instead true, 1 contains the total TDF, 
   !>          2 the spin-up component and 3 the spin-up component
   !> \param TDFEnergyArray The array with the energies for which the TDF is calculated, in eV
   subroutine calcTDFandDOS(TDF,TDFEnergyArray)
@@ -528,7 +528,7 @@ contains
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
     call get_HH_R
-    if(spn_decomp) then
+    if(spin_decomp) then
        ndim=3
        call get_SS_R
     else
@@ -729,7 +729,7 @@ contains
        if (boltz_dos_adpt_smr) then
           write(boltzdos_unit, '(A)') '# The second column is the adaptively-smeared DOS'
           write(boltzdos_unit, '(A)') '# (see Yates et al., PRB 75, 195121 (2007)'
-          if (spn_decomp) then
+          if (spin_decomp) then
              write(boltzdos_unit, '(A)') '# The third column is the spin-up projection of the DOS'
              write(boltzdos_unit, '(A)') '# The fourth column is the spin-down projection of the DOS'
           end if
@@ -827,7 +827,7 @@ contains
   !>       one often doesn't even need to smear. It simply uses a standard smearing as defined by
   !>       the variables boltz_TDF_smr_fixed_en_width and boltz_TDF_smr_index
   !> 
-  !> \todo still to do: adapt get_spn_nk to read in input the UU rotation matrix
+  !> \todo still to do: adapt get_spin_nk to read in input the UU rotation matrix
   !> 
   !> \note This routine simply provides the dos contribution of a given
   !>       point. This must be externally summed after proper weighting.
@@ -841,7 +841,7 @@ contains
   !> \note The meaning of the three indices of the TDF_k array is different with respect to
   !>       those of the dos_k array returned by the get_dos_k routine
   !> \note The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
-  !>       ndim=1 if spn_decomp==false, or ndim=3 if spn_decomp==true. This is not checked.
+  !>       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
   !> 
   !> \param kpt         the three coordinates of the k point vector whose DOS contribution we
   !>                    want to calculate (in relative coordinates)
@@ -858,15 +858,15 @@ contains
   !>                      see the global constants defined in the module
   !>                    - energyidx is the index of the energies, corresponding to the one
   !>                      of the EnergyArray array; 
-  !>                    - spinidx=1 contains the total dos; if if spn_decomp==.true., then
+  !>                    - spinidx=1 contains the total dos; if if spin_decomp==.true., then
   !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
   subroutine TDF_kpt(kpt,EnergyArray,eig_k,deleig_k,TDF_k)
 
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
-    use w90_parameters, only    : num_wann,spn_decomp,num_elec_per_state,&
+    use w90_parameters, only    : num_wann,spin_decomp,num_elec_per_state,&
          boltz_TDF_smr_fixed_en_width, boltz_TDF_smr_index, boltz_relax_time
-    use w90_spin, only          : get_spn_nk
+    use w90_spin, only          : get_spin_nk
 
     ! Arguments
     !
@@ -891,13 +891,13 @@ contains
 
     ! Get spin projections for every band
     !
-    if(spn_decomp) call get_spn_nk(kpt,spn_nk)
+    if(spin_decomp) call get_spin_nk(kpt,spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)   
 
     TDF_k=0.0_dp
     do BandIdx=1,num_wann
-       if(spn_decomp) then
+       if(spin_decomp) then
           ! Contribution to spin-up DOS of Bloch spinor with component 
           ! (alpha,beta) with respect to the chosen quantization axis
           alpha_sq=(1.0_dp+spn_nk(BandIdx))/2.0_dp ! |alpha|^2
@@ -954,7 +954,7 @@ contains
           
           ! I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
           ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
-          if(spn_decomp) then
+          if(spin_decomp) then
              ! Spin-up contribution
              TDF_k(XX,loop_f,2)=TDF_k(XX,loop_f,2) + rdum * &
                   alpha_sq * deleig_k(BandIdx, 1) * deleig_k (BandIdx, 1)  
