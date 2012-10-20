@@ -14,10 +14,10 @@ An example of a Boltzmann transport calculation can be found in the \wannier\ Tu
 The theory of the electronic transport using the Boltzmann transport equations can be found for instance in Refs.~\cite{Ziman,Grosso,Mahan}. Here we briefly summarize only the main results. 
 
 The current density $\bvec J$ and the heat current (or energy flux density) $\bvec J_Q$ can be written, respectively, as
-\begin{align*}
+\begin{align}
   \bvec J   &= \bvec \sigma(\bvec E - \bvec S \bvec \nabla T) \\
   \bvec J_Q &= T \bvec \sigma \bvec S \bvec E - \bvec K \bvec \nabla T,
-\end{align*}
+\end{align}
 where the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and $\bvec K$ are $3\times 3$ tensors, in general.
 
 Note: the thermal conductivity $\bvec \kappa$ (actually, the electronic part of the thermal conductivity), which is defined as the heat current per unit of temperature gradient in open-circuit experiments (i.e., with $\bvec J=0$) is not precisely $\bvec K$, but  $\bvec\kappa = \bvec K-\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
@@ -55,7 +55,7 @@ The first lines are comments (starting with \# characters) which describe the co
 Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first is the energy $\varepsilon$, the followings are the components if $\bvec \Sigma(\varepsilon)$ in the following order: $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$, $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input flag {\tt spin\_decomp}), 12 further columns are provided, with the 6 components of $\bvec \Sigma$ for the spin up, followed by those for the spin down.
 
 The energy $\varepsilon$ is in eV, while $\bvec \Sigma$ is in 
- $\displaystyle\frac{1}{\hbar^2}\cdot\frac{\text{eV}\cdot\text{fs}}{\text{\AA}}$.
+ $\displaystyle\frac{1}{\hbar^2}\cdot\frac{\mathrm{eV}\cdot\mathrm{fs}}{\mathrm{\AA}}$.
 
 \subsection{{\tt seedname\_elcond.dat}}
 OUTPUT. This file contains the electrical conductivity tensor $\bvec \sigma$ on the grid of $T$ and $\mu$ points. 
