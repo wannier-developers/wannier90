@@ -334,6 +334,7 @@ module w90_postw90_common
     call comms_bcast(boltz_dos_adpt_smr,1)
     call comms_bcast(boltz_dos_smr_fixed_en_width,1)
     call comms_bcast(boltz_dos_adpt_smr_fac,1)
+    call comms_bcast(boltz_dos_adpt_smr_max,1)
     call comms_bcast(boltz_mu_min,1) 
     call comms_bcast(boltz_mu_max,1) 
     call comms_bcast(boltz_mu_step,1) 

@@ -38,7 +38,7 @@ contains
                                    dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_kmesh,&
                                    dos_smr_index,dos_adpt_smr,&
-                                   dos_adpt_smr_fac ,spin_decomp,&
+                                   dos_adpt_smr_fac, dos_adpt_smr_max, spin_decomp,&
                                    dos_smr_fixed_en_width,&
                                    dos_project,num_dos_project
     use w90_get_oper, only       : get_HH_R,get_SS_R,HH_R
@@ -160,6 +160,7 @@ contains
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   adpt_smr_fac=dos_adpt_smr_fac,&
+                  adpt_smr_max=dos_adpt_smr_max,&
                   levelspacing_k=levelspacing_k,&
                   UU=UU)
           else
@@ -193,6 +194,7 @@ contains
              call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   adpt_smr_fac=dos_adpt_smr_fac,&
+                  adpt_smr_max=dos_adpt_smr_max,&
                   levelspacing_k=levelspacing_k,&
                   UU=UU)
           else
@@ -469,12 +471,11 @@ contains
   !>                    If not present: fixed-energy-width smearing
 
   subroutine get_dos_k(kpt,EnergyArray,eig_k,dos_k,smr_index,&
-       smr_fixed_en_width,adpt_smr_fac,levelspacing_k,UU)
+       smr_fixed_en_width,adpt_smr_fac,adpt_smr_max,levelspacing_k,UU)
     use w90_io, only            : io_error
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : w0gauss
     use w90_parameters, only    : num_wann,spin_decomp,num_elec_per_state,&
-                                  dos_adpt_smr_max,&
                                   num_dos_project,dos_project
     use w90_spin, only          : get_spin_nk
 
@@ -487,6 +488,7 @@ contains
     integer, intent(in)                                   :: smr_index
     real(kind=dp), intent(in),optional                    :: smr_fixed_en_width
     real(kind=dp), intent(in),optional                    :: adpt_smr_fac
+    real(kind=dp), intent(in),optional                    :: adpt_smr_max
     real(kind=dp), dimension(:), intent(in),optional      :: levelspacing_k
     complex(kind=dp), dimension(:,:), intent(in),optional :: UU
 
@@ -503,12 +505,16 @@ contains
    
     if (present(levelspacing_k)) then
        if (present(smr_fixed_en_width)) &
-            call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters')
+            call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters together')
        if (.not.(present(adpt_smr_fac))) &
             call io_error('Cannot call doskpt with levelspacing_k and without adpt_smr_fac parameter')
+       if (.not.(present(adpt_smr_max))) &
+            call io_error('Cannot call doskpt with levelspacing_k and without adpt_smr_max parameter')
     else
        if (present(adpt_smr_fac)) &
-            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_fac parameters')
+            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_fac parameter')
+       if (present(adpt_smr_max)) &
+            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_max parameter')
        if (.not.(present(smr_fixed_en_width))) &
             call io_error('Cannot call doskpt without levelspacing_k and without smr_fixed_en_width parameter')
     end if
@@ -538,7 +544,7 @@ contains
           smear=smr_fixed_en_width
        else
           smear=min(levelspacing_k(i)*adpt_smr_fac/sqrt(2.0_dp),&
-               dos_adpt_smr_max)
+               adpt_smr_max)
 !          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
        end if
 
@@ -688,49 +694,49 @@ contains
 !!$
 !!$  end subroutine get_eig_levelspacing_k
 
-  !=========================================================!
-  !                   PRIVATE PROCEDURES                    ! 
-  !=========================================================!
-
-
-  function count_states(energy,eig,levelspacing,npts)
-
-    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_utility, only       : wgauss
-    use w90_postw90_common, only : weight
-    use w90_parameters, only    : num_wann,dos_adpt_smr_fac
-
-    real(kind=dp) :: count_states
-
-    ! Arguments
-    !
-    real(kind=dp)                  :: energy
-    real(kind=dp), dimension (:,:) :: eig
-    real(kind=dp), dimension (:,:) :: levelspacing
-    integer                        :: npts
-
-    ! Misc/Dummy
-    !
-    integer       :: loop_k,i
-    real(kind=dp) :: sum,smear,arg
-
-    count_states=0.0_dp
-    do loop_k=1,npts
-       sum=0.0_dp
-       do i=1,num_wann
-          smear=levelspacing(i,loop_k)*dos_adpt_smr_fac/sqrt(2.0_dp)
-          arg=(energy-eig(i,loop_k))/smear
-          !
-          ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P
-          ! smearing, and E_f=12.6512 with F-D smearing
-          !
-          !          sum=sum+wgauss(arg,-99) ! Fermi-Dirac
-          sum=sum+wgauss(arg,1)    ! Methfessel-Paxton case
-       end do
-       count_states=count_states+weight(loop_k)*sum
-    end do
-
-  end function count_states
+!!$  !=========================================================!
+!!$  !                   PRIVATE PROCEDURES                    ! 
+!!$  !=========================================================!
+!!$
+!!$
+!!$  function count_states(energy,eig,levelspacing,npts)
+!!$
+!!$    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
+!!$    use w90_utility, only       : wgauss
+!!$    use w90_postw90_common, only : weight
+!!$    use w90_parameters, only    : num_wann,dos_adpt_smr_fac
+!!$
+!!$    real(kind=dp) :: count_states
+!!$
+!!$    ! Arguments
+!!$    !
+!!$    real(kind=dp)                  :: energy
+!!$    real(kind=dp), dimension (:,:) :: eig
+!!$    real(kind=dp), dimension (:,:) :: levelspacing
+!!$    integer                        :: npts
+!!$
+!!$    ! Misc/Dummy
+!!$    !
+!!$    integer       :: loop_k,i
+!!$    real(kind=dp) :: sum,smear,arg
+!!$
+!!$    count_states=0.0_dp
+!!$    do loop_k=1,npts
+!!$       sum=0.0_dp
+!!$       do i=1,num_wann
+!!$          smear=levelspacing(i,loop_k)*dos_adpt_smr_fac/sqrt(2.0_dp)
+!!$          arg=(energy-eig(i,loop_k))/smear
+!!$          !
+!!$          ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P
+!!$          ! smearing, and E_f=12.6512 with F-D smearing
+!!$          !
+!!$          !          sum=sum+wgauss(arg,-99) ! Fermi-Dirac
+!!$          sum=sum+wgauss(arg,1)    ! Methfessel-Paxton case
+!!$       end do
+!!$       count_states=count_states+weight(loop_k)*sum
+!!$    end do
+!!$
+!!$  end function count_states
 
 end module w90_dos
 

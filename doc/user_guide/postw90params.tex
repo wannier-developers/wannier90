@@ -1,6 +1,21 @@
 \chapter{Parameters}
 
 \section{Introduction}
+{\color{red}
+TO DO:
+\begin{itemize}
+\item GP: Fix color/colour and similar things consistently
+\item GP: decide a consistent way to write true/TRUE/.true. (same with
+  false)
+\item GP: reduce space between sections/subsections (mainly in the
+  parameter descriptions); this can help in reducing significantly the
+  overall length of the manual
+\item further items marked in red later on in this document
+\item GP: rename kmesh.pl to mp\_grid.pl? (see discussion in my email)
+\item GP: check if there are undocumented flags
+\end{itemize}
+}
+
 The \texttt{wannier90.x} code described in Part~\ref{part:w90}
 calculates the maximally-localized Wannier functions. The \texttt{wannier90.x} code is a
 serial executable (i.e., it cannot be executed in parallel on different
@@ -83,7 +98,8 @@ to obtain the Wannier functions.
 
 \textcolor{red}{[Ivo: Would it be useful to indicate around here
   (after each item? in a separate table?) which examples in the
-  tutorial illustrate each of the modules in {\tt postw90}?]}
+  tutorial illustrate each of the modules in {\tt postw90}?] GP: this
+  seems a good idea, please check that the references to the examples are ok.}
 
 The currently available modules in \texttt{postw90.x} are:
 \begin{itemize}
@@ -92,13 +108,16 @@ The currently available modules in \texttt{postw90.x} are:
 \item \texttt{berry}: Calculation of properties related to the
   $k$-space Berry curvature and Berry connection, including anomalous
   Hall conductivity, orbital magnetisation, and interband optical
-  conductivity (see Chap.~\ref{ch:berry}).
+  conductivity (see Chap.~\ref{ch:berry} and examples 18, 19 and 20 of
+  the tutorial).
 \item \texttt{kpath}: Calculation of $k$-space quantities along a
-  piecewise linear path in the BZ.
+  piecewise linear path in the BZ (see also examples 17 and 18 of the tutorial).
 \item \texttt{kslice}: Calculation of $k$-space quantities on a planar
-  slice of the BZ.
+  slice of the BZ (see also examples 17 and 18 of the tutorial).
 \item \texttt{BoltzWann}: Calculation of electronic transport
-  properties for bulk materials using the semiclassical Boltzmann transport equation (see Chap.~\ref{ch:boltzwann}).
+  properties for bulk materials using the semiclassical Boltzmann
+  transport equation (see Chap.~\ref{ch:boltzwann} and example 16 of
+  the tutorial).
 \item \texttt{geninterp} (Generic Band Interpolation): Calculation band energies (and band
   derivatives) on a generic list of $k$ points (see Chap.~\ref{ch:geninterp}).
 \end{itemize}
@@ -119,13 +138,6 @@ Sec.~\ref{sec:postw90-globalflags}; the description of the flags
 specific to the modules can be found
 in the following sections.
 
-\textcolor{red}{[Ivo: For conciseness, perhaps we should describe in
-  detail the ``global'' variables, and provide only give a minimal
-  description of the ``local'' counterparts later (focusing on what
-  functionalities of the module are affected), refering back to the
-  global definition for the generic properties. Right now there is a
-  lot of redundancy, which makes the text unnecessary lengthy.]}
-
 \clearpage
 
 \begin{table}[hH!]
@@ -139,10 +151,13 @@ in the following sections.
   \hline
   {\sc kmesh}   & I & Dimensions of the uniform interpolation $k$-mesh 
 (one or three integers) \\
-  {\sc kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+  {\sc kmesh\_spacing}& R & Minimum spacing between $k$ points in
+  \AA$^{-1}$\\
   {\sc adpt\_smr}   & L & Use adaptive smearing\\
   {\sc adpt\_smr\_fac}   & R & Adaptive smearing prefactor\\
-  {\sc \textcolor{red}{adpt\_smr\_max} (add?)} & P & Maximum allowed value for the adaptive energy smearing (eV) \\  {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
+  {\sc adpt\_smr\_max} & P & Maximum allowed value for the adaptive
+  energy smearing (eV) \\  
+  {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
   {\sc smr\_fixed\_en\_width}   & P & Energy smearing (if non-adaptive)\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
   {\sc scissors\_shift}   & P & Scissors shift applied to the conduction bands (eV) \\
@@ -152,7 +167,12 @@ in the following sections.
   {\sc spin\_axis\_polar}& P & Polar angle of the spin quantization axis (deg)\\
   {\sc spin\_axis\_azimuth}& P & Azimuthal angle of the spin quantization axis (deg)\\
   {\sc spin\_moment}$^*$& L & Determines whether to evaluate the spin 
-magnetic moment per cell\\  \hline
+magnetic moment per cell\\ 
+  {\sc uHu\_formatted}& L & Read a formatted {\tt seedname.uHu} file \\
+%  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
+{\sc spn\_formatted} {\color{red}UNIMPLEMENTED!} & L & 
+  Read a formatted {\tt seedname.spn} file\\
+ \hline
 \end{tabular}
 \caption[Parameter file keywords controlling \postw.]  {{\tt
     seedname.win} file keywords controlling the general behaviour of
@@ -178,24 +198,20 @@ magnetic moment per cell\\  \hline
   \hline
   {\sc dos}  & L & Calculate the density of states and related properties\\
   {\sc dos\_task}& S  & List of properties to compute \\
-  {\sc [dos\_]energy\_min} & P & Lower limit of the energy range for
+  {\sc dos\_energy\_min} & P & Lower limit of the energy range for
   computing the DOS (eV)\\
-  {\sc [dos\_]energy\_max}& P & Upper limit of the energy range for
+  {\sc dos\_energy\_max}& P & Upper limit of the energy range for
   computing the DOS (eV)\\
-  {\sc [dos\_]energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
+  {\sc dos\_energy\_step}& R & Step for increasing the energy in the specified range (eV)\\
   {\sc dos\_project}& I & List of WFs onto which the DOS is projected\\
   {\sc [dos\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh (one or three integers)\\ 
   {\sc [dos\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in \AA$^{-1}$\\
   {\sc [dos\_]adpt\_smr} & L & Use adaptive smearing for the DOS \\
   {\sc [dos\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
-  {\sc \textcolor{red}{[}dos\_\textcolor{red}{]}adpt\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
+  {\sc [dos\_]adpt\_smr\_max} & P & Maximum allowed value for the adaptive energy smearing (eV) \\
   {\sc [dos\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\   
   {\sc [dos\_]smr\_type} & S & Analytical form used for the broadened delta function
   when computing the DOS. \\
-  {\sc spin\_decomp} \textcolor{red}{({\sc [dos\_]spin\_decomp}?)}& L & 
-Decompose the total or projected DOS into up- and down-spin parts\\
-  {\sc spn\_formatted} {\color{red}UNIMPLEMENTED!} & L & 
-  Read a formatted {\tt seedname.spn} file\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the DOS module.]  {{\tt
@@ -285,26 +301,21 @@ isoenergy contour lines (eV)\\
   {\sc berry\_adpt\_kmesh\_thresh} & P & Threshold value of the Berry 
   curvature or $k$-space orbital magnetization for adaptive mesh refinement\\ 
   {\sc optics\_time\_parity}& S & Time parity of the optical conductivity tensor\\ 
-  {\sc [optics\_]energy\_min} & P & Lower limit of the energy range for
+  {\sc optics\_energy\_min} & P & Lower limit of the energy range for
   optical spectra and JDOS (eV) \\
-  {\sc [optics\_]energy\_max}& P & Upper limit of the energy range for
+  {\sc optics\_energy\_max}& P & Upper limit of the energy range for
   optical spectra and JDOS (eV) \\
-  {\sc [optics\_]energy\_step}& R &  Step for increasing the energy in the 
+  {\sc optics\_energy\_step}& R &  Step for increasing the energy in the 
   specified range (eV)\\
   {\sc [optics\_]adpt\_smr} & L & Use adaptive smearing for the 
   optical conductivity and JDOS \\
   {\sc [optics\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
-  {\sc \textcolor{red}{[}optics\_\textcolor{red}{]}adpt\_smr\_max} & P & Maximum allowed value for the 
+  {\sc[optics\_]adpt\_smr\_max} & P & Maximum allowed value for the 
   adaptive energy smearing (eV) \\
   {\sc [optics\_]smr\_type} & S & Analytical form used for the broadened delta function
   when computing the optical conductivity and JDOS\\  
   {\sc [optics\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
   for the optical conductivity and JDOS (eV) \\
-  {\sc spin\_decomp} \textcolor{red}{({\sc [optics\_]spin\_decomp}?)}& L & Decompose the optical conductivity into
-  up $\rightarrow$ up, down $\rightarrow$ down, and spin-flip parts\\
-  {\sc uHu\_formatted}& L & Read a formatted {\tt seedname.uHu} file \\
-  {\sc spn\_formatted} & L & Read a formatted {\tt seedname.spn} file \\
-%  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
@@ -339,7 +350,7 @@ $k$-mesh (one or three integers)\\
 {\sc boltz\_temp\_max} & P & Maximum value of the temperature $T$ in K \\
 {\sc boltz\_temp\_step} & R & Step for $T$ in K \\
 {\sc boltz\_tdf\_energy\_step} & R & Energy step for the TDF (eV) \\
-{\sc boltz\_tdf\_smr\_en\_width} & P & Energy smearing for the TDF (eV) \\
+{\sc boltz\_tdf\_smr\_fixed\_en\_width} & P & Energy smearing for the TDF (eV) \\
 {\sc boltz\_tdf\_smr\_type} & S & Smearing type for the TDF \\
 {\sc boltz\_calc\_also\_dos} & L & Calculate also DOS while calculating the TDF\\
 {\sc boltz\_dos\_energy\_min} & P & Minimum value of the energy for the DOS in eV \\
@@ -348,10 +359,12 @@ $k$-mesh (one or three integers)\\
 {\sc [boltz\_dos\_]smr\_type} & S & Smearing type for the DOS \\
 {\sc [boltz\_dos\_]adpt\_smr} & L & Use adaptive smearing for the DOS \\
 {\sc [boltz\_dos\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor\\
+{\sc [boltz\_dos\_]adpt\_smr\_max} & P & Maximum allowed value for the
+adaptive energy smearing (eV)\\
 {\sc [boltz\_dos\_smr\_]fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
-{\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
-{\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
-{\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
+%{\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
+%{\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
+%{\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the \bw\ module.]
@@ -369,7 +382,7 @@ physical value, L for a logical value and S for a text string.}
 Keyword & Type & Description \\
         &      &             \\
 \hline\hline
-\multicolumn{3}{|c|}{\emph{Generic Band Interpolation} Module Parameters} \\
+\multicolumn{3}{|c|}{{\tt geninterp} Parameters} \\
 \hline
 {\sc geninterp}   & L & Calculate bands for given set of $k$ points \\
 {\sc geninterp\_alsofirstder} & L & Calculate also first derivatives\\ 
@@ -377,8 +390,9 @@ Keyword & Type & Description \\
 process\\ 
 \hline
 \end{tabular}
-\caption[Parameter file keywords controlling the Generic Band Interpolation module.]
-{{\tt seedname.win} file keywords controlling the Generic Band Interpolation module. Argument types
+\caption[Parameter file keywords controlling the geninterp module.]
+{{\tt seedname.win} file keywords controlling the Generic Band
+  Interpolation ({\tt geninterp}) module. Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords_geninterp}
@@ -389,8 +403,12 @@ physical value, L for a logical value and S for a text string.}
 \section{Global variables}
 \label{sec:postw90-globalflags}
 
-  \subsection[kmesh]{\tt  integer :: boltz\_kmesh(:)}  
+  \subsection[kmesh]{\tt  integer :: kmesh(:)}  
 Dimensions of the interpolation grid used in {\tt postw90.x}.
+
+\emph{Not to be confused with the {\tt mp\_grid} 
+input flag, which
+  instead specifies the Monkhorst--Pack grid used in the ab-initio calculation!}
 
 If three integers $l$ $m$ $n$ are given, the reciprocal-space cell
 subtended by the three primitive translations is sampled on a uniform
@@ -438,7 +456,7 @@ $$
 %
 \textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
 Confusing, and does not appear in the YWVS07 paper. May need to change default value of
-{\tt adpt\_smr\_max}. See also if this is used explicitly in submodules]}}\\
+{\tt adpt\_smr\_fac}. See also if this is used explicitly in submodules]}}\\
 where the dimensionless factor $a$ is given by {\tt
   adpt\_smr\_fac}. $\Delta k$ is taken to be the largest of
 the mesh spacings along the three reciprocal lattice vectors ${\bf
@@ -454,9 +472,6 @@ The default value is 2.0.
 See description given immediately above.
 
 The units are eV. The default value is 1.0.
-
-\textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
-{\tt dos\_} and {\tt optics\_} subvariables to it?]}
 
 \subsection[smr\_type]{\tt  character(len=120) :: smr\_type}
 
@@ -485,7 +500,7 @@ energy axis.
 
 The default value is {\tt gauss}.
 
-\subsection[smr\_en\_width]{\tt logical :: smr\_fixed\_en\_width}
+\subsection[smr\_fixed\_en\_width]{\tt logical :: smr\_fixed\_en\_width}
 Energy width for the smearing function for the DOS. Used only if {\tt
   adpt\_smr} is \verb#false#.
 
@@ -527,15 +542,19 @@ meaning here (if it is number of electrons or number of states).
 }
 
 \subsection[spin\_decomp]{\tt logical :: spin\_decomp}
-If {\tt true}, two extra columns are added to some output files (as
+If {\tt true}, extra columns are added to some output files (as
 {\tt seedname\_dos.dat} for the {\tt dos} module, and analogously for
 the {\tt berry} and {\tt BoltzWann} modules).
 
-The further columns contain the decomposition of the required property
+For the {\tt dos} and {\tt BoltzWann} modules, two
+further columns are generated, which contain the decomposition of the required property
 (e.g., total or orbital-projected DOS)
 of a spinor calculation into up-spin and down-spin parts (relative to
 the quantization axis defined by the input variables {\tt
   spin\_axis\_polar} and {\tt spin\_axis\_azimuth}). 
+For the {\tt berry} module, three extra columns are added to the optical
+conductivity data files, containing the decomposition into up
+$\rightarrow$ up, down $\rightarrow$ down, and spin-flip transitions.
 
 The file {\tt seedname.spn} must be present at input. Furthermore, if
 this variable is set to \verb#.true.# it
@@ -561,9 +580,45 @@ Determines whether to evaluate the spin moment.
 
 The default value is \verb#false#.
 
+\subsection[uHu\_formatted]{\tt character(len=20) :: uHu\_formatted}
+
+If \verb#uHu_formatted#=\verb#TRUE#, then the uHu matrix elements will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files.
+
+The default value of this parameter is $\verb#.false.#$.
+
+%\subsection[uIu\_formatted]{\tt character(len=20) :: uIu\_formatted}
+
+%If \verb#uIu_formatted#=\verb#TRUE#, then the uIu matrix elements will be
+%read from disk as formatted (ie ASCII) files; otherwise they will be
+%read as unformatted files.
+
+%The default value of this parameter is $\verb#.false.#$.
+
+\subsection[spn\_formatted]{\tt character(len=20) :: spn\_formatted}
+
+If \verb#spn_formatted#=\verb#TRUE#, then the spin matrix elements will be
+read from disk as formatted (ie ASCII) files; otherwise they will be
+read as unformatted files. Unformatted is generally preferable as the
+files will take less disk space and I/O is significantly
+faster. However such files will not be transferable between all
+machine architectures and formatted files should be used if
+transferability is required (i.e., for test cases).
+
+The default value is \verb#false#.
 
 \clearpage
 \section{DOS}
+Note that the behavior of the \verb#dos# module  is also influenced by
+the value of some global flags (listed in
+Table~\ref{parameter_keywords_postw90}), as
+\verb#spin_decomp#, \verb#spin_axis_polar#, \verb#spin_axis_azimuth#,
+\verb#scissors_shift#, etc.
+Some of the global flags can be possibly
+overridden by local flags of the DOS module, listed below, which have
+the same name of the global flag but are prefixed by \verb#dos_#.
+
 \subsection[dos]{\tt logical :: dos}
 Determines whether to enter the DOS routines.
 
@@ -586,14 +641,14 @@ The valid options for this parameter are:
 The default value is \verb#dos_plot#.
 
 
-\subsection[dos\_min\_energy]{\tt real(kind=dp) :: dos\_min\_energy}
+\subsection[dos\_min\_energy]{\tt real(kind=dp) :: dos\_energy\_min}
 Lower limit of the energy range for computing the DOS.
 Units are eV.
 
 The default value is the minimum value of the energy eigenvalues
 stored in {\tt seedname.eig}, minus 0.6667.
 
-\subsection[dos\_max\_energy]{\tt real(kind=dp) :: dos\_max\_energy}
+\subsection[dos\_max\_energy]{\tt real(kind=dp) :: dos\_energy\_max}
 Upper limit of the energy range for computing the DOS.
 Units are eV.
 
@@ -619,71 +674,33 @@ For example, to project onto WFs 2, 6, 7, 8, and 12:
 
 
 \subsection[dos\_kmesh]{\tt integer :: dos\_kmesh(:)}
-Overrides the corresponding global variable (see Sec.~\ref{sec:postw90-globalflags}).
+Overrides the \verb#kmesh# global variable (see Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[dos\_kmesh\_spacing]{\tt real(kind=dp) :: dos\_kmesh\_spacing}
-Overrides the corresponding global variable (see Sec.~\ref{sec:postw90-globalflags}).
+Overrides the \verb#kmesh_spacing# global variable (see Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[dos\_adpt\_smr]{\tt logical :: dos\_adpt\_smr}
-Overrides the corresponding global variable (see Sec.~\ref{sec:postw90-globalflags}).
+Overrides the \verb#adpt_smr# global variable (see Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[dos\_adpt\_smr\_fac]{\tt real(kind=dp) :: dos\_adpt\_smr\_fac}
-Overrides the corresponding global variable (see
+Overrides the \verb#adpt_smr_fac# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[dos\_adpt\_smr\_max]{\tt real(kind=dp) ::
   dos\_adpt\_smr\_max}
+Overrides the \verb#adpt_smr_max# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
-See description given immediately above.
+\subsection[dos\_smr\_fixed\_en\_width]{\tt logical :: dos\_smr\_fixed\_en\_width}
+Overrides the \verb#smr_fixed_en_width# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
-The default value is 1.0.
-
-\textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
-{\tt dos\_} and {\tt optics\_} subvariables to it?]}
-
-\subsection[dos\_smr\_en\_width]{\tt logical :: dos\_smr\_en\_width}
-Energy width for the smearing function for the DOS. Used only if {\tt
-  dos\_adpt\_smr} is \verb#false#.
-
-{\color{red} CONVERT THIS TO {\tt smr\_fixed\_en\_width} overriding
-  the global variable.} 
-
-The units are eV. The default value is 0~eV. Note that if the width is
-smaller than twice the energy step {\tt dos\_energy\_step}, the DOS
+Note that if the width is smaller than twice the energy step {\tt dos\_energy\_step}, the DOS
 will be unsmeared (thus the default is to have an unsmeared DOS).
 
 
 \subsection[dos\_smr\_type]{\tt  character(len=120) :: dos\_smr\_type}
-Overrides the corresponding global variable (see Sec.~\ref{sec:postw90-globalflags}).
-
-\subsection[spin\_decomp]{\tt logical :: spin\_decomp}
-If {\tt true}, two extra columns are added to {\tt seedname\_dos.dat},
-containing the decomposition of the DOS (total or orbital-projected)
-of a spinor calculation into up-spin and down-spin parts (relative to
-the quantization axis defined by the input variables {\tt
-  spin\_axis\_polar} and {\tt spin\_axis\_azimuth}). 
-
-The file {\tt seedname.spn} must be present at input.
-
-The default value is \verb#false#.
-
-%\subsection[evaluate\_spin\_moment]{\tt logical :: evaluate\_spin\_moment}
-%Determines whether to evaluate the spin moment.
-
-The default value is \verb#false#.
-
-
-\subsection[spn\_formatted]{\tt character(len=20) :: spn\_formatted}
-
-If \verb#spn_formatted#=\verb#TRUE#, then the spin matrix elements will be
-read from disk as formatted (ie ASCII) files; otherwise they will be
-read as unformatted files. Unformatted is generally preferable as the
-files will take less disk space and I/O is significantly
-faster. However such files will not be transferable between all
-machine architectures and formatted files should be used if
-transferability is required (i.e., for test cases).
-
-The default value of this parameter is $\verb#FALSE#$.
+Overrides the \verb#smr_type# global variable (see Sec.~\ref{sec:postw90-globalflags}).
 
 
 \clearpage
@@ -705,7 +722,10 @@ The valid options for this parameter are:
   created:
 \begin{itemize}
   
-   \item[$\cdot$] {\tt seedname\_band.dat} (data file)
+   \item[$\cdot$] {\tt seedname\_band.dat} (data file) {\color{red}
+       Why don't we rename this seedame-band.dat? or there is a region
+     for the underscore vs. dash? similar considerations for the
+     kslice files.}
 
    \item[$\cdot$] {\tt seedname-band.gnu} ({\tt gnuplot} script)
 
@@ -922,41 +942,15 @@ There is no default value
 
 
 \subsection[berry\_kmesh]{\tt integer :: berry\_kmesh(:)}
-Dimensions of the interpolation grid used for carrying out the BZ
-integrals.
-
-If three integers $l$ $m$ $n$ are given, the reciprocal-space cell
-subtended by the three primitive translations is sampled on a uniform
-$l\times m\times n$ grid.  If only one integer $m$ is given, an
-$m\times m\times m$ grid is used.
-
-{\tt berry\_kmesh\_spacing} and {\tt berry\_kmesh} may not
-both be defined in the same input file.
-
-If neither {\tt berry\_kmesh\_spacing} nor {\tt
-  berry\_kmesh} are defined, then the grid defined either with
-{\tt kmesh\_spacing} or {\tt kmesh} is used (if defined,
-otherwise an error is issued).
+Overrides the \verb#kmesh# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[berry\_kmesh\_spacing]{\tt real(kind=dp) :: berry\_kmesh\_spacing}
-An alternative way of specifying the BZ integration grid. This flag
-defines the minimum distance for neighboring $k$ points along each of
-the three directions in $k$ space.
+Overrides the \verb#kmesh_spacing# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 
-The units are \AA$^{-1}$.
-
-{\tt berry\_kmesh\_spacing} and {\tt berry\_kmesh} may
-not both be defined in the same input file.
-
-If neither {\tt berry\_kmesh\_spacing} nor {\tt
-  berry\_kmesh} are defined, then the grid defined either with
-{\tt kmesh\_spacing} or {\tt kmesh} is used (if defined,
-otherwise an error is issued).
-
-
-\subsection[berry\_adpt\_kmesh]{\tt integer :: berry\_adpt\_kmesh(:)}
-
+\subsection[berry\_adpt\_kmesh]{\tt integer :: berry\_adpt\_kmesh}
 If a positive integer $n$ is given, an $n\times n\times n$ mesh is
 placed around points on the uniform mesh (defined by either {\tt
   berry\_kmesh} or {\tt berry\_kmesh\_spacing}) where
@@ -968,7 +962,7 @@ integration mesh around spikes in the integrand.
 The default value is 1.
 
 
-\subsection[berry\_adpt\_kmesh\_thresh]{\tt real(kind=dp) :: berry\_adpt\_kmesh\_thresh(:)}
+\subsection[berry\_adpt\_kmesh\_thresh]{\tt real(kind=dp) :: berry\_adpt\_kmesh\_thresh}
 
 Magnitude of the Berry curvature in \AA$^2$, or of the $k$-space
 orbital magnetization in eV$\cdot$\AA$^2$, that triggers adaptive mesh
@@ -1032,19 +1026,21 @@ The default value is {\tt even}.
 
 \subsection[optics\_energy\_min]{\tt real(kind=dp) :: optics\_energy\_min}
 Lower limit of the energy range for computing the optical conductivity
-and JDOS.  Units are eV.
+and JDOS. Units are eV.
 
-The default value is the minimum value of the energy eigenvalues
-stored in {\tt seedname.eig}, minus 0.6667.
+The default value 0~eV.
 
 \subsection[optics\_energy\_max]{\tt real(kind=dp) :: optics\_energy\_max}
 Upper limit of the energy range for computing the optical conductivity
-and JDOS.  Units are eV.
+and JDOS. Units are eV.
 
+{\color{red} [GP: Ivo, please check if this is correct]
 If an inner energy window was specified, the default value is the
-upper bound of the innter energy window, plus 0.6667.  Otherwise it is
+upper bound of the inner energy window minus the Fermi
+  energy plus 0.6667.  Otherwise it is
 the maximum value of the energy eigenvalues stored in {\tt
-  seedname.eig}, plus 0.6667.
+  seedname.eig} minus the minimum value of the energy eigenvalues, plus 0.6667.
+}
 
 \subsection[optics\_energy\_step]{\tt real(kind=dp) :: optics\_energy\_step}
 Energy step for the grid of energies used for computing the optical
@@ -1052,138 +1048,27 @@ conductivity and JDOS. Units are eV.
 
 The default value is 0.01~eV.
 
-
 \subsection[optics\_adpt\_smr]{\tt logical :: optics\_adpt\_smr}
-Determines whether to use an adaptive scheme for broadening the
-optical spectrum and JDOS. If \verb#true#, the values for the smearing widths are 
-controlled by the flag {\tt optics\_adpt\_smr\_fac}.
-
-If {\tt optics\_adpt\_smr} is not specified, then the value of {\tt
-  adpt\_smr} is used.  
-
-The default value is \verb#true#.
-
+Overrides the \verb#adpt_smr# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[optics\_adpt\_smr\_fac]{\tt real(kind=dp) ::
   optics\_adpt\_smr\_fac}
-
-The width $W_{n{\bf k}}$ of the broadened delta function used to
-determine the contribution to the optical conductivity and JDOS from
-band $n$ at point ${\bf k}$ is calculated as
-%
-$$
-W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
-\nabla_{\bf k} E_{n{\bf k}}\vert \Delta k,
-$$ 
-%
-\textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the code?! 
-Confusing, and does not appear in the YWVS07 paper. May need to change default value of
-{\tt optics\_adpt\_smr\_max}]}}\\
-where the dimensionless factor $a$ is given by {\tt
-  optics\_adpt\_smr\_fac}. $\Delta k$ is taken to be the largest of
-the mesh spacings along the three reciprocal lattice vectors ${\bf
-  b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated value of
-$W_{n{\bf k}}$ exceeds {\tt optics\_adpt\_smr\_max}, the latter
-value is used.
-
-If {\tt optics\_adpt\_smr\_fac} is not specified, then the value of {\tt
-  adpt\_smr\_fac} is used.  
-
-The default value is 2.0.
-
+Overrides the \verb#adpt_smr_fac# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[optics\_adpt\_smr\_max]{\tt real(kind=dp) ::
   optics\_adpt\_smr\_max}
+Overrides the \verb#adpt_smr_max# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
-See description given immediately above.
-
-The default value is 1.0.
-
-\textcolor{red}{[Create ``global'' variable {\tt adpt\_smr\_max} and then link
-{\tt dos\_} and {\tt optics\_} subvariables to it?]}
-
-\subsection[optics\_smr\_en\_width]{\tt logical :: optics\_smr\_en\_width}
-Energy width for the smearing function for the optical spectra
-and JDOS. Used only if {\tt optics\_adpt\_smr} is \verb#false#.
-
-The units are eV. The default value is 0~eV. Note that if the width is
-smaller than twice the energy step {\tt optics\_energy\_step}, the spectra
-will be unsmeared (thus the default is to have unsmeared spectra).
-
+\subsection[optics\_smr\_fixed\_en\_width]{\tt logical :: optics\_smr\_fixed\_en\_width}
+Overrides the \verb#smr_fixed_en_width# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[optics\_smr\_type]{\tt  character(len=120) :: optics\_smr\_type}
-
-Defines the analytical form used for the broadened delta function in
-the computation of the optical spectra and JDOS.
-
-\begin{itemize}
-  
-\item[{\bf --}]
-  {\tt gauss}: Gaussian smearing
-
-\item[{\bf --}]
-  {\tt m-pN}: derivative of the $N$-th order
-    Methfessel-Paxton function ($N\geq 0$). Example: {\tt m-p2} for the
-  second-order Methfessel-Paxton function. If only {\tt m-p} is
-  provided, the first-order function is used, i.e., it is equivalent to {\tt m-p1}.
-
-
-\item[{\bf --}]
-  {\tt m-v} or {\tt cold}: derivative of the Marzari--Vanderbilt cold-smearing function
-
-\item[{\bf --}]
-  {\tt f-d}: derivative of the Fermi-Dirac distribution function
-
-\end{itemize}
-
-If {\tt optics\_smr\_type} is not specified, then the value of {\tt
-  smr\_type} is used.  
-
-The default value is {\tt gauss}.
-
-\subsection[spin\_decomp]{\tt logical :: spin\_decomp}
-If {\tt true}, three extra columns are added to the optical
-conductivity data files, containing the decomposition into up
-$\rightarrow$ up, down $\rightarrow$ down, and spin-flip transitions
-(relative to the quantization axis defined by the input variables {\tt
-  spin\_axis\_polar} and {\tt spin\_axis\_azimuth}). 
-
-The file {\tt seedname.spin} must be present at input.
-
-The default value is \verb#false#.
-
-
-
-\subsection[spn\_formatted]{\tt character(len=20) :: spn\_formatted}
-
-If \verb#spn_formatted#=\verb#TRUE#, then the spin matrix elements will be
-read from disk as formatted (ie ASCII) files; otherwise they will be
-read as unformatted files. Unformatted is generally preferable as the
-files will take less disk space and I/O is significantly
-faster. However such files will not be transferable between all
-machine architectures and formatted files should be used if
-transferability is required (i.e., for test cases).
-
-The default value of this parameter is $\verb#FALSE#$.
-
-\subsection[uHu\_formatted]{\tt character(len=20) :: uHu\_formatted}
-
-If \verb#uHu_formatted#=\verb#TRUE#, then the uHu matrix elements will be
-read from disk as formatted (ie ASCII) files; otherwise they will be
-read as unformatted files.
-
-The default value of this parameter is $\verb#FALSE#$.
-
-%\subsection[uIu\_formatted]{\tt character(len=20) :: uIu\_formatted}
-
-%If \verb#uIu_formatted#=\verb#TRUE#, then the uIu matrix elements will be
-%read from disk as formatted (ie ASCII) files; otherwise they will be
-%read as unformatted files.
-
-%The default value of this parameter is $\verb#FALSE#$.
-
-
-
+Overrides the \verb#smr_type# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \clearpage
 \section{BoltzWann}
@@ -1194,21 +1079,13 @@ The default value is \verb#false#.
 
 \subsection[boltz\_kmesh]{\tt integer :: boltz\_kmesh(:)}
 It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used also for the DOS.
-
-If three integers $l$ $m$ $n$ are given, a $l\times m\times n$ grid is used. If only one integer $m$ is given, a $m\times m\times m$ grid is used.
-
-{\tt boltz\_kmesh\_spacing} and  {\tt boltz\_kmesh} may not both be defined in the same input file.
-
-If neither {\tt boltz\_kmesh\_spacing} nor  {\tt boltz\_kmesh} are defined, then the grid defined either with {\tt kmesh\_spacing} or {\tt kmesh} is used (if defined, otherwise an error is issued).
+Overrides the \verb#kmesh# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[boltz\_kmesh\_spacing]{\tt real(kind=dp) :: boltz\_kmesh\_spacing}
-It determines the interpolation $k$ mesh used to calculate the TDF (from which the transport coefficient are calculated). This flag defines the minimum distance for neighboring $k$ points along each of the three directions in $k$ space. If {\tt boltz\_calc\_also\_dos} is \verb#true#, the same $k$ mesh is used for the DOS.
+Overrides the \verb#kmesh_spacing# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
-The units are \AA$^{-1}$.
-
-{\tt boltz\_kmesh\_spacing} and  {\tt boltz\_kmesh} may not both be defined in the same input file.
-
-If neither {\tt boltz\_kmesh\_spacing} nor  {\tt boltz\_kmesh} are defined, then the grid defined either with {\tt kmesh\_spacing} or {\tt kmesh} is used (if defined, otherwise an error is issued).
 
 \subsection[boltz\_relax\_time]{\tt real(kind=dp) :: boltz\_relax\_time}
 The relaxation time to be used for the calculation of the TDF and the transport coefficients.
@@ -1263,7 +1140,7 @@ The type of smearing function to be used for the TDF. The available strings are 
 
 The default value is the one given via the {\tt smr\_type} input flag (if defined).
 
-\subsection[boltz\_tdf\_smr\_en\_width]{\tt real(kind=dp) :: boltz\_tdf\_smr\_en\_width}
+\subsection[boltz\_tdf\_smr\_fixed\_en\_width]{\tt real(kind=dp) :: boltz\_tdf\_smr\_fixed\_en\_width}
 Energy width for the smearing function. Note that for the TDF, a standard (non-adaptive) smearing scheme is used.
 
 The units are eV.
@@ -1272,7 +1149,8 @@ The default value is 0~eV. Note that if the width is smaller than twice the ener
 \subsection[boltz\_calc\_also\_dos]{\tt logical :: boltz\_calc\_also\_dos}
 Whether to calculate also the DOS while calculating the TDF.
 
-If one needs also the DOS, it is faster to calculate the DOS using this flag instead of using the routines for the DOS, since in this way the interpolation on the $k$ points will be performed only once.
+If one needs also the DOS, it is faster to calculate the DOS using
+this flag instead of using independently the routines of the {\tt dos} module, since in this way the interpolation on the $k$ points will be performed only once.
 
 The default value is \verb#false#.
 
@@ -1280,13 +1158,17 @@ The default value is \verb#false#.
 The minimum value for the energy grid for the calculation of the DOS.
 
 The units are eV.
-The default value is {\tt minval(eigval)-0.6667}, where  {\tt minval(eigval)} is the minimum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
+The default value is {\tt minval(eigval)-0.6667}, where  {\tt minval(eigval)} i\
+s the minimum eigenvalue returned by the ab-initio code on the ab-initio $q$ me\
+sh.
 
 \subsection[boltz\_dos\_energy\_max]{\tt real(kind=dp) :: boltz\_dos\_energy\_max}
 The maximum value for the energy grid for the calculation of the DOS.
 
 The units are eV.
-The default value is {\tt maxval(eigval)+0.6667}, where  {\tt maxval(eigval)} is the maximum eigenvalue returned by the ab-initio code on the ab-initio $q$ mesh.
+The default value is {\tt maxval(eigval)+0.6667}, where  {\tt maxval(eigval)} i\
+s the maximum eigenvalue returned by the ab-initio code on the ab-initio $q$ me\
+sh.
 
 \subsection[boltz\_dos\_energy\_step]{\tt real(kind=dp) :: boltz\_dos\_energy\_step}
 Energy step for the grid of energies for the DOS.
@@ -1295,79 +1177,43 @@ The units are eV.
 The default value is 0.001~eV.
 
 \subsection[boltz\_dos\_smr\_type]{\tt character(len=120) :: boltz\_dos\_smr\_type}
-The type of smearing function to be used for the DOS. The available strings are the same of the global {\tt smr\_type} input flag. 
-
-The default value is the one given via the {\tt smr\_type} input flag. 
-
+Overrides the \verb#smr_type# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[boltz\_dos\_adpt\_smr]{\tt logical :: boltz\_dos\_adpt\_smr}
-Determines whether to use an adaptive scheme for broadening the
-DOS. If \verb#true#, the values for the smearing widths are 
-%those defined by the flags {\tt adpt\_smr\_steps} and {\tt adpt\_smr\_width}.
-controlled by the flag {\tt boltz\_dos\_adpt\_smr\_fac}.
-
-The default value is \verb#true#.
-
-
+Overrides the \verb#adpt_smr# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
 \subsection[boltz\_dos\_adpt\_smr\_fac]{\tt real(kind=dp) :: boltz\_dos\_adpt\_smr\_fac}
+Overrides the \verb#adpt_smr_fac# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
 
-The width $W_{n{\bf k}}$ of the broadened delta function used to
-determine the contribution to the DOS from band $n$ at point ${\bf k}$
-is calculated as
+\subsection[boltz\_dos\_adpt\_smr\_max]{\tt real(kind=dp) :: boltz\_dos\_adpt\_smr\_max}
+Overrides the \verb#adpt_smr_max# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+\subsection[boltz\_dos\_smr\_fixed\_en\_width]{\tt logical :: boltz\_dos\_smr\_fixed\_en\_width}
+Overrides the \verb#smr_fixed_en_width# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+%\subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
+%Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
 %
-$$
-W_{n{\bf k}}=\frac{a}{\textcolor{red}{\sqrt{2}}}\vert
-\nabla_{\bf k} E_{n{\bf k}}\vert \Delta k,
-$$ 
+%The default value is \verb#false#.
+
+%\subsection[boltz\_bandshift\_firstband]{\tt integer :: boltz\_bandshift\_firstband}
+%Index of the first conduction band to shift.
 %
-\textcolor{red}{{\bf [Get rid of $1/\sqrt{2}$ factor here and in the
-    code?!  Confusing, and does not appear in the YWVS07 paper. May
-    need to change
-    {\tt dos\_adpt\_smr\_max}]}}\\
-where the dimensionless factor $a$ is given by {\tt
-  boltz\_dos\_adpt\_smr\_fac}. $\Delta k$ is taken to be the
-largest of the mesh spacings along the three reciprocal lattice
-vectors ${\bf b_1}$, ${\bf b_2}$, and ${\bf b_3}$.  If the calculated
-value of $W_{n{\bf k}}$ exceeds {\tt dos\_adpt\_smr\_max}, the
-latter value is used.  \textcolor{red}{[Ivo: Giovanni, is this correct? Or
-  should there be an additional variable {\tt
-    boltz\_dos\_adpt\_smr\_max}?]}
+%That means that all bands with index $i\ge {\tt boltz\_bandshift\_firstband}$ will be shifted by  {\tt boltz\_bandshift\_energyshift}, if {\tt boltz\_bandshift} is \verb#true#.
+%
+%The units are eV.
+%No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
 
-
-If {\tt boltz\_dos\_adpt\_smr\_fac} is not specified, then the value of {\tt
-  adpt\_smr\_fac} is used.  
-
-The default value is 2.0.
-
-\subsection[boltz\_dos\_smr\_en\_width]{\tt logical :: boltz\_dos\_smr\_en\_width}
-Energy width for the smearing function for the DOS. Used only if {\tt boltz\_dos\_adpt\_smr} is \verb#false#.
-
-The units are eV.
-The default value is 0~eV. Note that if the width is smaller than twice the energy step {\tt boltz\_dos\_energy\_step}, the DOS will be unsmeared (thus the default is to have an unsmeared DOS).
-
-\textcolor{red}{[Ivo: I believe the next three variables may not be
-  needed anymore, since I added ``global'' {\tt scissors\_shift} and
-  {\tt num\_valence\_bands} variables.]}
-
-\subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
-Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
-
-The default value is \verb#false#.
-
-\subsection[boltz\_bandshift\_firstband]{\tt integer :: boltz\_bandshift\_firstband}
-Index of the first conduction band to shift.
-
-That means that all bands with index $i\ge {\tt boltz\_bandshift\_firstband}$ will be shifted by  {\tt boltz\_bandshift\_energyshift}, if {\tt boltz\_bandshift} is \verb#true#.
-
-The units are eV.
-No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
-
-\subsection[boltz\_bandshift\_energyshift]{\tt real(kind=dp) :: boltz\_bandshift\_energyshift}
-Energy shift of the conduction bands.
-
-The units are eV.
-No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+%\subsection[boltz\_bandshift\_energyshift]{\tt real(kind=dp) :: boltz\_bandshift\_energyshift}
+%Energy shift of the conduction bands.
+%
+%The units are eV.
+%No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
 
 
 \section{Generic Band Interpolation}
@@ -1385,8 +1231,8 @@ The default value is \verb#false#.
 \subsection[geninterp\_alsofirstder]{\tt logical :: geninterp\_single\_file}
 Whether to write a single  {\tt seedname\_geninterp.dat} file (all I/O is done by the root node); or
 instead multiple files (one for each node) with
-name {\tt seedname\_geninterp\_00000.dat}, {\tt
-  seedname\_geninterp\_00001.dat}, \ldots
+names {\tt seedname\_geninterp\_NNNNN.dat}, where {\tt NNNNN} is the
+node number.
 See also the discussion in Sec.~\ref{sec:seedname.geninterp.dat} on
 how to use this flag.
 

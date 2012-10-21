@@ -485,6 +485,7 @@ contains
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
          boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
          boltz_dos_adpt_smr, boltz_dos_smr_fixed_en_width, boltz_dos_adpt_smr_fac, &
+         boltz_dos_adpt_smr_max, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
     use w90_wan_ham, only       : get_eig_deleig
@@ -620,6 +621,8 @@ contains
     if (boltz_bandshift.and.on_root) then
        write(stdout,'(5X,A,I0,A,G18.10,A)') "Shifting energy bands with index >= ", boltz_bandshift_firstband, " by ", &
             boltz_bandshift_energyshift, " eV."
+       write(stdout,'(A)') "### THE BOLTZ_BANDSHIFT FLAG IS DEPRECATED AND WILL BE REMOVED IN FUTURE ###"
+       write(stdout,'(A)') "### RELEASES. USE THE SCISSORS_SHIFT FLAG INSTEAD.                       ###"
     end if
 
     NumPtsRefined = 0
@@ -683,6 +686,7 @@ contains
                          call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                               smr_index=boltz_dos_smr_index,&
                               adpt_smr_fac=boltz_dos_adpt_smr_fac,&
+                              adpt_smr_max=boltz_dos_adpt_smr_max,&
                               levelspacing_k=levelspacing_k)
                          ! I divide by 8 because I'm substituting a point with its 8 neighbors
                          dos_all = dos_all + dos_k * kweight / 8.               
@@ -693,6 +697,7 @@ contains
                 call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
                      smr_index=boltz_dos_smr_index,&
                      adpt_smr_fac=boltz_dos_adpt_smr_fac,&
+                     adpt_smr_max=boltz_dos_adpt_smr_max,&
                      levelspacing_k=levelspacing_k)
                 dos_all = dos_all + dos_k * kweight                
              end if

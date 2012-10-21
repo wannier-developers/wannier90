@@ -9,7 +9,6 @@
 ! http://www.gnu.org/copyleft/gpl.txt .                      !
 !                                                            !
 !------------------------------------------------------------!
-
 module w90_parameters
 
   use w90_constants, only : dp
@@ -34,6 +33,7 @@ module w90_parameters
   ! that take this value as default
   logical                         :: adpt_smr
   real(kind=dp)                   :: adpt_smr_fac
+  real(kind=dp)                   :: adpt_smr_max
   real(kind=dp)                   :: smr_fixed_en_width
   !IVO
   logical,                    public, save :: spin_moment
@@ -184,6 +184,7 @@ module w90_parameters
   logical,           public, save :: boltz_dos_adpt_smr
   real(kind=dp),     public, save :: boltz_dos_smr_fixed_en_width
   real(kind=dp),     public, save :: boltz_dos_adpt_smr_fac
+  real(kind=dp),     public, save :: boltz_dos_adpt_smr_max
   real(kind=dp),     public, save :: boltz_mu_min
   real(kind=dp),     public, save :: boltz_mu_max
   real(kind=dp),     public, save :: boltz_mu_step
@@ -839,6 +840,12 @@ contains
     if (found .and. (adpt_smr_fac <= 0._dp)) &
          call io_error('Error: adpt_smr_fac must be greater than zero')  
 
+    ! By default: 1 eV
+    adpt_smr_max=1.0_dp
+    call param_get_keyword('adpt_smr_max',found,r_value=adpt_smr_max)
+    if (adpt_smr_max <= 0._dp) &
+         call io_error('Error: adpt_smr_max must be greater than zero')  
+
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
     smr_fixed_en_width=0.0_dp
@@ -931,9 +938,11 @@ contains
          ('Error: optics_adpt_smr_fac must be greater than zero')
 
 
-    optics_adpt_smr_max = 1._dp
+    optics_adpt_smr_max = adpt_smr_max
     call param_get_keyword('optics_adpt_smr_max',found,&
          r_value=optics_adpt_smr_max)
+    if (optics_adpt_smr_max <= 0._dp) call io_error&
+         ('Error: optics_adpt_smr_max must be greater than zero')
 
     optics_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('optics_smr_fixed_en_width',found,&
@@ -1030,9 +1039,12 @@ contains
     if (found .and. (dos_adpt_smr_fac <= 0._dp)) &
          call io_error('Error: dos_adpt_smr_fac must be greater than zero')    
 
-    dos_adpt_smr_max = 1._dp
+    dos_adpt_smr_max = adpt_smr_max
     call param_get_keyword('dos_adpt_smr_max',found,r_value=dos_adpt_smr_max)
+    if (dos_adpt_smr_max <= 0._dp) call io_error&
+         ('Error: dos_adpt_smr_max must be greater than zero')
     
+
     dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('dos_smr_fixed_en_width',found,r_value=dos_smr_fixed_en_width)
     if (found .and. (dos_smr_fixed_en_width < 0._dp)) &
@@ -1321,6 +1333,12 @@ contains
     if (found .and. (boltz_dos_adpt_smr_fac <= 0._dp)) &
          call io_error('Error: boltz_dos_adpt_smr_fac must be greater than zero')    
 
+    boltz_dos_adpt_smr_max = adpt_smr_max
+    call param_get_keyword('boltz_dos_adpt_smr_max',found,r_value=boltz_dos_adpt_smr_max)
+    if (boltz_dos_adpt_smr_max <= 0._dp) call io_error&
+         ('Error: boltz_dos_adpt_smr_max must be greater than zero')
+
+
     boltz_dos_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('boltz_dos_smr_fixed_en_width',found,r_value=boltz_dos_smr_fixed_en_width)
     if (found .and. (boltz_dos_smr_fixed_en_width < 0._dp)) &
@@ -1433,7 +1451,7 @@ contains
     elseif(allocated(eigval)) then
        dos_energy_max        = maxval(eigval)+0.6667_dp
     else
-       dos_energy_max        = 0.0_dp
+       dos_energy_max        = dis_win_max+0.6667_dp
     end if
     call param_get_keyword('dos_energy_max',found,r_value=dos_energy_max)
 
@@ -1441,7 +1459,7 @@ contains
     if(allocated(eigval)) then
        dos_energy_min        = minval(eigval)-0.6667_dp
     else
-       dos_energy_min        = 0.0_dp
+       dos_energy_min        = dis_win_min-0.6667_dp
     end if
     call param_get_keyword('dos_energy_min',found,r_value=dos_energy_min)
 
@@ -1451,7 +1469,7 @@ contains
     elseif(allocated(eigval)) then
        optics_energy_max        = maxval(eigval)-minval(eigval)+0.6667_dp
     else
-       optics_energy_max        = 0.0_dp
+       optics_energy_max        = dis_win_max-dis_win_min+0.6667_dp
     end if
     call param_get_keyword('optics_energy_max',found,r_value=optics_energy_max)
 
