@@ -51,8 +51,8 @@ veryclean: clean
 	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
 
 thedoc:
-	cd $(ROOTDIR)/doc/user_guide && make guide
-	cd $(ROOTDIR)/doc/tutorial && make tutorial
+	make -C $(ROOTDIR)/doc/user_guide 
+	make -C $(ROOTDIR)/doc/tutorial 
 
 dist:
 	@(cd $(ROOTDIR) && tar cf - \
