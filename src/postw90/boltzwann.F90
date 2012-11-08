@@ -21,15 +21,13 @@
 ! Central Michigan University, Mount Pleasant, MI 48859      !
 ! Robert Bosch LLC, Cambridge, MA, 02139                     !
 !                                                            !
-!------------------------------------------------------------!
-! For references on the transport equations, see:            !
-! [1] J. Ziman, "Principles of the Theory of Solids",        !
-!     2nd ed., Cambridge University Press (1972)             !
-! [2] G. Grosso, G. Pastori Parravicini,                     !
-!     "Solid State Physics", Academic Press (2000)           !
-! [3] G. Mahan, "Transport Properties", in                   !
-!     "International Tables for Crystallography" (2006)      !
-!     Vol. D, Chapter 1.8, pp. 220-227                       !
+!============================================================!
+!                                                            !
+!Please cite the following paper when publishing results     !
+!obtained using the BoltzWann module:                        !
+!                                                            !
+![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari,! 
+!    submitted.                                              !
 !============================================================!
 
 module w90_boltzwann
@@ -59,6 +57,13 @@ module w90_boltzwann
   integer, parameter :: XZ = 4
   integer, parameter :: YZ = 5
   integer, parameter :: ZZ = 6
+
+  character(len=76), parameter :: pub_string_1 = \
+  "Please cite the following paper for works obtained using BoltzWann:         "
+  character(len=76), parameter :: pub_string_2 = \
+  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, submitted.         "
+  character(len=76), parameter :: pub_string_3 = \
+  "                                                                            "
 
 contains 
 
@@ -109,6 +114,10 @@ contains
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,'(1x,a)') '| BoltzWann routines by                                                     |'
        write(stdout,'(1x,a)') '| G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari                |'
+       write(stdout,'(1x,a)') '|                                                                           |'
+       write(stdout,'(1x,a)') '|' // pub_string_1 // '|'
+       write(stdout,'(1x,a)') '|' // pub_string_2 // '|'
+       write(stdout,'(1x,a)') '|' // pub_string_3 // '|'
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,*) 
     end if
