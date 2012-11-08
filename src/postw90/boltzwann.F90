@@ -57,13 +57,18 @@ module w90_boltzwann
   integer, parameter :: XZ = 4
   integer, parameter :: YZ = 5
   integer, parameter :: ZZ = 6
+!Please cite the following paper when publishing results     !
+!obtained using the BoltzWann module:                        !
 
-  character(len=76), parameter :: pub_string_1 = \
-  "Please cite the following paper for works obtained using BoltzWann:         "
-  character(len=76), parameter :: pub_string_2 = \
-  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, submitted.         "
-  character(len=76), parameter :: pub_string_3 = \
-  "                                                                            "
+
+  character(len=74), parameter :: pub_string_1 = \
+  "Please cite the following paper when publishing results obtained using    "
+  character(len=74), parameter :: pub_string_2 = \
+  "the BoltzWann module:                                                     "
+  character(len=74), parameter :: pub_string_3 = \
+  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, submitted.       "
+  character(len=74), parameter :: pub_string_4 = \
+  "                                                                          "
 
 contains 
 
@@ -112,12 +117,10 @@ contains
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,'(1x,a)') '|                   Boltzmann Transport (BoltzWann module)                  |'
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
-       write(stdout,'(1x,a)') '| BoltzWann routines by                                                     |'
-       write(stdout,'(1x,a)') '| G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari                |'
-       write(stdout,'(1x,a)') '|                                                                           |'
-       write(stdout,'(1x,a)') '|' // pub_string_1 // '|'
-       write(stdout,'(1x,a)') '|' // pub_string_2 // '|'
-       write(stdout,'(1x,a)') '|' // pub_string_3 // '|'
+       write(stdout,'(1x,a)') '| ' // pub_string_1 // '|'
+       write(stdout,'(1x,a)') '| ' // pub_string_2 // '|'
+       write(stdout,'(1x,a)') '| ' // pub_string_3 // '|'
+       write(stdout,'(1x,a)') '| ' // pub_string_4 // '|'
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,*) 
     end if
