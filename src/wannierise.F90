@@ -1750,8 +1750,7 @@ contains
 
     implicit none
     
-    integer          :: iw,vdw_unit,file_unit,r,s,nkp,k,l,m,ierr,ndim
-    character(len=9) :: cdate, ctime
+    integer          :: iw,vdw_unit,r,s,k,m,ierr,ndim
     real(kind=dp)    :: wc(3,num_wann)
     real(kind=dp)    :: ws(num_wann)
     complex(kind=dp), allocatable :: f_w(:,:),v_matrix(:,:) !f_w2(:,:)
@@ -1851,7 +1850,7 @@ contains
     write(vdw_unit,'(a,i3)') 'degeneracy', num_elec_per_state
     write(vdw_unit,'(a)') 'num_frag 2'
     write(vdw_unit,'(a)') 'num_wann'
-    write(vdw_unit,'(i3,x,i3)') num_wann/2, num_wann/2
+    write(vdw_unit,'(i3,1x,i3)') num_wann/2, num_wann/2
     write(vdw_unit,'(a)') 'tol_occ 0.9'
     write(vdw_unit,'(a)') 'pxyz'
     write(vdw_unit,'(a)') 'F F F'
@@ -1860,7 +1859,7 @@ contains
     write(vdw_unit,'(a)') 'centres_spreads_occ'
     write(vdw_unit,'(a)') 'ang'
     do iw=1,num_wann
-       write(vdw_unit,'(4(f13.10,x),x,f11.8)') wc(1:3,iw),ws(iw),real(f_w(iw,iw))
+       write(vdw_unit,'(4(f13.10,1x),1x,f11.8)') wc(1:3,iw),ws(iw),real(f_w(iw,iw))
     end do
     close(vdw_unit)
 

@@ -1100,8 +1100,8 @@ contains
     if (index(one_dim_axis,'z')>0 ) one_dim_dir = 3
     if ( transport.and. .not.tran_read_ht .and.(one_dim_dir.eq.0) ) call io_error('Error: one_dim_axis not recognised')
     if ( bands_plot.and.(index(bands_plot_mode,'cut').ne.0)&
-	& .and.((bands_plot_dim.ne.3).or.(index(dist_cutoff_mode,'three_dim').eq.0))&
-	& .and.(one_dim_dir.eq.0) ) &
+       & .and.((bands_plot_dim.ne.3).or.(index(dist_cutoff_mode,'three_dim').eq.0))&
+       & .and.(one_dim_dir.eq.0) ) &
          call io_error('Error: one_dim_axis not recognised')
 
 301  continue
@@ -4387,7 +4387,8 @@ contains
           mem_bw=mem_bw+NumPoints3*size_real                         !TDFEnergyArray
           mem_bw=mem_bw+6*NumPoints3*ndim*size_real                  !TDFArray
           mem_bw=mem_bw+6*NumPoints3*size_real                       !IntegrandArray
-          mem_bw=mem_bw+(9*4+6)*size_real                            !ElCondTimesSeebeckFP,ThisElCond,ElCondInverse,ThisSeebeck,ElCondTimesSeebeck
+          mem_bw=mem_bw+(9*4+6)*size_real                           
+                                            !ElCondTimesSeebeckFP,ThisElCond,ElCondInverse,ThisSeebeck,ElCondTimesSeebeck
           mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !ElCond
           mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !Seebeck
           mem_bw=mem_bw+6*NumPoints1*NumPoints2*size_real            !ThermCond
