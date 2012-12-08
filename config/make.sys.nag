@@ -2,7 +2,7 @@
 # NAG 
 #======================= 
 
-F90 = f95 
+F90 = nagfor 
 FCOPTS = -DNAG  
 
 #=======================
@@ -19,5 +19,7 @@ LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
 #LIBS = -L$(LIBDIR)  -llapack -lblas
 
 
+# ACML for blas and lapack
+LIBS = -lacml
 
 
