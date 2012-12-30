@@ -23,6 +23,8 @@ module w90_parameters
   character(len=20), public, save :: energy_unit
   character(len=20), public, save :: length_unit
   logical,           public, save :: wvfn_formatted
+  logical,           public, save :: spn_formatted
+  logical,           public, save :: berry_uHu_formatted
   integer,           public, save :: spin
   integer,           public, save :: num_bands
   integer,           public, save :: num_dump_cycles
@@ -445,6 +447,12 @@ contains
 
     wvfn_formatted  =  .false.       ! formatted or "binary" file
     call param_get_keyword('wvfn_formatted',found,l_value=wvfn_formatted)
+
+    spn_formatted  =  .false.       ! formatted or "binary" file
+    call param_get_keyword('spn_formatted',found,l_value=spn_formatted)
+
+    berry_uHu_formatted  =  .false.       ! formatted or "binary" file
+    call param_get_keyword('berry_uHu_formatted',found,l_value=berry_uHu_formatted)
 
     spin=1
     call param_get_keyword('spin',found,c_value=spin_str)
@@ -1056,11 +1064,10 @@ contains
 !    dos_plot_format           = 'gnuplot'
 !    call param_get_keyword('dos_plot_format',found,c_value=dos_plot_format)
 
-    num_dos_project=num_wann
     call param_get_range_vector('dos_project',found,num_dos_project,&
          lcount=.true.)
     if(found) then
-       if(num_dos_project<1) call io_error('Error: problem reading dps_project')
+       if(num_dos_project<1) call io_error('Error: problem reading dos_project')
        allocate(dos_project(num_dos_project),stat=ierr)
        if (ierr/=0) call io_error('Error allocating dos_project in param_read')
        call param_get_range_vector('dos_project',found,num_dos_project,&
@@ -1068,6 +1075,8 @@ contains
        if (any(dos_project<1) .or. any(dos_project>num_wann)) call io_error&
             ('Error: dos_project asks for out-of-range Wannier functions')
     else
+       ! by default plot all
+       num_dos_project=num_wann
        allocate(dos_project(num_dos_project),stat=ierr) 
        if (ierr/=0) call io_error('Error allocating dos_project in param_read')
        do i=1,num_dos_project
@@ -2394,6 +2403,12 @@ contains
        deallocate( bands_plot_project, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating bands_plot_project in param_dealloc')
     endif
+    if( allocated( dos_project ) ) then
+       deallocate( dos_project, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating dos_project in param_dealloc')
+    endif
+
+
     return
 
   end subroutine param_dealloc
