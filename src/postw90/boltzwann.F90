@@ -106,7 +106,7 @@ contains
     integer, dimension(0:num_nodes-1) :: displs
     integer :: LocalIdx, GlobalIdx
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects
-    real(kind=dp), parameter :: TDF_exceeding_energy_times_smearing = 3._dp
+    real(kind=dp), parameter :: TDF_exceeding_energy_times_smr = 3._dp
     real(kind=dp) :: TDF_exceeding_energy
     integer :: NumberZeroDet
 
@@ -152,7 +152,7 @@ contains
     ! bands.
     ! I also add 3 times the smearing on each side of the TDF energy array to take into account also possible smearing effects,
     ! or at least 0.2 eV
-    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smearing * boltz_TDF_smr_fixed_en_width,0.2_dp)
+    TDF_exceeding_energy = max(TDF_exceeding_energy_times_smr * boltz_TDF_smr_fixed_en_width,0.2_dp)
     TDFEnergyNumPoints = int(floor((dis_win_max-dis_win_min+2._dp*TDF_exceeding_energy)/boltz_tdf_energy_step))+1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate(TDFEnergyArray(TDFEnergyNumPoints),stat=ierr)
@@ -359,6 +359,17 @@ contains
        if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
        allocate(Kappa(6,TempNumPoints,MuNumPoints),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
+    else
+       ! In principle, this should not be needed, because we use ElCond,
+       ! Seebeck and Kappa only on the root node. However, since all
+       ! processors call comms_gatherv a few lines below, and one argument
+       ! is ElCond(1,1,1), some compilers complain.
+       allocate(ElCond(1,1,1),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main (2)')
+       allocate(Seebeck(1,1,1),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main (2)')
+       allocate(Kappa(1,1,1),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main (2)')
     end if
     
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
@@ -439,14 +450,12 @@ contains
     deallocate(LocalKappa,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating LocalKappa in boltzwann_main')
 
-    if (on_root) then
-       deallocate(ElCond,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating ElCond in boltzwann_main')
-       deallocate(Seebeck,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating Seebeck in boltzwann_main')
-       deallocate(Kappa,stat=ierr)
-       if (ierr/=0) call io_error('Error in deallocating Kappa in boltzwann_main')
-    end if
+    deallocate(ElCond,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating ElCond in boltzwann_main')
+    deallocate(Seebeck,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating Seebeck in boltzwann_main')
+    deallocate(Kappa,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating Kappa in boltzwann_main')
 
     deallocate(IntegrandArray,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating IntegrandArray in boltzwann_main')
