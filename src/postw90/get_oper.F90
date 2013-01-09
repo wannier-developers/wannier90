@@ -512,7 +512,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
                                   num_bands,ndimwin,wb,bk,&
                                   have_disentangled,timing_level,&
-                                  scissors_shift
+                                  scissors_shift,  berry_uHu_formatted
     use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
                                   seedname
@@ -525,6 +525,7 @@ module w90_get_oper
     complex(kind=dp), allocatable :: CC_q(:,:,:,:,:)
     complex(kind=dp), allocatable :: Ho_qb1_q_qb2(:,:)
     complex(kind=dp), allocatable :: H_qb1_q_qb2(:,:)
+    real(kind=dp)                 :: c_real,c_img
     character(len=60)             :: header
     
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',1)
@@ -554,13 +555,23 @@ module w90_get_oper
        enddo
        
        uHu_in=io_file_unit()
-       open(unit=uHu_in, file=trim(seedname)//".uHu",form='unformatted',&
-            status='old',action='read',err=105)
-       write(stdout,'(/a)',advance='no')&
-          ' Reading uHu overlaps from '//trim(seedname)//'.uHu in get_CC_R: '
-       read(uHu_in,err=106,end=106) header
-       write(stdout,'(a)') trim(header)
-       read(uHu_in,err=106,end=106) nb_tmp,nkp_tmp,nntot_tmp
+       if (berry_uHu_formatted) then
+          open(unit=uHu_in, file=trim(seedname)//".uHu",form='formatted',&
+               status='old',action='read',err=105)
+          write(stdout,'(/a)',advance='no')&
+               ' Reading uHu overlaps from '//trim(seedname)//'.uHu in get_CC_R: '
+          read(uHu_in,*,err=106,end=106) header
+          write(stdout,'(a)') trim(header)
+          read(uHu_in,*,err=106,end=106) nb_tmp,nkp_tmp,nntot_tmp
+       else
+          open(unit=uHu_in, file=trim(seedname)//".uHu",form='unformatted',&
+               status='old',action='read',err=105)
+          write(stdout,'(/a)',advance='no')&
+               ' Reading uHu overlaps from '//trim(seedname)//'.uHu in get_CC_R: '
+          read(uHu_in,err=106,end=106) header
+          write(stdout,'(a)') trim(header)
+          read(uHu_in,err=106,end=106) nb_tmp,nkp_tmp,nntot_tmp
+       endif
        if (nb_tmp.ne.num_bands) &
             call io_error&
             (trim(seedname)//'.uHu has not the right number of bands')
@@ -583,11 +594,24 @@ module w90_get_oper
                 ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}> 
                 ! between the original ab initio eigenstates
                 !
-                do m=1,num_bands
-                   do n=1,num_bands
-                      read(uHu_in,err=106,end=106) Ho_qb1_q_qb2(m,n)
+                if (berry_uHu_formatted) then
+                   do m=1,num_bands
+                      do n=1,num_bands
+                         read(uHu_in,'(2ES20.10)',err=106,end=106) c_real,c_img
+                         Ho_qb1_q_qb2(n,m) = cmplx(c_real,c_img)
+                      end do
                    end do
-                end do
+                else
+                   read(uHu_in,err=106,end=106) ((Ho_qb1_q_qb2(n,m),n=1,num_bands),m=1,num_bands)
+                endif
+                ! pw2wannier90 is coded a bit strangely, so here we take the transpose
+                Ho_qb1_q_qb2=transpose(Ho_qb1_q_qb2)
+                ! old code here
+                !do m=1,num_bands
+                !   do n=1,num_bands
+                !      read(uHu_in,err=106,end=106) Ho_qb1_q_qb2(m,n)
+                !   end do
+                !end do
                 !
                 ! Transform to projected subspace, Wannier gauge
                 !
@@ -791,25 +815,26 @@ module w90_get_oper
   subroutine get_SS_R
   !===============================================================!
   !                                                               !
-  ! Wannier representation of the Pauli matrices: <0n|sigma_i|Rm> !
+  ! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm> !
+  ! (a=x,y,z)                                                     !
   !                                                               !
   !===============================================================!
 
     use w90_constants, only     : dp,pi,cmplx_0
+    use w90_parameters, only    : num_wann,ndimwin,num_kpts,num_bands,&
+                                  timing_level,have_disentangled,spn_formatted
+    use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : io_error,io_stopwatch,stdout,seedname,&
                                   io_file_unit
-    use w90_parameters, only    : num_wann,ndimwin,num_kpts,num_bands,&
-                                  timing_level,&
-                                  have_disentangled
-    use w90_postw90_common, only : nrpts,v_matrix
     use w90_comms, only         : on_root,comms_bcast    
 
     implicit none
   
-    complex(kind=dp), allocatable :: spn_o(:,:,:,:),SS_q(:,:,:,:)
+    complex(kind=dp), allocatable :: spn_o(:,:,:,:),SS_q(:,:,:,:),spn_temp(:,:)
+    real(kind=dp)                 :: s_real,s_img
     integer, allocatable          :: num_states(:)
     integer                       :: i,j,ii,jj,m,n,spn_in,ik,is,&
-                                     win_min,nb_tmp,nkp_tmp
+                                     winmin,nb_tmp,nkp_tmp,ierr,s, counter
     character(len=60)             :: header
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_SS_R',1)
@@ -824,56 +849,95 @@ module w90_get_oper
 
        allocate(spn_o(num_bands,num_bands,num_kpts,3))
        allocate(SS_q(num_wann,num_wann,num_kpts,3))
+
        allocate(num_states(num_kpts))
-
-       spn_in=io_file_unit()
-       open(unit=spn_in,file=trim(seedname)//'.spn',form='unformatted',&
-            status='old',err=109)
-       write(stdout,'(/a)',advance='no')&
-        ' Reading spin matrices from '//trim(seedname)//'.spn in get_SS_R : '
-       read(spn_in,err=110,end=110) header
-       write(stdout,'(a)') trim(header)
-       read(spn_in,err=110,end=110) nb_tmp,nkp_tmp
-       if (nb_tmp.ne.num_bands) &
-            call io_error(trim(seedname)//'.spn has wrong number of bands')
-       if (nkp_tmp.ne.num_kpts) &
-            call io_error(trim(seedname)//'.spn has wrong number of k-points')
-
-       ! Read from .spn file the upper-triangular part of the original spin matrices 
-       ! <psi_nk|sigma_i|psi_mk> (sigma_i = Pauli matrix) between 
-       ! ab initio eigenstates, and reconstruct lower-triangular part
-       !
-       do ik=1,num_kpts
-          do m=1,num_bands
-!             do n=1,num_bands
-             do n=1,m
-                read(spn_in,err=110,end=110) spn_o(n,m,ik,1),&
-                     spn_o(n,m,ik,2),spn_o(n,m,ik,3)
-                spn_o(m,n,ik,1)=conjg(spn_o(n,m,ik,1))
-                spn_o(m,n,ik,2)=conjg(spn_o(n,m,ik,2))
-                spn_o(m,n,ik,3)=conjg(spn_o(n,m,ik,3))
-             end do
-          end do
-       enddo
-       close(spn_in)
-       !
-       ! Wannier-gauge spin matrices in the projected subspace
-       !
-       SS_q(:,:,:,:)=cmplx_0
        do ik=1,num_kpts
           if(have_disentangled) then 
              num_states(ik)=ndimwin(ik)
           else
              num_states(ik)=num_wann
           endif
-          call get_win_min(ik,win_min)
+       enddo
+
+       ! Read from .spn file the original spin matrices <psi_nk|sigma_i|psi_mk> 
+       ! (sigma_i = Pauli matrix) between ab initio eigenstates
+       !
+       spn_in=io_file_unit()
+       if(spn_formatted) then
+          open(unit=spn_in,file=trim(seedname)//'.spn',form='formatted',&
+               status='old',err=109)
+          write(stdout,'(/a)',advance='no')&
+               ' Reading spin matrices from '//trim(seedname)//'.spn in get_SS_R : '
+          read(spn_in,*,err=110,end=110) header
+          write(stdout,'(a)') trim(header)
+          read(spn_in,*,err=110,end=110) nb_tmp,nkp_tmp
+       else
+          open(unit=spn_in,file=trim(seedname)//'.spn',form='unformatted',&
+               status='old',err=109)
+          write(stdout,'(/a)',advance='no')&
+               ' Reading spin matrices from '//trim(seedname)//'.spn in get_SS_R : '
+          read(spn_in,err=110,end=110) header
+          write(stdout,'(a)') trim(header)
+          read(spn_in,err=110,end=110) nb_tmp,nkp_tmp
+       endif
+       if (nb_tmp.ne.num_bands) &
+            call io_error(trim(seedname)//'.spn has wrong number of bands')
+       if (nkp_tmp.ne.num_kpts) &
+            call io_error(trim(seedname)//'.spn has wrong number of k-points')
+       if(spn_formatted) then
+          do ik=1,num_kpts
+             do m=1,num_bands
+                do n=1,m
+                   read(spn_in,*,err=110,end=110) s_real,s_img 
+                   spn_o(n,m,ik,1)=cmplx(s_real,s_img)
+                   read(spn_in,*,err=110,end=110) s_real,s_img 
+                   spn_o(n,m,ik,2)=cmplx(s_real,s_img)
+                   read(spn_in,*,err=110,end=110) s_real,s_img 
+                   spn_o(n,m,ik,3)=cmplx(s_real,s_img)
+                   ! Read upper-triangular part, now build the rest
+                   spn_o(m,n,ik,1)=conjg(spn_o(n,m,ik,1))
+                   spn_o(m,n,ik,2)=conjg(spn_o(n,m,ik,2))
+                   spn_o(m,n,ik,3)=conjg(spn_o(n,m,ik,3))
+                end do
+             end do
+          enddo
+       else
+          allocate(spn_temp(3,(num_bands*(num_bands+1))/2),stat=ierr)
+          if (ierr/=0) call io_error('Error in allocating spm_temp in get_SS_R')
+          do ik=1,num_kpts
+             read(spn_in) ((spn_temp(s,m),s=1,3),m=1,(num_bands*(num_bands+1))/2)
+             counter=0
+             do m=1,num_bands
+                do n=1,m
+                   counter=counter+1
+                   spn_o(n,m,ik,1)=spn_temp(1,counter)
+                   spn_o(m,n,ik,1)=conjg(spn_temp(1,counter))
+                   spn_o(n,m,ik,2)=spn_temp(2,counter)
+                   spn_o(m,n,ik,2)=conjg(spn_temp(2,counter))
+                   spn_o(n,m,ik,3)=spn_temp(3,counter)
+                   spn_o(m,n,ik,3)=conjg(spn_temp(3,counter))
+                end do
+             end do
+          end do
+          deallocate(spn_temp,stat=ierr)
+          if (ierr/=0) call io_error('Error in deallocating spm_temp in get_SS_R')
+       endif
+
+       close(spn_in)
+
+
+       ! Transform to projected subspace, Wannier gauge
+       !
+       SS_q(:,:,:,:)=cmplx_0
+       do ik=1,num_kpts
+          call get_win_min(ik,winmin)
           do is=1,3
              do m=1,num_wann
                 do n=1,m
                    do i=1,num_states(ik)
-                      ii=win_min+i-1
+                      ii=winmin+i-1
                       do j=1,num_states(ik)
-                         jj=win_min+j-1
+                         jj=winmin+j-1
                          SS_q(n,m,ik,is)=SS_q(n,m,ik,is)&
                               +conjg(v_matrix(i,n,ik))*spn_o(ii,jj,ik,is)&
                               *v_matrix(j,m,ik)
@@ -885,9 +949,9 @@ module w90_get_oper
           enddo !is
        enddo !ik
 
-       do is=1,3
-          call fourier_q_to_R(SS_q(:,:,:,is),SS_R(:,:,:,is))
-       end do
+       call fourier_q_to_R(SS_q(:,:,:,1),SS_R(:,:,:,1))
+       call fourier_q_to_R(SS_q(:,:,:,2),SS_R(:,:,:,2))
+       call fourier_q_to_R(SS_q(:,:,:,3),SS_R(:,:,:,3))
 
     endif !on_root
 
@@ -903,6 +967,7 @@ module w90_get_oper
          ('Error: Problem reading input file '//trim(seedname)//'.spn')
 
   end subroutine get_SS_R
+
 
   !=========================================================!
   !                   PRIVATE PROCEDURES                    ! 
