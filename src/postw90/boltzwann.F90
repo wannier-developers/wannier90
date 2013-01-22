@@ -606,7 +606,7 @@ contains
                min_smearing_binwidth_ratio) then
              write(stdout,'(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
           else
-             write(stdout,'(7X,A)') trim(param_get_smearing_type(boltz_dos_smr_index)) // &
+             write(stdout,'(7X,A,G18.10)') trim(param_get_smearing_type(boltz_dos_smr_index)) // &
                   ", non-adaptive, width (eV) =", boltz_dos_smr_fixed_en_width
           end if
        end if
@@ -622,7 +622,7 @@ contains
           write(stdout,'(7X,A)') "Unsmeared (use smearing width larger than bin width to smear)"
        else
           write(stdout,'(5X,A)') "Smearing for TDF: "
-          write(stdout,'(7X,A,G10.3)') &
+          write(stdout,'(7X,A,G18.10)') &
                trim(param_get_smearing_type(boltz_TDF_smr_index)) // ", non-adaptive, width (eV) =", &
                boltz_TDF_smr_fixed_en_width
        end if
