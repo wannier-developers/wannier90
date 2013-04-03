@@ -274,7 +274,9 @@ module w90_parameters
   ! Projections
   real(kind=dp), allocatable,     public, save :: proj_site(:,:)
   integer, allocatable,           public, save :: proj_l(:)  
-  integer, allocatable,           public, save :: proj_m(:)  
+  integer, allocatable,           public, save :: proj_m(:)
+  integer, allocatable,           public, save :: proj_s(:)  
+  real(kind=dp), allocatable,     public, save :: proj_s_qaxis(:,:)
   real(kind=dp), allocatable,     public, save :: proj_z(:,:)
   real(kind=dp), allocatable,     public, save :: proj_x(:,:)
   integer, allocatable,           public, save :: proj_radial(:)  
@@ -576,8 +578,8 @@ contains
     else
        if (found) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
-    if(spinors .and. (2*(num_wann/2))/=num_wann) &
-       call io_error('Error: For spinor WF num_wann must be even')
+!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
+!       call io_error('Error: For spinor WF num_wann must be even')
     
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
@@ -2367,6 +2369,14 @@ contains
        deallocate( proj_m, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating proj_m in param_dealloc')
     end if
+    if ( allocated( proj_s ) ) then
+       deallocate( proj_s, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating proj_s in param_dealloc')
+    end if
+    if ( allocated( proj_s_qaxis ) ) then
+       deallocate( proj_s_qaxis, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating proj_s_qaxis in param_dealloc')
+    end if
     if ( allocated( proj_z ) ) then
        deallocate( proj_z, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating proj_z in param_dealloc')
@@ -3620,7 +3630,7 @@ contains
      character(len=20) :: keyword
      integer           :: in,ins,ine,loop,line_e,line_s,counter
      integer           :: sites,species,line,pos1,pos2,pos3,m_tmp,l_tmp,mstate
-     integer           :: loop_l,loop_m,loop_sites,ierr
+     integer           :: loop_l,loop_m,loop_sites,ierr,loop_s,spn_counter
      logical           :: found_e,found_s
      character(len=maxlen) :: dummy,end_st,start_st
      character(len=maxlen) :: ctemp,ctemp2,ctemp3,ctemp4,ctemp5,m_string
@@ -3633,14 +3643,16 @@ contains
      ! default values for the optional part of the projection definitions
      real(kind=dp), parameter :: proj_z_def(3)=(/0.0_dp,0.0_dp,1.0_dp/)
      real(kind=dp), parameter :: proj_x_def(3)=(/1.0_dp,0.0_dp,0.0_dp/)
+     real(kind=dp), parameter :: proj_s_qaxis_def(3)=(/0.0_dp,0.0_dp,1.0_dp/)
      real(kind=dp), parameter :: proj_zona_def=1.0_dp
      integer, parameter       :: proj_radial_def=1
      !
      real(kind=dp) :: proj_z_tmp(3)
      real(kind=dp) :: proj_x_tmp(3)
+     real(kind=dp) :: proj_s_qaxis_tmp(3)
      real(kind=dp) :: proj_zona_tmp
      integer       :: proj_radial_tmp
-     logical       :: lconvert,lrandom
+     logical       :: lconvert,lrandom,proj_u_tmp,proj_d_tmp
      logical       :: lpartrandom
      !
      real(kind=dp) :: xnorm,znorm,cosphi,sinphi,xnorm_new,cosphi_new
@@ -3654,7 +3666,7 @@ contains
      end_st='end '//trim(keyword)
 
      num_proj=num_wann
-     if(spinors) num_proj=num_wann/2
+!     if(spinors) num_proj=num_wann/2
 
 
      allocate( proj_site(3,num_proj),stat=ierr)
@@ -3671,8 +3683,12 @@ contains
      if (ierr/=0) call io_error('Error allocating proj_radial in param_get_projections')
      allocate( proj_zona(num_proj) ,stat=ierr)
      if (ierr/=0) call io_error('Error allocating proj_zona in param_get_projections')
-
-
+     if(spinors) then
+        allocate( proj_s(num_proj)  ,stat=ierr)
+        if (ierr/=0) call io_error('Error allocating proj_s in param_get_projections')
+        allocate( proj_s_qaxis(3,num_proj) ,stat=ierr)
+        if (ierr/=0) call io_error('Error allocating proj_s_qaxis in param_get_projections')
+     endif
 
 
      do loop=1,num_lines
@@ -3747,6 +3763,14 @@ contains
            proj_x_tmp      = proj_x_def  
            proj_zona_tmp   = proj_zona_def  
            proj_radial_tmp =  proj_radial_def
+           if(spinors) then
+              proj_s_qaxis_tmp = proj_s_qaxis_def
+              spn_counter=2
+              proj_u_tmp=.true.
+              proj_d_tmp=.true.
+           else
+              spn_counter=1
+           endif
            ! Strip input line of all spaces
            dummy=utility_strip(in_data(line))
            dummy=adjustl(dummy)
@@ -3778,8 +3802,51 @@ contains
                  if(loop==num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp))
               end do
            end if
-           !Now we know the sites for this line. Get the angular momentum states
+
            dummy=dummy(pos1+1:)
+
+           ! scan for quantisation direction
+           pos1=index(dummy,'[')
+           if(spinors) then
+              if(pos1>0) then
+                 ctemp=(dummy(pos1+1:))
+                 pos2=index(ctemp,']')
+                 if(pos2==0) call io_error &
+                      ('param_get_projections: no closing square bracket for spin quantisation dir')
+                 ctemp=ctemp(:pos2-1)
+                 call utility_string_to_coord(ctemp,proj_s_qaxis_tmp)
+                 dummy=dummy(:pos1-1) ! remove [ ] section
+              endif
+           else
+              if(pos1>0) call io_error('param_get_projections: spin qdir is defined but spinors=.false.')
+           endif
+
+           ! scan for up or down
+           pos1=index(dummy,'(')
+           if(spinors) then
+              if(pos1>0) then
+                 proj_u_tmp=.false.;proj_d_tmp=.false.
+                 ctemp=(dummy(pos1+1:))
+                 pos2=index(ctemp,')')
+                 if(pos2==0) call io_error('param_get_projections: no closing bracket for spin')
+                 ctemp=ctemp(:pos2-1)
+                 if(index(ctemp,'u')>0) proj_u_tmp=.true.
+                 if(index(ctemp,'d')>0) proj_d_tmp=.true.
+                 if(proj_u_tmp.and.proj_d_tmp) then
+                    spn_counter=2
+                 elseif(.not.proj_u_tmp.and..not.proj_d_tmp) then
+                    call io_error('param_get_projections: found brackets but neither u or d')
+                 else
+                    spn_counter=1
+                 endif
+                 dummy=dummy(:pos1-1) ! remove ( ) section
+              endif
+           else
+              if(pos1>0) call io_error('param_get_projections: spin is defined but spinors=.false.')
+           endif
+
+
+           !Now we know the sites for this line. Get the angular momentum states
            pos1=index(dummy,':')
            if (pos1>0) then
               ctemp=dummy(:pos1-1)
@@ -3993,10 +4060,10 @@ contains
               endif
            end if
            if(sites==-1) then
-              if(counter+sum(ang_states) > num_proj) &
+              if(counter+spn_counter*sum(ang_states) > num_proj) &
                  call io_error('param_get_projection: too many projections defined')
            else
-              if(counter+sites*sum(ang_states) > num_proj) &
+              if(counter+spn_counter*sites*sum(ang_states) > num_proj) &
                  call io_error('param_get_projection: too many projections defined')
            end if
            !
@@ -4004,15 +4071,27 @@ contains
               do loop_l=min_l,max_l
                  do loop_m=min_m,max_m
                     if(ang_states(loop_m,loop_l)==1) then
-                       counter=counter+1
-                       proj_site(:,counter) = pos_frac
-                       proj_l(counter)      = loop_l
-                       proj_m(counter)      = loop_m
-                       proj_z(:,counter)    = proj_z_tmp
-                       proj_x(:,counter)    = proj_x_tmp
-                       proj_radial(counter) = proj_radial_tmp
-                       proj_zona(counter)   = proj_zona_tmp
-                    end if
+                       do loop_s=1,spn_counter
+                          counter=counter+1
+                          proj_site(:,counter) = pos_frac
+                          proj_l(counter)      = loop_l
+                          proj_m(counter)      = loop_m
+                          proj_z(:,counter)    = proj_z_tmp
+                          proj_x(:,counter)    = proj_x_tmp
+                          proj_radial(counter) = proj_radial_tmp
+                          proj_zona(counter)   = proj_zona_tmp
+                          if(spinors) then
+                             if(spn_counter==1) then
+                                if(proj_u_tmp) proj_s(counter)=1
+                                if(proj_d_tmp) proj_s(counter)=-1
+                             else
+                                if(loop_s==1) proj_s(counter)=1
+                                if(loop_s==2) proj_s(counter)=-1
+                             endif
+                             proj_s_qaxis(:,counter)    = proj_s_qaxis_tmp
+                          endif
+                       end do
+                    endif
                  end do
               end do
            else
@@ -4020,38 +4099,50 @@ contains
                  do loop_l=min_l,max_l
                     do loop_m=min_m,max_m
                        if(ang_states(loop_m,loop_l)==1) then
-                          counter=counter+1
-                          proj_site(:,counter) = atoms_pos_frac(:,loop_sites,species)
-                          proj_l(counter)      = loop_l
-                          proj_m(counter)      = loop_m
-                          proj_z(:,counter)    = proj_z_tmp
-                          proj_x(:,counter)    = proj_x_tmp
-                          proj_radial(counter) = proj_radial_tmp
-                          proj_zona(counter)   = proj_zona_tmp
-                       end if
-                    end do
+                          do loop_s=1,spn_counter
+                             counter=counter+1
+                             proj_site(:,counter) = atoms_pos_frac(:,loop_sites,species)
+                             proj_l(counter)      = loop_l
+                             proj_m(counter)      = loop_m
+                             proj_z(:,counter)    = proj_z_tmp
+                             proj_x(:,counter)    = proj_x_tmp
+                             proj_radial(counter) = proj_radial_tmp
+                             proj_zona(counter)   = proj_zona_tmp
+                             if(spinors) then
+                                if(spn_counter==1) then
+                                   if(proj_u_tmp) proj_s(counter)=1
+                                   if(proj_d_tmp) proj_s(counter)=-1
+                                else
+                                   if(loop_s==1) proj_s(counter)=1
+                                   if(loop_s==2) proj_s(counter)=-1
+                                endif
+                             proj_s_qaxis(:,counter)    = proj_s_qaxis_tmp
+                          endif
+                       end do
+                    end if
                  end do
               end do
-           end if
+           end do
+        end if
+           
+     end do !end loop over projection block
 
-        end do !end loop over projection block
-
-        ! check there are enough projections and add random projections if required
-        if (.not. lpartrandom) then
-              if (counter.ne.num_proj) call io_error(&
-               'param_get_projections: Fewer projections defined than the number of Wannier functions requested')
-        else
-           call random_seed()
-           do loop=counter+1,num_proj
-              call random_number(proj_site(:,loop))
-              proj_l(loop)      = 0
-              proj_m(loop)      = 1
-              proj_z(:,loop)    = proj_z_def  
-              proj_x(:,loop)    = proj_x_def  
-              proj_zona(loop)   = proj_zona_def  
-              proj_radial(loop) = proj_radial_def             
-           enddo
-        endif
+     ! check there are enough projections and add random projections if required
+     if (.not. lpartrandom) then
+        if (counter.ne.num_proj) call io_error(&
+             'param_get_projections: Fewer projections defined than the number of Wannier functions requested')
+     else
+        call random_seed()
+        do loop=counter+1,num_proj
+           call random_number(proj_site(:,loop))
+           proj_l(loop)      = 0
+           proj_m(loop)      = 1
+           proj_z(:,loop)    = proj_z_def  
+           proj_x(:,loop)    = proj_x_def  
+           proj_zona(loop)   = proj_zona_def  
+           proj_radial(loop) = proj_radial_def             
+        enddo
+     endif
 
      elseif(lrandom) then
 

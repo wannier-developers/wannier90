@@ -663,22 +663,44 @@ nnshell=0
     enddo
     write(nnkpout,'(a/)') 'end kpoints'
 
-    ! Projections
-    write(nnkpout,'(a)') 'begin projections'
-    if (allocated(proj_site)) then
-       write(nnkpout,'(i6)') num_proj
-       do i=1,num_proj
-          write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
-               proj_site(1,i),proj_site(2,i),proj_site(3,i), &
-               proj_l(i),proj_m(i),proj_radial(i)
+    if(spinors) then
+       ! Projections
+       write(nnkpout,'(a)') 'begin spinor_projections'
+       if (allocated(proj_site)) then
+          write(nnkpout,'(i6)') num_proj
+          do i=1,num_proj
+             write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
+                  proj_site(1,i),proj_site(2,i),proj_site(3,i), &
+                  proj_l(i),proj_m(i),proj_radial(i)
 !!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
-          write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-               proj_z(1,i),proj_z(2,i),proj_z(3,i), &
-               proj_x(1,i),proj_x(2,i),proj_x(3,i), &
-               proj_zona(i)
-       enddo
-    end if
-    write(nnkpout,'(a/)') 'end projections'
+             write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
+                  proj_z(1,i),proj_z(2,i),proj_z(3,i), &
+                  proj_x(1,i),proj_x(2,i),proj_x(3,i), &
+                  proj_zona(i)
+             write(nnkpout,'(2x,1i3,1x,3f11.7)') &
+                  proj_s(i), &
+                  proj_s_qaxis(1,i),proj_s_qaxis(2,i),proj_s_qaxis(3,i)
+          enddo
+       end if
+       write(nnkpout,'(a/)') 'end spinor_projections'
+    else
+       ! Projections
+       write(nnkpout,'(a)') 'begin projections'
+       if (allocated(proj_site)) then
+          write(nnkpout,'(i6)') num_proj
+          do i=1,num_proj
+             write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
+                  proj_site(1,i),proj_site(2,i),proj_site(3,i), &
+                  proj_l(i),proj_m(i),proj_radial(i)
+!!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+             write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
+                  proj_z(1,i),proj_z(2,i),proj_z(3,i), &
+                  proj_x(1,i),proj_x(2,i),proj_x(3,i), &
+                  proj_zona(i)
+          enddo
+       end if
+       write(nnkpout,'(a/)') 'end projections'
+    endif
 
     ! Nearest neighbour k-points
     write(nnkpout,'(a)') 'begin nnkpts'

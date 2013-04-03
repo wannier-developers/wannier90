@@ -183,11 +183,11 @@ contains
        do n=1,num_proj
           call utility_frac_to_cart(proj_site(:,n),rguide(:,n),real_lattice)
        enddo
-       if(spinors) then
-          do n=1,num_proj
-             call utility_frac_to_cart(proj_site(:,n),rguide(:,n+num_proj),real_lattice)
-          enddo
-       end if
+!       if(spinors) then ! not needed with new changes to spinor proj 2013 JRY
+!          do n=1,num_proj
+!             call utility_frac_to_cart(proj_site(:,n),rguide(:,n+num_proj),real_lattice)
+!          enddo
+!       end if
     end if
 
     write(stdout,*)
