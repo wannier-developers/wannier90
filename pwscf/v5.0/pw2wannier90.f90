@@ -22,7 +22,7 @@ module wannier
         iun_uIu !ivo
    ! end change Lopez, Thonhauser, Souza
    integer  :: n_wannier !number of WF
-   integer  :: n_proj    !number of projection (=#WF unless spinors then =#WF/2)
+   integer  :: n_proj    !number of projection 
    complex(DP), allocatable :: gf(:,:)  ! guding_function(npwx,n_wannier)
    integer               :: ispinw, ikstart, ikstop, iknum
    character(LEN=15)     :: wan_mode    ! running mode
@@ -34,6 +34,8 @@ module wannier
    ! end change Lopez, Thonhauser, Souza
    ! input data from nnkp file
    real(DP), allocatable :: center_w(:,:)     ! center_w(3,n_wannier)
+   integer,  allocatable :: spin_eig(:)
+   real(DP), allocatable :: spin_qaxis(:,:)
    integer, allocatable  :: l_w(:), mr_w(:) ! l and mr of wannier (n_wannier) as from table 3.1,3.2 of spec.
    integer, allocatable  :: r_w(:)      ! index of radial function (n_wannier) as from table 3.3 of spec.
    real(DP), allocatable :: xaxis(:,:),zaxis(:,:) ! xaxis and zaxis(3,n_wannier)
@@ -55,6 +57,7 @@ module wannier
    real(DP), allocatable    :: wann_centers(:,:),wann_spreads(:)
    real(DP)                 :: spreads(3)
    real(DP), allocatable    :: eigval(:,:)
+   logical                  :: old_spinor_proj  ! for compatability for nnkp files prior to W90v2.0
 end module wannier
 !
 
@@ -664,7 +667,7 @@ SUBROUTINE read_nnkp
   INTEGER numk, i, j
   INTEGER, ALLOCATABLE :: ig_check(:,:)
   real(DP) :: xx(3), xnorm, znorm, coseno
-  LOGICAL :: have_nnkp
+  LOGICAL :: have_nnkp,found
 
   IF (ionode) THEN  ! Read nnkp file on ionode only
 
@@ -687,7 +690,11 @@ SUBROUTINE read_nnkp
 
   IF (ionode) THEN   ! read from ionode only
 
-     CALL scan_file_to('real_lattice')
+     CALL scan_file_to('real_lattice',found)
+     if(.not.found) then
+        WRITE(stdout,*) ' Could not find real_lattice block in '//trim(seedname)//'.nnkp'
+        STOP
+     endif
      DO j=1,3
         READ(iun_nnkp,*) (rlatt(i,j),i=1,3)
         DO i = 1,3
@@ -705,7 +712,11 @@ SUBROUTINE read_nnkp
      ENDDO
      WRITE(stdout,*) ' - Real lattice is ok'
 
-     CALL scan_file_to('recip_lattice')
+     CALL scan_file_to('recip_lattice',found)
+     if(.not.found) then
+        WRITE(stdout,*) ' Could not find recip_lattice block in '//trim(seedname)//'.nnkp'
+        STOP
+     endif
      DO j=1,3
         READ(iun_nnkp,*) (glatt(i,j),i=1,3)
         DO i = 1,3
@@ -723,7 +734,11 @@ SUBROUTINE read_nnkp
      ENDDO
      WRITE(stdout,*) ' - Reciprocal lattice is ok'
 
-     CALL scan_file_to('kpoints')
+     CALL scan_file_to('kpoints',found)
+     if(.not.found) then
+        WRITE(stdout,*) ' Could not find kpoints block in '//trim(seedname)//'.nnkp'
+        STOP
+     endif
      READ(iun_nnkp,*) numk
      IF(numk/=iknum) THEN
         WRITE(stdout,*)  ' Something wrong! '
@@ -752,14 +767,35 @@ SUBROUTINE read_nnkp
   CALL mp_bcast(glatt,ionode_id)
 
   IF (ionode) THEN   ! read from ionode only
-     CALL scan_file_to('projections')
+     if(noncolin) then
+        old_spinor_proj=.false.
+        CALL scan_file_to('spinor_projections',found)
+        if(.not.found) then
+           !try old style projections
+           CALL scan_file_to('projections',found)
+           if(found) then
+              old_spinor_proj=.true.
+           else
+              WRITE(stdout,*) ' Could not find projections block in '//trim(seedname)//'.nnkp'
+              STOP
+           endif
+        end if
+     else
+        CALL scan_file_to('projections',found)
+        if(.not.found) then
+           WRITE(stdout,*) ' Could not find projections block in '//trim(seedname)//'.nnkp'
+           STOP           
+        endif
+     endif
      READ(iun_nnkp,*) n_proj
   ENDIF
 
   ! Broadcast
   CALL mp_bcast(n_proj,ionode_id)
+  CALL mp_bcast(old_spinor_proj,ionode_id)
 
-  IF(noncolin) THEN
+
+  IF(old_spinor_proj) THEN
      n_wannier=n_proj*2
   ELSE
      n_wannier=n_proj
@@ -770,6 +806,9 @@ SUBROUTINE read_nnkp
   ALLOCATE( center_w(3,n_proj), alpha_w(n_proj), gf(npwx,n_proj), &
        l_w(n_proj), mr_w(n_proj), r_w(n_proj), &
        zaxis(3,n_proj), xaxis(3,n_proj), csph(16,n_proj) )
+  if(noncolin.and..not.old_spinor_proj) then
+     ALLOCATE( spin_eig(n_proj),spin_qaxis(3,n_proj) ) 
+  endif
 
   WRITE(stdout,'("  - Number of wannier functions is ok (",i3,")")') n_wannier
 
@@ -791,6 +830,13 @@ SUBROUTINE read_nnkp
              CALL errore('read_nnkp',' zona value must be positive', 1)
         ! convert wannier center in cartesian coordinates (in unit of alat)
         CALL cryst_to_cart( 1, center_w(:,iw), at, 1 )
+        if(noncolin.and..not.old_spinor_proj) then
+           READ(iun_nnkp,*) spin_eig(iw),(spin_qaxis(i,iw),i=1,3)
+           xnorm = sqrt(spin_qaxis(1,iw)*spin_qaxis(1,iw) + spin_qaxis(2,iw)*spin_qaxis(2,iw) + &
+             spin_qaxis(3,iw)*spin_qaxis(3,iw))
+           IF (xnorm < eps6) CALL errore ('read_nnkp',' |xaxis| < eps ',1)
+           spin_qaxis(:,iw)=spin_qaxis(:,iw)/xnorm
+        endif
      ENDDO
   ENDIF
 
@@ -804,7 +850,8 @@ SUBROUTINE read_nnkp
   CALL mp_bcast(zaxis,ionode_id)
   CALL mp_bcast(xaxis,ionode_id)
   CALL mp_bcast(alpha_w,ionode_id)
-
+  CALL mp_bcast(spin_eig,ionode_id)
+  CALL mp_bcast(spin_qaxis,ionode_id)
   !
   WRITE(stdout,*)
   WRITE(stdout,*) 'Projections:'
@@ -814,7 +861,11 @@ SUBROUTINE read_nnkp
   ENDDO
 
   IF (ionode) THEN   ! read from ionode only
-     CALL scan_file_to('nnkpts')
+     CALL scan_file_to('nnkpts',found)
+     if(.not.found) then
+        WRITE(stdout,*) ' Could not find nnkpts block in '//trim(seedname)//'.nnkp'
+        STOP
+     endif
      READ (iun_nnkp,*) nnb
   ENDIF
 
@@ -875,7 +926,11 @@ SUBROUTINE read_nnkp
   ALLOCATE( excluded_band(nbnd) )
 
   IF (ionode) THEN     ! read from ionode only
-     CALL scan_file_to('exclude_bands')
+     CALL scan_file_to('exclude_bands',found)
+     if(.not.found) then
+        WRITE(stdout,*) ' Could not find exclude_bands block in '//trim(seedname)//'.nnkp'
+        STOP
+     endif
      READ (iun_nnkp,*) nexband
      excluded_band(1:nbnd)=.false.
      DO i=1,nexband
@@ -898,13 +953,14 @@ SUBROUTINE read_nnkp
 END SUBROUTINE read_nnkp
 !
 !-----------------------------------------------------------------------
-SUBROUTINE scan_file_to (keyword)
+SUBROUTINE scan_file_to (keyword,found)
    !-----------------------------------------------------------------------
    !
    USE wannier, ONLY :iun_nnkp
    USE io_global,  ONLY : stdout
    IMPLICIT NONE
-   CHARACTER(len=*) :: keyword
+   CHARACTER(len=*), intent(in) :: keyword
+   logical, intent(out) :: found
    CHARACTER(len=80) :: line1, line2
 !
 ! by uncommenting the following line the file scan restarts every time
@@ -916,9 +972,11 @@ SUBROUTINE scan_file_to (keyword)
    READ(iun_nnkp,*,end=20) line1, line2
    IF(line1/='begin')  GOTO 10
    IF(line2/=keyword) GOTO 10
+   found=.true.
    RETURN
-20 WRITE (stdout,*) keyword," data-block missing "
-   STOP
+20 found=.false.
+   rewind (iun_nnkp)
+
 END SUBROUTINE scan_file_to
 !
 !-----------------------------------------------------------------------
@@ -1860,18 +1918,19 @@ SUBROUTINE compute_amn
    USE mp,              ONLY : mp_sum
    USE noncollin_module,ONLY : noncolin, npol
    USE wvfct,           ONLY : ecutwfc
+   USE constants,       ONLY : eps6
 
    IMPLICIT NONE
    !
    INTEGER, EXTERNAL :: find_free_unit
    !
-   COMPLEX(DP) :: amn, zdotc
+   COMPLEX(DP) :: amn, zdotc,amn_tmp,fac(2)
    real(DP):: ddot
    COMPLEX(DP), ALLOCATABLE :: sgf(:,:)
    INTEGER :: ik, ibnd, ibnd1, iw,i, ikevc, nt, ipol
    CHARACTER (len=9)  :: cdate,ctime
    CHARACTER (len=60) :: header
-   LOGICAL            :: any_uspp, opnd, exst
+   LOGICAL            :: any_uspp, opnd, exst,spin_z_pos, spin_z_neg
    INTEGER            :: istart
 
    !nocolin: we have half as many projections g(r) defined as wannier
@@ -1940,53 +1999,122 @@ SUBROUTINE compute_amn
       ENDIF
       !
       IF(noncolin) THEN
-         ! we do the projection as g(r)*a(r) and g(r)*b(r)
-         DO ipol=1,npol
-            istart = (ipol-1)*npwx + 1
+         if(old_spinor_proj) then
+            ! we do the projection as g(r)*a(r) and g(r)*b(r)
+            DO ipol=1,npol
+               istart = (ipol-1)*npwx + 1
+               DO iw = 1,n_proj
+                  ibnd1 = 0
+                  DO ibnd = 1,nbnd
+                     IF (excluded_band(ibnd)) CYCLE
+                     amn=(0.0_dp,0.0_dp)
+                     !                  amn = zdotc(npw,evc_nc(1,ipol,ibnd),1,sgf(1,iw),1)
+                     amn = zdotc(npw,evc(istart,ibnd),1,sgf(1,iw),1)
+                     CALL mp_sum(amn, intra_pool_comm)
+                     ibnd1=ibnd1+1
+                     IF (wan_mode=='standalone') THEN
+                        IF (ionode) WRITE(iun_amn,'(3i5,2f18.12)') ibnd1, iw+n_proj*(ipol-1), ik, amn
+                     ELSEIF (wan_mode=='library') THEN
+                        a_mat(ibnd1,iw+n_proj*(ipol-1),ik) = amn
+                     ELSE
+                        CALL errore('compute_amn',' value of wan_mode not recognised',1)
+                     ENDIF
+                  ENDDO
+               ENDDO
+            ENDDO
+         ELSE
+            DO iw = 1,n_proj
+               spin_z_pos=.false.;spin_z_neg=.false.
+               ! detect if spin quantisation axis is along z
+               if((abs(spin_qaxis(1,iw)-0.0d0)<eps6).and.(abs(spin_qaxis(2,iw)-0.0d0)<eps6) &
+                    .and.(abs(spin_qaxis(3,iw)-1.0d0)<eps6)) then
+                  spin_z_pos=.true.
+               elseif(abs(spin_qaxis(1,iw)-0.0d0)<eps6.and.abs(spin_qaxis(2,iw)-0.0d0)<eps6 &
+                    .and.abs(spin_qaxis(3,iw)+1.0d0)<eps6) then
+                  spin_z_neg=.true.
+               endif
+               if(spin_z_pos .or. spin_z_neg) then
+                  ibnd1 = 0
+                  DO ibnd = 1,nbnd
+                     IF (excluded_band(ibnd)) CYCLE
+                     if(spin_z_pos) then
+                        ipol=(3-spin_eig(iw))/2
+                     else
+                        ipol=(3+spin_eig(iw))/2
+                     endif
+                     istart = (ipol-1)*npwx + 1
+                     amn=(0.0_dp,0.0_dp)
+                     amn = zdotc(npw,evc(istart,ibnd),1,sgf(1,iw),1)
+                     CALL mp_sum(amn, intra_pool_comm)
+                     ibnd1=ibnd1+1
+                     IF (wan_mode=='standalone') THEN
+                        IF (ionode) WRITE(iun_amn,'(3i5,2f18.12)') ibnd1, iw, ik, amn
+                     ELSEIF (wan_mode=='library') THEN
+                        a_mat(ibnd1,iw+n_proj*(ipol-1),ik) = amn
+                     ELSE
+                        CALL errore('compute_amn',' value of wan_mode not recognised',1)
+                     ENDIF
+                  ENDDO
+               else
+                  ! general routine
+                  ! for quantisation axis (a,b,c) 
+                  ! 'up'    eigenvector is 1/sqrt(1+c) [c+1,a+ib]
+                  ! 'down'  eigenvector is 1/sqrt(1-c) [c-1,a+ib]
+                  if(spin_eig(iw)==1) then
+                     fac(1)=(1.0_dp/sqrt(1+spin_qaxis(3,iw)))*(spin_qaxis(3,iw)+1)*cmplx(1.0d0,0.0d0,dp)
+                     fac(2)=(1.0_dp/sqrt(1+spin_qaxis(3,iw)))*cmplx(spin_qaxis(1,iw),spin_qaxis(2,iw),dp)
+                  else
+                     fac(1)=(1.0_dp/sqrt(1+spin_qaxis(3,iw)))*(spin_qaxis(3,iw))*cmplx(1.0d0,0.0d0,dp)
+                     fac(2)=(1.0_dp/sqrt(1-spin_qaxis(3,iw)))*cmplx(spin_qaxis(1,iw),spin_qaxis(2,iw),dp)
+                  endif
+                  ibnd1 = 0
+                  DO ibnd = 1,nbnd
+                     IF (excluded_band(ibnd)) CYCLE
+                     amn=(0.0_dp,0.0_dp)
+                     DO ipol=1,npol
+                        istart = (ipol-1)*npwx + 1
+                        amn_tmp=(0.0_dp,0.0_dp)
+                        amn_tmp = zdotc(npw,evc(istart,ibnd),1,sgf(1,iw),1)
+                        CALL mp_sum(amn_tmp, intra_pool_comm)
+                        amn=amn+fac(ipol)*amn_tmp
+                     enddo
+                     ibnd1=ibnd1+1
+                     IF (wan_mode=='standalone') THEN
+                        IF (ionode) WRITE(iun_amn,'(3i5,2f18.12)') ibnd1, iw, ik, amn
+                     ELSEIF (wan_mode=='library') THEN
+                           a_mat(ibnd1,iw+n_proj*(ipol-1),ik) = amn
+                        ELSE
+                           CALL errore('compute_amn',' value of wan_mode not recognised',1)
+                        ENDIF
+                     ENDDO
+                  endif
+               end do
+            endif
+         ELSE ! scalar wavefunctions
             DO iw = 1,n_proj
                ibnd1 = 0
                DO ibnd = 1,nbnd
                   IF (excluded_band(ibnd)) CYCLE
-                  amn=(0.0_dp,0.0_dp)
-!                  amn = zdotc(npw,evc_nc(1,ipol,ibnd),1,sgf(1,iw),1)
-                  amn = zdotc(npw,evc(istart,ibnd),1,sgf(1,iw),1)
+                  IF (gamma_only) THEN
+                     amn = 2.0_dp*ddot(2*npw,evc(1,ibnd),1,sgf(1,iw),1)
+                     IF (gstart==2) amn = amn - real(conjg(evc(1,ibnd))*sgf(1,iw))
+                  ELSE
+                     amn = zdotc(npw,evc(1,ibnd),1,sgf(1,iw),1)
+                  ENDIF
                   CALL mp_sum(amn, intra_pool_comm)
                   ibnd1=ibnd1+1
                   IF (wan_mode=='standalone') THEN
-                     IF (ionode) WRITE(iun_amn,'(3i5,2f18.12)') ibnd1, iw+n_proj*(ipol-1), ik, amn
+                     IF (ionode) WRITE(iun_amn,'(3i5,2f18.12)') ibnd1, iw, ik, amn
                   ELSEIF (wan_mode=='library') THEN
-                     a_mat(ibnd1,iw+n_proj*(ipol-1),ik) = amn
+                     a_mat(ibnd1,iw,ik) = amn
                   ELSE
                      CALL errore('compute_amn',' value of wan_mode not recognised',1)
-                 ENDIF
+                  ENDIF
                ENDDO
             ENDDO
-         ENDDO
-      ELSE
-         DO iw = 1,n_proj
-            ibnd1 = 0
-            DO ibnd = 1,nbnd
-               IF (excluded_band(ibnd)) CYCLE
-               IF (gamma_only) THEN
-                  amn = 2.0_dp*ddot(2*npw,evc(1,ibnd),1,sgf(1,iw),1)
-                  IF (gstart==2) amn = amn - real(conjg(evc(1,ibnd))*sgf(1,iw))
-               ELSE
-                  amn = zdotc(npw,evc(1,ibnd),1,sgf(1,iw),1)
-               ENDIF
-               CALL mp_sum(amn, intra_pool_comm)
-               ibnd1=ibnd1+1
-               IF (wan_mode=='standalone') THEN
-                  IF (ionode) WRITE(iun_amn,'(3i5,2f18.12)') ibnd1, iw, ik, amn
-               ELSEIF (wan_mode=='library') THEN
-                  a_mat(ibnd1,iw,ik) = amn
-               ELSE
-                  CALL errore('compute_amn',' value of wan_mode not recognised',1)
-               ENDIF
-            ENDDO
-         ENDDO
-      ENDIF
-   ENDDO  ! k-points
-   DEALLOCATE (sgf,csph)
+         ENDIF
+      ENDDO  ! k-points
+      DEALLOCATE (sgf,csph)
    IF(any_uspp) THEN
      CALL deallocate_bec_type (becp)
    ENDIF
