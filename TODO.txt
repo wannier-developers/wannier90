@@ -35,3 +35,4 @@ And to postpone to 2.1:
 + Fermi_energy finding routine (re-introduce input var num_elec_cell, make
 it real, for, e.g., alloys in VCA, make found_fermi_energy work) (IS)
 + Compute Wannier occupations (see email correspondence on 2013-04-03)
++ Consolidate  hamiltonian_wigner_seitz and wigner_seitz in postw90_common?

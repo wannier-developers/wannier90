@@ -691,8 +691,8 @@ module w90_postw90_common
   ! cell. This supercell is mp_grid(i) unit cells long along each primitive
   ! translation vector a_i of the unit cell
   !
-  ! We loop over grid points r on a cell that is (approx.?) 8 times larger than 
-  ! this "primitive supercell." 
+  ! We loop over grid points r on a cell that is approx. 8 times
+  ! larger than this "primitive supercell."
   !
   ! One of these points is in the W-S supercell if it is closer to R=0 than any
   ! of the other points R (where R are the translation vectors of the 
@@ -702,12 +702,6 @@ module w90_postw90_common
   ! found in the Wigner-Seitz cell
 
   nrpts = 0  
-  ! ivo: Should the following loops read instead
-  !  do n1 = -mp_grid(1) , mp_grid(1)-1
-  !   do n2 = -mp_grid(2), mp_grid(2)-1  
-  !      do n3 = -mp_grid(3),  mp_grid(3)-1  
-  !? This would correspond to a cell that is exactly 8 times larger than the
-  ! primitive supercell.
   do n1 = -mp_grid(1) , mp_grid(1)  
      do n2 = -mp_grid(2), mp_grid(2)  
         do n3 = -mp_grid(3),  mp_grid(3)  
@@ -745,8 +739,7 @@ module w90_postw90_common
                 irvec(2, nrpts) = n2   
                 irvec(3, nrpts) = n3   
                 !
-                ! Remember which grid point is at the origin (needed, e.g., 
-                ! to implement the empirical-TB convention for phased sums)
+                ! Remember which grid point r is at the origin
                 !
                 if (n1==0 .and. n2==0 .and. n3==0) rpt_origin=nrpts
               endif

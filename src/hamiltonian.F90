@@ -490,7 +490,8 @@ contains
     do n1 = -mp_grid(1) , mp_grid(1)  
        do n2 = -mp_grid(2), mp_grid(2)  
           do n3 = -mp_grid(3),  mp_grid(3)  
-             ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=1, or icnt=14
+             ! Loop over the 125 points R. R=0 corresponds to
+             ! i1=i2=i3=0, or icnt=63
              icnt = 0  
              do i1 = -2, 2  
                 do i2 = -2, 2  
@@ -525,7 +526,7 @@ contains
                    irvec(2, nrpts) = n2   
                    irvec(3, nrpts) = n3
                    !
-                   ! Record index of R=0
+                   ! Record index of r=0
                    if (n1==0 .and. n2==0 .and. n3==0) rpt_origin=nrpts
                 endif
              end if
