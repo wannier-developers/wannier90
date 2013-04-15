@@ -137,6 +137,33 @@ Angstrom.
 %%currently used.
 
 
+\subsection{{\tt spinor\_projections} block}
+\begin{verbatim}
+begin spinor_projections
+   n_proj
+   centre   l  mr  r   
+    z-axis   x-axis   zona
+     spin spn_quant
+   centre   l  mr  r   
+    z-axis   x-axis   zona
+     spin spn_quant
+   .
+   .
+end spinor_projections
+\end{verbatim}
+
+\noindent
+Notes: Only one of projections and spinor\_projections should be
+defined. Variables are the same as the projections block with the
+addition of \verb#spin# and \verb#spn_quant#.
+
+\verb#spin#: character. `u' or `d' to denote projection onto up or
+down states.
+
+\verb#spn_quant#: three real numbers. Defines the spin quatisation
+axis in Cartesian coordinates.
+
+
 
 \subsection{{\tt nnkpts} block}
 \begin{verbatim}

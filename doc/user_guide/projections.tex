@@ -139,6 +139,69 @@ function). Units always in reciprocal Angstrom. Default is \verb#zona=1.0#.
 
 \verb#Si:l=0;l=1:r=2#
 
+\section{Spinor Projections}
+When \verb#spinors=.true.# it is possible to select a set of localised
+function to project onto `up' states and a set to project onto `down'
+states where, for complete flexibility, it is also possible to set the
+local spin quantisation axis.
+
+\noindent
+\verb#Begin Projections#\\
+\verb#[units]#\\ 
+\verb#site:ang_mtm:zaxis:xaxis:radial:zona(spin)[quant_dir]#\\
+\verb#    #\vdots\\
+\verb#End Projections#
+
+\noindent
+
+\noindent
+\verb#spin# (optional):\\
+Choose projection onto `up' or `down' states\\
+\verb#u#  --  project onto `up' states.\\
+\verb#d#  --  project onto `down' states.\\
+ Default is \verb#u,d# 
+
+
+\noindent
+\verb#quant_dir# (optional):\\
+\verb#1,0,0#  --  set the spin quantisation axis to be in the (1,0,0) direction. Default
+is \verb#0,0,1# 
+
+
+\noindent
+\textbf{Examples}
+
+1. 18 projections on an iron site
+
+\verb#Fe:sp3d2;dxy;dxx;dyz#              
+
+2. same as above
+
+\verb#Fe:sp3d2;dxy;dxx;dyz(u,d)#
+         
+3. same as above
+
+\verb#Fe:sp3d2;dxy;dxz;dyz(u,d)[0,0,1]#
+  
+4. same as above but quantisation axis is now x
+
+\verb#Fe:sp3d2;dxy;dxz;dyz(u,d)[1,0,0]#
+
+5.  now only 8 projections onto up states
+
+\verb#Fe:sp3d2;dxy;dxz;dyz(u)#
+           
+6. 9 projections onto up-states and 3 on down
+
+\verb#Fe:sp3d2;dxy;dxz;dyz(u) #\\
+\verb#Fe:dxy;dxz;dyz(d)#                 
+
+7. projections onto alternate spin states for two lattice sites (Cr1, Cr2)
+
+\verb#Cr1:d(u)#\\
+\verb#Cr2:d(d)#
+
+
 \section{Short-Cuts}
 
 \subsection{Random projections}

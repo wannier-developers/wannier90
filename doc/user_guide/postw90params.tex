@@ -96,11 +96,6 @@ to obtain the Wannier functions.
 
 \section{List of available modules}
 
-\textcolor{red}{[Ivo: Would it be useful to indicate around here
-  (after each item? in a separate table?) which examples in the
-  tutorial illustrate each of the modules in {\tt postw90}?] GP: this
-  seems a good idea, please check that the references to the examples are ok.}
-
 The currently available modules in \texttt{postw90.x} are:
 \begin{itemize}
 \item \texttt{dos}: Calculation of the density of states (DOS), projected
@@ -170,7 +165,7 @@ in the following sections.
 magnetic moment per cell\\ 
   {\sc uHu\_formatted}& L & Read a formatted {\tt seedname.uHu} file \\
 %  {\sc uIu\_formatted}& L & Read a formatted uIu file\\
-{\sc spn\_formatted} {\color{red}UNIMPLEMENTED!} & L & 
+{\sc spn\_formatted}  & L & 
   Read a formatted {\tt seedname.spn} file\\
  \hline
 \end{tabular}
@@ -415,11 +410,8 @@ subtended by the three primitive translations is sampled on a uniform
 $l\times m\times n$ grid (including $\Gamma$).  If only one integer $m$ is given, an
 $m\times m\times m$ grid is used.
 
-Note that {\tt kmesh\_spacing} and {\tt kmesh} may not
-be both defined in the same input file.
-
-If you use a module which needs a k-mesh, at least one between {\tt kmesh\_spacing} and {\tt
-  kmesh} must be defined, otherwise an error is issued.
+If you use a module which needs a k-mesh, either {\tt kmesh\_spacing} or {\tt
+  kmesh} must be defined.
 
   \subsection[kmesh\_spacing]{\tt real(kind=dp) :: kmesh\_spacing}
 An alternative way of specifying the interpolation grid.
@@ -429,11 +421,8 @@ space.
 
 The units are \AA$^{-1}$.
 
-Note that {\tt kmesh\_spacing} and {\tt kmesh} may
-not be both defined in the same input file.
-
-If you use a module which needs a k-mesh, at least one between {\tt kmesh\_spacing} and {\tt
-  kmesh} must be defined, otherwise an error is issued.
+If you use a module which needs a k-mesh, either {\tt kmesh\_spacing} or {\tt
+  kmesh} must be defined.
 
 \subsection[adpt\_smr]{\tt logical :: adpt\_smr}
 Determines whether to use an adaptive scheme for broadening the
@@ -512,10 +501,10 @@ properties when {\tt  adpt\_smr} is set to \verb#false#.).
 
 
   \subsection{\tt integer :: num\_elec\_per\_state} 
-Number of electrons per state. It can only assume the values one or
+Number of electrons per state. It can only take the values one or
 two.
 
-The default value is 2 if {\tt spinors=.true.}, 1 otherwise.
+The default value is 1 if {\tt spinors=.true.}, 2 otherwise.
 
   \subsection{\tt real(kind=dp) :: scissors\_shift} 
 Scissors shift applied to the conduction bands.
