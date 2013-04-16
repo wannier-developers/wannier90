@@ -120,12 +120,10 @@ first step, install \wannier\ following the instructions in the {\tt
   README} file of the \wannier\ distribution.  For an introduction to
 the theory underlying MLWFs, you are encouraged to refer to the brief
 overview given in the \wannier\ User Guide~\cite{UserGuide}, to the
-two seminal papers of Refs.~\cite{MV,SMV}, and to a recent
-paper~\cite{W90} describing \wannier.
+two seminal papers of Refs.~\cite{MV,SMV}, a recent review
+article~\cite{RMP} and to a paper~\cite{W90} describing \wannier.
 
-\tent{[Add reference to RMP paper?]}
-
-The following additional programs should be installed in order to
+The following additional programs may be installed in order to
 visualise the output of \wannier\ (they are optional, not all of them
 are necessary)
 \begin{itemize}
@@ -145,22 +143,18 @@ files from \wannier, version 1.4 or later must be used.\\
 \url{http://www.ks.uiuc.edu/Research/vmd}
 \item{\tt python} with the {\tt numpy} and {\tt matplotlib} modules
   (used e.g. in example 18 on Berry curvature)\\
-\tent{add here links}
+\url{http://www.python.org}\\
+\url{http://www.numpy.org}\\
+\url{http://matplotlib.org}
 \end{itemize}
 
 \sectiontitle{Parallel execution}
 \label{sec:parallel}
-{\tentbis GP: I added here this subsection, feel free to
-  edit/modify/move. If you move it, please update references to
-  sec:parallel later in the examples.
-
 Presently, the \wannier\ is instead a serial-only executable, so
-it \emph{cannot} be run in parallel using MPI libraries.
-
-On the contrary, the {\tt postw90} executable can be run in parallel
+it \emph{cannot} be run in parallel using MPI libraries. On the contrary, the {\tt postw90} executable can be run in parallel
 to speed up the calculations, using the MPI libraries.
 
-To enable the parallel version, you must specify some flags in the
+To enable the parallel version to be built, you must specify some flags in the
 {\tt make.sys} file of {\tt wannier90} and {\tt postw90}; for further information, please refer to the {\tt
   README.install} file in the top directory of the {\tt wannier90}
 distribution.
@@ -172,7 +166,7 @@ mpirun -np 8 postw90.x seedname
 \end{verbatim}
 (the {\tt mpirun} command and its flags may differ depending on the
 MPI libraries installed on your system: refer to your MPI manual and/or to
-your system administrator for further information).}
+your system administrator for further information).
 
 
 
@@ -193,10 +187,10 @@ will need to install and compile elements of the {\tt
 examples. Please visit \url{http://www.quantum-espresso.org} to download the
 package, and for installation instructions. 
 
-At the time of
-writing, interfaces to a number of other electronic structure codes,
-such as {\sc 
-  castep} (\url{http://www.castep.org}), {\sc abinit} (\url{http://www.abinit.org}), and {\sc fleur} (\url{http://www.flapw.de}), are in progress \tent{{\bf [CHECK: still in progress?]}}.
+There are Interfaces to a number of other electronic structure codes
+including {\sc abinit} (\url{http://www.abinit.org}), {\sc fleur}
+(\url{http://www.flapw.de}), {\sc VASP} (\url{http://www.vasp.at}), and
+{\sc Wien2k} (\url{http://www.wien2k.at})
 
 For images of MLWFs, see our gallery at
   \url{http://www.wannier.org/gallery.html}. If you have any images that
