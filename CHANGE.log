@@ -25,6 +25,7 @@ v2.0 (xxx  Nov 2012)
 * added the w90vdw utility to calculate van der Waals energies
 * Now it is possible to provide both 'seedname' and 'seedname.win' on the 
   command line, both will work
+* Enabled very general specification of spinor projections
 * Tabs can now be present in the input file without problems
 * A few bugfixes
 
