@@ -93,6 +93,14 @@ dist:
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
 		./utility/PL_assessment/README \
+		./utility/w90vdw/w90vdw.f90 \
+		./utility/w90vdw/README \
+		./utility/w90vdw/doc/Makefile \
+		./utility/w90vdw/doc/w90vdw.tex \
+		./utility/w90vdw/examples/benzene_s_val/benzene_s_val.* \
+                ./utility/w90vdw/examples/benzene_s_val/ref/benzene_s_val.* \
+                ./utility/w90vdw/examples/benzene_s_cond/benzene_s_cond.* \
+                ./utility/w90vdw/examples/benzene_s_cond/ref/benzene_s_cond.* \
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
