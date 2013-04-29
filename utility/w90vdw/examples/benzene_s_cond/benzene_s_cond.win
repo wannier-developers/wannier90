@@ -16,7 +16,8 @@ num_print_cycles    = 100
 num_guide_cycles    = 100
 iprint              = 2
 
-num_elec_cell       = 60
+num_valence_bands   = 30
+num_elec_per_state  = 2
 write_proj          = true
 translate_home_cell = true
 write_xyz           = true

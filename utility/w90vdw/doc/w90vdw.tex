@@ -28,8 +28,8 @@ theoretical details, we refer the user to the following publication:\\
 
 Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi,
 ``Calculating dispersion interactions using maximally localized Wannier functions'',
-\emph{J. Chem. Phys.} \textbf{135}, 154105 (2011) [hereafter referred
-to as ``AHM11'']. \\
+\emph{J. Chem. Phys.} \textbf{135}, 154105 (2011), hereafter referred
+to as ``AHM11''. \\
 
 The code that calculates the van der Waals energy is called
 \wvdw\ and should be run separately after a \wannier\ run.\\
@@ -59,11 +59,13 @@ write a prototype input file, $\tt{seedname.vdw}$, for
 Dependencies: 
 \begin{itemize}
 \item Gamma-only sampling
-\item If disentanglement is being used, then $\tt{num\_elec\_cell}$
+\item If disentanglement is being used, then $\tt{num\_valance\_bands}$, the
+  total number of valence bands in the calculation,
   must be set in $\tt{seedname.win}$.
 \item If the system is spin-polarised, then
-  $\tt{num\_elec\_per\_state}$ should be set to $\tt{1}$ in
-  $\tt{seedname.win}$ (default value is $\tt{2}$).
+  $\tt{num\_elec\_per\_state}$, the number of electrons per band/state, 
+  should be set to $\tt{1}$ in
+  $\tt{seedname.win}$. The default value is $\tt{2}$.
 \end{itemize}
 
 
@@ -119,26 +121,29 @@ Each line is described in more detail below:
   for spin-degenerate systems 2
 \item $\tt{num\_frag}$: integer; the number of molecular fragments in
     the system
-\item $\tt{num\_wann}$: a list of $\tt{num\_frag}$ integers that
+\item $\tt{num\_wann}$: the following line contains 
+  a list of $\tt{num\_frag}$ integers that
   specify the number of MLWFs in each molecular fragment
 \item $\tt{tol\_occ}$: real; MLWFs with occupancy less than this value
   will be assumed to be $p$-like atomic orbitals and will be split
   into two separate $s$-like orbitals. Only used if $\tt{disentangle
     T}$. 
-\item $\tt{pxyz}$: logical vector; a list of $\tt{num\_frag}$ entries,
+\item $\tt{pxyz}$: $\tt{num\_frag}$ following lines,
   each on a separate line, that specify the direction in which
-  $p$-splitting should be performed for each molecular fragment (e.g.,
-  $\tt{F F T}$ corresponds to the z-direction). Only used if $\tt{disentangle
+  $p$-splitting should be performed for each molecular fragment. Each line
+  is a logical vector of length 3. For example,  
+  ``$\tt{F\ F\ T}$" corresponds to the z-direction; `$\tt{T\ F\ F}$" to the x-direction,
+  etc. Only used if $\tt{disentangle
     T}$.
 \item $\tt{tol\_dist}$: real; distance threshold (in bohr) determining whether
   MLWFs are co-centric. Only used if $\tt{amalgamate T}$.
-\item $\tt{units}$: character; units in which the following centres
-  and spreads are specified. Allowed values are $\tt{ang}$,
-  $\tt{bohr}$. 
-\item $\tt{centres\_spreads\_occ}$: real; one entry for each MLWF,
-  specifying the Cartesian co-ordinates of the centre, the quadratic
-  spread, and the occupancy. \textbf{Must be ordered by molecular
-    fragment, i.e., the MLWFs of the first fragment grouped together
+\item $\tt{centres\_spreads\_occ}$: the first following line 
+   specifies the units in which the subsequent entries
+  and are specified. Allowed values are $\tt{ang}$,
+  $\tt{bohr}$. The next lines, one line for each MLWF,
+  specify the Cartesian co-ordinates of the centre, the quadratic
+  spread, and the occupancy. \textbf{This data must be ordered by molecular
+    fragment, i.e., the MLWFs of the first fragment sequentially grouped together
     first, those of the second fragment grouped next, etc.}
 \end{itemize}
 
@@ -177,7 +182,7 @@ $\tt{seedname.in.vdw}$:
 
 $\tt{\$> cp\ seedname.vdw\ seedname.in.vdw}$
 
-and edit $\tt{seedname.in.vdw}$ to check that the two molecular
+and edit $\tt{seedname.in.vdw}$ to ensure that the two molecular
 fragments are specified correctly, and to group the data corresponding
 to the MLWF centres, spreads and occupancies by molecular fragment. 
 
@@ -208,26 +213,30 @@ $\tt{seedname.in.vdw}$:
 
 $\tt{\$> cp\ seedname.vdw\ seedname.in.vdw}$
 
-and edit $\tt{seedname.in.vdw}$ to check that the two molecular
+and edit $\tt{seedname.in.vdw}$ to ensure that the two molecular
 fragments are specified correctly and to group the data corresponding
 to the MLWF centres, spreads and occupancies by molecular fragment. 
 
 In addition, as disentanglement is being used, the direction for
 $p$-orbital splitting for each fragment and occupancy threshold for
-applying the splitting on MLWFs will need to be modified. 
+applying the splitting on MLWFs will need to be set appropriately. 
 
 The MLWFs centred on the C atoms are of atomic $p$-like character and, 
 according to the methods described in AHM11, they are split into two
-lobes of $s$-like character. This is done by specifying the direction
-of $p$-splitting in the input file. In this case the molecules are in
+lobes of $s$-like character, which is done by specifying in the input file 
+the direction in which the $p$-orbital lobes point. 
+
+In this particular example, the benzene molecules are in
 the $x$-$y$ plane and the $p$-orbitals point along the $z$-direction,
 hence this is the direction in which all the $p$-orbitals must be
-split. Hence, the directions should be of the form $\tt{F F T}$. The
-orbitals that need to be split are easily identified in
-$\tt{seedname.vdw}$ by their occupancies, which tend to be around
+split. Hence, the lines following $\tt{pxyz}$ in the input file 
+should read $\tt{F\ F\ T}$. 
+
+The orbitals that need to be split are easily identified in
+$\tt{seedname.vdw}$ by their occupancies, which will be around
 0.5. Hence a value of between 0.6 and 0.9 for $\tt{tol\_occ}$ should
-enable the code to apply the splitting algorithms to the appropriate
-orbitals. 
+enable the code to apply the splitting algorithms to the $p$-orbitals
+and not the others.
 
 Once $\tt{seedname.in.vdw}$ has been correctly modified, run
 
@@ -247,7 +256,7 @@ For spin-polarised systems, two separate W90 runs are required for
 each spin channel (up/down), so care must be taken with the following:
 
 \begin{itemize}
-\item The number of electrons per cell, $\tt{num\_elec\_cell}$, 
+\item The number of electrons per cell, $\tt{num\_valence\_bands}$, 
 may differ in the up/down cases.
 
 \item The number of electrons per state, $\tt{num\_elec\_per\_state}$, 
