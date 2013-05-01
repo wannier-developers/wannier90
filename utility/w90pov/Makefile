@@ -19,7 +19,7 @@ LINK=$(FC)
 # ------------ BASIC PARAMS ------------
 SRC=src
 OBJ=obj
-COMPTARGET=wan2pov
+COMPTARGET=w90pov
 OBJECTS= \
 	$(OBJ)/main.o
 GENMODS= \
