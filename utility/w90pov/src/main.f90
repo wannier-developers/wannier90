@@ -19,7 +19,7 @@ program wannierPro
 
   print *
   print 1000
-  print '(" Wan2Pov")'
+  print '(" w90pov")'
   print 1000
   call driver
   print *

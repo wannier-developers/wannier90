@@ -46,7 +46,7 @@ contains
     character(len=maxlen) :: dummy
 
     in_unit=90
-    open (in_unit, file='wan2pov.inp',form='formatted',status='old',err=101)
+    open (in_unit, file='w90pov.inp',form='formatted',status='old',err=101)
 
     num_lines=0;tot_num_lines=0
     do
@@ -60,7 +60,7 @@ contains
     end do
 
    
-101 print *,'error: can not read input file file wan2pov.inp'
+101 print *,'error: can not read input file file w90pov.inp'
     stop
 210 continue
     rewind(in_unit)

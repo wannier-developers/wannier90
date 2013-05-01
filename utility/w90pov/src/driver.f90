@@ -763,7 +763,7 @@ write(line,'(a,i3.3,3(a,F14.7),a)') '#declare co',j,' = <',denorg(1),',',denorg(
   subroutine read_infile
     use m_io
     implicit none
-    character(len=80),parameter :: infile='wan2pov.inp'
+    character(len=80),parameter :: infile='w90pov.inp'
     character(len=20) :: str
     integer :: i,j
     logical :: found
