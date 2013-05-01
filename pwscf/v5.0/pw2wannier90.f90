@@ -2424,20 +2424,31 @@ SUBROUTINE write_parity
    COMPLEX(kind=dp)             :: evc_sub_1D(32)
    !
    ! getting the ik index corresponding to the Gamma point
+   ! ... and the spin channel (fix due to N Poilvert, Feb 2011)
    !
    IF (.not. gamma_only) THEN
-     DO ik=ikstart,ikstop
-       IF ( (xk(1,ik)/= 0.d0) .or. (xk(2,ik)/= 0.d0) .or. (xk(3,ik)/= 0.d0) ) THEN
-         IF (ik == ikstop) CALL errore('write_parity',&
-                             ' parity calculation may only be performed at the gamma point.',1)
-         CYCLE
-       ELSE
-         kgamma=ik
-         exit
-       ENDIF
-     ENDDO
+      DO ik=ikstart,ikstop
+         IF ( (xk(1,ik)/= 0.d0) .or. (xk(2,ik)/= 0.d0) .or. (xk(3,ik)/= 0.d0) ) THEN
+            IF (ik == ikstop) CALL errore('write_parity',&
+                 ' parity calculation may only be performed at the gamma point.',1)
+            CYCLE
+         ELSE
+            ! NP: spin unpolarized or "up" component of spin
+            IF (ispinw == 0 .or. ispinw == 1) THEN
+               kgamma=ik
+            ELSE ! NP: "down" component
+               kgamma=ik+1
+            ENDIF
+            exit
+         ENDIF
+      ENDDO
    ELSE
-     kgamma=1
+      ! NP: spin unpolarized or "up" component of spin
+      IF (ispinw == 0 .or. ispinw == 1) THEN
+         kgamma=1
+      ELSE ! NP: "down" component
+         kgamma=2
+      ENDIF   
    ENDIF
    !
    ! building the evc array corresponding to the Gamma point
