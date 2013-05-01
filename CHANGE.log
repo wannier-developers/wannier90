@@ -22,7 +22,8 @@ v2.0 (xxx  Nov 2012)
 * Added the w90chk2chk.x utility to convert the checkpoint file between
   the formatted/unformatted formats, to move it between different computers
   with different architectures
-* added the w90vdw utility to calculate van der Waals energies
+* Added the w90vdw utility to calculate van der Waals energies with MLWFs
+* Added the w90pov utility to render ray-traced isosurfaces using POV-Ray
 * Now it is possible to provide both 'seedname' and 'seedname.win' on the 
   command line, both will work
 * Enabled very general specification of spinor projections
