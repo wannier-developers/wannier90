@@ -45,7 +45,13 @@ $(COMPTARGET): $(MODULES) $(OBJECTS)
 
 # ------------ MODULES ------------
 #  nested string substitution to turn 'f90' into 'o' and 'obj' into 'src'
-$(OBJ)/general.o: $(SRC)/general.f90
+objdir:
+	@( if [ ! -d ./obj ] ; \
+                then echo ".creating directory obj" && \
+                mkdir ./obj ; \
+        fi ) ;
+
+$(OBJ)/general.o: objdir $(SRC)/general.f90
 	@echo ".compiling file $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@))"
 	@rm -f $@
 	@cp $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@)) $(OBJ)/
@@ -82,4 +88,4 @@ $(OBJ)/main.o: $(GENMODS) $(MODULES) $(SRC)/main.f90
 
 clean:
 	@rm -fr obj $(COMPTARGET)
-	@mkdir $(OBJ)
+#	@mkdir $(OBJ)
