@@ -1,0 +1,15 @@
+numwan = 1
+wanlist = 4
+seedname = labr3 
+camera = a1
+isolevel = 2.
+trans=0
+isopm = 2
+wancol = 1 0.5 0
+bondcut=10
+radialfactor=0.3
+interpolation=2
+zoom = 5
+lookat= 3.9824 2.2992 1.1280
+lcage = f
+cutsphere = 0.1

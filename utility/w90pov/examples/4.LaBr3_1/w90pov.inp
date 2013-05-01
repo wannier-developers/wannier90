@@ -1,0 +1,14 @@
+numwan = 1
+wanlist = 1
+seedname = labr3
+camera = x
+isolevel = 4.0
+trans=0
+isopm = 2
+wancol = 1 0.5 0
+#bondcut=2
+radialfactor=0.5
+interpolation=2
+zoom = 30
+aspectratio=2
+ 

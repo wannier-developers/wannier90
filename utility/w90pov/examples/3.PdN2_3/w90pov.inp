@@ -1,0 +1,17 @@
+numwan = 1
+wanlist = 4 
+seedname = pdn2 
+camera = a2
+isolevel = 3.0 
+trans=0 
+isopm = 2 
+wancol = 1.0 0.7 0.1
+radialfactor=0.32
+bondrad=0.1
+interpolation=2
+zoom = 18
+cellim = -0.1 0.1 -0.1 0.1 -1.1 1.1
+lcage=false
+lookat=0 0 0
+cutsphere=3
+aspectratio=2
