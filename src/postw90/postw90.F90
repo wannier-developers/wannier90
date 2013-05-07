@@ -2,7 +2,7 @@
 
 program postw90
 
-  use w90_constants, only : dp
+  use w90_constants, only : dp, eps6
   use w90_parameters
   use w90_io
 
@@ -92,7 +92,7 @@ program postw90
        !
        have_gamma=.false.
        do nkp=1,num_kpts
-          if (all(kpt_latt(:,nkp)<0.000001_dp)) have_gamma=.true.       
+          if (all(abs(kpt_latt(:,nkp))<eps6)) have_gamma=.true.       
        end do
        if(.not. have_gamma) write(stdout,'(1x,a)')&
            'Ab-initio does not include Gamma. Interpolation may be incorrect!!!'

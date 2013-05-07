@@ -49,7 +49,7 @@ contains
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
-           if (all(kpt_latt(:,nkp)<eps6)) have_gamma=.true.       
+           if (all(abs(kpt_latt(:,nkp))<eps6)) have_gamma=.true.       
        end do
        if(.not. have_gamma) &
             write(stdout,'(1x,a)') '!!!! Kpoint grid does not include Gamma. ' // &
