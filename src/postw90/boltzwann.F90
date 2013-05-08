@@ -27,7 +27,7 @@
 !obtained using the BoltzWann module:                        !
 !                                                            !
 ![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari,! 
-!    submitted.                                              !
+!    arXiv:1305.1587                                         !
 !============================================================!
 
 module w90_boltzwann
@@ -66,7 +66,7 @@ module w90_boltzwann
   character(len=74), parameter :: pub_string_2 = \
   "the BoltzWann module:                                                     "
   character(len=74), parameter :: pub_string_3 = \
-  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, submitted.       "
+  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, arXiv:1305.1587  "
   character(len=74), parameter :: pub_string_4 = \
   "                                                                          "
 
