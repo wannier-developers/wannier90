@@ -1,7 +1,7 @@
 &inputpp 
    outdir = './'
    prefix = 'fe'
-   seedname = 'fe'
+   seedname = 'Fe'
    write_mmn = .true.
    write_amn = .true.
    write_uHu = .true.
