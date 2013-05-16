@@ -820,6 +820,8 @@ contains
        call io_error('Error in comms_gatherv_real')
     end if
 
+#else
+    call dcopy(localcount,array,1,rootglobalarray,1)
 #endif
 
     return
@@ -854,6 +856,8 @@ contains
        call io_error('Error in comms_scatterv_real')
     end if
 
+#else
+    call dcopy(localcount,rootglobalarray,1,array,1)
 #endif
 
     return
@@ -885,6 +889,8 @@ contains
        call io_error('Error in comms_scatterv_real')
     end if
 
+#else
+    call my_icopy(localcount,rootglobalarray,1,array,1)
 #endif
 
     return
