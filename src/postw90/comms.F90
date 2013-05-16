@@ -1,8 +1,18 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
 !                                                            !
-!  COMMS: set of MPI wrapper                                 !
-! (c) 2006-2012 Jonathan R. Yates                            !
+! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
+!                Giovanni Pizzi, Young-Su Lee,               !
+!                Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
+! This file is distributed under the terms of the GNU        !
+! General Public License. See the file `LICENSE' in          !
+! the root directory of the present distribution, or         !
+! http://www.gnu.org/copyleft/gpl.txt .                      !
+!                                                            !
+!------------------------------------------------------------!                                                            !
+!  COMMS: set of MPI wrapper                                 !
+!  written 2006-2012 Jonathan R. Yates                       !
+!    later additions Giovanni Pizzi                          !
 !------------------------------------------------------------!
 
 

@@ -1,4 +1,15 @@
-!-*- mode: F90; mode: font-lock -*-!
+!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!                                                            !
+! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
+!                Giovanni Pizzi, Young-Su Lee,               !
+!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+!                                                            !
+! This file is distributed under the terms of the GNU        !
+! General Public License. See the file `LICENSE' in          !
+! the root directory of the present distribution, or         !
+! http://www.gnu.org/copyleft/gpl.txt .                      !
+!                                                            !
+!------------------------------------------------------------!
 
 program postw90
 

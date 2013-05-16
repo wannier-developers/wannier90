@@ -1,7 +1,8 @@
 !-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
 !                                                            !
-! Copyright (C) 2007 Jonathan Yates, Arash Mostofi,          !
-!  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
+! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
+!                Giovanni Pizzi, Young-Su Lee,               !
+!                Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
 ! General Public License. See the file `LICENSE' in          !
@@ -2219,14 +2220,16 @@ contains
     write(stdout,*)  '            |        Generalized Wannier Functions code         |'
     write(stdout,*)  '            |            http://www.wannier.org                 |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  Wannier90 Authors:                               |'
+    write(stdout,*)  '            |  Wannier90 v2.0 Authors:                          |'
     write(stdout,*)  '            |    Arash A. Mostofi  (Imperial College London)    |'
+    write(stdout,*)  '            |    Giovanni Pizzi    (EPFL)                       |'
+    write(stdout,*)  '            |    Ivo Souza         (Universidad del Pais Vasco  |'
     write(stdout,*)  '            |    Jonathan R. Yates (University of Oxford)       |'
-    write(stdout,*)  '            |    Young-Su Lee      (KIST, S. Korea)             |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  Wannier90 Contributors:                          |'
+    write(stdout,*)  '            |    Young-Su Lee      (KIST, S. Korea)             |'
     write(stdout,*)  '            |    Matthew Shelley   (Imperial College London)    |'
-    write(stdout,*)  '            |    Nicolas Poilvert  (MIT)                        |'
+    write(stdout,*)  '            |    Nicolas Poilvert  (Harvard)                    |'
     write(stdout,*)  '            |                                                   |' 
     write(stdout,*)  '            |  Wannier77 Authors:                               |'
     write(stdout,*)  '            |    Nicola Marzari    (University of Oxford)       |'
@@ -2255,11 +2258,11 @@ contains
     write(stdout,*)  '            |         Phys. Rev. B 65 035109 (2001)             |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            | Copyright (c) 1996-2010                           |'
+    write(stdout,*)  '            | Copyright (c) 1996-2013                           |'
     write(stdout,*)  '            |        A. A. Mostofi, J. R. Yates, Y.-S. Lee,     |'
     write(stdout,*)  '            |        I. Souza, D. Vanderbilt and N. Marzari     |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |        Release: 1.2        24th Jan 2010          |'
+    write(stdout,*)  '            |        Release: 2.0        xxxxxxxx 2013          |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'

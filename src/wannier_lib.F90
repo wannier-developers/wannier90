@@ -5,10 +5,16 @@
 !          The Maximally-Localised Generalised               !
 !                 Wannier Functions Code                     !
 !                                                            !
-!        Authors:                                            !
-!              Arash A. Mostofi   (Imperial College London)  !
-!              Jonathan R. Yates  (University of Oxford)     !
-!              Young-Su Lee       (KIST, S.Korea)            ! 
+! Wannier90 v2.0 authors:                                    !
+!           Arash A. Mostofi   (Imperial College London)     !
+!           Jonathan R. Yates  (University of Oxford)        !
+!           Giovanni Pizzi     (EPFL, Switzerland)           !
+!           Ivo Souza          (Universidad del Pais Vasco)  !
+!                                                            !
+! Contributorsr:                                             !
+!          Young-Su Lee        (KIST, S. Korea)              !
+!          Matthew Shelley     (Imperial College London)     !
+!          Nicolas Poilvert    (Harvard)                     ! 
 !                                                            !
 !  Please cite                                               !
 !                                                            !
@@ -30,8 +36,9 @@
 !        Phys. Rev. B 65 035109 (2001)                       !
 !                                                            !
 !                                                            !
-! Copyright (C) 2009 Jonathan Yates, Arash Mostofi,          !
-!  Young-Su Lee, Nicola Marzari, Ivo Souza, David Vanderbilt !
+! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
+!                Giovanni Pizzi, Young-Su Lee,               !
+!                Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
 ! This file is distributed under the terms of the GNU        !
 ! General Public License. See the file `LICENSE' in          !
