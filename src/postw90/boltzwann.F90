@@ -62,13 +62,13 @@ module w90_boltzwann
 !obtained using the BoltzWann module:                        !
 
 
-  character(len=74), parameter :: pub_string_1 = \
+  character(len=74), parameter :: pub_string_1 = &
   "Please cite the following paper when publishing results obtained using    "
-  character(len=74), parameter :: pub_string_2 = \
+  character(len=74), parameter :: pub_string_2 = &
   "the BoltzWann module:                                                     "
-  character(len=74), parameter :: pub_string_3 = \
+  character(len=74), parameter :: pub_string_3 = &
   "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, arXiv:1305.1587  "
-  character(len=74), parameter :: pub_string_4 = \
+  character(len=74), parameter :: pub_string_4 = &
   "                                                                          "
 
 contains 
