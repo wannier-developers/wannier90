@@ -90,7 +90,7 @@ program postw90
      endif
   end if
 
-  ! Read onto the root node all the input parameters from seendame.wanint, 
+  ! Read onto the root node all the input parameters from seendame.win, 
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig 
   !
   if(on_root) then 
