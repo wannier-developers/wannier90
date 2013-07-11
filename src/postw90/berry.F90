@@ -435,12 +435,13 @@ module w90_berry
 !               'Wannier matrix elements containing the position operator'
        endif
 
+       if (timing_level>1) then
+          call io_stopwatch('berry: prelims',2)
+          call io_stopwatch('berry: kpts',1)
+       endif
+
     end if !on_root
 
-    if (timing_level>1.and.on_root) then
-         call io_stopwatch('berry: prelims',2)
-         call io_stopwatch('berry: kpts',1)
-      endif
        
     ! Loop over interpolation k-points
     !
@@ -1290,7 +1291,6 @@ module w90_berry
                 
        endif !eval_MEspn
        
-
        if (timing_level>1) call io_stopwatch('berry: kpts',2)
 
     end if !on_root
