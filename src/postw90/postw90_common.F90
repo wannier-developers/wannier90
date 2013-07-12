@@ -45,8 +45,7 @@ module w90_postw90_common
   ! Parameters describing the direct lattice points R on a 
   ! Wigner-Seitz supercell
   !
-!  real(kind=dp), allocatable :: invdegen(:)
-  integer, allocatable       :: irvec(:,:),negirvec(:)
+  integer, allocatable       :: irvec(:,:)
   real(kind=dp), allocatable :: crvec(:,:)
   integer, allocatable       :: ndegen(:)
   integer                    :: nrpts
@@ -85,18 +84,12 @@ module w90_postw90_common
   allocate(irvec(3,nrpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating irvec in wanint_setup')
   irvec=0
-  allocate(negirvec(nrpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating negirvec in wanint_setup')
-  negirvec=0
   allocate(crvec(3,nrpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating crvec in wanint_setup')
   crvec=0.0_dp
   allocate(ndegen(nrpts),stat=ierr)
   if (ierr/=0) call io_error('Error in allocating ndegen in wanint_setup')
   ndegen=0
-!  allocate(invdegen(nrpts),stat=ierr)
-!  if (ierr/=0) call io_error('Error in allocating invdegen in wanint_setup')
-!  invdegen=0.0_dp
 
   ! ----------------------------------------------------------------------
   ! Adaptive refinement is not always used (e.g., not used in DOS).
@@ -125,31 +118,6 @@ module w90_postw90_common
   ! where the Wannier functions live
   !
   call wigner_seitz(count_pts=.false.)
-
-  !<mgl> figure out the correspondence of R<-->-R (irvec<-->negirvec)
-  ! this is need for the empirical_tb 1st correction to Lambda_wk
-  ! note that irvec(:,negirvec(ir)) == -irvec(:,ir)
-  !
-  ! this is implementd in a very quick and dirty (i.e. *DUMB*) way!
-  do i=1,nrpts
-    do j=1,nrpts
-        if(irvec(1,j).eq.(-1*irvec(1,i))) then
-        if(irvec(2,j).eq.(-1*irvec(2,i))) then
-        if(irvec(3,j).eq.(-1*irvec(3,i))) then
-          negirvec(i) = j
-        end if
-        end if
-        end if
-    end do
-  end do
-  !write(stdout,'(a,i)') 'nrpts == ',nrpts
-  !write(stdout,'(a)') 'ir  irvec(:,ir) irvec(:,negirvec(1,ir))'
-  !write(stdout,'(a)') '---------------------------------------------------------'
-  !do ir=1,nrpts
-  !  write(stdout,'(i,3i,3i)') ir, irvec(:,ir), irvec(:,negirvec(ir))
-  !end do
-
-
 
   ! We will often need the lattice vectors in Cartesian coordinates
   !
@@ -653,7 +621,6 @@ module w90_postw90_common
     OO(:,:)=cmplx_0
     do ir=1,nrpts
        rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-!       phase_fac=exp(cmplx_i*rdotk)*invdegen(ir)
        phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
        if(alpha==0) then
           OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
@@ -784,8 +751,6 @@ module w90_postw90_common
      ! Corrects weights in Fourier sums for R-vectors on the boundary of the 
      ! W-S supercell 
      !
-!     invdegen(i)=1.0_dp/ndegen(i)
-!     tot = tot + invdegen(i)
      tot=tot+1.0_dp/real(ndegen(ir),dp)
   enddo
   if (abs(tot - real(mp_grid(1) * mp_grid(2) * mp_grid(3),dp) ) > 1.e-8_dp)&
