@@ -75,63 +75,57 @@ module w90_postw90_common
 
     integer        :: ierr,i,j,k,ikpt,ir
 
-  ! Find nrpts, the number of points in the Wigner-Seitz cell
-  !
-  call wigner_seitz(count_pts=.true.)
+    ! Find nrpts, the number of points in the Wigner-Seitz cell
+    !
+    call wigner_seitz(count_pts=.true.)
+    
+    ! Now can allocate several arrays
+    !
+    allocate(irvec(3,nrpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating irvec in wanint_setup')
+    irvec=0
+    allocate(crvec(3,nrpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating crvec in wanint_setup')
+    crvec=0.0_dp
+    allocate(ndegen(nrpts),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating ndegen in wanint_setup')
+    ndegen=0
+        
+    ! Set up the lattice vectors on the Wigner-Seitz supercell 
+    ! where the Wannier functions live
+    !
+    call wigner_seitz(count_pts=.false.)
+    !
+    ! Convert from reduced to Cartesian coordinates
+    !
+    do ir=1,nrpts
+       ! Note that 'real_lattice' stores the lattice vectors as *rows*
+       crvec(:,ir)=matmul(transpose(real_lattice),irvec(:,ir))
+    end do
 
-  ! Now can allocate several arrays
-  !
-  allocate(irvec(3,nrpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating irvec in wanint_setup')
-  irvec=0
-  allocate(crvec(3,nrpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating crvec in wanint_setup')
-  crvec=0.0_dp
-  allocate(ndegen(nrpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating ndegen in wanint_setup')
-  ndegen=0
+    ! TODO(?): Adaptive refinement is not always used (e.g., not used
+    ! in DOS).  Move to a separate public subroutine in this module,
+    ! to be called by specific interpolation tasks when
+    ! appropriate. (Check in the calling unit whether it has been
+    ! allocated before.)
+    !
+    allocate(adkpt(3,berry_adpt_kmesh**3),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating adkpt in wanint_setup')
+    ikpt=0
+    do i=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
+       do j=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
+          do k=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
+             ikpt=ikpt+1 
+             adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_adpt_kmesh)
+             adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_adpt_kmesh)
+             adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_adpt_kmesh)
+          end do
+       end do
+    end do
 
-  ! ----------------------------------------------------------------------
-  ! Adaptive refinement is not always used (e.g., not used in DOS).
-  ! Move to a separate public subroutine in this module, to be called by
-  ! specific interpolation tasks when appropriate. (Check in the calling
-  ! unit whether it has been allocated before, e.g., if in the same run
-  ! both classical and anomalous low-field Hall are computed.)
-  ! ----------------------------------------------------------------------
-
-  allocate(adkpt(3,berry_adpt_kmesh**3),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating adkpt in wanint_setup')
-
-  ikpt=0
-   do i=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
-     do j=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
-        do k=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
-           ikpt=ikpt+1 
-           adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_adpt_kmesh)
-           adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_adpt_kmesh)
-           adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_adpt_kmesh)
-        end do
-      end do
-   end do
-
-  ! Set up the lattice vectors on the Wigner-Seitz supercell 
-  ! where the Wannier functions live
-  !
-  call wigner_seitz(count_pts=.false.)
-
-  ! We will often need the lattice vectors in Cartesian coordinates
-  !
-  do ir=1,nrpts
-     !
-     ! Note that 'real_lattice' stores the lattice vectors as *rows* (argh!),
-     ! hence the transpose
-     !
-     crvec(:,ir)=matmul(transpose(real_lattice),irvec(:,ir))
-  end do
-
- end subroutine wanint_setup
-
-
+  end subroutine wanint_setup
+  
+  
   !===========================================================!
   subroutine wanint_get_kpoint_file
   !===========================================================!
