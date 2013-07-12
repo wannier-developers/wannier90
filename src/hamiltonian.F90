@@ -174,7 +174,7 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt,i,j,m,loop_rpt,ierr,counter
+    integer              :: loop_kpt,i,j,m,irpt,ierr,counter
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -264,11 +264,11 @@ contains
 
     if (.not. use_translation) then
 
-       do loop_rpt=1,nrpts
+       do irpt=1,nrpts
           do loop_kpt=1,num_kpts
-             rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,loop_rpt),dp))
+             rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
              fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
-             ham_r(:,:,loop_rpt)=ham_r(:,:,loop_rpt)+fac*ham_k(:,:,loop_kpt)
+             ham_r(:,:,irpt)=ham_r(:,:,irpt)+fac*ham_k(:,:,loop_kpt)
           enddo
        enddo
     
@@ -280,16 +280,16 @@ contains
        if (ierr/=0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
        call internal_translate_centres()
 
-       do loop_rpt=1,nrpts
+       do irpt=1,nrpts
           do loop_kpt=1,num_kpts
              do i=1,num_wann
                 do j=1,num_wann
-                   ! ham_r(j,i,loop_rpt)
-                   ! interaction btw j at 0 and i at irvec(:,loop_rpt)
-                   irvec_tmp(:)=irvec(:,loop_rpt)+shift_vec(:,i)-shift_vec(:,j)   
+                   ! ham_r(j,i,irpt)
+                   ! interaction btw j at 0 and i at irvec(:,irpt)
+                   irvec_tmp(:)=irvec(:,irpt)+shift_vec(:,i)-shift_vec(:,j)   
                    rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec_tmp(:),dp))
                    fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
-                   ham_r(j,i,loop_rpt)=ham_r(j,i,loop_rpt)+fac*ham_k(j,i,loop_kpt)
+                   ham_r(j,i,irpt)=ham_r(j,i,irpt)+fac*ham_k(j,i,loop_kpt)
                 end do
              end do
           enddo
@@ -407,7 +407,7 @@ contains
                                seedname,io_date
     use w90_parameters, only : num_wann,timing_level
 
-    integer            :: i,j,loop_rpt,file_unit
+    integer            :: i,j,irpt,file_unit
     character (len=33) :: header
     character (len=9)  :: cdate,ctime
 
@@ -418,7 +418,8 @@ contains
     ! write the  whole matrix with all the indices 
  
     file_unit=io_file_unit()
-    open(file_unit,file=trim(seedname)//'_hr.dat',form='formatted',status='unknown',err=101)
+    open(file_unit,file=trim(seedname)//'_hr.dat',form='formatted',&
+         status='unknown',err=101)
 
     call io_date(cdate,ctime)
     header='written on '//cdate//' at '//ctime
@@ -427,10 +428,11 @@ contains
     write(file_unit,*) num_wann
     write(file_unit,*) nrpts
     write(file_unit,'(15I5)') (ndegen(i),i=1,nrpts)
-    do loop_rpt=1,nrpts
+    do irpt=1,nrpts
        do i=1,num_wann
           do j=1,num_wann
-             write( file_unit,'(5I5,2F12.6)') irvec(:,loop_rpt), j, i, ham_r(j,i,loop_rpt)
+             write(file_unit,'(5I5,2F12.6)') irvec(:,irpt), j, i,&
+                  ham_r(j,i,irpt)
           end do
        end do
     end do

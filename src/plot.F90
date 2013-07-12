@@ -121,7 +121,7 @@ contains
     integer              :: nrpts_cut
     integer, allocatable :: iwork(:),ifail(:)
     integer              :: info,i,j
-    integer              :: loop_rpt,nfound,loop_kpt,counter
+    integer              :: irpt,nfound,loop_kpt,counter
     integer              :: loop_spts,total_pts,loop_i,nkp
     integer              :: num_paths,num_spts,ierr
     integer              :: bndunit,gnuunit,loop_w,loop_p
@@ -219,17 +219,17 @@ contains
     do loop_kpt=1,total_pts
        ham_kprm=cmplx_0
        if (index(bands_plot_mode,'s-k').ne.0) then
-          do loop_rpt=1,nrpts
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,loop_rpt))
-             fac=exp(cmplx_i*rdotk)/real(ndegen(loop_rpt),dp)
-             ham_kprm=ham_kprm+fac*ham_r(:,:,loop_rpt)
+          do irpt=1,nrpts
+             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
+             fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+             ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
           end do
        elseif (index(bands_plot_mode,'cut').ne.0) then
-          do loop_rpt=1,nrpts_cut
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,loop_rpt))
+          do irpt=1,nrpts_cut
+             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
 !!$[aam] check divide by ndegen?
              fac=exp(cmplx_i*rdotk)
-             ham_kprm=ham_kprm+fac*ham_r_cut(:,:,loop_rpt)
+             ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
           end do
        else
           call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
@@ -370,13 +370,13 @@ contains
     do n1 = -irvec_max(1), irvec_max(1)    
        do n2 = -irvec_max(2), irvec_max(2)    
 loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
-             do loop_rpt = 1, nrpts
-                i1 = mod(n1 - irvec(1,loop_rpt),mp_grid(1))
-                i2 = mod(n2 - irvec(2,loop_rpt),mp_grid(2))
-                i3 = mod(n3 - irvec(3,loop_rpt),mp_grid(3))
+             do irpt = 1, nrpts
+                i1 = mod(n1 - irvec(1,irpt),mp_grid(1))
+                i2 = mod(n2 - irvec(2,irpt),mp_grid(2))
+                i3 = mod(n3 - irvec(3,irpt),mp_grid(3))
                 if (i1.eq.0 .and. i2.eq.0 .and. i3.eq.0 ) then
                    nrpts_tmp = nrpts_tmp+1 
-                   ham_r_cut(:,:,nrpts_tmp) = ham_r(:,:,loop_rpt)
+                   ham_r_cut(:,:,nrpts_tmp) = ham_r(:,:,irpt)
                    irvec_cut(1,nrpts_tmp)=n1
                    irvec_cut(2,nrpts_tmp)=n2
                    irvec_cut(3,nrpts_tmp)=n3
@@ -393,12 +393,12 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     end if
 
     ! AAM: 29/10/2009 Bug fix thanks to Dr Shujun Hu, NIMS, Japan. 
-    do loop_rpt = 1, nrpts_cut
+    do irpt = 1, nrpts_cut
        ! line below is incorrect for non-orthorhombic cells
-       !shift_vec(:,loop_rpt) = matmul(real_lattice(:,:),real(irvec_cut(:,loop_rpt),dp))
+       !shift_vec(:,irpt) = matmul(real_lattice(:,:),real(irvec_cut(:,irpt),dp))
        ! line below is the same as calculating 
-       ! matmul(transpose(real_lattice(:,:)),irvec_cut(:,loop_rpt))
-       shift_vec(:,loop_rpt) = matmul(real(irvec_cut(:,loop_rpt),dp),real_lattice(:,:))
+       ! matmul(transpose(real_lattice(:,:)),irvec_cut(:,irpt))
+       shift_vec(:,irpt) = matmul(real(irvec_cut(:,irpt),dp),real_lattice(:,:))
     end do
 
     ! note: dist_cutoff_mode does not necessarily follow bands_plot_dim
@@ -408,11 +408,11 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
            do j=1,num_wann
               dist_ij_vec(one_dim_dir)= &
                    wannier_centres_translated(one_dim_dir,i) - wannier_centres_translated(one_dim_dir,j)
-              do loop_rpt =1, nrpts_cut
-                 dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+ shift_vec(one_dim_dir,loop_rpt)
+              do irpt =1, nrpts_cut
+                 dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+ shift_vec(one_dim_dir,irpt)
                  dist = abs(dist_vec(one_dim_dir))
                  if ( dist .gt. dist_cutoff ) &
-                    ham_r_cut(j,i,loop_rpt) = cmplx_0
+                    ham_r_cut(j,i,irpt) = cmplx_0
               end do
            end do
        end do
@@ -420,12 +420,12 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
        do i=1,num_wann
            do j=1,num_wann
               dist_ij_vec(:)=wannier_centres_translated(:,i) - wannier_centres_translated(:,j)
-              do loop_rpt =1, nrpts_cut
-                 dist_vec(:) = dist_ij_vec(:)+ shift_vec(:,loop_rpt)
+              do irpt =1, nrpts_cut
+                 dist_vec(:) = dist_ij_vec(:)+ shift_vec(:,irpt)
                  dist_vec(one_dim_dir) = 0.0_dp
                  dist = sqrt(dot_product(dist_vec,dist_vec))
                  if ( dist .gt. dist_cutoff ) &
-                    ham_r_cut(j,i,loop_rpt) = cmplx_0
+                    ham_r_cut(j,i,irpt) = cmplx_0
               end do
            end do
        end do
@@ -433,21 +433,21 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
        do i=1,num_wann
            do j=1,num_wann
               dist_ij_vec(:)=wannier_centres_translated(:,i) - wannier_centres_translated(:,j)
-              do loop_rpt =1, nrpts_cut
-                 dist_vec(:) = dist_ij_vec(:)+ shift_vec(:,loop_rpt)
+              do irpt =1, nrpts_cut
+                 dist_vec(:) = dist_ij_vec(:)+ shift_vec(:,irpt)
                  dist = sqrt(dot_product(dist_vec,dist_vec))
                  if ( dist .gt. dist_cutoff ) &
-                    ham_r_cut(j,i,loop_rpt) = cmplx_0
+                    ham_r_cut(j,i,irpt) = cmplx_0
               end do
            end do
        end do
     end if
 
-    do loop_rpt = 1,nrpts_cut
+    do irpt = 1,nrpts_cut
        do i=1, num_wann
           do j=1,num_wann
-             if (abs(ham_r_cut(j,i,loop_rpt)) .lt. hr_cutoff) &
-                ham_r_cut(j,i,loop_rpt) = cmplx_0 
+             if (abs(ham_r_cut(j,i,irpt)) .lt. hr_cutoff) &
+                ham_r_cut(j,i,irpt) = cmplx_0 
           end do
        end do
     end do
@@ -458,9 +458,9 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
     write(stdout,'(1x,8x,a62)') repeat('-',62)
     write(stdout,'(1x,11x,a,11x,a)') 'Lattice point R', 'Max |H_ij(R)|'
     !  output maximum ham_r_cut at each lattice point
-    do loop_rpt = 1, nrpts_cut
-       ham_r_tmp(:,:)=abs(ham_r_cut(:,:,loop_rpt))
-       write(stdout,'(1x,9x,3I5,9x,F12.6)') irvec_cut(:,loop_rpt),maxval(ham_r_tmp)
+    do irpt = 1, nrpts_cut
+       ham_r_tmp(:,:)=abs(ham_r_cut(:,:,irpt))
+       write(stdout,'(1x,9x,3I5,9x,F12.6)') irvec_cut(:,irpt),maxval(ham_r_tmp)
     end do 
     !
     return
@@ -672,7 +672,7 @@ end subroutine plot_interpolate_bands
     real(kind=dp)      :: rdotk,time0
     integer, allocatable :: iwork(:),ifail(:)
     integer              :: loop_x,loop_y,loop_z,INFO,ikp,i,j,ierr
-    integer              :: loop_rpt,nfound,npts_plot,loop_kpt,bxsf_unit
+    integer              :: irpt,nfound,npts_plot,loop_kpt,bxsf_unit
     character(len=9)     :: cdate, ctime
     !
     if (timing_level>1) call io_stopwatch('plot: fermi_surface',1)
@@ -709,12 +709,12 @@ end subroutine plot_interpolate_bands
              ikp=ikp+1
 
              ham_kprm=cmplx_0
-             do loop_rpt=1,nrpts
-                rdotk=twopi*real( (loop_x-1)*irvec(1,loop_rpt)+ &
-                     (loop_y-1)*irvec(2,loop_rpt) + (loop_z-1)* &
-                     irvec(3,loop_rpt) ,dp)/real(fermi_surface_num_points,dp)
-                fac=exp(cmplx_i*rdotk)/real(ndegen(loop_rpt),dp)
-                ham_kprm=ham_kprm+fac*ham_r(:,:,loop_rpt)
+             do irpt=1,nrpts
+                rdotk=twopi*real( (loop_x-1)*irvec(1,irpt)+ &
+                     (loop_y-1)*irvec(2,irpt) + (loop_z-1)* &
+                     irvec(3,irpt) ,dp)/real(fermi_surface_num_points,dp)
+                fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+                ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
              end do
              ! Diagonalise H_k (->basis of eigenstates)
              do j=1,num_wann
