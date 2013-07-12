@@ -184,7 +184,8 @@ module w90_get_oper
     if(.not.allocated(AA_R)) then
        allocate(AA_R(num_wann,num_wann,nrpts,3))
     else
-       return !been here before
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_AA_R',2)
+       return
     end if
 
     ! Do everything on root, broadcast AA_R at the end (smaller than S_o)
@@ -389,7 +390,8 @@ module w90_get_oper
     if(.not.allocated(BB_R)) then
        allocate(BB_R(num_wann,num_wann,nrpts,3))
     else
-       return ! been here before
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_BB_R',2)
+       return
     end if
  
     if(on_root) then
@@ -544,6 +546,7 @@ module w90_get_oper
     if(.not.allocated(CC_R)) then
        allocate(CC_R(num_wann,num_wann,nrpts,3,3))
     else
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',2)
        return
     end if
 
@@ -712,6 +715,7 @@ module w90_get_oper
     if(.not.allocated(FF_R)) then
        allocate(FF_R(num_wann,num_wann,nrpts,3,3))
     else
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_FF_R',2)
        return
     end if
 

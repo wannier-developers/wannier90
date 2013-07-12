@@ -98,7 +98,7 @@ module w90_berry
     use w90_io, only            : io_error,stdout,io_file_unit,seedname,&
                                   io_stopwatch
     use w90_postw90_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
-                                  adkpt,weight,rpt_origin
+                                  adkpt,weight
     use w90_parameters, only    : timing_level,num_wann,berry_kmesh,&
                                   !---------remove eventually---------
                                   alpha,beta,gamma,sigma_abc_onlyorb,&
