@@ -199,7 +199,7 @@ module w90_postw90_common
   !===========================================================!
   !                                                           !
   ! distribute the parameters across processors               !
-  ! NOTE: we only send the ones wanint uses, not all in w90   !
+  ! NOTE: we only send the ones postw90 uses, not all in w90  !
   !                                                           !
   !===========================================================!
 
@@ -216,8 +216,8 @@ module w90_postw90_common
     call comms_bcast(num_bands,1)
     call comms_bcast(mp_grid(1),3)
     call comms_bcast(num_kpts,1)
-    call comms_bcast(num_atoms,1)
-    call comms_bcast(num_species,1)
+!    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
+!    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1,1),9)
     call comms_bcast(recip_lattice(1,1),9)
     call comms_bcast(real_metric(1,1),9)
