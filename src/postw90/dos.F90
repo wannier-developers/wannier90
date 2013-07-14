@@ -33,10 +33,10 @@ contains
   subroutine dos_main
     !=======================================================!
     !                                                       !
-    ! Computes the electronic density of states using       !
-    ! adaptive broadening: PRB 75, 195121 (2007) [YWVS07].  !
-    ! Can resolve into up-spin and down-spin parts,         !
-    ! and project onto selected Wannier orbitals.           !
+    ! Computes the electronic density of states. Can        !
+    ! resolve into up-spin and down-spin parts, project     !
+    ! onto selected Wannier orbitals, and use adaptive      !
+    ! broadening, as in PRB 75, 195121 (2007) [YWVS07].     !
     !                                                       !
     !=======================================================!
 
@@ -48,8 +48,8 @@ contains
     use w90_parameters, only     : num_wann,dos_energy_min,dos_energy_max,&
                                    dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_kmesh,&
-                                   dos_smr_index,dos_adpt_smr,&
-                                   dos_adpt_smr_fac, dos_adpt_smr_max, spin_decomp,&
+                                   dos_smr_index,dos_adpt_smr,dos_adpt_smr_fac,&
+                                   dos_adpt_smr_max, spin_decomp,&
                                    dos_smr_fixed_en_width,&
                                    dos_project,num_dos_project
     use w90_get_oper, only       : get_HH_R,get_SS_R,HH_R
@@ -79,7 +79,8 @@ contains
     d_omega=(dos_energy_max-dos_energy_min)/(num_freq-1)
 
     allocate(dos_energyarray(num_freq),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating dos_energyarray in dos subroutine')
+    if (ierr/=0) call io_error('Error in allocating dos_energyarray in '&
+         //'dos subroutine')
     do ifreq=1,num_freq
        dos_energyarray(ifreq) = dos_energy_min + real(ifreq-1,dp)*d_omega
     end do
@@ -134,12 +135,7 @@ contains
             dos_adpt_smr_fac
 
        write(stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ',&
-            dos_kmesh(1:3) !(1),berry_kmesh(2),berry_kmesh(3)
-
-!       write(stdout,'(5x,a,i0,a,i0,a,i0,a,i0,a)')&
-!            'Interpolation mesh in full BZ: ',&
-!            dos_num_points,'x',dos_num_points,'x',&
-!            dos_num_points,'=',dos_num_points**3,' points'
+            dos_kmesh(1:3) 
 
     end if
 
@@ -153,15 +149,6 @@ contains
 
        ! Loop over k-points on the irreducible wedge of the Brillouin zone,
        ! read from file 'kpoint.dat'
-       !
-       ! ---------------------------------------------------------------------
-       ! NOTE: Still need to set the variable 'dos_num_points' in the .wanint
-       !       file to the linear dimensions of the corresponding nominal 
-       !       interpolation mesh in the full BZ. Ideally that information 
-       !       should be contained in the file 'kpoint.dat', and if the 
-       !       variable is also set in the .wanint file, the code should check 
-       !       that they are equal
-       ! ---------------------------------------------------------------------
        !
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
@@ -242,12 +229,11 @@ contains
     end if
 
     deallocate(HH,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating HH in calcTDF')
+    if (ierr/=0) call io_error('Error in deallocating HH in dos_main')
     deallocate(delHH,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating delHH in calcTDF')
+    if (ierr/=0) call io_error('Error in deallocating delHH in dos_main')
     deallocate(UU,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating UU in calcTDF')
-
+    if (ierr/=0) call io_error('Error in deallocating UU in dos_main')
 
   end subroutine dos_main
 
@@ -516,18 +502,24 @@ contains
    
     if (present(levelspacing_k)) then
        if (present(smr_fixed_en_width)) &
-            call io_error('Cannot call doskpt with levelspacing_k and with smr_fixed_en_width parameters together')
+            call io_error('Cannot call doskpt with levelspacing_k and '&
+            //'with smr_fixed_en_width parameters together')
        if (.not.(present(adpt_smr_fac))) &
-            call io_error('Cannot call doskpt with levelspacing_k and without adpt_smr_fac parameter')
+            call io_error('Cannot call doskpt with levelspacing_k and '&
+            //'without adpt_smr_fac parameter')
        if (.not.(present(adpt_smr_max))) &
-            call io_error('Cannot call doskpt with levelspacing_k and without adpt_smr_max parameter')
+            call io_error('Cannot call doskpt with levelspacing_k and '&
+            //'without adpt_smr_max parameter')
     else
        if (present(adpt_smr_fac)) &
-            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_fac parameter')
+            call io_error('Cannot call doskpt without levelspacing_k and '&
+            //'with adpt_smr_fac parameter')
        if (present(adpt_smr_max)) &
-            call io_error('Cannot call doskpt without levelspacing_k and with adpt_smr_max parameter')
+            call io_error('Cannot call doskpt without levelspacing_k and '&
+            //'with adpt_smr_max parameter')
        if (.not.(present(smr_fixed_en_width))) &
-            call io_error('Cannot call doskpt without levelspacing_k and without smr_fixed_en_width parameter')
+            call io_error('Cannot call doskpt without levelspacing_k and '&
+            //'without smr_fixed_en_width parameter')
     end if
 
     r_num_elec_per_state = real(num_elec_per_state,kind=dp)
