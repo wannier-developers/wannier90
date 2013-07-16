@@ -17,15 +17,10 @@ module w90_wan_ham
   !                                               !
   !===============================================!
 
-    ! TO DO: Implement version where energy denominators only connect
-    !        occupied and empty states. In this case probably do not need
-    !        to worry about avoiding small energy denominators
-
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_parameters, only    : num_wann,fermi_energy
-    use w90_utility, only       : utility_rotate
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
+    use w90_parameters, only     : num_wann,fermi_energy
+    use w90_utility, only        : utility_rotate
     use w90_postw90_common, only : get_occ
-    use w90_io, only            : stdout !debug
 
     ! Arguments
     !
@@ -44,7 +39,7 @@ module w90_wan_ham
     delHH_a_bar=utility_rotate(delHH_a,UU,num_wann)
     do m=1,num_wann
        do n=1,num_wann
-          if(occ(n)>0.999_dp.and.occ(m)<0.001) then
+          if(occ(n)>0.999_dp.and.occ(m)<0.001_dp) then
              D_h_a(n,m)=delHH_a_bar(n,m)/(eig(m)-eig(n))
           else
              D_h_a(n,m)=cmplx_0
@@ -79,7 +74,6 @@ module w90_wan_ham
     complex(kind=dp), dimension(:,:,:), intent(out) :: D_h
 
     complex(kind=dp), allocatable :: delHH_bar_i(:,:)
-    real(kind=dp)                 :: occ(num_wann)
     integer                       :: n,m,i
 
     allocate(delHH_bar_i(num_wann,num_wann))
@@ -104,9 +98,9 @@ module w90_wan_ham
   !                                    !
   !====================================!
 
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_parameters, only    : num_wann,fermi_energy
-    use w90_utility, only   : utility_rotate
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+    use w90_parameters, only : num_wann,fermi_energy
+    use w90_utility, only    : utility_rotate
 
     complex(kind=dp), dimension(:,:), intent(in)  :: delHH
     complex(kind=dp), dimension(:,:), intent(in)  :: UU
@@ -139,9 +133,9 @@ module w90_wan_ham
   !                                    !
   !====================================!
 
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
-    use w90_parameters, only    : num_wann,fermi_energy
-    use w90_utility, only   : utility_rotate
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+    use w90_parameters, only : num_wann,fermi_energy
+    use w90_utility, only    : utility_rotate
 
     complex(kind=dp), dimension(:,:), intent(in)  :: delHH
     complex(kind=dp), dimension(:,:), intent(in)  :: UU
@@ -209,9 +203,10 @@ module w90_wan_ham
   !                          !
   !==========================!
 
-    use w90_constants, only   : dp,cmplx_0,cmplx_i
-    use w90_utility, only : utility_diagonalize,utility_rotate,utility_rotate_diag
-    use w90_parameters, only  : num_wann,use_degen_pert,degen_thr
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+    use w90_utility, only    : utility_diagonalize,utility_rotate,&
+                               utility_rotate_diag
+    use w90_parameters, only : num_wann,use_degen_pert,degen_thr
 
     ! Arguments
     !
@@ -356,16 +351,13 @@ module w90_wan_ham
     complex(kind=dp), dimension(:,:), intent(out)   :: UU
     complex(kind=dp), dimension(:,:,:), intent(out) :: JJp
     complex(kind=dp), dimension(:,:,:), intent(out) :: JJm
-    !!!
     complex(kind=dp), dimension(:,:), intent(out)   :: HH
 
     integer                       :: i
-!!    complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: delHH(:,:,:)
 
     call get_HH_R
 
-!!    allocate(HH(num_wann,num_wann))
     allocate(delHH(num_wann,num_wann,3))
     call fourier_R_to_k(kpt,HH_R,HH,0) 
     call utility_diagonalize(HH,num_wann,eig,UU) 
