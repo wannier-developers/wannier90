@@ -82,29 +82,15 @@ module w90_spin
 
        if (on_root)&
             write(stdout,'(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
-       
-
-
-
-!       kweight=1.0_dp/optics_num_points**3
-!       do loop_tot=my_node_id,optics_num_points**3-1,num_nodes
-!          loop_x=loop_tot/optics_num_points**2
-!          loop_y=(loop_tot-loop_x*optics_num_points**2)/optics_num_points
-!          loop_z=loop_tot-loop_x*optics_num_points**2-loop_y*optics_num_points
-!          kpt(1)=real(loop_x,dp)/optics_num_points
-!          kpt(2)=real(loop_y,dp)/optics_num_points
-!          kpt(3)=real(loop_z,dp)/optics_num_points
-
        kweight = 1.0_dp / real(PRODUCT(spin_kmesh),kind=dp)
        do loop_tot=my_node_id,PRODUCT(spin_kmesh)-1,num_nodes
           loop_x= loop_tot/(spin_kmesh(2)*spin_kmesh(3))
           loop_y=(loop_tot-loop_x*(spin_kmesh(2)*spin_kmesh(3)))/spin_kmesh(3)
-          loop_z= loop_tot-loop_x*(spin_kmesh(2)*spin_kmesh(3)) -loop_y*spin_kmesh(3)
+          loop_z= loop_tot-loop_x*(spin_kmesh(2)*spin_kmesh(3))&
+               -loop_y*spin_kmesh(3)
           kpt(1)=(real(loop_x,dp)/real(spin_kmesh(1),dp))
           kpt(2)=(real(loop_y,dp)/real(spin_kmesh(2),dp))
           kpt(3)=(real(loop_z,dp)/real(spin_kmesh(3),dp))
-
-
           call get_spin_moment_k(kpt,spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
@@ -158,7 +144,7 @@ module w90_spin
     use w90_parameters, only    : num_wann,spin_axis_polar,&
                                   spin_axis_azimuth
     use w90_postw90_common, only : fourier_R_to_k
-    use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
+    use w90_get_oper, only      : HH_R,SS_R
 
     ! Arguments
     !
@@ -181,11 +167,9 @@ module w90_spin
     allocate(SS(num_wann,num_wann,3))
     allocate(SS_n(num_wann,num_wann))
     
-!    call get_HH_R
     call fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
 
-!    call get_SS_R
     do is=1,3
        call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
     enddo
@@ -216,7 +200,7 @@ module w90_spin
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann,fermi_energy
     use w90_postw90_common, only : fourier_R_to_k,get_occ
-    use w90_get_oper, only      : HH_R,SS_R !,get_HH_R,get_SS_R
+    use w90_get_oper, only      : HH_R,SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -238,12 +222,10 @@ module w90_spin
     allocate(UU(num_wann,num_wann))
     allocate(SS(num_wann,num_wann,3))
     
-!    call get_HH_R
     call fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
     call get_occ(eig,occ,fermi_energy)
 
-!    call get_SS_R
     spn_k(1:3)=0.0_dp
     do is=1,3
        call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
