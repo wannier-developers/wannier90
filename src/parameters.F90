@@ -181,6 +181,8 @@ module w90_parameters
   ! BoltzWann variables
   logical,           public, save :: boltzwann
   logical,           public, save :: boltz_calc_also_dos
+  integer,           public, save :: boltz_2d_dir_num
+  character(len=4),          save :: boltz_2d_dir
   real(kind=dp),     public, save :: boltz_dos_energy_step
   real(kind=dp),     public, save :: boltz_dos_energy_min
   real(kind=dp),     public, save :: boltz_dos_energy_max
@@ -1316,6 +1318,24 @@ contains
     call param_get_keyword('boltz_calc_also_dos',found,l_value=boltz_calc_also_dos)
 
     boltz_calc_also_dos = boltz_calc_also_dos .and. boltzwann
+
+    ! 0 means the normal 3d case for the calculation of the Seebeck coefficient
+    ! The other valid possibilities are 1,2,3 for x,y,z respectively
+    boltz_2d_dir_num = 0
+    call param_get_keyword('boltz_2d_dir',found,c_value=boltz_2d_dir)
+    if (found) then
+       if (trim(boltz_2d_dir) == 'no') then
+          boltz_2d_dir_num = 0
+       elseif (trim(boltz_2d_dir) == 'x') then
+          boltz_2d_dir_num = 1
+       elseif (trim(boltz_2d_dir) == 'y') then
+          boltz_2d_dir_num = 2
+       elseif (trim(boltz_2d_dir) == 'z') then
+          boltz_2d_dir_num = 3
+       else
+         call io_error('Error: boltz_2d_dir can only be "no", "x", "y" or "z".')
+      end if
+    end if
 
     boltz_dos_energy_step=0.001_dp
     call param_get_keyword('boltz_dos_energy_step',found,r_value=boltz_dos_energy_step)

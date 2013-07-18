@@ -301,6 +301,7 @@ module w90_postw90_common
     ! BoltzWann variables
     call comms_bcast(boltzwann,1) 
     call comms_bcast(boltz_calc_also_dos,1) 
+    call comms_bcast(boltz_2d_dir_num,1) 
     call comms_bcast(boltz_dos_energy_step,1) 
     call comms_bcast(boltz_dos_energy_min,1) 
     call comms_bcast(boltz_dos_energy_max,1) 

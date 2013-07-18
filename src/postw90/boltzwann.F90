@@ -39,10 +39,10 @@ module w90_boltzwann
        boltz_kmesh_spacing, boltz_kmesh, boltz_tdf_energy_step, boltz_relax_time, &
        boltz_bandshift, boltz_bandshift_firstband, boltz_bandshift_energyshift, &
        timing_level, dis_win_min, dis_win_max, spin_decomp, boltz_dos_adpt_smr, &
-       boltz_dos_adpt_smr_fac, boltz_dos_smr_fixed_en_width, &
+       boltz_dos_adpt_smr_fac, boltz_dos_smr_fixed_en_width, boltz_2d_dir_num, &
        boltz_tdf_smr_fixed_en_width, cell_volume, num_elec_per_state, iprint
   use w90_io, only         : io_error,stdout,io_stopwatch,io_file_unit,seedname  
-  use w90_utility, only    : utility_inv3
+  use w90_utility, only    : utility_inv3, utility_inv2
   use w90_postw90_common
   use w90_comms
   use w90_dos, only    : get_dos_k, get_levelspacing
@@ -92,6 +92,7 @@ contains
     real(kind=dp), dimension(:),       allocatable :: TDFEnergyArray
     real(kind=dp), dimension(:,:),     allocatable :: IntegrandArray ! (coordinate, Energy) at a given T and mu
     real(kind=dp), dimension(3,3)                  :: ElCondTimesSeebeckFP, ThisElCond, ElCondInverse, ThisSeebeck
+    real(kind=dp), dimension(2,2)                  :: ThisElCond2d, ElCondInverse2d
     real(kind=dp), dimension(6)                    :: ElCondTimesSeebeck
     real(kind=dp), dimension(:,:,:),   allocatable :: ElCond ! (coordinate,Temp, mu)
     real(kind=dp), dimension(:,:,:),   allocatable :: Seebeck ! (coordinate,Temp, mu)
@@ -125,6 +126,25 @@ contains
        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
        write(stdout,*) 
     end if
+
+    if (on_root) then
+       if (boltz_2d_dir_num /= 0) then
+          write(stdout,'(1x,a)') '>                                                                           <'
+          write(stdout,'(1x,a)') '> NOTE! Using the 2D version for the calculation of the Seebeck             <'
+          if (boltz_2d_dir_num == 1) then
+             write(stdout,'(1x,a)') '>       coefficient, where the non-periodic direction is x.                 <'
+          elseif (boltz_2d_dir_num == 2) then
+             write(stdout,'(1x,a)') '>       coefficient, where the non-periodic direction is y.                 <'
+          elseif (boltz_2d_dir_num == 3) then
+             write(stdout,'(1x,a)') '>       coefficient, where the non-periodic direction is z.                 <'
+          else
+             call io_error('Unrecognized value of boltz_2d_dir_num')
+          end if
+          write(stdout,'(1x,a)') '>                                                                           <'
+          write(stdout,'(1x,a)') ''
+       end if
+    end if
+
 
     ! I precalculate the TempArray and the MuArray
     TempNumPoints = int(floor((boltz_temp_max-boltz_temp_min)/boltz_temp_step))+1
@@ -247,13 +267,58 @@ contains
        ! ElCond has the same units of TDF)
        
        ! I store in ThisElCond the conductivity tensor in standard format
+       ! Store both the upper and lower triangle
        do j=1,3
           do i=1,j
              ThisElCond(i,j)=LocalElCond(i+((j-1)*j)/2,LocalIdx)
+             ThisElCond(j,i)=LocalElCond(i+((j-1)*j)/2,LocalIdx)
           end do
        end do
+
        ! I calculate the inverse matrix of the conductivity 
-       call utility_inv3(ThisElCond,ElCondInverse,Determinant)
+       if (boltz_2d_dir_num /= 0) then
+          ! Invert only the appropriate 2x2 submatrix
+          if (boltz_2d_dir_num == 1) then
+             ThisElCond2d(1,1) = ThisElCond(2,2)
+             ThisElCond2d(1,2) = ThisElCond(2,3)
+             ThisElCond2d(2,1) = ThisElCond(3,2)
+             ThisElCond2d(2,2) = ThisElCond(3,3)
+          elseif (boltz_2d_dir_num == 2) then
+             ThisElCond2d(1,1) = ThisElCond(1,1)
+             ThisElCond2d(1,2) = ThisElCond(1,3)
+             ThisElCond2d(2,1) = ThisElCond(3,1)
+             ThisElCond2d(2,2) = ThisElCond(3,3)
+          elseif (boltz_2d_dir_num == 3) then
+             ThisElCond2d(1,1) = ThisElCond(1,1)
+             ThisElCond2d(1,2) = ThisElCond(1,2)
+             ThisElCond2d(2,1) = ThisElCond(2,1)
+             ThisElCond2d(2,2) = ThisElCond(2,2)
+          ! I do not do the else case because this was already checked at the beginning
+          ! of this routine
+          end if
+          call utility_inv2(ThisElCond2d,ElCondInverse2d,Determinant)
+          ElCondInverse = 0._dp ! Other elements must be set to zero
+          if (boltz_2d_dir_num == 1) then
+             ElCondInverse(2,2) = ElCondInverse2d(1,1)
+             ElCondInverse(2,3) = ElCondInverse2d(1,2)
+             ElCondInverse(3,2) = ElCondInverse2d(2,1)
+             ElCondInverse(3,3) = ElCondInverse2d(2,2)
+          elseif (boltz_2d_dir_num == 2) then
+             ElCondInverse(1,1) = ElCondInverse2d(1,1)
+             ElCondInverse(1,3) = ElCondInverse2d(1,2)
+             ElCondInverse(3,1) = ElCondInverse2d(2,1)
+             ElCondInverse(3,3) = ElCondInverse2d(2,2)
+          elseif (boltz_2d_dir_num == 3) then
+             ElCondInverse(1,1) = ElCondInverse2d(1,1)
+             ElCondInverse(1,2) = ElCondInverse2d(1,2)
+             ElCondInverse(2,1) = ElCondInverse2d(2,1)
+             ElCondInverse(2,2) = ElCondInverse2d(2,2)
+          ! I do not do the else case because this was already checked at the beginning
+          ! of this routine
+          end if
+       else
+          call utility_inv3(ThisElCond,ElCondInverse,Determinant)
+       end if
        if (Determinant .eq. 0._dp) then
           NumberZeroDet = NumberZeroDet + 1
           ! If the determinant is zero (i.e., zero conductivity along a given direction)
@@ -277,7 +342,9 @@ contains
        ElCondTimesSeebeck = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
        do j=1,3
           do i=1,j
+             ! Both upper and lower diagonal
              ElCondTimesSeebeckFP(i,j)=ElCondTimesSeebeck(i+((j-1)*j)/2)
+             ElCondTimesSeebeckFP(j,i)=ElCondTimesSeebeck(i+((j-1)*j)/2)
           end do
        end do
        ! Now, ElCondTimesSeebeck (and ElCondTimesSeebeckFP) contain
@@ -317,10 +384,12 @@ contains
     call comms_reduce(NumberZeroDet,1,'SUM')
     if (on_root) then
        if ((NumberZeroDet.gt.0)) then
-          write(stdout,'(3X,A,I0,A)') "* WARNING! There are ",NumberZeroDet," (mu,T) pairs for which the electrical"
-          write(stdout,'(3X,A)')      "*          conductivity has zero determinant."
-          write(stdout,'(3X,A)')      "*          Seebeck coefficient set to zero for those pairs."
-          write(stdout,'(3X,A)')      "*          Check if this is physical or not."
+          write(stdout,'(1X,A,I0,A)') "> WARNING! There are ",NumberZeroDet," (mu,T) pairs for which the electrical"
+          write(stdout,'(1X,A)')      ">          conductivity has zero determinant."
+          write(stdout,'(1X,A)')      ">          Seebeck coefficient set to zero for those pairs."
+          write(stdout,'(1X,A)')      ">          Check if this is physical or not."
+          write(stdout,'(1X,A)')      ">          (If you are dealing with a 2D system, set the boltz_2d_dir flag.)"
+          write(stdout,'(1X,A)')      ""
        end if
     end if
 
@@ -790,7 +859,7 @@ contains
        if (boltz_calc_also_dos) then
           write(stdout,'(3X,A)') "TDF and DOS calculated."
        else
-          write(stdout,'(1X,A)') "TDF calculated."
+          write(stdout,'(3X,A)') "TDF calculated."
        end if
     end if
     if (on_root) write(stdout,*) 

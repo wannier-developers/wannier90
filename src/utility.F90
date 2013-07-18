@@ -20,6 +20,7 @@ module w90_utility
   private
 
   public :: utility_inv3
+  public :: utility_inv2
   public :: utility_recip_lattice
   public :: utility_metric
   public :: utility_compar
@@ -131,6 +132,34 @@ contains
     return
 
   end subroutine utility_inv3
+
+  !===================================================================
+  subroutine utility_inv2 (a, b, det)                   !
+    !==================================================================!
+    !                                                                  !
+    !    Return in b the adjoint of the 2x2 matrix                     !
+    !    a, together with the determinant of a.                        !
+    !    The inverse is defined as the adjoind divided by the          !
+    !    determinant, so that inverse(a) = b/det                       !
+    !                                                                  !
+    !===================================================================
+
+
+    implicit none
+    real(kind=dp), intent(in)  :: a (2, 2)
+    real(kind=dp), intent(out) :: b (2, 2)  
+    real(kind=dp), intent(out) :: det
+
+    det = a(1,1) * a(2,2) - a(1,2) * a(2,1)
+
+    b(1,1) = a(2,2)
+    b(1,2) = -a(1,2)
+    b(2,1) = -a(2,1)
+    b(2,2) = a(1,1)
+
+    return
+
+  end subroutine utility_inv2
 
 
   !===================================================================

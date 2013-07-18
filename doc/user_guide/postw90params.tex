@@ -337,6 +337,7 @@ Keyword & Type & Description \\
 {\sc [boltz\_]kmesh} & I & Dimensions of the uniform interpolation 
 $k$-mesh (one or three integers)\\ 
 {\sc [boltz\_]kmesh\_spacing} & R & Minimum spacing between $k$ points in \AA$^{-1}$\\
+{\sc boltz\_2d\_dir} & S & Non-periodic direction (for 2D systems only)\\
 {\sc boltz\_relax\_time} & P & Relaxation time in fs\\
 {\sc boltz\_mu\_min} & P & Minimum value of the chemical potential $\mu$ in eV\\
 {\sc boltz\_mu\_max} & P & Maximum value of the chemical potential $\mu$ in eV\\
@@ -1075,6 +1076,13 @@ Sec.~\ref{sec:postw90-globalflags}).
 Overrides the \verb#kmesh_spacing# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
+\subsection[boltz\_2d\_dir]{\tt  character(len=4) :: boltz\_2d\_dir}
+\label{sec:boltz2ddir}
+For two-dimensional systems, the direction along which the system is non-periodic. It can assume the following values: \texttt{x} for a 2D system on the $yz$ plane,  \texttt{y} for a 2D system on the $xz$ plane, \texttt{z} for a 2D system on the $xy$ plane, or \texttt{no} for a 3D system with periodicity along all threee directions.
+
+This value is used when calculating the Seebeck coefficient, where the electrical conductivity tensor needs to be inverted. If the value is different from zero, only the relevant $2\times 2$ sub-block of the electrical conductivity is inverted.
+
+The default value is \texttt{no}.
 
 \subsection[boltz\_relax\_time]{\tt real(kind=dp) :: boltz\_relax\_time}
 The relaxation time to be used for the calculation of the TDF and the transport coefficients.
