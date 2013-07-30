@@ -76,12 +76,13 @@ contains
   !> This is the main routine of the BoltzWann module.
   !> It calculates the transport coefficients using the Boltzmann transport equation.
   !>
-  !> It produces five files that contain:
+  !> It produces six files that contain:
   !> 1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*fs/angstrom
   !> 2. the electrical conductivity in SI units (1/Ohm/m)
-  !> 3. the Seebeck coefficient in SI units (V/K)
-  !> 4. the thermal conductivity in SI units (W/meter/K)
-  !> 5. if requested, the density of states
+  !> 2. the tensor sigma*S (sigma=el.cond., S=seebeck) in SI units (Ampere/meter/K)
+  !> 4. the Seebeck coefficient in SI units (V/K)
+  !> 5. the thermal conductivity in SI units (W/meter/K)
+  !> 6. if requested, the density of states
   !> Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
   !> T is the temperature in Kelvin. The grid is defined in the input.
   subroutine boltzwann_main()
@@ -91,17 +92,19 @@ contains
     real(kind=dp), dimension(:,:,:),   allocatable :: TDF ! (coordinate,Energy)
     real(kind=dp), dimension(:),       allocatable :: TDFEnergyArray
     real(kind=dp), dimension(:,:),     allocatable :: IntegrandArray ! (coordinate, Energy) at a given T and mu
-    real(kind=dp), dimension(3,3)                  :: ElCondTimesSeebeckFP, ThisElCond, ElCondInverse, ThisSeebeck
+    real(kind=dp), dimension(3,3)                  :: SigmaS_FP, ThisElCond, ElCondInverse, ThisSeebeck
     real(kind=dp), dimension(2,2)                  :: ThisElCond2d, ElCondInverse2d
     real(kind=dp), dimension(6)                    :: ElCondTimesSeebeck
     real(kind=dp), dimension(:,:,:),   allocatable :: ElCond ! (coordinate,Temp, mu)
+    real(kind=dp), dimension(:,:,:),   allocatable :: SigmaS ! (coordinate,Temp, mu)
     real(kind=dp), dimension(:,:,:),   allocatable :: Seebeck ! (coordinate,Temp, mu)
     real(kind=dp), dimension(:,:,:),   allocatable :: Kappa ! (coordinate,Temp, mu)
     real(kind=dp), dimension(:,:),     allocatable :: LocalElCond ! (coordinate,Temp+mu combined index)
+    real(kind=dp), dimension(:,:),     allocatable :: LocalSigmaS ! (coordinate,Temp+mu combined index)
     real(kind=dp), dimension(:,:),     allocatable :: LocalSeebeck ! (coordinate,Temp+mu combined index)
     real(kind=dp), dimension(:,:),     allocatable :: LocalKappa ! (coordinate,Temp+mu combined index)
     real(kind=dp)                                  :: Determinant
-    integer :: tdf_unit, elcond_unit, seebeck_unit, kappa_unit, ndim
+    integer :: tdf_unit, elcond_unit, sigmas_unit, seebeck_unit, kappa_unit, ndim
 
     ! Needed to split an array on different nodes
     integer, dimension(0:num_nodes-1) :: counts
@@ -231,10 +234,12 @@ contains
     ! I allocate the arrays for the spectra
     allocate(LocalElCond(6,counts(my_node_id)),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalElCond in boltzwann_main')
-    allocate(LocalSeebeck(6,counts(my_node_id)),stat=ierr)
+    allocate(LocalSigmaS(6,counts(my_node_id)),stat=ierr)
+    if (ierr/=0) call io_error('Error in allocating LocalSigmaS in boltzwann_main')
+    allocate(LocalSeebeck(9,counts(my_node_id)),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
     allocate(LocalKappa(6,counts(my_node_id)),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
+    if (ierr/=0) call io_error('Error in allocating LocalKappa in boltzwann_main')
     LocalElCond = 0._dp
     LocalSeebeck = 0._dp
     LocalKappa = 0._dp
@@ -338,30 +343,33 @@ contains
           IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
        end do
        
-       ! I store in ElCondTimesSeebeckFP the product of the two tensors in full-packed format
-       ElCondTimesSeebeck = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
+       ! I store in SigmaS_FP the product of the two tensors in full-packed format
+       LocalSigmaS(:,LocalIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
        do j=1,3
           do i=1,j
              ! Both upper and lower diagonal
-             ElCondTimesSeebeckFP(i,j)=ElCondTimesSeebeck(i+((j-1)*j)/2)
-             ElCondTimesSeebeckFP(j,i)=ElCondTimesSeebeck(i+((j-1)*j)/2)
+             SigmaS_FP(i,j)=LocalSigmaS(i+((j-1)*j)/2, LocalIdx)
+             SigmaS_FP(j,i)=LocalSigmaS(i+((j-1)*j)/2, LocalIdx)
           end do
        end do
-       ! Now, ElCondTimesSeebeck (and ElCondTimesSeebeckFP) contain
+       ! Now, LocalSigmaS (and SigmaS_FP) contain
        ! [ElCond*Seebeck] * hbar^2/e in units of eV^2*fs/angstrom/kelvin
        
-       ! I calculate ElCond^(-1) . (ElCondTimesSeebeck) = Seebeck in standard format, and then
-       ! store it in the Seebeck array (in packed format)
+       ! I calculate ElCond^(-1) . (LocalSigmaS) = Seebeck in fully-packed format and then
+       ! store it in the LocalSeebeck array (not in packed format because, unless S and sigma 
+       ! commute, there is no a-priori reason for which S should be symmetric - even if
+       ! probably one can find physical reasons).
 
-       ThisSeebeck = matmul(ElCondInverse,ElCondTimesSeebeckFP) 
        ! I invert the sign because the electron charge is < 0
-       ThisSeebeck = -ThisSeebeck
-
+       ThisSeebeck = -matmul(ElCondInverse,SigmaS_FP) 
+       ! Reshuffle in 1D; order: xx, xy, xz, yx, yy, yz, zx, zy, zz
+       ! Note that this is different
        do j=1,3
-          do i=1,j
-             LocalSeebeck(i+((j-1)*j)/2,LocalIdx) = ThisSeebeck(i,j)
+          do i=1,3
+             LocalSeebeck((i-1)*3+j, LocalIdx) = ThisSeebeck(i,j)
           end do
        end do
+
        ! Now, Seebeck contains the Seebeck coefficient in volt / Kelvin. In fact:
        ! - ElCond contains (hbar^2/e^2) * sigma in eV*fs/angstrom, where sigma is the value of the
        !   conductivity, i.e. it is the conductivity in units of (e^2/hbar^2) * eV * fs / angstrom
@@ -407,6 +415,12 @@ contains
     LocalElCond = LocalElCond * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
     ! THIS IS NOW THE ELECTRICAL CONDUCTIVITY IN SI UNITS, i.e. in 1/Ohm/meter
 
+    ! *** Sigma * S ****
+    ! Again, as above or below for Kappa, the conversion factor is 
+    ! * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
+    ! and brings the result to Ampere/m/K
+    LocalSigmaS = LocalSigmaS * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
+
     ! **** Seebeck coefficient ****
     ! THE SEEECK COEFFICIENTS IS ALREADY IN volt/kelvin, so nothing has to be done
 
@@ -425,10 +439,12 @@ contains
     if (on_root) then
        allocate(ElCond(6,TempNumPoints,MuNumPoints),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main')
-       allocate(Seebeck(6,TempNumPoints,MuNumPoints),stat=ierr)
+       allocate(SigmaS(6,TempNumPoints,MuNumPoints),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating SigmaS in boltzwann_main')
+       allocate(Seebeck(9,TempNumPoints,MuNumPoints),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
        allocate(Kappa(6,TempNumPoints,MuNumPoints),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main')
+       if (ierr/=0) call io_error('Error in allocating Kappa in boltzwann_main')
     else
        ! In principle, this should not be needed, because we use ElCond,
        ! Seebeck and Kappa only on the root node. However, since all
@@ -436,15 +452,19 @@ contains
        ! is ElCond(1,1,1), some compilers complain.
        allocate(ElCond(1,1,1),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating ElCond in boltzwann_main (2)')
+       allocate(SigmaS(1,1,1),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating SigmaS in boltzwann_main (2)')
        allocate(Seebeck(1,1,1),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main (2)')
        allocate(Kappa(1,1,1),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating Seebeck in boltzwann_main (2)')
+       if (ierr/=0) call io_error('Error in allocating Kappa in boltzwann_main (2)')
     end if
     
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
+    ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
     call comms_gatherv(LocalElCond(1,1),6*counts(my_node_id),ElCond(1,1,1),6*counts,6*displs)
-    call comms_gatherv(LocalSeebeck(1,1),6*counts(my_node_id),Seebeck(1,1,1),6*counts,6*displs)
+    call comms_gatherv(LocalSigmaS(1,1),6*counts(my_node_id),SigmaS(1,1,1),6*counts,6*displs)
+    call comms_gatherv(LocalSeebeck(1,1),9*counts(my_node_id),Seebeck(1,1,1),9*counts,9*displs)
     call comms_gatherv(LocalKappa(1,1),6*counts(my_node_id),Kappa(1,1,1),6*counts,6*displs)
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main: calc_props',2)
@@ -464,14 +484,27 @@ contains
        close(elcond_unit)
        if (iprint > 1) write(stdout,'(3X,A)') "Electrical conductivity written on the " // trim(seedname)//"_elcond.dat file."
 
+       sigmas_unit = io_file_unit()
+       open(unit=sigmas_unit,file=trim(seedname)//'_sigmas.dat')  
+       write(sigmas_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
+       write(sigmas_unit,'(A)') "# [(Electrical conductivity * Seebeck coefficient) in SI units, i.e. in Ampere/m/K]"
+       write(sigmas_unit,'(A)') "# Mu(eV) Temp(K) (Sigma*S)_xx (Sigma*S)_xy (Sigma*S)_yy (Sigma*S)_xz (Sigma*S)_yz (Sigma*S)_zz"
+       do MuIdx=1,MuNumPoints
+          do TempIdx = 1,TempNumPoints
+             write(sigmas_unit,103) MuArray(MuIdx), TempArray(TempIdx), SigmaS(:,TempIdx,MuIdx)
+          end do
+       end do
+       close(sigmas_unit)
+       if (iprint > 1) write(stdout,'(3X,A)') "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the " // trim(seedname)//"_sigmas.dat file."
+
        seebeck_unit =io_file_unit()
        open(unit=seebeck_unit,file=trim(seedname)//'_seebeck.dat')  
        write(seebeck_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
        write(seebeck_unit,'(A)') "# [Seebeck coefficient in SI units, i.e. in V/K]"
-       write(seebeck_unit,'(A)') "# Mu(eV) Temp(K) Seebeck_xx Seebeck_xy Seebeck_yy Seebeck_xz Seebeck_yz Seebeck_zz"
+       write(seebeck_unit,'(A)') "# Mu(eV) Temp(K) Seebeck_xx Seebeck_xy Seebeck_xz Seebeck_yx Seebeck_yy Seebeck_yz Seebeck_zx Seebeck_zy Seebeck_zz"
        do MuIdx=1,MuNumPoints
           do TempIdx = 1,TempNumPoints
-             write(seebeck_unit,103) MuArray(MuIdx), TempArray(TempIdx), Seebeck(:,TempIdx,MuIdx)
+             write(seebeck_unit,104) MuArray(MuIdx), TempArray(TempIdx), Seebeck(:,TempIdx,MuIdx)
           end do
        end do
        close(seebeck_unit)
@@ -515,6 +548,8 @@ contains
     if (ierr/=0) call io_error('Error in deallocating TDF in boltzwann_main')
     deallocate(LocalElCond,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating LocalElCond in boltzwann_main')
+    deallocate(LocalSigmaS,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating LocalSigmaS in boltzwann_main')
     deallocate(LocalSeebeck,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating LocalSeebeck in boltzwann_main')
     deallocate(LocalKappa,stat=ierr)
@@ -522,6 +557,8 @@ contains
 
     deallocate(ElCond,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating ElCond in boltzwann_main')
+    deallocate(SigmaS,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating SigmaS in boltzwann_main')
     deallocate(Seebeck,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating Seebeck in boltzwann_main')
     deallocate(Kappa,stat=ierr)
@@ -535,6 +572,7 @@ contains
 101 FORMAT(7G18.10)
 102 FORMAT(19G18.10)
 103 FORMAT(8G18.10)
+104 FORMAT(11G18.10)
 
   end subroutine boltzwann_main
 

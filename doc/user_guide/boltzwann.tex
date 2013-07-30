@@ -4,12 +4,10 @@ By setting $\verb#boltzwann#=\verb#TRUE#$, \postw\ will call the \bw\ routines t
 
 In particular, the transport coefficients that are calculated are: the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and the coefficient $\bvec K$ (defined below; it is the main ingredient of the thermal conductivity). 
 
-In the present version, the code is implemented for bulk materials only, with periodicity along all three spatial directions.
-
 The list of parameters of the \bw\ module are summarized in Table~\ref{parameter_keywords_bw}. 
 An example of a Boltzmann transport calculation can be found in the \wannier\ Tutorial. 
 
-\textbf{Note}: if you are interested in studying 2D systems, set the correct value for the \texttt{boltz\_2d\_dir} variable (see Sec.~\ref{sec:boltz2ddir} for the documentation).
+\textbf{Note}: By default, the code assumes to be working with a 3D bulk material, with periodicity along all three spatial directions. If you are interested in studying 2D systems, set the correct value for the \texttt{boltz\_2d\_dir} variable (see Sec.~\ref{sec:boltz2ddir} for the documentation). This is important for the evaluation of the Seebeck coefficient.
 
 %Reference: [BoltzWann paper]
 \section{Theory}
@@ -29,7 +27,7 @@ The thermal conductivity $\bvec \kappa$ can be then calculated from the $\bvec \
 These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows:
 \begin{align}
   [\bvec \sigma]_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
-  [\bvec \sigma \bvec S]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon), \\
+  [\bvec \sigma \bvec S]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon), \label{eq:boltz-sigmas}\\
   [\bvec K]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),\label{eq:boltz-thermcond}
 \end{align}
 where $[\bvec \sigma \bvec S]$ denotes the product of the two tensors $\bvec \sigma$ and $\bvec S$, $f(\varepsilon,\mu,T)$ is the usual Fermi--Dirac distribution function 
@@ -61,22 +59,33 @@ The first lines are comments (starting with \# characters) which describe the co
 Then, there is a line for each energy $\varepsilon$ on the grid, containing a number of columns. The first is the energy $\varepsilon$, the followings are the components if $\bvec \Sigma(\varepsilon)$ in the following order: $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$, $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input flag {\tt spin\_decomp}), 12 further columns are provided, with the 6 components of $\bvec \Sigma$ for the spin up, followed by those for the spin down.
 
 The energy $\varepsilon$ is in eV, while $\bvec \Sigma$ is in 
- $\displaystyle\frac{1}{\hbar^2}\cdot\frac{\mathrm{eV}\cdot\mathrm{fs}}{\mathrm{\AA}}$.
+ $\displaystyle\frac{1}{\hbar^2}\cdot\frac{\mathrm{eV}\cdot\mathrm{fs}}{\text{\AA}}$.
 
 \subsection{{\tt seedname\_elcond.dat}}
 OUTPUT. This file contains the electrical conductivity tensor $\bvec \sigma$ on the grid of $T$ and $\mu$ points. 
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $\sigma_{xx}$, $\sigma_{xy}$, $\sigma_{yy}$, $\sigma_{xz}$, $\sigma_{yz}$, $\sigma_{zz}$.
+Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $\sigma_{xx}$, $\sigma_{xy}$, $\sigma_{yy}$, $\sigma_{xz}$, $\sigma_{yz}$, $\sigma_{zz}$. (The tensor is symmetric).
 
 The chemical potential is in eV, the temperature is in K, and the components of the electrical conductivity tensor ar in SI units, i.e. in 1/$\Omega$/m.
+
+\subsection{{\tt seedname\_sigmas.dat}}
+OUTPUT. This file contains the tensor $\bvec\sigma\bvec S$, i.e. the product of the electrical conductivity tensor and of the Seebeck coefficient as defined by Eq.~\eqref{eq:boltz-sigmas}, on the grid of $T$ and $\mu$ points. 
+
+The first lines are comments (starting with \# characters) which describe the content of the file.
+Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $(\sigma S)_{xx}$, $(\sigma S)_{xy}$, $(\sigma S)_{yy}$, $(\sigma S)_{xz}$, $(\sigma S)_{yz}$, $(\sigma S)_{zz}$. (The tensor is symmetric).
+
+The chemical potential is in eV, the temperature is in K, and the components of the tensor ar in SI units, i.e. in A/m/K.
+
 \subsection{{\tt seedname\_seebeck.dat}}
 OUTPUT. This file contains the Seebeck tensor $\bvec S$ on the grid of $T$ and $\mu$ points. 
 
 Note that in the code the Seebeck coefficient is defined as zero when the determinant of the electrical conductivity $\bvec \sigma$ is zero. If there is at least one $(\mu, T)$ pair for which $\det \bvec \sigma=0$, a warning is issued on the output file.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $S_{xx}$, $S_{xy}$, $S_{yy}$, $S_{xz}$, $S_{yz}$, $S_{zz}$.
+Then, there is a line for each $(\mu,T)$ pair, containing 11 columns, which are respectively: $\mu$, $T$, $S_{xx}$, $S_{xy}$, $S_{xz}$, $S_{yx}$, $S_{yy}$, $S_{yz}$, $S_{zx}$, $S_{zy}$, $S_{zz}$.
+
+NOTE: therefore, the format of the columns of this file is different from the other three files (elcond, sigmas and kappa)!
 
 The chemical potential is in eV, the temperature is in K, and the components of the Seebeck tensor ar in SI units, i.e. in V/K.
 
@@ -84,7 +93,7 @@ The chemical potential is in eV, the temperature is in K, and the components of 
 OUTPUT. This file contains the tensor $\bvec K$ defined in Sec.~\ref{sec:boltzwann-theory} on the grid of $T$ and $\mu$ points.
 
 The first lines are comments (starting with \# characters) which describe the content of the file.
-Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $K_{xx}$, $K_{xy}$, $K_{yy}$, $K_{xz}$, $K_{yz}$, $K_{zz}$.
+Then, there is a line for each $(\mu,T)$ pair, containing 8 columns, which are respectively: $\mu$, $T$, $K_{xx}$, $K_{xy}$, $K_{yy}$, $K_{xz}$, $K_{yz}$, $K_{zz}$. (The tensor is symmetric).
 
 The chemical potential is in eV, the temperature is in K, and the components of the $\bvec K$ tensor are the SI units for the thermal conductivity, i.e. in W/m/K.
 
