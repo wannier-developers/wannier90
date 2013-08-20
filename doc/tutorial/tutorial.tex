@@ -1792,7 +1792,48 @@ and re-run {\tt postw90}. The names of the {\tt gnuplot} and {\tt
 plotting algorithm is different in this case, and the lines are not as
 smooth as before. You may want to increase {\tt kslice\_2dkmesh}.)
 
-In Example~8 we obtained MLWFs separately for the up- and down-spin
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+
+\item Redraw the Fermi surface contours on the (010) plane starting
+  from a calculation without spin-orbit coupling, by adding to the
+  input files {\tt iron\_\{up,down\}.win} in Example~8 the lines {\tt
+\begin{quote}
+kslice = true
+
+kslice\_task = fermi\_lines
+
+kslice\_fermi\_level = 12.6256
+
+kslice\_corner = 0.0  0.0  0.0
+
+kslice\_b1 =     0.5 -0.5 -0.5
+
+kslice\_b2 =     0.5  0.5  0.5
+
+kslice\_2dkmesh = 200 200
+\end{quote} }
+%
+before running {\tt postw90},
+%
+{\tt
+\begin{quote}
+postw90.x iron\_up
+
+postw90.x iron\_dn
+\end{quote}
+}
+%
+The {\tt python} scripts generated at runtime draw the up- and
+down-spin Fermi lines on separate figures. To draw them together, use
+the script {\tt iron\_updn-kslice-fermi\_lines.py} provided with
+Example~17 (or merge the two generated scripts). Compare the Fermi
+lines with and without spin-orbit, and note the spin-orbit-induced
+avoided crossings.
+
+\item In Example~8 we obtained MLWFs separately for the up- and down-spin
 channels of bcc Fe without spin-orbit. The Wannier-interpolated DOS
 was therefore automatically separated into minority and majority
 contributions.  For a spinor calculation we can still spin-decompose
@@ -1829,25 +1870,8 @@ down-spin WFs separately. To find the DOS projected onto the up-spin
 and re-run {\tt postw90}. This approach has the advantage that it does
 not require the {\tt Fe.spn} file.
 
-%\subsection*{Further ideas}
 
-%\begin{itemize}
-
-%\item Plot the energy bands over a single line segment in $k$-space,
-%  e.g., $\Gamma$--H, to see in detail a spin-orbit-induced avoided
-%  crossing between majority and minority bands. [Hint: When using {\tt
-%    gnuplot} you can zoom in by right-clicking to select a region of
-%  the plot.]
-
-%\item Generate the Fermi-surface contours on the (001) plane
-%perpendicular to the magnetization. Note the higher symmetry compared
-%to the (010) plane.
-
-%\item Redraw the Fermi-surface contours starting from an {\it ab
-%    initio} calculation without spin-orbit coupling (as in Example~8),
-%  and note the changes in their connectivity.
-
-%\end{itemize}
+\end{itemize}
 
 \cleardoublepage
 
@@ -1961,7 +1985,10 @@ myshell> python Fe-kslice-curv\_z+fermi\_lines.py
 \end{quote} }
 \medskip
 %
-Compare with Fig.~3 in Ref.~\cite{yao-prl04}.
+Compare with Fig.~3 in Ref.~\cite{yao-prl04}. Note how the Berry
+curvature ``hot-spots'' tend to occur near spin-orbit-induced avoided
+crossings (the Fermi lines with and without spin-orbit were generated
+in Example~17).
 
 \subsection*{Anomalous Hall conductivity}
 
@@ -2107,44 +2134,6 @@ gnuplot> plot `Fe-kubo-A\_xy.dat' u 1:(\$1)*(\$3)*0.0137 w l
 \item Recompute the AHC and optical spectra of bcc Fe using projected
   $s$, $p$, and $d$-type Wannier functions instead of the hybridrized
   MLWFs (see Example~8), and compare the results.
-
-\item Redraw the Fermi surface contours on the (010) plane starting
-  from a calculation without spin-orbit coupling, by adding to the
-  input files {\tt iron\_\{up,down\}.win} in Example~8 the lines
-{\tt
-\begin{quote}
-kslice = true
-
-kslice\_task = fermi\_lines
-
-kslice\_fermi\_level = 12.6256
-
-kslice\_corner = 0.0  0.0  0.0
-
-kslice\_b1 =     0.5 -0.5 -0.5
-
-kslice\_b2 =     0.5  0.5  0.5
-
-kslice\_2dkmesh = 200 200
-\end{quote} }
-%
-before running {\tt postw90},
-%
-{\tt
-\begin{quote}
-postw90.x iron\_up
-
-postw90.x iron\_dn
-\end{quote}
-}
-%
-The {\tt python} scripts generated at runtime draw the up- and
-down-spin Fermi lines on separate figures. To draw them together, use
-the script {\tt iron\_updn-kslice-fermi\_lines.py} provided with
-Example~18 (or merge the two generated scripts). Compare the Fermi
-lines with and without spin-orbit; look back at the Berry curvature
-heatmap plot, and note how the ``hot-spots'' tend to occur near
-spin-orbit-induced avoided crossings.
 
 \item A crude way to model the influence of heterovalent alloying on
   the AHC is to assume that its only effect is to donate or deplete
