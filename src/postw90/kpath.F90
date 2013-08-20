@@ -26,7 +26,6 @@ module w90_kpath
   implicit none
 
   public
-  real(kind=dp), parameter :: eps=1.0e-7
 
 contains
 
@@ -37,7 +36,7 @@ contains
   subroutine k_path
 
     use w90_comms
-    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi
+    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize
@@ -45,29 +44,29 @@ contains
     use w90_parameters, only     : num_wann,recip_metric,kpath_task,&
                                    kpath_num_points,bands_num_spec_points,&
                                    bands_spec_points,bands_label,&
-                                   kpath_bands_colour,found_fermi_energy,&
-                                   fermi_energy
+                                   kpath_bands_colour,nfermi,fermi_energy_list,&
+                                   berry_curv_unit
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_FF_R,get_SS_R
     use w90_spin, only           : get_spin_nk
-    use w90_berry, only          : get_imf_k,get_img_k,get_imh_k
-    use w90_constants, only      : bohr,ev_au
+    use w90_berry, only          : get_imf_k_list,get_imfgh_k_list
+    use w90_constants, only      : bohr
 
     integer           :: i,j,n,num_paths,num_spts,loop_path,loop_kpt,&
-         total_pts,counter,loop_i,dataunit,gnuunit,&
-         kpath_pts(bands_num_spec_points/2)
-    real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_nk(num_wann),&
-                         imf_k(3,3),img_k(3,3),imh_k(3,3),Morb_k(3,3),&
-                         kpath_len(bands_num_spec_points/2),range 
+                         total_pts,counter,loop_i,dataunit,gnuunit,pyunit,&
+                         kpath_pts(bands_num_spec_points/2)
+    real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_k(num_wann),&
+                         imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
+                         imh_k_list(3,3,nfermi),Morb_k(3,3),&
+                         kpath_len(bands_num_spec_points/2),range
     logical           :: plot_bands,plot_curv,plot_morb
     character(len=20) :: file_name
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
-    real(kind=dp), allocatable    :: xval(:),eig(:,:),curv_au(:,:),& 
-                                     morb_au(:,:),color_n(:,:),&
+    real(kind=dp), allocatable    :: xval(:),eig(:,:),curv(:,:),& 
+                                     morb(:,:),color(:,:),&
                                      plot_kpoint(:,:) 
-                                     !curv_decomp_au(:,:,:)
     character(len=3),allocatable  :: glabel(:)
 
     ! Everything is done on the root node (not worthwhile parallelizing) 
@@ -109,23 +108,23 @@ contains
           case("none")
              write(stdout,'(/,3x,a)') '* Energy bands in eV'
           case("spin")
-             write(stdout,'(/,3x,a)') '* Energy bands in eV, colored by spin'
+             write(stdout,'(/,3x,a)') '* Energy bands in eV, coloured by spin'
           end select
        end if
        if(plot_curv) then
-          write(stdout,'(/,3x,a)') '* Negative Berry curvature in a.u. (bohr^2)'
-          if(.not.found_fermi_energy) call io_error&
-               (&
-    'Need to set either "fermi_energy" or "num_valence_bands" when plot_curv=T'&
-               )
+          if(berry_curv_unit=='ang2') then
+             write(stdout,'(/,3x,a)') '* Negative Berry curvature in Ang^2'
+          elseif(berry_curv_unit=='bohr2') then
+             write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
+          endif
+          if(nfermi/=1) call io_error('Need to specify one value of '&
+               //'the fermi energy when kpath_task=curv')
        end if
        if(plot_morb) then
           write(stdout,'(/,3x,a)')& 
-               '* Orbital magnetization in a.u. (Ha.bohr^2)'
-          if(.not.found_fermi_energy) call io_error&
-               (&
-    'Need to set either "fermi_energy" or "num_valence_bands" when plot_morb=T'&
-               )
+               '* Orbital magnetization k-space integrand in eV.Ang^2'
+          if(nfermi/=1) call io_error('Need to specify one value of '&
+               //'the fermi energy when kpath_task=morb')
        end if
 
        ! Work out how many points there are in the total path, and the 
@@ -162,28 +161,19 @@ contains
        !
        allocate(xval(total_pts))
 
-       allocate(HH(num_wann,num_wann))
-       allocate(UU(num_wann,num_wann))
-
        ! Value of the vertical coordinate in the actual plots: energy bands 
        !
        if(plot_bands) then
+          allocate(HH(num_wann,num_wann))
+          allocate(UU(num_wann,num_wann))
           allocate(eig(num_wann,total_pts))
-          if(kpath_bands_colour/='none') then
-             allocate(color_n(num_wann,total_pts))
-          end if
+          if(kpath_bands_colour/='none') allocate(color(num_wann,total_pts))
        end if
 
        ! Value of the vertical coordinate in the actual plots
        !
-       if(plot_curv) then
-          ! Berry curvature summed over occupied states
-          allocate(curv_au(total_pts,3))
-!          allocate(curv_decomp_au(total_pts,3,3))
-       end if
-       if(plot_morb) then
-          allocate(morb_au(total_pts,3))
-       end if
+       if(plot_curv) allocate(curv(total_pts,3)) 
+       if(plot_morb) allocate(morb(total_pts,3))
 
        allocate(glabel(num_spts))
 
@@ -212,18 +202,21 @@ contains
        xval(total_pts)=sum(kpath_len)
        plot_kpoint(:,total_pts)=bands_spec_points(:,bands_num_spec_points)
 
-       ! Write out the kpoints in the path in a format that can be inserted
-       ! directly in the pwscf input file (the '1.0_dp' in the second column is 
-       ! a k-point weight, expected by pwscf)
-       !
-       dataunit=io_file_unit()
-       open(dataunit,file=trim(seedname)//'_band.kpt',form='formatted')
-       write(dataunit,*) total_pts
-       do loop_kpt=1,total_pts
-          write(dataunit,'(3f12.6,3x,f4.1)')&
-               (plot_kpoint(loop_i,loop_kpt),loop_i=1,3),1.0_dp
-       end do
-       close(dataunit)
+       if(plot_bands) then
+          !
+          ! Write out the kpoints in the path in a format that can be inserted
+          ! directly in the pwscf input file (the '1.0_dp' in the second column is 
+          ! a k-point weight, expected by pwscf)
+          !
+          dataunit=io_file_unit()
+          open(dataunit,file=trim(seedname)//'-path.kpt',form='formatted')
+          write(dataunit,*) total_pts
+          do loop_kpt=1,total_pts
+             write(dataunit,'(3f12.6,3x,f4.1)')&
+                  (plot_kpoint(loop_i,loop_kpt),loop_i=1,3),1.0_dp
+          end do
+          close(dataunit)
+       endif
 
        ! Loop over k-points on the path and evaluate the requested quantities
        !
@@ -238,56 +231,43 @@ contains
              ! chosen spin quantization axis
              !
              if(kpath_bands_colour=='spin') then
-                call get_spin_nk(kpt,spn_nk)
-                color_n(:,loop_kpt)=spn_nk(:)
+                call get_spin_nk(kpt,spn_k)
+                color(:,loop_kpt)=spn_k(:)
                 !
                 ! The following is needed to prevent bands from disappearing 
-                ! when the magnitude of the Wannier interpolated spn_nk (very 
+                ! when the magnitude of the Wannier interpolated spn_k (very 
                 ! slightly) exceeds 1.0 (e.g. in bcc Fe along N--G--H)
                 !
                 do n=1,num_wann
-                   if(color_n(n,loop_kpt)>1.0_dp-eps) then
-                      color_n(n,loop_kpt)=1.0_dp-eps
-                   elseif(color_n(n,loop_kpt)<-1.0_dp+eps) then
-                      color_n(n,loop_kpt)=-1.0_dp+eps
+                   if(color(n,loop_kpt)>1.0_dp-eps8) then
+                      color(n,loop_kpt)=1.0_dp-eps8
+                   elseif(color(n,loop_kpt)<-1.0_dp+eps8) then
+                      color(n,loop_kpt)=-1.0_dp+eps8
                    endif
                 enddo
              end if
           endif
 
           if(plot_curv) then
-             call get_imf_k(kpt,imf_k)
-             ! 
-             ! Convert from Ang^2 to atomic units (bohr^2)
-             !
-             curv_au(loop_kpt,1)=sum(imf_k(:,1))/bohr**2
-             curv_au(loop_kpt,2)=sum(imf_k(:,2))/bohr**2
-             curv_au(loop_kpt,3)=sum(imf_k(:,3))/bohr**2
-             !
-             ! Decompose into J0 (Omega_bar), J1 (DA) and J2 (DD) parts
-             !
-!             curv_decomp_au(loop_kpt,1,:)=imf_k(1,:)/bohr**2 !J0
-!             curv_decomp_au(loop_kpt,2,:)=imf_k(2,:)/bohr**2 !J1
-!             curv_decomp_au(loop_kpt,3,:)=imf_k(3,:)/bohr**2 !J2
+             call get_imf_k_list(kpt,imf_k_list)
+             curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
+             curv(loop_kpt,2)=sum(imf_k_list(:,2,1))
+             curv(loop_kpt,3)=sum(imf_k_list(:,3,1))
           end if
 
           if(plot_morb) then
-
-             call get_imf_k(kpt,imf_k)
-             call get_img_k(kpt,img_k)
-             call get_imh_k(kpt,imh_k)
-             
-             Morb_k=img_k+imh_k-2.0_dp*fermi_energy*imf_k
-             morb_au(loop_kpt,1)=sum(Morb_k(:,1))
-             morb_au(loop_kpt,2)=sum(Morb_k(:,2))
-             morb_au(loop_kpt,3)=sum(Morb_k(:,3))
-
-             ! Convert from eV.Ang^2 to atomic units (Ha.bohr^2)
-             !
-             morb_au(loop_kpt,:)=morb_au(loop_kpt,:)*eV_au/bohr**2
+             call get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+             Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
+                   -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
+             Morb_k=-Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
+             morb(loop_kpt,1)=sum(Morb_k(:,1))
+             morb(loop_kpt,2)=sum(Morb_k(:,2))
+             morb(loop_kpt,3)=sum(Morb_k(:,3))
           end if
 
        end do !loop_kpt
+
+       if(plot_curv .and. berry_curv_unit=='bohr2') curv=curv/bohr**2
 
        ! Axis labels
        !
@@ -303,21 +283,16 @@ contains
 
        ! Now write the plotting files
 
-       write(stdout,'(/,/,1x,a)') '------------------'
-       write(stdout,'(1x,a)')     'Output data files:'
-       write(stdout,'(1x,a)')     '------------------'
-
-       ! This file (created earlier) is written no matter which task
-       !
-       file_name=trim(seedname)//'_band.kpt'
-       write(stdout,'(/,3x,a)') file_name
+       write(stdout,'(/,1x,a)')     'Output files:'
 
        if(plot_bands) then
-
-          ! Data file, gnuplot format
+          file_name=trim(seedname)//'-path.kpt'
+          write(stdout,'(/,3x,a)') file_name
+          !
+          ! Data file
           !
           dataunit=io_file_unit()
-          file_name=trim(seedname)//'_band.dat'
+          file_name=trim(seedname)//'-bands.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do i=1,num_wann
@@ -326,32 +301,34 @@ contains
                    write(dataunit,'(2E16.8)') xval(loop_kpt),eig(i,loop_kpt)
                 else
                    write(dataunit,'(3E16.8)') xval(loop_kpt),&
-                        eig(i,loop_kpt),color_n(i,loop_kpt)  
+                        eig(i,loop_kpt),color(i,loop_kpt)  
                 end if
              enddo
              write(dataunit,*) ' '
           enddo
           close(dataunit)
+       endif
 
-          ymin=minval(eig)-1.0_dp
-          ymax=maxval(eig)+1.0_dp
-
+       if(plot_bands .and. .not.plot_curv .and. .not.plot_morb) then
+          !
           ! Gnuplot script
           !
+          ymin=minval(eig)-1.0_dp
+          ymax=maxval(eig)+1.0_dp
           gnuunit=io_file_unit()
-          file_name=trim(seedname)//'-band.gnu'
+          file_name=trim(seedname)//'-bands.gnu'
           write(stdout,'(/,3x,a)') file_name
           open(gnuunit,file=file_name,form='formatted')
           do i = 1,num_paths-1
-             write(gnuunit,705) sum(kpath_len(1:i)),ymin,sum(kpath_len(1:i)),&
-                  ymax
+             write(gnuunit,705) sum(kpath_len(1:i)),ymin,&
+                  sum(kpath_len(1:i)),ymax
           enddo
           if(kpath_bands_colour=='none') then
              write(gnuunit,701) xval(total_pts),ymin,ymax
              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
                   (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
              write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
-             write(gnuunit,*) 'plot ','"'//trim(seedname)//'_band.dat','"' 
+             write(gnuunit,*) 'plot ','"'//trim(seedname)//'-bands.dat','"' 
           elseif(kpath_bands_colour=='spin') then
              !
              ! Only works with gnuplot v4.2 and higher
@@ -361,57 +338,103 @@ contains
                   (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
              write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
              write(gnuunit,*)&
-                  'set palette defined (-1 "red", 0 "green", 1 "blue")'
+                  'set palette defined (-1 "blue", 0 "green", 1 "red")'
              write(gnuunit,*) 'set pm3d map'
              write(gnuunit,*) 'set zrange [-1:1]'
-             write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
+             write(gnuunit,*) 'splot ','"'//trim(seedname)//'-bands.dat',& 
                   '" with dots palette' 
-!          elseif(kpath_bands_colour=='curv') then
-!             write(gnuunit,706) xval(total_pts),ymin,ymax
-!             write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
-!                  (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
-!             write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
-!             write(gnuunit,704) minval(color_n),maxval(color_n)
-!             write(gnuunit,*) 'set pm3d map'
-!             write(gnuunit,*) 'splot ','"'//trim(seedname)//'_band.dat',& 
-!                  '" with dots palette' 
           end if
           close(gnuunit)
-
-       end if ! plot_bands
+          !
+          ! python script
+          !
+          pyunit=io_file_unit()
+          file_name=trim(seedname)//'-bands.py'
+          write(stdout,'(/,3x,a)') file_name
+          open(pyunit,file=file_name,form='formatted')             
+          write(pyunit,'(a)') 'import pylab as pl'
+          write(pyunit,'(a)') 'import numpy as np'
+          write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+               "-bands.dat')"
+          write(pyunit,'(a)') "x=data[:,0]"
+          write(pyunit,'(a)') "y=data[:,1]"
+          if(kpath_bands_colour=='spin') write(pyunit,'(a)') "z=data[:,2]"
+          write(pyunit,'(a)') "tick_labels=[]"
+          write(pyunit,'(a)') "tick_locs=[]"
+          do j=1,num_spts
+             if(trim(glabel(j))==' G') then
+                write(pyunit,'(a)') "tick_labels.append('$\Gamma$')"
+             else
+                write(pyunit,'(a)') "tick_labels.append('"//trim(glabel(j))&
+                     //"'.strip())"
+             endif
+             if(j==1) then
+                write(pyunit,'(a,F12.6,a)') "tick_locs.append(0)"
+             else
+                write(pyunit,'(a,F12.6,a)') "tick_locs.append(",&
+                     sum(kpath_len(1:j-1)),")"
+             endif
+          enddo
+          if(kpath_bands_colour=='none') then
+             write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
+          elseif(kpath_bands_colour=='spin') then
+             write(pyunit,'(a)')&
+                  "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
+          endif
+          write(pyunit,'(a)') "pl.xlim([0,max(x)])"
+          write(pyunit,'(a)') "pl.ylim([min(y)-0.025*(max(y)-min(y)),"&
+               //"max(y)+0.025*(max(y)-min(y))])"
+          write(pyunit,'(a)') "pl.xticks(tick_locs,tick_labels)"
+          write(pyunit,'(a)') "for n in range(1,len(tick_locs)):"
+          write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
+               //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
+               //"linestyle='-',linewidth=0.5)"
+          write(pyunit,'(a)') "pl.ylabel('Energy [eV]')"
+          if(kpath_bands_colour=='spin') then
+             write(pyunit,'(a)')&
+                  "pl.axes().set_aspect(aspect=0.65*max(x)/(max(y)-min(y)))"
+             write(pyunit,'(a)') "pl.colorbar(shrink=0.7)"
+          endif
+          write(pyunit,'(a)') "outfile = '"//trim(seedname)//"-bands.pdf'"
+          write(pyunit,'(a)') "pl.savefig(outfile)"
+          write(pyunit,'(a)') "pl.show()"
+          
+       endif ! plot_bands .and. .not.plot_curv .and. .not.plot_morb
 
        if(plot_curv) then
-          
-          ! It is conventional to plot (-1).Omega(k) rather than Omega(k)
-          !
-          curv_au=-curv_au
-!          curv_decomp_au=-curv_decomp_au
-
+          ! It is conventional to plot the negative curvature
+          curv=-curv
           dataunit=io_file_unit()
           file_name=trim(seedname)//'-curv.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
              write(dataunit,'(4E16.8)') xval(loop_kpt),&
-                  curv_au(loop_kpt,:) 
+                  curv(loop_kpt,:) 
           enddo
           write(dataunit,*) ' '
           close(dataunit)
+       endif
+
+       if(plot_curv .and. .not.plot_bands) then
 
           do i=1,3
+             !   
+             ! gnuplot script
+             !
              gnuunit=io_file_unit()
              file_name=trim(seedname)//'-curv_'//achar(119+i)//'.gnu'
              write(stdout,'(/,3x,a)') file_name
              open(gnuunit,file=file_name,form='formatted')
-             ymin=minval(curv_au(:,i))
-             ymax=maxval(curv_au(:,i))
+             ymin=minval(curv(:,i))
+             ymax=maxval(curv(:,i))
              range=ymax-ymin
              ymin=ymin-0.02_dp*range
              ymax=ymax+0.02_dp*range
              write(gnuunit,707) xval(total_pts),ymin,ymax
              do j=1,num_paths-1
-                write(gnuunit,705) sum(kpath_len(1:j)),ymin,sum(kpath_len(1:j)),&
-                     ymax
+                write(gnuunit,705) sum(kpath_len(1:j)),ymin,&
+                                   sum(kpath_len(1:j)),ymax
              enddo
              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
                   (glabel(j+1),sum(kpath_len(1:j)),j=1,num_paths-1)
@@ -419,50 +442,89 @@ contains
              write(gnuunit,*)&
                   'plot ','"'//trim(seedname)//'-curv.dat','" u 1:'//achar(49+i)
              close(gnuunit)
+             !   
+             ! python script
+             !
+             pyunit=io_file_unit()
+             file_name=trim(seedname)//'-curv_'//achar(119+i)//'.py'
+             write(stdout,'(/,3x,a)') file_name
+             open(pyunit,file=file_name,form='formatted')             
+             write(pyunit,'(a)') 'import pylab as pl'
+             write(pyunit,'(a)') 'import numpy as np'
+             write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+                  "-curv.dat')"
+             write(pyunit,'(a)') "x=data[:,0]"
+             write(pyunit,'(a)') "y=data[:,"//achar(48+i)//"]"
+             write(pyunit,'(a)') "tick_labels=[]"
+             write(pyunit,'(a)') "tick_locs=[]"
+             do j=1,num_spts
+                if(trim(glabel(j))==' G') then
+                   write(pyunit,'(a)') "tick_labels.append('$\Gamma$')"
+                else
+                   write(pyunit,'(a)') "tick_labels.append('"&
+                        //trim(glabel(j))//"'.strip())"
+                endif
+                if(j==1) then
+                   write(pyunit,'(a,F12.6,a)') "tick_locs.append(0)"
+                else
+                   write(pyunit,'(a,F12.6,a)') "tick_locs.append(",&
+                        sum(kpath_len(1:j-1)),")"
+                endif
+             enddo
+             write(pyunit,'(a)') "pl.plot(x,y,color='k')"
+             write(pyunit,'(a)') "pl.xlim([0,max(x)])"
+             write(pyunit,'(a)') "pl.ylim([min(y)-0.025*(max(y)-min(y)),"&
+                  //"max(y)+0.025*(max(y)-min(y))])"
+             write(pyunit,'(a)') "pl.xticks(tick_locs,tick_labels)"
+             write(pyunit,'(a)') "for n in range(1,len(tick_locs)):"
+             write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
+                  //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
+                  //"linestyle='-',linewidth=0.5)"
+             if(berry_curv_unit=='ang2') then
+                write(pyunit,'(a)') "pl.ylabel('$-\Omega_"//achar(119+i)&
+                     //"(\mathbf{k})$  [ $\AA^2$ ]')"
+             elseif(berry_curv_unit=='bohr2') then
+                write(pyunit,'(a)') "pl.ylabel('$-\Omega_"//achar(119+i)&
+                     //"(\mathbf{k})$  [ bohr$^2$ ]')"
+             endif
+             write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
+                  "-curv_"//achar(119+i)//".pdf'"
+             write(pyunit,'(a)') "pl.savefig(outfile)"
+             write(pyunit,'(a)') "pl.show()"
           enddo
-
-!          do i=1,3
-!             !
-!             dataunit=io_file_unit()
-!             file_name=trim(seedname)//'-curv_'//achar(119+i)//'.decomp.dat'
-!             write(stdout,'(/,3x,a)') file_name
-!             open(dataunit,file=file_name,form='formatted')
-!             do loop_kpt=1,total_pts
-!                write(dataunit,'(4E16.8)')&
-!                     xval(loop_kpt),curv_decomp_au(loop_kpt,:,i) 
-!             enddo
-!             write(dataunit,*) ' '
-!             close(dataunit)
-!          enddo
-
-       end if ! plot_curv
+          
+       end if ! plot_curv .and. .not.plot_bands
 
        if(plot_morb) then
-
           dataunit=io_file_unit()
           file_name=trim(seedname)//'-morb.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
           do loop_kpt=1,total_pts
-             write(dataunit,'(4E16.8)') xval(loop_kpt),morb_au(loop_kpt,:)
+             write(dataunit,'(4E16.8)') xval(loop_kpt),morb(loop_kpt,:)
           enddo
           write(dataunit,*) ' '
           close(dataunit)
+       endif
 
+       if(plot_morb .and. .not.plot_bands) then
           do i=1,3
+             !
+             ! gnuplot script
+             !
              gnuunit=io_file_unit()
              file_name=trim(seedname)//'-morb_'//achar(119+i)//'.gnu'
              write(stdout,'(/,3x,a)') file_name
              open(gnuunit,file=file_name,form='formatted')
-             ymin=minval(morb_au(:,i))
-             ymax=maxval(morb_au(:,i))
+             ymin=minval(morb(:,i))
+             ymax=maxval(morb(:,i))
              range=ymax-ymin
              ymin=ymin-0.02_dp*range
              ymax=ymax+0.02_dp*range
              write(gnuunit,707) xval(total_pts),ymin,ymax
              do j=1,num_paths-1
-                write(gnuunit,705) sum(kpath_len(1:j)),ymin,sum(kpath_len(1:j)),&
-                     ymax
+                write(gnuunit,705) sum(kpath_len(1:j)),ymin,&
+                                   sum(kpath_len(1:j)),ymax
              enddo
              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
                   (glabel(j+1),sum(kpath_len(1:j)),j=1,num_paths-1)
@@ -470,19 +532,169 @@ contains
              write(gnuunit,*)&
                   'plot ','"'//trim(seedname)//'-morb.dat','" u 1:'//achar(49+i)
              close(gnuunit)
+             !   
+             ! python script
+             !
+             pyunit=io_file_unit()
+             file_name=trim(seedname)//'-morb_'//achar(119+i)//'.py'
+             write(stdout,'(/,3x,a)') file_name
+             open(pyunit,file=file_name,form='formatted')             
+             write(pyunit,'(a)') 'import pylab as pl'
+             write(pyunit,'(a)') 'import numpy as np'
+             write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+                  "-morb.dat')"
+              write(pyunit,'(a)') "x=data[:,0]"
+              write(pyunit,'(a)') "y=data[:,"//achar(48+i)//"]"
+              write(pyunit,'(a)') "tick_labels=[]"
+              write(pyunit,'(a)') "tick_locs=[]"
+              do j=1,num_spts
+                 if(trim(glabel(j))==' G') then
+                    write(pyunit,'(a)') "tick_labels.append('$\Gamma$')"
+                 else
+                    write(pyunit,'(a)')&
+                         "tick_labels.append('"//trim(glabel(j))//"'.strip())"
+                 endif
+                 if(j==1) then
+                    write(pyunit,'(a,F12.6,a)') "tick_locs.append(0)"
+                 else
+                    write(pyunit,'(a,F12.6,a)') "tick_locs.append(",&
+                         sum(kpath_len(1:j-1)),")"
+                 endif
+              enddo
+              write(pyunit,'(a)') "pl.plot(x,y,color='k')"
+              write(pyunit,'(a)') "pl.xlim([0,max(x)])"
+              write(pyunit,'(a)') "pl.ylim([min(y)-0.025*(max(y)-min(y)),"&
+                                         //"max(y)+0.025*(max(y)-min(y))])"
+              write(pyunit,'(a)') "pl.xticks(tick_locs,tick_labels)"
+              write(pyunit,'(a)') "for n in range(1,len(tick_locs)):"
+              write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
+                   //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
+                   //"linestyle='-',linewidth=0.5)"
+              write(pyunit,'(a)') "pl.ylabel(r'$M^{\rm{orb}}_z(\mathbf{k})$"&
+                   //"  [ Ry$\cdot\AA^2$ ]')"
+              write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
+                   "-morb_"//achar(119+i)//".pdf'"
+              write(pyunit,'(a)') "pl.savefig(outfile)"
+              write(pyunit,'(a)') "pl.show()"
           enddo
 
-       end if ! plot_morb
+       end if ! plot_morb .and. .not.plot_bands
+
+       if(plot_bands .and. (plot_curv .or. plot_morb)) then
+          !
+          ! python script
+          !
+          do i=1,3
+             pyunit=io_file_unit()
+             if(plot_curv) then
+                file_name=trim(seedname)//'-bands+curv_'//achar(119+i)//'.py'
+             elseif(plot_morb) then
+                file_name=trim(seedname)//'-bands+morb_'//achar(119+i)//'.py'
+             endif
+             write(stdout,'(/,3x,a)') file_name
+             open(pyunit,file=file_name,form='formatted')             
+             write(pyunit,'(a)') 'import pylab as pl'
+             write(pyunit,'(a)') 'import numpy as np'
+             write(pyunit,'(a)') 'from matplotlib.gridspec import GridSpec'
+             write(pyunit,'(a)') "tick_labels=[]"
+             write(pyunit,'(a)') "tick_locs=[]"
+             do j=1,num_spts
+                if(trim(glabel(j))==' G') then
+                   write(pyunit,'(a)') "tick_labels.append('$\Gamma$')"
+                else
+                   write(pyunit,'(a)') "tick_labels.append('"//trim(glabel(j))&
+                        //"'.strip())"
+                endif
+                if(j==1) then
+                   write(pyunit,'(a,F12.6,a)') "tick_locs.append(0)"
+                else
+                   write(pyunit,'(a,F12.6,a)') "tick_locs.append(",&
+                        sum(kpath_len(1:j-1)),")"
+                endif
+             enddo
+             write(pyunit,'(a)') "fig = pl.figure()"
+             write(pyunit,'(a)') "gs = GridSpec(2, 1,hspace=0.00)"
+             !
+             ! upper panel (energy bands)
+             !
+             write(pyunit,'(a)') "axes1 = pl.subplot(gs[0, 0:])"
+             write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+                  "-bands.dat')"
+             write(pyunit,'(a)') "x=data[:,0]"
+             write(pyunit,'(a,F12.6)') "y=data[:,1]-",fermi_energy_list(1)
+             if(kpath_bands_colour=='spin') write(pyunit,'(a)') "z=data[:,2]"
+             if(kpath_bands_colour=='none') then
+                write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
+             elseif(kpath_bands_colour=='spin') then
+                write(pyunit,'(a)')&
+                     "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
+             endif
+             write(pyunit,'(a)') "pl.xlim([0,max(x)])"
+             write(pyunit,'(a)') "pl.ylim([-0.65,0.65]) # Adjust this range as needed"
+             write(pyunit,'(a)') "pl.plot([tick_locs[0],tick_locs[-1]],[0,0],"&
+                  //"color='black',linestyle='--',linewidth=0.5)"
+             write(pyunit,'(a)') "pl.xticks(tick_locs,tick_labels)"
+             write(pyunit,'(a)') "for n in range(1,len(tick_locs)):"
+             write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
+                  //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
+                  //"linestyle='-',linewidth=0.5)"
+             write(pyunit,'(a)') "pl.ylabel('Energy$-$E$_F$ [eV]')"
+             write(pyunit,'(a)') "pl.tick_params(axis='x',"&
+                  //"which='both',bottom='off',top='off',labelbottom='off')"
+             !
+             ! lower panel (curvature or orbital magnetization)
+             !
+             write(pyunit,'(a)') "axes2 = pl.subplot(gs[1, 0:])"
+             if(plot_curv) then
+                write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+                     "-curv.dat')"
+             elseif(plot_morb) then
+                write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+                     "-morb.dat')"
+             endif
+             write(pyunit,'(a)') "x=data[:,0]"
+             write(pyunit,'(a)') "y=data[:,"//achar(48+i)//"]"
+             write(pyunit,'(a)') "pl.plot(x,y,color='k')"
+             write(pyunit,'(a)') "pl.xlim([0,max(x)])"
+             write(pyunit,'(a)') "pl.ylim([min(y)-0.025*(max(y)-min(y)),"&
+                  //"max(y)+0.025*(max(y)-min(y))])"
+             write(pyunit,'(a)') "pl.xticks(tick_locs,tick_labels)"
+             write(pyunit,'(a)') "for n in range(1,len(tick_locs)):"
+             write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
+                  //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
+                  //"linestyle='-',linewidth=0.5)"
+             if(plot_curv) then
+                if(berry_curv_unit=='ang2') then
+                   write(pyunit,'(a)') "pl.ylabel('$-\Omega_"//achar(119+i)&
+                        //"(\mathbf{k})$  [ $\AA^2$ ]')"
+                elseif(berry_curv_unit=='bohr2') then
+                   write(pyunit,'(a)') "pl.ylabel('$-\Omega_"//achar(119+i)&
+                        //"(\mathbf{k})$  [ bohr$^2$ ]')"
+                endif
+                write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
+                     "-bands+curv_"//achar(119+i)//".pdf'"
+             elseif(plot_morb) then
+                write(pyunit,'(a)') "pl.ylabel(r'$M^{\rm{orb}}_z(\mathbf{k})$"&
+                     //"  [ Ry$\cdot\AA^2$ ]')"
+                write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
+                     "-morb_"//achar(119+i)//".pdf'"
+             endif
+             write(pyunit,'(a)') "pl.savefig(outfile)"
+             write(pyunit,'(a)') "pl.show()"
+          enddo
+
+       endif ! plot_bands .and. plot_curv
+
 
     end if ! on_root
 
-701 format('set style data dots',/,'set nokey',/,&
+701 format('set style data dots',/,'unset key',/,&
          'set xrange [0:',F8.5,']',/,'set yrange [',F16.8,' :',F16.8,']')
 702 format('set xtics (',:20('"',A3,'" ',F8.5,','))
 703 format(A3,'" ',F8.5,')')
 704 format('set palette defined (',F8.5,' "red", 0 "green", ',F8.5,' "blue")')
 705 format('set arrow from ',F16.8,',',F16.8,' to ',F16.8,',',F16.8, ' nohead')
-706 format('set nokey',/,&
+706 format('unset key',/,&
          'set xrange [0:',F9.5,']',/,'set yrange [',F16.8,' :',F16.8,']')
 707 format('set style data lines',/,'set nokey',/,&
          'set xrange [0:',F8.5,']',/,'set yrange [',F16.8,' :',F16.8,']')

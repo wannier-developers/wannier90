@@ -1,10 +1,11 @@
 \chapter{Methodology}\label{sec:method}
 \wannier\ computes maximally-localised Wannier functions (MLWF)
-following the method of Marzari and Vanderbilt (MV)~\cite{MV}.
-For entangled energy bands, the method of Souza, Marzari and
-Vanderbilt (SMV)~\cite{SMV} is used. We introduce briefly the methods
-and key definitions here, but full details can be found in the
-original papers and in Ref.~\cite{W90}.
+following the method of Marzari and Vanderbilt
+(MV)~\cite{marzari-prb97}.  For entangled energy bands, the method of
+Souza, Marzari and Vanderbilt (SMV)~\cite{souza-prb01} is used. We
+introduce briefly the methods and key definitions here, but full
+details can be found in the original papers and in
+Ref.~\cite{mostofi-cpc08}.
 
 First-principles codes typically solve the electronic structure of
 periodic materials in terms of Bloch states, $\psi_{n{\bf k}}$. 
@@ -64,32 +65,32 @@ structure calculation.
 M_{mn}^{(\bf{k,b})}=\langle u_{m{\bf k}}|u_{n{\bf k}+{\bf b}}\rangle,
 \end{equation}
 where the vectors ${\bf b}$, which connect a given k-point with its
-neighbours, are determined 
-by \wannier\ according to the prescription outlined in Ref.~\cite{MV}.
+neighbours, are determined by \wannier\ according to the prescription
+outlined in Ref.~\cite{marzari-prb97}.
 \item As a starting guess the projection of the Bloch states
   $|\psi_{n\bf{k}}\rangle$ onto trial localised orbitals $|g_{n}\rangle$ 
 \begin{equation}
 A_{mn}^{(\bf{k})}=\langle \psi_{m{\bf k}}|g_{n}\rangle,
 \end{equation}
 \end{enumerate}
-Note that $\Mkb$, $\Ak$ and $\Uk$ are all small, $N \times
-N$ matrices\footnote{Technically, this is true for the case of an
+Note that $\Mkb$, $\Ak$ and $\Uk$ are all small, $N \times N$
+matrices\footnote{Technically, this is true for the case of an
   isolated group of $N$ bands from which we obtain $N$ MLWF. When
-  using the disentanglement procedure of Ref.~\cite{SMV}, $\Ak$, for
-  example, is a rectangular matrix. See Section~\ref{sec:disentangle}.}
-that are independent of the basis set used to obtain the original
-Bloch states.
+  using the disentanglement procedure of Ref.~\cite{souza-prb01},
+  $\Ak$, for example, is a rectangular matrix. See
+  Section~\ref{sec:disentangle}.}  that are independent of the basis
+set used to obtain the original Bloch states.
 
 To date, \wannier\ has been used in combination with electronic codes
 based on plane-waves and pseudopotentials (norm-conserving and
-ultrasoft~\cite{USPP}) as well as mixed basis set techniques such as
-FLAPW~\cite{MnO}.
+ultrasoft~\cite{vanderbilt-prb90}) as well as mixed basis set techniques such as
+FLAPW~\cite{posternak-prb02}.
 
 \section{Entangled Energy Bands}\label{sec:disentangle}
-The above description is sufficient to obtain MLWF for an
-isolated set of bands, such as the valence states in an insulator. In
-order to obtain MLWF for entangled energy bands we use the
-``disentanglement'' procedure introduced in Ref.~\cite{SMV}.
+The above description is sufficient to obtain MLWF for an isolated set
+of bands, such as the valence states in an insulator. In order to
+obtain MLWF for entangled energy bands we use the ``disentanglement''
+procedure introduced in Ref.~\cite{souza-prb01}.
 
 We define an energy window (the ``outer window''). At a given
 k-point $\bf{k}$, $N^{({\bf k})}_{{\rm win}}$ states lie within this

@@ -501,7 +501,8 @@ contains
        open(unit=seebeck_unit,file=trim(seedname)//'_seebeck.dat')  
        write(seebeck_unit,'(A)') "# Written by the BoltzWann module of the Wannier90 code."
        write(seebeck_unit,'(A)') "# [Seebeck coefficient in SI units, i.e. in V/K]"
-       write(seebeck_unit,'(A)') "# Mu(eV) Temp(K) Seebeck_xx Seebeck_xy Seebeck_xz Seebeck_yx Seebeck_yy Seebeck_yz Seebeck_zx Seebeck_zy Seebeck_zz"
+       write(seebeck_unit,'(A)')&
+            "# Mu(eV) Temp(K) Seebeck_xx Seebeck_xy Seebeck_xz Seebeck_yx Seebeck_yy Seebeck_yz Seebeck_zx Seebeck_zy Seebeck_zz"
        do MuIdx=1,MuNumPoints
           do TempIdx = 1,TempNumPoints
              write(seebeck_unit,104) MuArray(MuIdx), TempArray(TempIdx), Seebeck(:,TempIdx,MuIdx)

@@ -36,16 +36,19 @@ module w90_spin
   !                                                            !
   !============================================================!
 
-    use w90_constants, only     : dp,pi,cmplx_i
-    use w90_comms, only         : on_root,my_node_id,num_nodes,comms_reduce
-    use w90_io, only            : io_error,stdout
+    use w90_constants, only      : dp,pi,cmplx_i
+    use w90_comms, only          : on_root,my_node_id,num_nodes,comms_reduce
+    use w90_io, only             : io_error,stdout
     use w90_postw90_common, only : num_int_kpts_on_node,int_kpts,weight
-    use w90_parameters, only    : spin_kmesh,wanint_kpoint_file
-    use w90_get_oper, only      : get_HH_R,get_SS_R
+    use w90_parameters, only     : spin_kmesh,wanint_kpoint_file,&
+                                   nfermi,fermi_energy_list
+    use w90_get_oper, only       : get_HH_R,get_SS_R
 
     integer       :: loop_x,loop_y,loop_z,loop_tot
     real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_all(3),&
                      spn_mom(3),magnitude,theta,phi,conv
+
+    if(nfermi>1) call io_error('Routine get_spin_moment requires nfermi=1')
 
     call get_HH_R
     call get_SS_R
@@ -74,7 +77,7 @@ module w90_spin
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
-          call get_spin_moment_k(kpt,spn_k)
+          call get_spin_moment_k(kpt,fermi_energy_list(1),spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
 
@@ -91,7 +94,7 @@ module w90_spin
           kpt(1)=(real(loop_x,dp)/real(spin_kmesh(1),dp))
           kpt(2)=(real(loop_y,dp)/real(spin_kmesh(2),dp))
           kpt(3)=(real(loop_z,dp)/real(spin_kmesh(3),dp))
-          call get_spin_moment_k(kpt,spn_k)
+          call get_spin_moment_k(kpt,fermi_energy_list(1),spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
 
@@ -174,7 +177,7 @@ module w90_spin
        call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
     enddo
  
-    ! Unit vector along the direction of the magnetization
+    ! Unit vector along the magnetization direction
     !
     conv=180.0_dp/pi
     alpha(1)=sin(spin_axis_polar/conv)*cos(spin_axis_azimuth/conv)
@@ -185,7 +188,7 @@ module w90_spin
     !
     SS_n(:,:)=alpha(1)*SS(:,:,1)+alpha(2)*SS(:,:,2)+alpha(3)*SS(:,:,3)
 
-    spn_nk(:)=aimag(cmplx_i*utility_rotate_diag(SS_n,UU,num_wann))
+    spn_nk(:)=real(utility_rotate_diag(SS_n,UU,num_wann),dp)
 
   end subroutine get_spin_nk
 
@@ -193,17 +196,18 @@ module w90_spin
   !                   PRIVATE PROCEDURES                      ! 
   !===========================================================!
 
-  subroutine get_spin_moment_k(kpt,spn_k)
+  subroutine get_spin_moment_k(kpt,ef,spn_k)
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_io, only            : io_error
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
-    use w90_parameters, only    : num_wann,fermi_energy
+    use w90_parameters, only    : num_wann
     use w90_postw90_common, only : fourier_R_to_k,get_occ
     use w90_get_oper, only      : HH_R,SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), intent(in)  :: ef
     real(kind=dp), intent(out) :: spn_k(3)
 
     ! Physics
@@ -224,7 +228,7 @@ module w90_spin
     
     call fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
-    call get_occ(eig,occ,fermi_energy)
+    call get_occ(eig,occ,ef)
 
     spn_k(1:3)=0.0_dp
     do is=1,3

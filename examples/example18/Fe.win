@@ -17,7 +17,7 @@ end projections
 
 fermi_energy = 12.6285
 
-kpath = T
+kpath = true
 kpath_task = curv
 kpath_num_points=1000
 begin kpoint_path
@@ -32,14 +32,14 @@ G 0.0 0.0 0.0            P 0.75 0.25 -0.25
 P 0.75 0.25 -0.25        N 0.5 0.0 0.0
 end kpoint_path
 
-#kslice = T
-#kslice_task = energy_cntr+curv_heatmap
+#kslice = true
+#kslice_task = curv+fermi_lines
 #kslice_kmesh = 200
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5
 #kslice_b2 =     0.5  0.5  0.5
 
-#berry = T
+#berry = true
 #berry_task = ahc                
 #berry_kmesh = 25 25 25
 

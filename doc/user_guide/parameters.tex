@@ -106,8 +106,8 @@ written to output \\
 to home unit cell when writing xyz file\\
 {\sc write\_xyz }  & L & To write atomic positions and final centres in xyz file format \\
 {\sc write\_vdw\_data }  & L & To write data for futher processing by w90vdw utility\\
-\textcolor{red}{{\sc write\_hr\_diag }}  & L & To write the diagonal elements of
-the Hamiltonian in the Wannier basis to seedname.wout\\
+{\sc write\_hr\_diag }  & L & To write the diagonal elements of
+the Hamiltonian in the Wannier basis to seedname.wout (in eV)\\
 \hline
 \end{tabular}
 \caption[win file keywords.]
@@ -210,45 +210,51 @@ the same input file. **Cannot be used in conjunction with disentanglement.}}
 \begin{table}
 \begin{center}
 \begin{tabular}{|c|c|p{6cm}|}
-\hline
-Keyword & Type & Description \\
-        &      &             \\
-\hline\hline
-\multicolumn{3}{|c|}{Plot Parameters} \\
-\hline
-{\sc wannier\_plot }   & L & Plot the WF \\
-{\sc wannier\_plot\_list } & I & List of WF to plot \\
-{\sc wannier\_plot\_supercell }   & I & Size of the supercell for
-plotting the WF \\
-{\sc wannier\_plot\_format }   & S & File format in which to plot the
-WF \\
-{\sc wannier\_plot\_mode }   & S & Mode in which to plot the
-WF, molecule or crystal \\ 
-{\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
-{\sc bands\_plot }   & L & Plot interpolated band structure \\
-{\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
-{\sc bands\_num\_points }   & I & Number of points along the first
-section of the k-point path \\
-{\sc bands\_plot\_format }   & S & File format in which to plot the
-interpolated bands \\
-{\sc bands\_plot\_project } & I & WF to project the band structure onto \\
-{\sc bands\_plot\_mode }   & S & Slater-Koster type interpolation or
-Hamiltonian cut-off \\
-{\sc bands\_plot\_dim } & I & Dimension of the system \\
-{\sc fermi\_surface\_plot }   & L & Plot the Fermi surface \\
-{\sc fermi\_surface\_num\_points }   & I & Number of points in the Fermi
-surface plot\\
-{\sc fermi\_energy }   & P & The Fermi energy \\
-{\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
-surface plot \\
-{\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
-{\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
-{\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
-{\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
-is calculated \\
-{\sc one\_dim\_axis} & S &  Extended direction for a one-dimensional system \\
-{\sc translation\_centre\_frac } & R & Centre of the unit cell to which
-final WF are translated \\ 
+  \hline
+  Keyword & Type & Description \\
+  &      &             \\
+  \hline\hline
+  \multicolumn{3}{|c|}{Plot Parameters} \\
+  \hline
+  {\sc wannier\_plot }   & L & Plot the WF \\
+  {\sc wannier\_plot\_list } & I & List of WF to plot \\
+  {\sc wannier\_plot\_supercell }   & I & Size of the supercell for
+  plotting the WF \\
+  {\sc wannier\_plot\_format }   & S & File format in which to plot the
+  WF \\
+  {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
+  WF, molecule or crystal \\ 
+  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
+  {\sc bands\_plot }   & L & Plot interpolated band structure \\
+  {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
+  {\sc bands\_num\_points }   & I & Number of points along the first
+  section of the k-point path \\
+  {\sc bands\_plot\_format }   & S & File format in which to plot the
+  interpolated bands \\
+  {\sc bands\_plot\_project } & I & WF to project the band structure onto \\
+  {\sc bands\_plot\_mode }   & S & Slater-Koster type interpolation or
+  Hamiltonian cut-off \\
+  {\sc bands\_plot\_dim } & I & Dimension of the system \\
+  {\sc fermi\_surface\_plot }   & L & Plot the Fermi surface \\
+  {\sc fermi\_surface\_num\_points }   & I & Number of points in the Fermi
+  surface plot\\
+  {\sc fermi\_energy }   & P & The Fermi energy \\
+  {\sc fermi\_energy\_min }   & P & Lower limit of
+  the Fermi energy range\\
+  {\sc fermi\_energy\_max }   & P & Upper limit of
+  the Fermi energy range\\
+  {\sc fermi\_energy\_step }   & R & Step for increasing the 
+Fermi energy in the specified range\\
+  {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
+  surface plot \\
+  {\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
+  {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
+  {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
+  {\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
+  is calculated \\
+  {\sc one\_dim\_axis} & S &  Extended direction for a one-dimensional system \\
+  {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
+  final WF are translated \\ 
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -481,7 +487,7 @@ Bloch eigenstates obtained from the underlying ab initio calculation
 are manifestly real. This can be the case when only the $\Gamma$-point
 is used to sample the Brillouin zone. The localisation procedure
 that is used in the $\Gamma$-only branch is based on the method of
-Ref.~\cite{Gygi}.
+Ref.~\cite{gygi-cpc03}.
 
 The default value is {\tt FALSE}.
 
@@ -502,7 +508,7 @@ k-points. The vectors $\{{\bf b}\}$ connect each mesh-point ${\bf k}$
   are included in the finite-difference formula, with $M_s$ vectors in
   the $s^{\mathrm{th}}$ shell. For $\nabla_{{\bf k}}$ to be correct to
   linear order, we require that the following equation is satisfied
-  (Eq.~B1 of Ref.~\cite{MV}):
+  (Eq.~B1 of Ref.~\cite{marzari-prb97}):
 \begin{equation}\label{eq:B1}
 \sum_{s}^{N_{\mathrm{sh}}} w_s \sum_i^{M_{\mathrm{s}}}
 b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:, 
@@ -712,7 +718,7 @@ The default value is \verb#false#.
 
 \section{Disentanglement}
 These keywords control the disentanglement routine of
-Ref.~\cite{SMV}, i.e., the iterative minimisation of $\omi$. This
+Ref.~\cite{souza-prb01}, i.e., the iterative minimisation of $\omi$. This
 routine will be activated if \verb#num_wann#$\:<\:$\verb#num_bands#.
 
 
@@ -752,9 +758,10 @@ The default value is 200.
 
 \subsection[dis\_mix\_ratio]{\tt real(kind=dp) :: dis\_mix\_ratio}
 In the disentanglement procedure, the mixing parameter to use for
-convergence (see pages 4-5 of Ref.~\cite{SMV}). A value of 0.5 is a `safe'
-choice. Using 1.0 (i.e., no mixing) often gives faster convergence, 
-but may cause the minimisation of $\omi$ to be unstable in some cases.
+convergence (see pages 4-5 of Ref.~\cite{souza-prb01}). A value of 0.5
+is a `safe' choice. Using 1.0 (i.e., no mixing) often gives faster
+convergence, but may cause the minimisation of $\omi$ to be unstable
+in some cases.
 
 Restriction: $0.0<\:${\tt dis\_mix\_ratio}$\:\leq 1.0$
 
@@ -788,6 +795,9 @@ spread functional.
 \subsection[num\_iter]{\tt integer :: num\_iter}
 
 Total number of iterations in the minimisation procedure.
+\textcolor{red}{Set {\tt num\_iter=0} if you wish to generate
+  projected WFs rather than maximally-localized WFs (see Example~8 in
+  the Tutorial).}
 
 The default value is 100
 
@@ -1122,12 +1132,39 @@ The default value for \verb#fermi_surface_num_points# is 50.
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
 The Fermi energy in eV. This parameter is written into the bxsf file.
+\textcolor{red}{If {\tt fermi\_energy} is specified, {\tt
+    fermi\_energy\_min}, {\tt fermi\_energy\_max}, and {\tt
+    fermi\_energy\_step} should not be specified, and vice-versa.}
 
 %Whilst this is not directly used by the
 %\wannier, it is a useful parameter to set as it will be written
 %into the bxsf file. 
 
 The default value is 0.0
+
+
+\subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy\_min}
+Instead of specifyfing a single Fermi energy, it is possible to scan
+the Fermi level over a range of values, and recompute certain
+quantities for each $\varepsilon_F$.\footnote{Scanning the Fermi level
+  is currently supported only by the {\tt postw90} module {\tt berry},
+  for {\tt berry\_task=ahc,morb}. For all other functionalities that
+  require a knowledge of $\varepsilon_F$, use {\tt fermi\_energy}
+  instead.}  This is the minimum value in the range (in eV).
+
+There is no default value.
+
+\subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy\_max}
+The maximum value in the range of Fermi energies. Units are eV.
+
+The default value is {\tt fermi\_energy\_min}+1.0.
+
+\subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy\_step}
+Difference between consecutive values of the Fermi energy when
+scanning from {\tt fermi\_energy\_min} to {\tt
+  fermi\_energy\_max}. Units are eV.
+
+The default value is 0.01.
 
 
 \subsection[fermi\_surface\_plot\_format]{\tt character(len=20) ::
@@ -1167,13 +1204,12 @@ the Hamiltonian matrix in the WF basis generated by \wannier\
 or a Hamiltonian matrix provided by the external file
 {\tt seedname\_htB.dat}.
 
-If $\verb#transport_mode#=\verb#lcr#$,
-quantum conductance and density of states are calculated 
-for a system where semi-infinite, left and right leads
-are connected through a central conductor region. 
-In this case, the transport part will work independently from
-the disentanglement and wannierise procedure. 
-Details of the method is described in Ref. \cite{Nardelli}.
+If $\verb#transport_mode#=\verb#lcr#$, quantum conductance and density
+of states are calculated for a system where semi-infinite, left and
+right leads are connected through a central conductor region.  In this
+case, the transport part will work independently from the
+disentanglement and wannierise procedure.  Details of the method is
+described in Ref. \cite{nardelli-prb99}.
 
 If $\verb#tran_read_ht# = \verb#TRUE#$ then the
 Hamiltonian matrices must be provided by

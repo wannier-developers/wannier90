@@ -1,6 +1,6 @@
 &inputpp 
    outdir = './'
-   prefix = 'fe'
+   prefix = 'Fe'
    seedname = 'iron'
    spin_component = 'down'
    write_mmn = .true.

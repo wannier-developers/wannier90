@@ -3,7 +3,7 @@
     restart_mode='from_scratch',
     pseudo_dir = '../../pseudo/',
     outdir='./'
-    prefix='fe'
+    prefix='Fe'
  /
  &system
     ibrav = 3, celldm(1) =5.4235, nat= 1, ntyp= 1,

@@ -143,7 +143,7 @@ contains
 
     if(wanint_kpoint_file) then
        !
-       ! Unlike for optical properties, this should always work for DOS
+       ! Unlike for optical properties, this should always work for the DOS
        !
        if(on_root)  write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
 
@@ -213,12 +213,10 @@ contains
     call comms_reduce(dos_all(1,1),num_freq*ndim,'SUM')
 
     if(on_root) then
-       write(stdout,'(/,/,1x,a)') '------------------'
        write(stdout,'(1x,a)')     'Output data files:'
-       write(stdout,'(1x,a)')     '------------------'
-       write(stdout,'(/,3x,a)') trim(seedname)//'_dos.dat'
+       write(stdout,'(/,3x,a)') trim(seedname)//'-dos.dat'
        dos_unit=io_file_unit()
-       open(dos_unit,FILE=trim(seedname)//'_dos.dat',STATUS='UNKNOWN',&
+       open(dos_unit,FILE=trim(seedname)//'-dos.dat',STATUS='UNKNOWN',&
             FORM='FORMATTED')
        do ifreq=1,num_freq
           omega=dos_energyarray(ifreq)
@@ -255,7 +253,7 @@ contains
 !!$    use w90_comms
 !!$    use w90_postw90_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
 !!$         int_kpts,weight
-!!$    use w90_parameters, only    : fermi_energy,found_fermi_energy,&
+!!$    use w90_parameters, only    : nfermi,fermi_energy_list,&
 !!$         num_valence_bands,&
 !!$         num_wann,dos_num_points,dos_min_energy,&
 !!$         dos_max_energy,dos_energy_step,&
@@ -412,9 +410,9 @@ contains
 !!$       end if
 !!$    end do
 !!$    
-!!$ 
-!!$    fermi_energy=ef
-!!$    found_fermi_energy=.true.
+!!$    nfermi=1
+!!$    allocate(fermi_energy_list(1))
+!!$    fermi_energy_list(1)=ef
 !!$    !!! PROBABLY HERE YOU MAY WANT TO BROADCAST THE ABOVE TWO VARIABLES!!
 !!$    if(on_root) then
 !!$       write(stdout,*) ' '
@@ -491,7 +489,7 @@ contains
 
     ! Adaptive smearing
     !
-    real(kind=dp) :: smear,arg
+    real(kind=dp) :: eta_smr,arg
 
     ! Misc/Dummy
     !
@@ -540,19 +538,16 @@ contains
           beta_sq=1.0_dp-alpha_sq ! |beta|^2 = 1 - |alpha|^2
        end if
 
-       !
-       ! Eq.(35) YWVS07, except for the factor 1/sqrt(2) (understand!)
-       !
        if (.not.present(levelspacing_k)) then
-          smear=smr_fixed_en_width
+          eta_smr=smr_fixed_en_width
        else
-          smear=min(levelspacing_k(i)*adpt_smr_fac/sqrt(2.0_dp),&
-               adpt_smr_max)
-!          smear=max(smear,min_smearing_binwidth_ratio) !! No: it would render the next if always false
+          ! Eq.(35) YWVS07
+          eta_smr=min(levelspacing_k(i)*adpt_smr_fac,adpt_smr_max)
+!          eta_smr=max(eta_smr,min_smearing_binwidth_ratio) !! No: it would render the next if always false
        end if
 
        ! Faster optimization: I precalculate the indices
-       if (smear/binwidth < min_smearing_binwidth_ratio) then
+       if (eta_smr/binwidth < min_smearing_binwidth_ratio) then
           min_f= max(nint((eig_k(i) - EnergyArray(1))/&
                (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
                * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
@@ -561,10 +556,10 @@ contains
                * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
           DoSmearing=.false.
        else      
-          min_f= max(nint((eig_k(i) - smearing_cutoff * smear - EnergyArray(1))/&
+          min_f= max(nint((eig_k(i) - smearing_cutoff * eta_smr - EnergyArray(1))/&
                (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
                * real(size(EnergyArray)-1,kind=dp)) + 1, 1)
-          max_f= min(nint((eig_k(i) + smearing_cutoff * smear - EnergyArray(1))/&
+          max_f= min(nint((eig_k(i) + smearing_cutoff * eta_smr - EnergyArray(1))/&
                (EnergyArray(size(EnergyArray))-EnergyArray(1)) &
                * real(size(EnergyArray)-1,kind=dp)) + 1, size(EnergyArray))
           DoSmearing=.true.
@@ -574,8 +569,8 @@ contains
        do loop_f=min_f, max_f
           ! kind of smearing read from input (internal smearing_index variable)
           if (DoSmearing) then
-             arg=(EnergyArray(loop_f)-eig_k(i))/smear
-             rdum=w0gauss(arg,smr_index)/smear
+             arg=(EnergyArray(loop_f)-eig_k(i))/eta_smr
+             rdum=w0gauss(arg,smr_index)/eta_smr
           else
              rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
           end if
@@ -721,14 +716,14 @@ contains
 !!$    ! Misc/Dummy
 !!$    !
 !!$    integer       :: loop_k,i
-!!$    real(kind=dp) :: sum,smear,arg
+!!$    real(kind=dp) :: sum,eta_smr,arg
 !!$
 !!$    count_states=0.0_dp
 !!$    do loop_k=1,npts
 !!$       sum=0.0_dp
 !!$       do i=1,num_wann
-!!$          smear=levelspacing(i,loop_k)*dos_adpt_smr_fac/sqrt(2.0_dp)
-!!$          arg=(energy-eig(i,loop_k))/smear
+!!$          eta_smr=levelspacing(i,loop_k)*dos_adpt_smr_fac
+!!$          arg=(energy-eig(i,loop_k))/eta_smr
 !!$          !
 !!$          ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P
 !!$          ! smearing, and E_f=12.6512 with F-D smearing

@@ -12,7 +12,7 @@ An example of a Boltzmann transport calculation can be found in the \wannier\ Tu
 %Reference: [BoltzWann paper]
 \section{Theory}
 \label{sec:boltzwann-theory}
-The theory of the electronic transport using the Boltzmann transport equations can be found for instance in Refs.~\cite{Ziman,Grosso,Mahan}. Here we briefly summarize only the main results. 
+The theory of the electronic transport using the Boltzmann transport equations can be found for instance in Refs.~\cite{ziman-book72,grosso-book00,mahan-itc06}. Here we briefly summarize only the main results. 
 
 The current density $\bvec J$ and the heat current (or energy flux density) $\bvec J_Q$ can be written, respectively, as
 \begin{align}
@@ -21,7 +21,7 @@ The current density $\bvec J$ and the heat current (or energy flux density) $\bv
 \end{align}
 where the electrical conductivity $\bvec \sigma$, the Seebeck coefficient $\bvec S$ and $\bvec K$ are $3\times 3$ tensors, in general.
 
-Note: the thermal conductivity $\bvec \kappa$ (actually, the electronic part of the thermal conductivity), which is defined as the heat current per unit of temperature gradient in open-circuit experiments (i.e., with $\bvec J=0$) is not precisely $\bvec K$, but  $\bvec\kappa = \bvec K-\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{Ziman} or Eq.~(XI-57b) of Ref.~\cite{Grosso}).
+Note: the thermal conductivity $\bvec \kappa$ (actually, the electronic part of the thermal conductivity), which is defined as the heat current per unit of temperature gradient in open-circuit experiments (i.e., with $\bvec J=0$) is not precisely $\bvec K$, but  $\bvec\kappa = \bvec K-\bvec S \bvec \sigma \bvec S T$ (see for instance Eq.~(7.89) of Ref.~\cite{ziman-book72} or Eq.~(XI-57b) of Ref.~\cite{grosso-book00}).
 The thermal conductivity $\bvec \kappa$ can be then calculated from the $\bvec \sigma$, $\bvec S$ and $\bvec K$ tensors output by the code.
 
 These quantities depend on the value of the chemical potential $\mu$ and on the temperature $T$, and can be calculated as follows:

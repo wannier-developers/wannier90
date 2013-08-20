@@ -8,7 +8,7 @@
 ! General Public License. See the file `LICENSE' in          !
 ! the root directory of the present distribution, or         !
 ! http://www.gnu.org/copyleft/gpl.txt .                      !
-!                                                            !
+!  !                                                          !
 !------------------------------------------------------------!
 
 module w90_kslice
@@ -24,18 +24,17 @@ module w90_kslice
   ! The slice is defined by three input variables, all in reciprocal
   ! lattice coordinates:
   !
-  !    slice_corner(1:3) is the lower left corner 
-  !    slice_b1(1:3) and slice_b2(1:3) are the vectors subtending the slice
-
-  !---------------------------------------------------------------------
+  !    kslice_corner(1:3) is the lower left corner 
+  !    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
+  !    the slice is oriented such that b1,b2 is left-handed
+  !
+  !---------------------------------------------
   ! TO DO:  
   !
-  !      * Add the possibility to color the energy contours by the spin
+  !      * Color the energy contours by the spin
   !
-  !      * Add python and octave script for energy_cntr (in addition to
-  !        gnuplot), allow to choose between them (uncomment 
-  !        kslice_plot_format in parameters.F90)
-  !---------------------------------------------------------------------
+  !      * Parallelize over k-points
+  !---------------------------------------------
 
   implicit none
 
@@ -50,263 +49,298 @@ module w90_kslice
   subroutine k_slice
 
     use w90_comms
-    use w90_constants,  only     : dp,twopi
+    use w90_constants,  only     : dp,twopi,eps8
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize
     use w90_postw90_common, only : fourier_R_to_k
     use w90_parameters, only     : num_wann,kslice,kslice_task,&
-                                   kslice_kmesh,kslice_corner,kslice_b1,&
-                                   kslice_b2,kslice_cntr_energy,&
-                                   found_kslice_cntr_energy,recip_lattice,&
-                                   found_fermi_energy,fermi_energy
-    use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R
-    use w90_berry, only          : get_imf_k,get_img_k,get_imh_k
-    use w90_utility, only        : utility_recip_lattice
-    use w90_constants, only      : bohr,ev_au
+                                   kslice_2dkmesh,kslice_corner,kslice_b1,&
+                                   kslice_b2,kslice_fermi_level,&
+                                   found_kslice_fermi_level,&
+                                   kslice_fermi_lines_colour,recip_lattice,&
+                                   nfermi,fermi_energy_list,berry_curv_unit
+    use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
+                                   get_SS_R
+    use w90_wan_ham, only        : get_eig_deleig
+    use w90_spin, only           : get_spin_nk
+    use w90_berry, only          : get_imf_k_list,get_imfgh_k_list
+    use w90_constants, only      : bohr
 
     integer           :: loop_tot,loop_x,loop_y,n,n1,n2,n3,i
-    integer           :: xdataunit,ydataunit,zdataunit,bandsunit,scriptunit
-    real(kind=dp)     :: avec(3,3),bvec(3,3),recip_vol,b1mod,b2mod,cosb1b2,&
-                         a2mod,kpt(3),kpt_x,kpt_y,k1,k2,k_cart(3),&
-                         imf_k(3,3),img_k(3,3),imh_k(3,3),&
-                         curv_au(3),morb_au(3),Morb_k(3,3)
-    logical           :: plot_curv_heatmap,plot_morb_heatmap,plot_energy_cntr
-    character(len=20) :: filename
+    integer           :: zdataunit,coorddataunit,& 
+                         bandsunit,scriptunit,dataunit
+    real(kind=dp)     :: bvec(3,3),yvec(3),zvec(3),b1mod,b2mod,ymod,cosb1b2,&
+                         areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,k_cart(3),&
+                         imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
+                         imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
+                         spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
+                         zhat(3),vdum(3)
+    logical           :: plot_fermi_lines,plot_curv,plot_morb,fermi_lines_color
+    character(len=25) :: filename,square
 
-    integer, allocatable          :: bnddataunit(:)
+    integer,          allocatable :: bnddataunit(:)
     complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     real(kind=dp),    allocatable :: eig(:)
 
-    ! Everything is done on the root node (not worthwhile parallelizing). 
-    ! However, we still have to read and distribute the data if we 
-    ! are in parallel. So calls to get_oper are done on all nodes at the moment
+    ! Everything is done on the root node.  However, we still have to
+    ! read and distribute the data if we are in parallel, so calls to
+    ! get_oper are done on all nodes
+   
+    plot_fermi_lines=.false.
+    if(index(kslice_task,'fermi_lines')>0) plot_fermi_lines=.true.
+    plot_curv=.false.
+    if(index(kslice_task,'curv')>0) plot_curv=.true.
+    plot_morb=.false.
+    if(index(kslice_task,'morb')>0) plot_morb=.true.
+    fermi_lines_color=.false.
+    if(kslice_fermi_lines_colour/='none') fermi_lines_color=.true.
 
-    plot_curv_heatmap=.false.
-    if(index(kslice_task,'curv_heatmap')>0) then
-       plot_curv_heatmap=.true.
-    end if
-    plot_morb_heatmap=.false.
-    if(index(kslice_task,'morb_heatmap')>0) then
-       plot_morb_heatmap=.true.
-    end if
-    plot_energy_cntr=.false.
-    if(index(kslice_task,'energy_cntr')>0) then
-       plot_energy_cntr=.true.
-    end if
-    ! Set up the needed Wannier matrix elements
+    if(plot_fermi_lines .and. fermi_lines_color .and. (plot_curv.or.plot_morb))&
+         call io_error('Error: spin-colored Fermi lines not allowed in '&
+         //'curv/morb heatmap plots') 
+
     call get_HH_R
-    if(plot_curv_heatmap.or.plot_morb_heatmap) call get_AA_R
-    if(plot_morb_heatmap) then
+    if(plot_curv.or.plot_morb) call get_AA_R
+    if(plot_morb) then
        call get_BB_R
        call get_CC_R
     endif
+    if(plot_fermi_lines .and. kslice_fermi_lines_colour=='spin') call get_SS_R
 
     if(on_root) then
 
        ! Set Cartesian components of the vectors (b_1,b_2) spanning the slice, 
-       ! and their reciprocals. Store as *rows* in bvec and avec
        !
        bvec(1,:)=matmul(kslice_b1(:),recip_lattice(:,:))
        bvec(2,:)=matmul(kslice_b2(:),recip_lattice(:,:))
-       ! Need also b_3 = b_1 \times b_2
-       bvec(3,1)=bvec(1,2)*bvec(2,3)-bvec(1,3)*bvec(2,2)
-       bvec(3,2)=bvec(1,3)*bvec(2,1)-bvec(1,1)*bvec(2,3)
-       bvec(3,3)=bvec(1,1)*bvec(2,2)-bvec(1,2)*bvec(2,1)
-       ! Cosine of the angle between b_1 and b_2
+       ! z_vec (orthogonal to b1 and b2)
+       zvec(1)=bvec(1,2)*bvec(2,3)-bvec(1,3)*bvec(2,2)
+       zvec(2)=bvec(1,3)*bvec(2,1)-bvec(1,1)*bvec(2,3)
+       zvec(3)=bvec(1,1)*bvec(2,2)-bvec(1,2)*bvec(2,1)
+       ! y_vec (orthogonal to b1=x_vec)
+       yvec(1)=zvec(2)*bvec(1,3)-zvec(3)*bvec(1,2)
+       yvec(2)=zvec(3)*bvec(1,1)-zvec(1)*bvec(1,3)
+       yvec(3)=zvec(1)*bvec(1,2)-zvec(2)*bvec(1,1)
+       ! Area (modulus b1 x b2 = z_vec)
+       areab1b2=sqrt(zvec(1)**2+zvec(2)**2+zvec(3)**2)
+       ! Moduli b_1,b_2,y_vec
        b1mod=sqrt(bvec(1,1)**2+bvec(1,2)**2+bvec(1,3)**2)
        b2mod=sqrt(bvec(2,1)**2+bvec(2,2)**2+bvec(2,3)**2)
+       ymod=sqrt(yvec(1)**2+yvec(2)**2+yvec(3)**2)
+       ! Cosine of the angle between y_vec and b_2
+       cosyb2=yvec(1)*bvec(2,1)+yvec(2)*bvec(2,2)+yvec(3)*bvec(2,3)
+       cosyb2=cosyb2/(ymod*b2mod)
+       ! Cosine of the angle between b_1=x_vec and b_2
        cosb1b2=bvec(1,1)*bvec(2,1)+bvec(1,2)*bvec(2,2)+bvec(1,3)*bvec(2,3)
-       cosb1b2=cosb1b2/(b1mod*b2mod)
-      ! Find the reciprocal of bvec, store in avec
-       call utility_recip_lattice(bvec,avec,recip_vol)
-       a2mod=sqrt(avec(2,1)**2+avec(2,2)**2+avec(2,3)**2)
+       cosb1b2=cosb1b2/(b1mod*b2mod)       
+!       if (abs(cosb1b2)<eps8 .and. b1mod==b2mod) then
+       if (abs(cosb1b2)<eps8 .and. abs(b1mod-b2mod)<eps8) then
+         square='True'
+       else
+         square='False'
+       end if  
 
        write(stdout,'(/,/,1x,a)')&
             'Properties calculated in module  k s l i c e'
        write(stdout,'(1x,a)')&
             '--------------------------------------------'
 
-       if(plot_energy_cntr) then
-          write(stdout,'(/,3x,a)') '* Constant energy contours'
-          if(.not.found_kslice_cntr_energy) call io_error&
-               ('Error: must specify either fermi_energy or kslice_cntr_energy when kslice_task = energy_cntr')
+       if(plot_fermi_lines) then
+          if(.not.found_kslice_fermi_level) call io_error&
+               ('Error: must specify either fermi_energy or'&
+               //' kslice_fermi_level when kslice_task = fermi_lines')
+          select case(kslice_fermi_lines_colour)
+          case("none")
+             write(stdout,'(/,3x,a)') '* Fermi lines'
+          case("spin")
+             write(stdout,'(/,3x,a)') '* Fermi lines coloured by spin'
+          end select
           write(stdout,'(/,7x,a,f10.4,1x,a)')&
-               '(Energy isocontour level: ',kslice_cntr_energy,'eV)'
+               '(Fermi level: ',kslice_fermi_level,'eV)'
        endif
-       if(plot_curv_heatmap) then
-          write(stdout,'(/,3x,a)') '* Negative Berry curvature in a.u. (bohr^2)'
-          if(.not.found_fermi_energy) call io_error&
-               (&
- 'Need to specify either "fermi_energy" or "num_valence_bands" when plot_curv_heatmap=T'&
-               )
-       elseif(plot_morb_heatmap) then
-          write(stdout,'(/,3x,a)') '* Orbital magnetization in a.u. (Ha.bohr^2)'
-          if(.not.found_fermi_energy) call io_error&
-               (&
-'Need to set either "fermi_energy" or "num_valence_bands" when plot_morb_heatmap=T'&
-               )
+       if(plot_curv) then
+          if(berry_curv_unit=='ang2') then
+             write(stdout,'(/,3x,a)') '* Negative Berry curvature in Ang^2'
+          elseif(berry_curv_unit=='bohr2') then
+             write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
+          endif
+          if(nfermi/=1) call io_error('Need to specify one value of '&
+               //'the fermi energy when kslice_task=curv')
+       elseif(plot_morb) then
+          write(stdout,'(/,3x,a)')&
+               '* Orbital magnetization k-space integrand in eV.Ang^2'
+          if(nfermi/=1) call io_error('Need to specify one value of '&
+               //'the fermi energy when kslice_task=morb')
        endif
 
-       write(stdout,'(/,/,1x,a,/)') 'Output files:' 
-       !
-       ! octave and python+matplotlib: write the x- and y-axis mesh values
-       xdataunit=io_file_unit() 
-       filename=trim(seedname)//'_slice_x.dat'
-       write(stdout,'(/,3x,a)') filename
-       open(xdataunit,file=filename,form='formatted')
-       ydataunit=io_file_unit() 
-       filename=trim(seedname)//'_slice_y.dat'
-       write(stdout,'(/,3x,a)') filename
-       open(ydataunit,file=filename,form='formatted')
+       write(stdout,'(/,/,1x,a)') 'Output files:' 
 
-       if(plot_energy_cntr) then
+       if(.not.fermi_lines_color) then
+          coorddataunit=io_file_unit() 
+          filename=trim(seedname)//'-kslice-coord.dat'
+          write(stdout,'(/,3x,a)') filename
+          open(coorddataunit,file=filename,form='formatted')
+       endif
+
+       if(plot_fermi_lines) then
           allocate(HH(num_wann,num_wann))
           allocate(UU(num_wann,num_wann))
           allocate(eig(num_wann))
-          bandsunit=io_file_unit()
-          filename=trim(seedname)//'-slice_bands.dat'
-          write(stdout,'(/,3x,a)') filename
-          open(bandsunit,file=filename,form='formatted')
-          allocate(bnddataunit(num_wann))
-          do n=1,num_wann
-             n1=n/100
-             n2=(n-n1*100)/10
-             n3=n-n1*100-n2*10
-             bnddataunit(n)=io_file_unit()
-             filename=trim(seedname)//'_bnd_'&
-                  //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
+          if(fermi_lines_color) then
+             allocate(delHH(num_wann,num_wann,3))
+             dataunit=io_file_unit()
+             filename=trim(seedname)//'-kslice-fermi-spn.dat'
              write(stdout,'(/,3x,a)') filename
-             open(bnddataunit(n),file=filename,form='formatted')
-          enddo
+             open(dataunit,file=filename,form='formatted')
+          else
+             bandsunit=io_file_unit()
+             filename=trim(seedname)//'-kslice-bands.dat'
+             write(stdout,'(/,3x,a)') filename
+             open(bandsunit,file=filename,form='formatted')
+             allocate(bnddataunit(num_wann))
+             do n=1,num_wann
+                n1=n/100
+                n2=(n-n1*100)/10
+                n3=n-n1*100-n2*10
+                bnddataunit(n)=io_file_unit()
+                filename=trim(seedname)//'-bnd_'&
+                     //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
+                write(stdout,'(/,3x,a)') filename
+                open(bnddataunit(n),file=filename,form='formatted')
+             enddo
+          endif
        endif
 
-       if(plot_curv_heatmap) then
+       if(plot_curv) then
           zdataunit=io_file_unit()
-          filename=trim(seedname)//'-slice_curv.dat'
+          filename=trim(seedname)//'-kslice-curv.dat'
           write(stdout,'(/,3x,a)') filename
           open(zdataunit,file=filename,form='formatted')
-       elseif(plot_morb_heatmap) then
+       elseif(plot_morb) then
           zdataunit=io_file_unit()
-          filename=trim(seedname)//'-slice_morb.dat'
+          filename=trim(seedname)//'-kslice-morb.dat'
           write(stdout,'(/,3x,a)') filename
           open(zdataunit,file=filename,form='formatted')
        end if
      
        ! Loop over uniform mesh of k-points on the slice
        !
-       do loop_tot=0,product(kslice_kmesh)-1
-          loop_x=loop_tot/kslice_kmesh(2)
-          loop_y=loop_tot-loop_x*kslice_kmesh(2)
-          kpt(1)=kslice_corner(1)&
-               +kslice_b1(1)*real(loop_x,dp)/real(kslice_kmesh(1),dp)&
-               +kslice_b2(1)*real(loop_y,dp)/real(kslice_kmesh(2),dp)
-          kpt(2)=kslice_corner(2)&
-               +kslice_b1(2)*real(loop_x,dp)/real(kslice_kmesh(1),dp)&
-               +kslice_b2(2)*real(loop_y,dp)/real(kslice_kmesh(2),dp)
-          kpt(3)=kslice_corner(3)&
-               +kslice_b1(3)*real(loop_x,dp)/real(kslice_kmesh(1),dp)&
-               +kslice_b2(3)*real(loop_y,dp)/real(kslice_kmesh(2),dp)
-
-          ! Convert to (x,y) Cartesian coordinates, with slice_b1 along x and
-          ! (slice_b1,slice_b2) in the xy-plane
-          !
-          k_cart(:)=matmul(kpt(:),recip_lattice(:,:))
+       do loop_tot=0,product(kslice_2dkmesh)-1
+          loop_x=loop_tot/kslice_2dkmesh(2)
+          loop_y=loop_tot-loop_x*kslice_2dkmesh(2)          
           ! k1 and k2 are the coefficients of the k-point in the basis
-          ! (slice_b1,slice_b2)
-          k1=(k_cart(1)*avec(1,1)+k_cart(2)*avec(1,2)+k_cart(3)*avec(1,3))/twopi
-          k2=(k_cart(1)*avec(2,1)+k_cart(2)*avec(2,2)+k_cart(3)*avec(2,3))/twopi
+          ! (kslice_b1,kslice_b2)
+          k1=real(loop_x,dp)/real(kslice_2dkmesh(1),dp)
+          k2=real(loop_y,dp)/real(kslice_2dkmesh(2),dp)
+             
+          kpt=kslice_corner+k1*kslice_b1+k2*kslice_b2
+          ! 
+          ! Convert to (kpt_x,kpt_y), the 2D Cartesian coordinates
+          ! with x along x_vec=b1 and y along y_vec
+          !
+          k_cart=matmul(kpt,recip_lattice)
+          
           kpt_x=k1*b1mod+k2*b2mod*cosb1b2
-          kpt_y=twopi*k2/a2mod
+          kpt_y=k2*b2mod*cosyb2
+          
+          if(.not.fermi_lines_color) write(coorddataunit,'(2E16.8)') kpt_x,kpt_y
 
-          if(loop_x==0) write(ydataunit,'(e16.8)') kpt_y
-          if(loop_y==0) write(xdataunit,'(e16.8)') kpt_x
-
-          if(plot_curv_heatmap) then
-             call get_imf_k(kpt,imf_k)
-             curv_au(1)=sum(imf_k(:,1))/bohr**2
-             curv_au(2)=sum(imf_k(:,2))/bohr**2
-             curv_au(3)=sum(imf_k(:,3))/bohr**2
-   
-             ! Heatmap plot of the negative Berry curvature using a 
-             ! "log" scale as in Yao's 2004 PRL
-             !
-             curv_au=-curv_au
-             do i=1,3
-                if(curv_au(i)>0) then
-                   if(curv_au(i)>10) then
-                      curv_au(i)=log10(curv_au(i))
-                   else
-                      curv_au(i)=0.5_dp ! 1.0 would work as well
+          if(plot_fermi_lines) then
+             if(fermi_lines_color) then
+                call get_spin_nk(kpt,spn_k)
+                do n=1,num_wann
+                   if(spn_k(n)>1.0_dp-eps8) then
+                      spn_k(n)=1.0_dp-eps8
+                   elseif(spn_k(n)<-1.0_dp+eps8) then
+                      spn_k(n)=-1.0_dp+eps8
                    endif
-                else
-                   if(curv_au(i)<-10) then
-                      curv_au(i)=-log10(-curv_au(i))
-                   else
-                      curv_au(i)=-0.5_dp ! -0.99 would work, but not -1.0!
-                   endif
-                endif
-             enddo
-             write(zdataunit,'(3E16.8)') curv_au(:)
-          end if
-
-          if(plot_morb_heatmap) then
-             call get_imf_k(kpt,imf_k)
-             call get_img_k(kpt,img_k)
-             call get_imh_k(kpt,imh_k)
-             Morb_k=img_k+imh_k-2.0_dp*fermi_energy*imf_k
-             morb_au(1)=sum(Morb_k(:,1))
-             morb_au(2)=sum(Morb_k(:,2))
-             morb_au(3)=sum(Morb_k(:,3))
-             morb_au=morb_au*eV_au/bohr**2
-             write(zdataunit,'(3E16.8)') morb_au(:)
-          end if
-
-          if(plot_energy_cntr) then
-             call fourier_R_to_k(kpt,HH_R,HH,0)
-             call utility_diagonalize(HH,num_wann,eig,UU)
+                enddo
+                call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+                Delta_k=max(b1mod/kslice_2dkmesh(1),b2mod/kslice_2dkmesh(2))
+             else
+                call fourier_R_to_k(kpt,HH_R,HH,0)
+                call utility_diagonalize(HH,num_wann,eig,UU)
+             endif
              do n=1,num_wann
-                ! For python/octave
-                write(bandsunit,'(E16.8)') eig(n)
-                ! For gnuplot, using 'grid data' format
-                write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
-                if(loop_y==kslice_kmesh(2)-1 .and. &
-                   loop_x/=kslice_kmesh(1)-1) write (bnddataunit(n),*) ' '
+                if(.not.fermi_lines_color) then
+                   ! For python
+                   write(bandsunit,'(E16.8)') eig(n)
+                   ! For gnuplot, using 'grid data' format
+                   write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
+                   if(loop_y==kslice_2dkmesh(2)-1 .and. &
+                       loop_x/=kslice_2dkmesh(1)-1) write (bnddataunit(n),*) ' '
+                elseif(kslice_fermi_lines_colour=='spin') then
+                   ! vdum = dE/dk projected on the k-slice
+                   zhat=zvec/sqrt(dot_product(zvec,zvec))
+                   vdum(:)=del_eig(n,:)-dot_product(del_eig(n,:),zhat)*zhat(:)
+                   Delta_E=sqrt(dot_product(vdum,vdum))*Delta_k
+!                   Delta_E=Delta_E*sqrt(2.0_dp) ! optimize this factor
+                   if(abs(eig(n)-kslice_fermi_level)<Delta_E)&
+                        write(dataunit,'(3E16.8)') kpt_x,kpt_y,spn_k(n)
+                endif
              enddo
           endif
 
+          if(plot_curv) then
+             call get_imf_k_list(kpt,imf_k_list)
+             curv(1)=sum(imf_k_list(:,1,1))
+             curv(2)=sum(imf_k_list(:,2,1))
+             curv(3)=sum(imf_k_list(:,3,1))
+             if(berry_curv_unit=='bohr2') curv=curv/bohr**2   
+             ! Print the negative Berry curvature 
+             write(zdataunit,'(3E16.8)') -curv(:)
+          end if
+
+          if(plot_morb) then
+             call get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+             Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
+                   -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
+             Morb_k=-Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
+             morb(1)=sum(Morb_k(:,1))
+             morb(2)=sum(Morb_k(:,2))
+             morb(3)=sum(Morb_k(:,3))
+             write(zdataunit,'(3E16.8)') morb(:)
+          end if
+
        end do !loop_tot
        
-       write(xdataunit,*) ' '
-       close(xdataunit)
-       write(ydataunit,*) ' '
-       close(ydataunit)
-       if(plot_curv_heatmap.or.plot_morb_heatmap) then
+       if(.not.fermi_lines_color) then
+          write(coorddataunit,*) ' '
+          close(coorddataunit)
+       endif
+       
+       if(plot_curv.or.plot_morb) then
           write(zdataunit,*) ' '
           close(zdataunit)
        endif
-       if(plot_energy_cntr) then
-          write(bandsunit,*) ' '
-          close(bandsunit)
-          do n=1,num_wann
-             write(bnddataunit(n),*) ' '
-             close(bnddataunit(n))
-          enddo
+       if(plot_fermi_lines) then
+          if(fermi_lines_color) then
+             close(dataunit)
+          else
+             write(bandsunit,*) ' '
+             close(bandsunit)
+             do n=1,num_wann
+                write(bnddataunit(n),*) ' '
+                close(bnddataunit(n))
+             enddo
+          endif
        endif
 
-       if(plot_energy_cntr) then
+       if(plot_fermi_lines .and. .not.fermi_lines_color) then
           !
-          ! gnuplot script for isoenergy contours
+          ! gnuplot script for black Fermi lines
           !
           scriptunit=io_file_unit()
-          open(scriptunit,file=trim(seedname)//'-energy_cntr.gnu',&
+          open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.gnu',&
                form='formatted')
           write(scriptunit,'(a)') 'unset surface'
           write(scriptunit,'(a)') 'set contour'
           write(scriptunit,'(a)') 'set view map'
           write(scriptunit,'(a,f9.5)') 'set cntrparam levels discrete ',&
-               kslice_cntr_energy
+               kslice_fermi_level
           write(scriptunit,'(a)') 'set cntrparam bspline'
           do n=1,num_wann
              n1=n/100
@@ -314,7 +348,7 @@ module w90_kslice
              n3=n-n1*100-n2*10
              write(scriptunit,'(a)') 'set table "bnd_'&
                   //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat"'
-             write(scriptunit,'(a)') 'splot "'//trim(seedname)//'_bnd_'&
+             write(scriptunit,'(a)') 'splot "'//trim(seedname)//'-bnd_'&
                   //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat"'
              write(scriptunit,'(a)') 'unset table'
           enddo
@@ -322,10 +356,10 @@ module w90_kslice
                '#Uncomment next two lines to create postscript'
           write(scriptunit,'(a)') '#set term post eps enh'
           write(scriptunit,'(a)')&
-               '#set output "'//trim(seedname)//'_econtour.eps"'
+               '#set output "'//trim(seedname)//'-kslice-fermi_lines.eps"'
           write(scriptunit,'(a)') 'set size ratio -1'
           write(scriptunit,'(a)') 'unset tics'
-          write(scriptunit,'(a)') 'set nokey'
+          write(scriptunit,'(a)') 'unset key'
           write(scriptunit,'(a)')&
                '#For postscript try changing lw 1 --> lw 2 in the next line'
           write(scriptunit,'(a)') 'set style line 1 lt 1 lw 1'
@@ -353,37 +387,69 @@ module w90_kslice
                //achar(48+n1)//achar(48+n2)//achar(48+n3)&
                //'.dat" using 1:2 w lines ls 1'
           close(scriptunit)
-          if(.not.(plot_curv_heatmap .or. plot_morb_heatmap)) then
+          if(.not.(plot_curv .or. plot_morb)) then
              !
-             ! Python script for energy isocontours
+             ! Python script for black Fermi lines
              !  
              scriptunit=io_file_unit()
-             open(scriptunit,file=trim(seedname)//'-energy_cntr.py',&
-                  form='formatted')
-             write(scriptunit,'(a)') 'import pylab as pl'
+             open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.py',&
+                  form='formatted')                                 
+             write(scriptunit,'(a)') 'import pylab as pl' 
              write(scriptunit,'(a)') 'import numpy as np'
-             write(scriptunit,'(a)') 'import mpl_toolkits'
+             write(scriptunit,'(a)') 'import matplotlib.mlab as ml'
+             write(scriptunit,'(a)') 'from collections import OrderedDict'
              write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "x = np.loadtxt('"//trim(seedname)//&
-                  "_slice_x.dat')"
-             write(scriptunit,'(a)') 'dimx=x.size'
+             write(scriptunit,'(a)') "points = np.loadtxt('"//trim(seedname)//&
+                                          "-kslice-coord.dat')"
+             write(scriptunit,'(a)') 'points_x=points[:,0]'
+             write(scriptunit,'(a)') 'points_y=points[:,1]'
+             write(scriptunit,'(a)') 'num_pt=len(points)'             
              write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "y = np.loadtxt('"//trim(seedname)//&
-                  "_slice_y.dat')"
-             write(scriptunit,'(a)') 'dimy=y.size'
+             write(scriptunit,'(a,f12.6)') 'area=', areab1b2
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') 'square= '//square
+             write(scriptunit,'(a)') ' '
+
+             write(scriptunit,'(a)') 'if square:'
+             write(scriptunit,'(a)')&
+                  '  x_coord=list(OrderedDict.fromkeys(points_x))'
+             write(scriptunit,'(a)')&
+                  '  y_coord=list(OrderedDict.fromkeys(points_y))'
+             write(scriptunit,'(a)') '  dimx=len(x_coord)'
+             write(scriptunit,'(a)') '  dimy=len(y_coord)'
+             write(scriptunit,'(a)') 'else:'
+             write(scriptunit,'(a)') '  xmin=np.min(points_x)'
+             write(scriptunit,'(a)') '  ymin=np.min(points_y)'
+             write(scriptunit,'(a)') '  xmax=np.max(points_x)'
+             write(scriptunit,'(a)') '  ymax=np.max(points_y)'  
+             write(scriptunit,'(a)')&
+                  '  a=np.max(np.array([xmax-xmin,ymax-ymin]))'
+             write(scriptunit,'(a)')&
+                  '  num_int=int(round(np.sqrt(num_pt*a**2/area)))'
+             write(scriptunit,'(a)') '  xint = np.linspace(xmin,xmin+a,num_int)'
+             write(scriptunit,'(a)') '  yint = np.linspace(ymin,ymin+a,num_int)'
              write(scriptunit,'(a)') ' '
              write(scriptunit,'(a)')&
-                  '# Energy level for isocontours (typically the Fermi level)'
-             write(scriptunit,'(a,f12.6)') 'ef=',kslice_cntr_energy
+                 '# Energy level for isocontours (typically the Fermi level)'
+             write(scriptunit,'(a,f12.6)') 'ef=',kslice_fermi_level
              write(scriptunit,'(a)') ' '
              write(scriptunit,'(a)')&
-                  "bands=np.loadtxt('"//trim(seedname)//"-slice_bands.dat')"
-             write(scriptunit,'(a)') 'numbands=bands.size/dimx/dimy'
+                  "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"
+             write(scriptunit,'(a)') 'numbands=bands.size/num_pt'
+             write(scriptunit,'(a)') 'if square:'
              write(scriptunit,'(a)')&
-                  'bands2=bands.reshape((dimx,dimy,numbands))'
-             write(scriptunit,'(a)') 'for i in range(numbands):'
-             write(scriptunit,'(a)')&
-                  "    pl.contour(np.transpose(bands2[:,:,i]),[ef],colors='black')"
+                  '  bbands=bands.reshape((dimx,dimy,numbands))'
+             write(scriptunit,'(a)') '  for i in range(numbands):'
+             write(scriptunit,'(a)') '    pl.contour(x_coord,'&
+                  //'y_coord,bbands[:,:,i],[ef],colors="black")'
+             write(scriptunit,'(a)') 'else:'
+             write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,numbands))'
+             write(scriptunit,'(a)') '  bandint=[]'
+             write(scriptunit,'(a)') '  for i in range(numbands):'
+             write(scriptunit,'(a)') '    bandint.append(ml.griddata'&
+                  //'(points_x,points_y, bbands[:,i], xint, yint))'
+             write(scriptunit,'(a)') '    pl.contour(xint,yint,bandint[i],'&
+                  //'[ef],colors="black")'                             
              write(scriptunit,'(a)') ' '
              write(scriptunit,'(a)') '# Remove the axes'
              write(scriptunit,'(a)') 'ax = pl.gca()'
@@ -393,7 +459,7 @@ module w90_kslice
              write(scriptunit,'(a)') "pl.axes().set_aspect('equal')"
              write(scriptunit,'(a)') ' '
              write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
-                  "-energy_cntr.pdf'"
+                  "-fermi_lines.pdf'"
              write(scriptunit,'(a)') ' '
              write(scriptunit,'(a)') ' '
              write(scriptunit,'(a)') 'pl.savefig(outfile)'
@@ -401,83 +467,226 @@ module w90_kslice
              close(scriptunit)
           endif
           !
-       endif !plot_energy_cntr
+       endif !plot_fermi_lines .and. kslice_fermi_lines_colour=='none'
 
-       if(plot_curv_heatmap .or. plot_morb_heatmap) then
+       if(plot_fermi_lines .and. fermi_lines_color) then
           !
-          ! python script for curvature/Morb heatmaps, eventually combined with
-          ! isoenergy contours
+          ! gnuplot script for spin-colored Fermi lines
+          !
+          scriptunit=io_file_unit()
+          open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.gnu',&
+               form='formatted')                                 
+          write(scriptunit,'(a)') 'unset key'
+          write(scriptunit,'(a)') 'unset tics'
+          write(scriptunit,'(a)') 'set cbtics'
+          write(scriptunit,'(a)')&
+               'set palette defined (-1 "blue", 0 "green", 1 "red")'
+          write(scriptunit,'(a)') 'set pm3d map'
+          write(scriptunit,'(a)') 'set zrange [-1:1]'
+          write(scriptunit,'(a)') 'set size ratio -1'
+          write(scriptunit,'(a)')&
+               '#Uncomment next two lines to create postscript'
+           write(scriptunit,'(a)') '#set term post eps enh'
+          write(scriptunit,'(a)') '#set output "'&
+               //trim(seedname)//'-kslice-fermi_lines.eps"'
+          write(scriptunit,'(a)') 'splot "'&
+               //trim(seedname)//'-kslice-fermi-spn.dat" with dots palette'
+          !
+          ! python script for spin-colored Fermi lines
+          !
+          scriptunit=io_file_unit()
+          open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.py',&
+               form='formatted')                                 
+          write(scriptunit,'(a)') 'import pylab as pl' 
+          write(scriptunit,'(a)') 'import numpy as np'
+          write(scriptunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
+               "-kslice-fermi-spn.dat')"
+          write(scriptunit,'(a)') 'x=data[:,0]'
+          write(scriptunit,'(a)') 'y=data[:,1]'
+          write(scriptunit,'(a)') 'z=data[:,2]'
+          write(scriptunit,'(a)')&
+               "pl.scatter(x,y,c=z,marker='+',s=2,cmap=pl.cm.jet)"
+          write(scriptunit,'(a,F12.6,a)')&
+               "pl.plot([0,",kpt_x,"],[0,0],color='black',linestyle='-',"&
+               //"linewidth=0.5)"
+          write(scriptunit,'(a,F12.6,a,F12.6,a,F12.6,a)')&
+               "pl.plot([",kpt_x,",",kpt_x,"],[0,",kpt_y,"],color='black',"&
+               //"linestyle='-',linewidth=0.5)"
+          write(scriptunit,'(a,F12.6,a,F12.6,a,F12.6,a)')&
+               "pl.plot([0,",kpt_x,"],[",kpt_y,",",kpt_y,&
+               "],color='black',linestyle='-',linewidth=0.5)"
+          write(scriptunit,'(a,F12.6,a)') "pl.plot([0,0],[0,",kpt_y,&
+               "],color='black',linestyle='-',linewidth=0.5)"
+          write(scriptunit,'(a,F12.6,a)') 'pl.xlim([0,',kpt_x,'])'
+          write(scriptunit,'(a,F12.6,a)') 'pl.ylim([0,',kpt_y,'])'
+          write(scriptunit,'(a)') 'cbar=pl.colorbar()'
+          write(scriptunit,'(a)') 'ax = pl.gca()'
+          write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
+          write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
+          write(scriptunit,'(a)') "pl.savefig('"//trim(seedname)//&
+               "-kslice-fermi_lines.pdf')"
+          write(scriptunit,'(a)') 'pl.show()'
+          close(scriptunit)
+       endif ! plot_fermi_lines .and. fermi_lines_color
+
+       if(plot_curv .or. plot_morb) then
+          !
+          ! python script for curvature/Morb heatmaps [+ black Fermi lines]
           !
           do i=1,3
 
              scriptunit=io_file_unit()
-             if(plot_curv_heatmap) then
+             if(plot_curv .and. .not.plot_fermi_lines) then
                 open(scriptunit,file=trim(seedname)//&
-                     '-curv_'//achar(119+i)//'-heatmap.py',form='formatted')
-             elseif(plot_morb_heatmap) then
+                     '-kslice-curv_'//achar(119+i)//'.py',form='formatted')
+             elseif(plot_curv .and. plot_fermi_lines) then
                 open(scriptunit,file=trim(seedname)//&
-                     '-morb_'//achar(119+i)//'-heatmap.py',form='formatted')
+                    '-kslice-curv_'//achar(119+i)//'+fermi_lines.py',&
+                    form='formatted')
+             elseif(plot_morb .and. .not.plot_fermi_lines) then
+                open(scriptunit,file=trim(seedname)//&
+                     '-kslice-morb_'//achar(119+i)//'.py',form='formatted')
+             elseif(plot_morb .and. plot_fermi_lines) then
+                open(scriptunit,file=trim(seedname)//&
+                    '-kslice-morb_'//achar(119+i)//'+fermi_lines.py',&
+                    form='formatted')
              endif
              write(scriptunit,'(a)') 'import pylab as pl'
              write(scriptunit,'(a)') 'import numpy as np'
-             write(scriptunit,'(a)') 'import mpl_toolkits'
+             write(scriptunit,'(a)') 'import matplotlib.mlab as ml'
+             write(scriptunit,'(a)') 'from collections import OrderedDict'
              write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "x = np.loadtxt('"//trim(seedname)//&
-                  "_slice_x.dat')"
-             write(scriptunit,'(a)') 'dimx=x.size'
+             write(scriptunit,'(a)') "points = np.loadtxt('"//trim(seedname)//&
+                                          "-kslice-coord.dat')"
+             write(scriptunit,'(a)') 'points_x=points[:,0]'
+             write(scriptunit,'(a)') 'points_y=points[:,1]'
+             write(scriptunit,'(a)') 'num_pt=len(points)'             
              write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "y = np.loadtxt('"//trim(seedname)//&
-                  "_slice_y.dat')"
-             write(scriptunit,'(a)') 'dimy=y.size'
+             write(scriptunit,'(a,f12.6)') 'area=', areab1b2
+             write(scriptunit,'(a)') ' '
+             write(scriptunit,'(a)') 'square= '//square
              write(scriptunit,'(a)') ' '
              
-             if(plot_energy_cntr) then
+             write(scriptunit,'(a)') 'if square:'
+             write(scriptunit,'(a)')&
+                  '  x_coord=list(OrderedDict.fromkeys(points_x))'
+             write(scriptunit,'(a)')&
+                  '  y_coord=list(OrderedDict.fromkeys(points_y))'
+             write(scriptunit,'(a)') '  dimx=len(x_coord)'
+             write(scriptunit,'(a)') '  dimy=len(y_coord)'
+             write(scriptunit,'(a)') 'else:'
+             write(scriptunit,'(a)') '  xmin=np.min(points_x)'
+             write(scriptunit,'(a)') '  ymin=np.min(points_y)'
+             write(scriptunit,'(a)') '  xmax=np.max(points_x)'
+             write(scriptunit,'(a)') '  ymax=np.max(points_y)'  
+             write(scriptunit,'(a)')&
+                  '  a=np.max(np.array([xmax-xmin,ymax-ymin]))'
+             write(scriptunit,'(a)')&
+                  '  num_int=int(round(np.sqrt(num_pt*a**2/area)))'
+             write(scriptunit,'(a)') '  xint = np.linspace(xmin,xmin+a,num_int)'
+             write(scriptunit,'(a)')&
+                  '  yint = np.linspace(ymin,ymin+a,num_int)'
+             write(scriptunit,'(a)') ' '
+             
+             if(plot_fermi_lines) then
                 write(scriptunit,'(a)')&
                     '# Energy level for isocontours (typically the Fermi level)'
-                write(scriptunit,'(a,f12.6)') 'ef=',kslice_cntr_energy
+                write(scriptunit,'(a,f12.6)') 'ef=',kslice_fermi_level
                 write(scriptunit,'(a)') ' '
                 write(scriptunit,'(a)')&
-                     "bands=np.loadtxt('"//trim(seedname)//"-slice_bands.dat')"
-                write(scriptunit,'(a)') 'numbands=bands.size/dimx/dimy'
+                     "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"
+                write(scriptunit,'(a)') 'numbands=bands.size/num_pt'
+                write(scriptunit,'(a)') 'if square:'
                 write(scriptunit,'(a)')&
-                     'bands2=bands.reshape((dimx,dimy,numbands))'
-                write(scriptunit,'(a)') 'for i in range(numbands):'
-                write(scriptunit,'(a)')&
-               "    pl.contour(np.transpose(bands2[:,:,i]),[ef],colors='black')"
+                     '  bbands=bands.reshape((dimx,dimy,numbands))'
+                write(scriptunit,'(a)') '  for i in range(numbands):'
+                write(scriptunit,'(a)') '    pl.contour(x_coord,y_coord,'&
+                     //'bbands[:,:,i],[ef],colors="black")'
+                write(scriptunit,'(a)') 'else:'
+                write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,'&
+                     //'numbands))'
+                write(scriptunit,'(a)') '  bandint=[]'
+                write(scriptunit,'(a)') '  for i in range(numbands):'
+                write(scriptunit,'(a)') '    bandint.append(ml.griddata'&
+                     //'(points_x,points_y, bbands[:,i], xint, yint))'
+                write(scriptunit,'(a)') '    pl.contour(xint,yint,'&
+                     //'bandint[i],[ef],colors="black")'     
              endif
+             
+             if(plot_curv) then
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
+               "-kslice-curv_"//achar(119+i)//".pdf'"
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)')&
+                     "val = np.loadtxt('"//trim(seedname)//&
+                     "-kslice-curv.dat', usecols=("//achar(47+i)//",))"
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)')&
+                     'val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
+                 &if abs(elem)>10 else elem/10.0 for elem in val])'
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)') 'if square: '
+                write(scriptunit,'(a)')&
+                     '  vval=val_log.reshape(dimx,dimy).transpose()'
+                write(scriptunit,'(a)') '  mn=int(np.floor(vval.min()))'
+                write(scriptunit,'(a)') '  mx=int(np.ceil(vval.max()))' 
+                write(scriptunit,'(a)') '  ticks=range(mn,mx+1)'
+                write(scriptunit,'(a)') "  pl.contourf(x_coord,y_coord,"&
+                     //"vval,ticks,origin='lower')"
+                write(scriptunit,'(a)') '  #pl.imshow(vval,origin="lower",'&
+                     //'extent=(min(x_coord),max(x_coord),min(y_coord),'&
+                     //'max(y_coord)))'
+                write(scriptunit,'(a)') 'else: '
+                write(scriptunit,'(a)') '  valint = ml.griddata(points_x,'&
+                     //'points_y, val_log, xint, yint)'  
+                write(scriptunit,'(a)') '  mn=int(np.floor(valint.min()))'
+                write(scriptunit,'(a)') '  mx=int(np.ceil(valint.max()))' 
+                write(scriptunit,'(a)') '  ticks=range(mn,mx+1)'
+                write(scriptunit,'(a)') '  pl.contourf(xint,yint,valint,ticks)'
+                write(scriptunit,'(a)') '  #pl.imshow(valint,origin="lower",'&
+                     //'extent=(min(xint),max(xint),min(yint),max(yint)))'
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)') 'ticklabels=[]'
+                write(scriptunit,'(a)') 'for n in ticks:'
+                write(scriptunit,'(a)') ' if n<0: '
+                write(scriptunit,'(a)')&
+                     "  ticklabels.append('-$10^{%d}$' % abs(n))"
+                write(scriptunit,'(a)') ' elif n==0:'
+                write(scriptunit,'(a)') "  ticklabels.append(' $%d$' %  n)" 
+                write(scriptunit,'(a)') ' else:'
+                write(scriptunit,'(a)') "  ticklabels.append(' $10^{%d}$' % n)" 
+                write(scriptunit,'(a)') ' '           
+                write(scriptunit,'(a)') 'cbar=pl.colorbar()'              
+                write(scriptunit,'(a)') 'cbar.set_ticks(ticks)'
+                write(scriptunit,'(a)') 'cbar.set_ticklabels(ticklabels)'
+         
+             elseif(plot_morb) then
+               
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
+               "-kslice-morb_"//achar(119+i)//".pdf'"
+                write(scriptunit,'(a)') ' '
+                write(scriptunit,'(a)')&
+                     "val = np.loadtxt('"//trim(seedname)//&
+                     "-kslice-morb.dat', usecols=("//achar(47+i)//",))"
+               write(scriptunit,'(a)') ' '
+               write(scriptunit,'(a)') 'if square: '
+               write(scriptunit,'(a)')&
+                    '  vval=val.reshape(dimx,dimy).transpose()'
+               write(scriptunit,'(a)') '  pl.imshow(vval,origin="lower",'&
+                    //'extent=(min(x_coord),max(x_coord),min(y_coord),'&
+                    //'max(y_coord)))'
+               write(scriptunit,'(a)') 'else: '
+               write(scriptunit,'(a)') '  valint = ml.griddata(points_x,'&
+                    //'points_y, val, xint, yint)' 
+               write(scriptunit,'(a)') '  pl.imshow(valint,origin="lower",'&
+                    //'extent=(min(xint),max(xint),min(yint),max(yint)))'
 
-             if(plot_curv_heatmap) then
-                write(scriptunit,'(a)') ' '
-                write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
-               "-curv_"//achar(119+i)//"-heatmap.pdf'"
-                write(scriptunit,'(a)') ' '
-                write(scriptunit,'(a)')&
-                     "z = np.loadtxt('"//trim(seedname)//&
-                     "-slice_curv.dat', usecols=("//achar(47+i)//",))"
-             elseif(plot_morb_heatmap) then
-                write(scriptunit,'(a)') ' '
-                write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
-               "-morb_"//achar(119+i)//"-heatmap.pdf'"
-                write(scriptunit,'(a)') ' '
-                write(scriptunit,'(a)')&
-                     "z = np.loadtxt('"//trim(seedname)//&
-                     "-slice_morb.dat', usecols=("//achar(47+i)//",))"
              endif
-             write(scriptunit,'(a)') 'zz=z.reshape((dimx,dimy)).transpose()'
+                       
              write(scriptunit,'(a)') ' '
-
-             if(plot_curv_heatmap) then
-                ! Stepped color scale
-                write(scriptunit,'(a)') 'pl.contourf(zz)'
-             elseif(plot_morb_heatmap) then
-                ! Gradual color scale
-                write(scriptunit,'(a)')&
-                     "pl.imshow(zz,interpolation='bicubic',origin='lower')"
-             endif
-
              write(scriptunit,'(a)') 'pl.colorbar()'
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') '# Remove the axes'
              write(scriptunit,'(a)') 'ax = pl.gca()'
              write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
              write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
@@ -488,7 +697,7 @@ module w90_kslice
              close(scriptunit)
           enddo
           !
-       endif !plot_curv_heatmap .or. plot_morb_heatmap
+       endif !plot_curv .or. plot_morb
               
     end if ! on_root
  

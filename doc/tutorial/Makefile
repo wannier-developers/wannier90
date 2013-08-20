@@ -1,5 +1,8 @@
 tutorial.pdf: tutorial.tex
 	pdflatex tutorial.tex
+	bibtex tutorial
+	pdflatex tutorial.tex
+	bibtex tutorial
 	pdflatex tutorial.tex
 #	dvips -Ppdf -o tutorial.ps tutorial.dvi
 #	ps2pdf tutorial.ps tutorial.pdf

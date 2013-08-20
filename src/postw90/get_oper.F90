@@ -68,16 +68,22 @@ module w90_get_oper
   !======================================================!
 
     use w90_constants, only      : dp,cmplx_0
-    use w90_io, only             : io_error,stdout,io_stopwatch
+    use w90_io, only             : io_error,stdout,io_stopwatch,&
+                                   io_file_unit,seedname
     use w90_parameters, only     : num_wann,ndimwin,num_kpts,num_bands,&
                                    eigval,u_matrix,have_disentangled,&
-                                   timing_level,scissors_shift,num_valence_bands
-    use w90_postw90_common, only : nrpts,rpt_origin,v_matrix
-    use w90_comms, only          : on_root
+                                   timing_level,scissors_shift,&
+                                   num_valence_bands,effective_model,&
+                                   real_lattice
+    use w90_postw90_common, only : nrpts,rpt_origin,v_matrix,ndegen,irvec,crvec
+    use w90_comms, only          : on_root,comms_bcast
 
-    integer                       :: i,j,n,m,ii,ik,winmin_q
+    integer                       :: i,j,n,m,ii,ik,winmin_q,file_unit,&
+                                     ir,io,idum,ivdum(3),ivdum_old(3)
     integer, allocatable          :: num_states(:)
+    real(kind=dp)                 :: rdum_real,rdum_imag
     complex(kind=dp), allocatable :: HH_q(:,:,:)
+    logical                       :: new_ir
     
     !ivo
     complex(kind=dp), allocatable :: sciss_q(:,:,:)
@@ -90,8 +96,92 @@ module w90_get_oper
        allocate(HH_R(num_wann,num_wann,nrpts))
     else
        if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_HH_R',2)
-       return !been here before
+       return
     end if
+
+    ! Real-space Hamiltonian H(R) is read from file
+    !
+    if(effective_model) then
+       HH_R=cmplx_0
+       if(on_root) then
+          write(stdout,'(/a)') ' Reading real-space Hamiltonian from file '&
+               //trim(seedname)//'_HH_R.dat'
+          file_unit=io_file_unit()
+          open(file_unit,file=trim(seedname)//'_HH_R.dat',form='formatted',&
+               status='old',err=101)
+          read(file_unit,*) ! header
+          read(file_unit,*) idum ! num_wann
+          read(file_unit,*) idum ! nrpts
+          ir=1
+          new_ir=.true.
+          ivdum_old(:)=0
+          n=1
+          do
+             read(file_unit,'(5I5,2F12.6)',iostat=io) ivdum(1:3),j,i,&
+                  rdum_real,rdum_imag
+             if(io<0) exit ! reached end of file
+             if(i<1 .or. i>num_wann .or. j<1 .or. j>num_wann) then
+                write(stdout,*) 'num_wann=',num_wann,'  i=',i,'  j=',j
+                call io_error&
+                     ('Error in get_HH_R: orbital indices out of bounds')
+             endif
+             if(n>1) then
+                if(ivdum(1)/=ivdum_old(1) .or. ivdum(2)/=ivdum_old(2) .or.&
+                     ivdum(3)/=ivdum_old(3)) then
+                   ir=ir+1
+                   new_ir=.true.
+                else
+                   new_ir=.false.
+                endif
+             endif
+             ivdum_old=ivdum
+             ! Note that the same (j,i,ir) may occur more than once in
+             ! the file seedname_HH_R.dat, hence the addition instead
+             ! of a simple equality. (This has to do with the way the
+             ! Berlijn effective Hamiltonian algorithm is
+             ! implemented.)
+             HH_R(j,i,ir)=HH_R(j,i,ir)+cmplx(rdum_real,rdum_imag,kind=dp)
+             if(new_ir) then
+                irvec(:,ir)=ivdum(:)
+                if(ivdum(1)==0.and.ivdum(2)==0.and.ivdum(3)==0) rpt_origin=ir
+             endif
+             n=n+1
+          enddo
+          close(file_unit)
+          if(ir/=nrpts) then
+             write(stdout,*) 'ir=',ir,'  nrpts=',nrpts
+             call io_error('Error in get_HH_R: inconsistent nrpts values')
+          endif
+          do ir=1,nrpts
+             crvec(:,ir)=matmul(transpose(real_lattice),irvec(:,ir))
+          end do
+          ndegen(:)=1 ! This is assumed when reading HH_R from file
+          !
+          ! TODO: Implement scissors in this case? Need to choose a
+          ! uniform k-mesh (the scissors correction is applied in
+          ! k-space) and then proceed as below, Fourier transforming
+          ! back to real space and adding to HH_R, Hopefully the
+          ! result converges (rapidly) with the k-mesh density, but
+          ! one should check
+          !
+          if(abs(scissors_shift)>1.0e-7_dp)&
+               call io_error(&
+               'Error in get_HH_R: scissors shift not implemented for '&
+               //'effective_model=T')
+       endif
+       call comms_bcast(HH_R(1,1,1),num_wann*num_wann*nrpts)
+       call comms_bcast(ndegen(1),nrpts)
+       call comms_bcast(irvec(1,1),3*nrpts)
+       call comms_bcast(crvec(1,1),3*nrpts)
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_HH_R',2)
+       return
+    endif
+
+    ! Everything below is only executed if effective_model==False (default)
+
+    ! Real-space Hamiltonian H(R) is calculated by Fourier
+    ! transforming H(q) defined on the ab-initio reciprocal mesh
+    !
     allocate(HH_q(num_wann,num_wann,num_kpts))
     allocate(num_states(num_kpts))
 
@@ -144,6 +234,10 @@ module w90_get_oper
     endif
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_HH_R',2)
+    return
+
+101 call io_error('Error in get_HH_R: problem opening file '//&
+         trim(seedname)//'_HH_R.dat')
 
   end subroutine get_HH_R
 
@@ -160,7 +254,7 @@ module w90_get_oper
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_parameters, only    : num_kpts,nntot,num_wann,wb,bk,timing_level,&
                                   num_bands,ndimwin,nnlist,have_disentangled,&
-                                  transl_inv,nncell
+                                  transl_inv,nncell,effective_model
     use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_file_unit,io_error,io_stopwatch,&
                                   seedname
@@ -173,13 +267,16 @@ module w90_get_oper
     integer                       :: n,m,i,ii,j,jj,winmin_q,winmin_qb,&
                                      ik,ik2,ik_prev,nn,inn,nnl,nnm,nnn,&
                                      idir,ncount,nn_count,mmn_in,&
-                                     nb_tmp,nkp_tmp,nntot_tmp
+                                     nb_tmp,nkp_tmp,nntot_tmp,file_unit,&
+                                     ir,io,ivdum(3),ivdum_old(3)
     integer, allocatable          :: num_states(:)
-    real(kind=dp)                 :: m_real,m_imag
+    real(kind=dp)                 :: m_real,m_imag,rdum1_real,rdum1_imag,&
+                                     rdum2_real,rdum2_imag,rdum3_real,rdum3_imag
     logical                       :: nn_found
     character(len=60)             :: header
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_AA_R',1)
+
     
     if(.not.allocated(AA_R)) then
        allocate(AA_R(num_wann,num_wann,nrpts,3))
@@ -188,6 +285,59 @@ module w90_get_oper
        return
     end if
 
+    ! Real-space position matrix elements read from file
+    !
+    if(effective_model) then
+       if(.not.allocated(HH_R)) call io_error(&
+         'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first')
+       AA_R=cmplx_0
+       if(on_root) then
+          write(stdout,'(/a)') ' Reading position matrix elements from file '&
+               //trim(seedname)//'_AA_R.dat'
+          file_unit=io_file_unit()
+          open(file_unit,file=trim(seedname)//'_AA_R.dat',form='formatted',&
+               status='old',err=103)
+          read(file_unit,*) ! header
+          ir=1
+          ivdum_old(:)=0
+          n=1
+          do
+             read(file_unit,'(5I5,6F12.6)',iostat=io)&
+                  ivdum(1:3),j,i,rdum1_real,rdum1_imag,&
+                  rdum2_real,rdum2_imag,rdum3_real,rdum3_imag
+             if(io<0) exit
+             if(i<1 .or. i>num_wann .or. j<1 .or. j>num_wann) then
+                write(stdout,*) 'num_wann=',num_wann,'  i=',i,'  j=',j
+                call io_error('Error in get_AA_R: orbital indices out of bounds')
+             endif
+             if(n>1) then
+                if(ivdum(1)/=ivdum_old(1) .or. ivdum(2)/=ivdum_old(2) .or.&
+                     ivdum(3)/=ivdum_old(3)) ir=ir+1
+             endif
+             ivdum_old=ivdum
+             AA_R(j,i,ir,1)=AA_R(j,i,ir,1)+cmplx(rdum1_real,rdum1_imag,kind=dp)
+             AA_R(j,i,ir,2)=AA_R(j,i,ir,2)+cmplx(rdum2_real,rdum2_imag,kind=dp)
+             AA_R(j,i,ir,3)=AA_R(j,i,ir,3)+cmplx(rdum3_real,rdum3_imag,kind=dp)
+             n=n+1
+          enddo
+          close(file_unit)
+          ! AA_R may not contain the same number of R-vectors as HH_R
+          ! (e.g., if a diagonal representation of the position matrix
+          ! elements is used, but it cannot be larger
+          if(ir>nrpts) then
+             write(stdout,*) 'ir=',ir,'  nrpts=',nrpts
+             call io_error('Error in get_AA_R: inconsistent nrpts values')
+          endif
+       endif
+       call comms_bcast(AA_R(1,1,1,1),num_wann*num_wann*nrpts*3)
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_AA_R',2)
+       return
+    endif
+
+    ! Real-space position matrix elements calculated by Fourier
+    ! transforming overlap matrices defined on the ab-initio
+    ! reciprocal mesh
+    !
     ! Do everything on root, broadcast AA_R at the end (smaller than S_o)
     !
     if(on_root) then
@@ -344,13 +494,14 @@ module w90_get_oper
     call comms_bcast(AA_R(1,1,1,1),num_wann*num_wann*nrpts*3)
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_AA_R',2)
-
     return
 
 101 call io_error&
          ('Error: Problem opening input file '//trim(seedname)//'.mmn')
 102 call io_error&
          ('Error: Problem reading input file '//trim(seedname)//'.mmn')
+103 call io_error('Error in get_AA_R: problem opening file '//&
+         trim(seedname)//'_AA_R.dat')
     
   end subroutine get_AA_R
 
@@ -501,7 +652,6 @@ module w90_get_oper
     call comms_bcast(BB_R(1,1,1,1),num_wann*num_wann*nrpts*3)
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_BB_R',2)
-
     return
 
 103 call io_error&
@@ -616,7 +766,8 @@ module w90_get_oper
                       end do
                    end do
                 else
-                   read(uHu_in,err=106,end=106) ((Ho_qb1_q_qb2(n,m),n=1,num_bands),m=1,num_bands)
+                   read(uHu_in,err=106,end=106)&
+                        ((Ho_qb1_q_qb2(n,m),n=1,num_bands),m=1,num_bands)
                 endif
                 ! pw2wannier90 is coded a bit strangely, so here we take the transpose
                 Ho_qb1_q_qb2=transpose(Ho_qb1_q_qb2)
@@ -672,7 +823,6 @@ module w90_get_oper
     call comms_bcast(CC_R(1,1,1,1,1),num_wann*num_wann*nrpts*3*3)
 
    if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',2)
-
    return
 
 105 call io_error&
@@ -764,11 +914,18 @@ module w90_get_oper
                 ! Read from .uIu file the matrices <u_{q+b1}|u_{q+b2}> 
                 ! between the original ab initio eigenstates
                 !
-                do m=1,num_bands
-                   do n=1,num_bands
-                      read(uIu_in,err=108,end=108) Lo_qb1_q_qb2(m,n)
-                   end do
-                end do
+ !               do m=1,num_bands
+ !                  do n=1,num_bands
+ !                     read(uIu_in,err=108,end=108) Lo_qb1_q_qb2(m,n)
+ !                  end do
+ !               end do
+                read(uIu_in,err=108,end=108)&
+                     ((Lo_qb1_q_qb2(n,m),n=1,num_bands),m=1,num_bands)
+                !
+                ! **************************************************************
+                ! 2013-08-09: Do we need to take a transpose here?! SEE get_CC_R
+                Lo_qb1_q_qb2=transpose(Lo_qb1_q_qb2) ! added 2013-08-09 (?) 
+                ! **************************************************************
                 !                
                 ! Transform to projected subspace, Wannier gauge
                 !
@@ -815,7 +972,6 @@ module w90_get_oper
     call comms_bcast(FF_R(1,1,1,1,1),num_wann*num_wann*nrpts*3*3)
 
    if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_FF_R',2)
-
    return
 
 107 call io_error&
@@ -973,7 +1129,6 @@ module w90_get_oper
     call comms_bcast(SS_R(1,1,1,1),num_wann*num_wann*nrpts*3)
 
     if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_SS_R',2)
-
     return
 
 109 call io_error&

@@ -7,6 +7,7 @@
 \usepackage{fancyhdr}
 \usepackage[T1]{fontenc} % important for having searchable underscores
 \usepackage{bm}
+\usepackage[sort&compress,numbers]{natbib}
 %\usepackage{fancyheadings}
 %\setlength{\parindent}{0in}
 %\setlength{\parskip}{0.05in}
@@ -79,7 +80,7 @@
 
 \author{Version 2.0}
 
-\date{\color{red} XXth November 2012}
+\date{\color{red} \today}
 
 %%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
 %hidelinks to remove colored borders from links
@@ -160,82 +161,8 @@
 
 %\include{other_thoughts}
 
-\begin{thebibliography}{99}
-
-%%\bibitem{UserGuide} A.~A.~Mostofi and J.~R.~Yates, \wannier: User
-%%  Guide v1.0.3, available at \url{http://www.wannier.org/user\_guide.html}.
-
-\bibitem{MV} N.~Marzari and D.~Vanderbilt, 
-  Maximally Localized Generalized Wannier Functions for Composite
-  Energy Bands, {\it Phys. Rev. B} {\bf 56}, 12847 (1997).  
-
-\bibitem{SMV} I.~Souza, N.~Marzari and D.~Vanderbilt, Maximally
-     Localized Wannier Functions for Entangled Energy Bands, {\it
-     Phys. Rev. B} {\bf 65}, 035109 (2001).
-
-\bibitem{Gygi} Gygi, F., Fattebert, J.-L., and Schwegler, E.,
- Computation of Maximally Localized Wannier Functions using a
- simultaneous diagonalization algorithm, {\it Comp. Phys. Commun.}
- {\bf 155}, 1 (2003).
-
-\bibitem{W90} A.~A.~Mostofi, J.~R.~Yates, Y.-S.~Lee, I.~Souza,
-   D.~Vanderbilt and N.~Marzari, \wannier: A Tool for Obtaining
-   Maximally-Localized Wannier Functions, {\it Comput. Phys. Commun.},
-   178, 685 (2008); \url{http://arxiv.org/abs/0708.0650}.
-
-\bibitem{USPP} D.~Vanderbilt, Soft Self-Consistent Pseudopotentials in
-  a Generalized Eigenvalue Formalism, {\it Phys. Rev. B} {\bf 41}
-  (11), 7892 (1990).
-
-\bibitem{MnO} M.~Posternak, A.~Baldereschi, S.~Massidda and
-  N.~Marzari, Maximally Localized Wannier Functions in
-  Antiferromagnetic MnO within the FLAPW Formalism, {\it Phys. Rev. B}
-  {\bf 65}, 184422 (2002).
-
-\bibitem{Nardelli} M.~Buongiorno Nardelli, Electronic Transport in Extended Systems:
-  Application to Carbon Nanotubes, {\it Phys. Rev. B} {\bf 60}
-  (11), 7828 (1999).
-%%\bibitem{BaTiO3} N.~Marzari and D.~Vanderbilt, Maximally-Localized
-%%  Wannier Functions in Perovskites: BaTiO$_3$,
-%%  \url{http://arxiv.org/abs/cond-mat/9802210}.
-
-%%\bibitem{WanInt} J.~R.~Yates {\it et al.}, Spectral and Fermi
-%%  Surface Properties from Wannier Interpolation, {\it Phys. Rev. B}
-%%  {\bf 75}, 195121 (2007). 
-\bibitem{Ziman} J. Ziman, {\it Principles of the Theory of Solids}, 2nd ed., Cambridge University Press (1972).
-
-\bibitem{Grosso} G.~Grosso, G.~Pastori Parravicini, {\it Solid State Physics}, Academic Press (2000).
-
-\bibitem{Mahan} G.~D.~Mahan, {\it Intern. Tables for Crystallography}, Vol. {\bf D}, Chap. 1.8, 7828 (2006).
-
-\bibitem{xiao-rmp10} D.~Xiao, M.-C.~Chang, and Q.~Niu,
-Berry phase effects on electronic properties, {\it Rev. Mod. Phys.} 
-{\bf 82}, 1959 (2010).
-
-\bibitem{ceresoli-prb06} D.~Ceresoli, T.~Thonhauser, D.~Vanderbilt, and
-R.~Resta, Orbital magnetization in crystalline solids: Multi-band
-nsulators, Chern insulators, and metals, {\it Phys. Rev. B}
-{\bf 74}, 024408 (2006).
-
-\bibitem{blount} E.~I.~Blount, Formalisms of Band Theory, {\it Solid State
-Physics} (Academic, New York), Vol.~13.
-
-
-\bibitem{wang-prb06} X.~Wang {\it et al.}, Ab-initio calculation of
-  the anomalous Hall conductivity by Wannier interpolation,
-{\it Phys. rev. B} {\bf 74}, 195118 (2006).
-
-\bibitem{yates-prb07} J.~R.~Yates {\it et al.}, Spectral and Fermi
-  Surface Properties from Wannier Interpolation, {\it Phys. Rev. B}
-  {\bf 75}, 195121 (2007). 
-
-\bibitem{lopez-prb12} M.~G.~Lopez, D.~Vanderbilt, T.~Thonhauser, and I.~Souza,
-Wannier-based calculation of the orbital magnetization in crystals,
-Phys. Rev. B {\bf 85}, 014435 (2012).
-
-
-\end{thebibliography}
-
+\bibliographystyle{apsrev4-1}
+\bibliography{../wannier90}
 
 \end{document} 
 

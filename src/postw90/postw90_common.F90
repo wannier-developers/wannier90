@@ -54,7 +54,6 @@ module w90_postw90_common
   integer                       :: max_int_kpts_on_node,num_int_kpts
   integer, allocatable          :: num_int_kpts_on_node(:)
   real(kind=dp), allocatable    :: int_kpts(:,:),weight(:)
-  real(kind=dp), allocatable    :: adkpt(:,:)
   complex(kind=dp), allocatable :: v_matrix(:,:,:)
 
   contains
@@ -68,16 +67,33 @@ module w90_postw90_common
   subroutine wanint_setup
 
     use w90_constants, only   : dp,cmplx_0
-    use w90_io, only          : io_error,io_file_unit
+    use w90_io, only          : io_error,io_file_unit,stdout,seedname
     use w90_utility, only     : utility_cart_to_frac
-    use w90_parameters, only  : berry_kmesh,&
-                                berry_adpt_kmesh,real_lattice
+    use w90_parameters, only  : berry_kmesh,ahc_adpt_kmesh,real_lattice,&
+                                effective_model,num_wann
 
-    integer        :: ierr,i,j,k,ikpt,ir
+    integer        :: ierr,i,j,k,ikpt,ir,file_unit,num_wann_loc
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
     !
-    call wigner_seitz(count_pts=.true.)
+    if(effective_model) then
+       if(on_root) then
+          ! nrpts is read from file, together with num_wann
+          file_unit=io_file_unit()
+          open(file_unit,file=trim(seedname)//'_HH_R.dat',form='formatted',&
+               status='old',err=101)
+          read(file_unit,*) !header
+          read(file_unit,*) num_wann_loc
+          if(num_wann_loc/=num_wann)&
+               call io_error('Inconsistent values of num_wann in '&
+               //trim(seedname)//'_HH_R.dat and '//trim(seedname)//'.win')
+          read(file_unit,*) nrpts
+          close(file_unit)
+       endif
+       call comms_bcast(nrpts,1)
+    else
+       call wigner_seitz(count_pts=.true.)
+    endif
     
     ! Now can allocate several arrays
     !
@@ -90,38 +106,31 @@ module w90_postw90_common
     allocate(ndegen(nrpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating ndegen in wanint_setup')
     ndegen=0
-        
-    ! Set up the lattice vectors on the Wigner-Seitz supercell 
-    ! where the Wannier functions live
     !
-    call wigner_seitz(count_pts=.false.)
-    !
-    ! Convert from reduced to Cartesian coordinates
-    !
-    do ir=1,nrpts
-       ! Note that 'real_lattice' stores the lattice vectors as *rows*
-       crvec(:,ir)=matmul(transpose(real_lattice),irvec(:,ir))
-    end do
-
-    ! TODO(?): Adaptive refinement is not always used (e.g., not used
-    ! in DOS).  Move to a separate public subroutine in this module,
-    ! to be called by specific interpolation tasks when
-    ! appropriate. (Check in the calling unit whether it has been
-    ! allocated before.)
-    !
-    allocate(adkpt(3,berry_adpt_kmesh**3),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating adkpt in wanint_setup')
-    ikpt=0
-    do i=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
-       do j=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
-          do k=-(berry_adpt_kmesh-1)/2,(berry_adpt_kmesh-1)/2
-             ikpt=ikpt+1 
-             adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_adpt_kmesh)
-             adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_adpt_kmesh)
-             adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_adpt_kmesh)
-          end do
+    ! Also rpt_origin, so that when effective_model=.true it is not
+    ! passed to get_HH_R without being initialized.
+    rpt_origin=0
+    
+    ! If effective_model, this is done in get_HH_R
+    if(.not.effective_model) then
+       !
+       ! Set up the lattice vectors on the Wigner-Seitz supercell 
+       ! where the Wannier functions live
+       !
+       call wigner_seitz(count_pts=.false.)
+       !
+       ! Convert from reduced to Cartesian coordinates
+       !
+       do ir=1,nrpts
+          ! Note that 'real_lattice' stores the lattice vectors as *rows*
+          crvec(:,ir)=matmul(transpose(real_lattice),irvec(:,ir))
        end do
-    end do
+    endif
+    
+    return
+
+101 call io_error('Error in wanint_setup: problem opening file '//&
+         trim(seedname)//'_HH_R.dat')
 
   end subroutine wanint_setup
   
@@ -210,12 +219,16 @@ module w90_postw90_common
 
     integer :: ierr
 
+    call comms_bcast(effective_model,1) 
+
+    if(.not.effective_model) then
+       call comms_bcast(mp_grid(1),3)
+       call comms_bcast(num_kpts,1)
+       call comms_bcast(num_bands,1)
+    endif
     call comms_bcast(num_wann,1)
     call comms_bcast(timing_level,1)
     call comms_bcast(iprint,1)
-    call comms_bcast(num_bands,1)
-    call comms_bcast(mp_grid(1),3)
-    call comms_bcast(num_kpts,1)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1,1),9)
@@ -237,19 +250,17 @@ module w90_postw90_common
     call comms_bcast(berry_task,len(berry_task))
     call comms_bcast(berry_kmesh_spacing,1)
     call comms_bcast(berry_kmesh(1),3)
-    call comms_bcast(berry_adpt_kmesh,1)
-    call comms_bcast(berry_adpt_kmesh_thresh,1)
-    call comms_bcast(optics_adpt_smr,1)
-    call comms_bcast(optics_adpt_smr_fac,1)
-    call comms_bcast(optics_adpt_smr_max,1)
-    call comms_bcast(optics_smr_fixed_en_width,1)
-    call comms_bcast(optics_smr_index,1)
-    call comms_bcast(optics_time_parity,len(optics_time_parity))
-    call comms_bcast(optics_energy_min,1)
-    call comms_bcast(optics_energy_max,1)
-    call comms_bcast(optics_energy_step,1)
-
-    call comms_bcast(fermi_energy,1)
+    call comms_bcast(ahc_adpt_kmesh,1)
+    call comms_bcast(ahc_adpt_kmesh_thresh,1)
+    call comms_bcast(berry_curv_unit,len(berry_curv_unit))
+    call comms_bcast(kubo_adpt_smr,1)
+    call comms_bcast(kubo_adpt_smr_fac,1)
+    call comms_bcast(kubo_adpt_smr_max,1)
+    call comms_bcast(kubo_smr_fixed_en_width,1)
+    call comms_bcast(kubo_smr_index,1)
+    call comms_bcast(kubo_eigval_max,1)
+    call comms_bcast(kubo_nfreq,1)
+    call comms_bcast(nfermi,1)
     call comms_bcast(dos_energy_min,1)
     call comms_bcast(dos_energy_max,1)
     call comms_bcast(spin_kmesh_spacing,1)
@@ -272,7 +283,6 @@ module w90_postw90_common
     call comms_bcast(use_degen_pert,1) 
     call comms_bcast(degen_thr,1)
     call comms_bcast(num_valence_bands,1)
-    call comms_bcast(found_fermi_energy,1)
     call comms_bcast(dos,1)
     call comms_bcast(dos_task,len(dos_task)) 
     call comms_bcast(kpath,1) 
@@ -331,55 +341,71 @@ module w90_postw90_common
     ! allocatable, and in param_read they were allocated on the root node only
     !
     if(.not.on_root) then
-       allocate(eigval(num_bands,num_kpts),stat=ierr)
-       if (ierr/=0)&
-            call io_error('Error allocating eigval in postw90_param_dist')
-       allocate(kpt_latt(3,num_kpts),stat=ierr)
-       if (ierr/=0)&
-            call io_error('Error allocating kpt_latt in postw90_param_dist')
-       allocate(dos_project(num_dos_project),stat=ierr) 
+       allocate(fermi_energy_list(nfermi),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating fermi_energy_read in postw90_param_dist')
+       allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating kubo_freq_list in postw90_param_dist')
+       allocate(dos_project(num_dos_project),stat=ierr)
        if (ierr/=0)&
             call io_error('Error allocating dos_project in postw90_param_dist')
+       if(.not.effective_model) then
+          allocate(eigval(num_bands,num_kpts),stat=ierr)
+          if (ierr/=0)&
+               call io_error('Error allocating eigval in postw90_param_dist')
+          allocate(kpt_latt(3,num_kpts),stat=ierr)
+          if (ierr/=0)&
+               call io_error('Error allocating kpt_latt in postw90_param_dist')
+       endif
     end if
-    call comms_bcast(eigval(1,1),num_bands*num_kpts)
-    call comms_bcast(kpt_latt(1,1),3*num_kpts)
+    call comms_bcast(fermi_energy_list(1),nfermi)
+    call comms_bcast(kubo_freq_list(1),kubo_nfreq)
     call comms_bcast(dos_project(1),num_dos_project)
+    if(.not.effective_model) then
+       call comms_bcast(eigval(1,1),num_bands*num_kpts)
+       call comms_bcast(kpt_latt(1,1),3*num_kpts)
+    endif
        
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix 
     ! elements of the position operator in reciprocal space. For the
     ! extra matrix elements entering the orbital magnetization, also 
     ! need nnlist. In principle could only broadcast those four variables
 
-    call comms_bcast(nnh,1)
-    call comms_bcast(nntot,1)
+    if(.not.effective_model) then
 
-    if(.not. on_root) then
-       allocate(nnlist(num_kpts,nntot), stat=ierr )
-       if (ierr/=0)&
-            call io_error('Error in allocating nnlist in wanint_param_dist')
-       allocate(neigh(num_kpts,nntot/2), stat=ierr )
-       if (ierr/=0)&
-            call io_error('Error in allocating neigh in wanint_param_dist')
-       allocate(nncell(3,num_kpts,nntot), stat=ierr )
-       if (ierr/=0)&
-            call io_error('Error in allocating nncell in wanint_param_dist')
-       allocate(wb(nntot), stat=ierr )
-       if (ierr/=0)&
-            call io_error('Error in allocating wb in wanint_param_dist')
-       allocate(bka(3,nntot/2), stat=ierr )
-       if (ierr/=0)&
-            call io_error('Error in allocating bka in wanint_param_dist')
-       allocate(bk(3,nntot,num_kpts), stat=ierr )
-       if (ierr/=0)&
-            call io_error('Error in allocating bk in wanint_param_dist')
-    end if
+       call comms_bcast(nnh,1)
+       call comms_bcast(nntot,1)
 
-    call comms_bcast(nnlist(1,1),num_kpts*nntot)
-    call comms_bcast(neigh(1,1),num_kpts*nntot/2)
-    call comms_bcast(nncell(1,1,1),3*num_kpts*nntot)
-    call comms_bcast(wb(1),nntot)
-    call comms_bcast(bka(1,1),3*nntot/2)
-    call comms_bcast(bk(1,1,1),3*nntot*num_kpts)
+       if(.not. on_root) then
+          allocate(nnlist(num_kpts,nntot), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating nnlist in wanint_param_dist')
+          allocate(neigh(num_kpts,nntot/2), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating neigh in wanint_param_dist')
+          allocate(nncell(3,num_kpts,nntot), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating nncell in wanint_param_dist')
+          allocate(wb(nntot), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating wb in wanint_param_dist')
+          allocate(bka(3,nntot/2), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating bka in wanint_param_dist')
+          allocate(bk(3,nntot,num_kpts), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating bk in wanint_param_dist')
+       end if
+       
+       call comms_bcast(nnlist(1,1),num_kpts*nntot)
+       call comms_bcast(neigh(1,1),num_kpts*nntot/2)
+       call comms_bcast(nncell(1,1,1),3*num_kpts*nntot)
+       call comms_bcast(wb(1),nntot)
+       call comms_bcast(bka(1,1),3*nntot/2)
+       call comms_bcast(bk(1,1,1),3*nntot*num_kpts)
+
+    endif
 
   end subroutine wanint_param_dist
 
@@ -488,7 +514,7 @@ module w90_postw90_common
 
 !=======================================================================
 
-  subroutine get_occ(eig,occ,efermi)
+  subroutine get_occ(eig,occ,ef)
 
     use w90_constants, only     : dp
     use w90_parameters, only    : num_wann !,smear_temp
@@ -497,7 +523,7 @@ module w90_postw90_common
     ! Arguments
     !
     real(kind=dp), intent(in)  :: eig(num_wann)
-    real(kind=dp), intent(in)  :: efermi
+    real(kind=dp), intent(in)  :: ef
     real(kind=dp), intent(out) :: occ(num_wann)
 
      
@@ -515,7 +541,7 @@ module w90_postw90_common
        ! Use a step function occupancy (T=0)
        !
        do i=1,num_wann
-          if( eig(i) < efermi) then
+          if( eig(i) < ef) then
              occ(i)=1.0_dp
           else
              occ(i)=0.0_dp
@@ -529,7 +555,7 @@ module w90_postw90_common
        !
 !       kt=k_B_SI*smear_temp/elem_charge_SI
 !       do i=1,num_wann
-!          occ(i)=1.0_dp/(exp((eig(i)-efermi)/kt)+1.0_dp)
+!          occ(i)=1.0_dp/(exp((eig(i)-ef)/kt)+1.0_dp)
 !       end do
 !    end if
 
@@ -583,7 +609,8 @@ module w90_postw90_common
   
   end function kmesh_spacing_mesh
 
-
+  ! ***REMOVE EVENTUALLY*** (replace with fourier_R_to_k_new)
+  !
   !=========================================================!
   subroutine fourier_R_to_k(kpt,OO_R,OO,alpha)
   !=========================================================!
@@ -628,6 +655,109 @@ module w90_postw90_common
     enddo
 
   end subroutine fourier_R_to_k
+
+  ! ***NEW***
+  !
+  !=========================================================!
+  subroutine fourier_R_to_k_new(kpt,OO_R,OO,OO_dx,OO_dy,OO_dz)
+  !=======================================================!
+  !                                                       !
+  ! For OO:                                               !
+  ! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)         !
+  !                                                       !
+  ! For OO_dx,dy,dz:                                      !
+  ! sum_R [cmplx_i*R_{dx,dy,dz}*e^{+ik.R}*O_ij(R)]        !
+  ! where R_{x,y,z} are the Cartesian components of R     !
+  !                                                       !
+  !=======================================================!
+
+    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
+    use w90_parameters, only    : timing_level,num_kpts,kpt_latt
+
+    implicit none
+
+    ! Arguments
+    !
+    real(kind=dp)                                             :: kpt(3)
+    complex(kind=dp), dimension(:,:,:), intent(in)            :: OO_R
+    complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO
+    complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dx
+    complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dy
+    complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dz
+
+    integer          :: ir
+    real(kind=dp)    :: rdotk
+    complex(kind=dp) :: phase_fac
+
+    if(present(OO)) OO=cmplx_0
+    if(present(OO_dx)) OO_dx=cmplx_0
+    if(present(OO_dy)) OO_dy=cmplx_0
+    if(present(OO_dz)) OO_dz=cmplx_0
+    do ir=1,nrpts
+       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+       if(present(OO)) OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
+       if(present(OO_dx)) OO_dx(:,:)=OO_dx(:,:)+&
+               cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir)
+       if(present(OO_dy)) OO_dy(:,:)=OO_dy(:,:)+&
+               cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir)
+       if(present(OO_dz)) OO_dz(:,:)=OO_dz(:,:)+&
+               cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir)
+    enddo
+
+  end subroutine fourier_R_to_k_new
+
+  ! ***NEW***
+  !
+  !=========================================================!
+  subroutine fourier_R_to_k_vec(kpt,OO_R,OO_true,OO_pseudo)
+  !====================================================================!
+  !                                                                    !
+  ! For OO_true (true vector):                                         !
+  ! {\vec O|_ij(R) --> {\vec O|_ij(k) = sum_R e^{+ik.R}*{\vec O}_ij(R) !
+  !                                                                    !
+  !====================================================================!
+
+    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
+    use w90_parameters, only    : num_kpts,kpt_latt
+
+    implicit none
+
+    ! Arguments
+    !
+    real(kind=dp)                                     :: kpt(3)
+    complex(kind=dp), dimension(:,:,:,:), intent(in)  :: OO_R
+    complex(kind=dp), optional, dimension(:,:,:), intent(out)   :: OO_true
+    complex(kind=dp), optional, dimension(:,:,:), intent(out)   :: OO_pseudo
+
+    integer          :: ir
+    real(kind=dp)    :: rdotk
+    complex(kind=dp) :: phase_fac
+
+    if(present(OO_true)) OO_true=cmplx_0
+    if(present(OO_pseudo)) OO_pseudo=cmplx_0
+    do ir=1,nrpts
+       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+       if(present(OO_true)) then
+          OO_true(:,:,1)=OO_true(:,:,1)+phase_fac*OO_R(:,:,ir,1)
+          OO_true(:,:,2)=OO_true(:,:,2)+phase_fac*OO_R(:,:,ir,2)
+          OO_true(:,:,3)=OO_true(:,:,3)+phase_fac*OO_R(:,:,ir,3)
+       endif
+       if(present(OO_pseudo)) then
+          OO_pseudo(:,:,1)=OO_pseudo(:,:,1)&
+                          +cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,3)&
+                          -cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,2)
+          OO_pseudo(:,:,2)=OO_pseudo(:,:,2)&
+                          +cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,1)&
+                          -cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,3)
+          OO_pseudo(:,:,3)=OO_pseudo(:,:,3)&
+                          +cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,2)&
+                          -cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,1)
+       endif
+    enddo
+
+  end subroutine fourier_R_to_k_vec
 
   !===========================================================!
   !                   PRIVATE PROCEDURES                      ! 

@@ -46,7 +46,8 @@ module w90_parameters
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spin_decomp
   real(kind=dp),              public, save :: num_valence_bands
-  logical,                    public, save :: found_fermi_energy
+!  logical,                    public, save :: found_fermi_energy
+  logical                                  :: found_fermi_energy
   real(kind=dp),              public, save :: scissors_shift
   !IVO_END
   ! [gp-begin, Apr 20, 2012] Smearing type
@@ -93,24 +94,24 @@ module w90_parameters
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
-  real(kind=dp),     public, save :: fermi_energy
+  real(kind=dp),             save :: fermi_energy
 
   ! module  k p a t h
   logical,                    public, save :: kpath
   character(len=20),          public, save :: kpath_task
   integer,                    public, save :: kpath_num_points
-  character(len=4),           public, save :: kpath_bands_colour
+  character(len=20),          public, save :: kpath_bands_colour
 
   ! module  k s l i c e
   logical,           public, save :: kslice
-  character(len=25), public, save :: kslice_task
-!  character(len=20), public, save :: kslice_plot_format ! use in the future
+  character(len=20), public, save :: kslice_task
   real(kind=dp),     public, save :: kslice_corner(3)
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
-  integer,           public, save :: kslice_kmesh(2)
-  real(kind=dp),     public, save :: kslice_cntr_energy
-  logical,           public, save :: found_kslice_cntr_energy
+  integer,           public, save :: kslice_2dkmesh(2)
+  real(kind=dp),     public, save :: kslice_fermi_level
+  character(len=20), public, save :: kslice_fermi_lines_colour
+  logical,           public, save :: found_kslice_fermi_level
 
   ! module  d o s
   logical,           public, save    :: dos
@@ -142,20 +143,31 @@ module w90_parameters
   integer,           public, save :: beta
   integer,           public, save :: gamma
   ! --------------remove eventually----------------
-  integer,           public, save :: berry_adpt_kmesh
-  real(kind=dp),     public, save :: berry_adpt_kmesh_thresh
-  logical,           public, save :: optics_adpt_smr
-  real(kind=dp),     public, save :: optics_adpt_smr_fac
-  integer,           public, save :: optics_smr_index
-  real(kind=dp),     public, save :: optics_smr_fixed_en_width
-  real(kind=dp),     public, save :: optics_adpt_smr_max
-  character(len=20), public, save :: optics_time_parity
-  real(kind=dp),     public, save :: optics_energy_step
-  real(kind=dp),     public, save :: optics_energy_min
-  real(kind=dp),     public, save :: optics_energy_max
+  integer,           public, save :: ahc_adpt_kmesh
+  real(kind=dp),     public, save :: ahc_adpt_kmesh_thresh
+  character(len=20), public, save :: berry_curv_unit
+  logical,           public, save :: kubo_adpt_smr
+  real(kind=dp),     public, save :: kubo_adpt_smr_fac
+  integer,           public, save :: kubo_smr_index
+  real(kind=dp),     public, save :: kubo_smr_fixed_en_width
+  real(kind=dp),     public, save :: kubo_adpt_smr_max
   logical,           public, save :: wanint_kpoint_file
   logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
+
+  logical                                  :: fermi_energy_scan
+  real(kind=dp)                            :: fermi_energy_min
+  real(kind=dp)                            :: fermi_energy_max
+  real(kind=dp)                            :: fermi_energy_step
+  integer,                    public, save :: nfermi
+  real(kind=dp), allocatable, public, save :: fermi_energy_list(:)
+
+  real(kind=dp)                               :: kubo_freq_min
+  real(kind=dp)                               :: kubo_freq_max
+  real(kind=dp)                               :: kubo_freq_step
+  integer,                       public, save :: kubo_nfreq
+  complex(kind=dp), allocatable, public, save :: kubo_freq_list(:)
+  real(kind=dp),                 public, save :: kubo_eigval_max
 
 ! Module  s p i n
   real(kind=dp),     public, save :: spin_kmesh_spacing
@@ -357,6 +369,10 @@ module w90_parameters
   ! Are we running postw90?
   logical, save, public :: ispostw90 = .false.
 
+  ! IVO
+  ! Are we running postw90 starting from an effective model?
+  logical, save, public :: effective_model = .false.
+
   ! Wannier centres and spreads
   real(kind=dp), public, save, allocatable :: wannier_centres(:,:)
   real(kind=dp), public, save, allocatable :: wannier_spreads(:)
@@ -437,8 +453,10 @@ contains
     optimisation    =  3             ! Verbosity
     call param_get_keyword('optimisation',found,i_value=optimisation)
 
-
     if (transport .and. tran_read_ht) goto 301 
+
+    !ivo
+    call param_get_keyword('effective_model',found,l_value=effective_model)
 
     energy_unit     =  'ev'          !
     call param_get_keyword('energy_unit',found,c_value=energy_unit)
@@ -474,9 +492,7 @@ contains
     num_wann      =   -99
     call param_get_keyword('num_wann',found,i_value=num_wann)
     if(.not. found) call io_error('Error: You must specify num_wann')
-    if(num_wann<=0) then
-       call io_error('Error: num_wann must be greater than zero')
-    endif
+    if(num_wann<=0) call io_error('Error: num_wann must be greater than zero')
 
     num_exclude_bands=0
     call param_get_range_vector('exclude_bands',found,num_exclude_bands,lcount=.true.)
@@ -492,7 +508,7 @@ contains
 !    num_bands       =   -1   
     call param_get_keyword('num_bands',found,i_value=i_temp)
     if(found.and.library) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
-    if (.not. library) then
+    if (.not. library .and. .not.effective_model) then
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
        if(found .and. num_bands<num_wann) then
@@ -514,7 +530,7 @@ contains
 !    mp_grid=-99
     call param_get_keyword_vector('mp_grid',found,3,i_value=iv_temp)
     if(found.and.library) write(stdout,'(a)') ' Ignoring <mp_grid> in input file'
-    if(.not.library) then
+    if(.not.library .and. .not.effective_model) then
        if(found) mp_grid=iv_temp
        if (.not. found) then
           call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
@@ -774,9 +790,65 @@ contains
     call param_get_keyword('fermi_surface_plot_format',found,c_value=fermi_surface_plot_format)
 
     fermi_energy=0.0_dp
+    nfermi=1
     found_fermi_energy=.false.
     call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
-    if(found) found_fermi_energy=.true.
+    if(found) then
+       found_fermi_energy=.true.
+    endif
+    !
+    fermi_energy_scan=.false.
+    call param_get_keyword('fermi_energy_min',found,r_value=fermi_energy_min)
+    if(found) then
+       if(found_fermi_energy) then
+          call io_error(&
+               'Error: Cannot specify both fermi_energy and fermi_energy_min')
+       else
+          fermi_energy_scan=.true.
+       endif
+    endif
+    !
+    if(fermi_energy_scan) fermi_energy_max=fermi_energy_min+1.0_dp
+    call param_get_keyword('fermi_energy_max',found,r_value=fermi_energy_max)
+    if(found) then
+       if(found_fermi_energy) call io_error(&
+            'Error: Cannot specify both fermi_energy and fermi_energy_max')
+       if(.not.fermi_energy_scan) call io_error(&
+         'Error: Must specify fermi_energy_min together with fermi_energy_max')
+       if(fermi_energy_max<=fermi_energy_min) call io_error(&
+            'Error: fermi_energy_max must be larger than fermi_energy_min')
+    endif
+    !
+    fermi_energy_step=0.01_dp
+    call param_get_keyword('fermi_energy_step',found,r_value=fermi_energy_step)
+    if(found) then
+       if(found_fermi_energy) call io_error(&
+            'Error: Cannot specify both fermi_energy and fermi_energy_step')
+       if(.not.fermi_energy_scan) call io_error(&
+         'Error: Must specify fermi_energy_min and fermi_energy_max'&
+         //' together with fermi_energy_step')
+       if(fermi_energy_step<=0.0_dp) call io_error(&
+            'Error: fermi_energy_step must be positive')
+    endif
+    !
+    if(fermi_energy_scan) then
+       nfermi=nint((fermi_energy_max-fermi_energy_min)/fermi_energy_step)+1
+       if(nfermi==1) nfermi=2
+       fermi_energy_step=(fermi_energy_max-fermi_energy_min)/(nfermi-1)
+    endif
+    !
+    allocate(fermi_energy_list(nfermi),stat=ierr)
+    if (ierr/=0) call io_error(&
+         'Error allocating fermi_energy_read in param_read')
+    fermi_energy_list=0.0_dp
+    if(found_fermi_energy) then
+       fermi_energy_list(1)=fermi_energy
+    elseif(fermi_energy_scan) then
+       do i=1,nfermi
+          fermi_energy_list(i)=fermi_energy_min&
+               +(i-1)*(fermi_energy_max-fermi_energy_min)/(nfermi-1)
+       enddo
+    endif
 
     ! checks
     if (fermi_surface_plot) then
@@ -788,31 +860,33 @@ contains
     kslice                = .false.
     call param_get_keyword('kslice',found,l_value=kslice)
 
-    kslice_task='energy_cntr'
+    kslice_task='fermi_lines'
     call param_get_keyword('kslice_task',found,c_value=kslice_task)
-       if(kslice .and. index(kslice_task,'energy_cntr')==0 .and.&
-          index(kslice_task,'curv_heatmap')==0 .and.&
-          index(kslice_task,'morb_heatmap')==0) call io_error&
+       if(kslice .and. index(kslice_task,'fermi_lines')==0 .and.&
+          index(kslice_task,'curv')==0 .and.&
+          index(kslice_task,'morb')==0) call io_error&
             ('Error: value of kslice_task not recognised in param_read')
-       if(kslice .and. index(kslice_task,'curv_heatmap')>0 .and.&
-            index(kslice_task,'morb_heatmap')>0) call io_error&
-          ('Error: kslice_task cannot include both "curv_heatmap" and "morb_heatmap"')
+       if(kslice .and. index(kslice_task,'curv')>0 .and.&
+            index(kslice_task,'morb')>0) call io_error&
+          ('Error: kslice_task cannot include both "curv" and "morb"')
 
-    kslice_kmesh(1:2) = 50
-    call param_get_vector_length('kslice_kmesh',found,length=i)
+    kslice_2dkmesh(1:2) = 50
+    call param_get_vector_length('kslice_2dkmesh',found,length=i)
     if(found) then
        if(i==1) then
-          call param_get_keyword_vector('kslice_kmesh',found,1,&
-               i_value=kslice_kmesh)
-          kslice_kmesh(2)=kslice_kmesh(1)
+          call param_get_keyword_vector('kslice_2dkmesh',found,1,&
+               i_value=kslice_2dkmesh)
+          kslice_2dkmesh(2)=kslice_2dkmesh(1)
        elseif(i==2) then
-          call param_get_keyword_vector('kslice_kmesh',found,2,&
-               i_value=kslice_kmesh)
+          call param_get_keyword_vector('kslice_2dkmesh',found,2,&
+               i_value=kslice_2dkmesh)
        else
-          call io_error('Error: kslice_kmesh must be provided as either one integer or a vector of two integers')
+          call io_error('Error: kslice_2dkmesh must be provided as either'&
+               //' one integer or a vector of two integers')
        endif
-       if (any(kslice_kmesh<=0)) &
-            call io_error('Error: kslice_kmesh elements must be greater than zero')
+       if (any(kslice_2dkmesh<=0)) &
+            call io_error('Error: kslice_2dkmesh elements must be'&
+            //' greater than zero')
     endif
 
     kslice_corner=0.0_dp
@@ -828,10 +902,20 @@ contains
     kslice_b2(3)=0.0_dp
     call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
 
-    kslice_cntr_energy=fermi_energy
-    found_kslice_cntr_energy=.false.
-    call param_get_keyword('kslice_cntr_energy',found,r_value=fermi_energy)
-    if(found.or.found_fermi_energy) found_kslice_cntr_energy=.true.
+    kslice_fermi_level=fermi_energy_list(1)
+    found_kslice_fermi_level=.false.
+    call param_get_keyword('kslice_fermi_level',found,&
+         r_value=kslice_fermi_level)
+    if(found.or.found_fermi_energy) found_kslice_fermi_level=.true.
+
+    kslice_fermi_lines_colour='none'                 
+    call param_get_keyword('kslice_fermi_lines_colour',found,&
+         c_value=kslice_fermi_lines_colour)
+    if(kslice .and. index(kslice_fermi_lines_colour,'none')==0 .and.&
+         index(kslice_fermi_lines_colour,'spin')==0) call io_error&
+         ('Error: value of kslice_fermi_lines_colour not recognised '&
+         //'in param_read')
+
 
 !    slice_plot_format         = 'plotmv'
 !    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
@@ -847,8 +931,8 @@ contains
     adpt_smr=.true.
     call param_get_keyword('adpt_smr',found,l_value=adpt_smr)
 
-    ! By default: a=2
-    adpt_smr_fac=2.0_dp
+    ! By default: a=sqrt(2)
+    adpt_smr_fac=sqrt(2.0_dp)
     call param_get_keyword('adpt_smr_fac',found,r_value=adpt_smr_fac)
     if (found .and. (adpt_smr_fac <= 0._dp)) &
          call io_error('Error: adpt_smr_fac must be greater than zero')  
@@ -893,21 +977,10 @@ contains
 !            ('Error: value of berry_task not recognised in param_read')
 !    end if
     if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-         .and. index(berry_task,'optics')==0) call io_error&
-         ('Error: value of berry_task not recognised in param_read')
+             .and. index(berry_task,'kubo')==0) call io_error&
+          ('Error: value of berry_task not recognised in param_read')
 
-    optics_time_parity ='even'
-    call param_get_keyword('optics_time_parity',found,c_value=optics_time_parity)
-    if(berry .and. index(berry_task,'optics')>0) then
-       if(.not.found) then
-          call io_error &
-               ('Error: berry=T and berry_task=optics and optics_time_parity is not set')
-       elseif(index(optics_time_parity,'even')==0 .and.&
-            index(optics_time_parity,'odd')==0) then
-          call io_error&
-               ('Error: value of optics_time_parity not recognised in param_read')
-       endif
-    endif
+    
 
 !-------------------------------------------------------
     alpha=0
@@ -920,19 +993,21 @@ contains
     call param_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
-    berry_adpt_kmesh           = 1
-    call param_get_keyword('berry_adpt_kmesh',found,&
-         i_value=berry_adpt_kmesh)
-    if (berry_adpt_kmesh<0)&
-         call io_error('Error:  berry_adpt_kmesh must be positive')       
+    ahc_adpt_kmesh           = 1
+    call param_get_keyword('ahc_adpt_kmesh',found,&
+         i_value=ahc_adpt_kmesh)
+    if (ahc_adpt_kmesh<0)&
+         call io_error('Error:  ahc_adpt_kmesh must be positive')       
 
-    optics_energy_step           = 0.01_dp
-    call param_get_keyword('optics_energy_step',found,&
-         r_value=optics_energy_step)
+    ahc_adpt_kmesh_thresh           = 100.0_dp
+    call param_get_keyword('ahc_adpt_kmesh_thresh',found,&
+         r_value=ahc_adpt_kmesh_thresh)
 
-    berry_adpt_kmesh_thresh           = 100.0_dp
-    call param_get_keyword('berry_adpt_kmesh_thresh',found,&
-         r_value=berry_adpt_kmesh_thresh)
+    berry_curv_unit     =  'ang2' 
+    call param_get_keyword('berry_curv_unit',found,c_value=berry_curv_unit)
+    if (berry_curv_unit.ne.'ang2' .and. berry_curv_unit.ne.'bohr2') &
+         call io_error&
+         ('Error: value of berry_curv_unit not recognised in param_read')
 
     wanint_kpoint_file = .false.
     call param_get_keyword('wanint_kpoint_file',found,&
@@ -941,27 +1016,27 @@ contains
 !    smear_temp = -1.0_dp
 !    call param_get_keyword('smear_temp',found,r_value=smear_temp)
 
-    optics_adpt_smr = adpt_smr
-    call param_get_keyword('optics_adpt_smr',found,l_value=optics_adpt_smr)
+    kubo_adpt_smr = adpt_smr
+    call param_get_keyword('kubo_adpt_smr',found,l_value=kubo_adpt_smr)
 
-    optics_adpt_smr_fac = adpt_smr_fac
-    call param_get_keyword('optics_adpt_smr_fac',found,&
-         r_value=optics_adpt_smr_fac)
-    if (found .and. (optics_adpt_smr_fac <= 0._dp)) call io_error&
-         ('Error: optics_adpt_smr_fac must be greater than zero')
+    kubo_adpt_smr_fac = adpt_smr_fac
+    call param_get_keyword('kubo_adpt_smr_fac',found,&
+         r_value=kubo_adpt_smr_fac)
+    if (found .and. (kubo_adpt_smr_fac <= 0._dp)) call io_error&
+         ('Error: kubo_adpt_smr_fac must be greater than zero')
 
 
-    optics_adpt_smr_max = adpt_smr_max
-    call param_get_keyword('optics_adpt_smr_max',found,&
-         r_value=optics_adpt_smr_max)
-    if (optics_adpt_smr_max <= 0._dp) call io_error&
-         ('Error: optics_adpt_smr_max must be greater than zero')
+    kubo_adpt_smr_max = adpt_smr_max
+    call param_get_keyword('kubo_adpt_smr_max',found,&
+         r_value=kubo_adpt_smr_max)
+    if (kubo_adpt_smr_max <= 0._dp) call io_error&
+         ('Error: kubo_adpt_smr_max must be greater than zero')
 
-    optics_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('optics_smr_fixed_en_width',found,&
-         r_value=optics_smr_fixed_en_width)
-    if (found .and. (optics_smr_fixed_en_width < 0._dp)) call io_error&
-      ('Error: optics_smr_fixed_en_width must be greater than or equal to zero')
+    kubo_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('kubo_smr_fixed_en_width',found,&
+         r_value=kubo_smr_fixed_en_width)
+    if (found .and. (kubo_smr_fixed_en_width < 0._dp)) call io_error&
+      ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
@@ -1022,8 +1097,12 @@ contains
     if (found.and.(num_valence_bands.le.0)) &
          call io_error('Error: num_valence_bands should be greater than zero')
 
-    dos_task =' '
-    dos_plot=.false.
+    dos_task ='dos_plot'
+    if(dos) then
+       dos_plot=.true.
+    else
+       dos_plot=.false.
+    endif
     call param_get_keyword('dos_task',found,c_value=dos_task)
     if(dos) then
        if(index(dos_task,'dos_plot')==0 .and.&
@@ -1037,6 +1116,7 @@ contains
 
     sigma_abc_onlyorb=.false.
     call param_get_keyword('sigma_abc_onlyorb',found,l_value=sigma_abc_onlyorb)
+
 ! -------------------------------------------------------------------
 
     !IVO_END
@@ -1215,7 +1295,7 @@ contains
 
     ! Read the eigenvalues from wannier.eig
     eig_found=.false.
-    if(.not. library) then
+    if(.not.library .and. .not.effective_model) then
        allocate(eigval(num_bands,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error allocating eigval in param_read')
        
@@ -1443,9 +1523,9 @@ contains
     if (found) dos_smr_index = get_smearing_index(ctmp,'dos_smr_type')
 
     ! By default: use the "global" smearing index 
-    optics_smr_index = smr_index
-    call param_get_keyword('optics_smr_type',found,c_value=ctmp)
-    if (found) optics_smr_index = get_smearing_index(ctmp,'optics_smr_type')
+    kubo_smr_index = smr_index
+    call param_get_keyword('kubo_smr_type',found,c_value=ctmp)
+    if (found) kubo_smr_index = get_smearing_index(ctmp,'kubo_smr_type')
 
     ! By default: 10 fs relaxation time
     boltz_relax_time = 10._dp
@@ -1496,17 +1576,46 @@ contains
     call param_get_keyword('dos_energy_min',found,r_value=dos_energy_min)
 
 
+    kubo_freq_min        = 0.0_dp
+    call param_get_keyword('kubo_freq_min',found,r_value=kubo_freq_min)
+    !
     if(frozen_states) then
-       optics_energy_max        = dis_froz_max-fermi_energy+0.6667_dp
+       kubo_freq_max        = dis_froz_max-fermi_energy_list(1)+0.6667_dp
     elseif(allocated(eigval)) then
-       optics_energy_max        = maxval(eigval)-minval(eigval)+0.6667_dp
+       kubo_freq_max        = maxval(eigval)-minval(eigval)+0.6667_dp
     else
-       optics_energy_max        = dis_win_max-dis_win_min+0.6667_dp
+       kubo_freq_max        = dis_win_max-dis_win_min+0.6667_dp
     end if
-    call param_get_keyword('optics_energy_max',found,r_value=optics_energy_max)
+    call param_get_keyword('kubo_freq_max',found,r_value=kubo_freq_max)
+    !
+    kubo_freq_step=0.01_dp
+    call param_get_keyword('kubo_freq_step',found,r_value=kubo_freq_step)
+    if(found .and. kubo_freq_step<0.0_dp) call io_error(&
+            'Error: kubo_freq_step must be positive')
+    !
+    kubo_nfreq=nint((kubo_freq_max-kubo_freq_min)/kubo_freq_step)+1
+    if(kubo_nfreq==1) kubo_nfreq=2
+    kubo_freq_step=(kubo_freq_max-kubo_freq_min)/(kubo_nfreq-1)
+    !
+    allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
+    if (ierr/=0)&
+         call io_error('Error allocating kubo_freq_list in param_read')
+    do i=1,kubo_nfreq
+       kubo_freq_list(i)=kubo_freq_min&
+            +(i-1)*(kubo_freq_max-kubo_freq_min)/(kubo_nfreq-1)
+    enddo
+    !
+    ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
+    !       the length of the list
 
-    optics_energy_min        = 0.0_dp
-    call param_get_keyword('optics_energy_min',found,r_value=optics_energy_min)
+    if(frozen_states) then
+       kubo_eigval_max=dis_froz_max+0.6667_dp
+    elseif(allocated(eigval)) then
+       kubo_eigval_max=maxval(eigval)+0.6667_dp
+    else
+       kubo_eigval_max=dis_win_max+0.6667_dp
+    end if
+    call param_get_keyword('kubo_eigval_max',found,r_value=kubo_eigval_max)
 
 
     automatic_translation=.true.
@@ -1561,24 +1670,26 @@ contains
          call utility_recip_lattice(real_lattice,recip_lattice,cell_volume)
     call utility_metric(real_lattice,recip_lattice,real_metric,recip_metric)
 
-    allocate ( kpt_cart(3,num_kpts) ,stat=ierr)
+    if(.not.effective_model) allocate ( kpt_cart(3,num_kpts) ,stat=ierr)
     if (ierr/=0) call io_error('Error allocating kpt_cart in param_read')
-    if(.not. library) then
+    if(.not. library .and. .not.effective_model) then
        allocate ( kpt_latt(3,num_kpts) ,stat=ierr)
        if (ierr/=0) call io_error('Error allocating kpt_latt in param_read')
     end if
 
     call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_cart)
     if(found.and.library) write(stdout,'(a)') ' Ignoring <kpoints> in input file'
-    if (.not. library) then
+    if (.not. library .and. .not.effective_model) then
        kpt_latt=kpt_cart
        if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
     end if
 
     ! Calculate the kpoints in cartesian coordinates
-    do nkp=1,num_kpts
-       kpt_cart(:,nkp)=matmul(kpt_latt(:,nkp),recip_lattice(:,:))
-    end do
+    if(.not.effective_model) then
+       do nkp=1,num_kpts
+          kpt_cart(:,nkp)=matmul(kpt_latt(:,nkp),recip_lattice(:,:))
+       end do
+    endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! k meshes

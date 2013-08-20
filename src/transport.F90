@@ -395,7 +395,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_io,         only : io_error, io_stopwatch, seedname, io_date, &
                                io_file_unit
     use w90_parameters, only : num_wann, tran_num_bb, tran_write_ht, &
-                               fermi_energy, timing_level
+                               nfermi,fermi_energy_list, timing_level
     !
     implicit none
     !
@@ -404,6 +404,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
     character(len=9)   :: cdate, ctime
     !
     if (timing_level>1) call io_stopwatch('tran: get_ht',1)
+    !
+    if(nfermi>1) call io_error("Error in tran_get_ht: nfermi>1. "&
+         //"Set the fermi level using the input parameter 'fermi_evel'") 
+    !
     !
     tran_num_bb=num_pl*num_wann
     !
@@ -437,7 +441,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     ! shift by fermi_energy
     do i=1,tran_num_bb
-       hB0(i,i)=hB0(i,i)-fermi_energy
+       hB0(i,i)=hB0(i,i)-fermi_energy_list(1)
     end do
 
     if ( tran_write_ht ) then
@@ -2921,7 +2925,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     use w90_constants,          only : dp,eps5
     use w90_io,                 only : io_error,stdout,seedname,io_file_unit,io_date,io_stopwatch
-    use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll,kpt_cart,fermi_energy,&
+    use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll,kpt_cart,nfermi,fermi_energy_list,&
                                        tran_write_ht,tran_num_rr,tran_num_lc,tran_num_cr,tran_num_cc,&
                                        tran_num_bandc,timing_level,dist_cutoff_mode,dist_cutoff,&
                                        dist_cutoff_hc
@@ -2939,6 +2943,10 @@ loop_n1: do n1 = -irvec_max, irvec_max
     character(len=9)                       :: cdate, ctime
 
     if (timing_level>1) call io_stopwatch('tran: lcr_2c2_build_ham',1)
+    
+    if(nfermi>1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. "&
+         //"Set the fermi level using the input parameter 'fermi_evel'") 
+    
 
     allocate(hL0(tran_num_ll,tran_num_ll),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating hL0 in tran_lcr_2c2_build_ham')
@@ -3208,11 +3216,11 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !Subtract the Fermi energy from the diagonal elements of hC,hL0,hR0
     !
     do i=1,tran_num_ll
-        hL0(i,i)=hL0(i,i)-fermi_energy
-        hR0(i,i)=hR0(i,i)-fermi_energy
+        hL0(i,i)=hL0(i,i)-fermi_energy_list(1)
+        hR0(i,i)=hR0(i,i)-fermi_energy_list(1)
     enddo
     do i=1,num_wann-(2*tran_num_ll)
-        hC(i,i)=hC(i,i)-fermi_energy
+        hC(i,i)=hC(i,i)-fermi_energy_list(1)
     enddo
     !
     !Define tran_num_** parameters that are used later in tran_lcr

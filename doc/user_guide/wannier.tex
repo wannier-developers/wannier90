@@ -1,16 +1,16 @@
 \chapter{\wannier\ as a library}\label{ch:wann-lib}
 
-This is a description of the interface between any external program and
-the wannier code. There are two subroutines: \verb#wannier_setup# and
-\verb#wannier_run#. Calling \verb#wannier_setup# will return
-information required to 
-construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref.~\cite{MV},
-Eq.~(25)) and $A_{mn}^{(\mathbf{k})}=\left\langle
-\psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections (Ref.~\cite{MV},
-Eq.~(62); Ref.~\cite{SMV}, Eq.~(22)). Once 
-the overlaps and projection have been computed, calling
-\verb#wannier_run# activates the minimisation and plotting routines in
-\wannier.
+This is a description of the interface between any external program
+and the wannier code. There are two subroutines: \verb#wannier_setup#
+and \verb#wannier_run#. Calling \verb#wannier_setup# will return
+information required to construct the $M_{mn}^{(\mathbf{k,b})}$
+overlaps (Ref.~\cite{marzari-prb97}, Eq.~(25)) and
+$A_{mn}^{(\mathbf{k})}=\left\langle
+  \psi_{m\mathbf{k}}|g_{n}\right\rangle$ projections
+(Ref.~\cite{marzari-prb97}, Eq.~(62); Ref.~\cite{souza-prb01},
+Eq.~(22)). Once the overlaps and projection have been computed,
+calling \verb#wannier_run# activates the minimisation and plotting
+routines in \wannier.
 
 %\section{Dependencies}
 %\begin{itemize}
@@ -189,24 +189,24 @@ may be specified in the \wannier\ input file.
       \verb#                  intent(in) :: M_matrix#\\ 
       The matrices of overlaps between neighbouring periodic parts of
       the Bloch eigenstates at each k-point, $M_{mn}^{(\mathbf{(k,b)})}$
-      (Ref.~\cite{MV}, Eq.~(25)).
+      (Ref.~\cite{marzari-prb97}, Eq.~(25)).
 \item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
       \verb#                  intent(in) :: A_matrix# \\The matrices
       describing the projection of \verb#num_wann# trial orbitals on
       \verb#num_bands# Bloch states at each k-point,
-      $A_{mn}^{(\mathbf{k})}$ (Ref.~\cite{MV}, Eq.~(62);
-      Ref.~\cite{SMV}, Eq.~(22)).
+      $A_{mn}^{(\mathbf{k})}$ (Ref.~\cite{marzari-prb97}, Eq.~(62);
+      Ref.~\cite{souza-prb01}, Eq.~(22)).
 \item \verb#real(kind=dp), dimension(num_bands,num_kpts),#
       \verb#intent(in) :: eigenvalues#\\ The
       eigenvalues $\varepsilon_{n\mathbf{k}}$ corresponding to the
       eigenstates, in eV.
 \item \verb#complex(kind=dp), dimension(num_wann,num_wann,num_kpts),#\\
       \verb#                  intent(out) :: U_matrix#\\ The unitary
-      matrices at each k-point (Ref.~\cite{MV}, Eq.~(59))
+      matrices at each k-point (Ref.~\cite{marzari-prb97}, Eq.~(59))
 \item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
       \verb#                   intent(out) :: U_matrix_opt#\\ The
       unitary matrices that describe the optimal sub-space at each
-      k-point (see Ref.~\cite{SMV}, Section~{\sc IIIa}). The array is
+      k-point (see Ref.~\cite{souza-prb01}, Section~{\sc IIIa}). The array is
       packed (see below) 
 \item \verb#logical, dimension(num_bands,num_kpts), intent(out) :: lwindow#\\ 
        The element \verb#lwindow(nband,nkpt)# is {\tt .true.} if the band
@@ -218,7 +218,7 @@ may be specified in the \wannier\ input file.
 \item \verb#real(kind=dp), dimension(3), intent(out) ::#
       \verb#spread#\\ 
       The values of $\Omega$, $\Omega_{\mathrm{I}}$ and
-      $\tilde{\Omega}$ (Ref.~\cite{MV}, Eq.~(13)). 
+      $\tilde{\Omega}$ (Ref.~\cite{marzari-prb97}, Eq.~(13)). 
 \end{itemize}
 
 Conditions:

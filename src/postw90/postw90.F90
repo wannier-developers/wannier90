@@ -99,23 +99,26 @@ program postw90
        write(stdout,'(1x,a25,f11.3,a)')&
             'Time to read parameters  ',time1-time0,' (sec)'
 
-       ! Check if the q-mesh includes the gamma point
-       !
-       have_gamma=.false.
-       do nkp=1,num_kpts
-          if (all(abs(kpt_latt(:,nkp))<eps6)) have_gamma=.true.       
-       end do
-       if(.not. have_gamma) write(stdout,'(1x,a)')&
-           'Ab-initio does not include Gamma. Interpolation may be incorrect!!!'
-       !
-       ! Need nntot, wb, and bk to evaluate WF matrix elements of the position
-       ! operator in reciprocal space. Also need nnlist to compute the
-       ! additional matrix elements entering the orbital magnetization
-       !
-       call kmesh_get
-       time2=io_time()
-       write(stdout,'(1x,a25,f11.3,a)')&
-            'Time to get kmesh        ',time2-time1,' (sec)'
+       if(.not.effective_model) then
+          ! Check if the q-mesh includes the gamma point
+          !
+          have_gamma=.false.
+          do nkp=1,num_kpts
+             if (all(abs(kpt_latt(:,nkp))<eps6)) have_gamma=.true.       
+          end do
+          if(.not. have_gamma) write(stdout,'(1x,a)')&
+               'Ab-initio does not include Gamma. Interpolation may be incorrect!!!'
+          !
+          ! Need nntot, wb, and bk to evaluate WF matrix elements of
+          ! the position operator in reciprocal space. Also need
+          ! nnlist to compute the additional matrix elements entering
+          ! the orbital magnetization
+          !
+          call kmesh_get
+          time2=io_time()
+          write(stdout,'(1x,a25,f11.3,a)')&
+               'Time to get kmesh        ',time2-time1,' (sec)'
+       endif
 
        ! GP, May 10, 2012: for the moment I leave this commented 
        ! since we need first to tune that routine so that it doesn't
@@ -129,19 +132,21 @@ program postw90
   !
   call wanint_param_dist
 
-  ! Read files seedname.chk (overlap matrices, unitary matrices for both
-  ! disentanglement and maximal localization, etc.)
-  !
-  if(on_root) then 
-     call param_read_chkpt()
+  if(.not.effective_model) then
+     !
+     ! Read files seedname.chk (overlap matrices, unitary matrices for
+     ! both disentanglement and maximal localization, etc.)
+     !
+     if(on_root) call param_read_chkpt()
+     !
+     ! Distribute the information in the um and chk files to the other nodes
+     !
+     ! Ivo: For interpolation purposes we do not need u_matrix_opt and
+     !      u_matrix separately, only their product v_matrix, and this
+     !      is what is distributed now
+     !
+     call wanint_data_dist
   end if
-
-  ! Distribute the information in the um and chk files to the other nodes
-  ! Ivo: For interpolation purposes we do not need u_matrix_opt and u_matrix
-  !      separately, only their product v_matrix, and this is what is 
-  !      distributed now
-  !
-  call wanint_data_dist
 
   ! Read list of k-points in irreducible BZ and their weights
   !

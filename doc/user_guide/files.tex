@@ -242,14 +242,14 @@ Then, each step of the iterative minimisation of $\omi$ is reported.
 \end{verbatim}
 The first column gives the iteration number. For a description of the
 minimisation procedure and expressions for $\omi^{(i)}$, see the
-original paper~\cite{SMV}. The procedure is considered to be converged
-when the fractional difference between $\omi^{(i)}$ and $\omi^{(i-1)}$ is
-less than {\tt dis\_conv\_tol} over {\tt dis\_conv\_window}
-iterations. The final column gives a running account of the wall time
-(in seconds) so far. Note that at the end of each line of output,
-there are the characters ``{\tt <-- DIS}''. This enables fast
-searching of the output using, for example, the Unix command {\tt
-  grep}:
+original paper~\cite{souza-prb01}. The procedure is considered to be
+converged when the fractional difference between $\omi^{(i)}$ and
+$\omi^{(i-1)}$ is less than {\tt dis\_conv\_tol} over {\tt
+  dis\_conv\_window} iterations. The final column gives a running
+account of the wall time (in seconds) so far. Note that at the end of
+each line of output, there are the characters ``{\tt <-- DIS}''. This
+enables fast searching of the output using, for example, the Unix
+command {\tt grep}:
 
 {\tt my\_shell> grep DIS wannier.wout | less}
 

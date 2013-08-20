@@ -3,14 +3,15 @@
 This is a description of how to use \wannier\ as a
 post-processing tool. 
 
-The code must be run twice. On the first pass either the logical keyword
-\verb#postproc_setup# must be set to \verb#.true.# in the input file
-\verb#seedname.win# or the code must be run with the command line
-option \verb#-pp#.  Running the code then generates the file
-\verb#seedname.nnkp# which provides the information required to 
-construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref.~\cite{MV},
-Eq.~(25)) and $A_{mn}^{(\mathbf{k})}$ (Ref.~\cite{MV}, Eq.~(62);
-Ref.~\cite{SMV}, Eq.~(22)).
+The code must be run twice. On the first pass either the logical
+keyword \verb#postproc_setup# must be set to \verb#.true.# in the
+input file \verb#seedname.win# or the code must be run with the
+command line option \verb#-pp#.  Running the code then generates the
+file \verb#seedname.nnkp# which provides the information required to
+construct the $M_{mn}^{(\mathbf{k,b})}$ overlaps
+(Ref.~\cite{marzari-prb97}, Eq.~(25)) and $A_{mn}^{(\mathbf{k})}$
+(Ref.~\cite{marzari-prb97}, Eq.~(62); Ref.~\cite{souza-prb01},
+Eq.~(22)).
 
 Once the overlaps and projection have been computed and written to
 files \verb#seedname.mmn# and \verb#seedname.amn#, respectively,
