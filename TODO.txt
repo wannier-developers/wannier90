@@ -4,7 +4,7 @@ Deadlines:
 
 Upcoming release:
 + Add own changes on the CHANGE.log (ALL)
-+ Duplication of "Fermi energy" variable (AAM)
++ Duplication of "Fermi energy" variable (AAM) ***DONE BY IVO***
 + Minimum k-spacing (debug only) (JRY)
 + Projection-only WFs (document, improve output, use in Example08) (JRY)
 + AHE/Orb-Mag - keywords, documentation, examples (IS)
@@ -16,7 +16,6 @@ Upcoming release:
   * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning) (ALL) [Ivo: forced num_elec_per_state=1 when spinors = T]
 + POVRay plotting (AAM) ***DONE***
 + Fix in pw2w90 for spin-polarized systems when write_parity=true (AAM) ***DONE***  
-+ Update ballistic transport (AAM) 
 + Command-line option to check input file and
   stop with result after reading parameters and finding b-vectors (eg,
   -validate) (GP) 
@@ -25,6 +24,7 @@ Upcoming release:
 And to postpone to 2.1: 
 + Testsuite (AAM) 
 + Plotting (atom-centred grids) (AAM) 
++ Update ballistic transport (AAM)
 + Jmol interface (JRY) 
 + Parallel timing routines (ALL) [maybe for 2.0 we should just check that 
   the current parallel timing provides results that make sense]
