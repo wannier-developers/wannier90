@@ -495,7 +495,8 @@ contains
           end do
        end do
        close(sigmas_unit)
-       if (iprint > 1) write(stdout,'(3X,A)') "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the " // trim(seedname)//"_sigmas.dat file."
+       if (iprint > 1) write(stdout,'(3X,A)') &
+                 "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the " // trim(seedname)//"_sigmas.dat file."
 
        seebeck_unit =io_file_unit()
        open(unit=seebeck_unit,file=trim(seedname)//'_seebeck.dat')  
