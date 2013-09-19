@@ -69,8 +69,7 @@ module w90_postw90_common
     use w90_constants, only   : dp,cmplx_0
     use w90_io, only          : io_error,io_file_unit,stdout,seedname
     use w90_utility, only     : utility_cart_to_frac
-    use w90_parameters, only  : berry_kmesh,ahc_adpt_kmesh,real_lattice,&
-                                effective_model,num_wann
+    use w90_parameters, only  : real_lattice,effective_model,num_wann
 
     integer        :: ierr,i,j,k,ikpt,ir,file_unit,num_wann_loc
 
@@ -250,8 +249,8 @@ module w90_postw90_common
     call comms_bcast(berry_task,len(berry_task))
     call comms_bcast(berry_kmesh_spacing,1)
     call comms_bcast(berry_kmesh(1),3)
-    call comms_bcast(ahc_adpt_kmesh,1)
-    call comms_bcast(ahc_adpt_kmesh_thresh,1)
+    call comms_bcast(berry_curv_adpt_kmesh,1)
+    call comms_bcast(berry_curv_adpt_kmesh_thresh,1)
     call comms_bcast(berry_curv_unit,len(berry_curv_unit))
     call comms_bcast(kubo_adpt_smr,1)
     call comms_bcast(kubo_adpt_smr_fac,1)

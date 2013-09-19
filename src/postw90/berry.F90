@@ -99,7 +99,7 @@ module w90_berry
                                   !---------remove eventually---------
                                   alpha,beta,gamma,sigma_abc_onlyorb,&
                                   !-----------------------------------
-                                  ahc_adpt_kmesh,ahc_adpt_kmesh_thresh,&
+                                  berry_curv_adpt_kmesh,berry_curv_adpt_kmesh_thresh,&
                                   wanint_kpoint_file,cell_volume,transl_inv,&
                                   berry_task,berry_curv_unit,spin_decomp,&
                                   kubo_nfreq,kubo_freq_list,nfermi,&
@@ -435,16 +435,16 @@ module w90_berry
 
     ! Set up adaptive refinement mesh
     !
-    allocate(adkpt(3,ahc_adpt_kmesh**3),stat=ierr)
+    allocate(adkpt(3,berry_curv_adpt_kmesh**3),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating adkpt in berry')
     ikpt=0
-    do i=-(ahc_adpt_kmesh-1)/2,(ahc_adpt_kmesh-1)/2
-       do j=-(ahc_adpt_kmesh-1)/2,(ahc_adpt_kmesh-1)/2
-          do k=-(ahc_adpt_kmesh-1)/2,(ahc_adpt_kmesh-1)/2
+    do i=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
+       do j=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
+          do k=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
              ikpt=ikpt+1 
-             adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*ahc_adpt_kmesh)
-             adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*ahc_adpt_kmesh)
-             adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*ahc_adpt_kmesh)
+             adkpt(1,ikpt)=real(i,dp)/(berry_kmesh(1)*berry_curv_adpt_kmesh)
+             adkpt(2,ikpt)=real(j,dp)/(berry_kmesh(2)*berry_curv_adpt_kmesh)
+             adkpt(3,ikpt)=real(k,dp)/(berry_kmesh(3)*berry_curv_adpt_kmesh)
           end do
        end do
     end do
@@ -469,7 +469,7 @@ module w90_berry
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
-          kweight_adpt=kweight/ahc_adpt_kmesh**3
+          kweight_adpt=kweight/berry_curv_adpt_kmesh**3
           !               .
           ! ***BEGIN COPY OF CODE BLOCK 1***
           !
@@ -480,9 +480,9 @@ module w90_berry
                    vdum(i)=sum(imf_k_list(1:3,i,if))
                 enddo
                 if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
-                if(sqrt(dot_product(vdum,vdum))>ahc_adpt_kmesh_thresh) then
+                if(sqrt(dot_product(vdum,vdum))>berry_curv_adpt_kmesh_thresh) then
                    adpt_counter_list(if)=adpt_counter_list(if)+1
-                   do loop_adpt=1,ahc_adpt_kmesh**3
+                   do loop_adpt=1,berry_curv_adpt_kmesh**3
                       ! Using imf_k_list here would corrupt values for other
                       ! frequencies, hence dummy. Only if-th element is used
                       call get_imf_k_list(kpt(:)+adkpt(:,loop_adpt),&
@@ -546,7 +546,7 @@ module w90_berry
     else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
        kweight = 1.0_dp/real(PRODUCT(berry_kmesh),kind=dp)
-       kweight_adpt=kweight/ahc_adpt_kmesh**3
+       kweight_adpt=kweight/berry_curv_adpt_kmesh**3
 
        do loop_tot=my_node_id,PRODUCT(berry_kmesh)-1,num_nodes
           loop_x= loop_tot/(berry_kmesh(2)*berry_kmesh(3))
@@ -567,9 +567,9 @@ module w90_berry
                    vdum(i)=sum(imf_k_list(1:3,i,if))
                 enddo
                 if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
-                if(sqrt(dot_product(vdum,vdum))>ahc_adpt_kmesh_thresh) then
+                if(sqrt(dot_product(vdum,vdum))>berry_curv_adpt_kmesh_thresh) then
                    adpt_counter_list(if)=adpt_counter_list(if)+1
-                   do loop_adpt=1,ahc_adpt_kmesh**3
+                   do loop_adpt=1,berry_curv_adpt_kmesh**3
                       ! Using imf_k_list here would corrupt values for other
                       ! frequencies, hence dummy. Only if-th element is used
                       call get_imf_k_list(kpt(:)+adkpt(:,loop_adpt),&
@@ -681,19 +681,19 @@ module w90_berry
 
        write(stdout,'(1x,a)') ' '
 
-       if(eval_ahc .and. ahc_adpt_kmesh.ne.1) then
+       if(eval_ahc .and. berry_curv_adpt_kmesh.ne.1) then
           if(.not.wanint_kpoint_file) write(stdout, '(1x,a28,3(i0,1x))')&
                'Regular interpolation grid: ',berry_kmesh
           write(stdout, '(1x,a28,3(i0,1x))') 'Adaptive refinement grid: ',&
-               ahc_adpt_kmesh,ahc_adpt_kmesh,ahc_adpt_kmesh
+               berry_curv_adpt_kmesh,berry_curv_adpt_kmesh,berry_curv_adpt_kmesh
           if(berry_curv_unit=='ang2') then
              write(stdout, '(1x,a28,a17,f6.2,a)')&
                   'Refinement threshold: ','Berry curvature >',&
-                  ahc_adpt_kmesh_thresh,' Ang^2'
+                  berry_curv_adpt_kmesh_thresh,' Ang^2'
           elseif(berry_curv_unit=='bohr2') then
              write(stdout, '(1x,a28,a17,f6.2,a)')&
                   'Refinement threshold: ','Berry curvature >',&
-                  ahc_adpt_kmesh_thresh,' bohr^2'
+                  berry_curv_adpt_kmesh_thresh,' bohr^2'
           endif
           if(nfermi==1) then
              if(wanint_kpoint_file) then

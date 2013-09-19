@@ -291,8 +291,8 @@ magnetic moment per cell\\
   (one or three integers)\\ 
   {\sc [berry\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in 
   \AA$^{-1}$\\
-  {\sc ahc\_adpt\_kmesh} & I & Linear dimension of the adaptively refined $k$-mesh used to compute the anomalous Hall conductivity\\ 
-  {\sc ahc\_adpt\_kmesh\_thresh} & P & Threshold magnitude
+  {\sc berry\_curv\_adpt\_kmesh} & I & Linear dimension of the adaptively refined $k$-mesh used to compute the anomalous Hall conductivity\\ 
+  {\sc berry\_curv\_adpt\_kmesh\_thresh} & P & Threshold magnitude
   of the Berry curvature for adaptive refinement\\ 
   {\sc kubo\_freq\_min} & P & Lower limit of the frequency range for
   optical spectra and JDOS (eV) \\
@@ -599,7 +599,7 @@ The default value is \verb#false#.
 \subsection[spn\_formatted]{\tt character(len=20) :: berry\_curv\_unit}
 
 Unit in which the Berry curvature is specified at input (in {\tt
-  ahc\_adpt\_kmesh\_thresh}) or written to file (when {\tt
+  berry\_curv\_adpt\_kmesh\_thresh}) or written to file (when {\tt
   kpath\_task=curv} or {\tt kslice\_task=curv}).
 
 \begin{itemize}
@@ -1073,20 +1073,20 @@ Overrides the \verb#kmesh_spacing# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
 
-\subsection[berry\_adpt\_kmesh]{\tt integer :: ahc\_adpt\_kmesh}
+\subsection[berry\_adpt\_kmesh]{\tt integer :: berry\_curv\_adpt\_kmesh}
 If a positive integer $n$ is given and {\tt berry\_task=ahc}, an
 $n\times n\times n$ mesh is placed around points on the uniform mesh
 (defined by either {\tt berry\_kmesh} or {\tt berry\_kmesh\_spacing})
 where the magnitude of the $k$-space Berry curvature exceeds the
-threshold value specified in {\tt ahc\_adpt\_kmesh\_thresh}. This can
-be used to densify the BZ integration mesh around spikes in the Berry
-curvature.
+threshold value specified in {\tt
+  berry\_curv\_adpt\_kmesh\_thresh}. This can be used to densify the
+BZ integration mesh around spikes in the Berry curvature.
 
 The default value is 1.
 
 
 \subsection[berry\_adpt\_kmesh\_thresh]{\tt real(kind=dp) ::
-  ahc\_adpt\_kmesh\_thresh}
+  berry\_curv\_adpt\_kmesh\_thresh}
 
 Magnitude of the Berry curvature (in units of {\tt berry\_curv\_unit})
 that triggers adaptive mesh refinement when {\tt berry\_task=ahc}.

@@ -143,8 +143,8 @@ module w90_parameters
   integer,           public, save :: beta
   integer,           public, save :: gamma
   ! --------------remove eventually----------------
-  integer,           public, save :: ahc_adpt_kmesh
-  real(kind=dp),     public, save :: ahc_adpt_kmesh_thresh
+  integer,           public, save :: berry_curv_adpt_kmesh
+  real(kind=dp),     public, save :: berry_curv_adpt_kmesh_thresh
   character(len=20), public, save :: berry_curv_unit
   logical,           public, save :: kubo_adpt_smr
   real(kind=dp),     public, save :: kubo_adpt_smr_fac
@@ -993,15 +993,15 @@ contains
     call param_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
-    ahc_adpt_kmesh           = 1
-    call param_get_keyword('ahc_adpt_kmesh',found,&
-         i_value=ahc_adpt_kmesh)
-    if (ahc_adpt_kmesh<0)&
-         call io_error('Error:  ahc_adpt_kmesh must be positive')       
+    berry_curv_adpt_kmesh           = 1
+    call param_get_keyword('berry_curv_adpt_kmesh',found,&
+         i_value=berry_curv_adpt_kmesh)
+    if (berry_curv_adpt_kmesh<0)&
+         call io_error('Error:  berry_curv_adpt_kmesh must be positive')       
 
-    ahc_adpt_kmesh_thresh           = 100.0_dp
-    call param_get_keyword('ahc_adpt_kmesh_thresh',found,&
-         r_value=ahc_adpt_kmesh_thresh)
+    berry_curv_adpt_kmesh_thresh           = 100.0_dp
+    call param_get_keyword('berry_curv_adpt_kmesh_thresh',found,&
+         r_value=berry_curv_adpt_kmesh_thresh)
 
     berry_curv_unit     =  'ang2' 
     call param_get_keyword('berry_curv_unit',found,c_value=berry_curv_unit)
