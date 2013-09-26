@@ -1,27 +1,4 @@
-Deadlines:
-* Oct. 25th: main modifications + documentation
-* Nov. 11th: get feedback and prepare pre-release
-
-Upcoming release:
-+ Add own changes on the CHANGE.log (ALL)
-+ Duplication of "Fermi energy" variable (AAM) ***DONE BY IVO***
-+ Minimum k-spacing (debug only) (JRY)
-+ Projection-only WFs (document, improve output, use in Example08) (JRY)
-+ AHE/Orb-Mag - keywords, documentation, examples (IS)
-+ Update documentation: input variables, FAQ, credits, version number, 
-                        CHANGE.LOG, installation instructions (ALL)
-  * I have a parser that lists all variables in the code (GP)
-+ Update checks on parameters (ALL)  
-  * update param_write with new params (ALL)
-  * Check if in DOS, berry, etc. we are correctly using num_elec_per_state (or, if the routine assumes num_elec_per_state=1, if this is checked at the beginning) (ALL) [Ivo: forced num_elec_per_state=1 when spinors = T]
-+ POVRay plotting (AAM) ***DONE***
-+ Fix in pw2w90 for spin-polarized systems when write_parity=true (AAM) ***DONE***  
-+ Command-line option to check input file and
-  stop with result after reading parameters and finding b-vectors (eg,
-  -validate) (GP) 
-+ Scissors operator: input variables (IS) ***DONE***
-
-And to postpone to 2.1: 
+Things for the next (2.1) release
 + Testsuite (AAM) 
 + Plotting (atom-centred grids) (AAM) 
 + Update ballistic transport (AAM)
@@ -34,3 +11,9 @@ And to postpone to 2.1:
 it real, for, e.g., alloys in VCA, make found_fermi_energy work) (IS)
 + Compute Wannier occupations (see email correspondence on 2013-04-03)
 + Consolidate  hamiltonian_wigner_seitz and wigner_seitz in postw90_common?
++ Use scissor operator for bandstructures (JRY / IS)
++ commandline help (JRY)
++ Improve the output of projection only WF (eg initial spread) 
++ Command-line option to check input file and
+  stop with result after reading parameters and finding b-vectors (eg,
+  -validate) (GP) [see help above - be aware of MPICH adding arguments to the command line]
