@@ -2532,6 +2532,98 @@ contains
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     endif
 
+    if(kpath .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*--------------------------------- KSLICE -----------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Plot Properties along a slice in k-space  :',kslice,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Fermi level used for slice                :',kslice_fermi_level,'|'
+       write(stdout,'(1x,a46,10x,I8,13x,a1)')    '|  Divisions along first kpath section       :',kpath_num_points,'|'
+       if(index(kslice_task,'fermi_lines')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :','       F','|'
+       endif
+       if(index(kslice_task,'curv')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature (sum over occ states):','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature (sum over occ states):','       F','|'
+       endif
+       if(index(kslice_task,'morb')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       F','|'
+       endif
+       write(stdout,'(1x,a46,10x,a8,13x,a1)')    '|  Property used to colour code the lines    :', &
+            trim(kslice_fermi_lines_colour),'|'
+       write(stdout,'(1x,a78)') '|  2D slice parameters (in reduced coordinates):                             |'
+       write(stdout,'(1x,a14,2x,3F8.3,37x,a1)') '|     Corner: ', (kslice_corner(i),i=1,3),'|'
+       write(stdout,'(1x,a14,2x,3F8.3,10x,a12,2x,i4,9x,a1)') &
+            '|    Vector1: ', (kslice_b1(i),i=1,3),' Divisions:',kslice_2dkmesh(1),'|'
+       write(stdout,'(1x,a14,2x,3F8.3,10x,a12,2x,i4,9x,a1)') &
+            '|    Vector2: ', (kslice_b2(i),i=1,3),' Divisions:',kslice_2dkmesh(1),'|'
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if(berry .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*--------------------------------- BERRY ------------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute Berry Phase related properties    :',berry,'|'
+       if(index(berry_task,'kubo')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Optical Conductivity and JDOS     :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Optical Conductivity and JDOS     :','       F','|'
+       endif
+       if(index(berry_task,'ahc')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :','       F','|'
+       endif
+       if(index(berry_task,'kubo')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       F','|'
+       endif
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for optical conductivity  :',kubo_freq_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for optical conductivity  :',kubo_freq_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for optical conductivity        :',kubo_freq_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue for optical conductivity :',kubo_eigval_max,'|'
+       if(kubo_adpt_smr.eqv.adpt_smr .and. kubo_adpt_smr_fac==adpt_smr_fac .and. kubo_adpt_smr_max==adpt_smr_max &
+            .and. kubo_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==kubo_smr_index) then
+          write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
+       else
+          if(kubo_adpt_smr) then
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Adaptive width smearing                   :','       T','|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :',kubo_adpt_smr_fac,'|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :',kubo_adpt_smr_max,'|'
+          else
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',kubo_smr_fixed_en_width,'|'
+          endif
+          write(stdout,'(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ',trim(param_get_smearing_type(kubo_smr_index)),'|'
+       endif
+       if(kmesh(1)==berry_kmesh(1) .and. kmesh(2)==berry_kmesh(2) .and. kmesh(3)==berry_kmesh(3) ) then
+          write(stdout,'(1x,a78)') '|  Using global k-point set for interpolation                                |'
+       else
+          if(berry_kmesh_spacing>0.0_dp) then
+             write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+                  berry_kmesh(1),'x',berry_kmesh(2),'x',berry_kmesh(3),' Spacing = ',berry_kmesh_spacing,'|'
+          else
+             write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
+                  ,berry_kmesh(1),'x',berry_kmesh(2),'x',berry_kmesh(3),'|'
+          endif
+       endif
+       if(berry_curv_adpt_kmesh>1) then
+          write(stdout,'(1x,a46,10x,i8,13x,a1)')     '|  Using an adaptive refinement mesh of size :',berry_curv_adpt_kmesh,'|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)')   '|  Threshold for adaptive refinement         :',&
+               berry_curv_adpt_kmesh_thresh,'|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :','    none','|'
+       endif
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+
+
+
+
     if(boltzwann .or. iprint>2) then
        write(stdout,'(1x,a78)') '*------------------------------- BOLTZWANN ----------------------------------*'
        write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute Boltzmann transport properties    :',boltzwann,'|'
@@ -2567,16 +2659,23 @@ contains
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :',boltz_dos_energy_min,'|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :',boltz_dos_energy_max,'|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :',boltz_dos_energy_step,'|'
-          if(boltz_dos_adpt_smr) then
-             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  DOS Adaptive width smearing               :','       T','|'
-             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Adaptive smearing factor              :',boltz_dos_adpt_smr_fac,'|'
-             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Maximum allowed smearing width        :',boltz_dos_adpt_smr_max,'|'
+          if(boltz_dos_adpt_smr.eqv.adpt_smr .and. boltz_dos_adpt_smr_fac==adpt_smr_fac .and. boltz_dos_adpt_smr_max==adpt_smr_max &
+               .and. boltz_dos_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==boltz_dos_smr_index) then
+             write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
           else
-             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  DOS Fixed width smearing                  :','       T','|'
-             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :',&
-                  boltz_dos_smr_fixed_en_width,'|'
+             if(boltz_dos_adpt_smr) then
+                write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  DOS Adaptive width smearing               :','       T','|'
+                write(stdout,'(1x,a46,10x,f8.3,13x,a1)') &
+                     '|  DOS Adaptive smearing factor              :',boltz_dos_adpt_smr_fac,'|'
+                write(stdout,'(1x,a46,10x,f8.3,13x,a1)') &
+                     '|  DOS Maximum allowed smearing width        :',boltz_dos_adpt_smr_max,'|'
+             else
+                write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  DOS Fixed width smearing                  :','       T','|'
+                write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :',&
+                     boltz_dos_smr_fixed_en_width,'|'
+             endif
+             write(stdout,'(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ',trim(param_get_smearing_type(boltz_dos_smr_index)),'|'
           endif
-          write(stdout,'(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ',trim(param_get_smearing_type(boltz_dos_smr_index)),'|'
        endif
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     endif
