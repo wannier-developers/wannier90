@@ -1,6 +1,6 @@
 \documentclass[a4paper,11pt,twoside]{article}
 \usepackage[top=3cm,bottom=3cm,left=2cm,right=2cm]{geometry}
-\usepackage{multirow}
+%\usepackage{multirow}
 \usepackage{footnote}
 \usepackage{amsbsy}
 \usepackage{graphicx}
@@ -39,7 +39,7 @@
 \title{\wannier: Tutorial}
 
 \author{Version 2.0}
-\date{\tent{\today}}
+\date{\today}
 
 %%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
 %hidelinks to remove colored borders from links
@@ -74,17 +74,6 @@
 
 \newpage
 
-{\tentbis
-  {\bf TO DO:}
-
-\begin{itemize}
-
-\item GP: would it be good to reduce the number of pages, since now
-  manual and tutorials are becoming quite long? E.g., I was thinking
-  to remove the cleardoublepage commands (now that we also have a
-  table of contents). I also reduced the margins a little bit.
-\end{itemize}
-  }
 
 \sectiontitle{Preliminaries}
 \label{sec:preliminaries}
@@ -157,16 +146,19 @@ provided.
 
 The second part of the tutorial covers the generation of \wannier\
 input files starting from a full electronic structure calculation. We
-have provided input files for the \pwscf\ interface (\url{http://www.quantum-espresso.org}) to \wannier. \tent{say that new
-versions of QE don't need to be patched? Say that new features that
-require uHu will not be ported back to QE prior to 5.0?} Therefore, you
+have provided input files for the \pwscf\ interface (\url{http://www.quantum-espresso.org}) to \wannier. 
+Therefore, you
 will need to install and compile elements of the {\tt
   quantum-espresso} package, namely {\tt pw.x} and {\tt
   pw2wannier90.x}, in order to run these
 examples. Please visit \url{http://www.quantum-espresso.org} to download the
 package, and for installation instructions. 
+The tutorial examples work with \pwscf\ v5.0.0 - v5.0.2 with the exception of the Berry phase related properties in examples 17-19 which require the
+very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v5.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}.
+We expect this will be included as standard in the next release of \pwscf\
 
-There are Interfaces to a number of other electronic structure codes
+
+There are interfaces to a number of other electronic structure codes
 including {\sc abinit} (\url{http://www.abinit.org}), {\sc fleur}
 (\url{http://www.flapw.de}), {\sc VASP} (\url{http://www.vasp.at}), and
 {\sc Wien2k} (\url{http://www.wien2k.at})
@@ -244,10 +236,10 @@ xcrysden --xsf gaas\_00001.xsf
 For large systems, plotting the MLWFs may be time consuming
 and require a lot of memory. Use the keyword {\tt wannier\_plot\_list}
 to plot a subset of the MLWFs. E.g., to plot the
-1st, 2nd and 7th MLWFs use 
+1st and 3rd MLWFs use 
 {\tt
 \begin{quote}
-wannier\_plot\_list = 1 2 7
+wannier\_plot\_list = 1 3
 \end{quote} }
 The MLWFs are plotted in a supercell of the unit cell. The
 size of this supercell is set through the keyword {\tt
@@ -267,7 +259,7 @@ unit cell.
 \end{enumerate}
 
 
-\cleardoublepage
+%\cleardoublepage
 
 
 
@@ -339,7 +331,7 @@ xcrysden --bxsf lead.bxsf
 \end{center}
 \end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 
 \sectiontitle{3: Silicon -- Disentangled MLWFs}
@@ -409,7 +401,7 @@ The k-point path for the bandstructure interpolation is set in the {\tt
 \end{center}
 \end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 
 \sectiontitle{4: Copper -- Fermi surface, orbital character of energy
@@ -523,7 +515,7 @@ parallel. In this case any number of processors can be used,
 independently of the number used for {\tt pw.x} and {\tt
   pw2wannier90.x}.
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{5: Diamond -- MLWFs for the valence bands}
 \begin{itemize}
@@ -560,7 +552,7 @@ independently of the number used for {\tt pw.x} and {\tt
 {\tt wannier90.x diamond}
 \end{enumerate}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{6: Copper -- Fermi surface}
 
@@ -653,7 +645,7 @@ end kpoint\_path
 \begin{itemize}
 \item Compare the Wannier interpolated bandstructure with the full
   \pwscf\ bandstructure. Obtain MLWFs using a denser k-point grid.
-\tent{{[Provide script for this? Link to Jonathan's URL?]}}
+To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the small fortran program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}.
 \item Investigate the effects of the outer and inner energy windows on
   the interpolated bands. 
 \item Instead of extracting a subspace of seven states, we could
@@ -671,7 +663,7 @@ end kpoint\_path
 %\end{center}
 %\end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{7: Silane (SiH$_4$) -- Molecular MLWFs using
   $\Gamma$-point sampling}
@@ -710,7 +702,7 @@ end kpoint\_path
 {\tt wannier90.x silane}
 \end{enumerate}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{8: Iron -- Spin-polarized WFs, DOS, projected WFs versus MLWFs}
 \begin{itemize}
@@ -811,10 +803,10 @@ Fe:s;p;d
 Let us analyze the evolution of the WFs during the gauge-selection
 step. Open one of the {\tt .wout} files and search for ``{\tt Initial
   state}''; those are the {\it projected} WFs. As expected they are
-atom-centered, with spreads organized in three groups, 1+3+5: one $s$,
+atom-centred, with spreads organized in three groups, 1+3+5: one $s$,
 three $p$, and five $d$.  Now look at the final state towards the end
 of the file.  The Wannier spreads have re-organized in two groups,
-6+3; moreover, the six more diffuse WFs are off-centered: the initial
+6+3; moreover, the six more diffuse WFs are off-centred: the initial
 atomic-like orbitals hybridized with one another, becoming more
 localized in the process. It is instructive to visualize the
 final-state MLWFs using {\tt XCrySDen}, following Example~1. For more
@@ -844,7 +836,7 @@ gnuplot> plot `sprd\_up' u 6  w l
 \end{figure}
 
 
-The first plateau corresponds to atom-centered WFs of separate $s$,
+The first plateau corresponds to atom-centred WFs of separate $s$,
 $p$, and $d$ character, and the sharp drop signals the onset of the
 hybridization. With hindsight, we can redo steps~4 and~5 more
 efficiently using trial orbitals with the same character as the final
@@ -871,7 +863,7 @@ num\_iter = 0
 \end{quote}
 }
 %
-\tent{[But note that we still need to do disentanglement!]}
+But note that we still need to do disentanglement!
 Recalculate the DOS to confirm that it is almost identical to the one
 obtained earlier using the hybridized set of MLWFs. Visualize the
 projected WFs using {\tt XCrySDen}, to see that they retain the pure
@@ -917,7 +909,7 @@ $d$-states, which contribute most of the density of states at the
 Fermi level.
 
 
-\cleardoublepage
+%\cleardoublepage
 
 
 \sectiontitle{9: Cubic BaTiO$_3$}
@@ -998,7 +990,7 @@ the second MLWF.
   change in Wannier centres under an atomic displacement. 
 \end{itemize}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{10: Graphite}
 \begin{itemize}
@@ -1036,7 +1028,7 @@ the second MLWF.
 \end{enumerate}
 
 
-\cleardoublepage
+%\cleardoublepage
 
 
 \sectiontitle{11: Silicon -- Valence and conduction states, scissors
@@ -1184,7 +1176,7 @@ Plot together the original and scissors-corrected bands.
 %\end{center}
 %\end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 
 \sectiontitle{12: Benzene}
@@ -1271,7 +1263,7 @@ wannier\_plot\_list   = 1,7,13
 and re-running \wannier. Visualise them using, e.g., {\tt XCrySDen}. 
 \end{enumerate}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{13: (5,5) Carbon Nanotube -- Transport properties}
 %\subsection*{Transport properties}
@@ -1356,7 +1348,7 @@ by 1.06eV with respect to Fig.~\ref{fig:cnt.win}.}
 \end{center}
 \end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{14: Linear Sodium Chain -- Transport properties}
 
@@ -1408,7 +1400,7 @@ The supercell is chosen so that is conforms to the 2c2 geometry (see User Guide
 for details). Each principal layer is 2 atoms long so that the conductor 
 region contains the defected atom plus a single atom on either side.
 
-The transport section of the input file contians  these key differences:
+The transport section of the input file contains these key differences:
 
 {\tt
 \begin{quote}
@@ -1439,7 +1431,7 @@ defected (LCR) calculation. Your plot should look like Fig.~\ref{fig:Na_qc}.
 \end{center}
 \end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{15: (5,0) Carbon Nanotube -- Transport properties}
 
@@ -1526,7 +1518,7 @@ defect (red).}
 	`buffer' regions are increased?
 \end{itemize}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{16: Silicon -- Boltzmann transport}
 \begin{itemize}
@@ -1625,7 +1617,7 @@ Then, you can plot columns 1 and 2 of the output file \verb#Si_seebeck_xx_500K.d
 %\end{center}
 %\end{figure}
 
-\cleardoublepage
+%\cleardoublepage
 
 
 \sectiontitle{17: Iron -- Spin-orbit-coupled bands and
@@ -1873,7 +1865,7 @@ not require the {\tt Fe.spn} file.
 
 \end{itemize}
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{18: Iron -- Berry curvature, anomalous Hall
   conductivity and optical conductivity}
@@ -2169,7 +2161,7 @@ gnuplot> plot `Fe-ahc-fermiscan.dat' u 1:4 w lp
 \end{itemize}
 
 
-\cleardoublepage
+%\cleardoublepage
 
 \sectiontitle{19: Iron -- Orbital magnetization}
 
@@ -2307,7 +2299,7 @@ than the Berry curvature (see Example 18). As a result, the integrated
 orbital magnetization converges more rapidly with the BZ sampling.
 
 
-\cleardoublepage
+%\cleardoublepage
 
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}

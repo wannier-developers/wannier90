@@ -1,20 +1,6 @@
 \chapter{Parameters}
 
 \section{Introduction}
-{\color{red}
-TO DO:
-\begin{itemize}
-\item GP: Fix color/colour and similar things consistently
-\item GP: decide a consistent way to write true/TRUE/.true. (same with
-  false) \textcolor{blue}{[Ivo: I vote for {\tt true}]}
-\item GP: reduce space between sections/subsections (mainly in the
-  parameter descriptions); this can help in reducing significantly the
-  overall length of the manual
-\item further items marked in red later on in this document
-\item GP: rename kmesh.pl to mp\_grid.pl? (see discussion in my email)
-\item GP: check if there are undocumented flags
-\end{itemize}
-}
 
 The \texttt{wannier90.x} code described in Part~\ref{part:w90}
 calculates the maximally-localized Wannier functions. The \texttt{wannier90.x} code is a
@@ -174,9 +160,9 @@ magnetic moment per cell\\
   the modules in \postw. Argument types are represented by, I for a
   integer, R for a real number, P for a
   physical value, L for a logical value and S for a text string.\\
-  \textcolor{red}{$^*$The keyword {\tt spin\_moment} does not affect
+  The keyword {\tt spin\_moment} does not affect
     the behavior of the modules in \postw, and does not really belong
-    to any of them. It is listed here for lack of a better place.}}
+    to any of them. It is listed here for lack of a better place.}
 \label{parameter_keywords_postw90}
 \end{center}
 \end{table}
@@ -231,7 +217,7 @@ magnetic moment per cell\\
   {\sc kpath}  & L & Calculate properties along a piecewise linear path in the BZ \\
   {\sc kpath\_task}& L & List of properties to evaluate\\
   {\sc kpath\_num\_points}& I & Number of points in the first kpath segment\\
-  {\sc kpath\_bands\_colour}& S & Property used to color the energy bands along the path\\
+  {\sc kpath\_bands\_colour}& S & Property used to colour the energy bands along the path\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the kpath module.]  {{\tt
@@ -261,7 +247,7 @@ magnetic moment per cell\\
   $k$-mesh on the slice (one or two integers)\\
   {\sc kslice\_fermi\_level}& P & Energy level for  plotting 
   constant-energy contour lines (eV)\\
-  {\sc kslice\_fermi\_lines\_colour}& S & Property used to color the Fermi 
+  {\sc kslice\_fermi\_lines\_colour}& S & Property used to colour the Fermi 
   lines\\
   \hline
 \end{tabular}
@@ -502,7 +488,7 @@ properties when {\tt  adpt\_smr} is set to \verb#false#.).
 Number of electrons per state. It can only take the values one or
 two.
 
-The default value is 1 if {\tt spinors=.true.}, 2 otherwise.
+The default value is 1 if {\tt spinors=true}, 2 otherwise.
 
   \subsection{\tt real(kind=dp) :: scissors\_shift} 
 Scissors shift applied to the conduction bands.
@@ -515,18 +501,6 @@ for the scissors shift.
 
 No default value.
 
-{\color{red}
-GP: TODO: put a check in parameters.F90  instead that in wannierise,
-subroutine
-wann\_write\_vdw\_data() to see if this was defined. Possibly same thing
-for other modules that use it?
-
-IMPORTANT: (GP) at the moment I believe there is an inconsistency on the
-meaning of this variable. In wann\_write\_vdw\_data(), it is divided by
-num\_elec\_per\_state. In the scissors shift, it is not. Decide what to
-do (I would probably go for the second one) and then explain its
-meaning here (if it is number of electrons or number of states).
-}
 
 \subsection[spin\_decomp]{\tt logical :: spin\_decomp}
 If {\tt true}, extra columns are added to some output files (such as
@@ -547,7 +521,7 @@ files {\tt seedname-kubo*.dat} where the complex optical conductivity
 is stored.
 
 The file {\tt seedname.spn} must be present at input. Furthermore, if
-this variable is set to \verb#.true.# it
+this variable is set to \verb#true# it
 requires {\tt num\_elec\_per\_state = 1}.
 
 The default value is \verb#false#.
@@ -581,7 +555,7 @@ The default value of this parameter is $\verb#false#$.
 %read from disk as formatted (ie ASCII) files; otherwise they will be
 %read as unformatted files.
 
-%The default value of this parameter is $\verb#.false.#$.
+%The default value of this parameter is $\verb#false#$.
 
 \subsection[spn\_formatted]{\tt logical :: spn\_formatted}
 
@@ -632,7 +606,7 @@ The default value is \verb#false#.
 
 
 \subsection[dos\_task]{\tt character(len=20) ::  dos\_task}
-The quantity to compute when {\tt dos=.true.}
+The quantity to compute when {\tt dos=true}
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -640,7 +614,7 @@ The valid options for this parameter are:
   {\tt seedname-dos.dat} is created, containing the energy values in
   eV in the first column, and the total DOS per unit cell and unit
   energy range (in eV$^{-1}$) in the second. Two additional columns
-  are present if {\tt spin\_decomp=.true.}
+  are present if {\tt spin\_decomp=true}
 \end{itemize}
 
 
@@ -877,7 +851,7 @@ The valid options for this parameter are:
   \end{itemize}
 
 \item[{\bf --}] \verb#curv#[+\verb#fermi_lines#] Heatmap of the Berry
-  curvature of the occupied states [togehter with the constant-energy
+  curvature of the occupied states [together with the constant-energy
   contours]. The unit of Berry curvature is {\tt berry\_curv\_unit}.
 
 Output files:
@@ -986,7 +960,7 @@ The default value is \verb#false#.
 
 
 \subsection[berry\_task]{\tt character(len=120) ::  berry\_task}
-The quantity to compute when {\tt berry=.true.}
+The quantity to compute when {\tt berry=true}
 
 The valid options for this parameter are:
 

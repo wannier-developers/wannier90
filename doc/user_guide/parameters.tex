@@ -31,7 +31,7 @@ num\_wann = 4
 
 num\_wann : 4
 \end{quote} }
-A logical keyword can be set to {\tt .true.} using any of the following
+A logical keyword can be set to {\tt true} using any of the following
 strings: {\tt T}, {\tt true}, {\tt .true.}.
 
 For further examples see Section~\ref{winfile} and the the \wannier\ Tutorial.
@@ -425,7 +425,7 @@ No default.
 %\red{Not yet implemented}
 %
 %If
-%$\verb#mp_grid_automatic#=\verb#TRUE#$
+%$\verb#mp_grid_automatic#=\verb#true#$
 %then a "standard" Monkhorst-Pack grid over the interval (0,1] with dimensions \verb#mp_grid#
 %will be used. The k-points will be assumed to be numbered such that the
 %loop over the x is fastest eg
@@ -441,7 +441,7 @@ No default.
 %\end{array}
 %$$
 %
-%If $\verb#mp_grid_automatic#=\verb#TRUE#$ then a \verb#kpoint# block must not be present.
+%If $\verb#mp_grid_automatic#=\verb#true#$ then a \verb#kpoint# block must not be present.
 %
 
 %{\it This keyword is helpful if one is using a dense MP mesh (eg
@@ -481,7 +481,7 @@ $k$ points required by {\tt wannier90}. See Sec.~\ref{sec:kmesh}.
 
 \subsection[gamma\_only]{{\tt logical :: gamma\_only}}
 
-If {\tt gamma\_only=TRUE}, then \wannier\ uses a branch of algorithms
+If {\tt gamma\_only=true}, then \wannier\ uses a branch of algorithms
 for disentanglement and localisation that exploit the fact that the 
 Bloch eigenstates obtained from the underlying ab initio calculation
 are manifestly real. This can be the case when only the $\Gamma$-point
@@ -489,15 +489,15 @@ is used to sample the Brillouin zone. The localisation procedure
 that is used in the $\Gamma$-only branch is based on the method of
 Ref.~\cite{gygi-cpc03}.
 
-The default value is {\tt FALSE}.
+The default value is {\tt false}.
 
 
 \subsection[spinors]{{\tt logical :: spinors}}
 
-If {\tt spinors=TRUE}, then \wannier\ will expect to find twice as many
-wannier functions as initial projections.
+If {\tt spinors=true}, then \wannier\ 
+assumes that the WF correspond to singularly occupied spinor states and {\tt num\_elec\_per\_state=1}.
 
-The default value is {\tt FALSE}.
+The default value is {\tt false}.
 
 \subsection{Shells}
 
@@ -555,7 +555,7 @@ by a first-principles code.
   . \\ 
 \verb#end projections#
 
-If \verb#guiding_centres#={\tt TRUE}, then the projection centres are
+If \verb#guiding_centres#={\tt true}, then the projection centres are
 used as the guiding centres in the Wannierisation routine.
 
 For details see Section~\ref{sec:proj}.
@@ -563,20 +563,20 @@ For details see Section~\ref{sec:proj}.
 \section{Job Control}
 
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
-If \verb#postproc_setup#=\verb#TRUE#, then the wannier code will write 
+If \verb#postproc_setup#=\verb#true#, then the wannier code will write 
  {\tt seedname.nnkp} file and exit.
 If \wannier\ is called with the option {\tt -pp}, then 
  \verb#postproc_setup# is set to 
-\verb#TRUE#, over-riding its
+\verb#true#, over-riding its
 value in the {\tt seedname.win} file.
 
-The default value is \verb#FALSE#.
+The default value is \verb#false#.
 
 
 %\subsection[cp\_pp]{\tt logical :: cp\_pp}
-%If \verb#cp_pp#=\verb#TRUE# we are using input files from the CP code.
+%If \verb#cp_pp#=\verb#true# we are using input files from the CP code.
 %
-%The default value is \verb#FALSE#.
+%The default value is \verb#false#.
 
 
 \subsection[iprint]{\tt integer :: iprint}
@@ -625,7 +625,7 @@ No default.
 %$M_{mn}^{(\mathbf{k,b})}$ and $A_{mn}^{(\mathbf{k})}$ are
 %calculated.
 %
-%The default value of this parameter is \verb#FALSE#.
+%The default value of this parameter is \verb#false#.
 
 
 \subsection[exclude\_bands]{\tt integer :: exclude\_bands(:)}
@@ -661,7 +661,7 @@ The valid options for this parameter are:
 
 \subsection[wvfn\_formated]{\tt character(len=20) :: wvfn\_formatted}
 
-If \verb#wvfn_formatted#=\verb#TRUE#, then the wavefunctions will be
+If \verb#wvfn_formatted#=\verb#true#, then the wavefunctions will be
 read from disk as formatted (ie ASCII) files; otherwise they will be
 read as unformatted files. Unformatted is generally preferable as the
 files will take less disk space and I/O is significantly
@@ -669,7 +669,7 @@ faster. However such files will not be transferable between all
 machine architectures and formatted files should be used if
 transferability is required (i.e., for test cases).
 
-The default value of this parameter is $\verb#FALSE#$.
+The default value of this parameter is $\verb#false#$.
 
 
 \subsection[spin]{\tt character(len=20) :: spin}
@@ -692,7 +692,7 @@ The default value is 1.
 Determines whether to translate the final Wannier centres to the home
 unit cell at the end of the calculation. Mainly useful for molecular
 systems in which the molecule resides entirely within the home unit 
-cell and user wants to write an xyz file ({\tt write\_xyz=.TRUE.}) for
+cell and user wants to write an xyz file ({\tt write\_xyz=.true.}) for
 the WF centres to compare with the structure. 
 
 The default value is \verb#false#. 
@@ -795,9 +795,9 @@ spread functional.
 \subsection[num\_iter]{\tt integer :: num\_iter}
 
 Total number of iterations in the minimisation procedure.
-\textcolor{red}{Set {\tt num\_iter=0} if you wish to generate
+Set {\tt num\_iter=0} if you wish to generate
   projected WFs rather than maximally-localized WFs (see Example~8 in
-  the Tutorial).}
+  the Tutorial).
 
 The default value is 100
 
@@ -868,14 +868,14 @@ $\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to WF) are written
 to file \verb#seedname.r2mn# at the end of the Wannierisation
 procedure. 
 
-The default value of this parameter is \verb#FALSE#.
+The default value of this parameter is \verb#false#.
 
 
 \subsection[guiding\_centres]{\tt logical :: guiding\_centres}
 Use guiding centres during the minimisation, in order to avoid
 local minima.
 
-The default value is \verb#FALSE#.
+The default value is \verb#false#.
 
 \subsection[num\_guide\_cycles]{\tt integer :: num\_guide\_cycles}
 If \verb#guiding_centres# is set to true, then the
@@ -936,12 +936,12 @@ Th default value is \verb#false#.
 
 \subsection[wannier\_plot]{\tt logical :: wannier\_plot}
 
-If $\verb#wannier_plot#=\verb#TRUE#$, then the code will write out the
+If $\verb#wannier_plot#=\verb#true#$, then the code will write out the
 Wannier functions in a super-cell whose size is defined by the
 variable \verb#wannier_plot_supercell#, and in a format specified by
 \verb#wannier_plot_format#
 
-The default value of this parameter is \verb#FALSE#.
+The default value of this parameter is \verb#false#.
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
 
@@ -1015,14 +1015,14 @@ The default value is 3.5.
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
-If $\verb#bands_plot#=\verb#TRUE#$, then the code will calculate the band
+If $\verb#bands_plot#=\verb#true#$, then the code will calculate the band
 structure, through Wannier interpolation,
  along
 the path in k-space defined by \verb#bands_kpath# using \verb#bands_num_points# along the first
 section of the path and write out an output file in a format specified
 by \verb#bands_plot_format#. 
 
-The default value is \verb#FALSE#.
+The default value is \verb#false#.
 
 
 \subsection[kpoint\_path]{kpoint\_path}
@@ -1046,7 +1046,7 @@ There is no default
 
 \subsection[bands\_num\_points]{\tt integer :: bands\_num\_points}
 
-If $\verb#bands_plot#=\verb#TRUE#$, then the number of points along
+If $\verb#bands_plot#=\verb#true#$, then the number of points along
 the first section of the bandstructure plot given by
 \verb#kpoint_path#. Other sections will have the same density of
 k-points. 
@@ -1113,18 +1113,18 @@ The valid options for this parameter are:
 
 \subsection[fermi\_surface\_plot]{\tt logical :: fermi\_surface\_plot}
 
-If $\verb#fermi_surface_plot#=\verb#TRUE#$, then the code will calculate,
+If $\verb#fermi_surface_plot#=\verb#true#$, then the code will calculate,
 through Wannier interpolation, the
 eigenvalues on a regular grid with \verb#fermi_surface_num_points# in
 each direction. The code will write a file in bxsf format which can be
 read by XCrySDen in order to plot the Fermi surface.
 
-The default value is \verb#FALSE#.
+The default value is \verb#false#.
 
 
 \subsection[fermi\_surface\_num\_points]{\tt integer :: fermi\_surface\_num\_points}
 
-If $\verb#fermi_surface_plot#=\verb#TRUE#$, then the number of divisions in
+If $\verb#fermi_surface_plot#=\verb#true#$, then the number of divisions in
 the regular k-point grid used to calculate the Fermi surface.
 
 The default value for \verb#fermi_surface_num_points# is 50.
@@ -1132,9 +1132,9 @@ The default value for \verb#fermi_surface_num_points# is 50.
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy}
 The Fermi energy in eV. This parameter is written into the bxsf file.
-\textcolor{red}{If {\tt fermi\_energy} is specified, {\tt
+If {\tt fermi\_energy} is specified, {\tt
     fermi\_energy\_min}, {\tt fermi\_energy\_max}, and {\tt
-    fermi\_energy\_step} should not be specified, and vice-versa.}
+    fermi\_energy\_step} should not be specified, and vice-versa.
 
 %Whilst this is not directly used by the
 %\wannier, it is a useful parameter to set as it will be written
@@ -1178,14 +1178,14 @@ The valid options for this parameter are:
 
 \subsection[hr\_plot]{\tt logical :: hr\_plot}
 
-If $\verb#hr_plot#=\verb#TRUE#$, then the Hamiltonian matrix in the
+If $\verb#hr_plot#=\verb#true#$, then the Hamiltonian matrix in the
 WF basis will be written to a file {\tt seedname\_hr.dat}.
 
-The default value is {\tt FALSE}.
+The default value is {\tt false}.
 
 \subsection[transport]{\tt logical :: transport}
 
-If $\verb#transport#=\verb#TRUE#$, then the code will calculate
+If $\verb#transport#=\verb#true#$, then the code will calculate
 quantum conductance and density of states of a one-dimensional system.
 The results will be written to files \verb#seedname_qc.dat#
 and \verb#seedname_dos.dat#, respectively.
@@ -1193,7 +1193,7 @@ Since both quantities are a function of energy,
 they will be evaluated from \verb#tran_win_min# to \verb#tran_win_max#
 with an interval of \verb#tran_energy_step#.
 
-The default value of this parameter is \verb#FALSE#.
+The default value of this parameter is \verb#false#.
 
 \subsection[transport\_mode]{\tt character(len=20) :: transport\_mode}
 
@@ -1211,12 +1211,12 @@ case, the transport part will work independently from the
 disentanglement and wannierise procedure.  Details of the method is
 described in Ref. \cite{nardelli-prb99}.
 
-If $\verb#tran_read_ht# = \verb#TRUE#$ then the
+If $\verb#tran_read_ht# = \verb#true#$ then the
 Hamiltonian matrices must be provided by
 the five external files:
 {\tt seedname\_htL.dat, seedname\_htLC.dat, seedname\_htC.dat,
 seedname\_htCR.dat, seedname\_htR.dat}.
-If $\verb#tran_read_ht# = \verb#FALSE#$ then the Hamiltonian
+If $\verb#tran_read_ht# = \verb#false#$ then the Hamiltonian
 matrices are found automatically provided the supercell adheres to 
 conditions outlined in Section~\ref{sec:2c2}.
 
@@ -1273,7 +1273,7 @@ The default value is 0.
 \subsection[tran\_num\_ll]{\tt integer :: tran\_num\_ll}
 Size of a left-lead Hamiltonian matrix. 
 If $\verb#transport_mode# = \verb#lcr#$ and 
-$\verb#tran_read_ht# = \verb#FALSE#$ then 
+$\verb#tran_read_ht# = \verb#false#$ then 
 \verb#tran_num_ll# is the number of Wannier functions
 in a principal layer.
 
@@ -1305,7 +1305,7 @@ The default value is 0.
 \subsection[tran\_num\_cell\_ll]{\tt integer :: tran\_num\_cell\_ll}
 Number of unit cells in one principal layer of left lead. 
 Used if $\verb#transport_mode# = \verb#lcr#$ and 
-$\verb#tran_read_ht# = \verb#FALSE#$.
+$\verb#tran_read_ht# = \verb#false#$.
 
 The default value is 0. 
  
@@ -1333,30 +1333,30 @@ The default value is 0.
 
 \subsection[tran\_write\_ht]{\tt logical :: tran\_write\_ht}
 
-If $\verb#tran_write_ht#=\verb#TRUE#$, then the Hamiltonian matrix 
+If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix 
 formatted for the transport calculation will be written 
 to a file \verb#seedname_htB.dat#.
 
-The default value is {\tt FALSE}.
+The default value is {\tt false}.
 
 \subsection[tran\_read\_ht]{\tt logical :: tran\_read\_ht}
 
-If $\verb#tran_write_ht#=\verb#TRUE#$, then the Hamiltonian matrix
+If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix
 formatted for the transport calculation will be read
 from a set of files described in the
 parameter \verb#transport_mode#. 
-Set $\verb#tran_write_ht#=\verb#FALSE#$ to perform automated 
+Set $\verb#tran_write_ht#=\verb#false#$ to perform automated 
 lcr calculations (see Section~\ref{sec:2c2}).
 
-The default value is {\tt FALSE}.
+The default value is {\tt false}.
 
 \subsection[tran\_use\_same\_lead]{\tt logical :: tran\_use\_same\_lead}
 
-If $\verb#tran_use_same_lead#=\verb#TRUE#$, then the
+If $\verb#tran_use_same_lead#=\verb#true#$, then the
 left and the right leads are the same. In this case, 
 \verb#seedname_htR.dat# is not required.
 
-The default value is {\tt TRUE}.
+The default value is {\tt true}.
 
 \subsection[tran\_group\_threshold]{\tt real(kind=dp) :: tran\_group\_threshold}
 
@@ -1443,10 +1443,10 @@ No default.
 %\subsection[slice\_plot]{\tt logical :: slice\_plot}
 %\red{Not yet implemented}
 %
-%If $\verb#slice_plot#=\verb#TRUE#$ plot the wannier orbitals along
+%If $\verb#slice_plot#=\verb#true#$ plot the wannier orbitals along
 % slices in the super-unit-cell defined by \verb#slice_coord#.
 
-%The default value of this parameter is FALSE
+%The default value of this parameter is false
 %
 %\subsection[slice\_coord]{slice\_coord}
 %\red{Not yet implemented}
@@ -1468,7 +1468,7 @@ No default.
 %\subsection[slice\_num\_points]{\tt integer :: slice\_num\_points}
 %\red{Not yet implemented}
 %
-%If $\verb#slice_plot#=\verb#TRUE#$ the number of points in the first
+%If $\verb#slice_plot#=\verb#true#$ the number of points in the first
 %direction of the slice. The number of points in the second direction
 %will be chosen to give the same density of points.
 %
@@ -1494,19 +1494,19 @@ No default.
 %\subsection[dos\_plot]{\tt logical :: dos\_plot}
 %\red{Not yet implemented}
 %
-%If $\verb#dos_plot#=\verb#TRUE#$ the code will calculate,
+%If $\verb#dos_plot#=\verb#true#$ the code will calculate,
 %through Wannier interpolation, the
 %eigenvalues on a regular grid with dimension \verb#dos_num_points#. The
 %density of states will be calculated by applying a Gaussian smearing of
 %width \verb#dos_gaussian_width#.
 %
-%The default value of this parameter is FALSE
+%The default value of this parameter is false
 %
 %
 %\subsection[dos\_num\_points]{\tt integer :: dos\_num\_points}
 %\red{Not yet implemented}
 %
-%If $\verb#dos_plot#=\verb#TRUE#$ the dimension of the k-point mesh
+%If $\verb#dos_plot#=\verb#true#$ the dimension of the k-point mesh
 %to sample in calculating the density of states.
 %
 %The default value for \verb#dos_num_points# is 50
