@@ -95,6 +95,7 @@ program postw90
   !
   if(on_root) then 
        call param_read
+       call param_postw90_write
        time1=io_time()
        write(stdout,'(1x,a25,f11.3,a)')&
             'Time to read parameters  ',time1-time0,' (sec)'

@@ -176,10 +176,10 @@ module w90_parameters
   ! [gp-begin, Apr 13, 2012]
   !! Global interpolation k mesh variables
   !! These don't need to be public, since their values are copied in the variables of the
-  !! local interpolation meshes
-  real(kind=dp)                   :: kmesh_spacing
-  integer                         :: kmesh(3)
-  logical                         :: global_kmesh_set
+  !! local interpolation meshes. JRY: added save attribute
+  real(kind=dp), save             :: kmesh_spacing
+  integer, save                   :: kmesh(3)
+  logical, save                   :: global_kmesh_set
   !! [gp-end]
 
   ! [gp-begin, Jun 1, 2012]
@@ -392,6 +392,7 @@ module w90_parameters
 
   public :: param_read
   public :: param_write
+  public :: param_postw90_write
   public :: param_dealloc
   public :: param_write_header
   public :: param_write_chkpt
@@ -2071,7 +2072,7 @@ contains
   subroutine param_write
     !==================================================================!
     !                                                                  !
-    ! write parameters to stdout                                       !
+    ! write wannier90 parameters to stdout                             !
     !                                                                  !
     !===================================================================  
 
@@ -2254,6 +2255,8 @@ contains
                wannier_plot_supercell(3),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
+          if (index(wannier_plot_format,'cube')>0 .or. iprint>2) &
+          write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :',wannier_plot_radius,'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
@@ -2330,6 +2333,269 @@ contains
 
   end subroutine param_write
 
+  !===================================================================
+  subroutine param_postw90_write
+    !==================================================================!
+    !                                                                  !
+    ! write postw90 parameters to stdout                               !
+    !                                                                  !
+    !===================================================================  
+
+    implicit none
+
+    integer :: i,nkp,loop,nat,nsp
+
+    ! System
+    write(stdout,*)
+    write(stdout,'(36x,a6)') '------' 
+    write(stdout,'(36x,a6)') 'SYSTEM' 
+    write(stdout,'(36x,a6)') '------' 
+    write(stdout,*)
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(30x,a21)') 'Lattice Vectors (Ang)' 
+    else
+       write(stdout,'(28x,a22)') 'Lattice Vectors (Bohr)' 
+    endif
+    write(stdout,101) 'a_1',(real_lattice(1,I)*lenconfac, i=1,3)
+    write(stdout,101) 'a_2',(real_lattice(2,I)*lenconfac, i=1,3)
+    write(stdout,101) 'a_3',(real_lattice(3,I)*lenconfac, i=1,3)
+    write(stdout,*)   
+    write(stdout,'(19x,a17,3x,f11.5)',advance='no') &
+         'Unit Cell Volume:',cell_volume*lenconfac**3
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(2x,a7)') '(Ang^3)'
+    else
+       write(stdout,'(2x,a8)') '(Bohr^3)'
+    endif
+    write(stdout,*)   
+    if (lenconfac.eq.1.0_dp) then
+       write(stdout,'(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
+    else
+       write(stdout,'(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
+    endif
+    write(stdout,101) 'b_1',(recip_lattice(1,I)/lenconfac, i=1,3)
+    write(stdout,101) 'b_2',(recip_lattice(2,I)/lenconfac, i=1,3)
+    write(stdout,101) 'b_3',(recip_lattice(3,I)/lenconfac, i=1,3)
+    write(stdout,*)   ' '
+    ! Atoms
+    if(num_atoms>0) then
+       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+       if (lenconfac.eq.1.0_dp) then
+          write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+       else
+          write(stdout,'(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+       endif
+       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+       do nsp=1,num_species
+          do nat=1,atoms_species_num(nsp)
+             write(stdout,'(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+&                 '|',atoms_symbol(nsp),nat,atoms_pos_frac(:,nat,nsp),&
+&                 '|',atoms_pos_cart(:,nat,nsp)*lenconfac,'|'
+          end do
+       end do
+       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+    else
+       write(stdout,'(25x,a)') 'No atom positions specified'
+    end if
+    write(stdout,*) ' '
+    ! Main
+    write(stdout,*) ' '
+
+    write(stdout,'(1x,a78)') '*-------------------------------- POSTW90 -----------------------------------*'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)')     '|  Number of Wannier Functions               :',num_wann,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Number of electrons per state             :',num_elec_per_state,'|'
+    if(abs(scissors_shift)>1.0e-7_dp .or. iprint>0) then
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :',scissors_shift,'|'
+       if(num_valence_bands>0) then
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)')   '|  Number of valence bands                   :',num_valence_bands,'|'
+       else
+          write(stdout,'(1x,a78)')   '|  Number of valence bands                   :       not defined             |'
+       endif
+    endif
+    if(spin_decomp .or. iprint>2) &
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Spin decomposition                        :',spin_decomp,'|'
+    if(spin_moment .or. iprint>2) &
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Compute Spin moment                       :',spin_moment,'|'
+    if(spin_decomp .or. spin_moment .or. iprint>2) then
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :',spin_axis_polar,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :',spin_axis_azimuth,'|'
+       if(spn_formatted) then
+          write(stdout,'(1x,a46,9x,a9,13x,a1)')   '|  Spn file type file-type                   :','formatted','|'
+       else
+          write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Spn file type file-type                   :','unformatted','|'
+       endif
+    end if
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :',timing_level,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :',optimisation,'|'
+    write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
+    write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    write(stdout,'(1x,a78)') '*------------------------ Global Smearing Parameters ------------------------*'
+    if(adpt_smr) then
+       write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Adaptive width smearing                   :','       T','|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :',adpt_smr_fac,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :',adpt_smr_max,'|'
+
+    else
+       write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',smr_fixed_en_width,'|'
+    endif
+    write(stdout,'(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ',trim(param_get_smearing_type(smr_index)),'|'
+    if(global_kmesh_set) then
+       write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Global interpolation k-points defined     :','       T','|'
+       if(kmesh_spacing>0.0_dp) then
+          write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ',kmesh(1),'x',kmesh(2),'x',kmesh(3),&
+               ' Spacing = ',kmesh_spacing,'|'
+       else
+                      write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
+          write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
+               ,kmesh(1),'x',kmesh(2),'x',kmesh(3),'|'
+       endif
+    else
+       write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Global interpolation k-points defined     :','       F','|'
+    endif
+    write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+
+
+
+    ! DOS
+    if(dos .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*---------------------------------- DOS -------------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Density of States                :',dos,'|'
+       if(num_dos_project>1) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Wannier Projected DOS             :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Wannier Projected DOS             :','       F','|'
+       endif
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :',dos_energy_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :',dos_energy_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :',dos_energy_step,'|'
+       if(dos_adpt_smr.eqv.adpt_smr .and. dos_adpt_smr_fac==adpt_smr_fac .and. dos_adpt_smr_max==adpt_smr_max &
+            .and. dos_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==dos_smr_index) then
+          write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
+       else
+          if(dos_adpt_smr) then
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Adaptive width smearing                   :','       T','|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :',dos_adpt_smr_fac,'|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :',dos_adpt_smr_max,'|'
+          else
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',dos_smr_fixed_en_width,'|'
+          endif
+          write(stdout,'(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ',trim(param_get_smearing_type(dos_smr_index)),'|'
+       endif
+       if(kmesh(1)==dos_kmesh(1) .and. kmesh(2)==dos_kmesh(2) .and. kmesh(3)==dos_kmesh(3) ) then
+          write(stdout,'(1x,a78)') '|  Using global k-point set for interpolation                                |'
+       else
+          if(dos_kmesh_spacing>0.0_dp) then
+             write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+                  dos_kmesh(1),'x',dos_kmesh(2),'x',dos_kmesh(3),' Spacing = ',dos_kmesh_spacing,'|'
+          else
+             write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
+                  ,dos_kmesh(1),'x',dos_kmesh(2),'x',dos_kmesh(3),'|'
+          endif
+       endif
+    endif
+    write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+
+
+    if(kpath .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*--------------------------------- KPATH ------------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Plot Properties along a path in k-space   :',kpath,'|'
+       write(stdout,'(1x,a46,10x,I8,13x,a1)')    '|  Divisions along first kpath section       :',kpath_num_points,'|'
+       if(index(kpath_task,'bands')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot energy bands                         :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot energy bands                         :','       F','|'
+       endif
+       if(index(kpath_task,'curv')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature                      :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature                      :','       F','|'
+       endif
+       if(index(kpath_task,'morb')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       F','|'
+       endif
+       write(stdout,'(1x,a46,10x,a8,13x,a1)')    '|  Property used to colour code the bands    :',trim(kpath_bands_colour),'|'
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+       write(stdout,'(1x,a78)') '|   K-space path sections:                                                   |'
+       if(bands_num_spec_points==0) then
+          write(stdout,'(1x,a78)') '|     None defined                                                           |'
+       else
+          do loop=1,bands_num_spec_points,2
+             write(stdout,'(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:',bands_label(loop),&
+                  (bands_spec_points(i,loop),i=1,3),'To:',bands_label(loop+1),(bands_spec_points(i,loop+1),i=1,3),'|'
+          end do
+       end if
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if(boltzwann .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*------------------------------- BOLTZWANN ----------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute Boltzmann transport properties    :',boltzwann,'|'
+       if  (boltz_2d_dir_num>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  2d structure: non-periodic dimension  :',trim(boltz_2d_dir),'|'
+       else
+          write(stdout,'(1x,a78)') '|  3d Structure                              :                 T             |'
+       endif
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Relaxation Time (fs)                      :',boltz_relax_time,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Minimum Value of Chemical Potential (eV)  :',boltz_mu_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Maximum Value of Chemical Potential (eV)  :',boltz_mu_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for Chemical Potential (eV)     :',boltz_mu_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Minimum Value of Temperature (K)          :',boltz_temp_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Maximum Value of Temperature (K)          :',boltz_temp_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for Temperature (K)             :',boltz_temp_step,'|'
+
+       if(kmesh(1)==boltz_kmesh(1) .and. kmesh(2)==boltz_kmesh(2) .and. kmesh(3)==boltz_kmesh(3) ) then
+          write(stdout,'(1x,a78)') '|  Using global k-point set for interpolation                                |'
+       else
+          if(boltz_kmesh_spacing>0.0_dp) then
+             write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+                  boltz_kmesh(1),'x',boltz_kmesh(2),'x',boltz_kmesh(3),' Spacing = ',boltz_kmesh_spacing,'|'
+          else
+             write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
+                  ,boltz_kmesh(1),'x',boltz_kmesh(2),'x',boltz_kmesh(3),'|'
+          endif
+       endif
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :',boltz_tdf_energy_step,'|'
+       write(stdout,'(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ',trim(param_get_smearing_type(boltz_tdf_smr_index)),'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  TDF fixed Smearing width                  :',boltz_tdf_smr_fixed_en_width,'|'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute DOS at same time                  :',boltz_calc_also_dos,'|'
+       if(boltz_calc_also_dos .and. iprint>2) then
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :',boltz_dos_energy_min,'|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :',boltz_dos_energy_max,'|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :',boltz_dos_energy_step,'|'
+          if(boltz_dos_adpt_smr) then
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  DOS Adaptive width smearing               :','       T','|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Adaptive smearing factor              :',boltz_dos_adpt_smr_fac,'|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Maximum allowed smearing width        :',boltz_dos_adpt_smr_max,'|'
+          else
+             write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  DOS Fixed width smearing                  :','       T','|'
+             write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :',&
+                  boltz_dos_smr_fixed_en_width,'|'
+          endif
+          write(stdout,'(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ',trim(param_get_smearing_type(boltz_dos_smr_index)),'|'
+       endif
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+
+    if(geninterp .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*------------------------Generic Band Interpolation--------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute Properties at given k-points      :',geninterp,'|'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Calculate band gradients                  :',geninterp_alsofirstder,'|'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Write data into a single file             :',geninterp_single_file,'|'
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+       
+101 format(20x,a3,2x,3F11.6)
+
+    
+  end subroutine param_postw90_write
+
   subroutine param_write_header
     use w90_io, only : io_date
     use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
@@ -2354,7 +2620,7 @@ contains
     write(stdout,*)  '            |  Wannier90 v2.0 Authors:                          |'
     write(stdout,*)  '            |    Arash A. Mostofi  (Imperial College London)    |'
     write(stdout,*)  '            |    Giovanni Pizzi    (EPFL)                       |'
-    write(stdout,*)  '            |    Ivo Souza         (Universidad del Pais Vasco  |'
+    write(stdout,*)  '            |    Ivo Souza         (Universidad del Pais Vasco) |'
     write(stdout,*)  '            |    Jonathan R. Yates (University of Oxford)       |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  Wannier90 Contributors:                          |'
