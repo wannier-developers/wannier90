@@ -83,7 +83,6 @@ dist:
                 ./examples/example1[4-5]/periodic/*.nscf \
                 ./examples/example1[4-5]/periodic/*.win \
                 ./examples/example1[4-5]/periodic/*.pw2wan \
-		./examples/example08/README \
 		./pseudo/*.UPF \
 		./pwscf/README \
 		./pwscf/v3.2.3/*.f90 \
@@ -104,6 +103,7 @@ dist:
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
+		./doc/wannier90.bib \
 		./*/Makefile \
 		./*/Makefile.2 \
 		./*/*/Makefile \
