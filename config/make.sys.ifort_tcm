@@ -1,0 +1,27 @@
+
+#=====================================================
+# For Linux with intel version 11/12 on 64bit machines
+# Setup for the machines in TCM Group, Cambridge
+#=====================================================
+F90 = ifort
+COMMS=mpi
+MPIF90=mpifort
+FCOPTS = -O3
+LDOPTS = 
+
+#useful debuf options
+#FCOPTS=-Ddebug -O0 -g -fno-omit-frame-pointer -debug extended -traceback -C -Ddebug -stand f95 -warn all
+#LDOPTS=-Ddebug -O0 -g -fno-omit-frame-pointer -debug extended -traceback -C -Ddebug -stand f95 -warn all
+
+#========================================================
+# Intel mkl libraries. Set LIBPATH if not in default path
+#========================================================
+
+LIBS   =  -L$(LIBDIR)   -Bstatic -lmkl 
+
+#=======================
+# ATLAS Blas and LAPACK
+#=======================
+#LIBDIR = /usr/local/lib
+#LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
+

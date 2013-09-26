@@ -1,9 +1,18 @@
 #===================
-# g95
+# gfortran
 #===================
 F90 = gfortran
-FCOPTS = -O2 
-LDOPTS = -O2
+
+#Add next two lines for parallel postw90. Choose the correct name of the mpi f90 wrapper
+#COMMS  = mpi 
+#MPIF90 = mpgfortran #mpif90
+
+FCOPTS = -O3 
+LDOPTS =
+
+#Next two lines are good for debugging
+#FCOPTS = -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
+#LDOPTS = -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
 
 
 #=======================
@@ -16,8 +25,8 @@ LDOPTS = -O2
 #=======================
 # NETLIB LAPACK and BLAS
 #=======================
-#LIBDIR = /usr/local/lib
-#LIBS = -L$(LIBDIR)  -llapack -lblas
+LIBDIR = /rscratch/jry20/LIB/gfortran 
+LIBS = -L$(LIBDIR)  -llapack -lblas
 
 
 
