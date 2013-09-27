@@ -1574,7 +1574,8 @@ You may also want to plot the Wannier functions and the interpolated band struct
 
 \item Run \postw\ to calculate the transport coefficients.\\
 {\tt postw90.x Si} (serial execution) \\
-{\tt mpirun -np 8 postw90.x Si} (example of parallel execution with 8 nodes) 
+{\tt mpirun -np 8 postw90.x Si} (example of parallel execution with 8
+MPI processes) 
 \end{enumerate}
 
 Inspect the output file {\tt Si.wpout}. It summarizes the main details of the calculation (more details can be obtained by setting a larger value of the \verb#iprint# flag). 
@@ -1915,7 +1916,8 @@ file {\tt Fe.win}.
 
 \item Run \postw\ \\
   {\tt postw90.x Fe} (serial execution)\\
-  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with 8 nodes) 
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
+  8 MPI processes) 
 
 \end{enumerate}
 
@@ -2225,7 +2227,8 @@ the new input files {\tt Fe.pw2wan} and {\tt Fe.win}.
 
 \item Run \postw\ to compute the orbital magnetization.\\
   {\tt postw90.x Fe} (serial execution)\\
-  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with 8 nodes) 
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
+  8 MPI processes) 
 
 
 \end{enumerate}

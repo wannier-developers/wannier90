@@ -141,7 +141,7 @@ function). Units always in reciprocal Angstrom. Default is \verb#zona=1.0#.
 
 \section{Spinor Projections}
 When \verb#spinors=.true.# it is possible to select a set of localised
-function to project onto `up' states and a set to project onto `down'
+functions to project onto `up' states and a set to project onto `down'
 states where, for complete flexibility, it is also possible to set the
 local spin quantisation axis.
 
@@ -170,37 +170,38 @@ is \verb#0,0,1#
 
 \noindent
 \textbf{Examples}
-
-1. 18 projections on an iron site
+\begin{itemize}
+\item 18 projections on an iron site
 
 \verb#Fe:sp3d2;dxy;dxx;dyz#              
 
-2. same as above
+\item same as above
 
 \verb#Fe:sp3d2;dxy;dxx;dyz(u,d)#
-         
-3. same as above
+        
+\item same as above
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u,d)[0,0,1]#
   
-4. same as above but quantisation axis is now x
+\item same as above but quantisation axis is now x
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u,d)[1,0,0]#
 
-5.  now only 8 projections onto up states
+\item  now only 9 projections onto up states
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u)#
            
-6. 9 projections onto up-states and 3 on down
+\item 9 projections onto up-states and 3 on down
 
 \verb#Fe:sp3d2;dxy;dxz;dyz(u) #\\
 \verb#Fe:dxy;dxz;dyz(d)#                 
 
-7. projections onto alternate spin states for two lattice sites (Cr1, Cr2)
+\item projections onto alternate spin states for two lattice sites (Cr1, Cr2)
 
 \verb#Cr1:d(u)#\\
 \verb#Cr2:d(d)#
 
+\end{itemize}
 
 \section{Short-Cuts}
 

@@ -42,3 +42,9 @@ example14: Linear chain of Na atoms (LCR transport)
 example15: (5,0) Carbon Nanotube (LCR transport)
 
 example16: Silicon (Boltzmann transport with BoltzWann module)
+
+example17: Iron - Spin-orbit-coupled bands and Fermi surface contours
+
+example18: Iron - Berry curvature and anomalous Hall conductivity
+
+example19: Iron - Orbital magnetization

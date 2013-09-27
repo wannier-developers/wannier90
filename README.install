@@ -128,6 +128,14 @@ Sun / Solaris  (sparc or x86)
       Compiler: f95
       Libraries: sunperf
 
+Mac OS X
+--------
+
+   1- make.sys.macosx
+      Compiler: gfortran
+      Libraries: Accelerate library
+      (check comments in the make.sys.macosx file!)
+
 IBM PowerPC/power series. Linux or AIX
 --------------------------------------
 

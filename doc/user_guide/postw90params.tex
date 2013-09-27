@@ -9,9 +9,8 @@ CPUs).
 
 For users of the previous \wannier\ 1.2 release, the
 \texttt{wannier90.x} executable has only a few minor changes with
-respect to the 1.2 release (a major one being that part of the
-transport routines have been moved to the \texttt{postw90.x}
-executable).
+respect to the 1.2 release. Note however that the checkpoint file format has
+changed from the one used in version 1.2.
 
 The \texttt{postw90.x} executable contains instead a series of modules
 that take the Wannier functions calculated by \texttt{wannier90.x} and
@@ -23,11 +22,10 @@ written in an unformatted machine-dependent format. If you need to use
 this file on a different machine, or you want to use a version of
 \texttt{postw90.x} compiled with a different compiler, refer to
 Sec.~\ref{sec:w90chk2chk} in the Appendices for a description of how
-to export/import this file. Note also that the checkpoint file format has
-changed from the one used in version 1.2.
+to export/import this file. 
 
 \section{Usage}
-{\tt postw90.x} is can be run in parallel using MPI libraries to
+{\tt postw90.x} can be run in parallel using MPI libraries to
 reduce the computation time.
 
 For serial execution use: {\tt postw90.x [seedname]} 
@@ -46,17 +44,16 @@ For parallel execution use: {\tt mpirun -np NUMPROCS postw90.x [seedname]}
 to use.
 \end{itemize}
 
-Note that this requires that the {\tt postw90.x} executable has been
+Note that the {\tt mpirun} command and command-line flags may be
+different in your MPI implementation: read your MPI manual or ask your
+computer administrator.
+
+Note also that this requires that the {\tt postw90.x} executable has been
 compiled in its parallel version (follow the instructions in the file
 {\tt README.install} in the main directory of the wannier90
 distribution) and
 that the MPI libraries and binaries are installed and correctly
 configured on your machine.
-
-Note also that the {\tt mpirun} command and command-line flags may be
-different in your MPI implementation: read your MPI manual or ask your
-computer administrator.
-
 
 \section[seedname.win File]{{\tt seedname.win} File}
 The \texttt{postw90.x} uses the same \texttt{seedname.win} input file

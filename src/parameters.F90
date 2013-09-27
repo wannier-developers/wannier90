@@ -1965,7 +1965,7 @@ contains
        write(orderstr,'(I0)') smearing_index
        param_get_smearing_type = "Methfessel-Paxton of order " // trim(orderstr)
     else if (smearing_index .eq. 0) then
-       param_get_smearing_type = "Gaussian (i.e., Methfessel-Paxton of order 0)"
+       param_get_smearing_type = "Gaussian"
     else if (smearing_index .eq. -1) then
        param_get_smearing_type = "Marzari-Vanderbilt cold smearing"
     else if (smearing_index .eq. -99) then
@@ -2434,7 +2434,7 @@ contains
     if(adpt_smr) then
        write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Adaptive width smearing                   :','       T','|'
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :',adpt_smr_fac,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :',adpt_smr_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width (eV)       :',adpt_smr_max,'|'
 
     else
        write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
@@ -2447,7 +2447,6 @@ contains
           write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ',kmesh(1),'x',kmesh(2),'x',kmesh(3),&
                ' Spacing = ',kmesh_spacing,'|'
        else
-                      write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
           write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
                ,kmesh(1),'x',kmesh(2),'x',kmesh(3),'|'
        endif
@@ -2653,7 +2652,11 @@ contains
        endif
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :',boltz_tdf_energy_step,'|'
        write(stdout,'(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ',trim(param_get_smearing_type(boltz_tdf_smr_index)),'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  TDF fixed Smearing width                  :',boltz_tdf_smr_fixed_en_width,'|'
+       if (boltz_tdf_smr_fixed_en_width > 0.0_dp) then
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  TDF fixed Smearing width (eV)             :',boltz_tdf_smr_fixed_en_width,'|'
+       else
+          write(stdout,'(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
+       endif
        write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute DOS at same time                  :',boltz_calc_also_dos,'|'
        if(boltz_calc_also_dos .and. iprint>2) then
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :',boltz_dos_energy_min,'|'
