@@ -28,7 +28,8 @@
 !obtained using the BoltzWann module:                        !
 !                                                            !
 ![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari,! 
-!    arXiv:1305.1587                                         !
+!    Comp. Phys. Comm. (2013)                                !
+!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)     !
 !============================================================!
 
 module w90_boltzwann
@@ -58,8 +59,6 @@ module w90_boltzwann
   integer, parameter :: XZ = 4
   integer, parameter :: YZ = 5
   integer, parameter :: ZZ = 6
-!Please cite the following paper when publishing results     !
-!obtained using the BoltzWann module:                        !
 
 
   character(len=74), parameter :: pub_string_1 = &
@@ -67,9 +66,9 @@ module w90_boltzwann
   character(len=74), parameter :: pub_string_2 = &
   "the BoltzWann module:                                                     "
   character(len=74), parameter :: pub_string_3 = &
-  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari, arXiv:1305.1587  "
+  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
   character(len=74), parameter :: pub_string_4 = &
-  "                                                                          "
+  "Comp. Phys. Comm. (2013), DOI:10.1016/j.cpc.2013.09.015 (arXiv:1305.1587) "
 
 contains 
 
