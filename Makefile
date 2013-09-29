@@ -83,11 +83,18 @@ dist:
                 ./examples/example1[4-5]/periodic/*.nscf \
                 ./examples/example1[4-5]/periodic/*.win \
                 ./examples/example1[4-5]/periodic/*.pw2wan \
+		./examples/example16/*.in \
+		./examples/example1[7-9]/*.scf \
+		./examples/example1[7-9]/*.nscf \
+		./examples/example1[7-9]/*.pw2wan \
+		./examples/example19/*.py \
+		./examples/example19/*.m \
 		./pseudo/*.UPF \
 		./pwscf/README \
 		./pwscf/v3.2.3/*.f90 \
 		./pwscf/v4.0/*.f90 \
 		./pwscf/v4.1/*.f90 \
+		./pwscf/v5.0/*.f90 \
 		./config/make.sys* \
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
@@ -100,6 +107,19 @@ dist:
                 ./utility/w90vdw/examples/benzene_s_val/ref/benzene_s_val.* \
                 ./utility/w90vdw/examples/benzene_s_cond/benzene_s_cond.* \
                 ./utility/w90vdw/examples/benzene_s_cond/ref/benzene_s_cond.* \
+		./utility/w90pov/doc/*.tex \
+		./utility/w90pov/doc/*.pdf \
+		./utility/w90pov/doc/figs/*.png \
+		./utility/w90pov/src/*.90 \
+		./utility/w90pov/src/*.c \
+		./utility/w90pov/examples/*/*.gz \
+		./utility/w90pov/examples/*/*.inp \
+		./utility/w90pov/examples/*/*.inc \
+		./utility/w90pov/examples/*/*.pov \
+		./utility/w90pov/examples/*/ref/*.png \
+		./utility/w90pov/Makefile \
+		./utility/w90pov/README \
+		./utility/w90chk2chk/README \
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
