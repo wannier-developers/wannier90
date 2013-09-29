@@ -1,7 +1,10 @@
 # Intel compiler (e.g., yana)
-FC=ifort
-FLAGS= -O3 -llapack
-LINK=$(FC)
+
+include ../../make.sys
+
+#FC=ifort
+#FLAGS= -O3 -llapack
+LINK=$(F90)
 
 # gfortran compiler (e.g., yana)
 #FC=gfortran
@@ -38,7 +41,7 @@ MODULES=$(OBJ)/write_df3.o\
 $(COMPTARGET): $(MODULES) $(OBJECTS)
 	@echo ".linking object files to final binary"
 	@rm -f $(COMPTARGET)
-	@cd $(OBJ) ; $(LINK) $(FLAGS) -o $(COMPTARGET) `ls *.o`
+	@cd $(OBJ) ; $(LINK) $(FCOPTS) -o $(COMPTARGET) `ls *.o`
 	@mv $(OBJ)/$(COMPTARGET) .
 
  
@@ -55,13 +58,13 @@ $(OBJ)/general.o: objdir $(SRC)/general.f90
 	@echo ".compiling file $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@))"
 	@rm -f $@
 	@cp $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@)) $(OBJ)/
-	@cd $(OBJ) ; $(FC) $(FLAGS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
+	@cd $(OBJ) ; $(F90) $(FCOPTS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
 
 $(OBJ)/io.o: $(SRC)/io.f90
 	@echo ".compiling file $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@))"
 	@rm -f $@
 	@cp $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@)) $(OBJ)/
-	@cd $(OBJ) ; $(FC) $(FLAGS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
+	@cd $(OBJ) ; $(F90) $(FCOPTS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
 
 $(OBJ)/write_df3.o: $(GENMODS) $(SRC)/write_df3.c
 	@echo ".compiling file $(subst $(OBJ),$(SRC),$(subst .o,.c,$@))"
@@ -73,7 +76,7 @@ $(OBJ)/driver.o: $(GENMODS) $(SRC)/driver.f90
 	@echo ".compiling file $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@))"
 	@rm -f $@
 	@cp $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@)) $(OBJ)/
-	@cd $(OBJ) ; $(FC) $(FLAGS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
+	@cd $(OBJ) ; $(F90) $(FCOPTS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
 
 
 # ------------ OBJECTS ------------
@@ -81,7 +84,7 @@ $(OBJ)/main.o: $(GENMODS) $(MODULES) $(SRC)/main.f90
 	@echo ".compiling file $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@))"
 	@rm -f $@
 	@cp $(subst $(OBJ),$(SRC),$(subst .o,.f90,$@)) $(OBJ)/
-	@cd $(OBJ) ; $(FC) $(FLAGS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
+	@cd $(OBJ) ; $(F90) $(FCOPTS) -c $(subst $(OBJ)/,./,$(subst .o,.f90,$@))
 
 
 

@@ -65,14 +65,14 @@ program vdw
   read(1,*) num_wann(1:num_frag) ! number of MLWFs per fragment
   write(2,'(a)',advance='no') ' num_wann   : '
   do n=1,num_frag
-     write(2,'(i4,x)',advance='no') num_wann(n)
+     write(2,'(i4,1x)',advance='no') num_wann(n)
   enddo
   read(1,*) dummy, tol_occ ! tolerance for splitting p-orbitals
   write(2,'(/a,f6.3)') ' tol_occ    : ', tol_occ
   if (.not.disentangle) write(2,'(a)') ' [disentanglement not used; ignoring tol_occ]'
   read(1,'(12x)')
   do ifrag=1,num_frag
-     read(1,'(l1,x,l1,x,l1)') p(ifrag,1:3) ! directions in which to split p-orbitals
+     read(1,'(l1,1x,l1,1x,l1)') p(ifrag,1:3) ! directions in which to split p-orbitals
   enddo
   do ifrag=1,num_frag
      write(2,'(a,i2,1x,l2,1x,l2,1x,l2)') ' pxyz       : ',ifrag,(p(ifrag,n),n=1,3)
@@ -124,7 +124,7 @@ program vdw
   write(2,'(a)') ' centres, sqrt(quadratic spreads) [in Ang], and electronic occupancies:'
   do ifrag=1,num_frag
      do iwann=1,num_wann(ifrag)
-        write(2,'(i3,x,i3,x,3f13.8,f12.8,f12.8)') &
+        write(2,'(i3,1x,i3,1x,3f13.8,f12.8,f12.8)') &
              ifrag,iwann,r(ifrag,1:3,iwann)*ang2a0,s(ifrag,iwann)*ang2a0,fw(ifrag,iwann)
      enddo
   enddo
@@ -221,7 +221,7 @@ program vdw
   do ifrag=1,num_frag
      do iwann=1,num_wann(ifrag)
         ! write centres, spreads and occupancies used in calculating E_vdW
-        write(2,'(i3,x,i3,x,3f13.8,f12.8,f12.8)') &
+        write(2,'(i3,1x,i3,1x,3f13.8,f12.8,f12.8)') &
              ifrag,iwann,r(ifrag,1:3,iwann)*ang2a0,s(ifrag,iwann)*ang2a0,fw(ifrag,iwann)
 
         do ifrag2=ifrag+1,num_frag
@@ -251,8 +251,8 @@ program vdw
 
 !  close(3)
   write(2,'(/a)') repeat('=',50)
-  write(2,'(a,f16.8,a)'), ' vdW energy = ',evdw,   ' Ha'
-  write(2,'(a,f16.8,a)'), ' C6_eff     = ',c6_eff, ' Ha*Bohr^6'
+  write(2,'(a,f16.8,a)') ' vdW energy = ',evdw,   ' Ha'
+  write(2,'(a,f16.8,a)') ' C6_eff     = ',c6_eff, ' Ha*Bohr^6'
   write(2,'(a)') repeat('=',50)
 
   write(2,'(/a)') ' Have a nice day.'

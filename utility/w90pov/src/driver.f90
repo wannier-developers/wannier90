@@ -280,7 +280,7 @@ write(line,'(a,i3.3,3(a,F14.7),a)') '#declare co',j,' = <',denorg(1),',',denorg(
        stop
     end if
     ! read nx, ny, nz
-    read(iu,*), nx, ny, nz
+    read(iu,*) nx, ny, nz
     ! print *, 'Gridpoints: ', nx, ny, nz
     ! read density lattice vectors and origin
     read(iu,*) (denorg(i),i=1,3)
@@ -768,7 +768,7 @@ write(line,'(a,i3.3,3(a,F14.7),a)') '#declare co',j,' = <',denorg(1),',',denorg(
     integer :: i,j
     logical :: found
 
-    real*8,allocatable ::  tmpcol(:)
+    real(q),allocatable ::  tmpcol(:)
     !---
     call param_in_file
     call param_get_keyword('numwan',found,i_value=numwan)
@@ -917,7 +917,7 @@ write(line,'(a,i3.3,3(a,F14.7),a)') '#declare co',j,' = <',denorg(1),',',denorg(
      lcage=.true.
      call param_get_keyword('lcage',found,l_value=lcage)
      if(found) then
-        write(*,'(a,L)') 'lcage= ',lcage
+        write(*,'(a,L1)') 'lcage= ',lcage
      end if
      !--
      aspectratio=1.0_q
@@ -930,9 +930,9 @@ write(line,'(a,i3.3,3(a,F14.7),a)') '#declare co',j,' = <',denorg(1),',',denorg(
 
   integer function split_string(strin, out) result (N)
     implicit none
-    character*(*),intent(in)  :: strin
-    character*(*),intent(out) :: out(:)
-    integer :: i, len, i0
+    character(*),intent(in)  :: strin
+    character(*),intent(out) :: out(:)
+    integer :: i, i0
     N=0
     i0=0
     do i=1,len(strin)
