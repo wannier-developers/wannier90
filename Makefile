@@ -22,6 +22,9 @@ wannier: objdir serialobjs
 lib: objdir serialobjs
 	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) libs)
 
+w90pov:
+	(cd $(ROOTDIR)/utility/w90pov ; make )
+
 libs: lib
 
 post: objdirp
@@ -43,6 +46,7 @@ clean:
 	make -C $(ROOTDIR)/tests clean
 	make -C $(ROOTDIR)/doc/user_guide clean
 	make -C $(ROOTDIR)/doc/tutorial clean
+	make -C $(ROOTDIR)/utility/w90pov clean
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a
@@ -87,8 +91,6 @@ dist:
 		./examples/example1[7-9]/*.scf \
 		./examples/example1[7-9]/*.nscf \
 		./examples/example1[7-9]/*.pw2wan \
-		./examples/example19/*.py \
-		./examples/example19/*.m \
 		./pseudo/*.UPF \
 		./pwscf/README \
 		./pwscf/v3.2.3/*.f90 \
@@ -110,7 +112,7 @@ dist:
 		./utility/w90pov/doc/*.tex \
 		./utility/w90pov/doc/*.pdf \
 		./utility/w90pov/doc/figs/*.png \
-		./utility/w90pov/src/*.90 \
+		./utility/w90pov/src/*.f90 \
 		./utility/w90pov/src/*.c \
 		./utility/w90pov/examples/*/*.gz \
 		./utility/w90pov/examples/*/*.inp \
