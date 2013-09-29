@@ -1097,6 +1097,7 @@ contains
     call param_get_keyword('num_valence_bands',found,r_value=num_valence_bands)
     if (found.and.(num_valence_bands.le.0)) &
          call io_error('Error: num_valence_bands should be greater than zero')
+    ! there is a check on this parameter later
 
     dos_task ='dos_plot'
     if(dos) then
@@ -1558,6 +1559,9 @@ contains
        if ((.not.gamma_only).or.(num_kpts.ne.1)) &
             call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma')
     endif
+    if(write_vdw_data .and. disentanglement .and. num_valence_bands.le.0) &
+         call io_error('If writing vdw data and disentangling then num_valence_bands must be defined')
+
 
     if(frozen_states) then
        dos_energy_max        = dis_froz_max+0.6667_dp
