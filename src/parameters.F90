@@ -2657,7 +2657,8 @@ contains
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :',boltz_tdf_energy_step,'|'
        write(stdout,'(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ',trim(param_get_smearing_type(boltz_tdf_smr_index)),'|'
        if (boltz_tdf_smr_fixed_en_width > 0.0_dp) then
-          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  TDF fixed Smearing width (eV)             :',boltz_tdf_smr_fixed_en_width,'|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') &
+                               '|  TDF fixed Smearing width (eV)             :',boltz_tdf_smr_fixed_en_width,'|'
        else
           write(stdout,'(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
        endif
