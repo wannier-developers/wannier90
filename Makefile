@@ -11,42 +11,45 @@ all: wannier lib post w90chk2chk
 doc: thedoc
 
 serialobjs: objdir
-	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) serialobjs)
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) serialobjs)
 
 w90chk2chk: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) w90chk2chk)
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
 
 wannier: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) wannier)
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
 
 lib: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj ; make -f $(REALMAKEFILE) libs)
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
 
 w90pov:
-	(cd $(ROOTDIR)/utility/w90pov ; make )
+	(cd $(ROOTDIR)/utility/w90pov && $(MAKE) )
+
+w90vdw:
+	(cd $(ROOTDIR)/utility/w90vdw && $(MAKE) )
 
 libs: lib
 
 post: objdirp
-	(cd $(ROOTDIR)/src/objp ; make -f $(REALMAKEFILE) post)
+	(cd $(ROOTDIR)/src/objp && $(MAKE) -f $(REALMAKEFILE) post)
 
 clean:
 	cd $(ROOTDIR) && rm -f *~
 	cd $(ROOTDIR) && rm -f src/*~
 	@( cd $(ROOTDIR) && if [ -d src/obj ] ; \
 		then cd src/obj && \
-		make -f $(REALMAKEFILE) clean && \
+		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf obj ; \
 	fi )
 	@( cd $(ROOTDIR) && if [ -d src/objp ] ; \
 		then cd src/objp && \
-		make -f $(REALMAKEFILE) clean && \
+		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf objp ; \
 	fi )
-	make -C $(ROOTDIR)/tests clean
-	make -C $(ROOTDIR)/doc/user_guide clean
-	make -C $(ROOTDIR)/doc/tutorial clean
-	make -C $(ROOTDIR)/utility/w90pov clean
+	$(MAKE) -C $(ROOTDIR)/tests clean
+	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
+	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
+	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a
@@ -55,8 +58,8 @@ veryclean: clean
 	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
 
 thedoc:
-	make -C $(ROOTDIR)/doc/user_guide 
-	make -C $(ROOTDIR)/doc/tutorial 
+	$(MAKE) -C $(ROOTDIR)/doc/user_guide 
+	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
 
 dist:
 	@(cd $(ROOTDIR) && tar cf - \
@@ -137,7 +140,7 @@ dist:
                 ./wannier90.tar.gz)
 
 test:   default
-	(cd $(ROOTDIR)/tests && make test )
+	(cd $(ROOTDIR)/tests && $(MAKE) test )
 
 dist-lite:
 	@(cd $(ROOTDIR) && tar cf - \

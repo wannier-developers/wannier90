@@ -41,14 +41,21 @@ program vdw
   logical, allocatable :: p(:,:)
   logical :: amalgamate, disentangle
   real(kind=DP) :: rnp
+  integer :: iostat
 
   call get_command_argument(1,filename)
   
+  open(unit=1,file=filename,action='read',iostat=iostat)
+  if (iostat /= 0) then
+     write(0,'(a)') "Error while reading file '" // trim(filename) // "'."
+     write(0,'(a)') "Pass the correct file name on the command line!"
+     stop 1
+  end if
   open(unit=2,file=adjustl(trim(filename))//".out",action='write')
   write(2,'(a/)') ' Running w90_vdw. Written by L Andrinopoulos et al. (c) 2012.'
   write(2,'(a/)') ' L Andrinopoulos, NDM Hine and AA Mostofi, J Chem Phys 135, 154105 (2011).'
   write(2,'(a,a,a/)') ' Reading input file ', adjustl(trim(filename)), '...'
-  open(unit=1,file=filename,action='read')
+
   
   ! read input parameters
   read(1,*) dummy, disentangle ! whether MLWFs are disentangled

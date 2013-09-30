@@ -340,6 +340,7 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: a_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix_orig(:,:,:,:)
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
+  logical,                       save, public :: eig_found
 
 !!$![ysl-b]
 !!$  ! ph_g = phase factor of Bloch functions at Gamma
@@ -420,7 +421,7 @@ contains
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3,3)
     integer :: nkp,i,j,n,k,itmp,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
-    logical :: found,found2,eig_found,lunits,chk_found
+    logical :: found,found2,lunits,chk_found
     character(len=6) :: spin_str
     real(kind=dp) :: cosa(3),rv_temp(3)
 
@@ -809,7 +810,7 @@ contains
        endif
     endif
     !
-    if(fermi_energy_scan) fermi_energy_max=fermi_energy_min+1.0_dp
+    fermi_energy_max=fermi_energy_min+1.0_dp
     call param_get_keyword('fermi_energy_max',found,r_value=fermi_energy_max)
     if(found) then
        if(found_fermi_energy) call io_error(&
@@ -818,6 +819,9 @@ contains
          'Error: Must specify fermi_energy_min together with fermi_energy_max')
        if(fermi_energy_max<=fermi_energy_min) call io_error(&
             'Error: fermi_energy_max must be larger than fermi_energy_min')
+    !else
+    !   if (fermi_energy_scan) call io_error(&
+    !        'Error: fermi_energy_min specified, but no fermi_energy_max')
     endif
     !
     fermi_energy_step=0.01_dp
@@ -1298,8 +1302,6 @@ contains
     ! Read the eigenvalues from wannier.eig
     eig_found=.false.
     if(.not.library .and. .not.effective_model) then
-       allocate(eigval(num_bands,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating eigval in param_read')
        
        if(.not.postproc_setup)  then
           inquire(file=trim(seedname)//'.eig',exist=eig_found)
@@ -1311,6 +1313,10 @@ contains
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
           else
+             ! Allocate only here
+             allocate(eigval(num_bands,num_kpts),stat=ierr)
+             if (ierr/=0) call io_error('Error allocating eigval in param_read')
+
              eig_unit=io_file_unit()
              open(unit=eig_unit,file=trim(seedname)//'.eig',form='formatted',status='old',err=105)
              do k=1,num_kpts
@@ -2226,6 +2232,7 @@ contains
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write xyz WF centres to file              :',write_xyz,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Write on-site energies <0n|H|0n> to file  :',write_hr_diag,'|'    
     write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Use guiding centre to control phases      :',guiding_centres,'|'
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Use phases for initial projections        :',use_bloch_phases,'|'
     if(guiding_centres .or. iprint>2) then
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations before starting guiding centres:',num_no_guide_iter,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between using guiding centres  :',num_guide_cycles,'|'
@@ -2257,6 +2264,16 @@ contains
                '|   Size of supercell for plotting           :', &
                wannier_plot_supercell(1),'x',wannier_plot_supercell(2),'x', &
                wannier_plot_supercell(3),'|'
+
+          if (translate_home_cell) then
+             write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Translating WFs to home cell              :',translate_home_cell,'|'             
+          end if
+          write(stdout,'(1x,a78)') '|   Centre of the unit cell to which WF are translated (fract. coords):      |'
+          write(stdout,'(1x,a1,35x,F12.6,a1,F12.6,a1,F12.6,3x,a1)') '|', translation_centre_frac(1), ',', &
+               translation_centre_frac(2), ',', &
+               translation_centre_frac(2), '|'
+
+
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           if (index(wannier_plot_format,'cube')>0 .or. iprint>2) &
@@ -2305,6 +2322,10 @@ contains
           write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',hr_plot,'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        endif
+       if (write_vdw_data .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Writing data for Van der Waals post-proc  :',write_vdw_data,'|'
+          write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+       endif
        !
     endif
 
@@ -2327,6 +2348,14 @@ contains
        write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :','F','|'
        write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :',trim(one_dim_axis),'|'
        !
+       end if
+
+       if (size(fermi_energy_list) == 1) then
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :',fermi_energy_list(1), '|'
+       else       
+          write(stdout,'(1x,a21,I8,a12,f8.3,a4,f8.3,a3,13x,a1)') '|  Fermi energy     :', size(fermi_energy_list),&
+               ' steps from ', fermi_energy_list(1), ' to ', &
+               fermi_energy_list(size(fermi_energy_list)), ' eV', '|'
        end if
        !
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
@@ -2429,6 +2458,15 @@ contains
           write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Spn file type file-type                   :','unformatted','|'
        endif
     end if
+
+    if (size(fermi_energy_list) == 1) then
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :',fermi_energy_list(1), '|'
+    else       
+       write(stdout,'(1x,a21,I8,a12,f8.3,a4,f8.3,a3,13x,a1)') '|  Fermi energy     :', size(fermi_energy_list),&
+            ' steps from ', fermi_energy_list(1), ' to ', &
+            fermi_energy_list(size(fermi_energy_list)), ' eV', '|'
+    end if
+
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :',timing_level,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :',optimisation,'|'
@@ -2458,8 +2496,6 @@ contains
        write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Global interpolation k-points defined     :','       F','|'
     endif
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
-
-
 
     ! DOS
     if(dos .or. iprint>2) then

@@ -219,6 +219,7 @@ module w90_postw90_common
     integer :: ierr
 
     call comms_bcast(effective_model,1) 
+    call comms_bcast(eig_found,1) 
 
     if(.not.effective_model) then
        call comms_bcast(mp_grid(1),3)
@@ -350,9 +351,11 @@ module w90_postw90_common
        if (ierr/=0)&
             call io_error('Error allocating dos_project in postw90_param_dist')
        if(.not.effective_model) then
-          allocate(eigval(num_bands,num_kpts),stat=ierr)
-          if (ierr/=0)&
-               call io_error('Error allocating eigval in postw90_param_dist')
+          if (eig_found) then
+             allocate(eigval(num_bands,num_kpts),stat=ierr)
+             if (ierr/=0)&
+                  call io_error('Error allocating eigval in postw90_param_dist')
+          end if
           allocate(kpt_latt(3,num_kpts),stat=ierr)
           if (ierr/=0)&
                call io_error('Error allocating kpt_latt in postw90_param_dist')
@@ -362,7 +365,9 @@ module w90_postw90_common
     call comms_bcast(kubo_freq_list(1),kubo_nfreq)
     call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then
-       call comms_bcast(eigval(1,1),num_bands*num_kpts)
+       if (eig_found) then
+          call comms_bcast(eigval(1,1),num_bands*num_kpts)
+       end if
        call comms_bcast(kpt_latt(1,1),3*num_kpts)
     endif
        
