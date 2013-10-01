@@ -2257,7 +2257,8 @@ contains
                wannier_plot_supercell(3),'|'
 
           if (translate_home_cell) then
-             write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Translating WFs to home cell              :',translate_home_cell,'|'             
+             write(stdout,'(1x,a46,10x,L8,13x,a1)') & 
+                                           '|  Translating WFs to home cell              :',translate_home_cell,'|'             
           end if
           write(stdout,'(1x,a78)') '|   Centre of the unit cell to which WF are translated (fract. coords):      |'
           write(stdout,'(1x,a1,35x,F12.6,a1,F12.6,a1,F12.6,3x,a1)') '|', translation_centre_frac(1), ',', &
@@ -2367,7 +2368,7 @@ contains
 
     implicit none
 
-    integer :: i,nkp,loop,nat,nsp
+    integer :: i,loop,nat,nsp
 
     ! System
     write(stdout,*)
@@ -2793,7 +2794,7 @@ contains
     write(stdout,*)  '            |        A. A. Mostofi, J. R. Yates, Y.-S. Lee,     |'
     write(stdout,*)  '            |        I. Souza, D. Vanderbilt and N. Marzari     |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |        Release: 2.0        xxxxxxxx 2013          |'
+    write(stdout,*)  '            |        Release: 2.0         October 2013          |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
