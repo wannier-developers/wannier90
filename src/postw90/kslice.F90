@@ -28,13 +28,9 @@ module w90_kslice
   !    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
   !    the slice is oriented such that b1,b2 is left-handed
   !
-  !---------------------------------------------
-  ! TO DO:  
-  !
-  !      * Color the energy contours by the spin
-  !
-  !      * Parallelize over k-points
-  !---------------------------------------------
+  !---------------------------------
+  ! TO DO: Parallelize over k-points
+  !---------------------------------
 
   implicit none
 
@@ -67,15 +63,15 @@ module w90_kslice
     use w90_berry, only          : get_imf_k_list,get_imfgh_k_list
     use w90_constants, only      : bohr
 
-    integer           :: loop_tot,loop_x,loop_y,n,n1,n2,n3,i
+    integer           :: loop_xy,loop_x,loop_y,n,n1,n2,n3,i
     integer           :: zdataunit,coorddataunit,& 
                          bandsunit,scriptunit,dataunit
     real(kind=dp)     :: bvec(3,3),yvec(3),zvec(3),b1mod,b2mod,ymod,cosb1b2,&
-                         areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,k_cart(3),&
+                         areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,&
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
                          spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
-                         zhat(3),vdum(3)
+                         zhat(3),vdum(3),db1,db2
     logical           :: plot_fermi_lines,plot_curv,plot_morb,fermi_lines_color
     character(len=25) :: filename,square
 
@@ -112,11 +108,11 @@ module w90_kslice
 
     if(on_root) then
 
-       ! Set Cartesian components of the vectors (b_1,b_2) spanning the slice, 
+       ! Set Cartesian components of the vectors (b1,b2) spanning the slice, 
        !
        bvec(1,:)=matmul(kslice_b1(:),recip_lattice(:,:))
        bvec(2,:)=matmul(kslice_b2(:),recip_lattice(:,:))
-       ! z_vec (orthogonal to b1 and b2)
+       ! z_vec (orthogonal to the slice)
        zvec(1)=bvec(1,2)*bvec(2,3)-bvec(1,3)*bvec(2,2)
        zvec(2)=bvec(1,3)*bvec(2,1)-bvec(1,1)*bvec(2,3)
        zvec(3)=bvec(1,1)*bvec(2,2)-bvec(1,2)*bvec(2,1)
@@ -126,14 +122,14 @@ module w90_kslice
        yvec(3)=zvec(1)*bvec(1,2)-zvec(2)*bvec(1,1)
        ! Area (modulus b1 x b2 = z_vec)
        areab1b2=sqrt(zvec(1)**2+zvec(2)**2+zvec(3)**2)
-       ! Moduli b_1,b_2,y_vec
+       ! Moduli b1,b2,y_vec
        b1mod=sqrt(bvec(1,1)**2+bvec(1,2)**2+bvec(1,3)**2)
        b2mod=sqrt(bvec(2,1)**2+bvec(2,2)**2+bvec(2,3)**2)
        ymod=sqrt(yvec(1)**2+yvec(2)**2+yvec(3)**2)
-       ! Cosine of the angle between y_vec and b_2
+       ! Cosine of the angle between y_vec and b2
        cosyb2=yvec(1)*bvec(2,1)+yvec(2)*bvec(2,2)+yvec(3)*bvec(2,3)
        cosyb2=cosyb2/(ymod*b2mod)
-       ! Cosine of the angle between b_1=x_vec and b_2
+       ! Cosine of the angle between b1=x_vec and b2
        cosb1b2=bvec(1,1)*bvec(2,1)+bvec(1,2)*bvec(2,2)+bvec(1,3)*bvec(2,3)
        cosb1b2=cosb1b2/(b1mod*b2mod)       
 !       if (abs(cosb1b2)<eps8 .and. b1mod==b2mod) then
@@ -226,26 +222,23 @@ module w90_kslice
           open(zdataunit,file=filename,form='formatted')
        end if
      
+       db1=1.0_dp/real(kslice_2dkmesh(1),dp)
+       db2=1.0_dp/real(kslice_2dkmesh(2),dp)
+
        ! Loop over uniform mesh of k-points on the slice
        !
-       do loop_tot=0,product(kslice_2dkmesh)-1
-          loop_x=loop_tot/kslice_2dkmesh(2)
-          loop_y=loop_tot-loop_x*kslice_2dkmesh(2)          
+       do loop_xy=0,product(kslice_2dkmesh)-1
+          loop_x=loop_xy/kslice_2dkmesh(2)
+          loop_y=loop_xy-loop_x*kslice_2dkmesh(2)          
           ! k1 and k2 are the coefficients of the k-point in the basis
           ! (kslice_b1,kslice_b2)
-          k1=real(loop_x,dp)/real(kslice_2dkmesh(1),dp)
-          k2=real(loop_y,dp)/real(kslice_2dkmesh(2),dp)
-             
+          k1=loop_x*db1
+          k2=loop_y*db2             
           kpt=kslice_corner+k1*kslice_b1+k2*kslice_b2
-          ! 
           ! Convert to (kpt_x,kpt_y), the 2D Cartesian coordinates
           ! with x along x_vec=b1 and y along y_vec
-          !
-          k_cart=matmul(kpt,recip_lattice)
-          
           kpt_x=k1*b1mod+k2*b2mod*cosb1b2
           kpt_y=k2*b2mod*cosyb2
-          
           if(.not.fermi_lines_color) write(coorddataunit,'(2E16.8)') kpt_x,kpt_y
 
           if(plot_fermi_lines) then
@@ -259,7 +252,7 @@ module w90_kslice
                    endif
                 enddo
                 call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-                Delta_k=max(b1mod/kslice_2dkmesh(1),b2mod/kslice_2dkmesh(2))
+                Delta_k=max(b1mod*db1,b2mod*db2)
              else
                 call fourier_R_to_k(kpt,HH_R,HH,0)
                 call utility_diagonalize(HH,num_wann,eig,UU)
@@ -305,7 +298,7 @@ module w90_kslice
              write(zdataunit,'(3E16.8)') morb(:)
           end if
 
-       end do !loop_tot
+       end do !loop_xy
        
        if(.not.fermi_lines_color) then
           write(coorddataunit,*) ' '
@@ -682,19 +675,19 @@ module w90_kslice
                     //'points_y, val, xint, yint)' 
                write(scriptunit,'(a)') '  pl.imshow(valint,origin="lower",'&
                     //'extent=(min(xint),max(xint),min(yint),max(yint)))'
+               write(scriptunit,'(a)') 'pl.colorbar()'
 
-             endif
+            endif
                        
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') 'pl.colorbar()'
-             write(scriptunit,'(a)') 'ax = pl.gca()'
-             write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
-             write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') 'pl.savefig(outfile)'
-             write(scriptunit,'(a)') 'pl.show()'
-
-             close(scriptunit)
+            write(scriptunit,'(a)') ' '
+            write(scriptunit,'(a)') 'ax = pl.gca()'
+            write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
+            write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
+            write(scriptunit,'(a)') ' '
+            write(scriptunit,'(a)') 'pl.savefig(outfile)'
+            write(scriptunit,'(a)') 'pl.show()'
+            
+            close(scriptunit)
           enddo
           !
        endif !plot_curv .or. plot_morb

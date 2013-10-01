@@ -487,7 +487,7 @@ interpolated bands.
 \end{center}
 \end{figure}
 
-\cleardoublepage
+\clearpage
 
 \sectiontitle{Examples Using the {\sc pwscf} Interface}
 \label{sec:using pwscf}
@@ -1031,8 +1031,7 @@ the second MLWF.
 %\cleardoublepage
 
 
-\sectiontitle{11: Silicon -- Valence and conduction states, scissors
-  correction}
+\sectiontitle{11: Silicon -- Valence and low-lying conduction states}
 \subsection*{Valence States}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWFs for the valence bands of silicon.}}
@@ -1141,18 +1140,18 @@ gnuplot> load `silicon\_band.gnu'
 The k-point path for the bandstructure interpolation is set in the {\tt
   kpoint\_path} block. Try plotting along different paths. 
 
-\item Shift the conduction bands upwards in energy by
-    0.65~eV. This {\it ad-hoc} ``scissors correction'' is applied to
-    the Hamiltonian in the Wannier basis using the instructions
+%\item Shift the conduction bands upwards in energy by
+%    0.65~eV. This {\it ad-hoc} ``scissors correction'' is applied to
+%    the Hamiltonian in the Wannier basis using the instructions
 %
-{\tt
-\begin{quote}
-num\_valence\_bands = 4
-
-scissors\_shift = 0.65
-\end{quote} }
+%{\tt
+%\begin{quote}
+%num\_valence\_bands = 4
 %
-Plot together the original and scissors-corrected bands.
+%scissors\_shift = 0.65
+%\end{quote} }
+%
+%Plot together the original and scissors-corrected bands.
 
 \end{enumerate}
 
@@ -1179,7 +1178,7 @@ Plot together the original and scissors-corrected bands.
 %\cleardoublepage
 
 
-\sectiontitle{12: Benzene}
+\sectiontitle{12: Benzene  -- Valence and low-lying conduction states}
 \subsection*{Valence States}
 \begin{itemize}
 \item{Outline: \it{Obtain MLWFs for the valence states of benzene}}
@@ -1732,15 +1731,17 @@ or, using {\tt python},
 myshell> python Fe-bands.py
 \end{quote} }
 
-Next we plot the Fermi-surface contours on the (010) plane, using the
-{\tt kslice} module. Set {\tt kpath = false} and uncomment the following instructions in {\tt
-  Fe.win}, {\tt
+Next we plot the Fermi-surface contours on the (010) plane $k_y=0$,
+using the {\tt kslice} module. Set {\tt kpath = false} and uncomment
+the following instructions in {\tt Fe.win}, 
+%
+{\tt
 \begin{quote}
 kslice = true
 
 kslice\_task = fermi\_lines
 
-kslice\_fermi\_level = 12.6285
+kslice\_fermi\_level = [insert your value here] 
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1751,7 +1752,7 @@ kslice\_b2 =     0.5  0.5  0.5
 kslice\_2dkmesh = 200 200
 \end{quote} }
 
-The Fermi level is taken from {\tt scf.out}, and the energy
+taking the Fermi level value from {\tt scf.out}. The energy
 eigenvalues are computed on a $200\times 200$ $k$-point grid covering
 the BZ slice. The lines of intersection between the Fermi surface and
 the (010) plane can be visualized with the {\tt gnuplot} or {\tt
@@ -1798,7 +1799,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-kslice\_fermi\_level = 12.6256
+kslice\_fermi\_level = [insert your value here] 
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1851,7 +1852,8 @@ myshell> gnuplot
 gnuplot> plot 'Fe-dos.dat' u (-\$3):(\$1-12.6285) w l,'Fe-dos.dat' u (\$4):(\$1-12.6285) w l
 \end{quote} }
 %
-An alternative approach is to project the DOS onto the up-spin and
+(You should replace 12.6285 with your value of the Fermi energy).  An
+alternative approach is to project the DOS onto the up-spin and
 down-spin WFs separately. To find the DOS projected onto the up-spin
 (odd-numbered) WFs replace {\tt spin\_decomp = true} with
 %
@@ -1929,7 +1931,7 @@ lines in {\tt Fe.win} are used to calculate the energy bands and the
 Berry curvature (in bohr$^2$) along high-symmetry lines in $k$-space.
 {\tt
 \begin{quote}
-fermi\_energy = 12.6285
+fermi\_energy = [insert your value here] 
 
 berry\_curv\_unit = bohr2
 
@@ -1945,16 +1947,19 @@ kpath\_num\_points = 1000
 %The path specification in {\tt Fe.win} is the same as in Example~17, and 
  
 
-After executing {\tt postw90}, make the plot using the script
-generated at runtime, {\tt
+After executing {\tt postw90}, plot the Berry curvature component
+$\Omega_z({\bf k})=\Omega_{xy}({\bf k})$ along the magnetization
+direction using the script generated at runtime, 
+%
+{\tt
 \begin{quote}
 myshell> python Fe-bands+curv\_z.py
 \end{quote} }
 
 and compare with Fig.~2 of Ref.~\cite{yao-prl04}.  
 
-In Example~17 we plotted the Fermi lines on the (010) plane.  To
-combine them with a heatmap plot of (minus) the Berry curvature set
+In Example~17 we plotted the Fermi lines on the (010) plane $k_y=0$.
+To combine them with a heatmap plot of (minus) the Berry curvature set
 {\tt kpath = false}, uncomment the following lines in {\tt Fe.win},
 \smallskip {\tt
 \begin{quote}
@@ -1987,9 +1992,11 @@ in Example~17).
 \subsection*{Anomalous Hall conductivity}
 
 The intrinsic anomalous Hall conductivity (AHC) is proportional to the
-BZ integral of the Berry curvature. To evaluate the AHC using a
-$25\times 25\times 25$ $k$-point mesh, set {\tt kslice = false},
-uncomment the following lines in {\tt Fe.win}, {\tt
+BZ integral of the Berry curvature. In bcc Fe with the magnetization
+along $\hat{\bf z}$, the only nonzero components are
+$\sigma_{xy}=-\sigma_{yx}$.  To evaluate the AHC using a $25\times
+25\times 25$ $k$-point mesh, set {\tt kslice = false}, uncomment the
+following lines in {\tt Fe.win}, {\tt
 \begin{quote}
 berry = true
 
@@ -1997,14 +2004,10 @@ berry\_task = ahc
 
 berry\_kmesh = 25 25 25
 
-\end{quote} } and re-run {\tt postw90}.  The AHC is written in the output file
-{\tt Fe.wpout}.
-%The $x$, $y$, and $z$ components correspond to $\sigma^{\rm
-%  AH}_{yz}$, $\sigma^{\rm AH}_{zx}$, and $\sigma^{\rm AH}_{xy}$
-%respectively. 
-For bcc Fe with the magnetization along [001], only the $z$-component
-is nonzero.
-%(the tiny values of the other two components are numerical noise).
+\end{quote} } and re-run {\tt postw90}.  The AHC is written in the
+output file {\tt Fe.wpout} in vector form.  For bcc Fe with the
+magnetization along [001], only the $z$-component $\sigma_{xy}$ is
+nonzero.
 
 As a result of the strong and rapid variations of the Berry curvature
 across the BZ, the AHC converges rather slowly with $k$-point
@@ -2028,7 +2031,7 @@ value.
   \end{itemize}
     
     This adds a $5\times 5\times 5$ fine mesh around those points
-    where $\vert\Omega_z({\bf k})\vert$ exceeds 100~bohr$^2$. The
+    where $\vert{\bm \Omega}({\bf k})\vert$ exceeds 100~bohr$^2$. The
     percentage of points triggering adaptive refinement is reported in
     {\tt Fe.wpout}.
 
@@ -2039,8 +2042,9 @@ value.
     comprises three terms, denoted $D$-$D$, $D$-$\overline{A}$, and
     $\overline{\Omega}$ in Ref.~\cite{wang-prb06}, and $J2$, $J1$, and
     $J0$ in Ref.~\cite{lopez-prb12}.  To report in {\tt Fe.wpout} the
-    decomposition of the AHC into these three terms, set {\tt iprint}
-    (verbosity level) to a value larger than one in {\tt Fe.win}.
+    decomposition of the total AHC into these three terms, set {\tt
+      iprint} (verbosity level) to a value larger than one in {\tt
+      Fe.win}.
 
 \subsection*{Optical conductivity}
 
@@ -2067,8 +2071,8 @@ $$
 where ``S'' and ``A'' stand for the symmetric and antisymmetric parts
 and $\sigma_{xx}=\sigma_{yy}\not=\sigma_{zz}$. The dc AHC calculated
 earlier corresponds to $\sigma_{xy}$ in the limit $\omega\rightarrow
-0$. At finite frequency $\sigma_{xy}$ acquires an imaginary part which
-describes magnetic circular dichoism (MCD).
+0$. At finite frequency $\sigma_{xy}=-\sigma_{yx}$ acquires an
+imaginary part which describes magnetic circular dichoism (MCD).
 
 To compute the complex optical conductivy for $\hbar\omega$
 up to 7~eV, replace 
@@ -2138,16 +2142,16 @@ Recalculate the AHC of bcc Fe for a range of Fermi energies within
 $\pm 0.5$~eV of the true Fermi level. This calculation can be
 streamlined by replacing in {\tt Fe.win} {\tt
 \begin{quote}
-fermi\_energy = 12.6285
+fermi\_energy = [insert your value here]
 \end{quote} }
 %
 with
 %
 {\tt
 \begin{quote}
-fermi\_energy\_min = 12.1285
+fermi\_energy\_min = [insert here your value minus 0.5]
 
-fermi\_energy\_max = 13.1285
+fermi\_energy\_max = [insert here your value plus 0.5]
 \end{quote} }
 %
 Use a sufficiently dense BZ mesh with adaptive refinement. To plot
@@ -2245,7 +2249,7 @@ berry\_task = morb
 
 berry\_kmesh = 25 25 25
 
-fermi\_energy = 12.6285
+fermi\_energy = [insert your value here]
 \end{quote} }
 %
 After running {\tt postw90}, compare the value of the orbital

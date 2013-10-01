@@ -273,9 +273,6 @@ module w90_postw90_common
 ! New input variables in development 
 !
     call comms_bcast(devel_flag,len(devel_flag))
-    call comms_bcast(alpha,1) 
-    call comms_bcast(beta,1) 
-    call comms_bcast(gamma,1) 
     call comms_bcast(spin_moment,1) 
     call comms_bcast(spin_axis_polar,1) 
     call comms_bcast(spin_axis_azimuth,1) 
@@ -291,7 +288,6 @@ module w90_postw90_common
     call comms_bcast(kslice,1) 
     call comms_bcast(kslice_task,len(kslice_task)) 
     call comms_bcast(transl_inv,1) 
-    call comms_bcast(sigma_abc_onlyorb,1)
     call comms_bcast(num_elec_per_state,1)
     call comms_bcast(scissors_shift,1)
     !
@@ -520,7 +516,7 @@ module w90_postw90_common
 
   subroutine get_occ(eig,occ,ef)
 
-    use w90_constants, only     : dp
+    use w90_constants, only     : dp !,eps7
     use w90_parameters, only    : num_wann !,smear_temp
 !    use w90_constants, only    : elem_charge_SI,k_B_SI
 
@@ -535,21 +531,16 @@ module w90_postw90_common
     !
     integer       :: i
 !    real(kind=dp) :: kt
-
-    real(kind=dp), parameter :: eps=1.0e-7
  
     ! State occupancies 
     !
-!    if(smear_temp < eps) then
+!    if(smear_temp < eps7) then
        !
        ! Use a step function occupancy (T=0)
        !
+    occ(:)=0.0_dp
        do i=1,num_wann
-          if( eig(i) < ef) then
-             occ(i)=1.0_dp
-          else
-             occ(i)=0.0_dp
-          end if
+          if( eig(i) < ef) occ(i)=1.0_dp
        end do
 !    else
        !

@@ -139,9 +139,9 @@ module w90_parameters
   real(kind=dp),     public, save :: berry_kmesh_spacing
   integer,           public, save :: berry_kmesh(3)
   ! --------------remove eventually----------------
-  integer,           public, save :: alpha
-  integer,           public, save :: beta
-  integer,           public, save :: gamma
+!  integer,           public, save :: alpha
+!  integer,           public, save :: beta
+!  integer,           public, save :: gamma
   ! --------------remove eventually----------------
   integer,           public, save :: berry_curv_adpt_kmesh
   real(kind=dp),     public, save :: berry_curv_adpt_kmesh_thresh
@@ -152,7 +152,7 @@ module w90_parameters
   real(kind=dp),     public, save :: kubo_smr_fixed_en_width
   real(kind=dp),     public, save :: kubo_adpt_smr_max
   logical,           public, save :: wanint_kpoint_file
-  logical,           public, save :: sigma_abc_onlyorb
+!  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
 
   logical                                  :: fermi_energy_scan
@@ -972,15 +972,6 @@ contains
     call param_get_keyword('berry_task',found,c_value=berry_task)
     if(berry .and. .not.found) call io_error &
          ('Error: berry=T and berry_task is not set')
-!    if(berry) then
-!       if(index(berry_task,'mcd')==0 .and. index(berry_task,'ord')==0&
-!            .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-!            .and. index(berry_task,'gyro')==0&
-!            .and. index(berry_task,'noa')==0&
-!            .and. index(berry_task,'mespn')==0)&
-!            call io_error&
-!            ('Error: value of berry_task not recognised in param_read')
-!    end if
     if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
              .and. index(berry_task,'kubo')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
@@ -988,14 +979,14 @@ contains
     
 
 !-------------------------------------------------------
-    alpha=0
-    call param_get_keyword('alpha',found,i_value=alpha)
+!    alpha=0
+!    call param_get_keyword('alpha',found,i_value=alpha)
 
-    beta=0
-    call param_get_keyword('beta',found,i_value=beta)
+!    beta=0
+!    call param_get_keyword('beta',found,i_value=beta)
 
-    gamma=0
-    call param_get_keyword('gamma',found,i_value=gamma)
+!    gamma=0
+!    call param_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
     berry_curv_adpt_kmesh           = 1
@@ -1120,8 +1111,8 @@ contains
   ('Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"') 
     end if
 
-    sigma_abc_onlyorb=.false.
-    call param_get_keyword('sigma_abc_onlyorb',found,l_value=sigma_abc_onlyorb)
+!    sigma_abc_onlyorb=.false.
+!    call param_get_keyword('sigma_abc_onlyorb',found,l_value=sigma_abc_onlyorb)
 
 ! -------------------------------------------------------------------
 

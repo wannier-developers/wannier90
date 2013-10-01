@@ -21,8 +21,6 @@ module w90_spin
 
   public :: get_spin_moment,get_spin_nk
 
-  real(kind=dp), parameter :: eps=1.0e-7
-
   contains
 
   !===========================================================!

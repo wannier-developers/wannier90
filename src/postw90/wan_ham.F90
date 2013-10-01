@@ -17,7 +17,7 @@ module w90_wan_ham
   !                                               !
   !===============================================!
 
-    use w90_constants, only      : dp,cmplx_0,cmplx_i
+    use w90_constants, only      : dp,cmplx_0
     use w90_parameters, only     : num_wann
     use w90_utility, only        : utility_rotate
     use w90_postw90_common, only : get_occ
@@ -63,7 +63,7 @@ module w90_wan_ham
     !        occupied and empty states. In this case probably do not need
     !        to worry about avoiding small energy denominators
 
-    use w90_constants, only     : dp,cmplx_0,cmplx_i
+    use w90_constants, only     : dp,cmplx_0
     use w90_parameters, only    : num_wann
     use w90_utility, only       : utility_rotate
 
@@ -184,7 +184,7 @@ module w90_wan_ham
   !                                !
   !================================!
     
-    use w90_constants, only      : dp,cmplx_0
+    use w90_constants, only      : dp,cmplx_0,cmplx_1
     use w90_parameters, only     : num_wann,nfermi,fermi_energy_list
     use w90_postw90_common, only : get_occ
 
@@ -201,16 +201,16 @@ module w90_wan_ham
     do if=1,nfermi
        call get_occ(eig,occ_list(:,if),fermi_energy_list(if))
     enddo
-    f_list=cmplx_0; g_list=cmplx_0
+    f_list=cmplx_0
     do if=1,nfermi
        do n=1,num_wann
           do m=1,num_wann
              do i=1,num_wann
                 f_list(n,m,if)=f_list(n,m,if)&
-                                  +UU(n,i)*occ_list(i,if)*conjg(UU(m,i))
+                     +UU(n,i)*occ_list(i,if)*conjg(UU(m,i))
              enddo
              g_list(n,m,if)=-f_list(n,m,if)
-             if(m==n) g_list(n,n,if)=g_list(n,n,if)+1.0_dp
+             if(m==n) g_list(n,n,if)=g_list(n,n,if)+cmplx_1
           enddo
        enddo
     enddo
@@ -363,10 +363,10 @@ module w90_wan_ham
   !                                                        ! 
   !========================================================!
 
-    use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R,get_HH_R
+    use w90_parameters, only     : num_wann
+    use w90_get_oper, only       : HH_R,get_HH_R
     use w90_postw90_common, only : fourier_R_to_k_new
-    use w90_utility, only : utility_diagonalize
+    use w90_utility, only        : utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
     real(kind=dp), intent(out)                        :: eig(num_wann)
