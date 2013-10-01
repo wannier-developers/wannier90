@@ -758,18 +758,16 @@ module w90_berry
 
 
   subroutine get_imf_k_list(kpt,imf_k_list)
-  !=============================================================!
-  !                                                             !
-  ! Calculates -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a     !
-  ! list of Fermi energies, and stores it in axial-vector form  !
-  !                                                             !
-  ! This is the Berry curvature traced over the occupied states !
-  !                                                             !
-  !=============================================================!
+  !============================================================!
+  !                                                            !
+  ! Calculates the Berry curvature traced over the occupied    !
+  ! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list  !
+  ! of Fermi energies, and stores it in axial-vector form      !
+  !                                                            !
+  !============================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
-    use w90_utility, only        : utility_re_tr,utility_im_tr,&
-                                   utility_diagonalize
+    use w90_utility, only        : utility_re_tr,utility_im_tr
     use w90_parameters, only     : num_wann,nfermi
     use w90_postw90_common, only : fourier_R_to_k_vec
     use w90_wan_ham, only        : get_eig_UU_HH_JJlist,get_occ_mat_list
@@ -835,23 +833,23 @@ module w90_berry
 
 
   subroutine get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
-  !==============================================================!
-  !                                                              !
-  ! Calculates together (to reduce the number of Fourier calls), !
-  ! the three quantities entering the orbital magnetization:     !
-  !                                                              !
-  ! * -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12]                     !
-  ! * -2Im[g(k)] [Eq.34 CTVR06, Eq.7 LVTS12]                     !
-  ! * -2Im[h(k)] [Eq.35 CTVR06, Eq.8 LVTS12]                     !
-  !                                                              !
-  ! They are calculated for a list of Fermi energies, and stored !
-  ! in axial-vector form.                                        !
-  !                                                              !
-  !==============================================================!
+  !=========================================================!
+  !                                                         !
+  ! Calculates the three quantities needed for the orbital  !
+  ! magnetization:                                          !
+  !                                                         !
+  ! * -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12]                !
+  ! * -2Im[g(k)] [Eq.34 CTVR06, Eq.7 LVTS12]                !
+  ! * -2Im[h(k)] [Eq.35 CTVR06, Eq.8 LVTS12]                !
+  !                                                         !
+  ! They are calculated together (to reduce the number of   !
+  ! Fourier calls) for a list of Fermi energies, and stored !
+  ! in axial-vector form.                                   !
+  !                                                         !
+  !=========================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
-    use w90_utility, only        : utility_re_tr,utility_im_tr,&
-                                   utility_diagonalize
+    use w90_utility, only        : utility_re_tr,utility_im_tr
     use w90_parameters, only     : num_wann,nfermi
     use w90_postw90_common, only : fourier_R_to_k_vec,fourier_R_to_k
     use w90_wan_ham, only        : get_eig_UU_HH_JJlist,get_occ_mat_list
@@ -932,7 +930,7 @@ module w90_berry
     do i=1,3
        !
        ! J0 term
-       ! LLambda_ij [Eq. (37) LVTS12] in pseudovector form
+       ! LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
        LLambda_i=cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
               -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
        do if=1,nfermi
@@ -1103,9 +1101,6 @@ module w90_berry
              !
              ! Complex frequency for the anti-Hermitian conductivity
              !
-!             if(kubo_adpt_smr) kubo_freq_list(ifreq)=&
-!                  real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
-!             omega=kubo_freq_list(ifreq)
              if(kubo_adpt_smr) then
                 omega=real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
              else

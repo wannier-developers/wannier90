@@ -2444,9 +2444,9 @@ contains
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :',spin_axis_polar,'|'
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :',spin_axis_azimuth,'|'
        if(spn_formatted) then
-          write(stdout,'(1x,a46,9x,a9,13x,a1)')   '|  Spn file type file-type                   :','formatted','|'
+          write(stdout,'(1x,a46,9x,a9,13x,a1)')   '|  Spn file-type                   :','formatted','|'
        else
-          write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Spn file type file-type                   :','unformatted','|'
+          write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Spn file-type                   :','unformatted','|'
        endif
     end if
 
