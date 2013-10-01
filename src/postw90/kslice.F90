@@ -19,14 +19,13 @@ module w90_kslice
   !
   !  - The integrand of the k-space orbital magnetization formula
   !
-  ! Calculates the intersections of constant-energy isosurfaces with the slice
+  ! Plots the intersections of constant-energy isosurfaces with the slice
   !
   ! The slice is defined by three input variables, all in reciprocal
   ! lattice coordinates:
   !
   !    kslice_corner(1:3) is the lower left corner 
   !    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
-  !    the slice is oriented such that b1,b2 is left-handed
   !
   !---------------------------------
   ! TO DO: Parallelize over k-points
@@ -390,88 +389,86 @@ module w90_kslice
                //achar(48+n1)//achar(48+n2)//achar(48+n3)&
                //'.dat" using 1:2 w lines ls 1'
           close(scriptunit)
-!          if(.not.(plot_curv .or. plot_morb)) then  ! ***REMOVE if?***
-             !
-             ! Python script for black Fermi lines
-             !  
-             scriptunit=io_file_unit()
-             filename=trim(seedname)//'-kslice-fermi_lines.py'
-             write(stdout,'(/,3x,a)') filename
-             open(scriptunit,file=filename,form='formatted')      
-             write(scriptunit,'(a)') 'import pylab as pl' 
-             write(scriptunit,'(a)') 'import numpy as np'
-             write(scriptunit,'(a)') 'import matplotlib.mlab as ml'
-             write(scriptunit,'(a)') 'from collections import OrderedDict'
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "points = np.loadtxt('"//trim(seedname)//&
-                                          "-kslice-coord.dat')"
-             write(scriptunit,'(a)') 'points_x=points[:,0]'
-             write(scriptunit,'(a)') 'points_y=points[:,1]'
-             write(scriptunit,'(a)') 'num_pt=len(points)'             
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a,f12.6)') 'area=', areab1b2
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') 'square= '//square
-             write(scriptunit,'(a)') ' '
-
-             write(scriptunit,'(a)') 'if square:'
-             write(scriptunit,'(a)')&
-                  '  x_coord=list(OrderedDict.fromkeys(points_x))'
-             write(scriptunit,'(a)')&
-                  '  y_coord=list(OrderedDict.fromkeys(points_y))'
-             write(scriptunit,'(a)') '  dimx=len(x_coord)'
-             write(scriptunit,'(a)') '  dimy=len(y_coord)'
-             write(scriptunit,'(a)') 'else:'
-             write(scriptunit,'(a)') '  xmin=np.min(points_x)'
-             write(scriptunit,'(a)') '  ymin=np.min(points_y)'
-             write(scriptunit,'(a)') '  xmax=np.max(points_x)'
-             write(scriptunit,'(a)') '  ymax=np.max(points_y)'  
-             write(scriptunit,'(a)')&
-                  '  a=np.max(np.array([xmax-xmin,ymax-ymin]))'
-             write(scriptunit,'(a)')&
-                  '  num_int=int(round(np.sqrt(num_pt*a**2/area)))'
-             write(scriptunit,'(a)') '  xint = np.linspace(xmin,xmin+a,num_int)'
-             write(scriptunit,'(a)') '  yint = np.linspace(ymin,ymin+a,num_int)'
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)')&
-                 '# Energy level for isocontours (typically the Fermi level)'
-             write(scriptunit,'(a,f12.6)') 'ef=',kslice_fermi_level
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)')&
-                  "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"
-             write(scriptunit,'(a)') 'numbands=bands.size/num_pt'
-             write(scriptunit,'(a)') 'if square:'
-             write(scriptunit,'(a)')&
-                  '  bbands=bands.reshape((dimx,dimy,numbands))'
-             write(scriptunit,'(a)') '  for i in range(numbands):'
-             write(scriptunit,'(a)') '    pl.contour(x_coord,'&
-                  //'y_coord,bbands[:,:,i],[ef],colors="black")'
-             write(scriptunit,'(a)') 'else:'
-             write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,numbands))'
-             write(scriptunit,'(a)') '  bandint=[]'
-             write(scriptunit,'(a)') '  for i in range(numbands):'
-             write(scriptunit,'(a)') '    bandint.append(ml.griddata'&
-                  //'(points_x,points_y, bbands[:,i], xint, yint))'
-             write(scriptunit,'(a)') '    pl.contour(xint,yint,bandint[i],'&
-                  //'[ef],colors="black")'                             
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') '# Remove the axes'
-             write(scriptunit,'(a)') 'ax = pl.gca()'
-             write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
-             write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "pl.axes().set_aspect('equal')"
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
-                  "-fermi_lines.pdf'"
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') ' '
-             write(scriptunit,'(a)') 'pl.savefig(outfile)'
-             write(scriptunit,'(a)') 'pl.show()'
-             close(scriptunit)
-!          endif
           !
+          ! Python script for black Fermi lines
+          !  
+          scriptunit=io_file_unit()
+          filename=trim(seedname)//'-kslice-fermi_lines.py'
+          write(stdout,'(/,3x,a)') filename
+          open(scriptunit,file=filename,form='formatted')      
+          write(scriptunit,'(a)') 'import pylab as pl' 
+          write(scriptunit,'(a)') 'import numpy as np'
+          write(scriptunit,'(a)') 'import matplotlib.mlab as ml'
+          write(scriptunit,'(a)') 'from collections import OrderedDict'
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') "points = np.loadtxt('"//trim(seedname)//&
+                                       "-kslice-coord.dat')"
+          write(scriptunit,'(a)') 'points_x=points[:,0]'
+          write(scriptunit,'(a)') 'points_y=points[:,1]'
+          write(scriptunit,'(a)') 'num_pt=len(points)'             
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a,f12.6)') 'area=', areab1b2
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') 'square= '//square
+          write(scriptunit,'(a)') ' '
+
+          write(scriptunit,'(a)') 'if square:'
+          write(scriptunit,'(a)')&
+               '  x_coord=list(OrderedDict.fromkeys(points_x))'
+          write(scriptunit,'(a)')&
+               '  y_coord=list(OrderedDict.fromkeys(points_y))'
+          write(scriptunit,'(a)') '  dimx=len(x_coord)'
+          write(scriptunit,'(a)') '  dimy=len(y_coord)'
+          write(scriptunit,'(a)') 'else:'
+          write(scriptunit,'(a)') '  xmin=np.min(points_x)'
+          write(scriptunit,'(a)') '  ymin=np.min(points_y)'
+          write(scriptunit,'(a)') '  xmax=np.max(points_x)'
+          write(scriptunit,'(a)') '  ymax=np.max(points_y)'  
+          write(scriptunit,'(a)')&
+               '  a=np.max(np.array([xmax-xmin,ymax-ymin]))'
+          write(scriptunit,'(a)')&
+               '  num_int=int(round(np.sqrt(num_pt*a**2/area)))'
+          write(scriptunit,'(a)') '  xint = np.linspace(xmin,xmin+a,num_int)'
+          write(scriptunit,'(a)') '  yint = np.linspace(ymin,ymin+a,num_int)'
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)')&
+              '# Energy level for isocontours (typically the Fermi level)'
+          write(scriptunit,'(a,f12.6)') 'ef=',kslice_fermi_level
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)')&
+               "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"
+          write(scriptunit,'(a)') 'numbands=bands.size/num_pt'
+          write(scriptunit,'(a)') 'if square:'
+          write(scriptunit,'(a)')&
+               '  bbands=bands.reshape((dimx,dimy,numbands))'
+          write(scriptunit,'(a)') '  for i in range(numbands):'
+          write(scriptunit,'(a)') '    pl.contour(x_coord,'&
+               //'y_coord,bbands[:,:,i],[ef],colors="black")'
+          write(scriptunit,'(a)') 'else:'
+          write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,numbands))'
+          write(scriptunit,'(a)') '  bandint=[]'
+          write(scriptunit,'(a)') '  for i in range(numbands):'
+          write(scriptunit,'(a)') '    bandint.append(ml.griddata'&
+               //'(points_x,points_y, bbands[:,i], xint, yint))'
+          write(scriptunit,'(a)') '    pl.contour(xint,yint,bandint[i],'&
+               //'[ef],colors="black")'                             
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') '# Remove the axes'
+          write(scriptunit,'(a)') 'ax = pl.gca()'
+          write(scriptunit,'(a)') 'ax.xaxis.set_visible(False)'
+          write(scriptunit,'(a)') 'ax.yaxis.set_visible(False)'
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') "pl.axes().set_aspect('equal')"
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
+               "-fermi_lines.pdf'"
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') ' '
+          write(scriptunit,'(a)') 'pl.savefig(outfile)'
+          write(scriptunit,'(a)') 'pl.show()'
+          close(scriptunit)
        endif !plot_fermi_lines .and. kslice_fermi_lines_colour=='none'
+             !.and. .not.heatmap
 
        if(plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap) then
           !
@@ -533,7 +530,7 @@ module w90_kslice
                "-kslice-fermi_lines.pdf')"
           write(scriptunit,'(a)') 'pl.show()'
           close(scriptunit)
-       endif ! plot_fermi_lines .and. fermi_lines_color
+       endif ! plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap
 
        if(heatmap) then
           !
@@ -707,8 +704,8 @@ module w90_kslice
             close(scriptunit)
           enddo
           !
-       endif !plot_curv .or. plot_morb
-              
+       endif !heatmap
+
        write(stdout,*) ' '
 
     end if ! on_root
