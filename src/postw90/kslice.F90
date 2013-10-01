@@ -72,8 +72,9 @@ module w90_kslice
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
                          spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
                          zhat(3),vdum(3),db1,db2
-    logical           :: plot_fermi_lines,plot_curv,plot_morb,fermi_lines_color
-    character(len=25) :: filename,square
+    logical           :: plot_fermi_lines,plot_curv,plot_morb,fermi_lines_color,&
+                         heatmap
+    character(len=40) :: filename,square
 
     integer,          allocatable :: bnddataunit(:)
     complex(kind=dp), allocatable :: HH(:,:)
@@ -93,8 +94,10 @@ module w90_kslice
     if(index(kslice_task,'morb')>0) plot_morb=.true.
     fermi_lines_color=.false.
     if(kslice_fermi_lines_colour/='none') fermi_lines_color=.true.
+    heatmap=.false.
+    if(plot_curv .or. plot_morb) heatmap=.true.
 
-    if(plot_fermi_lines .and. fermi_lines_color .and. (plot_curv.or.plot_morb))&
+    if(plot_fermi_lines .and. fermi_lines_color .and. heatmap)&
          call io_error('Error: spin-colored Fermi lines not allowed in '&
          //'curv/morb heatmap plots') 
 
@@ -196,17 +199,19 @@ module w90_kslice
              filename=trim(seedname)//'-kslice-bands.dat'
              write(stdout,'(/,3x,a)') filename
              open(bandsunit,file=filename,form='formatted')
-             allocate(bnddataunit(num_wann))
-             do n=1,num_wann
-                n1=n/100
-                n2=(n-n1*100)/10
-                n3=n-n1*100-n2*10
-                bnddataunit(n)=io_file_unit()
-                filename=trim(seedname)//'-bnd_'&
-                     //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
-                write(stdout,'(/,3x,a)') filename
-                open(bnddataunit(n),file=filename,form='formatted')
-             enddo
+             if(.not.heatmap) then
+                allocate(bnddataunit(num_wann))
+                do n=1,num_wann
+                   n1=n/100
+                   n2=(n-n1*100)/10
+                   n3=n-n1*100-n2*10
+                   bnddataunit(n)=io_file_unit()
+                   filename=trim(seedname)//'-bnd_'&
+                        //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
+                   write(stdout,'(/,3x,a)') filename
+                   open(bnddataunit(n),file=filename,form='formatted')
+                enddo
+             endif
           endif
        endif
 
@@ -262,9 +267,11 @@ module w90_kslice
                    ! For python
                    write(bandsunit,'(E16.8)') eig(n)
                    ! For gnuplot, using 'grid data' format
-                   write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
-                   if(loop_y==kslice_2dkmesh(2)-1 .and. &
-                       loop_x/=kslice_2dkmesh(1)-1) write (bnddataunit(n),*) ' '
+                    if(.not.heatmap) then
+                       write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
+                       if(loop_y==kslice_2dkmesh(2)-1 .and. &
+                            loop_x/=kslice_2dkmesh(1)-1) write (bnddataunit(n),*) ' '
+                    endif
                 elseif(kslice_fermi_lines_colour=='spin') then
                    ! vdum = dE/dk projected on the k-slice
                    zhat=zvec/sqrt(dot_product(zvec,zvec))
@@ -305,7 +312,7 @@ module w90_kslice
           close(coorddataunit)
        endif
        
-       if(plot_curv.or.plot_morb) then
+       if(heatmap) then
           write(zdataunit,*) ' '
           close(zdataunit)
        endif
@@ -315,20 +322,23 @@ module w90_kslice
           else
              write(bandsunit,*) ' '
              close(bandsunit)
-             do n=1,num_wann
-                write(bnddataunit(n),*) ' '
-                close(bnddataunit(n))
-             enddo
+             if(.not.heatmap) then
+                do n=1,num_wann
+                   write(bnddataunit(n),*) ' '
+                   close(bnddataunit(n))
+                enddo
+             endif
           endif
        endif
 
-       if(plot_fermi_lines .and. .not.fermi_lines_color) then
+       if(plot_fermi_lines .and. .not.fermi_lines_color .and. .not.heatmap) then
           !
           ! gnuplot script for black Fermi lines
           !
           scriptunit=io_file_unit()
-          open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.gnu',&
-               form='formatted')
+          filename=trim(seedname)//'-kslice-fermi_lines.gnu'
+          write(stdout,'(/,3x,a)') filename
+          open(scriptunit,file=filename,form='formatted')
           write(scriptunit,'(a)') 'unset surface'
           write(scriptunit,'(a)') 'set contour'
           write(scriptunit,'(a)') 'set view map'
@@ -380,13 +390,14 @@ module w90_kslice
                //achar(48+n1)//achar(48+n2)//achar(48+n3)&
                //'.dat" using 1:2 w lines ls 1'
           close(scriptunit)
-          if(.not.(plot_curv .or. plot_morb)) then
+!          if(.not.(plot_curv .or. plot_morb)) then  ! ***REMOVE if?***
              !
              ! Python script for black Fermi lines
              !  
              scriptunit=io_file_unit()
-             open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.py',&
-                  form='formatted')                                 
+             filename=trim(seedname)//'-kslice-fermi_lines.py'
+             write(stdout,'(/,3x,a)') filename
+             open(scriptunit,file=filename,form='formatted')      
              write(scriptunit,'(a)') 'import pylab as pl' 
              write(scriptunit,'(a)') 'import numpy as np'
              write(scriptunit,'(a)') 'import matplotlib.mlab as ml'
@@ -458,17 +469,18 @@ module w90_kslice
              write(scriptunit,'(a)') 'pl.savefig(outfile)'
              write(scriptunit,'(a)') 'pl.show()'
              close(scriptunit)
-          endif
+!          endif
           !
        endif !plot_fermi_lines .and. kslice_fermi_lines_colour=='none'
 
-       if(plot_fermi_lines .and. fermi_lines_color) then
+       if(plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap) then
           !
           ! gnuplot script for spin-colored Fermi lines
           !
           scriptunit=io_file_unit()
-          open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.gnu',&
-               form='formatted')                                 
+          filename=trim(seedname)//'-kslice-fermi_lines.gnu'
+          write(stdout,'(/,3x,a)') filename
+          open(scriptunit,file=filename,form='formatted')
           write(scriptunit,'(a)') 'unset key'
           write(scriptunit,'(a)') 'unset tics'
           write(scriptunit,'(a)') 'set cbtics'
@@ -488,8 +500,9 @@ module w90_kslice
           ! python script for spin-colored Fermi lines
           !
           scriptunit=io_file_unit()
-          open(scriptunit,file=trim(seedname)//'-kslice-fermi_lines.py',&
-               form='formatted')                                 
+          filename=trim(seedname)//'-kslice-fermi_lines.py'
+          write(stdout,'(/,3x,a)') filename
+          open(scriptunit,file=filename,form='formatted')
           write(scriptunit,'(a)') 'import pylab as pl' 
           write(scriptunit,'(a)') 'import numpy as np'
           write(scriptunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
@@ -522,7 +535,7 @@ module w90_kslice
           close(scriptunit)
        endif ! plot_fermi_lines .and. fermi_lines_color
 
-       if(plot_curv .or. plot_morb) then
+       if(heatmap) then
           !
           ! python script for curvature/Morb heatmaps [+ black Fermi lines]
           !
@@ -530,19 +543,23 @@ module w90_kslice
 
              scriptunit=io_file_unit()
              if(plot_curv .and. .not.plot_fermi_lines) then
-                open(scriptunit,file=trim(seedname)//&
-                     '-kslice-curv_'//achar(119+i)//'.py',form='formatted')
+                filename=trim(seedname)//'-kslice-curv_'//achar(119+i)//'.py'
+                write(stdout,'(/,3x,a)') filename
+                open(scriptunit,file=filename,form='formatted')
              elseif(plot_curv .and. plot_fermi_lines) then
-                open(scriptunit,file=trim(seedname)//&
-                    '-kslice-curv_'//achar(119+i)//'+fermi_lines.py',&
-                    form='formatted')
+                filename=trim(seedname)//'-kslice-curv_'//achar(119+i)//&
+                     '+fermi_lines.py'
+                write(stdout,'(/,3x,a)') filename
+                open(scriptunit,file=filename,form='formatted')
              elseif(plot_morb .and. .not.plot_fermi_lines) then
-                open(scriptunit,file=trim(seedname)//&
-                     '-kslice-morb_'//achar(119+i)//'.py',form='formatted')
+                filename=trim(seedname)//'-kslice-morb_'//achar(119+i)//'.py'
+                write(stdout,'(/,3x,a)') filename
+                open(scriptunit,file=filename,form='formatted')
              elseif(plot_morb .and. plot_fermi_lines) then
-                open(scriptunit,file=trim(seedname)//&
-                    '-kslice-morb_'//achar(119+i)//'+fermi_lines.py',&
-                    form='formatted')
+                filename=trim(seedname)//'-kslice-morb_'//achar(119+i)//&
+                     '+fermi_lines.py'
+                write(stdout,'(/,3x,a)') filename
+                open(scriptunit,file=filename,form='formatted')
              endif
              write(scriptunit,'(a)') 'import pylab as pl'
              write(scriptunit,'(a)') 'import numpy as np'
@@ -692,6 +709,8 @@ module w90_kslice
           !
        endif !plot_curv .or. plot_morb
               
+       write(stdout,*) ' '
+
     end if ! on_root
  
 end subroutine k_slice
