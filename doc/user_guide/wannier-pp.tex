@@ -380,12 +380,8 @@ E.g.,
 
 \section{Interface with {\sc pwscf}}
 
-At the time of writing there are public, fully functioning, interfaces
-between \wannier\ and \pwscf,  {\sc abinit} (\url{http://www.abinit.org}), {\sc siesta} (\url{http://www.icmab.es/siesta/})
-and {\sc fleur} (\url{http://www.fleur.de}). Interfaces to other
-electronic structure codes are in progress, e.g., {\sc castep} (\url{http://www.castep.org}), {\sc Wien2k} (\url{http://www.wien2k.at}).
-
-Here we describe the
+between \wannier\ and \pwscf,  {\sc abinit} (\url{http://www.abinit.org}), {\sc siesta} (\url{http://www.icmab.es/siesta/}), 
+{\sc fleur}, {\sc VASP} and {\sc Wien2k} (\url{http://www.wien2k.at}).  Here we describe the
 seamless interface between \wannier\ and \pwscf, a
 plane-wave DFT code that comes as part of the {\tt quantum-espresso}
 package (see \url{http://www.quantum-espresso.org}).
@@ -457,11 +453,36 @@ A number of keywords may be specified in the {\tt pw2wannier90} input file:
    $M_{mn}^{(\mathbf{k,b})}$ not required. Default is \verb#.true.#
 
 \item   \verb#write_spn# -- Set to \verb#.true.# to write out the matrix
-   elements of $S_z$ between Bloch states (non-collinear spin calculation
+   elements of $S$ between Bloch states (non-collinear spin calculation
    only). Default is \verb#.false.#
+
+\item   \verb#spn_formatted# -- Set to \verb#.true.# to write spn data as a formatted file. Default is \verb#.false.# (only relevant if
+   \verb#write_spn=.true.#)
+
+
+\item   \verb#write_uHu# -- Set to \verb#.true.# to write out the matrix
+   elements $$\langle u_{n{\bf k}+{\bf b}_1}\vert
+H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle
+$$. Default is \verb#.false.#
+
+\item   \verb#uHu_formatted# -- Set to \verb#.true.# to write uHu data as a formatted file. Default is \verb#.false.# (only relevant if
+   \verb#write_uHu=.true.#)
+
+
+\item   \verb#write_uIu# -- Set to \verb#.true.# to write out the matrix
+   elements of $$\langle  u_{n{\bf k}+{\bf b}_1}\vert
+u_{m{\bf k}+{\bf b}_2}\rangle
+$$. Default is \verb#.false.# 
+
+\item   \verb#uIu_formatted# -- Set to \verb#.true.# to write uIu data as a formatted file. Default is \verb#.false.# (only relevant if
+   \verb#write_uIu=.true.#)
+
+
 
 \item   \verb#write_unkg# -- Set to \verb#.true.# to write the first few
    Fourier components of the periodic parts of the Bloch functions.
+
+
 
 \end{itemize}
 
