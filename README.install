@@ -44,11 +44,14 @@
    make lib        build the wannier90 library
    make w90chk2chk build the w90chk2chk.x utility (see utility section of
                    the user guide)
+   make w90vdw     build the van der Waals code
+   make w90pov     build the ray-tracing code
    make test       run test cases
    make doc        build the documentation
    make dist       make a tar-ball of the distribution
    make dist-lite  make a tar-ball of the src and tests only
    make clean      remove object files etc
+   make veryclean  remove all non-distribution file
 
  'make -j' will allow compilation using multiple threads. On a multicore CPU this
  will build the executables in a shorter time.
