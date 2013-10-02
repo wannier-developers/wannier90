@@ -2260,11 +2260,6 @@ contains
              write(stdout,'(1x,a46,10x,L8,13x,a1)') & 
                                            '|  Translating WFs to home cell              :',translate_home_cell,'|'             
           end if
-          write(stdout,'(1x,a78)') '|   Centre of the unit cell to which WF are translated (fract. coords):      |'
-          write(stdout,'(1x,a1,35x,F12.6,a1,F12.6,a1,F12.6,3x,a1)') '|', translation_centre_frac(1), ',', &
-               translation_centre_frac(2), ',', &
-               translation_centre_frac(2), '|'
-
 
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
@@ -2341,6 +2336,12 @@ contains
        write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :',trim(one_dim_axis),'|'
        !
        end if
+
+       write(stdout,'(1x,a78)') '|   Centre of the unit cell to which WF are translated (fract. coords):      |'
+       write(stdout,'(1x,a1,35x,F12.6,a1,F12.6,a1,F12.6,3x,a1)') '|', translation_centre_frac(1), ',', &
+            translation_centre_frac(2), ',', &
+            translation_centre_frac(3), '|'
+
 
        if (size(fermi_energy_list) == 1) then
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :',fermi_energy_list(1), '|'

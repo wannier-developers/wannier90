@@ -8,6 +8,15 @@ v2.0 (October 2013)
 
 * Updated interface to PWscf v5.0 (including a minor bug fix to the 
   definition of the projection functions).
+* Changed the internal format of the checkpoint file (not compatible anymore
+  with v.1.2 and earlier)
+* Enabled very general specification of spinor projections
+* Generalized the definition of the supercell for real-space plotting of
+  the Wannier functions: now the supercell size (wannier_plot_supercell)
+  can be different along the three directions.
+* Now it is possible to provide both 'seedname' and 'seedname.win' on the 
+  command line, both will work
+* Tabs can now be present in the input file without problems
 * Added the new (parallel) postw90.x executable for calculations which use
   the MLWFs calculated by wannier90.x as an input.
 * Added the following postw90.x modules:
@@ -17,17 +26,11 @@ v2.0 (October 2013)
   - kslice
   - BoltzWann
   - geninterp
-* Changed the internal format of the checkpoint file (not compatible anymore
-  with v.1.2 and earlier)
 * Added the w90chk2chk.x utility to convert the checkpoint file between
   the formatted/unformatted formats, to move it between different computers
   with different architectures
 * Added the w90vdw utility to calculate van der Waals energies with MLWFs
 * Added the w90pov utility to render ray-traced isosurfaces using POV-Ray
-* Now it is possible to provide both 'seedname' and 'seedname.win' on the 
-  command line, both will work
-* Enabled very general specification of spinor projections
-* Tabs can now be present in the input file without problems
 * A few bugfixes
 
 v1.2 (14th Jan 2010)
