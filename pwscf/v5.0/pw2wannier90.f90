@@ -1,9 +1,23 @@
 !
-! Copyright (C) 2003-2011 Quantum ESPRESSO and Wannier90 groups
+! Copyright (C) 2003-2013 Quantum ESPRESSO and Wannier90 groups
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
 ! or http://www.gnu.org/copyleft/gpl.txt .
+!
+! pw2wannier was written by Stefano de Gironcoli
+! with later additions by
+! Jonathan Yates - spinors
+! Arash Mostofi - gamma point and transport things
+! Timo Thonhauser, Graham Lopez, Ivo Souza
+!         uHu, uIu terms for orbital magnetisation
+! please send bugs and comments to 
+! Jonathan Yates and Arash Mostofi
+!
+! Known limitations:
+!  spinors and orbital magnetisation term are not
+!  yet inplimented for ultrasofts or PAW 
+!
 !
 !
 module wannier
