@@ -52,7 +52,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
      num_atoms_loc,atom_symbols_loc,atoms_cart_loc, gamma_only_loc,spinors_loc, &
      nntot_loc,nnlist_loc,nncell_loc,num_bands_loc,num_wann_loc, &
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
-     proj_x_loc,proj_zona_loc,exclude_bands_loc)
+     proj_x_loc,proj_zona_loc,exclude_bands_loc,proj_s_loc,proj_s_qaxis_loc)
 
   use w90_constants
   use w90_parameters
@@ -86,6 +86,9 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   real(kind=dp), dimension(3,num_bands_tot), intent(out) :: proj_x_loc
   real(kind=dp), dimension(num_bands_tot), intent(out) :: proj_zona_loc
   integer, dimension(num_bands_tot), intent(out) :: exclude_bands_loc
+  integer, dimension(num_bands_tot), optional, intent(out) :: proj_s_loc  
+  real(kind=dp), dimension(3,num_bands_tot), optional, intent(out) :: proj_s_qaxis_loc
+
 
   real(kind=dp) time0,time1,time2
   character(len=9) :: stat,pos,cdate,ctime
@@ -167,8 +170,12 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
      proj_z_loc(:,1:num_proj)      = proj_z(:,1:num_proj)     
      proj_x_loc(:,1:num_proj)      = proj_x(:,1:num_proj)       
      proj_radial_loc(1:num_proj)   = proj_radial(1:num_proj)            
-     proj_zona_loc(1:num_proj)     = proj_zona(1:num_proj)         
-  end if
+     proj_zona_loc(1:num_proj)     = proj_zona(1:num_proj) 
+     if(allocated(proj_s) .and. present(proj_s_loc) .and. present(proj_s_qaxis_loc)) then
+             proj_s_loc(1:num_proj)     = proj_s(1:num_proj) 
+             proj_s_qaxis_loc(:,1:num_proj)   = proj_s_qaxis(:,1:num_proj)    
+          end if
+       endif
   if(allocated(exclude_bands)) then
      exclude_bands_loc(1:num_exclude_bands) = exclude_bands(1:num_exclude_bands)
   end if
@@ -188,7 +195,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
 
   call io_date(cdate,ctime)
 
-  write(stdout,'(2a)') ' Returning to pw2wannier90 at ',ctime
+  write(stdout,'(2a)') ' Exiting wannier_setup in wannier90 ',ctime
 
   close(stdout)
 
@@ -371,6 +378,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   ! from the parameters module
 
   u_matrix_loc=u_matrix
+  if(present(u_matrix_opt_loc) .and. present(lwindow_loc)) then
   if(disentanglement) then
      u_matrix_opt_loc=u_matrix_opt
      lwindow_loc=lwindow
@@ -383,13 +391,16 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      end do
      lwindow_loc=.true.
   end if
+  end if  
 
-  wann_centres_loc=wannier_centres
-  wann_spreads_loc=wannier_spreads
-  spread_loc(1)=omega_total
-  spread_loc(2)=omega_invariant
-  spread_loc(3)=omega_tilde
 
+  if(present(wann_centres_loc)) wann_centres_loc=wannier_centres
+  if(present(wann_spreads_loc)) wann_spreads_loc=wannier_spreads
+  if(present(spread_loc)) then
+     spread_loc(1)=omega_total
+     spread_loc(2)=omega_invariant
+     spread_loc(3)=omega_tilde
+  endif
   call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
