@@ -682,6 +682,9 @@ nnshell=0
                   proj_s(i), &
                   proj_s_qaxis(1,i),proj_s_qaxis(2,i),proj_s_qaxis(3,i)
           enddo
+       else
+          ! No projections
+          write(nnkpout,'(i6)') 0
        end if
        write(nnkpout,'(a/)') 'end spinor_projections'
     else
@@ -699,6 +702,9 @@ nnshell=0
                   proj_x(1,i),proj_x(2,i),proj_x(3,i), &
                   proj_zona(i)
           enddo
+       else
+          ! No projections
+          write(nnkpout,'(i6)') 0
        end if
        write(nnkpout,'(a/)') 'end projections'
     endif
