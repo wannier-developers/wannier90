@@ -50,6 +50,9 @@
    make dist-lite  make a tar-ball of the src and tests only
    make clean      remove object files etc
 
+ 'make -j' will allow compilation using multiple threads. On a multicore CPU this
+ will build the executables in a shorter time.
+
  In order to compile the postw90.x executable in its parallel version, you have
  to specify 
   COMMS=mpi
@@ -59,18 +62,12 @@
  
  Compiler: If your operating system came with a Fortran compiler or you have a
  commercial compiler (such as ifort) this should give the best performance.
- The g95 compiler is available for many operating systems (inc Windows) and 
- should give 50% - 75% the performance of the commercial compilers. 
- http://www.g95.org We used g95 a lot when writing Wannier90. 
- It's a really good compiler to develop code with.
   
  Libraries: For Wannier90 to perform well a well optimised BLAS library should
  be used. Many commercial operating systems and compilers provide well optimised
  BLAS libraries.
   ATLAS is one of the fastest implementations
      http://math-atlas.sourceforge.net/
-  GOTO BLAS provides optimised routines for many architecture
-     http://www.tacc.utexas.edu/resources/software/
   ACML AMD provides optimised BLAS for AMD processors 
     http://developer.amd.com/acml.aspx  
   LAPACK can be obtained from the netlib website. It also includes a 
@@ -85,8 +82,6 @@ Linux x86,x86-64
      Compiler:  Intel (ifc,ifort,iforte)
      Libraries: Intel mkl
                 (ATLAS BLAS is faster for AMD processors) 
-**Note: we have found an issue with ifort and ATLAS3.8.0. In certain cases BLAS calls return
-  NANs. The origin of this is unclear - we'd welcome any further reports.**
 
   2- make.sys.pathscale
      Compiler:  Pathscale (pathf90)
@@ -97,7 +92,7 @@ Linux x86,x86-64
      Libraries: ATLAS + LAPACK (maybe acml)
  [note in our experience the NAG compiler does not produce well optimised code]
 
-  4- make.sys
+  4- make.sys.sun
      Compiler: Sun-studio f90
      Libraries: sunperf (ATLAS is faster)
      avaible as a free beta for Linux
