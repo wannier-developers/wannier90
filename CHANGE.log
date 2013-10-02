@@ -13,7 +13,9 @@ v2.0 (October 2013)
 * Enabled very general specification of spinor projections
 * Generalized the definition of the supercell for real-space plotting of
   the Wannier functions: now the supercell size (wannier_plot_supercell)
-  can be different along the three directions.
+  can be different along the three directions. Moreover, the home cell
+  is left approximately at the center of the supercell, rather than near
+  one of its edges.
 * Now it is possible to provide both 'seedname' and 'seedname.win' on the 
   command line, both will work
 * Tabs can now be present in the input file without problems

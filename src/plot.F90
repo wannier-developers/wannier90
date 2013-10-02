@@ -682,7 +682,7 @@ end subroutine plot_interpolate_bands
     write(stdout,*)
     !
     if(nfermi>1) call io_error("Error in plot: nfermi>1. Set the fermi level "&
-         //"using the input parameter 'fermi_evel'") 
+         //"using the input parameter 'fermi_level'") 
     !
     allocate(ham_pack((num_wann*(num_wann+1))/2),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating ham_pack plot_fermi_surface') 
@@ -836,7 +836,9 @@ end subroutine plot_interpolate_bands
 
 200 format ('UNK',i5.5,'.',i1)
 
-    allocate(wann_func(-ngx:(ngs(1)-1)*ngx-1,-ngy:(ngs(2)-1)*ngy-1,-ngz:(ngs(3)-1)*ngz-1,num_wannier_plot),stat=ierr ) 
+    allocate(wann_func(-((ngs(1))/2)*ngx:((ngs(1)+1)/2)*ngx-1,&
+         -((ngs(2))/2)*ngy:((ngs(2)+1)/2)*ngy-1,&
+         -((ngs(3))/2)*ngz:((ngs(3)+1)/2)*ngz-1,num_wannier_plot),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating wann_func in plot_wannier')
     if(have_disentangled) then
        allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)),stat=ierr )
@@ -924,13 +926,13 @@ end subroutine plot_interpolate_bands
        ! in the inner loop. This is poor memory access for wann_func and
        ! but the reduced number of operations wins out. 
 
-       do nzz=-ngz,(ngs(3)-1)*ngz-1
+       do nzz =-((ngs(3))/2)*ngz,((ngs(3)+1)/2)*ngz-1
           nz=mod(nzz,ngz)
           if(nz.lt.1) nz=nz+ngz
-          do nyy=-ngy,(ngs(2)-1)*ngy-1
+          do nyy=-((ngs(2))/2)*ngy,((ngs(2)+1)/2)*ngy-1
              ny=mod(nyy,ngy)
              if(ny.lt.1) ny=ny+ngy
-             do nxx=-ngx,(ngs(1)-1)*ngx-1
+             do nxx=-((ngs(1))/2)*ngx,((ngs(1)+1)/2)*ngx-1
                 nx=mod(nxx,ngx)
                 if(nx.lt.1) nx=nx+ngx
 
@@ -958,9 +960,9 @@ end subroutine plot_interpolate_bands
     do loop_w=1,num_wannier_plot
        tmaxx=0.0
        wmod=cmplx_1
-       do nzz=-ngz,(ngs(3)-1)*ngz-1
-          do nyy=-ngy,(ngs(2)-1)*ngy-1
-             do nxx=-ngx,(ngs(1)-1)*ngx-1
+       do nzz=-((ngs(3))/2)*ngz,((ngs(3)+1)/2)*ngz-1
+          do nyy=-((ngs(2))/2)*ngy,((ngs(2)+1)/2)*ngy-1
+             do nxx=-((ngs(1))/2)*ngx,((ngs(1)+1)/2)*ngx-1
                 wann_func(nxx,nyy,nzz,loop_w)= wann_func(nxx,nyy,nzz,loop_w)/ real(num_kpts,dp)
                 tmax=real(wann_func(nxx,nyy,nzz,loop_w)* & 
                      conjg(wann_func(nxx,nyy,nzz,loop_w)),dp)
@@ -979,9 +981,9 @@ end subroutine plot_interpolate_bands
     !
     do loop_w=1,num_wannier_plot
        ratmax=0.0_dp
-       do nzz=-ngz,(ngs(3)-1)*ngz-1
-          do nyy=-ngy,(ngs(2)-1)*ngy-1
-             do nxx=-ngx,(ngs(1)-1)*ngx-1
+       do nzz=-((ngs(3))/2)*ngz,((ngs(3)+1)/2)*ngz-1
+          do nyy=-((ngs(2))/2)*ngy,((ngs(2)+1)/2)*ngy-1
+             do nxx=-((ngs(1))/2)*ngx,((ngs(1)+1)/2)*ngx-1
                 if (abs(real(wann_func(nxx,nyy,nzz,loop_w),dp))>=0.01_dp) then
                    ratio=abs(aimag(wann_func(nxx,nyy,nzz,loop_w)))/ &
                         abs(real(wann_func(nxx,nyy,nzz,loop_w),dp))
@@ -1144,8 +1146,10 @@ end subroutine plot_interpolate_bands
          do nzz=1,ilength(3)
             qzz=nzz+istart(3)-1
             izz=int((abs(qzz)-1)/ngz)
-            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
-            if (qzz.gt.(ngs(3)-1)*ngz-1) then
+!            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
+!            if (qzz.gt.(ngs(3)-1)*ngz-1) then
+            if (qzz.lt.(-((ngs(3))/2)*ngz)) qzz=qzz+izz*ngz
+            if (qzz.gt.((ngs(3)+1)/2)*ngz-1) then
                write(stdout,*) 'Error plotting WF cube. Try one of the following:'
                write(stdout,*) '   (1) increase wannier_plot_supercell;'
                write(stdout,*) '   (2) decrease wannier_plot_radius;'
@@ -1155,8 +1159,10 @@ end subroutine plot_interpolate_bands
             do nyy=1,ilength(2)
                qyy=nyy+istart(2)-1
                iyy=int((abs(qyy)-1)/ngy)
-               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
-               if (qyy.gt.(ngs(2)-1)*ngy-1) then
+!               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
+!               if (qyy.gt.(ngs(2)-1)*ngy-1) then
+               if (qyy.lt.(-((ngs(2))/2)*ngy)) qyy=qyy+iyy*ngy
+               if (qyy.gt.((ngs(2)+1)/2)*ngy-1) then
                   write(stdout,*) 'Error plotting WF cube. Try one of the following:'
                   write(stdout,*) '   (1) increase wannier_plot_supercell;'
                   write(stdout,*) '   (2) decrease wannier_plot_radius;'
@@ -1166,8 +1172,10 @@ end subroutine plot_interpolate_bands
                do nxx=1,ilength(1)
                   qxx=nxx+istart(1)-1
                   ixx=int((abs(qxx)-1)/ngx)
-                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
-                  if (qxx.gt.(ngs(1)-1)*ngx-1) then
+!                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
+!                  if (qxx.gt.(ngs(1)-1)*ngx-1) then
+                  if (qxx.lt.(-((ngs(1))/2)*ngx)) qxx=qxx+ixx*ngx
+                  if (qxx.gt.((ngs(1)+1)/2)*ngx-1) then
                      write(stdout,*) 'Error plotting WF cube. Try one of the following:'
                      write(stdout,*) '   (1) increase wannier_plot_supercell;'
                      write(stdout,*) '   (2) decrease wannier_plot_radius;'
@@ -1236,15 +1244,15 @@ end subroutine plot_interpolate_bands
       ! this is to create the WF...xsf output, to be read by XCrySDen
       ! (coordinates + isosurfaces)
 
-      x_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,1)- &
-           real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,1)-  &
-           real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,1)
-      y_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,2)- &
-           real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,2)-  &
-           real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,2)
-      z_0ang=-real(ngx+1,dp)/real(ngx,dp)*real_lattice(1,3)- &
-           real(ngy+1,dp)/real(ngy,dp)*real_lattice(2,3)-  &
-           real(ngz+1,dp)/real(ngz,dp)*real_lattice(3,3)
+      x_0ang=-real(((ngs(1))/2)*ngx+1,dp)/real(ngx,dp)*real_lattice(1,1)- &
+           real(((ngs(2))/2)*ngy+1,dp)/real(ngy,dp)*real_lattice(2,1)-  &
+           real(((ngs(3))/2)*ngz+1,dp)/real(ngz,dp)*real_lattice(3,1)
+      y_0ang=-real(((ngs(1))/2)*ngx+1,dp)/real(ngx,dp)*real_lattice(1,2)- &
+           real(((ngs(2))/2)*ngy+1,dp)/real(ngy,dp)*real_lattice(2,2)-  &
+           real(((ngs(3))/2)*ngz+1,dp)/real(ngz,dp)*real_lattice(3,2)
+      z_0ang=-real(((ngs(1))/2)*ngx+1,dp)/real(ngx,dp)*real_lattice(1,3)- &
+           real(((ngs(2))/2)*ngy+1,dp)/real(ngy,dp)*real_lattice(2,3)-  &
+           real(((ngs(3))/2)*ngz+1,dp)/real(ngz,dp)*real_lattice(3,3)
 
       fxcry(1)=real(ngs(1)*ngx-1,dp)/real(ngx,dp)
       fxcry(2)=real(ngs(2)*ngy-1,dp)/real(ngy,dp)
@@ -1293,8 +1301,8 @@ end subroutine plot_interpolate_bands
          write(file_unit,'(3f12.7)') dirl(2,1),dirl(2,2),dirl(2,3)
          write(file_unit,'(3f12.7)') dirl(3,1),dirl(3,2),dirl(3,3)
          write(file_unit,'(6e13.5)') &
-              (((real(wann_func(nx,ny,nz,loop_b)),nx=-ngx,(ngs(1)-1)*ngx-1), &
-              ny=-ngy,(ngs(2)-1)*ngy-1),nz=-ngz,(ngs(3)-1)*ngz-1)
+              (((real(wann_func(nx,ny,nz,loop_b)),nx=-((ngs(1))/2)*ngx,((ngs(1)+1)/2)*ngx-1), &
+              ny=-((ngs(2))/2)*ngy,((ngs(2)+1)/2)*ngy-1),nz=-((ngs(3))/2)*ngz,((ngs(3)+1)/2)*ngz-1)
          write(file_unit,'("END_DATAGRID_3D",/, "END_BLOCK_DATAGRID_3D")')
          close(file_unit)
 
