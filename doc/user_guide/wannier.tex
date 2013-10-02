@@ -29,7 +29,7 @@ routines in \wannier.
 \verb#              kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,#\\
 \verb#              gamma_only,spinors,nntot,nnlist,nncell,num_bands,num_wann,proj_site,#\\
 \verb#              proj_l,proj_m,proj_radial,proj_z,proj_x,proj_zona,#\\
-\verb#              exclude_bands)#}
+\verb#              exclude_bands,proj_s,proj_s_qaxis)#}
 
 \begin{itemize}
 \item \verb#character(len=*), intent(in) :: seed_name#\\ The seedname
@@ -63,8 +63,7 @@ first-principles calculation (note: including semi-core states).
   $M_{mn}^{\mathbf{(k,b)}}$ are real.
 \item \verb#logical, intent(in) :: spinors#\\ Set to \texttt{.true.} if
   underlying electronic structure calculation has been performed with
-  spinor wavefunctions. Note: the only effect this has is that wannier90
-  will expect half the usual number of projections.
+  spinor wavefunctions. 
 \item \verb#integer, intent(out) :: nntot#\\ The
   total number of nearest neighbours for each k-point. 
 \item \verb#integer, dimension(num_kpts,num_nnmax),#
@@ -116,6 +115,10 @@ Angstrom.
 \item \verb#integer, dimension(num_bands_tot), intent(out) :: exclude_bands#\\ 
       Kpoints independant list of bands to exclude from the
       calculation of the MLWF (e.g., semi-core states). 
+\item \verb#integer, dimension(num_bands_tot), optional,intent(out) :: proj_s#\\
+'1' or '-1' to denote projection onto up or down spin states
+\item  \verb#real(kind=dp), dimension(3,num_bands_tot), intent(out) :: proj_s_qaxisx#\\
+Defines the spin quantisation axis in Cartesian coordinates.
 
 \end{itemize}
 
@@ -204,18 +207,18 @@ may be specified in the \wannier\ input file.
       \verb#                  intent(out) :: U_matrix#\\ The unitary
       matrices at each k-point (Ref.~\cite{marzari-prb97}, Eq.~(59))
 \item \verb#complex(kind=dp), dimension(num_bands,num_wann,num_kpts),#\\
-      \verb#                   intent(out) :: U_matrix_opt#\\ The
+      \verb#               optional, intent(out) :: U_matrix_opt#\\ The
       unitary matrices that describe the optimal sub-space at each
       k-point (see Ref.~\cite{souza-prb01}, Section~{\sc IIIa}). The array is
       packed (see below) 
-\item \verb#logical, dimension(num_bands,num_kpts), intent(out) :: lwindow#\\ 
+\item \verb#logical, dimension(num_bands,num_kpts), optional, intent(out) :: lwindow#\\ 
        The element \verb#lwindow(nband,nkpt)# is {\tt .true.} if the band
 {\tt nband} lies within the outer energy window at kpoint {\tt nkpt}.
-\item \verb#real(kind=dp), dimension(3,num_wann), intent(out) :: wann_centres#\\   
+\item \verb#real(kind=dp), dimension(3,num_wann), optional, intent(out) :: wann_centres#\\   
       The centres of the MLWF in Cartesian co-ordinates in Angstrom. 
-\item \verb#real(kind=dp), dimension(num_wann), intent(out) :: wann_spreads#\\ 
+\item \verb#real(kind=dp), dimension(num_wann), optional, intent(out) :: wann_spreads#\\ 
       The spread of each MLWF in \AA$^{2}$.
-\item \verb#real(kind=dp), dimension(3), intent(out) ::#
+\item \verb#real(kind=dp), dimension(3), optional, intent(out) ::#
       \verb#spread#\\ 
       The values of $\Omega$, $\Omega_{\mathrm{I}}$ and
       $\tilde{\Omega}$ (Ref.~\cite{marzari-prb97}, Eq.~(13)). 
