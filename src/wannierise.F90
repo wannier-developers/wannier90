@@ -1775,7 +1775,7 @@ contains
 
        ! dimension of occupied subspace
        if (num_valence_bands.le.0) call io_error('Please set num_valence_bands in seedname.win')
-       ndim=INT(num_valence_bands)
+       ndim=num_valence_bands
 
        allocate(v_matrix(ndim, num_wann),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating V_matrix in wann_write_vdw_data')

@@ -45,7 +45,7 @@ module w90_parameters
   logical,                    public, save :: use_degen_pert
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spin_decomp
-  real(kind=dp),              public, save :: num_valence_bands
+  integer,                    public, save :: num_valence_bands
 !  logical,                    public, save :: found_fermi_energy
   logical                                  :: found_fermi_energy
   real(kind=dp),              public, save :: scissors_shift
@@ -1089,7 +1089,7 @@ contains
 
     ! set to a negative default value
     num_valence_bands=-99
-    call param_get_keyword('num_valence_bands',found,r_value=num_valence_bands)
+    call param_get_keyword('num_valence_bands',found,i_value=num_valence_bands)
     if (found.and.(num_valence_bands.le.0)) &
          call io_error('Error: num_valence_bands should be greater than zero')
     ! there is a check on this parameter later
@@ -2433,7 +2433,7 @@ contains
     if(abs(scissors_shift)>1.0e-7_dp .or. iprint>0) then
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :',scissors_shift,'|'
        if(num_valence_bands>0) then
-          write(stdout,'(1x,a46,10x,f8.3,13x,a1)')   '|  Number of valence bands                   :',num_valence_bands,'|'
+          write(stdout,'(1x,a46,10x,i8,13x,a1)')   '|  Number of valence bands                   :',num_valence_bands,'|'
        else
           write(stdout,'(1x,a78)')   '|  Number of valence bands                   :       not defined             |'
        endif

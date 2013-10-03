@@ -217,7 +217,7 @@ module w90_get_oper
        do ik=1,num_kpts
           do j=1,num_wann
              do i=1,j
-                do m=1,nint(num_valence_bands)
+                do m=1,num_valence_bands
                    sciss_q(i,j,ik)=sciss_q(i,j,ik)-&
                         conjg(u_matrix(m,i,ik))*u_matrix(m,j,ik)
                 enddo
