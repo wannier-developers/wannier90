@@ -29,7 +29,7 @@ upon which transport.f90 is based.
     Jonathan R. Yates  (University of Oxford, UK)
     Young-Su Lee       (KIST, S. Korea)
 
- Wannier90 is based on Fortran 77 codes written 
+ Wannier90 is based on Fortran 77 codes written by
                Nicola Marzari, Ivo Souza, David Vanderbilt
 
  website:  http://www.wannier.org
