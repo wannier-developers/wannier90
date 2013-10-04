@@ -17,3 +17,5 @@ it real, for, e.g., alloys in VCA, make found_fermi_energy work) (IS)
 + Command-line option to check input file and
   stop with result after reading parameters and finding b-vectors (eg,
   -validate) (GP) [see help above - be aware of MPICH adding arguments to the command line]
++ possibility to fix in which cell to find the final WFs
++ fix pw2wannier90.x for (possibly) wrong normalization (+ add comment on impossibility of having an exact norm for ultrasoft pseudos)
