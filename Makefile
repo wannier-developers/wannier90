@@ -62,7 +62,7 @@ thedoc:
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
 
 dist:
-	@(cd $(ROOTDIR) && tar cf - \
+	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./tests/run_test.pl \
@@ -90,10 +90,9 @@ dist:
                 ./examples/example1[4-5]/periodic/*.nscf \
                 ./examples/example1[4-5]/periodic/*.win \
                 ./examples/example1[4-5]/periodic/*.pw2wan \
-		./examples/example16/*.in \
-		./examples/example1[7-9]/*.scf \
-		./examples/example1[7-9]/*.nscf \
-		./examples/example1[7-9]/*.pw2wan \
+		./examples/example1[6-9]/*.scf \
+		./examples/example1[6-9]/*.nscf \
+		./examples/example1[6-9]/*.pw2wan \
 		./pseudo/*.UPF \
 		./pwscf/README \
 		./pwscf/v3.2.3/*.f90 \
@@ -136,14 +135,13 @@ dist:
 		./LICENCE \
 		./README* \
 		./CHANGE.log \
-        | gzip -c > \
-                ./wannier90.tar.gz)
+	)
 
 test:   default
 	(cd $(ROOTDIR)/tests && $(MAKE) test )
 
 dist-lite:
-	@(cd $(ROOTDIR) && tar cf - \
+	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./tests/run_test.pl \
@@ -162,8 +160,7 @@ dist-lite:
 		./LICENCE \
 		./README.* \
 		./CHANGE.log \
-	| gzip -c > \
-		./wannier90.tar.gz)
+	)
 
 objdir: 
 	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
