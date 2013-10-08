@@ -127,6 +127,8 @@ dist:
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
+                ./doc/user_guide.pdf \
+                ./doc/tutorial.pdf \
 		./doc/wannier90.bib \
 		./*/Makefile \
 		./*/Makefile.2 \
