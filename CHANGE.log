@@ -4,7 +4,7 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
-v2.0 (October 2013)
+v2.0 (10th October 2013)
 
 * Updated interface to PWscf v5.0 (including a minor bug fix to the 
   definition of the projection functions).

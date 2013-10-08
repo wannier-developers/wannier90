@@ -2795,7 +2795,7 @@ contains
     write(stdout,*)  '            |        A. A. Mostofi, J. R. Yates, Y.-S. Lee,     |'
     write(stdout,*)  '            |        I. Souza, D. Vanderbilt and N. Marzari     |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |        Release: 2.0         October 2013          |'
+    write(stdout,*)  '            |        Release: 2.0    10th October 2013          |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'

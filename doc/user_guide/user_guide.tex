@@ -79,7 +79,9 @@
 
 \author{Version 2.0}
 
+\date{10th October 2013}
 %\date{\color{red} \today}
+
 
 %%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
 %hidelinks to remove colored borders from links
@@ -91,7 +93,10 @@
 %be open
 % pdfdisplaydoctitle=true to show the document title instead of the
 % filename in the titlebar of adobereader
-\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,pdftex,%hidelinks,
+\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,pdftex,%
+%Comment next line if it makes problems
+%(it requires a recent LaTeX distribution)
+            hidelinks,
             pdftitle={Wannier90 User Guide},
             pdfkeywords={wannier90;postw90;pwscf;user guide}]{hyperref}
 

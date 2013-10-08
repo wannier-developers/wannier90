@@ -39,7 +39,9 @@
 \title{\wannier: Tutorial}
 
 \author{Version 2.0}
-\date{\today}
+
+\date{10th October 2013}
+%\date{\today}
 
 %%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
 %hidelinks to remove colored borders from links
@@ -51,7 +53,10 @@
 %be open
 % pdfdisplaydoctitle=true to show the document title instead of the
 % filename in the titlebar of adobereader
-\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,pdftex,hidelinks,
+\usepackage[plainpages=false,breaklinks=true,pdfborder=0 0 0,pdfdisplaydoctitle=true,bookmarksopen=true,bookmarksopenlevel=0,pdftex,%
+% Comment the following line if it makes problems (it requires a recent
+% LaTeX distribution)
+            hidelinks,
             pdftitle={Wannier90 Tutorial},
             pdfkeywords={wannier90;postw90;pwscf;tutorial;examples}]{hyperref}
 
@@ -1626,6 +1631,8 @@ Fermi-surface contours}
 Note: It is recommended that you go through Example 8 first (bcc Fe
 without spin-orbit).
 
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
+
 \begin{itemize}
 \item{Outline: \it{Plot the spin-orbit-coupled bands of ferromagnetic
       bcc Fe.  Plot the Fermi-surface contours on a plane in the
@@ -1872,6 +1879,8 @@ not require the {\tt Fe.spn} file.
 
 \sectiontitle{18: Iron -- Berry curvature, anomalous Hall
   conductivity and optical conductivity}
+
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
 \item{Outline: \it{Calculate the Berry curvature, anomalous Hall
@@ -2171,6 +2180,7 @@ gnuplot> plot `Fe-ahc-fermiscan.dat' u 1:4 w lp
 
 \sectiontitle{19: Iron -- Orbital magnetization}
 
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
 \item{Outline: \it{Calculate the orbital magnetization of
