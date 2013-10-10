@@ -11,6 +11,8 @@
 
  Requirements: A Fortran 95 compiler (most f90 compilers are really f95)
                LAPACK and BLAS libraries
+	       (Optional) MPI libraries for parallel execution of the
+                  postw90.x executable
 
  Configuration:
    The system dependent parameters (e.g. compiler name) are contained in a file
@@ -21,7 +23,7 @@
    
     On a linux system with the intel compiler build Wannier90 by typing
 
-         cp ./config/make.sys.intel ./make.sys
+         cp ./config/make.sys.ifort ./make.sys
          make 
 
    IMPORTANT NOTE: a GNU version of the make utility is needed to compile
@@ -38,11 +40,11 @@
 
    Options to make include:
 
-   make wannier    build the wannier90 executable
-   make post       bulks the postw90 executable
-   make default    (default) builds wannier90.x and postw90.x
+   make wannier    build the wannier90.x executable
+   make post       build the postw90.x executable
+   make default    (default) build wannier90.x and postw90.x
    make lib        build the wannier90 library
-   make w90chk2chk build the w90chk2chk.x utility (see utility section of
+   make w90chk2chk build the w90chk2chk.x utility (see 'Utility' section of
                    the user guide)
    make w90vdw     build the van der Waals code
    make w90pov     build the ray-tracing code
@@ -53,8 +55,8 @@
    make clean      remove object files etc
    make veryclean  remove all non-distribution file
 
- 'make -j' will allow compilation using multiple threads. On a multicore CPU this
- will build the executables in a shorter time.
+ 'make -j NN' will allow compilation using NN multiple threads.
+ On a multicore CPU this will build the executables in a shorter time.
 
  In order to compile the postw90.x executable in its parallel version, you have
  to specify 
@@ -81,7 +83,7 @@
 Linux x86,x86-64
 ----------------
 
-  1- make.sys.intel
+  1- make.sys.ifort
      Compiler:  Intel (ifc,ifort,iforte)
      Libraries: Intel mkl
                 (ATLAS BLAS is faster for AMD processors) 

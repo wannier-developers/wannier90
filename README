@@ -20,9 +20,9 @@
   w90vdw was written by:
     Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi
  
-We gratefully acknowledge Marco Buongiorno Nardelli for the dosqc v1.0 subroutines 
-for the calculation of the density of states and the quantum transport, 
-upon which transport.f90 is based. 
+We gratefully acknowledge Marco Buongiorno Nardelli for the dosqc
+v1.0 subroutines for the calculation of the density of states and the
+quantum transport, upon which transport.f90 is based. 
 
  Wannier90 Version 1.0 was written by:
     Arash A. Mostofi   (Imperial College London, UK)

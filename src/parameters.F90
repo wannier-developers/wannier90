@@ -2765,7 +2765,7 @@ contains
     write(stdout,*)  '            |    Nicolas Poilvert  (Harvard)                    |'
     write(stdout,*)  '            |                                                   |' 
     write(stdout,*)  '            |  Wannier77 Authors:                               |'
-    write(stdout,*)  '            |    Nicola Marzari    (University of Oxford)       |'
+    write(stdout,*)  '            |    Nicola Marzari    (EPFL)                       |'
     write(stdout,*)  '            |    Ivo Souza         (Universidad del Pais Vasco) |'
     write(stdout,*)  '            |    David Vanderbilt  (Rutgers University)         |'
     write(stdout,*)  '            |                                                   |'

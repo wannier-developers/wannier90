@@ -380,15 +380,18 @@ E.g.,
 
 \section{Interface with {\sc pwscf}}
 
-between \wannier\ and \pwscf,  {\sc abinit} (\url{http://www.abinit.org}), {\sc siesta} (\url{http://www.icmab.es/siesta/}), 
-{\sc fleur}, {\sc VASP} and {\sc Wien2k} (\url{http://www.wien2k.at}).  Here we describe the
+Interfaces between \wannier\ and many ab-initio codes as \pwscf, 
+{\sc abinit} (\url{http://www.abinit.org}),
+{\sc siesta} (\url{http://www.icmab.es/siesta/}), 
+{\sc fleur}, {\sc VASP} and {\sc Wien2k} (\url{http://www.wien2k.at}) are
+available.  Here we describe the
 seamless interface between \wannier\ and \pwscf, a
-plane-wave DFT code that comes as part of the {\tt quantum-espresso}
+plane-wave DFT code that comes as part of the {\sc Quantum ESPRESSO}
 package (see \url{http://www.quantum-espresso.org}).
 You will need
 to download and compile \pwscf\ (i.e., the {\tt pw.x} code) and the
 post-processing interface {\tt pw2wannier90.x}. Please refer to the
-documentation that comes with the {\tt quantum-espresso} distribution
+documentation that comes with the {\sc Quantum ESPRESSO} distribution
 for instructions. 
 
 \begin{enumerate}
@@ -462,8 +465,9 @@ A number of keywords may be specified in the {\tt pw2wannier90} input file:
 
 \item   \verb#write_uHu# -- Set to \verb#.true.# to write out the matrix
    elements $$\langle u_{n{\bf k}+{\bf b}_1}\vert
-H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle
-$$. Default is \verb#.false.#
+H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle.
+$$
+Default is \verb#.false.#
 
 \item   \verb#uHu_formatted# -- Set to \verb#.true.# to write uHu data as a formatted file. Default is \verb#.false.# (only relevant if
    \verb#write_uHu=.true.#)
@@ -471,8 +475,8 @@ $$. Default is \verb#.false.#
 
 \item   \verb#write_uIu# -- Set to \verb#.true.# to write out the matrix
    elements of $$\langle  u_{n{\bf k}+{\bf b}_1}\vert
-u_{m{\bf k}+{\bf b}_2}\rangle
-$$. Default is \verb#.false.# 
+u_{m{\bf k}+{\bf b}_2}\rangle.
+$$ Default is \verb#.false.# 
 
 \item   \verb#uIu_formatted# -- Set to \verb#.true.# to write uIu data as a formatted file. Default is \verb#.false.# (only relevant if
    \verb#write_uIu=.true.#)
