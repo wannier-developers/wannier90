@@ -62,7 +62,7 @@ thedoc:
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
 
 dist:
-	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
+	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90-2.0.0/,' -f wannier90-2.0.0.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./tests/run_test.pl \
@@ -121,7 +121,6 @@ dist:
 		./utility/w90pov/examples/*/*.inc \
 		./utility/w90pov/examples/*/*.pov \
 		./utility/w90pov/examples/*/ref/*.png \
-		./utility/w90pov/Makefile \
 		./utility/w90pov/README \
 		./utility/w90chk2chk/README \
                 ./doc/*/*.tex \
