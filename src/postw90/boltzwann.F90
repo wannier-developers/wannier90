@@ -28,7 +28,7 @@
 !obtained using the BoltzWann module:                        !
 !                                                            !
 ![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari,! 
-!    Comp. Phys. Comm. (2013)                                !
+!    Comp. Phys. Comm. 185, 422 (2014)                       !
 !    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)     !
 !============================================================!
 
@@ -68,7 +68,7 @@ module w90_boltzwann
   character(len=74), parameter :: pub_string_3 = &
   "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
   character(len=74), parameter :: pub_string_4 = &
-  "Comp. Phys. Comm. (2013), DOI:10.1016/j.cpc.2013.09.015 (arXiv:1305.1587) "
+  "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
 
 contains 
 

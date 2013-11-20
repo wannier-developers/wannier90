@@ -8,8 +8,6 @@ v2.0 (14th October 2013)
 
 * Updated interface to PWscf v5.0 (including a minor bug fix to the 
   definition of the projection functions).
-* Changed the internal format of the checkpoint file (not compatible anymore
-  with v.1.2 and earlier)
 * Enabled very general specification of spinor projections
 * Generalized the definition of the supercell for real-space plotting of
   the Wannier functions: now the supercell size (wannier_plot_supercell)
