@@ -12,14 +12,34 @@ Wannier90 are out of sync. Therefore, we provide here a copy
 of the post-processing routine that is compatible with this
 release of Wannier90 and a particular release of quantum-espresso.
 
-====
-v5.0
-====
+======
+v5.1.x
+======
+The Quantum ESPRESSO releases of version 5.1.x already contain
+the most up-to-date version of pw2wannier90.x. No special 
+action is needed.
 
-Within, e.g., the sub-directory v5.0 you will find the file pw2wannier90.f90
+======
+v5.0.x
+======
 
-Copy pw2wannier90.f90 to the PP/src directory of the quantum-espresso distribution, replacing the
-file of the same name that is already there. Then you should compile pw2wannier90.x as normal.
+************************************************************************
+** NOTE! this works only for Quantum ESPRESSO                          *
+** versions 5.0.0, 5.0.1, 5.0.2 and 5.0.3.                             *
+** From version 5.1.0, the most up-to-date version of pw2wannier90.f90 *
+** is already included in the Quantum ESPRESSO distribution.           *
+************************************************************************
+
+This file also includes the new features required by some
+modules added in Wannier90 2.0, like spinor-projections,
+and the evaluation of the matrix elements needed for the
+calculation of spin and orbital magnetization.
+
+Within, the sub-directory v5.0 you will find the file pw2wannier90.f90
+
+Copy pw2wannier90.f90 to the PP/src directory of the quantum ESPRESSO
+distribution, replacing the file of the same name that is already there.
+Then you should compile pw2wannier90.x as normal.
 
 
 
