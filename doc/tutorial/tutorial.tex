@@ -1530,7 +1530,10 @@ defect (red).}
     conduction states of Si. Calculate the electrical conductivity, the
     Seebeck coefficient and the thermal conductivity in the constant
     relaxation time approximation using the \bw\ module.}} 
-\item{Directory: {\tt examples/example16/}}
+\end{itemize}
+\subsection*{If you want to use Quantum ESPRESSO}
+\begin{itemize}
+\item{Directory: {\tt examples/example16-withqe/}}
 \item{Input Files}
 \begin{itemize}
 \item{ {\tt Si.scf}  {\it The \pwscf\ input file for ground state
@@ -1538,15 +1541,33 @@ defect (red).}
 \item{ {\tt Si.nscf}  {\it The \pwscf\ input file to obtain Bloch
     states on a uniform grid}} 
 \item{ {\tt Si.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt Si.win}  {\it The \wannier\ and \postw\ input file}}\
+\end{itemize}
+\end{itemize}
+\subsection*{If you do not want to use Quantum ESPRESSO}
+\begin{itemize}
+\item{Directory: {\tt examples/example16-noqe/}}
+\item{Input Files}
+\begin{itemize}
 \item{ {\tt Si.win}  {\it The \wannier\ and \postw\ input file}}
+\item{ {\tt Si.mmn}  {\it The overlap matrices $\Mkb$}}
+\item{ {\tt Si.amn}  {\it Projection $\Ak$ of the Bloch states onto a set
+    of trial localised orbitals}} 
+\item{ {\tt Si.eig}  {\it The Bloch eigenvalues at each k-point. For
+    interpolation only}} 
+\end{itemize}
 \end{itemize}
 
-\end{itemize}
-
-Note the first five steps in the following are the same of Example~11.
-If you have already run Example~11 (in particular, the section ``\emph{Valence + Conduction States}'')
+Note the first five steps in the following are the same of Example~11, and
+are needed only if you want to use the \texttt{PWscf} code of Quantum ESPRESSO.
+Otherwise, if you have already run Example~11 with Quantum ESPRESSSO 
+(in particular, the section ``\emph{Valence + Conduction States}'')
 you can start from those files and continue from point 6, after having
 added the \bw\ flags to the input file.
+
+If instead you do not have Quantum ESPRESSO installed, or you do not want to
+use it, you can start from step 5 using the files in the
+{\tt examples/example16-noqe/} folder.
 
 Note that in the following, steps 1, 2, 4 and 6 can be possibly run in parallel
 on multiple processors (using {\tt mpirun}), while steps 3 and 5 must
