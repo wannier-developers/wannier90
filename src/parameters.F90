@@ -1424,13 +1424,17 @@ contains
     if(allocated(eigval)) then
        boltz_dos_energy_min  = minval(eigval)-0.6667_dp
     else
-       boltz_dos_energy_min  = dis_win_min-0.6667_dp
+       ! Boltz_dos cannot run if eigval is not allocated.
+       ! We just set here a default numerical value.
+       boltz_dos_energy_min  = -1.0_dp
     end if
     call param_get_keyword('boltz_dos_energy_min',found,r_value=boltz_dos_energy_min)
     if(allocated(eigval)) then
        boltz_dos_energy_max  = maxval(eigval)+0.6667_dp
     else
-       boltz_dos_energy_max  = dis_win_max+0.6667_dp
+       ! Boltz_dos cannot run if eigval is not allocated.
+       ! We just set here a default numerical value.
+       boltz_dos_energy_max  = 0.0_dp
     end if
     call param_get_keyword('boltz_dos_energy_max',found,r_value=boltz_dos_energy_max)
     if (boltz_dos_energy_max <= boltz_dos_energy_min) &
