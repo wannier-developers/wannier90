@@ -1,0 +1,8 @@
+ &INPUTPP
+   outdir               =  './',
+   prefix               =  'SrMnO3',
+   seedname             =  'SrMnO3-d',
+   write_unk            =  .false.
+ /
+
+

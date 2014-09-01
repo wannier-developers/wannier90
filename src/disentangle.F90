@@ -582,6 +582,10 @@ contains
     ! internal variables
     integer :: i,j,nkp,ierr
     integer :: imin,imax,kifroz_min,kifroz_max
+    !!! GS-start
+    real(kind=dp) :: dk(3), kdr2
+    logical :: dis_ok
+    !!! GS-end
 
     ! OUTPUT:
     !     ndimwin(nkp)   number of bands inside outer window at nkp-th k poi
@@ -660,6 +664,30 @@ contains
        ndimwin(nkp) = imax - imin + 1  
 
        nfirstwin(nkp) = imin  
+
+       !!! GS-start 
+       ! disentangle at the current k-point only if it is within one of the
+       ! spheres centered at the k-points listed in kpt_dis
+       if ( dis_spheres_num .gt. 0 ) then
+          dis_ok = .false.
+          ! loop on the sphere centers
+          do i = 1,dis_spheres_num
+             dk = kpt_latt(:,nkp) - dis_spheres(1:3,i)
+             dk = matmul(anint(dk) - dk, recip_lattice(:,:) ) 
+             ! if the current k-point is included in at least one sphere,
+             ! then perform disentanglement as usual
+             if ( abs(dot_product(dk,dk)) .lt. dis_spheres(4,i)**2 ) then
+                dis_ok = .true.
+                exit
+             endif
+          enddo
+          ! this kpoint is not included in any sphere: no disentaglement
+          if ( .not. dis_ok ) then
+             ndimwin(nkp) = num_wann
+             nfirstwin(nkp) = dis_spheres_first_wann
+          endif
+       endif
+       !!! GS-end
 
        if (ndimwin(nkp).lt.num_wann) then  
           write(stdout,483) 'Error at k-point ',nkp,&

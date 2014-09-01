@@ -1,0 +1,8 @@
+ &INPUTPP
+   outdir               =  './',
+   prefix               =  'LaVO3',
+   seedname             =  'LaVO3',
+   write_unk            =  .false.
+ /
+
+

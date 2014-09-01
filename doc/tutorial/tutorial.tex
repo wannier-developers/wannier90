@@ -2337,6 +2337,73 @@ than the Berry curvature (see Example 18). As a result, the integrated
 orbital magnetization converges more rapidly with the BZ sampling.
 
 
+\sectiontitle{20: Disentanglement only in small (spherical) regions of $k$ space}
+\subsection*{LaVO$_3$}
+\begin{itemize}
+\item{Outline: \it{Obtain disentangled MLWFs for strained LaVO$_3$.}}
+\item{Directory: {\tt examples/example20/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt LaVO3.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt LaVO3.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt LaV03.pw2wan}  {\it Input file for {\tt pw2wannier90}}}
+\item{ {\tt LaVO3.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of silicon\\
+{\tt pw.x < LaVO3.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point
+  grid. Note that we request the lower 4 (valence) bands\\ 
+{\tt pw.x < LaVO3.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt LaVO3.nnkp} file).\\
+{\tt wannier90.x -pp LaVO3}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states and the projections for the starting guess (written in the
+  {\tt LaVO3.mmn} and {\tt  LaVO3.amn} files).\\
+{\tt pw2wannier90.x < LaVO3.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x LaVO3}
+
+\end{enumerate}
+
+Inspect the output file {\tt LaVO3.wout}. In the initial summary, you
+will see that the disentanglement was performed only within one sphere
+of radius 0.2 arount the point $A=(0.5, 0.5, 0.5)$ in reciprocal space:
+\begin{verbatim}
+ |  Number of spheres in k-space              :                 1             |
+ |   center n.   1 :     0.500   0.500   0.500,    radius   =   0.200         |
+\end{verbatim}
+
+Compare the band structure that Wannier90 produced with the one
+obtained using Quantum ESPRESSO. You should get something similar to Fig.~\ref{fig:lavo3}.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=10cm]{LaVO3}
+\caption{Bandstructure of strained LaVO$_3$. Black: ab-initio bands; red circles: Wannier-interpolated band structure. In order to disentangle the bands, only a small sphere around the A point has been used.} 
+\label{fig:lavo3}
+\end{center}
+\end{figure}
+
+\subsection*{Further ideas}
+
+\begin{itemize}
+\item Try to disentangle the Wannier functions without using the mesh. You will see that this is extremely hard due to the bands touching only near the $A$ point (for unstrained LaVO$_3$, instead, there is a gap so disentanglement is not needed).
+\item Try to run similar simulations for SrMnO$_3$. The input files can be found
+in the SrMnO$_3$ subfolder. There are three different {\tt .pw2wan} and {\tt .win} files for projections on different states. Accordingly, different spheres are taken into account.
+\end{itemize}
+
+
 %\cleardoublepage
 
 \bibliographystyle{apsrev4-1}

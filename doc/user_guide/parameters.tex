@@ -143,6 +143,9 @@ of $\omi$ \\
 {\sc dis\_conv\_tol }   & R & The convergence tolerance for finding $\omi$ \\
 {\sc dis\_conv\_window }   & I & The number of iterations over which
 convergence of $\omi$ is assessed. \\ 
+{\sc dis\_spheres\_num }   & I & Number of spheres k-space where disentaglement is performed\\
+{\sc dis\_spheres\_first\_wann }   & I & Index of the first band to be considered a Wannier function \\
+{\sc dis\_spheres } & R & List of centers and radii, for disentanglement only in spheres \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling disentanglement parameters.]
@@ -785,6 +788,45 @@ iterations is less than
 
 The default value of this parameter is 3.
 
+\subsection[dis\_spheres\_num]{\tt integer :: dis\_spheres\_num}
+Number of spheres in the reciprocal space on which the k-dependent
+disentanglement is performed. No disentanglement is performed for 
+those k-points that are not included in any of the spheres.
+
+The default is 0, which means disentangle at every k-point in the full BZ (the standard mode in Wannier90).
+
+
+\subsection[dis\_spheres\_first\_wann]{\tt integer :: dis\_spheres\_first\_wann}
+Index of the first band that has to be considered as a Wannier function. Used only if {\tt dis\_spheres\_num} is greater than zero.
+At k-points where disentanglement is not performed the bands from
+{\tt dis\_first\_wann} to {\tt dis\_first\_wann+num\_wann} are used
+to wannierise. The bands excluded using {\tt exclude\_bands} should not
+be counted.
+
+The default is 1, the band at the lowest energy.
+
+
+\subsection[dis\_spheres]{dis\_spheres}
+Each line gives the coordinate $\mathbf{K}=K_1 \mathbf{B}_{1} + K_2
+\mathbf{B}_{2} + K_3 \mathbf{B}_3$ of a k-point representing the
+center of one of the spheres used for k-dependent disentanglement.
+The same crystallographic units as for {\tt kpoints} are used here.
+Each k-point coordinate $\mathbf{K}^i$ must the followed by the 
+respectice sphere radius $r_{i}$ in inverse angstrom (on the same line).
+
+The number of lines must be equal to {\tt dis\_spheres\_num}.
+
+\noindent  \verb#begin dis_spheres#
+$$
+\begin{array}{cccc}
+ K^{1}_{1} & K^{1}_{2} & K^{1}_{3} & r_{1} \\
+ K^{2}_{1} & K^{2}_{2} & K^{2}_{3} & r_{2} \\
+\vdots
+\end{array}
+$$
+\verb#end dis_spheres#
+
+There is no default.
 
 
 \section{Wannierise}\label{sec:wann_params}

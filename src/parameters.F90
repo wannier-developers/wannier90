@@ -70,6 +70,11 @@ module w90_parameters
   real(kind=dp),     public, save :: dis_mix_ratio
   real(kind=dp),     public, save :: dis_conv_tol
   integer,           public, save :: dis_conv_window
+  !!! GS-start
+  integer,           public, save :: dis_spheres_first_wann
+  integer,           public, save :: dis_spheres_num
+  real(kind=dp), allocatable, public, save :: dis_spheres(:,:)
+  !!! GS-end
   integer,           public, save :: num_iter
   integer,           public, save :: num_cg_steps
   real(kind=dp),     public, save :: conv_tol
@@ -1377,6 +1382,27 @@ contains
     call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
     if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
 
+    !!! GS-start
+    dis_spheres_first_wann = 1
+    call param_get_keyword('dis_spheres_first_wann',found,i_value=dis_spheres_first_wann)
+    if ( dis_spheres_first_wann < 1 )  call io_error('Error: dis_spheres_first_wann must be greater than 0')
+    if ( dis_spheres_first_wann > num_bands-num_wann+1 )  &
+         call io_error('Error: dis_spheres_first_wann is larger than num_bands-num_wann+1')
+    dis_spheres_num = 0
+    call param_get_keyword('dis_spheres_num',found,i_value=dis_spheres_num)
+    if ( dis_spheres_num < 0 )  call io_error('Error: dis_spheres_num cannot be negative')
+    if ( dis_spheres_num > 0 ) then
+       allocate ( dis_spheres(4,dis_spheres_num) ,stat=ierr)
+       if (ierr/=0) call io_error('Error allocating dis_spheres in param_read')
+       call param_get_keyword_block('dis_spheres',found,dis_spheres_num,4,r_value=dis_spheres)
+       if(.not. found) call io_error('Error: Did not find dis_spheres in the input file')
+       do nkp = 1,dis_spheres_num
+          if (dis_spheres(4,nkp) < 1.0e-15_dp) &
+             call io_error('Error: radius for dis_spheres must be > 0')
+       enddo
+    endif
+    !!! GS-end
+
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
@@ -2243,6 +2269,16 @@ contains
        write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :',dis_mix_ratio,'|'
        write(stdout,'(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :',dis_conv_tol,'|'
        write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',dis_conv_window,'|'
+       !!! GS-start
+       if ( dis_spheres_num .gt. 0 ) then
+          write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :',dis_spheres_num,'|'
+          do nkp = 1,dis_spheres_num
+             write(stdout,'(1x,a13,I4,a2,2x,3F8.3,a15,F8.3,9x,a1)')  &
+                '|   center n.',nkp,' :',dis_spheres(1:3,nkp),',    radius   =',dis_spheres(4,nkp),'|'
+          enddo
+          write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :',dis_spheres_first_wann,'|'
+       endif
+       !!! GS-end
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     end if
     !

@@ -4,6 +4,12 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
+v2.0.1 (XXX)
+
+* Added the possibility to disentangle only in small spherical regions
+  in k space around a selected number of k points
+  (contributed by Gabriele Sclauzero, ETH Zurich)
+
 v2.0 (14th October 2013)
 
 * Updated interface to PWscf v5.0 (including a minor bug fix to the 

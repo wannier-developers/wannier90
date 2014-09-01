@@ -1,0 +1,42 @@
+ &CONTROL
+   calculation          =  'scf',
+   outdir               =  './',
+   prefix               =  'SrMnO3',
+   pseudo_dir           =  '../../../pseudo/',
+   restart_mode         =  'from_scratch'
+ /
+
+ &SYSTEM
+   celldm(1)            =  6.89,
+   celldm(3)            =  1.11,
+   degauss              =  0.02,
+   ecutrho              =  300,
+   ecutwfc              =  30,
+   ibrav                =  6,
+   nat                  =  5,
+   ntyp                 =  3,
+   occupations          =  'smearing',
+   smearing             =  'mp',
+ /
+
+ &ELECTRONS
+   conv_thr             =  1d-6,
+   mixing_beta          =  0.5,
+ /
+
+ATOMIC_SPECIES 
+  Sr   87.62   Sr.pbe-nsp-van.UPF 
+  Mn   54.938045   Mn.pbe-sp-van.UPF 
+  O   15.9994   O.pbe-rrkjus.UPF 
+
+
+ATOMIC_POSITIONS crystal
+  Sr      0.000000000000000   0.000000000000000   0.000000000000000
+  Mn      0.500000000000000   0.500000000000000   0.500000000000000
+  O       0.000000000000000   0.500000000000000   0.500000000000000
+  O       0.500000000000000   0.000000000000000   0.500000000000000
+  O       0.500000000000000   0.500000000000000   0.000000000000000
+
+K_POINTS automatic
+  6   6   6   0   0   0 
+
