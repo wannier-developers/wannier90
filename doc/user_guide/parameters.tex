@@ -143,7 +143,7 @@ of $\omi$ \\
 {\sc dis\_conv\_tol }   & R & The convergence tolerance for finding $\omi$ \\
 {\sc dis\_conv\_window }   & I & The number of iterations over which
 convergence of $\omi$ is assessed. \\ 
-{\sc dis\_spheres\_num }   & I & Number of spheres k-space where disentaglement is performed\\
+{\sc dis\_spheres\_num }   & I & Number of spheres in k-space where disentaglement is performed\\
 {\sc dis\_spheres\_first\_wann }   & I & Index of the first band to be considered a Wannier function \\
 {\sc dis\_spheres } & R & List of centers and radii, for disentanglement only in spheres \\
 \hline
@@ -789,7 +789,7 @@ iterations is less than
 The default value of this parameter is 3.
 
 \subsection[dis\_spheres\_num]{\tt integer :: dis\_spheres\_num}
-Number of spheres in the reciprocal space on which the k-dependent
+Number of spheres in reciprocal space where the k-dependent
 disentanglement is performed. No disentanglement is performed for 
 those k-points that are not included in any of the spheres.
 

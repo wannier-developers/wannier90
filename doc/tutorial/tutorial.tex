@@ -2355,11 +2355,11 @@ orbital magnetization converges more rapidly with the BZ sampling.
 \end{itemize}
 
 \begin{enumerate}
-\item Run \pwscf\ to obtain the ground state of silicon\\
+\item Run \pwscf\ to obtain the ground state of LaVO$_3$.\\
 {\tt pw.x < LaVO3.scf > scf.out}
 
 \item Run \pwscf\ to obtain the Bloch states on a uniform k-point
-  grid. Note that we request the lower 4 (valence) bands\\ 
+  grid.\\ 
 {\tt pw.x < LaVO3.nscf > nscf.out}
 
 \item Run \wannier\ to generate a list of the required overlaps (written
@@ -2398,9 +2398,8 @@ obtained using Quantum ESPRESSO. You should get something similar to Fig.~\ref{f
 \subsection*{Further ideas}
 
 \begin{itemize}
-\item Try to disentangle the Wannier functions without using the mesh. You will see that this is extremely hard due to the bands touching only near the $A$ point (for unstrained LaVO$_3$, instead, there is a gap so disentanglement is not needed).
-\item Try to run similar simulations for SrMnO$_3$. The input files can be found
-in the SrMnO$_3$ subfolder. There are three different {\tt .pw2wan} and {\tt .win} files for projections on different states. Accordingly, different spheres are taken into account.
+\item Try to disentangle the Wannier functions without disentanglement, and with standard disentanglement without using the spheres. You will notice that without disentanglement Wannier functions will not converge. With standard disentanglement (without spheres), also bands away from the A point in $k-$space are perturbed, even in regions of $k-$space where there is no entanglement. 
+\item Try to run similar simulations for SrMnO$_3$. The input files can be found in the SrMnO$_3$ subfolder. There are three different {\tt .pw2wan} and {\tt .win} files for projections on different states. Accordingly, different spheres are taken into account. Note that if one in interested in disentangling in points with degeneracy larger than 1 (e.g. the X point), then one has to include all symmetry-equivalent X points as centers of the spheres. This was not necessary for LaVO$_3$ because the A point is not degenerate, but it is important for the X point of SrMnO$_3$.
 \end{itemize}
 
 

@@ -21,7 +21,7 @@ End Projections
  dis_spheres_num = 1
 
 Begin dis_spheres
-  0.0  0.0  0.0  0.2
+  0.0  0.0  0.0  0.3
 End dis_spheres
 
 
