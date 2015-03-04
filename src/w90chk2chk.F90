@@ -110,6 +110,11 @@ end subroutine print_usage
     read(chk_unit) num_bands                           ! Number of bands
     write(stdout,'(a,i0)') "Number of bands: ", num_bands
     read(chk_unit) num_exclude_bands                   ! Number of excluded bands
+    if (num_exclude_bands < 0) then
+       call io_error('Invalid value for num_exclude_bands') 
+    endif
+    allocate(exclude_bands(num_exclude_bands),stat=ierr) 
+    if (ierr/=0) call io_error('Error allocating exclude_bands in conv_read_chkpt') 
     read(chk_unit) (exclude_bands(i),i=1,num_exclude_bands) ! Excluded bands
     write(stdout,'(a)',advance='no') "Excluded bands: "
     if (num_exclude_bands == 0) then
@@ -257,6 +262,11 @@ end subroutine print_usage
     read(chk_unit,*) num_bands                           ! Number of bands
     write(stdout,'(a,i0)') "Number of bands: ", num_bands
     read(chk_unit,*) num_exclude_bands                   ! Number of excluded bands
+    if (num_exclude_bands < 0) then
+       call io_error('Invalid value for num_exclude_bands') 
+    endif
+    allocate(exclude_bands(num_exclude_bands),stat=ierr) 
+    if (ierr/=0) call io_error('Error allocating exclude_bands in conv_read_chkpt_fmt') 
     do i=1,num_exclude_bands
        read(chk_unit,*) exclude_bands(i) ! Excluded bands
     end do
