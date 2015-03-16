@@ -371,30 +371,32 @@ nnshell=0
     ! We know it is true for kpt=1; but we check the rest to be safe.
     ! Eq. B1 in Appendix  B PRB 56 12847 (1997)
 
-    do nkp = 1, num_kpts  
-       do i = 1, 3  
-          do j = 1, 3  
-             ddelta = 0.0_dp 
-             nnx = 0  
-             do ndnnx = 1, num_shells  
-                ndnn = shell_list(ndnnx)  
-                do nnsh = 1, nnshell(1,ndnn)  
-                   nnx = nnx + 1  
-                   ddelta = ddelta + wb_local(nnx) * bk_local(i,nnx,nkp) * bk_local(j,nnx,nkp)
+    if (.not. skip_B1_tests) then
+       do nkp = 1, num_kpts  
+          do i = 1, 3  
+             do j = 1, 3  
+                ddelta = 0.0_dp 
+                nnx = 0  
+                do ndnnx = 1, num_shells  
+                   ndnn = shell_list(ndnnx)  
+                   do nnsh = 1, nnshell(1,ndnn)  
+                      nnx = nnx + 1  
+                      ddelta = ddelta + wb_local(nnx) * bk_local(i,nnx,nkp) * bk_local(j,nnx,nkp)
+                   enddo
                 enddo
+                if ( (i.eq.j) .and. (abs(ddelta-1.0_dp).gt.kmesh_tol) ) then
+                   write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
+                   call io_error('Eq. (B1) not satisfied in kmesh_get (1)')  
+                endif
+                if ( (i.ne.j) .and. (abs(ddelta).gt.kmesh_tol) ) then  
+                   write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
+                   call io_error('Eq. (B1) not satisfied in kmesh_get (2)')  
+                endif
              enddo
-             if ( (i.eq.j) .and. (abs(ddelta-1.0_dp).gt.kmesh_tol) ) then
-                write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
-                call io_error('Eq. (B1) not satisfied in kmesh_get (1)')  
-             endif
-             if ( (i.ne.j) .and. (abs(ddelta).gt.kmesh_tol) ) then  
-                write(stdout,'(1x,2i3,f12.8)') i,j,ddelta
-                call io_error('Eq. (B1) not satisfied in kmesh_get (2)')  
-             endif
           enddo
        enddo
-    enddo
-
+    end if
+       
     write(stdout,'(1x,a)') '| Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |'  
     write(stdout,'(1x,"+",76("-"),"+")') 
 
@@ -1178,23 +1180,24 @@ nnshell=0
     !check b1
 
     b1sat=.true.
-    do loop_i=1,3
-       do loop_j=loop_i,3
-          delta=0.0_dp
-          do loop_s=1,num_shells
-             do loop_b=1,multi(shell_list(loop_s))
-                delta=delta+bweight(loop_s)*bvector(loop_i,loop_b,loop_s)*bvector(loop_j,loop_b,loop_s)
+    if (.not. skip_B1_tests) then
+       do loop_i=1,3
+          do loop_j=loop_i,3
+             delta=0.0_dp
+             do loop_s=1,num_shells
+                do loop_b=1,multi(shell_list(loop_s))
+                   delta=delta+bweight(loop_s)*bvector(loop_i,loop_b,loop_s)*bvector(loop_j,loop_b,loop_s)
+                end do
              end do
+             if(loop_i==loop_j) then
+                if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.  
+             end if
+             if(loop_i/=loop_j) then
+                if(abs(delta)>kmesh_tol) b1sat=.false.
+             end if
           end do
-          if(loop_i==loop_j) then
-             if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.  
-          end if
-          if(loop_i/=loop_j) then
-             if(abs(delta)>kmesh_tol) b1sat=.false.
-          end if
        end do
-    end do
-
+    end if
 
     if(.not.b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied')
 
@@ -1372,25 +1375,25 @@ nnshell=0
 
 
     !check b1
-
     b1sat=.true.
-    do loop_i=1,3
-       do loop_j=loop_i,3
-          delta=0.0_dp
-          do loop_s=1,num_shells
-             do loop_b=1,multi(loop_s)
-                delta=delta+bweight(loop_s)*bvec_inp(loop_i,loop_b,loop_s)*bvec_inp(loop_j,loop_b,loop_s)
+    if (.not. skip_B1_tests) then
+       do loop_i=1,3
+          do loop_j=loop_i,3
+             delta=0.0_dp
+             do loop_s=1,num_shells
+                do loop_b=1,multi(loop_s)
+                   delta=delta+bweight(loop_s)*bvec_inp(loop_i,loop_b,loop_s)*bvec_inp(loop_j,loop_b,loop_s)
+                end do
              end do
+             if(loop_i==loop_j) then
+                if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.  
+             end if
+             if(loop_i/=loop_j) then
+                if(abs(delta)>kmesh_tol) b1sat=.false.
+             end if
           end do
-          if(loop_i==loop_j) then
-             if(abs(delta-1.0_dp)>kmesh_tol) b1sat=.false.  
-          end if
-          if(loop_i/=loop_j) then
-             if(abs(delta)>kmesh_tol) b1sat=.false.
-          end if
        end do
-    end do
-
+    end if
 
     if(.not.b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied')
 

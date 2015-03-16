@@ -65,6 +65,7 @@ calculation are manifestly real \\
 {\sc shell\_list }   & I & Which shells to use in finite difference formula \\
 {\sc search\_shells }   & I & The number of shells to search when
 determining finite difference formula \\
+{\sc skip\_B1\_tests }   & L & Check the condition B1 of Ref.~\cite{marzari-prb97}  \\
 {\sc kmesh\_tol } & R & The tolerance to control if two kpoint belong to the same shell \\
 \hline
 \end{tabular}
@@ -536,6 +537,15 @@ cases e.g. for very long thin unit cells.
 
 The default value is 12.
 
+\subsection[skip\_B1\_tests]{\tt logical :: skip\_B1\_tests}
+
+If set to \texttt{.true.}, does not check the B1 condition
+Eq.~\ref{eq:B1}. This should \emph{only} be used if one knows
+why the B1 condition should not be verified. A typical use of this
+flag is in conjunction with the Z2PACK code:
+\url{http://www.physics.rutgers.edu/z2pack/}.
+
+The default value is \texttt{.false.}.
 
 \subsection[kmesh\_tol]{\tt real(kind=dp) :: kmesh\_tol}
 

@@ -246,6 +246,7 @@ module w90_parameters
   real(kind=dp),     public, save :: tran_group_threshold  
   real(kind=dp),     public, save :: translation_centre_frac(3)
   integer,           public, save :: num_shells    !no longer an input keyword
+  logical,           public, save :: skip_B1_tests
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
   real(kind=dp),     public, save :: real_lattice(3,3)
@@ -1690,7 +1691,14 @@ contains
     if(found .and. (itmp/=num_shells)) &
         call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list')
 
-
+    ! If .true., does not perform the check of B1 of
+    ! Marzari, Vanderbild, PRB 56, 12847 (1997)
+    ! in kmesh.F90
+    ! mainly needed for the interaction with Z2PACK
+    ! By default: .false. (perform the tests)
+    skip_B1_tests = .false.
+    call param_get_keyword('skip_B1_tests', found, l_value=skip_B1_tests)
+    
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
