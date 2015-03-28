@@ -340,9 +340,9 @@ $k$-mesh (one or three integers)\\
 {\sc [boltz\_dos\_]adpt\_smr\_max} & P & Maximum allowed value for the
 adaptive energy smearing (eV)\\
 {\sc [boltz\_dos\_smr\_]fixed\_en\_width} & P  & Energy smearing (if non-adaptive) for the DOS (eV) \\
-%{\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
-%{\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
-%{\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
+{\sc boltz\_bandshift} & L & Rigid bandshift of the conduction bands\\
+{\sc boltz\_bandshift\_firstband} & I & Index of the first band to shift\\
+{\sc boltz\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the \bw\ module.]
@@ -1254,24 +1254,26 @@ Sec.~\ref{sec:postw90-globalflags}).
 Overrides the \verb#smr_fixed_en_width# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
-%\subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
-%Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
-%
-%The default value is \verb#false#.
+\subsection[boltz\_bandshift]{\tt logical :: boltz\_bandshift}
+Shift all conduction bands by a given amount (defined by {\tt boltz\_bandshift\_energyshift}).
 
-%\subsection[boltz\_bandshift\_firstband]{\tt integer :: boltz\_bandshift\_firstband}
-%Index of the first conduction band to shift.
-%
-%That means that all bands with index $i\ge {\tt boltz\_bandshift\_firstband}$ will be shifted by  {\tt boltz\_bandshift\_energyshift}, if {\tt boltz\_bandshift} is \verb#true#.
-%
-%The units are eV.
-%No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+Note: this flag slightly differs from the global {\tt scissors\_shift} flag: with {\tt boltz\_bandshift}, an exact rigid shift is applied \emph{after} interpolation; {\tt scissors\_shift} applies instead the shift \emph{before} interpolation. As a consequence, results may slightly differ (and this is why we provide both possibilities). Note also that with {\tt scissors\_shift} you have to provide the number of valence bands {\tt num\_valence\_bands}, while with {\tt boltz\_bandshift} you should provide the first band to shift {\tt boltz\_bandshift\_firstband} = {\tt num\_valence\_bands}$+1$.
 
-%\subsection[boltz\_bandshift\_energyshift]{\tt real(kind=dp) :: boltz\_bandshift\_energyshift}
-%Energy shift of the conduction bands.
-%
-%The units are eV.
-%No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+The default value is \verb#false#.
+
+\subsection[boltz\_bandshift\_firstband]{\tt integer :: boltz\_bandshift\_firstband}
+Index of the first conduction band to shift.
+
+That means that all bands with index $i\ge {\tt boltz\_bandshift\_firstband}$ will be shifted by  {\tt boltz\_bandshift\_energyshift}, if {\tt boltz\_bandshift} is \verb#true#.
+
+The units are eV.
+No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
+
+\subsection[boltz\_bandshift\_energyshift]{\tt real(kind=dp) :: boltz\_bandshift\_energyshift}
+Energy shift of the conduction bands.
+
+The units are eV.
+No default value; if {\tt boltz\_bandshift} is \verb#true#, this flag must be provided.
 
 
 \section{Generic Band Interpolation}

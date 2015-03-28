@@ -62,7 +62,7 @@ thedoc:
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
 
 dist:
-	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90-2.0.0/,' -f wannier90-2.0.0.tar.gz \
+	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90-2.0.1/,' -f wannier90-2.0.1.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./tests/run_test.pl \

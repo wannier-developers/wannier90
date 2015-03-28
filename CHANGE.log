@@ -4,7 +4,7 @@
                                                             
  The Maximally-Localised Generalised Wannier Functions Code 
 
-v2.0.1 (XXX)
+v2.0.1 (2nd April 2015)
 
 * Added the possibility to disentangle only in small spherical regions
   in k space around a selected number of k points

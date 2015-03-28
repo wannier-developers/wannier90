@@ -11,10 +11,12 @@
 !           Giovanni Pizzi     (EPFL, Switzerland)           !
 !           Ivo Souza          (Universidad del Pais Vasco)  !
 !                                                            !
-! Contributorsr:                                             !
+! Contributors:                                              !
 !          Young-Su Lee        (KIST, S. Korea)              !
 !          Matthew Shelley     (Imperial College London)     !
-!          Nicolas Poilvert    (Harvard)                     ! 
+!          Nicolas Poilvert    (Penn State University)       !
+!          Raffaello Bianco    (Paris 6 and CNRS)            !
+!          Gabriele Sclauzero  (ETH Zurich)                  !  
 !                                                            !
 !  Please cite                                               !
 !                                                            !

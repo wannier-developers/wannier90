@@ -5,7 +5,7 @@
  The Maximally-Localised Generalised Wannier Functions Code 
 
 
- Wannier90 Version 2.0 has been written by:                                                            
+ Wannier90 Version 2.0 has been written by: 
     Arash A. Mostofi   (Imperial College London, UK)
     Giovanni Pizzi     (EPFL, Switzerland)
     Ivo Souza          (Universidad del Pais Vasco, Spain)
@@ -14,13 +14,16 @@
  Contributors to the code include:
   Young-Su Lee (KIST, S. Korea) -- specialised Gamma point routines & transport
   Matthew Shelley (Imperial College London, UK) -- transport
-  Nicolas Poilvert (Harvard, USA) -- transport
-  Daniel Aberg (LLNL, USA) -- povray plotting
-  Raffaello Bianco (University of Trieste) -- k-slice plotting
+  Nicolas Poilvert (Penn State University, USA) -- transport
+  Raffaello Bianco (Univ. Pierre et Marie Curie Paris 6 and CNRS) -- 
+    k-slice plotting
   Gabriele Sclauzero (ETH, Zurich, Switzerland) -- disentanglement
     in spheres in k-space
-  w90vdw was written by:
-    Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi
+
+ w90vdw was written by:
+   Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi
+ w90pov (povray plotting) was written by:
+   Daniel Aberg (LLNL, USA)
  
 We gratefully acknowledge Marco Buongiorno Nardelli for the dosqc
 v1.0 subroutines for the calculation of the density of states and the
@@ -77,8 +80,9 @@ Further information can be found in the user guide and tutorial
         Rev. Mod. Phys. 84, 1419 (2012) 
                                                          
 
-Copyright (C) 1997-2013 Jonathan Yates, Arash Mostofi, Young-Su Lee, 
-           Giovanni Pizzi, Nicola Marzari, Ivo Souza, David Vanderbilt 
+Copyright (c) 1996-2015, Arash A. Mostofi, Jonathan R. Yates,
+  Young-Su Lee, Giovanni Pizzi, Ivo Souza,
+  David Vanderbilt and Nicola Marzari
 
 All the material included in this distribution is free software;
 you can redistribute it and/or modify it under the terms of the GNU
