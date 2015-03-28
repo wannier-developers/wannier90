@@ -751,8 +751,6 @@ contains
     if (boltz_bandshift.and.on_root) then
        write(stdout,'(5X,A,I0,A,G18.10,A)') "Shifting energy bands with index >= ", boltz_bandshift_firstband, " by ", &
             boltz_bandshift_energyshift, " eV."
-       write(stdout,'(A)') "### THE BOLTZ_BANDSHIFT FLAG IS DEPRECATED AND WILL BE REMOVED IN FUTURE ###"
-       write(stdout,'(A)') "### RELEASES. USE THE SCISSORS_SHIFT FLAG INSTEAD.                       ###"
     end if
 
     NumPtsRefined = 0

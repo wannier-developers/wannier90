@@ -7,8 +7,17 @@
 v2.0.1 (2nd April 2015)
 
 * Added the possibility to disentangle only in small spherical regions
-  in k space around a selected number of k points
+  in k space around a selected number of k points - see also Example 20.
   (contributed by Gabriele Sclauzero, ETH Zurich)
+* Added the skip_B1_tests flag to be compatible with the Z2PACK code
+  (http://www.physics.rutgers.edu/z2pack/)
+* Reintroduced the boltz_bandshift flag for a rigid shift of the bands
+  in BoltzWann; updated reference of BoltzWann paper; added a version
+  of BoltzWann tutorial example (example 16) that works also without
+  Quantum ESPRESSO.
+* Added documentation on pw2wannier90.f90 for QE 5.1.x
+* bug fix in w90chk2chk.F90 (missing allocation if there were excluded bands)
+
 
 v2.0 (14th October 2013)
 
