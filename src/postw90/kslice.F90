@@ -443,7 +443,7 @@ module w90_kslice
                '  bbands=bands.reshape((dimx,dimy,numbands))'
           write(scriptunit,'(a)') '  for i in range(numbands):'
           write(scriptunit,'(a)') '    pl.contour(x_coord,'&
-               //'y_coord,bbands[:,:,i],[ef],colors="black")'
+               //'y_coord,bbands[:,:,i].transpose(),[ef],colors="black")'
           write(scriptunit,'(a)') 'else:'
           write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,numbands))'
           write(scriptunit,'(a)') '  bandint=[]'
@@ -608,7 +608,7 @@ module w90_kslice
                      '  bbands=bands.reshape((dimx,dimy,numbands))'
                 write(scriptunit,'(a)') '  for i in range(numbands):'
                 write(scriptunit,'(a)') '    pl.contour(x_coord,y_coord,'&
-                     //'bbands[:,:,i],[ef],colors="black")'
+                     //'bbands[:,:,i].transpose(),[ef],colors="black")'
                 write(scriptunit,'(a)') 'else:'
                 write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,'&
                      //'numbands))'
