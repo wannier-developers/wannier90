@@ -90,9 +90,26 @@ dist:
                 ./examples/example1[4-5]/periodic/*.nscf \
                 ./examples/example1[4-5]/periodic/*.win \
                 ./examples/example1[4-5]/periodic/*.pw2wan \
-		./examples/example1[6-9]/*.scf \
-		./examples/example1[6-9]/*.nscf \
-		./examples/example1[6-9]/*.pw2wan \
+                ./examples/example16-noqe/Si.amn \
+                ./examples/example16-noqe/Si.mmn \
+                ./examples/example16-noqe/Si.eig \
+                ./examples/example16-withqe/Si.scf \
+                ./examples/example16-withqe/Si.nscf \
+                ./examples/example16-withqe/Si.pw2wan \
+		./examples/example1[7-9]/*.scf \
+		./examples/example1[7-9]/*.nscf \
+		./examples/example1[7-9]/*.pw2wan \
+		./examples/example20/*.scf \
+		./examples/example20/*.nscf \
+		./examples/example20/*.pw2wan \
+		./examples/example20/SrMnO3/SrMnO3-d.pw2wan \
+		./examples/example20/SrMnO3/SrMnO3-d.win \
+		./examples/example20/SrMnO3/SrMnO3-eg.pw2wan \
+		./examples/example20/SrMnO3/SrMnO3-eg.win \
+		./examples/example20/SrMnO3/SrMnO3.nscf \
+		./examples/example20/SrMnO3/SrMnO3.scf \
+		./examples/example20/SrMnO3/SrMnO3-t2g.pw2wan \
+		./examples/example20/SrMnO3/SrMnO3-t2g.win \
 		./pseudo/*.UPF \
 		./pwscf/README \
 		./pwscf/v3.2.3/*.f90 \
