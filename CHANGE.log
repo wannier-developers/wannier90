@@ -18,7 +18,7 @@ v2.0.1 (2nd April 2015)
 * Added documentation on pw2wannier90.f90 for QE 5.1.x
 * bug fix in w90chk2chk.F90 (missing allocation if there were excluded bands)
 * bug fix in kslice.F90 (missing transpose when plotting Fermi lines in 
-  the python scripts
+  the python scripts)
 
 v2.0 (14th October 2013)
 
