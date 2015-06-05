@@ -53,10 +53,10 @@ contains
     write(outdat_unit, '(A)') "# Input file comment: " // trim(commentline)
 
     if (geninterp_alsofirstder) then
-       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (2pi/ang)     K_y (2pi/ang)     K_z (2pi/ang)     Energy (eV)" // &
+       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (1/ang)       K_y (1/ang)       K_z (1/ang)       Energy (eV)" // &
             "      EnergyDer_x       EnergyDer_y       EnergyDer_z"
     else
-       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (2pi/ang)     K_y (2pi/ang)     K_z (2pi/ang)     Energy (eV)"
+       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (1/ang)       K_y (1/ang)       K_z (1/ang)       Energy (eV)"
     end if
   end subroutine internal_write_header
     
