@@ -53,10 +53,10 @@ contains
     write(outdat_unit, '(A)') "# Input file comment: " // trim(commentline)
 
     if (geninterp_alsofirstder) then
-       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (1/ang)       K_y (1/ang)       K_z (1/ang)       Energy (eV)" // &
+       write(outdat_unit, '(A)') "#  Kpt_idx  K_x (1/ang)       K_y (1/ang)        K_z (1/ang)       Energy (eV)" // &
             "      EnergyDer_x       EnergyDer_y       EnergyDer_z"
     else
-       write(outdat_unit, '(A)') "#  Kpt_idx   K_x (1/ang)       K_y (1/ang)       K_z (1/ang)       Energy (eV)"
+       write(outdat_unit, '(A)') "#  Kpt_idx  K_x (1/ang)       K_y (1/ang)        K_z (1/ang)       Energy (eV)"
     end if
   end subroutine internal_write_header
     
@@ -105,9 +105,9 @@ contains
        
        if (index(cdum,'crystal')>0) then
           absoluteCoords = .false.
-       elseif (index(cdum,'rel')>0) then
-          absoluteCoords = .false.       
        elseif (index(cdum,'frac')>0) then
+          absoluteCoords = .false.
+       elseif (index(cdum,'cart')>0) then
           absoluteCoords = .true.
        elseif (index(cdum,'abs')>0) then
           absoluteCoords = .true.

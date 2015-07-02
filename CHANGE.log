@@ -6,7 +6,10 @@
 
 v2.0.2 (XXX)
 * Fix to documentation of geninterp: k units were 1/ang and not
-  2pi/ang as previously stated
+  2pi/ang as previously stated; also made names for absolute/fractional
+  coordinates consistent with the rest of the code:now 'crystal' or
+  'frac' mean fractional coordinates for k-points, 'cart' and
+  'abs' mean absolute.
 
 v2.0.1 (2nd April 2015)
 
