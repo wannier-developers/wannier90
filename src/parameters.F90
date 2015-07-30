@@ -1627,7 +1627,7 @@ contains
             'Error: kubo_freq_step must be positive')
     !
     kubo_nfreq=nint((kubo_freq_max-kubo_freq_min)/kubo_freq_step)+1
-    if(kubo_nfreq==1) kubo_nfreq=2
+    if(kubo_nfreq<=1) kubo_nfreq=2
     kubo_freq_step=(kubo_freq_max-kubo_freq_min)/(kubo_nfreq-1)
     !
     allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
