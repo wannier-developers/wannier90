@@ -1697,7 +1697,7 @@ contains
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
     skip_B1_tests = .false.
-    call param_get_keyword('skip_B1_tests', found, l_value=skip_B1_tests)
+    call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
     
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'

@@ -5,6 +5,7 @@
  The Maximally-Localised Generalised Wannier Functions Code 
 
 v2.0.2 (XXX)
+* Fixed the skip_B1_tests flag, that was ignored
 * Fix to documentation of geninterp: k units were 1/ang and not
   2pi/ang as previously stated; also made names for absolute/fractional
   coordinates consistent with the rest of the code:now 'crystal' or
