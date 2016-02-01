@@ -6,7 +6,7 @@ REALMAKEFILE=../Makefile.2
 
 default: wannier post
 
-all: wannier lib post w90chk2chk
+all: wannier lib post w90chk2chk w90pov w90vdw
 
 doc: thedoc
 
@@ -50,6 +50,7 @@ clean:
 	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
+	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a

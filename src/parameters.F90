@@ -5130,6 +5130,8 @@ contains
      write(stdout,'(1x,a)')  '|   However, this will result in more i/o and slow down the calculation      |'
      endif
 
+     write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'plot_wannier:',(mem_param+mem_wan)/(1024**2),' Mb'
+
      if (ispostw90) then
         if (boltzwann) &
              write(stdout,'(1x,"|",24x,a15,f16.2,a,18x,"|")') 'BoltzWann:',(mem_param+mem_bw)/(1024**2),' Mb'
