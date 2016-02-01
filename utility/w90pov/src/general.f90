@@ -1,4 +1,4 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
 !                                                            !
 ! Copyright (C) 2012 Daniel Aberg                            !
 !                                                            !

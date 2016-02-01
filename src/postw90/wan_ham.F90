@@ -1,4 +1,4 @@
-!-*- mode: F90; mode: font-lock -*-!
+!-*- mode: F90 -*-!
 
 module w90_wan_ham
 

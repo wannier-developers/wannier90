@@ -19,6 +19,7 @@
     k-slice plotting
   Gabriele Sclauzero (ETH, Zurich, Switzerland) -- disentanglement
     in spheres in k-space
+  David Strubbe (MIT, USA) -- various bugfixes/improvements
 
  w90vdw was written by:
    Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi

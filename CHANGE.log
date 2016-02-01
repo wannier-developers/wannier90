@@ -11,7 +11,8 @@ v2.0.2 (XXX)
   coordinates consistent with the rest of the code:now 'crystal' or
   'frac' mean fractional coordinates for k-points, 'cart' and
   'abs' mean absolute.
-
+* Improvements to various Makefiles 
+	
 v2.0.1 (2nd April 2015)
 
 * Added the possibility to disentangle only in small spherical regions
