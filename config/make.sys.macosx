@@ -1,6 +1,5 @@
-
 #=================================================
-# For Mac Os X (tested on 10.7 Lion)
+# For Mac Os X (tested on 10.10 Yosemite)
 #=================================================
 ## The following requires a working gfortran compiler.
 ## You can use for instance MacPorts to obtain it
@@ -9,12 +8,11 @@
 ## install a recent version of gcc to get (also)
 ## gfortran.
 ## For instance:
-##  sudo port install gcc45
-## Note that this may take a lot of time (hours!)
-## Note: the executable may be called something like
-## gfortran-mp-4.5
+##  sudo port install gcc5
+## Note: update version number in port and F90 below as necessary
 ##
-F90 = gfortran
+F90 = gfortran-mp-5
+CC = cc
 
 
 ## The next two lines are needed if you want a
@@ -22,13 +20,14 @@ F90 = gfortran
 ## with a serial version, simply comment the next
 ## two lines.
 ## To get openmpi with MacPorts, use for instance
-##  sudo port install openmpi
+##  sudo port install openmpi-default
 ## Note that with MacPorts, the 
 ## 'mpirun' executable needed to run the code
-## may be called 'openmpirun'
+## is called 'mpirun-openmpirun-mp'
+## (You could also use mpich instead of openmpi.)
 ##
 COMMS=mpi
-MPIF90=openmpif90
+MPIF90=mpif90-openmpi-mp
 
 
 
@@ -55,3 +54,7 @@ FCOPTS=-O2 -ff2c
 LDOPTS=-O2 -ff2c
 LIBS   =  -framework Accelerate
 
+# other options: do not use -ff2c but instead:
+# port vecLibfort (wrapper to Accelerate): LIBS = -L/opt/local/lib -lvecLibFort
+# port atlas: LIBS = -L/opt/local/lib -lsatlas
+# port openblas +lapack: LIBS = -L/opt/local/lib -lopenblas
