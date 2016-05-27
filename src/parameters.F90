@@ -848,6 +848,7 @@ contains
        fermi_energy_step=(fermi_energy_max-fermi_energy_min)/(nfermi-1)
     endif
     !
+    if (allocated(fermi_energy_list)) deallocate(fermi_energy_list)
     allocate(fermi_energy_list(nfermi),stat=ierr)
     if (ierr/=0) call io_error(&
          'Error allocating fermi_energy_read in param_read')
@@ -1630,6 +1631,7 @@ contains
     if(kubo_nfreq<=1) kubo_nfreq=2
     kubo_freq_step=(kubo_freq_max-kubo_freq_min)/(kubo_nfreq-1)
     !
+    if (allocated(kubo_freq_list)) deallocate(kubo_freq_list)
     allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
     if (ierr/=0)&
          call io_error('Error allocating kubo_freq_list in param_read')
