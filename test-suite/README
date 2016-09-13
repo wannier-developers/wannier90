@@ -1,0 +1,35 @@
+# Copyright (C) 2001-2020 Quantum ESPRESSO Foundation
+# Created by Filippo Spiga (filippo.spiga@quantum-espresso.org)
+# Maintainer: Samuel Ponce
+
+TEST-SUITE  v1.0.0
+------------------
+
+Type 'make' for the list of possible 
+
+You can run make with several options:
+
+A) Run all PW and CP tests in serial and show a final report
+
+$ make run-tests
+
+If 'run-tests-parallel', it runs the custom test in parallel (4 MPI)
+
+
+B) Run the test that is in a single directory and show a final report
+
+$ make run-custom-test testdir=name_of_directory
+
+For example, the following runs only the tests in the pw_spinorbit directory
+$ make run-custom-test testdir=example01
+
+If 'run-custom-test-parallel', it runs the specified test in parallel (4 MPI)
+
+$ make run-custom-test-parallel testdir=example01
+
+
+
+
+REFERENCE OUTPUTS
+-----------------
+
