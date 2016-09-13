@@ -14,6 +14,7 @@ install:
 #before_script:
 #    - ...
 script:
-    - make -C test-suite run-tests
+    - cd test-suite
+    - make run-tests
 git:
   depth: 3
