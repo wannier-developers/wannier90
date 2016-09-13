@@ -124,6 +124,9 @@ module w90_kslice
        yvec(3)=zvec(1)*bvec(1,2)-zvec(2)*bvec(1,1)
        ! Area (modulus b1 x b2 = z_vec)
        areab1b2=sqrt(zvec(1)**2+zvec(2)**2+zvec(3)**2)
+       if(areab1b2<eps8) call io_error(&
+            'Error in kslice: Vectors kslice_b1 and kslice_b2 '&
+            //'not linearly independent')
        ! Moduli b1,b2,y_vec
        b1mod=sqrt(bvec(1,1)**2+bvec(1,2)**2+bvec(1,3)**2)
        b2mod=sqrt(bvec(2,1)**2+bvec(2,2)**2+bvec(2,3)**2)
