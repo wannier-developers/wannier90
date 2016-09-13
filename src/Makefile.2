@@ -3,8 +3,8 @@
 
 include ../../make.sys
 
-OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
-	 kmesh.o disentangle.o wannierise.o plot.o transport.o
+OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o position.o \
+         overlap.o kmesh.o disentangle.o wannierise.o plot.o transport.o
 
 OBJS2  =  wannier_lib.o
 
@@ -92,6 +92,9 @@ parameters.o: ../parameters.F90 constants.o io.o utility.o
 hamiltonian.o: ../hamiltonian.F90 constants.o io.o utility.o parameters.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../hamiltonian.F90
 
+position.o: ../position.F90 constants.o io.o utility.o parameters.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../position.F90
+
 overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
@@ -144,7 +147,7 @@ postw90_common.o: $(POSTDIR)postw90_common.F90 comms.o parameters.o utility.o co
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_common.F90
 
 wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
-	./hamiltonian.o ./kmesh.o ./overlap.o ./disentangle.o \
+	./hamiltonian.o ./position.o ./kmesh.o ./overlap.o ./disentangle.o \
 	./wannierise.o ./plot.o ./transport.o ../wannier_lib.F90
 	 $(COMPILER) $(FCOPTS) -c ../wannier_lib.F90
 

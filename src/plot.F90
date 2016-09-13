@@ -33,6 +33,7 @@ contains
                                 wannier_plot,timing_level
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup
+    use w90_position, only: position_setup
 
     implicit none
 
@@ -67,6 +68,7 @@ contains
        !
        if(hr_plot) call hamiltonian_write_hr()
        !
+       if(hr_plot) call position_setup()
     end if
 
     if(wannier_plot) call plot_wannier
