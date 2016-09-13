@@ -119,7 +119,6 @@ contains
     real(kind=dp)        :: rdotk,vec(3),emin,emax,time0
     integer, allocatable :: irvec_cut(:,:)
     integer              :: irvec_max(3)
-    integer              :: irvec_tmp(3)
     integer              :: nrpts_cut
     integer, allocatable :: iwork(:),ifail(:)
     integer              :: info,i,j
