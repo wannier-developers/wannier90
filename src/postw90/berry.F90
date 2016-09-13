@@ -900,7 +900,7 @@ module w90_berry
     do j=1,3
        do i=1,j
           call fourier_R_to_k(kpt,CC_R(:,:,:,i,j),CC(:,:,i,j),0)
-          CC(:,:,j,i)=-conjg(transpose(CC(:,:,i,j)))
+          CC(:,:,j,i)=conjg(transpose(CC(:,:,i,j)))
        enddo
     enddo
 

@@ -12,6 +12,7 @@ v2.0.2 (XXX)
   'frac' mean fractional coordinates for k-points, 'cart' and
   'abs' mean absolute.
 * Improvements to various Makefiles 
+* Fixed bug in the calculation of orbital magnetization in berry.F90
 	
 v2.0.1 (2nd April 2015)
 
