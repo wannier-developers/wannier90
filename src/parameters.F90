@@ -999,8 +999,9 @@ contains
     berry_curv_adpt_kmesh           = 1
     call param_get_keyword('berry_curv_adpt_kmesh',found,&
          i_value=berry_curv_adpt_kmesh)
-    if (berry_curv_adpt_kmesh<0)&
-         call io_error('Error:  berry_curv_adpt_kmesh must be positive')       
+    if (berry_curv_adpt_kmesh<1)&
+         call io_error(&
+         'Error:  berry_curv_adpt_kmesh must be a positive integer')       
 
     berry_curv_adpt_kmesh_thresh           = 100.0_dp
     call param_get_keyword('berry_curv_adpt_kmesh_thresh',found,&
