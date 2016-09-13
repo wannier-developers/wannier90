@@ -25,7 +25,7 @@ module w90_ws_distance
 
   private
   !
-  public :: ws_translate_dist
+  public :: ws_translate_dist, clean_ws_translate
   !
   ! The number of unit cells to shift WF j to put its centre inside the Wigner-Seitz 
   ! of wannier function i. If several shifts are equivalent (i.e. they take the function
@@ -79,7 +79,7 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
     ! not be the best thing if you invoke it while the WFs are moving
     if(present(force_recompute))then
       if(force_recompute) then
-        call clean_ws_translate
+        call clean_ws_translate()
       endif
     endif
     if(done_ws_distance) return
