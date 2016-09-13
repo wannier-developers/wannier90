@@ -16,7 +16,6 @@ module w90_plot
   implicit none
 
   private
-
   public :: plot_main
 
 
@@ -99,7 +98,8 @@ contains
                                 bands_num_spec_points,timing_level, &
                                 bands_spec_points,bands_label,bands_plot_format, &
                                 bands_plot_mode,num_bands_project,bands_plot_project
-    use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
+    use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r,wdist_shiftj_wsi,wdist_ndeg, &
+                                use_ws_distance
 
     implicit none
 
@@ -118,11 +118,12 @@ contains
     real(kind=dp)        :: rdotk,vec(3),emin,emax,time0
     integer, allocatable :: irvec_cut(:,:)
     integer              :: irvec_max(3)
+    integer              :: irvec_tmp(3)
     integer              :: nrpts_cut
     integer, allocatable :: iwork(:),ifail(:)
     integer              :: info,i,j
     integer              :: irpt,nfound,loop_kpt,counter
-    integer              :: loop_spts,total_pts,loop_i,nkp
+    integer              :: loop_spts,total_pts,loop_i,nkp,ideg
     integer              :: num_paths,num_spts,ierr
     integer              :: bndunit,gnuunit,loop_w,loop_p
     character(len=3),allocatable   :: glabel(:)
@@ -220,9 +221,24 @@ contains
        ham_kprm=cmplx_0
        if (index(bands_plot_mode,'s-k').ne.0) then
           do irpt=1,nrpts
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
-             fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
-             ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
+! [lp] Shift the WF to have the minimum distance IJ, see also hamiltonian.F90
+            if(use_ws_distance)then
+              do i=1,num_wann
+                do j=1,num_wann
+                   do ideg = 1,wdist_ndeg(j,i,irpt)
+                      irvec_tmp(:)=wdist_shiftj_wsi(:,ideg,i,j,irpt)
+                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),real(irvec_tmp(:),dp))
+                      fac=exp(cmplx_i*rdotk)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
+                      ham_kprm(j,i)=ham_kprm(j,i)+fac*ham_r(j,i,irpt)
+                   enddo
+                enddo
+              enddo 
+            else
+! [lp] Original code, without IJ-dependent shift:
+              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
+              fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+              ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
+            endif
           end do
        elseif (index(bands_plot_mode,'cut').ne.0) then
           do irpt=1,nrpts_cut

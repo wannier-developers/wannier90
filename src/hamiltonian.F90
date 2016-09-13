@@ -27,6 +27,14 @@ module w90_hamiltonian
   !                   irvec(1:3,irpt) in the basis of the lattice vectors
   !
   integer,          public, save, allocatable :: irvec(:,:)
+  integer,          public, save, allocatable :: shift_vec(:,:)
+  !
+  ! [lp] The number of unit cells to shift WF j to put its centre inside the Wigner-Seitz 
+  ! of wannier function i. If several shifts are equivalent (i.e. they take the function
+  ! on the edge of the WS) they are all listed
+  integer ,         public, save, allocatable :: wdist_shiftj_wsi(:,:,:,:,:)!(3,ndegenx,num_wann,num_wann,nrpts)
+  ! The number of equivalent shifts (see above)
+  integer,          public, save, allocatable :: wdist_ndeg(:,:,:)!(num_wann,num_wann,nrpts)
   !
   ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
   !
@@ -56,8 +64,13 @@ module w90_hamiltonian
   logical, save :: have_ham_r=.false.
   logical, save :: have_ham_k=.false.
   logical, save :: hr_written=.false.
+  logical, save, public :: use_ws_distance = .true.
 
   complex(kind=dp), save, allocatable :: ham_k(:,:,:)
+
+
+  integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch 
+                                    ! in a single point (i.e.  vertex of cube)
 
 contains
 
@@ -147,6 +160,14 @@ contains
        deallocate( wannier_centres_translated, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating wannier_centres_translated in param_dealloc')
     end if
+    if( allocated( wdist_ndeg ) ) then
+       deallocate( wdist_ndeg, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wdist_ndeg in param_dealloc')
+    end if
+    if( allocated( wdist_shiftj_wsi ) ) then
+       deallocate( wdist_shiftj_wsi, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating wdist_shiftj_wsi in param_dealloc')
+    end if
 
     return
   end subroutine hamiltonian_dealloc
@@ -174,7 +195,7 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt,i,j,m,irpt,ierr,counter
+    integer              :: loop_kpt,i,j,m,irpt,ideg,ierr,counter
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -271,7 +292,7 @@ contains
              ham_r(:,:,irpt)=ham_r(:,:,irpt)+fac*ham_k(:,:,loop_kpt)
           enddo
        enddo
-    
+
        have_translated = .false.
 
     else
@@ -299,6 +320,16 @@ contains
 
     end if
 
+    ! [lp] if required, compute the minimum diistances
+    if (use_ws_distance) then
+        allocate(wdist_shiftj_wsi(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating wdist_shiftj_wsi in hamiltonian_get_hr')
+        allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
+        !
+        call wz_translate_dist()
+    endif
+
     have_ham_r = .true.
 
 200 continue
@@ -313,6 +344,162 @@ contains
     return
 
   contains
+
+  ! [lp] The next three subroutines find the supercell translation (i.e. the translation
+  ! by a integer number of supercell) That minimizes the distance between two given funtions, 
+  ! i and j, the first in unit cell 0, the other in unit cell R. 
+  ! I.e. we put  WF j in the Wigner-Seitz of WF i. 
+  ! We also look for the number of equivalent translation, meaning that j is on the edge of the WS
+  ! The results are stored in global arrays wdist_ndeg and wdist_shiftj_wsi
+    !====================================================!
+    subroutine wz_translate_dist()
+      !====================================================!
+
+      use w90_parameters, only : num_wann,wannier_centres, real_lattice, &
+                                 translation_centre_frac, recip_lattice, &
+                                 automatic_translation,lenconfac
+      use w90_io,         only : stdout
+      use w90_utility,    only : utility_cart_to_frac, utility_frac_to_cart
+
+      implicit none
+
+      ! <<<local variables>>>
+      integer  :: iw, jw, ideg, ir
+      real(DP) :: wdist_wssc_frac(3,num_wann,num_wann,nrpts)
+      real(DP) :: wdist_deg_cart(3,ndegenx,num_wann,num_wann,nrpts)
+      real(DP) :: wdist_deg_frac(3,ndegenx,num_wann,num_wann,nrpts)
+      real(DP) :: irvec_cart(3)
+
+      translation_centre_frac = 0._dp
+      wdist_ndeg   = 0
+      wdist_shiftj_wsi   = 0
+      wdist_deg_cart = 0
+      wdist_deg_frac = 0
+      ! take to WS cell
+      write(stdout,'(1x,a)') 'Translated centres'
+      write(stdout,'(4x,a,3f10.6)') 'translation centre in fractional coordinate:',translation_centre_frac(:)
+      do ir =1,nrpts
+        do jw=1,num_wann
+          do iw=1,num_wann
+             call utility_frac_to_cart(DBLE(irvec(:,ir)),irvec_cart,real_lattice) 
+             ! function IW translated in the Wigner-Size around function JW
+             wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( wannier_centres(:,iw)&
+                         -(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
+             !find its degeneracy
+             CALL R_wz_sc_equiv(wdist_wssc_frac(:,iw,jw,ir), (/0._dp,0._dp,0._dp/), &
+                                wdist_ndeg(iw,jw,ir), wdist_deg_cart(:,:,iw,jw,ir))
+             IF(wdist_ndeg(iw,jw,ir)>ndegenx) call io_error('surprising ndeg')
+             do ideg = 1,wdist_ndeg(iw,jw,ir)
+               wdist_deg_cart(:,ideg,iw,jw,ir) = wdist_deg_cart(:,ideg,iw,jw,ir)&
+                             -wannier_centres(:,iw)+wannier_centres(:,jw)
+               call utility_cart_to_frac(wdist_deg_cart(:,ideg,iw,jw,ir),&
+                             wdist_deg_frac(:,ideg,iw,jw,ir),recip_lattice)
+             enddo
+          enddo
+        enddo
+      enddo
+      write(stdout,'(1x,a78)') repeat('-',78)
+      ! apply translation
+      wdist_shiftj_wsi = NINT(wdist_deg_frac)
+      !
+      do ir=1,nrpts
+      write(stdout,'(i5)') ir
+      do iw=1,num_wann
+          write(stdout,'("deg:",100i2)') wdist_ndeg(:,iw,ir)
+      enddo
+      enddo
+      write(stdout,'(1x,a78)') repeat('-',78)
+      !
+      IF(ANY(ABS(DBLE(wdist_shiftj_wsi)-wdist_deg_frac)>1.d-6)) &
+        call io_error('wrong wdist_shiftj_wsi')
+
+      return
+    end subroutine wz_translate_dist
+ 
+    !====================================================!
+    function R_wz_sc(R_in, R0) result (R_bz)
+      use w90_parameters, only : real_lattice,recip_lattice, mp_grid
+      use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
+      use w90_io,         only : stdout
+      implicit none
+      real(DP),intent(in) :: R_in(3), R0(3)
+      real(DP) :: R(3), R_bz(3), R_f(3), R_in_f(3), mod2_R_bz
+      integer :: i,j,k
+      ! [lp] How far shold we look? It depends on how far the WFs have been wandering
+      ! from their unit-cell, or if the cell is very slanted. 2 is almost always enough,
+      ! 3 is enough in every case I have ever met
+      integer,parameter :: far = 3
+
+      R_bz = R_in
+      mod2_R_bz = SUM((R_bz-R0)**2)
+      !
+      ! take R_bz to cryst(frac) coord for translating
+      call utility_cart_to_frac(R_in,R_in_f,recip_lattice)
+
+      do i = -far, far
+        do j = -far, far
+          do k = -far, far
+
+            R_f = R_in_f + REAL( (/i*mp_grid(1),j*mp_grid(2),k*mp_grid(3)/), kind=DP)
+            call utility_frac_to_cart(R_f,R,real_lattice)
+
+            if(SUM((R-R0)**2)<mod2_R_bz) then
+              R_bz = R
+              mod2_R_bz = SUM((R_bz-R0)**2)
+            endif
+
+          enddo
+        enddo
+      enddo
+    end function R_wz_sc
+    !====================================================!
+    subroutine R_wz_sc_equiv(R_in, R0, ndeg, R_out)
+      use w90_parameters, only : real_lattice,recip_lattice, mp_grid
+      use w90_utility,    only : utility_cart_to_frac,utility_frac_to_cart
+      use w90_io,         only : stdout
+      implicit none
+      real(DP),intent(in)  :: R_in(3), R0(3)
+      real(DP),intent(out) :: R_out(3,ndegenx)
+      integer,intent(out)  :: ndeg
+
+      real(DP) :: R(3), R_f(3), R_in_f(3), mod2_R_bz
+      integer :: i,j,k
+      integer,parameter :: far = 3
+      real(DP),parameter :: eps = 1.e-6_dp !d-1
+
+      ! init
+      ndeg=0
+      R_out = 0._dp
+
+      mod2_R_bz = SUM((R_in-R0)**2)
+      if(mod2_R_bz<eps)then
+        ndeg=1
+        return
+      endif
+      !
+      ! take R_bz to cryst(frac) coord for translating
+      call utility_cart_to_frac(R_in,R_in_f,recip_lattice)
+
+      do i = -far, far
+        do j = -far, far
+          do k = -far, far
+
+            R_f = R_in_f + REAL( (/i*mp_grid(1),j*mp_grid(2),k*mp_grid(3)/), kind=DP)
+            call utility_frac_to_cart(R_f,R,real_lattice)
+
+            if(  ABS(SUM((R-R0)**2)-mod2_R_bz)/mod2_R_bz<eps) then
+              ndeg=ndeg+1
+              R_out(:,ndeg) = R
+            endif
+
+          enddo
+        enddo
+      enddo
+      !====================================================!
+    end subroutine R_wz_sc_equiv
+    !====================================================!
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
     subroutine internal_translate_centres()
