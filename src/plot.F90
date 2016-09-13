@@ -98,8 +98,9 @@ contains
                                 bands_num_spec_points,timing_level, &
                                 bands_spec_points,bands_label,bands_plot_format, &
                                 bands_plot_mode,num_bands_project,bands_plot_project
-    use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r,wdist_shiftj_wsi,wdist_ndeg, &
-                                use_ws_distance
+    use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
+    use w90_ws_distance, only : wdist_shiftj_wsi,wdist_ndeg, &
+                                use_ws_distance, ws_translate_dist
 
     implicit none
 
@@ -217,22 +218,32 @@ contains
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
+    if(use_ws_distance)then
+      if (index(bands_plot_mode,'s-k').ne.0) then
+        call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
+      elseif (index(bands_plot_mode,'cut').ne.0) then
+        ! [lp] I can only hope this works, no test done:
+        call ws_translate_dist(nrpts_cut, irvec_cut, force_recompute=.true.)
+      else
+        call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+      endif
+    endif
+
     do loop_kpt=1,total_pts
        ham_kprm=cmplx_0
        if (index(bands_plot_mode,'s-k').ne.0) then
           do irpt=1,nrpts
-! [lp] Shift the WF to have the minimum distance IJ, see also hamiltonian.F90
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
             if(use_ws_distance)then
-              do i=1,num_wann
-                do j=1,num_wann
-                   do ideg = 1,wdist_ndeg(j,i,irpt)
-                      irvec_tmp(:)=wdist_shiftj_wsi(:,ideg,i,j,irpt)
-                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),real(irvec_tmp(:),dp))
-                      fac=exp(cmplx_i*rdotk)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
-                      ham_kprm(j,i)=ham_kprm(j,i)+fac*ham_r(j,i,irpt)
-                   enddo
-                enddo
-              enddo 
+               do i=1,num_wann
+               do j=1,num_wann
+                  do ideg = 1,wdist_ndeg(j,i,irpt)
+                     rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                     fac=exp(cmplx_i*rdotk)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
+                     ham_kprm(j,i)=ham_kprm(j,i)+fac*ham_r(j,i,irpt)
+                  enddo
+               enddo
+               enddo 
             else
 ! [lp] Original code, without IJ-dependent shift:
               rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
@@ -247,8 +258,6 @@ contains
              fac=exp(cmplx_i*rdotk)
              ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
           end do
-       else
-          call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
        endif
        ! Diagonalise H_k (->basis of eigenstates)
        do j=1,num_wann

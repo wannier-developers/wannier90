@@ -68,7 +68,7 @@ contains
   !> I think that a way to write in parallel to the output would help a lot,
   !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
-    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
+    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
@@ -222,6 +222,11 @@ contains
           call fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
        end if
+       do j=1,num_wann
+       do k=1,num_wann
+        WRITE(10000+i, '(2i6,2e24.16)') k,j, UU(k,j)
+       enddo
+       enddo
     end do
        
     if (geninterp_single_file) then

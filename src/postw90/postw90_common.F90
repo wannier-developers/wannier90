@@ -453,6 +453,7 @@ module w90_postw90_common
                    do i=1,num_wann
                       v_matrix(m,j,loop_kpt)=v_matrix(m,j,loop_kpt)&
                            +u_matrix_opt(m,i,loop_kpt)*u_matrix(i,j,loop_kpt)
+                      write(10000, '(3i6,2e24.16)') loop_kpt,m,j,v_matrix(m,j,loop_kpt)
                    enddo
                 enddo
              enddo
@@ -603,7 +604,6 @@ module w90_postw90_common
     kmesh_spacing_mesh=maxval(Delta_k_i)
   
   end function kmesh_spacing_mesh
-
   ! ***REMOVE EVENTUALLY*** (replace with fourier_R_to_k_new)
   !
   !=========================================================!
@@ -620,7 +620,8 @@ module w90_postw90_common
   !=========================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann
+    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, use_ws_distance, ws_translate_dist
 
     implicit none
 
@@ -631,22 +632,45 @@ module w90_postw90_common
     complex(kind=dp), dimension(:,:), intent(out)   :: OO
     integer                                         :: alpha
 
-    integer          :: ir
+    integer          :: ir, i,j,ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
+   if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
+    
     OO(:,:)=cmplx_0
     do ir=1,nrpts
-       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
-       if(alpha==0) then
-          OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
-       elseif(alpha==1.or.alpha==2.or.alpha==3) then
-          OO(:,:)=OO(:,:)+&
-               cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(:,:,ir)
-       else
-          stop 'wrong value of alpha in fourier_R_to_k'
-       endif
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+      if(use_ws_distance)then
+         do j=1,num_wann
+         do i=1,num_wann
+            do ideg = 1,wdist_ndeg(j,i,ir)
+               rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
+               phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+               if(alpha==0) then
+                  OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
+               elseif(alpha==1.or.alpha==2.or.alpha==3) then
+                  OO(i,j)=OO(i,j)+crvec(alpha,ir)*phase_fac*OO_R(i,j,ir)
+               else
+                  stop 'wrong value of alpha in fourier_R_to_k'
+               endif
+            enddo
+         enddo
+         enddo 
+      else
+   ! [lp] Original code, without IJ-dependent shift:
+         rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+         phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+         if(alpha==0) then
+            OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
+         elseif(alpha==1.or.alpha==2.or.alpha==3) then
+            OO(:,:)=OO(:,:)+&
+                  cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(:,:,ir)
+         else
+            stop 'wrong value of alpha in fourier_R_to_k'
+         endif
+      endif
+
     enddo
 
   end subroutine fourier_R_to_k
@@ -667,7 +691,8 @@ module w90_postw90_common
   !=======================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : timing_level,num_kpts,kpt_latt
+    use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann  
+    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, use_ws_distance, ws_translate_dist
 
     implicit none
 
@@ -680,24 +705,46 @@ module w90_postw90_common
     complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dy
     complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dz
 
-    integer          :: ir
+    integer          :: ir, i,j,ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
+    if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
+   
     if(present(OO)) OO=cmplx_0
     if(present(OO_dx)) OO_dx=cmplx_0
     if(present(OO_dy)) OO_dy=cmplx_0
     if(present(OO_dz)) OO_dz=cmplx_0
     do ir=1,nrpts
-       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
-       if(present(OO)) OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
-       if(present(OO_dx)) OO_dx(:,:)=OO_dx(:,:)+&
-               cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir)
-       if(present(OO_dy)) OO_dy(:,:)=OO_dy(:,:)+&
-               cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir)
-       if(present(OO_dz)) OO_dz(:,:)=OO_dz(:,:)+&
-               cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir)
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+      if(use_ws_distance)then
+        do j=1,num_wann
+        do i=1,num_wann
+            do ideg = 1,wdist_ndeg(j,i,ir)
+              rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
+              phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+              if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
+              if(present(OO_dx)) OO_dx(i,j)=OO_dx(i,j)+&
+                      cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir)
+              if(present(OO_dy)) OO_dy(i,j)=OO_dy(i,j)+&
+                      cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir)
+              if(present(OO_dz)) OO_dz(i,j)=OO_dz(i,j)+&
+                      cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir)
+            enddo
+        enddo
+        enddo 
+      else
+! [lp] Original code, without IJ-dependent shift:
+        rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+        phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+        if(present(OO)) OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
+        if(present(OO_dx)) OO_dx(:,:)=OO_dx(:,:)+&
+                cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir)
+        if(present(OO_dy)) OO_dy(:,:)=OO_dy(:,:)+&
+                cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir)
+        if(present(OO_dz)) OO_dz(:,:)=OO_dz(:,:)+&
+                cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir)
+      endif
     enddo
 
   end subroutine fourier_R_to_k_new
