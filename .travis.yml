@@ -1,6 +1,5 @@
-#language: python
-#python:
-#    - "2.7"
+# I use c language to have at least make and similar
+language: c
 addons:
   apt:
     packages:
@@ -13,4 +12,6 @@ install:
 #before_script:
 #    - ...
 script:
-    - make tests
+    - make test
+git:
+  depth: 3
