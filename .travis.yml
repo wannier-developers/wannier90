@@ -1,0 +1,20 @@
+# I use c language to have at least make and similar
+language: python
+python:
+    - "2.7"
+addons:
+  apt:
+    packages:
+        - gfortran 
+        - libblas-dev 
+        - liblapack-dev 
+install:
+    - cp config/make.sys.gfort make.sys
+    - make -j wannier post
+#before_script:
+#    - ...
+script:
+    - cd test-suite
+    - make run-tests
+git:
+  depth: 3
