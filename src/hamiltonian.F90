@@ -165,6 +165,7 @@ contains
     use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
                                eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
                                have_disentangled,timing_level
+    use w90_parameters, only : lsitesymmetry !YN:
 
     implicit none
   
@@ -175,6 +176,7 @@ contains
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
     integer              :: loop_kpt,i,j,m,irpt,ierr,counter
+    complex(kind=dp)     :: utmp(num_bands,num_wann) !RS:
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -216,6 +218,7 @@ contains
        ! but we choose u_matrix_opt such that the Hamiltonian is
        ! diagonal at each kpoint. (I guess we should check it here)
        
+       if(.not.lsitesymmetry)then !YN:
        do loop_kpt=1,num_kpts
           do j=1,num_wann
              do m=1,ndimwin(loop_kpt)
@@ -224,6 +227,17 @@ contains
              enddo
           enddo
        enddo
+       else !YN:                !RS: u_matrix_opt is not the eigenvectors of the Hamiltonian any more, so we
+         do loop_kpt=1,num_kpts !RS: have to calculate ham_k in the following way
+           utmp(1:ndimwin(loop_kpt),:)=matmul(u_matrix_opt(1:ndimwin(loop_kpt),:,loop_kpt),u_matrix(:,:,loop_kpt)) !RS:
+           do j=1,num_wann; do i=1,j                                                                               !RS:
+             do m=1,ndimwin(loop_kpt)                                                                              !RS:
+               ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval_opt(m,loop_kpt)*conjg(utmp(m,i))*utmp(m,j)           !RS:
+             enddo                                                                                                 !RS:
+             if(i.lt.j)ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))                                              !RS:
+           enddo; enddo                                                                                            !RS:
+         enddo                                                                                                     !RS:
+       endif !YN:
 
     else
        eigval2(1:num_wann,:)=eigval(1:num_wann,:)
@@ -237,6 +251,7 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
+    if(.not.lsitesymmetry.or..not.have_disentangled)then !YN:
     do loop_kpt=1,num_kpts
        do j=1,num_wann
           do i=1,j
@@ -248,6 +263,7 @@ contains
           enddo
        enddo
     enddo
+    endif !YN:
 
     have_ham_k = .true.
 

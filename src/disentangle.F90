@@ -16,6 +16,7 @@ module w90_disentangle
   use w90_constants, only: dp,cmplx_0,cmplx_1
   use w90_io, only: io_error,stdout,io_stopwatch
   use w90_parameters
+  use w90_sitesymmetry !RS:
 
   implicit none
 
@@ -71,6 +72,7 @@ contains
     ! If there is an inner window, need to modify projection procedure
     ! (Sec. III.G SMV)
     if (linner) then
+       if(lsitesymmetry)stop 'RS: in SSA, frozen window not implemented yet!' !RS:
        write(stdout,'(3x,a)') 'Using an inner window (linner = T)'  
        call dis_proj_froz()
     else
@@ -90,6 +92,8 @@ contains
        end do
     end do
 
+    if(lsitesymmetry)call slim_d_matrix_band(lwindow)                         !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
+    if(lsitesymmetry)call symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
     ! Extract the optimally-connected num_wann-dimensional subspaces
 ![ysl-b]
     if (.not. gamma_only) then
@@ -121,6 +125,7 @@ contains
     enddo
 
     ! Find the initial u_matrix
+    if(lsitesymmetry)call replace_d_matrix_band() !RS: replace d_matrix_band here
 ![ysl-b]
     if (.not. gamma_only) then
        call internal_find_u()
@@ -360,6 +365,7 @@ contains
     !                                                                !
     !================================================================!
 
+      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
       implicit none
 
       integer                       :: nkp,info,ierr
@@ -388,6 +394,7 @@ contains
       if (ierr/=0) call io_error('Error in allocating caa in dis_main')
       
       do nkp = 1, num_kpts  
+         if(lsitesymmetry)then; if(ir2ik(ik2ir(nkp)).ne.nkp)cycle; end if !YN: RS:
          call zgemm('C','N',num_wann,num_wann,ndimwin(nkp),cmplx_1,&
               u_matrix_opt(:,:,nkp),num_bands,a_matrix(:,:,nkp),num_bands,&
               cmplx_0,caa(:,:,nkp),num_wann)
@@ -407,6 +414,7 @@ contains
          call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
               cz,num_wann,cv,num_wann,cmplx_0,u_matrix(:,:,nkp),num_wann)
       enddo
+      if(lsitesymmetry)call symmetrize_u_matrix(num_wann,u_matrix) !RS:
       
       ! Deallocate arrays for ZGESVD
       deallocate(caa,stat=ierr)
@@ -1454,6 +1462,7 @@ contains
     !==================================================================!  
       
       use w90_io, only: io_time
+      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
 
       implicit none
 
@@ -1515,6 +1524,7 @@ contains
 
       real(kind=dp),    allocatable :: history(:)
       logical                       :: dis_converged
+      complex(kind=dp) :: lambda(num_wann,num_wann) !RS:
 
       if (timing_level>1) call io_stopwatch('dis: extract',1)
 
@@ -1624,10 +1634,12 @@ contains
             do nkp = 1, num_kpts  
                if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_in(:,:,nkp))
             enddo
+            if(lsitesymmetry)call symmetrize_zmatrix(czmat_in,lwindow) !RS:
          else  
             ! [iter.ne.1]
             ! Update Z matrix at k points with non-frozen states, using a mixing sch
             do nkp = 1, num_kpts  
+               if(lsitesymmetry)then; if(ir2ik(ik2ir(nkp)).ne.nkp)cycle; end if !YN: RS:
                if ( num_wann.gt.ndimfroz(nkp) ) then
                   ndimk = ndimwin(nkp) - ndimfroz(nkp)
                   do i=1,ndimk
@@ -1654,8 +1666,12 @@ contains
          ! non-frozen neighboring states from the previous iteration
 
          wkomegai1 = real(num_wann,dp) * wbtot
+         if(lsitesymmetry)then; do nkp=1,nkptirr                               !RS:
+           wkomegai1(nkp)=wkomegai1(nkp)*nsymmetry/count(kptsym(:,nkp).eq.nkp) !RS:
+         enddo; endif                                                          !RS:
          do nkp = 1, num_kpts  
             if ( ndimfroz(nkp).gt.0 ) then  
+               if(lsitesymmetry)stop 'RS: not implemented' !RS:
                do nn=1,nntot
                   nkp2=nnlist(nkp,nn)
                   call zgemm('C','N',ndimfroz(nkp),ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
@@ -1679,6 +1695,11 @@ contains
 
          ! Refine optimal subspace at k points w/ non-frozen states
          do nkp = 1, num_kpts  
+           if(lsitesymmetry)then; if(ir2ik(ik2ir(nkp)).ne.nkp)cycle; end if !YN: RS:
+           if(lsitesymmetry)then                                                      !RS:
+             call dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
+             do j=1,num_wann; wkomegai1(nkp)=wkomegai1(nkp)-lambda(j,j); enddo        !RS:
+           else                                                                       !RS:
             if ( num_wann.gt.ndimfroz(nkp) ) then  
                ! Diagonalize Z matrix
                do j = 1, ndimwin(nkp) - ndimfroz(nkp)  
@@ -1716,6 +1737,7 @@ contains
                enddo
             endif
             ! [if num_wann>ndimfroz(nkp)]
+           endif !RS:
 
             ! Now that we have contribs. from both frozen and non-frozen states to
             ! wkomegai1(nkp), add it to womegai1
@@ -1754,6 +1776,7 @@ contains
 
          enddo
          ! [Loop over k points (nkp)]
+         if(lsitesymmetry)call symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
       if (timing_level>1) call io_stopwatch('dis: extract_3',2)
 
 
@@ -1835,6 +1858,7 @@ contains
          do nkp = 1, num_kpts  
             if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_out(:,:,nkp))
          enddo
+         if(lsitesymmetry)call symmetrize_zmatrix(czmat_out,lwindow) !RS:
 
          call internal_test_convergence()
          
@@ -1963,11 +1987,16 @@ contains
       ! Replace u_matrix_opt by ceamp. Both span the
       ! same space, but the latter is more convenient for the purpose of obtai
       ! an optimal Fourier-interpolated band structure: see Sec. III.E of SMV.
+      if(.not.lsitesymmetry)then !YN:
       do nkp = 1, num_kpts  
          do j = 1, num_wann
             u_matrix_opt(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
          enddo
       enddo
+      else !YN:
+        !YN: !RS: Above is skipped as we require Uopt(Rk) to be related to Uopt(k)
+        write(*,"(a)") 'RS: u_matrix_opt are no longer the eigenstates of the subspace Hamiltonian.' !RS:
+      endif !YN:
 
       if(index(devel_flag,'compspace')>0) then
 

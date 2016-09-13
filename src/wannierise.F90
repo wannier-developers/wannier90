@@ -65,6 +65,8 @@ contains
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
          write_hr_diag
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
+    use w90_parameters, only : lsitesymmetry,nkptirr !RS:
+    use w90_sitesymmetry                             !RS:
 
     !ivo
     use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
@@ -277,6 +279,7 @@ contains
 
        ! calculate search direction (cdq)
        call internal_search_direction()
+       if(lsitesymmetry)call symmetrize_gradient(2,cdq) !RS:
 
        ! save search direction 
        cdqkeep(:,:,:) = cdq(:,:,:)
@@ -827,6 +830,8 @@ contains
       ! Update U and M matrices after a trial step    !
       !                                               !
       !===============================================!
+      use w90_sitesymmetry                  !    RS:
+      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
 
       implicit none
 
@@ -836,6 +841,7 @@ contains
       if (timing_level>1) call io_stopwatch('wann: main: u_and_m',1)
 
       do nkp=1,num_kpts
+         if(lsitesymmetry)then; if(ir2ik(ik2ir(nkp)).ne.nkp)cycle; end if !YN: RS:
          ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
          tmp_cdq(:,:) = cmplx_i * cdq(:,:,nkp)
          ! Hermitian matrix eigen-solver
@@ -885,6 +891,7 @@ contains
 !!$         cdq(:,:,nkp)=cmtmp(:,:)
 !!$      enddo
 
+      if(lsitesymmetry)call symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
       ! the orbitals are rotated
       do nkp=1,num_kpts
          ! cmtmp = U(k) . cdq(k)
@@ -1496,6 +1503,8 @@ contains
     !===================================================================  
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
     use w90_io,         only : io_stopwatch,io_error
+    use w90_parameters, only : lsitesymmetry !RS:
+    use w90_sitesymmetry                     !RS:
 
     implicit none
 
@@ -1584,6 +1593,7 @@ contains
     enddo
     cdodq = cdodq / real(num_kpts,dp) * 4.0_dp
 
+    if(lsitesymmetry)call symmetrize_gradient(1,cdodq) !RS:
 
     if (timing_level>1) call io_stopwatch('wann: domega',2)
 

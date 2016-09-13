@@ -366,6 +366,13 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
 
+  logical, public :: lsitesymmetry=.false.                         !RS: site-symmetry
+  integer, public :: nkptirr=9999,nsymmetry=9999                   !RS:
+  real(kind=dp), public :: symmetrize_eps=1d-3                     !RS:
+  integer, allocatable, public :: kptsym(:,:),ir2ik(:),ik2ir(:)    !RS:
+  complex(kind=dp),  allocatable, public :: d_matrix_band(:,:,:,:) !RS:
+  complex(kind=dp),  allocatable, public :: d_matrix_wann(:,:,:,:) !RS:
+  
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
   integer, parameter, public :: num_nnmax=12
@@ -432,6 +439,12 @@ contains
     real(kind=dp) :: cosa(3),rv_temp(3)
 
     call param_in_file
+
+    !%%%%%%%%%%%%%%%%
+    ! Site symmetry
+    !%%%%%%%%%%%%%%%%
+    call param_get_keyword('site_symmetry' ,found,l_value=lsitesymmetry )!YN:
+    call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
@@ -2123,6 +2136,10 @@ contains
 
     if (transport .and. tran_read_ht) goto 401
 
+    if(lsitesymmetry)then                                          !YN:
+      write(stdout,"(a)"      )'   Site-Symmetry-Adapted mode   '  !RS:
+      write(stdout,"(a,g15.7)")'   symmetrize_eps=',symmetrize_eps !YN:
+    endif                                                          !YN:
     ! System
     write(stdout,*)
     write(stdout,'(36x,a6)') '------' 
