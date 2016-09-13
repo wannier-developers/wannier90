@@ -31,7 +31,7 @@ LDOPTS =
 #=======================
 # System LAPACK and BLAS
 # e.g. use
-#   sudo apt-get install libblas-dev libblas3 liblapack-dev liblapack3
+#   sudo apt-get install libblas-dev liblapack-dev
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas

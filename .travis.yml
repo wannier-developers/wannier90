@@ -6,9 +6,7 @@ addons:
     packages:
         - gfortran 
         - libblas-dev 
-        - libblas3 
         - liblapack-dev 
-        - liblapack3
 install:
     - cp config/make.sys.gfort make.sys
     - make -j wannier post
