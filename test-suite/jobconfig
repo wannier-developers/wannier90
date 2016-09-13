@@ -1,0 +1,19 @@
+[example01/]
+program = WANNIER90
+inputs_args = ('gaas.win', '1')
+
+[example02/]
+program = WANNIER90
+inputs_args = ('lead.win', '1')
+
+[example03/]
+program = WANNIER90
+inputs_args = ('silicon.win', '1')
+
+[example04/]
+program = WANNIER90
+inputs_args = ('copper.win', '1')
+
+[categories]
+wannier_all = example*??
+_default_ =  example*??
