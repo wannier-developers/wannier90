@@ -74,22 +74,14 @@ contains
     ! are in parallel. So calls to get_oper are done on all nodes at the moment
     !
     plot_bands=.false.
-    if(index(kpath_task,'bands')>0) then
-       plot_bands=.true.
-    end if
+    if(index(kpath_task,'bands')>0) plot_bands=.true.
     plot_curv=.false.
-    if(index(kpath_task,'curv')>0) then
-       plot_curv=.true.
-    end if
+    if(index(kpath_task,'curv')>0) plot_curv=.true.
     plot_morb=.false.
-    if(index(kpath_task,'morb')>0) then
-       plot_morb=.true.
-    end if
+    if(index(kpath_task,'morb')>0)  plot_morb=.true.
     ! Set up the needed Wannier matrix elements
     call get_HH_R
-    if(plot_curv.or.plot_morb) then
-       call get_AA_R
-    endif
+    if(plot_curv.or.plot_morb) call get_AA_R
     if(plot_morb) then
        call get_BB_R
        call get_CC_R
