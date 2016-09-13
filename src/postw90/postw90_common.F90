@@ -453,7 +453,6 @@ module w90_postw90_common
                    do i=1,num_wann
                       v_matrix(m,j,loop_kpt)=v_matrix(m,j,loop_kpt)&
                            +u_matrix_opt(m,i,loop_kpt)*u_matrix(i,j,loop_kpt)
-                      write(10000, '(3i6,2e24.16)') loop_kpt,m,j,v_matrix(m,j,loop_kpt)
                    enddo
                 enddo
              enddo

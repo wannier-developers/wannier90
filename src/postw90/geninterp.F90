@@ -222,11 +222,6 @@ contains
           call fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
        end if
-       do j=1,num_wann
-       do k=1,num_wann
-        WRITE(10000+i, '(2i6,2e24.16)') k,j, UU(k,j)
-       enddo
-       enddo
     end do
        
     if (geninterp_single_file) then
