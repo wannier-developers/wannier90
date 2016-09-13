@@ -47,7 +47,7 @@ module w90_kslice
     use w90_constants,  only     : dp,twopi,eps8
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
-    use w90_utility, only        : utility_diagonalize
+    use w90_utility, only        : utility_diagonalize,utility_recip_lattice
     use w90_postw90_common, only : fourier_R_to_k
     use w90_parameters, only     : num_wann,kslice,kslice_task,&
                                    kslice_2dkmesh,kslice_corner,kslice_b1,&
@@ -62,15 +62,16 @@ module w90_kslice
     use w90_berry, only          : get_imf_k_list,get_imfgh_k_list
     use w90_constants, only      : bohr
 
-    integer           :: loop_xy,loop_x,loop_y,n,n1,n2,n3,i
+    integer           ::  itot,i1,i2,n,n1,n2,n3,i
     integer           :: zdataunit,coorddataunit,& 
                          bandsunit,scriptunit,dataunit
-    real(kind=dp)     :: bvec(3,3),yvec(3),zvec(3),b1mod,b2mod,ymod,cosb1b2,&
+    real(kind=dp)     :: avec_2d(3,3),avec_3d(3,3),bvec(3,3),yvec(3),zvec(3),&
+                         b1mod,b2mod,ymod,cosb1b2,&
                          areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,&
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
                          spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
-                         zhat(3),vdum(3),db1,db2
+                         zhat(3),vdum(3),db1,db2,rdum
     logical           :: plot_fermi_lines,plot_curv,plot_morb,fermi_lines_color,&
                          heatmap
     character(len=40) :: filename,square
@@ -127,6 +128,13 @@ module w90_kslice
        if(areab1b2<eps8) call io_error(&
             'Error in kslice: Vectors kslice_b1 and kslice_b2 '&
             //'not linearly independent')
+       ! This is the unit vector zvec/|zvec| which completes the triad
+       ! in the 2D case
+       bvec(3,:)=zvec(:)/areab1b2 
+       ! Now that we have bvec(3,:), we can compute the dual vectors
+       ! avec_2d as in the 3D case
+       call utility_recip_lattice(bvec,avec_2d,rdum)
+
        ! Moduli b1,b2,y_vec
        b1mod=sqrt(bvec(1,1)**2+bvec(1,2)**2+bvec(1,3)**2)
        b2mod=sqrt(bvec(2,1)**2+bvec(2,2)**2+bvec(2,3)**2)
@@ -137,7 +145,6 @@ module w90_kslice
        ! Cosine of the angle between b1=x_vec and b2
        cosb1b2=bvec(1,1)*bvec(2,1)+bvec(1,2)*bvec(2,2)+bvec(1,3)*bvec(2,3)
        cosb1b2=cosb1b2/(b1mod*b2mod)       
-!       if (abs(cosb1b2)<eps8 .and. b1mod==b2mod) then
        if (abs(cosb1b2)<eps8 .and. abs(b1mod-b2mod)<eps8) then
          square='True'
        else
@@ -232,15 +239,22 @@ module w90_kslice
        db1=1.0_dp/real(kslice_2dkmesh(1),dp)
        db2=1.0_dp/real(kslice_2dkmesh(2),dp)
 
-       ! Loop over uniform mesh of k-points on the slice
+       ! Loop over uniform mesh of k-points on the slice, including
+       ! all four borders (see berry.F90)
        !
-       do loop_xy=0,product(kslice_2dkmesh)-1
-          loop_x=loop_xy/kslice_2dkmesh(2)
-          loop_y=loop_xy-loop_x*kslice_2dkmesh(2)          
+       do itot=0,(kslice_2dkmesh(1)+1)*(kslice_2dkmesh(2)+1)-1
+          i2=itot/(kslice_2dkmesh(1)+1) ! slow
+          i1=itot-i2*(kslice_2dkmesh(1)+1) !fast
+     ! !
+      !  do loop_xy=0,product(kslice_2dkmesh)-1
+      !     loop_x=loop_xy/kslice_2dkmesh(2)
+      !     loop_y=loop_xy-loop_x*kslice_2dkmesh(2)          
           ! k1 and k2 are the coefficients of the k-point in the basis
           ! (kslice_b1,kslice_b2)
-          k1=loop_x*db1
-          k2=loop_y*db2             
+          ! k1=loop_x*db1
+          ! k2=loop_y*db2             
+          k1=i1/real(kslice_2dkmesh(1),dp)
+          k2=i2/real(kslice_2dkmesh(2),dp)
           kpt=kslice_corner+k1*kslice_b1+k2*kslice_b2
           ! Convert to (kpt_x,kpt_y), the 2D Cartesian coordinates
           ! with x along x_vec=b1 and y along y_vec
@@ -271,8 +285,8 @@ module w90_kslice
                    ! For gnuplot, using 'grid data' format
                     if(.not.heatmap) then
                        write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
-                       if(loop_y==kslice_2dkmesh(2)-1 .and. &
-                            loop_x/=kslice_2dkmesh(1)-1) write (bnddataunit(n),*) ' '
+                       if(i1==kslice_2dkmesh(1) .and. i2/=kslice_2dkmesh(2))&
+                            write (bnddataunit(n),*) ' '
                     endif
                 elseif(kslice_fermi_lines_colour=='spin') then
                    ! vdum = dE/dk projected on the k-slice
@@ -292,7 +306,7 @@ module w90_kslice
              curv(2)=sum(imf_k_list(:,2,1))
              curv(3)=sum(imf_k_list(:,3,1))
              if(berry_curv_unit=='bohr2') curv=curv/bohr**2   
-             ! Print the negative Berry curvature 
+             ! Print minus the Berry curvature 
              write(zdataunit,'(3E16.8)') -curv(:)
           end if
 
@@ -443,10 +457,11 @@ module w90_kslice
           write(scriptunit,'(a)') 'numbands=bands.size/num_pt'
           write(scriptunit,'(a)') 'if square:'
           write(scriptunit,'(a)')&
-               '  bbands=bands.reshape((dimx,dimy,numbands))'
+               '  bbands=bands.reshape((dimy,dimx,numbands))'
           write(scriptunit,'(a)') '  for i in range(numbands):'
-          write(scriptunit,'(a)') '    pl.contour(x_coord,'&
-               //'y_coord,bbands[:,:,i].transpose(),[ef],colors="black")'
+          write(scriptunit,'(a)') '    Z=bbands[:,:,i]'
+          write(scriptunit,'(a)') '    pl.contour(x_coord,y_coord,Z,'&
+               //'[ef],colors="black")'
           write(scriptunit,'(a)') 'else:'
           write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,numbands))'
           write(scriptunit,'(a)') '  bandint=[]'
@@ -608,10 +623,11 @@ module w90_kslice
                 write(scriptunit,'(a)') 'numbands=bands.size/num_pt'
                 write(scriptunit,'(a)') 'if square:'
                 write(scriptunit,'(a)')&
-                     '  bbands=bands.reshape((dimx,dimy,numbands))'
+                     '  bbands=bands.reshape((dimy,dimx,numbands))'
                 write(scriptunit,'(a)') '  for i in range(numbands):'
-                write(scriptunit,'(a)') '    pl.contour(x_coord,y_coord,'&
-                     //'bbands[:,:,i].transpose(),[ef],colors="black")'
+                write(scriptunit,'(a)') '    Z=bbands[:,:,i]'
+                write(scriptunit,'(a)') '    pl.contour(x_coord,y_coord,Z,'&
+                     //'[ef],colors="black")'
                 write(scriptunit,'(a)') 'else:'
                 write(scriptunit,'(a)') '  bbands=bands.reshape((num_pt,'&
                      //'numbands))'
@@ -638,13 +654,13 @@ module w90_kslice
                 write(scriptunit,'(a)') ' '
                 write(scriptunit,'(a)') 'if square: '
                 write(scriptunit,'(a)')&
-                     '  vval=val_log.reshape(dimx,dimy).transpose()'
-                write(scriptunit,'(a)') '  mn=int(np.floor(vval.min()))'
-                write(scriptunit,'(a)') '  mx=int(np.ceil(vval.max()))' 
+                     '  Z=val_log.reshape(dimy,dimx)'
+                write(scriptunit,'(a)') '  mn=int(np.floor(Z.min()))'
+                write(scriptunit,'(a)') '  mx=int(np.ceil(Z.max()))' 
                 write(scriptunit,'(a)') '  ticks=range(mn,mx+1)'
-                write(scriptunit,'(a)') "  pl.contourf(x_coord,y_coord,"&
-                     //"vval,ticks,origin='lower')"
-                write(scriptunit,'(a)') '  #pl.imshow(vval,origin="lower",'&
+                write(scriptunit,'(a)') "  pl.contourf(x_coord,y_coord,Z,"&
+                     //"ticks,origin='lower')"
+                write(scriptunit,'(a)') '  #pl.imshow(Z,origin="lower",'&
                      //'extent=(min(x_coord),max(x_coord),min(y_coord),'&
                      //'max(y_coord)))'
                 write(scriptunit,'(a)') 'else: '
