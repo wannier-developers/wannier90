@@ -630,7 +630,7 @@ return
     enddo
     ! NKP
 
-    if(lsitesymmetry)call symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
+    if (lsitesymmetry) call symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated 

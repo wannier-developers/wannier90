@@ -1,5 +1,6 @@
 module w90_sitesymmetry
   use w90_constants
+  use w90_io, only: io_error,stdout
   implicit none
 contains
 subroutine slim_d_matrix_band(lwindow_in)
@@ -8,7 +9,7 @@ subroutine slim_d_matrix_band(lwindow_in)
   logical,optional,intent(in) :: lwindow_in(num_bands,num_kpts)
   integer :: ik,i,j,nb,ir
   integer :: nindx(num_bands)
-  write(*,"(a)") '-- slim_d_matrix_band --'
+  write(stdout,"(a)") '-- slim_d_matrix_band --'
   do ir=1,nkptirr; ik=ir2ik(ir)
     j=0
     do i=1,num_bands
@@ -32,8 +33,8 @@ end subroutine slim_d_matrix_band
 subroutine replace_d_matrix_band()
   use w90_parameters
   implicit none
-  write(*,"(a)") '-- replace_d_matrix_band --'
-  write(*,"(a)") 'd_matrix_band is replaced by d_matrix_wann'
+  write(stdout,"(a)") '-- replace_d_matrix_band --'
+  write(stdout,"(a)") 'd_matrix_band is replaced by d_matrix_wann'
   deallocate(d_matrix_band)
   allocate(d_matrix_band(num_wann,num_wann,nsymmetry,nkptirr))
   d_matrix_band=d_matrix_wann
@@ -60,9 +61,9 @@ subroutine symmetrize_u_matrix(ndim,umat,lwindow_in)
   complex(kind=dp) :: cmat(ndim,num_wann)
   integer :: i,j,n
 
-  if (present(lwindow_in).and.(ndim.ne.num_bands)) stop 'ndim!=num_bands'
+  if (present(lwindow_in).and.(ndim.ne.num_bands)) call io_error('ndim!=num_bands')
   if (.not.present(lwindow_in)) then
-    if (ndim.ne.num_wann) stop 'ndim!=num_wann'
+    if (ndim.ne.num_wann) call io_error('ndim!=num_wann')
   endif
   ldone=.false.
   do ir=1,nkptirr; ik=ir2ik(ir)
@@ -91,7 +92,7 @@ subroutine symmetrize_u_matrix(ndim,umat,lwindow_in)
         d_matrix_wann(:,:,isym,ir),num_wann,cmplx_0,umat(:,:,irk),ndim)
     enddo
   enddo
-  if (any(.not.ldone)) stop 'error in symmetrize_u_matrix'
+  if (any(.not.ldone)) call io_error('error in symmetrize_u_matrix')
 end subroutine symmetrize_u_matrix
 
 subroutine symmetrize_gradient(imode,grad)
@@ -210,7 +211,7 @@ subroutine symmetrize_rotation(urot)
 !      call utility_zgemm(urot(:,:,irk),cmat1,'N',cmat2,'N',num_wann)
     enddo
   enddo
-  if (any(.not.ldone)) stop 'error in symmetrize_rotation'
+  if (any(.not.ldone)) call io_error('error in symmetrize_rotation')
 end subroutine symmetrize_rotation
 
 ! Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)
@@ -285,12 +286,12 @@ subroutine symmetrize_ukirr(ir,ndim,umat,n)
   double complex :: cmat(ndim,num_wann)
   double complex :: cmat2(num_wann,num_wann)
 
-!  write(*,"(a)") '-- symmetrize_ukirr --'
+!  write(stdout,"(a)") '-- symmetrize_ukirr --'
   if (present(n)) then
-    if (ndim.ne.num_bands) stop 'ndim!=num_bands'
+    if (ndim.ne.num_bands) call io_error('ndim!=num_bands')
     ntmp=n
   else
-    if (ndim.ne.num_wann) stop 'ndim!=num_wann'
+    if (ndim.ne.num_wann) call io_error('ndim!=num_wann')
     ntmp=ndim
   endif
 
@@ -308,7 +309,7 @@ subroutine symmetrize_ukirr(ir,ndim,umat,n)
     enddo
     do isym=1,nsymmetry
       if (kptsym(isym,ir).ne.ir2ik(ir)) cycle
-!umat(ndim,num_wann)
+      ! size of umat: umat(ndim,num_wann)
       ! cmat = d^{+}(R,k) U(k) D(R,k)
 
       ! cmat_sub = U(k) D(R,k)
@@ -327,14 +328,13 @@ subroutine symmetrize_ukirr(ir,ndim,umat,n)
         matmul(conjg(transpose(umat(:ntmp,:))),cmat(:ntmp,:))
     enddo ! isym
     diff=sum(abs(cmat2))
-!    write(*,"(a,2i5,E24.12)") 'ir,ngk,diff=',ir,ngk,diff
     if (diff.lt.symmetrize_eps) exit
     if (iter.eq.niter) then
-      write(*,"(a)") 'Error in symmetrize_u: not converged'
-      write(*,"(a)") 'Either eps is too small or specified irreps is not'
-      write(*,"(a)") '  compatible with the bands'
-      write(*,"(a,2e20.10)") 'diff,eps=',diff,symmetrize_eps
-      stop 'u not converged'
+      write(stdout,"(a)") 'Error in symmetrize_u: not converged'
+      write(stdout,"(a)") 'Either eps is too small or specified irreps is not'
+      write(stdout,"(a)") '  compatible with the bands'
+      write(stdout,"(a,2e20.10)") 'diff,eps=',diff,symmetrize_eps
+      call io_error('u not converged')
     endif
     usum=usum/ngk
     call orthogonalize_u(ndim,num_wann,usum,ntmp)
@@ -357,7 +357,7 @@ subroutine orthogonalize_u(ndim,m,u,n)
 
 
 
-  if (n.lt.m) stop 'n<m'
+  if (n.lt.m) call io_error('n<m')
   allocate(smat(n,m))
   allocate(evecl(n,n),evecr(m,m))
   smat(1:n,1:m)=u(1:n,1:m)
@@ -372,7 +372,7 @@ subroutine orthogonalize_u(ndim,m,u,n)
   call ZGESVD ('A', 'A', n, m, smat, n, &
     eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
   if (info.ne.0) then  
-    stop ' ERROR: IN ZGESVD IN orthogonalize_u'  
+    call io_error(' ERROR: IN ZGESVD IN orthogonalize_u')  
   endif
   deallocate(smat,eig,WORK,RWORK)
   ! u_matrix is the initial guess for the unitary rotation of the 
@@ -386,8 +386,6 @@ subroutine orthogonalize_u(ndim,m,u,n)
   enddo
   enddo
   deallocate(evecl,evecr)
-!  smat=matmul(conjg(transpose(u)),u)
-!  write(*,*) 'smat(new)=',smat
 end subroutine orthogonalize_u
 
 
@@ -441,20 +439,19 @@ subroutine dis_extract_symmetry(ik,n,zmat,lambda,umat)
         umatnew(:,i)=umat(:,i,ik)
         cycle
       endif
-!      call ZHPEVX ('V','A','U',2,HP,0.0_dp, 0.0_dp, 0, 0, &
       call ZHPGVX (1,'V','A','U',2,HP,SP,0.0_dp, 0.0_dp, 0, 0, &
         -1.0_dp, m, W, V,2,CWORK,RWORK,IWORK,IFAIL,INFO)
       if (INFO.ne.0) then
-        write(*,*) 'error in dis_extract_symmetry: INFO=',INFO
+        write(stdout,*) 'error in dis_extract_symmetry: INFO=',INFO
         if (INFO.gt.0) then
           if (INFO.le.2) then
-            write(*,*) INFO,' eigenvectors failed to converge'
-            write(*,*) IFAIL(1:INFO)
+            write(stdout,*) INFO,' eigenvectors failed to converge'
+            write(stdout,*) IFAIL(1:INFO)
           else
-            write(*,*) ' S is not positive definite'
-            write(*,*) 'sp3=',sp3
+            write(stdout,*) ' S is not positive definite'
+            write(stdout,*) 'sp3=',sp3
           endif
-          stop 'error in dis_extract_symmetry'
+          call io_error('error in dis_extract_symmetry')
         endif
       endif
       ! choose the larger eigenstate

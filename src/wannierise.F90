@@ -279,7 +279,7 @@ contains
 
        ! calculate search direction (cdq)
        call internal_search_direction()
-       if(lsitesymmetry)call symmetrize_gradient(2,cdq) !RS:
+       if (lsitesymmetry) call symmetrize_gradient(2,cdq) !RS:
 
        ! save search direction 
        cdqkeep(:,:,:) = cdq(:,:,:)
@@ -841,7 +841,9 @@ contains
       if (timing_level>1) call io_stopwatch('wann: main: u_and_m',1)
 
       do nkp=1,num_kpts
-         if(lsitesymmetry)then; if(ir2ik(ik2ir(nkp)).ne.nkp)cycle; end if !YN: RS:
+         if (lsitesymmetry) then                !YN: RS:
+            if (ir2ik(ik2ir(nkp)).ne.nkp) cycle !YN: RS:
+         end if                                 !YN: RS:
          ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
          tmp_cdq(:,:) = cmplx_i * cdq(:,:,nkp)
          ! Hermitian matrix eigen-solver
@@ -891,7 +893,7 @@ contains
 !!$         cdq(:,:,nkp)=cmtmp(:,:)
 !!$      enddo
 
-      if(lsitesymmetry)call symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+      if (lsitesymmetry) call symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
       ! the orbitals are rotated
       do nkp=1,num_kpts
          ! cmtmp = U(k) . cdq(k)
@@ -1593,7 +1595,7 @@ contains
     enddo
     cdodq = cdodq / real(num_kpts,dp) * 4.0_dp
 
-    if(lsitesymmetry)call symmetrize_gradient(1,cdodq) !RS:
+    if (lsitesymmetry) call symmetrize_gradient(1,cdodq) !RS:
 
     if (timing_level>1) call io_stopwatch('wann: domega',2)
 

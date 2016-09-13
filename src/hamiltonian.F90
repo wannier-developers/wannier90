@@ -218,26 +218,31 @@ contains
        ! but we choose u_matrix_opt such that the Hamiltonian is
        ! diagonal at each kpoint. (I guess we should check it here)
        
-       if(.not.lsitesymmetry)then !YN:
-       do loop_kpt=1,num_kpts
-          do j=1,num_wann
-             do m=1,ndimwin(loop_kpt)
-                eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
-                     real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+       if (.not.lsitesymmetry) then                                                                             !YN:
+          do loop_kpt=1,num_kpts
+             do j=1,num_wann
+                do m=1,ndimwin(loop_kpt)
+                   eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
+                        real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+                enddo
              enddo
           enddo
-       enddo
-       else !YN:                !RS: u_matrix_opt is not the eigenvectors of the Hamiltonian any more, so we
-         do loop_kpt=1,num_kpts !RS: have to calculate ham_k in the following way
-           utmp(1:ndimwin(loop_kpt),:)=matmul(u_matrix_opt(1:ndimwin(loop_kpt),:,loop_kpt),u_matrix(:,:,loop_kpt)) !RS:
-           do j=1,num_wann; do i=1,j                                                                               !RS:
-             do m=1,ndimwin(loop_kpt)                                                                              !RS:
-               ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval_opt(m,loop_kpt)*conjg(utmp(m,i))*utmp(m,j)           !RS:
-             enddo                                                                                                 !RS:
-             if(i.lt.j)ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))                                              !RS:
-           enddo; enddo                                                                                            !RS:
-         enddo                                                                                                     !RS:
-       endif !YN:
+       else                                                                                                     !YN: 
+          ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                                   !RS:
+          ! so we have to calculate ham_k in the following way                                                  !RS:
+          do loop_kpt=1,num_kpts                                                                                !RS:
+             utmp(1:ndimwin(loop_kpt),:)= &                                                                     !RS:
+                 matmul(u_matrix_opt(1:ndimwin(loop_kpt),:,loop_kpt),u_matrix(:,:,loop_kpt))                    !RS:
+             do j=1,num_wann                                                                                    !RS: 
+                do i=1,j                                                                                        !RS:
+                   do m=1,ndimwin(loop_kpt)                                                                     !RS:
+                      ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval_opt(m,loop_kpt)*conjg(utmp(m,i))*utmp(m,j) !RS:
+                   enddo                                                                                        !RS:
+                   if (i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))                                   !RS:
+                enddo                                                                                           !RS:
+             enddo                                                                                              !RS:
+          enddo                                                                                                 !RS:
+       endif                                                                                                    !YN:
 
     else
        eigval2(1:num_wann,:)=eigval(1:num_wann,:)
@@ -251,19 +256,19 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    if(.not.lsitesymmetry.or..not.have_disentangled)then !YN:
-    do loop_kpt=1,num_kpts
-       do j=1,num_wann
-          do i=1,j
-             do m=1,num_wann
-                ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
-                     conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+    if (.not.lsitesymmetry.or..not.have_disentangled) then !YN:
+       do loop_kpt=1,num_kpts
+          do j=1,num_wann
+             do i=1,j
+                do m=1,num_wann
+                   ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
+                        conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+                enddo
+                if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
              enddo
-             if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
           enddo
        enddo
-    enddo
-    endif !YN:
+    endif                                                  !YN:
 
     have_ham_k = .true.
 

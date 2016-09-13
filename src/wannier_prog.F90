@@ -150,24 +150,24 @@ program wannier
      stop
   endif
 
-  if(lsitesymmetry)then
-    iu=io_file_unit(); open(unit=iu,file=trim(seedname)//".dmb",form='formatted',status='old',action='read')
-    read(iu,*)
-    read(iu,*)ibnum,nsymmetry,nkptirr,iknum                      ; if(ibnum.ne.num_bands)call io_error("Error for ibnum ")
-                                                                   if(iknum.ne.num_kpts )call io_error("Error for iknum ")
-    allocate(ik2ir (iknum)                                       ,stat=ierr); if(ierr/=0)call io_error('Error for ik2ir ')
-    allocate(ir2ik (nkptirr)                                     ,stat=ierr); if(ierr/=0)call io_error('Error for ir2ik ')
-    allocate(kptsym(nsymmetry,nkptirr)                           ,stat=ierr); if(ierr/=0)call io_error('Error for kptsym')
-    allocate(d_matrix_band(num_bands,num_bands,nsymmetry,nkptirr),stat=ierr); if(ierr/=0)call io_error('Error for dmtbnd')
-    allocate(d_matrix_wann(num_wann ,num_wann ,nsymmetry,nkptirr),stat=ierr); if(ierr/=0)call io_error('Error for dmtwan')
-    read(iu,*)ik2ir
-    read(iu,*)ir2ik
-    read(iu,*)kptsym
-    read(iu,*)d_matrix_wann
-    read(iu,*)d_matrix_band
-    close(iu)
-!   stop!!!TEMP!!!
-  endif
+  if (lsitesymmetry) then                                                                                                  !YN:
+     iu=io_file_unit()                                                                                                     !YN:
+     open(unit=iu,file=trim(seedname)//".dmb",form='formatted',status='old',action='read')                                 !YN:
+     read(iu,*)                                                                                                            !YN:
+     read(iu,*)ibnum,nsymmetry,nkptirr,iknum                      ; if(ibnum.ne.num_bands)call io_error("Error for ibnum ")!YN:
+                                                                    if(iknum.ne.num_kpts )call io_error("Error for iknum ")!YN:
+     allocate(ik2ir (iknum)                                       ,stat=ierr); if(ierr/=0)call io_error('Error for ik2ir ')!YN:
+     allocate(ir2ik (nkptirr)                                     ,stat=ierr); if(ierr/=0)call io_error('Error for ir2ik ')!YN:
+     allocate(kptsym(nsymmetry,nkptirr)                           ,stat=ierr); if(ierr/=0)call io_error('Error for kptsym')!YN:
+     allocate(d_matrix_band(num_bands,num_bands,nsymmetry,nkptirr),stat=ierr); if(ierr/=0)call io_error('Error for dmtbnd')!YN:
+     allocate(d_matrix_wann(num_wann ,num_wann ,nsymmetry,nkptirr),stat=ierr); if(ierr/=0)call io_error('Error for dmtwan')!YN:
+     read(iu,*)ik2ir                                                                                                       !YN:
+     read(iu,*)ir2ik                                                                                                       !YN:
+     read(iu,*)kptsym                                                                                                      !YN:
+     read(iu,*)d_matrix_wann                                                                                               !YN:
+     read(iu,*)d_matrix_band                                                                                               !YN:
+     close(iu)                                                                                                             !YN:
+  endif                                                                                                                    !YN:
 
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
