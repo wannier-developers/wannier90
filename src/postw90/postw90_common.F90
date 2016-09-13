@@ -760,7 +760,8 @@ module w90_postw90_common
   !====================================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann
+    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, use_ws_distance, ws_translate_dist
 
     implicit none
 
@@ -771,31 +772,63 @@ module w90_postw90_common
     complex(kind=dp), optional, dimension(:,:,:), intent(out)   :: OO_true
     complex(kind=dp), optional, dimension(:,:,:), intent(out)   :: OO_pseudo
 
-    integer          :: ir
+    integer          :: ir, i,j,ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
+    if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
     if(present(OO_true)) OO_true=cmplx_0
     if(present(OO_pseudo)) OO_pseudo=cmplx_0
     do ir=1,nrpts
-       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
-       if(present(OO_true)) then
-          OO_true(:,:,1)=OO_true(:,:,1)+phase_fac*OO_R(:,:,ir,1)
-          OO_true(:,:,2)=OO_true(:,:,2)+phase_fac*OO_R(:,:,ir,2)
-          OO_true(:,:,3)=OO_true(:,:,3)+phase_fac*OO_R(:,:,ir,3)
-       endif
-       if(present(OO_pseudo)) then
-          OO_pseudo(:,:,1)=OO_pseudo(:,:,1)&
-                          +cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,3)&
-                          -cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,2)
-          OO_pseudo(:,:,2)=OO_pseudo(:,:,2)&
-                          +cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,1)&
-                          -cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,3)
-          OO_pseudo(:,:,3)=OO_pseudo(:,:,3)&
-                          +cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,2)&
-                          -cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,1)
-       endif
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+      if(use_ws_distance)then
+        do j=1,num_wann
+        do i=1,num_wann
+            do ideg = 1,wdist_ndeg(j,i,ir)
+              rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
+              phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+              rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+              phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+              if(present(OO_true)) then
+                  OO_true(i,j,1)=OO_true(i,j,1)+phase_fac*OO_R(i,j,ir,1)
+                  OO_true(i,j,2)=OO_true(i,j,2)+phase_fac*OO_R(i,j,ir,2)
+                  OO_true(i,j,3)=OO_true(i,j,3)+phase_fac*OO_R(i,j,ir,3)
+              endif
+              if(present(OO_pseudo)) then
+                  OO_pseudo(i,j,1)=OO_pseudo(i,j,1)&
+                                  +cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir,3)&
+                                  -cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir,2)
+                  OO_pseudo(i,j,2)=OO_pseudo(i,j,2)&
+                                  +cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir,1)&
+                                  -cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir,3)
+                  OO_pseudo(i,j,3)=OO_pseudo(i,j,3)&
+                                  +cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir,2)&
+                                  -cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir,1)
+              endif
+            enddo
+        enddo
+        enddo 
+      else
+! [lp] Original code, without IJ-dependent shift:
+        rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+        phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+        if(present(OO_true)) then
+            OO_true(:,:,1)=OO_true(:,:,1)+phase_fac*OO_R(:,:,ir,1)
+            OO_true(:,:,2)=OO_true(:,:,2)+phase_fac*OO_R(:,:,ir,2)
+            OO_true(:,:,3)=OO_true(:,:,3)+phase_fac*OO_R(:,:,ir,3)
+        endif
+        if(present(OO_pseudo)) then
+            OO_pseudo(:,:,1)=OO_pseudo(:,:,1)&
+                            +cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,3)&
+                            -cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,2)
+            OO_pseudo(:,:,2)=OO_pseudo(:,:,2)&
+                            +cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,1)&
+                            -cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,3)
+            OO_pseudo(:,:,3)=OO_pseudo(:,:,3)&
+                            +cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,2)&
+                            -cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,1)
+        endif
+      endif
     enddo
 
   end subroutine fourier_R_to_k_vec
