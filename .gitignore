@@ -3,3 +3,7 @@ postw90.x
 .DS_Store
 make.sys
 w90chk2chk.x
+tests/test*/wannier.wout
+tests/test*/wannier.chk
+tests/test*/wannier_*
+tests/wantest.log

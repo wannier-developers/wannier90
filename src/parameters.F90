@@ -1745,7 +1745,7 @@ contains
     call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
     ! check that postproc_setup is true
     if (explicit_nnkpts .and. (.not. postproc_setup)) &
-        call io_error('Input parameters num_nn and nnkpts_block are allowed only if postproc_setup = .true.')
+        call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
     ! assign the values in nnkpts_block to nnlist and nncell
     if (explicit_nnkpts) then
         ! this keeps track of how many neighbours have been seen for each k-point
@@ -1753,6 +1753,7 @@ contains
         if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
         nnkpts_idx = 1
         ! allocating "global" nnlist & nncell
+        ! These are deallocated in kmesh_dealloc
         allocate(nnlist(num_kpts, nntot), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
         allocate(nncell(3, num_kpts, nntot), stat=ierr)
