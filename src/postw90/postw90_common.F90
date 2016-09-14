@@ -645,7 +645,8 @@ module w90_postw90_common
          do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
                rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
-               phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+               !phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
                if(alpha==0) then
                   OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
                elseif(alpha==1.or.alpha==2.or.alpha==3) then
@@ -659,7 +660,7 @@ module w90_postw90_common
       else
    ! [lp] Original code, without IJ-dependent shift:
          rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-         phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+         phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
          if(alpha==0) then
             OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
          elseif(alpha==1.or.alpha==2.or.alpha==3) then
@@ -721,7 +722,7 @@ module w90_postw90_common
         do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
               rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
-              phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
               if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
               if(present(OO_dx)) OO_dx(i,j)=OO_dx(i,j)+&
                       cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir)
@@ -735,7 +736,7 @@ module w90_postw90_common
       else
 ! [lp] Original code, without IJ-dependent shift:
         rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-        phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+        phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
         if(present(OO)) OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
         if(present(OO_dx)) OO_dx(:,:)=OO_dx(:,:)+&
                 cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir)
@@ -786,9 +787,9 @@ module w90_postw90_common
         do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
               rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
-              phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
               rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-              phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
               if(present(OO_true)) then
                   OO_true(i,j,1)=OO_true(i,j,1)+phase_fac*OO_R(i,j,ir,1)
                   OO_true(i,j,2)=OO_true(i,j,2)+phase_fac*OO_R(i,j,ir,2)
@@ -811,7 +812,7 @@ module w90_postw90_common
       else
 ! [lp] Original code, without IJ-dependent shift:
         rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-        phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
+        phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
         if(present(OO_true)) then
             OO_true(:,:,1)=OO_true(:,:,1)+phase_fac*OO_R(:,:,ir,1)
             OO_true(:,:,2)=OO_true(:,:,2)+phase_fac*OO_R(:,:,ir,2)
