@@ -66,7 +66,7 @@ module w90_kslice
     integer           :: zdataunit,coorddataunit,& 
                          bandsunit,scriptunit,dataunit
     real(kind=dp)     :: avec_2d(3,3),avec_3d(3,3),bvec(3,3),yvec(3),zvec(3),&
-                         b1mod,b2mod,ymod,cosb1b2,&
+                         b1mod,b2mod,ymod,cosb1b2,kcorner_cart(3),&
                          areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,&
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
@@ -245,17 +245,18 @@ module w90_kslice
        do itot=0,(kslice_2dkmesh(1)+1)*(kslice_2dkmesh(2)+1)-1
           i2=itot/(kslice_2dkmesh(1)+1) ! slow
           i1=itot-i2*(kslice_2dkmesh(1)+1) !fast
-     ! !
-      !  do loop_xy=0,product(kslice_2dkmesh)-1
-      !     loop_x=loop_xy/kslice_2dkmesh(2)
-      !     loop_y=loop_xy-loop_x*kslice_2dkmesh(2)          
           ! k1 and k2 are the coefficients of the k-point in the basis
           ! (kslice_b1,kslice_b2)
-          ! k1=loop_x*db1
-          ! k2=loop_y*db2             
           k1=i1/real(kslice_2dkmesh(1),dp)
           k2=i2/real(kslice_2dkmesh(2),dp)
           kpt=kslice_corner+k1*kslice_b1+k2*kslice_b2
+          ! Cartesian coordinates of kslice_corner
+          kcorner_cart(:)=matmul(kslice_corner(:),recip_lattice(:,:))
+          ! Add to (k1,k2) the projection of kslice_corner on the
+          ! (kslice_b1,kslice_b2) plane, expressed as a linear
+          ! combination of kslice_b1 and kslice_b2
+          k1=k1+dot_product(kcorner_cart,avec_2d(1,:))/twopi
+          k2=k2+dot_product(kcorner_cart,avec_2d(2,:))/twopi
           ! Convert to (kpt_x,kpt_y), the 2D Cartesian coordinates
           ! with x along x_vec=b1 and y along y_vec
           kpt_x=k1*b1mod+k2*b2mod*cosb1b2
