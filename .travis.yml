@@ -8,9 +8,6 @@ addons:
         - libblas-dev 
         - liblapack-dev 
 install:
-# Install QE first, v.5.4.0 currently
-    - wget http://qe-forge.org/gf/download/frsrelease/211/968/espresso-5.4.0.tar.gz
-    - tar xzf espresso-5.4.0.tar.gz && cd espresso-5.4.0 && ./configure && make pw pp
 # Install Wannier
     - cp config/make.sys.gfort.travisci make.sys
     - make -j default
