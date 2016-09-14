@@ -1,0 +1,5 @@
+atom_centered_As_sp : one s-like and three p-like Wannier functions centered at As 
+atom_centered_Ga_p  : three p-like Wannier functions centered at Ga 
+atom_centered_Ga_s  : one s-like Wannier function centered at Ga 
+atom_centered_Ga_sp : one s-like and three p-like Wannier functions centered at Ga 
+bond_centered       : Usual four bond-centerd Wannier functions in symmetry-adapted mode 

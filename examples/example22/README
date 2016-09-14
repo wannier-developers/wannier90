@@ -1,0 +1,8 @@
+s_at_0.00 : s-like Wannier function centerd at (0,0,0)       + atomic-centered d-like Wannier functions  
+s_at_0.25 : s-like Wannier function centerd at (1/4,1/4,1/4) + atomic-centered d-like Wannier functions  
+s_at_0.50 : s-like Wannier function centerd at (1/2,1/2,1/2) + atomic-centered d-like Wannier functions 
+
+In s_at_0.25, we use an additional flag "read_sym = .true." to customize the symmetry operations to be used.  
+We eclude the inversion symmetry to create s-like Wannier function centerd at (1/4,1/4,1/4). 
+Information on symmetry operations without inversion symmetry is taken from GaAs calculation. 
+See more detailed discussion in R. Sakama, Phys. Rev. B 87, 235109 (2013). 
