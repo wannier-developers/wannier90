@@ -6,6 +6,7 @@
 # File:    run_test.py
 
 import os
+import re
 import subprocess
 
 import numpy as np
@@ -20,15 +21,43 @@ def clean(path):
         except OSError:
             pass
 
-#~ def find_block(tag):
+def get_block(lines, tag):
+    start, end = None, None
+    for i, l in enumerate(lines):
+        if re.match('[\s]*begin[\s]+' + tag + '[\s]*', l):
+            start = i
+        elif re.match('[\s]*end[\s]+' + tag + '[\s]*', l):
+            end = i
+    if start is None or end is None:
+        return []
+    else:
+        return lines[start + 1:end]
 
-
-#~ def check(path):
+def parse_block(lines, **kwargs):
+    return [list(np.fromstring(l, sep=' ', **kwargs)) for l in lines]
     
+def compare_sorted(l1, l2):
+    assert list(sorted(l1)) == list(sorted(l2))
+    
+def check(path):
+    #
+    with open(os.path.join(path, 'wannier.win'), 'r') as f:
+        win = f.readlines()
+    with open(os.path.join(path, 'wannier.nnkp'), 'r') as f:
+        out = f.readlines()
+        
+    in_nnkpts = parse_block(get_block(win, 'nnkpts'), dtype=int)
+    out_nnkpts = parse_block(get_block(out, 'nnkpts')[1:], dtype=int) # skip nntot
+    compare_sorted(in_nnkpts, out_nnkpts)
+
+    in_kpts = parse_block(get_block(win, 'kpoints'))
+    out_kpts = parse_block(get_block(out, 'kpoints')[1:])
+    assert np.isclose(np.array(in_kpts), np.array(out_kpts)).all()
 
 def run_test(path):
     clean(path)
     subprocess.call([W90, '-pp'], cwd=path)
+    check(path)
     
 
 if __name__ == '__main__':
