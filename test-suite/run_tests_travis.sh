@@ -1,5 +1,9 @@
 #!/bin/bash
 
+## Set here, if needed, the location of the executables
+THISDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ESPRESSO_ROOT="${THISDIR}/external-codes/espresso/"
+
 THEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$THEDIR"
 
