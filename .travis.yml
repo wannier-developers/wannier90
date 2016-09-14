@@ -8,7 +8,8 @@ addons:
         - libblas-dev 
         - liblapack-dev 
 env:
-   - W90TESTSWITHINTERFACE=true
+## Uncomment the following line if you want to run also the interface tests
+#   - W90TESTSWITHINTERFACE=true
    - W90TESTSWITHINTERFACE=false
 install:
 # Possibly install QE and other interface code
