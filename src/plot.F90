@@ -262,7 +262,7 @@ contains
                   do ideg = 1,wdist_ndeg(j,i,irpt)
                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
                      fac=exp(cmplx_i*rdotk)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
-                     ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+                     ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r_cut(i,j,irpt)
                   enddo
                 enddo
                 enddo
