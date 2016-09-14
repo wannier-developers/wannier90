@@ -30,6 +30,9 @@ inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('
 program = WANNIER90
 inputs_args = ('wannier.win', '1')
 
+[test2/]
+program = WANNIER90
+inputs_args = ('wannier.win', '1')
 
 
 [categories]
