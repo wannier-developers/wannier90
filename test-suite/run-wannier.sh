@@ -26,7 +26,7 @@ if [[ "$1" == "1" ]]
 then
   echo "Running Wannier90 ..."
   export TMP=$2
-  export OUTPUT="${TMP::-2}out"
+  export OUTPUT="${TMP%??}out"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4
   cp $OUTPUT $3
@@ -56,7 +56,7 @@ elif [[ "$1" == "4" ]]
 then
   echo "Running PP wannier ..."
   export TMP=$2
-  export OUTPUT="${TMP::-2}out"
+  export OUTPUT="${TMP%??}out"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4
   cp $OUTPUT $3

@@ -1,0 +1,23 @@
+&control
+    calculation='scf'
+    restart_mode='from_scratch',
+    pseudo_dir = '../../pseudo/',
+    outdir='./'
+    prefix='cu'
+ /
+ &system
+    ibrav = 2, celldm(1) =6.822, nat= 1, ntyp= 1,
+    ecutwfc = 30.0
+    occupations='smearing', smearing='cold', degauss=0.02
+ /
+ &electrons
+    diagonalization='cg'
+    conv_thr = 1.0e-9
+    mixing_beta = 0.7
+ /
+ATOMIC_SPECIES
+ Cu 63.546 Cu.pz-n-van_ak.UPF 
+ATOMIC_POSITIONS
+ Cu 0.0 0.0 0.0
+K_POINTS (automatic)
+16 16 16  0 0 0
