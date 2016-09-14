@@ -156,7 +156,7 @@ dist:
 		./CHANGE.log \
 	)
 
-test:   default
+test: 
 	(cd $(ROOTDIR)/test-suite && $(MAKE) run-tests )
 
 dist-lite:
