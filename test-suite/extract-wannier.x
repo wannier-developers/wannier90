@@ -17,6 +17,7 @@ fname=$1
 args=$(echo $fname | awk -F= '{print $NF}')
 
 if [ "$fname" == "" ]
+then
     echo "No file name passed, stopping..." >&2
     exit 1
 fi

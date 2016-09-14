@@ -7,12 +7,12 @@ cd "$THEDIR"
 ## W90TESTSWITHINTERFACE is set to true
 if [ "$W90TESTSWITHINTERFACE" == "true" ]
 then
-    # Only wannier tests
-    make run-tests
-elif [ "$W90TESTSWITHINTERFACE" == "false" ]
-then
     # Only tests involving interfaces
     make run-tests-interface
+elif [ "$W90TESTSWITHINTERFACE" == "false" ]
+then
+    # Only wannier tests
+    make run-tests
 else
     # By default: run both
     make run-tests-all
