@@ -1,7 +1,7 @@
 #  Should be no need to change below this line
 #
 
-include ../../make.sys
+include ../../make.inc
 
 OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 	 kmesh.o disentangle.o wannierise.o plot.o transport.o
@@ -56,7 +56,7 @@ ifndef MPIF90
 
 	$(info  ) \
 	$(info ********************* STOP **********************) \
-	$(info *  COMMS=mpi but MPIF90 is not set in make.sys  *) \
+	$(info *  COMMS=mpi but MPIF90 is not set in make.inc  *) \
 	$(info *  Set MPIF90 to your parallel fortran compiler *) \
 	$(info *  On many systems MPIF90=mpif90 will work      *) \
 	$(info ********************* STOP **********************) \
