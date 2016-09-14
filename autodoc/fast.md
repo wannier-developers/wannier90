@@ -1,5 +1,5 @@
 src_dir:          ../src
-output_dir:       ./build
+output_dir:       ./build_fast
 media_dir:        ./media
 favicon:          ./media/favicon16x16.png
 project:          Wannier90
@@ -11,9 +11,9 @@ summary:          Wannier90 is a code that calculates maximally-localised Wannie
 display:          public
                   protected
                   private
-source:           true
-graph:            true
-search:           true
+source:           false
+graph:            false
+search:           false
 license:          by-nc
 
 
