@@ -33,9 +33,9 @@ eigenval=`sed -n '/   k =/{n;n;p;}' $fname | awk '{print $1}; {print $2}; {print
 wfcenter=`sed -n '/Final State/{n;p;}' $fname | awk '{print $7; {print $8}; {print $9}}'`
 spread=`sed -n '/Final State/{n;p;}' $fname | awk '{print $11}'`
 
-omegaI=`grep "  Omega Total " $fname | awk '{print $6}'`
-omegaD=`grep "  Omega Total " $fname | awk '{print $5}'`
-omegaOD=`grep "  Omega Total " $fname | awk '{print $4}'`
+omegaI=`grep "  Omega I " $fname | awk '{print $6}'`
+omegaD=`grep "  Omega D " $fname | awk '{print $5}'`
+omegaOD=`grep "  Omega OD " $fname | awk '{print $4}'`
 omegaT=`grep "  Omega Total " $fname | awk '{print $7}'`
 
 # Wannier -pp
@@ -54,6 +54,7 @@ nnkpt_kpt=`sed -n '/begin kpoints/{n;n;p;n;p;n;p;n;p;n;p;}'\
 nnkpt=`sed -n '/begin nnkpts/{n;n;p;n;p;n;p;n;p;n;p;}'\
  $fname | awk '{print $1}; {print $2}; {print $3}; {print $4}; {print $5};'`
 
+wrmsg=`grep -A1 'Exiting.......'  $(fname) | wc -l`
 
 if test "$e1" != ""; then
         echo e1
@@ -160,3 +161,7 @@ if test "$nnkpt" != ""; then
         for x in $nnkpt; do echo $x; done
 fi
 
+if test "$wrmsg" != ""; then
+        echo wrmsg
+        echo $wrmsg
+fi

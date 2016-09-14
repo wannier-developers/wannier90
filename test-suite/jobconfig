@@ -46,6 +46,9 @@ inputs_args = ('wannier.win', '5')
 program = WANNIER90
 inputs_args = ('wannier.win', '5')
 
+[test_6/]
+program = WANNIER90
+inputs_args = ('wannier.win', '6')
 
 [categories]
 wannier_all = example*??  test_*

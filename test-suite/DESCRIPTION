@@ -14,32 +14,16 @@ pw_example05: Diamond, valence states
 
 pw_example06: Copper, states around the Fermi level; Fermi surface
 
-example07: Silane, valence states
+pw_example07: Silane, valence states
 
-example08: Iron, states around the Fermi level
+test_basic1 : Basic wannier
 
-example09: Barium Titanate
+test_basic2 : Basic wannier disentanglement
 
-example10: Graphite
+test_nnkpt1 : Test nnkpt file
 
-example11: Silicon
+test_nnkpt2 : Test nnkpt file
 
-example12: Benzene (gamma-only branch of algorithms)
+test_nnkpt3 : Test nnkpt file
 
-example13: (5,5) Carbon Nanotube (transport)
-
-example14: Linear chain of Na atoms (LCR transport)
-
-example15: (5,0) Carbon Nanotube (LCR transport)
-
-example16: Silicon (Boltzmann transport with BoltzWann module)
-
-example17: Iron - Spin-orbit-coupled bands and Fermi surface contours
-
-example18: Iron - Berry curvature and anomalous Hall conductivity
-
-example19: Iron - Orbital magnetization
-
-example20: LaVO3 - Disentanglement only in small (spherical) regions of k space
-
-test_crash : Test is the code correctly crash in case of wrong input.
+test_nnkpt4 : Testing crash with respect to nnkpt option
