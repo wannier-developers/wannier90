@@ -71,8 +71,12 @@ compare-wannier : prolog
 	${TESTCODE_DIR}/bin/testcode.py --category=wannier_all  --verbose compare 2>&1 | tee out.WANNIER90.`date +%Y%m%d_%H%M%S`
 
 clean:
-	@for x in `find pw_* -name "test*"`; do rm -rf $$x; done
-	@for x in `find cp_* -name "test*"`; do rm -rf $$x; done
+	@for x in `find example* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find example* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find test_* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find test_* -name "*.wout"`; do rm -rf $$x; done
 
 # Calling 'purge' means remove all reference outputs... be careful!
 purge: clean
