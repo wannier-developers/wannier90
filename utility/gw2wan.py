@@ -10,10 +10,10 @@
 import netCDF4
 import numpy as np
 import os,shutil
-from netCDF4 import Dataset
 import datetime
 from scipy.io import FortranFile
 import sys
+import glob
 
 
 argv=sys.argv
@@ -292,5 +292,28 @@ if calcSPN:
   except IOError as err:
     print "WARNING: {0}.spn not written : ".format(seednameGW) ,err
 
+if calcUNK:
+    for f_unk_name in  glob.glob("UNK*"):
+	try:
+	    mkdir("unk+GW")
+	except OSError:
+	    pass
+	if UNKformatted:
+	    f_unk_out=open(os.path.join("unk+GW",f_unk_name),"w")
+	    f_unk_in=open(f_unk_name,"r")
+	    nr1,nr2,nr3,ik,nbnd=np.array(f_unk_in.readline().split(),dtype=int)
+	    NR=nr1*nr2*nr3*2
+	    f_unk_out.write(" ".join(str(x) for x in (nr1,nr2,nr3,ik,NBND))+"\n")
+	    np.savetxt(f_unk_outnp.array([x for l in f_unk_in for x in l.split()],dtype=float).reshape((nbnd,NR),order='C')[BANDSORT[ik],:] )
+	else:
+	    f_unk_out=FortranFile(os.path.join("unk+GW",f_unk_name),"w")
+	    f_unk_in=FortranFile(f_unk_name,"r").read_record
+	    nr1,nr2,nr3,ik,nbnd=f_unk_in.read_record(dtype=np.int32)
+	    f_unk_out.write_record(np.array([nr1,nr2,nr3,ik,NBND],dtype=np.int32))
+	    unk=np.array([f_unk_in.read_record(dtype=np.complex) for ib in xrange(nbnd)] )[BANDSORT[ik],:]
+	    for i in NBND:
+		f_unk_out.write_record(unk[ib])
+	f_unk_in.close()
+	f_unk_out.close()
 
 
