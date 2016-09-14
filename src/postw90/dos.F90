@@ -413,7 +413,7 @@ contains
 !~    nfermi=1
 !~    allocate(fermi_energy_list(1))
 !~    fermi_energy_list(1)=ef
-!~    !!! PROBABLY HERE YOU MAY WANT TO BROADCAST THE ABOVE TWO VARIABLES!!
+!~    !~~ PROBABLY HERE YOU MAY WANT TO BROADCAST THE ABOVE TWO VARIABLES~!
 !~    if(on_root) then
 !~       write(stdout,*) ' '
 !~       write(stdout,'(1x,a,f10.6,a)')&
@@ -464,7 +464,6 @@ contains
   !>                    get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-
   subroutine get_dos_k(kpt,EnergyArray,eig_k,dos_k,smr_index,&
        smr_fixed_en_width,adpt_smr_fac,adpt_smr_max,levelspacing_k,UU)
     use w90_io, only            : io_error

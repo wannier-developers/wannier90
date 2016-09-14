@@ -1398,7 +1398,7 @@ contains
     call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
     if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
 
-    !!! GS-start
+    ! GS-start
     dis_spheres_first_wann = 1
     call param_get_keyword('dis_spheres_first_wann',found,i_value=dis_spheres_first_wann)
     if ( dis_spheres_first_wann < 1 )  call io_error('Error: dis_spheres_first_wann must be greater than 0')
@@ -1417,7 +1417,7 @@ contains
              call io_error('Error: radius for dis_spheres must be > 0')
        enddo
     endif
-    !!! GS-end
+    ! GS-end
 
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
@@ -1787,13 +1787,13 @@ contains
     deallocate(nnkpts_block, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! k meshes
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+    ! k meshes                                                                                 !
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
     ! [GP-begin, Apr13, 2012]
-    !! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
-    !! This bit of code must appear *before* all other codes for the local interpolation meshes,
-    !! BUT *after* having calculated the reciprocal-space vectors.
+    ! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
+    ! This bit of code must appear *before* all other codes for the local interpolation meshes,
+    ! BUT *after* having calculated the reciprocal-space vectors.
     global_kmesh_set = .false.
     kmesh_spacing=-1._dp
     kmesh = 0
@@ -2333,7 +2333,7 @@ contains
        write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :',dis_mix_ratio,'|'
        write(stdout,'(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :',dis_conv_tol,'|'
        write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',dis_conv_window,'|'
-       !!! GS-start
+       ! GS-start
        if ( dis_spheres_num .gt. 0 ) then
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :',dis_spheres_num,'|'
           do nkp = 1,dis_spheres_num
@@ -2342,7 +2342,7 @@ contains
           enddo
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :',dis_spheres_first_wann,'|'
        endif
-       !!! GS-end
+       ! GS-end
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     end if
     !
@@ -4804,13 +4804,13 @@ contains
 
      in_data(line_s:line_e)(1:maxlen) = ' '
 
-!!$     ! Check
-!!$     do loop=1,num_wann
-!!$        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
-!!$           write(stdout,*) ' Projection:',loop
-!!$           call io_error(' Error in projections: z and x axes are not orthogonal')
-!!$        endif
-!!$     enddo
+!~     ! Check
+!~     do loop=1,num_wann
+!~        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
+!~           write(stdout,*) ' Projection:',loop
+!~           call io_error(' Error in projections: z and x axes are not orthogonal')
+!~        endif
+!~     enddo
 
      ! Normalise z-axis and x-axis and check/fix orthogonality
      do loop=1,num_proj

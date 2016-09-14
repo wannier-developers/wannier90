@@ -221,8 +221,8 @@ contains
        if (iprint > 1) write(stdout,'(3X,A)') "Transport distribution function written on the " // trim(seedname)//"_tdf.dat file."
     end if
 
-    !! *********************************************************************************
-    !! I got the TDF and I printed it. Now I use it to calculate the transport properties.
+    ! *********************************************************************************
+    ! I got the TDF and I printed it. Now I use it to calculate the transport properties.
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main: calc_props',1)
 
@@ -789,7 +789,7 @@ contains
        TDF = TDF + TDF_k * kweight / cell_volume
 
 
-       !! DOS part
+       ! DOS part !
 
        if (boltz_calc_also_dos) then
           if (boltz_dos_adpt_smr) then
