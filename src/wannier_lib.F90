@@ -142,7 +142,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call kmesh_get()
+  if (.not. explicit_nnkpts) call kmesh_get()
 
 
   ! Now we zero all of the local output data, then copy in the data
