@@ -27,7 +27,7 @@ module w90_ws_distance
   !
   public :: ws_translate_dist, clean_ws_translate
   !
-  ! The number of unit cells to shift WF j to put its centre inside the Wigner-Seitz 
+  ! The number of unit cells to shift WF j to put its centre inside the Wigner-Seitz
   ! of wannier function i. If several shifts are equivalent (i.e. they take the function
   ! on the edge of the WS) they are all listed
   integer, public, save, allocatable :: wdist_shiftj_wsi(:,:,:,:,:)!(3,ndegenx,num_wann,num_wann,nrpts)
@@ -36,20 +36,20 @@ module w90_ws_distance
   !
   logical, save, public :: use_ws_distance = .true.
   logical, save :: done_ws_distance = .false.
-  integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch 
+  integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch
                                     ! in a single point (i.e.  vertex of cube)
 
    ! How far shold we look? It depends on how far the WFs have been wandering
    ! from their unit-cell, or if the cell is very slanted. 2 is almost always enough,
    ! 3 is enough in every case I have ever met
    integer,parameter :: far = 3
-    
+
   contains
-  
+
 ! The next three subroutines find the supercell translation (i.e. the translation
-! by a integer number of supercell) That minimizes the distance between two given funtions, 
-! i and j, the first in unit cell 0, the other in unit cell R. 
-! I.e. we put  WF j in the Wigner-Seitz of WF i. 
+! by a integer number of supercell) That minimizes the distance between two given funtions,
+! i and j, the first in unit cell 0, the other in unit cell R.
+! I.e. we put  WF j in the Wigner-Seitz of WF i.
 ! We also look for the number of equivalent translation, meaning that j is on the edge of the WS
 ! The results are stored in global arrays wdist_ndeg and wdist_shiftj_wsi
 !====================================================!
@@ -67,7 +67,7 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3,nrpts)
     logical, optional, intent(in):: force_recompute ! set to true to force recomputing everything
-    
+
     ! <<<local variables>>>
     integer  :: iw, jw, ideg, ir, ierr
     real(DP) :: wdist_wssc_frac(3,num_wann,num_wann,nrpts)
@@ -84,9 +84,9 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
     endif
     if(done_ws_distance) return
     done_ws_distance = .true.
-    
+
    if (ndegenx*num_wann*nrpts<=0) call io_error("unexpected dimensions in ws_translate_dist")
-    
+
    allocate(wdist_shiftj_wsi(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
    if (ierr/=0) call io_error('Error in allocating wdist_shiftj_wsi in ws_translate_dist')
    allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
@@ -103,7 +103,7 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
     do ir =1,nrpts
     do jw=1,num_wann
         do iw=1,num_wann
-            call utility_frac_to_cart(DBLE(irvec(:,ir)),irvec_cart,real_lattice) 
+            call utility_frac_to_cart(DBLE(irvec(:,ir)),irvec_cart,real_lattice)
             ! function IW translated in the Wigner-Size around function JW
             wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( wannier_centres(:,iw)&
                         -(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
@@ -226,4 +226,4 @@ subroutine clean_ws_translate()
   !====================================================!
 end subroutine
 
-end module w90_ws_distance                                    
+end module w90_ws_distance
