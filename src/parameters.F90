@@ -247,6 +247,7 @@ module w90_parameters
   real(kind=dp),     public, save :: translation_centre_frac(3)
   integer,           public, save :: num_shells    !no longer an input keyword
   logical,           public, save :: skip_B1_tests
+  logical,           public, save :: explicit_nnkpts ! if the nnkpts block is in the input file (allowed only for post-proc setup)
   integer, allocatable, public,save :: shell_list(:)
   real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
   real(kind=dp),     public, save :: real_lattice(3,3)
@@ -426,10 +427,12 @@ contains
 
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3,3)
-    integer :: nkp,i,j,n,k,itmp,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3)
+    integer :: nkp,i,j,n,k,itmp,i_temp,i_temp2,eig_unit,loop,ierr,iv_temp(3), rows
     logical :: found,found2,lunits,chk_found
     character(len=6) :: spin_str
     real(kind=dp) :: cosa(3),rv_temp(3)
+    integer, allocatable, dimension(:,:) :: nnkpts_block
+    integer, allocatable, dimension(:) :: nnkpts_idx
 
     call param_in_file
 
@@ -1732,6 +1735,46 @@ contains
           kpt_cart(:,nkp)=matmul(kpt_latt(:,nkp),recip_lattice(:,:))
        end do
     endif
+    
+    ! get the nnkpts block -- this is allowed only in postproc-setup mode
+    call param_get_block_length('nnkpts', explicit_nnkpts, rows)
+    nntot = rows / num_kpts
+    if (modulo(rows, num_kpts) /= 0 .and. explicit_nnkpts) then 
+        call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+    end if
+    allocate(nnkpts_block(5, rows), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
+    call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
+    ! check that postproc_setup is true
+    if (explicit_nnkpts .and. (.not. postproc_setup)) &
+        call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
+    ! assign the values in nnkpts_block to nnlist and nncell
+    if (explicit_nnkpts) then
+        ! this keeps track of how many neighbours have been seen for each k-point
+        allocate(nnkpts_idx(num_kpts), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
+        nnkpts_idx = 1
+        ! allocating "global" nnlist & nncell
+        ! These are deallocated in kmesh_dealloc
+        allocate(nnlist(num_kpts, nntot), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
+        allocate(nncell(3, num_kpts, nntot), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating nncell in param_read')
+        do i=1,num_kpts * nntot
+            k = nnkpts_block(1, i)
+            nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
+            nncell(:, k, nnkpts_idx(k)) = nnkpts_block(3:, i)
+            nnkpts_idx(k) = nnkpts_idx(k) + 1
+        end do
+        ! check that all k-points have the same number of neighbours
+        if (any(nnkpts_idx /= (/ (nntot + 1, i=1, num_kpts) /))) then
+            call io_error('Inconsistent number of nearest neighbours.')
+        end if
+        deallocate(nnkpts_idx, stat=ierr)
+        if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in param_read')
+    end if
+    deallocate(nnkpts_block, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! k meshes

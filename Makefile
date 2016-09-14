@@ -117,7 +117,7 @@ dist:
 		./pwscf/v4.0/*.f90 \
 		./pwscf/v4.1/*.f90 \
 		./pwscf/v5.0/*.f90 \
-		./config/make.sys* \
+		./config/make.inc* \
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
 		./utility/PL_assessment/README \
@@ -156,8 +156,8 @@ dist:
 		./CHANGE.log \
 	)
 
-test:   default
-	(cd $(ROOTDIR)/tests && $(MAKE) test )
+test: 
+	(cd $(ROOTDIR)/test-suite && $(MAKE) run-tests )
 
 dist-lite:
 	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \

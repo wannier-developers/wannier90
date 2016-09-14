@@ -1,0 +1,17 @@
+language: python
+python:
+    - "2.7"
+addons:
+  apt:
+    packages:
+        - gfortran 
+        - libblas-dev 
+        - liblapack-dev 
+install:
+# Install Wannier
+    - cp config/make.inc.gfort.travisci make.inc
+    - make -j default
+script:
+    - make test
+git:
+  depth: 3

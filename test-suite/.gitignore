@@ -1,0 +1,6 @@
+userconfig
+test.out.*
+test.err.*
+*.chk
+*.wout
+espresso-*

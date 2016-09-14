@@ -1,0 +1,30 @@
+[example01/]
+program = WANNIER90
+inputs_args = ('gaas.win', '1')
+
+[example02/]
+program = WANNIER90
+inputs_args = ('lead.win', '1')
+
+[example03/]
+program = WANNIER90
+inputs_args = ('silicon.win', '1')
+
+[example04/]
+program = WANNIER90
+inputs_args = ('copper.win', '1')
+
+[pw_example05/]
+program = WANNIER90
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3'), ('diamond.win', '1')
+
+[pw_example06/]
+program = WANNIER90
+inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('copper.pw2wan', '3'), ('copper.win', '1')
+
+
+[categories]
+wannier_all = example*??  
+interface_all = pw_example*??
+test_all = example*??  pw_example*??
+_default_ =  example*??
