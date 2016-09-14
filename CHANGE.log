@@ -13,6 +13,9 @@ v2.0.2 (XXX)
   'abs' mean absolute.
 * Improvements to various Makefiles 
 * Fixed bug in the calculation of orbital magnetization in berry.F90
+* Renamed make.sys to make.inc to cope with possible issues when this
+  file is sent over email (some providers think it's a virus and 
+  remove it from attachments)
 	
 v2.0.1 (2nd April 2015)
 

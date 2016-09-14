@@ -9,7 +9,7 @@ addons:
         - liblapack-dev 
 install:
 # Install Wannier
-    - cp config/make.sys.gfort.travisci make.sys
+    - cp config/make.inc.gfort.travisci make.inc
     - make -j default
 script:
     - make test

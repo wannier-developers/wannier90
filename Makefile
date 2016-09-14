@@ -117,7 +117,7 @@ dist:
 		./pwscf/v4.0/*.f90 \
 		./pwscf/v4.1/*.f90 \
 		./pwscf/v5.0/*.f90 \
-		./config/make.sys* \
+		./config/make.inc* \
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
 		./utility/PL_assessment/README \
