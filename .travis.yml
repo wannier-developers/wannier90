@@ -1,4 +1,3 @@
-# I use c language to have at least make and similar
 language: python
 python:
     - "2.7"
@@ -9,12 +8,9 @@ addons:
         - libblas-dev 
         - liblapack-dev 
 install:
-    - cp config/make.sys.gfort make.sys
-    - make -j wannier post
-#before_script:
-#    - ...
+    - cp config/make.sys.gfort.travisci make.sys
+    - make -j default
 script:
-    - cd test-suite
-    - make run-tests
+    - make test
 git:
   depth: 3

@@ -157,7 +157,7 @@ dist:
 	)
 
 test:   default
-	(cd $(ROOTDIR)/tests && $(MAKE) test )
+	(cd $(ROOTDIR)/test-suite && $(MAKE) run-tests )
 
 dist-lite:
 	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
