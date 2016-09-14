@@ -16,6 +16,11 @@
 fname=$1
 args=$(echo $fname | awk -F= '{print $NF}')
 
+if [ "$fname" == "" ]
+    echo "No file name passed, stopping..." >&2
+    exit 1
+fi
+
 # SCF
 e1=`grep ! $fname | tail -1 | awk '{printf "%12.6f\n", $5}'`
 n1=`grep 'convergence has' $fname | tail -1 | awk '{print $6}'`

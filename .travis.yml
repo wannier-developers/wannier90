@@ -7,11 +7,14 @@ addons:
         - gfortran 
         - libblas-dev 
         - liblapack-dev 
+env:
+   - W90TESTSWITHINTERFACE=true
+   - W90TESTSWITHINTERFACE=false
 install:
 # Install Wannier
     - cp config/make.inc.gfort.travisci make.inc
     - make -j default
 script:
-    - make test
+    - ./test-suite/run_tests_travis.sh
 git:
   depth: 3
