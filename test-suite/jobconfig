@@ -25,5 +25,6 @@ inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('
 
 [categories]
 wannier_all = example*??  
+interface_all = pw_example*??
 test_all = example*??  pw_example*??
 _default_ =  example*??

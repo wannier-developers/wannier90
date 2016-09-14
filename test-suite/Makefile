@@ -19,11 +19,12 @@ default :
 	@echo '  make target'
 	@echo ' '
 	@echo 'where <target> identifies an action'
-	@echo ' run-tests          : run wannier tests (default)'
-	@echo ' run-tests-all      : run all the tests in SERIAL '
-	@echo ' run-tests-parallel : run all tests in PARALLEL (4 MPI)'
-	@echo ' compare            : compare last output generated with reference'
-	@echo ' clean              : clean output (our/err files) of all tests'
+	@echo ' run-tests           : run wannier tests (default)'
+	@echo ' run-tests-interface : run tests that requires other codes (e.g. QE)'
+	@echo ' run-tests-all       : run all the tests in SERIAL '
+	@echo ' run-tests-parallel  : run all tests in PARALLEL (4 MPI)'
+	@echo ' compare             : compare last output generated with reference'
+	@echo ' clean               : clean output (our/err files) of all tests'
 	@echo ' '
 	@echo 'For additional advanced commands and settings please manually inspect'
 	@echo 'ENVIRONMENT and Makefile files'
@@ -34,6 +35,9 @@ prolog :
 	@sed "s|XXXXXX|$(WANNIER_ROOT)|g" < userconfig.tmp > userconfig
 
 run-tests : run-tests-wannier-serial
+
+run-tests-interface : prolog
+	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=interface_all
 
 run-tests-all : prolog
 	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=test_all
