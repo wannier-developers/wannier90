@@ -25,8 +25,18 @@ LDOPTS =
 #=======================
 # NETLIB LAPACK and BLAS
 #=======================
-LIBDIR = /rscratch/jry20/LIB/gfortran 
-LIBS = -L$(LIBDIR)  -llapack -lblas
+#LIBDIR = /rscratch/jry20/LIB/gfortran 
+#LIBS = -L$(LIBDIR)  -llapack -lblas
+
+#=======================
+# System LAPACK and BLAS
+# e.g. use
+#   sudo apt-get install libblas-dev liblapack-dev
+# on Ubuntu
+#=======================
+LIBS = -llapack -lblas
+
+
 
 
 
