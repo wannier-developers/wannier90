@@ -2412,8 +2412,107 @@ For instance, the $A$ point in the simple tetragonal lattice of this example is 
   Also the index \verb+dis_sphere_first_wan+ needs to be adapted to the new disentanglement window, which here contains also states below the lowest-lying Wannier function (at variance with the LaVO$_3$ case).
 \end{itemize}
 
+%\cleardoublepage
+
+\sectiontitle{21: Gallium Arsenide -- Symmetry-adapted Wannier functions}
+
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
+
+\begin{itemize}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs}}
+\item{Directory: {\tt examples/example21/atom\_centered\_As\_sp/} \\
+\phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_p/}    \\
+\phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_s/}    \\
+\phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_sp/}    \\
+\phantom{Directory: }{\tt examples/example21/bond\_centered/}    
+}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt GaAs.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt GaAs.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt GaAs.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt GaAs.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of GaAs\\
+{\tt pw.x < GaAs.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < GaAs.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt GaAs.nnkp} file).\\ 
+{\tt wannier90.x -pp GaAs}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
+  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmb} files, respectively).\\  
+{\tt pw2wannier90.x < GaAs.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x GaAs}
+\end{enumerate}
+
+Each directory creates different kind of symmetry-adapted Wannier function. 
+See more detail in {\tt examples/example21/README}. 
+Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
+
 
 %\cleardoublepage
+
+\sectiontitle{22: Copper -- Symmetry-adapted Wannier functions}
+
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
+
+\begin{itemize}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions for Cu. By symmetry-adapted mode, for example, we can make atomic centered $s$-like Wannier function, which is not possible in the usual procedure to create maximally localized Wannier functions.}}
+\item{Directory: {\tt examples/example22/s\_at\_0.00/} \\
+\phantom{Directory: }{\tt examples/example22/s\_at\_0.25/}    \\
+\phantom{Directory: }{\tt examples/example22/s\_at\_0.50/}    
+}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt Cu.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt Cu.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Cu.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Cu.sym}  {\it Used only in {\tt examples/example22/s\_at\_0.25/}. {\tt pw2wannier90} reads this file when {\rm ``read\_sym = .true.''} in {\tt Cu.pw2wan}. By default, {\rm ``read\_sym = .false.'' and {\tt Cu.sym} is the output of {\tt pw2wannier90}}, in which the symmetry operations employed in the calculation are written for reference. } } 
+\item{ {\tt Cu.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of Cu\\
+{\tt pw.x < Cu.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < Cu.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Cu.nnkp} file).\\ 
+{\tt wannier90.x -pp Cu}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
+  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmb} files, respectively).\\  
+{\tt pw2wannier90.x < Cu.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x Cu}
+\end{enumerate}
+
+Each directory creates $s$-like symmetry-adapted Wannier function centered at different position on top of atomic centered $d$-like Wannier functions. 
+See more detail in {\tt examples/example22/README}. 
+Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
+
+
+%\cleardoublepage
+
 
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}
