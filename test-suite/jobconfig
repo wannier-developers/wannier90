@@ -26,27 +26,27 @@ inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('
 program = WANNIER90
 inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
 
-[test_1/]
+[test_basic1/]
 program = WANNIER90
 inputs_args = ('wannier.win', '1')
 
-[test_2/]
+[test_basic2/]
 program = WANNIER90
 inputs_args = ('wannier.win', '1')
 
-[test_3/]
+[test_nnkpt1/]
 program = WANNIER90
 inputs_args = ('wannier.win', '5')
 
-[test_4/]
+[test_nnkpt2/]
 program = WANNIER90
 inputs_args = ('wannier.win', '5')
 
-[test_5/]
+[test_nnkpt3/]
 program = WANNIER90
 inputs_args = ('wannier.win', '5')
 
-[test_6/]
+[test_nnkpt4/]
 program = WANNIER90
 inputs_args = ('wannier.win', '6')
 
