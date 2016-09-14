@@ -1739,7 +1739,9 @@ contains
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call param_get_block_length('nnkpts', explicit_nnkpts, rows)
     nntot = rows / num_kpts
-    if (modulo(rows, num_kpts) /= 0) call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+    if (modulo(rows, num_kpts) /= 0 .and. explicit_nnkpts) then 
+        call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+    end if
     allocate(nnkpts_block(5, rows), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
     call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
