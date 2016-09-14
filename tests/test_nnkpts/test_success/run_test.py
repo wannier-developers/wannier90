@@ -40,7 +40,6 @@ def compare_sorted(l1, l2):
     assert list(sorted(l1)) == list(sorted(l2))
     
 def check(path):
-    #
     with open(os.path.join(path, 'wannier.win'), 'r') as f:
         win = f.readlines()
     with open(os.path.join(path, 'wannier.nnkp'), 'r') as f:
@@ -53,6 +52,7 @@ def check(path):
     in_kpts = parse_block(get_block(win, 'kpoints'))
     out_kpts = parse_block(get_block(out, 'kpoints')[1:])
     assert np.isclose(np.array(in_kpts), np.array(out_kpts)).all()
+    print(path, 'passed')
 
 def run_test(path):
     clean(path)
