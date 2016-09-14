@@ -148,13 +148,13 @@ contains
             integer :: num_arg
             character(4) :: n1_char,n2_char,n3_char,num_wann_char
 
-            num_arg=iargc()
+            num_arg=command_argument_count()
 
             if (num_arg==4) then
-                call getarg(1,n1_char)
-                call getarg(2,n2_char)
-                call getarg(3,n3_char)
-                call getarg(4,num_wann_char)
+                call get_command_argument(1,n1_char)
+                call get_command_argument(2,n2_char)
+                call get_command_argument(3,n3_char)
+                call get_command_argument(4,num_wann_char)
             else
                 write(*,*)'Input incorrect'
                 stop
