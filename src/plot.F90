@@ -33,7 +33,6 @@ contains
                                 wannier_plot,timing_level, pos_plot
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup, hamiltonian_write_pos
-    use w90_position, only: position_setup
 
     implicit none
 
