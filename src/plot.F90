@@ -228,18 +228,20 @@ contains
       endif
     endif
 
+    ! [lp] the s-k and cut codes are very similar when use_ws_distance is used, a complete
+    !      mercge after this point is not impossible
     do loop_kpt=1,total_pts
        ham_kprm=cmplx_0
        if (index(bands_plot_mode,'s-k').ne.0) then
           do irpt=1,nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
             if(use_ws_distance)then
-               do i=1,num_wann
                do j=1,num_wann
-                  do ideg = 1,wdist_ndeg(j,i,irpt)
+               do i=1,num_wann
+                  do ideg = 1,wdist_ndeg(i,j,irpt)
                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
                      fac=exp(cmplx_i*rdotk)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
-                     ham_kprm(j,i)=ham_kprm(j,i)+fac*ham_r(j,i,irpt)
+                     ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r(i,j,irpt)
                   enddo
                enddo
                enddo 
@@ -250,14 +252,29 @@ contains
               ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
             endif
           end do
+       ! end of s-k mode
        elseif (index(bands_plot_mode,'cut').ne.0) then
           do irpt=1,nrpts_cut
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+            if(use_ws_distance)then
+               do j=1,num_wann
+               do i=1,num_wann
+                  do ideg = 1,wdist_ndeg(j,i,irpt)
+                     rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                     fac=exp(cmplx_i*rdotk)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
+                     ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+                  enddo
+                enddo
+                enddo
+            else
+              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
 !!$[aam] check divide by ndegen?
-             fac=exp(cmplx_i*rdotk)
-             ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+              fac=exp(cmplx_i*rdotk)
+              ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+            endif ! end of use_ws_distance
           end do
-       endif
+       endif ! end of "cut" mode
+       !
        ! Diagonalise H_k (->basis of eigenstates)
        do j=1,num_wann
           do i=1,j
