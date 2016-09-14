@@ -14,7 +14,7 @@ display:          public
 source:           false
 graph:            false
 search:           false
-license:          by-nc
+license:          by
 
 
 This is the Wannier90 developer's documentation. It describes the procedures and modules within Wannier90.
