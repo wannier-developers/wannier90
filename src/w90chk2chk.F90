@@ -38,22 +38,16 @@ end subroutine print_usage
 
   subroutine conv_get_seedname
 
-#ifdef NAG
-    USE F90_UNIX_ENV, ONLY : IARGC,GETARG
-#endif
          implicit none
 
          integer :: num_arg
-#ifndef NAG
-         integer :: iargc
-#endif
          character(len=50) :: ctemp 
 
-         num_arg=iargc()
+         num_arg=command_argument_count()
          if (num_arg==1) then
             seedname='wannier'
          elseif (num_arg==2) then
-            call getarg(2,seedname)
+            call get_command_argument(2,seedname)
          else
             call print_usage
             call io_error('Wrong command line arguments, see logfile for usage')
@@ -66,7 +60,7 @@ end subroutine print_usage
             end if
          end if
 
-         call getarg(1,ctemp)
+         call get_command_argument(1,ctemp)
          if ( index(ctemp,'-import')>0 ) then
             export_flag=.false.
          elseif ( index(ctemp,'-f2u')>0 ) then
