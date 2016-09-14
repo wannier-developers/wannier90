@@ -564,7 +564,7 @@ Each nearest neighbour $\mathbf{k + b}$ is given by a line of 5 integers. The fi
 
 This format is the same as in the \texttt{.nnkp} file, except that the number of neighbours per k-point is not specified. However, the number of neighbours still needs to be a multiple of the number of k-points.
 
-This input parameter can be used only if \texttt{postproc\_setup = .true.}. It can be used also if the k-points do not describe a regular mesh.
+This input parameter can be used only if \texttt{postproc\_setup = .true.}, and is not intended to be used with a full Wannier90 run. It can be used also if the k-points do not describe a regular mesh.
 
 \subsection[kmesh\_tol]{\tt real(kind=dp) :: kmesh\_tol}
 
