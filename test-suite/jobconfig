@@ -22,6 +22,9 @@ inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'),
 program = WANNIER90
 inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('copper.pw2wan', '3'), ('copper.win', '1')
 
+[pw_example07/]
+program = WANNIER90
+inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
 
 [categories]
 wannier_all = example*??  
