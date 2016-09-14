@@ -8,7 +8,9 @@
 #
 ####################################################################################
 
-export ESPRESSO_ROOT=${PWD}/../../
+ifndef ESPRESSO_ROOT
+        export ESPRESSO_ROOT=${PWD}/../../
+endif
 
 export WANNIER_ROOT=${PWD}/../
 

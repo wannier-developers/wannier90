@@ -11,7 +11,7 @@
 # Maintainer: Samuel Ponce
 
 #include ${ESPRESSO_ROOT}/test-suite/ENVIRONMENT
-bash ../ENVIRONMENT
+#bash ../ENVIRONMENT
 
 if [[ $QE_USE_MPI == 1 ]]; then
   export PARA_PREFIX="mpirun -np ${TESTCODE_NPROCS}"

@@ -14,10 +14,12 @@ inputs_args = ('silicon.win', '1')
 program = WANNIER90
 inputs_args = ('copper.win', '1')
 
-[example05/]
+[pw_example05/]
 program = WANNIER90
 inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3'), ('diamond.win', '1')
 
+
 [categories]
-wannier_all = example*??
+wannier_all = example*??  
+test_all = example*??  pw_example*??
 _default_ =  example*??
