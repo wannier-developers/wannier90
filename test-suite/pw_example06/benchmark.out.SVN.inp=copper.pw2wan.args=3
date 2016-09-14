@@ -1,0 +1,142 @@
+
+     Program PW2WANNIER v.6.beta (svn rev. 12957) starts on 14Sep2016 at 13:47:15 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+           HOST :    @host@
+           ARCH :    x86_64
+             CC :    cc
+            CPP :    cpp
+            F90 :    mpif90
+            F77 :    gfortran
+         DFLAGS :    -D__GFORTRAN -D__STD_F95 -D__FFTW -D__MPI
+      BLAS LIBS :    
+    LAPACK LIBS :    $(TOPDIR)/LAPACK/liblapack.a $(TOPDIR)/LAPACK/libblas.a
+       FFT LIBS :    
+      MASS LIBS :    
+
+     Parallel version (MPI), running on     1 processors
+
+  Reading nscf_save data
+
+     Reading data from directory:
+     ./cu.save
+
+   Info: using nr1, nr2, nr3 values from input
+
+   Info: using nr1, nr2, nr3 values from input
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation      =  SLA  PZ   NOGX NOGC ( 1  1  0  0 0 0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     G-vector sticks info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Sum         199     199     73                 1807     1807     411
+
+
+  Spin CASE ( default = unpolarized )
+
+  Wannier mode is: standalone     
+
+  -----------------
+  *** Reading nnkp 
+  -----------------
+
+  Checking info from wannier.nnkp file
+
+  - Real lattice is ok
+  - Reciprocal lattice is ok
+  - K-points are ok
+  - Number of wannier functions is ok (  7)
+  - All guiding functions are given 
+
+ Projections:
+    0.000000    0.000000    0.000000  2  1  1    1.000000
+    0.000000    0.000000    0.000000  2  2  1    1.000000
+    0.000000    0.000000    0.000000  2  3  1    1.000000
+    0.000000    0.000000    0.000000  2  4  1    1.000000
+    0.000000    0.000000    0.000000  2  5  1    1.000000
+   -0.250000    0.250000    0.250000  0  1  1    1.000000
+    0.250000   -0.250000   -0.250000  0  1  1    1.000000
+
+  Reading data about k-point neighbours 
+
+  All neighbours are found 
+
+  Opening pp-files 
+
+
+  ---------------
+  *** Compute  A 
+  ---------------
+
+  AMN: iknum =       64
+       1       2       3       4       5       6       7       8       9      10
+      11      12      13      14      15      16      17      18      19      20
+      21      22      23      24      25      26      27      28      29      30
+      31      32      33      34      35      36      37      38      39      40
+      41      42      43      44      45      46      47      48      49      50
+      51      52      53      54      55      56      57      58      59      60
+      61      62      63      64
+
+  AMN calculated
+
+  ---------------
+  *** Compute  M 
+  ---------------
+
+  MMN: iknum =       64
+       1       2       3       4       5       6       7       8       9      10
+      11      12      13      14      15      16      17      18      19      20
+      21      22      23      24      25      26      27      28      29      30
+      31      32      33      34      35      36      37      38      39      40
+      41      42      43      44      45      46      47      48      49      50
+      51      52      53      54      55      56      57      58      59      60
+      61      62      63      64
+
+  MMN calculated
+
+  -----------------------------------
+  *** Orbital terms are not computed 
+  -----------------------------------
+
+  ----------------
+  *** Write bands 
+  ----------------
+
+
+  -----------------------------
+  *** Plot info is not printed 
+  -----------------------------
+
+  -----------------------------
+  *** Parity info is not printed 
+  -----------------------------
+
+  ------------
+  *** Stop pp 
+  ------------
+
+
+     init_pw2wan  :      0.79s CPU      0.41s WALL (       1 calls)
+     compute_amn  :      9.78s CPU      4.91s WALL (       1 calls)
+     compute_mmn  :      2.89s CPU      1.46s WALL (       1 calls)
+
+     PW2WANNIER   :    10.58s CPU         5.31s WALL
+
+
+   This run was terminated on:  13:47:20  14Sep2016            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=
+
