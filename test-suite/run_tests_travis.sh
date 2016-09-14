@@ -4,7 +4,7 @@
 THISDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ESPRESSO_ROOT="${THISDIR}/external-codes/espresso/"
 
-cd "$THEDIR"
+cd "$THISDIR"
 
 ## Get the external codes, but only if the environment variable
 ## W90TESTSWITHINTERFACE is set to true
