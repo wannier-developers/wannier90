@@ -1,4 +1,4 @@
-include ../../make.sys
+include ../../make.inc
 
 SRC=src
 OBJ=obj

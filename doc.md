@@ -1,5 +1,5 @@
-project_dir: ../src
-output_dir: ./build
+project_dir: ./src
+output_dir: ./ford_doc
 project_github: https://github.com/cmacmackin/futility
 project_website: http://github.com
 summary: Some Fortran program which I wrote.
@@ -7,7 +7,6 @@ author: John Doe
 author_description: I program stuff in Fortran.
 github: https://github.com/cmacmackin
 email: john.doe@address.com
-fpp_extensions: fpp
 predocmark: >
 media_dir: ./media
 docmark_alt: #
