@@ -50,6 +50,10 @@ inputs_args = ('wannier.win', '5')
 program = WANNIER90
 inputs_args = ('wannier.win', '6')
 
+[test_nnkpt5/]
+program = WANNIER90
+inputs_args = ('wannier.win', '6')
+
 [categories]
 wannier_all = example*??  test_*
 interface_all = pw_example*??
