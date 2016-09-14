@@ -26,17 +26,17 @@ inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('
 program = WANNIER90
 inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
 
-[test1/]
+[test_1/]
 program = WANNIER90
 inputs_args = ('wannier.win', '1')
 
-[test2/]
+[test_2/]
 program = WANNIER90
 inputs_args = ('wannier.win', '1')
 
 
 [categories]
-wannier_all = example*??  test*
+wannier_all = example*??  test_*
 interface_all = pw_example*??
-test_all = example*??  pw_example*?? test*
+test_all = example*??  pw_example*?? test_*
 _default_ =  example*?? test*
