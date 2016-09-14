@@ -1,5 +1,5 @@
 project_dir: ./src
-output_dir: ./ford_doc
+output_dir: ./autodoc
 project_github: https://github.com/cmacmackin/futility
 project_website: http://github.com
 summary: Some Fortran program which I wrote.
