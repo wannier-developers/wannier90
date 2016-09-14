@@ -30,9 +30,9 @@ contains
     use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level
+                                wannier_plot,timing_level, pos_plot
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
-                                hamiltonian_setup
+                                hamiltonian_setup, hamiltonian_write_pos
     use w90_position, only: position_setup
 
     implicit none
@@ -68,7 +68,7 @@ contains
        !
        if(hr_plot) call hamiltonian_write_hr()
        !
-       if(hr_plot) call position_setup()
+       if(pos_plot) call hamiltonian_write_pos()
     end if
 
     if(wannier_plot) call plot_wannier
