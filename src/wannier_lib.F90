@@ -131,9 +131,12 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   gamma_only=gamma_only_loc
   spinors=spinors_loc
 
+  ! AAM_2016-09-14: initialise num_bands as it's used in param_read()
+  num_bands = num_bands_tot
   call param_read()
   ! set num_bands and cell_volume as they are written to output in param_write
-  num_bands = num_bands_tot - num_exclude_bands
+  ! AAM_2016-09-14: num_exclude_bands is now subtracted in param_read
+  ! num_bands = num_bands_tot - num_exclude_bands
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
                 real_lattice(1,3)*(real_lattice(2,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(2,2))
