@@ -11,7 +11,7 @@
 #
 # Makefile to run regression numerical tests. Simple is good
 
-include ./ENVIRONMENT
+include ENVIRONMENT
 
 default :
 	@echo 'To run Wannier90 test-suite, type at the shell prompt:'
@@ -19,8 +19,8 @@ default :
 	@echo '  make target'
 	@echo ' '
 	@echo 'where <target> identifies an action'
-	@echo ' run-tests          : run-tests-serial (default)'
-	@echo ' run-tests-serial   : run all tests in SERIAL' 
+	@echo ' run-tests          : run wannier tests (default)'
+	@echo ' run-tests-all      : run all the tests in SERIAL '
 	@echo ' run-tests-parallel : run all tests in PARALLEL (4 MPI)'
 	@echo ' compare            : compare last output generated with reference'
 	@echo ' clean              : clean output (our/err files) of all tests'
@@ -33,9 +33,10 @@ prolog :
 	sed "s|XXXXXX|$(WANNIER_ROOT)|g" < userconfig.tmp > userconfig; fi
 	@sed "s|XXXXXX|$(WANNIER_ROOT)|g" < userconfig.tmp > userconfig
 
-run-tests : run-tests-serial
+run-tests : run-tests-wannier-serial
 
-run-tests-serial : run-tests-wannier-serial
+run-tests-all : prolog
+	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=test_all
 
 run-tests-parallel : run-tests-wannier-parallel
 
