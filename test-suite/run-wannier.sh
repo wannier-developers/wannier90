@@ -64,6 +64,18 @@ then
   then
     cat $3
   fi  
+elif [[ "$1" == "5" ]]
+then
+  echo "Running PP wannier and checking for nnkp ..."
+  export TMP=$2
+  export OUTPUT="${TMP%???}nnkp"
+  echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
+  ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4
+  cp $OUTPUT $3
+  if [[ -e CRASH ]]
+  then
+    cat $3
+  fi  
 fi
 
 #rm -f input_tmp.in

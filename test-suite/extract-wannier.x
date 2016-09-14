@@ -48,6 +48,11 @@ compl=`sed -n '/ b_k(x) /{n;n;p;n;p;n;p;n;p;n;p;n;p;}' \
 proji=`sed -n '/ Projections/{n;p;n;p;n;p;n;p;}'\
  $fname | awk '{print $1}; {print $2}; {print $3}; {print $4}; {print $5}; {print $6}; {print $7};'`
 
+nnkpt_kpt=`sed -n '/begin kpoints/{n;n;p;n;p;n;p;n;p;n;p;}'\
+ $fname | awk '{print $1}; {print $2}; {print $3};'`
+
+nnkpt=`sed -n '/begin nnkpts/{n;n;p;n;p;n;p;n;p;n;p;}'\
+ $fname | awk '{print $1}; {print $2}; {print $3}; {print $4}; {print $5};'`
 
 
 if test "$e1" != ""; then
@@ -145,4 +150,13 @@ if test "$proji" != ""; then
         for x in $proji; do echo $x; done
 fi
 
+if test "$nnkpt_kpt" != ""; then
+        echo nnkpt_kpt
+        for x in $nnkpt_kpt; do echo $x; done
+fi
+
+if test "$nnkpt" != ""; then
+        echo nnkpt
+        for x in $nnkpt; do echo $x; done
+fi
 
