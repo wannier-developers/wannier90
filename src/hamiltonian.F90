@@ -579,5 +579,4 @@ contains
 
   end subroutine hamiltonian_wigner_seitz
 
-  
 end module w90_hamiltonian
