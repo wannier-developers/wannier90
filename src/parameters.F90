@@ -90,6 +90,7 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
+  logical,           public, save :: u_matrices_plot
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
@@ -379,6 +380,13 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
 
+  logical, public :: lsitesymmetry=.false.                         !RS: site-symmetry
+  integer, public :: nkptirr=9999,nsymmetry=9999                   !RS:
+  real(kind=dp), public :: symmetrize_eps=1d-3                     !RS:
+  integer, allocatable, public :: kptsym(:,:),ir2ik(:),ik2ir(:)    !RS:
+  complex(kind=dp),  allocatable, public :: d_matrix_band(:,:,:,:) !RS:
+  complex(kind=dp),  allocatable, public :: d_matrix_wann(:,:,:,:) !RS:
+  
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
   integer, parameter, public :: num_nnmax=12
@@ -447,6 +455,12 @@ contains
     integer, allocatable, dimension(:) :: nnkpts_idx
 
     call param_in_file
+
+    !%%%%%%%%%%%%%%%%
+    ! Site symmetry
+    !%%%%%%%%%%%%%%%%
+    call param_get_keyword('site_symmetry' ,found,l_value=lsitesymmetry )!YN:
+    call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
@@ -758,6 +772,9 @@ contains
             call io_error('Error: wannier_plot_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
+
+    u_matrices_plot = .false.
+    call param_get_keyword('u_matrices_plot',found,l_value=u_matrices_plot)
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
@@ -1221,10 +1238,10 @@ contains
        & .and.(one_dim_dir.eq.0) ) &
          call io_error('Error: one_dim_axis not recognised')
 
+301  continue
+
     use_ws_distance = .false.
     call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
-
-301  continue
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
@@ -2185,6 +2202,10 @@ contains
 
     if (transport .and. tran_read_ht) goto 401
 
+    if(lsitesymmetry)then                                          !YN:
+      write(stdout,"(a)"      )'   Site-Symmetry-Adapted mode   '  !RS:
+      write(stdout,"(a,g15.7)")'   symmetrize_eps=',symmetrize_eps !YN:
+    endif                                                          !YN:
     ! System
     write(stdout,*)
     write(stdout,'(36x,a6)') '------' 

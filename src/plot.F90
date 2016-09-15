@@ -29,7 +29,7 @@ contains
     use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level
+                                u_matrices_plot, wannier_plot,timing_level
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup
 
@@ -69,6 +69,8 @@ contains
     end if
 
     if(wannier_plot) call plot_wannier
+
+    if(u_matrices_plot) call plot_u_matrices
 
     if (timing_level>0) call io_stopwatch('plot: main',2)
 
@@ -1358,6 +1360,59 @@ end subroutine plot_interpolate_bands
     end subroutine internal_xsf_format
 
   end subroutine plot_wannier
+
+
+  !============================================!
+  subroutine plot_u_matrices
+    !============================================!
+    !                                            !
+    ! Plot u_matrix and u_matrix_opt to          !
+    ! textfiles in readable format               !
+    !                                            !
+    !============================================!
+
+    use w90_parameters, only : num_bands, num_kpts, num_wann, have_disentangled,&
+                               kpt_latt, u_matrix, u_matrix_opt
+    use w90_io,         only  : io_error,stdout,io_file_unit,seedname,&
+                                io_time,io_stopwatch,io_date
+
+    implicit none
+    integer             :: matunit
+    integer             :: i,j,nkp
+    character (len=33)  :: header
+    character (len=9)   :: cdate,ctime
+
+    call io_date(cdate,ctime)
+    header = 'written on '//cdate//' at '//ctime
+    
+    matunit=io_file_unit()
+    open(matunit,file=trim(seedname)//'_u.mat',form='formatted')
+    
+    write(matunit,*) header
+    write(matunit,*) num_kpts, num_wann, num_wann
+    
+    do nkp=1,num_kpts
+        write(matunit,*)
+        write(matunit,'(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:,nkp)
+        write(matunit,'(f15.10,sp,f15.10)') ((u_matrix(i,j,nkp),i=1,num_wann),j=1,num_wann)
+    end do
+    close(matunit)    
+    
+
+    if (have_disentangled) then
+        matunit=io_file_unit()
+        open(matunit,file=trim(seedname)//'_u_dis.mat',form='formatted')
+        write(matunit,*) header
+        write(matunit,*) num_kpts, num_wann, num_bands
+        do nkp=1,num_kpts
+            write(matunit,*)
+            write(matunit,'(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:,nkp)
+            write(matunit,'(f15.10,sp,f15.10)') ((u_matrix_opt(i,j,nkp),i=1,num_wann),j=1,num_bands)
+        end do
+        close(matunit)
+    endif
+  
+  end subroutine plot_u_matrices
 
 end module w90_plot
  
