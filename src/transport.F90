@@ -91,7 +91,7 @@ module w90_transport
 
 
   public :: tran_main
-  public :: transport_dealloc
+  public :: tran_dealloc
 
 contains
   !==================================================================!
@@ -3357,7 +3357,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   end subroutine tran_lcr_2c2_build_ham
 
   !======================================!
-  subroutine transport_dealloc()
+  subroutine tran_dealloc()
   !====================================!
 
     use w90_io, only : io_error
@@ -3368,32 +3368,32 @@ loop_n1: do n1 = -irvec_max, irvec_max
     
     if( allocated( hR1 ) ) then
        deallocate( hR1, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hR1 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hR1 in tran_dealloc')
     end if
     if( allocated( hR0 ) ) then
        deallocate( hR0, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hR0 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hR0 in tran_dealloc')
     end if
     if( allocated( hL1 ) ) then
        deallocate( hL1, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hL1 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hL1 in tran_dealloc')
     end if  
     if( allocated( hB1 ) ) then
        deallocate( hB1, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hB1 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hB1 in tran_dealloc')
     end if  
     if( allocated( hB0 ) ) then
        deallocate( hB0, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hB0 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hB0 in tran_dealloc')
     end if
     if( allocated( hr_one_dim ) ) then
        deallocate( hr_one_dim, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hr_one_dim in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hr_one_dim in tran_dealloc')
     end if
 
     return
 
-  end subroutine transport_dealloc
+  end subroutine tran_dealloc
 
 
 end module w90_transport

@@ -27,8 +27,8 @@ module w90_geninterp
   use w90_get_oper, only      : get_HH_R, HH_R
   use w90_comms
   use w90_utility, only       : utility_diagonalize
-  use w90_postw90_common, only : fourier_R_to_k
-  use w90_wan_ham, only       : get_eig_deleig
+  use w90_postw90_common, only : pw90common_fourier_R_to_k
+  use w90_wan_ham, only       : wham_get_eig_deleig
   use w90_io, only            : io_date
   implicit none
 
@@ -217,9 +217,9 @@ contains
        kpt = localkpoints(:,i)
        ! Here I get the band energies and the velocities (if required)
        if (geninterp_alsofirstder) then
-          call get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
+          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
        else
-          call fourier_R_to_k(kpt,HH_R,HH,0) 
+          call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
        end if
     end do

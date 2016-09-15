@@ -19,7 +19,7 @@ module w90_spin
 
   private
 
-  public :: get_spin_moment,get_spin_nk
+  public :: spin_get_moment,spin_get_nk
 
   contains
 
@@ -27,7 +27,7 @@ module w90_spin
   !                   PUBLIC PROCEDURES                       ! 
   !===========================================================!
 
-  subroutine get_spin_moment
+  subroutine spin_get_moment
   !============================================================!
   !                                                            !
   ! Computes the spin magnetic moment by Wannier interpolation !
@@ -46,7 +46,7 @@ module w90_spin
     real(kind=dp) :: kweight,kpt(3),spn_k(3),spn_all(3),&
                      spn_mom(3),magnitude,theta,phi,conv
 
-    if(nfermi>1) call io_error('Routine get_spin_moment requires nfermi=1')
+    if(nfermi>1) call io_error('Routine spin_get_moment requires nfermi=1')
 
     call get_HH_R
     call get_SS_R
@@ -75,7 +75,7 @@ module w90_spin
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           kweight=weight(loop_tot)
-          call get_spin_moment_k(kpt,fermi_energy_list(1),spn_k)
+          call spin_get_moment_k(kpt,fermi_energy_list(1),spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
 
@@ -92,7 +92,7 @@ module w90_spin
           kpt(1)=(real(loop_x,dp)/real(spin_kmesh(1),dp))
           kpt(2)=(real(loop_y,dp)/real(spin_kmesh(2),dp))
           kpt(3)=(real(loop_z,dp)/real(spin_kmesh(3),dp))
-          call get_spin_moment_k(kpt,fermi_energy_list(1),spn_k)
+          call spin_get_moment_k(kpt,fermi_energy_list(1),spn_k)
           spn_all=spn_all+spn_k*kweight
        end do
 
@@ -124,11 +124,11 @@ module w90_spin
        write(stdout,'(1x,a18,f11.6)') 'Azim. phi (deg):',phi
     end if
 
-  end subroutine get_spin_moment
+  end subroutine spin_get_moment
 
 ! =========================================================================
 
-  subroutine get_spin_nk(kpt,spn_nk)
+  subroutine spin_get_nk(kpt,spn_nk)
   !=============================================================!
   !                                                             !
   ! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann) !
@@ -144,7 +144,7 @@ module w90_spin
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann,spin_axis_polar,&
                                   spin_axis_azimuth
-    use w90_postw90_common, only : fourier_R_to_k
+    use w90_postw90_common, only : pw90common_fourier_R_to_k
     use w90_get_oper, only      : HH_R,SS_R
 
     ! Arguments
@@ -168,11 +168,11 @@ module w90_spin
     allocate(SS(num_wann,num_wann,3))
     allocate(SS_n(num_wann,num_wann))
     
-    call fourier_R_to_k(kpt,HH_R,HH,0)
+    call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
 
     do is=1,3
-       call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
+       call pw90common_fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
     enddo
  
     ! Unit vector along the magnetization direction
@@ -188,19 +188,19 @@ module w90_spin
 
     spn_nk(:)=real(utility_rotate_diag(SS_n,UU,num_wann),dp)
 
-  end subroutine get_spin_nk
+  end subroutine spin_get_nk
 
   !===========================================================!
   !                   PRIVATE PROCEDURES                      ! 
   !===========================================================!
 
-  subroutine get_spin_moment_k(kpt,ef,spn_k)
+  subroutine spin_get_moment_k(kpt,ef,spn_k)
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_io, only            : io_error
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag
     use w90_parameters, only    : num_wann
-    use w90_postw90_common, only : fourier_R_to_k,get_occ
+    use w90_postw90_common, only : pw90common_fourier_R_to_k,pw90common_get_occ
     use w90_get_oper, only      : HH_R,SS_R
     ! Arguments
     !
@@ -224,19 +224,19 @@ module w90_spin
     allocate(UU(num_wann,num_wann))
     allocate(SS(num_wann,num_wann,3))
     
-    call fourier_R_to_k(kpt,HH_R,HH,0)
+    call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
-    call get_occ(eig,occ,ef)
+    call pw90common_get_occ(eig,occ,ef)
 
     spn_k(1:3)=0.0_dp
     do is=1,3
-       call fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
+       call pw90common_fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
        spn_nk(:,is)=aimag(cmplx_i*utility_rotate_diag(SS(:,:,is),UU,num_wann))
        do i=1,num_wann
           spn_k(is)=spn_k(is)+occ(i)*spn_nk(i,is)
        end do
     enddo
 
-  end subroutine get_spin_moment_k
+  end subroutine spin_get_moment_k
 
 end module w90_spin

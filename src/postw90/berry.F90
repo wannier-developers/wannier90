@@ -32,7 +32,7 @@ module w90_berry
 
   private
 
-  public :: berry_main,get_imf_k_list,get_imfgh_k_list
+  public :: berry_main,berry_get_imf_klist,berry_get_imfgh_klist
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -285,7 +285,7 @@ module w90_berry
           ! ***BEGIN COPY OF CODE BLOCK 1***
           !
           if(eval_ahc) then
-             call get_imf_k_list(kpt,imf_k_list)
+             call berry_get_imf_klist(kpt,imf_k_list)
              do if=1,nfermi
                 vdum(1)=sum(imf_k_list(:,1,if))
                 vdum(2)=sum(imf_k_list(:,2,if))
@@ -297,7 +297,7 @@ module w90_berry
                    do loop_adpt=1,berry_curv_adpt_kmesh**3
                       ! Using imf_k_list here would corrupt values for other
                       ! frequencies, hence dummy. Only if-th element is used
-                      call get_imf_k_list(kpt(:)+adkpt(:,loop_adpt),&
+                      call berry_get_imf_klist(kpt(:)+adkpt(:,loop_adpt),&
                            imf_k_list_dummy)
                       imf_list(:,:,if)=imf_list(:,:,if)&
                            +imf_k_list_dummy(:,:,if)*kweight_adpt
@@ -309,7 +309,7 @@ module w90_berry
           end if
 
           if(eval_morb) then
-             call get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+             call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              imf_list=imf_list+imf_k_list*kweight
              img_list=img_list+img_k_list*kweight
              imh_list=imh_list+imh_k_List*kweight
@@ -317,10 +317,10 @@ module w90_berry
 
           if(eval_kubo) then
              if(spin_decomp) then
-                call get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k,&
+                call berry_get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k,&
                      kubo_H_k_spn,kubo_AH_k_spn,jdos_k_spn)
              else
-                call get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k)
+                call berry_get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k)
              endif
              kubo_H=kubo_H+kubo_H_k*kweight
              kubo_AH=kubo_AH+kubo_AH_k*kweight
@@ -354,7 +354,7 @@ module w90_berry
           ! ***BEGIN CODE BLOCK 1***
           !
           if(eval_ahc) then
-             call get_imf_k_list(kpt,imf_k_list)
+             call berry_get_imf_klist(kpt,imf_k_list)
              do if=1,nfermi
                 vdum(1)=sum(imf_k_list(:,1,if))
                 vdum(2)=sum(imf_k_list(:,2,if))
@@ -366,7 +366,7 @@ module w90_berry
                    do loop_adpt=1,berry_curv_adpt_kmesh**3
                       ! Using imf_k_list here would corrupt values for other
                       ! frequencies, hence dummy. Only if-th element is used
-                      call get_imf_k_list(kpt(:)+adkpt(:,loop_adpt),&
+                      call berry_get_imf_klist(kpt(:)+adkpt(:,loop_adpt),&
                            imf_k_list_dummy)
                       imf_list(:,:,if)=imf_list(:,:,if)&
                            +imf_k_list_dummy(:,:,if)*kweight_adpt
@@ -378,7 +378,7 @@ module w90_berry
           end if
 
           if(eval_morb) then
-             call get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+             call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              imf_list=imf_list+imf_k_list*kweight
              img_list=img_list+img_k_list*kweight
              imh_list=imh_list+imh_k_List*kweight
@@ -386,10 +386,10 @@ module w90_berry
 
           if(eval_kubo) then
              if(spin_decomp) then
-                call get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k,&
+                call berry_get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k,&
                      kubo_H_k_spn,kubo_AH_k_spn,jdos_k_spn)
              else
-                call get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k)
+                call berry_get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k)
              endif
              kubo_H=kubo_H+kubo_H_k*kweight
              kubo_AH=kubo_AH+kubo_AH_k*kweight
@@ -757,7 +757,7 @@ module w90_berry
   end subroutine berry_main
 
 
-  subroutine get_imf_k_list(kpt,imf_k_list)
+  subroutine berry_get_imf_klist(kpt,imf_k_list)
   !============================================================!
   !                                                            !
   ! Calculates the Berry curvature traced over the occupied    !
@@ -769,8 +769,8 @@ module w90_berry
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_re_tr,utility_im_tr
     use w90_parameters, only     : num_wann,nfermi
-    use w90_postw90_common, only : fourier_R_to_k_vec
-    use w90_wan_ham, only        : get_eig_UU_HH_JJlist,get_occ_mat_list
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec
+    use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list
     use w90_get_oper, only       : AA_R
 
     ! Arguments
@@ -800,13 +800,13 @@ module w90_berry
 
     ! Gather W-gauge matrix objects
     !
-    call get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
+    call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
     ! occupation matrices f and g=1-f
-    call get_occ_mat_list(eig,UU,f_list,g_list)
+    call wham_get_occ_mat_list(eig,UU,f_list,g_list)
 
     ! Eqs.(39-40) WYSV06
     !
-    call fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega)
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega)
 
     ! Trace formula, Eq.(51) LVTS12
     !
@@ -829,10 +829,10 @@ module w90_berry
        end do
     enddo
 
-  end subroutine get_imf_k_list
+  end subroutine berry_get_imf_klist
 
 
-  subroutine get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+  subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
   !=========================================================!
   !                                                         !
   ! Calculates the three quantities needed for the orbital  !
@@ -851,8 +851,8 @@ module w90_berry
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_re_tr,utility_im_tr
     use w90_parameters, only     : num_wann,nfermi
-    use w90_postw90_common, only : fourier_R_to_k_vec,fourier_R_to_k
-    use w90_wan_ham, only        : get_eig_UU_HH_JJlist,get_occ_mat_list
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec,pw90common_fourier_R_to_k
+    use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list
     use w90_get_oper, only       : AA_R,BB_R,CC_R
 
     ! Arguments
@@ -892,14 +892,14 @@ module w90_berry
 
     ! Gather W-gauge matrix objects
     !
-    call get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
-    call get_occ_mat_list(eig,UU,f_list,g_list)
+    call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
+    call wham_get_occ_mat_list(eig,UU,f_list,g_list)
 
-    call fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega) 
-    call fourier_R_to_k_vec(kpt,BB_R,OO_true=BB)
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega) 
+    call pw90common_fourier_R_to_k_vec(kpt,BB_R,OO_true=BB)
     do j=1,3
        do i=1,j
-          call fourier_R_to_k(kpt,CC_R(:,:,:,i,j),CC(:,:,i,j),0)
+          call pw90common_fourier_R_to_k(kpt,CC_R(:,:,:,i,j),CC(:,:,i,j),0)
           CC(:,:,j,i)=conjg(transpose(CC(:,:,i,j)))
        enddo
     enddo
@@ -977,14 +977,14 @@ module w90_berry
        enddo
     enddo
 
-  end subroutine get_imfgh_k_list
+  end subroutine berry_get_imfgh_klist
 
 
   !===========================================================!
   !                   PRIVATE PROCEDURES                      ! 
   !===========================================================!
 
-  subroutine get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k,&
+  subroutine berry_get_kubo_k(kpt,kubo_H_k,kubo_AH_k,jdos_k,&
                         kubo_H_k_spn,kubo_AH_k_spn,jdos_k_spn)
   !====================================================================!
   !                                                                    !
@@ -995,17 +995,17 @@ module w90_berry
   !====================================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i,pi
-    use w90_utility, only        : utility_diagonalize,utility_rotate,w0gauss
+    use w90_utility, only        : utility_diagonalize,utility_rotate,utility_w0gauss
     use w90_parameters, only     : num_wann,kubo_nfreq,kubo_freq_list,&
                                    fermi_energy_list,kubo_eigval_max,&
                                    kubo_adpt_smr,kubo_smr_fixed_en_width,&
                                    kubo_adpt_smr_max,kubo_adpt_smr_fac,&
                                    kubo_smr_index,berry_kmesh,spin_decomp
-    use w90_postw90_common, only : get_occ,fourier_R_to_k_new,&
-                                   fourier_R_to_k_vec,kmesh_spacing
-    use w90_wan_ham, only        : get_D_h,get_eig_deleig
+    use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
+                                   pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
+    use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
-    use w90_spin, only           : get_spin_nk
+    use w90_spin, only           : spin_get_nk
 
     ! Arguments
     !
@@ -1043,19 +1043,19 @@ module w90_berry
     allocate(AA(num_wann,num_wann,3))
 
     if(kubo_adpt_smr) then
-       call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-       Delta_k=kmesh_spacing(berry_kmesh)
+       call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+       Delta_k=pw90common_kmesh_spacing(berry_kmesh)
     else
-       call fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+       call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
                                         OO_dx=delHH(:,:,1),&
                                         OO_dy=delHH(:,:,2),&
                                         OO_dz=delHH(:,:,3))
        call utility_diagonalize(HH,num_wann,eig,UU)
     endif
-    call get_occ(eig,occ,fermi_energy_list(1))
-    call get_D_h(delHH,UU,eig,D_h)
+    call pw90common_get_occ(eig,occ,fermi_energy_list(1))
+    call wham_get_D_h(delHH,UU,eig,D_h)
 
-    call fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
     do i=1,3
        AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
     enddo
@@ -1070,7 +1070,7 @@ module w90_berry
     kubo_AH_k=cmplx_0
     jdos_k=0.0_dp
     if(spin_decomp) then
-       call get_spin_nk(kpt,spn_nk)
+       call spin_get_nk(kpt,spn_nk)
        kubo_H_k_spn=cmplx_0
        kubo_AH_k_spn=cmplx_0
        jdos_k_spn=0.0_dp
@@ -1112,7 +1112,7 @@ module w90_berry
              arg=(eig(m)-eig(n)-real(omega,dp))/eta_smr
              ! If only Hermitean part were computed, could speed up
              ! by inserting here 'if(abs(arg)>10.0_dp) cycle'
-             delta=w0gauss(arg,kubo_smr_index)/eta_smr
+             delta=utility_w0gauss(arg,kubo_smr_index)/eta_smr
              !
              ! Lorentzian shape (for testing purposes)
 !             delta=1.0_dp/(1.0_dp+arg*arg)/pi
@@ -1143,6 +1143,6 @@ module w90_berry
        enddo
     enddo
 
-  end subroutine get_kubo_k
+  end subroutine berry_get_kubo_k
 
 end module w90_berry
