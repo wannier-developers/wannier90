@@ -1,9 +1,10 @@
 #!/usr/bin/env python2
-
+#
 # gw2wannier90 interface
 # 
 # Designed and tested with: Quantum Espresso and Yambo
-# Written by Stepan Tsirkin,
+# Written by Stepan Tsirkin
+# Bug fixes, improvements and documentation by Antimo Marrazzo
 # 
 
 
@@ -18,14 +19,22 @@ import glob
 argv=sys.argv
 
 if len(argv)<2:
-    print "you need to provide the seedname"
-    exit()
+    print "### gw2wannier90 interface ###"
+    print "You need to provide the seedname"
+    print "Usage: gw2wan.py seedname options"
+    print "Options can be mmn, amn, spn, unk, uhu"
+    print "The use of formatted files is strongly reccommended, in this case type:"
+    print "spn_formatted, uiu_formatted, uhu_formatted" 
+    print "If no options is specified, all the matrices and files are considered"    
+exit()
 
-seedname=argv[1]
-seednameGW=seedname+"+GW"
-targets=[s.lower() for s in argv[2:]]
+seedname=argv[1]   # for instance "silicon"
+seednameGW=seedname+".gw"  #for instance "silicon.gw"
+targets=[s.lower() for s in argv[2:]]   #options read from command line
 
-SPNformatted="spn_formatted" in targets
+#In case of formatted spn,uIu and uHu (mmn,amn,eig are formatted by default
+#NB: Formatted output is strongly reccommended! Fortran binaries are compilers dependent.
+SPNformatted="spn_formatted" in targets   
 UIUformatted="uiu_formatted" in targets
 UHUformatted="uhu_formatted" in targets
 
@@ -44,12 +53,11 @@ else:
     calcSPN=True
     calcUNK=True
 
-
-
-
 if calcUHU : calcMMN=True
 
+#Opening seedname.win file
 f=open(seedname+".nnkp","r")
+#It copies the seedname.win, we should make this optional
 shutil.copy(seedname+".nnkp",seednameGW+".nnkp")
 while True:
     s=f.readline()
