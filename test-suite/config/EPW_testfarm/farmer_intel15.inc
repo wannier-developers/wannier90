@@ -5,12 +5,13 @@
 F90 = ifort
 COMMS=mpi
 MPIF90=ifort
-FCOPTS=-O2 -assume byterecl -g -traceback -I/home/farmer/local/openmpi188_intel12/include/
+FCOPTS=-O2 -assume byterecl -g -traceback -I/home/farmer/local/openmpi188_intel15/include/
 LDOPTS=-O2
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path
 #========================================================
 
-LIBDIR =  /home/farmer/local/intel11/composer_xe_2011_sp1.8.273/mkl/lib/intel64
-LIBS   = -L/home/farmer/local/openmpi188_intel12/lib/ -lmpi_mpifh -lmpi  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
+LIBDIR =  /home/farmer/local/intel15/composer_xe_2015.3.187/mkl/lib/intel64/
+LIBS   = -L/home/farmer/local/openmpi188_intel15/lib/ -lmpi_mpifh -lmpi  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
+
