@@ -104,7 +104,7 @@ program wannier
 
   if (transport .and. tran_read_ht) goto 3003
 
-  call kmesh_get()
+  if (.not. explicit_nnkpts) call kmesh_get()
   call param_memory_estimate()
 
   ! Sort out restarts
@@ -112,7 +112,7 @@ program wannier
      write(stdout,'(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
      call param_read_chkpt()
-!!$     call param_read_um
+!~     call param_read_um
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
            write(stdout,'(/1x,a)',advance='no') 'Resuming a previous Wannier90 calculation '
@@ -167,7 +167,7 @@ program wannier
   endif
 
   call param_write_chkpt('postdis')
-!!$  call param_write_um
+!~  call param_write_um
 
 1001 time2=io_time()
 

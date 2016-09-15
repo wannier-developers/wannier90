@@ -1,4 +1,4 @@
-include ../../make.sys
+include ../../make.inc
 
 w90vdw.x: w90vdw.f90
 	$(F90) $(FCOPTS) $< -o $@

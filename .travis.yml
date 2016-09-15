@@ -1,0 +1,23 @@
+language: python
+python:
+    - "2.7"
+addons:
+  apt:
+    packages:
+        - gfortran 
+        - libblas-dev 
+        - liblapack-dev 
+env:
+## Uncomment the following line if you want to run also the interface tests
+#   - W90TESTSWITHINTERFACE=true
+   - W90TESTSWITHINTERFACE=false
+install:
+# Possibly install QE and other interface code
+    - ./test-suite/external-codes/get-external-codes.sh
+# Install Wannier
+    - cp config/make.inc.gfort.travisci make.inc
+    - make -j default
+script:
+    - ./test-suite/run_tests_travis.sh
+git:
+  depth: 3

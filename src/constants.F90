@@ -17,7 +17,7 @@ module w90_constants
 
   private
 
-  !!! GENERIC CONSTANTS !!!
+  !~~ GENERIC CONSTANTS ~~!
 !aam_2012-04-11; fix to run on MacBook Air 
   integer, parameter, public          :: dp = kind(1.0d0)
 !  integer, parameter, public          :: dp = selected_real_kind(14,200)
@@ -28,7 +28,7 @@ module w90_constants
   complex(kind=dp), parameter, public :: cmplx_0 = (0.0_dp,0.0_dp)
   complex(kind=dp), parameter, public :: cmplx_1 = (1.0_dp,0.0_dp)
 
-  !!! NUMERICAL CONVERGENCE CONSTANTS !!!
+  !~~ NUMERICAL CONVERGENCE CONSTANTS ~~!
   real(kind=dp), parameter, public    :: eps2  = 1.0e-2_dp
   real(kind=dp), parameter, public    :: eps5  = 1.0e-5_dp
   real(kind=dp), parameter, public    :: eps6  = 1.0e-6_dp
@@ -42,12 +42,12 @@ module w90_constants
   real(kind=dp), parameter, public    :: min_smearing_binwidth_ratio = 2._dp 
 
 
-  !!! PHYSICAL CONSTANTS !!!
+  !~~ PHYSICAL CONSTANTS ~~!
   !
   ! Values of the fundamental constants taken from 
   ! http://physics.nist.gov/cuu/Constants/index.html
   ! 
-!! Pick up default value; unfortunately, it doesn't work with indentation...
+!~ Pick up default value; unfortunately, it doesn't work with indentation...
 #ifndef CODATA2006
 #ifndef CODATA2010
 #define CODATA2006
