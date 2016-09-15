@@ -102,6 +102,7 @@ module w90_parameters
   character(len=20), public, save :: dist_cutoff_mode
   real(kind=dp),     public, save :: dist_cutoff_hc
   character(len=20), public, save :: one_dim_axis
+  logical,           public, save :: use_ws_distance
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -1219,6 +1220,9 @@ contains
        & .and.((bands_plot_dim.ne.3).or.(index(dist_cutoff_mode,'three_dim').eq.0))&
        & .and.(one_dim_dir.eq.0) ) &
          call io_error('Error: one_dim_axis not recognised')
+
+    use_ws_distance = .false.
+    call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
 
 301  continue
 

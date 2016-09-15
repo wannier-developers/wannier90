@@ -27,6 +27,7 @@ module w90_hamiltonian
   !                   irvec(1:3,irpt) in the basis of the lattice vectors
   !
   integer,          public, save, allocatable :: irvec(:,:)
+  integer,          public, save, allocatable :: shift_vec(:,:)
   !
   ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
   !
@@ -174,7 +175,7 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt,i,j,m,irpt,ierr,counter
+    integer              :: loop_kpt,i,j,m,irpt,ideg,ierr,counter
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -271,7 +272,7 @@ contains
              ham_r(:,:,irpt)=ham_r(:,:,irpt)+fac*ham_k(:,:,loop_kpt)
           enddo
        enddo
-    
+
        have_translated = .false.
 
     else
@@ -299,6 +300,16 @@ contains
 
     end if
 
+    ! [lp] if required, compute the minimum diistances
+!     if (use_ws_distance) then
+!         allocate(wdist_shiftj_wsi(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating wdist_shiftj_wsi in hamiltonian_get_hr')
+!         allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
+        !
+!         call ws_translate_dist(nrpts, irvec)
+!     endif
+
     have_ham_r = .true.
 
 200 continue
@@ -313,6 +324,8 @@ contains
     return
 
   contains
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
     subroutine internal_translate_centres()
@@ -565,6 +578,5 @@ contains
     return  
 
   end subroutine hamiltonian_wigner_seitz
-
 
 end module w90_hamiltonian

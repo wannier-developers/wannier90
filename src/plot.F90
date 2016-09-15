@@ -16,7 +16,6 @@ module w90_plot
   implicit none
 
   private
-
   public :: plot_main
 
 
@@ -98,8 +97,11 @@ contains
     use w90_parameters, only  : num_wann,bands_num_points,recip_metric,&
                                 bands_num_spec_points,timing_level, &
                                 bands_spec_points,bands_label,bands_plot_format, &
-                                bands_plot_mode,num_bands_project,bands_plot_project
+                                bands_plot_mode,num_bands_project,bands_plot_project, &
+                                use_ws_distance
     use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
+    use w90_ws_distance, only : wdist_shiftj_wsi,wdist_ndeg, &
+                                ws_translate_dist
 
     implicit none
 
@@ -122,7 +124,7 @@ contains
     integer, allocatable :: iwork(:),ifail(:)
     integer              :: info,i,j
     integer              :: irpt,nfound,loop_kpt,counter
-    integer              :: loop_spts,total_pts,loop_i,nkp
+    integer              :: loop_spts,total_pts,loop_i,nkp,ideg
     integer              :: num_paths,num_spts,ierr
     integer              :: bndunit,gnuunit,loop_w,loop_p
     character(len=3),allocatable   :: glabel(:)
@@ -216,24 +218,67 @@ contains
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
+    if(use_ws_distance)then
+      if (index(bands_plot_mode,'s-k').ne.0) then
+        call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
+      elseif (index(bands_plot_mode,'cut').ne.0) then
+        call ws_translate_dist(nrpts_cut, irvec_cut, force_recompute=.true.)
+      else
+        call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+      endif
+    endif
+
+    ! [lp] the s-k and cut codes are very similar when use_ws_distance is used, a complete
+    !      mercge after this point is not impossible
     do loop_kpt=1,total_pts
        ham_kprm=cmplx_0
+       !
        if (index(bands_plot_mode,'s-k').ne.0) then
           do irpt=1,nrpts
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
-             fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
-             ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+            if(use_ws_distance)then
+               do j=1,num_wann
+               do i=1,num_wann
+                  do ideg = 1,wdist_ndeg(i,j,irpt)
+                     rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),&
+                                             real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                     fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
+                     ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r(i,j,irpt)
+                  enddo
+               enddo
+               enddo 
+            else
+! [lp] Original code, without IJ-dependent shift:
+              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
+              fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt),dp)
+              ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
+            endif
           end do
+       ! end of s-k mode
        elseif (index(bands_plot_mode,'cut').ne.0) then
           do irpt=1,nrpts_cut
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+            if(use_ws_distance)then
+               do j=1,num_wann
+               do i=1,num_wann
+                  do ideg = 1,wdist_ndeg(j,i,irpt)
+                     rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt), &
+                                             real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                     fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(wdist_ndeg(i,j,irpt),dp)
+                     ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r_cut(i,j,irpt)
+                  enddo
+                enddo
+                enddo
+! [lp] Original code, without IJ-dependent shift:
+            else
+              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
 !~[aam] check divide by ndegen?
-             fac=exp(cmplx_i*rdotk)
-             ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+              fac=cmplx(cos(rdotk),sin(rdotk),dp)
+              ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+            endif ! end of use_ws_distance
           end do
-       else
-          call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
-       endif
+       endif ! end of "cut" mode
+       !
        ! Diagonalise H_k (->basis of eigenstates)
        do j=1,num_wann
           do i=1,j
@@ -716,7 +761,7 @@ end subroutine plot_interpolate_bands
                 rdotk=twopi*real( (loop_x-1)*irvec(1,irpt)+ &
                      (loop_y-1)*irvec(2,irpt) + (loop_z-1)* &
                      irvec(3,irpt) ,dp)/real(fermi_surface_num_points,dp)
-                fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+                fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt),dp)
                 ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
              end do
              ! Diagonalise H_k (->basis of eigenstates)
