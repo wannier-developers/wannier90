@@ -828,7 +828,7 @@ The default is 0, which means disentangle at every k-point in the full BZ (the s
 \subsection[dis\_spheres\_first\_wann]{\tt integer :: dis\_spheres\_first\_wann}
 Index of the first band that has to be considered as a Wannier function. Used only if {\tt dis\_spheres\_num} is greater than zero.
 At k-points where disentanglement is not performed the bands from
-{\tt dis\_first\_wann} to {\tt dis\_first\_wann+num\_wann} are used
+{\tt dis\_spheres\_first\_wann} to {\tt dis\_spheres\_first\_wann+num\_wann} are used
 to wannierise. The bands excluded using {\tt exclude\_bands} should not
 be counted.
 
