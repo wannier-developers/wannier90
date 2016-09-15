@@ -188,10 +188,10 @@ contains
 
     if(have_ham_k) go to 100
 
-!!$    if (.not. allocated(ham_k)) then
-!!$       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
-!!$       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
-!!$    end if
+!~    if (.not. allocated(ham_k)) then
+!~       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+!~       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
+!~    end if
 
     ham_k=cmplx_0
     eigval_opt=0.0_dp
@@ -255,10 +255,10 @@ contains
 
     ! Fourier transform rotated hamiltonian into WF basis
     ! H_ij(k) --> H_ij(R) = (1/N_kpts) sum_k e^{-ikR} H_ij(k)
-!!$    if (.not.allocated(ham_r)) then
-!!$      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
-!!$      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
-!!$    end if
+!~    if (.not.allocated(ham_r)) then
+!~      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
+!~      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
+!~    end if
     
     ham_r=cmplx_0
 
@@ -332,11 +332,11 @@ contains
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
     
-!!$      if (.not.allocated(wannier_centres_translated)) then
-!!$         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
-!!$         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
-!!$              &in internal_translate_wannier_centres')
-!!$      end if
+!~      if (.not.allocated(wannier_centres_translated)) then
+!~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
+!~         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
+!~              &in internal_translate_wannier_centres')
+!~      end if
 
       allocate(r_home(3,num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_centres')

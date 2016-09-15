@@ -227,7 +227,7 @@ contains
        elseif (index(bands_plot_mode,'cut').ne.0) then
           do irpt=1,nrpts_cut
              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
-!!$[aam] check divide by ndegen?
+!~[aam] check divide by ndegen?
              fac=exp(cmplx_i*rdotk)
              ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
           end do

@@ -59,22 +59,28 @@ module w90_parameters
   ! [gp-end]
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
+    !! number of wannier functions
   integer,           public, save :: mp_grid(3)
 !  logical,           public, save :: automatic_mp_grid
   logical,           public, save :: gamma_only  
   real(kind=dp),     public, save :: dis_win_min
+    !! lower bound of the disentanglement outer window
   real(kind=dp),     public, save :: dis_win_max
+    !! upper bound of the disentanglement outer window
   real(kind=dp),     public, save :: dis_froz_min
+    !! lower bound of the disentanglement inner (frozen) window
   real(kind=dp),     public, save :: dis_froz_max
+    !! upper bound of the disentanglement inner (frozen) window
   integer,           public, save :: dis_num_iter
+    !! number of disentanglement iteration steps
   real(kind=dp),     public, save :: dis_mix_ratio
   real(kind=dp),     public, save :: dis_conv_tol
   integer,           public, save :: dis_conv_window
-  !!! GS-start
+  ! GS-start
   integer,           public, save :: dis_spheres_first_wann
   integer,           public, save :: dis_spheres_num
   real(kind=dp), allocatable, public, save :: dis_spheres(:,:)
-  !!! GS-end
+  ! GS-end
   integer,           public, save :: num_iter
   integer,           public, save :: num_cg_steps
   real(kind=dp),     public, save :: conv_tol
@@ -179,13 +185,13 @@ module w90_parameters
   integer,           public, save :: spin_kmesh(3)
 
   ! [gp-begin, Apr 13, 2012]
-  !! Global interpolation k mesh variables
-  !! These don't need to be public, since their values are copied in the variables of the
-  !! local interpolation meshes. JRY: added save attribute
+  ! Global interpolation k mesh variables
+  ! These don't need to be public, since their values are copied in the variables of the
+  ! local interpolation meshes. JRY: added save attribute
   real(kind=dp), save             :: kmesh_spacing
   integer, save                   :: kmesh(3)
   logical, save                   :: global_kmesh_set
-  !! [gp-end]
+  ! [gp-end]
 
   ! [gp-begin, Jun 1, 2012]
   ! GeneralInterpolator variables
@@ -245,14 +251,19 @@ module w90_parameters
   integer,           public, save :: tran_num_cell_rr     
   real(kind=dp),     public, save :: tran_group_threshold  
   real(kind=dp),     public, save :: translation_centre_frac(3)
-  integer,           public, save :: num_shells    !no longer an input keyword
+  integer,           public, save :: num_shells    
+    !! no longer an input keyword
   logical,           public, save :: skip_B1_tests
-  logical,           public, save :: explicit_nnkpts ! if the nnkpts block is in the input file (allowed only for post-proc setup)
+    !! do not check the B1 condition 
+  logical,           public, save :: explicit_nnkpts 
+    !! nnkpts block is in the input file (allowed only for post-proc setup)
   integer, allocatable, public,save :: shell_list(:)
-  real(kind=dp), allocatable,    public, save :: kpt_latt(:,:) !kpoints in lattice vecs
+  real(kind=dp), allocatable,    public, save :: kpt_latt(:,:)   
+    !! kpoints in lattice vecs
   real(kind=dp),     public, save :: real_lattice(3,3)
   logical,           public, save :: postproc_setup
-  logical,           public, save :: cp_pp ! Car-Parinello post-proc flag/transport
+  logical,           public, save :: cp_pp 
+    !! Car-Parinello post-proc flag/transport
 
   logical,           public, save :: calc_only_A
   logical,           public, save :: use_bloch_phases
@@ -349,11 +360,11 @@ module w90_parameters
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
   logical,                       save, public :: eig_found
 
-!!$![ysl-b]
-!!$  ! ph_g = phase factor of Bloch functions at Gamma
-!!$  !  assuming that Bloch functions at Gamma are real except this phase factor
-!!$  complex(kind=dp), allocatable, save, public :: ph_g(:)
-!!$![ysl-e]
+! $![ysl-b]
+! $  ! ph_g = phase factor of Bloch functions at Gamma
+! $  !  assuming that Bloch functions at Gamma are real except this phase factor
+! $  complex(kind=dp), allocatable, save, public :: ph_g(:)
+! $![ysl-e]
 
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the
   ! original bloch states
@@ -1387,7 +1398,7 @@ contains
     call param_get_keyword('dis_conv_window',found,i_value=dis_conv_window)
     if (dis_conv_window<0) call io_error('Error: dis_conv_window must be positive')       
 
-    !!! GS-start
+    ! GS-start
     dis_spheres_first_wann = 1
     call param_get_keyword('dis_spheres_first_wann',found,i_value=dis_spheres_first_wann)
     if ( dis_spheres_first_wann < 1 )  call io_error('Error: dis_spheres_first_wann must be greater than 0')
@@ -1406,7 +1417,7 @@ contains
              call io_error('Error: radius for dis_spheres must be > 0')
        enddo
     endif
-    !!! GS-end
+    ! GS-end
 
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
@@ -1776,13 +1787,13 @@ contains
     deallocate(nnkpts_block, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! k meshes
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+    ! k meshes                                                                                 !
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
     ! [GP-begin, Apr13, 2012]
-    !! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
-    !! This bit of code must appear *before* all other codes for the local interpolation meshes,
-    !! BUT *after* having calculated the reciprocal-space vectors.
+    ! Global interpolation k-mesh; this is overridden by "local" meshes of a given submodule
+    ! This bit of code must appear *before* all other codes for the local interpolation meshes,
+    ! BUT *after* having calculated the reciprocal-space vectors.
     global_kmesh_set = .false.
     kmesh_spacing=-1._dp
     kmesh = 0
@@ -2322,7 +2333,7 @@ contains
        write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :',dis_mix_ratio,'|'
        write(stdout,'(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :',dis_conv_tol,'|'
        write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Convergence window                        :',dis_conv_window,'|'
-       !!! GS-start
+       ! GS-start
        if ( dis_spheres_num .gt. 0 ) then
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :',dis_spheres_num,'|'
           do nkp = 1,dis_spheres_num
@@ -2331,7 +2342,7 @@ contains
           enddo
           write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :',dis_spheres_first_wann,'|'
        endif
-       !!! GS-end
+       ! GS-end
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     end if
     !
@@ -3056,85 +3067,85 @@ contains
   end subroutine param_dealloc
 
 
-!!$  !================================!
-!!$  subroutine param_write_um
-!!$    !================================!
-!!$    !                                !
-!!$    ! Dump the U and M to *_um.dat   !
-!!$    !                                !
-!!$    !================================!
-!!$
-!!$
-!!$    use w90_io,        only : io_file_unit,io_error,seedname,io_date
-!!$    implicit none
-!!$
-!!$    integer :: i,j,k,l,um_unit
-!!$    character (len=9) :: cdate, ctime
-!!$    character(len=33) :: header
-!!$
-!!$    call io_date(cdate, ctime)
-!!$    header='written on '//cdate//' at '//ctime
-!!$
-!!$    um_unit=io_file_unit()
-!!$    open(unit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
-!!$    write(um_unit) header
-!!$    write(um_unit) omega_invariant
-!!$    write(um_unit) num_wann,num_kpts,num_nnmax    
-!!$    write(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
-!!$    write(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
-!!$    close(um_unit)
-!!$
-!!$    return
-!!$
-!!$  end subroutine param_write_um
+!~  !================================!
+!~  subroutine param_write_um
+!~    !================================!
+!~    !                                !
+!~    ! Dump the U and M to *_um.dat   !
+!~    !                                !
+!~    !================================!
+!~
+!~
+!~    use w90_io,        only : io_file_unit,io_error,seedname,io_date
+!~    implicit none
+!~
+!~    integer :: i,j,k,l,um_unit
+!~    character (len=9) :: cdate, ctime
+!~    character(len=33) :: header
+!~
+!~    call io_date(cdate, ctime)
+!~    header='written on '//cdate//' at '//ctime
+!~
+!~    um_unit=io_file_unit()
+!~    open(unit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
+!~    write(um_unit) header
+!~    write(um_unit) omega_invariant
+!~    write(um_unit) num_wann,num_kpts,num_nnmax    
+!~    write(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
+!~    write(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
+!~    close(um_unit)
+!~
+!~    return
+!~
+!~  end subroutine param_write_um
 
 
-!!$  !================================!
-!!$  subroutine param_read_um
-!!$    !================================!
-!!$    !                                !
-!!$    ! Restore U and M from file      !
-!!$    !                                !
-!!$    !================================!
-!!$
-!!$    use w90_io,        only : io_file_unit,io_error,seedname
-!!$    implicit none
-!!$
-!!$    integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
-!!$    integer       :: i,j,k,l,um_unit,ierr
-!!$    character(len=33) :: header
-!!$    real(kind=dp) :: tmp_omi
-!!$
-!!$    um_unit=io_file_unit()
-!!$    open(unit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
-!!$    read(um_unit) header
-!!$    write(stdout,'(1x,4(a))') 'Reading U and M from file ',trim(seedname),'_um.dat ', header 
-!!$    read(um_unit) tmp_omi
-!!$    if ( have_disentangled ) then
-!!$       if ( abs(tmp_omi-omega_invariant).gt.1.0e-10_dp )  &
-!!$            call io_error('Error in restart: omega_invariant in .chk and um.dat files do not match')
-!!$    endif
-!!$    read(um_unit) tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
-!!$    if(tmp_num_wann/=num_wann) call io_error('Error in param_read_um: num_wann mismatch')
-!!$    if(tmp_num_kpts/=num_kpts) call io_error('Error in param_read_um: num_kpts mismatch')
-!!$    if(tmp_num_nnmax/=num_nnmax) call io_error('Error in param_read_um: num_nnmax mismatch')
-!!$    if (.not.allocated(u_matrix)) then
-!!$       allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
-!!$       if (ierr/=0) call io_error('Error allocating u_matrix in param_read_um')
-!!$    endif
-!!$    read(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
-!!$    if (.not.allocated(m_matrix)) then
-!!$       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-!!$       if (ierr/=0) call io_error('Error allocating m_matrix in param_read_um')
-!!$    endif
-!!$    read(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
-!!$    close(um_unit)
-!!$
-!!$    return
-!!$
-!!$105 call io_error('Error: Problem opening file '//trim(seedname)//'_um.dat in param_read_um')
-!!$
-!!$  end subroutine param_read_um
+!~  !================================!
+!~  subroutine param_read_um
+!~    !================================!
+!~    !                                !
+!~    ! Restore U and M from file      !
+!~    !                                !
+!~    !================================!
+!~
+!~    use w90_io,        only : io_file_unit,io_error,seedname
+!~    implicit none
+!~
+!~    integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
+!~    integer       :: i,j,k,l,um_unit,ierr
+!~    character(len=33) :: header
+!~    real(kind=dp) :: tmp_omi
+!~
+!~    um_unit=io_file_unit()
+!~    open(unit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
+!~    read(um_unit) header
+!~    write(stdout,'(1x,4(a))') 'Reading U and M from file ',trim(seedname),'_um.dat ', header 
+!~    read(um_unit) tmp_omi
+!~    if ( have_disentangled ) then
+!~       if ( abs(tmp_omi-omega_invariant).gt.1.0e-10_dp )  &
+!~            call io_error('Error in restart: omega_invariant in .chk and um.dat files do not match')
+!~    endif
+!~    read(um_unit) tmp_num_wann,tmp_num_kpts,tmp_num_nnmax    
+!~    if(tmp_num_wann/=num_wann) call io_error('Error in param_read_um: num_wann mismatch')
+!~    if(tmp_num_kpts/=num_kpts) call io_error('Error in param_read_um: num_kpts mismatch')
+!~    if(tmp_num_nnmax/=num_nnmax) call io_error('Error in param_read_um: num_nnmax mismatch')
+!~    if (.not.allocated(u_matrix)) then
+!~       allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
+!~       if (ierr/=0) call io_error('Error allocating u_matrix in param_read_um')
+!~    endif
+!~    read(um_unit) (((u_matrix(i,j,k),i=1,num_wann),j=1,num_wann),k=1,num_kpts)
+!~    if (.not.allocated(m_matrix)) then
+!~       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+!~       if (ierr/=0) call io_error('Error allocating m_matrix in param_read_um')
+!~    endif
+!~    read(um_unit) ((((m_matrix(i,j,k,l),i=1,num_wann),j=1,num_wann),k=1,nntot),l=1,num_kpts)
+!~    close(um_unit)
+!~
+!~    return
+!~
+!~105 call io_error('Error: Problem opening file '//trim(seedname)//'_um.dat in param_read_um')
+!~
+! $  end subroutine param_read_um
 
 
 
@@ -4793,13 +4804,13 @@ contains
 
      in_data(line_s:line_e)(1:maxlen) = ' '
 
-!!$     ! Check
-!!$     do loop=1,num_wann
-!!$        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
-!!$           write(stdout,*) ' Projection:',loop
-!!$           call io_error(' Error in projections: z and x axes are not orthogonal')
-!!$        endif
-!!$     enddo
+!~     ! Check
+!~     do loop=1,num_wann
+!~        if ( abs(sum(proj_z(:,loop)*proj_x(:,loop))).gt.1.0e-6_dp ) then
+!~           write(stdout,*) ' Projection:',loop
+!~           call io_error(' Error in projections: z and x axes are not orthogonal')
+!~        endif
+!~     enddo
 
      ! Normalise z-axis and x-axis and check/fix orthogonality
      do loop=1,num_proj
