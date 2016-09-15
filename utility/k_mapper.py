@@ -70,3 +70,5 @@ print 'Path of the QE NSCF output file', nscf_output_file
 
 ind_list=indeces_list(np.array(k_fine_list),np.array(k_coarse_list))
 print 'List of k-indeces to pass to Yambo', ind_list
+for i in ind_list:
+    print str(i)+'|'+str(i)+'|'+'first band'+'|'+'last band'+'|'
