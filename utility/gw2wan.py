@@ -250,12 +250,6 @@ def reorder_uXu(ext,formatted=False):
 	start=0
 	length=nbnd*nbnd
 
-	for ik in xrange(NKPT):
-	    for ib2 in xrange(nnb):
-		for ib1 in xrange(nnb):
-		    f_uXu_out.write("\n".join(x for x in (A[start:start+length].reshape(nbnd,nbnd,order='F')[BANDSORT[KPNB[ik][ib2]],:][:,BANDSORT[KPNB[ik][ib1]]]+
-			np.einsum('ln,lm,l->nm',MMN[ik][ib2].conj(),MMN[ik][ib1],eigenDE[ik]) ).reshape(-1,order='F') )+"\n")
-		    start+=length
     for ik in xrange(NKPT):
 	for ib2 in xrange(nnb):
 	    for ib1 in xrange(nnb):
