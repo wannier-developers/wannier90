@@ -82,7 +82,7 @@ then
   export TMP=$2
   export OUTPUT="${TMP%???}werr"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
-  ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4
+  ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4
   cp $OUTPUT $3
   if [[ -e CRASH ]]
   then

@@ -297,7 +297,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
                 !    hamiltonians correctly in tran_2c2_build_hams
                 !
                 if ((index(transport_mode,'lcr')>0 ) .and. &
-!!!                    (tran_num_cell_ll .eq. 1)        .and. &
+!~                    (tran_num_cell_ll .eq. 1)        .and. &
                     (abs(dist_vec(one_dim_dir)) .gt. dist_cutoff) ) then
                     ! Move to right
                     dist_vec(one_dim_dir) = dist_ij_vec(one_dim_dir)+real_lattice(one_dim_dir,one_dim_vec)
@@ -324,7 +324,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
                  ! MS: Special case (as above) equivalent for alternate definition of cut off
                  !
                  if ((index(transport_mode,'lcr')>0 ) .and. &
- !!!                   (tran_num_cell_ll .eq. 1)         .and. &
+ !~                   (tran_num_cell_ll .eq. 1)         .and. &
                     (dist .gt. dist_cutoff) ) then
                     ! Move to right
                     dist_vec(:) = dist_ij_vec(:)+real_lattice(:,one_dim_vec)
@@ -1460,7 +1460,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
      real(kind=dp)                                          :: i_unkg,r_unkg,wf_frac(3),det_rl,inv_t_rl(3,3),&
                                                                mag_signature_sq
 
-!!$     character(len=11)                                      :: unkg_file
+!~     character(len=11)                                      :: unkg_file
 
      logical                                                :: have_file
 
@@ -1718,7 +1718,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     real(dp)                                          :: reference_position,&
       cell_length,distance,PL_max_val,PL_min_val
 
-!!$    integer                                           :: l,max_i,iterator !aam: unused variables
+!~    integer                                           :: l,max_i,iterator !aam: unused variables
     integer                                           :: i,j,k,PL_selector,&
       sort_iterator,sort_iterator2,ierr,temp_coord_2,temp_coord_3,n,&
       num_wann_cell_ll,num_wf_group1,num_wf_last_group

@@ -14,7 +14,7 @@
     nat  = 20
     ntyp = 1
     ecutwfc = 60
-    occupations = smearing 
+    occupations = "smearing" 
     degauss = 0.02
     nosym = .true.
 /
