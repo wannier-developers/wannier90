@@ -186,7 +186,7 @@ contains
     if  (.not.geninterp_single_file) then
        allocate(localkpointidx(counts(my_node_id)),stat=ierr)
        if (ierr/=0) call io_error('Error allocating localkpointidx in geinterp_main.')
-       call comms_scatterv(localkpointidx(1),counts(my_node_id),kpointidx(1),counts, displs)
+       call comms_scatterv(localkpointidx(:),counts(my_node_id),kpointidx(:),counts, displs)
     end if
 
     ! I open the output file(s)
