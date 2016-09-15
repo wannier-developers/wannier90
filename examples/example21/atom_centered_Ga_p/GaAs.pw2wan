@@ -2,6 +2,6 @@
     outdir='./work'
     prefix='GaAs',
     seedname = 'GaAs'
-	write_unk = .true.
-        write_dmb = .true.
+    write_unk = .true.
+    write_dmb = .true. ! additional input for symmetry-adapted mode
 /

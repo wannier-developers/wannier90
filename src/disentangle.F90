@@ -1670,11 +1670,11 @@ contains
          ! non-frozen neighboring states from the previous iteration
 
          wkomegai1 = real(num_wann,dp) * wbtot
-         if (lsitesymmetry) then                                                   !RS:
-            do nkp=1,nkptirr                                                       !RS:                      
-               wkomegai1(nkp)=wkomegai1(nkp)*nsymmetry/count(kptsym(:,nkp).eq.nkp) !RS:   
-            enddo                                                                  !RS:
-         endif                                                                     !RS:
+         if (lsitesymmetry) then                                                                        !RS:
+            do nkp=1,nkptirr                                                                            !RS:                      
+               wkomegai1(ir2ik(nkp))=wkomegai1(ir2ik(nkp))*nsymmetry/count(kptsym(:,nkp).eq.ir2ik(nkp)) !RS:   
+            enddo                                                                                       !RS:
+         endif                                                                                          !RS:
          do nkp = 1, num_kpts  
             if ( ndimfroz(nkp).gt.0 ) then  
                if (lsitesymmetry) call io_error('not implemented in symmetry-adapted mode') !YN: RS: 
@@ -1701,51 +1701,53 @@ contains
 
          ! Refine optimal subspace at k points w/ non-frozen states
          do nkp = 1, num_kpts  
-           if (lsitesymmetry) then                                                    !RS: 
-              if (ir2ik(ik2ir(nkp)).ne.nkp) cycle                                     !RS:
-           end if                                                                     !RS:
-           if (lsitesymmetry) then                                                    !RS:
-             call dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
-             do j=1,num_wann; wkomegai1(nkp)=wkomegai1(nkp)-lambda(j,j); enddo        !RS:
-           else                                                                       !RS:
-            if ( num_wann.gt.ndimfroz(nkp) ) then  
-               ! Diagonalize Z matrix
-               do j = 1, ndimwin(nkp) - ndimfroz(nkp)  
-                  do i = 1, j  
-                     cap(i + ( (j - 1) * j) / 2) = czmat_in(i,j,nkp)  
+            if (lsitesymmetry) then                                                     !RS: 
+               if (ir2ik(ik2ir(nkp)).ne.nkp) cycle                                      !RS:
+            end if                                                                      !RS:
+            if (lsitesymmetry) then                                                     !RS:
+               call dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
+               do j=1,num_wann                                                          !RS:
+                  wkomegai1(nkp)=wkomegai1(nkp)-lambda(j,j)                             !RS:
+               enddo                                                                    !RS:
+            else                                                                        !RS:
+               if ( num_wann.gt.ndimfroz(nkp) ) then  
+                  ! Diagonalize Z matrix
+                  do j = 1, ndimwin(nkp) - ndimfroz(nkp)  
+                     do i = 1, j  
+                        cap(i + ( (j - 1) * j) / 2) = czmat_in(i,j,nkp)  
+                     enddo
                   enddo
-               enddo
-               ndiff = ndimwin(nkp) - ndimfroz(nkp)  
-               call ZHPEVX ('V', 'A', 'U', ndiff, cap, 0.0_dp, 0.0_dp, 0, 0, &
-                    -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
-               if (info.lt.0) then  
-                  write(stdout,*) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
-                  write(stdout,*) ' THE ',  -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-                  call io_error(' dis_extract: error')  
-               endif
-               if (info.gt.0) then  
-                  write(stdout,*) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
-                  write(stdout,*) info, ' EIGENVECTORS FAILED TO CONVERGE'  
-                  call io_error(' dis_extract: error')  
-               endif
-
-               ! Update the optimal subspace by incorporating the num_wann-ndimfroz(nkp) l
-               ! eigenvectors of the Z matrix into u_matrix_opt. Also, add contribution from
-               ! non-frozen states to wkomegai1(nkp) (minus the corresponding eigenvalu
-               m = ndimfroz(nkp)  
-               do j = ndimwin(nkp) - num_wann + 1, ndimwin(nkp) - ndimfroz(nkp)
-                  m = m + 1  
-                  wkomegai1(nkp) = wkomegai1(nkp) - w(j)  
-                  u_matrix_opt(1:ndimwin(nkp),m,nkp) = cmplx_0
-                  ndimk=ndimwin(nkp)-ndimfroz(nkp)
-                  do i=1,ndimk
-                     p=indxnfroz(i,nkp)
-                     u_matrix_opt(p,m,nkp) = cz(i,j)  
+                  ndiff = ndimwin(nkp) - ndimfroz(nkp)  
+                  call ZHPEVX ('V', 'A', 'U', ndiff, cap, 0.0_dp, 0.0_dp, 0, 0, &
+                       -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
+                  if (info.lt.0) then  
+                     write(stdout,*) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
+                     write(stdout,*) ' THE ',  -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
+                     call io_error(' dis_extract: error')  
+                  endif
+                  if (info.gt.0) then  
+                     write(stdout,*) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
+                     write(stdout,*) info, ' EIGENVECTORS FAILED TO CONVERGE'  
+                     call io_error(' dis_extract: error')  
+                  endif
+   
+                  ! Update the optimal subspace by incorporating the num_wann-ndimfroz(nkp) l
+                  ! eigenvectors of the Z matrix into u_matrix_opt. Also, add contribution from
+                  ! non-frozen states to wkomegai1(nkp) (minus the corresponding eigenvalu
+                  m = ndimfroz(nkp)  
+                  do j = ndimwin(nkp) - num_wann + 1, ndimwin(nkp) - ndimfroz(nkp)
+                     m = m + 1  
+                     wkomegai1(nkp) = wkomegai1(nkp) - w(j)  
+                     u_matrix_opt(1:ndimwin(nkp),m,nkp) = cmplx_0
+                     ndimk=ndimwin(nkp)-ndimfroz(nkp)
+                     do i=1,ndimk
+                        p=indxnfroz(i,nkp)
+                        u_matrix_opt(p,m,nkp) = cz(i,j)  
+                     enddo
                   enddo
-               enddo
-            endif
-            ! [if num_wann>ndimfroz(nkp)]
-           endif !RS:
+               endif
+               ! [if num_wann>ndimfroz(nkp)]
+            endif !RS:
 
             ! Now that we have contribs. from both frozen and non-frozen states to
             ! wkomegai1(nkp), add it to womegai1

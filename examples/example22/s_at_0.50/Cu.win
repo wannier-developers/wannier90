@@ -1,8 +1,10 @@
 num_bands         =  10
 num_wann          =   6
 
+!===========  additional input for symmetry-adapted mode
 site_symmetry = .true.
 symmetrize_eps=  1d-9
+!===========
 
 ! window is set to [-10 eV:+10 eV] with respect to Fermi level
 dis_win_min =   4.689
@@ -17,7 +19,7 @@ hr_plot = .true.
 bands_plot = .true.
 wannier_plot = .true.
 
-wannier_plot_supercell = 4
+wannier_plot_supercell = 3
 
 begin kpoint_path
 L   0.50000     0.50000     0.50000   G   0.00000     0.00000     0.00000

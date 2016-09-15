@@ -94,10 +94,9 @@ contains
     logical,optional,intent(in) :: lwindow_in(num_bands,num_kpts)
   
   ! local
-    integer :: ik,ir,isym,irk
+    integer :: ik,ir,isym,irk,n
     logical :: ldone(num_kpts)
     complex(kind=dp) :: cmat(ndim,num_wann)
-    integer :: i,j,n
   
     if (present(lwindow_in).and.(ndim.ne.num_bands)) call io_error('ndim!=num_bands')
     if (.not.present(lwindow_in)) then
@@ -266,8 +265,7 @@ contains
     complex(kind=dp),intent(inout) :: czmat(num_bands,num_bands,num_kpts)
     logical,intent(in) :: lwindow_in(num_bands,num_kpts)
     logical :: lfound(num_kpts)
-    integer :: ik,ir,isym,irk
-    integer :: i,j,nd
+    integer :: ik,ir,isym,irk,nd
     complex(kind=dp) :: cztmp(num_bands,num_bands)
     complex(kind=dp) :: cmat1(num_bands,num_bands)
     complex(kind=dp) :: cmat2(num_bands,num_bands)
@@ -284,7 +282,7 @@ contains
           ! cmat1 = Z(R,k)*d(R,k)
           call zgemm('N','N',nd,nd,nd,cmplx_1,czmat(:,:,irk),num_bands,&
                      d_matrix_band(:,:,isym,ir),num_bands,cmplx_0,cmat1,num_bands)
-          ! cmat2 = d^{+}(R,k) Z(R,k) d(R,k)=d^{+}(R,k) cmat1
+          ! cmat2 = d^{+}(R,k) Z(R,k) d(R,k) = d^{+}(R,k) cmat1
           call zgemm('C','N',nd,nd,nd,cmplx_1,d_matrix_band(:,:,isym,ir),num_bands,&
                      cmat1,num_bands,cmplx_0,cmat2,num_bands)
           czmat(:,:,ik)=czmat(:,:,ik)+cmat2(:,:)
@@ -326,7 +324,7 @@ contains
     complex(kind=dp),intent(inout) :: umat(ndim,num_wann)
     integer,optional,intent(in) :: n
   
-    integer :: isym,ngk,i,j,iter,ntmp
+    integer :: isym,ngk,i,iter,ntmp
     integer,parameter :: niter=100
   
     real(kind=dp)    :: diff
@@ -462,7 +460,7 @@ contains
     complex(kind=dp) :: umatnew(num_bands,num_wann)
     complex(kind=dp) :: ZU(num_bands,num_wann)
     complex(kind=dp) :: deltaU(num_bands,num_wann),carr(num_bands)
-    integer :: i,j,m,INFO,IFAIL(2),IWORK(5*2)
+    integer :: i,m,INFO,IFAIL(2),IWORK(5*2)
     complex(kind=dp) :: HP(3),SP(3),V(2,2),CWORK(2*2)
     real(kind=dp)    :: W(2),RWORK(7*2),sp3
     integer :: iter

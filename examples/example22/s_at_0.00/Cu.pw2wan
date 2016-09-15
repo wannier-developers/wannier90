@@ -2,7 +2,7 @@
     outdir='./work'
     prefix='Cu',
     seedname = 'Cu'
-	write_unk = .true.
-        write_dmb = .true.
-    !    read_sym = .true.
+    write_unk = .true.
+    write_dmb = .true.  ! additional input for symmetry-adapted mode 
+   ! read_sym = .true.  
 /

@@ -1,8 +1,10 @@
 num_bands         =   4 
 num_wann          =   1
 
+!===========  additional input for symmetry-adapted mode
 site_symmetry = .true.
 symmetrize_eps=  1d-9
+!===========
 
 dis_win_min =  -6.0
 dis_win_max =   8.0
@@ -35,6 +37,10 @@ bohr
 -5.34 5.34 0.0
 end unit_cell_cart
 
+begin atoms_frac
+Ga 0.00  0.00  0.00
+As 0.25  0.25  0.25 
+end atoms_frac
 
 mp_grid           = 4 4 4
 
