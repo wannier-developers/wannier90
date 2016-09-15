@@ -335,27 +335,35 @@ if calcSPN:
     print "WARNING: {0}.spn not written : ".format(seednameGW) ,err
 
 if calcUNK:
+    unkgwdir="UNK_GW"
     for f_unk_name in  glob.glob("UNK*"):
+      try:
 	try:
-	    os.mkdir("UNK_GW")
+	    os.mkdir(unkgwdir)
 	except OSError:
 	    pass
 	if UNKformatted:
-	    f_unk_out=open(os.path.join("UNK_GW",f_unk_name),"w")
+	    f_unk_out=open(os.path.join(unkgwdir,f_unk_name),"w")
 	    f_unk_in=open(f_unk_name,"r")
 	    nr1,nr2,nr3,ik,nbnd=np.array(f_unk_in.readline().split(),dtype=int)
-	    NR=nr1*nr2*nr3*2
+	    NR=nr1*nr2*nr3
 	    f_unk_out.write(" ".join(str(x) for x in (nr1,nr2,nr3,ik,NBND))+"\n")
-	    np.savetxt(f_unk_out,np.array([x for l in f_unk_in for x in l.split()],dtype=float).reshape((nbnd,NR),order='C')[BANDSORT[ik],:] )
+	    f_unk_out.write("\n".join(
+		    np.array([l.strip() for l in f_unk_in],dtype=str).reshape((nbnd,NR),order='C')[BANDSORT[ik-1],:].reshape(-1,order='C') ) )
 	else:
-	    f_unk_out=FortranFile(os.path.join("UNK_GW",f_unk_name),"w")
-	    f_unk_in=FortranFile(f_unk_name,"r").read_record
+	    f_unk_out=FortranFile(os.path.join(unkgwdir,f_unk_name),"w")
+	    f_unk_in=FortranFile(f_unk_name,"r")
 	    nr1,nr2,nr3,ik,nbnd=f_unk_in.read_record(dtype=np.int32)
 	    f_unk_out.write_record(np.array([nr1,nr2,nr3,ik,NBND],dtype=np.int32))
-	    unk=np.array([f_unk_in.read_record(dtype=np.complex) for ib in xrange(nbnd)] )[BANDSORT[ik],:]
-	    for i in NBND:
+	    unk=np.array([f_unk_in.read_record(dtype=np.complex) for ib in xrange(nbnd)] )[BANDSORT[ik-1],:]
+	    for i in xrange(NBND):
 		f_unk_out.write_record(unk[ib])
 	f_unk_in.close()
 	f_unk_out.close()
+      except IOError as err:
+        if err.errno==21:
+    	    pass
+    	else:
+    	    raise err
 
 f_raw.close()
