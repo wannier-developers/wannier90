@@ -19,7 +19,8 @@ program postw90
 
   use w90_kmesh
   use w90_comms, only : on_root, num_nodes, comms_setup, comms_end, comms_bcast, comms_barrier
-  use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_param_dist, pw90common_wanint_data_dist
+  use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
+       pw90common_wanint_param_dist, pw90common_wanint_data_dist
 
   ! These modules deal with the interpolation of specific physical properties
   !
