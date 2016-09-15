@@ -32,7 +32,7 @@ inputs_args = ('benzene.win', '1')
 
 [wan_lavo3_dissphere/]
 program = WANNIER90
-inputs_args = ('lavo3.win', '1')
+inputs_args = ('LaVO3.win', '1')
 
 [pw_example07/]
 program = WANNIER90
