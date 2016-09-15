@@ -1234,10 +1234,10 @@ contains
        & .and.(one_dim_dir.eq.0) ) &
          call io_error('Error: one_dim_axis not recognised')
 
+301  continue
+
     use_ws_distance = .false.
     call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
-
-301  continue
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
