@@ -14,7 +14,7 @@
     nat  = 220
     ntyp = 2
     ecutwfc = 60
-    occupations = smearing 
+    occupations = "smearing" 
     degauss = 0.02
 /
 &electrons
