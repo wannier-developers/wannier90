@@ -1,4 +1,3 @@
-# I use c language to have at least make and similar
 language: python
 python:
     - "2.7"
@@ -8,13 +7,17 @@ addons:
         - gfortran 
         - libblas-dev 
         - liblapack-dev 
+env:
+## Uncomment the following line if you want to run also the interface tests
+#   - W90TESTSWITHINTERFACE=true
+   - W90TESTSWITHINTERFACE=false
 install:
-    - cp config/make.sys.gfort make.sys
-    - make -j wannier post
-#before_script:
-#    - ...
+# Possibly install QE and other interface code
+    - ./test-suite/external-codes/get-external-codes.sh
+# Install Wannier
+    - cp config/make.inc.gfort.travisci make.inc
+    - make -j default
 script:
-    - cd test-suite
-    - make run-tests
+    - ./test-suite/run_tests_travis.sh
 git:
   depth: 3

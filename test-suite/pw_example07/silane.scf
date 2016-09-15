@@ -1,0 +1,30 @@
+&control
+    calculation  = 'scf'
+    restart_mode = 'from_scratch'
+    pseudo_dir   = '../../pseudo/'
+    outdir       = './'
+    prefix       = 'sil'
+ /
+&system
+    ibrav     = 1
+    celldm(1) = 12
+    nat       = 5
+    ntyp      = 2
+    ecutwfc   = 40.0
+ /
+&electrons
+    startingwfc     = 'random'
+    diagonalization = 'cg'
+    conv_thr        = 1.0e-10
+    mixing_beta     = 0.2
+ /
+ATOMIC_SPECIES
+Si 55  Si.pz-vbc.UPF
+H  1   H.pz-vbc.UPF
+ATOMIC_POSITIONS angstrom 
+   Si      0.000000000    0.000000000    0.000000000    
+    H      1.056551000    1.056551000    1.056551000    
+    H      1.056551000   -1.056551000   -1.056551000    
+    H     -1.056551000    1.056551000   -1.056551000    
+    H     -1.056551000   -1.056551000    1.056551000    
+K_POINTS {gamma}

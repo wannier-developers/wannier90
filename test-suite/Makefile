@@ -11,7 +11,7 @@
 #
 # Makefile to run regression numerical tests. Simple is good
 
-include ./ENVIRONMENT
+include ENVIRONMENT
 
 default :
 	@echo 'To run Wannier90 test-suite, type at the shell prompt:'
@@ -19,11 +19,12 @@ default :
 	@echo '  make target'
 	@echo ' '
 	@echo 'where <target> identifies an action'
-	@echo ' run-tests          : run-tests-serial (default)'
-	@echo ' run-tests-serial   : run all tests in SERIAL' 
-	@echo ' run-tests-parallel : run all tests in PARALLEL (4 MPI)'
-	@echo ' compare            : compare last output generated with reference'
-	@echo ' clean              : clean output (our/err files) of all tests'
+	@echo ' run-tests           : run wannier tests (default)'
+	@echo ' run-tests-interface : run tests that requires other codes (e.g. QE)'
+	@echo ' run-tests-all       : run all the tests in SERIAL '
+	@echo ' run-tests-parallel  : run all tests in PARALLEL (4 MPI)'
+	@echo ' compare             : compare last output generated with reference'
+	@echo ' clean               : clean output (our/err files) of all tests'
 	@echo ' '
 	@echo 'For additional advanced commands and settings please manually inspect'
 	@echo 'ENVIRONMENT and Makefile files'
@@ -33,9 +34,13 @@ prolog :
 	sed "s|XXXXXX|$(WANNIER_ROOT)|g" < userconfig.tmp > userconfig; fi
 	@sed "s|XXXXXX|$(WANNIER_ROOT)|g" < userconfig.tmp > userconfig
 
-run-tests : run-tests-serial
+run-tests : run-tests-wannier-serial
 
-run-tests-serial : run-tests-wannier-serial
+run-tests-interface : prolog
+	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=interface_all
+
+run-tests-all : prolog
+	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=test_all
 
 run-tests-parallel : run-tests-wannier-parallel
 
@@ -66,8 +71,12 @@ compare-wannier : prolog
 	${TESTCODE_DIR}/bin/testcode.py --category=wannier_all  --verbose compare 2>&1 | tee out.WANNIER90.`date +%Y%m%d_%H%M%S`
 
 clean:
-	@for x in `find pw_* -name "test*"`; do rm -rf $$x; done
-	@for x in `find cp_* -name "test*"`; do rm -rf $$x; done
+	@for x in `find example* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find example* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find test_* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find test_* -name "*.wout"`; do rm -rf $$x; done
 
 # Calling 'purge' means remove all reference outputs... be careful!
 purge: clean
