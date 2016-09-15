@@ -12,6 +12,7 @@ v2.0.2 (XXX)
   'frac' mean fractional coordinates for k-points, 'cart' and
   'abs' mean absolute.
 * Improvements to various Makefiles 
+* Fixed bug in kslice.F90 (trying to plot isoenergy contours colored by the spin gave an error message at runtime).
 * Adaptively-refined mesh now implemented correctly for even sizes (e.g., 4x4).
 * Fixed bug in the calculation of orbital magnetization in berry.F90
 <<<<<<< HEAD
