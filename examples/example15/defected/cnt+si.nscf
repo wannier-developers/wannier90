@@ -15,7 +15,7 @@
     ntyp = 2
     nbnd = 1100
     ecutwfc = 60
-    occupations = smearing 
+    occupations = "smearing" 
     degauss = 0.02
 /
 &electrons

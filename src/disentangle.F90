@@ -205,22 +205,22 @@ contains
        enddo
     enddo
 
-!!$![ysl-b]
-!!$!   Apply phase factor ph_g if gamma_only
-!!$    if (.not. gamma_only) then
-!!$       do nkp = 1, num_kpts
-!!$          do j = 1, num_wann
-!!$             u_matrix_opt(1:ndimwin(nkp),j,nkp)  = u_matrix_opt(1:ndimwin(nkp),j,nkp)
-!!$          enddo
-!!$       enddo
-!!$    else
-!!$       do nkp = 1, num_kpts
-!!$          do j = 1, ndimwin(nkp)
-!!$             u_matrix_opt(j,1:num_wann,nkp)  = conjg(ph_g(j))*u_matrix_opt(j,1:num_wann,nkp)
-!!$          enddo
-!!$       enddo
-!!$    endif
-!!$![ysl-e]
+!~![ysl-b]
+!~!   Apply phase factor ph_g if gamma_only
+!~    if (.not. gamma_only) then
+!~       do nkp = 1, num_kpts
+!~          do j = 1, num_wann
+!~             u_matrix_opt(1:ndimwin(nkp),j,nkp)  = u_matrix_opt(1:ndimwin(nkp),j,nkp)
+!~          enddo
+!~       enddo
+!~    else
+!~       do nkp = 1, num_kpts
+!~          do j = 1, ndimwin(nkp)
+!~             u_matrix_opt(j,1:num_wann,nkp)  = conjg(ph_g(j))*u_matrix_opt(j,1:num_wann,nkp)
+!~          enddo
+!~       enddo
+!~    endif
+!~![ysl-e]
 
     ! Deallocate module arrays
     call internal_dealloc()
@@ -592,10 +592,10 @@ contains
     ! internal variables
     integer :: i,j,nkp,ierr
     integer :: imin,imax,kifroz_min,kifroz_max
-    !!! GS-start
+    !~~ GS-start
     real(kind=dp) :: dk(3), kdr2
     logical :: dis_ok
-    !!! GS-end
+    !~~ GS-end
 
     ! OUTPUT:
     !     ndimwin(nkp)   number of bands inside outer window at nkp-th k poi
@@ -675,7 +675,7 @@ contains
 
        nfirstwin(nkp) = imin  
 
-       !!! GS-start 
+       !~~ GS-start 
        ! disentangle at the current k-point only if it is within one of the
        ! spheres centered at the k-points listed in kpt_dis
        if ( dis_spheres_num .gt. 0 ) then
@@ -697,7 +697,7 @@ contains
              nfirstwin(nkp) = dis_spheres_first_wann
           endif
        endif
-       !!! GS-end
+       !~~ GS-end
 
        if (ndimwin(nkp).lt.num_wann) then  
           write(stdout,483) 'Error at k-point ',nkp,&
@@ -799,22 +799,22 @@ contains
     ! [k-point loop (nkp)]
 
 ![ysl-b]
-!!$    if (gamma_only) then
-!!$       if (.not. allocated(ph_g)) then
-!!$          allocate(  ph_g(num_bands),stat=ierr )
-!!$          if (ierr/=0) call io_error('Error in allocating ph_g in dis_windows')
-!!$          ph_g = cmplx_1
-!!$       endif
-!!$       ! Apply same operation to ph_g
-!!$       do i = 1, ndimwin(1)
-!!$          j = nfirstwin(1) + i - 1
-!!$          ph_g(i) = ph_g(j)
-!!$       enddo
-!!$       do i = ndimwin(1) + 1, num_bands
-!!$          ph_g(i) = cmplx_0
-!!$       enddo
-!!$    endif
-!!$![ysl-e]
+!~    if (gamma_only) then
+!~       if (.not. allocated(ph_g)) then
+!~          allocate(  ph_g(num_bands),stat=ierr )
+!~          if (ierr/=0) call io_error('Error in allocating ph_g in dis_windows')
+!~          ph_g = cmplx_1
+!~       endif
+!~       ! Apply same operation to ph_g
+!~       do i = 1, ndimwin(1)
+!~          j = nfirstwin(1) + i - 1
+!~          ph_g(i) = ph_g(j)
+!~       enddo
+!~       do i = ndimwin(1) + 1, num_bands
+!~          ph_g(i) = cmplx_0
+!~       enddo
+!~    endif
+!~![ysl-e]
 
     if (iprint>1) then
        write(stdout,'(1x,a)') &
@@ -1171,13 +1171,13 @@ contains
 
          ! aam: this should be done at the end, otherwise important
          !      projection info is lost
-!!$         ! Put the frozen states in the lowest columns of u_matrix_opt
-!!$         if (ndimfroz(nkp).gt.0) then  
-!!$            do l = 1, ndimfroz(nkp)  
-!!$               u_matrix_opt(:,l,nkp)=cmplx_0
-!!$               u_matrix_opt(indxfroz(l,nkp),l,nkp) = cmplx_1
-!!$            enddo
-!!$         endif
+!~         ! Put the frozen states in the lowest columns of u_matrix_opt
+!~         if (ndimfroz(nkp).gt.0) then  
+!~            do l = 1, ndimfroz(nkp)  
+!~               u_matrix_opt(:,l,nkp)=cmplx_0
+!~               u_matrix_opt(indxfroz(l,nkp),l,nkp) = cmplx_1
+!~            enddo
+!~         endif
 
          ! If there are non-frozen states, compute the num_wann-ndimfroz(nkp) leadin
          ! eigenvectors of cqpq
@@ -1235,14 +1235,14 @@ contains
             call ZHPEVX ('V', 'A', 'U', ndimwin(nkp), cap, 0.0_dp, 0.0_dp, il, &
                  iu, -1.0_dp, m, w, cz, num_bands, cwork, rwork, iwork, ifail, info)
 
-!!$            write(stdout,*) 'w:'
-!!$            do n=1,ndimwin(nkp)
-!!$               write(stdout,'(f14.10)') w(n)
-!!$            enddo
-!!$            write(stdout,*) 'cz:'
-!!$            do n=1,ndimwin(nkp)
-!!$               write(stdout,'(6f12.8)') cz(n,il), cz(n,iu)
-!!$            enddo
+!~            write(stdout,*) 'w:'
+!~            do n=1,ndimwin(nkp)
+!~               write(stdout,'(f14.10)') w(n)
+!~            enddo
+!~            write(stdout,*) 'cz:'
+!~            do n=1,ndimwin(nkp)
+!~               write(stdout,'(6f12.8)') cz(n,il), cz(n,iu)
+!~            enddo
 
             ! DEBUG
             if (info.lt.0) then  
@@ -1274,7 +1274,7 @@ contains
             endif
             do j = 1, ndimwin(nkp)  
                if (iprint>2) write(stdout,'(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)  
-!!$[aam]        if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
+!~[aam]        if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
                if ( (w(j).lt.-eps8).or.(w(j).gt.1.0_dp + eps8) ) then
                   call io_error('dis_proj_frozen: error - Eigenvalues not between 0 and 1') 
                endif
@@ -1412,11 +1412,11 @@ contains
             enddo
          endif
          
-!!$         write(stdout,*) 'u_matrix_opt:'
-!!$         do m=1,ndimwin(nkp)
-!!$            write(stdout,'(6f12.8)') u_matrix_opt(m,1,nkp), &
-!!$                 u_matrix_opt(m,ndimfroz(nkp),nkp), u_matrix_opt(m,num_wann,nkp)
-!!$         enddo
+!~         write(stdout,*) 'u_matrix_opt:'
+!~         do m=1,ndimwin(nkp)
+!~            write(stdout,'(6f12.8)') u_matrix_opt(m,1,nkp), &
+!~                 u_matrix_opt(m,ndimfroz(nkp),nkp), u_matrix_opt(m,num_wann,nkp)
+!~         enddo
          
       enddo   ! NKP
 
@@ -2200,65 +2200,65 @@ contains
       end subroutine internal_zmatrix
 
 
-!!$      !==================================================================!
-!!$!      function dis_zeig(nkp,m,cmk)
-!!$      function dis_zeig(nkp,m)
-!!$      !==================================================================!
-!!$      !                                                                  !
-!!$      !                                                                  !
-!!$      !                                                                  !
-!!$      !                                                                  !
-!!$      !==================================================================!  
-!!$        
-!!$        ! Computes <lambda>_mk = sum_{n=1}^N sum_b w_b |<u_{mk}|u_{n,k+b}>|^2
-!!$        ! [See Eqs. (12) and (17) of SMV]
-!!$
-!!$        implicit none
-!!$
-!!$        integer, intent(in) :: nkp
-!!$        integer, intent(in) :: m
-!!$!        complex(kind=dp), intent(in) :: cmk(num_bands,num_bands,nntot)
-!!$
-!!$        ! Internal variables
-!!$        real(kind=dp) :: dis_zeig
-!!$        complex(kind=dp) :: cdot_bloch
-!!$        integer :: n,nn,ndnnx,ndnn,nnsh,nkp2,l,j
-!!$
-!!$        dis_zeig=0.0_dp
-!!$
-!!$!        do nn=1,nntot
-!!$!           nkp2=nnlist(nkp,nn)
-!!$        do n = 1, num_wann  
-!!$           do nn = 1, nntot  
-!!$                 nkp2 = nnlist(nkp,nn)  
-!!$                 ! Dotproduct
-!!$                 cdot_bloch = cmplx_0          
-!!$                 do l = 1, ndimwin(nkp)  
-!!$                    do j = 1, ndimwin(nkp2)  
-!!$                       cdot_bloch = cdot_bloch + &
-!!$!                            conjg(u_matrix_opt(l,m,nkp)) * u_matrix_opt(j,n,nkp2) * cmk(l,j,nn)
-!!$                            conjg(u_matrix_opt(l,m,nkp)) * u_matrix_opt(j,n,nkp2) * m_matrix_orig(l,j,nn,nkp)
-!!$                    enddo
-!!$                 enddo
-!!$                 write(stdout,'(a,4i5,2f15.10)') 'zeig:',nkp,nn,m,n,cdot_bloch
-!!$!                 call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
-!!$!                      u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
-!!$!                      cwb,num_wann)                 
-!!$!                 call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
-!!$!                      cwb,num_wann,u_matrix_opt(:,:,nkp),num_bands,cmplx_0,cww,num_wann)
-!!$
-!!$                 dis_zeig = dis_zeig + wb(nn) * abs(cdot_bloch)**2  
-!!$
-!!$!                 do n=1,num_wann
-!!$!                    dis_zeig = dis_zeig + wb(nn) * abs(cww(m,n))**2
-!!$!                 enddo
-!!$
-!!$              enddo
-!!$        enddo
-!!$
-!!$        return  
-!!$
-!!$      end function dis_zeig
+!~      !==================================================================!
+!~!      function dis_zeig(nkp,m,cmk)
+!~      function dis_zeig(nkp,m)
+!~      !==================================================================!
+!~      !                                                                  !
+!~      !                                                                  !
+!~      !                                                                  !
+!~      !                                                                  !
+!~      !==================================================================!  
+!~        
+!~        ! Computes <lambda>_mk = sum_{n=1}^N sum_b w_b |<u_{mk}|u_{n,k+b}>|^2
+!~        ! [See Eqs. (12) and (17) of SMV]
+!~
+!~        implicit none
+!~
+!~        integer, intent(in) :: nkp
+!~        integer, intent(in) :: m
+!~!        complex(kind=dp), intent(in) :: cmk(num_bands,num_bands,nntot)
+!~
+!~        ! Internal variables
+!~        real(kind=dp) :: dis_zeig
+!~        complex(kind=dp) :: cdot_bloch
+!~        integer :: n,nn,ndnnx,ndnn,nnsh,nkp2,l,j
+!~
+!~        dis_zeig=0.0_dp
+!~
+!~!        do nn=1,nntot
+!~!           nkp2=nnlist(nkp,nn)
+!~        do n = 1, num_wann  
+!~           do nn = 1, nntot  
+!~                 nkp2 = nnlist(nkp,nn)  
+!~                 ! Dotproduct
+!~                 cdot_bloch = cmplx_0          
+!~                 do l = 1, ndimwin(nkp)  
+!~                    do j = 1, ndimwin(nkp2)  
+!~                       cdot_bloch = cdot_bloch + &
+!~!                            conjg(u_matrix_opt(l,m,nkp)) * u_matrix_opt(j,n,nkp2) * cmk(l,j,nn)
+!~                            conjg(u_matrix_opt(l,m,nkp)) * u_matrix_opt(j,n,nkp2) * m_matrix_orig(l,j,nn,nkp)
+!~                    enddo
+!~                 enddo
+!~                 write(stdout,'(a,4i5,2f15.10)') 'zeig:',nkp,nn,m,n,cdot_bloch
+!~!                 call zgemm('C','N',num_wann,ndimwin(nkp2),ndimwin(nkp),cmplx_1,&
+!~!                      u_matrix_opt(:,:,nkp),num_bands,m_matrix_orig(:,:,nn,nkp),num_bands,cmplx_0,&
+!~!                      cwb,num_wann)                 
+!~!                 call zgemm('N','N',num_wann,num_wann,ndimwin(nkp2),cmplx_1,&
+!~!                      cwb,num_wann,u_matrix_opt(:,:,nkp),num_bands,cmplx_0,cww,num_wann)
+!~
+!~                 dis_zeig = dis_zeig + wb(nn) * abs(cdot_bloch)**2  
+!~
+!~!                 do n=1,num_wann
+!~!                    dis_zeig = dis_zeig + wb(nn) * abs(cww(m,n))**2
+!~!                 enddo
+!~
+!~              enddo
+!~        enddo
+!~
+!~        return  
+!~
+!~      end function dis_zeig
 
 
 

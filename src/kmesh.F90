@@ -675,7 +675,7 @@ nnshell=0
              write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
                   proj_site(1,i),proj_site(2,i),proj_site(3,i), &
                   proj_l(i),proj_m(i),proj_radial(i)
-!!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+!~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
              write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
                   proj_z(1,i),proj_z(2,i),proj_z(3,i), &
                   proj_x(1,i),proj_x(2,i),proj_x(3,i), &
@@ -698,7 +698,7 @@ nnshell=0
              write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
                   proj_site(1,i),proj_site(2,i),proj_site(3,i), &
                   proj_l(i),proj_m(i),proj_radial(i)
-!!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+!~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
              write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
                   proj_z(1,i),proj_z(2,i),proj_z(3,i), &
                   proj_x(1,i),proj_x(2,i),proj_x(3,i), &
@@ -754,20 +754,22 @@ nnshell=0
     integer :: ierr
 
     ! Deallocate real arrays that are public
-
-    deallocate(bk, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
-    deallocate(bka, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
-    deallocate(wb, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
+    if (.not. explicit_nnkpts) then
+        deallocate(bk, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
+        deallocate(bka, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
+        deallocate(wb, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
+    end if
 
     ! Deallocate integer arrays that are public
-
+    if (.not. explicit_nnkpts) then
+        deallocate(neigh, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
+    end if
     deallocate(nncell, stat=ierr )
     if (ierr/=0) call io_error('Error in deallocating nncell in kmesh_dealloc')
-    deallocate(neigh, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
     deallocate(nnlist, stat=ierr )
     if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_dealloc')
 

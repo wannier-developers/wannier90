@@ -1,5 +1,7 @@
 wannier90.x
 postw90.x
 .DS_Store
-make.sys
+make.inc
 w90chk2chk.x
+libwannier.a
+*~

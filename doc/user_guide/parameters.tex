@@ -66,6 +66,7 @@ calculation are manifestly real \\
 {\sc search\_shells }   & I & The number of shells to search when
 determining finite difference formula \\
 {\sc skip\_B1\_tests }   & L & Check the condition B1 of Ref.~\cite{marzari-prb97}  \\
+{\sc nnkpts} & I & Explicit list of nearest-neighbour k-points.\\
 {\sc kmesh\_tol } & R & The tolerance to control if two kpoint belong to the same shell \\
 \hline
 \end{tabular}
@@ -258,6 +259,7 @@ Fermi energy in the specified range\\
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
+  {\sc use\_ws\_distance } & L & Use the minimum distance between WFs for interpolation \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -546,6 +548,24 @@ flag is in conjunction with the Z2PACK code:
 \url{http://www.physics.rutgers.edu/z2pack/}.
 
 The default value is \texttt{.false.}.
+
+\subsection[nnkpts]{\tt integer, dimension(:, 5) :: nnkpts}
+
+Specifies the nearest-neighbour k-points which are written to the \texttt{.nnkp} file. This can be used to explicitly specify which overlap matrices should be calculated.
+
+\begin{verbatim}
+begin nnkpts
+1   2   0  0  0
+.
+.
+end nnkpts
+\end{verbatim}
+
+Each nearest neighbour $\mathbf{k + b}$ is given by a line of 5 integers. The first specifies the k-point number \texttt{nkp} of $\mathbf{k}$. The second is the k-point number of the neighbour. The final three integers specify the reciprocal lattice vector which brings the k-point specified by the second integer to $\mathbf{k + b}$.
+
+This format is the same as in the \texttt{.nnkp} file, except that the number of neighbours per k-point is not specified. However, the number of neighbours still needs to be a multiple of the number of k-points.
+
+This input parameter can be used only if \texttt{postproc\_setup = .true.}, and is not intended to be used with a full Wannier90 run. It can be used also if the k-points do not describe a regular mesh.
 
 \subsection[kmesh\_tol]{\tt real(kind=dp) :: kmesh\_tol}
 
@@ -1419,11 +1439,23 @@ The default is 0.15
 
 \subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
 
-Centre of the unit cell to which the final Wannier centers are
+Centre of the unit cell to which the final Wannier centres are
 translated. Numbers are in fractional coordinates with respect to the
 lattice vectors.
  
 The default value is (0.0,0.0,0.0).
+
+\subsection[use\_ws\_distance]{\tt logical :: use\_ws\_distance}
+
+When interpolating the k-space Hamiltonian, apply a translation to each WF by a basis
+vector of the super-lattice that minimises the distance between their centres.
+The translation is dependent on both WF and on the unit cell vector
+to which they belong, i.e., translate function $W_j({\bf r}-{\bf R})$ inside
+the Wigner-Seitz cell centred on WF $W_i({\bf r})$.
+
+If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
+
+The default value is {\tt false}.
 
 \subsection[hr\_cutoff]{\tt real(kind=dp) :: hr\_cutoff}
 

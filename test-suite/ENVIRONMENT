@@ -1,0 +1,20 @@
+# Copyright (C) 2001-2016 Quantum ESPRESSO group
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License. See the file `License' in the root directory
+# of the present distribution.
+#
+####################################################################################
+
+ifndef ESPRESSO_ROOT
+        export ESPRESSO_ROOT=${PWD}/../../
+endif
+
+export WANNIER_ROOT=${PWD}/../
+
+export TESTCODE_DIR=${WANNIER_ROOT}/test-suite/testcode
+
+# SP: Number of processor when run-tests-parallel
+export TESTCODE_NPROCS=4

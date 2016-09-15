@@ -142,42 +142,31 @@ contains
     !==================================================================!
     !                                                                  !
     ! Get the seedname from the commandline                            !
-    ! Note iargc and getarg are not standard                           !
-    ! Some platforms require them to be external or provide            !
-    ! equivalent routines. Not a problem in f2003!                     !
     !===================================================================  
-
-
-#ifdef NAG
-    USE F90_UNIX_ENV, ONLY : IARGC,GETARG
-#endif
 
          implicit none
 
          integer :: num_arg
-#ifndef NAG
-    integer :: iargc
-#endif
          character(len=50) :: ctemp 
 
          post_proc_flag=.false.
 
-         num_arg=iargc()
+         num_arg=command_argument_count()
          if (num_arg==0) then
             seedname='wannier'
          elseif (num_arg==1) then
-            call getarg(1,seedname)
+            call get_command_argument(1,seedname)
             if( index(seedname,'-pp')>0 ) then
                post_proc_flag=.true.
                seedname='wannier'
             end if
          else
-            call getarg(1,seedname)
+            call get_command_argument(1,seedname)
             if( index(seedname,'-pp')>0 ) then
                post_proc_flag=.true.
-               call getarg(2,seedname)
+               call get_command_argument(2,seedname)
             else
-               call getarg(2,ctemp)
+               call get_command_argument(2,ctemp)
                if( index(ctemp,'-pp')>0 ) post_proc_flag=.true.
             end if
 
