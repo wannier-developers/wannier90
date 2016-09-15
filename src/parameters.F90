@@ -527,16 +527,20 @@ contains
             call io_error('Error: exclude_bands must contain positive numbers')
     end if
 
+    ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
 !    num_bands       =   -1   
     call param_get_keyword('num_bands',found,i_value=i_temp)
     if(found.and.library) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not.effective_model) then
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
+    end if
+    if (library) num_bands = num_bands - num_exclude_bands
+    if (.not. effective_model) then
        if(found .and. num_bands<num_wann) then
           call io_error('Error: num_bands must be greater than or equal to num_wann')
        endif
-    end if
+    endif
 
     num_dump_cycles =   100          ! frequency to write backups at
     call param_get_keyword('num_dump_cycles',found,i_value=num_dump_cycles)
@@ -2800,7 +2804,8 @@ contains
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :',boltz_dos_energy_min,'|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :',boltz_dos_energy_max,'|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :',boltz_dos_energy_step,'|'
-          if(boltz_dos_adpt_smr.eqv.adpt_smr .and. boltz_dos_adpt_smr_fac==adpt_smr_fac .and. boltz_dos_adpt_smr_max==adpt_smr_max &
+          if(boltz_dos_adpt_smr.eqv.adpt_smr .and. boltz_dos_adpt_smr_fac==adpt_smr_fac &
+               .and. boltz_dos_adpt_smr_max==adpt_smr_max &
                .and. boltz_dos_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==boltz_dos_smr_index) then
              write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
           else
@@ -3060,7 +3065,18 @@ contains
        deallocate( dos_project, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating dos_project in param_dealloc')
     endif
-
+    if( allocated( fermi_energy_list ) ) then
+       deallocate( fermi_energy_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating fermi_energy_list in param_dealloc')
+    endif
+    if( allocated( kubo_freq_list ) ) then
+       deallocate( kubo_freq_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating kubo_freq_list in param_dealloc')
+    endif
+    if( allocated( dis_spheres ) ) then
+       deallocate( dis_spheres, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating dis_spheres in param_dealloc')
+    endif
 
     return
 
