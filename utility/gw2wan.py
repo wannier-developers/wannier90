@@ -1,13 +1,12 @@
 #!/usr/bin/env python2
 
+# gw2wannier90 interface
+# 
+# Designed and tested with: Quantum Espresso and Yambo
+# Written by Stepan Tsirkin,
+# 
 
-# The interfac between Quantum Espresso, (oeriginally for YAMBO) and wannier90
-# Written by Stepan Tsirkin
-#   12-16/09/2016,  Wannier90  workshop,  Donostia-Sansebastian.
-# this version is not tested yet !
 
-
-import netCDF4
 import numpy as np
 import os,shutil
 import datetime
@@ -74,7 +73,7 @@ exbands=np.array(f.readline().split(),dtype=int)
 if len(exbands)>1 or exbands[0]!=0:
     raise RuntimeError("exclude bands is not supported yet")
 
-corrections=np.loadtxt(seedname+".gw.eig")
+corrections=np.loadtxt(seedname+".gw.unsorted.eig")
 corrections={(int(l[1])-1,int(l[0])-1):l[2] for l in corrections}
 print "eig-read"
 #print corrections
