@@ -15,10 +15,11 @@ tolerance = ( (1.0e-6, 5.0e-3, 'e1'),
               (1.0e-6, 1.0e-6, 'wfcenter'),
               (1.0e-6, 1.0e-6, 'spread'), 
               (1.0e-6, 1.0e-6, 'omegaI'), 
-              (1.0e-6, 1.0e-6, 'omegaD'), 
+              (1.0e-6, 5.0e-6, 'omegaD'), 
               (1.0e-6, 1.0e-6, 'omegaOD'), 
               (1.0e-6, 1.0e-6, 'omegaT'),
               (1.0e-6, 1.0e-6, 'nearn'),
+              (0.1, 0.01, 'wrmsg'),
               (1.0e-6, 1.0e-6, 'compl'))
 
 skip_program = grep

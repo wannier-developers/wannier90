@@ -34,8 +34,40 @@ inputs_args = ('benzene.win', '1')
 program = WANNIER90
 inputs_args = ('lavo3.win', '1')
 
+[pw_example07/]
+program = WANNIER90
+inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
+
+[test_basic1/]
+program = WANNIER90
+inputs_args = ('wannier.win', '1')
+
+[test_basic2/]
+program = WANNIER90
+inputs_args = ('wannier.win', '1')
+
+[test_nnkpt1/]
+program = WANNIER90
+inputs_args = ('wannier.win', '5')
+
+[test_nnkpt2/]
+program = WANNIER90
+inputs_args = ('wannier.win', '5')
+
+[test_nnkpt3/]
+program = WANNIER90
+inputs_args = ('wannier.win', '5')
+
+[test_nnkpt4/]
+program = WANNIER90
+inputs_args = ('wannier.win', '6')
+
+[test_nnkpt5/]
+program = WANNIER90
+inputs_args = ('wannier.win', '6')
+
 [categories]
-wannier_all = example*?? wan_*  
+wannier_all = example*??  test_* wan_*
 interface_all = pw_example*??
-test_all = example*??  pw_example*?? wan_*
-_default_ =  example*?? wan_*
+test_all = example*??  pw_example*?? test_* wan_*
+_default_ =  example*?? test* wan_*

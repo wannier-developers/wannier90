@@ -8,7 +8,7 @@
    dis_num_iter      =  50    !now a comment 
     dis_mix_ratio     =  0.5d0
 ! test
-mp_grid : 2 2 2!dfsdfdfsdfsd2
+mp_grid : 2 2 2 !fdfd
 
 !begin atoms_frac
 !G 0.0 0.0 0.0
