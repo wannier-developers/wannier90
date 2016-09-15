@@ -147,6 +147,7 @@ program postw90
      !      is what is distributed now
      !
      call wanint_data_dist
+     !
   end if
 
   ! Read list of k-points in irreducible BZ and their weights
@@ -164,7 +165,7 @@ program postw90
      write(stdout,'(/1x,a25,f11.3,a)')&
           'Time to read and process .chk    ',time1-time2,' (sec)'
   endif
-
+  !
   ! Now perform one or more of the following tasks
 
   ! ---------------------------------------------------------------

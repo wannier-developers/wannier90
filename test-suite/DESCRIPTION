@@ -27,3 +27,5 @@ test_nnkpt2 : Test nnkpt file
 test_nnkpt3 : Test nnkpt file
 
 test_nnkpt4 : Testing crash with respect to nnkpt option
+
+test_nnkpt5 : Testing crash when nnkpt is set in non postproc_setup mode

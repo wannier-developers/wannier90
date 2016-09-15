@@ -27,6 +27,7 @@ module w90_hamiltonian
   !                   irvec(1:3,irpt) in the basis of the lattice vectors
   !
   integer,          public, save, allocatable :: irvec(:,:)
+  integer,          public, save, allocatable :: shift_vec(:,:)
   !
   ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
   !
@@ -166,6 +167,7 @@ contains
     use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
                                eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
                                have_disentangled,timing_level
+    use w90_parameters, only : lsitesymmetry !YN:
 
     implicit none
   
@@ -175,7 +177,8 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt,i,j,m,irpt,ierr,counter
+    integer              :: loop_kpt,i,j,m,irpt,ideg,ierr,counter
+    complex(kind=dp)     :: utmp(num_bands,num_wann) !RS:
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -189,10 +192,10 @@ contains
 
     if(have_ham_k) go to 100
 
-!!$    if (.not. allocated(ham_k)) then
-!!$       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
-!!$       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
-!!$    end if
+!~    if (.not. allocated(ham_k)) then
+!~       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+!~       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
+!~    end if
 
     ham_k=cmplx_0
     eigval_opt=0.0_dp
@@ -217,14 +220,31 @@ contains
        ! but we choose u_matrix_opt such that the Hamiltonian is
        ! diagonal at each kpoint. (I guess we should check it here)
        
-       do loop_kpt=1,num_kpts
-          do j=1,num_wann
-             do m=1,ndimwin(loop_kpt)
-                eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
-                     real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+       if (.not.lsitesymmetry) then                                                                             !YN:
+          do loop_kpt=1,num_kpts
+             do j=1,num_wann
+                do m=1,ndimwin(loop_kpt)
+                   eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
+                        real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+                enddo
              enddo
           enddo
-       enddo
+       else                                                                                                     !YN: 
+          ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                                   !RS:
+          ! so we have to calculate ham_k in the following way                                                  !RS:
+          do loop_kpt=1,num_kpts                                                                                !RS:
+             utmp(1:ndimwin(loop_kpt),:)= &                                                                     !RS:
+                 matmul(u_matrix_opt(1:ndimwin(loop_kpt),:,loop_kpt),u_matrix(:,:,loop_kpt))                    !RS:
+             do j=1,num_wann                                                                                    !RS: 
+                do i=1,j                                                                                        !RS:
+                   do m=1,ndimwin(loop_kpt)                                                                     !RS:
+                      ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval_opt(m,loop_kpt)*conjg(utmp(m,i))*utmp(m,j) !RS:
+                   enddo                                                                                        !RS:
+                   if (i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))                                   !RS:
+                enddo                                                                                           !RS:
+             enddo                                                                                              !RS:
+          enddo                                                                                                 !RS:
+       endif                                                                                                    !YN:
 
     else
        eigval2(1:num_wann,:)=eigval(1:num_wann,:)
@@ -238,17 +258,19 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    do loop_kpt=1,num_kpts
-       do j=1,num_wann
-          do i=1,j
-             do m=1,num_wann
-                ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
-                     conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+    if (.not.lsitesymmetry.or..not.have_disentangled) then !YN:
+       do loop_kpt=1,num_kpts
+          do j=1,num_wann
+             do i=1,j
+                do m=1,num_wann
+                   ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
+                        conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+                enddo
+                if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
              enddo
-             if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
           enddo
        enddo
-    enddo
+    endif                                                  !YN:
 
     have_ham_k = .true.
 
@@ -256,10 +278,10 @@ contains
 
     ! Fourier transform rotated hamiltonian into WF basis
     ! H_ij(k) --> H_ij(R) = (1/N_kpts) sum_k e^{-ikR} H_ij(k)
-!!$    if (.not.allocated(ham_r)) then
-!!$      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
-!!$      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
-!!$    end if
+!~    if (.not.allocated(ham_r)) then
+!~      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
+!~      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
+!~    end if
     
     ham_r=cmplx_0
 
@@ -272,7 +294,7 @@ contains
              ham_r(:,:,irpt)=ham_r(:,:,irpt)+fac*ham_k(:,:,loop_kpt)
           enddo
        enddo
-    
+
        have_translated = .false.
 
     else
@@ -300,6 +322,16 @@ contains
 
     end if
 
+    ! [lp] if required, compute the minimum diistances
+!     if (use_ws_distance) then
+!         allocate(wdist_shiftj_wsi(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating wdist_shiftj_wsi in hamiltonian_get_hr')
+!         allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
+        !
+!         call ws_translate_dist(nrpts, irvec)
+!     endif
+
     have_ham_r = .true.
 
 200 continue
@@ -314,6 +346,8 @@ contains
     return
 
   contains
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
     subroutine internal_translate_centres()
@@ -333,11 +367,11 @@ contains
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
     
-!!$      if (.not.allocated(wannier_centres_translated)) then
-!!$         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
-!!$         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
-!!$              &in internal_translate_wannier_centres')
-!!$      end if
+!~      if (.not.allocated(wannier_centres_translated)) then
+!~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
+!~         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
+!~              &in internal_translate_wannier_centres')
+!~      end if
 
       allocate(r_home(3,num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_centres')

@@ -68,7 +68,7 @@ contains
   !> I think that a way to write in parallel to the output would help a lot,
   !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
-    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
+    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
@@ -186,7 +186,7 @@ contains
     if  (.not.geninterp_single_file) then
        allocate(localkpointidx(counts(my_node_id)),stat=ierr)
        if (ierr/=0) call io_error('Error allocating localkpointidx in geinterp_main.')
-       call comms_scatterv(localkpointidx(1),counts(my_node_id),kpointidx(1),counts, displs)
+       call comms_scatterv(localkpointidx(:),counts(my_node_id),kpointidx(:),counts, displs)
     end if
 
     ! I open the output file(s)

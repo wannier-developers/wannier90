@@ -94,7 +94,9 @@ module w90_comms
   end interface comms_gatherv
 
   interface comms_scatterv
-     module procedure comms_scatterv_int  
+     module procedure comms_scatterv_int_1  
+     module procedure comms_scatterv_int_2
+     module procedure comms_scatterv_int_3
      module procedure comms_scatterv_real
 !     module procedure comms_scatterv_cmplx
   end interface comms_scatterv
@@ -869,13 +871,13 @@ contains
   ! rootglobalarray: array on the root node from which data will be sent
   ! counts, displs : how data should be partitioned, see MPI documentation or
   !                  function comms_array_split
-  subroutine comms_scatterv_int(array,localcount,rootglobalarray,counts,displs)
+  subroutine comms_scatterv_int_1(array,localcount,rootglobalarray,counts,displs)
 
     implicit none
 
-    integer, intent(inout)                    :: array
+    integer, dimension(:), intent(inout)      :: array
     integer, intent(in)                       :: localcount
-    integer, intent(inout)                    :: rootglobalarray
+    integer, dimension(:), intent(inout)      :: rootglobalarray
     integer, dimension(num_nodes), intent(in) :: counts
     integer, dimension(num_nodes), intent(in) :: displs
 
@@ -895,10 +897,79 @@ contains
 
     return
 
-  end subroutine comms_scatterv_int
+  end subroutine comms_scatterv_int_1
+
+  ! Array: local array for getting data; localcount elements will be fetched
+  !        from the root node
+  ! rootglobalarray: array on the root node from which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
+  subroutine comms_scatterv_int_2(array,localcount,rootglobalarray,counts,displs)
+
+    implicit none
+
+    integer, dimension(:,:), intent(inout)    :: array
+    integer, intent(in)                       :: localcount
+    integer, dimension(:,:), intent(inout)    :: rootglobalarray
+    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in) :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_scatterv(rootglobalarray,counts,displs,MPI_Integer,&
+         Array,localcount,MPI_Integer,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_scatterv_real')
+    end if
+
+#else
+    call my_icopy(localcount,rootglobalarray,1,array,1)
+#endif
+
+    return
+
+  end subroutine comms_scatterv_int_2
+
+  ! Array: local array for getting data; localcount elements will be fetched
+  !        from the root node
+  ! rootglobalarray: array on the root node from which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
+  subroutine comms_scatterv_int_3(array,localcount,rootglobalarray,counts,displs)
+
+    implicit none
+
+    integer, dimension(:,:,:), intent(inout)  :: array
+    integer, intent(in)                       :: localcount
+    integer, dimension(:,:,:), intent(inout)  :: rootglobalarray
+    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in) :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_scatterv(rootglobalarray,counts,displs,MPI_Integer,&
+         Array,localcount,MPI_Integer,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_scatterv_real')
+    end if
+
+#else
+    call my_icopy(localcount,rootglobalarray,1,array,1)
+#endif
+
+    return
+
+  end subroutine comms_scatterv_int_3
+
 
 
 end module w90_comms
+
+
 
 
 subroutine my_ICOPY(N,ZX,INCX,ZY,INCY)
