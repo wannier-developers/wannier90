@@ -481,16 +481,16 @@ contains
        ! band-by-band minimization
        do i=1,num_wann
           ! diagonalize 2x2 matrix
-          HP(1)=dble(dot_product(umat(1:n,i,ik),ZU(1:n,i)))
+          HP(1)=real(dot_product(umat(1:n,i,ik),ZU(1:n,i)),kind=dp)
           HP(2)=dot_product(ZU(1:n,i),deltaU(1:n,i)) ! (1,2) matrix element
           carr(1:n)=matmul(zmat(1:n,1:n,ik),deltaU(1:n,i))
-          HP(3)=dble(dot_product(deltaU(1:n,i),carr(1:n))) ! (2,2)
+          HP(3)=real(dot_product(deltaU(1:n,i),carr(1:n)),kind=dp) ! (2,2)
         
-          SP(1)=dble(dot_product(umat(1:n,i,ik),umat(1:n,i,ik)))
+          SP(1)=real(dot_product(umat(1:n,i,ik),umat(1:n,i,ik)),kind=dp)
           SP(2)=dot_product(umat(1:n,i,ik),deltaU(1:n,i))
-          SP(3)=dble(dot_product(deltaU(1:n,i),deltaU(1:n,i)))
+          SP(3)=real(dot_product(deltaU(1:n,i),deltaU(1:n,i)),kind=dp)
   
-          sp3=SP(3)
+          sp3=real(SP(3),kind=dp)
           if (abs(sp3).lt.1e-10) then
              umatnew(:,i)=umat(:,i,ik)
              cycle

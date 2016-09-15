@@ -1707,7 +1707,7 @@ contains
             if (lsitesymmetry) then                                                     !RS:
                call dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
                do j=1,num_wann                                                          !RS:
-                  wkomegai1(nkp)=wkomegai1(nkp)-lambda(j,j)                             !RS:
+                  wkomegai1(nkp)=wkomegai1(nkp)-real(lambda(j,j),kind=dp)               !RS:
                enddo                                                                    !RS:
             else                                                                        !RS:
                if ( num_wann.gt.ndimfroz(nkp) ) then  
