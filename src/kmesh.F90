@@ -900,8 +900,8 @@ nnshell=0
     real(kind=dp), intent(out) :: bweight(max_shells)
     real(kind=dp), allocatable     :: bvector(:,:,:) ! the bvectors
 
-    real(kind=dp), dimension(:),     allocatable :: singv
-    real(kind=dp), dimension(:,:),   allocatable :: amat,umat,vmat,smat
+    real(kind=dp), dimension(:),     allocatable :: singv,tmp1,tmp2,tmp3
+    real(kind=dp), dimension(:,:),   allocatable :: amat,umat,vmat,smat,tmp0
     integer, parameter :: lwork=max_shells*10
     real(kind=dp) :: work(lwork)
     real(kind=dp), parameter :: target(6)=(/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp/)
@@ -959,6 +959,14 @@ nnshell=0
        num_shells=num_shells+1
        shell_list(num_shells)=shell
 
+       allocate(tmp0(max_shells,max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(tmp1(max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(tmp2(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(tmp3(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
        allocate(amat(max_shells,num_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
        allocate(umat(max_shells,max_shells),stat=ierr)
@@ -969,7 +977,7 @@ nnshell=0
        if (ierr/=0) call io_error('Error allocating smat in kmesh_shell_automatic')
        allocate(singv(num_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating singv in kmesh_shell_automatic')
-       amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
+       amat(:,:)=0.0_dp;umat(:,:)=0.0_dp;vmat(:,:)=0.0_dp;smat(:,:)=0.0_dp;singv(:)=0.0_dp
 
        amat=0.0_dp
        do loop_s=1,num_shells
@@ -1006,10 +1014,17 @@ nnshell=0
 
        smat=0.0_dp
        do loop_s=1,num_shells
-          smat(loop_s,loop_s)=1/singv(loop_s)
+          smat(loop_s,loop_s)=1.0_dp/singv(loop_s)
        end do
 
-       bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
+       ! S. Ponce: The following below is correct but had to be unpacked because of PGI-15
+       ! bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
+       tmp0 = transpose(umat)
+       tmp1 = matmul(tmp0,target)
+       tmp2 = matmul(smat,tmp1)
+       tmp3 = matmul(transpose(vmat),tmp2)
+       bweight(1:num_shells) = tmp3
+
        if(iprint>=2) then
           do loop_s=1,num_shells
              write(stdout,'(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ',loop_s,&
@@ -1050,7 +1065,14 @@ nnshell=0
        end if
 
 200 continue
-
+       deallocate(tmp0,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(tmp1,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(tmp2,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(tmp3,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
        deallocate(amat,stat=ierr)
        if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
        deallocate(umat,stat=ierr)
