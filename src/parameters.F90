@@ -98,6 +98,7 @@ module w90_parameters
   integer, allocatable, public, save :: bands_plot_project(:)
   integer,           public, save :: bands_plot_dim         
   logical,           public, save :: hr_plot
+  logical,           public, save :: pos_plot
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
@@ -1211,6 +1212,9 @@ contains
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
+
+    pos_plot                    = .false.
+    call param_get_keyword('pos_plot',found,l_value=pos_plot)
                                                                                            
     hr_cutoff                 = 0.0_dp
     call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)
