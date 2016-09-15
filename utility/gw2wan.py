@@ -42,6 +42,7 @@ targets=[s.lower() for s in argv[2:]]   #options read from command line
 SPNformatted="spn_formatted" in targets   
 UIUformatted="uiu_formatted" in targets
 UHUformatted="uhu_formatted" in targets
+UNKformatted="unk_formatted" in targets
 
 if set(targets).intersection(set(["spn","uhu","mmn","amn","unk"])) :
     calcAMN="amn" in targets
@@ -336,18 +337,18 @@ if calcSPN:
 if calcUNK:
     for f_unk_name in  glob.glob("UNK*"):
 	try:
-	    mkdir("unk+GW")
+	    os.mkdir("UNK_GW")
 	except OSError:
 	    pass
 	if UNKformatted:
-	    f_unk_out=open(os.path.join("unk+GW",f_unk_name),"w")
+	    f_unk_out=open(os.path.join("UNK_GW",f_unk_name),"w")
 	    f_unk_in=open(f_unk_name,"r")
 	    nr1,nr2,nr3,ik,nbnd=np.array(f_unk_in.readline().split(),dtype=int)
 	    NR=nr1*nr2*nr3*2
 	    f_unk_out.write(" ".join(str(x) for x in (nr1,nr2,nr3,ik,NBND))+"\n")
-	    np.savetxt(f_unk_outnp.array([x for l in f_unk_in for x in l.split()],dtype=float).reshape((nbnd,NR),order='C')[BANDSORT[ik],:] )
+	    np.savetxt(f_unk_out,np.array([x for l in f_unk_in for x in l.split()],dtype=float).reshape((nbnd,NR),order='C')[BANDSORT[ik],:] )
 	else:
-	    f_unk_out=FortranFile(os.path.join("unk+GW",f_unk_name),"w")
+	    f_unk_out=FortranFile(os.path.join("UNK_GW",f_unk_name),"w")
 	    f_unk_in=FortranFile(f_unk_name,"r").read_record
 	    nr1,nr2,nr3,ik,nbnd=f_unk_in.read_record(dtype=np.int32)
 	    f_unk_out.write_record(np.array([nr1,nr2,nr3,ik,NBND],dtype=np.int32))
