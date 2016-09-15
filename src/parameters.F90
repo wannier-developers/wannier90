@@ -90,6 +90,7 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
+  logical,           public, save :: u_matrices_plot
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
@@ -771,6 +772,9 @@ contains
             call io_error('Error: wannier_plot_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
+
+    u_matrices_plot = .false.
+    call param_get_keyword('u_matrices_plot',found,l_value=u_matrices_plot)
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
