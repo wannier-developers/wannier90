@@ -20,6 +20,7 @@ module w90_ws_distance
 !     end if
 
   use w90_constants, only : dp
+  use w90_parameters, only : use_ws_distance
 
   implicit none
 
@@ -34,7 +35,8 @@ module w90_ws_distance
   ! The number of equivalent shifts (see above)
   integer, public, save, allocatable :: wdist_ndeg(:,:,:)!(num_wann,num_wann,nrpts)
   !
-  logical, save, public :: use_ws_distance = .false.
+  ! next parameter moved to parameters, used here
+  !logical, save, public :: use_ws_distance = .false.
   logical, save :: done_ws_distance = .false.
   integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch
                                     ! in a single point (i.e.  vertex of cube)

@@ -619,8 +619,8 @@ module w90_postw90_common
   !=========================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt, num_wann
-    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, use_ws_distance, ws_translate_dist
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -691,8 +691,8 @@ module w90_postw90_common
   !=======================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann  
-    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, use_ws_distance, ws_translate_dist
+    use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -761,8 +761,8 @@ module w90_postw90_common
   !====================================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt, num_wann
-    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, use_ws_distance, ws_translate_dist
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, ws_translate_dist
 
     implicit none
 

@@ -97,10 +97,11 @@ contains
     use w90_parameters, only  : num_wann,bands_num_points,recip_metric,&
                                 bands_num_spec_points,timing_level, &
                                 bands_spec_points,bands_label,bands_plot_format, &
-                                bands_plot_mode,num_bands_project,bands_plot_project
+                                bands_plot_mode,num_bands_project,bands_plot_project, &
+                                use_ws_distance
     use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
     use w90_ws_distance, only : wdist_shiftj_wsi,wdist_ndeg, &
-                                use_ws_distance, ws_translate_dist
+                                ws_translate_dist
 
     implicit none
 
