@@ -61,6 +61,7 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
+  use w90_sitesymmetry !YN:
  
   implicit none
 
@@ -152,6 +153,7 @@ program wannier
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
+  if (lsitesymmetry) call sitesymmetry_read()   !YN:
   call overlap_read()
 
   time1=io_time()
@@ -204,6 +206,7 @@ program wannier
   call overlap_dealloc()
   call kmesh_dealloc()
   call param_dealloc()
+  if (lsitesymmetry) call sitesymmetry_dealloc() !YN:
 
 4004 continue 
 
