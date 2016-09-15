@@ -28,6 +28,10 @@ if len(argv)<2:
     print "spn_formatted, uiu_formatted, uhu_formatted" 
     print "If no options is specified, all the matrices and files are considered"    
     exit()
+print '------------------------------\n'
+print '##############################\n'
+print '### gw2wannier90 interface ###\n'
+print '##############################\n'
 
 seedname=argv[1]   # for instance "silicon"
 seednameGW=seedname+".gw"  #for instance "silicon.gw"
@@ -66,7 +70,7 @@ while True:
     s=f.readline()
     if "begin kpoints" in s: break
 NKPT=int(f.readline())
-print "NK=",NKPT
+print "Kpoints number:",NKPT
 n1=np.array(NKPT,dtype=int)
 IKP=[tuple(np.array(np.round(np.array(f.readline().split(),dtype=float)*n1),dtype=int)) for i in xrange (NKPT)]
 
@@ -88,7 +92,7 @@ if len(exbands)>1 or exbands[0]!=0:
 
 corrections=np.loadtxt(seedname+".gw.unsorted.eig")
 corrections={(int(l[1])-1,int(l[0])-1):l[2] for l in corrections}
-print "G0W0 QP corrections read from ",seedname,".gw.unsorted.eig" 
+print "G0W0 QP corrections read from ",seedname+".gw.unsorted.eig" 
 #print corrections
 eigenDFT=np.loadtxt(seedname+".eig")
 nk=int(eigenDFT[:,1].max())
@@ -110,44 +114,55 @@ f_raw.write('List of provided GW corrections (bands indeces)\n')
 f_raw.write(str(providedGW))
 f_raw.write('------------------------------\n')
 NBND=len(providedGW)
-print "adding"
+print "Adding GW QP corrections to KS eigenvalues"
 eigenDE= np.array([  [corrections[(ik,ib)]  for ib in providedGW ]   for ik in xrange(NKPT)])
 eigenDFTGW= np.array([  [eigenDFT[ik,ib]+corrections[(ik,ib)]  for ib in providedGW ]   for ik in xrange(NKPT)])
-#print eigenDFTGW
-print "eigenDFTGW -unsorted"
-#print eigenDFTGW
+
 f_raw.write('------------------------------\n')
 f_raw.write('Writing GW eigenvalues unsorted (KS + QP correction) \n')
 for line in eigenDFTGW:
     f_raw.write(str(line)+'\n')
 f_raw.write('------------------------------\n')
 
-print "sorting"
+print "Sorting"
 bsort=np.array([np.argsort(eigenDFTGW[ik,:]) for ik in xrange(NKPT)])
-print "bsort="
-print bsort
+
+f_raw.write('------------------------------\n')
+f_raw.write('Writing sorting list\n')
+for line in bsort:
+    f_raw.write(str(line)+'\n')
+f_raw.write('------------------------------\n')
+
+
 eigenDE=np.array([eigenDE[ik][bsort[ik]] for ik in xrange(NKPT)])
 eigenDFTGW=np.array([eigenDFTGW[ik][bsort[ik]] for ik in xrange(NKPT)])
 BANDSORT=np.array([np.array(providedGW)[bsort[ik]] for ik in xrange(NKPT)])
 
-print "eigenDFTGW - sorted"
-print eigenDFTGW
+f_raw.write('------------------------------\n')
+f_raw.write('Writing sorted GW eigenvalues\n')
+for line in eigenDFTGW:
+    f_raw.write(str(line)+'\n')
+f_raw.write('------------------------------\n')
 
-print "writing"+seednameGW+".eig"
+print "GW eigenvalues sorted"
+#print eigenDFT
+print '------------------------------\n'
+print "writing "+seednameGW+".eig"
 feig_out=open(seednameGW+".eig","w")
 for ik in xrange(NKPT):
     for ib in xrange(NBND):
 	feig_out.write(" {0:4d} {1:4d} {2:17.12f}\n".format(ib+1,ik+1,eigenDFTGW[ik,ib]))
 feig_out.close()
-
+print seednameGW+".eig", ' written.'
+('------------------------------\n')
 
 if calcAMN:
   try:
-    print "----------\n AMN   \n---------\n"
+    print "----------\n AMN module  \n---------\n"
     f_amn_out=open(seednameGW+".amn","w")
     f_amn_in=open(seedname+".amn","r")
     s=f_amn_in.readline().strip()
-    f_amn_out.write("{0}, sorted by quasi-particle energies (YAMBO) on {1} \n".format(s,datetime.datetime.now().isoformat()) )
+    f_amn_out.write("{0}, sorted by GW quasi-particle energies on {1} \n".format(s,datetime.datetime.now().isoformat()) )
     s=f_amn_in.readline()
     nb,nk,npr=np.array(s.split(),dtype=int)
     assert nk==NKPT
@@ -170,13 +185,13 @@ if calcAMN:
 
 if calcMMN:
   try:
-    print "----------\n MMN  \n---------\n"
+    print "----------\n MMN module  \n---------\n"
 
     f_mmn_out=open(os.path.join(seednameGW+".mmn"),"w")
     f_mmn_in=open(os.path.join(seedname+".mmn"),"r")
 
     s=f_mmn_in.readline().strip()
-    f_mmn_out.write("{0}, sorted by quasi-particle energies (YAMBO) on {1} \n".format(s,datetime.datetime.now().isoformat()) )
+    f_mmn_out.write("{0}, sorted by GW quasi-particle energies on {1} \n".format(s,datetime.datetime.now().isoformat()) )
     s=f_mmn_in.readline()
     nb,nk,nnb=np.array(s.split(),dtype=int)
     assert nb==nbndDFT
@@ -209,7 +224,7 @@ if calcMMN:
 
 def reorder_uXu(ext,formatted=False):
   try:
-    print "----------\n  {0}  \n---------".format(ext)
+    print "----------\n  {0}  \n----------".format(ext)
     
     if formatted:
 	f_uXu_in = open(seedname+"."+ext, 'r')
@@ -256,7 +271,7 @@ def reorder_uXu(ext,formatted=False):
 	    	    f_uXu_out.write_record(A)
     f_uXu_out.close()
     f_uXu_in.close()
-    print "----------\n {0} OK  \n---------\n".format(ext)
+    print "----------\n {0} OK  \n----------\n".format(ext)
   except IOError as err:
     print "WARNING: {0}.{1} not written : ".format(seednameGW,ext),err 
 
