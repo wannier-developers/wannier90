@@ -821,3 +821,69 @@ Note the G-vectors ($a,b,c$) needed.
     .
     .
 \end{verbatim}
+
+
+\section{{\tt seedname\_u.mat}}
+
+OUTPUT. Written if {\tt u\_matrices\_plot=.TRUE.}. The first line gives the date and
+time at which the file was created.
+The second line states the number of kpoints {\tt num\_kpts} and the number of wannier
+functions {\tt num\_wann} twice.
+Separated by an empty line the kpoint and then the corresponding matrix is written
+in num\_kpts blocks each occupying {\tt num\_wann * num\_wann + 1} lines.
+
+\begin{verbatim}
+ written on 15Sep2016 at 16:33:46 
+           64           8           8
+	 
+   0.0000000000  +0.0000000000  +0.0000000000
+   0.4468355787  +0.1394579978
+  -0.0966033667  +0.4003934902
+  -0.0007748974  +0.0011788678
+  -0.0041177339  +0.0093821027
+   .
+   .
+   .
+
+   0.1250000000   0.0000000000  +0.0000000000
+   0.4694005589  +0.0364941808
+  +0.2287801742  -0.1135511138
+  -0.4776782452  -0.0511719121
+  +0.0142081014  +0.0006203139
+   .
+   .
+   .
+\end{verbatim}
+
+
+\section{{\tt seedname\_u\_dis.mat}}
+
+OUTPUT. Written if {\tt u\_matrices\_plot=.TRUE.} and disentangling enabled.
+The first line gives the date and time at which the file was created.
+The second line states the number of kpoints {\tt num\_kpts}, the number of wannier
+functions {\tt num\_bands} and the number of {\tt num\_bands}.
+Separated by an empty line the kpoint and then the corresponding matrix is written
+in num\_kpts blocks each occupying {\tt num\_wann * num\_bands + 1} lines.
+
+\begin{verbatim}
+ written on 15Sep2016 at 16:33:46 
+           64           8          16
+	    
+   0.0000000000  +0.0000000000  +0.0000000000
+   1.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+   .
+   .
+   .
+   
+   0.1250000000   0.0000000000  +0.0000000000
+   1.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+   .
+   .
+   .
+\end{verbatim}
