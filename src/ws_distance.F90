@@ -59,7 +59,7 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
     !====================================================!
 
     use w90_parameters, only : num_wann,wannier_centres, real_lattice, &
-                               recip_lattice
+                               recip_lattice, iprint
                                 !translation_centre_frac, automatic_translation,lenconfac
     use w90_io,         only : stdout, io_error
     use w90_utility,    only : utility_cart_to_frac, utility_frac_to_cart
@@ -107,32 +107,34 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
         do iw=1,num_wann
             call utility_frac_to_cart(DBLE(irvec(:,ir)),irvec_cart,real_lattice)
             ! function IW translated in the Wigner-Size around function JW
-            wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( wannier_centres(:,iw)&
-                        -(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
+            wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( -wannier_centres(:,iw)&
+                        +(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
             !find its degeneracy
             CALL R_wz_sc_equiv(wdist_wssc_frac(:,iw,jw,ir), (/0._dp,0._dp,0._dp/), &
                             wdist_ndeg(iw,jw,ir), wdist_deg_cart(:,:,iw,jw,ir))
             IF(wdist_ndeg(iw,jw,ir)>ndegenx) call io_error('surprising ndeg')
             do ideg = 1,wdist_ndeg(iw,jw,ir)
             wdist_deg_cart(:,ideg,iw,jw,ir) = wdist_deg_cart(:,ideg,iw,jw,ir)&
-                            -wannier_centres(:,iw)+wannier_centres(:,jw)
+                            +wannier_centres(:,iw)-wannier_centres(:,jw)
             call utility_cart_to_frac(wdist_deg_cart(:,ideg,iw,jw,ir),&
                             wdist_deg_frac(:,ideg,iw,jw,ir),recip_lattice)
             enddo
         enddo
     enddo
     enddo
-    write(stdout,'(1x,a78)') repeat('-',78)
     ! apply translation
     wdist_shiftj_wsi = NINT(wdist_deg_frac)
     !
-    do ir=1,nrpts
-    write(stdout,'(i5)') ir
-    do iw=1,num_wann
-        write(stdout,'("deg:",100i2)') wdist_ndeg(:,iw,ir)
-    enddo
-    enddo
-    write(stdout,'(1x,a78)') repeat('-',78)
+    IF(iprint>3)then
+      write(stdout,'(1x,a78)') repeat('-',78)
+      do ir=1,nrpts
+      write(stdout,'(i5)') ir
+      do iw=1,num_wann
+          write(stdout,'("deg:",100i2)') wdist_ndeg(:,iw,ir)
+      enddo
+      enddo
+      write(stdout,'(1x,a78)') repeat('-',78)
+    endif
     !
     IF(ANY(ABS(DBLE(wdist_shiftj_wsi)-wdist_deg_frac)>1.d-6)) &
     call io_error('wrong wdist_shiftj_wsi')
