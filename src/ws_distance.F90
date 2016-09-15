@@ -34,7 +34,7 @@ module w90_ws_distance
   ! The number of equivalent shifts (see above)
   integer, public, save, allocatable :: wdist_ndeg(:,:,:)!(num_wann,num_wann,nrpts)
   !
-  logical, save, public :: use_ws_distance = .true.
+  logical, save, public :: use_ws_distance = .false.
   logical, save :: done_ws_distance = .false.
   integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch
                                     ! in a single point (i.e.  vertex of cube)
@@ -138,6 +138,7 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
     return
 end subroutine ws_translate_dist
 
+! puts R_in in the Wigner-Seitz cell centered around R0
 !====================================================!
 function R_wz_sc(R_in, R0) result (R_bz)
     use w90_parameters, only : real_lattice,recip_lattice, mp_grid
@@ -170,6 +171,10 @@ function R_wz_sc(R_in, R0) result (R_bz)
     enddo
     enddo
 end function R_wz_sc
+!
+! Find the list list of R_out that differ from R_in by a lattice vector
+! and are equally distant from R0 (i.e. that are on the edges of the WS
+! cell centered on R0)
 !====================================================!
 subroutine R_wz_sc_equiv(R_in, R0, ndeg, R_out)
     use w90_parameters, only : real_lattice,recip_lattice, mp_grid
