@@ -4,7 +4,7 @@
 # 
 # Designed and tested with: Quantum Espresso and Yambo
 # Written by Stepan Tsirkin
-# Bug fixes, improvements and documentation by Antimo Marrazzo
+# Several improvements, bug fixes and documentation by Antimo Marrazzo
 # 
 
 
@@ -56,6 +56,8 @@ else:
 
 if calcUHU : calcMMN=True
 
+#Here we open a file to dump all the intermediate steps (mainly for debugging)
+f_raw=open(seedname+'.gw2wannier90.raw','w')
 #Opening seedname.win file
 f=open(seedname+".nnkp","r")
 #It copies the seedname.nnkp for GW, we should make this optional
@@ -80,11 +82,13 @@ while True:
     if "begin exclude_bands" in s: break
 exbands=np.array(f.readline().split(),dtype=int)
 if len(exbands)>1 or exbands[0]!=0:
-    raise RuntimeError("exclude bands is not supported yet")
+    #raise RuntimeError("exclude bands is not supported yet") # actually it is OK, see below
+    print 'Exclude bands option is used: be careful to be consistent'
+    'with the choice of bands for the GW QP corrections.'
 
 corrections=np.loadtxt(seedname+".gw.unsorted.eig")
 corrections={(int(l[1])-1,int(l[0])-1):l[2] for l in corrections}
-print "eig-read"
+print "G0W0 QP corrections read from ",seedname,".gw.unsorted.eig" 
 #print corrections
 eigenDFT=np.loadtxt(seedname+".eig")
 nk=int(eigenDFT[:,1].max())
@@ -92,17 +96,31 @@ assert nk==NKPT
 
 nbndDFT=int(eigenDFT[:,0].max())
 eigenDFT=eigenDFT[:,2].reshape(NKPT,nbndDFT,order='C')
-print eigenDFT
-print "check"
+#print eigenDFT
+f_raw.write('------------------------------\n')
+f_raw.write('Writing DFT eigenvalues \n')
+for line in eigenDFT:
+    f_raw.write(str(line)+'\n')
+f_raw.write('------------------------------ \n')
+
 providedGW= [ ib for ib in xrange(nbndDFT) if all(  (ik,ib) in corrections.keys() for ik in xrange(NKPT)) ]
-print providedGW
+#print providedGW
+f_raw.write('------------------------------\n')
+f_raw.write('List of provided GW corrections (bands indeces)\n')
+f_raw.write(str(providedGW))
+f_raw.write('------------------------------\n')
 NBND=len(providedGW)
 print "adding"
 eigenDE= np.array([  [corrections[(ik,ib)]  for ib in providedGW ]   for ik in xrange(NKPT)])
 eigenDFTGW= np.array([  [eigenDFT[ik,ib]+corrections[(ik,ib)]  for ib in providedGW ]   for ik in xrange(NKPT)])
 #print eigenDFTGW
 print "eigenDFTGW -unsorted"
-print eigenDFTGW
+#print eigenDFTGW
+f_raw.write('------------------------------\n')
+f_raw.write('Writing GW eigenvalues unsorted (KS + QP correction) \n')
+for line in eigenDFTGW:
+    f_raw.write(str(line)+'\n')
+f_raw.write('------------------------------\n')
 
 print "sorting"
 bsort=np.array([np.argsort(eigenDFTGW[ik,:]) for ik in xrange(NKPT)])
@@ -324,4 +342,4 @@ if calcUNK:
 	f_unk_in.close()
 	f_unk_out.close()
 
-
+f_raw.close()
