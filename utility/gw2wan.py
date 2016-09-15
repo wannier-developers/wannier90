@@ -23,10 +23,11 @@ if len(argv)<2:
     print "You need to provide the seedname"
     print "Usage: gw2wan.py seedname options"
     print "Options can be mmn, amn, spn, unk, uhu"
-    print "The use of formatted files is strongly reccommended, in this case type:"
+    print "Be careful with unformatted files, they are compiler-dependdent"
+    print "A safer choice is to use (bigger) formatted files, in this case type:"
     print "spn_formatted, uiu_formatted, uhu_formatted" 
     print "If no options is specified, all the matrices and files are considered"    
-exit()
+    exit()
 
 seedname=argv[1]   # for instance "silicon"
 seednameGW=seedname+".gw"  #for instance "silicon.gw"
@@ -57,8 +58,8 @@ if calcUHU : calcMMN=True
 
 #Opening seedname.win file
 f=open(seedname+".nnkp","r")
-#It copies the seedname.win, we should make this optional
-shutil.copy(seedname+".nnkp",seednameGW+".nnkp")
+#It copies the seedname.nnkp for GW, we should make this optional
+#shutil.copy(seedname+".nnkp",seednameGW+".nnkp")
 while True:
     s=f.readline()
     if "begin kpoints" in s: break
@@ -114,7 +115,7 @@ BANDSORT=np.array([np.array(providedGW)[bsort[ik]] for ik in xrange(NKPT)])
 print "eigenDFTGW - sorted"
 print eigenDFTGW
 
-print "writing eig"
+print "writing"+seednameGW+".eig"
 feig_out=open(seednameGW+".eig","w")
 for ik in xrange(NKPT):
     for ib in xrange(NBND):
