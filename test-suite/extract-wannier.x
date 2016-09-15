@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (C) 2001-2016 Quantum ESPRESSO group
 # 
@@ -33,10 +33,10 @@ ef1=`grep "the Fermi energy is" $fname | awk '{print $5}'`
 eh1=`grep "highest occupied" $fname | awk '{print $5}'`
 el1=`grep "highest occupied" $fname | awk '{print $8}'`
 tf1=`grep " P = " $fname | head -1 | awk '{printf "%7.5f", $3}'`
-eigenval=`sed -n '/   k =/{n;n;p;}' $fname | awk '{print $1}; {print $2}; {print $3}; {print $4}'`
+eigenval=`sed -n '/   k =/{n;n;p;}' $fname | awk '{print $1; print $2; print $3; print $4}'`
 
 # WANNIER
-wfcenter=`sed -n '/Final State/{n;p;}' $fname | awk '{print $7; {print $8}; {print $9}}'`
+wfcenter=`sed -n '/Final State/{n;p;}' $fname | awk '{print $7; print $8; print $9}'| tr , " " `
 spread=`sed -n '/Final State/{n;p;}' $fname | awk '{print $11}'`
 
 omegaI=`grep "  Omega I " $fname | awk '{print $6}'`
@@ -45,22 +45,22 @@ omegaOD=`grep "  Omega OD " $fname | awk '{print $4}'`
 omegaT=`grep "  Omega Total " $fname | awk '{print $7}'`
 
 # Wannier -pp
-nearn=`sed -n '/ Distance (Ang^-1)/{n;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p}'\
+nearn=`sed -n '/ Distance (Ang^-1)/{n;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;}'\
  $fname | awk '{print $2}; {print $3}; {print $4}'`
 compl=`sed -n '/ b_k(x) /{n;n;p;n;p;n;p;n;p;n;p;n;p;}' \
- $fname | awk '{print $2}; {print $3}; {print $4}; {print $5}; {print $6}'`
+ $fname | awk '{print $2; print $3; print $4; print $5; print $6}'`
 
 # PW2WANNIER
 proji=`sed -n '/ Projections/{n;p;n;p;n;p;n;p;}'\
- $fname | awk '{print $1}; {print $2}; {print $3}; {print $4}; {print $5}; {print $6}; {print $7};'`
+ $fname | awk '{print $1; print $2; print $3; print $4; print $5; print $6; print $7};'`
 
 nnkpt_kpt=`sed -n '/begin kpoints/{n;n;p;n;p;n;p;n;p;n;p;}'\
- $fname | awk '{print $1}; {print $2}; {print $3};'`
+ $fname | awk '{print $1; print $2; print $3};'`
 
 nnkpt=`sed -n '/begin nnkpts/{n;n;p;n;p;n;p;n;p;n;p;}'\
- $fname | awk '{print $1}; {print $2}; {print $3}; {print $4}; {print $5};'`
+ $fname | awk '{print $1; print $2; print $3; print $4; print $5};'`
 
-wrmsg=`grep -A1 'Exiting.......'  $(fname) | wc -l`
+wrmsg=`grep -A1 'Exiting.......'  "${fname}" | wc -l`
 
 if test "$e1" != ""; then
         echo e1

@@ -61,6 +61,7 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
+  use w90_sitesymmetry !YN:
  
   implicit none
 
@@ -112,7 +113,7 @@ program wannier
      write(stdout,'(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
      call param_read_chkpt()
-!!$     call param_read_um
+!~     call param_read_um
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
            write(stdout,'(/1x,a)',advance='no') 'Resuming a previous Wannier90 calculation '
@@ -152,6 +153,7 @@ program wannier
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
+  if (lsitesymmetry) call sitesymmetry_read()   !YN:
   call overlap_read()
 
   time1=io_time()
@@ -167,7 +169,7 @@ program wannier
   endif
 
   call param_write_chkpt('postdis')
-!!$  call param_write_um
+!~  call param_write_um
 
 1001 time2=io_time()
 
@@ -204,6 +206,7 @@ program wannier
   call overlap_dealloc()
   call kmesh_dealloc()
   call param_dealloc()
+  if (lsitesymmetry) call sitesymmetry_dealloc() !YN:
 
 4004 continue 
 
