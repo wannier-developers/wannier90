@@ -272,7 +272,7 @@ contains
 ! [lp] Original code, without IJ-dependent shift:
             else
               rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
-!!$[aam] check divide by ndegen?
+!~[aam] check divide by ndegen?
               fac=cmplx(cos(rdotk),sin(rdotk),dp)
               ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
             endif ! end of use_ws_distance

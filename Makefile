@@ -46,7 +46,6 @@ clean:
 		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf objp ; \
 	fi )
-	$(MAKE) -C $(ROOTDIR)/tests clean
 	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
@@ -66,12 +65,6 @@ dist:
 	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90-2.0.1/,' -f wannier90-2.0.1.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
-		./tests/run_test.pl \
-		./tests/test*/wannier.win \
-		./tests/test*/des.dat \
-		./tests/test*/wannier.eig \
-		./tests/test*/wannier.?mn \
-		./tests/test*/stnd* \
 		./examples/README \
 		./examples/example01/UNK* \
 		./examples/*/*.win \
@@ -163,12 +156,6 @@ dist-lite:
 	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
-		./tests/run_test.pl \
-		./tests/test*/wannier.win \
-		./tests/test*/des.dat \
-		./tests/test*/wannier.eig \
-		./tests/test*/wannier.?mn \
-		./tests/test*/stnd* \
 		./config/* \
 		./*/Makefile \
 		./utility/*.pl \
