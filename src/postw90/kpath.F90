@@ -388,7 +388,7 @@ contains
              write(pyunit,'(a)') "pl.colorbar(shrink=0.7)"
           endif
           write(pyunit,'(a)') "outfile = '"//trim(seedname)//"-bands.pdf'"
-          write(pyunit,'(a)') "pl.savefig(outfile)"
+          write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
           write(pyunit,'(a)') "pl.show()"
           
        endif ! plot_bands .and. .not.plot_curv .and. .not.plot_morb
@@ -481,7 +481,7 @@ contains
              endif
              write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                   "-curv_"//achar(119+i)//".pdf'"
-             write(pyunit,'(a)') "pl.savefig(outfile)"
+             write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
              write(pyunit,'(a)') "pl.show()"
           enddo
           
@@ -566,7 +566,7 @@ contains
                    //"  [ Ry$\cdot\AA^2$ ]')"
               write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                    "-morb_"//achar(119+i)//".pdf'"
-              write(pyunit,'(a)') "pl.savefig(outfile)"
+              write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
               write(pyunit,'(a)') "pl.show()"
           enddo
 
@@ -671,7 +671,7 @@ contains
                 write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                      "-morb_"//achar(119+i)//".pdf'"
              endif
-             write(pyunit,'(a)') "pl.savefig(outfile)"
+             write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
              write(pyunit,'(a)') "pl.show()"
           enddo
 
