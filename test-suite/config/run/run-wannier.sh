@@ -84,6 +84,20 @@ then
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4
   cp $OUTPUT $3
+#  if [[ -e CRASH ]]
+#  then
+#    cat $3
+#  fi  
+elif [[ "$1" == "7" ]]
+then
+  echo "Running w90+postw90 for geninterp and checking for energies and derivatives ..."
+  export TMP=$2
+  export OUTPUT="${TMP%????}_geninterp.dat"
+  echo " ${WANNIER_ROOT}/wannier90.x $2 2> $4 # $3"
+  ${WANNIER_ROOT}/wannier90.x $2 2> ${4}_wan
+  echo "${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> $4 # $3"
+  ${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> $4
+  cp $OUTPUT $3
   if [[ -e CRASH ]]
   then
     cat $3

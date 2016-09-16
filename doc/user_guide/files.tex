@@ -500,7 +500,7 @@ visualiser ({\tt jmol}, {\tt gopenmol}, {\tt vmd}, etc.).
 
 \section{{\tt seedname\_hr.dat}}
 
-OUTPUT. Written if {\tt hr\_plot=.TRUE.}. The first line gives the date and
+OUTPUT. Written if {\tt write\_hr=.TRUE.}. The first line gives the date and
 time at which the file was created. 
 The second line states the number of Wannier functions {\tt num\_wann}. The third
 line gives the number of Wigner-Seitz grid-points {\tt nrpts}. The next block of 
@@ -527,6 +527,18 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
     .
     .
 \end{verbatim}
+
+\section{{\tt seedname\_r.dat}}
+OUTPUT.
+Written if $\verb#write_rmn#=\verb#true#$. The matrix elements
+$\langle m\mathbf{0}|\mathbf{r}|n\mathbf{R}\rangle$ (where $n\mathbf{R}$ refers to MLWF $n$ in unit cell $\mathbf{R}$). The first line gives the date and time at which the file was created. 
+The second line states the number of Wannier functions {\tt num\_wann}. 
+Similar to the case of the Hamiltonian matrix above, the 
+remaining {\tt num\_wann}$^2 \times$ {\tt nrpts} lines
+each contain, respectively, the components of the vector $\mathbf{R}$
+in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
+and $n$, and the real and imaginary parts of the position matrix element
+in the WF basis.
 
 \section{{\tt seedname\_qc.dat}}
 OUTPUT. Written if $\verb#transport#=\verb#.TRUE.#$.
@@ -820,4 +832,78 @@ Note the G-vectors ($a,b,c$) needed.
     .
     .
     .
+\end{verbatim}
+
+
+\section{{\tt seedname\_u.mat}}
+OUTPUT. Written if $\verb#write_u_matrices#=\verb#.TRUE.#$. The first line gives the date and
+time at which the file was created.
+The second line states the number of kpoints {\tt num\_kpts} and the number of wannier
+functions {\tt num\_wann} twice. The third line is empty.
+Then there are {\tt num\_kpts} blocks of data, each of which starts with a line containing the kpoint 
+(in fractional coordinates of the reciprocal lattice vectors) 
+followed by {\tt num\_wann * num\_wann} lines containing the matrix elements (real and imaginary parts) of
+$\mathbf{U}^{(\mathbf{k})}$.
+The matrix elements are in column-major order (ie, cycling over rows first and then columns).
+There is an empty line between each block of data.
+
+\begin{verbatim}
+ written on 15Sep2016 at 16:33:46 
+           64           8           8
+	 
+   0.0000000000  +0.0000000000  +0.0000000000
+   0.4468355787  +0.1394579978
+  -0.0966033667  +0.4003934902
+  -0.0007748974  +0.0011788678
+  -0.0041177339  +0.0093821027
+   .
+   .
+   .
+
+   0.1250000000   0.0000000000  +0.0000000000
+   0.4694005589  +0.0364941808
+  +0.2287801742  -0.1135511138
+  -0.4776782452  -0.0511719121
+  +0.0142081014  +0.0006203139
+   .
+   .
+   .
+\end{verbatim}
+
+
+\section{{\tt seedname\_u\_dis.mat}}
+
+OUTPUT. Written if $\verb#write_u_matrices#=\verb#.TRUE.#$ and disentanglement is enabled.
+The first line gives the date and time at which the file was created.
+The second line states the number of kpoints {\tt num\_kpts}, the number of wannier
+functions {\tt num\_bands} and the number of {\tt num\_bands}.
+The third line is empty.
+Then there are {\tt num\_kpts} blocks of data, each of which starts with a line containing the kpoint 
+(in fractional coordinates of the reciprocal lattice vectors) 
+followed by {\tt num\_wann * num\_bands} lines containing the matrix elements (real and imaginary parts)
+of $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$.
+The matrix elements are in column-major order (ie, cycling over rows first and then columns).
+There is an empty line between each block of data.
+
+\begin{verbatim}
+ written on 15Sep2016 at 16:33:46 
+           64           8          16
+	    
+   0.0000000000  +0.0000000000  +0.0000000000
+   1.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+   .
+   .
+   .
+   
+   0.1250000000   0.0000000000  +0.0000000000
+   1.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+   .
+   .
+   .
 \end{verbatim}

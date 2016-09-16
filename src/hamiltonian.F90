@@ -27,6 +27,7 @@ module w90_hamiltonian
   !                   irvec(1:3,irpt) in the basis of the lattice vectors
   !
   integer,          public, save, allocatable :: irvec(:,:)
+  integer,          public, save, allocatable :: shift_vec(:,:)
   !
   ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
   !
@@ -48,6 +49,7 @@ module w90_hamiltonian
   public :: hamiltonian_write_hr
   public :: hamiltonian_setup
   public :: hamiltonian_dealloc
+  public :: hamiltonian_write_rmn
 
   ! Module variables
   logical, save :: ham_have_setup=.false.
@@ -165,6 +167,7 @@ contains
     use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
                                eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
                                have_disentangled,timing_level
+    use w90_parameters, only : lsitesymmetry !YN:
 
     implicit none
   
@@ -174,7 +177,8 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt,i,j,m,irpt,ierr,counter
+    integer              :: loop_kpt,i,j,m,irpt,ideg,ierr,counter
+    complex(kind=dp)     :: utmp(num_bands,num_wann) !RS:
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -216,14 +220,31 @@ contains
        ! but we choose u_matrix_opt such that the Hamiltonian is
        ! diagonal at each kpoint. (I guess we should check it here)
        
-       do loop_kpt=1,num_kpts
-          do j=1,num_wann
-             do m=1,ndimwin(loop_kpt)
-                eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
-                     real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+       if (.not.lsitesymmetry) then                                                                             !YN:
+          do loop_kpt=1,num_kpts
+             do j=1,num_wann
+                do m=1,ndimwin(loop_kpt)
+                   eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
+                        real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+                enddo
              enddo
           enddo
-       enddo
+       else                                                                                                     !YN: 
+          ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                                   !RS:
+          ! so we have to calculate ham_k in the following way                                                  !RS:
+          do loop_kpt=1,num_kpts                                                                                !RS:
+             utmp(1:ndimwin(loop_kpt),:)= &                                                                     !RS:
+                 matmul(u_matrix_opt(1:ndimwin(loop_kpt),:,loop_kpt),u_matrix(:,:,loop_kpt))                    !RS:
+             do j=1,num_wann                                                                                    !RS: 
+                do i=1,j                                                                                        !RS:
+                   do m=1,ndimwin(loop_kpt)                                                                     !RS:
+                      ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval_opt(m,loop_kpt)*conjg(utmp(m,i))*utmp(m,j) !RS:
+                   enddo                                                                                        !RS:
+                   if (i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))                                   !RS:
+                enddo                                                                                           !RS:
+             enddo                                                                                              !RS:
+          enddo                                                                                                 !RS:
+       endif                                                                                                    !YN:
 
     else
        eigval2(1:num_wann,:)=eigval(1:num_wann,:)
@@ -237,17 +258,19 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    do loop_kpt=1,num_kpts
-       do j=1,num_wann
-          do i=1,j
-             do m=1,num_wann
-                ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
-                     conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+    if (.not.lsitesymmetry.or..not.have_disentangled) then !YN:
+       do loop_kpt=1,num_kpts
+          do j=1,num_wann
+             do i=1,j
+                do m=1,num_wann
+                   ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
+                        conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+                enddo
+                if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
              enddo
-             if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
           enddo
        enddo
-    enddo
+    endif                                                  !YN:
 
     have_ham_k = .true.
 
@@ -271,7 +294,7 @@ contains
              ham_r(:,:,irpt)=ham_r(:,:,irpt)+fac*ham_k(:,:,loop_kpt)
           enddo
        enddo
-    
+
        have_translated = .false.
 
     else
@@ -299,6 +322,16 @@ contains
 
     end if
 
+    ! [lp] if required, compute the minimum diistances
+!     if (use_ws_distance) then
+!         allocate(irdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating irdist_ws in hamiltonian_get_hr')
+!         allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
+        !
+!         call ws_translate_dist(nrpts, irvec)
+!     endif
+
     have_ham_r = .true.
 
 200 continue
@@ -313,6 +346,8 @@ contains
     return
 
   contains
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
     subroutine internal_translate_centres()
@@ -566,5 +601,60 @@ contains
 
   end subroutine hamiltonian_wigner_seitz
 
+  !============================================!
+  subroutine hamiltonian_write_rmn()
+  !============================================!
+    use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
+                               nntot
+    use w90_constants, only  : twopi, cmplx_i
+    use w90_io,         only : io_error, io_file_unit, seedname,io_date
+
+    implicit none
+
+    complex(kind=dp)     :: fac
+    real(kind=dp)        :: rdotk
+    real(kind=dp)        :: delta
+    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit
+    complex(kind=dp)     :: position(3)
+    character (len=33) :: header
+    character (len=9)  :: cdate,ctime
+
+    file_unit=io_file_unit()
+    open(file_unit,file=trim(seedname)//'_r.dat',form='formatted',status='unknown',err=101)
+    call io_date(cdate,ctime)
+
+    header='written on '//cdate//' at '//ctime
+    write(file_unit,*) header ! Date and time
+    write(file_unit,*) num_wann
+
+    do loop_rpt=1,nrpts
+       do m=1,num_wann
+          do n=1,num_wann
+             delta=0._dp
+             if (m.eq.n) delta=1._dp
+             position(:)=0._dp
+             do nkp=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,nkp),real(irvec(:,loop_rpt),dp))
+                fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                do ind = 1, 3  
+                   do nn = 1, nntot 
+                      ! Eq. C16 of Marzari and Vanderbilt PRB 56, 12847 (1997)     !
+                      position(ind) = position(ind) + &
+                                      wb(nn) * bk(ind,nn,nkp) * (m_matrix(n,m,nn,nkp) - delta) * fac
+                   end do   
+                end do
+             end do
+             write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)  
+          end do
+       end do
+    end do
+    
+    close(file_unit)
+
+    return
+
+101 call io_error('Error: position_write_pos: problem opening file '//trim(seedname)//'_r')
+
+  end subroutine hamiltonian_write_rmn
 
 end module w90_hamiltonian

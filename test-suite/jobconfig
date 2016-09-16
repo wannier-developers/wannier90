@@ -14,13 +14,28 @@ inputs_args = ('silicon.win', '1')
 program = WANNIER90
 inputs_args = ('copper.win', '1')
 
-[pw_example05/]
+[pw_example05_1]
+program = PW
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2')
+
+[pw_example05_2]
+program = PW2WANNIER
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3')
+
+[pw_example05_3]
 program = WANNIER90
 inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3'), ('diamond.win', '1')
+
+# The next two tests are not splitted. This means that only Wannier is tested. 
+# If you want to test PWSCF for the two below you should split as above. 
 
 [pw_example06/]
 program = WANNIER90
 inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('copper.pw2wan', '3'), ('copper.win', '1')
+
+[pw_example07/]
+program = WANNIER90
+inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
 
 [wan_benzene_gamma_valcond/]
 program = WANNIER90
@@ -33,10 +48,6 @@ inputs_args = ('benzene.win', '1')
 [wan_lavo3_dissphere/]
 program = WANNIER90
 inputs_args = ('LaVO3.win', '1')
-
-[pw_example07/]
-program = WANNIER90
-inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
 
 [test_basic1/]
 program = WANNIER90
@@ -65,6 +76,10 @@ inputs_args = ('wannier.win', '6')
 [test_nnkpt5/]
 program = WANNIER90
 inputs_args = ('wannier.win', '6')
+
+[test_si_geninterp/]
+program = POSTW90GENINTERP
+inputs_args = ('silicon.win', '7')
 
 [categories]
 wannier_all = example*??  test_* wan_*

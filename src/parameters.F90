@@ -90,18 +90,21 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
+  logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
   integer, allocatable, public, save :: bands_plot_project(:)
   integer,           public, save :: bands_plot_dim         
-  logical,           public, save :: hr_plot
+  logical,           public, save :: write_hr
+  logical,           public, save :: write_rmn
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
   real(kind=dp),     public, save :: dist_cutoff_hc
   character(len=20), public, save :: one_dim_axis
+  logical,           public, save :: use_ws_distance
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -378,6 +381,13 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
 
+  logical, public :: lsitesymmetry=.false.                         !RS: site-symmetry
+  integer, public :: nkptirr=9999,nsymmetry=9999                   !RS:
+  real(kind=dp), public :: symmetrize_eps=1d-3                     !RS:
+  integer, allocatable, public :: kptsym(:,:),ir2ik(:),ik2ir(:)    !RS:
+  complex(kind=dp),  allocatable, public :: d_matrix_band(:,:,:,:) !RS:
+  complex(kind=dp),  allocatable, public :: d_matrix_wann(:,:,:,:) !RS:
+  
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
   integer, parameter, public :: num_nnmax=12
@@ -408,6 +418,8 @@ module w90_parameters
   character(len=maxlen), allocatable :: in_data(:)
   character(len=maxlen)              :: ctmp
   logical                            :: ltmp
+  ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
+  logical                            :: hr_plot 
 
   public :: param_read
   public :: param_write
@@ -446,6 +458,12 @@ contains
     integer, allocatable, dimension(:) :: nnkpts_idx
 
     call param_in_file
+
+    !%%%%%%%%%%%%%%%%
+    ! Site symmetry
+    !%%%%%%%%%%%%%%%%
+    call param_get_keyword('site_symmetry' ,found,l_value=lsitesymmetry )!YN:
+    call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
@@ -527,16 +545,20 @@ contains
             call io_error('Error: exclude_bands must contain positive numbers')
     end if
 
+    ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
 !    num_bands       =   -1   
     call param_get_keyword('num_bands',found,i_value=i_temp)
     if(found.and.library) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not.effective_model) then
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
+    end if
+    if (library) num_bands = num_bands - num_exclude_bands
+    if (.not. effective_model) then
        if(found .and. num_bands<num_wann) then
           call io_error('Error: num_bands must be greater than or equal to num_wann')
        endif
-    end if
+    endif
 
     num_dump_cycles =   100          ! frequency to write backups at
     call param_get_keyword('num_dump_cycles',found,i_value=num_dump_cycles)
@@ -753,6 +775,9 @@ contains
             call io_error('Error: wannier_plot_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
+
+    write_u_matrices = .false.
+    call param_get_keyword('write_u_matrices',found,l_value=write_u_matrices)
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
@@ -1189,6 +1214,12 @@ contains
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
+    if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.')
+    write_hr                   = .false.
+    call param_get_keyword('write_hr',found,l_value=write_hr)
+
+    write_rmn                    = .false.
+    call param_get_keyword('write_rmn',found,l_value=write_rmn)
                                                                                            
     hr_cutoff                 = 0.0_dp
     call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)
@@ -1217,6 +1248,9 @@ contains
          call io_error('Error: one_dim_axis not recognised')
 
 301  continue
+
+    use_ws_distance = .false.
+    call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
@@ -1320,7 +1354,7 @@ contains
           if(.not. eig_found) then
              if ( disentanglement) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. boltzwann &
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. boltzwann &
                   .or. geninterp) ) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
@@ -2177,6 +2211,10 @@ contains
 
     if (transport .and. tran_read_ht) goto 401
 
+    if(lsitesymmetry)then                                          !YN:
+      write(stdout,"(a)"      )'   Site-Symmetry-Adapted mode   '  !RS:
+      write(stdout,"(a,g15.7)")'   symmetrize_eps=',symmetrize_eps !YN:
+    endif                                                          !YN:
     ! System
     write(stdout,*)
     write(stdout,'(36x,a6)') '------' 
@@ -2349,7 +2387,7 @@ contains
     ! Plotting
     !
     if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. kslice &
-         .or. dos_plot .or. hr_plot .or. iprint>2) then
+         .or. dos_plot .or. write_hr .or. iprint>2) then
        !
        write(stdout,'(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
        !
@@ -2409,8 +2447,8 @@ contains
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
-       if (hr_plot .or. iprint>2) then
-          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',hr_plot,'|'
+       if (write_hr .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',write_hr,'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        endif
        if (write_vdw_data .or. iprint>2) then
@@ -2800,7 +2838,8 @@ contains
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :',boltz_dos_energy_min,'|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :',boltz_dos_energy_max,'|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :',boltz_dos_energy_step,'|'
-          if(boltz_dos_adpt_smr.eqv.adpt_smr .and. boltz_dos_adpt_smr_fac==adpt_smr_fac .and. boltz_dos_adpt_smr_max==adpt_smr_max &
+          if(boltz_dos_adpt_smr.eqv.adpt_smr .and. boltz_dos_adpt_smr_fac==adpt_smr_fac &
+               .and. boltz_dos_adpt_smr_max==adpt_smr_max &
                .and. boltz_dos_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==boltz_dos_smr_index) then
              write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
           else
@@ -3060,7 +3099,18 @@ contains
        deallocate( dos_project, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating dos_project in param_dealloc')
     endif
-
+    if( allocated( fermi_energy_list ) ) then
+       deallocate( fermi_energy_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating fermi_energy_list in param_dealloc')
+    endif
+    if( allocated( kubo_freq_list ) ) then
+       deallocate( kubo_freq_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating kubo_freq_list in param_dealloc')
+    endif
+    if( allocated( dis_spheres ) ) then
+       deallocate( dis_spheres, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating dis_spheres in param_dealloc')
+    endif
 
     return
 

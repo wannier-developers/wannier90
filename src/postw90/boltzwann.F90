@@ -46,7 +46,7 @@ module w90_boltzwann
   use w90_utility, only    : utility_inv3, utility_inv2
   use w90_postw90_common
   use w90_comms
-  use w90_dos, only    : get_dos_k, get_levelspacing
+  use w90_dos, only    : dos_get_k, dos_get_levelspacing
   implicit none
 
   private 
@@ -618,7 +618,7 @@ contains
          boltz_dos_adpt_smr_max, &
          param_get_smearing_type, boltz_dos_smr_index, boltz_tdf_smr_index
     use w90_utility, only       : utility_diagonalize
-    use w90_wan_ham, only       : get_eig_deleig
+    use w90_wan_ham, only       : wham_get_eig_deleig
 
     real(kind=dp), dimension(:,:,:), intent(out)   :: TDF ! (coordinate,Energy,spin)
     real(kind=dp), dimension(:), intent(in)      :: TDFEnergyArray
@@ -773,8 +773,8 @@ contains
        kpt(3)=(real(loop_z,dp)/real(boltz_kmesh(3),dp))
               
        ! Here I get the band energies and the velocities
-       call get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-       call get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
+       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+       call dos_get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
 
        ! Here I apply a scissor operator to the conduction bands, if required in the input
        if (boltz_bandshift) then
@@ -809,9 +809,9 @@ contains
                               (/ real(i,kind=dp)/real(boltz_kmesh(1),dp)/ 4._dp, &
                               real(j,kind=dp)/real(boltz_kmesh(2),dp)/ 4._dp, &
                               real(k,kind=dp)/real(boltz_kmesh(3),dp)/ 4._dp /)
-                         call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-                         call get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
-                         call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
+                         call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+                         call dos_get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
+                         call dos_get_k(kpt,DOS_EnergyArray,eig,dos_k,&
                               smr_index=boltz_dos_smr_index,&
                               adpt_smr_fac=boltz_dos_adpt_smr_fac,&
                               adpt_smr_max=boltz_dos_adpt_smr_max,&
@@ -822,7 +822,7 @@ contains
                    end do
                 end do
              else
-                call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
+                call dos_get_k(kpt,DOS_EnergyArray,eig,dos_k,&
                      smr_index=boltz_dos_smr_index,&
                      adpt_smr_fac=boltz_dos_adpt_smr_fac,&
                      adpt_smr_max=boltz_dos_adpt_smr_max,&
@@ -830,7 +830,7 @@ contains
                 dos_all = dos_all + dos_k * kweight                
              end if
           else
-             call get_dos_k(kpt,DOS_EnergyArray,eig,dos_k,&
+             call dos_get_k(kpt,DOS_EnergyArray,eig,dos_k,&
                   smr_index=boltz_dos_smr_index,&
                   smr_fixed_en_width=boltz_dos_smr_fixed_en_width)
              ! This sum multiplied by kweight amounts to calculate
@@ -960,7 +960,7 @@ contains
   !>       one often doesn't even need to smear. It simply uses a standard smearing as defined by
   !>       the variables boltz_TDF_smr_fixed_en_width and boltz_TDF_smr_index
   !> 
-  !> \todo still to do: adapt get_spin_nk to read in input the UU rotation matrix
+  !> \todo still to do: adapt spin_get_nk to read in input the UU rotation matrix
   !> 
   !> \note This routine simply provides the dos contribution of a given
   !>       point. This must be externally summed after proper weighting.
@@ -972,7 +972,7 @@ contains
   !>       is taken from EnergyArray(2)-EnergyArray(1))
   !> \note The routine is assuming that EnergyArray has at least two elements.
   !> \note The meaning of the three indices of the TDF_k array is different with respect to
-  !>       those of the dos_k array returned by the get_dos_k routine
+  !>       those of the dos_k array returned by the dos_get_k routine
   !> \note The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
   !>       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
   !> 
@@ -984,7 +984,7 @@ contains
   !> \param deleig_k    array with the band derivatives at the given k point
   !>                    (in eV * angstrom / (2pi) as internally given by the code)
   !>                    already corrected in case of degeneracies, as returned by the 
-  !>                    get_deleig_a routine
+  !>                    wham_get_deleig_a routine
   !> \param             TDF_k array in which the contribution is stored. Three dimensions:
   !>                    TDF_k(ij, energyidx, spinidx), where:
   !>                    - ij indexes the components of the TDF (symmetric) tensor (1=XX, 2=XY, ...);
@@ -996,10 +996,10 @@ contains
   subroutine TDF_kpt(kpt,EnergyArray,eig_k,deleig_k,TDF_k)
 
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
-    use w90_utility, only       : w0gauss
+    use w90_utility, only       : utility_w0gauss
     use w90_parameters, only    : num_wann,spin_decomp,num_elec_per_state,&
          boltz_TDF_smr_fixed_en_width, boltz_TDF_smr_index, boltz_relax_time
-    use w90_spin, only          : get_spin_nk
+    use w90_spin, only          : spin_get_nk
 
     ! Arguments
     !
@@ -1024,7 +1024,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if(spin_decomp) call get_spin_nk(kpt,spn_nk)
+    if(spin_decomp) call spin_get_nk(kpt,spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)   
 
@@ -1065,7 +1065,7 @@ contains
        do loop_f=min_f,max_f
           if (DoSmearing) then
              arg=(EnergyArray(loop_f)-eig_k(BandIdx))/smear
-             rdum=w0gauss(arg,boltz_TDF_smr_index)/smear
+             rdum=utility_w0gauss(arg,boltz_TDF_smr_index)/smear
           else
              rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
           end if

@@ -61,6 +61,7 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
+  use w90_sitesymmetry !YN:
  
   implicit none
 
@@ -152,6 +153,7 @@ program wannier
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
+  if (lsitesymmetry) call sitesymmetry_read()   !YN:
   call overlap_read()
 
   time1=io_time()
@@ -184,7 +186,7 @@ program wannier
 
 2002 time2=io_time()
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
      call plot_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
@@ -199,11 +201,12 @@ program wannier
      if (tran_read_ht) goto 4004
   end if
 
-  call transport_dealloc()
+  call tran_dealloc()
   call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
   call param_dealloc()
+  if (lsitesymmetry) call sitesymmetry_dealloc() !YN:
 
 4004 continue 
 

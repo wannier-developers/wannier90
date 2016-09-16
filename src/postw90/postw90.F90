@@ -18,8 +18,9 @@ program postw90
   use w90_io
 
   use w90_kmesh
-  use w90_comms, only : on_root,num_nodes, comms_setup, comms_end, comms_bcast
-  use w90_postw90_common
+  use w90_comms, only : on_root, num_nodes, comms_setup, comms_end, comms_bcast, comms_barrier
+  use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
+       pw90common_wanint_param_dist, pw90common_wanint_data_dist
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -131,7 +132,7 @@ program postw90
 
   ! We now distribute a subset of the parameters to the other nodes
   !
-  call wanint_param_dist
+  call pw90common_wanint_param_dist
 
   if(.not.effective_model) then
      !
@@ -146,25 +147,26 @@ program postw90
      !      u_matrix separately, only their product v_matrix, and this
      !      is what is distributed now
      !
-     call wanint_data_dist
+     call pw90common_wanint_data_dist
+     !
   end if
 
   ! Read list of k-points in irreducible BZ and their weights
   !
   ! Should this be done on root node only?
   !
-  if(wanint_kpoint_file) call wanint_get_kpoint_file
+  if(wanint_kpoint_file) call pw90common_wanint_get_kpoint_file
 
   ! Setup a number of common variables for all interpolation tasks
   !
-  call wanint_setup
+  call pw90common_wanint_setup
 
   if(on_root) then
      time1=io_time()
      write(stdout,'(/1x,a25,f11.3,a)')&
           'Time to read and process .chk    ',time1-time2,' (sec)'
   endif
-
+  !
   ! Now perform one or more of the following tasks
 
   ! ---------------------------------------------------------------
@@ -192,7 +194,7 @@ program postw90
   ! Spin magnetic moment
   ! --------------------
   !
-  if(spin_moment) call get_spin_moment
+  if(spin_moment) call spin_get_moment
 
   ! -------------------------------------------------------------------
   ! dc Anomalous Hall conductivity and eventually (if 'mcd' string also 

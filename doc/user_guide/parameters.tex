@@ -252,13 +252,17 @@ the same input file. **Cannot be used in conjunction with disentanglement.}}
 Fermi energy in the specified range\\
   {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
   surface plot \\
-  {\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
+  {\sc hr\_plot} & L & This parameter is not used anymore. Use {\sc write\_hr} instead. \\
+  {\sc write\_hr} & L & Write the Hamiltonian in the WF basis \\
   {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
   {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
   {\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
+  {\sc use\_ws\_distance } & L & Use the minimum distance between WFs for interpolation \\
+  {\sc write\_u\_matrices } & L & Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files \\
+  {\sc write\_rmn } & L & Write the position operator in the WF basis \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -828,7 +832,7 @@ The default is 0, which means disentangle at every k-point in the full BZ (the s
 \subsection[dis\_spheres\_first\_wann]{\tt integer :: dis\_spheres\_first\_wann}
 Index of the first band that has to be considered as a Wannier function. Used only if {\tt dis\_spheres\_num} is greater than zero.
 At k-points where disentanglement is not performed the bands from
-{\tt dis\_first\_wann} to {\tt dis\_first\_wann+num\_wann} are used
+{\tt dis\_spheres\_first\_wann} to {\tt dis\_spheres\_first\_wann+num\_wann} are used
 to wannierise. The bands excluded using {\tt exclude\_bands} should not
 be counted.
 
@@ -1246,10 +1250,17 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#xcrysden#  (default)
 \end{itemize}
 
-\subsection[hr\_plot]{\tt logical :: hr\_plot}
+\subsection[write\_hr]{\tt logical :: write\_hr}
 
-If $\verb#hr_plot#=\verb#true#$, then the Hamiltonian matrix in the
+If $\verb#write_hr#=\verb#true#$, then the Hamiltonian matrix in the
 WF basis will be written to a file {\tt seedname\_hr.dat}.
+
+The default value is {\tt false}.
+
+\subsection[write\_rmn]{\tt logical :: write\_rmn}
+
+If $\verb#write_rmn#=\verb#true#$, then the position operator in the
+WF basis will be written to a file {\tt seedname\_r.dat}.
 
 The default value is {\tt false}.
 
@@ -1438,11 +1449,31 @@ The default is 0.15
 
 \subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
 
-Centre of the unit cell to which the final Wannier centers are
+Centre of the unit cell to which the final Wannier centres are
 translated. Numbers are in fractional coordinates with respect to the
 lattice vectors.
  
 The default value is (0.0,0.0,0.0).
+
+\subsection[use\_ws\_distance]{\tt logical :: use\_ws\_distance}
+
+When interpolating the k-space Hamiltonian, apply a translation to each WF by a basis
+vector of the super-lattice that minimises the distance between their centres.
+The translation is dependent on both WF and on the unit cell vector
+to which they belong, i.e., translate function $W_j({\bf r}-{\bf R})$ inside
+the Wigner-Seitz cell centred on WF $W_i({\bf r})$.
+
+If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
+
+The default value is {\tt false}.
+
+\subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
+
+Write the $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices obtained at the end of wannierization to files
+{\tt seedname\_u.mat} and {\tt seedname\_u\_dis.mat}, respectively.
+
+The default value is {\tt false}.
+
 
 \subsection[hr\_cutoff]{\tt real(kind=dp) :: hr\_cutoff}
 

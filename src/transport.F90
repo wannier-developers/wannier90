@@ -56,7 +56,6 @@
 module w90_transport
 
   use w90_constants,  only : dp
-  use w90_parameters, only : num_wann
 
   implicit none
 
@@ -91,7 +90,7 @@ module w90_transport
 
 
   public :: tran_main
-  public :: transport_dealloc
+  public :: tran_dealloc
 
 contains
   !==================================================================!
@@ -99,7 +98,7 @@ contains
     !==================================================================!
 
     use w90_io,         only : stdout,io_stopwatch
-    use w90_parameters, only : transport_mode,tran_read_ht,timing_level,hr_plot,&
+    use w90_parameters, only : transport_mode,tran_read_ht,timing_level,write_hr,&
                                write_xyz
     use w90_hamiltonian,only : hamiltonian_get_hr,hamiltonian_write_hr,hamiltonian_setup
 
@@ -121,7 +120,7 @@ contains
        if (.not.tran_read_ht) then
           call hamiltonian_setup()
           call hamiltonian_get_hr()
-          if (hr_plot) call hamiltonian_write_hr()
+          if (write_hr) call hamiltonian_write_hr()
           call tran_reduce_hr()
           call tran_cut_hr_one_dim()
           call tran_get_ht()
@@ -135,7 +134,7 @@ contains
        if (.not.tran_read_ht) then
           call hamiltonian_setup()
           call hamiltonian_get_hr()
-          if (hr_plot) call hamiltonian_write_hr()
+          if (write_hr) call hamiltonian_write_hr()
           call tran_reduce_hr()
           call tran_cut_hr_one_dim()
           write(stdout,*)'------------------------- 2c2 Calculation Type: ------------------------------'
@@ -162,7 +161,7 @@ contains
     use w90_constants,   only : dp, eps8
     use w90_io,          only : io_error, io_stopwatch, stdout
     use w90_parameters,  only : one_dim_dir,real_lattice,num_wann, &
-                                mp_grid,timing_level,hr_plot
+                                mp_grid,timing_level
     use w90_hamiltonian, only : irvec,nrpts,ham_r
 
     implicit none
@@ -250,7 +249,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     use w90_parameters,  only : num_wann,mp_grid,timing_level,real_lattice,&
                                 hr_cutoff,dist_cutoff,dist_cutoff_mode, &
                                 one_dim_dir,length_unit,transport_mode,&
-                                tran_num_cell_ll,tran_num_ll,hr_plot,dist_cutoff_hc
+                                tran_num_cell_ll,tran_num_ll,dist_cutoff_hc
     use w90_hamiltonian, only : wannier_centres_translated
 
     implicit none
@@ -1701,7 +1700,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
     use w90_constants,          only : dp
     use w90_io,                 only : io_error,stdout,io_stopwatch
-    use w90_parameters,         only : one_dim_dir,tran_num_ll,tran_num_rr,num_wann,tran_num_cell_ll,&
+    use w90_parameters,         only : one_dim_dir,tran_num_ll,num_wann,tran_num_cell_ll,&
                                        real_lattice,tran_group_threshold,iprint,timing_level,lenconfac,&
                                        wannier_spreads,write_xyz,dist_cutoff
     use w90_hamiltonian,        only : wannier_centres_translated
@@ -2191,7 +2190,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
  
     use w90_constants,          only : dp
     use w90_io,                 only : io_error,stdout,io_stopwatch
-    use w90_parameters,         only : one_dim_dir,tran_num_ll,iprint,timing_level
+    use w90_parameters,         only : iprint,timing_level
     use w90_hamiltonian,        only : wannier_centres_translated
 
     implicit none
@@ -2329,9 +2328,6 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !========================================!
 
     use w90_constants,          only : dp
-    use w90_io,                 only : io_error
-
-    use w90_hamiltonian,        only : wannier_centres_translated
 
     implicit none
 
@@ -2786,11 +2782,9 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !=====================================!
 
     use w90_io,          only: seedname,io_file_unit,io_date,stdout
-    use w90_parameters,  only: num_wann,wannier_centres, &
-                               lenconfac,real_lattice,recip_lattice,iprint, &
+    use w90_parameters,  only: num_wann, &
                                atoms_pos_cart,atoms_symbol,num_species, &
                                atoms_species_num,num_atoms,transport_mode
-    use w90_utility,     only: utility_translate_home
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
@@ -2840,7 +2834,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
     !==============================================================!
 
     use w90_constants,          only : dp
-    use w90_io,                 only : io_error,stdout,io_stopwatch
+    use w90_io,                 only : stdout,io_stopwatch
     use w90_parameters,         only : tran_num_cell_ll,num_wann,tran_num_ll, &
                                        timing_level,iprint, tran_easy_fix
 
@@ -3357,7 +3351,7 @@ loop_n1: do n1 = -irvec_max, irvec_max
   end subroutine tran_lcr_2c2_build_ham
 
   !======================================!
-  subroutine transport_dealloc()
+  subroutine tran_dealloc()
   !====================================!
 
     use w90_io, only : io_error
@@ -3368,32 +3362,32 @@ loop_n1: do n1 = -irvec_max, irvec_max
     
     if( allocated( hR1 ) ) then
        deallocate( hR1, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hR1 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hR1 in tran_dealloc')
     end if
     if( allocated( hR0 ) ) then
        deallocate( hR0, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hR0 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hR0 in tran_dealloc')
     end if
     if( allocated( hL1 ) ) then
        deallocate( hL1, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hL1 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hL1 in tran_dealloc')
     end if  
     if( allocated( hB1 ) ) then
        deallocate( hB1, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hB1 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hB1 in tran_dealloc')
     end if  
     if( allocated( hB0 ) ) then
        deallocate( hB0, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hB0 in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hB0 in tran_dealloc')
     end if
     if( allocated( hr_one_dim ) ) then
        deallocate( hr_one_dim, stat=ierr  )
-       if (ierr/=0) call io_error('Error in deallocating hr_one_dim in transport_dealloc')
+       if (ierr/=0) call io_error('Error in deallocating hr_one_dim in tran_dealloc')
     end if
 
     return
 
-  end subroutine transport_dealloc
+  end subroutine tran_dealloc
 
 
 end module w90_transport

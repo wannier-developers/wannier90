@@ -27,8 +27,8 @@ module w90_geninterp
   use w90_get_oper, only      : get_HH_R, HH_R
   use w90_comms
   use w90_utility, only       : utility_diagonalize
-  use w90_postw90_common, only : fourier_R_to_k
-  use w90_wan_ham, only       : get_eig_deleig
+  use w90_postw90_common, only : pw90common_fourier_R_to_k
+  use w90_wan_ham, only       : wham_get_eig_deleig
   use w90_io, only            : io_date
   implicit none
 
@@ -68,7 +68,7 @@ contains
   !> I think that a way to write in parallel to the output would help a lot,
   !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
-    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
+    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
@@ -186,7 +186,7 @@ contains
     if  (.not.geninterp_single_file) then
        allocate(localkpointidx(counts(my_node_id)),stat=ierr)
        if (ierr/=0) call io_error('Error allocating localkpointidx in geinterp_main.')
-       call comms_scatterv(localkpointidx(1),counts(my_node_id),kpointidx(1),counts, displs)
+       call comms_scatterv(localkpointidx(:),counts(my_node_id),kpointidx(:),counts, displs)
     end if
 
     ! I open the output file(s)
@@ -217,9 +217,9 @@ contains
        kpt = localkpoints(:,i)
        ! Here I get the band energies and the velocities (if required)
        if (geninterp_alsofirstder) then
-          call get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
+          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
        else
-          call fourier_R_to_k(kpt,HH_R,HH,0) 
+          call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
        end if
     end do
