@@ -324,8 +324,8 @@ contains
 
     ! [lp] if required, compute the minimum diistances
 !     if (use_ws_distance) then
-!         allocate(wdist_shiftj_wsi(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
-!         if (ierr/=0) call io_error('Error in allocating wdist_shiftj_wsi in hamiltonian_get_hr')
+!         allocate(irdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating irdist_ws in hamiltonian_get_hr')
 !         allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
 !         if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
         !
