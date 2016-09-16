@@ -37,8 +37,8 @@ module w90_utility
   public :: utility_commutator_diag
   public :: utility_re_tr
   public :: utility_im_tr
-  public :: w0gauss
-  public :: wgauss
+  public :: utility_w0gauss
+  public :: utility_wgauss
   public :: utility_diagonalize
 
 
@@ -694,7 +694,7 @@ contains
 
   end function utility_im_tr
 
-  function wgauss (x, n)
+  function utility_wgauss (x, n)
     !-----------------------------------------------------------------------
     !
     !     this function computes the approximate theta function for the
@@ -710,7 +710,7 @@ contains
     use w90_constants, only : dp,pi
 
     implicit none
-    real(kind=dp) :: wgauss, x
+    real(kind=dp) :: utility_wgauss, x
     ! output: the value of the function
     ! input: the argument of the function
     integer :: n
@@ -735,11 +735,11 @@ contains
     ! Fermi-Dirac smearing
     if (n.eq. - 99) then
        if (x.lt. - maxarg) then
-          wgauss = 0.0_dp
+          utility_wgauss = 0.0_dp
        elseif (x.gt.maxarg) then
-          wgauss = 1.0_dp
+          utility_wgauss = 1.0_dp
        else
-          wgauss = 1.00_dp / (1.00_dp + exp ( - x) )
+          utility_wgauss = 1.00_dp / (1.00_dp + exp ( - x) )
        endif
        return
 
@@ -748,13 +748,13 @@ contains
     if (n.eq. - 1) then
        xp = x - 1.00_dp / sqrt (2.00_dp)
        arg = min (maxarg, xp**2)
-       wgauss = 0.50_dp * qe_erf (xp) + 1.00_dp / sqrt (2.00_dp * pi) * exp ( - &
+       utility_wgauss = 0.50_dp * qe_erf (xp) + 1.00_dp / sqrt (2.00_dp * pi) * exp ( - &
             arg) + 0.50_dp
        return
 
     endif
     ! Methfessel-Paxton
-    wgauss = gauss_freq (x * sqrt (2.00_dp) )
+    utility_wgauss = gauss_freq (x * sqrt (2.00_dp) )
     if (n.eq.0) return
     hd = 0.0_dp
     arg = min (maxarg, x**2)
@@ -765,19 +765,19 @@ contains
        hd = 2.00_dp * x * hp - 2.00_dp * DBLE (ni) * hd
        ni = ni + 1
        a = - a / (DBLE (i) * 4.00_dp)
-       wgauss = wgauss - a * hd
+       utility_wgauss = utility_wgauss - a * hd
        hp = 2.00_dp * x * hd-2.00_dp * DBLE (ni) * hp
        ni = ni + 1
     enddo
     return
-  end function wgauss
+  end function utility_wgauss
 
-  function w0gauss (x, n)
+  function utility_w0gauss (x, n)
     !-----------------------------------------------------------------------
     !
-    !     the derivative of wgauss:  an approximation to the delta function
+    !     the derivative of utility_wgauss:  an approximation to the delta function
     !
-    ! --> (n>=0) : derivative of the corresponding Methfessel-Paxton wgauss
+    ! --> (n>=0) : derivative of the corresponding Methfessel-Paxton utility_wgauss
     !
     ! --> (n=-1 ): derivative of cold smearing:
     !              1/sqrt(pi)*exp(-(x-1/sqrt(2))**2)*(2-sqrt(2)*x)
@@ -787,7 +787,7 @@ contains
     use w90_constants, only : dp,pi
     use w90_io, only        : io_error
     implicit none
-    real(kind=dp) :: w0gauss, x
+    real(kind=dp) :: utility_w0gauss, x
     ! output: the value of the function
     ! input: the point where to compute the function
 
@@ -812,10 +812,10 @@ contains
 
     if (n.eq. - 99) then
        if (abs (x) .le.36.0) then
-          w0gauss = 1.00_dp / (2.00_dp + exp ( - x) + exp ( + x) )
+          utility_w0gauss = 1.00_dp / (2.00_dp + exp ( - x) + exp ( + x) )
           ! in order to avoid problems for large values of x in the e
        else
-          w0gauss = 0.0_dp
+          utility_w0gauss = 0.0_dp
        endif
        return
 
@@ -823,17 +823,17 @@ contains
     ! cold smearing  (Marzari-Vanderbilt)
     if (n.eq. - 1) then
        arg = min (200.0_dp, (x - 1.00_dp / sqrt (2.00_dp) ) **2)
-       w0gauss = sqrtpm1 * exp ( - arg) * (2.00_dp - sqrt ( 2.00_dp) * x)
+       utility_w0gauss = sqrtpm1 * exp ( - arg) * (2.00_dp - sqrt ( 2.00_dp) * x)
        return
 
     endif
 
     if (n.gt.10 .or. n.lt.0) &
-         call io_error('w0gauss higher order smearing is untested and unstable')
+         call io_error('utility_w0gauss higher order smearing is untested and unstable')
 
     ! Methfessel-Paxton
     arg = min (200.0_dp, x**2)
-    w0gauss = exp ( - arg) * sqrtpm1
+    utility_w0gauss = exp ( - arg) * sqrtpm1
     if (n.eq.0) return
     hd = 0.00_dp
     hp = exp ( - arg)
@@ -845,10 +845,10 @@ contains
        a = - a / (DBLE (i) * 4.00_dp)
        hp = 2.00_dp * x * hd-2.00_dp * DBLE (ni) * hp
        ni = ni + 1
-       w0gauss = w0gauss + a * hp
+       utility_w0gauss = utility_w0gauss + a * hp
     enddo
     return
-  end function w0gauss
+  end function utility_w0gauss
 
   function qe_erf (x)  
     !---------------------------------------------------------------------
