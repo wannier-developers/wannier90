@@ -66,6 +66,10 @@ inputs_args = ('wannier.win', '6')
 program = WANNIER90
 inputs_args = ('wannier.win', '6')
 
+[test_si_geninterp/]
+program = POSTW90GENINTERP
+inputs_args = ('silicon.win', '1')
+
 [categories]
 wannier_all = example*??  test_* wan_*
 interface_all = pw_example*??

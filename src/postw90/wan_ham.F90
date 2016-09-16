@@ -6,10 +6,15 @@ module w90_wan_ham
 
   implicit none
 
+  private
+
+  public :: wham_get_D_h, wham_get_eig_deleig
+  public :: wham_get_occ_mat_list, wham_get_eig_UU_HH_JJlist
+
   contains
 
 
-  subroutine get_D_h_a(delHH_a,UU,eig,ef,D_h_a)
+  subroutine wham_get_D_h_a(delHH_a,UU,eig,ef,D_h_a)
   !===============================================!
   !                                               !
   ! Compute D^H_a=UU^dag.del_a UU (a=alpha,beta), !
@@ -20,7 +25,7 @@ module w90_wan_ham
     use w90_constants, only      : dp,cmplx_0
     use w90_parameters, only     : num_wann
     use w90_utility, only        : utility_rotate
-    use w90_postw90_common, only : get_occ
+    use w90_postw90_common, only : pw90common_get_occ
 
     ! Arguments
     !
@@ -34,7 +39,7 @@ module w90_wan_ham
     real(kind=dp)                 :: occ(num_wann)
     integer                       :: n,m
 
-    call get_occ(eig,occ,ef)
+    call pw90common_get_occ(eig,occ,ef)
 
     allocate(delHH_a_bar(num_wann,num_wann))
     delHH_a_bar=utility_rotate(delHH_a,UU,num_wann)
@@ -49,9 +54,9 @@ module w90_wan_ham
     end do
     D_h_a=D_h_a-conjg(transpose(D_h_a))
 
-  end subroutine get_D_h_a
+  end subroutine wham_get_D_h_a
 
-  subroutine get_D_h(delHH,UU,eig,D_h)
+  subroutine wham_get_D_h(delHH,UU,eig,D_h)
   !=========================================!
   !                                         !
   ! Compute D^H_a=UU^dag.del_a UU (a=x,y,z) !
@@ -89,10 +94,10 @@ module w90_wan_ham
        end do
     enddo
 
-  end subroutine get_D_h
+  end subroutine wham_get_D_h
 
 
-  subroutine get_JJp_list(delHH,UU,eig,JJp_list)
+  subroutine wham_get_JJp_list(delHH,UU,eig,JJp_list)
   !====================================!
   !                                    !
   ! Compute JJ^+_a (a=Cartesian index) !
@@ -131,10 +136,10 @@ module w90_wan_ham
             utility_rotate(JJp_list(:,:,if),conjg(transpose(UU)),num_wann)
     enddo
 
-  end subroutine get_JJp_list
+  end subroutine wham_get_JJp_list
 
 
-  subroutine get_JJm_list(delHH,UU,eig,JJm_list)
+  subroutine wham_get_JJm_list(delHH,UU,eig,JJm_list)
   !====================================!
   !                                    !
   ! Compute JJ^-_a (a=Cartesian index) !
@@ -173,10 +178,10 @@ module w90_wan_ham
             utility_rotate(JJm_list(:,:,if),conjg(transpose(UU)),num_wann)
     enddo
 
-  end subroutine get_JJm_list
+  end subroutine wham_get_JJm_list
 
 
-  subroutine get_occ_mat_list(eig,UU,f_list,g_list)
+  subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
   !================================!
   !                                !
   ! Occupation matrix f, and g=1-f !
@@ -186,7 +191,7 @@ module w90_wan_ham
     
     use w90_constants, only      : dp,cmplx_0,cmplx_1
     use w90_parameters, only     : num_wann,nfermi,fermi_energy_list
-    use w90_postw90_common, only : get_occ
+    use w90_postw90_common, only : pw90common_get_occ
 
     ! Arguments
     !
@@ -199,7 +204,7 @@ module w90_wan_ham
     integer       :: n,m,i,if
 
     do if=1,nfermi
-       call get_occ(eig,occ_list(:,if),fermi_energy_list(if))
+       call pw90common_get_occ(eig,occ_list(:,if),fermi_energy_list(if))
     enddo
     f_list=cmplx_0
     do if=1,nfermi
@@ -215,10 +220,10 @@ module w90_wan_ham
        enddo
     enddo
 
-  end subroutine get_occ_mat_list
+  end subroutine wham_get_occ_mat_list
 
 
-  subroutine get_deleig_a(deleig_a,eig,delHH_a,UU)
+  subroutine wham_get_deleig_a(deleig_a,eig,delHH_a,UU)
   !==========================!
   !                          !
   ! Band derivatives dE/dk_a !
@@ -313,10 +318,10 @@ module w90_wan_ham
 
     end if
     
-  end subroutine get_deleig_a
+  end subroutine wham_get_deleig_a
 
   !> Given a k point, this function returns eigenvalues E and
-  !> derivatives of the eigenvalues dE/dk_a, using get_deleig_a
+  !> derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
   !> \param kpt the three coordinates of the k point vector
   !>            (in relative coordinates)
   !> \param eig the calculated eigenvalues at kpt
@@ -326,10 +331,10 @@ module w90_wan_ham
   !> \param HH the Hamiltonian matrix at kpt
   !> \param delHH the delHH matrix (derivative of H) at kpt
   !> \param UU the rotation matrix that gives the eigenvectors of HH
-  subroutine get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+  subroutine wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
     use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R
-    use w90_postw90_common, only : fourier_R_to_k
+    use w90_postw90_common, only : pw90common_fourier_R_to_k
     use w90_utility, only : utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)         :: kpt
@@ -344,19 +349,19 @@ module w90_wan_ham
     ! Further calls should return very fast.
     call get_HH_R
 
-    call fourier_R_to_k(kpt,HH_R,HH,0) 
+    call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
     call utility_diagonalize(HH,num_wann,eig,UU) 
-    call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
-    call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
-    call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
-    call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
-    call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
-    call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+    call pw90common_fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+    call pw90common_fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+    call pw90common_fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+    call wham_get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+    call wham_get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+    call wham_get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
 
-  end subroutine get_eig_deleig
+  end subroutine wham_get_eig_deleig
 
   
-  subroutine get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
+  subroutine wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
   !========================================================!
   !                                                        ! 
   ! Wrapper routine used to reduce number of Fourier calls !
@@ -365,7 +370,7 @@ module w90_wan_ham
 
     use w90_parameters, only     : num_wann
     use w90_get_oper, only       : HH_R,get_HH_R
-    use w90_postw90_common, only : fourier_R_to_k_new
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_new
     use w90_utility, only        : utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
@@ -381,16 +386,16 @@ module w90_wan_ham
     call get_HH_R
 
     allocate(delHH(num_wann,num_wann,3))
-    call fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+    call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
                                      OO_dx=delHH(:,:,1),&
                                      OO_dy=delHH(:,:,2),&
                                      OO_dz=delHH(:,:,3))
     call utility_diagonalize(HH,num_wann,eig,UU) 
     do i=1,3
-       call get_JJp_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i))
-       call get_JJm_list(delHH(:,:,i),UU,eig,JJm_list(:,:,:,i))
+       call wham_get_JJp_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i))
+       call wham_get_JJm_list(delHH(:,:,i),UU,eig,JJm_list(:,:,:,i))
     enddo
 
-  end subroutine get_eig_UU_HH_JJlist
+  end subroutine wham_get_eig_UU_HH_JJlist
 
 end module w90_wan_ham
