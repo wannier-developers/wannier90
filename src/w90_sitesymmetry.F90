@@ -31,7 +31,7 @@ contains
     integer :: ik,i,j,nb,ir
     integer :: nindx(num_bands)
 
-    write(stdout,"(a)") '-- slim_d_matrix_band --'
+    !write(stdout,"(a)") '-- slim_d_matrix_band --'
 
     do ir=1,nkptirr
        ik=ir2ik(ir)
@@ -62,8 +62,8 @@ contains
 
     implicit none
 
-    write(stdout,"(a)") '-- replace_d_matrix_band --'
-    write(stdout,"(a)") 'd_matrix_band is replaced by d_matrix_wann'
+    !write(stdout,"(a)") '-- replace_d_matrix_band --'
+    !write(stdout,"(a)") 'd_matrix_band is replaced by d_matrix_wann'
     deallocate(d_matrix_band)
     allocate(d_matrix_band(num_wann,num_wann,nsymmetry,nkptirr))
     d_matrix_band=d_matrix_wann
@@ -333,7 +333,7 @@ contains
     complex(kind=dp) :: cmat(ndim,num_wann)
     complex(kind=dp) :: cmat2(num_wann,num_wann)
   
-  !  write(stdout,"(a)") '-- symmetrize_ukirr --'
+    !write(stdout,"(a)") '-- symmetrize_ukirr --'
     if (present(n)) then
        if (ndim.ne.num_bands) call io_error('ndim!=num_bands')
        ntmp=n
