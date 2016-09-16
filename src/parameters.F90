@@ -90,15 +90,15 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
-  logical,           public, save :: u_matrices_plot
+  logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
   integer, allocatable, public, save :: bands_plot_project(:)
   integer,           public, save :: bands_plot_dim         
-  logical,           public, save :: hr_plot
-  logical,           public, save :: pos_plot
+  logical,           public, save :: write_hr
+  logical,           public, save :: write_rmn
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
@@ -418,6 +418,8 @@ module w90_parameters
   character(len=maxlen), allocatable :: in_data(:)
   character(len=maxlen)              :: ctmp
   logical                            :: ltmp
+  ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
+  logical                            :: hr_plot 
 
   public :: param_read
   public :: param_write
@@ -774,8 +776,8 @@ contains
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
 
-    u_matrices_plot = .false.
-    call param_get_keyword('u_matrices_plot',found,l_value=u_matrices_plot)
+    write_u_matrices = .false.
+    call param_get_keyword('write_u_matrices',found,l_value=write_u_matrices)
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
@@ -1212,9 +1214,12 @@ contains
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
+    if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.')
+    write_hr                   = .false.
+    call param_get_keyword('write_hr',found,l_value=write_hr)
 
-    pos_plot                    = .false.
-    call param_get_keyword('pos_plot',found,l_value=pos_plot)
+    write_rmn                    = .false.
+    call param_get_keyword('write_rmn',found,l_value=write_rmn)
                                                                                            
     hr_cutoff                 = 0.0_dp
     call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)
@@ -1349,7 +1354,7 @@ contains
           if(.not. eig_found) then
              if ( disentanglement) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. boltzwann &
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. boltzwann &
                   .or. geninterp) ) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
@@ -2382,7 +2387,7 @@ contains
     ! Plotting
     !
     if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. kslice &
-         .or. dos_plot .or. hr_plot .or. iprint>2) then
+         .or. dos_plot .or. write_hr .or. iprint>2) then
        !
        write(stdout,'(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
        !
@@ -2442,8 +2447,8 @@ contains
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
-       if (hr_plot .or. iprint>2) then
-          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',hr_plot,'|'
+       if (write_hr .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',write_hr,'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        endif
        if (write_vdw_data .or. iprint>2) then
