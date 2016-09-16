@@ -3,8 +3,9 @@
 # gw2wannier90 interface
 # 
 # Designed and tested with: Quantum Espresso and Yambo
-# Written by Stepan Tsirkin
-# Several improvements, bug fixes and documentation by Antimo Marrazzo
+# This interface should work with any G0W0 code 
+# Originally written by Stepan Tsirkin
+# Several extensions, improvements, bug fixes and documentation by Antimo Marrazzo
 # 
 
 
@@ -37,7 +38,7 @@ seedname=argv[1]   # for instance "silicon"
 seednameGW=seedname+".gw"  #for instance "silicon.gw"
 targets=[s.lower() for s in argv[2:]]   #options read from command line
 
-#In case of formatted spn,uIu and uHu (mmn,amn,eig are formatted by default
+#In case of formatted spn,uIu and uHu (mmn,amn,eig are formatted by default)
 #NB: Formatted output is strongly reccommended! Fortran binaries are compilers dependent.
 SPNformatted="spn_formatted" in targets   
 UIUformatted="uiu_formatted" in targets
@@ -330,15 +331,23 @@ if calcSPN:
 
 if calcUNK:
     unkgwdir="UNK_GW"
+    unkdftdir="UNK_DFT"
+    files_list=[]
     for f_unk_name in  glob.glob("UNK*"):
+        files_list.append(f_unk_name)
+
+    try:
+        os.mkdir(unkgwdir)
+        os.mkdir(unkdftdir)
+    except OSError:
+        pass
+
+    for f_unk_name in files_list:
       try:
-	try:
-	    os.mkdir(unkgwdir)
-	except OSError:
-	    pass
-	if UNKformatted:
+	shutil.move('./'+f_unk_name,'./'+unkdftdir+'/')
+        if UNKformatted:
 	    f_unk_out=open(os.path.join(unkgwdir,f_unk_name),"w")
-	    f_unk_in=open(f_unk_name,"r")
+	    f_unk_in=open(os.path.join(unkdftdir,f_unk_name),"r")
 	    nr1,nr2,nr3,ik,nbnd=np.array(f_unk_in.readline().split(),dtype=int)
 	    NR=nr1*nr2*nr3
 	    f_unk_out.write(" ".join(str(x) for x in (nr1,nr2,nr3,ik,NBND))+"\n")
@@ -353,11 +362,13 @@ if calcUNK:
 	    for i in xrange(NBND):
 		f_unk_out.write_record(unk[ib])
 	f_unk_in.close()
-	f_unk_out.close()
+        f_unk_out.close()
+        shutil.move('./'+unkgwdir+'/'+f_unk_name,'./')
       except IOError as err:
         if err.errno==21:
     	    pass
     	else:
     	    raise err
-
+    os.rmdir(unkgwdir)
+    print 'UNK files are been reordered, old files coming from DFT are available in UNK_DFT'
 f_raw.close()
