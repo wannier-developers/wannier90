@@ -201,7 +201,7 @@ program wannier
      if (tran_read_ht) goto 4004
   end if
 
-  call transport_dealloc()
+  call tran_dealloc()
   call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
