@@ -25,6 +25,19 @@ tolerance = ( (1.0e-6, 5.0e-3, 'e1'),
 skip_program = grep
 skip_args = 'not present in this version'
 
+[POSTW90GENINTERP]
+exe = XXXXXX/test-suite/run-postw90.sh
+extract_program = XXXXXX/test-suite/extract-postw90geninterp.x
+inputs_args = ('*.win', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error 
+tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
+	      (1.0e-6, 1.0e-6, 'bandkpt'),
+	      (1.0e-3, 5.0e-3, 'bandderiv'),
+              (1.0e-6, 1.0e-6, 'bandidx'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
 
 [user]
 benchmark = SVN
