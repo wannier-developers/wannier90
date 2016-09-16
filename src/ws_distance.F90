@@ -110,15 +110,15 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
         do iw=1,num_wann
             call utility_frac_to_cart(DBLE(irvec(:,ir)),irvec_cart,real_lattice)
             ! function IW translated in the Wigner-Size around function JW
-            wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( +wannier_centres(:,iw)&
-                        -(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
+            wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( -wannier_centres(:,iw)&
+                        +(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
             !find its degeneracy
             CALL R_wz_sc_equiv(wdist_wssc_frac(:,iw,jw,ir), (/0._dp,0._dp,0._dp/), &
                             wdist_ndeg(iw,jw,ir), crdist_ws(:,:,iw,jw,ir))
             IF(wdist_ndeg(iw,jw,ir)>ndegenx) call io_error('surprising ndeg')
             do ideg = 1,wdist_ndeg(iw,jw,ir)
             crdist_ws(:,ideg,iw,jw,ir) = crdist_ws(:,ideg,iw,jw,ir)&
-                            -wannier_centres(:,iw)+wannier_centres(:,jw)
+                            +wannier_centres(:,iw)-wannier_centres(:,jw)
             !
             call utility_cart_to_frac(crdist_ws(:,ideg,iw,jw,ir),&
                             irdist_real(:,ideg,iw,jw,ir),recip_lattice)
