@@ -5,6 +5,11 @@
  The Maximally-Localised Generalised Wannier Functions Code 
 
 v2.0.2 (XXX)
+* Fixed bug in kslice.F90 (trying to plot isoenergy contours colored 
+by the spin gave an error message at runtime).
+* Adaptively-refined mesh now implemented correctly for even sizes 
+(e.g., 4x4).
+* Fixed bug in the calculation of orbital magnetization in berry.F90
 * Fixed the skip_B1_tests flag, that was ignored
 * Fix to documentation of geninterp: k units were 1/ang and not
   2pi/ang as previously stated; also made names for absolute/fractional
@@ -12,16 +17,10 @@ v2.0.2 (XXX)
   'frac' mean fractional coordinates for k-points, 'cart' and
   'abs' mean absolute.
 * Improvements to various Makefiles 
-* Fixed bug in kslice.F90 (trying to plot isoenergy contours colored by the spin gave an error message at runtime).
-* Adaptively-refined mesh now implemented correctly for even sizes (e.g., 4x4).
-* Fixed bug in the calculation of orbital magnetization in berry.F90
-<<<<<<< HEAD
-=======
 * Renamed make.sys to make.inc to cope with possible issues when this
   file is sent over email (some providers think it's a virus and 
   remove it from attachments). If you have already compiled wannier90,
   after updating the version, just rename make.sys to make.inc.
->>>>>>> upstream/develop
 	
 v2.0.1 (2nd April 2015)
 
