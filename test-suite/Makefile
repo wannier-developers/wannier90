@@ -77,8 +77,10 @@ clean:
 	@for x in `find pw_example* -name "*.wout"`; do rm -rf $$x; done
 	@for x in `find test_* -name "test.*"`; do rm -rf $$x; done
 	@for x in `find test_* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find test_* -name "*.wpout"`; do rm -rf $$x; done
+	@for x in `find test_* -name "*_geninterp.dat"`; do rm -rf $$x; done
 
-# Calling 'purge' means remove all reference outputs... be careful!
-purge: clean
-	@for x in `find pw_* -name "benchmark*"`; do rm -rf $$x; done
-	@for x in `find cp_* -name "benchmark*"`; do rm -rf $$x; done
+## Calling 'purge' means remove all reference outputs... be careful!
+#purge: clean
+#	@for x in `find pw_* -name "benchmark*"`; do rm -rf $$x; done
+#	@for x in `find cp_* -name "benchmark*"`; do rm -rf $$x; done

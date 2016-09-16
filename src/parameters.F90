@@ -90,6 +90,7 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
+  logical,           public, save :: u_matrices_plot
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
@@ -97,6 +98,7 @@ module w90_parameters
   integer, allocatable, public, save :: bands_plot_project(:)
   integer,           public, save :: bands_plot_dim         
   logical,           public, save :: hr_plot
+  logical,           public, save :: pos_plot
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
@@ -772,6 +774,9 @@ contains
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
 
+    u_matrices_plot = .false.
+    call param_get_keyword('u_matrices_plot',found,l_value=u_matrices_plot)
+
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
 
@@ -1208,6 +1213,9 @@ contains
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
+
+    pos_plot                    = .false.
+    call param_get_keyword('pos_plot',found,l_value=pos_plot)
                                                                                            
     hr_cutoff                 = 0.0_dp
     call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)

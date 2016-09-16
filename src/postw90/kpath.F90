@@ -25,7 +25,9 @@ module w90_kpath
 
   implicit none
 
-  public
+  private
+
+  public :: k_path
 
 contains
 
@@ -40,7 +42,7 @@ contains
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize
-    use w90_postw90_common, only : fourier_R_to_k
+    use w90_postw90_common, only : pw90common_fourier_R_to_k
     use w90_parameters, only     : num_wann,recip_metric,kpath_task,&
                                    kpath_num_points,bands_num_spec_points,&
                                    bands_spec_points,bands_label,&
@@ -48,8 +50,8 @@ contains
                                    berry_curv_unit
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_FF_R,get_SS_R
-    use w90_spin, only           : get_spin_nk
-    use w90_berry, only          : get_imf_k_list,get_imfgh_k_list
+    use w90_spin, only           : spin_get_nk
+    use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist
     use w90_constants, only      : bohr
 
     integer           :: i,j,n,num_paths,num_spts,loop_path,loop_kpt,&
@@ -216,14 +218,14 @@ contains
           kpt(:)=plot_kpoint(:,loop_kpt)
 
           if(plot_bands) then
-             call fourier_R_to_k(kpt,HH_R,HH,0)
+             call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
              call utility_diagonalize(HH,num_wann,eig(:,loop_kpt),UU)
              !
              ! Color-code energy bands with the spin projection along the
              ! chosen spin quantization axis
              !
              if(kpath_bands_colour=='spin') then
-                call get_spin_nk(kpt,spn_k)
+                call spin_get_nk(kpt,spn_k)
                 color(:,loop_kpt)=spn_k(:)
                 !
                 ! The following is needed to prevent bands from disappearing 
@@ -241,14 +243,14 @@ contains
           endif
 
           if(plot_curv) then
-             call get_imf_k_list(kpt,imf_k_list)
+             call berry_get_imf_klist(kpt,imf_k_list)
              curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
              curv(loop_kpt,2)=sum(imf_k_list(:,2,1))
              curv(loop_kpt,3)=sum(imf_k_list(:,3,1))
           end if
 
           if(plot_morb) then
-             call get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+             call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
                    -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
              Morb_k=-Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12

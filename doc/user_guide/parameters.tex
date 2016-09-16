@@ -260,6 +260,7 @@ Fermi energy in the specified range\\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
   {\sc use\_ws\_distance } & L & Use the minimum distance between WFs for interpolation \\
+  {\sc u\_matrices\_plot } & L & Write U and U\_{dis} matrices to files \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -1456,6 +1457,14 @@ the Wigner-Seitz cell centred on WF $W_i({\bf r})$.
 If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
 
 The default value is {\tt false}.
+
+\subsection[u\_matrices\_plot]{\tt logical :: u\_matrices\_plot}
+
+Write the U matrix and the U\_{dis} matrices obtained at the end of wannierization to files
+{\tt seedname\_u.mat} and {\tt seedname\_u\_dis.mat} respectively.
+
+The default value is {\tt false}.
+
 
 \subsection[hr\_cutoff]{\tt real(kind=dp) :: hr\_cutoff}
 
