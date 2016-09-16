@@ -572,7 +572,7 @@ module w90_kslice
                 write(scriptunit,'(a)') " "
                 write(scriptunit,'(a)')&
                      "val = np.loadtxt('"//trim(seedname)//&
-                     "-kslice-morb.dat', usecols=('//achar(47+i)//',))"
+                     "-kslice-morb.dat', usecols=("//achar(47+i)//",))"
                 write(scriptunit,'(a)') " "
                 write(scriptunit,'(a)') "if square: "
                 write(scriptunit,'(a)') "  Z=val.reshape(dimy,dimx)"
