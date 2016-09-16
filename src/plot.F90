@@ -23,15 +23,15 @@ contains
 
   !============================================!
   subroutine plot_main( )
-    !============================================!
+  !============================================!
 
     use w90_constants,   only : eps6
     use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                u_matrices_plot, wannier_plot,timing_level
+                                wannier_plot,timing_level, pos_plot, u_matrices_plot
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
-                                hamiltonian_setup
+                                hamiltonian_setup, hamiltonian_write_pos
 
     implicit none
 
@@ -66,6 +66,7 @@ contains
        !
        if(hr_plot) call hamiltonian_write_hr()
        !
+       if(pos_plot) call hamiltonian_write_pos()
     end if
 
     if(wannier_plot) call plot_wannier
