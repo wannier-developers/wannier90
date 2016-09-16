@@ -27,11 +27,11 @@ contains
 
     use w90_constants,   only : eps6
     use w90_io,          only : stdout,io_stopwatch
-    use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
+    use w90_parameters,  only : num_kpts,bands_plot,dos_plot,write_hr, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level, pos_plot, u_matrices_plot
+                                wannier_plot,timing_level, write_rmn, write_u_matrices
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
-                                hamiltonian_setup, hamiltonian_write_pos
+                                hamiltonian_setup, hamiltonian_write_rmn
 
     implicit none
 
@@ -45,7 +45,7 @@ contains
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,*)
 
-    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot) then
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr) then
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
@@ -64,14 +64,14 @@ contains
        !
        if(fermi_surface_plot) call plot_fermi_surface
        !
-       if(hr_plot) call hamiltonian_write_hr()
+       if(write_hr) call hamiltonian_write_hr()
        !
-       if(pos_plot) call hamiltonian_write_pos()
+       if(write_rmn) call hamiltonian_write_rmn()
     end if
 
     if(wannier_plot) call plot_wannier
 
-    if(u_matrices_plot) call plot_u_matrices
+    if(write_u_matrices) call plot_u_matrices
 
     if (timing_level>0) call io_stopwatch('plot: main',2)
 
@@ -103,7 +103,7 @@ contains
                                 bands_plot_mode,num_bands_project,bands_plot_project, &
                                 use_ws_distance
     use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
-    use w90_ws_distance, only : wdist_shiftj_wsi,wdist_ndeg, &
+    use w90_ws_distance, only : irdist_ws,wdist_ndeg, &
                                 ws_translate_dist
 
     implicit none
@@ -244,7 +244,7 @@ contains
                do i=1,num_wann
                   do ideg = 1,wdist_ndeg(i,j,irpt)
                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),&
-                                             real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                                             real(irdist_ws(:,ideg,i,j,irpt),dp))
                      fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
                      ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r(i,j,irpt)
                   enddo
@@ -266,7 +266,7 @@ contains
                do i=1,num_wann
                   do ideg = 1,wdist_ndeg(j,i,irpt)
                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt), &
-                                             real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                                             real(irdist_ws(:,ideg,i,j,irpt),dp))
                      fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(wdist_ndeg(i,j,irpt),dp)
                      ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r_cut(i,j,irpt)
                   enddo

@@ -49,7 +49,7 @@ module w90_hamiltonian
   public :: hamiltonian_write_hr
   public :: hamiltonian_setup
   public :: hamiltonian_dealloc
-  public :: hamiltonian_write_pos
+  public :: hamiltonian_write_rmn
 
   ! Module variables
   logical, save :: ham_have_setup=.false.
@@ -324,8 +324,8 @@ contains
 
     ! [lp] if required, compute the minimum diistances
 !     if (use_ws_distance) then
-!         allocate(wdist_shiftj_wsi(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
-!         if (ierr/=0) call io_error('Error in allocating wdist_shiftj_wsi in hamiltonian_get_hr')
+!         allocate(irdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating irdist_ws in hamiltonian_get_hr')
 !         allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
 !         if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
         !
@@ -602,7 +602,7 @@ contains
   end subroutine hamiltonian_wigner_seitz
 
   !============================================!
-  subroutine hamiltonian_write_pos()
+  subroutine hamiltonian_write_rmn()
   !============================================!
     use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
                                nntot
@@ -620,7 +620,7 @@ contains
     character (len=9)  :: cdate,ctime
 
     file_unit=io_file_unit()
-    open(file_unit,file=trim(seedname)//'_pos.dat',form='formatted',status='unknown',err=101)
+    open(file_unit,file=trim(seedname)//'_r.dat',form='formatted',status='unknown',err=101)
     call io_date(cdate,ctime)
 
     header='written on '//cdate//' at '//ctime
@@ -653,8 +653,8 @@ contains
 
     return
 
-101 call io_error('Error: position_write_pos: problem opening file '//trim(seedname)//'_pos.dat')
+101 call io_error('Error: position_write_pos: problem opening file '//trim(seedname)//'_r')
 
-  end subroutine hamiltonian_write_pos
+  end subroutine hamiltonian_write_rmn
 
 end module w90_hamiltonian

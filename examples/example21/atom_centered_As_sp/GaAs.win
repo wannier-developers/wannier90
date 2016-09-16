@@ -11,7 +11,7 @@ f=0.25,0.25,0.25 : s
 f=0.25,0.25,0.25 : p
 end projections
 
-hr_plot = .true.
+write_hr = .true.
 bands_plot = .true.
 wannier_plot = .true.
 
