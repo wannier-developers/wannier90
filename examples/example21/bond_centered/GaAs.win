@@ -13,7 +13,7 @@ f= -.375, 0.125, 0.125: s
 f= 0.125, -.375, 0.125: s
 end projections
 
-hr_plot = .true.
+write_hr = .true.
 bands_plot = .true.
 wannier_plot = .true.
 

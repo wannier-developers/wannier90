@@ -186,7 +186,7 @@ program wannier
 
 2002 time2=io_time()
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
      call plot_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
