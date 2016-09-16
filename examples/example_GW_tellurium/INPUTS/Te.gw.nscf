@@ -13,8 +13,8 @@
     lspinorb=.true.,
     noncolin=.true.
     occupations='smearing', smearing='cold', degauss=0.02
-    nosym=.true.
-    nbnd=40
+    force_symmorphic   =  .true.
+    nbnd=200
  /
  &electrons
     startingwfc='random'
@@ -68,4 +68,4 @@ K_POINTS crystal
 0.6666666667 0.6666666667 0.0000000000  0.027777778
 0.6666666667 0.6666666667 0.2500000000  0.027777778
 0.6666666667 0.6666666667 0.5000000000  0.027777778
-0.6666666667 0.6666666667 0.7500000000  0.027777778
+
