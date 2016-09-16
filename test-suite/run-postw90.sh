@@ -21,17 +21,15 @@ echo $0" "$@
 if [[ "$1" == "1" ]]
 then
   echo "Running w90+postw90 for geninterp and checking for energies and derivatives ..."
-  export TMP=$2
-  export OUTPUT="${TMP%????}_geninterp.dat"
-  echo "${WANNIER_ROOT}/wannier90.x $2 2> $4 # $3"
-  ${WANNIER_ROOT}/wannier90.x $2 2> $4
-  echo "${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> $4 # $3"
-  ${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> $4
+  TMP=$2
+  OUTPUT="${TMP%????}_geninterp.dat"
+
+  echo "${WANNIER_ROOT}/wannier90.x $2 2> ${4}_w90"
+  ${WANNIER_ROOT}/wannier90.x $2 2> ${4}_w90
+
+  echo "${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> ${4}_postw90"
+  ${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> ${4}_postw90
   cp $OUTPUT $3
-  if [[ -e CRASH ]]
-  then
-    cat $3
-  fi  
 fi
 
 

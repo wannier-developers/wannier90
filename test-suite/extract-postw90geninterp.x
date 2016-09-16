@@ -20,15 +20,27 @@ fi
 
 # POSTW90 - BANDS
 bandidx=`grep -v '#' $fname | awk '{print $1}'`
-banddata=`grep -v '#' $fname | awk '{print $2, $3, $4, $5, $6, $7, $8}'`
+bandkpt=`grep -v '#' $fname | awk '{print $2, $3, $4}'`
+bandenergy=`grep -v '#' $fname | awk '{print $5}'`
+bandderiv=`grep -v '#' $fname | awk '{print $6, $7, $8}'`
 
 if test "$bandidx" != ""; then
         echo bandidx
         echo $bandidx | tr ' ' '\n'
 fi
 
-if test "$banddata" != ""; then
-        echo banddata
-        echo $banddata | tr ' ' '\n'
+if test "$bandkpt" != ""; then
+        echo bandkpt
+        echo $bandkpt | tr ' ' '\n'
+fi
+
+if test "$bandenergy" != ""; then
+        echo bandenergy
+        echo $bandenergy | tr ' ' '\n'
+fi
+
+if test "$bandderiv" != ""; then
+        echo bandderiv
+        echo $bandderiv | tr ' ' '\n'
 fi
 
