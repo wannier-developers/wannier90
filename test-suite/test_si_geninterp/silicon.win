@@ -10,8 +10,11 @@ dis_win_max       = 17.0d0
 dis_froz_max      =  6.4d0
 dis_num_iter      =  120
 dis_mix_ratio     = 1.d0
+dis_conv_tol = 1.0e-13
 
-num_iter          = 50
+! Large number of interations need to get reproducible values
+! 300 seems a good compromise with speed.  
+num_iter          = 300 
 num_print_cycles  = 10
 
 Begin Atoms_Frac
