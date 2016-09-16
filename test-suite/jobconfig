@@ -14,7 +14,15 @@ inputs_args = ('silicon.win', '1')
 program = WANNIER90
 inputs_args = ('copper.win', '1')
 
-[pw_example05/]
+[pw_example05_1]
+program = PW
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2')
+
+[pw_example05_2]
+program = PW2WANNIER
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3')
+
+[pw_example05_3]
 program = WANNIER90
 inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3'), ('diamond.win', '1')
 
