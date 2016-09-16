@@ -631,7 +631,8 @@ module w90_postw90_common
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only   : irdist_ws, crdist_ws, &
+                                  wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -655,13 +656,14 @@ module w90_postw90_common
          do j=1,num_wann
          do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
-               rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
+               rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir),dp))
                !phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
                phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
                if(alpha==0) then
                   OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
                elseif(alpha==1.or.alpha==2.or.alpha==3) then
-                  OO(i,j)=OO(i,j)+crvec(alpha,ir)*phase_fac*OO_R(i,j,ir)
+                  OO(i,j)=OO(i,j)+cmplx_i*crdist_ws(alpha,ideg,i,j,ir)*phase_fac*OO_R(i,j,ir)
+                  !OO(i,j)=OO(i,j)+cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(i,j,ir)
                else
                   stop 'wrong value of alpha in pw90common_fourier_R_to_k'
                endif
@@ -703,7 +705,7 @@ module w90_postw90_common
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only   : irdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -732,7 +734,7 @@ module w90_postw90_common
         do j=1,num_wann
         do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
-              rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
+              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir),dp))
               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
               if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
               if(present(OO_dx)) OO_dx(i,j)=OO_dx(i,j)+&
@@ -773,7 +775,7 @@ module w90_postw90_common
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
     use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only   : wdist_shiftj_wsi, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only   : irdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -797,7 +799,7 @@ module w90_postw90_common
         do j=1,num_wann
         do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
-              rdotk=twopi*dot_product(kpt(:),real(wdist_shiftj_wsi(:,ideg,i,j,ir),dp))
+              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir),dp))
               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
               rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
