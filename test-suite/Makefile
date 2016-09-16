@@ -36,27 +36,27 @@ prolog :
 
 run-tests : run-tests-wannier-serial
 
-run-tests-interface : prolog
+run-tests-interface : clean prolog
 	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=interface_all
 
-run-tests-all : prolog
+run-tests-all : clean prolog
 	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=test_all
 
 run-tests-parallel : run-tests-wannier-parallel
 
 run-custom-test : run-custom-test-serial
 
-run-tests-wannier-serial : prolog 
+run-tests-wannier-serial : clean prolog 
 	        env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=wannier_all
 
-run-tests-wannier-parallel : prolog 
+run-tests-wannier-parallel : clean prolog 
 	        env QE_USE_MPI=1 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=wannier_all
 
-run-custom-test-serial : prolog 
+run-custom-test-serial : clean prolog 
 	@if test -d $(testdir); then \
 	env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=$(testdir) ; fi
 
-run-custom-test-parallel : prolog 
+run-custom-test-parallel : clean prolog 
 	@if test -d $(testdir); then \
 	env QE_USE_MPI=1 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=$(testdir) ; fi
 
@@ -75,6 +75,14 @@ clean:
 	@for x in `find example* -name "*.wout"`; do rm -rf $$x; done
 	@for x in `find pw_example* -name "test.*"`; do rm -rf $$x; done
 	@for x in `find pw_example* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.xsf"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.amn"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.mmn"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.eig"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.nnkp"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.wfc1"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "*.save"`; do rm -rf $$x; done
+	@for x in `find pw_example* -name "UNK*"`; do rm -rf $$x; done
 	@for x in `find test_* -name "test.*"`; do rm -rf $$x; done
 	@for x in `find test_* -name "*.wout"`; do rm -rf $$x; done
 	@for x in `find test_* -name "*.wpout"`; do rm -rf $$x; done
