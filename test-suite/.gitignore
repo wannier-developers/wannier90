@@ -3,6 +3,8 @@ test.out.*
 test.err.*
 *.chk
 *.wout
+*.wpout
+*_geninterp.dat
 espresso-*
 test_nnkpt*/wannier.nnkp
 test_nnkpt*/wannier.wout

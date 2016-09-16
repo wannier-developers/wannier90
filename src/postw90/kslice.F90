@@ -33,7 +33,9 @@ module w90_kslice
 
   implicit none
 
-  public
+  private
+
+  public :: k_slice
 
   contains
 
@@ -48,7 +50,7 @@ module w90_kslice
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize
-    use w90_postw90_common, only : fourier_R_to_k
+    use w90_postw90_common, only : pw90common_fourier_R_to_k
     use w90_parameters, only     : num_wann,kslice,kslice_task,&
                                    kslice_2dkmesh,kslice_corner,kslice_b1,&
                                    kslice_b2,kslice_fermi_level,&
@@ -57,9 +59,9 @@ module w90_kslice
                                    nfermi,fermi_energy_list,berry_curv_unit
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_SS_R
-    use w90_wan_ham, only        : get_eig_deleig
-    use w90_spin, only           : get_spin_nk
-    use w90_berry, only          : get_imf_k_list,get_imfgh_k_list
+    use w90_wan_ham, only        : wham_get_eig_deleig
+    use w90_spin, only           : spin_get_nk
+    use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist
     use w90_constants, only      : bohr
 
     integer           :: loop_xy,loop_x,loop_y,n,n1,n2,n3,i
@@ -247,7 +249,7 @@ module w90_kslice
 
           if(plot_fermi_lines) then
              if(fermi_lines_color) then
-                call get_spin_nk(kpt,spn_k)
+                call spin_get_nk(kpt,spn_k)
                 do n=1,num_wann
                    if(spn_k(n)>1.0_dp-eps8) then
                       spn_k(n)=1.0_dp-eps8
@@ -255,10 +257,10 @@ module w90_kslice
                       spn_k(n)=-1.0_dp+eps8
                    endif
                 enddo
-                call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+                call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
                 Delta_k=max(b1mod*db1,b2mod*db2)
              else
-                call fourier_R_to_k(kpt,HH_R,HH,0)
+                call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
                 call utility_diagonalize(HH,num_wann,eig,UU)
              endif
              do n=1,num_wann
@@ -284,7 +286,7 @@ module w90_kslice
           endif
 
           if(plot_curv) then
-             call get_imf_k_list(kpt,imf_k_list)
+             call berry_get_imf_klist(kpt,imf_k_list)
              curv(1)=sum(imf_k_list(:,1,1))
              curv(2)=sum(imf_k_list(:,2,1))
              curv(3)=sum(imf_k_list(:,3,1))
@@ -294,7 +296,7 @@ module w90_kslice
           end if
 
           if(plot_morb) then
-             call get_imfgh_k_list(kpt,imf_k_list,img_k_list,imh_k_list)
+             call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
                    -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
              Morb_k=-Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
