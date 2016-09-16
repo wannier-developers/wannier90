@@ -103,7 +103,7 @@ contains
                                 bands_plot_mode,num_bands_project,bands_plot_project, &
                                 use_ws_distance
     use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
-    use w90_ws_distance, only : wdist_shiftj_wsi,wdist_ndeg, &
+    use w90_ws_distance, only : irdist_ws,wdist_ndeg, &
                                 ws_translate_dist
 
     implicit none
@@ -244,7 +244,7 @@ contains
                do i=1,num_wann
                   do ideg = 1,wdist_ndeg(i,j,irpt)
                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),&
-                                             real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                                             real(irdist_ws(:,ideg,i,j,irpt),dp))
                      fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
                      ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r(i,j,irpt)
                   enddo
@@ -266,7 +266,7 @@ contains
                do i=1,num_wann
                   do ideg = 1,wdist_ndeg(j,i,irpt)
                      rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt), &
-                                             real(wdist_shiftj_wsi(:,ideg,i,j,irpt),dp))
+                                             real(irdist_ws(:,ideg,i,j,irpt),dp))
                      fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(wdist_ndeg(i,j,irpt),dp)
                      ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r_cut(i,j,irpt)
                   enddo
