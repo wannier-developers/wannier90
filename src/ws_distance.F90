@@ -196,7 +196,7 @@ subroutine R_wz_sc_equiv(R_in, R0, ndeg, R_out)
     real(DP) :: R(3), R_f(3), R_in_f(3), mod2_R_bz
     integer :: i,j,k
     integer,parameter :: far = 3
-    real(DP),parameter :: eps = 1.e-6_dp !d-1
+    real(DP),parameter :: eps = 1.e-5_dp !d-1
 
     ! init
     ndeg=0
