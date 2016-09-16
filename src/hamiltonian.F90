@@ -624,16 +624,18 @@ contains
   subroutine hamiltonian_write_rmn()
   !============================================!
     use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
-                               nntot
+                               nntot, use_ws_distance
     use w90_constants, only  : twopi, cmplx_i
     use w90_io,         only : io_error, io_file_unit, seedname,io_date
+    use w90_ws_distance, only : irdist_ws,wdist_ndeg, &
+                                ws_translate_dist
 
     implicit none
 
     complex(kind=dp)     :: fac
     real(kind=dp)        :: rdotk
     real(kind=dp)        :: delta
-    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit
+    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit, ideg
     complex(kind=dp)     :: position(3)
     character (len=33) :: header
     character (len=9)  :: cdate,ctime
@@ -645,6 +647,10 @@ contains
     header='written on '//cdate//' at '//ctime
     write(file_unit,*) header ! Date and time
     write(file_unit,*) num_wann
+
+    if(use_ws_distance)then
+       call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
+    endif
 
     do loop_rpt=1,nrpts
        do m=1,num_wann
@@ -663,7 +669,16 @@ contains
                    end do   
                 end do
              end do
-             write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)  
+             !   Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+             if(use_ws_distance)then
+                do ideg = 1, wdist_ndeg(n,m,loop_rpt)
+                   write( file_unit ,'(5I5,6F12.6,I5)') irdist_ws(:,ideg,n,m,loop_rpt),n,m, &
+                                                        cmplx_i*position(:),wdist_ndeg(n,m,loop_rpt)
+                end do
+             ! Original code, without IJ-dependent shift:
+             else
+                   write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)
+             end if
           end do
        end do
     end do
