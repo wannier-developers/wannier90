@@ -21,6 +21,11 @@ begin projections
 Pb:sp3
 end projections
 
+write_xyz = T
+write_hr = T
+write_rmn = T
+write_TB = T
+
 ! KPOINTS
 
 mp_grid : 4 4 4

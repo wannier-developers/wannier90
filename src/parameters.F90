@@ -99,6 +99,7 @@ module w90_parameters
   integer,           public, save :: bands_plot_dim         
   logical,           public, save :: write_hr
   logical,           public, save :: write_rmn
+  logical,           public, save :: write_tb
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
@@ -1221,6 +1222,9 @@ contains
 
     write_rmn                    = .false.
     call param_get_keyword('write_rmn',found,l_value=write_rmn)
+
+    write_tb = .false.
+    call param_get_keyword('write_tb',found,l_value=write_tb)
                                                                                            
     hr_cutoff                 = 0.0_dp
     call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)
