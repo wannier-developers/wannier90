@@ -5,6 +5,8 @@
  The Maximally-Localised Generalised Wannier Functions Code 
 
 v2.0.2 (XXX)
+* Added input flag 'write_tb = true,false' to streamline the interface
+between wannier90 and tight-binding codes such as pythtb.
 * Fixed bug in kslice.F90 (trying to plot isoenergy contours colored 
 by the spin gave an error message at runtime).
 * Adaptively-refined mesh now implemented correctly for even sizes 
