@@ -96,7 +96,7 @@ then
   export OUTPUT="${TMP1%????}_geninterp.dat"
   echo " ${WANNIER_ROOT}/wannier90.x $2 2> $4 # $3"
   ${WANNIER_ROOT}/wannier90.x $2 2> ${4}_wan
-  echo "${PARA_PREFIX} --mca btl self,openib,sm,tcp ${WANNIER_ROOT}postw90.x $2 2> $4 # $3"
+  echo "${PARA_PREFIX} ${WANNIER_ROOT}postw90.x $2 2> $4 # $3"
   ${PARA_PREFIX} ${WANNIER_ROOT}postw90.x $2 2> $4
   cp $OUTPUT $3
   if [[ -e CRASH ]]
