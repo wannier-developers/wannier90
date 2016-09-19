@@ -888,11 +888,13 @@ contains
        fermi_energy_step=(fermi_energy_max-fermi_energy_min)/(nfermi-1)
     endif
     !
+    ! Is next line needed?!
     if (allocated(fermi_energy_list)) deallocate(fermi_energy_list)
     allocate(fermi_energy_list(nfermi),stat=ierr)
     if (ierr/=0) call io_error(&
          'Error allocating fermi_energy_read in param_read')
     fermi_energy_list=0.0_dp
+    ! Use CASE construction here?
     if(found_fermi_energy) then
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then

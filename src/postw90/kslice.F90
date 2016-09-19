@@ -174,12 +174,12 @@ module w90_kslice
              write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
           endif
           if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the fermi energy when kslice_task=curv')
+               //'the Fermi energy when kslice_task=curv')
        elseif(plot_morb) then
           write(stdout,'(/,3x,a)')&
                '* Orbital magnetization k-space integrand in eV.Ang^2'
           if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the fermi energy when kslice_task=morb')
+               //'the Fermi energy when kslice_task=morb')
        endif
 
        write(stdout,'(/,/,1x,a)') 'Output files:' 
