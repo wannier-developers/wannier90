@@ -7,6 +7,9 @@
 v2.0.2 (XXX)
 * Added input flag 'write_tb = true,false' to streamline the interface
 between wannier90 and tight-binding codes such as pythtb.
+* postw90 prints an error message when trying to evaluate a quantity
+that requires a Fermi level, but none has been provided by the user
+(input variable fermi_level now has no default value)
 * Fixed bug in kslice.F90 (trying to plot isoenergy contours colored 
 by the spin gave an error message at runtime).
 * Adaptively-refined mesh now implemented correctly for even sizes 

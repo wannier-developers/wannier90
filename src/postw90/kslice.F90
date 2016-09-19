@@ -49,10 +49,8 @@ module w90_kslice
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize,utility_recip_lattice
     use w90_postw90_common, only : pw90common_fourier_R_to_k
-    use w90_parameters, only     : num_wann,kslice,kslice_task,&
-                                   kslice_2dkmesh,kslice_corner,kslice_b1,&
-                                   kslice_b2,kslice_fermi_level,&
-                                   found_kslice_fermi_level,&
+    use w90_parameters, only     : num_wann,kslice,kslice_task,kslice_2dkmesh,&
+                                   kslice_corner,kslice_b1,kslice_b2,&
                                    kslice_fermi_lines_colour,recip_lattice,&
                                    nfermi,fermi_energy_list,berry_curv_unit
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
@@ -155,9 +153,8 @@ module w90_kslice
             '--------------------------------------------'
 
        if(plot_fermi_lines) then
-          if(.not.found_kslice_fermi_level) call io_error&
-               ('Error: must specify either fermi_energy or'&
-               //' kslice_fermi_level when kslice_task = fermi_lines')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kslice_task=fermi_lines')
           select case(fermi_lines_color)
           case(.false.)
              write(stdout,'(/,3x,a)') '* Fermi lines'
@@ -165,7 +162,7 @@ module w90_kslice
              write(stdout,'(/,3x,a)') '* Fermi lines coloured by spin'
           end select
           write(stdout,'(/,7x,a,f10.4,1x,a)')&
-               '(Fermi level: ',kslice_fermi_level,'eV)'
+               '(Fermi level: ',fermi_energy_list(1),'eV)'
        endif
        if(plot_curv) then
           if(berry_curv_unit=='ang2') then
@@ -173,13 +170,13 @@ module w90_kslice
           elseif(berry_curv_unit=='bohr2') then
              write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
           endif
-          if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the Fermi energy when kslice_task=curv')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kslice_task=curv')
        elseif(plot_morb) then
           write(stdout,'(/,3x,a)')&
                '* Orbital magnetization k-space integrand in eV.Ang^2'
-          if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the Fermi energy when kslice_task=morb')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kslice_task=morb')
        endif
 
        write(stdout,'(/,/,1x,a)') 'Output files:' 
@@ -289,7 +286,7 @@ module w90_kslice
                    vdum(:)=del_eig(n,:)-dot_product(del_eig(n,:),zhat)*zhat(:)
                    Delta_E=sqrt(dot_product(vdum,vdum))*Delta_k
 !                   Delta_E=Delta_E*sqrt(2.0_dp) ! optimize this factor
-                   if(abs(eig(n)-kslice_fermi_level)<Delta_E)&
+                   if(abs(eig(n)-fermi_energy_list(1))<Delta_E)&
                         write(dataunit,'(3E16.8)') kpt_x,kpt_y,spn_k(n)
                 endif
              enddo
@@ -354,7 +351,7 @@ module w90_kslice
           write(scriptunit,'(a)') "set contour"
           write(scriptunit,'(a)') "set view map"
           write(scriptunit,'(a,f9.5)') "set cntrparam levels discrete ",&
-               kslice_fermi_level
+               fermi_energy_list(1)
           write(scriptunit,'(a)') "set cntrparam bspline"
           do n=1,num_wann
              n1=n/100
@@ -659,13 +656,13 @@ end subroutine script_common
 subroutine script_fermi_lines(scriptunit)
 
     use w90_io,         only : seedname
-    use w90_parameters, only : kslice_fermi_level
+    use w90_parameters, only : fermi_energy_list
 
   integer, intent(in) :: scriptunit
 
   write(scriptunit,'(a)')&
        "# Energy level for isocontours (typically the Fermi level)"
-  write(scriptunit,'(a,f12.6)') "ef=",kslice_fermi_level
+  write(scriptunit,'(a,f12.6)') "ef=",fermi_energy_list(1)
   write(scriptunit,'(a)') " "
   write(scriptunit,'(a)')&
        "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"

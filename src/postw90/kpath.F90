@@ -111,14 +111,14 @@ contains
           elseif(berry_curv_unit=='bohr2') then
              write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
           endif
-          if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the Fermi energy when kpath_task=curv')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kpath_task=curv')
        end if
        if(plot_morb) then
           write(stdout,'(/,3x,a)')& 
                '* Orbital magnetization k-space integrand in eV.Ang^2'
-          if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the Fermi energy when kpath_task=morb')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kpath_task=morb')
        end if
 
        ! Work out how many points there are in the total path, and the 

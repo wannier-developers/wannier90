@@ -134,8 +134,7 @@ module w90_berry
     logical           :: eval_ahc,eval_morb,eval_kubo,not_scannable
 
     if(nfermi==0) call io_error(&
-         'Must set either "fermi_energy," "num_valence_bands," or '&
-         //'(fermi_energy_min,fermi_energy_max,nfermi) if berry=TRUE')
+         'Must specify one or more Fermi levels when berry=true')
 
     if (timing_level>1.and.on_root) call io_stopwatch('berry: prelims',1)
 
