@@ -3,7 +3,7 @@
 #=====================================================
 F90 = ifort
 COMMS=mpi
-MPIF90=ifort
+MPIF90=mpif90
 FCOPTS=-O3 -assume byterecl -g -traceback -I/home/farmer/local/openmpi188_intel13/include/
 LDOPTS=-O3
 
