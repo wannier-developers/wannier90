@@ -50,6 +50,7 @@ module w90_hamiltonian
   public :: hamiltonian_setup
   public :: hamiltonian_dealloc
   public :: hamiltonian_write_rmn
+  public :: hamiltonian_write_tb
 
   ! Module variables
   logical, save :: ham_have_setup=.false.
@@ -58,6 +59,7 @@ module w90_hamiltonian
   logical, save :: have_ham_r=.false.
   logical, save :: have_ham_k=.false.
   logical, save :: hr_written=.false.
+  logical, save :: tb_written=.false.
 
   complex(kind=dp), save, allocatable :: ham_k(:,:,:)
 
@@ -657,4 +659,113 @@ contains
 
   end subroutine hamiltonian_write_rmn
 
+
+  !============================================!
+  subroutine hamiltonian_write_tb()
+  !============================================!
+  ! Write in a single file all the information !
+  ! that is needed to set up a Wannier-based   !
+  ! tight-binding model:                       !
+  !                                            !
+  ! * lattice vectors                          !
+  ! * <0n|H|Rn>                                !
+  ! * <0n|r|Rn>                                !
+  !============================================!
+
+    use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
+                               seedname,io_date
+    use w90_parameters, only : real_lattice,num_wann,timing_level,&
+                               m_matrix,wb,bk,num_kpts,kpt_latt,nntot
+    use w90_constants, only  : twopi,cmplx_i
+
+    integer            :: i,j,irpt,ik,nn,idir,file_unit
+    character (len=33) :: header
+    character (len=9)  :: cdate,ctime
+    complex(kind=dp)   :: fac,pos_r(3)
+    real(kind=dp)      :: rdotk,delta
+
+    if (tb_written) return
+
+    if (timing_level>1) call io_stopwatch('hamiltonian: write_tb',1)
+ 
+    file_unit=io_file_unit()
+    open(file_unit,file=trim(seedname)//'_tb.dat',form='formatted',&
+         status='unknown',err=101)
+
+    call io_date(cdate,ctime)
+    header='written on '//cdate//' at '//ctime
+
+    write(file_unit,*) header ! Date and time
+    !
+    ! lattice vectors
+    !
+    write(file_unit,*) real_lattice(1,:) !a_1
+    write(file_unit,*) real_lattice(2,:) !a_2
+    write(file_unit,*) real_lattice(3,:) !a_3
+    !
+    write(file_unit,*) num_wann
+    write(file_unit,*) nrpts
+    write(file_unit,'(15I5)') (ndegen(i),i=1,nrpts)
+    !
+    ! <0n|H|Rm>
+    !
+    do irpt=1,nrpts
+       write(file_unit,'(/,3I5)') irvec(:,irpt)
+       do i=1,num_wann
+          do j=1,num_wann
+             write(file_unit,'(2I5,3x,2(E15.8,1x))') j,i,ham_r(j,i,irpt)
+          end do
+       end do
+    end do
+    !
+    ! <0n|r|Rm>
+    !
+    do irpt=1,nrpts
+       write(file_unit,'(/,3I5)') irvec(:,irpt)
+       do i=1,num_wann
+          do j=1,num_wann
+             delta=0._dp
+             if (i==j) delta=1._dp
+             pos_r(:)=0._dp
+             do ik=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,ik),real(irvec(:,irpt),dp))
+                fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                do idir=1,3  
+                   do nn=1,nntot 
+                      if(i==j) then
+                         ! For irpt==rpt_origin, this reduces to
+                         ! Eq.(32) of Marzari and Vanderbilt PRB 56,
+                         ! 12847 (1997). Otherwise, is is Eq.(44)
+                         ! Wang, Yates, Souza and Vanderbilt PRB 74,
+                         ! 195118 (2006), modified according to
+                         ! Eqs.(27,29) of Marzari and Vanderbilt
+                         pos_r(idir)=pos_r(idir)-&
+                              wb(nn)*bk(idir,nn,ik)*aimag(log(m_matrix(i,i,nn,ik)))*fac
+                      else
+                         ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
+                         pos_r(idir)=pos_r(idir)+&
+                              cmplx_i*wb(nn)*bk(idir,nn,ik)*(m_matrix(j,i,nn,ik)-delta)*fac
+                      endif
+                   end do
+                end do
+             end do
+             write(file_unit,'(2I5,3x,6(E15.8,1x))') j,i,pos_r(:)  
+          end do
+       end do
+    end do
+
+    close(file_unit)
+
+    tb_written=.true.
+
+    if (timing_level>1) call io_stopwatch('hamiltonian: write_tb',2)
+
+    return
+
+101 call io_error('Error: hamiltonian_write_tb: problem opening file '&
+         //trim(seedname)//'_tb.dat')
+
+  end subroutine hamiltonian_write_tb
+
+  
 end module w90_hamiltonian

@@ -306,7 +306,7 @@ module w90_wan_ham
              !
              ! Use non-degenerate form [Eq.(27) YWVS07] for current (i-th) band
              !
-             deleig_a(i)=aimag(cmplx_i*delHH_bar_a(i,i))
+             deleig_a(i)=real(delHH_bar_a(i,i),dp)
           end if
        end do
        
@@ -314,7 +314,7 @@ module w90_wan_ham
        
        ! Use non-degenerate form for all bands
        !
-       deleig_a(:)=aimag(cmplx_i*utility_rotate_diag(delHH_a(:,:),UU,num_wann))
+       deleig_a(:)=real(utility_rotate_diag(delHH_a(:,:),UU,num_wann),dp)
 
     end if
     
