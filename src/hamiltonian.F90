@@ -442,21 +442,15 @@ contains
 
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
                                seedname,io_date
-    use w90_parameters, only : num_wann,timing_level, use_ws_distance
-    use w90_ws_distance, only : irdist_ws,wdist_ndeg, &
-                                ws_translate_dist
+    use w90_parameters, only : num_wann,timing_level
 
-    integer            :: i,j,irpt,file_unit,ideg
+    integer            :: i,j,irpt,file_unit
     character (len=33) :: header
     character (len=9)  :: cdate,ctime
 
     if (hr_written) return
 
     if (timing_level>1) call io_stopwatch('hamiltonian: write_hr',1)
-
-    if(use_ws_distance)then
-       call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
-    endif
 
     ! write the  whole matrix with all the indices 
  
@@ -472,25 +466,12 @@ contains
     write(file_unit,*) nrpts
     write(file_unit,'(15I5)') (ndegen(i),i=1,nrpts)
     do irpt=1,nrpts
-!   Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-       if(use_ws_distance)then
-               do j=1,num_wann
-                  do i=1,num_wann
-                     do ideg = 1, wdist_ndeg(j,i,irpt)
-                        write(file_unit,'(5I5,2F12.6,I5)') irdist_ws(:,ideg,j,i,irpt), &
-                             j, i, ham_r(j,i,irpt), wdist_ndeg(j,i,irpt)
-                     end do
-                  end do
-               end do
-!   Original code, without IJ-dependent shift:
-            else
-               do i=1,num_wann
-                  do j=1,num_wann
-                     write(file_unit,'(5I5,2F12.6)') irvec(:,irpt), j, i,&
-                          ham_r(j,i,irpt)
-                  end do
-               end do
-            end if
+       do i=1,num_wann
+          do j=1,num_wann
+             write(file_unit,'(5I5,2F12.6)') irvec(:,irpt), j, i,&
+                  ham_r(j,i,irpt)
+          end do
+       end do
     end do
 
     close(file_unit)
@@ -626,18 +607,16 @@ contains
   subroutine hamiltonian_write_rmn()
   !============================================!
     use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
-                               nntot, use_ws_distance
+                               nntot
     use w90_constants, only  : twopi, cmplx_i
     use w90_io,         only : io_error, io_file_unit, seedname,io_date
-    use w90_ws_distance, only : irdist_ws,wdist_ndeg, &
-                                ws_translate_dist
 
     implicit none
 
     complex(kind=dp)     :: fac
     real(kind=dp)        :: rdotk
     real(kind=dp)        :: delta
-    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit, ideg
+    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit
     complex(kind=dp)     :: position(3)
     character (len=33) :: header
     character (len=9)  :: cdate,ctime
@@ -649,10 +628,6 @@ contains
     header='written on '//cdate//' at '//ctime
     write(file_unit,*) header ! Date and time
     write(file_unit,*) num_wann
-
-    if(use_ws_distance)then
-       call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
-    endif
 
     do loop_rpt=1,nrpts
        do m=1,num_wann
@@ -671,16 +646,7 @@ contains
                    end do   
                 end do
              end do
-             !   Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-             if(use_ws_distance)then
-                do ideg = 1, wdist_ndeg(n,m,loop_rpt)
-                   write( file_unit ,'(5I5,6F12.6,I5)') irdist_ws(:,ideg,n,m,loop_rpt),n,m, &
-                                                        cmplx_i*position(:),wdist_ndeg(n,m,loop_rpt)
-                end do
-             ! Original code, without IJ-dependent shift:
-             else
-                   write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)
-             end if
+             write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)  
           end do
        end do
     end do

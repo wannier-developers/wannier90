@@ -26,7 +26,7 @@ module w90_ws_distance
 
   private
   !
-  public :: ws_translate_dist, clean_ws_translate
+  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
   !
   ! The number of unit cells to shift WF j to put its centre inside the Wigner-Seitz
   ! of wannier function i. If several shifts are equivalent (i.e. they take the function
@@ -228,6 +228,70 @@ subroutine R_wz_sc_equiv(R_in, R0, ndeg, R_out)
     enddo
     !====================================================!
 end subroutine R_wz_sc_equiv
+!====================================================!
+
+! Write to file the lattice vectors of the superlattice
+! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
+! in order to have the second Wannier function inside the WS cell
+! of the first one.
+! Use internal irvec and nrpts, so it assumes
+! hamiltonian_get_hr has already been called
+!====================================================!
+subroutine ws_write_vec()
+    !====================================================!
+    use w90_io,          only : io_error,io_stopwatch,io_file_unit, &
+                               seedname,io_date
+    use w90_hamiltonian, only : irvec, nrpts 
+    use w90_parameters,  only : num_wann
+
+    implicit none
+
+    integer:: irpt, iw, jw, ideg, file_unit
+    character (len=60) :: header
+    character (len=9)  :: cdate,ctime
+
+    file_unit=io_file_unit()
+    call io_date(cdate,ctime)
+
+    open(file_unit,file=trim(seedname)//'_ws_vec.dat',form='formatted',&
+         status='unknown',err=101)
+    if (use_ws_distance) then
+       header='written on '//cdate//' at '//ctime//' with ws_distance=.true.'
+       write(file_unit,*) header
+
+       do irpt = 1, nrpts
+          do iw = 1, num_wann
+             do jw = 1, num_wann
+                write(file_unit,'(6I5)') irvec(:,irpt), iw, jw, &
+                                         wdist_ndeg(iw,jw,irpt)
+                do ideg = 1, wdist_ndeg(iw,jw,irpt)
+                   write(file_unit,'(5I5,2F12.6,I5)') irdist_ws(:,ideg,iw,jw,irpt) - &
+                                                      irvec(:,irpt)
+                end do
+             end do
+          end do
+       end do
+    else
+       header='written on '//cdate//' at '//ctime//' with ws_distance=.false.'
+       write(file_unit,*) header
+
+       do irpt = 1, nrpts
+          do iw = 1, num_wann
+             do jw = 1, num_wann
+                write(file_unit,'(6I5)') irvec(:,irpt), &
+                        iw, jw, 1
+                write(file_unit,'(3I5)') 0, 0, 0
+             end do
+          end do
+       end do
+    end if
+    
+    close(file_unit)
+    return
+    
+101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat')
+  !====================================================!
+  end subroutine ws_write_vec
 !====================================================!
 !====================================================!
 subroutine clean_ws_translate()
