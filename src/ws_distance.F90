@@ -247,23 +247,24 @@ subroutine ws_write_vec()
     implicit none
 
     integer:: irpt, iw, jw, ideg, file_unit
-    character (len=60) :: header
+    character (len=100) :: header
     character (len=9)  :: cdate,ctime
 
     file_unit=io_file_unit()
     call io_date(cdate,ctime)
 
-    open(file_unit,file=trim(seedname)//'_ws_vec.dat',form='formatted',&
+    open(file_unit,file=trim(seedname)//'_wsvec.dat',form='formatted',&
          status='unknown',err=101)
+
     if (use_ws_distance) then
-       header='written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'
-       write(file_unit,*) header
+       header='## written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'
+       write(file_unit,'(A)') trim(header)
 
        do irpt = 1, nrpts
           do iw = 1, num_wann
              do jw = 1, num_wann
-                write(file_unit,'(6I5)') irvec(:,irpt), iw, jw, &
-                                         wdist_ndeg(iw,jw,irpt)
+                write(file_unit,'(5I5)') irvec(:,irpt), iw, jw
+                write(file_unit,'(I5)') wdist_ndeg(iw,jw,irpt)
                 do ideg = 1, wdist_ndeg(iw,jw,irpt)
                    write(file_unit,'(5I5,2F12.6,I5)') irdist_ws(:,ideg,iw,jw,irpt) - &
                                                       irvec(:,irpt)
@@ -272,14 +273,15 @@ subroutine ws_write_vec()
           end do
        end do
     else
-       header='written on '//cdate//' at '//ctime//' with use_ws_distance=.false.'
-       write(file_unit,*) header
+       header='## written on '//cdate//' at '//ctime//' with use_ws_distance=.false.'
+       write(file_unit,'(A)') trim(header)
 
        do irpt = 1, nrpts
           do iw = 1, num_wann
              do jw = 1, num_wann
-                write(file_unit,'(6I5)') irvec(:,irpt), &
-                        iw, jw, 1
+                write(file_unit,'(5I5)') irvec(:,irpt), &
+                        iw, jw
+                write(file_unit,'(I5)') 1
                 write(file_unit,'(3I5)') 0, 0, 0
              end do
           end do
