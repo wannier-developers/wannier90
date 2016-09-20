@@ -1,23 +1,32 @@
                        =========
                        WANNIER90
-                       =========                            
-                                                            
- The Maximally-Localised Generalised Wannier Functions Code 
+                       =========
+
+	The Maximally-Localised Generalised Wannier Functions Code
 
 v2.0.2 (XXX)
+* Streamlined the interface between wannier90 and tight-binding
+codes such as pythtb (new input variable: write_tb)
+* postw90 prints an error message when trying to evaluate a quantity
+that requires a Fermi level, but none has been provided by the user
+(input variable fermi_level now has no default value)
+* Fixed bug in kslice.F90 (trying to plot isoenergy contours colored
+by the spin gave an error message at runtime).
+* Adaptively-refined mesh now implemented correctly for even sizes
+(e.g., 4x4).
+* Fixed bug in the calculation of orbital magnetization in berry.F90
 * Fixed the skip_B1_tests flag, that was ignored
 * Fix to documentation of geninterp: k units were 1/ang and not
   2pi/ang as previously stated; also made names for absolute/fractional
   coordinates consistent with the rest of the code:now 'crystal' or
   'frac' mean fractional coordinates for k-points, 'cart' and
   'abs' mean absolute.
-* Improvements to various Makefiles 
-* Fixed bug in the calculation of orbital magnetization in berry.F90
+* Improvements to various Makefiles
 * Renamed make.sys to make.inc to cope with possible issues when this
-  file is sent over email (some providers think it's a virus and 
+  file is sent over email (some providers think it's a virus and
   remove it from attachments). If you have already compiled wannier90,
   after updating the version, just rename make.sys to make.inc.
-	
+
 v2.0.1 (2nd April 2015)
 
 * Added the possibility to disentangle only in small spherical regions
@@ -31,12 +40,12 @@ v2.0.1 (2nd April 2015)
   Quantum ESPRESSO.
 * Added documentation on pw2wannier90.f90 for QE 5.1.x
 * bug fix in w90chk2chk.F90 (missing allocation if there were excluded bands)
-* bug fix in kslice.F90 (missing transpose when plotting Fermi lines in 
+* bug fix in kslice.F90 (missing transpose when plotting Fermi lines in
   the python scripts)
 
 v2.0 (14th October 2013)
 
-* Updated interface to PWscf v5.0 (including a minor bug fix to the 
+* Updated interface to PWscf v5.0 (including a minor bug fix to the
   definition of the projection functions).
 * Enabled very general specification of spinor projections
 * Generalized the definition of the supercell for real-space plotting of
@@ -44,7 +53,7 @@ v2.0 (14th October 2013)
   can be different along the three directions. Moreover, the home cell
   is left approximately at the center of the supercell, rather than near
   one of its edges.
-* Now it is possible to provide both 'seedname' and 'seedname.win' on the 
+* Now it is possible to provide both 'seedname' and 'seedname.win' on the
   command line, both will work
 * Tabs can now be present in the input file without problems
 * Added the new (parallel) postw90.x executable for calculations which use
@@ -68,12 +77,12 @@ v1.2 (14th Jan 2010)
 * The information written to the file seedname_hr.dat (the Hamiltonian
   in the WF basis) has been extended to include the number of WF (num_wann),
   the number of Wigner-Seitz points (nrpts) and the degeneracy of each point
-  (ndegen). 
+  (ndegen).
 * The information contained in seedname.chk has been extended to
   include the number of bands (num_bands), the number of excluded
   bands (num_exclude_bands), the excluded band indices (exclude_bands)
   and the Monkhorst-Pack grid dimensions (mp_grid). As a result
-  v1.2 is not compatible with checkfiles written with older versions of 
+  v1.2 is not compatible with checkfiles written with older versions of
   the code.
 * Automated lcr transport calculations from a single supercell.
   Includes robust sorting and Wannier function parity determination
@@ -82,7 +91,7 @@ v1.2 (14th Jan 2010)
 * Added examples 14, 15 to tutorial to displaying new lcr transport
   functionality
 * Updated interface to PWscf v4.1.2 (new input variable write_unkg)
-* New utility: PL_assessment. Investigates principal layer size 
+* New utility: PL_assessment. Investigates principal layer size
   from bulk transport, many k-point lead calculations.
 * Altered <seedname>_centres.xyz output file to include atomic
   positions in transport calculations
@@ -91,14 +100,14 @@ v1.2 (14th Jan 2010)
 * Addition of Matthew Shelley and Nicolas Poilvert as contributors.
 * Report of estimated memory usage
 * Improved memory efficiency
- 
+
 v1.1 (21st Dec 2007)
 
-* Addition of specific algorithms for when only Gamma-point 
+* Addition of specific algorithms for when only Gamma-point
   sampling is used (new input variable: gamma_only)
 * Addition of routines for quantum transport and DoS calculations
   (new input variables: transport, transport_mode, etc.)
-* Option to write out hamiltonian matrix elements in the Wannier 
+* Option to write out hamiltonian matrix elements in the Wannier
   function basis (new input variable: hr_plot)
 * Option to set a convergence threshold for localisation procedure
   (new input variables: conv_tol, conv_window)
@@ -107,10 +116,10 @@ v1.1 (21st Dec 2007)
 * Option to specify the number of shells that are searched to find
   nearest neighbour b-vectors (new input variable: search_shells)
 * Option to plot bandstructures in xmgrace format (bands_plot_format=xmgrace)
-* Option to plot Wannier functions in cube format (wannier_plot_format=cube) 
-  -- works for isolated molecules, further testing for periodic systems is 
-  required -- significantly reduces WF file-size  
-  (new input variable: wannier_plot_radius) 
+* Option to plot Wannier functions in cube format (wannier_plot_format=cube)
+  -- works for isolated molecules, further testing for periodic systems is
+  required -- significantly reduces WF file-size
+  (new input variable: wannier_plot_radius)
 * Optional capability to specify some projections in input file and
   have the remaining centres chosen randomly by the code
 * Checkpointing and restarts all done via the .chk file (_um.dat file
@@ -126,7 +135,7 @@ v1.1 (21st Dec 2007)
 v1.0.2 (1st Dec 2006)
 
 * Addition of "library mode" functionality
-* Introduction of "range vectors" for specifying exclude_bands and 
+* Introduction of "range vectors" for specifying exclude_bands and
   wannier_plot_list in input file
 * Option to specify random projections
 * Option to use Bloch phases for initial projections
@@ -143,7 +152,7 @@ v1.0.1 (17th May 2006)
 * Bug fix in wannierise minimiser - caused poor convergence in large systems
 * Increase precision of k-points in *.nnkp file
 * More robust selection of eigenvectors in disentanglement (dis_proj_froz)
-* Addition of write_proj keyword -- outputs projection of original bands 
+* Addition of write_proj keyword -- outputs projection of original bands
   on final Wannier functions
 * Longer strings for atom labels in *.win
 * Minor format change to *_bands.dat
