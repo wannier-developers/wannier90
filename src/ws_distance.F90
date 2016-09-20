@@ -256,7 +256,7 @@ subroutine ws_write_vec()
     open(file_unit,file=trim(seedname)//'_ws_vec.dat',form='formatted',&
          status='unknown',err=101)
     if (use_ws_distance) then
-       header='written on '//cdate//' at '//ctime//' with ws_distance=.true.'
+       header='written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'
        write(file_unit,*) header
 
        do irpt = 1, nrpts
@@ -272,7 +272,7 @@ subroutine ws_write_vec()
           end do
        end do
     else
-       header='written on '//cdate//' at '//ctime//' with ws_distance=.false.'
+       header='written on '//cdate//' at '//ctime//' with use_ws_distance=.false.'
        write(file_unit,*) header
 
        do irpt = 1, nrpts
