@@ -34,6 +34,7 @@ contains
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup,hamiltonian_write_rmn,&
                                 hamiltonian_write_tb
+    use w90_ws_distance, only : ws_write_vec
 
     implicit none
 
@@ -71,6 +72,10 @@ contains
        if(write_rmn) call hamiltonian_write_rmn()
        !
        if(write_tb) call hamiltonian_write_tb()
+       ! 
+       if (write_hr.or.write_rmn.or.write_tb) then
+          call ws_write_vec() 
+       end if
     end if
 
     if(wannier_plot) call plot_wannier
