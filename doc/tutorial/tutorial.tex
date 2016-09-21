@@ -2419,7 +2419,8 @@ For instance, the $A$ point in the simple tetragonal lattice of this example is 
 Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
-\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs}}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs. 
+For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
 \item{Directory: {\tt examples/example21/atom\_centered\_As\_sp/} \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_p/}    \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_s/}    \\
@@ -2450,7 +2451,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
-  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmb} files, respectively).\\  
+  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmn} files, respectively).\\  
 {\tt pw2wannier90.x < GaAs.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -2459,7 +2460,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 Each directory creates different kind of symmetry-adapted Wannier function. 
 See more detail in {\tt examples/example21/README}. 
-Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
+%Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
 
 
 %\cleardoublepage
@@ -2469,7 +2470,8 @@ Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}
 Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
-\item{Outline: \it{Obtain symmetry-adapted Wannier functions for Cu. By symmetry-adapted mode, for example, we can make atomic centered $s$-like Wannier function, which is not possible in the usual procedure to create maximally localized Wannier functions.}}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions for Cu. By symmetry-adapted mode, for example, we can make atomic centered $s$-like Wannier function, which is not possible in the usual procedure to create maximally localized Wannier functions.
+For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
 \item{Directory: {\tt examples/example22/s\_at\_0.00/} \\
 \phantom{Directory: }{\tt examples/example22/s\_at\_0.25/}    \\
 \phantom{Directory: }{\tt examples/example22/s\_at\_0.50/}    
@@ -2499,7 +2501,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
-  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmb} files, respectively).\\  
+  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmn} files, respectively).\\  
 {\tt pw2wannier90.x < Cu.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -2508,7 +2510,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 Each directory creates $s$-like symmetry-adapted Wannier function centered at different position on top of atomic centered $d$-like Wannier functions. 
 See more detail in {\tt examples/example22/README}. 
-Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
+%Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
 
 
 %\cleardoublepage

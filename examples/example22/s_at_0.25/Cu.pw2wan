@@ -3,6 +3,6 @@
     prefix='Cu',
     seedname = 'Cu'
     write_unk = .true.
-    write_dmb = .true.  ! additional input for symmetry-adapted mode 
+    write_dmn = .true.  ! additional input for symmetry-adapted mode 
      read_sym = .true.  
 /

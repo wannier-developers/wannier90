@@ -196,6 +196,8 @@ of $\Omega$\\
 {\sc fixed\_step }*   & R & The fixed step length to take during the minimisation
 of $\Omega$, instead of doing a parabolic line search \\
 {\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
+{\sc site\_symmetry}***   & L & To construct symmetry-adapted Wannier functions  \\
+{\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\ 
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -205,7 +207,8 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. 
 {\footnotesize
 * {\sc fixed\_step } and  {\sc trial\_step } may not both be defined in
-the same input file. **Cannot be used in conjunction with disentanglement.}}
+the same input file. **Cannot be used in conjunction with disentanglement.
+***Cannot be used in conjunction with the inner (frozen) energy window.}}
 \label{parameter_keywords5}
 \end{center}
 \end{table}
@@ -986,7 +989,25 @@ Determines whether to use the Bloch functions as the
 initial guess for the projections. Can only be used if
 \verb#disentanglement = false#. 
 
-Th default value is \verb#false#.
+The default value is \verb#false#.
+
+
+\subsection[site\_symmetry]{\tt logical :: site\_symmetry}
+
+Construct symmetry-adapted Wannier functions. 
+For the detail of the theoretical background, see Ref.~\cite{sakuma-prb13}. 
+Cannot be used in conjunction with the inner (frozen) energy window. 
+
+The default value is \verb#false#.
+
+\subsection[symmetrize\_eps]{\tt real(kind=dp) :: symmetrize\_eps}
+
+Convergence threshold to check whether the symmetry condition (Eq. (19) in Ref.~\cite{sakuma-prb13})
+on the unitary matrix $\Uk$ is satisfied or not.  
+See also Eq. (29) in Ref.~\cite{sakuma-prb13}. 
+Used when \verb#site_symmetry = .true#.
+
+The default value is 1.0E-3.
 
 
 \section{Post-Processing}
