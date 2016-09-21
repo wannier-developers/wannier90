@@ -541,7 +541,7 @@ $$ Default is \verb#.false.#
 \item   \verb#write_dmn# -- Set to \verb#.true.# to construct symmetry-adapted Wannier functions.  
 Default is \verb#.false.#
 
-\item   \verb#read_sym# -- Set to \verb#.true.# to customize the symmetry-operations to be used in symmetry-adapted mode. 
+\item   \verb#read_sym# -- Set to \verb#.true.# to customize symmetry operations to be used in symmetry-adapted mode. 
 When  \verb#read_sym = .true.#, an additional input {\tt seedname.sym} is required. 
 Default is \verb#.false.#
 (only relevant if \verb#write_dmn=.true.#). 
@@ -563,7 +563,7 @@ If \verb#read_sym = .false.# (default), {\tt pw2wannier90.x} uses the full symme
 If \verb#read_sym = .true.#, you can specify symmetry operations to be used in symmetry-adapted mode.  
 
 
-First line: an integer \verb#nsymmetry# (number of symmetry operations)
+First line: an integer: \verb#nsymmetry# (number of symmetry operations)
 
 Second line: blank
  
