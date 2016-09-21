@@ -655,7 +655,7 @@ contains
 
     return
 
-101 call io_error('Error: position_write_pos: problem opening file '//trim(seedname)//'_r')
+101 call io_error('Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r')
 
   end subroutine hamiltonian_write_rmn
 
