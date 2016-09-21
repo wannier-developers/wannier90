@@ -38,7 +38,7 @@ module w90_ws_distance
   !
   ! next parameter moved to parameters, used here
   !logical, save, public :: use_ws_distance = .false.
-  logical, save :: done_ws_distance = .false.
+  logical, public, save :: done_ws_distance = .false.
   integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch
                                     ! in a single point (i.e.  vertex of cube)
 
@@ -237,15 +237,16 @@ end subroutine R_wz_sc_equiv
 ! Use internal irvec and nrpts, so it assumes
 ! hamiltonian_get_hr has already been called
 !====================================================!
-subroutine ws_write_vec()
+subroutine ws_write_vec(nrpts,irvec)
     !====================================================!
     use w90_io,          only : io_error,io_stopwatch,io_file_unit, &
                                seedname,io_date
-    use w90_hamiltonian, only : irvec, nrpts 
     use w90_parameters,  only : num_wann
 
     implicit none
 
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: irvec(3,nrpts)
     integer:: irpt, iw, jw, ideg, file_unit
     character (len=100) :: header
     character (len=9)  :: cdate,ctime

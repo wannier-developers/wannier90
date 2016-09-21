@@ -33,8 +33,9 @@ contains
                                 write_hr,write_rmn,write_tb,write_u_matrices
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup,hamiltonian_write_rmn,&
-                                hamiltonian_write_tb
-    use w90_ws_distance, only : ws_write_vec
+                                hamiltonian_write_tb, nrpts, irvec
+    use w90_ws_distance, only : done_ws_distance, ws_translate_dist, &
+                                ws_write_vec
 
     implicit none
 
@@ -74,7 +75,8 @@ contains
        if(write_tb) call hamiltonian_write_tb()
        ! 
        if (write_hr.or.write_rmn.or.write_tb) then
-          call ws_write_vec() 
+          if (.not.done_ws_distance) call ws_translate_dist(nrpts,irvec)
+          call ws_write_vec(nrpts,irvec) 
        end if
     end if
 
