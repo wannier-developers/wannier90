@@ -252,17 +252,19 @@ the same input file. **Cannot be used in conjunction with disentanglement.}}
 Fermi energy in the specified range\\
   {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
   surface plot \\
-  {\sc hr\_plot} & L & This parameter is not used anymore. Use {\sc write\_hr} instead. \\
-  {\sc write\_hr} & L & Write the Hamiltonian in the WF basis \\
+  \old{\sc hr\_plot} & L & \old{This parameter is not used anymore. Use {\sc write\_hr} instead.} \\
+  \new{\sc write\_hr} & L & \new{Write the Hamiltonian in the WF basis} \\
+  \new{\sc write\_rmn } & L & \new{Write the position operator in the WF basis} \\
+\new{\sc write\_tb }  & L & \new{Write lattice vectors, 
+Hamiltonian, and position operator in WF basis} \\
   {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
   {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
   {\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
-  {\sc use\_ws\_distance } & L & Use the minimum distance between WFs for interpolation \\
-  {\sc write\_u\_matrices } & L & Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files \\
-  {\sc write\_rmn } & L & Write the position operator in the WF basis \\
+  \new{\sc use\_ws\_distance } & L & \new{Use the minimum distance between WFs for interpolation} \\
+  \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -735,7 +737,7 @@ The default value is \verb#false#.
 \subsection[write\_xyz]{\tt logical :: write\_xyz}
 
 Determines whether to write the atomic positions and 
-final Wannier centres to an xyzfile,
+final Wannier centres to an xyz file,
 \verb#seedname_centres.xyz#, for subsequent
 visualisation. 
 
@@ -750,6 +752,7 @@ distribution) for calculating van der Waals energies.
 Brillouin zone sampling must be at the Gamma-point only.
 
 The default value is \verb#false#.
+
 
 \section{Disentanglement}
 These keywords control the disentanglement routine of
@@ -1214,7 +1217,8 @@ If {\tt fermi\_energy} is specified, {\tt
 %\wannier, it is a useful parameter to set as it will be written
 %into the bxsf file. 
 
-The default value is 0.0
+There is no default value.
+% The default value is 0.0
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy\_min}
@@ -1263,6 +1267,16 @@ If $\verb#write_rmn#=\verb#true#$, then the position operator in the
 WF basis will be written to a file {\tt seedname\_r.dat}.
 
 The default value is {\tt false}.
+
+\subsection[write\_tb]{\tt logical :: write\_tb}
+
+If $\verb#write_tb#=\verb#true#$, then the lattice vectors, together
+with the Hamiltonian and position-operator matrices in the WF basis,
+will be written to a file {\tt seedname\_tb.dat}, in units
+of Angstrom and eV.
+
+The default value is {\tt false}.
+
 
 \subsection[transport]{\tt logical :: transport}
 

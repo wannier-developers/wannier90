@@ -76,22 +76,14 @@ contains
     ! are in parallel. So calls to get_oper are done on all nodes at the moment
     !
     plot_bands=.false.
-    if(index(kpath_task,'bands')>0) then
-       plot_bands=.true.
-    end if
+    if(index(kpath_task,'bands')>0) plot_bands=.true.
     plot_curv=.false.
-    if(index(kpath_task,'curv')>0) then
-       plot_curv=.true.
-    end if
+    if(index(kpath_task,'curv')>0) plot_curv=.true.
     plot_morb=.false.
-    if(index(kpath_task,'morb')>0) then
-       plot_morb=.true.
-    end if
+    if(index(kpath_task,'morb')>0)  plot_morb=.true.
     ! Set up the needed Wannier matrix elements
     call get_HH_R
-    if(plot_curv.or.plot_morb) then
-       call get_AA_R
-    endif
+    if(plot_curv.or.plot_morb) call get_AA_R
     if(plot_morb) then
        call get_BB_R
        call get_CC_R
@@ -119,14 +111,14 @@ contains
           elseif(berry_curv_unit=='bohr2') then
              write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
           endif
-          if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the fermi energy when kpath_task=curv')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kpath_task=curv')
        end if
        if(plot_morb) then
           write(stdout,'(/,3x,a)')& 
                '* Orbital magnetization k-space integrand in eV.Ang^2'
-          if(nfermi/=1) call io_error('Need to specify one value of '&
-               //'the fermi energy when kpath_task=morb')
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kpath_task=morb')
        end if
 
        ! Work out how many points there are in the total path, and the 
@@ -398,7 +390,7 @@ contains
              write(pyunit,'(a)') "pl.colorbar(shrink=0.7)"
           endif
           write(pyunit,'(a)') "outfile = '"//trim(seedname)//"-bands.pdf'"
-          write(pyunit,'(a)') "pl.savefig(outfile)"
+          write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
           write(pyunit,'(a)') "pl.show()"
           
        endif ! plot_bands .and. .not.plot_curv .and. .not.plot_morb
@@ -491,7 +483,7 @@ contains
              endif
              write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                   "-curv_"//achar(119+i)//".pdf'"
-             write(pyunit,'(a)') "pl.savefig(outfile)"
+             write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
              write(pyunit,'(a)') "pl.show()"
           enddo
           
@@ -576,7 +568,7 @@ contains
                    //"  [ Ry$\cdot\AA^2$ ]')"
               write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                    "-morb_"//achar(119+i)//".pdf'"
-              write(pyunit,'(a)') "pl.savefig(outfile)"
+              write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
               write(pyunit,'(a)') "pl.show()"
           enddo
 
@@ -681,7 +673,7 @@ contains
                 write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                      "-morb_"//achar(119+i)//".pdf'"
              endif
-             write(pyunit,'(a)') "pl.savefig(outfile)"
+             write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
              write(pyunit,'(a)') "pl.show()"
           enddo
 

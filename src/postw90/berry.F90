@@ -134,8 +134,7 @@ module w90_berry
     logical           :: eval_ahc,eval_morb,eval_kubo,not_scannable
 
     if(nfermi==0) call io_error(&
-         'Must set either "fermi_energy," "num_valence_bands," or '&
-         //'(fermi_energy_min,fermi_energy_max,nfermi) if berry=TRUE')
+         'Must specify one or more Fermi levels when berry=true')
 
     if (timing_level>1.and.on_root) call io_stopwatch('berry: prelims',1)
 
@@ -249,13 +248,29 @@ module w90_berry
     allocate(adkpt(3,berry_curv_adpt_kmesh**3),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating adkpt in berry')
     ikpt=0
-    do i=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
-       do j=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
-          do k=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
+    !
+    ! OLD VERSION (only works correctly for odd grids including original point)
+    !
+    ! do i=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
+    !    do j=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
+    !       do k=-(berry_curv_adpt_kmesh-1)/2,(berry_curv_adpt_kmesh-1)/2
+    !          ikpt=ikpt+1 
+    !          adkpt(1,ikpt)=i*db1/berry_curv_adpt_kmesh
+    !          adkpt(2,ikpt)=j*db2/berry_curv_adpt_kmesh
+    !          adkpt(3,ikpt)=k*db3/berry_curv_adpt_kmesh
+    !       end do
+    !    end do
+    ! end do
+    !
+    ! NEW VERSION (both even and odd grids) 
+    !
+    do i=0,berry_curv_adpt_kmesh-1
+       do j=0,berry_curv_adpt_kmesh-1
+          do k=0,berry_curv_adpt_kmesh-1
              ikpt=ikpt+1 
-             adkpt(1,ikpt)=i*db1/berry_curv_adpt_kmesh
-             adkpt(2,ikpt)=j*db2/berry_curv_adpt_kmesh
-             adkpt(3,ikpt)=k*db3/berry_curv_adpt_kmesh
+             adkpt(1,ikpt)=db1*((i+0.5_dp)/berry_curv_adpt_kmesh-0.5_dp)
+             adkpt(2,ikpt)=db2*((j+0.5_dp)/berry_curv_adpt_kmesh-0.5_dp)
+             adkpt(3,ikpt)=db3*((k+0.5_dp)/berry_curv_adpt_kmesh-0.5_dp)
           end do
        end do
     end do
