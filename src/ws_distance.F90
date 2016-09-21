@@ -26,7 +26,7 @@ module w90_ws_distance
 
   private
   !
-  public :: ws_translate_dist, clean_ws_translate
+  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
   !
   ! The number of unit cells to shift WF j to put its centre inside the Wigner-Seitz
   ! of wannier function i. If several shifts are equivalent (i.e. they take the function
@@ -38,7 +38,7 @@ module w90_ws_distance
   !
   ! next parameter moved to parameters, used here
   !logical, save, public :: use_ws_distance = .false.
-  logical, save :: done_ws_distance = .false.
+  logical, public, save :: done_ws_distance = .false.
   integer, parameter :: ndegenx = 8 ! max number of unit cells that can touch
                                     ! in a single point (i.e.  vertex of cube)
 
@@ -110,15 +110,15 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
         do iw=1,num_wann
             call utility_frac_to_cart(DBLE(irvec(:,ir)),irvec_cart,real_lattice)
             ! function IW translated in the Wigner-Size around function JW
-            wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( +wannier_centres(:,iw)&
-                        -(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
+            wdist_wssc_frac(:,iw,jw,ir) = R_wz_sc( -wannier_centres(:,iw)&
+                        +(irvec_cart+wannier_centres(:,jw)), (/0._dp,0._dp,0._dp/) )
             !find its degeneracy
             CALL R_wz_sc_equiv(wdist_wssc_frac(:,iw,jw,ir), (/0._dp,0._dp,0._dp/), &
                             wdist_ndeg(iw,jw,ir), crdist_ws(:,:,iw,jw,ir))
             IF(wdist_ndeg(iw,jw,ir)>ndegenx) call io_error('surprising ndeg')
             do ideg = 1,wdist_ndeg(iw,jw,ir)
             crdist_ws(:,ideg,iw,jw,ir) = crdist_ws(:,ideg,iw,jw,ir)&
-                            -wannier_centres(:,iw)+wannier_centres(:,jw)
+                            +wannier_centres(:,iw)-wannier_centres(:,jw)
             !
             call utility_cart_to_frac(crdist_ws(:,ideg,iw,jw,ir),&
                             irdist_real(:,ideg,iw,jw,ir),recip_lattice)
@@ -196,7 +196,7 @@ subroutine R_wz_sc_equiv(R_in, R0, ndeg, R_out)
     real(DP) :: R(3), R_f(3), R_in_f(3), mod2_R_bz
     integer :: i,j,k
     integer,parameter :: far = 3
-    real(DP),parameter :: eps = 1.e-6_dp !d-1
+    real(DP),parameter :: eps = 1.e-5_dp !d-1
 
     ! init
     ndeg=0
@@ -228,6 +228,71 @@ subroutine R_wz_sc_equiv(R_in, R0, ndeg, R_out)
     enddo
     !====================================================!
 end subroutine R_wz_sc_equiv
+!====================================================!
+
+! Write to file the lattice vectors of the superlattice
+! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
+! in order to have the second Wannier function inside the WS cell
+! of the first one.
+!====================================================!
+subroutine ws_write_vec(nrpts,irvec)
+    !====================================================!
+    use w90_io,          only : io_error,io_stopwatch,io_file_unit, &
+                               seedname,io_date
+    use w90_parameters,  only : num_wann
+
+    implicit none
+
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: irvec(3,nrpts)
+    integer:: irpt, iw, jw, ideg, file_unit
+    character (len=100) :: header
+    character (len=9)  :: cdate,ctime
+
+    file_unit=io_file_unit()
+    call io_date(cdate,ctime)
+
+    open(file_unit,file=trim(seedname)//'_wsvec.dat',form='formatted',&
+         status='unknown',err=101)
+
+    if (use_ws_distance) then
+       header='## written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'
+       write(file_unit,'(A)') trim(header)
+
+       do irpt = 1, nrpts
+          do iw = 1, num_wann
+             do jw = 1, num_wann
+                write(file_unit,'(5I5)') irvec(:,irpt), iw, jw
+                write(file_unit,'(I5)') wdist_ndeg(iw,jw,irpt)
+                do ideg = 1, wdist_ndeg(iw,jw,irpt)
+                   write(file_unit,'(5I5,2F12.6,I5)') irdist_ws(:,ideg,iw,jw,irpt) - &
+                                                      irvec(:,irpt)
+                end do
+             end do
+          end do
+       end do
+    else
+       header='## written on '//cdate//' at '//ctime//' with use_ws_distance=.false.'
+       write(file_unit,'(A)') trim(header)
+
+       do irpt = 1, nrpts
+          do iw = 1, num_wann
+             do jw = 1, num_wann
+                write(file_unit,'(5I5)') irvec(:,irpt), &
+                        iw, jw
+                write(file_unit,'(I5)') 1
+                write(file_unit,'(3I5)') 0, 0, 0
+             end do
+          end do
+       end do
+    end if
+    
+    close(file_unit)
+    return
+    
+101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat')
+  !====================================================!
+  end subroutine ws_write_vec
 !====================================================!
 !====================================================!
 subroutine clean_ws_translate()
