@@ -234,8 +234,6 @@ end subroutine R_wz_sc_equiv
 ! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
 ! in order to have the second Wannier function inside the WS cell
 ! of the first one.
-! Use internal irvec and nrpts, so it assumes
-! hamiltonian_get_hr has already been called
 !====================================================!
 subroutine ws_write_vec(nrpts,irvec)
     !====================================================!
