@@ -12,6 +12,8 @@
 !------------------------------------------------------------!
 
 module w90_io
+  !! Module to handle operations related to file input and output.
+
 
   use w90_constants, only : dp
 
@@ -25,21 +27,32 @@ module w90_io
 #endif
 
   integer, public, save           :: stdout
+  !! Unit on which stdout is written
   character(len=50), public, save :: seedname
-  integer, parameter, public      :: maxlen = 120  ! Max column width of input file
-  logical, public, save           :: post_proc_flag  ! Set post_processing from cmd line
+  !! The seedname for this run
+  integer, parameter, public      :: maxlen = 120  
+  !! Max column width of input file
+  logical, public, save           :: post_proc_flag  
+  !! Are we in post processing mode 
 
   type timing_data
+      !! Data about each stopwatch - for timing routines
      integer :: ncalls           
+     !! Number of times stopwatch has been called
      real(kind=DP) :: ctime      
-     real(kind=DP) :: ptime     
+     !! Total time on stopwatch
+     real(kind=DP) :: ptime
+     !! Temporary record of time when watch is started     
      character(len=60) :: label      
+     !! What is this stopwatch timing
   end type timing_data
 
   integer, parameter :: nmax = 100
+  !! Maximum number of stopwatches
   type(timing_data) :: clocks(nmax)
+  !! Data for the stopwatches 
   integer, save     :: nnames=0
-
+  !! Number of active stopwatches
 
   public :: io_stopwatch
   public :: io_print_timings
@@ -52,16 +65,18 @@ module w90_io
 contains
 
 
-  !==================================================================!
+  !=====================================
   subroutine io_stopwatch(tag,mode)
-  !==================================================================!
-  ! Stopwatch to time parts of the code                              !
-  !==================================================================!
+  !=====================================
+  !! Stopwatch to time parts of the code
+  !=====================================
 
     implicit none
 
     character(len=*), intent(in) :: tag
+    !! Which stopwatch to act upon
     integer, intent(in)          :: mode
+    !! Action  1=start 2=stop
 
     integer :: i
     real(kind=dp) :: t
@@ -111,11 +126,11 @@ contains
   end subroutine io_stopwatch
 
 
-  !==================================================================!
+  !=====================================
   subroutine io_print_timings()
-  !==================================================================!
-  ! Output timing information to stdout
-  !==================================================================!
+  !=====================================
+  !! Output timing information to stdout
+  !=====================================
 
     implicit none
 
@@ -137,12 +152,12 @@ contains
   end subroutine io_print_timings
 
 
-    !==================================================================!
-       subroutine io_get_seedname (  )
-    !==================================================================!
-    !                                                                  !
-    ! Get the seedname from the commandline                            !
-    !===================================================================  
+    !=======================================
+       subroutine io_get_seedname()
+    !=======================================
+    !                                     
+    !! Get the seedname from the commandline
+    !=======================================
 
          implicit none
 
@@ -183,13 +198,11 @@ contains
 
 
 
-    !==================================================================!
+    !========================================
        subroutine io_error ( error_msg )
-    !==================================================================!
-    !                                                                  !
-    ! Aborts giving error message                                      !
-    !                                                                  !
-    !===================================================================  
+    !========================================
+    !! Abort the code giving an error message 
+    !========================================
 
 
          implicit none
@@ -236,17 +249,19 @@ contains
        end subroutine io_error
 
 
-    !==================================================================!
+    !=======================================================
       subroutine io_date(cdate, ctime)
-    !==================================================================!
-    !                                                                  !
-    !     Returns two strings containing the date and the time         !
-    !     in human-readable format. Uses a standard f90 call.          !
-    !                                                                  !
-    !===================================================================  
+    !=======================================================
+    !                                                      
+    !! Returns two strings containing the date and the time 
+    !! in human-readable format. Uses a standard f90 call.
+    !                                                    
+    !=======================================================
     implicit none
     character (len=9), intent(out) :: cdate
+    !! The date
     character (len=9), intent(out) :: ctime
+    !! The time
 
     character(len=3), dimension(12) :: months
     data months /'Jan','Feb','Mar','Apr','May','Jun',   &
@@ -261,14 +276,14 @@ contains
   end subroutine io_date
 
 
-    !==================================================================!
+    !===========================================================
       function io_time()
-    !==================================================================!
-    !                                                                  !
-    ! Returns elapsed CPU time in seconds since its first call         !
-    ! uses standard f90 call                                           !
-    !                                                                  !
-    !===================================================================  
+    !===========================================================
+    !                                                          
+    !! Returns elapsed CPU time in seconds since its first call.
+    !! Uses standard f90 call                                  
+    !                                                           
+    !===========================================================
     use w90_constants, only : dp
     implicit none
 
@@ -292,14 +307,14 @@ contains
     return
   end function io_time
 
-  !==================================================================!
+  !===========================================
   function io_file_unit()
-  !==================================================================!
-  !                                                                  !
-  ! Returns an unused unit number                                    !
-  ! (so we can open a file on that unit                              !
-  !                                                                  !
-  !=================================================================== 
+  !===========================================
+  !                                          
+  !! Returns an unused unit number
+  !! so we can later open a file on that unit.
+  !                                           
+  !===========================================
   implicit none
 
   integer :: io_file_unit,unit
