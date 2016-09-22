@@ -74,21 +74,23 @@ Wannier90 Version 2.0 has been written by:
 
 Contributors to the code include:
 
-* Young-Su Lee (KIST, S. Korea) -- specialised Gamma point routines & transport
-* Matthew Shelley (Imperial College London, UK) -- transport
-* Nicolas Poilvert (Penn State University, USA) -- transport
-* Raffaello Bianco (Univ. Pierre et Marie Curie Paris 6 and CNRS) --  k-slice plotting
-* Gabriele Sclauzero (ETH, Zurich, Switzerland) -- disentanglement in spheres in k-space
-* David Strubbe (MIT, USA) -- various bugfixes/improvements
+* Young-Su Lee (KIST, S. Korea): specialised Gamma point routines & transport
+* Matthew Shelley (Imperial College London, UK): transport
+* Nicolas Poilvert (Penn State University, USA): transport
+* Raffaello Bianco (Univ. Pierre et Marie Curie Paris 6 and CNRS):  k-slice plotting
+* Gabriele Sclauzero (ETH, Zurich, Switzerland): disentanglement in spheres in k-space
+* David Strubbe (MIT, USA): various bugfixes/improvements
+
+Moreover:
 
 * ``w90vdw`` was written by:
   Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi
 * ``w90pov`` (povray plotting) was written by:
   Daniel Aberg (LLNL, USA)
 
-We gratefully acknowledge Marco Buongiorno Nardelli for the dosqc
-v1.0 subroutines for the calculation of the density of states and the
-quantum transport, upon which transport.f90 is based. 
+We gratefully acknowledge Marco Buongiorno Nardelli for the `dosqc
+v1.0` subroutines for the calculation of the density of states and the
+quantum transport, upon which `transport.f90` is based. 
 
 Wannier90 Version 1.0 was written by:
 
@@ -98,7 +100,7 @@ Wannier90 Version 1.0 was written by:
 
 Wannier90 is based on Fortran 77 codes written by:
 
-* Nicola Marzari
-* Ivo Souza
-* David Vanderbilt
+* Nicola Marzari (EPFL, Switzerland)
+* Ivo Souza (Universidad del Pais Vasco, Spain)
+* David Vanderbilt (Rutgers University, USA)
 
