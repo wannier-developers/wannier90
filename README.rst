@@ -3,7 +3,7 @@ Wannier90
 =========
 
 The Maximally-Localised Generalised Wannier Functions Code 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+----------------------------------------------------------
 
 The homepage of the Wannier90 code is http://www.wannier.org
 
@@ -14,40 +14,37 @@ Discussions about development can be found on the
 `GitHub wiki<https://github.com/wannier-developers/wannier90/wiki/ContributorsGuide>`_.
 
 How to contribute
------------------
++++++++++++++++++
 
 How to cite
------------
- Please cite                                             
++++++++++++
+Please cite the following paper in any publications arising from the use of 
+this code:
                                                          
- [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt  
-       and N. Marzari, "Wannier90: A Tool for Obtaining Maximally-Localised
-       Wannier Functions", Computer Physics Communications 178, 685 (2008)
+  A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt  
+  and N. Marzari, "Wannier90: A Tool for Obtaining Maximally-Localised
+  Wannier Functions", Computer Physics Communications 178, 685 (2008)
 
-  in any publications arising from the use of this code.  
+For the method please cite:
 
- For the method please cite 
-
- [ref] "Maximally Localized Generalised Wannier
-        Functions for Composite Energy Bands"     
-        N. Marzari and D. Vanderbilt              
-        Phys. Rev. B 56 12847 (1997)              
+  "Maximally Localized Generalised Wannier Functions for Composite Energy Bands"     
+  N. Marzari and D. Vanderbilt, Phys. Rev. B 56 12847 (1997)              
                                                   
- [ref] "Maximally Localized Wannier Functions 
-        for Entangled Energy Bands"
-        I. Souza, N. Marzari and D. Vanderbilt    
-        Phys. Rev. B 65 035109 (2001)             
+  "Maximally Localized Wannier Functions for Entangled Energy Bands", 
+  I. Souza, N. Marzari and D. Vanderbilt, Phys. Rev. B 65 035109 (2001)             
 
- [ref] "Maximally localized Wannier functions: Theory and applications"
-        Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, 
-        Ivo Souza, David Vanderbilt 
-        Rev. Mod. Phys. 84, 1419 (2012) 
+  "Maximally localized Wannier functions: Theory and applications", 
+  Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, Ivo Souza, 
+  David Vanderbilt, Rev. Mod. Phys. 84, 1419 (2012) 
 
-License
--------
+Licence
++++++++
+
+The Wannier90 code is licensed under GPLv2. 
+You can read the licence text in the ``LICENCE`` file.
 
 Authors and contributors
-------------------------
+++++++++++++++++++++++++
 
 Wannier90 Version 2.0 has been written by: 
 
