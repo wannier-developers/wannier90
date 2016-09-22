@@ -10,11 +10,16 @@ The homepage of the Wannier90 code is http://www.wannier.org
 The code is hosted on 
 GitHub_.
 
-Discussions about development can be found on the 
+Discussions about development, roadmap, and further information of interest
+to developers and contributors can be found on the 
 `GitHub wiki`_.
+In particular, *if you want to contribute, you should first read the 
+`guide to contributors`_ section*.
 
 .. _GitHub: https://github.com/wannier-developers/wannier90
 .. _GitHub wiki: https://github.com/wannier-developers/wannier90/wiki/ContributorsGuide
+.. _guide to contributors: https://github.com/wannier-developers/wannier90/wiki/ContributorsGuide
+
 
 How to contribute
 +++++++++++++++++
