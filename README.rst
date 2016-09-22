@@ -32,10 +32,9 @@ this code:
   A.A. Mostofi, J.R. Yates, G. Pizzi, Y.S. Lee, I. Souza, 
   D Vanderbilt, N Marzari, *An updated version of wannier90: A tool for 
   obtaining maximally-localised Wannier functions*, 
-  Comput. Phys. Commun. 185, 2309 (2014) 
-  (`ONLINE JOURNAL`_)
+  `Comput. Phys. Commun. 185, 2309 (2014)`_ 
 
-.. _ONLINE JOURNAL: http://dx.doi.org/10.1016/j.cpc.2014.05.003
+.. _Comput. Phys. Commun. 185, 2309 (2014): http://dx.doi.org/10.1016/j.cpc.2014.05.003
 
 For the method please cite:
 
