@@ -4,8 +4,8 @@
 F90 = ifort
 COMMS=mpi
 MPIF90=mpif90
-FCOPTS=-O3 -assume byterecl -g -traceback -I/home/farmer/local/openmpi188_intel13/include/
-LDOPTS=-O3
+FCOPTS=-O2 -assume byterecl -g -traceback -I/home/farmer/local/openmpi188_intel13/include/
+LDOPTS=-O2
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path
