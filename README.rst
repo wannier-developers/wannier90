@@ -40,16 +40,21 @@ For the method please cite:
 
   N. Marzari and D. Vanderbilt,
   *Maximally Localized Generalised Wannier Functions for Composite Energy Bands*,    
-  Phys. Rev. B 56 12847 (1997)              
+  `Phys. Rev. B 56 12847 (1997)`_
                                                   
   I. Souza, N. Marzari and D. Vanderbilt,
   *Maximally Localized Wannier Functions for Entangled Energy Bands*, 
-  Phys. Rev. B 65 035109 (2001)
+  `Phys. Rev. B 65 035109 (2001)`_
 
   Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, Ivo Souza, 
   David Vanderbilt,
   *Maximally localized Wannier functions: Theory and applications*, 
-  Rev. Mod. Phys. 84, 1419 (2012) 
+  `Rev. Mod. Phys. 84, 1419 (2012)`_ 
+
+.. _Phys. Rev. B 56 12847 (1997): http://dx.doi.org/10.1103/PhysRevB.56.12847
+.. _Phys. Rev. B 65 035109 (2001): http://dx.doi.org/10.1103/PhysRevB.65.035109
+.. _Rev. Mod. Phys. 84, 1419 (2012): http://dx.doi.org/10.1103/RevModPhys.84.1419
+
 
 Licence
 +++++++
