@@ -56,10 +56,12 @@ For Installation Instructions see README.install
 Further information can be found in the user guide and tutorial
                                                          
  Please cite                                             
-                                                         
- [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza, D. Vanderbilt  
-       and N. Marzari, "Wannier90: A Tool for Obtaining Maximally-Localised
-       Wannier Functions", Computer Physics Communications 178, 685 (2008)
+                                   
+ [ref] A.A. Mostofi, J.R. Yates, G. Pizzi, Y.S. Lee, I. Souza, 
+       D. Vanderbilt, N. Marzari, "An updated version of wannier90: 
+       A tool for obtaining maximally-localised Wannier functions", 
+       Comput. Phys. Commun. 185, 2309 (2014)
+       (http://dx.doi.org/10.1016/j.cpc.2014.05.003)
 
   in any publications arising from the use of this code.  
 
