@@ -540,6 +540,39 @@ in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
 and $n$, and the real and imaginary parts of the position matrix element
 in the WF basis.
 
+\section{{\tt seedname\_wsvec.dat}}
+OUTPUT.
+Written if $\verb#write_hr#=\verb#true#$ or $\verb#write_rmn#=\verb#true#$ or $\verb#write_tb#=\verb#true#$. The first line gives the date and
+time at which the file was created and the value of {\tt use\_ws\_distance}. 
+For each pair of Wannier functions (identified by the components of the vector $\mathbf{R}$ separating their unit cells and their indices) it gives: (i) the number of lattice vectors of the periodic supercell $\mathbf{T}$ that bring the Wannier function in $\mathbf{R}$ back in the Wigner-Seitz cell centred on the other Wannier function and (ii) the set of superlattice vectors $\mathbf{T}$ to make this transformation. 
+These superlattice vectors $\mathbf{T}$ should be added to the $\mathbf{R}$ vector to obtain the correct centre of the Wannier function that underlies a given matrix element (e.g. the Hamiltonian matrix elements in {\tt seedname\_hr.dat}) in order to correctly interpolate in reciprocal space.
+
+\begin{verbatim}
+## written on 20Sep2016 at 18:12:37  with use_ws_distance=.true.
+    0    0    0    1    1
+    1
+    0    0    0
+    0    0    0    1    2
+    1
+    0    0    0
+    0    0    0    1    3
+    1
+    0    0    0
+    0    0    0    1    4
+    1
+    0    0    0
+    0    0    0    1    5
+    1
+    0    0    0
+    0    0    0    1    6
+    2
+    0   -1   -1
+    1   -1   -1
+    .
+    .
+    .  
+\end{verbatim}
+
 \section{{\tt seedname\_qc.dat}}
 OUTPUT. Written if $\verb#transport#=\verb#.TRUE.#$.
 The first line gives the date and

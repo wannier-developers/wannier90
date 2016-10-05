@@ -1172,7 +1172,7 @@ module w90_get_oper
           op_R(:,:,ir)=op_R(:,:,ir)+phase_fac*op_q(:,:,ik)
        enddo
     enddo
-    op_R=op_R/num_kpts
+    op_R=op_R/real(num_kpts,dp)
 
   end subroutine fourier_q_to_R
 

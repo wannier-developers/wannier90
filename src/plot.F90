@@ -27,11 +27,15 @@ contains
 
     use w90_constants,   only : eps6
     use w90_io,          only : stdout,io_stopwatch
-    use w90_parameters,  only : num_kpts,bands_plot,dos_plot,write_hr, &
+    use w90_parameters,  only : num_kpts,bands_plot,dos_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level, write_rmn, write_u_matrices
+                                wannier_plot,timing_level,&
+                                write_hr,write_rmn,write_tb,write_u_matrices
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
-                                hamiltonian_setup, hamiltonian_write_rmn
+                                hamiltonian_setup,hamiltonian_write_rmn,&
+                                hamiltonian_write_tb, nrpts, irvec
+    use w90_ws_distance, only : done_ws_distance, ws_translate_dist, &
+                                ws_write_vec
 
     implicit none
 
@@ -67,6 +71,13 @@ contains
        if(write_hr) call hamiltonian_write_hr()
        !
        if(write_rmn) call hamiltonian_write_rmn()
+       !
+       if(write_tb) call hamiltonian_write_tb()
+       ! 
+       if (write_hr.or.write_rmn.or.write_tb) then
+          if (.not.done_ws_distance) call ws_translate_dist(nrpts,irvec)
+          call ws_write_vec(nrpts,irvec) 
+       end if
     end if
 
     if(wannier_plot) call plot_wannier

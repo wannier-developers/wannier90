@@ -25,8 +25,8 @@ echo $0" "$@
 if [[ "$1" == "1" ]]
 then
   echo "Running Wannier90 ..."
-  export TMP=$2
-  export OUTPUT="${TMP%??}out"
+  export TMP1=$2
+  export OUTPUT="${TMP1%??}out"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4
   cp $OUTPUT $3
@@ -55,8 +55,8 @@ then
 elif [[ "$1" == "4" ]]
 then
   echo "Running PP wannier ..."
-  export TMP=$2
-  export OUTPUT="${TMP%??}out"
+  export TMP1=$2
+  export OUTPUT="${TMP1%??}out"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4
   cp $OUTPUT $3
@@ -67,8 +67,8 @@ then
 elif [[ "$1" == "5" ]]
 then
   echo "Running PP wannier and checking for nnkp ..."
-  export TMP=$2
-  export OUTPUT="${TMP%???}nnkp"
+  export TMP1=$2
+  export OUTPUT="${TMP1%???}nnkp"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4
   cp $OUTPUT $3
@@ -79,8 +79,8 @@ then
 elif [[ "$1" == "6" ]]
 then
   echo "Running PP wannier and checking for crash ..."
-  export TMP=$2
-  export OUTPUT="${TMP%???}werr"
+  export TMP1=$2
+  export OUTPUT="${TMP1%???}werr"
   echo "${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x -pp $2 $3 2> $4"
   ${PARA_PREFIX} ${WANNIER_ROOT}/wannier90.x $2 $3 2> $4
   cp $OUTPUT $3
@@ -91,12 +91,13 @@ then
 elif [[ "$1" == "7" ]]
 then
   echo "Running w90+postw90 for geninterp and checking for energies and derivatives ..."
-  export TMP=$2
-  export OUTPUT="${TMP%????}_geninterp.dat"
+  # SP: DO NOT set this to TMP or it will clash with mpirun
+  export TMP1=$2
+  export OUTPUT="${TMP1%????}_geninterp.dat"
   echo " ${WANNIER_ROOT}/wannier90.x $2 2> $4 # $3"
   ${WANNIER_ROOT}/wannier90.x $2 2> ${4}_wan
-  echo "${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> $4 # $3"
-  ${PARA_PREFIX} ${WANNIER_ROOT}/postw90.x $2 2> $4
+  echo "${PARA_PREFIX} ${WANNIER_ROOT}postw90.x $2 2> $4 # $3"
+  ${PARA_PREFIX} ${WANNIER_ROOT}postw90.x $2 2> $4
   cp $OUTPUT $3
   if [[ -e CRASH ]]
   then
