@@ -5,10 +5,10 @@
 # Designed and tested with: Quantum Espresso and Yambo
 # This interface should work with any G0W0 code 
 # Originally written by Stepan Tsirkin
-# Several extensions, improvements, bug fixes and documentation by Antimo Marrazzo
+# Extended, developed and documented by Antimo Marrazzo
 # 
-
-
+# Last update October 5th, 2016 by Antimo Marrazzo (antimo.marrazzo@epfl.ch)
+#
 import numpy as np
 import os,shutil
 import datetime
@@ -22,7 +22,7 @@ argv=sys.argv
 if len(argv)<2:
     print "### gw2wannier90 interface ###"
     print "You need to provide the seedname"
-    print "Usage: gw2wan.py seedname options"
+    print "Usage: gw2wannier90.py seedname options"
     print "Options can be mmn, amn, spn, unk, uhu"
     print "Be careful with unformatted files, they are compiler-dependdent"
     print "A safer choice is to use (bigger) formatted files, in this case type:"
@@ -370,5 +370,5 @@ if calcUNK:
     	else:
     	    raise err
     os.rmdir(unkgwdir)
-    print 'UNK files are been reordered, old files coming from DFT are available in UNK_DFT'
+    print 'UNK files are being reordered, old files coming from DFT are available in UNK_DFT'
 f_raw.close()
