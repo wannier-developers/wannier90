@@ -4427,8 +4427,8 @@ contains
         endif
      endif
 
+     counter=0
      if(.not. lrandom) then
-        counter=0
         do line=line_s+1,line_e-1
            ang_states=0
            !Assume the default values
@@ -4804,7 +4804,10 @@ contains
      if (.not. lpartrandom) then
         if (counter.ne.num_proj) call io_error(&
              'param_get_projections: Fewer projections defined than the number of Wannier functions requested')
-     else
+     end if
+     end if ! .not. lrandom
+     
+     if (lpartrandom .or. lrandom) then
         call random_seed()
         do loop=counter+1,num_proj
            call random_number(proj_site(:,loop))
@@ -4814,20 +4817,6 @@ contains
            proj_x(:,loop)    = proj_x_def  
            proj_zona(loop)   = proj_zona_def  
            proj_radial(loop) = proj_radial_def             
-        enddo
-     endif
-
-     elseif(lrandom) then
-
-        call random_seed() ! comment out this line for reproducible random positions!
-        do loop=1,num_proj
-           call random_number(proj_site(:,loop))
-           proj_l(loop)      = 0
-           proj_m(loop)      = 1
-           proj_z(:,loop)    = proj_z_def  
-           proj_x(:,loop)    = proj_x_def  
-           proj_zona(loop)   = proj_zona_def  
-           proj_radial(loop) = proj_radial_def
            if (spinors) then
                if (modulo(loop, 2) == 1) then
                   proj_s(loop) = 1
@@ -4838,9 +4827,8 @@ contains
                proj_s_qaxis(2, loop) = 0.
                proj_s_qaxis(3, loop) = 1.
            end if
-        end do
-
-     end if
+        enddo
+     endif
 
      in_data(line_s:line_e)(1:maxlen) = ' '
 
