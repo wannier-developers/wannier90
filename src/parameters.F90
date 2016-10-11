@@ -4808,7 +4808,7 @@ contains
      end if ! .not. lrandom
      
      if (lpartrandom .or. lrandom) then
-        call random_seed()
+        call random_seed()  ! comment out this line for reproducible random positions!
         do loop=counter+1,num_proj
            call random_number(proj_site(:,loop))
            proj_l(loop)      = 0
