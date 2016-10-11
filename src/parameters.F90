@@ -4819,6 +4819,7 @@ contains
 
      elseif(lrandom) then
 
+        print *, 'Debug: A'
         call random_seed() ! comment out this line for reproducible random positions!
         do loop=1,num_proj
            call random_number(proj_site(:,loop))
@@ -4828,8 +4829,17 @@ contains
            proj_x(:,loop)    = proj_x_def  
            proj_zona(loop)   = proj_zona_def  
            proj_radial(loop) = proj_radial_def
+           if (modulo(loop, 2) == 1) then
+              proj_s(loop) = 1
+           else
+              proj_s(loop) = -1
+           end if
+!~            proj_s(loop)      = 
         end do
+        
+        print *, proj_s
 
+        print *, 'Debug: B'
      end if
 
      in_data(line_s:line_e)(1:maxlen) = ' '
@@ -4841,6 +4851,8 @@ contains
 !~           call io_error(' Error in projections: z and x axes are not orthogonal')
 !~        endif
 !~     enddo
+
+    print *, 'Debug: C'
 
      ! Normalise z-axis and x-axis and check/fix orthogonality
      do loop=1,num_proj
@@ -4894,6 +4906,8 @@ contains
         endif
 
      enddo
+     
+     print *, 'Debug: D'
 
      return
 
