@@ -136,7 +136,7 @@ specific to the modules can be found in the following sections.
   {\sc smr\_type}   & S &  Analytical form used for the broadened delta function\\
   {\sc smr\_fixed\_en\_width}   & P & Energy smearing (if non-adaptive)\\
   {\sc num\_elec\_per\_state}   & I & Number of electrons per state \\
-  {\sc scissors\_shift}   & P & Scissors shift applied to the conduction bands (eV) \\
+  \old{\sc scissors\_shift}   & P & Scissors shift applied to the conduction bands (eV) \old{(deprecated)} \\
   {\sc num\_valence\_bands}   & I & Number of valence bands \\
   {\sc spin\_decomp}& L & Decompose various properties into
   up-spin, down-spin, and possibly spin-flip parts\\
@@ -487,6 +487,11 @@ The default value is 1 if {\tt spinors=true}, 2 otherwise.
 
   \subsection{\tt real(kind=dp) :: scissors\_shift} 
 Scissors shift applied to the conduction bands.
+
+\textbf{Note!} This variable is deprecated and will be removed in future
+versions of the code. This applies the scissors shift only to the Hamiltonian,
+but also other matrices might need to be updated if a scissors shift is 
+applied. If you are using BoltzWann, consider using \texttt{boltz\_bandshift} instead.
 
 The units are eV. The default value is 0~eV (i.e., no scissors shift applied).
 
