@@ -4834,6 +4834,9 @@ contains
                else
                   proj_s(loop) = -1
                end if
+               proj_s_qaxis(1, loop) = 0.
+               proj_s_qaxis(2, loop) = 0.
+               proj_s_qaxis(3, loop) = 1.
            end if
         end do
 
