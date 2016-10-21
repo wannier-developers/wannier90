@@ -2511,6 +2511,73 @@ See more detail in {\tt examples/example22/README}.
 Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
 
 
+\sectiontitle{23: Silicon -- $G_0W_0$ bands structure interpolation}
+
+Note: This example requires a recent version of the {\tt pw2wannier90} interface and of {\tt ypp} post-processing code of {\tt yambo}.
+
+\begin{itemize}
+\item{Outline: \it{Interpolate the bands structure of silicon obtained from many-body pertubation theory at the $G_0W_0$ level. Using the {\tt yambo} code, the quasi-particle corrections (QP) are summed to Kohn-Sham eigenvalues, while the wavefunctions remain the same. }}
+\item{Directory: {\tt examples/example23/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt silicon.scf}  {\it The \pwscf\ input file for the ground state
+    calculation}} 
+\item{ {\tt silicon.nscf }  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}}
+\item{ {\tt silicon.gw.nscf }  {\it The \pwscf\ input file to obtain Bloch
+    states on a reduced grid with many empty bands}}  
+\item{ {\tt silicon.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
+\item{ {\tt silicon.gw.win}  {\it The {\tt wannier90} input file} (for the $G_0W_0$ step)}
+\item{ {\tt yambo.in}  {\it The {\tt yambo} input file}}
+\item{ {\tt ypp.in}  {\it The {\tt ypp} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Copy the input files from the {\tt INPUT directory} into a working directory (e.g. {\tt WORK}
+\item Run \pwscf\ to obtain the ground state charge of silicon \\
+{\tt pw.x < silicon.scf > scf.out}
+\item Run \pwscf\ to obtain the Bloch states reduced grid. We use a 8x8x8 with many bands (many empy bands are needed to perform a $G_0W_0$ with {\tt yambo})\\
+{\tt pw.x < silicon.gw.nscf > nscf.gw.out}
+\item Use the {\tt k\_mapper.py} utility to find the indeces of a 4x4x4 uniform grid into the 8x8x8 reduced grid \\
+{\tt ./k\_mapper.py 4 4 4 "../examples/example23/WORK/nscf.gw.out"}\\
+Use the output to complete the {\tt yambo.in} input file (you also need to specify the on how many bands you want to compute the QP corrections, here you can use all the bands from 1 to 14). Then, you should have obtained something like:\\
+ {\tt 
+1| 1|  1|14| \\
+3| 3|  1|14| \\ 
+5| 5|  1|14| \\ 
+13| 13|  1|14| \\
+...\tt}
+\item Enter the {\tt si.save} directory and run {\tt p2y}. A {\tt SAVE} folder is created, you can move it up in the {\tt /WORK/} directory.\\
+\item Run a $G_0W_0$ calculation from the {\tt /WORK/} directory (remeber, we are using a 8x8x8 grid but computing QP corrections only on a 4x4x4 grid)\\
+{\tt yambo }
+
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < silicon.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt silicon.nnkp} file).\\ 
+{\tt wannier90.x -pp silicon}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states, the projections for the starting guess (written in the
+  {\tt silicon.mmn} and {\tt silicon.amn} respectively).\\  
+{\tt pw2wannier90.x < silicon.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x silicon}
+At this point, you should have obtained the interpolated valence bands for silicon at the DFT level.
+\item Run a {\tt ypp} calculation (just type {\tt ypp})\\
+You should obtain a file {\tt silicon.gw.unsorted.eig} which contains the QP corrections on a uniform 4x4x4 grid.
+\item Run the gw2wannier90.py script to reorder, align and correct all matrices and files using the QP corrections\\
+{\tt ../../../utility/gw2wannier90.py silicon mmn amn}
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x silicon.gw}
+At this point, you should have obtained the interpolated valence bands for silicon at the $G_0W_0$ level.
+\end{enumerate}
+After you completed the tutorial for the valence bands only (4 Wannier functions), you can repeat the final steps to interpolate also some conduction bands using disentanglement (the code is already present as comments in the input files).
 %\cleardoublepage
 
 

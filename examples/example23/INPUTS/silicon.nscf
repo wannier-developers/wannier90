@@ -2,7 +2,7 @@ Silicon
  &control
     calculation        =  'nscf'
     prefix             =  'si'
-    pseudo_dir         =  '../../pseudo/'
+    pseudo_dir         =  '../../../pseudo/'
     outdir             =  './'
     iprint             =   2
     verbosity          =  'high'

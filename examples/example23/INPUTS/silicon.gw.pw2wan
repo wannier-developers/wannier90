@@ -1,9 +1,0 @@
-&inputpp
-  outdir     =  './'
-  prefix     =  'si'
-  seedname   =  'silicon.gw'
-  write_amn  =  .true.
-  write_mmn  =  .true.
-  write_unk  =  .false.
-  write_eig  =  .false.
-/

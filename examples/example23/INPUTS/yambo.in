@@ -34,12 +34,5 @@ dScStep=  0.10000      eV    # [GW] Energy step to evaluate Z factors
 GTermKind= "none"            # [GW] GW terminator ("none","BG" Bruneval-Gonze,"BRS" Berger-Reining-Sottile)
 DysSolver= "n"               # [GW] Dyson Equation solver ("n","s","g")
 %QPkrange                    # [GW] QP generalized Kpoint/Band indices
-1| 1|  1|14|
-3| 3|  1|14|
-5| 5|  1|14|
-13| 13|  1|14|
-15| 15|  1|14|
-17| 17|  1|14|
-21| 21|  1|14|
-29| 29|  1|14|
+!!! insert here the QP corrections you want to compute!!!
 %
