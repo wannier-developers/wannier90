@@ -2513,7 +2513,7 @@ Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87
 
 \sectiontitle{23: Silicon -- $G_0W_0$ bands structure interpolation}
 
-Note: This example requires a recent version of the {\tt pw2wannier90} interface and of {\tt ypp} post-processing code of {\tt yambo}.
+Note: This example requires a recent version of the {\tt pw2wannier90} interface and of the {\tt ypp} post-processing code of {\tt yambo}.
 
 \begin{itemize}
 \item{Outline: \it{Interpolate the bands structure of silicon obtained from many-body pertubation theory at the $G_0W_0$ level. Using the {\tt yambo} code, the quasi-particle corrections (QP) are summed to Kohn-Sham eigenvalues, while the wavefunctions remain the same. }}
@@ -2535,7 +2535,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 \end{itemize}
 
 \begin{enumerate}
-\item Copy the input files from the {\tt INPUT directory} into a working directory (e.g. {\tt WORK}
+\item Copy the input files from the {\tt INPUT directory} into a working directory (e.g. {\tt WORK})
 \item Run \pwscf\ to obtain the ground state charge of silicon \\
 {\tt pw.x < silicon.scf > scf.out}
 \item Run \pwscf\ to obtain the Bloch states reduced grid. We use a 8x8x8 with many bands (many empy bands are needed to perform a $G_0W_0$ with {\tt yambo})\\
@@ -2567,17 +2567,17 @@ Use the output to complete the {\tt yambo.in} input file (you also need to speci
 {\tt pw2wannier90.x < silicon.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
-{\tt wannier90.x silicon}
+{\tt wannier90.x silicon}\\
 At this point, you should have obtained the interpolated valence bands for silicon at the DFT level.
 \item Run a {\tt ypp} calculation (just type {\tt ypp})\\
 You should obtain a file {\tt silicon.gw.unsorted.eig} which contains the QP corrections on a uniform 4x4x4 grid.
 \item Run the gw2wannier90.py script to reorder, align and correct all matrices and files using the QP corrections\\
 {\tt ../../../utility/gw2wannier90.py silicon mmn amn}
 \item Run \wannier\ to compute the MLWFs.\\
-{\tt wannier90.x silicon.gw}
+{\tt wannier90.x silicon.gw}\\
 At this point, you should have obtained the interpolated valence bands for silicon at the $G_0W_0$ level.
 \end{enumerate}
-After you completed the tutorial for the valence bands only (4 Wannier functions), you can repeat the final steps to interpolate also some conduction bands using disentanglement (the code is already present as comments in the input files).
+After you completed the tutorial for the valence bands only, you can repeat the final steps to interpolate also some conduction bands using disentanglement (the code is already present as comments in the input files).
 %\cleardoublepage
 
 
