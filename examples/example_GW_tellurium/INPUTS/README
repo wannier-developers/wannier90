@@ -1,5 +1,0 @@
-3x3x4 is a minimum reasonable k-point grid for Te, because it contains 
-the H-point, where the gap minimum is situated.
-
-we can exclude bands 1-6 (s-bands) from wannierisation and from GW, and work only with p-bands 7-24
-
