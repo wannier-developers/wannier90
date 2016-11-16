@@ -343,6 +343,8 @@ module w90_postw90_common
     call comms_bcast(boltz_bandshift_firstband,1) 
     call comms_bcast(boltz_bandshift_energyshift,1) 
     ! [gp-end]
+    call comms_bcast(use_ws_distance,1)
+
 
     ! These variables are different from the ones above in that they are 
     ! allocatable, and in param_read they were allocated on the root node only

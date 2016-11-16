@@ -46,7 +46,6 @@ module w90_parameters
   real(kind=dp),              public, save :: degen_thr
   logical,                    public, save :: spin_decomp
   integer,                    public, save :: num_valence_bands
-!  logical,                    public, save :: found_fermi_energy
   logical                                  :: found_fermi_energy
   real(kind=dp),              public, save :: scissors_shift
   !IVO_END
@@ -90,15 +89,16 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
-  logical,           public, save :: u_matrices_plot
+  logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
   integer, allocatable, public, save :: bands_plot_project(:)
   integer,           public, save :: bands_plot_dim         
-  logical,           public, save :: hr_plot
-  logical,           public, save :: pos_plot
+  logical,           public, save :: write_hr
+  logical,           public, save :: write_rmn
+  logical,           public, save :: write_tb
   real(kind=dp),     public, save :: hr_cutoff
   real(kind=dp),     public, save :: dist_cutoff
   character(len=20), public, save :: dist_cutoff_mode
@@ -123,9 +123,7 @@ module w90_parameters
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
   integer,           public, save :: kslice_2dkmesh(2)
-  real(kind=dp),     public, save :: kslice_fermi_level
   character(len=20), public, save :: kslice_fermi_lines_colour
-  logical,           public, save :: found_kslice_fermi_level
 
   ! module  d o s
   logical,           public, save    :: dos
@@ -418,6 +416,8 @@ module w90_parameters
   character(len=maxlen), allocatable :: in_data(:)
   character(len=maxlen)              :: ctmp
   logical                            :: ltmp
+  ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
+  logical                            :: hr_plot 
 
   public :: param_read
   public :: param_write
@@ -774,8 +774,8 @@ contains
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
 
-    u_matrices_plot = .false.
-    call param_get_keyword('u_matrices_plot',found,l_value=u_matrices_plot)
+    write_u_matrices = .false.
+    call param_get_keyword('write_u_matrices',found,l_value=write_u_matrices)
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
@@ -832,78 +832,60 @@ contains
     call param_get_keyword('fermi_surface_num_points',found,i_value=fermi_surface_num_points)
  
     fermi_surface_plot_format = 'xcrysden'
-    call param_get_keyword('fermi_surface_plot_format',found,c_value=fermi_surface_plot_format)
+    call param_get_keyword('fermi_surface_plot_format',&
+         found,c_value=fermi_surface_plot_format)
 
-    fermi_energy=0.0_dp
-    nfermi=1
+    nfermi=0
     found_fermi_energy=.false.
     call param_get_keyword('fermi_energy',found,r_value=fermi_energy)
     if(found) then
        found_fermi_energy=.true.
+       nfermi=1
     endif
     !
     fermi_energy_scan=.false.
     call param_get_keyword('fermi_energy_min',found,r_value=fermi_energy_min)
     if(found) then
-       if(found_fermi_energy) then
-          call io_error(&
-               'Error: Cannot specify both fermi_energy and fermi_energy_min')
-       else
-          fermi_energy_scan=.true.
-       endif
-    endif
-    !
-    fermi_energy_max=fermi_energy_min+1.0_dp
-    call param_get_keyword('fermi_energy_max',found,r_value=fermi_energy_max)
-    if(found) then
        if(found_fermi_energy) call io_error(&
-            'Error: Cannot specify both fermi_energy and fermi_energy_max')
-       if(.not.fermi_energy_scan) call io_error(&
-         'Error: Must specify fermi_energy_min together with fermi_energy_max')
-       if(fermi_energy_max<=fermi_energy_min) call io_error(&
+            'Error: Cannot specify both fermi_energy and fermi_energy_min')
+       fermi_energy_scan=.true.
+       fermi_energy_max=fermi_energy_min+1.0_dp
+       call param_get_keyword('fermi_energy_max',found,&
+            r_value=fermi_energy_max)
+       if(found .and. fermi_energy_max<=fermi_energy_min) call io_error(&
             'Error: fermi_energy_max must be larger than fermi_energy_min')
-    !else
-    !   if (fermi_energy_scan) call io_error(&
-    !        'Error: fermi_energy_min specified, but no fermi_energy_max')
-    endif
-    !
-    fermi_energy_step=0.01_dp
-    call param_get_keyword('fermi_energy_step',found,r_value=fermi_energy_step)
-    if(found) then
-       if(found_fermi_energy) call io_error(&
-            'Error: Cannot specify both fermi_energy and fermi_energy_step')
-       if(.not.fermi_energy_scan) call io_error(&
-         'Error: Must specify fermi_energy_min and fermi_energy_max'&
-         //' together with fermi_energy_step')
-       if(fermi_energy_step<=0.0_dp) call io_error(&
+       fermi_energy_step=0.01_dp
+       call param_get_keyword('fermi_energy_step',found,&
+            r_value=fermi_energy_step)
+       if(found .and. fermi_energy_step<=0.0_dp) call io_error(&
             'Error: fermi_energy_step must be positive')
-    endif
-    !
-    if(fermi_energy_scan) then
        nfermi=nint((fermi_energy_max-fermi_energy_min)/fermi_energy_step)+1
-       if(nfermi==1) nfermi=2
-       fermi_energy_step=(fermi_energy_max-fermi_energy_min)/(nfermi-1)
     endif
     !
-    if (allocated(fermi_energy_list)) deallocate(fermi_energy_list)
-    allocate(fermi_energy_list(nfermi),stat=ierr)
-    if (ierr/=0) call io_error(&
-         'Error allocating fermi_energy_read in param_read')
-    fermi_energy_list=0.0_dp
     if(found_fermi_energy) then
+       allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
-       do i=1,nfermi
+       allocate(fermi_energy_list(0:nfermi),stat=ierr)
+       do i=0,nfermi
           fermi_energy_list(i)=fermi_energy_min&
-               +(i-1)*(fermi_energy_max-fermi_energy_min)/(nfermi-1)
+               +i*(fermi_energy_max-fermi_energy_min)/real(nfermi,dp)
        enddo
+    elseif(nfermi==0) then 
+       ! This happens when both found_fermi_energy=.false. and
+       ! fermi_energy_scan=.false. Functionalities that require
+       ! specifying a Fermi level should give an error message
+       allocate(fermi_energy_list(1),stat=ierr) ! helps streamline things
     endif
+    if (ierr/=0) call io_error(&
+         'Error allocating fermi_energy_list in param_read')
 
     ! checks
     if (fermi_surface_plot) then
        if ( (index(fermi_surface_plot_format,'xcrys').eq.0) ) &
             call io_error('Error: fermi_surface_plot_format not recognised')    
-       if ( fermi_surface_num_points < 0 ) call io_error('Error: fermi_surface_num_points must be positive')
+       if ( fermi_surface_num_points < 0 )&
+            call io_error('Error: fermi_surface_num_points must be positive')
     endif
 
     kslice                = .false.
@@ -917,7 +899,7 @@ contains
             ('Error: value of kslice_task not recognised in param_read')
        if(kslice .and. index(kslice_task,'curv')>0 .and.&
             index(kslice_task,'morb')>0) call io_error&
-          ('Error: kslice_task cannot include both "curv" and "morb"')
+          ("Error: kslice_task cannot include both 'curv' and 'morb'")
 
     kslice_2dkmesh(1:2) = 50
     call param_get_vector_length('kslice_2dkmesh',found,length=i)
@@ -950,12 +932,6 @@ contains
     kslice_b2(2)=1.0_dp
     kslice_b2(3)=0.0_dp
     call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
-
-    kslice_fermi_level=fermi_energy_list(1)
-    found_kslice_fermi_level=.false.
-    call param_get_keyword('kslice_fermi_level',found,&
-         r_value=kslice_fermi_level)
-    if(found.or.found_fermi_energy) found_kslice_fermi_level=.true.
 
     kslice_fermi_lines_colour='none'                 
     call param_get_keyword('kslice_fermi_lines_colour',found,&
@@ -1036,8 +1012,9 @@ contains
     berry_curv_adpt_kmesh           = 1
     call param_get_keyword('berry_curv_adpt_kmesh',found,&
          i_value=berry_curv_adpt_kmesh)
-    if (berry_curv_adpt_kmesh<0)&
-         call io_error('Error:  berry_curv_adpt_kmesh must be positive')       
+    if (berry_curv_adpt_kmesh<1)&
+         call io_error(&
+         'Error:  berry_curv_adpt_kmesh must be a positive integer')       
 
     berry_curv_adpt_kmesh_thresh           = 100.0_dp
     call param_get_keyword('berry_curv_adpt_kmesh_thresh',found,&
@@ -1212,9 +1189,15 @@ contains
 
     hr_plot                    = .false.
     call param_get_keyword('hr_plot',found,l_value=hr_plot)
+    if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.')
+    write_hr                   = .false.
+    call param_get_keyword('write_hr',found,l_value=write_hr)
 
-    pos_plot                    = .false.
-    call param_get_keyword('pos_plot',found,l_value=pos_plot)
+    write_rmn                    = .false.
+    call param_get_keyword('write_rmn',found,l_value=write_rmn)
+
+    write_tb = .false.
+    call param_get_keyword('write_tb',found,l_value=write_tb)
                                                                                            
     hr_cutoff                 = 0.0_dp
     call param_get_keyword('hr_cutoff',found,r_value=hr_cutoff)
@@ -1349,7 +1332,7 @@ contains
           if(.not. eig_found) then
              if ( disentanglement) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
-             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot .or. boltzwann &
+             else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. boltzwann &
                   .or. geninterp) ) then
                 call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
              end if
@@ -2382,7 +2365,7 @@ contains
     ! Plotting
     !
     if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. kslice &
-         .or. dos_plot .or. hr_plot .or. iprint>2) then
+         .or. dos_plot .or. write_hr .or. iprint>2) then
        !
        write(stdout,'(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
        !
@@ -2442,8 +2425,8 @@ contains
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
-       if (hr_plot .or. iprint>2) then
-          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',hr_plot,'|'
+       if (write_hr .or. iprint>2) then
+          write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Plotting Hamiltonian in WF basis          :',write_hr,'|'
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        endif
        if (write_vdw_data .or. iprint>2) then
@@ -2701,10 +2684,10 @@ contains
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     endif
 
-    if(kpath .or. iprint>2) then
+    if(kslice .or. iprint>2) then
        write(stdout,'(1x,a78)') '*--------------------------------- KSLICE -----------------------------------*'
        write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Plot Properties along a slice in k-space  :',kslice,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Fermi level used for slice                :',kslice_fermi_level,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Fermi level used for slice                :',fermi_energy_list(1),'|'
        write(stdout,'(1x,a46,10x,I8,13x,a1)')    '|  Divisions along first kpath section       :',kpath_num_points,'|'
        if(index(kslice_task,'fermi_lines')>0) then
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :','       T','|'
@@ -2911,11 +2894,13 @@ contains
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  Please cite                                      |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  [ref] "Wannier90: A Tool for Obtaining Maximally |'
-    write(stdout,*)  '            |         Localised Wannier Functions"              |'
-    write(stdout,*)  '            |        A. A. Mostofi, J. R. Yates, Y.-S. Lee,     |'
-    write(stdout,*)  '            |        I. Souza, D. Vanderbilt and N. Marzari     |'
-    write(stdout,*)  '            |        Comput. Phys. Commun. 178, 685 (2008)      |'
+    write(stdout,*)  '            |  [ref] "An updated version of Wannier90:          |'
+    write(stdout,*)  '            |        A Tool for Obtaining Maximally Localised   |'
+    write(stdout,*)  '            |        Wannier Functions", A. A. Mostofi,         |'
+    write(stdout,*)  '            |        J. R. Yates, G. Pizzi, Y. S. Lee,          |'
+    write(stdout,*)  '            |        I. Souza, D. Vanderbilt and N. Marzari,    |'
+    write(stdout,*)  '            |        Comput. Phys. Commun. 185, 2309 (2014)     |'
+    write(stdout,*)  '            |        http://dx.doi.org/10.1016/j.cpc.2014.05.003|'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |  in any publications arising from the use of      |'
     write(stdout,*)  '            |  this code. For the method please cite            |'
@@ -4442,8 +4427,8 @@ contains
         endif
      endif
 
+     counter=0
      if(.not. lrandom) then
-        counter=0
         do line=line_s+1,line_e-1
            ang_states=0
            !Assume the default values
@@ -4819,8 +4804,11 @@ contains
      if (.not. lpartrandom) then
         if (counter.ne.num_proj) call io_error(&
              'param_get_projections: Fewer projections defined than the number of Wannier functions requested')
-     else
-        call random_seed()
+     end if
+     end if ! .not. lrandom
+     
+     if (lpartrandom .or. lrandom) then
+        call random_seed()  ! comment out this line for reproducible random positions!
         do loop=counter+1,num_proj
            call random_number(proj_site(:,loop))
            proj_l(loop)      = 0
@@ -4829,23 +4817,18 @@ contains
            proj_x(:,loop)    = proj_x_def  
            proj_zona(loop)   = proj_zona_def  
            proj_radial(loop) = proj_radial_def             
+           if (spinors) then
+               if (modulo(loop, 2) == 1) then
+                  proj_s(loop) = 1
+               else
+                  proj_s(loop) = -1
+               end if
+               proj_s_qaxis(1, loop) = 0.
+               proj_s_qaxis(2, loop) = 0.
+               proj_s_qaxis(3, loop) = 1.
+           end if
         enddo
      endif
-
-     elseif(lrandom) then
-
-        call random_seed() ! comment out this line for reproducible random positions!
-        do loop=1,num_proj
-           call random_number(proj_site(:,loop))
-           proj_l(loop)      = 0
-           proj_m(loop)      = 1
-           proj_z(:,loop)    = proj_z_def  
-           proj_x(:,loop)    = proj_x_def  
-           proj_zona(loop)   = proj_zona_def  
-           proj_radial(loop) = proj_radial_def
-        end do
-
-     end if
 
      in_data(line_s:line_e)(1:maxlen) = ' '
 

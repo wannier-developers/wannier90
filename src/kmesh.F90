@@ -1,6 +1,6 @@
 !-*- mode: F90 -*-!
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
+! Copyright (C) 2007-16 Jonathan Yates, Arash Mostofi,       !
 !                Giovanni Pizzi, Young-Su Lee,               !
 !                Nicola Marzari, Ivo Souza, David Vanderbilt !
 !                                                            !
@@ -12,6 +12,14 @@
 !------------------------------------------------------------!
 
 module w90_kmesh
+  !! Routines to analyse the regular k-point mesh
+  !! and determine the overlaps neccessary for a finite
+  !! difference representation of the spread operator.
+  !! These overlaps are defined by a set of vectors (b-vectors) which
+  !! connect the Bloch states.
+  !! See Eq. B1 in Appendix B of Marzari and
+  !!  Vanderbilt  PRB 56 12847 (1997)
+
 
   use w90_constants, only : dp
   use w90_parameters
@@ -39,18 +47,22 @@ module w90_kmesh
 
 
   integer, parameter :: nsupcell=5
-  integer            :: lmn(3,(2*nsupcell+1)**3)
-  real(kind=dp)      :: bvec_inp(3,num_nnmax,max_shells)
+  !! Size of supercell (of recip cell) in which to search for k-point shells 
 
+  integer            :: lmn(3,(2*nsupcell+1)**3)
+  !! Order in which to search the cells (ordered in dist from origin)
+ 
+  real(kind=dp)      :: bvec_inp(3,num_nnmax,max_shells)
+  !! The input b-vectors (only used in the rare case they are read from file)
 
 contains 
-  !==================================================================!
+  !=======================================================
   subroutine kmesh_get()
-    !==================================================================!
-    !                                                                  !
-    !  Set up the framework for the kspace derivatives                 ! 
-    !                                                                  !
-    !===================================================================  
+    !=====================================================
+    !                                                   
+    !! Main routine to calculate the b-vectors  
+    !                                                  
+    !=====================================================
     use w90_io,      only : stdout,io_error,io_stopwatch
     use w90_utility, only : utility_compar
 
@@ -599,7 +611,7 @@ nnshell=0
     subroutine kmesh_write()
     !==================================================================!
     !                                                                  !
-    ! Writes wannier.nnkp file                                         !
+    !! Writes nnkp file (list of overlaps needed)  
     !                                                                  ! 
     ! Note that the format is different to (and more compact than)     !
     ! that used by the old f77 code.                                   !
@@ -742,13 +754,13 @@ nnshell=0
 
 
 
-    !==================================================================!
+    !========================================
     subroutine kmesh_dealloc()
-    !==================================================================!
-    !                                                                  !
-    !  Release Memory                                                  ! 
-    !                                                                  !
-    !===================================================================  
+    !========================================
+    !                                       
+    !!  Release memory from the kmesh module 
+    !                                      
+    !========================================
     use w90_io,   only : io_error
     implicit none
     integer :: ierr
@@ -778,16 +790,16 @@ nnshell=0
   end subroutine kmesh_dealloc
 
 
-    !==================================================================!
+    !==================================================================
   subroutine kmesh_supercell_sort
-    !==================================================================!
-    !                                                                  !
-    ! We look for kpoint neighbours in a large supercell of reciprocal !
-    ! unit cells. Done sequentially this is very slow.                 !
-    ! Here we order the cells by the distance from the origin          !
-    ! Doing the search in this order gives a dramatic speed up         !
-    !                                                                  !
-    !==================================================================!  
+    !==================================================================
+    !                                                                  
+    !! We look for kpoint neighbours in a large supercell of reciprocal 
+    !! unit cells. Done sequentially this is very slow.       
+    !! Here we order the cells by the distance from the origin. 
+    !! Doing the search in this order gives a dramatic speed up
+    !                                                         
+    !==================================================================
     use w90_io,   only : io_stopwatch
     implicit none
     integer :: counter,l,m,n,loop
@@ -830,13 +842,13 @@ nnshell=0
 
 
 
-    !==================================================================!
+    !=============================================================
     subroutine kmesh_get_bvectors(multi,kpt,shell_dist,bvector)
-    !==================================================================!
-    !                                                                  !
-    ! Returns the bvectors for a given shell and kpoint                ! 
-    !                                                                  !
-    !===================================================================  
+    !=============================================================
+    !                                                            
+    !! Returns the b-vectors for a given shell and kpoint.
+    !                                                           
+    !=============================================================
     use w90_io,   only : io_error,io_stopwatch
     implicit none
 
@@ -879,17 +891,17 @@ nnshell=0
   end subroutine kmesh_get_bvectors
 
 
-    !==========================================================================!
+    !==========================================================================
     subroutine kmesh_shell_automatic(multi,dnn,bweight)
-    !==========================================================================!
-    !                                                                          !
-    ! Find the correct set of shells to satisfy B1                             !
-    !  The stratagy is:                                                        !
-    !        Take the bvectors from the next shell                             !
-    !        Reject them if they are parallel to exisiting b vectors           !
-    !        Test to see if we satisfy B1, if not add another shell and repeat !
-    !                                                                          !
-    !==========================================================================!  
+    !==========================================================================
+    !                                                                          
+    !! Find the correct set of shells to satisfy B1                            
+    !!  The stratagy is:                                                       
+    !!       1) Take the bvectors from the next shell                            
+    !!       2) Reject them if they are parallel to exisiting b vectors          
+    !!       3) Test to see if we satisfy B1, if not add another shell and repeat
+    !                                                                          
+    !==========================================================================
 
     use w90_constants, only : eps5,eps6
     use w90_io,   only : io_error,stdout,io_stopwatch
@@ -1105,13 +1117,13 @@ nnshell=0
   end subroutine kmesh_shell_automatic
 
 
-    !==========================================================================!
+    !================================================================
      subroutine kmesh_shell_fixed(multi,dnn,bweight)
-    !==========================================================================!
-    !                                                                          !
-    !  Find the B1 weights for a set of shells specified by the user           !
-    !                                                                          !
-    !==========================================================================!
+    !================================================================
+    !                                                               
+    !!  Find the B1 weights for a set of shells specified by the user 
+    !                                                                 
+    !================================================================
 
     use w90_constants, only : eps7
     use w90_io,   only : io_error,stdout,io_stopwatch
@@ -1232,13 +1244,15 @@ nnshell=0
   end subroutine kmesh_shell_fixed
 
 
-    !==========================================================================!
+    !=================================================================
      subroutine kmesh_shell_from_file(multi,dnn,bweight)
-    !==========================================================================!
-    !                                                                          !
-    !  Find the B1 weights for a set of shells specified by the user           !
-    !                                                                          !
-    !==========================================================================!
+    !=================================================================
+    !                                                                
+    !!  Find the B1 weights for a set of b-vectors given in a file.
+    !!  This routine is only activated via a devel_flag and is not
+    !!  intended for regular use. 
+    !                                                               
+    !=================================================================
 
     use w90_constants, only : eps7
     use w90_io,   only : io_error,stdout,io_stopwatch,io_file_unit,seedname,maxlen
@@ -1433,19 +1447,21 @@ nnshell=0
   end subroutine kmesh_shell_from_file
 
 
-    !=========================================================================!
+    !=================================
      function internal_maxloc(dist)
-    !=========================================================================!
-    !                                                                         !
-    !  A predictable maxloc.                                                  !
-    !                                                                         !
-    !=========================================================================!
+    !=================================
+    !                              
+    !!  A reproducible maxloc function
+    !!  so b-vectors come in the same
+    !!  order each time                           
+    !=================================
 
     use w90_constants, only : eps8   
     implicit none
 
 
     real(kind=dp), intent(in)  :: dist((2*nsupcell+1)**3)
+    !! Distances from the origin of the unit cells in the supercell.
     integer                    :: internal_maxloc
   
     integer       :: guess(1),loop,counter

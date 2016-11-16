@@ -2003,10 +2003,11 @@ contains
                u_matrix_opt(1:ndimwin(nkp),j,nkp) = ceamp(1:ndimwin(nkp),j,nkp)
             enddo
          enddo
-      else                                                                                                 !YN:
-         ! Above is skipped as we require Uopt(Rk) to be related to Uopt(k)                                !YN: RS:
-         write(stdout,"(a)") 'RS: u_matrix_opt are no longer the eigenstates of the subspace Hamiltonian.' !RS:
-      endif                                                                                                !YN:
+      !else                                                                                                        !YN:
+         ! Above is skipped as we require Uopt(Rk) to be related to Uopt(k)                                        !YN: RS:
+         !write(stdout,"(a)")  &                                                                                   !YN: RS: 
+         !  'Note(symmetry-adapted mode): u_matrix_opt are no longer the eigenstates of the subspace Hamiltonian.' !RS:
+      endif                                                                                                        !YN:
 
       if(index(devel_flag,'compspace')>0) then
 

@@ -235,7 +235,7 @@ using {\tt XCrySDen},\footnote{Once {\tt XCrySDen} starts, click on
   {\tt Tools} $\rightarrow$ {\tt Data Grid} in order to specify an
   isosurface value to plot.} e.g., {\tt
 \begin{quote}
-xcrysden --xsf gaas\_00001.xsf
+xcrysden \texttt{-{}-}xsf gaas\_00001.xsf
 \end{quote} }
 
 For large systems, plotting the MLWFs may be time consuming
@@ -323,7 +323,7 @@ points).  The Fermi surface file {\tt lead.bxsf} can be viewed using
 %
 {\tt
 \begin{quote}
-xcrysden --bxsf lead.bxsf
+xcrysden \texttt{-{}-}bxsf lead.bxsf
 \end{quote} }
 \end{enumerate}
 
@@ -622,7 +622,7 @@ default value is 50 (i.e., 50$^3$ points).  The Fermi surface file
 %
 {\tt
 \begin{quote}
-xcrysden --bxsf copper.bxsf
+xcrysden \texttt{-{}-}bxsf copper.bxsf
 \end{quote} }
 
 
@@ -972,7 +972,7 @@ wannier\_plot\_supercell = 3
 and re-running \wannier. Visualise it using {\tt XCrySDen},
 {\tt
 \begin{quote}
-xcrysden --xsf BaTiO3\_00002.xsf
+xcrysden \texttt{-{}-}xsf BaTiO3\_00002.xsf
 \end{quote} }
 
 We can now simulate the ferroelectric phase by displacing the Ti
@@ -1091,7 +1091,7 @@ wannier\_plot = true
 and re-running \wannier. Visualise them using {\tt XCrySDen}, e.g.,
 {\tt
 \begin{quote}
-xcrysden --xsf silicon\_00001.xsf
+xcrysden \texttt{-{}-}xsf silicon\_00001.xsf
 \end{quote} }
 
 \subsection*{Valence + Conduction States}
@@ -1514,7 +1514,7 @@ defect (red).}
 
 \subsection*{Further ideas}
 \begin{itemize}
-\item Set {\tt hr\_plot = true} in the bulk case. Consider the magnitude of Hamiltonian 
+\item Set {\tt write\_hr = true} in the bulk case. Consider the magnitude of Hamiltonian 
 	elements between Wannier functions in increasingly distant unit cells. Are two 
 	unit cell principal layers really large enough, or are significant errors introduced?
 \item Does one unit cell either side of the defected unit cell shield the disorder
@@ -1769,7 +1769,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-kslice\_fermi\_level = [insert your value here] 
+fermi\_energy = [insert your value here] 
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1827,7 +1827,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-kslice\_fermi\_level = [insert your value here] 
+fermi\_energy = [insert your value here] 
 
 kslice\_corner = 0.0  0.0  0.0
 

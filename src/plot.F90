@@ -27,11 +27,15 @@ contains
 
     use w90_constants,   only : eps6
     use w90_io,          only : stdout,io_stopwatch
-    use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
+    use w90_parameters,  only : num_kpts,bands_plot,dos_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level, pos_plot, u_matrices_plot
+                                wannier_plot,timing_level,&
+                                write_hr,write_rmn,write_tb,write_u_matrices
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
-                                hamiltonian_setup, hamiltonian_write_pos
+                                hamiltonian_setup,hamiltonian_write_rmn,&
+                                hamiltonian_write_tb, nrpts, irvec
+    use w90_ws_distance, only : done_ws_distance, ws_translate_dist, &
+                                ws_write_vec
 
     implicit none
 
@@ -45,7 +49,7 @@ contains
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,*)
 
-    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot) then
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr) then
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
@@ -64,14 +68,21 @@ contains
        !
        if(fermi_surface_plot) call plot_fermi_surface
        !
-       if(hr_plot) call hamiltonian_write_hr()
+       if(write_hr) call hamiltonian_write_hr()
        !
-       if(pos_plot) call hamiltonian_write_pos()
+       if(write_rmn) call hamiltonian_write_rmn()
+       !
+       if(write_tb) call hamiltonian_write_tb()
+       ! 
+       if (write_hr.or.write_rmn.or.write_tb) then
+          if (.not.done_ws_distance) call ws_translate_dist(nrpts,irvec)
+          call ws_write_vec(nrpts,irvec) 
+       end if
     end if
 
     if(wannier_plot) call plot_wannier
 
-    if(u_matrices_plot) call plot_u_matrices
+    if(write_u_matrices) call plot_u_matrices
 
     if (timing_level>0) call io_stopwatch('plot: main',2)
 
