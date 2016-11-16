@@ -740,11 +740,11 @@ module w90_postw90_common
               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
               if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
               if(present(OO_dx)) OO_dx(i,j)=OO_dx(i,j)+&
-                      cmplx_i*crdist_ws(1,ideg,i,j,ir)*phase_fac*OO_R(i,j,ir)
+                      cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir)
               if(present(OO_dy)) OO_dy(i,j)=OO_dy(i,j)+&
-                      cmplx_i*crdist_ws(2,ideg,i,j,ir)*phase_fac*OO_R(i,j,ir)
+                      cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir)
               if(present(OO_dz)) OO_dz(i,j)=OO_dz(i,j)+&
-                      cmplx_i*crdist_ws(3,ideg,i,j,ir)*phase_fac*OO_R(i,j,ir)
+                      cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir)
             enddo
         enddo
         enddo 
