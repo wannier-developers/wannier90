@@ -15,7 +15,6 @@
 !    later additions Giovanni Pizzi                          !
 !------------------------------------------------------------!
 
-
 module w90_comms
 
   use w90_constants, only : dp
@@ -90,7 +89,7 @@ module w90_comms
   interface comms_gatherv
 !     module procedure comms_gatherv_int    ! to be done
      module procedure comms_gatherv_real
-!     module procedure comms_gatherv_cmplx
+     module procedure comms_gatherv_cmplx
   end interface comms_gatherv
 
   interface comms_scatterv
@@ -829,6 +828,39 @@ contains
     return
 
   end subroutine comms_gatherv_real
+
+  ! Array: local array for sending data; localcount elements will be sent
+  !        to the root node
+  ! rootglobalarray: array on the root node to which data will be sent
+  ! counts, displs : how data should be partitioned, see MPI documentation or
+  !                  function comms_array_split
+  subroutine comms_gatherv_cmplx(array,localcount,rootglobalarray,counts,displs)
+
+    implicit none
+
+    complex(kind=dp), intent(inout)           :: array
+    integer, intent(in)                       :: localcount
+    complex(kind=dp), intent(inout)           :: rootglobalarray
+    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in) :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_complex,rootglobalarray,counts,&
+         displs,MPI_double_complex,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_cmplx')
+    end if
+
+#else
+    call dcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_cmplx
 
 
   ! Array: local array for getting data; localcount elements will be fetched
