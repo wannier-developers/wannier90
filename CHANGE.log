@@ -5,6 +5,11 @@
 	The Maximally-Localised Generalised Wannier Functions Code
 
 v2.0.2 (XXX)
+* Parallelized the disentanglement and wannierise subroutines
+  with respect to k-points. Other parts of the code have been
+  modified so that only the root process writes in the .wout file.
+  wannier90.x can now be run in parallel (see user guide)
+  (contributed by Guillaume Geranton, FZ Julich)
 * Streamlined the interface between wannier90 and tight-binding
 codes such as pythtb (new input variable: write_tb)
 * postw90 prints an error message when trying to evaluate a quantity
