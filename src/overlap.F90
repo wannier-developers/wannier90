@@ -11,11 +11,13 @@
 !                                                            !
 !------------------------------------------------------------!
 
+
 module w90_overlap
  
   use w90_constants, only : dp,cmplx_0,cmplx_1
   use w90_parameters, only : disentanglement
   use w90_io, only : stdout
+  use w90_comms, only : on_root
 
   implicit none
  
@@ -103,11 +105,11 @@ contains
        open(unit=mmn_in,file=trim(seedname)//'.mmn',&
             form='formatted',status='old',action='read',err=101)
               
-       write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
+       if(on_root) write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
 
        ! Read the comment line
        read(mmn_in,'(a)',err=103,end=103) dummy
-       write(stdout,'(a)') trim(dummy)
+       if(on_root) write(stdout,'(a)') trim(dummy)
 
        ! Read the number of bands, k-points and nearest neighbours
        read(mmn_in,*,err=103,end=103) nb_tmp,nkp_tmp,nntot_tmp
@@ -149,7 +151,7 @@ contains
              endif
           end do
           if (nn.eq.0) then
-             write(stdout,'(/a,i8,2i5,i4,2x,3i3)') &
+             if(on_root) write(stdout,'(/a,i8,2i5,i4,2x,3i3)') &
                   ' Error reading '//trim(seedname)//'.mmn:',ncount,nkp,nkp2,nn,nnl,nnm,nnn
              call io_error('Neighbour not found')
           end if
@@ -172,11 +174,11 @@ contains
           amn_in=io_file_unit()
           open(unit=amn_in,file=trim(seedname)//'.amn',form='formatted',status='old',err=102)
           
-          write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
+          if(on_root) write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
           
           ! Read the comment line
           read(amn_in,'(a)',err=104,end=104) dummy
-          write(stdout,'(a)') trim(dummy)
+          if(on_root) write(stdout,'(a)') trim(dummy)
           
           ! Read the number of bands, k-points and wannier functions
           read(amn_in,*,err=104,end=104) nb_tmp, nkp_tmp, nw_tmp
