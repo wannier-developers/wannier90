@@ -33,9 +33,7 @@ endif
 
 wannier libs w90chk2chk serialobjs: POSTOPTS = -DMPI
 wannier libs w90chk2chk serialobjs: COMPILER = $(MPIF90)
-wannier: POSTOPTS = $(TEMP1)
-wannier: COMPILER = $(TEMP2)
-wannier: mpi_test ../../wannier90.x 
+wannier: ../../wannier90.x 
 w90chk2chk: ../../w90chk2chk.x
 
 serialobjs: $(OBJS)
