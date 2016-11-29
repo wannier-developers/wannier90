@@ -64,10 +64,10 @@ if calcUHU : calcMMN=True
 
 #Here we open a file to dump all the intermediate steps (mainly for debugging)
 f_raw=open(seedname+'.gw2wannier90.raw','w')
-#Opening seedname.win file
+#Opening seedname.nnkp file
 f=open(seedname+".nnkp","r")
-#It copies the seedname.nnkp for GW, we should make this optional
-#shutil.copy(seedname+".nnkp",seednameGW+".nnkp")
+#It copies the seedname.win for GW, we should make this optional
+#shutil.copy(seedname+".win",seednameGW+".win")
 while True:
     s=f.readline()
     if "begin kpoints" in s: break
