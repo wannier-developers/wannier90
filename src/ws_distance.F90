@@ -141,12 +141,13 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
       write(stdout,'(1x,a78)') repeat('-',78)
     endif
     !
-   DEALLOCATE(wdist_wssc_frac, irdist_real)
    !
    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) &
    call io_error('wrong irdist_ws')
-
-    return
+   !
+   DEALLOCATE(wdist_wssc_frac, irdist_real)
+   !
+   return
 end subroutine ws_translate_dist
 
 ! puts R_in in the Wigner-Seitz cell centered around R0
