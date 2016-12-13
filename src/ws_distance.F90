@@ -73,9 +73,7 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
 
     ! <<<local variables>>>
     integer  :: iw, jw, ideg, ir, ierr
-    real(DP) :: wdist_wssc_frac(3,num_wann,num_wann,nrpts)
-    !real(DP) :: crdist_ws(3,ndegenx,num_wann,num_wann,nrpts)
-    real(DP) :: irdist_real(3,ndegenx,num_wann,num_wann,nrpts)
+    real(DP),allocatable :: wdist_wssc_frac(:,:,:,:), irdist_real(:,:,:,:,:)
     real(DP) :: irvec_cart(3)
 
     ! The subroutine does nothing if called more than once, which may
@@ -96,6 +94,9 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
    if (ierr/=0) call io_error('Error in allocating crdist_ws in ws_translate_dist')
    allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
    if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist')
+    
+   ALLOCATE(wdist_wssc_frac(3,num_wann,num_wann,nrpts))
+   ALLOCATE(irdist_real(3,ndegenx,num_wann,num_wann,nrpts))
 
     !translation_centre_frac = 0._dp
     wdist_ndeg   = 0
@@ -140,10 +141,13 @@ subroutine ws_translate_dist(nrpts, irvec, force_recompute)
       write(stdout,'(1x,a78)') repeat('-',78)
     endif
     !
-    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) &
-    call io_error('wrong irdist_ws')
-
-    return
+   !
+   IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) &
+   call io_error('wrong irdist_ws')
+   !
+   DEALLOCATE(wdist_wssc_frac, irdist_real)
+   !
+   return
 end subroutine ws_translate_dist
 
 ! puts R_in in the Wigner-Seitz cell centered around R0
