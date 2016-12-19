@@ -532,7 +532,7 @@ contains
     integer :: iu,ibnum,iknum,ierr
 
     iu=io_file_unit() 
-    open(unit=iu,file=trim(seedname)//".dmb",form='formatted',status='old',action='read') 
+    open(unit=iu,file=trim(seedname)//".dmn",form='formatted',status='old',action='read') 
     read(iu,*) 
     read(iu,*) ibnum,nsymmetry,nkptirr,iknum
     if (ibnum.ne.num_bands) call io_error("Error: Number of bands is not correct (sitesymmetry_read)")
