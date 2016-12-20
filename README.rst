@@ -65,7 +65,7 @@ You can read the licence text in the ``LICENCE`` file.
 Authors and contributors
 ++++++++++++++++++++++++
 
-Wannier90 Version 2.0 has been written by: 
+Wannier90 Versions 2.x have been written by: 
 
 * Arash A. Mostofi   (Imperial College London, UK)
 * Giovanni Pizzi     (EPFL, Switzerland)
@@ -80,6 +80,15 @@ Contributors to the code include:
 * Raffaello Bianco (Univ. Pierre et Marie Curie Paris 6 and CNRS):  k-slice plotting
 * Gabriele Sclauzero (ETH, Zurich, Switzerland): disentanglement in spheres in k-space
 * David Strubbe (MIT, USA): various bugfixes/improvements
+* Ryo Arita (Riken, JP): Symmetry-adapted Wannier functions
+* Yusuke Nomura (U. Tokyo, JP): Symmetry-adapted Wannier functions
+* Takashi Koretsune (Riken, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
+* Lorenzo Paulatto (UPMC Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
+* Florian Thole (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
+* Pablo Garcia Fernandez (Unican, ES): Matrix elements of the position operator
+* Dominik Gresch (ETHZ, CH): FORD infrastructure for code documentation
+* Samuel Ponce (Oxford Univerisity, UK): Test suite for Wannier90
+* Marco Gibertini (EPFL, CH): Improvements to the interpolation routines
 
 Moreover:
 
