@@ -49,6 +49,9 @@ module w90_ws_distance
 
   contains
 
+! Short documentation follows, for a longer explanation see the documentation
+! of the use_ws_distance variable in the user guide.
+!
 ! The next three subroutines find the supercell translation (i.e. the translation
 ! by a integer number of supercell) That minimizes the distance between two given funtions,
 ! i and j, the first in unit cell 0, the other in unit cell R.

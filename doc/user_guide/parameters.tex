@@ -263,7 +263,7 @@ Hamiltonian, and position operator in WF basis} \\
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
-  \new{\sc use\_ws\_distance } & L & \new{Use the minimum distance between WFs for interpolation} \\
+  \new{\sc use\_ws\_distance } & L & \new{Improve interpolation using minimum distance between WFs, see Chap.~\ref{chap:interpolation}} \\
   \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
@@ -1471,15 +1471,18 @@ The default value is (0.0,0.0,0.0).
 
 \subsection[use\_ws\_distance]{\tt logical :: use\_ws\_distance}
 
-When interpolating the k-space Hamiltonian, apply a translation to each WF by a basis
+Improves the interpolation of the k-space Hamiltonian, by
+applying a translation to each WF by a basis
 vector of the super-lattice that minimises the distance between their centres.
 The translation is dependent on both WF and on the unit cell vector
 to which they belong, i.e., translate function $W_j({\bf r}-{\bf R})$ inside
 the Wigner-Seitz cell centred on WF $W_i({\bf r})$.
 
+For a longer explanation, see Chapter~\ref{chap:interpolation}.
+
 If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
 
-The default value is {\tt false}.
+The default value is {\tt false}. Introduced in v2.1.
 
 \subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
 
