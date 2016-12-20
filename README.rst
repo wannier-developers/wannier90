@@ -60,7 +60,8 @@ Licence
 +++++++
 
 The Wannier90 code is licensed under GPLv2. 
-You can read the licence text in the ``LICENCE`` file.
+You can read the licence text in the LICENSE file in the root directory 
+of the Wannier90 distribution.
 
 Authors and contributors
 ++++++++++++++++++++++++

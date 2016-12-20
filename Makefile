@@ -144,7 +144,7 @@ dist:
 		./*/Makefile.2 \
 		./*/*/Makefile \
 		./Makefile \
-		./LICENCE \
+		./LICENSE \
 		./README* \
 		./CHANGE.log \
 	)
@@ -163,7 +163,7 @@ dist-lite:
 		./*/Makefile.2 \
 		./*/*/Makefile \
 		./Makefile \
-		./LICENCE \
+		./LICENSE \
 		./README.* \
 		./CHANGE.log \
 	)
