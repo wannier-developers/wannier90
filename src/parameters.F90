@@ -379,12 +379,9 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
 
-  logical, public :: lsitesymmetry=.false.                         !RS: site-symmetry
-  integer, public :: nkptirr=9999,nsymmetry=9999                   !RS:
-  real(kind=dp), public :: symmetrize_eps=1d-3                     !RS:
-  integer, allocatable, public :: kptsym(:,:),ir2ik(:),ik2ir(:)    !RS:
-  complex(kind=dp),  allocatable, public :: d_matrix_band(:,:,:,:) !RS:
-  complex(kind=dp),  allocatable, public :: d_matrix_wann(:,:,:,:) !RS:
+  ! RS: symmetry-adapted Wannier functions
+  logical,       public, save :: lsitesymmetry=.false.
+  real(kind=dp), public, save :: symmetrize_eps=1.d-3
   
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
@@ -460,7 +457,11 @@ contains
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%
+
+    ! default value is lsitesymmetry=.false.
     call param_get_keyword('site_symmetry' ,found,l_value=lsitesymmetry )!YN:
+
+    ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
 
     !%%%%%%%%%%%%%%%%
@@ -2189,10 +2190,6 @@ contains
 
     if (transport .and. tran_read_ht) goto 401
 
-    if(lsitesymmetry)then                                          !YN:
-      write(stdout,"(a)"      )'   Site-Symmetry-Adapted mode   '  !RS:
-      write(stdout,"(a,g15.7)")'   symmetrize_eps=',symmetrize_eps !YN:
-    endif                                                          !YN:
     ! System
     write(stdout,*)
     write(stdout,'(36x,a6)') '------' 
@@ -2299,6 +2296,12 @@ contains
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :',postproc_setup,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :',gamma_only,'|'
+    !YN: RS:
+    if(lsitesymmetry) then
+      write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Using symmetry-adapted WF mode            :',lsitesymmetry,'|'
+      write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :',symmetrize_eps,'|'
+    endif                                                         
+ 
     if(cp_pp .or. iprint>2) &
                   write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :',cp_pp,'|'
     if(wannier_plot .or. iprint>2) then

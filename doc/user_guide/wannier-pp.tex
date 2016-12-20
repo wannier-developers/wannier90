@@ -363,25 +363,32 @@ First line: a user comment, e.g., the date and time
 
 Second line: 4 integers: \verb#num_bands#, \verb#nsymmetry#, \verb#nkptirr#, \verb#num_kpts#.  \\ 
 \phantom{Second line:} \verb#nsymmetry#: the number of symmetry operations   \\
-\phantom{Second line:}  \verb#nkptirr#: the number of irreducible ${\mathbf k}$-points
+\phantom{Second line:}  \verb#nkptirr#: the number of irreducible k-points
 
 Blank line 
 
 \verb#num_kpts# integers: 
-Mapping between full $\mathbf  k$- and irreducible $\mathbf k$-points. 
-Each $\mathbf k$-point is related to some $\mathbf k$-point in the irreducible BZ. 
-The information of this mapping is written. 
-The order of $\mathbf k$-points follows the $\mathbf k$-list in  \verb#seedname.win# file. 
+Mapping between full k- and irreducible k-points. 
+Each k-point is related to some k-point in the irreducible BZ. 
+The information of this mapping is written. Each entry corresponds to a k-point in the 
+full BZ, in the order in which they appear in the k-point list in \verb#seedname.win# file.
+The (integer) value of each entry is the k-point index in the IBZ to which the k-point maps. 
+The number of unique values is equal to the number of k-points in the IBZ.
+The data is written 10 values per line. 
  
 Blank line 
 
 \verb#nkptirr# integers:  
-List of irreducible ${\mathbf k}$-points. The values should be between 1 and \verb#num_kpts#.
+List of irreducible k-points. 
+Each entry corresponds to a k-point of the IBZ. The (integer) value of each entry
+is the k-point index corresponding to the k-point list in \verb#seedname.win# file. 
+The values should be between 1 and \verb#num_kpts#. The data is written 10 values per line.
 
 Blank line 
 
 \verb#nkptirr# blocks of  \verb#nsymmetry# integer data (each block separated by a blank line): 
-List of ${\mathbf k}$-points obtained by acting the symmetry operations on the irreducible ${\mathbf k}$-points. 
+List of k-points obtained by acting the symmetry operations on the irreducible k-points. 
+The data is written 10 values per line.
 
 Blank line 
 
@@ -555,8 +562,9 @@ For examples of use, refer to the \wannier\ Tutorial.
 
 \subsection{{\tt seedname.sym}}
 
-Additional input for {\tt pw2wannier90.x}, if \verb#read_sym = .true.#  \\ 
-Output of {\tt pw2wannier90.x}, if \verb#read_sym = .false.# (just for reference, not used in subsequent calculations)
+If \verb#read_sym = .true.#, then this additional input file is required for {\tt pw2wannier90.x}\\ 
+if \verb#read_sym = .false.#, then this file is written by {\tt pw2wannier90.x} (only for reference -- 
+it is not used in subsequent calculations)
 
 The file \verb#seedname.sym# contains the information of symmetry operations used to create symmetry-adapted Wannier functions.  
 If \verb#read_sym = .false.# (default), {\tt pw2wannier90.x} uses the full symmetry recognized by {\tt pw.x}. 

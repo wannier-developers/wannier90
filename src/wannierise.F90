@@ -65,8 +65,8 @@ contains
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
          write_hr_diag
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
-    use w90_parameters, only : lsitesymmetry,nkptirr !RS:
-    use sitesym                             !RS:
+    use w90_parameters, only : lsitesymmetry                !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_gradient  !RS:
 
     !ivo
     use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
@@ -830,8 +830,8 @@ contains
       ! Update U and M matrices after a trial step    !
       !                                               !
       !===============================================!
-      use sitesym                  !    RS:
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: sitesym_symmetrize_rotation,& !RS:
+                             ir2ik,ik2ir !YN: RS:
 
       implicit none
 
@@ -1506,7 +1506,7 @@ contains
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
     use w90_io,         only : io_stopwatch,io_error
     use w90_parameters, only : lsitesymmetry !RS:
-    use sitesym                     !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_gradient !RS:
 
     implicit none
 

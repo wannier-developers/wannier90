@@ -1,4 +1,4 @@
-module sitesym
+module w90_sitesym
 
   use w90_constants, only : dp,cmplx_1,cmplx_0
   use w90_io,        only : io_error,stdout
@@ -18,12 +18,19 @@ module sitesym
   public  :: sitesym_read
   public  :: sitesym_dealloc
 
+  ! Variables and parameters needed by other modules
+  integer,                        public, save :: nkptirr=9999
+  integer,                        public, save :: nsymmetry=9999
+  integer,           allocatable, public, save :: kptsym(:,:),ir2ik(:),ik2ir(:)
+  complex(kind=dp),  allocatable, public, save :: d_matrix_band(:,:,:,:)
+  complex(kind=dp),  allocatable, public, save :: d_matrix_wann(:,:,:,:)
+
 contains
 
   !==================================================================!
   subroutine sitesym_slim_d_matrix_band(lwindow_in)
     !==================================================================!
-    use w90_parameters, only : num_bands,num_kpts,nkptirr,ir2ik,d_matrix_band
+    use w90_parameters, only : num_bands,num_kpts
 
     implicit none
 
@@ -58,7 +65,7 @@ contains
   !==================================================================!
   subroutine sitesym_replace_d_matrix_band()
     !==================================================================!
-    use w90_parameters, only : num_wann,nsymmetry,nkptirr,d_matrix_band,d_matrix_wann
+    use w90_parameters, only : num_wann
 
     implicit none
 
@@ -84,8 +91,7 @@ contains
     !    ndim=num_wann,  d=d_matrix_band                                       !
     !                                                                          !
     !==========================================================================!
-    use w90_parameters, only : num_wann,num_bands,num_kpts,nkptirr,nsymmetry,& 
-                               ir2ik,kptsym,d_matrix_band,d_matrix_wann
+    use w90_parameters, only : num_wann,num_bands,num_kpts 
 
     implicit none
 
@@ -139,8 +145,7 @@ contains
   !==================================================================!
   subroutine sitesym_symmetrize_gradient(imode,grad)
     !==================================================================!
-    use w90_parameters, only : num_wann,num_kpts,nkptirr,nsymmetry, & 
-                               ir2ik,ik2ir,kptsym,d_matrix_wann 
+    use w90_parameters, only : num_wann,num_kpts 
     use w90_utility,    only : utility_zgemm
 
     implicit none
@@ -212,9 +217,7 @@ contains
   !==================================================================!
   subroutine sitesym_symmetrize_rotation(urot)
     !==================================================================!
-    use w90_parameters, only : num_wann,num_kpts,u_matrix,&
-                               nkptirr,nsymmetry,kptsym,  &
-                               d_matrix_band,d_matrix_wann,ir2ik
+    use w90_parameters, only : num_wann,num_kpts,u_matrix
     use w90_utility,    only : utility_zgemm
 
     implicit none
@@ -257,8 +260,7 @@ contains
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only : num_bands,num_kpts,nkptirr,&
-                               nsymmetry,kptsym,d_matrix_band,ir2ik
+    use w90_parameters, only : num_bands,num_kpts
 
     implicit none
 
@@ -314,9 +316,7 @@ contains
     !  and orthonormalize it                                           !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only : num_wann,num_bands,nsymmetry,kptsym,&
-                               ir2ik,d_matrix_wann,d_matrix_band,  &
-                               symmetrize_eps
+    use w90_parameters, only : num_wann,num_bands,symmetrize_eps
 
     implicit none
 
@@ -448,7 +448,7 @@ contains
     !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only : num_bands,num_wann,num_kpts,ik2ir 
+    use w90_parameters, only : num_bands,num_wann,num_kpts 
 
     implicit none
 
@@ -523,8 +523,7 @@ contains
   !==================================================================!
   subroutine sitesym_read()
     !==================================================================!
-    use w90_parameters, only : num_bands,num_wann,nsymmetry,nkptirr,num_kpts,& 
-                               ik2ir,ir2ik,kptsym,d_matrix_band,d_matrix_wann  
+    use w90_parameters, only : num_bands,num_wann,num_kpts 
     use w90_io        , only : io_file_unit,io_error,seedname
 
     implicit none 
@@ -562,7 +561,6 @@ contains
   !==================================================================!
   subroutine sitesym_dealloc
     !==================================================================!
-    use w90_parameters, only : ik2ir,ir2ik,kptsym,d_matrix_band,d_matrix_wann  
     use w90_io        , only : io_error
    
     implicit none 
@@ -583,5 +581,5 @@ contains
     return 
   end subroutine sitesym_dealloc
 
-end module sitesym
+end module w90_sitesym
   

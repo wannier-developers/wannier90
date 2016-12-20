@@ -61,7 +61,7 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use sitesym !YN:
+  use w90_sitesym !YN:
  
   implicit none
 

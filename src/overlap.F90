@@ -550,7 +550,7 @@ return
                            u_matrix,m_matrix,nntot,nnlist
     use w90_utility,    only : utility_zgemm
     use w90_parameters, only : lsitesymmetry !RS:
-    use sitesym                     !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_u_matrix !RS:
 
     implicit none
 

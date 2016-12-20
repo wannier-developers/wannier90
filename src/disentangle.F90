@@ -16,7 +16,9 @@ module w90_disentangle
   use w90_constants, only: dp,cmplx_0,cmplx_1
   use w90_io, only: io_error,stdout,io_stopwatch
   use w90_parameters
-  use sitesym !RS:
+  use w90_sitesym, only: sitesym_slim_d_matrix_band, &
+	sitesym_replace_d_matrix_band,sitesym_symmetrize_u_matrix,&
+	sitesym_symmetrize_zmatrix,sitesym_dis_extract_symmetry !RS:
 
   implicit none
 
@@ -365,7 +367,7 @@ contains
     !                                                                !
     !================================================================!
 
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: ir2ik,ik2ir !YN: RS:
       implicit none
 
       integer                       :: nkp,info,ierr
@@ -1464,7 +1466,7 @@ contains
     !==================================================================!  
       
       use w90_io, only: io_time
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: ir2ik,ik2ir,nkptirr,nsymmetry,kptsym !YN: RS:
 
       implicit none
 
