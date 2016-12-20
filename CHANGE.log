@@ -4,10 +4,10 @@
 
 	The Maximally-Localised Generalised Wannier Functions Code
 
-v2.1.0 (XXX)
+v2.1.0 (13th January 2017)
 * Implementation of the symmetry-adapted Wannier functions
   (see R. Sakuma, Phys. Rev. B 87, 235109 (2013), courtesy
-   of T. Koretsune (Riken, JP), R. Arita (Riken, JP),
+   of R. Sakuma (Lund University, Sweden), T. Koretsune (Riken, JP),
    Y. Nomura (U. Tokyo, JP))
 * Streamlined the interface between wannier90 and tight-binding
   codes such as pythtb (new input variable: write_tb). Also,
