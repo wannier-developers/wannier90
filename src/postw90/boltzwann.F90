@@ -1,16 +1,16 @@
 !-*- mode: F90 -*-!
-!                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
-!                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
-!                                                            !
 !------------------------------------------------------------!
-!============================================================!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
 !                                                            !
 ! BoltzWann routines by                                      !
 ! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari ! 
@@ -22,7 +22,7 @@
 ! Central Michigan University, Mount Pleasant, MI 48859      !
 ! Robert Bosch LLC, Cambridge, MA, 02139                     !
 !                                                            !
-!============================================================!
+!------------------------------------------------------------!
 !                                                            !
 !Please cite the following paper when publishing results     !
 !obtained using the BoltzWann module:                        !
@@ -30,7 +30,7 @@
 ![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari,! 
 !    Comp. Phys. Comm. 185, 422 (2014)                       !
 !    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)     !
-!============================================================!
+!------------------------------------------------------------!
 
 module w90_boltzwann
 
