@@ -5,7 +5,7 @@
 include ../../make.inc
 
 OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
-	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o w90_sitesymmetry.o
+	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o
 
 OBJS2  =  wannier_lib.o
 
@@ -94,16 +94,16 @@ parameters.o: ../parameters.F90 constants.o io.o utility.o
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o parameters.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../hamiltonian.F90
 
-overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o w90_sitesymmetry.o
+overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
 kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o 
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../kmesh.F90
 
-disentangle.o: ../disentangle.F90 constants.o io.o parameters.o w90_sitesymmetry.o
+disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../disentangle.F90
 
-wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o w90_sitesymmetry.o
+wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannierise.F90
 
 plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o ws_distance.o
@@ -115,8 +115,8 @@ ws_distance.o: ../ws_distance.F90 constants.o io.o parameters.o
 transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../transport.F90
 
-w90_sitesymmetry.o : ../w90_sitesymmetry.F90 utility.o parameters.o constants.o 
-	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../w90_sitesymmetry.F90
+sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
 comms.o: $(POSTDIR)comms.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90

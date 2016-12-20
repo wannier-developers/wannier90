@@ -66,7 +66,7 @@ contains
          write_hr_diag
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
     use w90_parameters, only : lsitesymmetry,nkptirr !RS:
-    use w90_sitesymmetry                             !RS:
+    use sitesym                             !RS:
 
     !ivo
     use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
@@ -279,7 +279,7 @@ contains
 
        ! calculate search direction (cdq)
        call internal_search_direction()
-       if (lsitesymmetry) call symmetrize_gradient(2,cdq) !RS:
+       if (lsitesymmetry) call sitesym_symmetrize_gradient(2,cdq) !RS:
 
        ! save search direction 
        cdqkeep(:,:,:) = cdq(:,:,:)
@@ -830,7 +830,7 @@ contains
       ! Update U and M matrices after a trial step    !
       !                                               !
       !===============================================!
-      use w90_sitesymmetry                  !    RS:
+      use sitesym                  !    RS:
       use w90_parameters, only: ir2ik,ik2ir !YN: RS:
 
       implicit none
@@ -893,7 +893,7 @@ contains
 !~         cdq(:,:,nkp)=cmtmp(:,:)
 !~      enddo
 
-      if (lsitesymmetry) call symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+      if (lsitesymmetry) call sitesym_symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
       ! the orbitals are rotated
       do nkp=1,num_kpts
          ! cmtmp = U(k) . cdq(k)
@@ -1506,7 +1506,7 @@ contains
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
     use w90_io,         only : io_stopwatch,io_error
     use w90_parameters, only : lsitesymmetry !RS:
-    use w90_sitesymmetry                     !RS:
+    use sitesym                     !RS:
 
     implicit none
 
@@ -1595,7 +1595,7 @@ contains
     enddo
     cdodq = cdodq / real(num_kpts,dp) * 4.0_dp
 
-    if (lsitesymmetry) call symmetrize_gradient(1,cdodq) !RS:
+    if (lsitesymmetry) call sitesym_symmetrize_gradient(1,cdodq) !RS:
 
     if (timing_level>1) call io_stopwatch('wann: domega',2)
 

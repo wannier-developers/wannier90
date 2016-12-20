@@ -16,7 +16,7 @@ module w90_disentangle
   use w90_constants, only: dp,cmplx_0,cmplx_1
   use w90_io, only: io_error,stdout,io_stopwatch
   use w90_parameters
-  use w90_sitesymmetry !RS:
+  use sitesym !RS:
 
   implicit none
 
@@ -92,8 +92,8 @@ contains
        end do
     end do
 
-    if (lsitesymmetry) call slim_d_matrix_band(lwindow)                         !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
-    if (lsitesymmetry) call symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
+    if (lsitesymmetry) call sitesym_slim_d_matrix_band(lwindow)                         !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
     ! Extract the optimally-connected num_wann-dimensional subspaces
 ![ysl-b]
     if (.not. gamma_only) then
@@ -125,7 +125,7 @@ contains
     enddo
 
     ! Find the initial u_matrix
-    if (lsitesymmetry) call replace_d_matrix_band() !RS: replace d_matrix_band here
+    if (lsitesymmetry) call sitesym_replace_d_matrix_band() !RS: replace d_matrix_band here
 ![ysl-b]
     if (.not. gamma_only) then
        call internal_find_u()
@@ -416,7 +416,7 @@ contains
          call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
               cz,num_wann,cv,num_wann,cmplx_0,u_matrix(:,:,nkp),num_wann)
       enddo
-      if (lsitesymmetry) call symmetrize_u_matrix(num_wann,u_matrix) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS:
       
       ! Deallocate arrays for ZGESVD
       deallocate(caa,stat=ierr)
@@ -1636,7 +1636,7 @@ contains
             do nkp = 1, num_kpts  
                if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_in(:,:,nkp))
             enddo
-            if (lsitesymmetry) call symmetrize_zmatrix(czmat_in,lwindow) !RS:
+            if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_in,lwindow) !RS:
          else  
             ! [iter.ne.1]
             ! Update Z matrix at k points with non-frozen states, using a mixing sch
@@ -1705,7 +1705,7 @@ contains
                if (ir2ik(ik2ir(nkp)).ne.nkp) cycle                                      !RS:
             end if                                                                      !RS:
             if (lsitesymmetry) then                                                     !RS:
-               call dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
+               call sitesym_dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
                do j=1,num_wann                                                          !RS:
                   wkomegai1(nkp)=wkomegai1(nkp)-real(lambda(j,j),kind=dp)               !RS:
                enddo                                                                    !RS:
@@ -1786,7 +1786,7 @@ contains
 
          enddo
          ! [Loop over k points (nkp)]
-         if (lsitesymmetry) call symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
+         if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
       if (timing_level>1) call io_stopwatch('dis: extract_3',2)
 
 
@@ -1868,7 +1868,7 @@ contains
          do nkp = 1, num_kpts  
             if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_out(:,:,nkp))
          enddo
-         if (lsitesymmetry) call symmetrize_zmatrix(czmat_out,lwindow) !RS:
+         if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_out,lwindow) !RS:
 
          call internal_test_convergence()
          

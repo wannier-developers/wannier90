@@ -550,7 +550,7 @@ return
                            u_matrix,m_matrix,nntot,nnlist
     use w90_utility,    only : utility_zgemm
     use w90_parameters, only : lsitesymmetry !RS:
-    use w90_sitesymmetry                     !RS:
+    use sitesym                     !RS:
 
     implicit none
 
@@ -630,7 +630,7 @@ return
     enddo
     ! NKP
 
-    if (lsitesymmetry) call symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated 
