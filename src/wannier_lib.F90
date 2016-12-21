@@ -1,52 +1,54 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
 !                                                            !
 !                       WANNIER90                            !
 !                                                            !
 !          The Maximally-Localised Generalised               !
 !                 Wannier Functions Code                     !
 !                                                            !
-! Wannier90 v2.0 authors:                                    !
-!           Arash A. Mostofi   (Imperial College London)     !
-!           Jonathan R. Yates  (University of Oxford)        !
-!           Giovanni Pizzi     (EPFL, Switzerland)           !
-!           Ivo Souza          (Universidad del Pais Vasco)  !
+! Please cite                                                !
 !                                                            !
-! Contributors:                                              !
-!          Young-Su Lee        (KIST, S. Korea)              !
-!          Matthew Shelley     (Imperial College London)     !
-!          Nicolas Poilvert    (Penn State University)       !
-!          Raffaello Bianco    (Paris 6 and CNRS)            !
-!          Gabriele Sclauzero  (ETH Zurich)                  !
+! [ref] A. A. Mostofi, J. R. Yates, G. Pizzi, Y.-S. Lee,     !
+!       I. Souza, D. Vanderbilt and N. Marzari,              !
+!       "An updated version of Wannier90: a tool             !
+!       for obtaining maximally-localised Wannier            !
+!       functions",                                          !
+!       Computer Physics Communications 185, 2309 (2014),    !
+!       http://dx.doi.org/10.1016/j.cpc.2014.05.003          !
 !                                                            !
-!  Please cite                                               !
+! in any publications arising from the use of this code.     !
 !                                                            !
-!  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza,    !
-!        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
-!        for Obtaining Maximally Localised Wannier           !
-!        Functions", Computer Physics Communications,        !
-!        178, 685 (2008)                                     !
+! Wannier90 is based on Wannier77, written by N. Marzari,    !
+! I. Souza and D. Vanderbilt. For the method please cite     !
 !                                                            !
-!  in any publications arising from the use of this code.    !
+! [ref] N. Marzari and D. Vanderbilt,                        !
+!       Phys. Rev. B 56 12847 (1997)                         !
+!       http://dx.doi.org/10.1103/PhysRevB.56.12847          !
 !                                                            !
-!  Wannier90 is based on Wannier77, written by N. Marzari,   !
-!  I. Souza and D. Vanderbilt. For the method please cite    !
+! [ref] I. Souza, N. Marzari and D. Vanderbilt,              !
+!       Phys. Rev. B 65 035109 (2001)                        !
+!       http://dx.doi.org/10.1103/PhysRevB.65.035109         !
 !                                                            !
-!  [ref] N. Marzari and D. Vanderbilt,                       !
-!        Phys. Rev. B 56 12847 (1997)                        !
+! [ref] N. Marzari, A. A. Mostofi, J. R. Yates, I. Souza,    !
+!       D. Vanderbilt, "Maximally localized Wannier          ! 
+!       functions: theory and applications",                 !
+!       Rev. Mod. Phys. 84, 1419 (2012)                      !
+!       http://dx.doi.org/10.1103/RevModPhys.84.1419         !
 !                                                            !
-!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
-!        Phys. Rev. B 65 035109 (2001)                       !
+! For a full list of authors and contributors, please        !
+! see the README file in the root directory of the           !
+! distribution.                                              !
 !                                                            !
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
