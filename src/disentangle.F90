@@ -20,8 +20,8 @@ module w90_disentangle
   use w90_io, only: io_error,stdout,io_stopwatch
   use w90_parameters
   use w90_sitesym, only: sitesym_slim_d_matrix_band, &
-	sitesym_replace_d_matrix_band,sitesym_symmetrize_u_matrix,&
-	sitesym_symmetrize_zmatrix,sitesym_dis_extract_symmetry !RS:
+       sitesym_replace_d_matrix_band,sitesym_symmetrize_u_matrix,&
+       sitesym_symmetrize_zmatrix,sitesym_dis_extract_symmetry !RS:
 
   implicit none
 
