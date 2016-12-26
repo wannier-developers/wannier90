@@ -14,8 +14,8 @@
 module w90_postw90_common
 
 !==============================================================================
-! This contains the common variables and procedures needed to set up a Wannier
-! interpolatation calculation for any physical property
+!! This contains the common variables and procedures needed to set up a Wannier
+!! interpolatation calculation for any physical property
 !==============================================================================
 
   ! Should we remove this 'use w90_comms' and invoke in individual routines 
@@ -76,7 +76,7 @@ module w90_postw90_common
   ! Public procedures have names starting with wanint_
                                                   
   subroutine pw90common_wanint_setup
-
+    !! Setup data ready for interpolation
     use w90_constants, only   : dp,cmplx_0
     use w90_io, only          : io_error,io_file_unit,stdout,seedname
     use w90_utility, only     : utility_cart_to_frac
@@ -149,7 +149,7 @@ module w90_postw90_common
   subroutine pw90common_wanint_get_kpoint_file
   !===========================================================!
   !                                                           !
-  ! read kpoints from kpoint.dat and distribute               !
+  !! read kpoints from kpoint.dat and distribute 
   !                                                           !
   !===========================================================!
 
@@ -217,8 +217,8 @@ module w90_postw90_common
   subroutine pw90common_wanint_param_dist
   !===========================================================!
   !                                                           !
-  ! distribute the parameters across processors               !
-  ! NOTE: we only send the ones postw90 uses, not all in w90  !
+  !! distribute the parameters across processors              
+  !! NOTE: we only send the ones postw90 uses, not all in w90 
   !                                                           !
   !===========================================================!
 
@@ -427,7 +427,7 @@ module w90_postw90_common
   subroutine pw90common_wanint_data_dist
   !===========================================================!
   !                                                           !
-  ! Distribute the um and chk files                           !
+  !! Distribute the um and chk files
   !                                                           !
   !===========================================================!
 
@@ -528,6 +528,7 @@ module w90_postw90_common
 !=======================================================================
 
   subroutine pw90common_get_occ(eig,occ,ef)
+    !! Compute the electronic occupancy
 
     use w90_constants, only     : dp !,eps7
     use w90_parameters, only    : num_wann !,smear_temp
@@ -536,8 +537,11 @@ module w90_postw90_common
     ! Arguments
     !
     real(kind=dp), intent(in)  :: eig(num_wann)
+    !! Eigenvalues
     real(kind=dp), intent(in)  :: ef
+    !! Fermi level
     real(kind=dp), intent(out) :: occ(num_wann)
+    !! Occupancy of states
 
      
     ! Misc/Dummy
@@ -573,9 +577,9 @@ module w90_postw90_common
 
   function kmesh_spacing_singleinteger(num_points)
 
-  ! Set up the value of the interpolation mesh spacing, needed for
-  ! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of 
-  ! the three Delta_k's for each of the primitive translations b1, b2, and b3
+  !! Set up the value of the interpolation mesh spacing, needed for
+  !! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of 
+  !! the three Delta_k's for each of the primitive translations b1, b2, and b3
   
     use w90_parameters, only : recip_lattice
 
@@ -597,10 +601,9 @@ module w90_postw90_common
     kmesh_spacing_singleinteger=maxval(Delta_k_i)
   
   end function kmesh_spacing_singleinteger
-
-  ! Same as kmesh_spacing_singleinteger, but for a kmesh with three
-  ! different mesh samplings along the three directions
   function kmesh_spacing_mesh(mesh)  
+  !! Same as kmesh_spacing_singleinteger, but for a kmesh with three
+  !! different mesh samplings along the three directions
     use w90_parameters, only : recip_lattice
 
     integer, dimension(3), intent(in) :: mesh
@@ -616,18 +619,19 @@ module w90_postw90_common
     kmesh_spacing_mesh=maxval(Delta_k_i)
   
   end function kmesh_spacing_mesh
-  ! ***REMOVE EVENTUALLY*** (replace with pw90common_fourier_R_to_k_new)
   !
   !=========================================================!
   subroutine pw90common_fourier_R_to_k(kpt,OO_R,OO,alpha)
   !=========================================================!
   !                                                         !
-  ! For alpha=0:                                            !
-  ! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)           !
-  !                                                         !
-  ! For alpha=1,2,3:                                        !
-  ! sum_R [cmplx_i*R_alpha*e^{+ik.R}*O_ij(R)]               !
-  ! where R_alpha is a Cartesian component of R             !
+  !! For alpha=0:                                 
+  !! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)
+  !!                                              
+  !! For alpha=1,2,3:                             
+  !! sum_R [cmplx_i*R_alpha*e^{+ik.R}*O_ij(R)]    
+  !! where R_alpha is a Cartesian component of R  
+  !! ***REMOVE EVENTUALLY*** (replace with pw90common_fourier_R_to_k_new)
+
   !                                                         !
   !=========================================================!
 
@@ -696,12 +700,11 @@ module w90_postw90_common
   subroutine pw90common_fourier_R_to_k_new(kpt,OO_R,OO,OO_dx,OO_dy,OO_dz)
   !=======================================================!
   !                                                       !
-  ! For OO:                                               !
-  ! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)         !
-  !                                                       !
-  ! For OO_dx,dy,dz:                                      !
-  ! sum_R [cmplx_i*R_{dx,dy,dz}*e^{+ik.R}*O_ij(R)]        !
-  ! where R_{x,y,z} are the Cartesian components of R     !
+  !! For OO: 
+  !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
+  !! For $$OO_{dx,dy,dz}$$:
+  !! $$\sum_R [i.R_{dx,dy,dz}.e^{+ik.R}.O_{ij}(R)]$$
+  !! where R_{x,y,z} are the Cartesian components of R 
   !                                                       !
   !=======================================================!
 
@@ -770,8 +773,8 @@ module w90_postw90_common
   subroutine pw90common_fourier_R_to_k_vec(kpt,OO_R,OO_true,OO_pseudo)
   !====================================================================!
   !                                                                    !
-  ! For OO_true (true vector):                                         !
-  ! {\vec O|_ij(R) --> {\vec O|_ij(k) = sum_R e^{+ik.R}*{\vec O}_ij(R) !
+  !! For OO_true (true vector):  
+  !! $${\vec O}_{ij}(k) = \sum_R e^{+ik.R} {\vec O}_{ij}(R)$$ 
   !                                                                    !
   !====================================================================!
 
@@ -856,10 +859,10 @@ module w90_postw90_common
   !================================!
   subroutine wigner_seitz(count_pts)
   !================================!
-  ! Calculates a grid of lattice vectors r that fall inside (and eventually  !
-  ! on the surface of) the Wigner-Seitz supercell centered on the            ! 
-  ! origin of the Bravais superlattice with primitive translations           !
-  ! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3                       !
+  !! Calculates a grid of lattice vectors r that fall inside (and eventually
+  !! on the surface of) the Wigner-Seitz supercell centered on the 
+  !! origin of the Bravais superlattice with primitive translations 
+  !! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3 
   !==========================================================================!
 
     use w90_constants, only  : dp

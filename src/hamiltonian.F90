@@ -12,38 +12,35 @@
 !------------------------------------------------------------!
 
 module w90_hamiltonian
-
+  !! Module to obtain the Hamiltonian in a wannier basis
+  !! This is a simplified routine, more sophisticated properties
+  !! are found in postw90 (e.g. w90_get_oper)
   use w90_constants, only : dp
 
   implicit none
 
   private
   !
-  ! Hamiltonian matrix in WF representation
-  !
   complex(kind=dp), public, save, allocatable :: ham_r(:,:,:)
-  !
-  ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
-  !                   irvec(1:3,irpt) in the basis of the lattice vectors
+  !! Hamiltonian matrix in WF representation
   !
   integer,          public, save, allocatable :: irvec(:,:)
+  !!  The irpt-th Wigner-Seitz grid point has components
+  !! irvec(1:3,irpt) in the basis of the lattice vectors
+  !
   integer,          public, save, allocatable :: shift_vec(:,:)
   !
-  ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
-  !
   integer,          public, save, allocatable :: ndegen(:)
-  !
-  ! nrpts             number of Wigner-Seitz grid points
+  !! Weight of the irpt-th point is 1/ndegen(irpt) 
   !
   integer,          public, save              :: nrpts
+  !! number of Wigner-Seitz grid points
   !
-  ! ivo
-  ! rpt_origin        index of R=0
   integer,          public, save              :: rpt_origin
-  !
-  ! translated Wannier centres
+  !! index of R=0
   !
   real(kind=dp),    public, save, allocatable :: wannier_centres_translated(:,:)
+  !! translated Wannier centres
 
   public :: hamiltonian_get_hr
   public :: hamiltonian_write_hr
@@ -67,6 +64,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_setup()
+    !! Allocate arrays and setup data
     !============================================!
 
     use w90_constants,  only: cmplx_0
@@ -123,6 +121,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_dealloc()
+    !! Deallocate module data
     !============================================!
 
     use w90_io, only : io_error
@@ -160,7 +159,7 @@ contains
   subroutine hamiltonian_get_hr()
     !============================================!
     !                                            !
-    !  Calculate the Hamiltonian in the WF basis !
+    !!  Calculate the Hamiltonian in the WF basis
     !                                            !
     !============================================!
 
@@ -353,6 +352,7 @@ contains
 
     !====================================================!
     subroutine internal_translate_centres()
+      !! Translate the centres of the WF into the home cell
       !====================================================!
 
       use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres, &
@@ -437,7 +437,7 @@ contains
   !============================================!
   subroutine hamiltonian_write_hr()
     !============================================!
-    !  Write the Hamiltonian in the WF basis     !
+    !!  Write the Hamiltonian in the WF basis    
     !============================================!
 
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
@@ -490,9 +490,9 @@ contains
   !================================================================================!
   subroutine hamiltonian_wigner_seitz(count_pts)
     !================================================================================!
-    ! Calculates a grid of points that fall inside of (and eventually on the         !
-    ! surface of) the Wigner-Seitz supercell centered on the origin of the B         !
-    ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
+    !! Calculates a grid of points that fall inside of (and eventually on the 
+    !! surface of) the Wigner-Seitz supercell centered on the origin of the B 
+    !! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3 
     !================================================================================!
 
     use w90_constants,  only : eps7,eps8
@@ -506,7 +506,8 @@ contains
 
     implicit none
 
-    logical, intent(in) :: count_pts 
+    logical, intent(in) :: count_pts
+    !! Only count points and return
 
     integer       :: ndiff (3)
     real(kind=dp) :: dist(125),tot,dist_min
@@ -605,6 +606,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_write_rmn()
+    !! Write out the matrix elements of r
   !============================================!
     use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
                                nntot
@@ -663,13 +665,12 @@ contains
   !============================================!
   subroutine hamiltonian_write_tb()
   !============================================!
-  ! Write in a single file all the information !
-  ! that is needed to set up a Wannier-based   !
-  ! tight-binding model:                       !
-  !                                            !
-  ! * lattice vectors                          !
-  ! * <0n|H|Rn>                                !
-  ! * <0n|r|Rn>                                !
+  !! Write in a single file all the information 
+  !! that is needed to set up a Wannier-based
+  !! tight-binding model:  
+  !! * lattice vectors     
+  !! * <0n|H|Rn>          
+  !! * <0n|r|Rn>          
   !============================================!
 
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &

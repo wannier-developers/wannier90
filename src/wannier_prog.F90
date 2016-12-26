@@ -50,6 +50,7 @@
 !------------------------------------------------------------!
 
 program wannier
+  !! The main Wannier90 program
 
   use w90_constants
   use w90_parameters

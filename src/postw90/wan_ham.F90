@@ -1,6 +1,7 @@
 !-*- mode: F90 -*-!
 
 module w90_wan_ham
+  !! This module contain operations on the Hamiltonian in the WF basis
 
   use w90_constants, only : dp
 
@@ -17,8 +18,8 @@ module w90_wan_ham
   subroutine wham_get_D_h_a(delHH_a,UU,eig,ef,D_h_a)
   !===============================================!
   !                                               !
-  ! Compute D^H_a=UU^dag.del_a UU (a=alpha,beta), !
-  ! using Eq.(24) of WYSV06                       !
+  !! Compute D^H_a=UU^dag.del_a UU (a=alpha,beta), 
+  !! using Eq.(24) of WYSV06                       
   !                                               !
   !===============================================!
 
@@ -59,8 +60,8 @@ module w90_wan_ham
   subroutine wham_get_D_h(delHH,UU,eig,D_h)
   !=========================================!
   !                                         !
-  ! Compute D^H_a=UU^dag.del_a UU (a=x,y,z) !
-  ! using Eq.(24) of WYSV06                 !
+  !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z) 
+  !! using Eq.(24) of WYSV06                 
   !                                         !
   !=========================================!
 
@@ -100,8 +101,8 @@ module w90_wan_ham
   subroutine wham_get_JJp_list(delHH,UU,eig,JJp_list)
   !====================================!
   !                                    !
-  ! Compute JJ^+_a (a=Cartesian index) !
-  ! for a list of Fermi energies       !
+  !! Compute JJ^+_a (a=Cartesian index) 
+  !! for a list of Fermi energies       
   !                                    !
   !====================================!
 
@@ -142,8 +143,8 @@ module w90_wan_ham
   subroutine wham_get_JJm_list(delHH,UU,eig,JJm_list)
   !====================================!
   !                                    !
-  ! Compute JJ^-_a (a=Cartesian index) !
-  ! for a list of Fermi energies       !
+  !! Compute JJ^-_a (a=Cartesian index) 
+  !! for a list of Fermi energies       
   !                                    !
   !====================================!
 
@@ -184,8 +185,8 @@ module w90_wan_ham
   subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
   !================================!
   !                                !
-  ! Occupation matrix f, and g=1-f !
-  ! for a list of Fermi energies   !
+  !! Occupation matrix f, and g=1-f 
+  !! for a list of Fermi energies   
   !                                !
   !================================!
     
@@ -226,7 +227,7 @@ module w90_wan_ham
   subroutine wham_get_deleig_a(deleig_a,eig,delHH_a,UU)
   !==========================!
   !                          !
-  ! Band derivatives dE/dk_a !
+  !! Band derivatives dE/dk_a 
   !                          !
   !==========================!
 
@@ -320,30 +321,29 @@ module w90_wan_ham
     
   end subroutine wham_get_deleig_a
 
-  !> Given a k point, this function returns eigenvalues E and
-  !> derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
-  !> \param kpt the three coordinates of the k point vector
-  !>            (in relative coordinates)
-  !> \param eig the calculated eigenvalues at kpt
-  !> \param deleig the calculated derivatives of the eigenvalues
-  !>        at kpt [first component: band; second component: 1,2,3
-  !>        for the derivatives along the three k directions]
-  !> \param HH the Hamiltonian matrix at kpt
-  !> \param delHH the delHH matrix (derivative of H) at kpt
-  !> \param UU the rotation matrix that gives the eigenvectors of HH
   subroutine wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+    !! Given a k point, this function returns eigenvalues E and
+    !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
+    !
     use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R
     use w90_postw90_common, only : pw90common_fourier_R_to_k
     use w90_utility, only : utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)         :: kpt
+    !! the three coordinates of the k point vector (in relative coordinates)
     real(kind=dp), intent(out)                      :: eig(num_wann)
+    !! the calculated eigenvalues at kpt
     real(kind=dp), intent(out)                      :: del_eig(num_wann,3)
+    !! the calculated derivatives of the eigenvalues at kpt [first component: band; second component: 1,2,3
+    !! for the derivatives along the three k directions]
     complex(kind=dp), dimension(:,:), intent(out)   :: HH
+    !! the Hamiltonian matrix at kpt
     complex(kind=dp), dimension(:,:,:), intent(out) :: delHH
+    !! the delHH matrix (derivative of H) at kpt
     complex(kind=dp), dimension(:,:), intent(out)   :: UU
-   
+    !! the rotation matrix that gives the eigenvectors of HH
+
     ! I call it to be sure that it has been called already once, 
     ! and that HH_R contains the actual matrix. 
     ! Further calls should return very fast.
@@ -364,7 +364,7 @@ module w90_wan_ham
   subroutine wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
   !========================================================!
   !                                                        ! 
-  ! Wrapper routine used to reduce number of Fourier calls !
+  !! Wrapper routine used to reduce number of Fourier calls
   !                                                        ! 
   !========================================================!
 

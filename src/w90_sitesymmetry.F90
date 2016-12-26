@@ -1,4 +1,5 @@
 module w90_sitesymmetry
+  !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only : dp,cmplx_1,cmplx_0
   use w90_io,        only : io_error,stdout

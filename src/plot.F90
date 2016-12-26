@@ -12,6 +12,7 @@
 !------------------------------------------------------------!
 
 module w90_plot
+  !! This module handles various plots
 
   implicit none
 
@@ -23,6 +24,7 @@ contains
 
   !============================================!
   subroutine plot_main( )
+    !! Main plotting routine
   !============================================!
 
     use w90_constants,   only : eps6
@@ -101,7 +103,7 @@ contains
   subroutine plot_interpolate_bands
     !============================================!
     !                                            !
-    !     Plots the interpolated band structure  !
+    !! Plots the interpolated band structure 
     !                                            !
     !============================================!
 
@@ -351,20 +353,20 @@ contains
   subroutine plot_cut_hr() 
     !============================================!
     !                                                           
-    !  In real-space picture, ham_r(j,i,k) is an interaction between                   
-    !  j_th WF at 0 and i_th WF at the lattice point translated 
-    !  by matmul(real_lattice(:,:),irvec(:,k))                          
-    !  We truncate Hamiltonian matrix when                                                               
-    !   1) |  r_i(0) - r_j (R) | > dist_cutoff               
-    !   2) |  ham_r(i,j,k)     | < hr_cutoff              
-    !  while the condition 1) is essential to get a meaningful band structure, 
-    !    ( dist_cutoff must be smaller than the shortest distance from
-    !      the center of W-S supercell to the points at the cell boundaries )
-    !  the condition 2) is optional.
-    !      
-    !  limitation: when bands_plot_dim .ne. 3
-    !      one_dim_vec must be parallel to one of the cartesian axis
-    !      and perpendicular to the other two primitive lattice vectors                         
+    !!  In real-space picture, ham_r(j,i,k) is an interaction between                   
+    !!  j_th WF at 0 and i_th WF at the lattice point translated 
+    !!  by matmul(real_lattice(:,:),irvec(:,k))                          
+    !!  We truncate Hamiltonian matrix when                                                               
+    !!   1) |  r_i(0) - r_j (R) | > dist_cutoff               
+    !!   2) |  ham_r(i,j,k)     | < hr_cutoff              
+    !!  while the condition 1) is essential to get a meaningful band structure, 
+    !!    ( dist_cutoff must be smaller than the shortest distance from
+    !!      the center of W-S supercell to the points at the cell boundaries )
+    !!  the condition 2) is optional.
+    !!      
+    !!  limitation: when bands_plot_dim .ne. 3
+    !!      one_dim_vec must be parallel to one of the cartesian axis
+    !!      and perpendicular to the other two primitive lattice vectors                         
     !============================================!
 
     use w90_constants,   only : dp,cmplx_0, eps8
@@ -530,8 +532,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
   subroutine plot_interpolate_gnuplot
     !============================================!
     !                                            !
-    !     Plots the interpolated band structure  !
-    !           in gnuplot format                !
+    !! Plots the interpolated band structure in gnuplot format
     !============================================!
 
     use w90_constants,  only : dp
@@ -612,8 +613,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
   subroutine plot_interpolate_xmgrace
     !============================================!
     !                                            !
-    !     Plots the interpolated band structure  !
-    !         in Xmgrace format                  !
+    !! Plots the interpolated band structure in Xmgrace format 
     !============================================!
 
     use w90_io,         only : io_file_unit,seedname,io_date
@@ -708,7 +708,7 @@ end subroutine plot_interpolate_bands
   subroutine plot_fermi_surface
     !===========================================================!
     !                                                           !
-    !  Prepares a Xcrysden bxsf file to view the fermi surface  !
+    !!  Prepares a Xcrysden bxsf file to view the fermi surface 
     !                                                           !
     !===========================================================!
 
@@ -845,8 +845,8 @@ end subroutine plot_interpolate_bands
   subroutine plot_wannier
     !============================================!
     !                                            !
-    ! Plot the WF in Xcrysden format             !
-    !  based on code written by Michel Posternak !
+    !! Plot the WF in Xcrysden format
+    !! based on code written by Michel Posternak
     !                                            !
     !============================================!
 
@@ -1075,7 +1075,7 @@ end subroutine plot_interpolate_bands
     subroutine internal_cube_format()
     !============================================!
     !                                            !
-    ! Write WFs in Gaussian cube format.         !
+    !! Write WFs in Gaussian cube format. 
     !                                            !
     !============================================!
 
@@ -1378,8 +1378,7 @@ end subroutine plot_interpolate_bands
   subroutine plot_u_matrices
     !============================================!
     !                                            !
-    ! Plot u_matrix and u_matrix_opt to          !
-    ! textfiles in readable format               !
+    !! Plot u_matrix and u_matrix_opt to textfiles in readable format 
     !                                            !
     !============================================!
 

@@ -13,13 +13,13 @@
 
 module w90_kpath
 
-  ! Calculates one of the following along a specified k-path:
-  ! 
-  !  - Energy bands (eventually colored by the spin) 
-  !
-  !  - (Berry curvature)x(-1) summed over occupied bands
-  !
-  !  - Integrand of orbital magnetization Morb=LCtil+ICtil
+  !! Calculates quantities along a specified k-path:
+  !! 
+  !!  - Energy bands (eventually colored by the spin) 
+  !!
+  !!  - (Berry curvature)x(-1) summed over occupied bands
+  !!
+  !!  - Integrand of orbital magnetization Morb=LCtil+ICtil
 
   use w90_constants, only : dp
 
@@ -36,6 +36,7 @@ contains
   !===========================================================!
 
   subroutine k_path
+    !! Main routine
 
     use w90_comms
     use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8

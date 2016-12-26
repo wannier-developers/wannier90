@@ -12,13 +12,15 @@
 !------------------------------------------------------------!
 !============================================================!
 !                                                            !
-! Generic Interpolation Routine written by Giovanni Pizzi    !
-! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
-! June, 2012                                                 !
 !                                                            !
 !============================================================!
 
 module w90_geninterp
+  !! Generic Interpolation Routine 
+  !!
+  !! written by Giovanni Pizzi
+  !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)  
+  !! June, 2012 
 
   use w90_constants
   use w90_parameters, only    : geninterp_alsofirstder, num_wann, recip_lattice, real_lattice, &
@@ -37,13 +39,13 @@ module w90_geninterp
 
 contains 
 
-  ! Writes a header for the output file(s).
-  !
-  ! \param outdat_unit Integer with the output file unit. The file must be already open.
-  ! \param commentline String with the comment taken from the output, to be written on the output
   subroutine internal_write_header(outdat_unit,commentline)
+  !! Writes a header for the output file(s).
+
     integer, intent(in) :: outdat_unit
-    character(len=*)    :: commentline
+    !! Integer with the output file unit. The file must be already open.
+    character(len=*)    :: commentline !! no intent?
+    !! String with the comment taken from the output, to be written on the output
 
     character(len=9)   :: cdate, ctime
 
@@ -60,14 +62,14 @@ contains
     end if
   end subroutine internal_write_header
     
-  !> This routine prints the band energies (and possibly the band derivatives) 
-  !>
-  !> This routine is parallel, even if ***the scaling is very bad*** since at the moment
-  !> everything must be written by the root node (we need that the output is sorted).
-  !> But at least if works independently of the number of processors.
-  !> I think that a way to write in parallel to the output would help a lot,
-  !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
+  !! This routine prints the band energies (and possibly the band derivatives) 
+  !!
+  !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
+  !! everything must be written by the root node (we need that the output is sorted).
+  !! But at least if works independently of the number of processors.
+  !! I think that a way to write in parallel to the output would help a lot,
+  !! so that we don't have to send all eigenvalues to the root node.
     integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum

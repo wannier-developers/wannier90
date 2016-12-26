@@ -54,6 +54,15 @@
 !=======================================================================!
 
 module w90_transport
+  !! Module to handle ballistic transport. 
+  !!Based on 
+  !!  < dosqc_1.0 >
+  !!  Density Of States and Quantum Conductance - Version 1.0
+  !!  Marco Buongiorno Nardelli, January 2000. 
+  !!  Reference: 
+  !!  - M. Buongiorno Nardelli, "Electronic transport in extended systems:
+  !!  application to carbon nanotubes", Phys. Rev. B, vol. 60(11), 7828 
+  !!  (1999)  
 
   use w90_constants,  only : dp
 
@@ -61,21 +70,21 @@ module w90_transport
 
   private
 
-! small complex number 
   complex(kind=dp), parameter :: eta=(0.0_dp,0.0005_dp)
+  !! small complex number 
 
-! nterx  = # of maximum iteration to calculate transfer matrix
   integer, parameter :: nterx=50
-  ! cartesian axis to which real_lattice(:,one_dim_vec) is parallel
+  !! nterx  = # of maximum iteration to calculate transfer matrix
   integer :: one_dim_vec
+  !! cartesian axis to which real_lattice(:,one_dim_vec) is parallel
   integer :: nrpts_one_dim
-  ! num_pl : number of unit cell in a principal layer
   integer :: num_pl
-  ! coord : coord(1) defines the conduction direction according to 1=x,2=y,3=z, 
-  ! coord(2),coord(3) define the other directions during sorting routines
+  !! number of unit cell in a principal layer
   integer,dimension(3) :: coord
-  ! index of sorted WF centres to unsorted
+  !! coord : coord(1) defines the conduction direction according to 1=x,2=y,3=z, 
+  !! coord(2),coord(3) define the other directions during sorting routines
   integer,allocatable :: tran_sorted_idx(:)
+  !! index of sorted WF centres to unsorted
 
   real(kind=dp), allocatable :: hr_one_dim(:,:,:)
   real(kind=dp), allocatable :: hB0(:,:)
@@ -95,6 +104,7 @@ module w90_transport
 contains
   !==================================================================!
   subroutine tran_main()
+    !! Main transport subroutine
     !==================================================================!
 
     use w90_io,         only : stdout,io_stopwatch
@@ -3352,7 +3362,9 @@ loop_n1: do n1 = -irvec_max, irvec_max
 
   !======================================!
   subroutine tran_dealloc()
+    !! Dellocate module data
   !====================================!
+
 
     use w90_io, only : io_error
     

@@ -11,29 +11,29 @@
 !                                                            !
 !------------------------------------------------------------!
 !============================================================!
-!                                                            !
-! BoltzWann routines by                                      !
-! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari ! 
-! August, 2012                                               !
-!                                                            !
-! Affiliations:                                              !
-! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
-! DMSE, MIT, 77 Massachusetts Ave, Cambridge, MA, 02139      !
-! Central Michigan University, Mount Pleasant, MI 48859      !
-! Robert Bosch LLC, Cambridge, MA, 02139                     !
-!                                                            !
-!============================================================!
-!                                                            !
-!Please cite the following paper when publishing results     !
-!obtained using the BoltzWann module:                        !
-!                                                            !
-![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari,! 
-!    Comp. Phys. Comm. 185, 422 (2014)                       !
-!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)     !
-!============================================================!
+
 
 module w90_boltzwann
-
+!! Compute Boltzman tranport properties  
+!!                                                           
+!! BoltzWann routines by                                     
+!! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari 
+!! August, 2012                                              
+!!                                                           
+!! Affiliations:                                             
+!! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)      
+!! DMSE, MIT, 77 Massachusetts Ave, Cambridge, MA, 02139     
+!! Central Michigan University, Mount Pleasant, MI 48859     
+!! Robert Bosch LLC, Cambridge, MA, 02139                    
+!!                                                           
+!!                                                           
+!! Please cite the following paper when publishing results   
+!! obtained using the BoltzWann module:                      
+!!                                                           
+!![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari 
+!!    Comp. Phys. Comm. 185, 422 (2014)                      
+!!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)    
+!============================================================!
   use w90_constants
   use w90_parameters, only : &
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
@@ -72,19 +72,21 @@ module w90_boltzwann
 
 contains 
 
-  !> This is the main routine of the BoltzWann module.
-  !> It calculates the transport coefficients using the Boltzmann transport equation.
-  !>
-  !> It produces six files that contain:
-  !> 1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*fs/angstrom
-  !> 2. the electrical conductivity in SI units (1/Ohm/m)
-  !> 2. the tensor sigma*S (sigma=el.cond., S=seebeck) in SI units (Ampere/meter/K)
-  !> 4. the Seebeck coefficient in SI units (V/K)
-  !> 5. the thermal conductivity in SI units (W/meter/K)
-  !> 6. if requested, the density of states
-  !> Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
-  !> T is the temperature in Kelvin. The grid is defined in the input.
   subroutine boltzwann_main()
+  !! This is the main routine of the BoltzWann module.
+  !! It calculates the transport coefficients using the Boltzmann transport equation.
+  !!
+  !! It produces six files that contain:
+  !!  
+  !!  1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*fs/angstrom
+  !!  2. the electrical conductivity in SI units (1/Ohm/m)
+  !!  3. the tensor sigma*S (sigma=el.cond., S=seebeck) in SI units (Ampere/meter/K)
+  !!  4. the Seebeck coefficient in SI units (V/K)
+  !!  5. the thermal conductivity in SI units (W/meter/K)
+  !!  6. if requested, the density of states
+  !!
+  !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
+  !! T is the temperature in Kelvin. The grid is defined in the input.
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
     real(kind=dp), dimension(:),       allocatable :: TempArray, MuArray, KTArray
@@ -577,40 +579,28 @@ contains
 
   end subroutine boltzwann_main
 
-  !> This routine calculates the Transport Distribution Function \f$ \Sigma_{ij}(\eps) \f$ (TDF)
-  !> in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
-  !> 
-  !> \note The TDFEnergyArray must be already allocated and initialized with the
-  !> energies in eV before calling this routine.
-  !> 
-  !> \note The TDF array must be already allocated with dimensions 6 * size(TDFEnergyArray) * ndim, before calling
-  !> this routine, where ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
-  !>
-  !> \note If run in parallel, at the end each processor will have a copy of the full TDF array
-  !>
-  !> \note We assume that the TDFEnergyArray is uniformely spaced and that it has at least
-  !>       two elements (no checks are performed on this).
-  !> 
-  !> \note Note that the order of indices of TDF is different w.r.t. the DOS array (the energy is not the first but
-  !>       the second index)
-  !> 
-  !> \note If the input flag boltz_bandshift is set to .true., the code will also shift the
-  !>       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
-  !>       and boltz_bandshift_firstband input flags.
-  !> 
-  !> \param TDF The TDF(i,EnIdx,spin) output array, where:
-  !>        - i is an index from 1 to 6 giving the component of the symmetric tensor
-  !>          \f$ Sigma_{ij}(\eps) \f$,
-  !>          where 1=xx, 2=xy, 3=yy, 4=xz, 5=yz, 6=zz
-  !>          as defined by the module constants XX, XY, ...
-  !>          (in this way the mapping (i,j) -> i+((j-1)*j)/2 is satisfied for the packed storage of the
-  !>          upper triangle [i<=j]).
-  !>        - EnIdx is the index of the energies; the corresponding energy is given by
-  !>          TDFEnergyArray(EndIdx) array (in eV).
-  !>        - Spin may be only 1 if spin_decomp=.false. If it is instead true, 1 contains the total TDF, 
-  !>          2 the spin-up component and 3 the spin-up component
-  !> \param TDFEnergyArray The array with the energies for which the TDF is calculated, in eV
   subroutine calcTDFandDOS(TDF,TDFEnergyArray)
+  !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
+  !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
+  !! 
+  !! The TDFEnergyArray must be already allocated and initialized with the
+  !! energies in eV before calling this routine.
+  !! 
+  !!  The TDF array must be already allocated with dimensions 6 * size(TDFEnergyArray) * ndim, before calling
+  !! this routine, where ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
+  !!
+  !!  If run in parallel, at the end each processor will have a copy of the full TDF array
+  !!
+  !!  We assume that the TDFEnergyArray is uniformely spaced and that it has at least
+  !!       two elements (no checks are performed on this).
+  !! 
+  !! Note that the order of indices of TDF is different w.r.t. the DOS array (the energy is not the first but
+  !!       the second index)
+  !! 
+  !!  If the input flag boltz_bandshift is set to .true., the code will also shift the
+  !!       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
+  !!       and boltz_bandshift_firstband input flags.
+  !! 
     use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
          boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
@@ -621,7 +611,19 @@ contains
     use w90_wan_ham, only       : wham_get_eig_deleig
 
     real(kind=dp), dimension(:,:,:), intent(out)   :: TDF ! (coordinate,Energy,spin)
+    !! The TDF(i,EnIdx,spin) output array, where:
+    !!        - i is an index from 1 to 6 giving the component of the symmetric tensor
+    !!          $$ Sigma_{ij}(\eps) $$,
+    !!          where 1=xx, 2=xy, 3=yy, 4=xz, 5=yz, 6=zz
+    !!          as defined by the module constants XX, XY, ...
+    !!          (in this way the mapping (i,j) -> i+((j-1)*j)/2 is satisfied for the packed storage of the
+    !!          upper triangle [i<=j]).
+    !!        - EnIdx is the index of the energies; the corresponding energy is given by
+    !!          TDFEnergyArray(EndIdx) array (in eV).
+    !!        - Spin may be only 1 if spin_decomp=.false. If it is instead true, 1 contains the total TDF, 
+    !!          2 the spin-up component and 3 the spin-up component
     real(kind=dp), dimension(:), intent(in)      :: TDFEnergyArray
+    !! TDFEnergyArray The array with the energies for which the TDF is calculated, in eV
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
@@ -953,48 +955,29 @@ contains
   end function MinusFermiDerivative
 
 
-
-  !> This subroutine calculates the contribution to the TDF of a single k point
-  !> 
-  !> \note This routine does not use the adaptive smearing; in fact, for non-zero temperatures
-  !>       one often doesn't even need to smear. It simply uses a standard smearing as defined by
-  !>       the variables boltz_TDF_smr_fixed_en_width and boltz_TDF_smr_index
-  !> 
-  !> \todo still to do: adapt spin_get_nk to read in input the UU rotation matrix
-  !> 
-  !> \note This routine simply provides the dos contribution of a given
-  !>       point. This must be externally summed after proper weighting.
-  !>       The weight factor (for a full BZ sampling with N^3 points) is 1/N^3/cell_volume
-  !>       if we want to calculate 1/(2*pi)^3 * \int_{BZ} d^3 k
-  !> \note The only factor that is included INSIDE this routine is the spin degeneracy
-  !>       factor (=2 if spinors is .false., =1 if spinors is .true.)
-  !> \note The EnergyArray is assumed to be evenly spaced (and the energy spacing
-  !>       is taken from EnergyArray(2)-EnergyArray(1))
-  !> \note The routine is assuming that EnergyArray has at least two elements.
-  !> \note The meaning of the three indices of the TDF_k array is different with respect to
-  !>       those of the dos_k array returned by the dos_get_k routine
-  !> \note The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
-  !>       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
-  !> 
-  !> \param kpt         the three coordinates of the k point vector whose DOS contribution we
-  !>                    want to calculate (in relative coordinates)
-  !> \param EnergyArray array with the energy grid on which to calculate the DOS (in eV)
-  !>                    It must have at least two elements
-  !> \param eig_k       array with the eigenvalues at the given k point (in eV)
-  !> \param deleig_k    array with the band derivatives at the given k point
-  !>                    (in eV * angstrom / (2pi) as internally given by the code)
-  !>                    already corrected in case of degeneracies, as returned by the 
-  !>                    wham_get_deleig_a routine
-  !> \param             TDF_k array in which the contribution is stored. Three dimensions:
-  !>                    TDF_k(ij, energyidx, spinidx), where:
-  !>                    - ij indexes the components of the TDF (symmetric) tensor (1=XX, 2=XY, ...);
-  !>                      see the global constants defined in the module
-  !>                    - energyidx is the index of the energies, corresponding to the one
-  !>                      of the EnergyArray array; 
-  !>                    - spinidx=1 contains the total dos; if if spin_decomp==.true., then
-  !>                      spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
   subroutine TDF_kpt(kpt,EnergyArray,eig_k,deleig_k,TDF_k)
-
+    !! This subroutine calculates the contribution to the TDF of a single k point
+    !!
+    !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
+    !!       one often doesn't even need to smear. It simply uses a standard smearing as defined by
+    !!       the variables boltz_TDF_smr_fixed_en_width and boltz_TDF_smr_index
+    !! 
+    !! still to do: adapt spin_get_nk to read in input the UU rotation matrix
+    !! 
+    !! This routine simply provides the dos contribution of a given
+    !!       point. This must be externally summed after proper weighting.
+    !!       The weight factor (for a full BZ sampling with N^3 points) is 1/N^3/cell_volume
+    !!       if we want to calculate 1/(2*pi)^3 * \int_{BZ} d^3 k
+    !! The only factor that is included INSIDE this routine is the spin degeneracy
+    !!       factor (=2 if spinors is .false., =1 if spinors is .true.)
+    !! The EnergyArray is assumed to be evenly spaced (and the energy spacing
+    !!       is taken from EnergyArray(2)-EnergyArray(1))
+    !! The routine is assuming that EnergyArray has at least two elements.
+    !!  The meaning of the three indices of the TDF_k array is different with respect to
+    !!       those of the dos_k array returned by the dos_get_k routine
+    !! The TDF_k array must have dimensions 6 * size(EnergyArray) * ndim, where
+    !!       ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
+    !! 
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
     use w90_utility, only       : utility_w0gauss
     use w90_parameters, only    : num_wann,spin_decomp,num_elec_per_state,&
@@ -1004,10 +987,27 @@ contains
     ! Arguments
     !
     real(kind=dp), dimension(3), intent(in)      :: kpt
+    !! the three coordinates of the k point vector whose DOS contribution we
+    !! want to calculate (in relative coordinates)
     real(kind=dp), dimension(:), intent(in)      :: EnergyArray
+    !! array with the energy grid on which to calculate the DOS (in eV)
+    !! It must have at least two elements
     real(kind=dp), dimension(:), intent(in)      :: eig_k
+    !! array with the eigenvalues at the given k point (in eV)
     real(kind=dp), dimension(:,:), intent(in)    :: deleig_k
+    !! array with the band derivatives at the given k point
+    !! (in eV * angstrom / (2pi) as internally given by the code)
+    !! already corrected in case of degeneracies, as returned by the 
+    !! wham_get_deleig_a routine
     real(kind=dp), dimension(:,:,:), intent(out) :: TDF_k
+    !! TDF_k array in which the contribution is stored. Three dimensions:
+    !! TDF_k(ij, energyidx, spinidx), where:
+    !! - ij indexes the components of the TDF (symmetric) tensor (1=XX, 2=XY, ...);
+    !!   see the global constants defined in the module
+    !! - energyidx is the index of the energies, corresponding to the one
+    !!   of the EnergyArray array; 
+    !!  - spinidx=1 contains the total dos; if if spin_decomp==.true., then
+    !!  spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
 
     ! Adaptive smearing
     !
