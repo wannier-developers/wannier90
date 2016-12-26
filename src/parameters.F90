@@ -1,15 +1,17 @@
 !-*- mode: F90 -*-!
-!                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
-!                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
-!                                                            !
 !------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
+
 module w90_parameters
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
@@ -398,12 +400,9 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
 
-  logical, public :: lsitesymmetry=.false.                         !RS: site-symmetry
-  integer, public :: nkptirr=9999,nsymmetry=9999                   !RS:
-  real(kind=dp), public :: symmetrize_eps=1d-3                     !RS:
-  integer, allocatable, public :: kptsym(:,:),ir2ik(:),ik2ir(:)    !RS:
-  complex(kind=dp),  allocatable, public :: d_matrix_band(:,:,:,:) !RS:
-  complex(kind=dp),  allocatable, public :: d_matrix_wann(:,:,:,:) !RS:
+  ! RS: symmetry-adapted Wannier functions
+  logical,       public, save :: lsitesymmetry=.false.
+  real(kind=dp), public, save :: symmetrize_eps=1.d-3
   
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
@@ -479,7 +478,11 @@ contains
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%
+
+    ! default value is lsitesymmetry=.false.
     call param_get_keyword('site_symmetry' ,found,l_value=lsitesymmetry )!YN:
+
+    ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
 
     !%%%%%%%%%%%%%%%%
@@ -2204,10 +2207,6 @@ contains
 
     if (transport .and. tran_read_ht) goto 401
 
-    if(lsitesymmetry)then                                          !YN:
-      write(stdout,"(a)"      )'   Site-Symmetry-Adapted mode   '  !RS:
-      write(stdout,"(a,g15.7)")'   symmetrize_eps=',symmetrize_eps !YN:
-    endif                                                          !YN:
     ! System
     write(stdout,*)
     write(stdout,'(36x,a6)') '------' 
@@ -2314,6 +2313,12 @@ contains
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :',postproc_setup,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :',gamma_only,'|'
+    !YN: RS:
+    if(lsitesymmetry) then
+      write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Using symmetry-adapted WF mode            :',lsitesymmetry,'|'
+      write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :',symmetrize_eps,'|'
+    endif                                                         
+ 
     if(cp_pp .or. iprint>2) &
                   write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :',cp_pp,'|'
     if(wannier_plot .or. iprint>2) then
@@ -2890,7 +2895,7 @@ contains
     write(stdout,*)  '            |        Generalized Wannier Functions code         |'
     write(stdout,*)  '            |            http://www.wannier.org                 |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  Wannier90 v2.0 Authors:                          |'
+    write(stdout,*)  '            |  Wannier90 v2.x Authors:                          |'
     write(stdout,*)  '            |    Arash A. Mostofi  (Imperial College London)    |'
     write(stdout,*)  '            |    Giovanni Pizzi    (EPFL)                       |'
     write(stdout,*)  '            |    Ivo Souza         (Universidad del Pais Vasco) |'
@@ -2902,6 +2907,18 @@ contains
     write(stdout,*)  '            |    Nicolas Poilvert   (Penn State University)     |'
     write(stdout,*)  '            |    Raffaello Bianco   (Paris 6 and CNRS)          |'
     write(stdout,*)  '            |    Gabriele Sclauzero (ETH Zurich)                |'
+    write(stdout,*)  '            |    David Strubbe (MIT, USA)                       |'
+    write(stdout,*)  '            |    Rei Sakuma (Lund University, Sweden)           |'
+    write(stdout,*)  '            |    Yusuke Nomura (U. Tokyo, Japan)                |'
+    write(stdout,*)  '            |    Takashi Koretsune (Riken, Japan)               |'
+    write(stdout,*)  '            |    Lorenzo Paulatto (UPMC Paris)                  |'
+    write(stdout,*)  '            |    Florian Thole (ETH Zurich)                     |'
+    write(stdout,*)  '            |    Pablo Garcia Fernandez (Unican, Spain)         |'
+    write(stdout,*)  '            |    Dominik Gresch (ETH Zurich)                    |'
+    write(stdout,*)  '            |    Samuel Ponce (Univerisity of Oxford)           |'
+    write(stdout,*)  '            |    Marco Gibertini (EPFL)                         |'
+    write(stdout,*)  '            |    Christian Stieger (ETHZ, CH)                   |' 
+    write(stdout,*)  '            |    Stepan Tsirkin (Universidad del Pais Vasco)    |' 
     write(stdout,*)  '            |                                                   |' 
     write(stdout,*)  '            |  Wannier77 Authors:                               |'
     write(stdout,*)  '            |    Nicola Marzari    (EPFL)                       |'
@@ -2932,12 +2949,12 @@ contains
     write(stdout,*)  '            |         Phys. Rev. B 65 035109 (2001)             |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            | Copyright (c) 1996-2015                           |'
+    write(stdout,*)  '            | Copyright (c) 1996-2017                           |'
     write(stdout,*)  '            |        Arash A. Mostofi, Jonathan R. Yates,       |'
     write(stdout,*)  '            |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |'
     write(stdout,*)  '            |        David Vanderbilt and Nicola Marzari        |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |        Release: 2.0.1   2nd April 2015            |'
+    write(stdout,*)  '            |        Release: 2.1.0   13th January 2017         |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'

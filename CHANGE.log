@@ -4,16 +4,26 @@
 
 	The Maximally-Localised Generalised Wannier Functions Code
 
-v2.0.2 (XXX)
+v2.1.0 (13th January 2017)
+* Implementation of the symmetry-adapted Wannier functions
+  (see R. Sakuma, Phys. Rev. B 87, 235109 (2013), courtesy
+   of R. Sakuma (Lund University, Sweden), T. Koretsune (Riken, JP),
+   Y. Nomura (U. Tokyo, JP))
 * Streamlined the interface between wannier90 and tight-binding
-codes such as pythtb (new input variable: write_tb)
+  codes such as pythtb (new input variable: write_tb). Also,
+  matrix elements of the position operator can now be printed
+  (courtesy P. Garcia Fernandez, Unican, ES)
+* Non-collinear sping with ultrasoft pseudos now implemented
+  in the pw2wannier90 interface with Quantum ESPRESSO, working
+  also in parallel (courtesy F. Thoele (ETHZ, CH), T. Koretsune
+  (Riken, JP), L. Paulatto (UPMC Paris))
 * postw90 prints an error message when trying to evaluate a quantity
-that requires a Fermi level, but none has been provided by the user
-(input variable fermi_level now has no default value)
+  that requires a Fermi level, but none has been provided by the user
+  (input variable fermi_level now has no default value)
 * Fixed bug in kslice.F90 (trying to plot isoenergy contours colored
-by the spin gave an error message at runtime).
+  by the spin gave an error message at runtime).
 * Adaptively-refined mesh now implemented correctly for even sizes
-(e.g., 4x4).
+  (e.g., 4x4).
 * Fixed bug in the calculation of orbital magnetization in berry.F90
 * Fixed the skip_B1_tests flag, that was ignored
 * Fix to documentation of geninterp: k units were 1/ang and not
@@ -26,6 +36,17 @@ by the spin gave an error message at runtime).
   file is sent over email (some providers think it's a virus and
   remove it from attachments). If you have already compiled wannier90,
   after updating the version, just rename make.sys to make.inc.
+* Added the use_ws_distance flag to improve the interpolation of
+  band structures (courtesy of L. Paulatto, UPMC Paris).
+* Improved the interface with the Z2pack code (courtesy D. Gresch, ETHZ)
+And for developers:
+  * Added a test-suite, and integrated with GitHub and Travis-CI for
+    continuous integration. A number of tests have been added
+    (contributed mainly by S. Ponce, Oxford). Also compilation on the
+    buildbot test farm at the Oxford Materials Modelling Laboratory
+    has been activated.
+  * First implementation of the FORD infrastructure for code documentation
+    (courtesy D. Gresch, ETHZ).
 
 v2.0.1 (2nd April 2015)
 

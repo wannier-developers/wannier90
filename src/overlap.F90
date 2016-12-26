@@ -1,14 +1,15 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_overlap
@@ -557,7 +558,7 @@ return
                            u_matrix,m_matrix,nntot,nnlist
     use w90_utility,    only : utility_zgemm
     use w90_parameters, only : lsitesymmetry !RS:
-    use w90_sitesymmetry                     !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_u_matrix !RS:
 
     implicit none
 
@@ -637,7 +638,7 @@ return
     enddo
     ! NKP
 
-    if (lsitesymmetry) call symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated 

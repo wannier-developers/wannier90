@@ -6,7 +6,7 @@ Additional input in GaAs.win file
 
 
 Additional input in GaAs.pw2wan file 
-  write_dmb = .true.
+  write_dmn = .true.
 
 
 Working directories 

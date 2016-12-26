@@ -1,11 +1,18 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
 !                                                            !
 ! Copyright (C) 2016 Lorenzo Paulatto                        !
-!                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
 !                                                            !
 !------------------------------------------------------------!
 
@@ -41,6 +48,7 @@ module w90_ws_distance
   ! next parameter moved to parameters, used here
   !logical, save, public :: use_ws_distance = .false.
   logical, public, save :: done_ws_distance = .false.
+
   integer, parameter :: ndegenx = 8 
   !! max number of unit cells that can touch
   !! in a single point (i.e.  vertex of cube)
@@ -52,7 +60,9 @@ module w90_ws_distance
 
 contains
 
-  !====================================================!
+! Short documentation follows, for a longer explanation see the documentation
+! of the use_ws_distance variable in the user guide.
+
   subroutine ws_translate_dist(nrpts, irvec, force_recompute)
   !! The next three subroutines find the supercell translation (i.e. the translation
   !! by a integer number of supercell) That minimizes the distance between two given funtions,
@@ -75,9 +85,7 @@ contains
 
     ! <<<local variables>>>
     integer  :: iw, jw, ideg, ir, ierr
-    real(DP) :: wdist_wssc_frac(3,num_wann,num_wann,nrpts)
-    !real(DP) :: crdist_ws(3,ndegenx,num_wann,num_wann,nrpts)
-    real(DP) :: irdist_real(3,ndegenx,num_wann,num_wann,nrpts)
+    real(DP),allocatable :: wdist_wssc_frac(:,:,:,:), irdist_real(:,:,:,:,:)
     real(DP) :: irvec_cart(3)
 
     ! The subroutine does nothing if called more than once, which may
@@ -92,12 +100,15 @@ contains
 
     if (ndegenx*num_wann*nrpts<=0) call io_error("unexpected dimensions in ws_translate_dist")
 
-    allocate(irdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating irdist_ws in ws_translate_dist')
-    allocate(crdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating crdist_ws in ws_translate_dist')
-    allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist')
+   allocate(irdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+   if (ierr/=0) call io_error('Error in allocating irdist_ws in ws_translate_dist')
+   allocate(crdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+   if (ierr/=0) call io_error('Error in allocating crdist_ws in ws_translate_dist')
+   allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
+   if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist')
+    
+   ALLOCATE(wdist_wssc_frac(3,num_wann,num_wann,nrpts))
+   ALLOCATE(irdist_real(3,ndegenx,num_wann,num_wann,nrpts))
 
     !translation_centre_frac = 0._dp
     wdist_ndeg   = 0
@@ -144,7 +155,9 @@ contains
     !
     IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) &
          call io_error('wrong irdist_ws')
-
+    !
+    DEALLOCATE(wdist_wssc_frac, irdist_real)
+    !
     return
   end subroutine ws_translate_dist
 

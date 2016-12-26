@@ -1,39 +1,38 @@
 !-*- mode: F90 -*-!
-!                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
-!                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
-!                                                            !
 !------------------------------------------------------------!
-!============================================================!
-
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
 
 module w90_boltzwann
-!! Compute Boltzman tranport properties  
-!!                                                           
-!! BoltzWann routines by                                     
-!! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari 
-!! August, 2012                                              
-!!                                                           
-!! Affiliations:                                             
-!! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)      
-!! DMSE, MIT, 77 Massachusetts Ave, Cambridge, MA, 02139     
-!! Central Michigan University, Mount Pleasant, MI 48859     
-!! Robert Bosch LLC, Cambridge, MA, 02139                    
-!!                                                           
-!!                                                           
-!! Please cite the following paper when publishing results   
-!! obtained using the BoltzWann module:                      
-!!                                                           
-!![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari 
-!!    Comp. Phys. Comm. 185, 422 (2014)                      
-!!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)    
-!============================================================!
+  !! Compute Boltzman tranport properties  
+  !!                                                           
+  !! BoltzWann routines by                                     
+  !! G. Pizzi, D. Volja, B. Kozinsky, M. Fornari and N. Marzari 
+  !! August, 2012                                              
+  !!                                                           
+  !! Affiliations:                                             
+  !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)      
+  !! DMSE, MIT, 77 Massachusetts Ave, Cambridge, MA, 02139     
+  !! Central Michigan University, Mount Pleasant, MI 48859     
+  !! Robert Bosch LLC, Cambridge, MA, 02139                    
+  !!                                                           
+  !!                                                           
+  !! Please cite the following paper when publishing results   
+  !! obtained using the BoltzWann module:                      
+  !!                                                           
+  !![1] G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, N. Marzari 
+  !!    Comp. Phys. Comm. 185, 422 (2014)                      
+  !!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)    
+  !============================================================!
   use w90_constants
   use w90_parameters, only : &
        boltz_mu_min, boltz_mu_max, boltz_mu_step, boltz_temp_min, boltz_temp_max, boltz_temp_step, &
@@ -62,31 +61,31 @@ module w90_boltzwann
 
 
   character(len=74), parameter :: pub_string_1 = &
-  "Please cite the following paper when publishing results obtained using    "
+       "Please cite the following paper when publishing results obtained using    "
   character(len=74), parameter :: pub_string_2 = &
-  "the BoltzWann module:                                                     "
+       "the BoltzWann module:                                                     "
   character(len=74), parameter :: pub_string_3 = &
-  "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
+       "G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,              "
   character(len=74), parameter :: pub_string_4 = &
-  "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
+       "Comp. Phys. Comm. 185, 422 (2014); DOI:10.1016/j.cpc.2013.09.015          "
 
 contains 
 
   subroutine boltzwann_main()
-  !! This is the main routine of the BoltzWann module.
-  !! It calculates the transport coefficients using the Boltzmann transport equation.
-  !!
-  !! It produces six files that contain:
-  !!  
-  !!  1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*fs/angstrom
-  !!  2. the electrical conductivity in SI units (1/Ohm/m)
-  !!  3. the tensor sigma*S (sigma=el.cond., S=seebeck) in SI units (Ampere/meter/K)
-  !!  4. the Seebeck coefficient in SI units (V/K)
-  !!  5. the thermal conductivity in SI units (W/meter/K)
-  !!  6. if requested, the density of states
-  !!
-  !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
-  !! T is the temperature in Kelvin. The grid is defined in the input.
+    !! This is the main routine of the BoltzWann module.
+    !! It calculates the transport coefficients using the Boltzmann transport equation.
+    !!
+    !! It produces six files that contain:
+    !!  
+    !!  1. the Transport Distribution function (TDF) in units of 1/hbar^2 * eV*fs/angstrom
+    !!  2. the electrical conductivity in SI units (1/Ohm/m)
+    !!  3. the tensor sigma*S (sigma=el.cond., S=seebeck) in SI units (Ampere/meter/K)
+    !!  4. the Seebeck coefficient in SI units (V/K)
+    !!  5. the thermal conductivity in SI units (W/meter/K)
+    !!  6. if requested, the density of states
+    !!
+    !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
+    !! T is the temperature in Kelvin. The grid is defined in the input.
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
     real(kind=dp), dimension(:),       allocatable :: TempArray, MuArray, KTArray
@@ -157,7 +156,7 @@ contains
     do i=1,TempNumPoints
        TempArray(i) = boltz_temp_min + real(i-1,dp)*boltz_temp_step
     end do
-    
+
     ! This array contains the same temperatures of the TempArray, but multiplied by k_boltzmann, in units of eV
     allocate(KTArray(TempNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating KTArray in boltzwann_main')
@@ -249,7 +248,7 @@ contains
     allocate(IntegrandArray(6,TDFEnergyNumPoints),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating FermiDerivArray in boltzwann_main')
 
-   NumberZeroDet=0
+    NumberZeroDet=0
     ! Now, I calculate the various spectra for all mu and T values
     do LocalIdx = 1, counts(my_node_id)
        ! GlobalIdx is an index from 0 to TempNumPoints*MuNumPoints-1
@@ -271,7 +270,7 @@ contains
        ! ElCond contains now (hbar^2/e^2) * sigma in eV*fs/angstrom, where sigma is the conductivity tensor 
        ! (note that MinusFermiDerivative is in units of 1/eV, so that when I perform the integration
        ! ElCond has the same units of TDF)
-       
+
        ! I store in ThisElCond the conductivity tensor in standard format
        ! Store both the upper and lower triangle
        do j=1,3
@@ -299,8 +298,8 @@ contains
              ThisElCond2d(1,2) = ThisElCond(1,2)
              ThisElCond2d(2,1) = ThisElCond(2,1)
              ThisElCond2d(2,2) = ThisElCond(2,2)
-          ! I do not do the else case because this was already checked at the beginning
-          ! of this routine
+             ! I do not do the else case because this was already checked at the beginning
+             ! of this routine
           end if
           call utility_inv2(ThisElCond2d,ElCondInverse2d,Determinant)
           ElCondInverse = 0._dp ! Other elements must be set to zero
@@ -319,8 +318,8 @@ contains
              ElCondInverse(1,2) = ElCondInverse2d(1,2)
              ElCondInverse(2,1) = ElCondInverse2d(2,1)
              ElCondInverse(2,2) = ElCondInverse2d(2,2)
-          ! I do not do the else case because this was already checked at the beginning
-          ! of this routine
+             ! I do not do the else case because this was already checked at the beginning
+             ! of this routine
           end if
        else
           call utility_inv3(ThisElCond,ElCondInverse,Determinant)
@@ -336,14 +335,14 @@ contains
           ! the inverse, I have to calculate ElCondInverse / Determinant
           ElCondInverse = ElCondInverse / Determinant
        end if
-       
+
        ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
        ! (-dn/dE) * TDF_ij(E) * (E-mu) and its integral is (ElCond*Seebeck)_ij * T / e, where
        ! T is the temperature
        do EnIdx=1,TDFEnergyNumPoints
           IntegrandArray(:,EnIdx) = IntegrandArray(:,EnIdx) * (TDFEnergyArray(EnIdx) -MuArray(MuIdx))
        end do
-       
+
        ! I store in SigmaS_FP the product of the two tensors in full-packed format
        LocalSigmaS(:,LocalIdx) = sum(IntegrandArray,DIM=2)*boltz_tdf_energy_step / TempArray(TempIdx)
        do j=1,3
@@ -355,7 +354,7 @@ contains
        end do
        ! Now, LocalSigmaS (and SigmaS_FP) contain
        ! [ElCond*Seebeck] * hbar^2/e in units of eV^2*fs/angstrom/kelvin
-       
+
        ! I calculate ElCond^(-1) . (LocalSigmaS) = Seebeck in fully-packed format and then
        ! store it in the LocalSeebeck array (not in packed format because, unless S and sigma 
        ! commute, there is no a-priori reason for which S should be symmetric - even if
@@ -379,7 +378,7 @@ contains
        ! therefore ThisSeebeck, which has the units of ElCondInverse * ElCondTimesSeebeck, i.e.
        ! [(hbar^2/e^2) / eV / fs * angstrom] * [ e / hbar^2 * eV^2 * fs / angstrom / kelvin] = 
        ! eV/e/kelvin = volt/kelvin
-       
+
        ! Now, I multiply IntegrandArray by (E-mu): then, IntegrandArray contains
        ! (-dn/dE) * TDF_ij(E) * (E-mu)^2 and its integral is (Kappa)_ij * T
        do EnIdx=1,TDFEnergyNumPoints
@@ -403,7 +402,7 @@ contains
     end if
 
     ! Now, I multiply by the correct factors to obtain the tensors in SI units
-    
+
     ! **** Electrical conductity ****
     ! Now, ElCond is in units of (e^2/hbar^2) * eV * fs / angstrom
     ! I want the conductivity in units of 1/Ohm/meter (i.e., SI units). The conversion factor is then
@@ -460,7 +459,7 @@ contains
        allocate(Kappa(1,1,1),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating Kappa in boltzwann_main (2)')
     end if
-    
+
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
     call comms_gatherv(LocalElCond(1,1),6*counts(my_node_id),ElCond(1,1,1),6*counts,6*displs)
@@ -497,7 +496,7 @@ contains
        end do
        close(sigmas_unit)
        if (iprint > 1) write(stdout,'(3X,A)') &
-                 "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the " // trim(seedname)//"_sigmas.dat file."
+            "sigma*S (sigma=el. conductivity, S=Seebeck coeff.) written on the " // trim(seedname)//"_sigmas.dat file."
 
        seebeck_unit =io_file_unit()
        open(unit=seebeck_unit,file=trim(seedname)//'_seebeck.dat')  
@@ -580,27 +579,27 @@ contains
   end subroutine boltzwann_main
 
   subroutine calcTDFandDOS(TDF,TDFEnergyArray)
-  !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
-  !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
-  !! 
-  !! The TDFEnergyArray must be already allocated and initialized with the
-  !! energies in eV before calling this routine.
-  !! 
-  !!  The TDF array must be already allocated with dimensions 6 * size(TDFEnergyArray) * ndim, before calling
-  !! this routine, where ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
-  !!
-  !!  If run in parallel, at the end each processor will have a copy of the full TDF array
-  !!
-  !!  We assume that the TDFEnergyArray is uniformely spaced and that it has at least
-  !!       two elements (no checks are performed on this).
-  !! 
-  !! Note that the order of indices of TDF is different w.r.t. the DOS array (the energy is not the first but
-  !!       the second index)
-  !! 
-  !!  If the input flag boltz_bandshift is set to .true., the code will also shift the
-  !!       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
-  !!       and boltz_bandshift_firstband input flags.
-  !! 
+    !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
+    !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
+    !! 
+    !! The TDFEnergyArray must be already allocated and initialized with the
+    !! energies in eV before calling this routine.
+    !! 
+    !!  The TDF array must be already allocated with dimensions 6 * size(TDFEnergyArray) * ndim, before calling
+    !! this routine, where ndim=1 if spin_decomp==false, or ndim=3 if spin_decomp==true. This is not checked.
+    !!
+    !!  If run in parallel, at the end each processor will have a copy of the full TDF array
+    !!
+    !!  We assume that the TDFEnergyArray is uniformely spaced and that it has at least
+    !!       two elements (no checks are performed on this).
+    !! 
+    !! Note that the order of indices of TDF is different w.r.t. the DOS array (the energy is not the first but
+    !!       the second index)
+    !! 
+    !!  If the input flag boltz_bandshift is set to .true., the code will also shift the
+    !!       conduction bands by a given amount, as defined by the boltz_bandshift_energyshift
+    !!       and boltz_bandshift_firstband input flags.
+    !! 
     use w90_get_oper, only      : get_HH_R, get_SS_R, HH_R
     use w90_parameters, only    : num_wann, boltz_calc_also_dos, &
          boltz_dos_energy_step, boltz_dos_energy_min, boltz_dos_energy_max, &
@@ -627,7 +626,7 @@ contains
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
- 
+
     real(kind=dp), dimension(3) :: kpt, orig_kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
 
@@ -637,7 +636,7 @@ contains
     real(kind=dp) :: del_eig(num_wann,3)
     real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
 
-    
+
     real(kind=dp), allocatable :: DOS_EnergyArray(:)
     real(kind=dp), allocatable :: DOS_k(:,:), TDF_k(:,:,:)
     real(kind=dp), allocatable :: DOS_all(:,:)
@@ -726,7 +725,7 @@ contains
        write(stdout,'(5X,A)') "*** WARNING! boltz_dos_smr_fixed_en_width ignored since you chose"
        write(stdout,'(5X,A)') "             an adaptive smearing."
     end if
-       
+
     if (on_root.and.(iprint>1)) then
        if (boltz_TDF_smr_fixed_en_width/(TDFEnergyArray(2)-TDFEnergyArray(1)) < min_smearing_binwidth_ratio) then
           write(stdout,'(5X,A)') "Smearing for TDF: "
@@ -773,7 +772,7 @@ contains
        kpt(1)=(real(loop_x,dp)/real(boltz_kmesh(1),dp))
        kpt(2)=(real(loop_y,dp)/real(boltz_kmesh(2),dp))
        kpt(3)=(real(loop_z,dp)/real(boltz_kmesh(3),dp))
-              
+
        ! Here I get the band energies and the velocities
        call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
        call dos_get_levelspacing(del_eig,boltz_kmesh,levelspacing_k)
@@ -795,7 +794,7 @@ contains
 
        if (boltz_calc_also_dos) then
           if (boltz_dos_adpt_smr) then
-             
+
              ! This may happen if at least one band has zero derivative (along all three directions)
              ! Then I substitute this point with its 8 neighbors (+/- 1/4 of the spacing with the next point on the grid
              ! on each of the three directions)
@@ -1019,7 +1018,7 @@ contains
     real(kind=dp)    :: rdum,spn_nk(num_wann),alpha_sq,beta_sq 
     real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
-    
+
     r_num_elec_per_state = real(num_elec_per_state, kind=dp)
 
     ! Get spin projections for every band
@@ -1084,7 +1083,7 @@ contains
                r_num_elec_per_state * deleig_k(BandIdx, 2) * deleig_k (BandIdx, 3)  
           TDF_k(ZZ,loop_f,1)=TDF_k(ZZ,loop_f,1) + rdum * &
                r_num_elec_per_state * deleig_k(BandIdx, 3) * deleig_k (BandIdx, 3)  
-          
+
           ! I don't put num_elec_per_state here below: if we are calculating the spin decomposition,
           ! we should be doing a calcultation with spin-orbit, and thus num_elec_per_state=1!
           if(spin_decomp) then
@@ -1117,7 +1116,7 @@ contains
           end if
        end do
     end do !loop over bands
-    
+
     ! I multiply it here, since I am assuming a constant relaxation time, independent of the band index
     ! (actually, it is also independent of k)
     TDF_k = TDF_k * boltz_relax_time
