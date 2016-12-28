@@ -4,6 +4,8 @@ endif
 
 REALMAKEFILE=../Makefile.2
 
+TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else echo tar; fi )
+
 default: wannier post
 
 all: wannier lib post w90chk2chk w90pov w90vdw
@@ -50,6 +52,7 @@ clean:
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
+	$(MAKE) -C $(ROOTDIR)/test-suite clean
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a
@@ -62,9 +65,12 @@ thedoc:
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
 
 dist:
-	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90-2.1.0/,' -f wannier90-2.1.0.tar.gz \
+	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90-2.1.0/,' -f wannier90-2.1.0.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
+		./autodoc/README.txt \
+		./autodoc/*.md \
+		./autodoc/media/favicon*png \
 		./examples/README \
 		./examples/example01/UNK* \
 		./examples/*/*.win \
@@ -104,12 +110,16 @@ dist:
 		./examples/example20/SrMnO3/SrMnO3.scf \
 		./examples/example20/SrMnO3/SrMnO3-t2g.pw2wan \
 		./examples/example20/SrMnO3/SrMnO3-t2g.win \
+		./examples/example2[1-2]/README \
+		./examples/example2[1-2]/*/*.scf \
+		./examples/example2[1-2]/*/*.nscf \
+		./examples/example2[1-2]/*/*.win \
+		./examples/example2[1-2]/*/*.sym \
+		./examples/example2[1-2]/*/*.pw2wan \
 		./pseudo/*.UPF \
 		./pwscf/README \
-		./pwscf/v3.2.3/*.f90 \
-		./pwscf/v4.0/*.f90 \
-		./pwscf/v4.1/*.f90 \
-		./pwscf/v5.0/*.f90 \
+		./pwscf/v*/*.f90 \
+		./pwscf/v*/README \
 		./config/make.inc* \
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
@@ -137,8 +147,6 @@ dist:
                 ./doc/*/*.tex \
                 ./doc/*/*.eps \
                 ./doc/*/*.fig \
-                ./doc/user_guide.pdf \
-                ./doc/tutorial.pdf \
 		./doc/wannier90.bib \
 		./*/Makefile \
 		./*/Makefile.2 \
@@ -153,7 +161,7 @@ test:
 	(cd $(ROOTDIR)/test-suite && $(MAKE) run-tests )
 
 dist-lite:
-	@(cd $(ROOTDIR) && tar -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
+	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./config/* \

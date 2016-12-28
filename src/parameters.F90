@@ -2915,7 +2915,7 @@ contains
     write(stdout,*)  '            |    Florian Thole (ETH Zurich)                     |'
     write(stdout,*)  '            |    Pablo Garcia Fernandez (Unican, Spain)         |'
     write(stdout,*)  '            |    Dominik Gresch (ETH Zurich)                    |'
-    write(stdout,*)  '            |    Samuel Ponce (Univerisity of Oxford)           |'
+    write(stdout,*)  '            |    Samuel Ponce (University of Oxford)            |'
     write(stdout,*)  '            |    Marco Gibertini (EPFL)                         |'
     write(stdout,*)  '            |    Christian Stieger (ETHZ, CH)                   |' 
     write(stdout,*)  '            |    Stepan Tsirkin (Universidad del Pais Vasco)    |' 

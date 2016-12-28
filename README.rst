@@ -88,7 +88,7 @@ Contributors to the code include:
 * Florian Thole (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
 * Pablo Garcia Fernandez (Unican, ES): Matrix elements of the position operator
 * Dominik Gresch (ETHZ, CH): FORD infrastructure for code documentation
-* Samuel Ponce (Oxford Univerisity, UK): Test suite for Wannier90
+* Samuel Ponce (Oxford University, UK): Test suite for Wannier90
 * Marco Gibertini (EPFL, CH): Improvements to the interpolation routines
 * Christian Stieger (ETHZ, CH): Routine to print the U matrices
 * Stepan Tsirkin (Universidad del Pais Vasco, Spain): bug fixes in the berry module
