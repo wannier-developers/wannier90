@@ -13,6 +13,7 @@
 !------------------------------------------------------------!
 
 module w90_spin
+  !! Module to compute spin
 
   use w90_constants, only : dp
 
@@ -31,7 +32,7 @@ module w90_spin
   subroutine spin_get_moment
   !============================================================!
   !                                                            !
-  ! Computes the spin magnetic moment by Wannier interpolation !
+  !! Computes the spin magnetic moment by Wannier interpolation
   !                                                            !
   !============================================================!
 
@@ -132,11 +133,11 @@ module w90_spin
   subroutine spin_get_nk(kpt,spn_nk)
   !=============================================================!
   !                                                             !
-  ! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann) !
-  ! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z                     !
-  !                                                             !
-  ! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit  !
-  ! vector along the chosen spin quantization axis              !
+  !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
+  !! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z                     
+  !!                                                             
+  !! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit  
+  !! vector along the chosen spin quantization axis              
   !                                                             !
   !============================================================ !
 
@@ -196,7 +197,8 @@ module w90_spin
   !===========================================================!
 
   subroutine spin_get_moment_k(kpt,ef,spn_k)
-
+    !! Computes the spin magnetic moment by Wannier interpolation
+    !! at the specified k-point
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_io, only            : io_error
     use w90_utility, only       : utility_diagonalize,utility_rotate_diag

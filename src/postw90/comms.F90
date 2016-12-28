@@ -20,6 +20,7 @@
 
 
 module w90_comms
+  !! This module handles all of the communications
 
   use w90_constants, only : dp
   use w90_io, only: io_error
@@ -34,8 +35,13 @@ module w90_comms
 #endif
 
   logical, public, save :: on_root
-  integer, public, save :: num_nodes,my_node_id
+  !! Are we the root node
+  integer, public, save :: num_nodes
+  !! Number of nodes
+  integer, public, save :: my_node_id
+  !! ID of this node
   integer, public, parameter :: root_id=0
+  !! ID of the root node
 
   integer, parameter :: mpi_send_tag=77 !abitrary
 
@@ -107,7 +113,7 @@ module w90_comms
 contains
 
   subroutine comms_setup
- 
+    !! Set up communications
     implicit none
 
 #ifdef MPI
@@ -127,26 +133,27 @@ contains
     
   end subroutine comms_setup
 
-  !> Given an array of size numpoints, we want to split on num_nodes nodes. This function returns
-  !> two arrays: count and displs.
-  !> The i-th element of the count array gives the number of elements
-  !> that must be calculated by the process with id (i-1).
-  !> The i-th element of the displs array gives the displacement of the array calculated locally on
-  !> the process with id (i-1) with respect to the global array.
-  !>
-  !> \note These values are those to be passed to the functions MPI_Scatterv, MPI_Gatherv and MPI_Alltoallv.
-  !>
-  !> \note one can use the following do loop to run over the needed elements, if the full array is stored
-  !> on all nodes:
-  !> do i=displs(my_node_id)+1,displs(my_node_id)+counts(my_node_id)
-  !> 
-  !> \param numpoints Number of elements of the array to be scattered
-  !> \param counts    Array (of size num_nodes) with the number of elements of the array on each node
-  !> \param displs    Array (of size num_nodes) with the displacement relative to the global array
   subroutine comms_array_split(numpoints,counts,displs)
+    !! Given an array of size numpoints, we want to split on num_nodes nodes. This function returns
+    !! two arrays: count and displs.
+    !!
+    !! The i-th element of the count array gives the number of elements
+    !! that must be calculated by the process with id (i-1).
+    !! The i-th element of the displs array gives the displacement of the array calculated locally on
+    !! the process with id (i-1) with respect to the global array.
+    !!
+    !! These values are those to be passed to the functions MPI_Scatterv, MPI_Gatherv and MPI_Alltoallv.
+    !!
+    !! one can use the following do loop to run over the needed elements, if the full array is stored
+    !! on all nodes:
+    !! do i=displs(my_node_id)+1,displs(my_node_id)+counts(my_node_id)
+    !!
     integer, intent(in) :: numpoints
+    !! Number of elements of the array to be scattered
     integer, dimension(0:num_nodes-1), intent(out) :: counts
+    !! Array (of size num_nodes) with the number of elements of the array on each node
     integer, dimension(0:num_nodes-1), intent(out) :: displs
+    !! Array (of size num_nodes) with the displacement relative to the global array
 
     integer :: ratio, remainder, i
 
@@ -166,7 +173,7 @@ contains
   end subroutine comms_array_split
 
   subroutine comms_end
- 
+    !! Called to finalise the comms
     implicit none
 
 #ifdef MPI
@@ -178,7 +185,7 @@ contains
   end subroutine comms_end
 
   subroutine comms_barrier
- 
+    !! A barrier to synchronise all nodes
     implicit none
 
 #ifdef MPI
@@ -205,7 +212,7 @@ contains
 
 
   subroutine comms_bcast_int(array,size)
-
+    !! Send integar array from root node to all nodes
     implicit none
 
     integer, intent(inout) :: array
@@ -226,7 +233,7 @@ contains
   end subroutine comms_bcast_int
 
   subroutine comms_bcast_real(array,size)
-
+    !! Send real array from root node to all nodes
     implicit none
 
     real(kind=dp), intent(inout) :: array
@@ -247,7 +254,7 @@ contains
   end subroutine comms_bcast_real
 
   subroutine comms_bcast_logical(array,size)
-
+    !! Send logical array from root node to all nodes
     implicit none
 
     logical, intent(inout) :: array
@@ -268,7 +275,7 @@ contains
   end subroutine comms_bcast_logical
 
   subroutine comms_bcast_char(array,size)
-
+    !! Send character array from root node to all nodes
     implicit none
 
     character(len=*), intent(inout) :: array
@@ -290,6 +297,7 @@ contains
   end subroutine comms_bcast_char
 
   subroutine comms_bcast_cmplx(array,size)
+    !! Send character array from root node to all nodes
 
     implicit none
 
@@ -315,6 +323,7 @@ contains
   !--------- SEND ----------------
 
   subroutine comms_send_logical(array,size,to)
+    !! Send logical array to specified node
 
     implicit none
 
@@ -339,7 +348,7 @@ contains
 
 
   subroutine comms_send_int(array,size,to)
-
+    !! Send integer array to specified node
     implicit none
 
     integer, intent(inout) :: array
@@ -363,7 +372,7 @@ contains
 
 
   subroutine comms_send_char(array,size,to)
-
+    !! Send character array to specified node
     implicit none
 
     character(len=*), intent(inout) :: array
@@ -387,7 +396,7 @@ contains
 
 
   subroutine comms_send_real(array,size,to)
-
+    !! Send real array to specified node
     implicit none
 
     real(kind=dp), intent(inout) :: array
@@ -411,7 +420,7 @@ contains
 
 
   subroutine comms_send_cmplx(array,size,to)
-
+    !! Send complex array to specified node
     implicit none
 
     complex(kind=dp), intent(inout) :: array
@@ -438,7 +447,7 @@ contains
   !--------- RECV ----------------
 
   subroutine comms_recv_logical(array,size,from)
-
+    !! Receive logical array from specified node
     implicit none
 
     logical, intent(inout) :: array
@@ -463,7 +472,7 @@ contains
 
 
   subroutine comms_recv_int(array,size,from)
-
+    !! Receive integer array from specified node
     implicit none
 
     integer, intent(inout) :: array
@@ -488,7 +497,7 @@ contains
 
 
   subroutine comms_recv_char(array,size,from)
-
+    !! Receive character array from specified node
     implicit none
 
     character(len=*), intent(inout) :: array
@@ -513,7 +522,7 @@ contains
 
 
   subroutine comms_recv_real(array,size,from)
-
+    !! Receive real array from specified node
     implicit none
 
     real(kind=dp), intent(inout) :: array
@@ -538,7 +547,7 @@ contains
 
 
   subroutine comms_recv_cmplx(array,size,from)
-
+    !! Receive complex array from specified node
     implicit none
 
     complex(kind=dp), intent(inout) :: array
@@ -581,7 +590,7 @@ contains
   ! COMMS_REDUCE (collect data on the root node)
 
   subroutine comms_reduce_int(array,size,op)
-
+    !! Reduce integer data to root node
     implicit none
 
     integer, intent(inout) :: array
@@ -624,6 +633,7 @@ contains
 
 
   subroutine comms_reduce_real(array,size,op)
+    !! Reduce real data to root node
 
     implicit none
 
@@ -671,6 +681,7 @@ contains
 
 
   subroutine comms_reduce_cmplx(array,size,op)
+    !! Reduce complex data to root node
 
     implicit none
 
@@ -713,6 +724,7 @@ contains
   end subroutine comms_reduce_cmplx
 
   subroutine comms_allreduce_real(array,size,op)
+    !! Reduce real data to all nodes
 
     implicit none
 
@@ -759,7 +771,7 @@ contains
   end subroutine comms_allreduce_real
 
   subroutine comms_allreduce_cmplx(array,size,op)
-
+    !! Reduce complex data to all nodes
     implicit none
 
     complex(kind=dp), intent(inout) :: array
@@ -800,19 +812,20 @@ contains
 
   end subroutine comms_allreduce_cmplx
 
-  ! Array: local array for sending data; localcount elements will be sent
-  !        to the root node
-  ! rootglobalarray: array on the root node to which data will be sent
-  ! counts, displs : how data should be partitioned, see MPI documentation or
-  !                  function comms_array_split
-  subroutine comms_gatherv_real(array,localcount,rootglobalarray,counts,displs)
 
+  subroutine comms_gatherv_real(array,localcount,rootglobalarray,counts,displs)
+    !! Gather real data to root node
     implicit none
 
     real(kind=dp), intent(inout)              :: array
+    !! local array for sending data
     integer, intent(in)                       :: localcount
+    !! localcount elements will be sent to the root node
     real(kind=dp), intent(inout)              :: rootglobalarray
+    !! array on the root node to which data will be sent
     integer, dimension(num_nodes), intent(in) :: counts
+    !! how data should be partitioned, see MPI documentation or
+    !! function comms_array_split
     integer, dimension(num_nodes), intent(in) :: displs
 
 #ifdef MPI
@@ -833,20 +846,18 @@ contains
 
   end subroutine comms_gatherv_real
 
-
-  ! Array: local array for getting data; localcount elements will be fetched
-  !        from the root node
-  ! rootglobalarray: array on the root node from which data will be sent
-  ! counts, displs : how data should be partitioned, see MPI documentation or
-  !                  function comms_array_split
   subroutine comms_scatterv_real(array,localcount,rootglobalarray,counts,displs)
-
+    !! Scatter data from root node
     implicit none
 
     real(kind=dp), intent(inout)              :: array
+    !! local array for getting data
     integer, intent(in)                       :: localcount
+    !! localcount elements will be fetched from the root node
     real(kind=dp), intent(inout)              :: rootglobalarray
+    !! array on the root node from which data will be sent
     integer, dimension(num_nodes), intent(in) :: counts
+    !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, dimension(num_nodes), intent(in) :: displs
 
 #ifdef MPI
@@ -869,19 +880,18 @@ contains
 
   end subroutine comms_scatterv_real
 
-  ! Array: local array for getting data; localcount elements will be fetched
-  !        from the root node
-  ! rootglobalarray: array on the root node from which data will be sent
-  ! counts, displs : how data should be partitioned, see MPI documentation or
-  !                  function comms_array_split
   subroutine comms_scatterv_int_1(array,localcount,rootglobalarray,counts,displs)
-
+    !! Scatter integer data from root node (array of rank 1)
     implicit none
 
     integer, dimension(:), intent(inout)      :: array
+    !! local array for getting data
     integer, intent(in)                       :: localcount
+    !! localcount elements will be fetched from the root node
     integer, dimension(:), intent(inout)      :: rootglobalarray
+    !!  array on the root node from which data will be sent
     integer, dimension(num_nodes), intent(in) :: counts
+    !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, dimension(num_nodes), intent(in) :: displs
 
 #ifdef MPI
@@ -902,19 +912,19 @@ contains
 
   end subroutine comms_scatterv_int_1
 
-  ! Array: local array for getting data; localcount elements will be fetched
-  !        from the root node
-  ! rootglobalarray: array on the root node from which data will be sent
-  ! counts, displs : how data should be partitioned, see MPI documentation or
-  !                  function comms_array_split
   subroutine comms_scatterv_int_2(array,localcount,rootglobalarray,counts,displs)
-
+    !! Scatter integer data from root node (array of rank 2)
+    
     implicit none
 
     integer, dimension(:,:), intent(inout)    :: array
+    !! local array for getting data
     integer, intent(in)                       :: localcount
+    !! localcount elements will be fetched from the root node
     integer, dimension(:,:), intent(inout)    :: rootglobalarray
+    !!  array on the root node from which data will be sent
     integer, dimension(num_nodes), intent(in) :: counts
+    !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, dimension(num_nodes), intent(in) :: displs
 
 #ifdef MPI
@@ -924,7 +934,7 @@ contains
          Array,localcount,MPI_Integer,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_scatterv_real')
+       call io_error('Error in comms_scatterv_int_1')
     end if
 
 #else
@@ -935,19 +945,19 @@ contains
 
   end subroutine comms_scatterv_int_2
 
-  ! Array: local array for getting data; localcount elements will be fetched
-  !        from the root node
-  ! rootglobalarray: array on the root node from which data will be sent
-  ! counts, displs : how data should be partitioned, see MPI documentation or
-  !                  function comms_array_split
   subroutine comms_scatterv_int_3(array,localcount,rootglobalarray,counts,displs)
+    !! Scatter integer data from root node (array of rank 3)
 
     implicit none
 
     integer, dimension(:,:,:), intent(inout)  :: array
+    !! local array for getting data
     integer, intent(in)                       :: localcount
+    !! localcount elements will be fetched from the root node
     integer, dimension(:,:,:), intent(inout)  :: rootglobalarray
+    !!  array on the root node from which data will be sent
     integer, dimension(num_nodes), intent(in) :: counts
+    !! how data should be partitioned, see MPI documentation or function comms_array_split
     integer, dimension(num_nodes), intent(in) :: displs
 
 #ifdef MPI
@@ -957,7 +967,7 @@ contains
          Array,localcount,MPI_Integer,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_scatterv_real')
+       call io_error('Error in comms_scatterv_int_3')
     end if
 
 #else

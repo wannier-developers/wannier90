@@ -13,7 +13,7 @@
 !------------------------------------------------------------!
 
 module w90_dos
-
+  !! Compute Density of States
   use w90_constants, only : dp
 
   implicit none
@@ -23,7 +23,9 @@ module w90_dos
   public :: dos_main, dos_get_levelspacing, dos_get_k
 
   integer       :: num_freq
+  !! Number of sampling points
   real(kind=dp) :: d_omega
+  !! Step between energies
 
 contains
 
@@ -34,10 +36,10 @@ contains
   subroutine dos_main
     !=======================================================!
     !                                                       !
-    ! Computes the electronic density of states. Can        !
-    ! resolve into up-spin and down-spin parts, project     !
-    ! onto selected Wannier orbitals, and use adaptive      !
-    ! broadening, as in PRB 75, 195121 (2007) [YWVS07].     !
+    !! Computes the electronic density of states. Can 
+    !! resolve into up-spin and down-spin parts, project 
+    !! onto selected Wannier orbitals, and use adaptive 
+    !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
     !                                                       !
     !=======================================================!
 
@@ -617,21 +619,20 @@ contains
 
   ! =========================================================================
 
-  !> This subroutine calculates the level spacing, i.e. how much the level changes
-  !> near a given point of the interpolation mesh
-  !>
-  !> \param del_eig Band velocities, already corrected when degeneracies occur
-  !> \param kmesh array of three integers, giving the number of k points along
-  !>        each of the three directions defined by the reciprocal lattice vectors
-  !> \param levelspacing On output, the spacing for each of the bands (in eV)
   subroutine dos_get_levelspacing(del_eig,kmesh,levelspacing)
+  !! This subroutine calculates the level spacing, i.e. how much the level changes
+  !! near a given point of the interpolation mesh
     use w90_parameters, only: num_wann
     use w90_postw90_common, only : pw90common_kmesh_spacing
     
     real(kind=dp), dimension(num_wann,3), intent(in) :: del_eig
+    !! Band velocities, already corrected when degeneracies occur
     integer, dimension(3), intent(in)                :: kmesh
+    !! array of three integers, giving the number of k points along
+    !! each of the three directions defined by the reciprocal lattice vectors
     real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
-    
+    !! On output, the spacing for each of the bands (in eV)
+
     real(kind=dp) :: Delta_k
     integer :: band
     

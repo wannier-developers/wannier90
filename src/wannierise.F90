@@ -13,6 +13,7 @@
 !------------------------------------------------------------!
 
 module w90_wannierise
+  !! Main routines for the minimisation of the spread
 
   use w90_constants
 
@@ -27,16 +28,21 @@ module w90_wannierise
   real(kind=dp),    allocatable  :: rnkb (:,:,:)   
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
-  ! The next variable is used to trigger the calculation of the invarient spread
-  ! we only need to do this on entering wann_main (_gamma)
   logical :: first_pass
+  !! Used to trigger the calculation of the invarient spread
+  !! we only need to do this on entering wann_main (_gamma)
 
 
   type localisation_vars
-     real(kind=dp) :: om_i   
-     real(kind=dp) :: om_d   
+     !! Contributions to the spread
+     real(kind=dp) :: om_i  
+     !! Gauge Invarient
+     real(kind=dp) :: om_d
+     !! Diagonal
      real(kind=dp) :: om_od  
+     !! Off-diagonal
      real(kind=dp) :: om_tot 
+     !! Total
 !~     real(kind=dp) :: om_1   
 !~     real(kind=dp) :: om_2   
 !~     real(kind=dp) :: om_3   
@@ -49,8 +55,7 @@ contains
   subroutine wann_main
     !==================================================================!
     !                                                                  !
-    ! Calculate the Unitary Rotations to give                          !
-    !            Maximally Localised Wannier Functions                 !
+    !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions 
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0
@@ -542,8 +547,8 @@ contains
     subroutine internal_test_convergence()
       !===============================================!
       !                                               !
-      ! Determine whether minimisation of non-gauge   !
-      ! invariant spread is converged                 !
+      !! Determine whether minimisation of non-gauge
+      !! invariant spread is converged
       !                                               !
       !===============================================!
 
@@ -611,8 +616,8 @@ contains
     subroutine internal_random_noise()
       !===============================================!
       !                                               !
-      ! Add some random noise to the search direction !
-      ! to help escape from local minima              !
+      !! Add some random noise to the search direction
+      !! to help escape from local minima
       !                                               !
       !===============================================!
 
@@ -675,10 +680,10 @@ contains
     subroutine internal_search_direction()
       !===============================================!
       !                                               !
-      ! Calculate the conjugate gradients search      !
-      ! direction using the Fletcher-Reeves formula:  !
-      !                                               !
-      !     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]    !
+      !! Calculate the conjugate gradients search
+      !! direction using the Fletcher-Reeves formula: 
+      !!
+      !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
 
@@ -775,8 +780,8 @@ contains
     subroutine internal_optimal_step()
       !===============================================!
       !                                               !
-      ! Calculate the optimal step length based on a  !
-      ! parabolic line search                         !
+      !! Calculate the optimal step length based on a
+      !! parabolic line search 
       !                                               !
       !===============================================!
 
@@ -828,7 +833,7 @@ contains
     subroutine internal_new_u_and_m()               
       !===============================================!
       !                                               !
-      ! Update U and M matrices after a trial step    !
+      !! Update U and M matrices after a trial step 
       !                                               !
       !===============================================!
       use w90_sitesym, only: sitesym_symmetrize_rotation,& !RS:
@@ -1113,7 +1118,8 @@ contains
   !==================================================================!
   subroutine wann_phases (csheet, sheet, rguide, irguide, m_w)
     !==================================================================!
-    !                                                                  !
+    !! Uses guiding centres to pick phases which give a 
+    !! consistent choice of branch cut for the spread definction 
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : eps6
@@ -1125,10 +1131,15 @@ contains
     implicit none
 
     complex(kind=dp), intent(out)   :: csheet (:,:,:)
+    !! Choice of phase
     real(kind=dp)   , intent(out)   :: sheet (:,:,:)
+    !! Choice of branch cut
     real(kind=dp)   , intent(inout) :: rguide (:,:)
+    !! Guiding centres
     integer         , intent(in)    :: irguide
+    !! Zero if first call to this routine
     real(kind=dp), intent(in), optional :: m_w(:,:,:)
+    !! Used in the Gamma point routines as an optimisation
 
     !local
     complex(kind=dp) :: csum (nnh)  
@@ -1313,7 +1324,7 @@ contains
   subroutine wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     !==================================================================!
     !                                                                  !
-    !   Calculate the Wannier Function spread                          !
+    !!   Calculate the Wannier Function spread
     !                                                                  !
     !===================================================================  
     use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&

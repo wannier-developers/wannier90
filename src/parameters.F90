@@ -13,6 +13,8 @@
 !------------------------------------------------------------!
 
 module w90_parameters
+  !! This module contains parameters to control the actions of wannier90.
+  !! Also routines to read the parameters and write them out again.
 
   use w90_constants, only : dp
   use w90_io,        only : stdout,maxlen
@@ -23,15 +25,25 @@ module w90_parameters
 
   !Input
   integer,           public, save :: iprint
+  !! Controls the verbosity of the output
   character(len=20), public, save :: energy_unit
+  !! Units for energy
   character(len=20), public, save :: length_unit
+  !! Units for length
   logical,           public, save :: wvfn_formatted
+  !! Read the wvfn from fortran formatted file
   logical,           public, save :: spn_formatted
+  !! Read the spin from fortran formatted file
   logical,           public, save :: berry_uHu_formatted
+  !! Read the uHu from fortran formatted file
   integer,           public, save :: spin
+  !! Spin up=1 down=2
   integer,           public, save :: num_bands
+  !! Number of bands
   integer,           public, save :: num_dump_cycles
+  !! Number of steps before writing checkpoint
   integer,           public, save :: num_print_cycles
+  !! Number of steps between writing output
   character(len=50), public, save :: devel_flag
   ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
   ! Only internal, always use the local variables defined by each module
@@ -60,10 +72,12 @@ module w90_parameters
   ! [gp-end]
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
-    !! number of wannier functions
+  !! number of wannier functions
   integer,           public, save :: mp_grid(3)
+  !! Dimensions of the Monkhorst-Pack grid
 !  logical,           public, save :: automatic_mp_grid
   logical,           public, save :: gamma_only  
+  !! Use the special Gamma-point routines
   real(kind=dp),     public, save :: dis_win_min
     !! lower bound of the disentanglement outer window
   real(kind=dp),     public, save :: dis_win_max
@@ -75,15 +89,20 @@ module w90_parameters
   integer,           public, save :: dis_num_iter
     !! number of disentanglement iteration steps
   real(kind=dp),     public, save :: dis_mix_ratio
+  !! Mixing ratio for the disentanglement routine
   real(kind=dp),     public, save :: dis_conv_tol
+  !! Convergence tolerance for the disentanglement 
   integer,           public, save :: dis_conv_window
+  !! Size of the convergence window for disentanglement
   ! GS-start
   integer,           public, save :: dis_spheres_first_wann
   integer,           public, save :: dis_spheres_num
   real(kind=dp), allocatable, public, save :: dis_spheres(:,:)
   ! GS-end
   integer,           public, save :: num_iter
+  !! Number of wannierisation iterations
   integer,           public, save :: num_cg_steps
+  !! Number of Conjugate Gradient steps
   real(kind=dp),     public, save :: conv_tol
   integer,           public, save :: conv_window
   logical,           public, save :: wannier_plot
@@ -437,7 +456,7 @@ contains
   subroutine param_read ( )
   !==================================================================!
   !                                                                  !
-  ! Read parameters and calculate derived values                     !
+  !! Read parameters and calculate derived values                    
   !                                                                  !
   !===================================================================  
     use w90_constants, only : bohr, eps6
@@ -1957,24 +1976,25 @@ contains
     
   end subroutine param_read
 
-  !> This routines returns the three integers that define the interpolation k-mesh, satisfying
-  !> the condition that the spacing between two neighboring points along each of the three
-  !> k_x, k_y and k_z directions is at smaller than a given spacing.
-  !>
-  !> \note The reclat is defined as:
-  !>   * 'b_1' = (recip_lattice(1,I), i=1,3)
-  !>   * 'b_2' = (recip_lattice(2,I), i=1,3)
-  !>   * 'b_3' = (recip_lattice(3,I), i=1,3)
-  !>
-  !> \note spacing must be > 0 (and in particular different from zero). We don't check this here.
-  !> 
-  !> \param spacing Minimum spacing between neighboring points, in angstrom^(-1)
-  !> \param reclat  Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
-  !> \param mesh    output, will contain the three integers defining the interpolation k-mesh.
-  subroutine internal_set_kmesh(spacing,reclat,mesh)
+ subroutine internal_set_kmesh(spacing,reclat,mesh)
+  !! This routines returns the three integers that define the interpolation k-mesh, satisfying
+  !! the condition that the spacing between two neighboring points along each of the three
+  !! k_x, k_y and k_z directions is at smaller than a given spacing.
+  !!
+  !! The reclat is defined as:
+  !!   * 'b_1' = (recip_lattice(1,I), i=1,3)
+  !!   * 'b_2' = (recip_lattice(2,I), i=1,3)
+  !!   * 'b_3' = (recip_lattice(3,I), i=1,3)
+  !!
+  !!  spacing must be > 0 (and in particular different from zero). We don't check this here.
+  !! 
+   implicit none
     real(kind=dp),                 intent(in) :: spacing
+    !! Minimum spacing between neighboring points, in angstrom^(-1)
     real(kind=dp), dimension(3,3), intent(in) :: reclat
+    !! Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
     integer,       dimension(3),  intent(out) :: mesh
+    !! Will contain the three integers defining the interpolation k-mesh
 
     real(kind=dp), dimension(3) :: blen
     integer :: i
@@ -1989,29 +2009,28 @@ contains
 
   end subroutine internal_set_kmesh
 
-  !> This function reads and sets the interpolation mesh variables needed by a given module
-  !> 
-  !> \note This function MUST be called after having read the global kmesh and kmesh_spacing!!
-  !> \note if the user didn't provide an interpolation_mesh_spacing, it is set to -1, so that
-  !>       one can check in the code what the user asked for
-  !> \note The function takes care also of setting the default value to the global one if no local 
-  !>       keyword is defined
-  !> 
-  !> \param moduleprefix   The prefix that is appended before the name of the variables. In particular,
-  !>                       if the prefix is for instance XXX, the two variables that are read from the
-  !>                       input file are XXX_kmesh and XXX_kmesh_spacing.
-  !> \param should_be_defined A logical flag: if it is true, at the end the code stops if no value is specified.
-  !>                       Define it to .false. if no check should be performed.
-  !>                       Often, you can simply pass the flag that activates the module itself.
-  !> \param module_kmesh the integer array (length 3) where the interpolation mesh will be saved
-  !> \param module_kmesh_spacing the real number on which the min mesh spacing is saved. -1 if it the
-  !>                       user specifies in input the mesh and not the mesh_spacing
   subroutine get_module_kmesh(moduleprefix,should_be_defined,module_kmesh,module_kmesh_spacing)
+  !! This function reads and sets the interpolation mesh variables needed by a given module
+  !> 
+  !!  This function MUST be called after having read the global kmesh and kmesh_spacing!!
+  !!  if the user didn't provide an interpolation_mesh_spacing, it is set to -1, so that
+  !!       one can check in the code what the user asked for
+  !!  The function takes care also of setting the default value to the global one if no local 
+  !!       keyword is defined
     use w90_io, only : io_error
     character(len=*), intent(in)       :: moduleprefix
+    !!The prefix that is appended before the name of the variables. In particular,
+    !!if the prefix is for instance XXX, the two variables that are read from the
+    !!input file are XXX_kmesh and XXX_kmesh_spacing.
     logical, intent(in)                :: should_be_defined
+    !! A logical flag: if it is true, at the end the code stops if no value is specified.
+    !! Define it to .false. if no check should be performed.
+    !! Often, you can simply pass the flag that activates the module itself.
     integer, dimension(3), intent(out) :: module_kmesh
+    !! the integer array (length 3) where the interpolation mesh will be saved
     real(kind=dp), intent(out)         :: module_kmesh_spacing
+    !! the real number on which the min mesh spacing is saved. -1 if it the
+    !!user specifies in input the mesh and not the mesh_spacing
 
     logical :: found, found2
     integer :: i
@@ -2059,14 +2078,12 @@ contains
     end if
   end subroutine get_module_kmesh
 
-  !> This function returns a string describing the type of smearing
-  !> associated to a given smr_index integer value.
-  !>
-  !> \param smearing_index The integer index for which we want to get
-  !>        the string
-  !> \return returns a string which describes the type of smearing
+
   function param_get_smearing_type(smearing_index)
+  !! This function returns a string describing the type of smearing
+  !! associated to a given smr_index integer value.
     integer, intent(in) :: smearing_index
+    !! The integer index for which we want to get the string
     character(len=80)   :: param_get_smearing_type
 
     character(len=4)   :: orderstr
@@ -2087,18 +2104,16 @@ contains
   end function param_get_smearing_type
 
 
-  !> This function parses a string containing the type of 
-  !> smearing and returns the correct index for the smearing_index variable
-  !>
-  !> If the string is not valid, an io_error is issued
-  !>
-  !> \param string The string read from input 
-  !> \param keyword The keyword that was read (e.g., smr_type), so that
-  !>        we can print a more useful error message
   function get_smearing_index(string,keyword)
+  !! This function parses a string containing the type of 
+  !! smearing and returns the correct index for the smearing_index variable
+  !
+  !! If the string is not valid, an io_error is issued
     use w90_io, only: io_error
     character(len=*), intent(in) :: string
+    !! The string read from input 
     character(len=*), intent(in) :: keyword
+    !! The keyword that was read (e.g., smr_type), so that we can print a more useful error message
     integer :: get_smearing_index
 
     integer :: pos
@@ -2139,7 +2154,7 @@ contains
   subroutine param_uppercase
     !===================================================================
     !                                                                  !
-    ! Convert a few things to uppercase to look nice in the output     !
+    !! Convert a few things to uppercase to look nice in the output   
     !                                                                  !
     !===================================================================  
 
@@ -2182,7 +2197,7 @@ contains
   subroutine param_write
     !==================================================================!
     !                                                                  !
-    ! write wannier90 parameters to stdout                             !
+    !! write wannier90 parameters to stdout 
     !                                                                  !
     !===================================================================  
 
@@ -2488,7 +2503,7 @@ contains
   subroutine param_postw90_write
     !==================================================================!
     !                                                                  !
-    ! write postw90 parameters to stdout                               !
+    !! write postw90 parameters to stdout 
     !                                                                  !
     !===================================================================  
 
@@ -2859,6 +2874,7 @@ contains
   end subroutine param_postw90_write
 
   subroutine param_write_header
+    !! Write a suitable header for the calculation - version authors etc
     use w90_io, only : io_date
     use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
     implicit none
@@ -2976,7 +2992,7 @@ contains
   subroutine param_dealloc
     !==================================================================!
     !                                                                  !
-    ! release memory from allocated parameters                         !
+    !! release memory from allocated parameters 
     !                                                                  !
     !===================================================================  
     use w90_io, only : io_error
@@ -3199,9 +3215,9 @@ contains
   !=================================================!
   subroutine param_write_chkpt(chkpt)
     !=================================================!
-    ! Write checkpoint file                           !
-    ! IMPORTANT! If you change the chkpt format, adapt!
-    ! accordingly also the w90chk2chk.x utility!      !
+    !! Write checkpoint file                           
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!      
     !=================================================!
 
     use w90_io, only : io_file_unit,io_date,seedname
@@ -3260,9 +3276,9 @@ contains
     !=================================================!
   subroutine param_read_chkpt()
     !=================================================!
-    ! Read checkpoint file                            !
-    ! IMPORTANT! If you change the chkpt format, adapt!
-    ! accordingly also the w90chk2chk.x utility!      !
+    !! Read checkpoint file                            
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!      
     !=================================================!
 
     use w90_constants, only : eps6
@@ -3409,10 +3425,10 @@ contains
   !=======================================!
   subroutine param_in_file
     !=======================================!
-    ! Load the *.win file into a character  !
-    ! array in_file, ignoring comments and  !
-    ! blank lines and converting everything !
-    ! to lowercase characters               !
+    !! Load the *.win file into a character  
+    !! array in_file, ignoring comments and  
+    !! blank lines and converting everything 
+    !! to lowercase characters               
     !=======================================!
 
     use w90_io,        only : io_file_unit,io_error,seedname
@@ -3486,7 +3502,7 @@ contains
   subroutine param_get_keyword(keyword,found,c_value,l_value,i_value,r_value)
     !===========================================================================!
     !                                                                           !
-    !             Finds the value of the required keyword.                      !
+    !! Finds the value of the required keyword.
     !                                                                           !
     !===========================================================================!
 
@@ -3495,11 +3511,17 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     character(*)     ,optional, intent(inout) :: c_value
+    !! Keyword value
     logical          ,optional, intent(inout) :: l_value
+    !! Keyword value
     integer          ,optional, intent(inout) :: i_value
+    !! Keyword value
     real(kind=dp)    ,optional, intent(inout) :: r_value
+    !! Keyword value
 
     integer           :: kl, in,loop,itmp
     character(len=maxlen) :: dummy
@@ -3555,7 +3577,7 @@ contains
   subroutine param_get_keyword_vector(keyword,found,length,c_value,l_value,i_value,r_value)
     !=========================================================================================!
     !                                                                                         !
-    !                  Finds the values of the required keyword vector                        !
+    !! Finds the values of the required keyword vector 
     !                                                                                         !
     !=========================================================================================!
 
@@ -3564,12 +3586,19 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     integer,           intent(in)  :: length
+    !! Length of vecotr to read
     character(*)     ,optional, intent(inout) :: c_value(length)
+    !! Keyword data
     logical          ,optional, intent(inout) :: l_value(length)
+    !! Keyword data
     integer          ,optional, intent(inout) :: i_value(length)
+    !! Keyword data
     real(kind=dp)    ,optional, intent(inout) :: r_value(length)
+    !! Keyword data
 
     integer           :: kl, in,loop,i
     character(len=maxlen) :: dummy
@@ -3622,7 +3651,7 @@ contains
   subroutine param_get_vector_length(keyword,found,length)
     !======================================================!
     !                                                      !
-    !        Returns the length of a keyword vector        !
+    !! Returns the length of a keyword vector 
     !                                                      !
     !======================================================!
 
@@ -3631,8 +3660,11 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     integer,           intent(out)  :: length
+    !! length of vector
 
     integer           :: kl, in,loop,pos
     character(len=maxlen) :: dummy
@@ -3689,7 +3721,7 @@ contains
   subroutine param_get_keyword_block(keyword,found,rows,columns,c_value,l_value,i_value,r_value)
     !==============================================================================================!
     !                                                                                              !
-    !                           Finds the values of the required data block                        !
+    !!   Finds the values of the required data block               
     !                                                                                              !
     !==============================================================================================!
 
@@ -3699,13 +3731,21 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     integer,           intent(in)  :: rows
+    !! Number of rows
     integer,           intent(in)  :: columns
+    !! Number of columns
     character(*)     ,optional, intent(inout) :: c_value(columns,rows)
+    !! keyword block data
     logical          ,optional, intent(inout) :: l_value(columns,rows)
+    !! keyword block data
     integer          ,optional, intent(inout) :: i_value(columns,rows)
+    !! keyword block data
     real(kind=dp)    ,optional, intent(inout) :: r_value(columns,rows)
+    !! keyword block data
 
     integer           :: in,ins,ine,loop,i,line_e,line_s,counter,blen
     logical           :: found_e,found_s,lconvert
@@ -3825,7 +3865,7 @@ contains
   subroutine param_get_block_length(keyword,found,rows,lunits)
     !=====================================================!
     !                                                     !
-    !       Finds the length of the data block            !
+    !! Finds the length of the data block       
     !                                                     !
     !=====================================================!
 
@@ -3834,9 +3874,13 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical,           intent(out) :: found
+    !! Is keyword present
     integer,           intent(out) :: rows
+    !! Number of rows
     logical, optional, intent(out) :: lunits
+    !! Have we found a unit specification
 
     integer           :: i,in,ins,ine,loop,line_e,line_s
     logical           :: found_e,found_s
@@ -3934,7 +3978,7 @@ contains
   subroutine param_get_atoms(lunits)
     !===================================!
     !                                   !
-    !   Fills the atom data block       !
+    !!   Fills the atom data block      
     !                                   !
     !===================================!
 
@@ -3944,6 +3988,7 @@ contains
     implicit none
 
     logical, intent(in) :: lunits
+    !! Do we expect a first line with the units
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
     real(kind=dp)     :: atoms_pos_cart_tmp(3,num_atoms)
@@ -4112,7 +4157,7 @@ contains
      subroutine param_lib_set_atoms(atoms_label_tmp,atoms_pos_cart_tmp)
     !=====================================================!
     !                                                     !
-    !   Fills the atom data block during a library call   !
+    !!   Fills the atom data block during a library call   
     !                                                     !
     !=====================================================!
 
@@ -4122,7 +4167,9 @@ contains
     implicit none
 
     character(len=*), intent(in) :: atoms_label_tmp(num_atoms)
+    !! Atom labels
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3,num_atoms)
+    !! Atom positions
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
     integer           :: loop2,max_sites,ierr,ic,loop,counter
@@ -4203,18 +4250,23 @@ contains
     !====================================================================!
     subroutine param_get_range_vector(keyword,found,length,lcount,i_value)
     !====================================================================!
-    !   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100               !
-    !   if(lcount) we return the number of states in length              !
+    !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100           
+    !!   if(lcount) we return the number of states in length            
     !====================================================================!
     use w90_io,        only : io_error
 
     implicit none
 
     character(*),      intent(in)    :: keyword
+    !! Keyword to examine
     logical          , intent(out)   :: found
+    !! Is keyword found
     integer,           intent(inout) :: length
+    !! Number of states
     logical,           intent(in)    :: lcount
+    !! If T only count states
     integer, optional, intent(out)   :: i_value(length)
+    !! States specified in range vector
 
     integer   :: kl, in,loop,num1,num2,i_punc
     integer   :: counter,i_digit,loop_r,range_size
@@ -4303,7 +4355,7 @@ contains
    subroutine param_get_projections
      !===================================!
      !                                   !
-     !  Fills the projection data block  !
+     !!  Fills the projection data block 
      !                                   !
      !===================================!
 
@@ -4927,7 +4979,7 @@ contains
   subroutine param_get_keyword_kpath
     !===================================!
     !                                   !
-    !  Fills the kpath data block       !
+    !!  Fills the kpath data block     
     !                                   !
     !===================================!
     use w90_io,        only : io_error
@@ -5006,7 +5058,7 @@ contains
     subroutine param_memory_estimate
     !===========================================!
     !                                           !
-    ! Estimate how much memory we will allocate !
+    !! Estimate how much memory we will allocate
     !                                           !
     !===========================================!
 

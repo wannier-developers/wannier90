@@ -13,7 +13,9 @@
 !------------------------------------------------------------!
 
 module w90_overlap
- 
+  !! This module reads in the overlap (Mmn) and Projections (Amn)
+  !! and performs simple operations on them.
+
   use w90_constants, only : dp,cmplx_0,cmplx_1
   use w90_parameters, only : disentanglement
   use w90_io, only : stdout
@@ -36,7 +38,8 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_read( )
   !%%%%%%%%%%%%%%%%%%%%%
-    
+    !! Allocate and read the Mmn and Amn from files
+
     use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
                            m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only ![ysl]
@@ -422,6 +425,8 @@ return
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_rotate
   !%%%%%%%%%%%%%%%%%%%%%
+    !! Only used when interfaced to the CP code
+    !! Not sure why this is done here and not in CP
 
     use w90_parameters, only : num_bands,a_matrix,m_matrix_orig,nntot,timing_level
     use w90_io,         only : io_file_unit,io_error,io_stopwatch
@@ -496,6 +501,7 @@ return
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_dealloc( )
   !%%%%%%%%%%%%%%%%%%%%%
+    !! Dellocate memory
 
     use w90_parameters, only : u_matrix,m_matrix,m_matrix_orig,&
                        a_matrix,u_matrix_opt
@@ -539,9 +545,10 @@ return
   !==================================================================!
   subroutine overlap_project()
   !==================================================================!
-  !                                                                  !
-  !  Note that in this subroutine num_wann = num_bands               ! 
-  !  since, if we are here, then disentanglement = FALSE             !
+  !!  Construct initial guess from the projection via a Lowdin transformation 
+  !!  See section 3 of the CPC 2008 
+  !!  Note that in this subroutine num_wann = num_bands
+  !!  since, if we are here, then disentanglement = FALSE             
   !                                                                  !
   !                                                                  !
   !==================================================================!  
@@ -665,10 +672,11 @@ return
   !==================================================================!
   subroutine overlap_project_gamma()
   !==================================================================!
-  !                                                                  !
-  !  Note that in this subroutine num_wann = num_bands               ! 
-  !  since, if we are here, then disentanglement = FALSE             !
-  !  Gamma specific version                                          !
+  !!  Construct initial guess from the projection via a Lowdin transformation 
+  !!  See section 3 of the CPC 2008 
+  !!  Note that in this subroutine num_wann = num_bands   
+  !!  since, if we are here, then disentanglement = FALSE 
+  !!  Gamma specific version
   !                                                                  !
   !==================================================================!  
     use w90_constants

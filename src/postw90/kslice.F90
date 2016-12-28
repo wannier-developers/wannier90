@@ -14,21 +14,21 @@
 
 module w90_kslice
 
-  ! Plots the intersections of constant-energy isosurfaces with a BZ
-  ! slice, and/or makes a heatmap plot on the slice of:
-  ! 
-  !  - Minus the Berry curvature, summed over occupied bands 
-  !
-  !  - The k-integrand of the orbital magnetization formula
-  !
-  ! The slice is defined in reduced coordinates by three input variables:
-  !
-  !    kslice_corner(1:3) is the lower left corner 
-  !    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
-  !
-  !---------------------------------
-  ! TO DO: Parallelize over k-points
-  !---------------------------------
+  !! Plots the intersections of constant-energy isosurfaces with a BZ
+  !! slice, and/or makes a heatmap plot on the slice:
+  !! 
+  !!  - Minus the Berry curvature, summed over occupied bands 
+  !!
+  !!  - The k-integrand of the orbital magnetization formula
+  !!
+  !! The slice is defined in reduced coordinates by three input variables:
+  !!
+  !!    kslice_corner(1:3) is the lower left corner 
+  !!    kslice_b1(1:3) and kslice_b2(1:3) are the vectors subtending the slice
+  !!
+  !!---------------------------------
+  !! TO DO: Parallelize over k-points
+  !!---------------------------------
 
   implicit none
 
@@ -43,6 +43,7 @@ module w90_kslice
   !===========================================================!
 
   subroutine k_slice
+    !! Main routine
 
     use w90_comms
     use w90_constants,  only     : dp,twopi,eps8

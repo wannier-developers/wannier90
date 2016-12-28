@@ -13,19 +13,20 @@
 !------------------------------------------------------------!
 
 ! ---------------------------------------------------------------
-! REFERENCES
-!
-!   WYSV06 = PRB 74, 195118 (2006)  (anomalous Hall conductivity - AHC)
-!   YWVS07 = PRB 75, 195121 (2007)  (Kubo frequency-dependent conductivity)
-!   LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
-!   CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
-!
-! ---------------------------------------------------------------
-!
-! * Undocumented, works for limited purposes only: 
-!                                 reading k-points and weights from file
 
 module w90_berry
+  !! This module computes various "Berry phase" related properties
+  !!
+  !! Key REFERENCES
+  !!
+  !! *  WYSV06 = PRB 74, 195118 (2006)  (anomalous Hall conductivity - AHC)
+  !! *  YWVS07 = PRB 75, 195121 (2007)  (Kubo frequency-dependent conductivity)
+  !! *  LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
+  !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
+  ! ---------------------------------------------------------------
+  !
+  ! * Undocumented, works for limited purposes only: 
+  !                                 reading k-points and weights from file
 
   use w90_constants, only : dp
 
@@ -66,11 +67,10 @@ module w90_berry
   subroutine berry_main
   !============================================================!
   !                                                            !
-  ! Computes the following quantities:                         !
-  !                                                            !
-  !   (i) Anomalous Hall conductivity (from Berry curvature)   ! 
-  !  (ii) Complex optical conductivity (Kubo-Greenwood) & JDOS ! 
-  ! (iii) Orbital magnetization                                !
+  !! Computes the following quantities:                        
+  !!   (i) Anomalous Hall conductivity (from Berry curvature)   
+  !!  (ii) Complex optical conductivity (Kubo-Greenwood) & JDOS 
+  !! (iii) Orbital magnetization                               
   !                                                            !
   !============================================================!
 
@@ -776,9 +776,9 @@ module w90_berry
   subroutine berry_get_imf_klist(kpt,imf_k_list)
   !============================================================!
   !                                                            !
-  ! Calculates the Berry curvature traced over the occupied    !
-  ! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list  !
-  ! of Fermi energies, and stores it in axial-vector form      !
+  !! Calculates the Berry curvature traced over the occupied
+  !! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list 
+  !! of Fermi energies, and stores it in axial-vector form 
   !                                                            !
   !============================================================!
 
@@ -851,16 +851,15 @@ module w90_berry
   subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
   !=========================================================!
   !                                                         !
-  ! Calculates the three quantities needed for the orbital  !
-  ! magnetization:                                          !
-  !                                                         !
-  ! * -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12]                !
-  ! * -2Im[g(k)] [Eq.34 CTVR06, Eq.7 LVTS12]                !
-  ! * -2Im[h(k)] [Eq.35 CTVR06, Eq.8 LVTS12]                !
-  !                                                         !
-  ! They are calculated together (to reduce the number of   !
-  ! Fourier calls) for a list of Fermi energies, and stored !
-  ! in axial-vector form.                                   !
+  !! Calculates the three quantities needed for the orbital
+  !! magnetization: 
+  !!  
+  !! * -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] 
+  !! * -2Im[g(k)] [Eq.34 CTVR06, Eq.7 LVTS12] 
+  !! * -2Im[h(k)] [Eq.35 CTVR06, Eq.8 LVTS12] 
+  !! They are calculated together (to reduce the number of  
+  !! Fourier calls) for a list of Fermi energies, and stored
+  !! in axial-vector form. 
   !                                                         !
   !=========================================================!
 
@@ -1004,9 +1003,9 @@ module w90_berry
                         kubo_H_k_spn,kubo_AH_k_spn,jdos_k_spn)
   !====================================================================!
   !                                                                    !
-  ! Contribution from point k to the complex interband optical         !
-  ! conductivity, separated into Hermitian (H) and anti-Hermitian (AH) ! 
-  ! parts. Also returns the joint density of states                    !
+  !! Contribution from point k to the complex interband optical 
+  !! conductivity, separated into Hermitian (H) and anti-Hermitian (AH)
+  !! parts. Also returns the joint density of states 
   !                                                                    !
   !====================================================================!
 
