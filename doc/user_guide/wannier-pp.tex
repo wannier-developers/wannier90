@@ -569,7 +569,13 @@ Second line: blank
  
 Then:   \verb#nsymmetry# blocks of data.  
 Each block (separated by a blank line) consists of four lines.  
-First three lines: Rotational part of symmetry operations ($3\times3$ matrix). 
-Last line: Fractional translation in the unit of ``\verb#alat#'' (refer the definition of ``\verb#alat#'' to the manual of \pwscf). 
+The order of the data in each block is as follows: 
+\begin{verbatim}
+  R(1,1)   R(2,1)   R(3,1)
+  R(1,2)   R(2,2)   R(3,2)
+  R(1,3)   R(2,3)   R(3,3)
+   t(1)     t(2)     t(3)   
+\end{verbatim}
+Here, $R$ is the rotational part of symmetry operations ($3\times3$ matrix), and  $\bf t$ is the fractional translation in the unit of ``\verb#alat#'' (refer the definition of ``\verb#alat#'' to the manual of \pwscf). 
 Both data are given in Cartesian coordinates. 
-
+The symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$. 
