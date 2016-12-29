@@ -2911,6 +2911,8 @@ contains
     write(stdout,*)  '            |    Rei Sakuma (Lund University, Sweden)           |'
     write(stdout,*)  '            |    Yusuke Nomura (U. Tokyo, Japan)                |'
     write(stdout,*)  '            |    Takashi Koretsune (Riken, Japan)               |'
+    write(stdout,*)  '            |    Yoshiro Nohara (ASMS Co. Ltd., Japan)          |'
+    write(stdout,*)  '            |    Ryotaro Arita (Riken, Japan)                   |'
     write(stdout,*)  '            |    Lorenzo Paulatto (UPMC Paris)                  |'
     write(stdout,*)  '            |    Florian Thole (ETH Zurich)                     |'
     write(stdout,*)  '            |    Pablo Garcia Fernandez (Unican, Spain)         |'
