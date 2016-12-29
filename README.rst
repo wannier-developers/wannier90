@@ -84,8 +84,8 @@ Contributors to the code include:
 * Rei Sakuma (Lund University, Sweden): Symmetry-adapted Wannier functions
 * Yusuke Nomura (U. Tokyo, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
 * Takashi Koretsune (Riken, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
-* Yoshiro Nohara (Atomic-scale material simulations, Co., Ltd.): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
-* Ryotaro Arita (Rigen, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
+* Yoshiro Nohara (Atomic-scale material simulations, Co., Ltd.): Symmetry-adapted Wannier functions
+* Ryotaro Arita (Riken, JP): Symmetry-adapted Wannier functions
 * Lorenzo Paulatto (UPMC Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
 * Florian Thole (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
 * Pablo Garcia Fernandez (Unican, ES): Matrix elements of the position operator
