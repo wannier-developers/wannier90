@@ -1783,43 +1783,43 @@ contains
     
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call param_get_block_length('nnkpts', explicit_nnkpts, rows)
-    nntot = rows / num_kpts
-    if (modulo(rows, num_kpts) /= 0 .and. explicit_nnkpts) then 
-        call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+    if(explicit_nnkpts) then
+       nntot = rows / num_kpts
+       if (modulo(rows, num_kpts) /= 0) then 
+          call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+       end if
+       allocate(nnkpts_block(5, rows), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
+       call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
+       ! check that postproc_setup is true
+       if (.not. postproc_setup) &
+            call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
+       ! assign the values in nnkpts_block to nnlist and nncell
+       ! this keeps track of how many neighbours have been seen for each k-point
+       allocate(nnkpts_idx(num_kpts), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
+       nnkpts_idx = 1
+       ! allocating "global" nnlist & nncell
+       ! These are deallocated in kmesh_dealloc
+       allocate(nnlist(num_kpts, nntot), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
+       allocate(nncell(3, num_kpts, nntot), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nncell in param_read')
+       do i=1,num_kpts * nntot
+          k = nnkpts_block(1, i)
+          nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
+          nncell(:, k, nnkpts_idx(k)) = nnkpts_block(3:, i)
+          nnkpts_idx(k) = nnkpts_idx(k) + 1
+       end do
+       ! check that all k-points have the same number of neighbours
+       if (any(nnkpts_idx /= (/ (nntot + 1, i=1, num_kpts) /))) then
+          call io_error('Inconsistent number of nearest neighbours.')
+       end if
+       deallocate(nnkpts_idx, stat=ierr)
+       if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in param_read')
+       deallocate(nnkpts_block, stat=ierr)
+       if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
     end if
-    allocate(nnkpts_block(5, rows), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
-    call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
-    ! check that postproc_setup is true
-    if (explicit_nnkpts .and. (.not. postproc_setup)) &
-        call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
-    ! assign the values in nnkpts_block to nnlist and nncell
-    if (explicit_nnkpts) then
-        ! this keeps track of how many neighbours have been seen for each k-point
-        allocate(nnkpts_idx(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
-        nnkpts_idx = 1
-        ! allocating "global" nnlist & nncell
-        ! These are deallocated in kmesh_dealloc
-        allocate(nnlist(num_kpts, nntot), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
-        allocate(nncell(3, num_kpts, nntot), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating nncell in param_read')
-        do i=1,num_kpts * nntot
-            k = nnkpts_block(1, i)
-            nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
-            nncell(:, k, nnkpts_idx(k)) = nnkpts_block(3:, i)
-            nnkpts_idx(k) = nnkpts_idx(k) + 1
-        end do
-        ! check that all k-points have the same number of neighbours
-        if (any(nnkpts_idx /= (/ (nntot + 1, i=1, num_kpts) /))) then
-            call io_error('Inconsistent number of nearest neighbours.')
-        end if
-        deallocate(nnkpts_idx, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in param_read')
-    end if
-    deallocate(nnkpts_block, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
     ! k meshes                                                                                 !
@@ -3890,6 +3890,7 @@ contains
     character(len=2)  :: atsym
     real(kind=dp)     :: atpos(3)
 
+    rows=0
     found_s=.false.
     found_e=.false.
 
