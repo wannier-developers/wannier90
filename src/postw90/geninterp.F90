@@ -219,7 +219,7 @@ contains
        kpt = localkpoints(:,i)
        ! Here I get the band energies and the velocities (if required)
        if (geninterp_alsofirstder) then
-          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
+          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,:,i),HH,delHH,UU)
        else
           call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
