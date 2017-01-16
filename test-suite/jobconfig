@@ -1,0 +1,118 @@
+# Gallium Arsenide, valence bands
+[example01/]
+program = WANNIER90
+inputs_args = ('gaas.win', '1')
+
+# Lead, 4 lowest states; Fermi surface
+[example02/]
+program = WANNIER90
+inputs_args = ('lead.win', '1')
+
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure
+[example03/]
+program = WANNIER90
+inputs_args = ('silicon.win', '1')
+
+# Copper, states around the Fermi level; Fermi surface
+[example04/]
+program = WANNIER90
+inputs_args = ('copper.win', '1')
+
+# Diamond, valence states - test of the PW part
+[pw_example05_1]
+program = PW
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2')
+
+# Diamond, valence states - test of the PW2Wannier part
+[pw_example05_2]
+program = PW2WANNIER
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3')
+
+# Diamond, valence states - test of the W90 part
+[pw_example05_3]
+program = WANNIER90
+inputs_args = ('diamond.scf', '2'), ('diamond.nscf', '2'), ('diamond.win', '4'), ('diamond.pw2wan', '3'), ('diamond.win', '1')
+
+# The next two tests are not splitted. This means that only Wannier is tested. 
+# If you want to test PWSCF for the two below you should split as above. 
+
+# Copper, states around the Fermi level; Fermi surface
+[pw_example06/]
+program = WANNIER90
+inputs_args = ('copper.scf', '2'), ('copper.nscf', '2'), ('copper.win', '4'), ('copper.pw2wan', '3'), ('copper.win', '1')
+
+# Silane, valence states
+[pw_example07/]
+program = WANNIER90
+inputs_args = ('silane.scf', '2'), ('silane.nscf', '2'), ('silane.win', '4'), ('silane.pw2wan', '3'), ('silane.win', '1')
+
+# Benzene, valence and conduction
+[wan_benzene_gamma_valcond/]
+program = WANNIER90
+inputs_args = ('benzene.win', '1')
+
+# Benzene, valence bands
+[wan_benzene_gamma_val/]
+program = WANNIER90
+inputs_args = ('benzene.win', '1')
+
+# Test of disentanglement in spheres in k-space
+[wan_lavo3_dissphere/]
+program = WANNIER90
+inputs_args = ('LaVO3.win', '1')
+
+# Basic wannier
+[test_basic1/]
+program = WANNIER90
+inputs_args = ('wannier.win', '1')
+
+# Basic wannier disentanglement
+[test_basic2/]
+program = WANNIER90
+inputs_args = ('wannier.win', '1')
+
+# Test for the nnkpt file
+[test_nnkpt1/]
+program = WANNIER90
+inputs_args = ('wannier.win', '5')
+
+# Test for the nnkpt file
+[test_nnkpt2/]
+program = WANNIER90
+inputs_args = ('wannier.win', '5')
+
+# Test for the nnkpt file
+[test_nnkpt3/]
+program = WANNIER90
+inputs_args = ('wannier.win', '5')
+
+# Testing crash with respect to nnkpt option
+[test_nnkpt4/]
+program = WANNIER90
+inputs_args = ('wannier.win', '6')
+
+# Testing crash when nnkpt is set in non postproc_setup mode
+[test_nnkpt5/]
+program = WANNIER90
+inputs_args = ('wannier.win', '6')
+
+# Testing geninterp, with use_ws_distance = .false.
+[test_si_geninterp/]
+program = POSTW90GENINTERP
+inputs_args = ('silicon.win', '7')
+
+# Testing geninterp, with use_ws_distance = .true.
+[test_si_geninterp_wsdistance/]
+program = POSTW90GENINTERP
+inputs_args = ('silicon.win', '7')
+
+# Testing symmetry-adapted WFs, from example21, case of As with s and p
+[example21_As_sp]
+program = WANNIER90
+inputs_args = ('GaAs.win', '1')
+
+[categories]
+wannier_all = example*??  test_* wan_*
+interface_all = pw_example*??
+test_all = example*??  pw_example*?? test_* wan_*
+_default_ =  example*?? test* wan_*

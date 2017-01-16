@@ -16,14 +16,14 @@
 
  Configuration:
    The system dependent parameters (e.g. compiler name) are contained in a file
-   called 'make.sys'. Sample files may be found in the ./config/ directory.
-   Choose one that is nearest to your setup and copy it to make.sys. You may 
+   called 'make.inc'. Sample files may be found in the ./config/ directory.
+   Choose one that is nearest to your setup and copy it to make.inc. You may 
    need to edit it, for example to give the correct library path for your 
    machine.
    
     On a linux system with the intel compiler build Wannier90 by typing
 
-         cp ./config/make.sys.ifort ./make.sys
+         cp ./config/make.inc.ifort ./make.inc
          make 
 
    IMPORTANT NOTE: a GNU version of the make utility is needed to compile
@@ -61,7 +61,7 @@
  In order to compile the postw90.x executable in its parallel version, you have
  to specify 
   COMMS=mpi
- inside the make.sys file (some of the example files already contain this line)
+ inside the make.inc file (some of the example files already contain this line)
  and moreover define the parallel compiler using the MPIF90 flag, for instance:
   MPIF90=mpiifort
  
@@ -83,32 +83,32 @@
 Linux x86,x86-64
 ----------------
 
-  1- make.sys.ifort
+  1- make.inc.ifort
      Compiler:  Intel (ifc,ifort,iforte)
      Libraries: Intel mkl
                 (ATLAS BLAS is faster for AMD processors) 
 
-  2- make.sys.pathscale
+  2- make.inc.pathscale
      Compiler:  Pathscale (pathf90)
      Libraries: acml 
 
-  3- make.sys.nag   
+  3- make.inc.nag   
      Compiler:  NAG (f95)
      Libraries: ATLAS + LAPACK (maybe acml)
  [note in our experience the NAG compiler does not produce well optimised code]
 
-  4- make.sys.sun
+  4- make.inc.sun
      Compiler: Sun-studio f90
      Libraries: sunperf (ATLAS is faster)
      avaible as a free beta for Linux
 
 Generic: Most architectures
 ---------------------------
-  1- make.sys.g95
+  1- make.inc.g95
      Compiler: g95
      Libraries: ATLAS + LAPACK
 
-  2- make.sys.gfort
+  2- make.inc.gfort
      Compiler: gfortran
      Libraries: ATLAS + LAPACK
      (the official gcc f90 compiler - often faster than g95)
@@ -117,29 +117,29 @@ Generic: Most architectures
 Alpha/HP/Compaq/DEC Tru64 UNIX
 ------------------------------
 
-   1- make.sys.alpha
+   1- make.inc.alpha
       Compiler: f90
       Libraries: cxml
 
 Sun / Solaris  (sparc or x86)
 ----------------------------
 
-   1- make.sys.sun
+   1- make.inc.sun
       Compiler: f95
       Libraries: sunperf
 
 Mac OS X
 --------
 
-   1- make.sys.macosx
+   1- make.inc.macosx
       Compiler: gfortran
       Libraries: Accelerate library
-      (check comments in the make.sys.macosx file!)
+      (check comments in the make.inc.macosx file!)
 
 IBM PowerPC/power series. Linux or AIX
 --------------------------------------
 
-  1- make.sys.xlf
+  1- make.inc.xlf
      Compiler:  xlf95
      Libraries: ESSL + LAPACK
        Note: ESSL does not provide a complete lapack installation.
@@ -151,25 +151,25 @@ IBM PowerPC/power series. Linux or AIX
 Windows
 -------
  There are many commercial Fortran compilers for windows.
- We haven't included make.sys files for these as we don't 
+ We haven't included make.inc files for these as we don't 
  have access to them. Wannier90 should compile just fine.
 
  I use cygwin (http://www.cygwin.com/) which provides a bash shell.
 
-  1- make.sys.g95
+  1- make.inc.g95
      Compiler: g95  (within cygwin)
      Libraries: LAPACK and ATLAS (cygwin comes with a lapack and blas library,
      but I think they have been compiled with g77. I had problems making 
      a working executable. I suggest building your own)
 
- 2- make.sys.pgf90
+ 2- make.inc.pgf90
     Compiler: Portland Group (pgf90)
     Libaries: pg supplied lapack and blas
  
 PREPROCESSOR FLAGS
 ------------------
 To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the 
-make.sys file.
+make.inc file.
 For instance, if the flag is called EXIT_FLAG, you can simply append
   -DEXIT_FLAG
 (note that -D is prepended to the name of the flag)
@@ -179,7 +179,7 @@ FCOPTS=-O2 -DEXIT_FLAG
 LDOPTS=-O2 -DEXIT_FLAG
 
 Alternatively, after the definition of the FCOPTS and LDOPTS variables,
-at the end of the make.sys file, you can add the lines
+at the end of the make.inc file, you can add the lines
   FCOPTS+=-DEXIT_FLAG
   LDOPTS+=-DEXIT_FLAG
 

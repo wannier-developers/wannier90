@@ -1,0 +1,116 @@
+# Copyright (C) 2001-2020 Quantum ESPRESSO Foundation
+# Created by Filippo Spiga (filippo.spiga@quantum-espresso.org)
+# Maintainer: Samuel Ponce
+
+TEST-SUITE  v1.0.0
+------------------
+
+Type 'make' for the list of possible 
+
+You can run make with several options:
+
+A) Run all PW and CP tests in serial and show a final report
+
+$ make run-tests
+
+If 'run-tests-parallel', it runs the custom test in parallel (4 MPI)
+
+
+B) Run the test that is in a single directory and show a final report
+
+$ make run-custom-test testdir=name_of_directory
+
+For example, the following runs only the tests in the pw_spinorbit directory
+$ make run-custom-test testdir=example01
+
+If 'run-custom-test-parallel', it runs the specified test in parallel (4 MPI)
+
+$ make run-custom-test-parallel testdir=example01
+
+
+### HOW TO WRITE A NEW TEST
+1. create a new folder for the test, with a short but meaningful
+   name. Note that the prefix identifies the 'category' as specified at
+   the end of the 'jobconfig' file: typically, you will call folders
+   with a starting 'test_' prefix if they only test Wannier90.
+
+2. modify the file 'jobconfig': add a new section, following the template
+   of existing tests. E.g.:
+
+# Lead, 4 lowest states; Fermi surface
+[example02/]
+program = WANNIER90
+inputs_args = ('lead.win', '1')
+
+  where:
+  - the first line is an (optional, but suggested) long(er) comment
+    on what the test is supposed to do (or, better, to test);
+  - the second line has the name of the folder created in point 1
+    between square brackets
+  - the third line contains the name of a program that you want to run to test.
+    The name of possible tests are defined in userconfig.tmp (note .tmp
+    stands for template, not temporary...). 
+    This defines how to run the program, which output file to check,
+    which script to use to parse it, and the tolerance parameters to use.
+  - the fourth line is a list of tuples of length 2, containing the
+    ('inputfile', 'number') for each step to run in sequence.
+    The inputfile is the name of the input file for each step, and the
+    integer identifies the code to run (this is passed to the 'exe'
+    defined in the userconfig.tmp file, that currently is 
+    'test-suite/config/run/run-wannier.sh' for all of them.
+    Check there to see what each option does, this actually not only decides
+    what code to run, but also which output file to check.
+
+In the example above, we are running WANNIER90, meaning that e.g. we
+are checking the following variables with the following (abs/rel) tolerances:
+tolerance = ( (1.0e-5, 1.0e-5, 'wfcenter'),
+              (1.0e-6, 1.0e-6, 'spread'), 
+              (1.0e-6, 1.0e-6, 'omegaI'), 
+	      ...
+and we are running only one step, where the input is lead.win and '1' means:
+run wannier90.x, and check/parse the .wout file
+
+3. Put the input files in the folder, with the names as you specified above.
+   Note that if you want to run only Wannier (suggested, to avoid tests failing
+   because of a change in interface), you need to put all the required 
+   inputs (.amn, .mmn, ...). Add them to the GIT repo.
+
+4. (with the code compiled in its most recent version) run the test a first
+   time to create a reference output (replace name_of_directory):
+
+   make run-custom-test testdir=name_of_directory
+
+   This will run the code, and FAIL (since there is no reference file to
+   compare with).
+
+5. Read the output, verify that the code actually run (e.g., if you did not 
+   compile the code, you will still fail, but simply because you could not 
+   generate any output...).
+   Then, in the output you will find two things:
+   a. toward the center, the command actually executed, and the output file
+      generated (with a name similar to 
+      test.out.201216.inp=GaAs.win.args=1)
+   b. toward the end, a complain telling the name of the reference file
+      the code expects (called 'benchmark', e.g.
+      benchmark.out.SVN.inp=GaAs.win.args=1)
+
+6. Open the file in point 5a above, verify it's the actual expected output,
+   and copy it to the filename given in point 5b. Add it to the GIT repo.
+
+7. If you are using a standard check (combination of 'program' and second
+   value in 'input_args' in the file 'jobconfig'), then probably you are 
+   already ok: just run the test again to check that the test now passes
+   without errors. 
+
+   STRONG SUGGESTION: To be more safe, maybe try to change in the reference
+   a value that should be checked, to verify that it is indeed complaining
+   if the value changes, and then put it back to the expected value. Often,
+   the value you think is checked, is not actually checked.
+
+   If instead you need to check for specific values, you will need to add 
+   some code to the files userconfig.tmp and probably change the scripts
+   in config/extract/.
+
+
+
+

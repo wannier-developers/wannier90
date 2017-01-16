@@ -1,17 +1,19 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_utility
+  !! Module contains lots of useful general routines
 
   use w90_constants, only : dp
 
@@ -37,8 +39,8 @@ module w90_utility
   public :: utility_commutator_diag
   public :: utility_re_tr
   public :: utility_im_tr
-  public :: w0gauss
-  public :: wgauss
+  public :: utility_w0gauss
+  public :: utility_wgauss
   public :: utility_diagonalize
 
 
@@ -49,15 +51,15 @@ contains
   subroutine utility_zgemm(c,a,transa,b,transb,n)
     !=============================================================!
     !                                                             !
-    ! Return matrix product of complex n x n matrices a and b:    !
-    !                                                             !
-    !                       C = Op(A) Op(B)                       !
-    !                                                             !
-    ! transa = 'N'  ==> Op(A) = A                                 !
-    ! transa = 'T'  ==> Op(A) = transpose(A)                      !
-    ! transa = 'C'  ==> Op(A) = congj(transpose(A))               !
-    !                                                             !
-    ! similarly for B                                             !
+    !! Return matrix product of complex n x n matrices a and b:
+    !!                                              
+    !!                       C = Op(A) Op(B)        
+    !!                                              
+    !! transa = 'N'  ==> Op(A) = A                  
+    !! transa = 'T'  ==> Op(A) = transpose(A)       
+    !! transa = 'C'  ==> Op(A) = congj(transpose(A))
+    !!                  
+    !! similarly for B  
     !                                                             !
     !=============================================================!
 
@@ -84,10 +86,10 @@ contains
   subroutine utility_inv3 (a, b, det)                   !
     !==================================================================!
     !                                                                  !
-    !    Return in b the adjoint of the 3x3 matrix a, and its          !
-    !    determinant.                                                  !
-    !    The inverse is defined as the adjoind divided by the          !
-    !    determinant, so that inverse(a) = b/det                       !
+    !! Return in b the adjoint of the 3x3 matrix a, and its  
+    !! determinant.                                         
+    !! The inverse is defined as the adjoind divided by the 
+    !! determinant, so that inverse(a) = b/det  
     !                                                                  !
     !===================================================================
 
@@ -137,10 +139,10 @@ contains
   subroutine utility_inv2 (a, b, det)                   !
     !==================================================================!
     !                                                                  !
-    !    Return in b the adjoint of the 2x2 matrix                     !
-    !    a, together with the determinant of a.                        !
-    !    The inverse is defined as the adjoind divided by the          !
-    !    determinant, so that inverse(a) = b/det                       !
+    !! Return in b the adjoint of the 2x2 matrix 
+    !! a, together with the determinant of a.  
+    !! The inverse is defined as the adjoind divided by the
+    !! determinant, so that inverse(a) = b/det 
     !                                                                  !
     !===================================================================
 
@@ -166,7 +168,7 @@ contains
   subroutine utility_recip_lattice (real_lat,recip_lat,volume)  !
     !==================================================================!
     !                                                                  !
-    !  Calculates the reciprical lattice vectors and the cell volume   !
+    !!  Calculates the reciprical lattice vectors and the cell volume 
     !                                                                  !
     !===================================================================
 
@@ -209,7 +211,7 @@ contains
   subroutine utility_compar(a,b,ifpos,ifneg)
     !==================================================================!
     !                                                                  !
-    !                                                                  !
+    !! Compares two vectors
     !                                                                  !
     !===================================================================
     use w90_constants, only: eps8
@@ -240,7 +242,7 @@ contains
        real_metric,recip_metric)
     !==================================================================!
     !                                                                  !
-    !  Calculate the real and reciprical space metrics                 !
+    !!  Calculate the real and reciprical space metrics 
     !                                                                  !
     !===================================================================  
     implicit none
@@ -275,7 +277,7 @@ contains
   subroutine utility_frac_to_cart(frac,cart,real_lat)
     !==================================================================!
     !                                                                  !
-    !  Convert from fractional to Cartesian coordinates                !
+    !!  Convert from fractional to Cartesian coordinates
     !                                                                  !
     !===================================================================  
     implicit none
@@ -299,7 +301,7 @@ contains
   subroutine utility_cart_to_frac(cart,frac,recip_lat)
     !==================================================================!
     !                                                                  !
-    !  Convert from Cartesian to fractional coordinates                !
+    !!  Convert from Cartesian to fractional coordinates
     !                                                                  !
     !===================================================================  
     use w90_constants, only : twopi
@@ -327,8 +329,7 @@ contains
   function utility_strip(string)!
     !=============================!
     !                             !
-    !    Strips string of all     !
-    !        blank spaces         !
+    !! Strips string of all blank spaces
     !                             !
     !=============================!
 
@@ -365,8 +366,8 @@ contains
   function utility_lowercase(string)!
     !=================================!
     !                                 !
-    ! Takes a string and converts to  !
-    !      lowercase characters       !
+    !! Takes a string and converts to
+    !!  lowercase characters
     !                                 !
     !=================================!
 
@@ -403,8 +404,8 @@ contains
   subroutine utility_string_to_coord(string_tmp,outvec)!
     !====================================================!
     !                                                    !
-    !      Takes a string in the form 0.0,1.0,0.5        !
-    !       and returns an array of the real num         !
+    !! Takes a string in the form 0.0,1.0,0.5 
+    !! and returns an array of the real num  
     !                                                    !
     !====================================================!
     use w90_io, only :io_error,maxlen
@@ -438,43 +439,43 @@ contains
   end subroutine  utility_string_to_coord
 
 
-!!$  !===========================================!
-!!$  function utility_string_to_coord(string_tmp)!
-!!$  !===========================================!
-!!$  !                                           !
-!!$  !  Takes a string in the form 0.0,1.0,0.5   !
-!!$  !   and returns an array of the real num    !
-!!$  !                                           !
-!!$  !===========================================!
-!!$
-!!$    implicit none
-!!$
-!!$    character(len=80), intent(in)  :: string_tmp
-!!$    real(kind=dp) :: utility_string_to_coord(3)
-!!$    
-!!$    integer :: pos,pos2
-!!$    character(len=80)  :: ctemp
-!!$    character(len=80)  :: ctemp2
-!!$
-!!$
-!!$    ctemp=string_tmp
-!!$    pos2=index(ctemp,',')
-!!$    ctemp2=ctemp(1:pos2-1)
-!!$    read(ctemp2,*) utility_string_to_coord(1)
-!!$    ctemp=ctemp(pos2+1:)
-!!$    pos2=index(ctemp,',')
-!!$    ctemp2=ctemp(1:pos2-1)
-!!$    read(ctemp2,*) utility_string_to_coord(2)
-!!$    ctemp=ctemp(pos2+1:)
-!!$    read(ctemp,*) utility_string_to_coord(3)
-!!$
-!!$  end function utility_string_to_coord
+!~  !===========================================!
+!~  function utility_string_to_coord(string_tmp)!
+!~  !===========================================!
+!~  !                                           !
+!~  !  Takes a string in the form 0.0,1.0,0.5   !
+!~  !   and returns an array of the real num    !
+!~  !                                           !
+!~  !===========================================!
+!~
+!~    implicit none
+!~
+!~    character(len=80), intent(in)  :: string_tmp
+!~    real(kind=dp) :: utility_string_to_coord(3)
+!~    
+!~    integer :: pos,pos2
+!~    character(len=80)  :: ctemp
+!~    character(len=80)  :: ctemp2
+!~
+!~
+!~    ctemp=string_tmp
+!~    pos2=index(ctemp,',')
+!~    ctemp2=ctemp(1:pos2-1)
+!~    read(ctemp2,*) utility_string_to_coord(1)
+!~    ctemp=ctemp(pos2+1:)
+!~    pos2=index(ctemp,',')
+!~    ctemp2=ctemp(1:pos2-1)
+!~    read(ctemp2,*) utility_string_to_coord(2)
+!~    ctemp=ctemp(pos2+1:)
+!~    read(ctemp,*) utility_string_to_coord(3)
+!~
+!~  end function utility_string_to_coord
 
   !========================================================!
   subroutine utility_translate_home(vec,real_lat,recip_lat)
     !========================================================!
     !                                                        !
-    !        Translate a vector to the home unit cell        !
+    !! Translate a vector to the home unit cell 
     !                                                        !
     !========================================================!
 
@@ -516,8 +517,8 @@ contains
   subroutine utility_diagonalize(mat,dim,eig,rot)
     !============================================================!
     !                                                            !
-    ! Diagonalize the dim x dim  hermitian matrix 'mat' and      !
-    ! return the eigenvalues 'eig' and the unitary rotation 'rot'!
+    !! Diagonalize the dim x dim  hermitian matrix 'mat' and 
+    !! return the eigenvalues 'eig' and the unitary rotation 'rot'
     !                                                            !
     !============================================================!
 
@@ -557,8 +558,8 @@ contains
   function utility_rotate(mat,rot,dim)
     !==========================================================!
     !                                                           !
-    ! Rotates the dim x dim matrix 'mat' according to           !
-    ! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix     !
+    !! Rotates the dim x dim matrix 'mat' according to 
+    !! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix 
     !                                                           !
     !===========================================================!
 
@@ -577,7 +578,7 @@ contains
   function utility_matmul_diag(mat1,mat2,dim)
     !===========================================================!
     !                                                           !
-    ! Computes the diagonal elements of the matrix mat1.mat2    !
+    !! Computes the diagonal elements of the matrix mat1.mat2 
     !                                                           !
     !===========================================================!
 
@@ -604,9 +605,9 @@ contains
   function utility_rotate_diag(mat,rot,dim)
     !===========================================================!
     !                                                           !
-    ! Rotates the dim x dim matrix 'mat' according to           !
-    ! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix.    !
-    ! Computes only the diagonal elements of rotated matrix.    !
+    !! Rotates the dim x dim matrix 'mat' according to 
+    !! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix.
+    !! Computes only the diagonal elements of rotated matrix.
     !                                                           !
     !===========================================================!
 
@@ -626,8 +627,8 @@ contains
   function utility_commutator_diag(mat1,mat2,dim)
     !===========================================================!
     !                                                           !
-    ! Computes diagonal elements of                             !
-    ! [mat1,mat2]=mat1.mat2-mat2.mat1                           ! 
+    !! Computes diagonal elements of 
+    !! [mat1,mat2]=mat1.mat2-mat2.mat1 
     !                                                           !
     !===========================================================!
 
@@ -647,7 +648,7 @@ contains
   function utility_re_tr(mat)
     !========================!
     !                        !
-    ! Real part of the trace !
+    !! Real part of the trace
     !                        !
     !========================!
 
@@ -672,7 +673,7 @@ contains
   function utility_im_tr(mat)
     !=============================!
     !                             !
-    ! Imaginary part of the trace !
+    !! Imaginary part of the trace
     !                             !
     !=============================!
 
@@ -694,27 +695,27 @@ contains
 
   end function utility_im_tr
 
-  function wgauss (x, n)
+  function utility_wgauss (x, n)
     !-----------------------------------------------------------------------
     !
-    !     this function computes the approximate theta function for the
-    !     given order n, at the point x.
-    !
-    ! --> (n>=0) : Methfessel-Paxton case. See PRB 40, 3616 (1989).
-    !
-    ! --> (n=-1 ): Cold smearing (Marzari-Vanderbilt). See PRL 82, 3296 (1999)
-    !       1/2*erf(x-1/sqrt(2)) + 1/sqrt(2*pi)*exp(-(x-1/sqrt(2))**2) + 1/2
-    !
-    ! --> (n=-99): Fermi-Dirac case: 1.0/(1.0+exp(-x)).
+    !! this function computes the approximate theta function for the
+    !! given order n, at the point x.
+    !!
+    !! (n>=0) : Methfessel-Paxton case. See PRB 40, 3616 (1989).
+    !!
+    !! (n=-1 ): Cold smearing (Marzari-Vanderbilt). See PRL 82, 3296 (1999)
+    !!       1/2*erf(x-1/sqrt(2)) + 1/sqrt(2*pi)*exp(-(x-1/sqrt(2))**2) + 1/2
+    !!
+    !! (n=-99): Fermi-Dirac case: 1.0/(1.0+exp(-x)).
     !
     use w90_constants, only : dp,pi
 
     implicit none
-    real(kind=dp) :: wgauss, x
-    ! output: the value of the function
-    ! input: the argument of the function
+    real(kind=dp) :: utility_wgauss, x
+    !! output: the value of the function
+    !! input: the argument of the function
     integer :: n
-    ! input: the order of the function
+    !! input: the order of the function
     !
     !    the local variables
     !
@@ -735,11 +736,11 @@ contains
     ! Fermi-Dirac smearing
     if (n.eq. - 99) then
        if (x.lt. - maxarg) then
-          wgauss = 0.0_dp
+          utility_wgauss = 0.0_dp
        elseif (x.gt.maxarg) then
-          wgauss = 1.0_dp
+          utility_wgauss = 1.0_dp
        else
-          wgauss = 1.00_dp / (1.00_dp + exp ( - x) )
+          utility_wgauss = 1.00_dp / (1.00_dp + exp ( - x) )
        endif
        return
 
@@ -748,13 +749,13 @@ contains
     if (n.eq. - 1) then
        xp = x - 1.00_dp / sqrt (2.00_dp)
        arg = min (maxarg, xp**2)
-       wgauss = 0.50_dp * qe_erf (xp) + 1.00_dp / sqrt (2.00_dp * pi) * exp ( - &
+       utility_wgauss = 0.50_dp * qe_erf (xp) + 1.00_dp / sqrt (2.00_dp * pi) * exp ( - &
             arg) + 0.50_dp
        return
 
     endif
     ! Methfessel-Paxton
-    wgauss = gauss_freq (x * sqrt (2.00_dp) )
+    utility_wgauss = gauss_freq (x * sqrt (2.00_dp) )
     if (n.eq.0) return
     hd = 0.0_dp
     arg = min (maxarg, x**2)
@@ -765,34 +766,34 @@ contains
        hd = 2.00_dp * x * hp - 2.00_dp * DBLE (ni) * hd
        ni = ni + 1
        a = - a / (DBLE (i) * 4.00_dp)
-       wgauss = wgauss - a * hd
+       utility_wgauss = utility_wgauss - a * hd
        hp = 2.00_dp * x * hd-2.00_dp * DBLE (ni) * hp
        ni = ni + 1
     enddo
     return
-  end function wgauss
+  end function utility_wgauss
 
-  function w0gauss (x, n)
+  function utility_w0gauss (x, n)
     !-----------------------------------------------------------------------
     !
-    !     the derivative of wgauss:  an approximation to the delta function
-    !
-    ! --> (n>=0) : derivative of the corresponding Methfessel-Paxton wgauss
-    !
-    ! --> (n=-1 ): derivative of cold smearing:
-    !              1/sqrt(pi)*exp(-(x-1/sqrt(2))**2)*(2-sqrt(2)*x)
-    !
-    ! --> (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
+    !! the derivative of utility_wgauss:  an approximation to the delta function
+    !!
+    !! (n>=0) : derivative of the corresponding Methfessel-Paxton utility_wgauss
+    !!
+    !! (n=-1 ): derivative of cold smearing:
+    !!              1/sqrt(pi)*exp(-(x-1/sqrt(2))**2)*(2-sqrt(2)*x)
+    !!
+    !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
     !
     use w90_constants, only : dp,pi
     use w90_io, only        : io_error
     implicit none
-    real(kind=dp) :: w0gauss, x
-    ! output: the value of the function
-    ! input: the point where to compute the function
+    real(kind=dp) :: utility_w0gauss, x
+    !! output: the value of the function
+    !! input: the point where to compute the function
 
     integer :: n
-    ! input: the order of the smearing function
+    !! input: the order of the smearing function
     !
     !    here the local variables
     !
@@ -812,10 +813,10 @@ contains
 
     if (n.eq. - 99) then
        if (abs (x) .le.36.0) then
-          w0gauss = 1.00_dp / (2.00_dp + exp ( - x) + exp ( + x) )
+          utility_w0gauss = 1.00_dp / (2.00_dp + exp ( - x) + exp ( + x) )
           ! in order to avoid problems for large values of x in the e
        else
-          w0gauss = 0.0_dp
+          utility_w0gauss = 0.0_dp
        endif
        return
 
@@ -823,17 +824,17 @@ contains
     ! cold smearing  (Marzari-Vanderbilt)
     if (n.eq. - 1) then
        arg = min (200.0_dp, (x - 1.00_dp / sqrt (2.00_dp) ) **2)
-       w0gauss = sqrtpm1 * exp ( - arg) * (2.00_dp - sqrt ( 2.00_dp) * x)
+       utility_w0gauss = sqrtpm1 * exp ( - arg) * (2.00_dp - sqrt ( 2.00_dp) * x)
        return
 
     endif
 
     if (n.gt.10 .or. n.lt.0) &
-         call io_error('w0gauss higher order smearing is untested and unstable')
+         call io_error('utility_w0gauss higher order smearing is untested and unstable')
 
     ! Methfessel-Paxton
     arg = min (200.0_dp, x**2)
-    w0gauss = exp ( - arg) * sqrtpm1
+    utility_w0gauss = exp ( - arg) * sqrtpm1
     if (n.eq.0) return
     hd = 0.00_dp
     hp = exp ( - arg)
@@ -845,19 +846,19 @@ contains
        a = - a / (DBLE (i) * 4.00_dp)
        hp = 2.00_dp * x * hd-2.00_dp * DBLE (ni) * hp
        ni = ni + 1
-       w0gauss = w0gauss + a * hp
+       utility_w0gauss = utility_w0gauss + a * hp
     enddo
     return
-  end function w0gauss
+  end function utility_w0gauss
 
   function qe_erf (x)  
     !---------------------------------------------------------------------
     !
-    !     Error function - computed from the rational approximations of
-    !     W. J. Cody, Math. Comp. 22 (1969), pages 631-637.
-    !
-    !     for abs(x) le 0.47 erf is calculated directly
-    !     for abs(x) gt 0.47 erf is calculated via erf(x)=1-erfc(x)
+    !! Error function - computed from the rational approximations of
+    !! W. J. Cody, Math. Comp. 22 (1969), pages 631-637.
+    !!
+    !!     for abs(x) le 0.47 erf is calculated directly
+    !!     for abs(x) gt 0.47 erf is calculated via erf(x)=1-erfc(x)
     !
     use w90_constants, only : dp
 
@@ -892,7 +893,7 @@ contains
   function qe_erfc (x)  
     !---------------------------------------------------------------------
     !
-    !     erfc(x) = 1-erf(x)  - See comments in erf
+    !! erfc(x) = 1-erf(x)  - See comments in erf
     !
     use w90_constants, only : dp
     implicit none  
@@ -951,8 +952,8 @@ contains
   function gauss_freq (x)
     !---------------------------------------------------------------------
     !
-    !     gauss_freq(x) = (1+erf(x/sqrt(2)))/2 = erfc(-x/sqrt(2))/2
-    !             - See comments in erf
+    !! gauss_freq(x) = (1+erf(x/sqrt(2)))/2 = erfc(-x/sqrt(2))/2
+    !! - See comments in erf
     !
     use w90_constants, only : dp
 

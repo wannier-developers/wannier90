@@ -1,17 +1,26 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_kmesh
+  !! Routines to analyse the regular k-point mesh
+  !! and determine the overlaps neccessary for a finite
+  !! difference representation of the spread operator.
+  !! These overlaps are defined by a set of vectors (b-vectors) which
+  !! connect the Bloch states.
+  !! See Eq. B1 in Appendix B of Marzari and
+  !!  Vanderbilt  PRB 56 12847 (1997)
+
 
   use w90_constants, only : dp
   use w90_parameters
@@ -39,18 +48,22 @@ module w90_kmesh
 
 
   integer, parameter :: nsupcell=5
-  integer            :: lmn(3,(2*nsupcell+1)**3)
-  real(kind=dp)      :: bvec_inp(3,num_nnmax,max_shells)
+  !! Size of supercell (of recip cell) in which to search for k-point shells 
 
+  integer            :: lmn(3,(2*nsupcell+1)**3)
+  !! Order in which to search the cells (ordered in dist from origin)
+ 
+  real(kind=dp)      :: bvec_inp(3,num_nnmax,max_shells)
+  !! The input b-vectors (only used in the rare case they are read from file)
 
 contains 
-  !==================================================================!
+  !=======================================================
   subroutine kmesh_get()
-    !==================================================================!
-    !                                                                  !
-    !  Set up the framework for the kspace derivatives                 ! 
-    !                                                                  !
-    !===================================================================  
+    !=====================================================
+    !                                                   
+    !! Main routine to calculate the b-vectors  
+    !                                                  
+    !=====================================================
     use w90_io,      only : stdout,io_error,io_stopwatch
     use w90_utility, only : utility_compar
 
@@ -599,7 +612,7 @@ nnshell=0
     subroutine kmesh_write()
     !==================================================================!
     !                                                                  !
-    ! Writes wannier.nnkp file                                         !
+    !! Writes nnkp file (list of overlaps needed)  
     !                                                                  ! 
     ! Note that the format is different to (and more compact than)     !
     ! that used by the old f77 code.                                   !
@@ -675,7 +688,7 @@ nnshell=0
              write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
                   proj_site(1,i),proj_site(2,i),proj_site(3,i), &
                   proj_l(i),proj_m(i),proj_radial(i)
-!!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+!~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
              write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
                   proj_z(1,i),proj_z(2,i),proj_z(3,i), &
                   proj_x(1,i),proj_x(2,i),proj_x(3,i), &
@@ -698,7 +711,7 @@ nnshell=0
              write(nnkpout,'(3(f10.5,1x),2x,3i3)') &
                   proj_site(1,i),proj_site(2,i),proj_site(3,i), &
                   proj_l(i),proj_m(i),proj_radial(i)
-!!$          write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
+!~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
              write(nnkpout,'(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
                   proj_z(1,i),proj_z(2,i),proj_z(3,i), &
                   proj_x(1,i),proj_x(2,i),proj_x(3,i), &
@@ -742,32 +755,34 @@ nnshell=0
 
 
 
-    !==================================================================!
+    !========================================
     subroutine kmesh_dealloc()
-    !==================================================================!
-    !                                                                  !
-    !  Release Memory                                                  ! 
-    !                                                                  !
-    !===================================================================  
+    !========================================
+    !                                       
+    !!  Release memory from the kmesh module 
+    !                                      
+    !========================================
     use w90_io,   only : io_error
     implicit none
     integer :: ierr
 
     ! Deallocate real arrays that are public
-
-    deallocate(bk, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
-    deallocate(bka, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
-    deallocate(wb, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
+    if (.not. explicit_nnkpts) then
+        deallocate(bk, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
+        deallocate(bka, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
+        deallocate(wb, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
+    end if
 
     ! Deallocate integer arrays that are public
-
+    if (.not. explicit_nnkpts) then
+        deallocate(neigh, stat=ierr )
+        if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
+    end if
     deallocate(nncell, stat=ierr )
     if (ierr/=0) call io_error('Error in deallocating nncell in kmesh_dealloc')
-    deallocate(neigh, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
     deallocate(nnlist, stat=ierr )
     if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_dealloc')
 
@@ -776,16 +791,16 @@ nnshell=0
   end subroutine kmesh_dealloc
 
 
-    !==================================================================!
+    !==================================================================
   subroutine kmesh_supercell_sort
-    !==================================================================!
-    !                                                                  !
-    ! We look for kpoint neighbours in a large supercell of reciprocal !
-    ! unit cells. Done sequentially this is very slow.                 !
-    ! Here we order the cells by the distance from the origin          !
-    ! Doing the search in this order gives a dramatic speed up         !
-    !                                                                  !
-    !==================================================================!  
+    !==================================================================
+    !                                                                  
+    !! We look for kpoint neighbours in a large supercell of reciprocal 
+    !! unit cells. Done sequentially this is very slow.       
+    !! Here we order the cells by the distance from the origin. 
+    !! Doing the search in this order gives a dramatic speed up
+    !                                                         
+    !==================================================================
     use w90_io,   only : io_stopwatch
     implicit none
     integer :: counter,l,m,n,loop
@@ -828,13 +843,13 @@ nnshell=0
 
 
 
-    !==================================================================!
+    !=============================================================
     subroutine kmesh_get_bvectors(multi,kpt,shell_dist,bvector)
-    !==================================================================!
-    !                                                                  !
-    ! Returns the bvectors for a given shell and kpoint                ! 
-    !                                                                  !
-    !===================================================================  
+    !=============================================================
+    !                                                            
+    !! Returns the b-vectors for a given shell and kpoint.
+    !                                                           
+    !=============================================================
     use w90_io,   only : io_error,io_stopwatch
     implicit none
 
@@ -877,17 +892,17 @@ nnshell=0
   end subroutine kmesh_get_bvectors
 
 
-    !==========================================================================!
+    !==========================================================================
     subroutine kmesh_shell_automatic(multi,dnn,bweight)
-    !==========================================================================!
-    !                                                                          !
-    ! Find the correct set of shells to satisfy B1                             !
-    !  The stratagy is:                                                        !
-    !        Take the bvectors from the next shell                             !
-    !        Reject them if they are parallel to exisiting b vectors           !
-    !        Test to see if we satisfy B1, if not add another shell and repeat !
-    !                                                                          !
-    !==========================================================================!  
+    !==========================================================================
+    !                                                                          
+    !! Find the correct set of shells to satisfy B1                            
+    !!  The stratagy is:                                                       
+    !!       1) Take the bvectors from the next shell                            
+    !!       2) Reject them if they are parallel to exisiting b vectors          
+    !!       3) Test to see if we satisfy B1, if not add another shell and repeat
+    !                                                                          
+    !==========================================================================
 
     use w90_constants, only : eps5,eps6
     use w90_io,   only : io_error,stdout,io_stopwatch
@@ -898,8 +913,8 @@ nnshell=0
     real(kind=dp), intent(out) :: bweight(max_shells)
     real(kind=dp), allocatable     :: bvector(:,:,:) ! the bvectors
 
-    real(kind=dp), dimension(:),     allocatable :: singv
-    real(kind=dp), dimension(:,:),   allocatable :: amat,umat,vmat,smat
+    real(kind=dp), dimension(:),     allocatable :: singv,tmp1,tmp2,tmp3
+    real(kind=dp), dimension(:,:),   allocatable :: amat,umat,vmat,smat,tmp0
     integer, parameter :: lwork=max_shells*10
     real(kind=dp) :: work(lwork)
     real(kind=dp), parameter :: target(6)=(/1.0_dp,1.0_dp,1.0_dp,0.0_dp,0.0_dp,0.0_dp/)
@@ -957,6 +972,14 @@ nnshell=0
        num_shells=num_shells+1
        shell_list(num_shells)=shell
 
+       allocate(tmp0(max_shells,max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(tmp1(max_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(tmp2(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
+       allocate(tmp3(num_shells),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
        allocate(amat(max_shells,num_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating amat in kmesh_shell_automatic')
        allocate(umat(max_shells,max_shells),stat=ierr)
@@ -967,7 +990,7 @@ nnshell=0
        if (ierr/=0) call io_error('Error allocating smat in kmesh_shell_automatic')
        allocate(singv(num_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating singv in kmesh_shell_automatic')
-       amat=0.0_dp;umat=0.0_dp;vmat=0.0_dp;smat=0.0_dp;singv=0.0_dp
+       amat(:,:)=0.0_dp;umat(:,:)=0.0_dp;vmat(:,:)=0.0_dp;smat(:,:)=0.0_dp;singv(:)=0.0_dp
 
        amat=0.0_dp
        do loop_s=1,num_shells
@@ -1004,10 +1027,17 @@ nnshell=0
 
        smat=0.0_dp
        do loop_s=1,num_shells
-          smat(loop_s,loop_s)=1/singv(loop_s)
+          smat(loop_s,loop_s)=1.0_dp/singv(loop_s)
        end do
 
-       bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
+       ! S. Ponce: The following below is correct but had to be unpacked because of PGI-15
+       ! bweight(1:num_shells)=matmul(transpose(vmat),matmul(smat,matmul(transpose(umat),target)))
+       tmp0 = transpose(umat)
+       tmp1 = matmul(tmp0,target)
+       tmp2 = matmul(smat,tmp1)
+       tmp3 = matmul(transpose(vmat),tmp2)
+       bweight(1:num_shells) = tmp3
+
        if(iprint>=2) then
           do loop_s=1,num_shells
              write(stdout,'(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ',loop_s,&
@@ -1048,7 +1078,14 @@ nnshell=0
        end if
 
 200 continue
-
+       deallocate(tmp0,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(tmp1,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(tmp2,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+       deallocate(tmp3,stat=ierr)
+       if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
        deallocate(amat,stat=ierr)
        if (ierr/=0) call io_error('Error deallocating amat in kmesh_shell_automatic')
        deallocate(umat,stat=ierr)
@@ -1081,13 +1118,13 @@ nnshell=0
   end subroutine kmesh_shell_automatic
 
 
-    !==========================================================================!
+    !================================================================
      subroutine kmesh_shell_fixed(multi,dnn,bweight)
-    !==========================================================================!
-    !                                                                          !
-    !  Find the B1 weights for a set of shells specified by the user           !
-    !                                                                          !
-    !==========================================================================!
+    !================================================================
+    !                                                               
+    !!  Find the B1 weights for a set of shells specified by the user 
+    !                                                                 
+    !================================================================
 
     use w90_constants, only : eps7
     use w90_io,   only : io_error,stdout,io_stopwatch
@@ -1208,13 +1245,15 @@ nnshell=0
   end subroutine kmesh_shell_fixed
 
 
-    !==========================================================================!
+    !=================================================================
      subroutine kmesh_shell_from_file(multi,dnn,bweight)
-    !==========================================================================!
-    !                                                                          !
-    !  Find the B1 weights for a set of shells specified by the user           !
-    !                                                                          !
-    !==========================================================================!
+    !=================================================================
+    !                                                                
+    !!  Find the B1 weights for a set of b-vectors given in a file.
+    !!  This routine is only activated via a devel_flag and is not
+    !!  intended for regular use. 
+    !                                                               
+    !=================================================================
 
     use w90_constants, only : eps7
     use w90_io,   only : io_error,stdout,io_stopwatch,io_file_unit,seedname,maxlen
@@ -1409,19 +1448,21 @@ nnshell=0
   end subroutine kmesh_shell_from_file
 
 
-    !=========================================================================!
+    !=================================
      function internal_maxloc(dist)
-    !=========================================================================!
-    !                                                                         !
-    !  A predictable maxloc.                                                  !
-    !                                                                         !
-    !=========================================================================!
+    !=================================
+    !                              
+    !!  A reproducible maxloc function
+    !!  so b-vectors come in the same
+    !!  order each time                           
+    !=================================
 
     use w90_constants, only : eps8   
     implicit none
 
 
     real(kind=dp), intent(in)  :: dist((2*nsupcell+1)**3)
+    !! Distances from the origin of the unit cells in the supercell.
     integer                    :: internal_maxloc
   
     integer       :: guess(1),loop,counter

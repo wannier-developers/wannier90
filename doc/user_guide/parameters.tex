@@ -66,6 +66,7 @@ calculation are manifestly real \\
 {\sc search\_shells }   & I & The number of shells to search when
 determining finite difference formula \\
 {\sc skip\_B1\_tests }   & L & Check the condition B1 of Ref.~\cite{marzari-prb97}  \\
+{\sc nnkpts} & I & Explicit list of nearest-neighbour k-points.\\
 {\sc kmesh\_tol } & R & The tolerance to control if two kpoint belong to the same shell \\
 \hline
 \end{tabular}
@@ -195,6 +196,8 @@ of $\Omega$\\
 {\sc fixed\_step }*   & R & The fixed step length to take during the minimisation
 of $\Omega$, instead of doing a parabolic line search \\
 {\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
+{\sc site\_symmetry}***   & L & To construct symmetry-adapted Wannier functions  \\
+{\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\ 
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -204,7 +207,8 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. 
 {\footnotesize
 * {\sc fixed\_step } and  {\sc trial\_step } may not both be defined in
-the same input file. **Cannot be used in conjunction with disentanglement.}}
+the same input file. **Cannot be used in conjunction with disentanglement.
+***Cannot be used in conjunction with the inner (frozen) energy window.}}
 \label{parameter_keywords5}
 \end{center}
 \end{table}
@@ -251,13 +255,19 @@ the same input file. **Cannot be used in conjunction with disentanglement.}}
 Fermi energy in the specified range\\
   {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
   surface plot \\
-  {\sc hr\_plot} & L & Write the Hamiltonian in the WF basis \\
+  \old{\sc hr\_plot} & L & \old{This parameter is not used anymore. Use {\sc write\_hr} instead.} \\
+  \new{\sc write\_hr} & L & \new{Write the Hamiltonian in the WF basis} \\
+  \new{\sc write\_rmn } & L & \new{Write the position operator in the WF basis} \\
+\new{\sc write\_tb }  & L & \new{Write lattice vectors, 
+Hamiltonian, and position operator in WF basis} \\
   {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
   {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
   {\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
+  \new{\sc use\_ws\_distance } & L & \new{Improve interpolation using minimum distance between WFs, see Chap.~\ref{chap:interpolation}} \\
+  \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
 %{\sc slice\_num\_points }   & I & Number of points in the slice plot \\
@@ -547,6 +557,24 @@ flag is in conjunction with the Z2PACK code:
 
 The default value is \texttt{.false.}.
 
+\subsection[nnkpts]{\tt integer, dimension(:, 5) :: nnkpts}
+
+Specifies the nearest-neighbour k-points which are written to the \texttt{.nnkp} file. This can be used to explicitly specify which overlap matrices should be calculated.
+
+\begin{verbatim}
+begin nnkpts
+1   2   0  0  0
+.
+.
+end nnkpts
+\end{verbatim}
+
+Each nearest neighbour $\mathbf{k + b}$ is given by a line of 5 integers. The first specifies the k-point number \texttt{nkp} of $\mathbf{k}$. The second is the k-point number of the neighbour. The final three integers specify the reciprocal lattice vector which brings the k-point specified by the second integer to $\mathbf{k + b}$.
+
+This format is the same as in the \texttt{.nnkp} file, except that the number of neighbours per k-point is not specified. However, the number of neighbours still needs to be a multiple of the number of k-points.
+
+This input parameter can be used only if \texttt{postproc\_setup = .true.}, and is not intended to be used with a full Wannier90 run. It can be used also if the k-points do not describe a regular mesh.
+
 \subsection[kmesh\_tol]{\tt real(kind=dp) :: kmesh\_tol}
 
 Two kpoints belong to the same shell if the distance between them is
@@ -712,7 +740,7 @@ The default value is \verb#false#.
 \subsection[write\_xyz]{\tt logical :: write\_xyz}
 
 Determines whether to write the atomic positions and 
-final Wannier centres to an xyzfile,
+final Wannier centres to an xyz file,
 \verb#seedname_centres.xyz#, for subsequent
 visualisation. 
 
@@ -727,6 +755,7 @@ distribution) for calculating van der Waals energies.
 Brillouin zone sampling must be at the Gamma-point only.
 
 The default value is \verb#false#.
+
 
 \section{Disentanglement}
 These keywords control the disentanglement routine of
@@ -809,7 +838,7 @@ The default is 0, which means disentangle at every k-point in the full BZ (the s
 \subsection[dis\_spheres\_first\_wann]{\tt integer :: dis\_spheres\_first\_wann}
 Index of the first band that has to be considered as a Wannier function. Used only if {\tt dis\_spheres\_num} is greater than zero.
 At k-points where disentanglement is not performed the bands from
-{\tt dis\_first\_wann} to {\tt dis\_first\_wann+num\_wann} are used
+{\tt dis\_spheres\_first\_wann} to {\tt dis\_spheres\_first\_wann+num\_wann} are used
 to wannierise. The bands excluded using {\tt exclude\_bands} should not
 be counted.
 
@@ -966,7 +995,25 @@ Determines whether to use the Bloch functions as the
 initial guess for the projections. Can only be used if
 \verb#disentanglement = false#. 
 
-Th default value is \verb#false#.
+The default value is \verb#false#.
+
+
+\subsection[site\_symmetry]{\tt logical :: site\_symmetry}
+
+Construct symmetry-adapted Wannier functions. 
+For the detail of the theoretical background, see Ref.~\cite{sakuma-prb13}. 
+Cannot be used in conjunction with the inner (frozen) energy window. 
+
+The default value is \verb#false#.
+
+\subsection[symmetrize\_eps]{\tt real(kind=dp) :: symmetrize\_eps}
+
+Convergence threshold to check whether the symmetry condition (Eq. (19) in Ref.~\cite{sakuma-prb13})
+on the unitary matrix $\Uk$ is satisfied or not.  
+See also Eq. (29) in Ref.~\cite{sakuma-prb13}. 
+Used when \verb#site_symmetry = .true#.
+
+The default value is 1.0E-3.
 
 
 \section{Post-Processing}
@@ -1191,7 +1238,8 @@ If {\tt fermi\_energy} is specified, {\tt
 %\wannier, it is a useful parameter to set as it will be written
 %into the bxsf file. 
 
-The default value is 0.0
+There is no default value.
+% The default value is 0.0
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy\_min}
@@ -1227,12 +1275,29 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#xcrysden#  (default)
 \end{itemize}
 
-\subsection[hr\_plot]{\tt logical :: hr\_plot}
+\subsection[write\_hr]{\tt logical :: write\_hr}
 
-If $\verb#hr_plot#=\verb#true#$, then the Hamiltonian matrix in the
+If $\verb#write_hr#=\verb#true#$, then the Hamiltonian matrix in the
 WF basis will be written to a file {\tt seedname\_hr.dat}.
 
 The default value is {\tt false}.
+
+\subsection[write\_rmn]{\tt logical :: write\_rmn}
+
+If $\verb#write_rmn#=\verb#true#$, then the position operator in the
+WF basis will be written to a file {\tt seedname\_r.dat}.
+
+The default value is {\tt false}.
+
+\subsection[write\_tb]{\tt logical :: write\_tb}
+
+If $\verb#write_tb#=\verb#true#$, then the lattice vectors, together
+with the Hamiltonian and position-operator matrices in the WF basis,
+will be written to a file {\tt seedname\_tb.dat}, in units
+of Angstrom and eV.
+
+The default value is {\tt false}.
+
 
 \subsection[transport]{\tt logical :: transport}
 
@@ -1419,11 +1484,34 @@ The default is 0.15
 
 \subsection[translation\_centre\_frac]{\tt real(kind=dp) :: translation\_centre\_frac(3)}
 
-Centre of the unit cell to which the final Wannier centers are
+Centre of the unit cell to which the final Wannier centres are
 translated. Numbers are in fractional coordinates with respect to the
 lattice vectors.
  
 The default value is (0.0,0.0,0.0).
+
+\subsection[use\_ws\_distance]{\tt logical :: use\_ws\_distance}
+
+Improves the interpolation of the k-space Hamiltonian, by
+applying a translation to each WF by a basis
+vector of the super-lattice that minimises the distance between their centres.
+The translation is dependent on both WF and on the unit cell vector
+to which they belong, i.e., translate function $W_j({\bf r}-{\bf R})$ inside
+the Wigner-Seitz cell centred on WF $W_i({\bf r})$.
+
+For a longer explanation, see Chapter~\ref{chap:interpolation}.
+
+If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
+
+The default value is {\tt false}. Introduced in v2.1.
+
+\subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
+
+Write the $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices obtained at the end of wannierization to files
+{\tt seedname\_u.mat} and {\tt seedname\_u\_dis.mat}, respectively.
+
+The default value is {\tt false}.
+
 
 \subsection[hr\_cutoff]{\tt real(kind=dp) :: hr\_cutoff}
 

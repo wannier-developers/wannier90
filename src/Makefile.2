@@ -1,14 +1,16 @@
+# -*- MakeFile -*- 
 #  Should be no need to change below this line
 #
 
-include ../../make.sys
+include ../../make.inc
 
 OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
-	 kmesh.o disentangle.o wannierise.o plot.o transport.o
+	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o
 
 OBJS2  =  wannier_lib.o
 
-OBJS_POST  = parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o postw90_common.o wan_ham.o spin.o dos.o berry.o kpath.o kslice.o boltzwann.o geninterp.o
+OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
+             postw90_common.o wan_ham.o spin.o dos.o berry.o kpath.o kslice.o boltzwann.o geninterp.o
 
 LIBRARY = ../../libwannier.a
 
@@ -56,7 +58,7 @@ ifndef MPIF90
 
 	$(info  ) \
 	$(info ********************* STOP **********************) \
-	$(info *  COMMS=mpi but MPIF90 is not set in make.sys  *) \
+	$(info *  COMMS=mpi but MPIF90 is not set in make.inc  *) \
 	$(info *  Set MPIF90 to your parallel fortran compiler *) \
 	$(info *  On many systems MPIF90=mpif90 will work      *) \
 	$(info ********************* STOP **********************) \
@@ -89,26 +91,32 @@ utility.o: ../utility.F90  constants.o io.o
 parameters.o: ../parameters.F90 constants.o io.o utility.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../parameters.F90
 
-hamiltonian.o: ../hamiltonian.F90 constants.o io.o utility.o parameters.o
+hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o parameters.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../hamiltonian.F90
 
-overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o
+overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../overlap.F90
 
 kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o 
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../kmesh.F90
 
-disentangle.o: ../disentangle.F90 constants.o io.o parameters.o
+disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../disentangle.F90
 
-wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o
+wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannierise.F90
 
-plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o
+plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o ws_distance.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../plot.F90
+
+ws_distance.o: ../ws_distance.F90 constants.o io.o parameters.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../ws_distance.F90
 
 transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../transport.F90
+
+sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
 comms.o: $(POSTDIR)comms.F90 constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90
@@ -140,7 +148,7 @@ berry.o: $(POSTDIR)berry.F90 comms.o parameters.o constants.o utility.o postw90_
 wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o constants.o utility.o postw90_common.o get_oper.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)wan_ham.F90
 
-postw90_common.o: $(POSTDIR)postw90_common.F90 comms.o parameters.o utility.o constants.o io.o 
+postw90_common.o: $(POSTDIR)postw90_common.F90 ws_distance.o comms.o parameters.o utility.o constants.o io.o 
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_common.F90
 
 wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \

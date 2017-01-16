@@ -1,21 +1,22 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_postw90_common
 
 !==============================================================================
-! This contains the common variables and procedures needed to set up a Wannier
-! interpolatation calculation for any physical property
+!! This contains the common variables and procedures needed to set up a Wannier
+!! interpolatation calculation for any physical property
 !==============================================================================
 
   ! Should we remove this 'use w90_comms' and invoke in individual routines 
@@ -26,21 +27,32 @@ module w90_postw90_common
 
   implicit none
 
+  private
+
+  public :: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, pw90common_wanint_param_dist
+  public :: pw90common_wanint_data_dist, pw90common_get_occ
+  public :: pw90common_fourier_R_to_k, pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec 
+  public :: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
+  public :: num_int_kpts_on_node, int_kpts, weight
+  public :: pw90common_kmesh_spacing
+
+! AAM PROBABLY REMOVE THIS
   ! This 'save' statement could probably be ommited, since this module 
   ! is USEd by the main program 'wannier_parint'
   !
   save
  
+! AAM REMOVE THIS
   ! Default accessibility is PUBLIC
   !
-  private :: wigner_seitz
-
-  private :: kmesh_spacing_singleinteger, kmesh_spacing_mesh
+!  private :: wigner_seitz
+!
+!  private :: kmesh_spacing_singleinteger, kmesh_spacing_mesh
   
-  interface kmesh_spacing
+  interface pw90common_kmesh_spacing
      module procedure kmesh_spacing_singleinteger
      module procedure kmesh_spacing_mesh
-  end interface kmesh_spacing
+  end interface pw90common_kmesh_spacing
 
   ! Parameters describing the direct lattice points R on a 
   ! Wigner-Seitz supercell
@@ -64,8 +76,8 @@ module w90_postw90_common
 
   ! Public procedures have names starting with wanint_
                                                   
-  subroutine wanint_setup
-
+  subroutine pw90common_wanint_setup
+    !! Setup data ready for interpolation
     use w90_constants, only   : dp,cmplx_0
     use w90_io, only          : io_error,io_file_unit,stdout,seedname
     use w90_utility, only     : utility_cart_to_frac
@@ -97,13 +109,13 @@ module w90_postw90_common
     ! Now can allocate several arrays
     !
     allocate(irvec(3,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating irvec in wanint_setup')
+    if (ierr/=0) call io_error('Error in allocating irvec in pw90common_wanint_setup')
     irvec=0
     allocate(crvec(3,nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating crvec in wanint_setup')
+    if (ierr/=0) call io_error('Error in allocating crvec in pw90common_wanint_setup')
     crvec=0.0_dp
     allocate(ndegen(nrpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ndegen in wanint_setup')
+    if (ierr/=0) call io_error('Error in allocating ndegen in pw90common_wanint_setup')
     ndegen=0
     !
     ! Also rpt_origin, so that when effective_model=.true it is not
@@ -128,17 +140,17 @@ module w90_postw90_common
     
     return
 
-101 call io_error('Error in wanint_setup: problem opening file '//&
+101 call io_error('Error in pw90common_wanint_setup: problem opening file '//&
          trim(seedname)//'_HH_R.dat')
 
-  end subroutine wanint_setup
+  end subroutine pw90common_wanint_setup
   
   
   !===========================================================!
-  subroutine wanint_get_kpoint_file
+  subroutine pw90common_wanint_get_kpoint_file
   !===========================================================!
   !                                                           !
-  ! read kpoints from kpoint.dat and distribute               !
+  !! read kpoints from kpoint.dat and distribute 
   !                                                           !
   !===========================================================!
 
@@ -197,17 +209,17 @@ module w90_postw90_common
 
   return
 
-106 call io_error('Error: Problem opening file kpoint.dat in wanint_get_kpoint_file')
+106 call io_error('Error: Problem opening file kpoint.dat in pw90common_wanint_get_kpoint_file')
  
-  end subroutine wanint_get_kpoint_file
+  end subroutine pw90common_wanint_get_kpoint_file
 
 
   !===========================================================!
-  subroutine wanint_param_dist
+  subroutine pw90common_wanint_param_dist
   !===========================================================!
   !                                                           !
-  ! distribute the parameters across processors               !
-  ! NOTE: we only send the ones postw90 uses, not all in w90  !
+  !! distribute the parameters across processors              
+  !! NOTE: we only send the ones postw90 uses, not all in w90 
   !                                                           !
   !===========================================================!
 
@@ -332,6 +344,8 @@ module w90_postw90_common
     call comms_bcast(boltz_bandshift_firstband,1) 
     call comms_bcast(boltz_bandshift_energyshift,1) 
     ! [gp-end]
+    call comms_bcast(use_ws_distance,1)
+
 
     ! These variables are different from the ones above in that they are 
     ! allocatable, and in param_read they were allocated on the root node only
@@ -380,22 +394,22 @@ module w90_postw90_common
        if(.not. on_root) then
           allocate(nnlist(num_kpts,nntot), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating nnlist in wanint_param_dist')
+               call io_error('Error in allocating nnlist in pw90common_wanint_param_dist')
           allocate(neigh(num_kpts,nntot/2), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating neigh in wanint_param_dist')
+               call io_error('Error in allocating neigh in pw90common_wanint_param_dist')
           allocate(nncell(3,num_kpts,nntot), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating nncell in wanint_param_dist')
+               call io_error('Error in allocating nncell in pw90common_wanint_param_dist')
           allocate(wb(nntot), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating wb in wanint_param_dist')
+               call io_error('Error in allocating wb in pw90common_wanint_param_dist')
           allocate(bka(3,nntot/2), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating bka in wanint_param_dist')
+               call io_error('Error in allocating bka in pw90common_wanint_param_dist')
           allocate(bk(3,nntot,num_kpts), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating bk in wanint_param_dist')
+               call io_error('Error in allocating bk in pw90common_wanint_param_dist')
        end if
        
        call comms_bcast(nnlist(1,1),num_kpts*nntot)
@@ -407,14 +421,14 @@ module w90_postw90_common
 
     endif
 
-  end subroutine wanint_param_dist
+  end subroutine pw90common_wanint_param_dist
 
 
   !===========================================================!
-  subroutine wanint_data_dist
+  subroutine pw90common_wanint_data_dist
   !===========================================================!
   !                                                           !
-  ! Distribute the um and chk files                           !
+  !! Distribute the um and chk files
   !                                                           !
   !===========================================================!
 
@@ -440,7 +454,7 @@ module w90_postw90_common
     ! Allocate on all nodes
     allocate(v_matrix(num_bands,num_wann,num_kpts),stat=ierr)
     if (ierr/=0)&
-         call io_error('Error allocating v_matrix in wanint_data_dist')    
+         call io_error('Error allocating v_matrix in pw90common_wanint_data_dist')    
     ! u_matrix and u_matrix_opt are stored on root only
     if(on_root) then
        if(.not.have_disentangled) then
@@ -465,14 +479,14 @@ module w90_postw90_common
     if (.not.on_root .and. .not.allocated(u_matrix)) then
        allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
        if (ierr/=0)&
-            call io_error('Error allocating u_matrix in wanint_data_dist')
+            call io_error('Error allocating u_matrix in pw90common_wanint_data_dist')
     endif
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
 
     if (.not.on_root .and. .not.allocated(m_matrix)) then
        allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
        if (ierr/=0)&
-            call io_error('Error allocating m_matrix in wanint_data_dist')
+            call io_error('Error allocating m_matrix in pw90common_wanint_data_dist')
     endif
     call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
     
@@ -488,19 +502,19 @@ module w90_postw90_common
           if (.not.allocated(u_matrix_opt)) then
              allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
              if (ierr/=0)&
-              call io_error('Error allocating u_matrix_opt in wanint_data_dist')
+              call io_error('Error allocating u_matrix_opt in pw90common_wanint_data_dist')
           endif
           
           if (.not.allocated(lwindow)) then
              allocate(lwindow(num_bands,num_kpts),stat=ierr)
              if (ierr/=0)&
-                  call io_error('Error allocating lwindow in wanint_data_dist')
+                  call io_error('Error allocating lwindow in pw90common_wanint_data_dist')
           endif
           
           if (.not.allocated(ndimwin)) then
              allocate(ndimwin(num_kpts),stat=ierr)
              if (ierr/=0)&
-                  call io_error('Error allocating ndimwin in wanint_data_dist')
+                  call io_error('Error allocating ndimwin in pw90common_wanint_data_dist')
           endif
      
        end if
@@ -510,11 +524,12 @@ module w90_postw90_common
        call comms_bcast(ndimwin(1),num_kpts)
     end if
 
-  end subroutine wanint_data_dist
+  end subroutine pw90common_wanint_data_dist
 
 !=======================================================================
 
-  subroutine get_occ(eig,occ,ef)
+  subroutine pw90common_get_occ(eig,occ,ef)
+    !! Compute the electronic occupancy
 
     use w90_constants, only     : dp !,eps7
     use w90_parameters, only    : num_wann !,smear_temp
@@ -523,8 +538,11 @@ module w90_postw90_common
     ! Arguments
     !
     real(kind=dp), intent(in)  :: eig(num_wann)
+    !! Eigenvalues
     real(kind=dp), intent(in)  :: ef
+    !! Fermi level
     real(kind=dp), intent(out) :: occ(num_wann)
+    !! Occupancy of states
 
      
     ! Misc/Dummy
@@ -554,15 +572,15 @@ module w90_postw90_common
 !       end do
 !    end if
 
-  end subroutine get_occ
+  end subroutine pw90common_get_occ
 
 !=======================================================================
 
   function kmesh_spacing_singleinteger(num_points)
 
-  ! Set up the value of the interpolation mesh spacing, needed for
-  ! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of 
-  ! the three Delta_k's for each of the primitive translations b1, b2, and b3
+  !! Set up the value of the interpolation mesh spacing, needed for
+  !! adaptive smearing [see Eqs. (34-35) YWVS07]. Choose it as the largest of 
+  !! the three Delta_k's for each of the primitive translations b1, b2, and b3
   
     use w90_parameters, only : recip_lattice
 
@@ -584,10 +602,9 @@ module w90_postw90_common
     kmesh_spacing_singleinteger=maxval(Delta_k_i)
   
   end function kmesh_spacing_singleinteger
-
-  ! Same as kmesh_spacing_singleinteger, but for a kmesh with three
-  ! different mesh samplings along the three directions
   function kmesh_spacing_mesh(mesh)  
+  !! Same as kmesh_spacing_singleinteger, but for a kmesh with three
+  !! different mesh samplings along the three directions
     use w90_parameters, only : recip_lattice
 
     integer, dimension(3), intent(in) :: mesh
@@ -603,24 +620,26 @@ module w90_postw90_common
     kmesh_spacing_mesh=maxval(Delta_k_i)
   
   end function kmesh_spacing_mesh
-
-  ! ***REMOVE EVENTUALLY*** (replace with fourier_R_to_k_new)
   !
   !=========================================================!
-  subroutine fourier_R_to_k(kpt,OO_R,OO,alpha)
+  subroutine pw90common_fourier_R_to_k(kpt,OO_R,OO,alpha)
   !=========================================================!
   !                                                         !
-  ! For alpha=0:                                            !
-  ! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)           !
-  !                                                         !
-  ! For alpha=1,2,3:                                        !
-  ! sum_R [cmplx_i*R_alpha*e^{+ik.R}*O_ij(R)]               !
-  ! where R_alpha is a Cartesian component of R             !
+  !! For alpha=0:                                 
+  !! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)
+  !!                                              
+  !! For alpha=1,2,3:                             
+  !! sum_R [cmplx_i*R_alpha*e^{+ik.R}*O_ij(R)]    
+  !! where R_alpha is a Cartesian component of R  
+  !! ***REMOVE EVENTUALLY*** (replace with pw90common_fourier_R_to_k_new)
+
   !                                                         !
   !=========================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only   : irdist_ws, crdist_ws, &
+                                  wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -631,43 +650,68 @@ module w90_postw90_common
     complex(kind=dp), dimension(:,:), intent(out)   :: OO
     integer                                         :: alpha
 
-    integer          :: ir
+    integer          :: ir, i,j,ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
+   if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
+    
     OO(:,:)=cmplx_0
     do ir=1,nrpts
-       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
-       if(alpha==0) then
-          OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
-       elseif(alpha==1.or.alpha==2.or.alpha==3) then
-          OO(:,:)=OO(:,:)+&
-               cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(:,:,ir)
-       else
-          stop 'wrong value of alpha in fourier_R_to_k'
-       endif
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+      if(use_ws_distance)then
+         do j=1,num_wann
+         do i=1,num_wann
+            do ideg = 1,wdist_ndeg(j,i,ir)
+               rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir),dp))
+               !phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+               if(alpha==0) then
+                  OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
+               elseif(alpha==1.or.alpha==2.or.alpha==3) then
+                  OO(i,j)=OO(i,j)+cmplx_i*crdist_ws(alpha,ideg,i,j,ir)*phase_fac*OO_R(i,j,ir)
+                  !OO(i,j)=OO(i,j)+cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(i,j,ir)
+               else
+                  stop 'wrong value of alpha in pw90common_fourier_R_to_k'
+               endif
+            enddo
+         enddo
+         enddo 
+      else
+   ! [lp] Original code, without IJ-dependent shift:
+         rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+         phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
+         if(alpha==0) then
+            OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
+         elseif(alpha==1.or.alpha==2.or.alpha==3) then
+            OO(:,:)=OO(:,:)+&
+                  cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(:,:,ir)
+         else
+            stop 'wrong value of alpha in pw90common_fourier_R_to_k'
+         endif
+      endif
+
     enddo
 
-  end subroutine fourier_R_to_k
+  end subroutine pw90common_fourier_R_to_k
 
   ! ***NEW***
   !
   !=========================================================!
-  subroutine fourier_R_to_k_new(kpt,OO_R,OO,OO_dx,OO_dy,OO_dz)
+  subroutine pw90common_fourier_R_to_k_new(kpt,OO_R,OO,OO_dx,OO_dy,OO_dz)
   !=======================================================!
   !                                                       !
-  ! For OO:                                               !
-  ! O_ij(R) --> O_ij(k) = sum_R e^{+ik.R}*O_ij(R)         !
-  !                                                       !
-  ! For OO_dx,dy,dz:                                      !
-  ! sum_R [cmplx_i*R_{dx,dy,dz}*e^{+ik.R}*O_ij(R)]        !
-  ! where R_{x,y,z} are the Cartesian components of R     !
+  !! For OO: 
+  !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
+  !! For $$OO_{dx,dy,dz}$$:
+  !! $$\sum_R [i.R_{dx,dy,dz}.e^{+ik.R}.O_{ij}(R)]$$
+  !! where R_{x,y,z} are the Cartesian components of R 
   !                                                       !
   !=======================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : timing_level,num_kpts,kpt_latt
+    use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only   : irdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -680,41 +724,64 @@ module w90_postw90_common
     complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dy
     complex(kind=dp), optional, dimension(:,:), intent(out)   :: OO_dz
 
-    integer          :: ir
+    integer          :: ir, i,j,ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
+    if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
+   
     if(present(OO)) OO=cmplx_0
     if(present(OO_dx)) OO_dx=cmplx_0
     if(present(OO_dy)) OO_dy=cmplx_0
     if(present(OO_dz)) OO_dz=cmplx_0
     do ir=1,nrpts
-       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
-       if(present(OO)) OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
-       if(present(OO_dx)) OO_dx(:,:)=OO_dx(:,:)+&
-               cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir)
-       if(present(OO_dy)) OO_dy(:,:)=OO_dy(:,:)+&
-               cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir)
-       if(present(OO_dz)) OO_dz(:,:)=OO_dz(:,:)+&
-               cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir)
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+      if(use_ws_distance)then
+        do j=1,num_wann
+        do i=1,num_wann
+            do ideg = 1,wdist_ndeg(j,i,ir)
+              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir),dp))
+              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+              if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
+              if(present(OO_dx)) OO_dx(i,j)=OO_dx(i,j)+&
+                      cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir)
+              if(present(OO_dy)) OO_dy(i,j)=OO_dy(i,j)+&
+                      cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir)
+              if(present(OO_dz)) OO_dz(i,j)=OO_dz(i,j)+&
+                      cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir)
+            enddo
+        enddo
+        enddo 
+      else
+! [lp] Original code, without IJ-dependent shift:
+        rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+        phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
+        if(present(OO)) OO(:,:)=OO(:,:)+phase_fac*OO_R(:,:,ir)
+        if(present(OO_dx)) OO_dx(:,:)=OO_dx(:,:)+&
+                cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir)
+        if(present(OO_dy)) OO_dy(:,:)=OO_dy(:,:)+&
+                cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir)
+        if(present(OO_dz)) OO_dz(:,:)=OO_dz(:,:)+&
+                cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir)
+      endif
     enddo
 
-  end subroutine fourier_R_to_k_new
+  end subroutine pw90common_fourier_R_to_k_new
 
   ! ***NEW***
   !
   !=========================================================!
-  subroutine fourier_R_to_k_vec(kpt,OO_R,OO_true,OO_pseudo)
+  subroutine pw90common_fourier_R_to_k_vec(kpt,OO_R,OO_true,OO_pseudo)
   !====================================================================!
   !                                                                    !
-  ! For OO_true (true vector):                                         !
-  ! {\vec O|_ij(R) --> {\vec O|_ij(k) = sum_R e^{+ik.R}*{\vec O}_ij(R) !
+  !! For OO_true (true vector):  
+  !! $${\vec O}_{ij}(k) = \sum_R e^{+ik.R} {\vec O}_{ij}(R)$$ 
   !                                                                    !
   !====================================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only   : irdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -725,34 +792,66 @@ module w90_postw90_common
     complex(kind=dp), optional, dimension(:,:,:), intent(out)   :: OO_true
     complex(kind=dp), optional, dimension(:,:,:), intent(out)   :: OO_pseudo
 
-    integer          :: ir
+    integer          :: ir, i,j,ideg
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
+    if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
     if(present(OO_true)) OO_true=cmplx_0
     if(present(OO_pseudo)) OO_pseudo=cmplx_0
     do ir=1,nrpts
-       rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-       phase_fac=exp(cmplx_i*rdotk)/real(ndegen(ir),dp)
-       if(present(OO_true)) then
-          OO_true(:,:,1)=OO_true(:,:,1)+phase_fac*OO_R(:,:,ir,1)
-          OO_true(:,:,2)=OO_true(:,:,2)+phase_fac*OO_R(:,:,ir,2)
-          OO_true(:,:,3)=OO_true(:,:,3)+phase_fac*OO_R(:,:,ir,3)
-       endif
-       if(present(OO_pseudo)) then
-          OO_pseudo(:,:,1)=OO_pseudo(:,:,1)&
-                          +cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,3)&
-                          -cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,2)
-          OO_pseudo(:,:,2)=OO_pseudo(:,:,2)&
-                          +cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,1)&
-                          -cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,3)
-          OO_pseudo(:,:,3)=OO_pseudo(:,:,3)&
-                          +cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,2)&
-                          -cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,1)
-       endif
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+      if(use_ws_distance)then
+        do j=1,num_wann
+        do i=1,num_wann
+            do ideg = 1,wdist_ndeg(j,i,ir)
+              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir),dp))
+              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
+              rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
+              if(present(OO_true)) then
+                  OO_true(i,j,1)=OO_true(i,j,1)+phase_fac*OO_R(i,j,ir,1)
+                  OO_true(i,j,2)=OO_true(i,j,2)+phase_fac*OO_R(i,j,ir,2)
+                  OO_true(i,j,3)=OO_true(i,j,3)+phase_fac*OO_R(i,j,ir,3)
+              endif
+              if(present(OO_pseudo)) then
+                  OO_pseudo(i,j,1)=OO_pseudo(i,j,1)&
+                                  +cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir,3)&
+                                  -cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir,2)
+                  OO_pseudo(i,j,2)=OO_pseudo(i,j,2)&
+                                  +cmplx_i*crvec(3,ir)*phase_fac*OO_R(i,j,ir,1)&
+                                  -cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir,3)
+                  OO_pseudo(i,j,3)=OO_pseudo(i,j,3)&
+                                  +cmplx_i*crvec(1,ir)*phase_fac*OO_R(i,j,ir,2)&
+                                  -cmplx_i*crvec(2,ir)*phase_fac*OO_R(i,j,ir,1)
+              endif
+            enddo
+        enddo
+        enddo 
+      else
+! [lp] Original code, without IJ-dependent shift:
+        rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
+        phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
+        if(present(OO_true)) then
+            OO_true(:,:,1)=OO_true(:,:,1)+phase_fac*OO_R(:,:,ir,1)
+            OO_true(:,:,2)=OO_true(:,:,2)+phase_fac*OO_R(:,:,ir,2)
+            OO_true(:,:,3)=OO_true(:,:,3)+phase_fac*OO_R(:,:,ir,3)
+        endif
+        if(present(OO_pseudo)) then
+            OO_pseudo(:,:,1)=OO_pseudo(:,:,1)&
+                            +cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,3)&
+                            -cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,2)
+            OO_pseudo(:,:,2)=OO_pseudo(:,:,2)&
+                            +cmplx_i*crvec(3,ir)*phase_fac*OO_R(:,:,ir,1)&
+                            -cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,3)
+            OO_pseudo(:,:,3)=OO_pseudo(:,:,3)&
+                            +cmplx_i*crvec(1,ir)*phase_fac*OO_R(:,:,ir,2)&
+                            -cmplx_i*crvec(2,ir)*phase_fac*OO_R(:,:,ir,1)
+        endif
+      endif
     enddo
 
-  end subroutine fourier_R_to_k_vec
+  end subroutine pw90common_fourier_R_to_k_vec
 
   !===========================================================!
   !                   PRIVATE PROCEDURES                      ! 
@@ -761,10 +860,10 @@ module w90_postw90_common
   !================================!
   subroutine wigner_seitz(count_pts)
   !================================!
-  ! Calculates a grid of lattice vectors r that fall inside (and eventually  !
-  ! on the surface of) the Wigner-Seitz supercell centered on the            ! 
-  ! origin of the Bravais superlattice with primitive translations           !
-  ! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3                       !
+  !! Calculates a grid of lattice vectors r that fall inside (and eventually
+  !! on the surface of) the Wigner-Seitz supercell centered on the 
+  !! origin of the Bravais superlattice with primitive translations 
+  !! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3 
   !==========================================================================!
 
     use w90_constants, only  : dp

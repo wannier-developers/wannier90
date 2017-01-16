@@ -1,55 +1,58 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
 !                                                            !
 !                       WANNIER90                            !
 !                                                            !
 !          The Maximally-Localised Generalised               !
 !                 Wannier Functions Code                     !
 !                                                            !
-! Wannier90 v2.0 authors:                                    !
-!           Arash A. Mostofi   (Imperial College London)     !
-!           Jonathan R. Yates  (University of Oxford)        !
-!           Giovanni Pizzi     (EPFL, Switzerland)           !
-!           Ivo Souza          (Universidad del Pais Vasco)  !
+! Please cite                                                !
 !                                                            !
-! Contributors:                                              !
-!          Young-Su Lee        (KIST, S. Korea)              !
-!          Matthew Shelley     (Imperial College London)     !
-!          Nicolas Poilvert    (Penn State University)       !
-!          Raffaello Bianco    (Paris 6 and CNRS)            !
-!          Gabriele Sclauzero  (ETH Zurich)                  !  
+! [ref] A. A. Mostofi, J. R. Yates, G. Pizzi, Y.-S. Lee,     !
+!       I. Souza, D. Vanderbilt and N. Marzari,              !
+!       "An updated version of Wannier90: a tool             !
+!       for obtaining maximally-localised Wannier            !
+!       functions",                                          !
+!       Computer Physics Communications 185, 2309 (2014),    !
+!       http://dx.doi.org/10.1016/j.cpc.2014.05.003          !
 !                                                            !
-!  Please cite                                               !
+! in any publications arising from the use of this code.     !
 !                                                            !
-!  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza,    !
-!        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
-!        for Obtaining Maximally Localised Wannier           !
-!        Functions", Computer Physics Communications,        !
-!        178, 685 (2008)                                     !
+! Wannier90 is based on Wannier77, written by N. Marzari,    !
+! I. Souza and D. Vanderbilt. For the method please cite     !
 !                                                            !
-!  in any publications arising from the use of this code.    !
+! [ref] N. Marzari and D. Vanderbilt,                        !
+!       Phys. Rev. B 56 12847 (1997)                         !
+!       http://dx.doi.org/10.1103/PhysRevB.56.12847          !
 !                                                            !
-!  Wannier90 is based on Wannier77, written by N. Marzari,   !
-!  I. Souza and D. Vanderbilt. For the method please cite    !
+! [ref] I. Souza, N. Marzari and D. Vanderbilt,              !
+!       Phys. Rev. B 65 035109 (2001)                        !
+!       http://dx.doi.org/10.1103/PhysRevB.65.035109         !
 !                                                            !
-!  [ref] N. Marzari and D. Vanderbilt,                       !
-!        Phys. Rev. B 56 12847 (1997)                        !
+! [ref] N. Marzari, A. A. Mostofi, J. R. Yates, I. Souza,    !
+!       D. Vanderbilt, "Maximally localized Wannier          !
+!       functions: theory and applications",                 !
+!       Rev. Mod. Phys. 84, 1419 (2012)                      !
+!       http://dx.doi.org/10.1103/RevModPhys.84.1419         !
 !                                                            !
-!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
-!        Phys. Rev. B 65 035109 (2001)                       !
+! For a full list of authors and contributors, please        !
+! see the README file in the root directory of the           !
+! distribution.                                              !
 !                                                            !
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 program wannier
+  !! The main Wannier90 program
 
   use w90_constants
   use w90_parameters
@@ -61,6 +64,7 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
+  use w90_sitesym !YN:
  
   implicit none
 
@@ -104,7 +108,7 @@ program wannier
 
   if (transport .and. tran_read_ht) goto 3003
 
-  call kmesh_get()
+  if (.not. explicit_nnkpts) call kmesh_get()
   call param_memory_estimate()
 
   ! Sort out restarts
@@ -112,7 +116,7 @@ program wannier
      write(stdout,'(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
      call param_read_chkpt()
-!!$     call param_read_um
+!~     call param_read_um
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
            write(stdout,'(/1x,a)',advance='no') 'Resuming a previous Wannier90 calculation '
@@ -152,6 +156,7 @@ program wannier
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
+  if (lsitesymmetry) call sitesym_read()   !YN:
   call overlap_read()
 
   time1=io_time()
@@ -167,7 +172,7 @@ program wannier
   endif
 
   call param_write_chkpt('postdis')
-!!$  call param_write_um
+!~  call param_write_um
 
 1001 time2=io_time()
 
@@ -184,7 +189,7 @@ program wannier
 
 2002 time2=io_time()
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
      call plot_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
@@ -199,11 +204,12 @@ program wannier
      if (tran_read_ht) goto 4004
   end if
 
-  call transport_dealloc()
+  call tran_dealloc()
   call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
   call param_dealloc()
+  if (lsitesymmetry) call sitesym_dealloc() !YN:
 
 4004 continue 
 

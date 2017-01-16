@@ -1,0 +1,17 @@
+# Symmetry-adapted mode
+
+Additional input in GaAs.win file 
+  site_symmetry = .true.   (default value is .false.) 
+  symmetrize_eps = 1d-9    (default value is 1d-3   )
+
+
+Additional input in GaAs.pw2wan file 
+  write_dmn = .true.
+
+
+Working directories 
+  atom_centered_As_sp : one s-like and three p-like Wannier functions centered at As 
+  atom_centered_Ga_p  : three p-like Wannier functions centered at Ga 
+  atom_centered_Ga_s  : one s-like Wannier function centered at Ga 
+  atom_centered_Ga_sp : one s-like and three p-like Wannier functions centered at Ga 
+  bond_centered       : four bond-centered Wannier functions in symmetry-adapted mode 

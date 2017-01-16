@@ -1,52 +1,54 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
 !                                                            !
 !                       WANNIER90                            !
 !                                                            !
 !          The Maximally-Localised Generalised               !
 !                 Wannier Functions Code                     !
 !                                                            !
-! Wannier90 v2.0 authors:                                    !
-!           Arash A. Mostofi   (Imperial College London)     !
-!           Jonathan R. Yates  (University of Oxford)        !
-!           Giovanni Pizzi     (EPFL, Switzerland)           !
-!           Ivo Souza          (Universidad del Pais Vasco)  !
+! Please cite                                                !
 !                                                            !
-! Contributors:                                              !
-!          Young-Su Lee        (KIST, S. Korea)              !
-!          Matthew Shelley     (Imperial College London)     !
-!          Nicolas Poilvert    (Penn State University)       !
-!          Raffaello Bianco    (Paris 6 and CNRS)            !
-!          Gabriele Sclauzero  (ETH Zurich)                  !
+! [ref] A. A. Mostofi, J. R. Yates, G. Pizzi, Y.-S. Lee,     !
+!       I. Souza, D. Vanderbilt and N. Marzari,              !
+!       "An updated version of Wannier90: a tool             !
+!       for obtaining maximally-localised Wannier            !
+!       functions",                                          !
+!       Computer Physics Communications 185, 2309 (2014),    !
+!       http://dx.doi.org/10.1016/j.cpc.2014.05.003          !
 !                                                            !
-!  Please cite                                               !
+! in any publications arising from the use of this code.     !
 !                                                            !
-!  [ref] A. A. Mostofi, J. R. Yates, Y.-S. Lee, I. Souza,    !
-!        D. Vanderbilt and N. Marzari, "Wannier90: A Tool    !
-!        for Obtaining Maximally Localised Wannier           !
-!        Functions", Computer Physics Communications,        !
-!        178, 685 (2008)                                     !
+! Wannier90 is based on Wannier77, written by N. Marzari,    !
+! I. Souza and D. Vanderbilt. For the method please cite     !
 !                                                            !
-!  in any publications arising from the use of this code.    !
+! [ref] N. Marzari and D. Vanderbilt,                        !
+!       Phys. Rev. B 56 12847 (1997)                         !
+!       http://dx.doi.org/10.1103/PhysRevB.56.12847          !
 !                                                            !
-!  Wannier90 is based on Wannier77, written by N. Marzari,   !
-!  I. Souza and D. Vanderbilt. For the method please cite    !
+! [ref] I. Souza, N. Marzari and D. Vanderbilt,              !
+!       Phys. Rev. B 65 035109 (2001)                        !
+!       http://dx.doi.org/10.1103/PhysRevB.65.035109         !
 !                                                            !
-!  [ref] N. Marzari and D. Vanderbilt,                       !
-!        Phys. Rev. B 56 12847 (1997)                        !
+! [ref] N. Marzari, A. A. Mostofi, J. R. Yates, I. Souza,    !
+!       D. Vanderbilt, "Maximally localized Wannier          ! 
+!       functions: theory and applications",                 !
+!       Rev. Mod. Phys. 84, 1419 (2012)                      !
+!       http://dx.doi.org/10.1103/RevModPhys.84.1419         !
 !                                                            !
-!  [ref] I. Souza, N. Marzari and D. Vanderbilt,             !
-!        Phys. Rev. B 65 035109 (2001)                       !
+! For a full list of authors and contributors, please        !
+! see the README file in the root directory of the           !
+! distribution.                                              !
 !                                                            !
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
@@ -131,9 +133,12 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   gamma_only=gamma_only_loc
   spinors=spinors_loc
 
+  ! AAM_2016-09-14: initialise num_bands as it's used in param_read()
+  num_bands = num_bands_tot
   call param_read()
   ! set num_bands and cell_volume as they are written to output in param_write
-  num_bands = num_bands_tot - num_exclude_bands
+  ! AAM_2016-09-14: num_exclude_bands is now subtracted in param_read
+  ! num_bands = num_bands_tot - num_exclude_bands
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
                 real_lattice(1,3)*(real_lattice(2,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(2,2))
@@ -142,7 +147,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   time1=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
 
-  call kmesh_get()
+  if (.not. explicit_nnkpts) call kmesh_get()
 
 
   ! Now we zero all of the local output data, then copy in the data
@@ -332,8 +337,8 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      u_matrix=a_matrix_loc
   endif
 
-!!$  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
-!!$  if (gamma_only) call overlap_check_m_symmetry()
+!~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
+!~  if (gamma_only) call overlap_check_m_symmetry()
 
   if(disentanglement) then
      have_disentangled = .false.
@@ -363,7 +368,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time for wannierise      ',time2-time1,' (sec)'     
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. hr_plot) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
      call plot_main()
      time1=io_time()
      write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'     

@@ -1,0 +1,22 @@
+# Symmetry-adapted mode
+
+Additional input in Cu.win file 
+  site_symmetry = .true.   (default value is .false.) 
+  symmetrize_eps = 1d-9    (default value is 1d-3   )
+
+
+Additional input in Cu.pw2wan file 
+  write_dmn = .true.
+
+
+Working directories 
+  s_at_0.00 : s-like Wannier function centered at (0,0,0)       + atomic-centered d-like Wannier functions  
+  s_at_0.25 : s-like Wannier function centered at (1/4,1/4,1/4) + atomic-centered d-like Wannier functions  
+  s_at_0.50 : s-like Wannier function centered at (1/2,1/2,1/2) + atomic-centered d-like Wannier functions 
+
+
+
+In s_at_0.25, we use an additional flag "read_sym = .true." to customize the symmetry operations to be used.  
+We exclude the inversion symmetry to create s-like Wannier function centered at (1/4,1/4,1/4). 
+Information on symmetry operations without inversion symmetry is taken from GaAs calculation. 
+See more detailed discussion in R. Sakuma, Phys. Rev. B 87, 235109 (2013). 

@@ -1,53 +1,54 @@
-!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_hamiltonian
-
+  !! Module to obtain the Hamiltonian in a wannier basis
+  !! This is a simplified routine, more sophisticated properties
+  !! are found in postw90 (e.g. w90_get_oper)
   use w90_constants, only : dp
 
   implicit none
 
   private
   !
-  ! Hamiltonian matrix in WF representation
-  !
   complex(kind=dp), public, save, allocatable :: ham_r(:,:,:)
-  !
-  ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
-  !                   irvec(1:3,irpt) in the basis of the lattice vectors
+  !! Hamiltonian matrix in WF representation
   !
   integer,          public, save, allocatable :: irvec(:,:)
+  !!  The irpt-th Wigner-Seitz grid point has components
+  !! irvec(1:3,irpt) in the basis of the lattice vectors
   !
-  ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
+  integer,          public, save, allocatable :: shift_vec(:,:)
   !
   integer,          public, save, allocatable :: ndegen(:)
-  !
-  ! nrpts             number of Wigner-Seitz grid points
+  !! Weight of the irpt-th point is 1/ndegen(irpt) 
   !
   integer,          public, save              :: nrpts
+  !! number of Wigner-Seitz grid points
   !
-  ! ivo
-  ! rpt_origin        index of R=0
   integer,          public, save              :: rpt_origin
-  !
-  ! translated Wannier centres
+  !! index of R=0
   !
   real(kind=dp),    public, save, allocatable :: wannier_centres_translated(:,:)
+  !! translated Wannier centres
 
   public :: hamiltonian_get_hr
   public :: hamiltonian_write_hr
   public :: hamiltonian_setup
   public :: hamiltonian_dealloc
+  public :: hamiltonian_write_rmn
+  public :: hamiltonian_write_tb
 
   ! Module variables
   logical, save :: ham_have_setup=.false.
@@ -56,6 +57,7 @@ module w90_hamiltonian
   logical, save :: have_ham_r=.false.
   logical, save :: have_ham_k=.false.
   logical, save :: hr_written=.false.
+  logical, save :: tb_written=.false.
 
   complex(kind=dp), save, allocatable :: ham_k(:,:,:)
 
@@ -63,6 +65,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_setup()
+    !! Allocate arrays and setup data
     !============================================!
 
     use w90_constants,  only: cmplx_0
@@ -119,6 +122,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_dealloc()
+    !! Deallocate module data
     !============================================!
 
     use w90_io, only : io_error
@@ -156,7 +160,7 @@ contains
   subroutine hamiltonian_get_hr()
     !============================================!
     !                                            !
-    !  Calculate the Hamiltonian in the WF basis !
+    !!  Calculate the Hamiltonian in the WF basis
     !                                            !
     !============================================!
 
@@ -165,6 +169,7 @@ contains
     use w90_parameters, only : num_bands,num_kpts,num_wann,u_matrix, &
                                eigval,kpt_latt,u_matrix_opt,lwindow,ndimwin, &
                                have_disentangled,timing_level
+    use w90_parameters, only : lsitesymmetry !YN:
 
     implicit none
   
@@ -174,7 +179,8 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands,num_kpts)
     real(kind=dp)        :: eigval2(num_wann,num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt,i,j,m,irpt,ierr,counter
+    integer              :: loop_kpt,i,j,m,irpt,ideg,ierr,counter
+    complex(kind=dp)     :: utmp(num_bands,num_wann) !RS:
 
     if (timing_level>1) call io_stopwatch('hamiltonian: get_hr',1)
 
@@ -188,10 +194,10 @@ contains
 
     if(have_ham_k) go to 100
 
-!!$    if (.not. allocated(ham_k)) then
-!!$       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
-!!$       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
-!!$    end if
+!~    if (.not. allocated(ham_k)) then
+!~       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
+!~       if (ierr/=0) call io_error('Error in allocating ham_k in hamiltonian_get_hr')
+!~    end if
 
     ham_k=cmplx_0
     eigval_opt=0.0_dp
@@ -216,14 +222,31 @@ contains
        ! but we choose u_matrix_opt such that the Hamiltonian is
        ! diagonal at each kpoint. (I guess we should check it here)
        
-       do loop_kpt=1,num_kpts
-          do j=1,num_wann
-             do m=1,ndimwin(loop_kpt)
-                eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
-                     real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+       if (.not.lsitesymmetry) then                                                                             !YN:
+          do loop_kpt=1,num_kpts
+             do j=1,num_wann
+                do m=1,ndimwin(loop_kpt)
+                   eigval2(j,loop_kpt)=eigval2(j,loop_kpt)+eigval_opt(m,loop_kpt)* &
+                        real(conjg(u_matrix_opt(m,j,loop_kpt))*u_matrix_opt(m,j,loop_kpt),dp)
+                enddo
              enddo
           enddo
-       enddo
+       else                                                                                                     !YN: 
+          ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                                   !RS:
+          ! so we have to calculate ham_k in the following way                                                  !RS:
+          do loop_kpt=1,num_kpts                                                                                !RS:
+             utmp(1:ndimwin(loop_kpt),:)= &                                                                     !RS:
+                 matmul(u_matrix_opt(1:ndimwin(loop_kpt),:,loop_kpt),u_matrix(:,:,loop_kpt))                    !RS:
+             do j=1,num_wann                                                                                    !RS: 
+                do i=1,j                                                                                        !RS:
+                   do m=1,ndimwin(loop_kpt)                                                                     !RS:
+                      ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval_opt(m,loop_kpt)*conjg(utmp(m,i))*utmp(m,j) !RS:
+                   enddo                                                                                        !RS:
+                   if (i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))                                   !RS:
+                enddo                                                                                           !RS:
+             enddo                                                                                              !RS:
+          enddo                                                                                                 !RS:
+       endif                                                                                                    !YN:
 
     else
        eigval2(1:num_wann,:)=eigval(1:num_wann,:)
@@ -237,17 +260,19 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    do loop_kpt=1,num_kpts
-       do j=1,num_wann
-          do i=1,j
-             do m=1,num_wann
-                ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
-                     conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+    if (.not.lsitesymmetry.or..not.have_disentangled) then !YN:
+       do loop_kpt=1,num_kpts
+          do j=1,num_wann
+             do i=1,j
+                do m=1,num_wann
+                   ham_k(i,j,loop_kpt)=ham_k(i,j,loop_kpt)+eigval2(m,loop_kpt)* &
+                        conjg(u_matrix(m,i,loop_kpt))*u_matrix(m,j,loop_kpt)
+                enddo
+                if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
              enddo
-             if(i.lt.j) ham_k(j,i,loop_kpt)=conjg(ham_k(i,j,loop_kpt))
           enddo
        enddo
-    enddo
+    endif                                                  !YN:
 
     have_ham_k = .true.
 
@@ -255,10 +280,10 @@ contains
 
     ! Fourier transform rotated hamiltonian into WF basis
     ! H_ij(k) --> H_ij(R) = (1/N_kpts) sum_k e^{-ikR} H_ij(k)
-!!$    if (.not.allocated(ham_r)) then
-!!$      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
-!!$      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
-!!$    end if
+!~    if (.not.allocated(ham_r)) then
+!~      allocate(ham_r(num_wann,num_wann,nrpts),stat=ierr)
+!~      if (ierr/=0) call io_error('Error in allocating ham_r in hamiltonian_get_hr')
+!~    end if
     
     ham_r=cmplx_0
 
@@ -271,7 +296,7 @@ contains
              ham_r(:,:,irpt)=ham_r(:,:,irpt)+fac*ham_k(:,:,loop_kpt)
           enddo
        enddo
-    
+
        have_translated = .false.
 
     else
@@ -299,6 +324,16 @@ contains
 
     end if
 
+    ! [lp] if required, compute the minimum diistances
+!     if (use_ws_distance) then
+!         allocate(irdist_ws(3,ndegenx,num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating irdist_ws in hamiltonian_get_hr')
+!         allocate(wdist_ndeg(num_wann,num_wann,nrpts),stat=ierr)
+!         if (ierr/=0) call io_error('Error in allocating wcenter_ndeg in hamiltonian_get_hr')
+        !
+!         call ws_translate_dist(nrpts, irvec)
+!     endif
+
     have_ham_r = .true.
 
 200 continue
@@ -314,8 +349,11 @@ contains
 
   contains
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     !====================================================!
     subroutine internal_translate_centres()
+      !! Translate the centres of the WF into the home cell
       !====================================================!
 
       use w90_parameters, only : num_wann,real_lattice,recip_lattice,wannier_centres, &
@@ -332,11 +370,11 @@ contains
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
     
-!!$      if (.not.allocated(wannier_centres_translated)) then
-!!$         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
-!!$         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
-!!$              &in internal_translate_wannier_centres')
-!!$      end if
+!~      if (.not.allocated(wannier_centres_translated)) then
+!~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
+!~         if (ierr/=0) call io_error('Error in allocating wannier_centres_translated &
+!~              &in internal_translate_wannier_centres')
+!~      end if
 
       allocate(r_home(3,num_wann),stat=ierr)
       if (ierr/=0) call io_error('Error in allocating r_home in internal_translate_centres')
@@ -400,7 +438,7 @@ contains
   !============================================!
   subroutine hamiltonian_write_hr()
     !============================================!
-    !  Write the Hamiltonian in the WF basis     !
+    !!  Write the Hamiltonian in the WF basis    
     !============================================!
 
     use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
@@ -453,9 +491,9 @@ contains
   !================================================================================!
   subroutine hamiltonian_wigner_seitz(count_pts)
     !================================================================================!
-    ! Calculates a grid of points that fall inside of (and eventually on the         !
-    ! surface of) the Wigner-Seitz supercell centered on the origin of the B         !
-    ! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3  !
+    !! Calculates a grid of points that fall inside of (and eventually on the 
+    !! surface of) the Wigner-Seitz supercell centered on the origin of the B 
+    !! lattice with primitive translations nmonkh(1)*a_1+nmonkh(2)*a_2+nmonkh(3)*a_3 
     !================================================================================!
 
     use w90_constants,  only : eps7,eps8
@@ -469,7 +507,8 @@ contains
 
     implicit none
 
-    logical, intent(in) :: count_pts 
+    logical, intent(in) :: count_pts
+    !! Only count points and return
 
     integer       :: ndiff (3)
     real(kind=dp) :: dist(125),tot,dist_min
@@ -566,5 +605,169 @@ contains
 
   end subroutine hamiltonian_wigner_seitz
 
+  !============================================!
+  subroutine hamiltonian_write_rmn()
+    !! Write out the matrix elements of r
+  !============================================!
+    use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
+                               nntot
+    use w90_constants, only  : twopi, cmplx_i
+    use w90_io,         only : io_error, io_file_unit, seedname,io_date
 
+    implicit none
+
+    complex(kind=dp)     :: fac
+    real(kind=dp)        :: rdotk
+    real(kind=dp)        :: delta
+    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit
+    complex(kind=dp)     :: position(3)
+    character (len=33) :: header
+    character (len=9)  :: cdate,ctime
+
+    file_unit=io_file_unit()
+    open(file_unit,file=trim(seedname)//'_r.dat',form='formatted',status='unknown',err=101)
+    call io_date(cdate,ctime)
+
+    header='written on '//cdate//' at '//ctime
+    write(file_unit,*) header ! Date and time
+    write(file_unit,*) num_wann
+
+    do loop_rpt=1,nrpts
+       do m=1,num_wann
+          do n=1,num_wann
+             delta=0._dp
+             if (m.eq.n) delta=1._dp
+             position(:)=0._dp
+             do nkp=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,nkp),real(irvec(:,loop_rpt),dp))
+                fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                do ind = 1, 3  
+                   do nn = 1, nntot 
+                      ! Eq. C16 of Marzari and Vanderbilt PRB 56, 12847 (1997)     !
+                      position(ind) = position(ind) + &
+                                      wb(nn) * bk(ind,nn,nkp) * (m_matrix(n,m,nn,nkp) - delta) * fac
+                   end do   
+                end do
+             end do
+             write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)  
+          end do
+       end do
+    end do
+    
+    close(file_unit)
+
+    return
+
+101 call io_error('Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r')
+
+  end subroutine hamiltonian_write_rmn
+
+
+  !============================================!
+  subroutine hamiltonian_write_tb()
+  !============================================!
+  !! Write in a single file all the information 
+  !! that is needed to set up a Wannier-based
+  !! tight-binding model:  
+  !! * lattice vectors     
+  !! * <0n|H|Rn>          
+  !! * <0n|r|Rn>          
+  !============================================!
+
+    use w90_io,         only : io_error,io_stopwatch,io_file_unit, &
+                               seedname,io_date
+    use w90_parameters, only : real_lattice,num_wann,timing_level,&
+                               m_matrix,wb,bk,num_kpts,kpt_latt,nntot
+    use w90_constants, only  : twopi,cmplx_i
+
+    integer            :: i,j,irpt,ik,nn,idir,file_unit
+    character (len=33) :: header
+    character (len=9)  :: cdate,ctime
+    complex(kind=dp)   :: fac,pos_r(3)
+    real(kind=dp)      :: rdotk,delta
+
+    if (tb_written) return
+
+    if (timing_level>1) call io_stopwatch('hamiltonian: write_tb',1)
+ 
+    file_unit=io_file_unit()
+    open(file_unit,file=trim(seedname)//'_tb.dat',form='formatted',&
+         status='unknown',err=101)
+
+    call io_date(cdate,ctime)
+    header='written on '//cdate//' at '//ctime
+
+    write(file_unit,*) header ! Date and time
+    !
+    ! lattice vectors
+    !
+    write(file_unit,*) real_lattice(1,:) !a_1
+    write(file_unit,*) real_lattice(2,:) !a_2
+    write(file_unit,*) real_lattice(3,:) !a_3
+    !
+    write(file_unit,*) num_wann
+    write(file_unit,*) nrpts
+    write(file_unit,'(15I5)') (ndegen(i),i=1,nrpts)
+    !
+    ! <0n|H|Rm>
+    !
+    do irpt=1,nrpts
+       write(file_unit,'(/,3I5)') irvec(:,irpt)
+       do i=1,num_wann
+          do j=1,num_wann
+             write(file_unit,'(2I5,3x,2(E15.8,1x))') j,i,ham_r(j,i,irpt)
+          end do
+       end do
+    end do
+    !
+    ! <0n|r|Rm>
+    !
+    do irpt=1,nrpts
+       write(file_unit,'(/,3I5)') irvec(:,irpt)
+       do i=1,num_wann
+          do j=1,num_wann
+             delta=0._dp
+             if (i==j) delta=1._dp
+             pos_r(:)=0._dp
+             do ik=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,ik),real(irvec(:,irpt),dp))
+                fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                do idir=1,3  
+                   do nn=1,nntot 
+                      if(i==j) then
+                         ! For irpt==rpt_origin, this reduces to
+                         ! Eq.(32) of Marzari and Vanderbilt PRB 56,
+                         ! 12847 (1997). Otherwise, is is Eq.(44)
+                         ! Wang, Yates, Souza and Vanderbilt PRB 74,
+                         ! 195118 (2006), modified according to
+                         ! Eqs.(27,29) of Marzari and Vanderbilt
+                         pos_r(idir)=pos_r(idir)-&
+                              wb(nn)*bk(idir,nn,ik)*aimag(log(m_matrix(i,i,nn,ik)))*fac
+                      else
+                         ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
+                         pos_r(idir)=pos_r(idir)+&
+                              cmplx_i*wb(nn)*bk(idir,nn,ik)*(m_matrix(j,i,nn,ik)-delta)*fac
+                      endif
+                   end do
+                end do
+             end do
+             write(file_unit,'(2I5,3x,6(E15.8,1x))') j,i,pos_r(:)  
+          end do
+       end do
+    end do
+
+    close(file_unit)
+
+    tb_written=.true.
+
+    if (timing_level>1) call io_stopwatch('hamiltonian: write_tb',2)
+
+    return
+
+101 call io_error('Error: hamiltonian_write_tb: problem opening file '&
+         //trim(seedname)//'_tb.dat')
+
+  end subroutine hamiltonian_write_tb
+
+  
 end module w90_hamiltonian

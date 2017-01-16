@@ -15,7 +15,9 @@
 
 %\usepackage{a4wide}
 \usepackage{color}
-\def\red{\textcolor{red}}
+\def\red{\textcolor{red}}       %
+\def\old#1{\textcolor{red}{#1}}
+\def\new#1{\textcolor{blue}{#1}}
 
 \usepackage{amsmath}
 
@@ -77,9 +79,9 @@
 
 \title{{\tt wannier90}: User Guide}
 
-\author{Version 2.0.1}
+\author{Version 2.1.0}
 
-\date{2nd April 2015}
+\date{13th January 2017}
 %\date{\color{red} \today}
 
 
@@ -143,6 +145,8 @@
 \include{transport}
 
 \include{files}
+
+\include{interpolation}
 
 \include{sample_input_files}
 

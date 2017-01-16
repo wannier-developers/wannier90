@@ -12,6 +12,10 @@ is read from the file named {\tt seedname\_geninterp.kpt}. The format
 of this file is
 described below. 
 
+Note also that you might want to activate the flag 
+{\tt use\_ws\_distance=.true.}
+to improve the interpolation results. For an explanation, see 
+Chapter~\ref{chap:interpolation}.
 
 \section{Files}
 \subsection{{\tt seedname\_geninterp.kpt}}
@@ -20,14 +24,22 @@ INPUT. Read by \postw\ if {\tt geninterp} is \verb#true#.
 The first line is a comment (its maximum allowed length is 500
 characters).
 
-The second line must contain \verb#crystal# (or \verb#rel#) if the
-$k$-point coordinates are given in relative (crystallographic) units,
+The second line must contain \verb#crystal# (or \verb#frac#) if the
+$k$-point coordinates are given in crystallographic units,
 i.e., in fractional units with respect to the primitive reciprocal
 lattice vectors.
-Otherwise, it must contain \verb#frac# (or \verb#abs#) if instead the
+Otherwise, it must contain \verb#cart# (or \verb#abs#) if instead the
 $k-$point coordinates are given in absolute 
-coordinates (in units of $2\pi/$\AA) along the $k_x$, $k_y$ and $k_z$
+coordinates (in units of 1/\AA) along the $k_x$, $k_y$ and $k_z$
 axes.
+
+\emph{Note on units}: In the case of absolute coordinates, 
+if $a_{lat}$ is the lattice constant expressed in angstrom,
+and you want to represent for instance the point
+$X=\frac {2\pi}{a_{lat}} [0.5, 0, 0]$, then you have to input for its $x$ coordinate
+$k_x = 0.5 * 2 * \pi / a_{lat}$. As a practical example, if
+$a_{lat}=4$\AA, then $k_x = 0.78539816339745$ in 
+absolute coordinates in units of 1/\AA.
 
 The third line must contain the number $n$ of following $k$ points.
 
@@ -92,14 +104,14 @@ derivatives) for each band and $k$ point (the energy
 index runs faster than the $k$-point index).
 For each of these lines, the first four columns contain the $k$-point index as provided in the
 input, and the $k$ coordinates (always in absolute coordinates, in
-units of $2\pi/$\AA).
+units of 1/\AA).
 The fifth column contains the band energy.
 
 If \verb#geninterp_alsofirstder# is \verb#true#, three further columns
 are printed, containing the three first derivatives of the bands along the $k_x$, $k_y$
 and $k_z$ directions.
 
-The $k$ point coordinates are in units of $2\pi/$\AA, the band energy is in eV.
+The $k$ point coordinates are in units of 1/\AA, the band energy is in eV.
 
 
 

@@ -1,0 +1,74 @@
+[WANNIER90]
+exe = XXXXXX/test-suite/config/run/run-wannier.sh
+extract_program = XXXXXX/test-suite/config/extract/extract-wannier.x
+inputs_args = ('*.win', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error 
+tolerance = ( (1.0e-5, 1.0e-5, 'wfcenter'),
+              (1.0e-6, 1.0e-6, 'spread'), 
+              (1.0e-6, 1.0e-6, 'omegaI'), 
+              (1.0e-6, 5.0e-6, 'omegaD'), 
+              (1.0e-6, 1.0e-6, 'omegaOD'), 
+              (1.0e-6, 1.0e-6, 'omegaT'),
+              (1.0e-6, 1.0e-6, 'nearn'),
+              (1.0e-6, 1.0e-6, 'compl'),
+              (0.1, 0.01, 'wrmsg'),
+              (1.0e-6, 1.0e-6, 'nnkpt'),
+              (1.0e-6, 1.0e-6, 'nnkpt_kpt'),
+              (1.0e-6, 1.0e-6, 'proji'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+[PW]
+exe = XXXXXX/test-suite/config/run/run-wannier.sh
+extract_program = XXXXXX/test-suite/config/extract/extract-pw.x
+inputs_args = ('*.win', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (1.0e-6, 5.0e-3, 'e1'),
+              (3.0e+0, 5.0e-1, 'n1'),
+              (1.0e-3, 1.0e-5, 'f1'),
+              (1.0e-1, 1.0e-3, 'p1'),
+              (1.0e-2, 1.0e-5, 'ef1'),
+              (1.0e-2, 1.0e-5, 'eh1'),
+              (1.0e-2, 1.0e-5, 'el1'),
+              (1.0e-2, 1.0e-5, 'tf1'),
+              (1.0e-6, 1.0e-6, 'eigenval'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+
+[PW2WANNIER]
+exe = XXXXXX/test-suite/config/run/run-wannier.sh
+extract_program = XXXXXX/test-suite/config/extract/extract-pw2wannier.x
+inputs_args = ('*.win', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error
+tolerance = ( (0.1, 0.01, 'wrmsg'),
+              (1.0e-6, 1.0e-6, 'nnkpt'),
+              (1.0e-6, 1.0e-6, 'nnkpt_kpt'),
+              (1.0e-6, 1.0e-6, 'proji'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+
+
+[POSTW90GENINTERP]
+exe = XXXXXX/test-suite/config/run/run-wannier.sh
+extract_program = XXXXXX/test-suite/config/extract/extract-postw90geninterp.x
+inputs_args = ('*.win', '')
+run_cmd_template = tc.program tc.args tc.input tc.output tc.error 
+tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
+	      (1.0e-6, 1.0e-6, 'bandkpt'),
+	      (1.0e-3, 1.0e-3, 'bandderiv'),
+              (1.0e-6, 1.0e-6, 'bandidx'))
+
+skip_program = grep
+skip_args = 'not present in this version'
+
+
+[user]
+benchmark = SVN
+date_fmt = %d%m%y
+diff = vimdiff
+

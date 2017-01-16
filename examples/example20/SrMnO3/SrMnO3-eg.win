@@ -264,7 +264,7 @@ Begin Kpoints
 End Kpoints
 
 
- hr_plot = true 
+ write_hr = true 
  bands_plot= true 
  bands_num_points = 30 
  begin kpoint_path

@@ -1,0 +1,7 @@
+&inputpp
+    outdir='./work'
+    prefix='GaAs',
+    seedname = 'GaAs'
+    write_unk = .true.
+    write_dmn = .true. ! additional input for symmetry-adapted mode
+/
