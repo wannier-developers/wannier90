@@ -73,6 +73,7 @@ compare-wannier : prolog
 clean:
 	@for x in `find example* -name "test.*"`; do rm -rf $$x; done
 	@for x in `find example* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find example* -name "*.chk"`; do rm -rf $$x; done
 	@for x in `find pw_example* -name "test.*"`; do rm -rf $$x; done
 	@for x in `find pw_example* -name "*.wout"`; do rm -rf $$x; done
 	@for x in `find pw_example* -name "*.xsf"`; do rm -rf $$x; done
@@ -87,6 +88,10 @@ clean:
 	@for x in `find test_* -name "*.wout"`; do rm -rf $$x; done
 	@for x in `find test_* -name "*.wpout"`; do rm -rf $$x; done
 	@for x in `find test_* -name "*_geninterp.dat"`; do rm -rf $$x; done
+	@for x in `find test_* -name "*.chk"`; do rm -rf $$x; done
+	@for x in `find wan_* -name "test.*"`; do rm -rf $$x; done
+	@for x in `find wan_* -name "*.wout"`; do rm -rf $$x; done
+	@for x in `find wan_* -name "*.chk"`; do rm -rf $$x; done
 
 ## Calling 'purge' means remove all reference outputs... be careful!
 #purge: clean

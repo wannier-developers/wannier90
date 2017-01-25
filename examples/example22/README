@@ -6,7 +6,7 @@ Additional input in Cu.win file
 
 
 Additional input in Cu.pw2wan file 
-  write_dmb = .true.
+  write_dmn = .true.
 
 
 Working directories 

@@ -1,17 +1,19 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_wannierise
+  !! Main routines for the minimisation of the spread
 
   use w90_constants
 
@@ -26,16 +28,21 @@ module w90_wannierise
   real(kind=dp),    allocatable  :: rnkb (:,:,:)   
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
-  ! The next variable is used to trigger the calculation of the invarient spread
-  ! we only need to do this on entering wann_main (_gamma)
   logical :: first_pass
+  !! Used to trigger the calculation of the invarient spread
+  !! we only need to do this on entering wann_main (_gamma)
 
 
   type localisation_vars
-     real(kind=dp) :: om_i   
-     real(kind=dp) :: om_d   
+     !! Contributions to the spread
+     real(kind=dp) :: om_i  
+     !! Gauge Invarient
+     real(kind=dp) :: om_d
+     !! Diagonal
      real(kind=dp) :: om_od  
+     !! Off-diagonal
      real(kind=dp) :: om_tot 
+     !! Total
 !~     real(kind=dp) :: om_1   
 !~     real(kind=dp) :: om_2   
 !~     real(kind=dp) :: om_3   
@@ -48,8 +55,7 @@ contains
   subroutine wann_main
     !==================================================================!
     !                                                                  !
-    ! Calculate the Unitary Rotations to give                          !
-    !            Maximally Localised Wannier Functions                 !
+    !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions 
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0
@@ -65,8 +71,8 @@ contains
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
          write_hr_diag
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
-    use w90_parameters, only : lsitesymmetry,nkptirr !RS:
-    use w90_sitesymmetry                             !RS:
+    use w90_parameters, only : lsitesymmetry                !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_gradient  !RS:
 
     !ivo
     use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
@@ -279,7 +285,7 @@ contains
 
        ! calculate search direction (cdq)
        call internal_search_direction()
-       if (lsitesymmetry) call symmetrize_gradient(2,cdq) !RS:
+       if (lsitesymmetry) call sitesym_symmetrize_gradient(2,cdq) !RS:
 
        ! save search direction 
        cdqkeep(:,:,:) = cdq(:,:,:)
@@ -541,8 +547,8 @@ contains
     subroutine internal_test_convergence()
       !===============================================!
       !                                               !
-      ! Determine whether minimisation of non-gauge   !
-      ! invariant spread is converged                 !
+      !! Determine whether minimisation of non-gauge
+      !! invariant spread is converged
       !                                               !
       !===============================================!
 
@@ -610,8 +616,8 @@ contains
     subroutine internal_random_noise()
       !===============================================!
       !                                               !
-      ! Add some random noise to the search direction !
-      ! to help escape from local minima              !
+      !! Add some random noise to the search direction
+      !! to help escape from local minima
       !                                               !
       !===============================================!
 
@@ -674,10 +680,10 @@ contains
     subroutine internal_search_direction()
       !===============================================!
       !                                               !
-      ! Calculate the conjugate gradients search      !
-      ! direction using the Fletcher-Reeves formula:  !
-      !                                               !
-      !     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]    !
+      !! Calculate the conjugate gradients search
+      !! direction using the Fletcher-Reeves formula: 
+      !!
+      !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
 
@@ -774,8 +780,8 @@ contains
     subroutine internal_optimal_step()
       !===============================================!
       !                                               !
-      ! Calculate the optimal step length based on a  !
-      ! parabolic line search                         !
+      !! Calculate the optimal step length based on a
+      !! parabolic line search 
       !                                               !
       !===============================================!
 
@@ -827,11 +833,11 @@ contains
     subroutine internal_new_u_and_m()               
       !===============================================!
       !                                               !
-      ! Update U and M matrices after a trial step    !
+      !! Update U and M matrices after a trial step 
       !                                               !
       !===============================================!
-      use w90_sitesymmetry                  !    RS:
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: sitesym_symmetrize_rotation,& !RS:
+                             ir2ik,ik2ir !YN: RS:
 
       implicit none
 
@@ -893,7 +899,7 @@ contains
 !~         cdq(:,:,nkp)=cmtmp(:,:)
 !~      enddo
 
-      if (lsitesymmetry) call symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+      if (lsitesymmetry) call sitesym_symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
       ! the orbitals are rotated
       do nkp=1,num_kpts
          ! cmtmp = U(k) . cdq(k)
@@ -1112,7 +1118,8 @@ contains
   !==================================================================!
   subroutine wann_phases (csheet, sheet, rguide, irguide, m_w)
     !==================================================================!
-    !                                                                  !
+    !! Uses guiding centres to pick phases which give a 
+    !! consistent choice of branch cut for the spread definction 
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : eps6
@@ -1124,10 +1131,15 @@ contains
     implicit none
 
     complex(kind=dp), intent(out)   :: csheet (:,:,:)
+    !! Choice of phase
     real(kind=dp)   , intent(out)   :: sheet (:,:,:)
+    !! Choice of branch cut
     real(kind=dp)   , intent(inout) :: rguide (:,:)
+    !! Guiding centres
     integer         , intent(in)    :: irguide
+    !! Zero if first call to this routine
     real(kind=dp), intent(in), optional :: m_w(:,:,:)
+    !! Used in the Gamma point routines as an optimisation
 
     !local
     complex(kind=dp) :: csum (nnh)  
@@ -1312,7 +1324,7 @@ contains
   subroutine wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     !==================================================================!
     !                                                                  !
-    !   Calculate the Wannier Function spread                          !
+    !!   Calculate the Wannier Function spread
     !                                                                  !
     !===================================================================  
     use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
@@ -1506,7 +1518,7 @@ contains
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
     use w90_io,         only : io_stopwatch,io_error
     use w90_parameters, only : lsitesymmetry !RS:
-    use w90_sitesymmetry                     !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_gradient !RS:
 
     implicit none
 
@@ -1595,7 +1607,7 @@ contains
     enddo
     cdodq = cdodq / real(num_kpts,dp) * 4.0_dp
 
-    if (lsitesymmetry) call symmetrize_gradient(1,cdodq) !RS:
+    if (lsitesymmetry) call sitesym_symmetrize_gradient(1,cdodq) !RS:
 
     if (timing_level>1) call io_stopwatch('wann: domega',2)
 

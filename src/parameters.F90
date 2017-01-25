@@ -1,16 +1,20 @@
 !-*- mode: F90 -*-!
-!                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
-!                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
-!                                                            !
 !------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
+
 module w90_parameters
+  !! This module contains parameters to control the actions of wannier90.
+  !! Also routines to read the parameters and write them out again.
 
   use w90_constants, only : dp
   use w90_io,        only : stdout,maxlen
@@ -21,15 +25,25 @@ module w90_parameters
 
   !Input
   integer,           public, save :: iprint
+  !! Controls the verbosity of the output
   character(len=20), public, save :: energy_unit
+  !! Units for energy
   character(len=20), public, save :: length_unit
+  !! Units for length
   logical,           public, save :: wvfn_formatted
+  !! Read the wvfn from fortran formatted file
   logical,           public, save :: spn_formatted
+  !! Read the spin from fortran formatted file
   logical,           public, save :: berry_uHu_formatted
+  !! Read the uHu from fortran formatted file
   integer,           public, save :: spin
+  !! Spin up=1 down=2
   integer,           public, save :: num_bands
+  !! Number of bands
   integer,           public, save :: num_dump_cycles
+  !! Number of steps before writing checkpoint
   integer,           public, save :: num_print_cycles
+  !! Number of steps between writing output
   character(len=50), public, save :: devel_flag
   ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
   ! Only internal, always use the local variables defined by each module
@@ -58,10 +72,12 @@ module w90_parameters
   ! [gp-end]
   integer, allocatable, public,save :: exclude_bands(:)  
   integer,           public, save :: num_wann
-    !! number of wannier functions
+  !! number of wannier functions
   integer,           public, save :: mp_grid(3)
+  !! Dimensions of the Monkhorst-Pack grid
 !  logical,           public, save :: automatic_mp_grid
   logical,           public, save :: gamma_only  
+  !! Use the special Gamma-point routines
   real(kind=dp),     public, save :: dis_win_min
     !! lower bound of the disentanglement outer window
   real(kind=dp),     public, save :: dis_win_max
@@ -73,15 +89,20 @@ module w90_parameters
   integer,           public, save :: dis_num_iter
     !! number of disentanglement iteration steps
   real(kind=dp),     public, save :: dis_mix_ratio
+  !! Mixing ratio for the disentanglement routine
   real(kind=dp),     public, save :: dis_conv_tol
+  !! Convergence tolerance for the disentanglement 
   integer,           public, save :: dis_conv_window
+  !! Size of the convergence window for disentanglement
   ! GS-start
   integer,           public, save :: dis_spheres_first_wann
   integer,           public, save :: dis_spheres_num
   real(kind=dp), allocatable, public, save :: dis_spheres(:,:)
   ! GS-end
   integer,           public, save :: num_iter
+  !! Number of wannierisation iterations
   integer,           public, save :: num_cg_steps
+  !! Number of Conjugate Gradient steps
   real(kind=dp),     public, save :: conv_tol
   integer,           public, save :: conv_window
   logical,           public, save :: wannier_plot
@@ -379,12 +400,9 @@ module w90_parameters
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
 
-  logical, public :: lsitesymmetry=.false.                         !RS: site-symmetry
-  integer, public :: nkptirr=9999,nsymmetry=9999                   !RS:
-  real(kind=dp), public :: symmetrize_eps=1d-3                     !RS:
-  integer, allocatable, public :: kptsym(:,:),ir2ik(:),ik2ir(:)    !RS:
-  complex(kind=dp),  allocatable, public :: d_matrix_band(:,:,:,:) !RS:
-  complex(kind=dp),  allocatable, public :: d_matrix_wann(:,:,:,:) !RS:
+  ! RS: symmetry-adapted Wannier functions
+  logical,       public, save :: lsitesymmetry=.false.
+  real(kind=dp), public, save :: symmetrize_eps=1.d-3
   
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
   integer, parameter, public :: max_shells=6
@@ -438,7 +456,7 @@ contains
   subroutine param_read ( )
   !==================================================================!
   !                                                                  !
-  ! Read parameters and calculate derived values                     !
+  !! Read parameters and calculate derived values                    
   !                                                                  !
   !===================================================================  
     use w90_constants, only : bohr, eps6
@@ -460,7 +478,11 @@ contains
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%
+
+    ! default value is lsitesymmetry=.false.
     call param_get_keyword('site_symmetry' ,found,l_value=lsitesymmetry )!YN:
+
+    ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
 
     !%%%%%%%%%%%%%%%%
@@ -1761,43 +1783,43 @@ contains
     
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call param_get_block_length('nnkpts', explicit_nnkpts, rows)
-    nntot = rows / num_kpts
-    if (modulo(rows, num_kpts) /= 0 .and. explicit_nnkpts) then 
-        call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+    if(explicit_nnkpts) then
+       nntot = rows / num_kpts
+       if (modulo(rows, num_kpts) /= 0) then 
+          call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
+       end if
+       allocate(nnkpts_block(5, rows), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
+       call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
+       ! check that postproc_setup is true
+       if (.not. postproc_setup) &
+            call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
+       ! assign the values in nnkpts_block to nnlist and nncell
+       ! this keeps track of how many neighbours have been seen for each k-point
+       allocate(nnkpts_idx(num_kpts), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
+       nnkpts_idx = 1
+       ! allocating "global" nnlist & nncell
+       ! These are deallocated in kmesh_dealloc
+       allocate(nnlist(num_kpts, nntot), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
+       allocate(nncell(3, num_kpts, nntot), stat=ierr)
+       if (ierr /= 0) call io_error('Error allocating nncell in param_read')
+       do i=1,num_kpts * nntot
+          k = nnkpts_block(1, i)
+          nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
+          nncell(:, k, nnkpts_idx(k)) = nnkpts_block(3:, i)
+          nnkpts_idx(k) = nnkpts_idx(k) + 1
+       end do
+       ! check that all k-points have the same number of neighbours
+       if (any(nnkpts_idx /= (/ (nntot + 1, i=1, num_kpts) /))) then
+          call io_error('Inconsistent number of nearest neighbours.')
+       end if
+       deallocate(nnkpts_idx, stat=ierr)
+       if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in param_read')
+       deallocate(nnkpts_block, stat=ierr)
+       if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
     end if
-    allocate(nnkpts_block(5, rows), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
-    call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
-    ! check that postproc_setup is true
-    if (explicit_nnkpts .and. (.not. postproc_setup)) &
-        call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
-    ! assign the values in nnkpts_block to nnlist and nncell
-    if (explicit_nnkpts) then
-        ! this keeps track of how many neighbours have been seen for each k-point
-        allocate(nnkpts_idx(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
-        nnkpts_idx = 1
-        ! allocating "global" nnlist & nncell
-        ! These are deallocated in kmesh_dealloc
-        allocate(nnlist(num_kpts, nntot), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
-        allocate(nncell(3, num_kpts, nntot), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating nncell in param_read')
-        do i=1,num_kpts * nntot
-            k = nnkpts_block(1, i)
-            nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
-            nncell(:, k, nnkpts_idx(k)) = nnkpts_block(3:, i)
-            nnkpts_idx(k) = nnkpts_idx(k) + 1
-        end do
-        ! check that all k-points have the same number of neighbours
-        if (any(nnkpts_idx /= (/ (nntot + 1, i=1, num_kpts) /))) then
-            call io_error('Inconsistent number of nearest neighbours.')
-        end if
-        deallocate(nnkpts_idx, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating nnkpts_idx in param_read')
-    end if
-    deallocate(nnkpts_block, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
     ! k meshes                                                                                 !
@@ -1954,24 +1976,25 @@ contains
     
   end subroutine param_read
 
-  !> This routines returns the three integers that define the interpolation k-mesh, satisfying
-  !> the condition that the spacing between two neighboring points along each of the three
-  !> k_x, k_y and k_z directions is at smaller than a given spacing.
-  !>
-  !> \note The reclat is defined as:
-  !>   * 'b_1' = (recip_lattice(1,I), i=1,3)
-  !>   * 'b_2' = (recip_lattice(2,I), i=1,3)
-  !>   * 'b_3' = (recip_lattice(3,I), i=1,3)
-  !>
-  !> \note spacing must be > 0 (and in particular different from zero). We don't check this here.
-  !> 
-  !> \param spacing Minimum spacing between neighboring points, in angstrom^(-1)
-  !> \param reclat  Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
-  !> \param mesh    output, will contain the three integers defining the interpolation k-mesh.
-  subroutine internal_set_kmesh(spacing,reclat,mesh)
+ subroutine internal_set_kmesh(spacing,reclat,mesh)
+  !! This routines returns the three integers that define the interpolation k-mesh, satisfying
+  !! the condition that the spacing between two neighboring points along each of the three
+  !! k_x, k_y and k_z directions is at smaller than a given spacing.
+  !!
+  !! The reclat is defined as:
+  !!   * 'b_1' = (recip_lattice(1,I), i=1,3)
+  !!   * 'b_2' = (recip_lattice(2,I), i=1,3)
+  !!   * 'b_3' = (recip_lattice(3,I), i=1,3)
+  !!
+  !!  spacing must be > 0 (and in particular different from zero). We don't check this here.
+  !! 
+   implicit none
     real(kind=dp),                 intent(in) :: spacing
+    !! Minimum spacing between neighboring points, in angstrom^(-1)
     real(kind=dp), dimension(3,3), intent(in) :: reclat
+    !! Matrix of the reciprocal lattice vectors in cartesian coordinates, in angstrom^(-1)
     integer,       dimension(3),  intent(out) :: mesh
+    !! Will contain the three integers defining the interpolation k-mesh
 
     real(kind=dp), dimension(3) :: blen
     integer :: i
@@ -1986,29 +2009,28 @@ contains
 
   end subroutine internal_set_kmesh
 
-  !> This function reads and sets the interpolation mesh variables needed by a given module
-  !> 
-  !> \note This function MUST be called after having read the global kmesh and kmesh_spacing!!
-  !> \note if the user didn't provide an interpolation_mesh_spacing, it is set to -1, so that
-  !>       one can check in the code what the user asked for
-  !> \note The function takes care also of setting the default value to the global one if no local 
-  !>       keyword is defined
-  !> 
-  !> \param moduleprefix   The prefix that is appended before the name of the variables. In particular,
-  !>                       if the prefix is for instance XXX, the two variables that are read from the
-  !>                       input file are XXX_kmesh and XXX_kmesh_spacing.
-  !> \param should_be_defined A logical flag: if it is true, at the end the code stops if no value is specified.
-  !>                       Define it to .false. if no check should be performed.
-  !>                       Often, you can simply pass the flag that activates the module itself.
-  !> \param module_kmesh the integer array (length 3) where the interpolation mesh will be saved
-  !> \param module_kmesh_spacing the real number on which the min mesh spacing is saved. -1 if it the
-  !>                       user specifies in input the mesh and not the mesh_spacing
   subroutine get_module_kmesh(moduleprefix,should_be_defined,module_kmesh,module_kmesh_spacing)
+  !! This function reads and sets the interpolation mesh variables needed by a given module
+  !> 
+  !!  This function MUST be called after having read the global kmesh and kmesh_spacing!!
+  !!  if the user didn't provide an interpolation_mesh_spacing, it is set to -1, so that
+  !!       one can check in the code what the user asked for
+  !!  The function takes care also of setting the default value to the global one if no local 
+  !!       keyword is defined
     use w90_io, only : io_error
     character(len=*), intent(in)       :: moduleprefix
+    !!The prefix that is appended before the name of the variables. In particular,
+    !!if the prefix is for instance XXX, the two variables that are read from the
+    !!input file are XXX_kmesh and XXX_kmesh_spacing.
     logical, intent(in)                :: should_be_defined
+    !! A logical flag: if it is true, at the end the code stops if no value is specified.
+    !! Define it to .false. if no check should be performed.
+    !! Often, you can simply pass the flag that activates the module itself.
     integer, dimension(3), intent(out) :: module_kmesh
+    !! the integer array (length 3) where the interpolation mesh will be saved
     real(kind=dp), intent(out)         :: module_kmesh_spacing
+    !! the real number on which the min mesh spacing is saved. -1 if it the
+    !!user specifies in input the mesh and not the mesh_spacing
 
     logical :: found, found2
     integer :: i
@@ -2056,14 +2078,12 @@ contains
     end if
   end subroutine get_module_kmesh
 
-  !> This function returns a string describing the type of smearing
-  !> associated to a given smr_index integer value.
-  !>
-  !> \param smearing_index The integer index for which we want to get
-  !>        the string
-  !> \return returns a string which describes the type of smearing
+
   function param_get_smearing_type(smearing_index)
+  !! This function returns a string describing the type of smearing
+  !! associated to a given smr_index integer value.
     integer, intent(in) :: smearing_index
+    !! The integer index for which we want to get the string
     character(len=80)   :: param_get_smearing_type
 
     character(len=4)   :: orderstr
@@ -2084,18 +2104,16 @@ contains
   end function param_get_smearing_type
 
 
-  !> This function parses a string containing the type of 
-  !> smearing and returns the correct index for the smearing_index variable
-  !>
-  !> If the string is not valid, an io_error is issued
-  !>
-  !> \param string The string read from input 
-  !> \param keyword The keyword that was read (e.g., smr_type), so that
-  !>        we can print a more useful error message
   function get_smearing_index(string,keyword)
+  !! This function parses a string containing the type of 
+  !! smearing and returns the correct index for the smearing_index variable
+  !
+  !! If the string is not valid, an io_error is issued
     use w90_io, only: io_error
     character(len=*), intent(in) :: string
+    !! The string read from input 
     character(len=*), intent(in) :: keyword
+    !! The keyword that was read (e.g., smr_type), so that we can print a more useful error message
     integer :: get_smearing_index
 
     integer :: pos
@@ -2136,7 +2154,7 @@ contains
   subroutine param_uppercase
     !===================================================================
     !                                                                  !
-    ! Convert a few things to uppercase to look nice in the output     !
+    !! Convert a few things to uppercase to look nice in the output   
     !                                                                  !
     !===================================================================  
 
@@ -2179,7 +2197,7 @@ contains
   subroutine param_write
     !==================================================================!
     !                                                                  !
-    ! write wannier90 parameters to stdout                             !
+    !! write wannier90 parameters to stdout 
     !                                                                  !
     !===================================================================  
 
@@ -2189,10 +2207,6 @@ contains
 
     if (transport .and. tran_read_ht) goto 401
 
-    if(lsitesymmetry)then                                          !YN:
-      write(stdout,"(a)"      )'   Site-Symmetry-Adapted mode   '  !RS:
-      write(stdout,"(a,g15.7)")'   symmetrize_eps=',symmetrize_eps !YN:
-    endif                                                          !YN:
     ! System
     write(stdout,*)
     write(stdout,'(36x,a6)') '------' 
@@ -2299,6 +2313,12 @@ contains
     write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :',trim(length_unit),'|'  
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :',postproc_setup,'|'
     write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :',gamma_only,'|'
+    !YN: RS:
+    if(lsitesymmetry) then
+      write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Using symmetry-adapted WF mode            :',lsitesymmetry,'|'
+      write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :',symmetrize_eps,'|'
+    endif                                                         
+ 
     if(cp_pp .or. iprint>2) &
                   write(stdout,'(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :',cp_pp,'|'
     if(wannier_plot .or. iprint>2) then
@@ -2483,7 +2503,7 @@ contains
   subroutine param_postw90_write
     !==================================================================!
     !                                                                  !
-    ! write postw90 parameters to stdout                               !
+    !! write postw90 parameters to stdout 
     !                                                                  !
     !===================================================================  
 
@@ -2854,6 +2874,7 @@ contains
   end subroutine param_postw90_write
 
   subroutine param_write_header
+    !! Write a suitable header for the calculation - version authors etc
     use w90_io, only : io_date
     use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
     implicit none
@@ -2874,7 +2895,7 @@ contains
     write(stdout,*)  '            |        Generalized Wannier Functions code         |'
     write(stdout,*)  '            |            http://www.wannier.org                 |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |  Wannier90 v2.0 Authors:                          |'
+    write(stdout,*)  '            |  Wannier90 v2.x Authors:                          |'
     write(stdout,*)  '            |    Arash A. Mostofi  (Imperial College London)    |'
     write(stdout,*)  '            |    Giovanni Pizzi    (EPFL)                       |'
     write(stdout,*)  '            |    Ivo Souza         (Universidad del Pais Vasco) |'
@@ -2886,6 +2907,20 @@ contains
     write(stdout,*)  '            |    Nicolas Poilvert   (Penn State University)     |'
     write(stdout,*)  '            |    Raffaello Bianco   (Paris 6 and CNRS)          |'
     write(stdout,*)  '            |    Gabriele Sclauzero (ETH Zurich)                |'
+    write(stdout,*)  '            |    David Strubbe (MIT, USA)                       |'
+    write(stdout,*)  '            |    Rei Sakuma (Lund University, Sweden)           |'
+    write(stdout,*)  '            |    Yusuke Nomura (U. Tokyo, Japan)                |'
+    write(stdout,*)  '            |    Takashi Koretsune (Riken, Japan)               |'
+    write(stdout,*)  '            |    Yoshiro Nohara (ASMS Co. Ltd., Japan)          |'
+    write(stdout,*)  '            |    Ryotaro Arita (Riken, Japan)                   |'
+    write(stdout,*)  '            |    Lorenzo Paulatto (UPMC Paris)                  |'
+    write(stdout,*)  '            |    Florian Thole (ETH Zurich)                     |'
+    write(stdout,*)  '            |    Pablo Garcia Fernandez (Unican, Spain)         |'
+    write(stdout,*)  '            |    Dominik Gresch (ETH Zurich)                    |'
+    write(stdout,*)  '            |    Samuel Ponce (University of Oxford)            |'
+    write(stdout,*)  '            |    Marco Gibertini (EPFL)                         |'
+    write(stdout,*)  '            |    Christian Stieger (ETHZ, CH)                   |' 
+    write(stdout,*)  '            |    Stepan Tsirkin (Universidad del Pais Vasco)    |' 
     write(stdout,*)  '            |                                                   |' 
     write(stdout,*)  '            |  Wannier77 Authors:                               |'
     write(stdout,*)  '            |    Nicola Marzari    (EPFL)                       |'
@@ -2916,12 +2951,12 @@ contains
     write(stdout,*)  '            |         Phys. Rev. B 65 035109 (2001)             |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            | Copyright (c) 1996-2015                           |'
+    write(stdout,*)  '            | Copyright (c) 1996-2017                           |'
     write(stdout,*)  '            |        Arash A. Mostofi, Jonathan R. Yates,       |'
     write(stdout,*)  '            |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |'
     write(stdout,*)  '            |        David Vanderbilt and Nicola Marzari        |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |        Release: 2.0.1   2nd April 2015            |'
+    write(stdout,*)  '            |        Release: 2.1.0   13th January 2017         |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
@@ -2959,7 +2994,7 @@ contains
   subroutine param_dealloc
     !==================================================================!
     !                                                                  !
-    ! release memory from allocated parameters                         !
+    !! release memory from allocated parameters 
     !                                                                  !
     !===================================================================  
     use w90_io, only : io_error
@@ -3182,9 +3217,9 @@ contains
   !=================================================!
   subroutine param_write_chkpt(chkpt)
     !=================================================!
-    ! Write checkpoint file                           !
-    ! IMPORTANT! If you change the chkpt format, adapt!
-    ! accordingly also the w90chk2chk.x utility!      !
+    !! Write checkpoint file                           
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!      
     !=================================================!
 
     use w90_io, only : io_file_unit,io_date,seedname
@@ -3243,9 +3278,9 @@ contains
     !=================================================!
   subroutine param_read_chkpt()
     !=================================================!
-    ! Read checkpoint file                            !
-    ! IMPORTANT! If you change the chkpt format, adapt!
-    ! accordingly also the w90chk2chk.x utility!      !
+    !! Read checkpoint file                            
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!      
     !=================================================!
 
     use w90_constants, only : eps6
@@ -3392,10 +3427,10 @@ contains
   !=======================================!
   subroutine param_in_file
     !=======================================!
-    ! Load the *.win file into a character  !
-    ! array in_file, ignoring comments and  !
-    ! blank lines and converting everything !
-    ! to lowercase characters               !
+    !! Load the *.win file into a character  
+    !! array in_file, ignoring comments and  
+    !! blank lines and converting everything 
+    !! to lowercase characters               
     !=======================================!
 
     use w90_io,        only : io_file_unit,io_error,seedname
@@ -3469,7 +3504,7 @@ contains
   subroutine param_get_keyword(keyword,found,c_value,l_value,i_value,r_value)
     !===========================================================================!
     !                                                                           !
-    !             Finds the value of the required keyword.                      !
+    !! Finds the value of the required keyword.
     !                                                                           !
     !===========================================================================!
 
@@ -3478,11 +3513,17 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     character(*)     ,optional, intent(inout) :: c_value
+    !! Keyword value
     logical          ,optional, intent(inout) :: l_value
+    !! Keyword value
     integer          ,optional, intent(inout) :: i_value
+    !! Keyword value
     real(kind=dp)    ,optional, intent(inout) :: r_value
+    !! Keyword value
 
     integer           :: kl, in,loop,itmp
     character(len=maxlen) :: dummy
@@ -3538,7 +3579,7 @@ contains
   subroutine param_get_keyword_vector(keyword,found,length,c_value,l_value,i_value,r_value)
     !=========================================================================================!
     !                                                                                         !
-    !                  Finds the values of the required keyword vector                        !
+    !! Finds the values of the required keyword vector 
     !                                                                                         !
     !=========================================================================================!
 
@@ -3547,12 +3588,19 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     integer,           intent(in)  :: length
+    !! Length of vecotr to read
     character(*)     ,optional, intent(inout) :: c_value(length)
+    !! Keyword data
     logical          ,optional, intent(inout) :: l_value(length)
+    !! Keyword data
     integer          ,optional, intent(inout) :: i_value(length)
+    !! Keyword data
     real(kind=dp)    ,optional, intent(inout) :: r_value(length)
+    !! Keyword data
 
     integer           :: kl, in,loop,i
     character(len=maxlen) :: dummy
@@ -3605,7 +3653,7 @@ contains
   subroutine param_get_vector_length(keyword,found,length)
     !======================================================!
     !                                                      !
-    !        Returns the length of a keyword vector        !
+    !! Returns the length of a keyword vector 
     !                                                      !
     !======================================================!
 
@@ -3614,8 +3662,11 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     integer,           intent(out)  :: length
+    !! length of vector
 
     integer           :: kl, in,loop,pos
     character(len=maxlen) :: dummy
@@ -3672,7 +3723,7 @@ contains
   subroutine param_get_keyword_block(keyword,found,rows,columns,c_value,l_value,i_value,r_value)
     !==============================================================================================!
     !                                                                                              !
-    !                           Finds the values of the required data block                        !
+    !!   Finds the values of the required data block               
     !                                                                                              !
     !==============================================================================================!
 
@@ -3682,13 +3733,21 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical          , intent(out) :: found
+    !! Is keyword present
     integer,           intent(in)  :: rows
+    !! Number of rows
     integer,           intent(in)  :: columns
+    !! Number of columns
     character(*)     ,optional, intent(inout) :: c_value(columns,rows)
+    !! keyword block data
     logical          ,optional, intent(inout) :: l_value(columns,rows)
+    !! keyword block data
     integer          ,optional, intent(inout) :: i_value(columns,rows)
+    !! keyword block data
     real(kind=dp)    ,optional, intent(inout) :: r_value(columns,rows)
+    !! keyword block data
 
     integer           :: in,ins,ine,loop,i,line_e,line_s,counter,blen
     logical           :: found_e,found_s,lconvert
@@ -3808,7 +3867,7 @@ contains
   subroutine param_get_block_length(keyword,found,rows,lunits)
     !=====================================================!
     !                                                     !
-    !       Finds the length of the data block            !
+    !! Finds the length of the data block       
     !                                                     !
     !=====================================================!
 
@@ -3817,9 +3876,13 @@ contains
     implicit none
 
     character(*),      intent(in)  :: keyword
+    !! Keyword to examine
     logical,           intent(out) :: found
+    !! Is keyword present
     integer,           intent(out) :: rows
+    !! Number of rows
     logical, optional, intent(out) :: lunits
+    !! Have we found a unit specification
 
     integer           :: i,in,ins,ine,loop,line_e,line_s
     logical           :: found_e,found_s
@@ -3827,6 +3890,7 @@ contains
     character(len=2)  :: atsym
     real(kind=dp)     :: atpos(3)
 
+    rows=0
     found_s=.false.
     found_e=.false.
 
@@ -3917,7 +3981,7 @@ contains
   subroutine param_get_atoms(lunits)
     !===================================!
     !                                   !
-    !   Fills the atom data block       !
+    !!   Fills the atom data block      
     !                                   !
     !===================================!
 
@@ -3927,6 +3991,7 @@ contains
     implicit none
 
     logical, intent(in) :: lunits
+    !! Do we expect a first line with the units
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
     real(kind=dp)     :: atoms_pos_cart_tmp(3,num_atoms)
@@ -4095,7 +4160,7 @@ contains
      subroutine param_lib_set_atoms(atoms_label_tmp,atoms_pos_cart_tmp)
     !=====================================================!
     !                                                     !
-    !   Fills the atom data block during a library call   !
+    !!   Fills the atom data block during a library call   
     !                                                     !
     !=====================================================!
 
@@ -4105,7 +4170,9 @@ contains
     implicit none
 
     character(len=*), intent(in) :: atoms_label_tmp(num_atoms)
+    !! Atom labels
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3,num_atoms)
+    !! Atom positions
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3,num_atoms)
     integer           :: loop2,max_sites,ierr,ic,loop,counter
@@ -4186,18 +4253,23 @@ contains
     !====================================================================!
     subroutine param_get_range_vector(keyword,found,length,lcount,i_value)
     !====================================================================!
-    !   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100               !
-    !   if(lcount) we return the number of states in length              !
+    !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100           
+    !!   if(lcount) we return the number of states in length            
     !====================================================================!
     use w90_io,        only : io_error
 
     implicit none
 
     character(*),      intent(in)    :: keyword
+    !! Keyword to examine
     logical          , intent(out)   :: found
+    !! Is keyword found
     integer,           intent(inout) :: length
+    !! Number of states
     logical,           intent(in)    :: lcount
+    !! If T only count states
     integer, optional, intent(out)   :: i_value(length)
+    !! States specified in range vector
 
     integer   :: kl, in,loop,num1,num2,i_punc
     integer   :: counter,i_digit,loop_r,range_size
@@ -4286,7 +4358,7 @@ contains
    subroutine param_get_projections
      !===================================!
      !                                   !
-     !  Fills the projection data block  !
+     !!  Fills the projection data block 
      !                                   !
      !===================================!
 
@@ -4910,7 +4982,7 @@ contains
   subroutine param_get_keyword_kpath
     !===================================!
     !                                   !
-    !  Fills the kpath data block       !
+    !!  Fills the kpath data block     
     !                                   !
     !===================================!
     use w90_io,        only : io_error
@@ -4989,7 +5061,7 @@ contains
     subroutine param_memory_estimate
     !===========================================!
     !                                           !
-    ! Estimate how much memory we will allocate !
+    !! Estimate how much memory we will allocate
     !                                           !
     !===========================================!
 

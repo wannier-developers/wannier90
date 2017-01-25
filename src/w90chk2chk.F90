@@ -1,17 +1,20 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_conv
+  !! Module to convert checkpoint files from formatted to unformmated 
+  !! and vice versa - useful for switching between computers
   use w90_constants, only : dp
   use w90_io, only : stdout, io_error, seedname
   implicit none
@@ -20,7 +23,8 @@ module w90_conv
   character(len=33), save :: header
 contains
 
-  subroutine print_usage
+  subroutine print_usage( )
+    !! Writes the usage of the program to stdout
     write(stdout, '(A)') "Usage:"
     write(stdout, '(A)') "  w90chk2chk.x ACTION [SEEDNAME]"
     write(stdout, '(A)') "where ACTION can be one of the following:"
@@ -37,7 +41,7 @@ contains
 end subroutine print_usage
 
   subroutine conv_get_seedname
-
+    !! Set the seedname from the command line
          implicit none
 
          integer :: num_arg
@@ -80,7 +84,7 @@ end subroutine print_usage
   !=======================================!
   subroutine conv_read_chkpt()
     !=======================================!
-    ! Read formatted checkpoint file        !
+    !! Read formatted checkpoint file
     !=======================================!
 
     use w90_constants, only : eps6
@@ -230,7 +234,7 @@ end subroutine print_usage
 
   subroutine conv_read_chkpt_fmt()
     !=======================================!
-    ! Read formatted checkpoint file        !
+    !! Read formatted checkpoint file 
     !=======================================!
 
     use w90_constants, only : eps6
@@ -435,7 +439,7 @@ end subroutine print_usage
 
   subroutine conv_write_chkpt()
     !=======================================!
-    ! Write formatted checkpoint file       !
+    !! Write formatted checkpoint file
     !=======================================!
 
     use w90_io, only : io_file_unit,io_date,seedname
@@ -484,7 +488,7 @@ end subroutine print_usage
 
   subroutine conv_write_chkpt_fmt()
     !=======================================!
-    ! Write formatted checkpoint file       !
+    !! Write formatted checkpoint file 
     !=======================================!
 
     use w90_io, only : io_file_unit,io_date,seedname
@@ -575,6 +579,8 @@ end subroutine print_usage
 end module w90_conv
 
 program w90chk2chk
+  !! Program to convert checkpoint files from formatted to unformmated 
+  !! and vice versa - useful for switching between computers
   use w90_constants, only : dp
   use w90_io, only : io_file_unit, stdout, io_error, seedname
   use w90_conv
