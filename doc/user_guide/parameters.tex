@@ -178,6 +178,7 @@ Steepest Descents \\
 {\sc conv\_window }   & I & The number of iterations over which
 convergence of $\Omega$ is assessed \\
 {\sc conv\_tol }   & P & The convergence tolerance for finding $\Omega$  \\
+{\sc precond }   & L & Use preconditioning \\
 {\sc conv\_noise\_amp} & R & The amplitude of random noise applied
 towards end of minimisation procedure \\
 {\sc conv\_noise\_num} & I & The number of times random noise is
@@ -903,6 +904,17 @@ If {\tt conv\_window}$\:>1$, then this is the convergence tolerance on
 $\Omega$, otherwise not used. Units are \AA$^2$.
 
 The default value is 1.0E-10
+
+\subsection[precond]{\tt logical :: precond}
+
+Whether or not to use preconditioning to speed up the minimization of
+the spreads. This is based on the same idea as the classical
+Tetter-Payne-Allan preconditionning for DFT and dampens the
+high-frequency oscillations of the gradient due to contributions from
+large real lattice vectors. It is useful when the optimization
+routines have trouble converging.
+
+The default value is \verb#false#.
 
 \subsection[conv\_noise\_amp]{\tt real(kind=dp) :: conv\_noise\_amp}
 
