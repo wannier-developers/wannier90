@@ -736,7 +736,6 @@ contains
 
     precond=.false.
     call param_get_keyword('precond',found,l_value=precond)
-    if ( found.and.lfixstep ) call io_error('Error: cannot specify both fixed_step and trial_step')
 
     !%%%%%%%%%
     ! Plotting

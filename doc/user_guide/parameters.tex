@@ -911,8 +911,9 @@ Whether or not to use preconditioning to speed up the minimization of
 the spreads. This is based on the same idea as the classical
 Tetter-Payne-Allan preconditionning for DFT and dampens the
 high-frequency oscillations of the gradient due to contributions from
-large real lattice vectors. It is useful when the optimization
-routines have trouble converging.
+large real lattice vectors. It is useful when the optimization is
+slow, especially on fine grids. When \verb#optimisation<3#, this uses
+a slower algorithm to save memory.
 
 The default value is \verb#false#.
 
