@@ -731,14 +731,15 @@ contains
 
       if (timing_level>1) call io_stopwatch('wann: main: search_direction',1)
 
-      ! compute cdodq_precond if necessary
       if (precond) then
-         cdodq_r(:,:,:) = 0
+         ! compute cdodq_precond
+         
+         cdodq_r(:,:,:) = 0 ! intermediary gradient in R space
          cdodq_precond(:,:,:) = 0
 
          ! convert to real space in cdodq_r
          ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
-         ! Ideally, we should implement FFT-based filtering
+         ! Ideally, we should implement FFT-based filtering here
          if(optimisation >= 3) then
             call zgemm('N','N',num_wann*num_wann, nrpts, num_kpts,cmplx_1, &
                  & cdodq, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
@@ -759,9 +760,6 @@ contains
          ! be tweaked further: the point is to have something that has
          ! the right units, and is not too small (or the filtering is
          ! too severe) or too high (or the filtering does nothing).
-         ! The normalization by 5 is also arbitrary, and there to
-         ! ensure approximate mass conservation (so that trial_step
-         ! has the same approximate meaning as without preconditioning)
          !
          ! the descent direction produced has a different magnitude
          ! than the one without preconditionner, so the values of
@@ -780,7 +778,6 @@ contains
             call zgemm('N','C',num_wann*num_wann, num_kpts, nrpts,cmplx_1, &
                  & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
          else
-            ! convert cdodq_r back to cdodq_precond in k space
             do irpt=1,nrpts
                do loop_kpt=1,num_kpts
                   rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
@@ -789,9 +786,6 @@ contains
                enddo
             enddo
          end if
-
-         cdodq_precond = cdodq_precond * real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1)) /&
-              & real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq_precond,1))
       end if
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
