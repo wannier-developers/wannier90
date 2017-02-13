@@ -94,6 +94,7 @@ contains
     complex(kind=dp), allocatable :: csheet(:,:,:)
     complex(kind=dp), allocatable :: cdodq(:,:,:)  
     complex(kind=dp), allocatable :: cdodq_r(:,:,:)
+    complex(kind=dp), allocatable :: k_to_r(:,:)
     complex(kind=dp), allocatable :: cdodq_precond(:,:,:)
     real(kind=dp),    allocatable :: sheet (:,:,:)
     real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)
@@ -168,6 +169,19 @@ contains
        if (ierr/=0) call io_error('Error in allocating cdodq_r in wann_main')
        allocate(cdodq_precond(num_wann,num_wann,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+
+       ! this method of computing the preconditioning is much more efficient, but requires more RAM
+       if(optimisation >= 3) then
+          allocate(k_to_r(num_kpts,nrpts),stat=ierr)
+          if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+          
+          do irpt=1,nrpts
+             do loop_kpt=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                k_to_r(loop_kpt,irpt)=exp(-cmplx_i*rdotk)
+             enddo
+          enddo
+       end if
     end if
 
     csheet=cmplx_1;cdodq=cmplx_0
@@ -513,6 +527,10 @@ contains
     deallocate(cwschur1,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cwschur1 in wann_main')
     if(precond) then
+       if(optimisation >= 3) then
+          deallocate(k_to_r,stat=ierr)
+          if (ierr/=0) call io_error('Error in deallocating k_to_r in wann_main')
+       end if
        deallocate(cdodq_r,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating cdodq_r in wann_main')
        deallocate(cdodq_precond,stat=ierr)
@@ -719,14 +737,22 @@ contains
          cdodq_precond(:,:,:) = 0
 
          ! convert to real space in cdodq_r
-         do irpt=1,nrpts
-            do loop_kpt=1,num_kpts
-               rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
-               fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
-               cdodq_r(:,:,irpt)=cdodq_r(:,:,irpt)+fac*cdodq(:,:,loop_kpt)
-            enddo
-         enddo
-
+         ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
+         ! Ideally, we should implement FFT-based filtering
+         if(optimisation >= 3) then
+            call zgemm('N','N',num_wann*num_wann, nrpts, num_kpts,cmplx_1, &
+                 & cdodq, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
+            cdodq_r = cdodq_r /real(num_kpts,dp)
+         else
+            do irpt=1,nrpts
+               do loop_kpt=1,num_kpts
+                  rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                  fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                  cdodq_r(:,:,irpt)=cdodq_r(:,:,irpt)+fac*cdodq(:,:,loop_kpt)
+               enddo
+            enddo            
+         end if
+         
          ! filter cdodq_r in real space by 1/(1+R^2/alpha)
          
          ! this alpha coefficient is more or less arbitrary, and could
@@ -746,14 +772,26 @@ contains
             cdodq_r(:,:,irpt) = cdodq_r(:,:,irpt) * 1 / (1+ dot_product(rvec_cart,rvec_cart)/alpha_precond)
          end do
 
-         ! convert cdodq_r back to cdodq_precond in k space
-         do irpt=1,nrpts
-            do loop_kpt=1,num_kpts
-               rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
-               fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
-               cdodq_precond(:,:,loop_kpt)=cdodq_precond(:,:,loop_kpt)+fac*cdodq_r(:,:,irpt)
+         ! go back to k space
+         if(optimisation >= 3) then
+            do irpt=1,nrpts
+               cdodq_r(:,:,irpt) = cdodq_r(:,:,irpt) / real(ndegen(irpt),dp)
+            end do
+            call zgemm('N','C',num_wann*num_wann, num_kpts, nrpts,cmplx_1, &
+                 & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
+         else
+            ! convert cdodq_r back to cdodq_precond in k space
+            do irpt=1,nrpts
+               do loop_kpt=1,num_kpts
+                  rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                  fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+                  cdodq_precond(:,:,loop_kpt)=cdodq_precond(:,:,loop_kpt)+fac*cdodq_r(:,:,irpt)
+               enddo
             enddo
-         enddo
+         end if
+
+         cdodq_precond = cdodq_precond * real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1)) /&
+              & real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq_precond,1))
       end if
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
