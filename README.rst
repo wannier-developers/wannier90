@@ -60,12 +60,13 @@ Licence
 +++++++
 
 The Wannier90 code is licensed under GPLv2. 
-You can read the licence text in the ``LICENCE`` file.
+You can read the licence text in the LICENSE file in the root directory 
+of the Wannier90 distribution.
 
 Authors and contributors
 ++++++++++++++++++++++++
 
-Wannier90 Version 2.0 has been written by: 
+Wannier90 Versions 2.x have been written by: 
 
 * Arash A. Mostofi   (Imperial College London, UK)
 * Giovanni Pizzi     (EPFL, Switzerland)
@@ -80,6 +81,19 @@ Contributors to the code include:
 * Raffaello Bianco (Univ. Pierre et Marie Curie Paris 6 and CNRS):  k-slice plotting
 * Gabriele Sclauzero (ETH, Zurich, Switzerland): disentanglement in spheres in k-space
 * David Strubbe (MIT, USA): various bugfixes/improvements
+* Rei Sakuma (Lund University, Sweden): Symmetry-adapted Wannier functions
+* Yusuke Nomura (U. Tokyo, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
+* Takashi Koretsune (Riken, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
+* Yoshiro Nohara (Atomic-scale material simulations, Co., Ltd.): Symmetry-adapted Wannier functions
+* Ryotaro Arita (Riken, JP): Symmetry-adapted Wannier functions
+* Lorenzo Paulatto (UPMC Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
+* Florian Thole (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
+* Pablo Garcia Fernandez (Unican, ES): Matrix elements of the position operator
+* Dominik Gresch (ETHZ, CH): FORD infrastructure for code documentation
+* Samuel Ponce (Oxford University, UK): Test suite for Wannier90
+* Marco Gibertini (EPFL, CH): Improvements to the interpolation routines
+* Christian Stieger (ETHZ, CH): Routine to print the U matrices
+* Stepan Tsirkin (Universidad del Pais Vasco, Spain): bug fixes in the berry module
 
 Moreover:
 

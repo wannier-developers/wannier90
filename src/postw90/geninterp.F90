@@ -1,24 +1,26 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
+!                                                            !
 !                                                            !
 !------------------------------------------------------------!
-!============================================================!
-!                                                            !
-! Generic Interpolation Routine written by Giovanni Pizzi    !
-! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
-! June, 2012                                                 !
-!                                                            !
-!============================================================!
 
 module w90_geninterp
+  !! Generic Interpolation Routine 
+  !!
+  !! written by Giovanni Pizzi
+  !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)  
+  !! June, 2012 
 
   use w90_constants
   use w90_parameters, only    : geninterp_alsofirstder, num_wann, recip_lattice, real_lattice, &
@@ -37,13 +39,13 @@ module w90_geninterp
 
 contains 
 
-  ! Writes a header for the output file(s).
-  !
-  ! \param outdat_unit Integer with the output file unit. The file must be already open.
-  ! \param commentline String with the comment taken from the output, to be written on the output
   subroutine internal_write_header(outdat_unit,commentline)
+  !! Writes a header for the output file(s).
+
     integer, intent(in) :: outdat_unit
-    character(len=*)    :: commentline
+    !! Integer with the output file unit. The file must be already open.
+    character(len=*)    :: commentline !! no intent?
+    !! String with the comment taken from the output, to be written on the output
 
     character(len=9)   :: cdate, ctime
 
@@ -60,14 +62,14 @@ contains
     end if
   end subroutine internal_write_header
     
-  !> This routine prints the band energies (and possibly the band derivatives) 
-  !>
-  !> This routine is parallel, even if ***the scaling is very bad*** since at the moment
-  !> everything must be written by the root node (we need that the output is sorted).
-  !> But at least if works independently of the number of processors.
-  !> I think that a way to write in parallel to the output would help a lot,
-  !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
+  !! This routine prints the band energies (and possibly the band derivatives) 
+  !!
+  !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
+  !! everything must be written by the root node (we need that the output is sorted).
+  !! But at least if works independently of the number of processors.
+  !! I think that a way to write in parallel to the output would help a lot,
+  !! so that we don't have to send all eigenvalues to the root node.
     integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
@@ -217,7 +219,7 @@ contains
        kpt = localkpoints(:,i)
        ! Here I get the band energies and the velocities (if required)
        if (geninterp_alsofirstder) then
-          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
+          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,:,i),HH,delHH,UU)
        else
           call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 

@@ -21,6 +21,8 @@ then
 fi
 
 # WANNIER
+# center and spread, but only for the first WF (this is suboptimal, should
+# be improved...)
 wfcenter=`sed -n '/Final State/{n;p;}' $fname | awk '{print $7; print $8; print $9}'| tr , " " `
 spread=`sed -n '/Final State/{n;p;}' $fname | awk '{print $11}'`
 

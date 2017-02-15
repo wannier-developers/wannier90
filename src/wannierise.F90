@@ -1,17 +1,19 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_wannierise
+  !! Main routines for the minimisation of the spread
 
   use w90_constants
   use w90_comms, only : on_root, my_node_id, num_nodes,&
@@ -29,6 +31,7 @@ module w90_wannierise
   real(kind=dp),    allocatable  :: rnkb (:,:,:)   
   real(kind=dp),    allocatable  :: rnkb_loc (:,:,:)   
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
+
   real(kind=dp),    allocatable  :: ln_tmp_loc(:,:,:)
 
   ! for MPI
@@ -43,19 +46,24 @@ module w90_wannierise
   integer,          allocatable  :: counts(:)
   integer,          allocatable  :: displs(:)
     
-  ! The next variable is used to trigger the calculation of the invarient spread
-  ! we only need to do this on entering wann_main (_gamma)
   logical :: first_pass
+  !! Used to trigger the calculation of the invarient spread
+  !! we only need to do this on entering wann_main (_gamma)
 
 #ifdef MPI
   include 'mpif.h'
 #endif
 
   type localisation_vars
-     real(kind=dp) :: om_i   
-     real(kind=dp) :: om_d   
+     !! Contributions to the spread
+     real(kind=dp) :: om_i  
+     !! Gauge Invarient
+     real(kind=dp) :: om_d
+     !! Diagonal
      real(kind=dp) :: om_od  
+     !! Off-diagonal
      real(kind=dp) :: om_tot 
+     !! Total
 !~     real(kind=dp) :: om_1   
 !~     real(kind=dp) :: om_2   
 !~     real(kind=dp) :: om_3   
@@ -68,8 +76,7 @@ contains
   subroutine wann_main
     !==================================================================!
     !                                                                  !
-    ! Calculate the Unitary Rotations to give                          !
-    !            Maximally Localised Wannier Functions                 !
+    !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions 
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : dp,cmplx_1,cmplx_0
@@ -79,18 +86,18 @@ contains
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
          num_dump_cycles,omega_invariant,param_write_chkpt,length_unit, &
          lenconfac,proj_site,real_lattice,write_r2mn,guiding_centres, &
-         num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
+         num_guide_cycles,num_no_guide_iter,timing_level,trial_step,precond,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
-         write_hr_diag
+         write_hr_diag,kpt_latt
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
-    use w90_parameters, only : lsitesymmetry,nkptirr !RS:
-    use w90_sitesymmetry                             !RS:
+    use w90_parameters, only : lsitesymmetry                !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_gradient  !RS:
 
     !ivo
     use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
-                                rpt_origin
+         rpt_origin,irvec,nrpts,ndegen
 
     implicit none
 
@@ -107,8 +114,12 @@ contains
     ! local arrays used and passed in subroutines
     complex(kind=dp), allocatable :: csheet(:,:,:)
     complex(kind=dp), allocatable :: cdodq(:,:,:)  
+    complex(kind=dp), allocatable :: cdodq_r(:,:,:)
+    complex(kind=dp), allocatable :: k_to_r(:,:)
+    complex(kind=dp), allocatable :: cdodq_precond(:,:,:)
     real(kind=dp),    allocatable :: sheet (:,:,:)
-    real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)  
+    real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)
+    real(kind=dp), dimension(3) :: rvec_cart
 
     !local arrays not passed into subroutines
     complex(kind=dp), allocatable  :: cwschur1 (:), cwschur2 (:)  
@@ -134,6 +145,9 @@ contains
     real(kind=dp)              :: save_spread
     logical                    :: lconverged,lrandom,lfirst
     integer                    :: conv_count,noise_count,page_unit
+    complex(kind=dp) :: fac,rdotk
+    real(kind=dp) :: alpha_precond
+    integer :: irpt,loop_kpt
 
     if (timing_level>0.and.on_root) call io_stopwatch('wann: main',1)
 
@@ -173,6 +187,27 @@ contains
     if (ierr/=0) call io_error('Error in allocating rave2 in wann_main')
     allocate( rguide (3, num_wann)   )
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main')
+
+    if(precond) then
+       call hamiltonian_setup()
+       allocate(cdodq_r(num_wann,num_wann,nrpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating cdodq_r in wann_main')
+       allocate(cdodq_precond(num_wann,num_wann,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+
+       ! this method of computing the preconditioning is much more efficient, but requires more RAM
+       if(optimisation >= 3) then
+          allocate(k_to_r(num_kpts,nrpts),stat=ierr)
+          if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+          
+          do irpt=1,nrpts
+             do loop_kpt=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                k_to_r(loop_kpt,irpt)=exp(-cmplx_i*rdotk)
+             enddo
+          enddo
+       end if
+    end if
 
     csheet=cmplx_1;cdodq=cmplx_0
     sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;rave2=0.0_dp;rguide=0.0_dp
@@ -342,7 +377,7 @@ contains
 
        ! calculate search direction (cdq)
        call internal_search_direction()
-       if (lsitesymmetry) call symmetrize_gradient(2,cdq) !RS:
+       if (lsitesymmetry) call sitesym_symmetrize_gradient(2,cdq) !RS:
 
        ! save search direction 
        cdqkeep_loc(:,:,:) = cdq_loc(:,:,:)
@@ -591,6 +626,16 @@ contains
     if (ierr/=0) call io_error('Error in deallocating cwschur3 in wann_main')
     deallocate(cwschur1,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cwschur1 in wann_main')
+    if(precond) then
+       if(optimisation >= 3) then
+          deallocate(k_to_r,stat=ierr)
+          if (ierr/=0) call io_error('Error in deallocating k_to_r in wann_main')
+       end if
+       deallocate(cdodq_r,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating cdodq_r in wann_main')
+       deallocate(cdodq_precond,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating cdodq_precond in wann_main')
+    end if
 
     ! deallocate sub vars passed into other subs
     deallocate(rguide,stat=ierr)
@@ -640,8 +685,8 @@ contains
     subroutine internal_test_convergence()
       !===============================================!
       !                                               !
-      ! Determine whether minimisation of non-gauge   !
-      ! invariant spread is converged                 !
+      !! Determine whether minimisation of non-gauge
+      !! invariant spread is converged
       !                                               !
       !===============================================!
 
@@ -709,8 +754,8 @@ contains
     subroutine internal_random_noise()
       !===============================================!
       !                                               !
-      ! Add some random noise to the search direction !
-      ! to help escape from local minima              !
+      !! Add some random noise to the search direction
+      !! to help escape from local minima
       !                                               !
       !===============================================!
 
@@ -773,10 +818,10 @@ contains
     subroutine internal_search_direction()
       !===============================================!
       !                                               !
-      ! Calculate the conjugate gradients search      !
-      ! direction using the Fletcher-Reeves formula:  !
-      !                                               !
-      !     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]    !
+      !! Calculate the conjugate gradients search
+      !! direction using the Fletcher-Reeves formula: 
+      !!
+      !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
 
@@ -790,7 +835,72 @@ contains
       ! gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
       gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann,cdodq_loc,1,cdodq_loc,1),dp)
 
+
       call comms_allreduce(gcnorm1,1,'SUM')
+
+      if (precond) then
+         ! compute cdodq_precond
+         
+         cdodq_r(:,:,:) = 0 ! intermediary gradient in R space
+         cdodq_precond(:,:,:) = 0
+
+         ! convert to real space in cdodq_r
+         ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
+         ! Ideally, we should implement FFT-based filtering here
+         if(optimisation >= 3) then
+            call zgemm('N','N',num_wann*num_wann, nrpts, num_kpts,cmplx_1, &
+                 & cdodq, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
+            cdodq_r = cdodq_r /real(num_kpts,dp)
+         else
+            do irpt=1,nrpts
+               do loop_kpt=1,num_kpts
+                  rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                  fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                  cdodq_r(:,:,irpt)=cdodq_r(:,:,irpt)+fac*cdodq(:,:,loop_kpt)
+               enddo
+            enddo            
+         end if
+         
+         ! filter cdodq_r in real space by 1/(1+R^2/alpha)
+         
+         ! this alpha coefficient is more or less arbitrary, and could
+         ! be tweaked further: the point is to have something that has
+         ! the right units, and is not too small (or the filtering is
+         ! too severe) or too high (or the filtering does nothing).
+         !
+         ! the descent direction produced has a different magnitude
+         ! than the one without preconditionner, so the values of
+         ! trial_step are not consistent
+         alpha_precond = 10*wann_spread%om_tot / num_wann
+         do irpt=1,nrpts
+            rvec_cart = matmul(real_lattice(:,:),real(irvec(:,irpt),dp))
+            cdodq_r(:,:,irpt) = cdodq_r(:,:,irpt) * 1 / (1+ dot_product(rvec_cart,rvec_cart)/alpha_precond)
+         end do
+
+         ! go back to k space
+         if(optimisation >= 3) then
+            do irpt=1,nrpts
+               cdodq_r(:,:,irpt) = cdodq_r(:,:,irpt) / real(ndegen(irpt),dp)
+            end do
+            call zgemm('N','C',num_wann*num_wann, num_kpts, nrpts,cmplx_1, &
+                 & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
+         else
+            do irpt=1,nrpts
+               do loop_kpt=1,num_kpts
+                  rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                  fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+                  cdodq_precond(:,:,loop_kpt)=cdodq_precond(:,:,loop_kpt)+fac*cdodq_r(:,:,irpt)
+               enddo
+            enddo
+         end if
+      end if
+
+      ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
+      if(precond) then
+         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq,1),dp)
+      else
+         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
+      end if
 
       ! calculate cg_coefficient
       if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
@@ -818,7 +928,13 @@ contains
       gcnorm0 = gcnorm1
 
       ! calculate search direction
-      cdq_loc(:,:,:) = cdodq_loc(:,:,:) + cdqkeep_loc(:,:,:) * gcfac
+
+      if(precond) then
+         cdq(:,:,:) = cdodq_precond(:,:,:) + cdqkeep(:,:,:) * gcfac !! JRY not MPI
+      else
+        cdq_loc(:,:,:) = cdodq_loc(:,:,:) + cdqkeep_loc(:,:,:) * gcf   
+      end if
+
 
       ! add some random noise to search direction, if required
       if (lrandom) then
@@ -882,8 +998,8 @@ contains
     subroutine internal_optimal_step()
       !===============================================!
       !                                               !
-      ! Calculate the optimal step length based on a  !
-      ! parabolic line search                         !
+      !! Calculate the optimal step length based on a
+      !! parabolic line search 
       !                                               !
       !===============================================!
 
@@ -935,11 +1051,11 @@ contains
     subroutine internal_new_u_and_m()               
       !===============================================!
       !                                               !
-      ! Update U and M matrices after a trial step    !
+      !! Update U and M matrices after a trial step 
       !                                               !
       !===============================================!
-      use w90_sitesymmetry                  !    RS:
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: sitesym_symmetrize_rotation,& !RS:
+                             ir2ik,ik2ir !YN: RS:
 
       implicit none
 
@@ -1008,7 +1124,7 @@ contains
 !!$         cdq(:,:,nkp)=cmtmp(:,:)
 !!$      enddo
 
-      if (lsitesymmetry) call symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+      if (lsitesymmetry) call sitesym_symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
       ! the orbitals are rotated
       do nkp_loc = 1, counts(my_node_id)
          nkp = nkp_loc + displs(my_node_id)   
@@ -1229,7 +1345,8 @@ contains
   !==================================================================!
   subroutine wann_phases (csheet, sheet, rguide, irguide, m_w)
     !==================================================================!
-    !                                                                  !
+    !! Uses guiding centres to pick phases which give a 
+    !! consistent choice of branch cut for the spread definction 
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : eps6
@@ -1241,10 +1358,15 @@ contains
     implicit none
 
     complex(kind=dp), intent(out)   :: csheet (:,:,:)
+    !! Choice of phase
     real(kind=dp)   , intent(out)   :: sheet (:,:,:)
+    !! Choice of branch cut
     real(kind=dp)   , intent(inout) :: rguide (:,:)
+    !! Guiding centres
     integer         , intent(in)    :: irguide
+    !! Zero if first call to this routine
     real(kind=dp), intent(in), optional :: m_w(:,:,:)
+    !! Used in the Gamma point routines as an optimisation
 
     !local
     complex(kind=dp) :: csum (nnh)  
@@ -1433,7 +1555,7 @@ contains
   subroutine wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
     !==================================================================!
     !                                                                  !
-    !   Calculate the Wannier Function spread                          !
+    !!   Calculate the Wannier Function spread
     !                                                                  !
     !===================================================================  
     use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
@@ -1648,7 +1770,7 @@ contains
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
     use w90_io,         only : io_stopwatch,io_error
     use w90_parameters, only : lsitesymmetry !RS:
-    use w90_sitesymmetry                     !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_gradient !RS:
 
     implicit none
 
@@ -1753,9 +1875,13 @@ contains
       call comms_bcast(cdodq(1,1,1),num_wann*num_wann*num_kpts)   
     end if
 
+
     if (lsitesymmetry) call symmetrize_gradient(1,cdodq) !RS:
     deallocate( cr, crt, stat=ierr ) 
     if (ierr/=0) call io_error('Error in deallocating cr and crt in wann_domega')
+
+    if (lsitesymmetry) call sitesym_symmetrize_gradient(1,cdodq) !RS:
+
 
     if (timing_level>1.and.on_root) call io_stopwatch('wann: domega',2)
 

@@ -38,9 +38,9 @@
 
 \title{\wannier: Tutorial}
 
-\author{Version 2.0.1}
+\author{Version 2.1.0}
 
-\date{2nd April 2015}
+\date{13th January 2017}
 %\date{\today}
 
 %%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
@@ -156,20 +156,17 @@ will need to install and compile elements of the {\tt
   pw2wannier90.x}, in order to run these
 examples. Please visit \url{http://www.quantum-espresso.org} to download the
 package, and for installation instructions. 
-The tutorial examples work with \pwscf\ v5.0.0 - v5.0.2 with the exception of the Berry phase related properties in examples 17-19 which require the
-very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v5.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}.
-We expect this will be included as standard in the next release of \pwscf\
+The tutorial examples work with \pwscf\ v5.1.x and v6.0.x. The exception are the examples on symmetry adapted Wannier functions which require v6.0.x together with the  
+very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v6.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}. Later versions v6.x.x should have the most up-to-date version 
+ of pw2wannier90.f90 already included in the Quantum ESPRESSO  
+ distribution. 
 
 
 There are interfaces to a number of other electronic structure codes
 including {\sc abinit} (\url{http://www.abinit.org}), {\sc fleur}
-(\url{http://www.flapw.de}), {\sc VASP} (\url{http://www.vasp.at}), and
+(\url{http://www.flapw.de}),  {\sc OpenMX} (\url{http://www.openmx-square.org/}), 
+{\sc GPAW} (\url{https://wiki.fysik.dtu.dk/gpaw/}), {\sc VASP} (\url{http://www.vasp.at}), and
 {\sc Wien2k} (\url{http://www.wien2k.at})
-
-For images of MLWFs, see our gallery at
-  \url{http://www.wannier.org/gallery.html}. If you have any images that
-  you would like to submit to the gallery, please email us.
-% at\\ {\tt developers@wannier.org}.
 
 \sectiontitle{Contact us}
 
@@ -2417,7 +2414,8 @@ For instance, the $A$ point in the simple tetragonal lattice of this example is 
 Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
-\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs}}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs. 
+For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
 \item{Directory: {\tt examples/example21/atom\_centered\_As\_sp/} \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_p/}    \\
 \phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_s/}    \\
@@ -2448,7 +2446,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
-  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmb} files, respectively).\\  
+  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmn} files, respectively).\\  
 {\tt pw2wannier90.x < GaAs.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -2457,7 +2455,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 Each directory creates different kind of symmetry-adapted Wannier function. 
 See more detail in {\tt examples/example21/README}. 
-Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
+%Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
 
 
 %\cleardoublepage
@@ -2467,7 +2465,8 @@ Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}
 Note: This example requires a recent version of the {\tt pw2wannier90} interface.
 
 \begin{itemize}
-\item{Outline: \it{Obtain symmetry-adapted Wannier functions for Cu. By symmetry-adapted mode, for example, we can make atomic centered $s$-like Wannier function, which is not possible in the usual procedure to create maximally localized Wannier functions.}}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions for Cu. By symmetry-adapted mode, for example, we can make atomic centered $s$-like Wannier function, which is not possible in the usual procedure to create maximally localized Wannier functions.
+For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
 \item{Directory: {\tt examples/example22/s\_at\_0.00/} \\
 \phantom{Directory: }{\tt examples/example22/s\_at\_0.25/}    \\
 \phantom{Directory: }{\tt examples/example22/s\_at\_0.50/}    
@@ -2479,7 +2478,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 \item{ {\tt Cu.nscf}  {\it The \pwscf\ input file to obtain Bloch
     states on a uniform grid}} 
 \item{ {\tt Cu.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
-\item{ {\tt Cu.sym}  {\it Used only in {\tt examples/example22/s\_at\_0.25/}. {\tt pw2wannier90} reads this file when {\rm ``read\_sym = .true.''} in {\tt Cu.pw2wan}. By default, {\rm ``read\_sym = .false.'' and {\tt Cu.sym} is the output of {\tt pw2wannier90}}, in which the symmetry operations employed in the calculation are written for reference. } } 
+\item{ {\tt Cu.sym}  {\it Used only in {\tt examples/example22/s\_at\_0.25/}. {\tt pw2wannier90} reads this file when {\tt ``read\_sym = .true.''} in {\tt Cu.pw2wan}. By default, {\tt ``read\_sym = .false.'' and {\tt Cu.sym} is the output of {\tt pw2wannier90}}, in which the symmetry operations employed in the calculation are written for reference. } } 
 \item{ {\tt Cu.win}  {\it The {\tt wannier90} input file}}
 \end{itemize}
 \end{itemize}
@@ -2497,7 +2496,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 \item Run {\tt pw2wannier90} to compute the overlap between Bloch
   states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
-  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmb} files, respectively).\\  
+  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmn} files, respectively).\\  
 {\tt pw2wannier90.x < Cu.pw2wan > pw2wan.out}
 
 \item Run \wannier\ to compute the MLWFs.\\
@@ -2506,7 +2505,7 @@ Note: This example requires a recent version of the {\tt pw2wannier90} interface
 
 Each directory creates $s$-like symmetry-adapted Wannier function centered at different position on top of atomic centered $d$-like Wannier functions. 
 See more detail in {\tt examples/example22/README}. 
-Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
+%Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
 
 
 %\cleardoublepage

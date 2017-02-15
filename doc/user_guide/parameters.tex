@@ -198,6 +198,7 @@ Steepest Descents \\
 {\sc conv\_window }   & I & The number of iterations over which
 convergence of $\Omega$ is assessed \\
 {\sc conv\_tol }   & P & The convergence tolerance for finding $\Omega$  \\
+{\sc precond }   & L & Use preconditioning \\
 {\sc conv\_noise\_amp} & R & The amplitude of random noise applied
 towards end of minimisation procedure \\
 {\sc conv\_noise\_num} & I & The number of times random noise is
@@ -216,6 +217,8 @@ of $\Omega$\\
 {\sc fixed\_step }*   & R & The fixed step length to take during the minimisation
 of $\Omega$, instead of doing a parabolic line search \\
 {\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
+{\sc site\_symmetry}***   & L & To construct symmetry-adapted Wannier functions  \\
+{\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\ 
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -225,7 +228,8 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. 
 {\footnotesize
 * {\sc fixed\_step } and  {\sc trial\_step } may not both be defined in
-the same input file. **Cannot be used in conjunction with disentanglement.}}
+the same input file. **Cannot be used in conjunction with disentanglement.
+***Cannot be used in conjunction with the inner (frozen) energy window.}}
 \label{parameter_keywords5}
 \end{center}
 \end{table}
@@ -283,7 +287,7 @@ Hamiltonian, and position operator in WF basis} \\
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
   final WF are translated \\ 
-  \new{\sc use\_ws\_distance } & L & \new{Use the minimum distance between WFs for interpolation} \\
+  \new{\sc use\_ws\_distance } & L & \new{Improve interpolation using minimum distance between WFs, see Chap.~\ref{chap:interpolation}} \\
   \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
@@ -921,6 +925,18 @@ $\Omega$, otherwise not used. Units are \AA$^2$.
 
 The default value is 1.0E-10
 
+\subsection[precond]{\tt logical :: precond}
+
+Whether or not to use preconditioning to speed up the minimization of
+the spreads. This is based on the same idea as the classical
+Tetter-Payne-Allan preconditionning for DFT and dampens the
+high-frequency oscillations of the gradient due to contributions from
+large real lattice vectors. It is useful when the optimization is
+slow, especially on fine grids. When \verb#optimisation<3#, this uses
+a slower algorithm to save memory.
+
+The default value is \verb#false#.
+
 \subsection[conv\_noise\_amp]{\tt real(kind=dp) :: conv\_noise\_amp}
 
 If {\tt conv\_noise\_amp}$\:>0$, once convergence (as defined above) is
@@ -1012,7 +1028,25 @@ Determines whether to use the Bloch functions as the
 initial guess for the projections. Can only be used if
 \verb#disentanglement = false#. 
 
-Th default value is \verb#false#.
+The default value is \verb#false#.
+
+
+\subsection[site\_symmetry]{\tt logical :: site\_symmetry}
+
+Construct symmetry-adapted Wannier functions. 
+For the detail of the theoretical background, see Ref.~\cite{sakuma-prb13}. 
+Cannot be used in conjunction with the inner (frozen) energy window. 
+
+The default value is \verb#false#.
+
+\subsection[symmetrize\_eps]{\tt real(kind=dp) :: symmetrize\_eps}
+
+Convergence threshold to check whether the symmetry condition (Eq. (19) in Ref.~\cite{sakuma-prb13})
+on the unitary matrix $\Uk$ is satisfied or not.  
+See also Eq. (29) in Ref.~\cite{sakuma-prb13}. 
+Used when \verb#site_symmetry = .true#.
+
+The default value is 1.0E-3.
 
 
 \section{Post-Processing}
@@ -1491,15 +1525,18 @@ The default value is (0.0,0.0,0.0).
 
 \subsection[use\_ws\_distance]{\tt logical :: use\_ws\_distance}
 
-When interpolating the k-space Hamiltonian, apply a translation to each WF by a basis
+Improves the interpolation of the k-space Hamiltonian, by
+applying a translation to each WF by a basis
 vector of the super-lattice that minimises the distance between their centres.
 The translation is dependent on both WF and on the unit cell vector
 to which they belong, i.e., translate function $W_j({\bf r}-{\bf R})$ inside
 the Wigner-Seitz cell centred on WF $W_i({\bf r})$.
 
+For a longer explanation, see Chapter~\ref{chap:interpolation}.
+
 If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
 
-The default value is {\tt false}.
+The default value is {\tt false}. Introduced in v2.1.
 
 \subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
 

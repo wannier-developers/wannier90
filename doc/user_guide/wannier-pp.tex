@@ -352,6 +352,63 @@ $A_{mn}^{(\mathbf{k})}$.
 %($-$,$-$,$+$).
 
 
+\section{{\tt seedname.dmn} file} 
+
+INPUT. 
+
+The file \verb#seedname.dmn# contains the data needed to construct symmetry-adapted Wannier functions~\cite{sakuma-prb13}. 
+Required if \verb#site_symmetry = .true.#
+
+First line: a user comment, e.g., the date and time
+
+Second line: 4 integers: \verb#num_bands#, \verb#nsymmetry#, \verb#nkptirr#, \verb#num_kpts#.  \\ 
+\phantom{Second line:} \verb#nsymmetry#: the number of symmetry operations   \\
+\phantom{Second line:}  \verb#nkptirr#: the number of irreducible k-points
+
+Blank line 
+
+\verb#num_kpts# integers: 
+Mapping between full k- and irreducible k-points. 
+Each k-point is related to some k-point in the irreducible BZ. 
+The information of this mapping is written. Each entry corresponds to a k-point in the 
+full BZ, in the order in which they appear in the k-point list in \verb#seedname.win# file.
+The (integer) value of each entry is the k-point index in the IBZ to which the k-point maps. 
+The number of unique values is equal to the number of k-points in the IBZ.
+The data is written 10 values per line. 
+ 
+Blank line 
+
+\verb#nkptirr# integers:  
+List of irreducible k-points. 
+Each entry corresponds to a k-point of the IBZ. The (integer) value of each entry
+is the k-point index corresponding to the k-point list in \verb#seedname.win# file. 
+The values should be between 1 and \verb#num_kpts#. The data is written 10 values per line.
+
+Blank line 
+
+\verb#nkptirr# blocks of  \verb#nsymmetry# integer data (each block separated by a blank line): 
+List of k-points obtained by acting the symmetry operations on the irreducible k-points. 
+The data is written 10 values per line.
+
+Blank line 
+
+$\verb#nsymmetry# \times \verb#nkptirr# $ blocks of data: \\
+The information of $D$ matrix in Eq. (15) of Ref.~\cite{sakuma-prb13}. 
+Each block contains $\verb#num_wann# \times \verb#num_wann#$ lines and is separated by a blank line. 
+The data are stored in  \verb#d_matrix_wann(m,n,isym,ikirr)# with 
+$\verb#m#, \verb#n# \in [1,\verb#num_wann#]$, $\verb#isym# \in [1,\verb#nsymmetry#]$, and $\verb#ikirr# \in [1,\verb#nkptirr#]$. 
+The order of the elements is such that left indices run faster than right indices (\verb#m#: fastest,  \verb#ikirr#: slowest).
+ 
+Blank line 
+
+$\verb#nsymmetry# \times \verb#nkptirr# $ blocks of data: \\
+The information of $\tilde d$ matrix in Eq. (17) of Ref.~\cite{sakuma-prb13}. 
+Each block contains $\verb#num_bands# \times \verb#num_bands#$ lines and is separated by a blank line.
+The data are stored in  \verb#d_matrix_band(m,n,isym,ikirr)# with 
+$\verb#m#, \verb#n# \in [1,\verb#num_bands#]$, $\verb#isym# \in [1,\verb#nsymmetry#]$, and $\verb#ikirr# \in [1,\verb#nkptirr#]$. 
+The order of the elements is such that left indices run faster than right indices (\verb#m#: fastest,  \verb#ikirr#: slowest). 
+
+
 \section{{\tt seedname.eig} file}
 
 INPUT. 
@@ -380,7 +437,7 @@ E.g.,
 
 \section{Interface with {\sc pwscf}}
 
-Interfaces between \wannier\ and many ab-initio codes as \pwscf, 
+Interfaces between \wannier\ and many ab-initio codes such as \pwscf, 
 {\sc abinit} (\url{http://www.abinit.org}),
 {\sc siesta} (\url{http://www.icmab.es/siesta/}), 
 {\sc fleur}, {\sc VASP} and {\sc Wien2k} (\url{http://www.wien2k.at}) are
@@ -405,7 +462,9 @@ for instructions.
   between the direct and reciprocal lattice vectors read from
   \verb#seedname.nnkp# and those defined in the files specified by
   \verb#prefix#. \verb#pw2wannier90# generates \verb#seedname.mmn#,
-  \verb#seedname.amn# and \verb#seedname.eig# 
+  \verb#seedname.amn# and \verb#seedname.eig#. 
+    \verb#seedname.dmn# and  \verb#seedname.sym# files are additionally created when  
+     \verb#write_dmn = .true.# (see below). 
 \item Run \verb#wannier90# with \verb#postproc_setup#~=~\verb#.false.# to
   disentangle bands (if required), localise MLWF, and use MLWF for
   plotting, bandstructures, Fermi surfaces etc.
@@ -486,8 +545,45 @@ $$ Default is \verb#.false.#
 \item   \verb#write_unkg# -- Set to \verb#.true.# to write the first few
    Fourier components of the periodic parts of the Bloch functions.
 
+\item   \verb#write_dmn# -- Set to \verb#.true.# to construct symmetry-adapted Wannier functions.  
+Default is \verb#.false.#
+
+\item   \verb#read_sym# -- Set to \verb#.true.# to customize symmetry operations to be used in symmetry-adapted mode. 
+When  \verb#read_sym = .true.#, an additional input {\tt seedname.sym} is required. 
+Default is \verb#.false.#
+(only relevant if \verb#write_dmn=.true.#). 
+
 
 
 \end{itemize}
 
 For examples of use, refer to the \wannier\ Tutorial.
+
+
+\subsection{{\tt seedname.sym}}
+
+If \verb#read_sym = .true.#, then this additional input file is required for {\tt pw2wannier90.x}\\ 
+if \verb#read_sym = .false.#, then this file is written by {\tt pw2wannier90.x} (only for reference -- 
+it is not used in subsequent calculations)
+
+The file \verb#seedname.sym# contains the information of symmetry operations used to create symmetry-adapted Wannier functions.  
+If \verb#read_sym = .false.# (default), {\tt pw2wannier90.x} uses the full symmetry recognized by {\tt pw.x}. 
+If \verb#read_sym = .true.#, you can specify symmetry operations to be used in symmetry-adapted mode.  
+
+
+First line: an integer: \verb#nsymmetry# (number of symmetry operations)
+
+Second line: blank
+ 
+Then:   \verb#nsymmetry# blocks of data.  
+Each block (separated by a blank line) consists of four lines.  
+The order of the data in each block is as follows: 
+\begin{verbatim}
+  R(1,1)   R(2,1)   R(3,1)
+  R(1,2)   R(2,2)   R(3,2)
+  R(1,3)   R(2,3)   R(3,3)
+   t(1)     t(2)     t(3)   
+\end{verbatim}
+Here, $R$ is the rotational part of symmetry operations ($3\times3$ matrix), and  $\bf t$ is the fractional translation in the unit of ``\verb#alat#'' (refer the definition of ``\verb#alat#'' to the manual of \pwscf). 
+Both data are given in Cartesian coordinates. 
+The symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$. 

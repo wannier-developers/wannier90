@@ -1,41 +1,55 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_disentangle
+  !! This module contains the core routines to extract an optimal
+  !! subspace from a set of entangled bands.
 
   use w90_constants, only: dp,cmplx_0,cmplx_1
   use w90_io, only: io_error,stdout,io_stopwatch
   use w90_parameters
-  use w90_sitesymmetry !RS:
   use w90_comms, only : on_root, my_node_id, num_nodes,&
                         comms_bcast, comms_array_split,&
                         comms_gatherv, comms_allreduce
+
+  use w90_sitesym, only: sitesym_slim_d_matrix_band, &
+       sitesym_replace_d_matrix_band,sitesym_symmetrize_u_matrix,&
+       sitesym_symmetrize_zmatrix,sitesym_dis_extract_symmetry !RS:
 
   implicit none
 
   private
 
-  ! Variables local to this module
   real(kind=dp),    allocatable :: eigval_opt(:,:)
+  !! At input it contains a large set of eigenvalues. At
+  !! it is slimmed down to contain only those inside the energy window.
 
-  ! Determined in dis_windows
+
   logical                :: linner                               
+  !! Is there a frozen window
   logical, allocatable   :: lfrozen(:,:) 
+  !! true if the i-th band inside outer window is frozen
   integer, allocatable   :: nfirstwin(:)
+  !! index of lowest band inside outer window at nkp-th
   integer, allocatable   :: ndimfroz(:)
+  !! number of frozen bands at nkp-th k point
   integer, allocatable   :: indxfroz(:,:)
+  !! number of bands inside outer window at nkp-th k point
   integer, allocatable   :: indxnfroz(:,:)
-  
+  !!   outer-window band index for the i-th non-frozen state
+   !! (equals 1 if it is the bottom of outer window)
+
   public :: dis_main
 
 contains
@@ -44,7 +58,7 @@ contains
   !==================================================================!
   subroutine dis_main()
   !==================================================================!
-  !                                                                  !
+  !! Main disentanglement routine
   !                                                                  !
   !                                                                  !
   !                                                                  !
@@ -95,8 +109,8 @@ contains
        end do
     end do
 
-    if (lsitesymmetry) call slim_d_matrix_band(lwindow)                         !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
-    if (lsitesymmetry) call symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
+    if (lsitesymmetry) call sitesym_slim_d_matrix_band(lwindow)                         !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
     ! Extract the optimally-connected num_wann-dimensional subspaces
 ![ysl-b]
     if (.not. gamma_only) then
@@ -128,7 +142,7 @@ contains
     enddo
 
     ! Find the initial u_matrix
-    if (lsitesymmetry) call replace_d_matrix_band() !RS: replace d_matrix_band here
+    if (lsitesymmetry) call sitesym_replace_d_matrix_band() !RS: replace d_matrix_band here
 ![ysl-b]
     if (.not. gamma_only) then
        call internal_find_u()
@@ -240,14 +254,14 @@ contains
     subroutine internal_check_orthonorm()
     !================================================================!
     !                                                                !
-    ! This subroutine checks that the states in the columns of the   !
-    ! final matrix U_opt are orthonormal at every k-point, i.e.,     !
-    ! that the matrix is unitary in the sense that                   !
-    ! conjg(U_opt).U_opt = 1  (but not  U_opt.conjg(U_opt) = 1).     !
-    !                                                                !
-    ! In particular, this checks whether the projected gaussians     !
-    ! are indeed orthogonal to the frozen states, at those k-points  !
-    ! where both are present in the trial subspace.                  !
+    !! This subroutine checks that the states in the columns of the
+    !! final matrix U_opt are orthonormal at every k-point, i.e.,  
+    !! that the matrix is unitary in the sense that 
+    !! conjg(U_opt).U_opt = 1  (but not  U_opt.conjg(U_opt) = 1).
+    !! 
+    !! In particular, this checks whether the projected gaussians 
+    !! are indeed orthogonal to the frozen states, at those k-points
+    !! where both are present in the trial subspace.
     !                                                                !
     !================================================================!
 
@@ -301,9 +315,9 @@ contains
     subroutine internal_slim_m()
     !================================================================!
     !                                                                !
-    ! This subroutine slims down the original Mmn(k,b), removing     !
-    ! rows and columns corresponding to u_nks that fall outside      !
-    ! the outer energy window                                        !
+    !! This subroutine slims down the original Mmn(k,b), removing
+    !! rows and columns corresponding to u_nks that fall outside
+    !! the outer energy window.
     !                                                                !
     !================================================================!
       
@@ -350,25 +364,25 @@ contains
     subroutine internal_find_u()
     !================================================================!
     !                                                                !
-    ! This subroutine finds the initial guess for the square unitary ! 
-    ! rotation matrix u_matrix. The method is similar to Sec. III.D  !
-    ! of SMV, but with square instead of rectangular matrices:       !
-    !                                                                !
-    ! First find caa, the square overlap matrix <psitilde_nk|g_m>,   !
-    ! where psitilde is an eigenstate of the optimal subspace.       !
-    !                                                                !
-    ! Note that, contrary to what is implied in Sec. III.E of SMV,   !
-    ! this does *not* need to be computed by brute: instead we take  !
-    ! advantage of the previous computation of overlaps with the     !
-    ! same projections that are used to initiate the minimization of ! 
-    ! Omega.                                                         !
-    !                                                                !
-    ! Note: |psi> U_opt = |psitilde> and obviously                   !
-    ! <psitilde| = (U_opt)^dagger <psi|                              !
+    !! This subroutine finds the initial guess for the square unitary
+    !! rotation matrix u_matrix. The method is similar to Sec. III.D
+    !! of SMV, but with square instead of rectangular matrices:
+    !! 
+    !! First find caa, the square overlap matrix <psitilde_nk|g_m>,
+    !! where psitilde is an eigenstate of the optimal subspace.
+    !! 
+    !! Note that, contrary to what is implied in Sec. III.E of SMV,
+    !! this does *not* need to be computed by brute: instead we take
+    !! advantage of the previous computation of overlaps with the
+    !! same projections that are used to initiate the minimization of
+    !! Omega. 
+    !! 
+    !! Note: |psi> U_opt = |psitilde> and obviously  
+    !! <psitilde| = (U_opt)^dagger <psi| 
     !                                                                !
     !================================================================!
 
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: ir2ik,ik2ir !YN: RS:
       implicit none
 
       integer                       :: nkp,info,ierr
@@ -419,7 +433,7 @@ contains
          call zgemm('N','N',num_wann,num_wann,num_wann,cmplx_1,&
               cz,num_wann,cv,num_wann,cmplx_0,u_matrix(:,:,nkp),num_wann)
       enddo
-      if (lsitesymmetry) call symmetrize_u_matrix(num_wann,u_matrix) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS:
       
       ! Deallocate arrays for ZGESVD
       deallocate(caa,stat=ierr)
@@ -446,8 +460,8 @@ contains
     subroutine internal_find_u_gamma()
     !================================================================!
     !                                                                !
-    ! Make initial u_matrix real                                     ! 
-    ! Must be the case when gamma_only = .true.                      !
+    !! Make initial u_matrix real
+    !! Must be the case when gamma_only = .true.
     !                                                                !
     !================================================================!
 
@@ -537,7 +551,7 @@ contains
     !==================================!
     subroutine internal_dealloc()
     !==================================!
-    !                                  !
+    !! Deallocate module data
     !                                  !
     !==================================!
 
@@ -574,19 +588,19 @@ contains
   subroutine dis_windows()
   !==================================================================!
   !                                                                  !
-  ! This subroutine selects the states that are inside the outer     !
-  ! window (ie, the energy window out of which we fish out the       !
-  ! optimally-connected subspace) and those that are inside the      !
-  ! inner window (that make up the frozen manifold, and are          !
-  ! straightfowardly included as they are). This, in practice,       !
-  ! amounts to slimming down the original num_wann x num_wann overlap!
-  ! matrices, removing rows and columns that belong to u_nks that    !
-  ! have been excluded forever, and marking (indexing) the rows and  !
-  ! columns that correspond to frozen states.                        !
-  !                                                                  !
-  ! Note - in windows eigval_opt are shifted, so the lowest ones go  !
-  ! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above  !
-  ! they are set to zero.                                            !
+  !! This subroutine selects the states that are inside the outer 
+  !! window (ie, the energy window out of which we fish out the 
+  !! optimally-connected subspace) and those that are inside the 
+  !! inner window (that make up the frozen manifold, and are 
+  !! straightfowardly included as they are). This, in practice, 
+  !! amounts to slimming down the original num_wann x num_wann overlap
+  !! matrices, removing rows and columns that belong to u_nks that 
+  !! have been excluded forever, and marking (indexing) the rows and 
+  !! columns that correspond to frozen states.
+  !! 
+  !! Note - in windows eigval_opt are shifted, so the lowest ones go 
+  !! from nfirstwin(nkp) to nfirstwin(nkp)+ndimwin(nkp)-1, and above
+  !! they are set to zero. 
   !                                                                  !
   !==================================================================!  
 
@@ -879,46 +893,48 @@ contains
   subroutine dis_project()
   !==================================================================!
   !                                                                  !
-  ! Original notes from Nicola (refers only to the square case)      !
-  !                                                                  !
-  ! This subroutine calculates the transformation matrix             !
-  ! CU = CS^(-1/2).CA, where CS = CA.CA^dagger.                      !
-  ! CS is diagonalized with a Schur factorization, to be on the safe !
-  ! side of numerical stability.                                     !
-  !                                                                  !
-  ! ZGEES computes for an N-by-N complex nonsymmetric matrix Y, the  !
-  ! eigenvalues, the Schur form T, and, optionally, the matrix of    !
-  ! Schur vectors. This gives the Schur factorization Y = Z*T*(Z**H).!
-  !                                                                  !
-  ! Optionally, it also orders the eigenvalues on the diagonal of the!
-  ! Schur form so that selected eigenvalues are at the top left.     !
-  ! The leading components of Z then form an orthonormal basis for   !
-  ! the invariant subspace corresponding to the selected eigenvalues.!
-  !                                                                  !
-  ! A complex matrix is in Schur form if it is upper triangular.     !
-  !                                                                  !
-  ! Notes from Ivo disentangling (e.g. non-square) projection        !
-  ! (See Sec. III.D of SMV paper)                                    !
-  ! Compute the ndimwin(k) x num_wann matrix cu that yields,         !
-  ! from the ndimwin original Bloch states, the num_wann Bloch-like  !
-  ! states with maximal projection onto the num_wann localised       !
-  ! functions:                                                       !
-  !                                                                  !
-  ! CU = CA.CS^{-1/2}, CS = transpose(CA).CA                         !
-  !                                                                  !
-  ! Use the singular-calue decomposition of the matrix CA:           !
-  !                                                                  !
-  ! CA = CZ.CD.CVdagger (note: zgesvd spits out CVdagger)            !
-  !                                                                  !
-  ! which yields                                                     !
-  !                                                                  !
-  ! CU = CZ.CD.CD^{-1}.CVdag                                         !
-  !                                                                  !
-  ! where CZ is ndimwin(NKP) x ndimwin(NKP) and unitary, CD is       !
-  ! ndimwin(NKP) x num_wann and diagonal, CD^{-1} is                 !
-  ! num_wann x num_wann and diagonal, and CVdag is                   !
-  ! num_wann x num_wann and unitary.                                 !
-  !                                                                  !
+  !! Construct projections for the start of the disentanglement routine
+  !!
+  !! Original notes from Nicola (refers only to the square case)
+  !! 
+  !! This subroutine calculates the transformation matrix
+  !! CU = CS^(-1/2).CA, where CS = CA.CA^dagger.  
+  !! CS is diagonalized with a Schur factorization, to be on the safe
+  !! side of numerical stability.
+  !! 
+  !! ZGEES computes for an N-by-N complex nonsymmetric matrix Y, the
+  !! eigenvalues, the Schur form T, and, optionally, the matrix of  
+  !! Schur vectors. This gives the Schur factorization Y = Z*T*(Z**H).
+  !! 
+  !! Optionally, it also orders the eigenvalues on the diagonal of the
+  !! Schur form so that selected eigenvalues are at the top left.
+  !! The leading components of Z then form an orthonormal basis for 
+  !! the invariant subspace corresponding to the selected eigenvalues.
+  !! 
+  !! A complex matrix is in Schur form if it is upper triangular.
+  !!  
+  !! Notes from Ivo disentangling (e.g. non-square) projection 
+  !! (See Sec. III.D of SMV paper)  
+  !! Compute the ndimwin(k) x num_wann matrix cu that yields, 
+  !! from the ndimwin original Bloch states, the num_wann Bloch-like 
+  !! states with maximal projection onto the num_wann localised 
+  !! functions:  
+  !! 
+  !! CU = CA.CS^{-1/2}, CS = transpose(CA).CA 
+  !! 
+  !! Use the singular-calue decomposition of the matrix CA:  
+  !! 
+  !! CA = CZ.CD.CVdagger (note: zgesvd spits out CVdagger) 
+  !!  
+  !! which yields 
+  !! 
+  !! CU = CZ.CD.CD^{-1}.CVdag 
+  !! 
+  !! where CZ is ndimwin(NKP) x ndimwin(NKP) and unitary, CD is 
+  !! ndimwin(NKP) x num_wann and diagonal, CD^{-1} is
+  !! num_wann x num_wann and diagonal, and CVdag is
+  !! num_wann x num_wann and unitary.
+  !!
   !==================================================================!  
 
     use w90_constants, only: eps5
@@ -1082,12 +1098,12 @@ contains
   subroutine dis_proj_froz()
   !==================================================================!
   !                                                                  !
-  ! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,      !
-  ! WHERE P_s PROJECTOR OPERATOR ONTO THE SUBSPACE S OF THE PROJECTED! 
-  ! GAUSSIANS, P_f THE PROJECTOR ONTO THE FROZEN STATES, AND         !
-  ! Q_froz = 1 - P_froz, ALL EXP IN THE BASIS OF THE BLOCH           !
-  ! EIGENSTATES INSIDE THE OUTER ENERGY WINDOW                       !
-  ! (See Eq. (27) in Sec. III.G of SMV)                              !
+  !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz, 
+  !! WHERE P_s PROJECTOR OPERATOR ONTO THE SUBSPACE S OF THE PROJECTED
+  !! GAUSSIANS, P_f THE PROJECTOR ONTO THE FROZEN STATES, AND 
+  !! Q_froz = 1 - P_froz, ALL EXP IN THE BASIS OF THE BLOCH 
+  !! EIGENSTATES INSIDE THE OUTER ENERGY WINDOW 
+  !! (See Eq. (27) in Sec. III.G of SMV) 
   !                                                                  !
   !==================================================================!  
 
@@ -1461,13 +1477,14 @@ contains
     subroutine dis_extract()
     !==================================================================!
     !                                                                  !
-    ! Extracts an num_wann-dimensional subspace at each k by           !
-    ! minimizing Omega_I                                               !
+    !! Extracts an num_wann-dimensional subspace at each k by 
+    !! minimizing Omega_I 
     !                                                                  !
     !==================================================================!  
       
+
       use w90_io, only: io_wallclocktime
-      use w90_parameters, only: ir2ik,ik2ir !YN: RS:
+      use w90_sitesym, only: ir2ik,ik2ir,nkptirr,nsymmetry,kptsym !YN: RS:
 
       implicit none
 
@@ -1666,7 +1683,9 @@ contains
                nkp = nkp_loc + displs(my_node_id)            
                if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_in_loc(:,:,nkp_loc))
             enddo
-            if (lsitesymmetry) call symmetrize_zmatrix(czmat_in_loc,lwindow) !RS:
+
+            if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_in,lwindow) !RS:
+
          else  
             ! [iter.ne.1]
             ! Update Z matrix at k points with non-frozen states, using a mixing sch
@@ -1743,7 +1762,9 @@ contains
                if (ir2ik(ik2ir(nkp)).ne.nkp) cycle                                      !RS:
             end if                                                                      !RS:
             if (lsitesymmetry) then                                                     !RS:
-               call dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in_loc,lambda,u_matrix_opt) !RS:
+
+               call sitesym_dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
+
                do j=1,num_wann                                                          !RS:
                   wkomegai1_loc(nkp_loc)=wkomegai1(nkp_loc)-real(lambda(j,j),kind=dp)               !RS:
                enddo                                                                    !RS:
@@ -1826,7 +1847,9 @@ contains
 
          enddo
          ! [Loop over k points (nkp)]
-         if (lsitesymmetry) call symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
+
+         if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands,u_matrix_opt,lwindow) !RS:
+
 
          ! send chunks of wkomegai1 to root node
          call comms_gatherv(wkomegai1_loc(1),counts(my_node_id),wkomegai1(1),counts,displs)
@@ -1935,7 +1958,8 @@ contains
             nkp = nkp_loc + displs(my_node_id)   
             if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_out_loc(:,:,nkp_loc))
          enddo
-         if (lsitesymmetry) call symmetrize_zmatrix(czmat_out_loc,lwindow) !RS:
+
+         if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_out,lwindow) !RS:
 
          call internal_test_convergence()
          
@@ -2194,6 +2218,7 @@ contains
 
 
       subroutine internal_test_convergence()
+        !! Check if we have converged
 
         implicit none
 
@@ -2226,7 +2251,7 @@ contains
       !==================================================================!
       subroutine internal_zmatrix(nkp,cmtrx)
       !==================================================================!
-      !                                                                  !
+      !! Compute the Z-matrix
       !                                                                  !
       !                                                                  !
       !                                                                  !
@@ -2235,12 +2260,10 @@ contains
         implicit none
 
         integer, intent(in) :: nkp
+        !! Which kpoint
         complex(kind=dp), intent(out) :: cmtrx(num_bands,num_bands)
-
-        ! OUTPUT:
-        ! CMTRX(M,N)        (M,N)-TH ENTRY IN THE
-        !                   (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
-        !                   HERMITIAN MATRIX AT THE NKP-TH K-POINT
+        !! (M,N)-TH ENTRY IN THE (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
+        !! HERMITIAN MATRIX AT THE NKP-TH K-POINT
         
         ! Internal variables
         integer          :: l,m,n,p,q,nn,nkp2,ndimk
@@ -2345,8 +2368,8 @@ contains
     subroutine dis_extract_gamma()
     !==================================================================!
     !                                                                  !
-    ! Extracts an num_wann-dimensional subspace at each k by           !
-    ! minimizing Omega_I                                               !
+    !! Extracts an num_wann-dimensional subspace at each k by 
+    !! minimizing Omega_I (Gamma point version) 
     !                                                                  !
     !==================================================================!  
       
@@ -2985,6 +3008,7 @@ contains
 
 
       subroutine internal_test_convergence()
+        !! Test for convergence (Gamma point routine)
 
         implicit none
 
@@ -3017,7 +3041,7 @@ contains
       !==================================================================!
       subroutine internal_zmatrix_gamma(nkp,rmtrx)
       !==================================================================!
-      !                                                                  !
+      !! Compute Z-matrix (Gamma point routine)
       !                                                                  !
       !                                                                  !
       !                                                                  !
@@ -3026,12 +3050,10 @@ contains
         implicit none
 
         integer, intent(in) :: nkp
+        !! Which k-point
         real(kind=dp), intent(out) :: rmtrx(num_bands,num_bands)
-
-        ! OUTPUT:
-        ! RMTRX(M,N)        (M,N)-TH ENTRY IN THE
-        !                   (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
-        !                   HERMITIAN MATRIX AT THE NKP-TH K-POINT
+        !!(M,N)-TH ENTRY IN THE (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
+        !! HERMITIAN MATRIX AT THE NKP-TH K-POINT
         
         ! Internal variables
         integer          :: l,m,n,p,q,nn,nkp2,ndimk

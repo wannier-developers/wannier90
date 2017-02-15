@@ -1,19 +1,22 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 
 module w90_overlap
- 
+  !! This module reads in the overlap (Mmn) and Projections (Amn)
+  !! and performs simple operations on them.
+
   use w90_constants, only : dp,cmplx_0,cmplx_1
   use w90_parameters, only : disentanglement
   use w90_io, only : stdout
@@ -37,7 +40,8 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_read( )
   !%%%%%%%%%%%%%%%%%%%%%
-    
+    !! Allocate and read the Mmn and Amn from files
+
     use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
                            m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only ![ysl]
@@ -423,6 +427,8 @@ return
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_rotate
   !%%%%%%%%%%%%%%%%%%%%%
+    !! Only used when interfaced to the CP code
+    !! Not sure why this is done here and not in CP
 
     use w90_parameters, only : num_bands,a_matrix,m_matrix_orig,nntot,timing_level
     use w90_io,         only : io_file_unit,io_error,io_stopwatch
@@ -497,6 +503,7 @@ return
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_dealloc( )
   !%%%%%%%%%%%%%%%%%%%%%
+    !! Dellocate memory
 
     use w90_parameters, only : u_matrix,m_matrix,m_matrix_orig,&
                        a_matrix,u_matrix_opt
@@ -540,9 +547,10 @@ return
   !==================================================================!
   subroutine overlap_project()
   !==================================================================!
-  !                                                                  !
-  !  Note that in this subroutine num_wann = num_bands               ! 
-  !  since, if we are here, then disentanglement = FALSE             !
+  !!  Construct initial guess from the projection via a Lowdin transformation 
+  !!  See section 3 of the CPC 2008 
+  !!  Note that in this subroutine num_wann = num_bands
+  !!  since, if we are here, then disentanglement = FALSE             
   !                                                                  !
   !                                                                  !
   !==================================================================!  
@@ -552,7 +560,7 @@ return
                            u_matrix,m_matrix,nntot,nnlist
     use w90_utility,    only : utility_zgemm
     use w90_parameters, only : lsitesymmetry !RS:
-    use w90_sitesymmetry                     !RS:
+    use w90_sitesym,    only : sitesym_symmetrize_u_matrix !RS:
 
     implicit none
 
@@ -632,7 +640,7 @@ return
     enddo
     ! NKP
 
-    if (lsitesymmetry) call symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated 
@@ -666,10 +674,11 @@ return
   !==================================================================!
   subroutine overlap_project_gamma()
   !==================================================================!
-  !                                                                  !
-  !  Note that in this subroutine num_wann = num_bands               ! 
-  !  since, if we are here, then disentanglement = FALSE             !
-  !  Gamma specific version                                          !
+  !!  Construct initial guess from the projection via a Lowdin transformation 
+  !!  See section 3 of the CPC 2008 
+  !!  Note that in this subroutine num_wann = num_bands   
+  !!  since, if we are here, then disentanglement = FALSE 
+  !!  Gamma specific version
   !                                                                  !
   !==================================================================!  
     use w90_constants

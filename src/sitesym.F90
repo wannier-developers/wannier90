@@ -1,4 +1,26 @@
-module w90_sitesymmetry
+!-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+!                                                            !
+! The webpage of the Wannier90 code is www.wannier.org       !
+!                                                            !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
+!                                                            !
+! Reference:                                                 !
+!    R. Sakuma, Symmetry-adapted Wannier functions           ! 
+!    in the maximal localization procedure,                  !
+!    Phys Rev B 87, 235109 (2013)                            !
+!                                                            !
+!------------------------------------------------------------!
+
+module w90_sitesym
+  !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only : dp,cmplx_1,cmplx_0
   use w90_io,        only : io_error,stdout
@@ -8,22 +30,29 @@ module w90_sitesymmetry
   private :: symmetrize_ukirr
   private :: orthogonalize_u
 
-  public  :: slim_d_matrix_band
-  public  :: replace_d_matrix_band
-  public  :: symmetrize_u_matrix
-  public  :: symmetrize_gradient
-  public  :: symmetrize_rotation
-  public  :: symmetrize_zmatrix
-  public  :: dis_extract_symmetry
-  public  :: sitesymmetry_read
-  public  :: sitesymmetry_dealloc
+  public  :: sitesym_slim_d_matrix_band
+  public  :: sitesym_replace_d_matrix_band
+  public  :: sitesym_symmetrize_u_matrix
+  public  :: sitesym_symmetrize_gradient
+  public  :: sitesym_symmetrize_rotation
+  public  :: sitesym_symmetrize_zmatrix
+  public  :: sitesym_dis_extract_symmetry
+  public  :: sitesym_read
+  public  :: sitesym_dealloc
+
+  ! Variables and parameters needed by other modules
+  integer,                        public, save :: nkptirr=9999
+  integer,                        public, save :: nsymmetry=9999
+  integer,           allocatable, public, save :: kptsym(:,:),ir2ik(:),ik2ir(:)
+  complex(kind=dp),  allocatable, public, save :: d_matrix_band(:,:,:,:)
+  complex(kind=dp),  allocatable, public, save :: d_matrix_wann(:,:,:,:)
 
 contains
 
   !==================================================================!
-  subroutine slim_d_matrix_band(lwindow_in)
+  subroutine sitesym_slim_d_matrix_band(lwindow_in)
     !==================================================================!
-    use w90_parameters, only : num_bands,num_kpts,nkptirr,ir2ik,d_matrix_band
+    use w90_parameters, only : num_bands,num_kpts
 
     implicit none
 
@@ -31,7 +60,7 @@ contains
     integer :: ik,i,j,nb,ir
     integer :: nindx(num_bands)
 
-    !write(stdout,"(a)") '-- slim_d_matrix_band --'
+    !write(stdout,"(a)") '-- sitesym_slim_d_matrix_band --'
 
     do ir=1,nkptirr
        ik=ir2ik(ir)
@@ -53,26 +82,26 @@ contains
     enddo
 
     return
-  end subroutine slim_d_matrix_band
+  end subroutine sitesym_slim_d_matrix_band
   
   !==================================================================!
-  subroutine replace_d_matrix_band()
+  subroutine sitesym_replace_d_matrix_band()
     !==================================================================!
-    use w90_parameters, only : num_wann,nsymmetry,nkptirr,d_matrix_band,d_matrix_wann
+    use w90_parameters, only : num_wann
 
     implicit none
 
-    !write(stdout,"(a)") '-- replace_d_matrix_band --'
+    !write(stdout,"(a)") '-- sitesym_replace_d_matrix_band --'
     !write(stdout,"(a)") 'd_matrix_band is replaced by d_matrix_wann'
     deallocate(d_matrix_band)
     allocate(d_matrix_band(num_wann,num_wann,nsymmetry,nkptirr))
     d_matrix_band=d_matrix_wann
 
     return 
-  end subroutine replace_d_matrix_band
+  end subroutine sitesym_replace_d_matrix_band
   
   !==========================================================================!
-  subroutine symmetrize_u_matrix(ndim,umat,lwindow_in)
+  subroutine sitesym_symmetrize_u_matrix(ndim,umat,lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -84,8 +113,7 @@ contains
     !    ndim=num_wann,  d=d_matrix_band                                       !
     !                                                                          !
     !==========================================================================!
-    use w90_parameters, only : num_wann,num_bands,num_kpts,nkptirr,nsymmetry,& 
-                               ir2ik,kptsym,d_matrix_band,d_matrix_wann
+    use w90_parameters, only : num_wann,num_bands,num_kpts 
 
     implicit none
 
@@ -131,16 +159,15 @@ contains
                      d_matrix_wann(:,:,isym,ir),num_wann,cmplx_0,umat(:,:,irk),ndim)
        enddo
     enddo
-    if (any(.not.ldone)) call io_error('error in symmetrize_u_matrix')
+    if (any(.not.ldone)) call io_error('error in sitesym_symmetrize_u_matrix')
 
     return 
-  end subroutine symmetrize_u_matrix
+  end subroutine sitesym_symmetrize_u_matrix
   
   !==================================================================!
-  subroutine symmetrize_gradient(imode,grad)
+  subroutine sitesym_symmetrize_gradient(imode,grad)
     !==================================================================!
-    use w90_parameters, only : num_wann,num_kpts,nkptirr,nsymmetry, & 
-                               ir2ik,ik2ir,kptsym,d_matrix_wann 
+    use w90_parameters, only : num_wann,num_kpts 
     use w90_utility,    only : utility_zgemm
 
     implicit none
@@ -207,14 +234,12 @@ contains
     enddo
  
     return  
-  end subroutine symmetrize_gradient
+  end subroutine sitesym_symmetrize_gradient
   
   !==================================================================!
-  subroutine symmetrize_rotation(urot)
+  subroutine sitesym_symmetrize_rotation(urot)
     !==================================================================!
-    use w90_parameters, only : num_wann,num_kpts,u_matrix,&
-                               nkptirr,nsymmetry,kptsym,  &
-                               d_matrix_band,d_matrix_wann,ir2ik
+    use w90_parameters, only : num_wann,num_kpts,u_matrix
     use w90_utility,    only : utility_zgemm
 
     implicit none
@@ -245,20 +270,19 @@ contains
           urot(:,:,irk)=cmat1(:,:)
        enddo
     enddo
-    if (any(.not.ldone)) call io_error('error in symmetrize_rotation')
+    if (any(.not.ldone)) call io_error('error in sitesym_symmetrize_rotation')
 
     return
-  end subroutine symmetrize_rotation
+  end subroutine sitesym_symmetrize_rotation
   
   !==================================================================!
-  subroutine symmetrize_zmatrix(czmat,lwindow_in)
+  subroutine sitesym_symmetrize_zmatrix(czmat,lwindow_in)
     !==================================================================!
     !                                                                  !
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only : num_bands,num_kpts,nkptirr,&
-                               nsymmetry,kptsym,d_matrix_band,ir2ik
+    use w90_parameters, only : num_bands,num_kpts
 
     implicit none
 
@@ -303,7 +327,7 @@ contains
     enddo 
 
     return 
-  end subroutine symmetrize_zmatrix
+  end subroutine sitesym_symmetrize_zmatrix
   
   !==================================================================!
   subroutine symmetrize_ukirr(ir,ndim,umat,n)
@@ -314,9 +338,7 @@ contains
     !  and orthonormalize it                                           !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only : num_wann,num_bands,nsymmetry,kptsym,&
-                               ir2ik,d_matrix_wann,d_matrix_band,  &
-                               symmetrize_eps
+    use w90_parameters, only : num_wann,num_bands,symmetrize_eps
 
     implicit none
 
@@ -438,7 +460,7 @@ contains
   end subroutine orthogonalize_u
   
   !==================================================================!
-  subroutine dis_extract_symmetry(ik,n,zmat,lambda,umat)
+  subroutine sitesym_dis_extract_symmetry(ik,n,zmat,lambda,umat)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !
@@ -448,7 +470,7 @@ contains
     !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only : num_bands,num_wann,num_kpts,ik2ir 
+    use w90_parameters, only : num_bands,num_wann,num_kpts 
 
     implicit none
 
@@ -498,7 +520,7 @@ contains
           call ZHPGVX (1,'V','A','U',2,HP,SP,0.0_dp, 0.0_dp, 0, 0, &
                        -1.0_dp, m, W, V,2,CWORK,RWORK,IWORK,IFAIL,INFO)
           if (INFO.ne.0) then
-             write(stdout,*) 'error in dis_extract_symmetry: INFO=',INFO
+             write(stdout,*) 'error in sitesym_dis_extract_symmetry: INFO=',INFO
              if (INFO.gt.0) then
                 if (INFO.le.2) then
                    write(stdout,*) INFO,' eigenvectors failed to converge'
@@ -507,7 +529,7 @@ contains
                    write(stdout,*) ' S is not positive definite'
                    write(stdout,*) 'sp3=',sp3
                 endif
-                call io_error('error at dis_extract_symmetry')
+                call io_error('error at sitesym_dis_extract_symmetry')
              endif
           endif
           ! choose the larger eigenstate
@@ -518,13 +540,12 @@ contains
     enddo ! iter
 
     return 
-  end subroutine dis_extract_symmetry
+  end subroutine sitesym_dis_extract_symmetry
   
   !==================================================================!
-  subroutine sitesymmetry_read()
+  subroutine sitesym_read()
     !==================================================================!
-    use w90_parameters, only : num_bands,num_wann,nsymmetry,nkptirr,num_kpts,& 
-                               ik2ir,ir2ik,kptsym,d_matrix_band,d_matrix_wann  
+    use w90_parameters, only : num_bands,num_wann,num_kpts 
     use w90_io        , only : io_file_unit,io_error,seedname
 
     implicit none 
@@ -532,22 +553,22 @@ contains
     integer :: iu,ibnum,iknum,ierr
 
     iu=io_file_unit() 
-    open(unit=iu,file=trim(seedname)//".dmb",form='formatted',status='old',action='read') 
+    open(unit=iu,file=trim(seedname)//".dmn",form='formatted',status='old',action='read') 
     read(iu,*) 
     read(iu,*) ibnum,nsymmetry,nkptirr,iknum
-    if (ibnum.ne.num_bands) call io_error("Error: Number of bands is not correct (sitesymmetry_read)")
-    if (iknum.ne.num_kpts ) call io_error("Error: Number of k-points is not correct (sitesymmetry_read)")
+    if (ibnum.ne.num_bands) call io_error("Error: Number of bands is not correct (sitesym_read)")
+    if (iknum.ne.num_kpts ) call io_error("Error: Number of k-points is not correct (sitesym_read)")
 
     allocate(ik2ir(num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ik2ir in sitesymmetry_read')
+    if (ierr/=0) call io_error('Error in allocating ik2ir in sitesym_read')
     allocate(ir2ik(nkptirr),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating ir2ik in sitesymmetry_read')
+    if (ierr/=0) call io_error('Error in allocating ir2ik in sitesym_read')
     allocate(kptsym(nsymmetry,nkptirr),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating kptsym in sitesymmetry_read')
+    if (ierr/=0) call io_error('Error in allocating kptsym in sitesym_read')
     allocate(d_matrix_band(num_bands,num_bands,nsymmetry,nkptirr),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating d_matrix_band in sitesymmetry_read')
+    if (ierr/=0) call io_error('Error in allocating d_matrix_band in sitesym_read')
     allocate(d_matrix_wann(num_wann,num_wann,nsymmetry,nkptirr),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating d_matrix_wann in sitesymmetry_read')
+    if (ierr/=0) call io_error('Error in allocating d_matrix_wann in sitesym_read')
 
     read(iu,*) ik2ir   
     read(iu,*) ir2ik 
@@ -557,12 +578,11 @@ contains
     close(iu) 
 
     return 
-  end subroutine sitesymmetry_read
+  end subroutine sitesym_read
 
   !==================================================================!
-  subroutine sitesymmetry_dealloc
+  subroutine sitesym_dealloc
     !==================================================================!
-    use w90_parameters, only : ik2ir,ir2ik,kptsym,d_matrix_band,d_matrix_wann  
     use w90_io        , only : io_error
    
     implicit none 
@@ -570,18 +590,18 @@ contains
     integer :: ierr 
 
     deallocate(ik2ir,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating ik2ir in sitesymmetry_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating ik2ir in sitesym_dealloc')
     deallocate(ir2ik,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating ir2ik in sitesymmetry_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating ir2ik in sitesym_dealloc')
     deallocate(kptsym,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating kptsym in sitesymmetry_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating kptsym in sitesym_dealloc')
     deallocate(d_matrix_band,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating d_matrix_band in sitesymmetry_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating d_matrix_band in sitesym_dealloc')
     deallocate(d_matrix_wann,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating d_matrix_wann in sitesymmetry_dealloc')
+    if (ierr/=0) call io_error('Error in deallocating d_matrix_wann in sitesym_dealloc')
 
     return 
-  end subroutine sitesymmetry_dealloc
+  end subroutine sitesym_dealloc
 
-end module w90_sitesymmetry
+end module w90_sitesym
   
