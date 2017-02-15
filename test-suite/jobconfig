@@ -111,6 +111,11 @@ inputs_args = ('silicon.win', '7')
 program = WANNIER90
 inputs_args = ('GaAs.win', '1')
 
+# Testing preconditioner
+[test_precond]
+program = WANNIER90
+inputs_args = ('gaas1.win', '1'),('gaas2.win', '1')
+
 [categories]
 wannier_all = example*??  test_* wan_*
 interface_all = pw_example*??
