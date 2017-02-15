@@ -65,18 +65,18 @@ contains
          nntot,wbtot,u_matrix,m_matrix,num_kpts,iprint,num_print_cycles, &
          num_dump_cycles,omega_invariant,param_write_chkpt,length_unit, &
          lenconfac,proj_site,real_lattice,write_r2mn,guiding_centres, &
-         num_guide_cycles,num_no_guide_iter,timing_level,trial_step,spinors, &
+         num_guide_cycles,num_no_guide_iter,timing_level,trial_step,precond,spinors, &
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
-         write_hr_diag
+         write_hr_diag,kpt_latt
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
     use w90_parameters, only : lsitesymmetry                !RS:
     use w90_sitesym,    only : sitesym_symmetrize_gradient  !RS:
 
     !ivo
     use w90_hamiltonian, only : hamiltonian_setup,hamiltonian_get_hr,ham_r,&
-                                rpt_origin
+         rpt_origin,irvec,nrpts,ndegen
 
     implicit none
 
@@ -93,8 +93,12 @@ contains
     ! local arrays used and passed in subroutines
     complex(kind=dp), allocatable :: csheet(:,:,:)
     complex(kind=dp), allocatable :: cdodq(:,:,:)  
+    complex(kind=dp), allocatable :: cdodq_r(:,:,:)
+    complex(kind=dp), allocatable :: k_to_r(:,:)
+    complex(kind=dp), allocatable :: cdodq_precond(:,:,:)
     real(kind=dp),    allocatable :: sheet (:,:,:)
-    real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)  
+    real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)
+    real(kind=dp), dimension(3) :: rvec_cart
 
     !local arrays not passed into subroutines
     complex(kind=dp), allocatable  :: cwschur1 (:), cwschur2 (:)  
@@ -116,6 +120,9 @@ contains
     real(kind=dp)              :: save_spread
     logical                    :: lconverged,lrandom,lfirst
     integer                    :: conv_count,noise_count,page_unit
+    complex(kind=dp) :: fac,rdotk
+    real(kind=dp) :: alpha_precond
+    integer :: irpt,loop_kpt
 
     if (timing_level>0) call io_stopwatch('wann: main',1)
 
@@ -155,6 +162,27 @@ contains
     if (ierr/=0) call io_error('Error in allocating rave2 in wann_main')
     allocate( rguide (3, num_wann)   )
     if (ierr/=0) call io_error('Error in allocating rguide in wann_main')
+
+    if(precond) then
+       call hamiltonian_setup()
+       allocate(cdodq_r(num_wann,num_wann,nrpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating cdodq_r in wann_main')
+       allocate(cdodq_precond(num_wann,num_wann,num_kpts),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+
+       ! this method of computing the preconditioning is much more efficient, but requires more RAM
+       if(optimisation >= 3) then
+          allocate(k_to_r(num_kpts,nrpts),stat=ierr)
+          if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+          
+          do irpt=1,nrpts
+             do loop_kpt=1,num_kpts
+                rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                k_to_r(loop_kpt,irpt)=exp(-cmplx_i*rdotk)
+             enddo
+          enddo
+       end if
+    end if
 
     csheet=cmplx_1;cdodq=cmplx_0
     sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;rave2=0.0_dp;rguide=0.0_dp
@@ -498,6 +526,16 @@ contains
     if (ierr/=0) call io_error('Error in deallocating cwschur3 in wann_main')
     deallocate(cwschur1,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cwschur1 in wann_main')
+    if(precond) then
+       if(optimisation >= 3) then
+          deallocate(k_to_r,stat=ierr)
+          if (ierr/=0) call io_error('Error in deallocating k_to_r in wann_main')
+       end if
+       deallocate(cdodq_r,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating cdodq_r in wann_main')
+       deallocate(cdodq_precond,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating cdodq_precond in wann_main')
+    end if
 
     ! deallocate sub vars passed into other subs
     deallocate(rguide,stat=ierr)
@@ -693,8 +731,69 @@ contains
 
       if (timing_level>1) call io_stopwatch('wann: main: search_direction',1)
 
+      if (precond) then
+         ! compute cdodq_precond
+         
+         cdodq_r(:,:,:) = 0 ! intermediary gradient in R space
+         cdodq_precond(:,:,:) = 0
+
+         ! convert to real space in cdodq_r
+         ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
+         ! Ideally, we should implement FFT-based filtering here
+         if(optimisation >= 3) then
+            call zgemm('N','N',num_wann*num_wann, nrpts, num_kpts,cmplx_1, &
+                 & cdodq, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
+            cdodq_r = cdodq_r /real(num_kpts,dp)
+         else
+            do irpt=1,nrpts
+               do loop_kpt=1,num_kpts
+                  rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                  fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
+                  cdodq_r(:,:,irpt)=cdodq_r(:,:,irpt)+fac*cdodq(:,:,loop_kpt)
+               enddo
+            enddo            
+         end if
+         
+         ! filter cdodq_r in real space by 1/(1+R^2/alpha)
+         
+         ! this alpha coefficient is more or less arbitrary, and could
+         ! be tweaked further: the point is to have something that has
+         ! the right units, and is not too small (or the filtering is
+         ! too severe) or too high (or the filtering does nothing).
+         !
+         ! the descent direction produced has a different magnitude
+         ! than the one without preconditionner, so the values of
+         ! trial_step are not consistent
+         alpha_precond = 10*wann_spread%om_tot / num_wann
+         do irpt=1,nrpts
+            rvec_cart = matmul(real_lattice(:,:),real(irvec(:,irpt),dp))
+            cdodq_r(:,:,irpt) = cdodq_r(:,:,irpt) * 1 / (1+ dot_product(rvec_cart,rvec_cart)/alpha_precond)
+         end do
+
+         ! go back to k space
+         if(optimisation >= 3) then
+            do irpt=1,nrpts
+               cdodq_r(:,:,irpt) = cdodq_r(:,:,irpt) / real(ndegen(irpt),dp)
+            end do
+            call zgemm('N','C',num_wann*num_wann, num_kpts, nrpts,cmplx_1, &
+                 & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
+         else
+            do irpt=1,nrpts
+               do loop_kpt=1,num_kpts
+                  rdotk=twopi*dot_product(kpt_latt(:,loop_kpt),real(irvec(:,irpt),dp))
+                  fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+                  cdodq_precond(:,:,loop_kpt)=cdodq_precond(:,:,loop_kpt)+fac*cdodq_r(:,:,irpt)
+               enddo
+            enddo
+         end if
+      end if
+
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
-      gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
+      if(precond) then
+         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq,1),dp)
+      else
+         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
+      end if
 
       ! calculate cg_coefficient
       if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
@@ -722,7 +821,11 @@ contains
       gcnorm0 = gcnorm1
 
       ! calculate search direction
-      cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
+      if(precond) then
+         cdq(:,:,:) = cdodq_precond(:,:,:) + cdqkeep(:,:,:) * gcfac
+      else
+         cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
+      end if
 
       ! add some random noise to search direction, if required
       if (lrandom) then

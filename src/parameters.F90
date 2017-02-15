@@ -296,6 +296,7 @@ module w90_parameters
   integer,           public, save :: num_no_guide_iter
   real(kind=dp),     public, save :: fixed_step
   real(kind=dp),     public, save :: trial_step
+  logical,           public, save :: precond
   logical,           public, save :: write_proj
   integer,           public, save :: timing_level
   logical,           public, save :: spinors   !are our WF spinors?
@@ -732,6 +733,9 @@ contains
     trial_step=2.0_dp
     call param_get_keyword('trial_step',found,r_value=trial_step)
     if ( found.and.lfixstep ) call io_error('Error: cannot specify both fixed_step and trial_step')
+
+    precond=.false.
+    call param_get_keyword('precond',found,l_value=precond)
 
     !%%%%%%%%%
     ! Plotting
