@@ -121,10 +121,8 @@ files from \wannier, version 1.4 or later must be used.\\
 
 \sectiontitle{Parallel execution}
 \label{sec:parallel}
-Presently, {\tt wannier90.x} is a serial-only executable, so it
-\emph{cannot} be run in parallel using MPI libraries. On the contrary,
-{\tt postw90.x} can be run in parallel to speed up the calculations,
-using the MPI libraries.
+{\tt postw90.x} and {\tt wannier90.x} can be run in parallel to speed up
+the calculations, using the MPI libraries.
 
 To enable the parallel version to be built, you must specify some
 flags in the {\tt make.inc} file of {\tt wannier90} and {\tt postw90};
