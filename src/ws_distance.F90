@@ -153,8 +153,10 @@ contains
        write(stdout,'(1x,a78)') repeat('-',78)
     endif
     !
-    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) &
+    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) THEN
+         write(stdout, *) ABS(DBLE(irdist_ws) - irdist_real)
          call io_error('wrong irdist_ws')
+    ENDIF
     !
     DEALLOCATE(wdist_wssc_frac, irdist_real)
     !
