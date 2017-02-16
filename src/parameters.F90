@@ -126,6 +126,7 @@ module w90_parameters
   real(kind=dp),     public, save :: dist_cutoff_hc
   character(len=20), public, save :: one_dim_axis
   logical,           public, save :: use_ws_distance
+  real(kind=dp),     public, save :: irdist_ws_tol
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -1255,6 +1256,9 @@ contains
 
     use_ws_distance = .false.
     call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
+    
+    irdist_ws_tol = 1.d-6
+    call param_get_keyword('irdist_ws_tol', found, r_value=irdist_ws_tol)
 
     !%%%%%%%%%%%%%%%%
     ! Transport 

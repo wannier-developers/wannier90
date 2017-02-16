@@ -29,7 +29,7 @@ module w90_ws_distance
   !     end if
 
   use w90_constants, only : dp
-  use w90_parameters, only : use_ws_distance
+  use w90_parameters, only : use_ws_distance, irdist_ws_tol
 
   implicit none
 
@@ -153,8 +153,7 @@ contains
        write(stdout,'(1x,a78)') repeat('-',78)
     endif
     !
-    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>1.d-6)) THEN
-         write(stdout, *) ABS(DBLE(irdist_ws) - irdist_real)
+    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>irdist_ws_tol)) THEN
          call io_error('wrong irdist_ws')
     ENDIF
     !
