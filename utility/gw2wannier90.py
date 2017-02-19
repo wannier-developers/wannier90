@@ -1,13 +1,24 @@
 #!/usr/bin/env python2
 #
 # gw2wannier90 interface
+#
+# This file is distributed as part of the Wannier90 code and
+# under the terms of the GNU General Public License. See the
+# file `LICENSE' in the root directory of the Wannier90
+# distribution, or http://www.gnu.org/copyleft/gpl.txt
+#
+# The webpage of the Wannier90 code is www.wannier.org
+#  
+# The Wannier90 code is hosted on GitHub:
+#
+# https://github.com/wannier-developers/wannier90
 # 
 # Designed and tested with: Quantum Espresso and Yambo
 # This interface should work with any G0W0 code 
 # Originally written by Stepan Tsirkin
 # Extended, developed and documented by Antimo Marrazzo
 # 
-# Last update October 5th, 2016 by Antimo Marrazzo (antimo.marrazzo@epfl.ch)
+# Last update February 19th, 2017 by Antimo Marrazzo (antimo.marrazzo@epfl.ch)
 #
 import numpy as np
 import os,shutil
