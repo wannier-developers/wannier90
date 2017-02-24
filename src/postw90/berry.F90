@@ -783,7 +783,7 @@ module w90_berry
   !============================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
-    use w90_utility, only        : utility_re_tr,utility_im_tr
+    use w90_utility, only        : utility_re_tr_prod,utility_im_tr_prod
     use w90_parameters, only     : num_wann,nfermi
     use w90_postw90_common, only : pw90common_fourier_R_to_k_vec
     use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list
@@ -803,7 +803,8 @@ module w90_berry
     complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
     complex(kind=dp), allocatable :: mdum(:,:)
     real(kind=dp)                 :: eig(num_wann)
-    integer                       :: i,if
+    integer                       :: i,ife
+    real(kind=dp)                 :: s
 
     allocate(UU(num_wann,num_wann))
     allocate(f_list(num_wann,num_wann,nfermi))
@@ -812,7 +813,6 @@ module w90_berry
     allocate(JJm_list(num_wann,num_wann,nfermi,3))
     allocate(AA(num_wann,num_wann,3))
     allocate(OOmega(num_wann,num_wann,3))
-    allocate(mdum(num_wann,num_wann))
 
     ! Gather W-gauge matrix objects
     !
@@ -826,25 +826,26 @@ module w90_berry
 
     ! Trace formula, Eq.(51) LVTS12
     !
-    do if=1,nfermi
+    do ife=1,nfermi
        do i=1,3
           !
           ! J0 term (Omega_bar term of WYSV06)
-          mdum=matmul(f_list(:,:,if),OOmega(:,:,i))
-          imf_k_list(1,i,if)=utility_re_tr(mdum)
+          imf_k_list(1,i,ife) = &
+             utility_re_tr_prod(f_list(:,:,ife),OOmega(:,:,i))
           !
           ! J1 term (DA term of WYSV06)
-          mdum =matmul(AA(:,:,alpha_A(i)),JJp_list(:,:,if,beta_A(i)))&
-               +matmul(JJm_list(:,:,if,alpha_A(i)),AA(:,:,beta_A(i)))
-          imf_k_list(2,i,if)=-2.0_dp*utility_im_tr(mdum)
+          imf_k_list(2,i,ife) = -2.0_dp * &
+          ( &
+               utility_im_tr_prod(AA(:,:,alpha_A(i)),JJp_list(:,:,ife,beta_A(i))) &
+             + utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)),AA(:,:,beta_A(i))) &
+          )
+
           !
           ! J2 term (DD of WYSV06)
-          mdum=matmul(JJm_list(:,:,if,alpha_A(i)),JJp_list(:,:,if,beta_A(i)))
-          imf_k_list(3,i,if)=-2.0_dp*utility_im_tr(mdum)
-          !
+          imf_k_list(3,i,ife) = -2.0_dp * &
+              utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)),JJp_list(:,:,ife,beta_A(i)))
        end do
     enddo
-
   end subroutine berry_get_imf_klist
 
 

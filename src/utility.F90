@@ -41,7 +41,9 @@ module w90_utility
   public :: utility_rotate_diag
   public :: utility_commutator_diag
   public :: utility_re_tr
+  public :: utility_re_tr_prod
   public :: utility_im_tr
+  public :: utility_im_tr_prod
   public :: utility_w0gauss
   public :: utility_wgauss
   public :: utility_diagonalize
@@ -790,6 +792,61 @@ contains
 
   end function utility_commutator_diag
 
+  !===================================================!
+  function utility_re_tr_prod(a,b)
+     !================================================!
+     !                                                !
+     ! Return Re(tr(a.b)), i.e. the real part of the  !
+     ! trace of the matrix product of a and b.        !
+     !                                                !
+     !================================================!
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+
+
+    complex(kind=dp), dimension(:,:), intent(in) :: a, b
+    real(kind=dp) :: utility_re_tr_prod
+    real(kind=dp) :: s
+    integer       :: i, j, n, m
+
+    n = min(size(a,1),size(b,2))
+    m = min(size(a,2),size(b,1))
+
+    s = 0
+    do i=1,n
+      do j=1,m
+        s = s + dble(a(i,j) * b(j,i))
+      end do
+    end do
+    utility_re_tr_prod = s
+  end function
+
+  !===================================================!
+  function utility_im_tr_prod(a,b)
+     !====================================================!
+     !                                                    !
+     ! Return Im(tr(a.b)), i.e. the imaginary part of the !
+     ! trace of the matrix product of a and b.            !
+     !                                                    !
+     !====================================================!
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+
+    complex(kind=dp), dimension(:,:), intent(in) :: a, b
+
+    real(kind=dp) :: utility_im_tr_prod
+    real(kind=dp) :: s
+    integer       :: i, j, n, m
+
+    n = min(size(a,1),size(b,2))
+    m = min(size(a,2),size(b,1))
+
+    s = 0
+    do i=1,n
+      do j=1,m
+        s = s + aimag(a(i,j) * b(j,i))
+      end do
+    end do
+    utility_im_tr_prod = s
+  end function
 
   !===================================================!
   function utility_re_tr(mat)
