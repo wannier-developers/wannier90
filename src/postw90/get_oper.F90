@@ -419,7 +419,10 @@ module w90_get_oper
 
           ! Wannier-gauge overlap matrix S in the projected subspace
           !
-          call get_gauge_overlap_matrix(ik,nn,num_states,S_o,S)
+          call get_gauge_overlap_matrix( &
+                  ik, num_states(ik), &
+                  nnlist(ik,nn), num_states(nnlist(ik,nn)), &
+                  S_o, S)
           
           ! Berry connection matrix
           ! Assuming all neighbors of a given point are read in sequence!
@@ -1201,7 +1204,7 @@ module w90_get_oper
   end subroutine get_win_min
 
   !==========================================================!
-  subroutine get_gauge_overlap_matrix(ik,nn,num_states,S_o,S)
+  subroutine get_gauge_overlap_matrix(ik_a, ns_a, ik_b, ns_b, S_o, S)
   !==========================================================!
   !                                                          !
   ! Wannier-gauge overlap matrix S in the projected subspace !
@@ -1210,31 +1213,29 @@ module w90_get_oper
 
     use w90_constants, only      : dp, cmplx_0
     use w90_postw90_common, only : v_matrix
-    use w90_parameters, only     : nnlist, num_wann
+    use w90_parameters, only     : num_wann
 
-    integer, intent(in) :: ik
-    integer, intent(in) :: nn
+    integer, intent(in) :: ik_a, ns_a, ik_b, ns_b
 
-    integer, dimension(:), intent(in)             :: num_states
     complex(kind=dp), dimension(:,:), intent(in)  :: S_o
     complex(kind=dp), dimension(:,:), intent(out) :: S
 
-    integer :: winmin_q, winmin_qb, &
+    integer :: wm_a, wm_b, &
                m, n, i, ii, j, jj
 
 
-    call get_win_min(ik,winmin_q)
-    call get_win_min(nnlist(ik,nn),winmin_qb)
+    call get_win_min(ik_a, wm_a)
+    call get_win_min(ik_b, wm_b)
     S=cmplx_0
     do m=1,num_wann
       do n=1,num_wann
-        do i=1,num_states(ik)
-          ii=winmin_q+i-1
-          do j=1,num_states(nnlist(ik,nn))
-            jj=winmin_qb+j-1
+        do i=1,ns_a
+          ii=wm_a+i-1
+          do j=1,ns_b
+            jj=wm_b+j-1
             S(n,m)=S(n,m)&
-                 +conjg(v_matrix(i,n,ik))*S_o(ii,jj)&
-                 *v_matrix(j,m,nnlist(ik,nn))
+                 +conjg(v_matrix(i,n,ik_a))*S_o(ii,jj)&
+                 *v_matrix(j,m,ik_b)
           end do
         end do
       end do
