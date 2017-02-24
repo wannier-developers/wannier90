@@ -32,8 +32,11 @@ module w90_utility
   public :: utility_lowercase
   public :: utility_strip
   public :: utility_zgemm
+  public :: utility_zgemm_new
+  public :: utility_zgemmm
   public :: utility_translate_home
   public :: utility_rotate
+  public :: utility_rotate_new
   public :: utility_matmul_diag
   public :: utility_rotate_diag
   public :: utility_commutator_diag
@@ -80,6 +83,113 @@ contains
 
   end subroutine utility_zgemm
 
+  !=============================================================!
+  subroutine utility_zgemm_new(a,transa,b,transb,c)
+    !=============================================================!
+    !                                                             !
+    ! Return matrix product of complex matrices a and b:          !
+    !                                                             !
+    !                       C = Op(A) Op(B)                       !
+    !                                                             !
+    ! transa = 'N'  ==> Op(A) = A                                 !
+    ! transa = 'T'  ==> Op(A) = transpose(A)                      !
+    ! transa = 'C'  ==> Op(A) = congj(transpose(A))               !
+    !                                                             !
+    ! similarly for B                                             !
+    !                                                             !
+    ! Due to the use of assumed shape arrays, this routine is a   !
+    ! safer and more general replacement for the above routine    !
+    ! utility_zgemm. Consider removing utility_zgemm and using    !
+    ! utility_zgemm_new throughout.                               !
+    !                                                             !
+    !=============================================================!
+
+    use w90_constants, only: cmplx_0,cmplx_1
+
+    implicit none
+
+    character(len=1),  intent(in)  :: transa
+    character(len=1),  intent(in)  :: transb
+    complex(kind=dp),  intent(in)  :: a(:,:)
+    complex(kind=dp),  intent(in)  :: b(:,:)
+    complex(kind=dp),  intent(out) :: c(:,:)
+    integer                        :: m,n,k
+
+    ! m ... number of rows in Op(A) and C
+    ! n ... number of columns in Op(B) and C
+    ! k ... number of columns in Op(A) resp. rows in Op(B)
+    m = size(c,1)
+    n = size(c,2)
+
+    if(transa /= 'N') then
+      k = size(a,1)
+    else
+      k = size(a,2)
+    end if
+
+    call zgemm(transa,transb,m,n,k,cmplx_1,a,size(a,1),b,size(b,1),cmplx_0,c,m)
+
+    return
+
+  end subroutine utility_zgemm_new
+
+  !=============================================================!
+  subroutine utility_zgemmm(a, transa, b, transb, c, transc, &
+                            prod1, eigval, prod2)
+    !===============================================================!
+    ! Returns the complex matrix-matrix-matrix product              !
+    ! --> prod1 = op(a).op(b).op(c),                                !
+    ! where op(a/b/c) are defined according to transa/transb/transc !
+    ! (see also documentation of utility_zgemm above)               !
+    !                                                               !
+    ! If eigval and prod2 are present, also                         !
+    ! --> prod2 = op(a).diag(eigval).op(b).op(c)                    !
+    ! is returned.                                                  !
+    !===============================================================!
+
+    complex(kind=dp), dimension(:,:), intent(in)  :: a, b, c
+    character(len=1), intent(in)                  :: transa, transb, transc
+    real(kind=dp), dimension(:), optional, &
+                                 intent(in)       :: eigval
+    complex(kind=dp), dimension(:,:), optional, &
+                                      intent(out) :: prod1, prod2
+
+    complex(kind=dp), dimension(:,:), allocatable :: tmp
+    integer                                       :: nb, mc, i, j
+
+    ! query matrix sizes
+    ! naming convention:
+    ! matrix op(a) [resp. op(b) and op(c)] is of size na x ma [resp. nb x mb and nc x mc]
+    ! only nb (=ma) and mc are explicitly needed
+    if(transb /= 'N') then
+      nb = size(b,2)
+    else
+      nb = size(b,1)
+    end if
+    if(transc /= 'N') then
+      mc = size(c,1)
+    else
+      mc = size(c,2)
+    end if
+
+    ! tmp = op(b).op(c)
+    allocate(tmp(nb,mc))
+    call utility_zgemm_new(b, transb, c, transc, tmp)
+
+    ! prod1 = op(a).tmp
+    if(present(prod1)) then
+      call utility_zgemm_new(a, transa, tmp, 'N', prod1)
+    end if
+
+    if(present(prod2) .and. present(eigval)) then
+      ! tmp = diag(eigval).tmp
+      forall(i=1:nb, j=1:mc)
+        tmp(i,j) = eigval(i) * tmp(i,j)
+      end forall
+      ! prod2 = op(a).tmp
+      call utility_zgemm_new(a, transa, tmp, 'N', prod2)
+    end if
+  end subroutine
 
 
   !===================================================================
@@ -573,6 +683,43 @@ contains
     utility_rotate=matmul(matmul(transpose(conjg(rot)),mat),rot)
 
   end function utility_rotate
+
+  !===========================================================!
+  subroutine utility_rotate_new(mat,rot,N,reverse)
+    !==============================================================!
+    !                                                              !
+    ! Rotates the N x N matrix 'mat' according to                  !
+    ! * (rot)^dagger.mat.rot (reverse = .false. or not present) OR !
+    ! * rot.mat.(rot)^dagger (reverse = .true.),                   !
+    ! where 'rot' is a unitary matrix.                             !
+    ! The matrix 'mat' is overwritten.                             !
+    !                                                              !
+    !==============================================================!
+
+    use w90_constants, only : dp
+
+    integer, intent(in)             :: N
+    logical, optional, intent(in)   :: reverse
+    complex(kind=dp), intent(inout) :: mat(N,N)
+    complex(kind=dp), intent(in)    :: rot(N,N)
+    complex(kind=dp)                :: tmp(N,N)
+    logical                         :: rev
+
+    if(.not. present(reverse)) then
+       rev = .false.
+    else
+       rev = reverse
+    end if
+
+    if(rev) then
+       call utility_zgemm_new(rot, 'N', mat, 'C', tmp)
+       call utility_zgemm_new(rot, 'N', mat, 'C', tmp)
+    else
+       call utility_zgemm_new(mat, 'C', rot, 'N', tmp)
+       call utility_zgemm_new(tmp, 'C', rot, 'N', mat)
+    end if
+
+  end subroutine utility_rotate_new
 
   !===========================================================!
   function utility_matmul_diag(mat1,mat2,dim)
