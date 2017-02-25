@@ -86,7 +86,7 @@ contains
   end subroutine utility_zgemm
 
   !=============================================================!
-  subroutine utility_zgemm_new(a,transa,b,transb,c)
+  subroutine utility_zgemm_new(a,b,c,transa_opt,transb_opt)
     !=============================================================!
     !                                                             !
     ! Return matrix product of complex matrices a and b:          !
@@ -110,12 +110,19 @@ contains
 
     implicit none
 
-    character(len=1),  intent(in)  :: transa
-    character(len=1),  intent(in)  :: transb
-    complex(kind=dp),  intent(in)  :: a(:,:)
-    complex(kind=dp),  intent(in)  :: b(:,:)
-    complex(kind=dp),  intent(out) :: c(:,:)
-    integer                        :: m,n,k
+    complex(kind=dp),  intent(in)            :: a(:,:)
+    complex(kind=dp),  intent(in)            :: b(:,:)
+    complex(kind=dp),  intent(out)           :: c(:,:)
+    character(len=1),  intent(in), optional  :: transa_opt
+    character(len=1),  intent(in), optional  :: transb_opt
+
+    integer          :: m,n,k
+    character(len=1) :: transa, transb
+
+    transa='N'
+    transb='N'
+    if(present(transa_opt)) transa=transa_opt
+    if(present(transb_opt)) transb=transb_opt
 
     ! m ... number of rows in Op(A) and C
     ! n ... number of columns in Op(B) and C
@@ -130,8 +137,6 @@ contains
     end if
 
     call zgemm(transa,transb,m,n,k,cmplx_1,a,size(a,1),b,size(b,1),cmplx_0,c,m)
-
-    return
 
   end subroutine utility_zgemm_new
 
@@ -176,11 +181,11 @@ contains
 
     ! tmp = op(b).op(c)
     allocate(tmp(nb,mc))
-    call utility_zgemm_new(b, transb, c, transc, tmp)
+    call utility_zgemm_new(b, c, tmp, transb, transc)
 
     ! prod1 = op(a).tmp
     if(present(prod1)) then
-      call utility_zgemm_new(a, transa, tmp, 'N', prod1)
+      call utility_zgemm_new(a, tmp, prod1, transa, 'N')
     end if
 
     if(present(prod2) .and. present(eigval)) then
@@ -189,7 +194,7 @@ contains
         tmp(i,j) = eigval(i) * tmp(i,j)
       end forall
       ! prod2 = op(a).tmp
-      call utility_zgemm_new(a, transa, tmp, 'N', prod2)
+      call utility_zgemm_new(a, tmp, prod2, transa, 'N')
     end if
   end subroutine
 
@@ -714,11 +719,11 @@ contains
     end if
 
     if(rev) then
-       call utility_zgemm_new(rot, 'N', mat, 'C', tmp)
-       call utility_zgemm_new(rot, 'N', mat, 'C', tmp)
+       call utility_zgemm_new(rot, mat, tmp, 'N', 'C')
+       call utility_zgemm_new(rot, mat, tmp, 'N', 'C')
     else
-       call utility_zgemm_new(mat, 'C', rot, 'N', tmp)
-       call utility_zgemm_new(tmp, 'C', rot, 'N', mat)
+       call utility_zgemm_new(mat, rot, tmp, 'C', 'N')
+       call utility_zgemm_new(tmp, rot, mat, 'C', 'N')
     end if
 
   end subroutine utility_rotate_new

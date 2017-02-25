@@ -1230,12 +1230,12 @@ module w90_get_oper
 
     allocate(tmp(ns_b,num_wann))
 
-    call utility_zgemm_new(S_o(wm_a:wm_a+ns_a-1, wm_b:wm_b+ns_b-1), 'C', &
-                           v_matrix(1:ns_a, 1:num_wann, ik_a), 'N', &
-                           tmp)
-    call utility_zgemm_new(tmp, 'C', &
-                           v_matrix(1:ns_b,1:num_wann,ik_b), 'N', &
-                           S)
+    call utility_zgemm_new(S_o(wm_a:wm_a+ns_a-1, wm_b:wm_b+ns_b-1), &
+                           v_matrix(1:ns_a, 1:num_wann, ik_a), &
+                           tmp, 'C', 'N')
+    call utility_zgemm_new(tmp, &
+                           v_matrix(1:ns_b,1:num_wann,ik_b), &
+                           S, 'C', 'N')
   end subroutine get_gauge_overlap_matrix
 
 end module w90_get_oper
