@@ -792,7 +792,7 @@ module w90_berry
 
   subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
   !=========================================================!
-  !                                                         !
+  !
   !! Calculates the three quantities needed for the orbital
   !! magnetization: 
   !!  
@@ -802,7 +802,11 @@ module w90_berry
   !! They are calculated together (to reduce the number of  
   !! Fourier calls) for a list of Fermi energies, and stored
   !! in axial-vector form. 
-  !                                                         !
+  !
+  ! The two optional output parameters 'imh_k_list' and
+  ! 'img_k_list' are only calculated if both of them are
+  ! present.
+  !
   !=========================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
@@ -827,7 +831,6 @@ module w90_berry
     complex(kind=dp), allocatable :: BB(:,:,:)
     complex(kind=dp), allocatable :: CC(:,:,:,:)
     complex(kind=dp), allocatable :: OOmega(:,:,:)
-    complex(kind=dp), allocatable :: LLambda_i(:,:)
     complex(kind=dp), allocatable :: JJp_list(:,:,:,:)
     complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
     real(kind=dp)                 :: eig(num_wann)
@@ -835,7 +838,6 @@ module w90_berry
     real(kind=dp)                 :: s
 
     ! Temporary space for matrix products
-    !TODO: use BLAS for products
     complex(kind=dp), allocatable, dimension(:,:,:) :: tmp
 
     allocate(HH(num_wann,num_wann))
@@ -878,11 +880,19 @@ module w90_berry
       end do
     end if
 
-    if(present(img_k_list)) then
+    if(present(img_k_list)) img_k_list = cmplx_0
+    if(present(imh_k_list)) imh_k_list = cmplx_0
+
+    if(present(img_k_list) .and. present(imh_k_list)) then
       allocate(BB(num_wann,num_wann,3))
       allocate(CC(num_wann,num_wann,3,3))
-      allocate(LLambda_i(num_wann,num_wann))
-      allocate(tmp(num_wann,num_wann,2))
+
+      allocate(tmp(num_wann,num_wann,5))
+      ! tmp(:,:,1:3) ... not dependent on inner loop variables
+      ! tmp(:,:,1) ..... HH . AA(:,:,alpha_A(i))
+      ! tmp(:,:,2) ..... LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
+      ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
+      ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
 
       call pw90common_fourier_R_to_k_vec(kpt,BB_R,OO_true=BB)
       do j=1,3
@@ -893,75 +903,58 @@ module w90_berry
       end do
 
       ! Trace formula for -2Im[g], Eq.(66) LVTS12
+      ! Trace formula for -2Im[h], Eq.(56) LVTS12
       !
       do i=1,3
+        call utility_zgemm_new(HH, AA(:,:,alpha_A(i)), tmp(:,:,1))
+        call utility_zgemm_new(HH, OOmega(:,:,i), tmp(:,:,3))
         !
-        ! J0 term
         ! LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
-        LLambda_i=cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
-               -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
-        do ife=1,nfermi
-          !tmp(:,:,1) = matmul(HH,matmul(AA(:,:,alpha_A(i)),&
-          !             matmul(f_list(:,:,ife),AA(:,:,beta_A(i)))))
-          call utility_zgemm_new(f_list(:,:,ife),    AA(:,:,beta_A(i)), tmp(:,:,1))
-          call utility_zgemm_new(AA(:,:,alpha_A(i)), tmp(:,:,1),        tmp(:,:,2))
-          call utility_zgemm_new(HH,                 tmp(:,:,2),        tmp(:,:,1))
+        tmp(:,:,2) = cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
+                     -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
 
-          img_k_list(1,i,ife) = utility_re_tr_prod(f_list(:,:,ife),LLambda_i) &
-            -2.0_dp * utility_im_tr_prod(f_list(:,:,ife), tmp(:,:,1))
+        do ife=1,nfermi
           !
-          ! J1 term
+          ! J0 terms for -2Im[g] and -2Im[h]
+          !
+          ! tmp(:,:,5) = HH . AA(:,:,alpha_A(i)) . f_list(:,:,ife) . AA(:,:,beta_A(i))
+          call utility_zgemm_new(tmp(:,:,1), f_list(:,:,ife),   tmp(:,:,4))
+          call utility_zgemm_new(tmp(:,:,4), AA(:,:,beta_A(i)), tmp(:,:,5))
+
+          s = 2.0_dp * utility_im_tr_prod(f_list(:,:,ife), tmp(:,:,5));
+          img_k_list(1,i,ife) = utility_re_tr_prod(f_list(:,:,ife), tmp(:,:,2)) - s
+          imh_k_list(1,i,ife) = utility_re_tr_prod(f_list(:,:,ife), tmp(:,:,3)) + s
+
+          !
+          ! J1 terms for -2Im[g] and -2Im[h]
+          !
+          ! tmp(:,:,1) = HH . AA(:,:,alpha_A(i))
+          ! tmp(:,:,4) = HH . JJm_list(:,:,ife,alpha_A(i))
+          call utility_zgemm_new(HH, JJm_list(:,:,ife,alpha_A(i)), tmp(:,:,4))
+
           img_k_list(2,i,ife) = -2.0_dp * &
           ( &
               utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)),BB(:,:,beta_A(i))) &
             - utility_im_tr_prod(JJm_list(:,:,ife,beta_A(i)),BB(:,:,alpha_A(i))) &
           )
+          imh_k_list(2,i,ife) = -2.0_dp * &
+          ( &
+              utility_im_tr_prod(tmp(:,:,1), JJp_list(:,:,ife,beta_A(i))) &
+            + utility_im_tr_prod(tmp(:,:,4), AA(:,:,beta_A(i))) &
+          )
+
           !
-          ! J2 term
-          call utility_zgemm_new(HH, JJp_list(:,:,ife,beta_A(i)), tmp(:,:,1))
+          ! J2 terms for -2Im[g] and -2Im[h]
+          !
+          ! tmp(:,:,4) = JJm_list(:,:,ife,alpha_A(i)) . HH
+          ! tmp(:,:,5) = HH . JJm_list(:,:,ife,alpha_A(i))
+          call utility_zgemm_new(JJm_list(:,:,ife,alpha_A(i)), HH, tmp(:,:,4))
+          call utility_zgemm_new(HH, JJm_list(:,:,ife,alpha_A(i)), tmp(:,:,5))
 
           img_k_list(3,i,ife) = -2.0_dp * &
-             utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)), tmp(:,:,1))
-        end do
-      end do
-      deallocate(tmp)
-    end if
-
-    if(present(imh_k_list)) then
-      allocate(tmp(num_wann,num_wann,2))
-
-      ! Trace formula for -2Im[h], Eq.(56) LVTS12
-      !
-      do ife=1,nfermi
-        do i=1,3
-          !
-          ! J0 term
-          call utility_zgemm_new(HH, OOmega(:,:,i), tmp(:,:,1))
-          s = utility_re_tr_prod(f_list(:,:,ife),tmp(:,:,1))
-                     
-          !FIXME: The same matrix product has already been calculated above!
-          !tmp(:,:,1) = matmul(HH,matmul(AA(:,:,alpha_A(i)),&
-          !             matmul(f_list(:,:,ife),AA(:,:,beta_A(i)))))
-          call utility_zgemm_new(f_list(:,:,ife),    AA(:,:,beta_A(i)), tmp(:,:,1))
-          call utility_zgemm_new(AA(:,:,alpha_A(i)), tmp(:,:,1),        tmp(:,:,2))
-          call utility_zgemm_new(HH,                 tmp(:,:,2),        tmp(:,:,1))
-          
-          imh_k_list(1,i,ife) = s + 2.0_dp * &
-              utility_im_tr_prod(f_list(:,:,ife), tmp(:,:,1))
-          !
-          ! J1 term
-          call utility_zgemm_new(AA(:,:,alpha_A(i)), JJp_list(:,:,ife,beta_A(i)), tmp(:,:,1))
-          s = utility_im_tr_prod(HH, tmp(:,:,1))
-          call utility_zgemm_new(JJm_list(:,:,ife,alpha_A(i)), AA(:,:,beta_A(i)), tmp(:,:,1))
-          s = s + &
-              utility_im_tr_prod(HH, tmp(:,:,1))
-          imh_k_list(2,i,ife) = -2.0_dp * s
-          !
-          ! J2 term
-          call utility_zgemm_new(JJm_list(:,:,ife,alpha_A(i)), &
-                    JJp_list(:,:,ife,beta_A(i)), tmp(:,:,1))
+             utility_im_tr_prod(tmp(:,:,4), JJp_list(:,:,ife,beta_A(i)))
           imh_k_list(3,i,ife) = -2.0_dp * &
-              utility_im_tr_prod(HH, tmp(:,:,1))
+             utility_im_tr_prod(tmp(:,:,5), JJp_list(:,:,ife,beta_A(i)))
         end do
       end do
       deallocate(tmp)
