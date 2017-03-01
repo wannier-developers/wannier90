@@ -720,7 +720,7 @@ contains
 
     if(rev) then
        call utility_zgemm_new(rot, mat, tmp, 'N', 'C')
-       call utility_zgemm_new(rot, mat, tmp, 'N', 'C')
+       call utility_zgemm_new(rot, tmp, mat, 'N', 'C')
     else
        call utility_zgemm_new(mat, rot, tmp, 'C', 'N')
        call utility_zgemm_new(tmp, rot, mat, 'C', 'N')
