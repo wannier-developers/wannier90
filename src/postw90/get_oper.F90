@@ -1062,22 +1062,11 @@ module w90_get_oper
        !
        SS_q(:,:,:,:)=cmplx_0
        do ik=1,num_kpts
-          call get_win_min(ik,winmin)
           do is=1,3
-             do m=1,num_wann
-                do n=1,m
-                   do i=1,num_states(ik)
-                      ii=winmin+i-1
-                      do j=1,num_states(ik)
-                         jj=winmin+j-1
-                         SS_q(n,m,ik,is)=SS_q(n,m,ik,is)&
-                              +conjg(v_matrix(i,n,ik))*spn_o(ii,jj,ik,is)&
-                              *v_matrix(j,m,ik)
-                      enddo !j
-                   enddo !i
-                   SS_q(m,n,ik,is)=conjg(SS_q(n,m,ik,is))
-                enddo !n
-             enddo !m
+             call get_gauge_overlap_matrix( &
+                  ik, num_states(ik), &
+                  ik, num_states(ik), &
+                  spn_o(:,:,ik,is), SS_q(:,:,ik,is))
           enddo !is
        enddo !ik
 
