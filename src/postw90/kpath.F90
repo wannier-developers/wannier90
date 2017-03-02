@@ -244,13 +244,6 @@ contains
              end if
           endif
 
-          if(plot_curv) then
-             call berry_get_imf_klist(kpt,imf_k_list)
-             curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
-             curv(loop_kpt,2)=sum(imf_k_list(:,2,1))
-             curv(loop_kpt,3)=sum(imf_k_list(:,3,1))
-          end if
-
           if(plot_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
@@ -259,6 +252,15 @@ contains
              morb(loop_kpt,1)=sum(Morb_k(:,1))
              morb(loop_kpt,2)=sum(Morb_k(:,2))
              morb(loop_kpt,3)=sum(Morb_k(:,3))
+          end if
+
+          if(plot_curv) then
+             if(.not. plot_morb) then
+                call berry_get_imf_klist(kpt,imf_k_list)
+             end if
+             curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
+             curv(loop_kpt,2)=sum(imf_k_list(:,2,1))
+             curv(loop_kpt,3)=sum(imf_k_list(:,3,1))
           end if
 
        end do !loop_kpt
