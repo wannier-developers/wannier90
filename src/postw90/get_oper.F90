@@ -603,20 +603,10 @@ module w90_get_oper
           
           call get_win_min(ik,winmin_q)
           call get_win_min(nnlist(ik,nn),winmin_qb)
-          H_q_qb(:,:)=cmplx_0
-          do m=1,num_wann
-             do n=1,num_wann
-                do i=1,num_states(ik)
-                   ii=winmin_q+i-1
-                   do j=1,num_states(nnlist(ik,nn))
-                      jj=winmin_qb+j-1
-                      H_q_qb(n,m)=H_q_qb(n,m)&
-                           +conjg(v_matrix(i,n,ik))*eigval(ii,ik)&
-                           *S_o(ii,jj)*v_matrix(j,m,nnlist(ik,nn))
-                   enddo
-                enddo
-             enddo
-          enddo
+          call get_gauge_overlap_matrix( &
+                  ik, num_states(ik), &
+                  nnlist(ik,nn), num_states(nnlist(ik,nn)), &
+                  S_o, H=H_q_qb)
           do idir=1,3
              BB_q(:,:,ik,idir)=BB_q(:,:,ik,idir)&
                   +cmplx_i*wb(nn)*bk(idir,nn,ik)*H_q_qb(:,:)
@@ -1192,39 +1182,37 @@ module w90_get_oper
     
   end subroutine get_win_min
 
-  !==========================================================!
-  subroutine get_gauge_overlap_matrix(ik_a, ns_a, ik_b, ns_b, S_o, S)
-  !==========================================================!
-  !                                                          !
-  ! Wannier-gauge overlap matrix S in the projected subspace !
-  !                                                          !
-  !==========================================================!
+  !==========================================================
+  subroutine get_gauge_overlap_matrix(ik_a, ns_a, ik_b, ns_b, S_o, S, H)
+  !==========================================================
+  !
+  ! Wannier-gauge overlap matrix S in the projected subspace
+  !
+  ! TODO: Update this documentation of this routine and
+  ! possibliy give it a better name. The routine has been
+  ! generalized multiple times.
+  !
+  !==========================================================
 
     use w90_constants, only      : dp, cmplx_0
     use w90_postw90_common, only : v_matrix
-    use w90_parameters, only     : num_wann
-    use w90_utility, only        : utility_zgemm_new
+    use w90_parameters, only     : num_wann, eigval
+    use w90_utility, only        : utility_zgemmm
 
     integer, intent(in) :: ik_a, ns_a, ik_b, ns_b
 
-    complex(kind=dp), dimension(:,:), intent(in)  :: S_o
-    complex(kind=dp), dimension(:,:), intent(out) :: S
-    complex(kind=dp), dimension(:,:), allocatable :: tmp
+    complex(kind=dp), dimension(:,:), intent(in)            :: S_o
+    complex(kind=dp), dimension(:,:), intent(out), optional :: S, H
 
-    integer :: wm_a, wm_b, &
-               m, n, i, ii, j, jj
+    integer :: wm_a, wm_b
 
     call get_win_min(ik_a, wm_a)
     call get_win_min(ik_b, wm_b)
 
-    allocate(tmp(ns_b,num_wann))
-
-    call utility_zgemm_new(S_o(wm_a:wm_a+ns_a-1, wm_b:wm_b+ns_b-1), &
-                           v_matrix(1:ns_a, 1:num_wann, ik_a), &
-                           tmp, 'C', 'N')
-    call utility_zgemm_new(tmp, &
-                           v_matrix(1:ns_b,1:num_wann,ik_b), &
-                           S, 'C', 'N')
+    call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a),      'C', &
+                        S_o(wm_a:wm_a+ns_a-1, wm_b:wm_b+ns_b-1), 'N', &
+                        v_matrix(1:ns_b, 1:num_wann, ik_b),      'N', &
+                        S, eigval(:,ik_a), H)
   end subroutine get_gauge_overlap_matrix
 
 end module w90_get_oper
