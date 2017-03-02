@@ -771,9 +771,10 @@ contains
     complex(kind=dp) :: utility_rotate_diag(dim)
     complex(kind=dp) :: mat(dim,dim)
     complex(kind=dp) :: rot(dim,dim)
+    complex(kind=dp) :: tmp(dim,dim)
 
-
-    utility_rotate_diag=utility_matmul_diag(matmul(transpose(conjg(rot)),mat),rot,dim)
+    call utility_zgemm_new(rot, mat, tmp, 'C', 'N')
+    utility_rotate_diag=utility_matmul_diag(tmp,rot,dim)
 
   end function utility_rotate_diag
 
