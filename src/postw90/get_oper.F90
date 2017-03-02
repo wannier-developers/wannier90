@@ -762,21 +762,10 @@ module w90_get_oper
                 !
                 ! Transform to projected subspace, Wannier gauge
                 !
-                H_qb1_q_qb2(:,:)=cmplx_0
-                do m=1,num_wann
-                   do n=1,num_wann
-                      do i=1,num_states(qb1)
-                         ii=winmin_qb1+i-1
-                         do j=1,num_states(qb2)
-                            jj=winmin_qb2+j-1
-                            H_qb1_q_qb2(n,m)=H_qb1_q_qb2(n,m)&
-                                 +conjg(v_matrix(i,n,qb1))&
-                                 *Ho_qb1_q_qb2(ii,jj)&
-                                 *v_matrix(j,m,qb2)
-                         enddo
-                      enddo
-                   enddo
-                enddo
+                call get_gauge_overlap_matrix(&
+                   qb1, num_states(qb1), &
+                   qb2, num_states(qb2), &
+                   Ho_qb1_q_qb2, H_qb1_q_qb2)
                 do b=1,3
                    do a=1,b
                       CC_q(:,:,ik,a,b)=CC_q(:,:,ik,a,b)+wb(nn1)*bk(a,nn1,ik)&
