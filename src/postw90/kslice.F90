@@ -86,19 +86,15 @@ module w90_kslice
     ! read and distribute the data if we are in parallel, so calls to
     ! get_oper are done on all nodes
    
-    plot_fermi_lines=.false.
-    if(index(kslice_task,'fermi_lines')>0) plot_fermi_lines=.true.
-    plot_curv=.false.
-    if(index(kslice_task,'curv')>0) plot_curv=.true.
-    plot_morb=.false.
-    if(index(kslice_task,'morb')>0) plot_morb=.true.
-    fermi_lines_color=.false.
-    if(index(kslice_fermi_lines_colour,'spin')>0) fermi_lines_color=.true.
-    heatmap=.false.
-    if(plot_curv .or. plot_morb) heatmap=.true.
-    if(plot_fermi_lines .and. fermi_lines_color .and. heatmap)&
+    plot_fermi_lines  = index(kslice_task,'fermi_lines') > 0
+    plot_curv         = index(kslice_task,'curv') > 0
+    plot_morb         = index(kslice_task,'morb') > 0
+    fermi_lines_color = kslice_fermi_lines_colour /= 'none'
+    heatmap           = plot_curv .or. plot_morb
+    if(plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
          call io_error('Error: spin-colored Fermi lines not allowed in '&
          //'curv/morb heatmap plots') 
+    end if
 
     call get_HH_R
     if(plot_curv.or.plot_morb) call get_AA_R
