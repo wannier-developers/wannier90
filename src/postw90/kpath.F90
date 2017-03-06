@@ -55,8 +55,11 @@ contains
     use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist
     use w90_constants, only      : bohr
 
+    integer, dimension(0:num_nodes-1) :: counts, displs
+
     integer           :: i,j,n,num_paths,num_spts,loop_path,loop_kpt,&
-                         total_pts,counter,loop_i,dataunit,gnuunit,pyunit
+                         total_pts,counter,loop_i,dataunit,gnuunit,pyunit,&
+                         my_num_pts
     real(kind=dp)     :: ymin,ymax,kpt(3),spn_k(num_wann),&
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),&
@@ -67,9 +70,11 @@ contains
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
-    real(kind=dp), allocatable    :: xval(:),eig(:,:),curv(:,:),& 
-                                     morb(:,:),color(:,:),&
-                                     plot_kpoint(:,:) 
+    real(kind=dp), allocatable    :: xval(:),eig(:,:),my_eig(:,:),&
+                                     curv(:,:),my_curv(:,:),&
+                                     morb(:,:),my_morb(:,:),&
+                                     color(:,:),my_color(:,:),&
+                                     plot_kpoint(:,:), my_plot_kpoint(:,:)
     character(len=3),allocatable  :: glabel(:)
 
     ! Everything is done on the root node (not worthwhile parallelizing) 
@@ -97,29 +102,125 @@ contains
        call k_path_get_points(num_paths, kpath_len, total_pts, xval, plot_kpoint)
        ! (paths)
        num_spts=num_paths+1 ! number of path endpoints (special pts)
+    else
+       ! Dummy allocation for making scatterv work
+       allocate(plot_kpoint(1,1))
+    end if
+
+    ! Broadcast number of k-points on the path
+    call comms_bcast(total_pts, 1)
+
+    ! Partition set of k-points into junks
+    call comms_array_split(total_pts, counts, displs);
+    !kpt_lo = displs(my_node_id)+1
+    !kpt_hi = displs(my_node_id)+counts(my_node_id)
+    my_num_pts = counts(my_node_id)
+
+    ! Distribute coordinates
+    allocate(my_plot_kpoint(3, my_num_pts))
+    call comms_scatterv(my_plot_kpoint(1,1), 3*my_num_pts, &
+                        plot_kpoint(1,1), 3*counts, 3*displs)
+
+    ! Value of the vertical coordinate in the actual plots: energy bands
+    !
+    if(plot_bands) then
+       allocate(HH(num_wann,num_wann))
+       allocate(UU(num_wann,num_wann))
+       allocate(my_eig(num_wann,my_num_pts))
+       if(kpath_bands_colour/='none') allocate(my_color(num_wann,my_num_pts))
+    end if
+
+    ! Value of the vertical coordinate in the actual plots
+    !
+    if(plot_curv) allocate(my_curv(my_num_pts,3))
+    if(plot_morb) allocate(my_morb(my_num_pts,3))
+
+    ! Loop over local junk of k-points on the path and evaluate the requested quantities
+    !
+    do loop_kpt=1,my_num_pts
+       kpt(:)=my_plot_kpoint(:,loop_kpt)
+
+       if(plot_bands) then
+          call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
+          call utility_diagonalize(HH,num_wann,my_eig(:,loop_kpt),UU)
+          !
+          ! Color-code energy bands with the spin projection along the
+          ! chosen spin quantization axis
+          !
+          if(kpath_bands_colour=='spin') then
+             call spin_get_nk(kpt,spn_k)
+             my_color(:,loop_kpt)=spn_k(:)
+             !
+             ! The following is needed to prevent bands from disappearing
+             ! when the magnitude of the Wannier interpolated spn_k (very
+             ! slightly) exceeds 1.0 (e.g. in bcc Fe along N--G--H)
+             !
+             do n=1,num_wann
+                if(my_color(n,loop_kpt)>1.0_dp-eps8) then
+                   my_color(n,loop_kpt)=1.0_dp-eps8
+                else if(my_color(n,loop_kpt)<-1.0_dp+eps8) then
+                   my_color(n,loop_kpt)=-1.0_dp+eps8
+                end if
+             end do
+          end if
+       end if
+
+       if(plot_morb) then
+          call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
+          Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
+                -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
+          Morb_k=-Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
+          my_morb(loop_kpt,1)=sum(Morb_k(:,1))
+          my_morb(loop_kpt,2)=sum(Morb_k(:,2))
+          my_morb(loop_kpt,3)=sum(Morb_k(:,3))
+       end if
+
+       if(plot_curv) then
+          if(.not. plot_morb) then
+             call berry_get_imf_klist(kpt,imf_k_list)
+          end if
+          my_curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
+          my_curv(loop_kpt,2)=sum(imf_k_list(:,2,1))
+          my_curv(loop_kpt,3)=sum(imf_k_list(:,3,1))
+       end if
+    end do !loop_kpt
+
+    ! Send results to root process
+    if(plot_bands) then
+       allocate(eig(num_wann,total_pts))
+       call comms_gatherv(my_eig(1,1), num_wann*my_num_pts, &
+                          eig(1,1), num_wann*counts, num_wann*displs)
+       if(kpath_bands_colour/='none') then
+          allocate(color(num_wann,total_pts))
+          call comms_gatherv(my_color(1,1), num_wann*my_num_pts, &
+                             color(1,1), num_wann*counts, num_wann*displs)
+       end if
+    end if
+
+    if(plot_curv) then
+       allocate(curv(total_pts,3))
+       do i = 1,3
+          call comms_gatherv(my_curv(1,i), my_num_pts, &
+                             curv(1,i), counts, displs)
+       end do
+    end if
+
+    if(plot_morb) then
+       allocate(morb(total_pts,3))
+       do i = 1,3
+          call comms_gatherv(my_morb(1,i), my_num_pts, &
+                             morb(1,i), counts, displs)
+       end do
     end if
 
     if(on_root) then
-       ! Value of the vertical coordinate in the actual plots: energy bands 
-       !
-       if(plot_bands) then
-          allocate(HH(num_wann,num_wann))
-          allocate(UU(num_wann,num_wann))
-          allocate(eig(num_wann,total_pts))
-          if(kpath_bands_colour/='none') allocate(color(num_wann,total_pts))
-       end if
-
-       ! Value of the vertical coordinate in the actual plots
-       !
-       if(plot_curv) allocate(curv(total_pts,3)) 
-       if(plot_morb) allocate(morb(total_pts,3))
-
+       num_spts=num_paths+1
        allocate(glabel(num_spts))
 
        if(plot_bands) then
           !
           ! Write out the kpoints in the path in a format that can be inserted
-          ! directly in the pwscf input file (the '1.0_dp' in the second column is 
+          ! directly in the pwscf input file (the '1.0_dp' in the second column is
           ! a k-point weight, expected by pwscf)
           !
           dataunit=io_file_unit()
@@ -131,58 +232,6 @@ contains
           end do
           close(dataunit)
        end if
-
-       ! Loop over k-points on the path and evaluate the requested quantities
-       !
-       do loop_kpt=1,total_pts       
-          kpt(:)=plot_kpoint(:,loop_kpt)
-
-          if(plot_bands) then
-             call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
-             call utility_diagonalize(HH,num_wann,eig(:,loop_kpt),UU)
-             !
-             ! Color-code energy bands with the spin projection along the
-             ! chosen spin quantization axis
-             !
-             if(kpath_bands_colour=='spin') then
-                call spin_get_nk(kpt,spn_k)
-                color(:,loop_kpt)=spn_k(:)
-                !
-                ! The following is needed to prevent bands from disappearing 
-                ! when the magnitude of the Wannier interpolated spn_k (very 
-                ! slightly) exceeds 1.0 (e.g. in bcc Fe along N--G--H)
-                !
-                do n=1,num_wann
-                   if(color(n,loop_kpt)>1.0_dp-eps8) then
-                      color(n,loop_kpt)=1.0_dp-eps8
-                   else if(color(n,loop_kpt)<-1.0_dp+eps8) then
-                      color(n,loop_kpt)=-1.0_dp+eps8
-                   end if
-                end do
-             end if
-          end if
-
-          if(plot_curv) then
-             call berry_get_imf_klist(kpt,imf_k_list)
-             curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
-             curv(loop_kpt,2)=sum(imf_k_list(:,2,1))
-             curv(loop_kpt,3)=sum(imf_k_list(:,3,1))
-          end if
-
-          if(plot_morb) then
-             call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
-             Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
-                   -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
-             Morb_k=-Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
-             morb(loop_kpt,1)=sum(Morb_k(:,1))
-             morb(loop_kpt,2)=sum(Morb_k(:,2))
-             morb(loop_kpt,3)=sum(Morb_k(:,3))
-          end if
-
-       end do !loop_kpt
-   end if
-
-   if(on_root) then
        if(plot_curv .and. berry_curv_unit=='bohr2') curv=curv/bohr**2
 
        ! Axis labels
