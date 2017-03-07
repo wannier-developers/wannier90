@@ -62,9 +62,8 @@ module w90_kslice
     use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist
     use w90_constants, only      : bohr
 
-    integer           ::  itot,i1,i2,n,n1,n2,n3,i
-    integer           :: zdataunit,coorddataunit,& 
-                         bandsunit,scriptunit,dataunit
+    integer           :: itot,i1,i2,n,n1,n2,n3,i,nkpts
+    integer           :: scriptunit
     real(kind=dp)     :: avec_2d(3,3),avec_3d(3,3),bvec(3,3),yvec(3),zvec(3),&
                          b1mod,b2mod,ymod,cosb1b2,kcorner_cart(3),&
                          areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,&
@@ -81,6 +80,13 @@ module w90_kslice
     complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
     real(kind=dp),    allocatable :: eig(:)
+
+    ! Output data buffers
+    real(kind=dp),    allocatable :: coords(:,:), &
+                                     spndata(:,:), &
+                                     bandsdata(:,:), &
+                                     zdata(:,:)
+    logical,          allocatable :: spnmask(:,:)
 
     ! Everything is done on the root node. However, we still have to
     ! read and distribute the data if we are in parallel, so calls to
@@ -150,14 +156,10 @@ module w90_kslice
          square='False'
        end if  
 
-       write(stdout,'(/,/,1x,a)') 'Output files:' 
+       nkpts = (kslice_2dkmesh(1)+1)*(kslice_2dkmesh(2)+1)
 
-       if(.not.fermi_lines_color) then
-          coorddataunit=io_file_unit() 
-          filename=trim(seedname)//'-kslice-coord.dat'
-          write(stdout,'(/,3x,a)') filename
-          open(coorddataunit,file=filename,form='formatted')
-       endif
+       allocate(coords(2,nkpts))
+       if(heatmap) allocate(zdata(3,nkpts))
 
        if(plot_fermi_lines) then
           allocate(HH(num_wann,num_wann))
@@ -165,47 +167,18 @@ module w90_kslice
           allocate(eig(num_wann))
           if(fermi_lines_color) then
              allocate(delHH(num_wann,num_wann,3))
-             dataunit=io_file_unit()
-             filename=trim(seedname)//'-kslice-fermi-spn.dat'
-             write(stdout,'(/,3x,a)') filename
-             open(dataunit,file=filename,form='formatted')
+             allocate(spndata(num_wann,nkpts))
+             allocate(spnmask(num_wann,nkpts))
+             spnmask = .false.
           else
-             bandsunit=io_file_unit()
-             filename=trim(seedname)//'-kslice-bands.dat'
-             write(stdout,'(/,3x,a)') filename
-             open(bandsunit,file=filename,form='formatted')
-             if(.not.heatmap) then
-                allocate(bnddataunit(num_wann))
-                do n=1,num_wann
-                   n1=n/100
-                   n2=(n-n1*100)/10
-                   n3=n-n1*100-n2*10
-                   bnddataunit(n)=io_file_unit()
-                   filename=trim(seedname)//'-bnd_'&
-                        //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
-                   write(stdout,'(/,3x,a)') filename
-                   open(bnddataunit(n),file=filename,form='formatted')
-                enddo
-             endif
+             allocate(bandsdata(num_wann,nkpts))
           endif
        endif
-
-       if(plot_curv) then
-          zdataunit=io_file_unit()
-          filename=trim(seedname)//'-kslice-curv.dat'
-          write(stdout,'(/,3x,a)') filename
-          open(zdataunit,file=filename,form='formatted')
-       elseif(plot_morb) then
-          zdataunit=io_file_unit()
-          filename=trim(seedname)//'-kslice-morb.dat'
-          write(stdout,'(/,3x,a)') filename
-          open(zdataunit,file=filename,form='formatted')
-       end if
 
        ! Loop over uniform mesh of k-points covering the slice,
        ! including all four borders
        !
-       do itot=0,(kslice_2dkmesh(1)+1)*(kslice_2dkmesh(2)+1)-1
+       do itot=0,nkpts-1
           i2=itot/(kslice_2dkmesh(1)+1) ! slow
           i1=itot-i2*(kslice_2dkmesh(1)+1) !fast
           ! k1 and k2 are the coefficients of the k-point in the basis
@@ -223,7 +196,8 @@ module w90_kslice
           ! with x along x_vec=b1 and y along y_vec
           kpt_x=k1*b1mod+k2*b2mod*cosb1b2
           kpt_y=k2*b2mod*cosyb2
-          if(.not.fermi_lines_color) write(coorddataunit,'(2E16.8)') kpt_x,kpt_y
+
+          coords(:,i) = [kpt_x, kpt_y]
 
           if(plot_fermi_lines) then
              if(fermi_lines_color) then
@@ -241,27 +215,21 @@ module w90_kslice
                 call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
                 call utility_diagonalize(HH,num_wann,eig,UU)
              endif
-             do n=1,num_wann
-                if(.not.fermi_lines_color) then
-                   ! For python
-                   write(bandsunit,'(E16.8)') eig(n)
-                   ! For gnuplot, using 'grid data' format
-                    if(.not.heatmap) then
-                       write(bnddataunit(n),'(3E16.8)') kpt_x,kpt_y,eig(n)
-                       if(i1==kslice_2dkmesh(1) .and. i2/=kslice_2dkmesh(2))&
-                            write (bnddataunit(n),*) ' '
-                    endif
-                 else
+
+             if(allocated(bandsdata)) then
+                bandsdata(:,i) = eig(:)
+             else
+                spndata(:,i) = spn_k(:)
+                do n=1,num_wann
                    ! vdum = dE/dk projected on the k-slice
                    zhat=zvec/sqrt(dot_product(zvec,zvec))
                    vdum(:)=del_eig(n,:)-dot_product(del_eig(n,:),zhat)*zhat(:)
                    Delta_E=sqrt(dot_product(vdum,vdum))*Delta_k
 !                   Delta_E=Delta_E*sqrt(2.0_dp) ! optimize this factor
-                   if(abs(eig(n)-fermi_energy_list(1))<Delta_E)&
-                        write(dataunit,'(3E16.8)') kpt_x,kpt_y,spn_k(n)
-                endif
-             enddo
-          endif
+                   spnmask(n,i) = abs(eig(n)-fermi_energy_list(1))<Delta_E
+                end do
+             end if
+          end if
 
           if(plot_curv) then
              call berry_get_imf_klist(kpt,imf_k_list)
@@ -270,10 +238,8 @@ module w90_kslice
              curv(3)=sum(imf_k_list(:,3,1))
              if(berry_curv_unit=='bohr2') curv=curv/bohr**2   
              ! Print _minus_ the Berry curvature 
-             write(zdataunit,'(3E16.8)') -curv(:)
-          end if
-
-          if(plot_morb) then
+             zdata(:,i) = -curv(:)
+          else if(plot_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
                    -2.0_dp*fermi_energy_list(1)*imf_k_list(:,:,1)
@@ -281,34 +247,47 @@ module w90_kslice
              morb(1)=sum(Morb_k(:,1))
              morb(2)=sum(Morb_k(:,2))
              morb(3)=sum(Morb_k(:,3))
-             write(zdataunit,'(3E16.8)') morb(:)
+             zdata(:,i) = morb(:)
           end if
 
        end do !itot
        
+       write(stdout,'(/,/,1x,a)') 'Output files:'
+
        if(.not.fermi_lines_color) then
-          write(coorddataunit,*) ' '
-          close(coorddataunit)
-       endif
+         filename=trim(seedname)//'-kslice-coord.dat'
+         call write_data_file(filename, '(2E16.8)', coords)
+       end if
        
-       if(heatmap) then
-          write(zdataunit,*) ' '
-          close(zdataunit)
-       endif
-       if(plot_fermi_lines) then
-          if(fermi_lines_color) then
-             close(dataunit)
-          else
-             write(bandsunit,*) ' '
-             close(bandsunit)
-             if(.not.heatmap) then
-                do n=1,num_wann
-                   write(bnddataunit(n),*) ' '
-                   close(bnddataunit(n))
-                enddo
-             endif
+       if(allocated(bandsdata)) then
+          ! For python
+          filename=trim(seedname)//'-kslice-bands.dat'
+          call write_data_file(filename, '(E16.8)', &
+                               reshape(bandsdata, [1, nkpts*num_wann]))
+
+          ! For gnuplot, using 'grid data' format
+          if(.not.heatmap) then
+             do n=1,num_wann
+                n1=n/100
+                n2=(n-n1*100)/10
+                n3=n-n1*100-n2*10
+                bnddataunit(n)=io_file_unit()
+                filename=trim(seedname)//'-bnd_'&
+                     //achar(48+n1)//achar(48+n2)//achar(48+n3)//'.dat'
+
+                call write_coords_file(filename, '(3E16.8)', coords, &
+                                       reshape(bandsdata(n,:), [1, 1, nkpts]), &
+                                       blocklen=kslice_2dkmesh(1)+1)
+             enddo
           endif
-       endif
+       end if
+
+       if(allocated(spndata)) then
+          filename=trim(seedname)//'-kslice-fermi-spn.dat'
+          call write_coords_file(filename, '(3E16.8)', coords, &
+                                 reshape(spndata, [1, num_wann, nkpts]), &
+                                 spnmask)
+       end if
 
        if(plot_fermi_lines .and. .not.fermi_lines_color .and. .not.heatmap) then
           !
@@ -619,6 +598,74 @@ end subroutine k_slice
     endif
 
   end subroutine kslice_print_info
+
+  subroutine write_data_file(filename, fmt, data)
+     use w90_io,        only : io_error, stdout, io_file_unit
+     use w90_constants, only : dp
+
+     character(len=*), intent(in)  :: filename, fmt
+     real(kind=dp), intent(in)     :: data(:,:)
+
+     integer :: n, i, fileunit
+
+     write(stdout,'(/,3x,a)') filename
+     fileunit = io_file_unit()
+     open(fileunit,file=filename,form='formatted')
+
+     n = size(data,2)
+     do i=1,n
+        write(fileunit,fmt) data(:,i)
+     end do
+
+     write(fileunit,*) ''
+     close(fileunit)
+  end subroutine
+
+  subroutine write_coords_file(filename, fmt, coords, vals, mask, blocklen)
+     use w90_io,        only : io_error, stdout, io_file_unit
+     use w90_constants, only : dp
+
+     character(len=*), intent(in)  :: filename, fmt
+     real(kind=dp), intent(in)     :: coords(:,:), vals(:,:,:)
+     logical, intent(in), optional :: mask(:,:)
+     integer, intent(in), optional :: blocklen
+
+     integer :: n, m, i, j, fileunit, bl
+
+     write(stdout,'(/,3x,a)') filename
+     fileunit = io_file_unit()
+     open(fileunit,file=filename,form='formatted')
+
+     n = size(vals,3)
+     m = size(vals,2)
+
+     if(present(mask)) then
+        do i = 1,n
+           do j = 1,m
+              if(mask(j,i)) then
+                 write(fileunit, fmt) coords(:,i), vals(:,j,i)
+              end if
+           end do
+        end do
+     else
+        if(present(blocklen)) then
+           bl = blocklen
+        else
+           bl = n
+        end if
+
+        do i = 1,n
+           do j = 1,m
+              write(fileunit, fmt) coords(:,i), vals(:,j,i)
+           end do
+           if(mod(i,bl) == 0) then
+              write(fileunit, *) ''
+           end if
+        end do
+     end if
+     write(fileunit,*) ''
+     close(fileunit)
+  end subroutine
 
 subroutine script_common(scriptunit,areab1b2,square)
 
