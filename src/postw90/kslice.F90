@@ -96,6 +96,11 @@ module w90_kslice
          //'curv/morb heatmap plots') 
     end if
 
+    if(on_root) then
+       call kslice_print_info(plot_fermi_lines, fermi_lines_color, &
+                              plot_curv, plot_morb)
+    end if
+
     call get_HH_R
     if(plot_curv.or.plot_morb) call get_AA_R
     if(plot_morb) then
@@ -144,38 +149,6 @@ module w90_kslice
        else
          square='False'
        end if  
-
-       write(stdout,'(/,/,1x,a)')&
-            'Properties calculated in module  k s l i c e'
-       write(stdout,'(1x,a)')&
-            '--------------------------------------------'
-
-       if(plot_fermi_lines) then
-          if(nfermi/=1) call io_error(&
-               'Must specify one Fermi level when kslice_task=fermi_lines')
-          select case(fermi_lines_color)
-          case(.false.)
-             write(stdout,'(/,3x,a)') '* Fermi lines'
-          case(.true.)
-             write(stdout,'(/,3x,a)') '* Fermi lines coloured by spin'
-          end select
-          write(stdout,'(/,7x,a,f10.4,1x,a)')&
-               '(Fermi level: ',fermi_energy_list(1),'eV)'
-       endif
-       if(plot_curv) then
-          if(berry_curv_unit=='ang2') then
-             write(stdout,'(/,3x,a)') '* Negative Berry curvature in Ang^2'
-          elseif(berry_curv_unit=='bohr2') then
-             write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
-          endif
-          if(nfermi/=1) call io_error(&
-               'Must specify one Fermi level when kslice_task=curv')
-       elseif(plot_morb) then
-          write(stdout,'(/,3x,a)')&
-               '* Orbital magnetization k-space integrand in eV.Ang^2'
-          if(nfermi/=1) call io_error(&
-               'Must specify one Fermi level when kslice_task=morb')
-       endif
 
        write(stdout,'(/,/,1x,a)') 'Output files:' 
 
@@ -603,6 +576,49 @@ module w90_kslice
  
 end subroutine k_slice
 
+  !===========================================================!
+  !                   PRIVATE PROCEDURES
+  !===========================================================!
+
+  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb)
+    use w90_io,         only : stdout, io_error
+    use w90_parameters, only : nfermi, fermi_energy_list, berry_curv_unit
+
+    logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb
+
+    write(stdout,'(/,/,1x,a)')&
+         'Properties calculated in module  k s l i c e'
+    write(stdout,'(1x,a)')&
+         '--------------------------------------------'
+
+    if(plot_fermi_lines) then
+       if(nfermi/=1) call io_error(&
+            'Must specify one Fermi level when kslice_task=fermi_lines')
+       select case(fermi_lines_color)
+       case(.false.)
+          write(stdout,'(/,3x,a)') '* Fermi lines'
+       case(.true.)
+          write(stdout,'(/,3x,a)') '* Fermi lines coloured by spin'
+       end select
+       write(stdout,'(/,7x,a,f10.4,1x,a)')&
+            '(Fermi level: ',fermi_energy_list(1),'eV)'
+    endif
+    if(plot_curv) then
+       if(berry_curv_unit=='ang2') then
+          write(stdout,'(/,3x,a)') '* Negative Berry curvature in Ang^2'
+       elseif(berry_curv_unit=='bohr2') then
+          write(stdout,'(/,3x,a)') '* Negative Berry curvature in Bohr^2'
+       endif
+       if(nfermi/=1) call io_error(&
+            'Must specify one Fermi level when kslice_task=curv')
+    elseif(plot_morb) then
+       write(stdout,'(/,3x,a)')&
+            '* Orbital magnetization k-space integrand in eV.Ang^2'
+       if(nfermi/=1) call io_error(&
+            'Must specify one Fermi level when kslice_task=morb')
+    endif
+
+  end subroutine kslice_print_info
 
 subroutine script_common(scriptunit,areab1b2,square)
 
