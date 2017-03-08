@@ -60,7 +60,7 @@ module w90_kslice
 
     integer, dimension(0:num_nodes-1) :: counts, displs
 
-    integer           :: itot,i1,i2,n,n1,n2,n3,i,nkpts,my_nkpts
+    integer           :: iloc,itot,i1,i2,n,n1,n2,n3,i,nkpts,my_nkpts
     integer           :: scriptunit
     real(kind=dp)     :: avec_2d(3,3),avec_3d(3,3),bvec(3,3),yvec(3),zvec(3),&
                          b1mod,b2mod,ymod,cosb1b2,kcorner_cart(3),&
@@ -174,7 +174,8 @@ module w90_kslice
        ! Loop over local portion of uniform mesh of k-points covering the slice,
        ! including all four borders
        !
-       do itot=displs(my_node_id),displs(my_node_id)+my_nkpts
+       do iloc=1,my_nkpts
+          itot=iloc-1+displs(my_node_id)
           i2=itot/(kslice_2dkmesh(1)+1) ! slow
           i1=itot-i2*(kslice_2dkmesh(1)+1) !fast
           ! k1 and k2 are the coefficients of the k-point in the basis
@@ -193,7 +194,7 @@ module w90_kslice
           kpt_x=k1*b1mod+k2*b2mod*cosb1b2
           kpt_y=k2*b2mod*cosyb2
 
-          my_coords(:,i) = [kpt_x, kpt_y]
+          my_coords(:,iloc) = [kpt_x, kpt_y]
 
           if(plot_fermi_lines) then
              if(fermi_lines_color) then
@@ -213,16 +214,16 @@ module w90_kslice
              endif
 
              if(allocated(my_bandsdata)) then
-                my_bandsdata(:,i) = eig(:)
+                my_bandsdata(:,iloc) = eig(:)
              else
-                my_spndata(:,i) = spn_k(:)
+                my_spndata(:,iloc) = spn_k(:)
                 do n=1,num_wann
                    ! vdum = dE/dk projected on the k-slice
                    zhat=zvec/sqrt(dot_product(zvec,zvec))
                    vdum(:)=del_eig(n,:)-dot_product(del_eig(n,:),zhat)*zhat(:)
                    Delta_E=sqrt(dot_product(vdum,vdum))*Delta_k
 !                   Delta_E=Delta_E*sqrt(2.0_dp) ! optimize this factor
-                   my_spnmask(n,i) = abs(eig(n)-fermi_energy_list(1))<Delta_E
+                   my_spnmask(n,iloc) = abs(eig(n)-fermi_energy_list(1))<Delta_E
                 end do
              end if
           end if
@@ -234,7 +235,7 @@ module w90_kslice
              curv(3)=sum(imf_k_list(:,3,1))
              if(berry_curv_unit=='bohr2') curv=curv/bohr**2   
              ! Print _minus_ the Berry curvature 
-             my_zdata(:,i) = -curv(:)
+             my_zdata(:,iloc) = -curv(:)
           else if(plot_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
              Morb_k=img_k_list(:,:,1)+imh_k_list(:,:,1)&
@@ -243,10 +244,10 @@ module w90_kslice
              morb(1)=sum(Morb_k(:,1))
              morb(2)=sum(Morb_k(:,2))
              morb(3)=sum(Morb_k(:,3))
-             my_zdata(:,i) = morb(:)
+             my_zdata(:,iloc) = morb(:)
           end if
 
-       end do !itot
+       end do !iloc
 
     ! Send results to root process
     if(on_root) then
