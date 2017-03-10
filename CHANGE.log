@@ -4,6 +4,9 @@
 
 	The Maximally-Localised Generalised Wannier Functions Code
 
+v2.x.y (25th January 2017)
+* G0W0 interface implemented (A. Marrazzo (EPFL, CH) and S. Tsirkin (DIPC, Spain)).
+  Added two utilities (gw2wannier90.py and k_mapper.py) and example 23 on G0W0 bands interpolation with Yambo. 
 v2.1.0 (13th January 2017)
 * Implementation of the symmetry-adapted Wannier functions
   (see R. Sakuma, Phys. Rev. B 87, 235109 (2013), courtesy
