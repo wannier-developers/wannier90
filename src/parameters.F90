@@ -127,6 +127,7 @@ module w90_parameters
   character(len=20), public, save :: one_dim_axis
   logical,           public, save :: use_ws_distance
   real(kind=dp),     public, save :: ws_distance_tol
+  !! absolute tolerance for the distance to equivalent lattice vectors
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
