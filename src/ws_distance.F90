@@ -218,7 +218,7 @@ contains
 
     mod2_R_bz = SUM((R_in-R0)**2)
     ! check if R0 and R_in are the same vector
-    if(mod2_R_bz<ws_distance_tol)then
+    if(mod2_R_bz<ws_distance_tol**2)then
        ndeg=1
        return
     endif
@@ -233,7 +233,7 @@ contains
              R_f = R_in_f + REAL( (/i*mp_grid(1),j*mp_grid(2),k*mp_grid(3)/), kind=DP)
              call utility_frac_to_cart(R_f,R,real_lattice)
 
-             if(  ABS(SUM((R-R0)**2)-mod2_R_bz)<ws_distance_tol) then
+             if(  ABS(SQRT(SUM((R-R0)**2))-SQRT(mod2_R_bz))<ws_distance_tol) then
                 ndeg=ndeg+1
                 R_out(:,ndeg) = R
              endif

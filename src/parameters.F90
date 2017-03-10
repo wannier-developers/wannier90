@@ -1258,7 +1258,7 @@ contains
     use_ws_distance = .false.
     call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
     
-    ws_distance_tol = 1.d-4
+    ws_distance_tol = 1.e-4_dp
     call param_get_keyword('ws_distance_tol', found, r_value=ws_distance_tol)
 
     !%%%%%%%%%%%%%%%%
