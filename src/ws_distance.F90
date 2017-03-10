@@ -29,7 +29,7 @@ module w90_ws_distance
   !     end if
 
   use w90_constants, only : dp
-  use w90_parameters, only : use_ws_distance, irdist_ws_tol
+  use w90_parameters, only : use_ws_distance, ws_distance_tol
 
   implicit none
 
@@ -152,8 +152,8 @@ contains
        enddo
        write(stdout,'(1x,a78)') repeat('-',78)
     endif
-    !
-    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>irdist_ws_tol)) THEN
+    ! sanity check for isdist_ws
+    IF(ANY(ABS(DBLE(irdist_ws)-irdist_real)>0.04)) THEN
          call io_error('wrong irdist_ws')
     ENDIF
     !
@@ -211,14 +211,14 @@ contains
     real(DP) :: R(3), R_f(3), R_in_f(3), mod2_R_bz
     integer :: i,j,k
     integer,parameter :: far = 3
-    real(DP),parameter :: eps = 1.e-5_dp !d-1
 
     ! init
     ndeg=0
     R_out = 0._dp
 
     mod2_R_bz = SUM((R_in-R0)**2)
-    if(mod2_R_bz<eps)then
+    ! check if R0 and R_in are the same vector
+    if(mod2_R_bz<ws_distance_tol)then
        ndeg=1
        return
     endif
@@ -233,7 +233,7 @@ contains
              R_f = R_in_f + REAL( (/i*mp_grid(1),j*mp_grid(2),k*mp_grid(3)/), kind=DP)
              call utility_frac_to_cart(R_f,R,real_lattice)
 
-             if(  ABS(SUM((R-R0)**2)-mod2_R_bz)/mod2_R_bz<eps) then
+             if(  ABS(SUM((R-R0)**2)-mod2_R_bz)<ws_distance_tol) then
                 ndeg=ndeg+1
                 R_out(:,ndeg) = R
              endif
