@@ -126,6 +126,8 @@ module w90_parameters
   real(kind=dp),     public, save :: dist_cutoff_hc
   character(len=20), public, save :: one_dim_axis
   logical,           public, save :: use_ws_distance
+  real(kind=dp),     public, save :: ws_distance_tol
+  !! absolute tolerance for the distance to equivalent positions
   logical,           public, save :: fermi_surface_plot
   integer,           public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -1255,6 +1257,9 @@ contains
 
     use_ws_distance = .false.
     call param_get_keyword('use_ws_distance',found,l_value=use_ws_distance)
+    
+    ws_distance_tol = 1.e-5_dp
+    call param_get_keyword('ws_distance_tol', found, r_value=ws_distance_tol)
 
     !%%%%%%%%%%%%%%%%
     ! Transport 
