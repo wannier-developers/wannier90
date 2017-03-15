@@ -1519,6 +1519,12 @@ If {\tt false} the code puts all the WF in the home cell, only possible choice u
 
 The default value is {\tt false}. Introduced in v2.1.
 
+\subsection[ws\_distance\_tol]{\tt real(kind=dp) :: ws\_distance\_tol}
+
+Tolerance when determining whether two values $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as defined in chapter~\ref{chap:interpolation}) for the shortest distance between two Wannier functions are equivalent. If the difference in distance (calculated in cartesian coordinates) is less than \texttt{ws\_distance\_tol}, they are taken to be equivalent.
+
+The default value is $10^{-5}$.
+
 \subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
 
 Write the $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices obtained at the end of wannierization to files
@@ -1694,4 +1700,3 @@ No default.
 %\end{itemize}
 
 %The default value for \verb#dos_plot_format# is gnuplot.
-
