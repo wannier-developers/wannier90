@@ -1521,7 +1521,7 @@ The default value is {\tt false}. Introduced in v2.1.
 
 \subsection[ws\_distance\_tol]{\tt real(kind=dp) :: ws\_distance\_tol}
 
-Tolerance when determining whether two values $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as defined in chapter~\ref{chap:interpolation}) for the shortest distance between two Wannier functions are equivalent. If the difference in distance (calculated in cartesian coordinates) is less than \texttt{ws\_distance\_tol}, they are taken to be equivalent.
+Tolerance when determining whether two values $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as defined in chapter~\ref{chap:interpolation}) for the shortest distance between two Wannier functions are equivalent. If the difference in distance (in Angstrom) is less than \texttt{ws\_distance\_tol}, they are taken to be equivalent.
 
 The default value is $10^{-5}$.
 
