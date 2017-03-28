@@ -872,7 +872,7 @@ contains
     end if
 
 #else
-    call dcopy(localcount,array,1,rootglobalarray,1)
+    call zcopy(localcount,array,1,rootglobalarray,1)
 #endif
 
     return

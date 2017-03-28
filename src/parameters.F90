@@ -487,9 +487,9 @@ contains
 
     ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
-    if (lsitesymmetry.and.num_nodes>1) then
-       call io_error('Error: site symmetry can not be used in parallel mode')
-    end if
+!jry    if (lsitesymmetry.and.num_nodes>1) then
+!jry       call io_error('Error: site symmetry can not be used in parallel mode')
+!jry    end if
 
 
     !%%%%%%%%%%%%%%%%

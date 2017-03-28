@@ -1684,7 +1684,7 @@ contains
                if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_in_loc(:,:,nkp_loc))
             enddo
 
-            if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_in,lwindow) !RS:
+            if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_in_loc,lwindow) !RS:
 
          else  
             ! [iter.ne.1]
@@ -1763,7 +1763,7 @@ contains
             end if                                                                      !RS:
             if (lsitesymmetry) then                                                     !RS:
 
-               call sitesym_dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in,lambda,u_matrix_opt) !RS:
+               call sitesym_dis_extract_symmetry(nkp,ndimwin(nkp),czmat_in_loc,lambda,u_matrix_opt) !RS:
 
                do j=1,num_wann                                                          !RS:
                   wkomegai1_loc(nkp_loc)=wkomegai1(nkp_loc)-real(lambda(j,j),kind=dp)               !RS:
@@ -1959,7 +1959,7 @@ contains
             if (num_wann.gt.ndimfroz(nkp)) call internal_zmatrix(nkp,czmat_out_loc(:,:,nkp_loc))
          enddo
 
-         if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_out,lwindow) !RS:
+         if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_out_loc,lwindow) !RS:
 
          call internal_test_convergence()
          

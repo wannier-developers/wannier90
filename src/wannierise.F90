@@ -117,6 +117,7 @@ contains
     complex(kind=dp), allocatable :: cdodq_r(:,:,:)
     complex(kind=dp), allocatable :: k_to_r(:,:)
     complex(kind=dp), allocatable :: cdodq_precond(:,:,:)
+    complex(kind=dp), allocatable :: cdodq_precond_loc(:,:,:)
     real(kind=dp),    allocatable :: sheet (:,:,:)
     real(kind=dp),    allocatable :: rave(:,:),r2ave(:),rave2(:)
     real(kind=dp), dimension(3) :: rvec_cart
@@ -198,7 +199,7 @@ contains
        ! this method of computing the preconditioning is much more efficient, but requires more RAM
        if(optimisation >= 3) then
           allocate(k_to_r(num_kpts,nrpts),stat=ierr)
-          if (ierr/=0) call io_error('Error in allocating cdodq_precond in wann_main')
+          if (ierr/=0) call io_error('Error in allocating k_to_r in wann_main')
           
           do irpt=1,nrpts
              do loop_kpt=1,num_kpts
@@ -236,6 +237,10 @@ contains
     if (ierr/=0) call io_error('Error in allocating m_matrix_1b in wann_main')
     allocate( m_matrix_1b_loc  (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating m_matrix_1b_loc in wann_main')
+    if(precond) then
+       allocate(cdodq_precond_loc(num_wann,num_wann,counts(my_node_id)),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating cdodq_precond_loc in wann_main')
+    end if
     ! initialize local u and m matrices with global ones
     do nkp_loc = 1, counts(my_node_id)
        nkp = nkp_loc + displs(my_node_id)
@@ -244,6 +249,7 @@ contains
        u_matrix_loc (:,:, nkp_loc) = &
            u_matrix (:,:, nkp)
     end do
+
     allocate( cdq_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating cdq_loc in wann_main')
     allocate( cdodq_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
@@ -351,6 +357,7 @@ contains
        open(unit=page_unit,status='scratch',form='unformatted')
     endif
 
+
     ! main iteration loop
     do iter=1,num_iter
 
@@ -370,7 +377,13 @@ contains
        endif
 
        ! calculate gradient of omega
-       call wann_domega(csheet,sheet,rave)!,cdodq)  fills only cdodq_loc
+       
+       if (lsitesymmetry.or.precond) then
+          call wann_domega(csheet,sheet,rave,cdodq) 
+       else
+          call wann_domega(csheet,sheet,rave)!,cdodq)  fills only cdodq_loc
+       endif
+
 
        if ( lprint .and. iprint>2 .and. on_root) &
             write(stdout,*) ' LINE --> Iteration                     :',iter
@@ -453,7 +466,7 @@ contains
 
           ! update U and M
           call internal_new_u_and_m()
-          
+
           call wann_spread_copy(wann_spread,old_spread)
           
           ! calculate the new centers and spread
@@ -635,6 +648,8 @@ contains
        if (ierr/=0) call io_error('Error in deallocating cdodq_r in wann_main')
        deallocate(cdodq_precond,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating cdodq_precond in wann_main')
+       deallocate(cdodq_precond_loc,stat=ierr)
+       if (ierr/=0) call io_error('Error in deallocating cdodq_precond_loc in wann_main')
     end if
 
     ! deallocate sub vars passed into other subs
@@ -833,16 +848,14 @@ contains
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian      
       ! gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
-      gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann,cdodq_loc,1,cdodq_loc,1),dp)
-
-
-      call comms_allreduce(gcnorm1,1,'SUM')
 
       if (precond) then
          ! compute cdodq_precond
          
          cdodq_r(:,:,:) = 0 ! intermediary gradient in R space
          cdodq_precond(:,:,:) = 0
+         cdodq_precond_loc(:,:,:) = 0
+!         cdodq_precond(:,:,:) = complx_0
 
          ! convert to real space in cdodq_r
          ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
@@ -893,14 +906,18 @@ contains
                enddo
             enddo
          end if
+         cdodq_precond_loc(:,:,1:counts(my_node_id))=cdodq_precond(:,:,1+displs(my_node_id):displs(my_node_id)+counts(my_node_id))
+
       end if
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       if(precond) then
-         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq,1),dp)
+!         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq,1),dp)
+         gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann,cdodq_precond_loc,1,cdodq_loc,1),dp)
       else
-         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
+         gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann,cdodq_loc,1,cdodq_loc,1),dp)
       end if
+      call comms_allreduce(gcnorm1,1,'SUM')
 
       ! calculate cg_coefficient
       if ( (iter.eq.1) .or. (ncg.ge.num_cg_steps) ) then
@@ -930,9 +947,9 @@ contains
       ! calculate search direction
 
       if(precond) then
-         cdq(:,:,:) = cdodq_precond(:,:,:) + cdqkeep(:,:,:) * gcfac !! JRY not MPI
+         cdq_loc(:,:,:) = cdodq_precond_loc(:,:,:) + cdqkeep_loc(:,:,:) * gcfac !! JRY not MPI
       else
-        cdq_loc(:,:,:) = cdodq_loc(:,:,:) + cdqkeep_loc(:,:,:) * gcf   
+        cdq_loc(:,:,:) = cdodq_loc(:,:,:) + cdqkeep_loc(:,:,:) * gcfac   
       end if
 
 
@@ -1107,6 +1124,7 @@ contains
                  cdq(1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
       call comms_bcast(cdq(1,1,1),num_wann*num_wann*num_kpts)   
 
+
 !!$      do nkp = 1, num_kpts  
 !!$         tmp_cdq(:,:) = cdq(:,:,nkp)
 !!$         call zgees ('V', 'N', ltmp, num_wann, tmp_cdq, num_wann, nsdim, &
@@ -1124,7 +1142,11 @@ contains
 !!$         cdq(:,:,nkp)=cmtmp(:,:)
 !!$      enddo
 
-      if (lsitesymmetry) call sitesym_symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+      if (lsitesymmetry) then
+         call sitesym_symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+         cdq_loc(:,:,1:counts(my_node_id))=cdq(:,:,1+displs(my_node_id):displs(my_node_id)+counts(my_node_id))
+      endif
+
       ! the orbitals are rotated
       do nkp_loc = 1, counts(my_node_id)
          nkp = nkp_loc + displs(my_node_id)   
@@ -1808,6 +1830,8 @@ contains
       end do
     end do
 
+
+
     ! recalculate rave
     rave = 0.0_dp
     do iw = 1, num_wann  
@@ -1869,18 +1893,22 @@ contains
     cdodq_loc = cdodq_loc / real(num_kpts,dp) * 4.0_dp
 
     if(present(cdodq)) then
-      ! each process communicates its result to other processes
-      call comms_gatherv(cdodq_loc(1,1,1),num_wann*num_wann*counts(my_node_id),&
-               cdodq(1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
-      call comms_bcast(cdodq(1,1,1),num_wann*num_wann*num_kpts)   
+       ! each process communicates its result to other processes
+       call comms_gatherv(cdodq_loc(1,1,1),num_wann*num_wann*counts(my_node_id),&
+            cdodq(1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
+       call comms_bcast(cdodq(1,1,1),num_wann*num_wann*num_kpts)   
+       if (lsitesymmetry) then
+          call sitesym_symmetrize_gradient(1,cdodq) !RS:
+          cdodq_loc(:,:,1:counts(my_node_id))=cdodq(:,:,displs(my_node_id)+1:displs(my_node_id)+counts(my_node_id))
+       endif
     end if
 
 
-    if (lsitesymmetry) call symmetrize_gradient(1,cdodq) !RS:
-    deallocate( cr, crt, stat=ierr ) 
-    if (ierr/=0) call io_error('Error in deallocating cr and crt in wann_domega')
+    deallocate( cr, stat=ierr ) 
+    if (ierr/=0) call io_error('Error in deallocating cr in wann_domega')
+    deallocate( crt, stat=ierr ) 
+    if (ierr/=0) call io_error('Error in deallocating crt in wann_domega')
 
-    if (lsitesymmetry) call sitesym_symmetrize_gradient(1,cdodq) !RS:
 
 
     if (timing_level>1.and.on_root) call io_stopwatch('wann: domega',2)
