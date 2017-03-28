@@ -33,8 +33,8 @@ MPIF90=mpifort
 ## Therefore, you need first to install blas/lapack libraries from
 ##  brew install homebrew/science/openblas
 ## and then use the following options
-FCOPTS=-O2 -g -fbacktrace
-LDOPTS=-O2 -g -fbacktrace
+FCOPTS=-O2 
+LDOPTS=-O2 
 LIBS   = -L/usr/local/opt/openblas/lib -lblas -llapack
 
 
