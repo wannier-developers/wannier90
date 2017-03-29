@@ -4,7 +4,10 @@
 
 	The Maximally-Localised Generalised Wannier Functions Code
 
-v2.1.x (XXX)
+v2.x.y (DATE)
+* G0W0 interface implemented (A. Marrazzo (EPFL, CH) and S. Tsirkin (DIPC, Spain)).
+  Added two utilities (gw2wannier90.py and k_mapper.py) and example 23 on
+  G0W0 bands interpolation with Yambo.
 * Parallelized the disentanglement and wannierise subroutines
   with respect to k-points. Other parts of the code have been
   modified so that only the root process writes in the .wout file.
@@ -14,7 +17,7 @@ v2.1.0 (13th January 2017)
 * Implementation of the symmetry-adapted Wannier functions
   (see R. Sakuma, Phys. Rev. B 87, 235109 (2013), courtesy
    of R. Sakuma (Lund University, Sweden), T. Koretsune (Riken, JP),
-   Y. Nomura (U. Tokyo, JP), Y. Nohara (Atomic-Scale Material 
+   Y. Nomura (U. Tokyo, JP), Y. Nohara (Atomic-Scale Material
    Simulations, Co., Ltd.), R. Arita (Riken, JP))
 * Streamlined the interface between wannier90 and tight-binding
   codes such as pythtb (new input variable: write_tb). Also,
