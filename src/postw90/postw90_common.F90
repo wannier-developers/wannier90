@@ -241,6 +241,7 @@ module w90_postw90_common
     call comms_bcast(num_wann,1)
     call comms_bcast(timing_level,1)
     call comms_bcast(iprint,1)
+    call comms_bcast(ws_distance_tol,1)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1,1),9)
