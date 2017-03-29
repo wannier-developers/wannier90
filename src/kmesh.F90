@@ -1050,7 +1050,7 @@ nnshell=0
        tmp3 = matmul(transpose(vmat),tmp2)
        bweight(1:num_shells) = tmp3
 
-       if(iprint>=2) then
+       if(iprint>=2.and.on_root) then
           do loop_s=1,num_shells
              write(stdout,'(1x,a,I2,a,f12.7,5x,a8,36x,a)') '| Shell: ',loop_s,&
                   ' w_b ', bweight(loop_s)*lenconfac**2,'('//trim(length_unit)//'^2)','|'

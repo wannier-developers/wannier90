@@ -89,52 +89,68 @@ program wannier
   call comms_bcast(len_seedname,1)
   call comms_bcast(seedname,len_seedname)
 
-  if (on_root) then
+
+
+  if(on_root) then 
      stdout=io_file_unit()
      open(unit=stdout,file=trim(seedname)//'.werr')
      call io_date(cdate,ctime)
-     write(stdout,*)  'Wannier90: Execution started on ',cdate,' at ',ctime
-  endif
+     write(stdout,*) 'Wannier90: Execution started on ',cdate,' at ',ctime
 
-  call param_read() ! better would be that only one process reads the file,
-                    ! then sends the content to other processes
+     call param_read
+     close(stdout,status='delete')     
 
-  if (on_root) close(stdout,status='delete')
-
-  if (restart.eq.' ') then
-     stat='replace'
-     pos ='rewind'
-  else
-     inquire(file=trim(seedname)//'.wout',exist=wout_found)
-     if (wout_found) then
-        stat='old'
-     else
+     if (restart.eq.' ') then
         stat='replace'
+        pos ='rewind'
+     else
+        inquire(file=trim(seedname)//'.wout',exist=wout_found)
+        if (wout_found) then
+           stat='old'
+        else
+           stat='replace'
+        endif
+        pos='append'
      endif
-     pos='append'
-  endif
 
-  if (on_root) then
      stdout=io_file_unit()
      open(unit=stdout,file=trim(seedname)//'.wout',status=trim(stat),position=trim(pos))
      call param_write_header()
-     call param_write()
-  endif
+       if(num_nodes==1) then
+#ifdef MPI        
+          write(stdout,'(/,1x,a)') 'Running in serial (with parallel executable)'
+#else
+          write(stdout,'(/,1x,a)') 'Running in serial (with serial executable)'
+#endif
+       else
+          write(stdout,'(/,1x,a,i3,a/)')&
+               'Running in parallel on ',num_nodes,' CPUs'
+       endif
+       call param_write()
+       
+       time1=io_time()
+       write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
+       
+       
+       if (.not. explicit_nnkpts) call kmesh_get
+       time2=io_time()
+       write(stdout,'(1x,a25,f11.3,a)')&
+            'Time to get kmesh        ',time2-time1,' (sec)'
 
-  time1=io_time()
-  if (on_root) write(stdout,'(1x,a25,f11.3,a)') 'Time to read parameters  ',time1-time0,' (sec)'
+       call param_memory_estimate
+    end if
+
+  ! We now distribute the parameters to the other nodes
+    call param_dist
 
   if (transport .and. tran_read_ht) goto 3003
-
-  if (.not. explicit_nnkpts) call kmesh_get()
-  call param_memory_estimate()
 
   ! Sort out restarts
   if (restart.eq.' ') then  ! start a fresh calculation
      if (on_root) write(stdout,'(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
      call param_read_chkpt()
-!~     call param_read_um
+
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
            if (on_root) write(stdout,'(/1x,a)',advance='no') 'Resuming a previous Wannier90 calculation '
@@ -163,23 +179,19 @@ program wannier
   endif
 
   if (postproc_setup) then
-     call kmesh_write()
+     if(on_root) call kmesh_write()
      call kmesh_dealloc()
      call param_dealloc()
      if (on_root) write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
      if (on_root) write(stdout,'(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
-     stop
+     stop  !! change this JRY
   endif
 
-  time2=io_time()
-  if (on_root) write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
-
-  if (lsitesymmetry) call sitesym_read()   !YN:
+  if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
   call overlap_read()
 
   time1=io_time()
   if (on_root) write(stdout,'(/1x,a25,f11.3,a)') 'Time to read overlaps    ',time1-time2,' (sec)'
-
 
   have_disentangled = .false.
 

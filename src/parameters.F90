@@ -450,6 +450,7 @@ module w90_parameters
   public :: param_lib_set_atoms
   public :: param_memory_estimate
   public :: param_get_smearing_type
+  public :: param_dist
 
 contains
 
@@ -5315,6 +5316,376 @@ contains
 
     return
   end subroutine param_memory_estimate
+
+
+  !===========================================================!
+  subroutine param_dist
+  !===========================================================!
+  !                                                           !
+  !! distribute the parameters across processors              !
+  !                                                           !
+  !===========================================================!
+
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,io_file_unit,io_date,io_time,&
+                               io_stopwatch
+    use w90_comms,      only : comms_bcast
+
+    integer :: ierr
+
+    call comms_bcast(effective_model,1) 
+    call comms_bcast(eig_found,1) 
+    if(.not.effective_model) then
+       call comms_bcast(mp_grid(1),3)
+       call comms_bcast(num_kpts,1)
+       call comms_bcast(num_bands,1)
+    endif
+    call comms_bcast(num_wann,1)
+    call comms_bcast(timing_level,1)
+    call comms_bcast(iprint,1)
+    call comms_bcast(energy_unit,1) 
+    call comms_bcast(length_unit,1) 
+    call comms_bcast(wvfn_formatted,1) 
+    call comms_bcast(spn_formatted,1) 
+    call comms_bcast(berry_uHu_formatted,1) 
+    call comms_bcast(spin,1) 
+    call comms_bcast(num_dump_cycles,1)
+    call comms_bcast(num_print_cycles,1)
+    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
+    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
+    call comms_bcast(real_lattice(1,1),9)
+    call comms_bcast(recip_lattice(1,1),9)
+    call comms_bcast(real_metric(1,1),9)
+    call comms_bcast(recip_metric(1,1),9)
+    call comms_bcast(cell_volume,1)
+    call comms_bcast(dos_energy_step,1)
+    call comms_bcast(dos_adpt_smr,1)
+    call comms_bcast(dos_smr_index,1)
+    call comms_bcast(dos_kmesh_spacing,1) 
+    call comms_bcast(dos_kmesh(1),3) 
+    call comms_bcast(dos_adpt_smr_max,1)
+    call comms_bcast(dos_smr_fixed_en_width,1)
+    call comms_bcast(dos_adpt_smr_fac,1)
+    call comms_bcast(num_dos_project,1)
+    call comms_bcast(num_exclude_bands,1)
+    if(num_exclude_bands>0) then
+       if(.not.on_root) then
+          allocate(exclude_bands(num_exclude_bands), stat=ierr )
+          if (ierr/=0) &
+               call io_error('Error in allocating exclude_bands in param_dist')
+       endif
+       call comms_bcast(exclude_bands(1),num_exclude_bands)
+    end if
+
+    call comms_bcast(gamma_only,1)  
+    call comms_bcast(dis_win_min,1)
+    call comms_bcast(dis_win_max,1)
+    call comms_bcast(dis_froz_min,1)
+    call comms_bcast(dis_froz_max,1)
+    call comms_bcast(dis_num_iter,1)
+    call comms_bcast(dis_mix_ratio,1)
+    call comms_bcast(dis_conv_tol,1)
+    call comms_bcast(dis_conv_window,1)
+    call comms_bcast(dis_spheres_first_wann,1)
+    call comms_bcast(dis_spheres_num,1)
+    if(dis_spheres_num>0) then
+       if(.not.on_root) then
+          allocate(dis_spheres(4,dis_spheres_num), stat=ierr )
+          if (ierr/=0) &
+               call io_error('Error in allocating dis_spheres in param_dist')
+       endif
+       call comms_bcast(dis_spheres(1,1),4*dis_spheres_num)
+    end if
+    call comms_bcast(num_iter,1)
+    call comms_bcast(num_cg_steps,1)
+    call comms_bcast(conv_tol,1)
+    call comms_bcast(conv_window,1)
+    call comms_bcast(wannier_plot,1)
+    call comms_bcast(num_wannier_plot,1)
+    if(num_wannier_plot>0) then
+       if(.not.on_root) then
+          allocate(wannier_plot_list(num_wannier_plot), stat=ierr )
+          if (ierr/=0) &
+               call io_error('Error in allocating wannier_plot_list in param_dist')
+       endif
+       call comms_bcast(wannier_plot_list(1),num_wannier_plot)
+    end if
+    call comms_bcast(wannier_plot_supercell(1),3)
+    call comms_bcast(wannier_plot_format,len(wannier_plot_format))
+    call comms_bcast(wannier_plot_mode,len(wannier_plot_mode))
+    call comms_bcast(write_u_matrices,1)
+    call comms_bcast(bands_plot,1)
+    call comms_bcast(bands_num_points,1)
+    call comms_bcast(bands_plot_format,len(bands_plot_format))
+    call comms_bcast(bands_plot_mode,len(bands_plot_mode))
+    call comms_bcast(num_bands_project,1)
+
+    if(num_bands_project>0) then
+       if(.not.on_root) then
+          allocate(bands_plot_project(num_bands_project), stat=ierr )
+          if (ierr/=0) &
+               call io_error('Error in allocating bands_plot_project in param_dist')
+       endif
+       call comms_bcast(bands_plot_project(1),num_bands_project)
+    end if
+    call comms_bcast(bands_plot_dim,1)
+    call comms_bcast(write_hr,1)
+    call comms_bcast(write_rmn,1)
+    call comms_bcast(write_tb,1)
+    call comms_bcast(hr_cutoff,1)
+    call comms_bcast(dist_cutoff,1)
+    call comms_bcast(dist_cutoff_mode,len(dist_cutoff_mode))
+    call comms_bcast(dist_cutoff_hc,1)
+    call comms_bcast(one_dim_axis,len(one_dim_axis))
+    call comms_bcast(use_ws_distance,1)
+!    call comms_bcast(ws_distance_tol,1)
+    call comms_bcast(fermi_surface_plot,1)
+    call comms_bcast(fermi_surface_num_points,1)
+    call comms_bcast(fermi_surface_plot_format,len(fermi_surface_plot_format))
+    call comms_bcast(fermi_energy,1) !! used?
+    call comms_bcast(berry,1)
+    call comms_bcast(berry_task,len(berry_task))
+    call comms_bcast(berry_kmesh_spacing,1)
+    call comms_bcast(berry_kmesh(1),3)
+    call comms_bcast(berry_curv_adpt_kmesh,1)
+    call comms_bcast(berry_curv_adpt_kmesh_thresh,1)
+    call comms_bcast(berry_curv_unit,len(berry_curv_unit))
+    call comms_bcast(kubo_adpt_smr,1)
+    call comms_bcast(kubo_adpt_smr_fac,1)
+    call comms_bcast(kubo_adpt_smr_max,1)
+    call comms_bcast(kubo_smr_fixed_en_width,1)
+    call comms_bcast(kubo_smr_index,1)
+    call comms_bcast(kubo_eigval_max,1)
+    call comms_bcast(kubo_nfreq,1)
+    call comms_bcast(nfermi,1)
+    call comms_bcast(dos_energy_min,1)
+    call comms_bcast(dos_energy_max,1)
+    call comms_bcast(spin_kmesh_spacing,1)
+    call comms_bcast(spin_kmesh(1),3)
+    call comms_bcast(wanint_kpoint_file,1)
+
+    call comms_bcast(devel_flag,len(devel_flag))
+    call comms_bcast(spin_moment,1) 
+    call comms_bcast(spin_axis_polar,1) 
+    call comms_bcast(spin_axis_azimuth,1) 
+    call comms_bcast(spin_decomp,1)
+    call comms_bcast(use_degen_pert,1) 
+    call comms_bcast(degen_thr,1)
+    call comms_bcast(num_valence_bands,1)
+    call comms_bcast(dos,1)
+    call comms_bcast(dos_task,len(dos_task)) 
+    call comms_bcast(kpath,1) 
+    call comms_bcast(kpath_task,len(kpath_task)) 
+    call comms_bcast(kpath_bands_colour,len(kpath_bands_colour)) 
+    call comms_bcast(kslice,1) 
+    call comms_bcast(kslice_task,len(kslice_task)) 
+    call comms_bcast(transl_inv,1) 
+    call comms_bcast(num_elec_per_state,1)
+    call comms_bcast(scissors_shift,1)
+    !
+
+! ----------------------------------------------
+    call comms_bcast(geninterp,1)
+    call comms_bcast(geninterp_alsofirstder,1)
+    call comms_bcast(geninterp_single_file,1)
+    ! [gp-begin, Apr 12, 2012]
+    ! BoltzWann variables
+    call comms_bcast(boltzwann,1) 
+    call comms_bcast(boltz_calc_also_dos,1) 
+    call comms_bcast(boltz_2d_dir_num,1) 
+    call comms_bcast(boltz_dos_energy_step,1) 
+    call comms_bcast(boltz_dos_energy_min,1) 
+    call comms_bcast(boltz_dos_energy_max,1) 
+    call comms_bcast(boltz_dos_adpt_smr,1)
+    call comms_bcast(boltz_dos_smr_fixed_en_width,1)
+    call comms_bcast(boltz_dos_adpt_smr_fac,1)
+    call comms_bcast(boltz_dos_adpt_smr_max,1)
+    call comms_bcast(boltz_mu_min,1) 
+    call comms_bcast(boltz_mu_max,1) 
+    call comms_bcast(boltz_mu_step,1) 
+    call comms_bcast(boltz_temp_min,1) 
+    call comms_bcast(boltz_temp_max,1) 
+    call comms_bcast(boltz_temp_step,1) 
+    call comms_bcast(boltz_kmesh_spacing,1) 
+    call comms_bcast(boltz_kmesh(1),3) 
+    call comms_bcast(boltz_tdf_energy_step,1) 
+    call comms_bcast(boltz_relax_time,1) 
+    call comms_bcast(boltz_TDF_smr_fixed_en_width,1)
+    call comms_bcast(boltz_TDF_smr_index,1)
+    call comms_bcast(boltz_dos_smr_index,1)
+    call comms_bcast(boltz_bandshift,1) 
+    call comms_bcast(boltz_bandshift_firstband,1) 
+    call comms_bcast(boltz_bandshift_energyshift,1) 
+    ! [gp-end]
+    call comms_bcast(use_ws_distance,1)
+    call comms_bcast(disentanglement,1)
+
+    
+    call comms_bcast(transport,1)
+    call comms_bcast(tran_easy_fix,1)
+    call comms_bcast(transport_mode,len(transport_mode))
+    call comms_bcast(tran_win_min,1)
+    call comms_bcast(tran_win_max,1)
+    call comms_bcast(tran_energy_step,1)
+    call comms_bcast(tran_num_bb,1)
+    call comms_bcast(tran_num_ll,1)
+    call comms_bcast(tran_num_rr,1)
+    call comms_bcast(tran_num_cc,1)
+    call comms_bcast(tran_num_lc,1)
+    call comms_bcast(tran_num_cr,1)
+    call comms_bcast(tran_num_bandc,1)
+    call comms_bcast(tran_write_ht,1)
+    call comms_bcast(tran_read_ht ,1)
+    call comms_bcast(tran_use_same_lead,1)
+    call comms_bcast(tran_num_cell_ll,1)
+    call comms_bcast(tran_num_cell_rr,1)
+    call comms_bcast(tran_group_threshold,1)
+    call comms_bcast(translation_centre_frac(1),3)
+    call comms_bcast(num_shells,1)
+    call comms_bcast(skip_B1_tests,1)
+    call comms_bcast(explicit_nnkpts,1)
+
+
+    call comms_bcast(calc_only_A,1)
+    call comms_bcast(use_bloch_phases,1)
+    call comms_bcast(restart,len(restart))
+    call comms_bcast(write_r2mn,1)
+    call comms_bcast(num_guide_cycles,1)
+    call comms_bcast(num_no_guide_iter,1)
+    call comms_bcast(fixed_step,1)
+    call comms_bcast(trial_step,1)
+    call comms_bcast(precond,1)
+    call comms_bcast(write_proj,1)
+    call comms_bcast(timing_level,1)
+    call comms_bcast(spinors,1)
+    call comms_bcast(num_elec_per_state,1)
+    call comms_bcast(translate_home_cell,1)
+    call comms_bcast(write_xyz,1)
+    call comms_bcast(write_hr_diag,1)
+    call comms_bcast(conv_noise_amp,1)
+    call comms_bcast(conv_noise_num,1)
+    call comms_bcast(wannier_plot_radius,1)
+    call comms_bcast(kmesh_tol,1)
+    call comms_bcast(optimisation,1)
+    call comms_bcast(write_vdw_data,1)
+    call comms_bcast(lenconfac,1)
+    call comms_bcast(lfixstep,1)
+    call comms_bcast(lsitesymmetry,1)
+    call comms_bcast(frozen_states,1)
+
+    call comms_bcast(num_proj,1)
+    if(num_proj>0) then
+       if(.not.on_root) then
+          allocate( proj_site(3,num_proj),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating proj_site in param_dist') 
+       endif
+       call comms_bcast(proj_site(1,1),3*num_proj)
+    endif
+
+
+    ! These variables are different from the ones above in that they are 
+    ! allocatable, and in param_read they were allocated on the root node only
+    !
+    if(.not.on_root) then
+       allocate(fermi_energy_list(nfermi),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating fermi_energy_read in postw90_param_dist')
+       allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating kubo_freq_list in postw90_param_dist')
+       allocate(dos_project(num_dos_project),stat=ierr)
+       if (ierr/=0)&
+            call io_error('Error allocating dos_project in postw90_param_dist')
+       if(.not.effective_model) then
+          if (eig_found) then
+             allocate(eigval(num_bands,num_kpts),stat=ierr)
+             if (ierr/=0)&
+                  call io_error('Error allocating eigval in postw90_param_dist')
+          end if
+          allocate(kpt_latt(3,num_kpts),stat=ierr)
+          if (ierr/=0)&
+               call io_error('Error allocating kpt_latt in postw90_param_dist')
+       endif
+    end if
+    if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
+    if(kubo_nfreq>0) call comms_bcast(kubo_freq_list(1),kubo_nfreq)
+    if(num_dos_project>0) call comms_bcast(dos_project(1),num_dos_project)
+    if(.not.effective_model) then
+       if (eig_found) then
+          call comms_bcast(eigval(1,1),num_bands*num_kpts)
+       end if
+       call comms_bcast(kpt_latt(1,1),3*num_kpts)
+    endif
+
+    
+
+       
+    ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix 
+    ! elements of the position operator in reciprocal space. For the
+    ! extra matrix elements entering the orbital magnetization, also 
+    ! need nnlist. In principle could only broadcast those four variables
+
+    if(.not.effective_model) then
+
+       call comms_bcast(nnh,1)
+       call comms_bcast(nntot,1)
+       call comms_bcast(wbtot,1)
+
+       if(.not. on_root) then
+          allocate(nnlist(num_kpts,nntot), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating nnlist in pw90common_wanint_param_dist')
+          allocate(neigh(num_kpts,nntot/2), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating neigh in pw90common_wanint_param_dist')
+          allocate(nncell(3,num_kpts,nntot), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating nncell in pw90common_wanint_param_dist')
+          allocate(wb(nntot), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating wb in pw90common_wanint_param_dist')
+          allocate(bka(3,nntot/2), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating bka in pw90common_wanint_param_dist')
+          allocate(bk(3,nntot,num_kpts), stat=ierr )
+          if (ierr/=0)&
+               call io_error('Error in allocating bk in pw90common_wanint_param_dist')
+       end if
+       
+       call comms_bcast(nnlist(1,1),num_kpts*nntot)
+       call comms_bcast(neigh(1,1),num_kpts*nntot/2)
+       call comms_bcast(nncell(1,1,1),3*num_kpts*nntot)
+       call comms_bcast(wb(1),nntot)
+       call comms_bcast(bka(1,1),3*nntot/2)
+       call comms_bcast(bk(1,1,1),3*nntot*num_kpts)
+
+    endif
+
+    call comms_bcast(omega_total,1)
+    call comms_bcast(omega_tilde,1)
+    call comms_bcast(omega_invariant,1)
+    call comms_bcast(have_disentangled,1)
+
+    if(.not.on_root) then
+       allocate(wannier_centres(3,num_wann),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating wannier_centres in param_dist')
+       wannier_centres=0.0_dp
+       allocate(wannier_spreads(num_wann),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating wannier_spreads in param_dist')
+       wannier_spreads=0.0_dp 
+       if (disentanglement) then 
+          allocate(ndimwin(num_kpts),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating ndimwin in param_dist')
+          allocate(lwindow(num_bands,num_kpts),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating lwindow in param_dist')
+       endif
+    endif
+
+
+
+
+  end subroutine param_dist
+
 
 
 end module w90_parameters

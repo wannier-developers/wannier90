@@ -18,7 +18,15 @@ module w90_disentangle
 
   use w90_constants, only: dp,cmplx_0,cmplx_1
   use w90_io, only: io_error,stdout,io_stopwatch
-  use w90_parameters
+  use w90_parameters, only : num_bands,num_wann,a_matrix,u_matrix_opt,&
+       u_matrix,m_matrix_orig,lwindow,dis_conv_window,devel_flag, &
+       nntot,timing_level,omega_invariant,u_matrix,lsitesymmetry, &
+       lenconfac,iprint,wbtot,dis_num_iter,dis_mix_ratio,dis_win_min, &
+       dis_win_max,dis_froz_min,dis_froz_max,dis_spheres_num, &
+       dis_spheres_first_wann,num_kpts,nnlist,ndimwin,wb,gamma_only, &
+       eigval,length_unit,dis_spheres,m_matrix,dis_conv_tol,frozen_states, &
+       optimisation,recip_lattice,kpt_latt
+
   use w90_comms, only : on_root, my_node_id, num_nodes,&
                         comms_bcast, comms_array_split,&
                         comms_gatherv, comms_allreduce

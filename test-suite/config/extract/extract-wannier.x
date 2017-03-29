@@ -34,9 +34,9 @@ omegaT=`grep "  Omega Total " $fname | awk '{print $7}'`
 # Wannier -pp
 nearn=`sed -n '/ Distance (Ang^-1)/{n;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;n;p;}'\
  $fname | awk '{print $2}; {print $3}; {print $4}'`
-compl=`sed -n '/ b_k(x) /{n;n;p;n;p;n;p;n;p;n;p;n;p;}' \
+compl=`sed -n '/ Completeness relation is fully satisfied /{n;n;n;n;n;n;p;n;p;n;p;n;p;n;p;n;p;}'\
  $fname | awk '{print $2; print $3; print $4; print $5; print $6}'`
-
+#compl=`sed -n '/ b_k(x) /{n;n;p;n;p;n;p;n;p;n;p;n;p;}' \
 
 
 proji=`sed -n '/ Projections/{n;p;n;p;n;p;n;p;}'\
