@@ -451,6 +451,7 @@ module w90_parameters
   public :: param_memory_estimate
   public :: param_get_smearing_type
   public :: param_dist
+  public :: param_chkpt_dist
 
 contains
 
@@ -3434,6 +3435,74 @@ contains
 
   end subroutine param_read_chkpt
 
+
+  !===========================================================!
+  subroutine param_chkpt_dist
+  !===========================================================!
+  !                                                           !
+  !! Distribute the chk files
+  !                                                           !
+  !===========================================================!
+
+    use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
+    use w90_io,         only : io_error,io_file_unit,&
+                               io_date,io_time,io_stopwatch
+    use w90_comms,      only : on_root,comms_bcast
+
+    implicit none
+
+    integer :: ierr,loop_kpt,m,i,j
+
+    call comms_bcast(checkpoint,len(checkpoint))
+
+    if (.not.on_root .and. .not.allocated(u_matrix)) then
+       allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
+       if (ierr/=0)&
+            call io_error('Error allocating u_matrix in param_chkpt_dist')
+    endif
+    call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
+
+    if (.not.on_root .and. .not.allocated(m_matrix)) then
+       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+       if (ierr/=0)&
+            call io_error('Error allocating m_matrix in param_chkpt_dist')
+    endif
+    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+    
+    call comms_bcast(have_disentangled,1)
+
+    if (have_disentangled) then
+       if(.not.on_root) then
+
+          if (.not.allocated(u_matrix_opt)) then
+             allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
+             if (ierr/=0)&
+              call io_error('Error allocating u_matrix_opt in param_chkpt_dist')
+          endif
+          
+          if (.not.allocated(lwindow)) then
+             allocate(lwindow(num_bands,num_kpts),stat=ierr)
+             if (ierr/=0)&
+                  call io_error('Error allocating lwindow in param_chkpt_dist')
+          endif
+          
+          if (.not.allocated(ndimwin)) then
+             allocate(ndimwin(num_kpts),stat=ierr)
+             if (ierr/=0)&
+                  call io_error('Error allocating ndimwin in param_chkpt_dist')
+          endif
+     
+       end if
+
+       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
+       call comms_bcast(lwindow(1,1),num_bands*num_kpts)
+       call comms_bcast(ndimwin(1),num_kpts)
+       call comms_bcast(omega_invariant,1)
+    end if
+    call comms_bcast(wannier_centres(1,1),3*num_wann)
+    call comms_bcast(wannier_spreads(1),num_wann)
+
+  end subroutine param_chkpt_dist
 
   !=======================================!
   subroutine param_in_file
