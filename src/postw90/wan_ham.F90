@@ -109,7 +109,7 @@ module w90_wan_ham
 
   end subroutine wham_get_D_h
 
-
+  ! TODO: Remove
   subroutine wham_get_JJp_list(delHH,UU,eig,JJp_list)
   !====================================!
   !                                    !
@@ -151,7 +151,7 @@ module w90_wan_ham
 
   end subroutine wham_get_JJp_list
 
-
+  ! TODO: Remove
   subroutine wham_get_JJm_list(delHH,UU,eig,JJm_list)
   !====================================!
   !                                    !
@@ -193,6 +193,56 @@ module w90_wan_ham
 
   end subroutine wham_get_JJm_list
 
+
+  subroutine wham_get_JJp_JJm_list(delHH,UU,eig,JJp_list,JJm_list)
+  !===============================================!
+  !                                               !
+  ! Compute JJ^+_a and JJ^-_a (a=Cartesian index) !
+  ! for a list of Fermi energies                  !
+  !                                               !
+  ! This routine is a replacement for             !
+  ! wham_get_JJp_list and wham_getJJm_list.       !
+  ! It computes both lists at once in a more      !
+  ! efficient manner.                             !
+  !                                               !
+  !===============================================!
+
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+    use w90_parameters, only : num_wann,nfermi,fermi_energy_list
+    use w90_utility, only    : utility_rotate_new
+
+    complex(kind=dp), dimension(:,:), intent(inout) :: delHH
+    complex(kind=dp), dimension(:,:), intent(in)    :: UU
+    real(kind=dp),    dimension(:),   intent(in)    :: eig
+    complex(kind=dp), dimension(:,:,:), intent(out) :: JJp_list
+    complex(kind=dp), dimension(:,:,:), intent(out) :: JJm_list
+
+    integer                       :: n,m,ife
+    real(kind=dp)                 :: fe
+
+    call utility_rotate_new(delHH,UU,num_wann)
+    do ife=1,nfermi
+       fe = fermi_energy_list(ife)
+       do m=1,num_wann
+          do n=1,num_wann
+             if(eig(n)>fe .and. eig(m)<fe) then
+                JJp_list(n,m,ife)=cmplx_i*delHH(n,m)/(eig(m)-eig(n))
+             else
+                JJp_list(n,m,ife)=cmplx_0
+             end if
+
+             if(eig(m)>fe .and. eig(n)<fe) then
+                JJm_list(n,m,ife)=cmplx_i*delHH(n,m)/(eig(m)-eig(n))
+             else
+                JJm_list(n,m,ife)=cmplx_0
+             end if
+          enddo
+       end do
+       call utility_rotate_new(JJp_list(:,:,ife),UU,num_wann,reverse=.true.)
+       call utility_rotate_new(JJm_list(:,:,ife),UU,num_wann,reverse=.true.)
+    end do
+
+  end subroutine wham_get_JJp_JJm_list
 
   subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
   !================================!
@@ -404,8 +454,9 @@ module w90_wan_ham
                                      OO_dz=delHH(:,:,3))
     call utility_diagonalize(HH,num_wann,eig,UU) 
     do i=1,3
-       call wham_get_JJp_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i))
-       call wham_get_JJm_list(delHH(:,:,i),UU,eig,JJm_list(:,:,:,i))
+       call wham_get_JJp_JJm_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i),JJm_list(:,:,:,i))
+       !call wham_get_JJp_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i))
+       !call wham_get_JJm_list(delHH(:,:,i),UU,eig,JJm_list(:,:,:,i))
     enddo
 
   end subroutine wham_get_eig_UU_HH_JJlist
