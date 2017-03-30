@@ -22,6 +22,20 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('copper.win', '')
 output = copper.wout
 
+# Diamond, valence states - test of the W90 part
+[test_example05]
+program = WANNIER90_WOUT_OK
+inputs_args = ('diamond.win', '')
+output = diamond.wout
+
+# Silane, valence states, Gamma only
+[test_example07/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silane.win', '')
+output = silane.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
 # Test for the nnkpt file
 [test_nnkpt1/]
 program = WANNIER90_NNKP_OK
