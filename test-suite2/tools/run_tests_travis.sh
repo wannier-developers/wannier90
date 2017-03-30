@@ -13,11 +13,15 @@ pwd
 if [ "$W90TESTSWITHINTERFACE" == "true" ]
 then
     # Only tests involving interfaces
-    ./run_tests --category=run-tests-interface
+    ./run_tests --category=interface_only
 elif [ "$W90TESTSWITHINTERFACE" == "false" ]
 then
     # Only wannier tests
-    ./run_tests --category=run-tests
+    ./run_tests --category=wannier_only
+elif [ "$W90TESTSWITHINTERFACE" == "all" ]
+then
+    # Only wannier tests
+    ./run_tests --category=all
 else
     # By default: run default tests
     ./run_tests -d
