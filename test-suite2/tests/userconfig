@@ -25,6 +25,7 @@ tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_werr.parse
 tolerance = ( (0.1, 0.01, 'warning_msg'))
+can_fail = true
 
 [WANNIER90_NNKP_OK]
 exe = ../../wannier90.x

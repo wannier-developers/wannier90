@@ -105,7 +105,8 @@ config_file: location of the userconfig file, either relative or absolute.'''
     test_program_options = ('run_cmd_template',
         'launch_parallel', 'ignore_fields', 'data_tag', 'extract_cmd_template',
         'extract_fn', 'extract_program', 'extract_args', 'extract_fmt',
-        'verify', 'vcs', 'skip_program', 'skip_args', 'skip_cmd_template')
+        'verify', 'vcs', 'skip_program', 'skip_args', 'skip_cmd_template',
+        'can_fail')
     default_test_options = ('inputs_args', 'output', 'nprocs',
         'min_nprocs', 'max_nprocs', 'submit_template',)
     test_programs = {}
@@ -171,6 +172,10 @@ config_file: location of the userconfig file, either relative or absolute.'''
         if 'vcs' in tp_dict:
             tp_dict['vcs'] = vcs.VCSRepository(tp_dict['vcs'],
                     os.path.dirname(exe))
+        if 'can_fail' in tp_dict:
+            tp_dict['can_fail'] = \
+                    userconfig.getboolean(section, 'can_fail')
+
         program = testcode2.TestProgram(section, exe, test_id,
             user_options['benchmark'], **tp_dict)
         test_programs[section] = program

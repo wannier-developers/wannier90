@@ -121,13 +121,18 @@ if __name__ == "__main__":
             print >> sys.stderr, "You cannot specify both --default and --category"
             sys.exit(1)
 
+
+    verbose_cmd = ["--verbose"] 
     new_env = os.environ.copy()
     if args.verbose:
         new_env["W90VERBOSETESTS"] = "true"
+        # Put twice --verbose, to set the verbosity level at 3
+        # and therefore, e.g. print the actual command being run
+        # (with mpirun etc.)
+        verbose_cmd *= 2
 
     command_pieces = [
-        testcode_exe,
-        "--verbose", 
+        testcode_exe] + verbose_cmd + [
         "--category={}".format(the_category),
         "--jobconfig={}".format(jobconfig),
         "--userconfig={}".format(userconfig)
@@ -136,8 +141,10 @@ if __name__ == "__main__":
     if args.numprocs:
         command_pieces.append("--processors={}".format(args.numprocs))
 
-    print "I will run the following command:"
-    print " ".join(command_pieces)   
+    if args.verbose:
+        print "I will run the following command:"
+        print " ".join(command_pieces)   
+
     return_code = subprocess.call(
         command_pieces
         , stdout=sys.stdout, stderr=sys.stderr, env=new_env)

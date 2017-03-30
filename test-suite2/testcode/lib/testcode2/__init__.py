@@ -82,6 +82,9 @@ class TestProgram:
         self.skip_args = ''
         self.verify = False
         self.extract_fn = None
+        # By default, the job is expected to exit with error code 0.
+        # Setting it to True will discard the exit status/error code.
+        self.can_fail = False
 
         # Info
         self.vcs = None
@@ -312,10 +315,11 @@ class Test:
                             err.append(sys.exc_info()[1])
                     status = validation.Status()
                     if job.returncode != 0:
-                        err.insert(0, 'Error running job.  Return code: %i'
-                                        % job.returncode)
-                        (status, msg) = self.skip_job(test_input, test_arg,
-                                                      verbose)
+                        if not self.test_program.can_fail:
+                            err.insert(0, 'Error running job.  Return code: %i'
+                                            % job.returncode)
+                            (status, msg) = self.skip_job(test_input, test_arg,
+                                                          verbose)
                     if status.skipped():
                         self._update_status(status, (test_input, test_arg))
                         if verbose > 0 and verbose < 3:
