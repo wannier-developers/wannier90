@@ -7,17 +7,21 @@ addons:
         - gfortran 
         - libblas-dev 
         - liblapack-dev 
+        - openmpi-bin
+        - libopenmpi-dev
 env:
 ## Uncomment the following line if you want to run also the interface tests
-#   - W90TESTSWITHINTERFACE=true W90VERBOSETESTS=true
-   - W90TESTSWITHINTERFACE=false W90VERBOSETESTS=true
+#   - W90TESTSWITHINTERFACE=true
+   - W90TESTSWITHINTERFACE=false W90BINARYPARALLEL=false
+   - W90TESTSWITHINTERFACE=false W90BINARYPARALLEL=true
 install:
 # Possibly install QE and other interface code
     - ./test-suite2/tools/external-codes/get-external-codes.sh
 # Install Wannier
-    - cp ./test-suite2/config/TravisCI/make.inc.gfort.travisci make.inc
+    - ./test-suite/travis_copy_make.inc.sh
     - make -j default
 script:
     - ./test-suite2/tools/run_tests_travis.sh
 git:
   depth: 3
+
