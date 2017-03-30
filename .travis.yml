@@ -8,6 +8,7 @@ addons:
         - libblas-dev 
         - liblapack-dev 
         - openmpi-bin
+        - libopenmpi-dev
 env:
 ## Uncomment the following line if you want to run also the interface tests
 #   - W90TESTSWITHINTERFACE=true
