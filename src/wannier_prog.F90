@@ -142,6 +142,8 @@ program wannier
 
   ! We now distribute the parameters to the other nodes
     call param_dist
+    if(gamma_only.and.num_nodes>1) &
+         call io_error('Gamma point branch is serial only at the moment')
 
   if (transport .and. tran_read_ht) goto 3003
 

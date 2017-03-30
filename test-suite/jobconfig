@@ -118,6 +118,7 @@ inputs_args = ('gaas1.win', '1'),('gaas2.win', '1')
 
 [categories]
 wannier_all = example*??  test_* wan_*
+wannier_par = example*?? wan_l* test_b* test_n* test_p*
 interface_all = pw_example*??
 test_all = example*??  pw_example*?? test_* wan_*
 _default_ =  example*?? test* wan_*
