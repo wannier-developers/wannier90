@@ -907,11 +907,17 @@ contains
           fermi_energy_list(i)=fermi_energy_min&
                +i*(fermi_energy_max-fermi_energy_min)/real(nfermi,dp)
        enddo
-    elseif(nfermi==0) then 
-       ! This happens when both found_fermi_energy=.false. and
-       ! fermi_energy_scan=.false. Functionalities that require
-       ! specifying a Fermi level should give an error message
-       allocate(fermi_energy_list(1),stat=ierr) ! helps streamline things
+!!    elseif(nfermi==0) then 
+!!        ! This happens when both found_fermi_energy=.false. and
+!!        ! fermi_energy_scan=.false. Functionalities that require
+!!        ! specifying a Fermi level should give an error message
+!!        allocate(fermi_energy_list(1),stat=ierr) ! helps streamline things
+!!       
+!! AAM_2017-03-27: if nfermi is zero (ie, fermi_energy* parameters are not set in input file)
+!! then allocate fermi_energy_list with length 1 and set to zero as default. 
+    else
+       allocate(fermi_energy_list(1),stat=ierr)
+       fermi_energy_list(1)=0.0_dp
     endif
     if (ierr/=0) call io_error(&
          'Error allocating fermi_energy_list in param_read')
