@@ -54,11 +54,12 @@ def get_valid_categories():
     return sorted(set(retlist)) # Remove duplicates, sort
 
 def prompt_for_category():
-    valid_categories = get_valid_categories()
+    valid_categories_with_type = get_valid_categories()
+    valid_categories = [_[0] for _ in valid_categories_with_type]
 
     print "This is the list of valid categories:"
     for idx, (cat, is_single_test) in enumerate(
-            valid_categories, start=1):
+            valid_categories_with_type, start=1):
         print "{:10s} [{}] {}".format("TEST" if is_single_test else "CATEGORY",
                                       idx, cat)
     print " ----------------------------------------------------------------------------"
@@ -70,7 +71,7 @@ def prompt_for_category():
         chosen_idx = int(ans)
         chosen_idx -= 1
         # I put this in place mainly for negative numbers, that might not
-        # return a ValueERror
+        # return a ValueError
         if chosen_idx < 0 or chosen_idx >= len(valid_categories):
             raise ValueError # So we try this as a test folder name
         chosen_test = valid_categories[chosen_idx]
@@ -97,6 +98,8 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--category', type=str, default=None,
                         help='The category (i.e., the group) of tests you want to run. '
                              'You can also specify a single test name')
+    parser.add_argument('-n', '--numprocs', type=int, default=None,
+                        help='The number of processors (if specified, runs with mpirun even if the value is 1')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Enforce increased verbosity of tests, by printing all parsed results. '
                              'Without this variable, the verbosity is set by the '
@@ -122,15 +125,22 @@ if __name__ == "__main__":
     if args.verbose:
         new_env["W90VERBOSETESTS"] = "true"
 
-    # TODO: pass the -p option for NPROCS
+    command_pieces = [
+        testcode_exe,
+        "--verbose", 
+        "--category={}".format(the_category),
+        "--jobconfig={}".format(jobconfig),
+        "--userconfig={}".format(userconfig)
+        ]
+    
+    if args.numprocs:
+        command_pieces.append("--processors={}".format(args.numprocs))
+
+    print "I will run the following command:"
+    print " ".join(command_pieces)   
     return_code = subprocess.call(
-        [
-            testcode_exe,
-            "--verbose", 
-            "--category={}".format(the_category),
-            "--jobconfig={}".format(jobconfig),
-            "--userconfig={}".format(userconfig)
-        ], stdout=sys.stdout, stderr=sys.stderr, env=new_env)
+        command_pieces
+        , stdout=sys.stdout, stderr=sys.stderr, env=new_env)
 
     # Exit with the same error code
     sys.exit(return_code)

@@ -87,12 +87,16 @@ output = gaas2.wout
 program = WANNIER90_WOUT_OK
 inputs_args = ('benzene.win', '')
 output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
 
 # Benzene, valence bands
 [test_benzene_gamma_val/]
 program = WANNIER90_WOUT_OK
 inputs_args = ('benzene.win', '')
 output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
 
 # Test of disentanglement in spheres in k-space
 [test_lavo3_dissphere/]

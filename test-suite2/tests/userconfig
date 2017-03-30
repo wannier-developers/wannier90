@@ -1,3 +1,8 @@
+# Define here the codes, one per pair (input, output)
+# Note that you are not obliged to specify tolerances. If a tolerance
+# is not specified, then the default one is used.
+# Still, specifying it helps understanding what the test will compare.
+
 [WANNIER90_WOUT_OK]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_wout.parse
@@ -19,7 +24,7 @@ tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
 [WANNIER90_WERR_FAIL]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_werr.parse
-tolerance = ( (0.1, 0.01, 'wrmsg'))
+tolerance = ( (0.1, 0.01, 'warning_msg'))
 
 [WANNIER90_NNKP_OK]
 exe = ../../wannier90.x
