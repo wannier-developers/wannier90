@@ -17,7 +17,6 @@ module w90_io
 
 
   use w90_constants, only : dp
-
   implicit none
 
   private
@@ -59,6 +58,7 @@ module w90_io
   public :: io_print_timings
   public :: io_get_seedname
   public :: io_time
+  public :: io_wallclocktime
   public :: io_date
   public :: io_error
   public :: io_file_unit
@@ -228,6 +228,10 @@ contains
 106      write(*,'(1x,a,I0,a)') "Error on node ", &
               whoami, ": examine the output/error files for details"
          
+         ! added in order to pass test_nnkpt4 and test_nnkpt5
+         write(stdout,*)  'Exiting.......' 
+         write(stdout, '(1x,a)') trim(error_msg)
+         
          call MPI_abort(MPI_comm_world,1,ierr)
 
 #else
@@ -307,6 +311,36 @@ contains
     endif
     return
   end function io_time
+
+
+    !==================================================================!
+      function io_wallclocktime()
+    !==================================================================!
+    !                                                                  !
+    ! Returns elapsed wall clock time in seconds since its first call  !
+    !                                                                  !
+    !===================================================================  
+    use w90_constants, only : dp
+    implicit none
+
+    real(kind=dp) :: io_wallclocktime
+
+    integer :: c0,c1
+    integer :: rate
+    logical :: first=.true.
+    save first, rate, c0
+
+    if (first) then
+
+       call system_clock(c0, rate)
+       io_wallclocktime = 0.0_dp
+       first = .false.
+    else
+       call system_clock(c1)
+       io_wallclocktime = real(c1 - c0)/real(rate)
+    endif
+    return
+  end function io_wallclocktime
 
   !===========================================
   function io_file_unit()

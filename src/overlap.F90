@@ -12,6 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
+
 module w90_overlap
   !! This module reads in the overlap (Mmn) and Projections (Amn)
   !! and performs simple operations on them.
@@ -19,6 +20,7 @@ module w90_overlap
   use w90_constants, only : dp,cmplx_0,cmplx_1
   use w90_parameters, only : disentanglement
   use w90_io, only : stdout
+  use w90_comms, only : on_root,comms_bcast
 
   implicit none
  
@@ -83,35 +85,18 @@ contains
     endif
 
 
-    if (index(devel_flag,'f77input')>0) then
-       ! This block left for the short term as a means
-       ! to quickly benchmark against the old f77 code
-       ! Read U_matrix and M_matrix from file 
-       open(20,file='wannier0.dat',form='formatted',status='unknown')
-       do i=1,num_wann
-          do j=1,num_wann
-             do nkp=1,num_kpts
-                read(20,*) u_matrix(i,j,nkp)
-                do nn=1,nntot
-                   read(20,*) m_matrix(i,j,nn,nkp)
-                end do
-             end do
-          end do
-       end do
-       close(20)
-
-    else
+    if(on_root) then
 
        ! Read M_matrix_orig from file
        mmn_in=io_file_unit()
        open(unit=mmn_in,file=trim(seedname)//'.mmn',&
             form='formatted',status='old',action='read',err=101)
               
-       write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
+       if(on_root) write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
 
        ! Read the comment line
        read(mmn_in,'(a)',err=103,end=103) dummy
-       write(stdout,'(a)') trim(dummy)
+       if(on_root) write(stdout,'(a)') trim(dummy)
 
        ! Read the number of bands, k-points and nearest neighbours
        read(mmn_in,*,err=103,end=103) nb_tmp,nkp_tmp,nntot_tmp
@@ -153,7 +138,7 @@ contains
              endif
           end do
           if (nn.eq.0) then
-             write(stdout,'(/a,i8,2i5,i4,2x,3i3)') &
+             if(on_root) write(stdout,'(/a,i8,2i5,i4,2x,3i3)') &
                   ' Error reading '//trim(seedname)//'.mmn:',ncount,nkp,nkp2,nn,nnl,nnm,nnn
              call io_error('Neighbour not found')
           end if
@@ -166,21 +151,27 @@ contains
        end do
        deallocate(mmn_tmp,stat=ierr)
        if (ierr/=0) call io_error('Error in deallocating mmn_tmp in overlap_read')
- 
        close(mmn_in)
+    endif
+    
+    if(disentanglement) then
+       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
+    else
+       call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+    endif
 
-
-       if(.not. use_bloch_phases) then
+    if(.not. use_bloch_phases) then
+       if(on_root) then
 
           ! Read A_matrix from file wannier.amn
           amn_in=io_file_unit()
           open(unit=amn_in,file=trim(seedname)//'.amn',form='formatted',status='old',err=102)
           
-          write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
+          if(on_root) write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
           
           ! Read the comment line
           read(amn_in,'(a)',err=104,end=104) dummy
-          write(stdout,'(a)') trim(dummy)
+          if(on_root) write(stdout,'(a)') trim(dummy)
           
           ! Read the number of bands, k-points and wannier functions
           read(amn_in,*,err=104,end=104) nb_tmp, nkp_tmp, nw_tmp
@@ -206,18 +197,24 @@ contains
                 u_matrix(m,n,nkp) = cmplx(a_real,a_imag,kind=dp)
              end do
           end if
-          
           close(amn_in)
-          
-       else
-          
-          do n=1,num_kpts
-             do m=1,num_wann
-                u_matrix(m,m,n)=cmplx_1
-             end do
-          end do
+       endif
 
-       end if
+       if(disentanglement) then
+          call comms_bcast(a_matrix(1,1,1),num_bands*num_wann*num_kpts)
+       else
+          call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
+       endif
+
+    else
+       
+       do n=1,num_kpts
+          do m=1,num_wann
+             u_matrix(m,m,n)=cmplx_1
+          end do
+       end do
+       
+    end if
        
        ! If post-processing a Car-Parinello calculation (gamma only)
        ! then rotate M and A to the basis of Kohn-Sham eigenstates
@@ -261,7 +258,6 @@ contains
  !~      end if
 ![ysl-e]
 
-    endif
 
     if (timing_level>0) call io_stopwatch('overlap: read',2)
 
