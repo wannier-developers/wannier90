@@ -6,6 +6,7 @@ only one, or runs them all with the proper command-line options.
 NOTE: give a look also to 'testcode.py tidy', that however does not do
       exactly what we want.
 """
+import argparse
 import os
 import shutil
 import subprocess
@@ -59,6 +60,14 @@ global_patterns_to_delete = [
     ]
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(
+        description='Cleans the test folders from generated files.')
+    parser.add_argument('-i', '--also-ignored', action='store_true',
+                        help='Remove also files that are ignored by git (otherwise, just warn about their presence')
+    args = parser.parse_args()
+
+
     valid_categories = get_valid_categories()
     for testname in os.listdir(test_folder):
         the_folder = os.path.join(test_folder, testname)
@@ -114,8 +123,15 @@ if __name__ == "__main__":
                 # will be triggered and probably fail... We'll
                 # take care of this when such case happens.
                 shutil.rmtree(entryfname)
+
         for entry in entries_gitignored:
-            print "    ** Potentially deletable (but I won't delete): {}".format(entry)
+            entryfname = os.path.join(the_folder, entry)
+            if args.also_ignored:
+                print "    Deleting git-ignored {}...".format(entry)
+                # These are always ignored
+                os.remove(entryfname)
+            else:
+                print "    ** Potentially deletable (use -i option to delete): {}".format(entry)
 
 
 
