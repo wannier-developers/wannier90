@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+"""
+This script runs the tests either asking interactively if you want to run 
+only one, or runs them all with the proper command-line options.
+"""
+import os
+import subprocess
+import sys
+
+DEFAULT_CATEGORY = 'default' # The default category
+
+# Folder of this file
+this_folder = os.path.abspath(os.path.split(__file__)[0]) 
+testcode_exe = os.path.join(
+    this_folder, 'testcode', 'bin', 'testcode.py')
+jobconfig = os.path.join(
+    this_folder, 'tests', 'jobconfig')
+userconfig = os.path.join(
+    this_folder, 'tests', 'userconfig')
+
+
+def strip_slash(the_string):
+    """
+    Remove trailing slashes, if any
+    """
+    if the_string.endswith('/'):
+        return strip_slash(the_string[:-1])
+    else:
+        return the_string
+
+def get_valid_categories():
+    import configparser
+
+    config = configparser.ConfigParser()
+    config.read(jobconfig)
+    all_sections = config.values()
+    retlist = []
+    for section in all_sections:
+        if section.name == 'categories':
+            # Append categories as well
+            for category in section.keys():
+                retlist.append(category)
+        elif section.name == "DEFAULT":
+            pass
+        else:
+            retlist.append(strip_slash(section.name))
+
+    return sorted(set(retlist)) # Remove duplicates, sort
+
+def prompt_for_category():
+    valid_categories = get_valid_categories()
+
+    print "This is the list of valid categories:"
+    for idx, cat in enumerate(valid_categories, start=1):
+        print "[{}] {}".format(idx, cat)
+    print " ----------------------------------------------------------------------------"
+    print " -- If you don't want this prompt, or want more options, call this command --"
+    print " -- with a '-h' option to get help on the command-line options             --"
+    print " ----------------------------------------------------------------------------"
+    ans = raw_input("Which category do you want to run? [{}] ".format(DEFAULT_CATEGORY))
+    try:
+        chosen_idx = int(ans)
+        chosen_idx -= 1
+        # I put this in place mainly for negative numbers, that might not
+        # return a ValueERror
+        if chosen_idx < 0 or chosen_idx >= len(valid_categories):
+            raise ValueError # So we try this as a test folder name
+        chosen_test = valid_categories[chosen_idx]
+    except ValueError: # Invalid number
+        chosen_test = ans
+
+    # Default choice
+    if chosen_test == '':
+        chosen_test = DEFAULT_CATEGORY
+
+    print "Chosen test(s): {}".format(chosen_test)
+    if chosen_test not in valid_categories:
+        print "*"*72
+        print "WARNING! I'm going to ask 'testcode' to run category '{}', but ".format(chosen_test)
+        print "I'm quite confident it's not a valid category or test..."
+        print "*"*72
+    return chosen_test
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Run the tests (or a subset of them).')
+    parser.add_argument('-c', '--category', type=str, default=None,
+                        help='The category (i.e., the group) of tests you want to run. '
+                             'You can also specify a single test name')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Enforce increased verbosity of tests, by printing all parsed results. '
+                             'Without this variable, the verbosity is set by the '
+                             'value of the environment variable W90VERBOSETESTS (setting it to the '
+                             'string "true" increases verbosity, any other string keeps it low')
+    parser.add_argument('-d', '--default', action='store_true',
+                        help='never prompt the user for input, read values from options or stop '
+                             'if missing')
+    args = parser.parse_args()
+
+    the_category = args.category
+    if the_category is None:
+        if args.default:
+            the_category = DEFAULT_CATEGORY
+        else:
+            the_category = prompt_for_category()
+    else:
+        if args.default:
+            print >> sys.stderr, "You cannot specify both --default and --category"
+            sys.exit(1)
+
+    new_env = os.environ.copy()
+    if args.verbose:
+        new_env["W90VERBOSETESTS"] = "true"
+
+    # TODO: pass the -p option for NPROCS
+    return_code = subprocess.call(
+        [
+            testcode_exe,
+            "--verbose", 
+            "--category={}".format(the_category),
+            "--jobconfig={}".format(jobconfig),
+            "--userconfig={}".format(userconfig)
+        ], stdout=sys.stdout, stderr=sys.stderr, env=new_env)
+
+    # Exit with the same error code
+    sys.exit(return_code)
+

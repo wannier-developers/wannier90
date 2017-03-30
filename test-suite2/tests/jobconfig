@@ -1,0 +1,31 @@
+# Gallium Arsenide, valence bands
+[example01]
+program = WANNIER90_WOUT_OK
+# This could be a list of tuples
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+# Serial execution
+nprocs = 0
+# Note: I could specify custom tolerances here
+
+# Test for the nnkpt file
+[test_nnkpt1/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Testing crash with respect to nnkpt option
+[test_nnkpt4/]
+program = WANNIER90_WERR_FAIL
+output = wannier.werr
+inputs_args = ('wannier.win', '')
+# Serial execution
+nprocs = 0
+
+
+[categories]
+# TODO: put back original categories
+wannier_only = example*  test_* wan_*
+interface_only = pw_*
+all = wannier_only interface_only
+default =  wannier_only

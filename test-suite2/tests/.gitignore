@@ -1,0 +1,4 @@
+test.out.*
+test.err.*
+*.chk
+test.prev.output.*
