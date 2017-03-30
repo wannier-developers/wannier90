@@ -10,16 +10,12 @@ addons:
         - openmpi-bin
         - libopenmpi-dev
 env:
-## Uncomment the following line if you want to run also the interface tests
-#   - W90TESTSWITHINTERFACE=true
-   - W90TESTSWITHINTERFACE=false W90BINARYPARALLEL=false
-   - W90TESTSWITHINTERFACE=false W90BINARYPARALLEL=true
+   - W90BINARYPARALLEL=false
+   - W90BINARYPARALLEL=true
 install:
-# Possibly install QE and other interface code
-    - ./test-suite2/tools/external-codes/get-external-codes.sh
 # Install Wannier
-    - ./test-suite/travis_copy_make.inc.sh
-    - make -j default
+    - ./test-suite2/tools/configure_travis_compilation.sh
+    - make -j default w90chk2chk
 script:
     - ./test-suite2/tools/run_tests_travis.sh
 git:

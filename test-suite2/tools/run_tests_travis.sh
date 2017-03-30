@@ -4,25 +4,14 @@ set -e
 
 ## Set here, if needed, the location of the executables
 TESTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-export ESPRESSO_ROOT="${TESTDIR}/tools/external-codes/espresso/"
-
 cd "$TESTDIR"
 
-## Get the external codes, but only if the environment variable
-## W90TESTSWITHINTERFACE is set to true
-if [ "$W90TESTSWITHINTERFACE" == "true" ]
+# Default: serial, no mpirun. Run these in any case
+./run_tests --category=default 
+if [ "$W90BINARYPARALLEL" == "true" ]
 then
-    # Only tests involving interfaces
-    ./run_tests --category=interface_only
-elif [ "$W90TESTSWITHINTERFACE" == "false" ]
-then
-    # Only wannier tests
-    ./run_tests --category=wannier_only
-elif [ "$W90TESTSWITHINTERFACE" == "all" ]
-then
-    # Only wannier tests
-    ./run_tests --category=all
-else
-    # By default: run default tests
-    ./run_tests -d
+  # If running in parallel: run also the tests in parallel
+  # I hardcode this to four, in case change it or set it as an ENV
+  # var in the .travis.yml
+  make ./run_tests --category=default --num-procs=4
 fi
