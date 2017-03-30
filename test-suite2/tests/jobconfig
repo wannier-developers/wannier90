@@ -52,10 +52,57 @@ program = WANNIER90_WERR_FAIL
 inputs_args = ('wannier.win', '')
 output = wannier.werr
 
+# Testing symmetry-adapted WFs, from example21, case of As with s and p
+[test_example21_As_sp]
+program = WANNIER90_WOUT_OK
+inputs_args = ('GaAs.win', '')
+output = GaAs.wout
+
+# Basic wannier
+[test_basic1/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('wannier.win', '')
+output = wannier.wout
+
+# Basic wannier disentanglement
+[test_basic2/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('wannier.win', '')
+output = wannier.wout
+
+# Testing preconditioner
+[test_precond_1]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas1.win', '')
+output = gaas1.wout
+
+# Testing preconditioner
+[test_precond_2]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas2.win', '')
+output = gaas2.wout
+
+# Benzene, valence and conduction
+[test_benzene_gamma_valcond/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+
+# Benzene, valence bands
+[test_benzene_gamma_val/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+
+# Test of disentanglement in spheres in k-space
+[test_lavo3_dissphere/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('LaVO3.win', '')
+output = LaVO3.wout
 
 [categories]
 # TODO: put back original categories
-wannier_only = test_* wan_*
+wannier_only = test_*
 interface_only = pw_*
 all = wannier_only interface_only
 default =  wannier_only
