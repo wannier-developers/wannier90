@@ -13,5 +13,5 @@ then
   # If running in parallel: run also the tests in parallel
   # I hardcode this to four, in case change it or set it as an ENV
   # var in the .travis.yml
-  ./run_tests --category=default --num-procs=4
+  ./run_tests --category=default --numprocs=4
 fi
