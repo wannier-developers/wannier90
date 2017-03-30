@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ## Set here, if needed, the location of the executables
 THISDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ESPRESSO_ROOT="${THISDIR}/external-codes/espresso/"
@@ -16,6 +18,10 @@ elif [ "$W90TESTSWITHINTERFACE" == "false" ]
 then
     # Only wannier tests
     make run-tests
+    if [ "$W90BINARYPARALLEL" == "true" ]
+    then
+      make run-tests-parallel
+    fi
 else
     # By default: run both
     make run-tests-all
