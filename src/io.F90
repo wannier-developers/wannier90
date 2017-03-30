@@ -211,27 +211,31 @@ contains
 
 #ifdef MPI
          character(len=50) :: filename
-         integer           :: stderr,ierr,whoami
+         integer           :: stderr,ierr,whoami,num_nodes
 
          call mpi_comm_rank(mpi_comm_world, whoami, ierr)
-         if(whoami>99999) then
-            write(filename,'(a,a,I0,a)')trim(seedname),'.node_',whoami,'.werr'
-         else
-            write(filename,'(a,a,I5.5,a)')trim(seedname),'.node_',whoami,'.werr'
-         endif
-         stderr=io_file_unit()
-         open(unit=stderr,file=trim(filename),form='formatted',err=105)
-         write(stderr, '(1x,a)') trim(error_msg)
-         close(stderr)
+         call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
+         if(num_nodes>1) then
+            if(whoami>99999) then
+               write(filename,'(a,a,I0,a)')trim(seedname),'.node_',whoami,'.werr'
+            else
+               write(filename,'(a,a,I5.5,a)')trim(seedname),'.node_',whoami,'.werr'
+            endif
+            stderr=io_file_unit()
+            open(unit=stderr,file=trim(filename),form='formatted',err=105)
+            write(stderr, '(1x,a)') trim(error_msg)
+            close(stderr)
+         end if
 
 105      write(*,'(1x,a)') trim(error_msg)
 106      write(*,'(1x,a,I0,a)') "Error on node ", &
               whoami, ": examine the output/error files for details"
          
-         ! added in order to pass test_nnkpt4 and test_nnkpt5
-         write(stdout,*)  'Exiting.......' 
-         write(stdout, '(1x,a)') trim(error_msg)
-         
+         if(whoami==0) then
+            write(stdout,*)  'Exiting.......' 
+            write(stdout, '(1x,a)') trim(error_msg)
+         end if
+
          call MPI_abort(MPI_comm_world,1,ierr)
 
 #else
