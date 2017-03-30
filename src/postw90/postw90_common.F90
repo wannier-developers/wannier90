@@ -372,9 +372,7 @@ module w90_postw90_common
                call io_error('Error allocating kpt_latt in postw90_param_dist')
        endif
     end if
-    if (nfermi /= 0) then
-       call comms_bcast(fermi_energy_list(1),nfermi)
-    end if
+    if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
     call comms_bcast(kubo_freq_list(1),kubo_nfreq)
     call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then
