@@ -1,12 +1,26 @@
 # Gallium Arsenide, valence bands
-[example01]
+[test_example01]
 program = WANNIER90_WOUT_OK
-# This could be a list of tuples
 inputs_args = ('gaas.win', '')
 output = gaas.wout
-# Serial execution
-nprocs = 0
-# Note: I could specify custom tolerances here
+
+# Lead, 4 lowest states; Fermi surface
+[test_example02]
+program = WANNIER90_WOUT_OK
+inputs_args = ('lead.win', '')
+output = lead.wout
+
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure
+[test_example03]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Copper, states around the Fermi level; Fermi surface
+[test_example04]
+program = WANNIER90_WOUT_OK
+inputs_args = ('copper.win', '')
+output = copper.wout
 
 # Test for the nnkpt file
 [test_nnkpt1/]
@@ -14,18 +28,34 @@ program = WANNIER90_NNKP_OK
 inputs_args = ('wannier.win', '-pp')
 output = wannier.nnkp
 
+# Test for the nnkpt file
+[test_nnkpt2/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for the nnkpt file
+[test_nnkpt3/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
 # Testing crash with respect to nnkpt option
 [test_nnkpt4/]
 program = WANNIER90_WERR_FAIL
+inputs_args = ('wannier.win', '-pp')
 output = wannier.werr
+
+# Testing crash when nnkpt is set in non postproc_setup mode
+[test_nnkpt5/]
+program = WANNIER90_WERR_FAIL
 inputs_args = ('wannier.win', '')
-# Serial execution
-nprocs = 0
+output = wannier.werr
 
 
 [categories]
 # TODO: put back original categories
-wannier_only = example*  test_* wan_*
+wannier_only = test_* wan_*
 interface_only = pw_*
 all = wannier_only interface_only
 default =  wannier_only

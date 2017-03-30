@@ -29,6 +29,12 @@ def strip_slash(the_string):
         return the_string
 
 def get_valid_categories():
+    """
+    Return a list of tuples in the format
+    (category_name, is_single_test)
+    where category_name is a string, and is_single_test
+    is a boolean (True for single tests, False for categories)
+    """
     import configparser
 
     config = configparser.ConfigParser()
@@ -39,11 +45,11 @@ def get_valid_categories():
         if section.name == 'categories':
             # Append categories as well
             for category in section.keys():
-                retlist.append(category)
+                retlist.append((category,False))
         elif section.name == "DEFAULT":
             pass
         else:
-            retlist.append(strip_slash(section.name))
+            retlist.append((strip_slash(section.name),True))
 
     return sorted(set(retlist)) # Remove duplicates, sort
 
@@ -51,8 +57,10 @@ def prompt_for_category():
     valid_categories = get_valid_categories()
 
     print "This is the list of valid categories:"
-    for idx, cat in enumerate(valid_categories, start=1):
-        print "[{}] {}".format(idx, cat)
+    for idx, (cat, is_single_test) in enumerate(
+            valid_categories, start=1):
+        print "{:10s} [{}] {}".format("TEST" if is_single_test else "CATEGORY",
+                                      idx, cat)
     print " ----------------------------------------------------------------------------"
     print " -- If you don't want this prompt, or want more options, call this command --"
     print " -- with a '-h' option to get help on the command-line options             --"

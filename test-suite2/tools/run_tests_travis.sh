@@ -1,12 +1,12 @@
 #!/bin/bash
 
+set -e
+
 ## Set here, if needed, the location of the executables
 TESTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 export ESPRESSO_ROOT="${TESTDIR}/tools/external-codes/espresso/"
 
 cd "$TESTDIR"
-
-pwd
 
 ## Get the external codes, but only if the environment variable
 ## W90TESTSWITHINTERFACE is set to true

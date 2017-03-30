@@ -9,8 +9,8 @@ addons:
         - liblapack-dev 
 env:
 ## Uncomment the following line if you want to run also the interface tests
-#   - W90TESTSWITHINTERFACE=true
-   - W90TESTSWITHINTERFACE=false
+#   - W90TESTSWITHINTERFACE=true W90VERBOSETESTS=true
+   - W90TESTSWITHINTERFACE=false W90VERBOSETESTS=true
 install:
 # Possibly install QE and other interface code
     - ./test-suite2/tools/external-codes/get-external-codes.sh
