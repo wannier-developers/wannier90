@@ -149,7 +149,8 @@ program wannier
   if (restart.eq.' ') then  ! start a fresh calculation
      if (on_root) write(stdout,'(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
-     call param_read_chkpt()
+     if(on_root) call param_read_chkpt()
+     call param_chkpt_dist
 
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
@@ -178,13 +179,15 @@ program wannier
      end select
   endif
 
+
   if (postproc_setup) then
      if(on_root) call kmesh_write()
      call kmesh_dealloc()
      call param_dealloc()
      if (on_root) write(stdout,'(1x,a25,f11.3,a)') 'Time to write kmesh      ',io_time(),' (sec)'
      if (on_root) write(stdout,'(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
-     stop  !! change this JRY
+     call comms_end
+     stop
   endif
 
   if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY

@@ -772,31 +772,41 @@ nnshell=0
     !========================================
     !                                       
     !!  Release memory from the kmesh module 
-    !                                      
+    !   This routine now check to see if arrays
+    !   are allocated, as there are some code
+    !   paths that will not allocate on all nodes
     !========================================
     use w90_io,   only : io_error
     implicit none
     integer :: ierr
 
     ! Deallocate real arrays that are public
-    if (.not. explicit_nnkpts) then
-        deallocate(bk, stat=ierr )
-        if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
-        deallocate(bka, stat=ierr )
-        if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
-        deallocate(wb, stat=ierr )
-        if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
+    if(allocated(bk))then
+       deallocate(bk, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating bk in kmesh_dealloc')
+    endif
+    if(allocated(bka))then
+       deallocate(bka, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating bka in kmesh_dealloc')
+    endif
+    if(allocated(wb))then
+       deallocate(wb, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating wb in kmesh_dealloc')
     end if
 
     ! Deallocate integer arrays that are public
-    if (.not. explicit_nnkpts) then
-        deallocate(neigh, stat=ierr )
-        if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
+    if(allocated(neigh))then
+       deallocate(neigh, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating neigh in kmesh_dealloc')
     end if
-    deallocate(nncell, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating nncell in kmesh_dealloc')
-    deallocate(nnlist, stat=ierr )
-    if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_dealloc')
+    if(allocated(nncell))then
+       deallocate(nncell, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating nncell in kmesh_dealloc')
+    endif
+    if(allocated(nnlist))then
+       deallocate(nnlist, stat=ierr )
+       if (ierr/=0) call io_error('Error in deallocating nnlist in kmesh_dealloc')
+    endif
 
     return
 

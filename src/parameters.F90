@@ -5409,6 +5409,7 @@ contains
 
     call comms_bcast(effective_model,1) 
     call comms_bcast(eig_found,1) 
+    call comms_bcast(postproc_setup,1)
     if(.not.effective_model) then
        call comms_bcast(mp_grid(1),3)
        call comms_bcast(num_kpts,1)
@@ -5693,13 +5694,7 @@ contains
 
     
 
-       
-    ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix 
-    ! elements of the position operator in reciprocal space. For the
-    ! extra matrix elements entering the orbital magnetization, also 
-    ! need nnlist. In principle could only broadcast those four variables
-
-    if(.not.effective_model) then
+    if(.not.effective_model.and..not.explicit_nnkpts) then
 
        call comms_bcast(nnh,1)
        call comms_bcast(nntot,1)
@@ -5708,22 +5703,22 @@ contains
        if(.not. on_root) then
           allocate(nnlist(num_kpts,nntot), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating nnlist in pw90common_wanint_param_dist')
+               call io_error('Error in allocating nnlist in param_dist')
           allocate(neigh(num_kpts,nntot/2), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating neigh in pw90common_wanint_param_dist')
+               call io_error('Error in allocating neigh in param_dist')
           allocate(nncell(3,num_kpts,nntot), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating nncell in pw90common_wanint_param_dist')
+               call io_error('Error in allocating nncell in param_dist')
           allocate(wb(nntot), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating wb in pw90common_wanint_param_dist')
+               call io_error('Error in allocating wb in param_dist')
           allocate(bka(3,nntot/2), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating bka in pw90common_wanint_param_dist')
+               call io_error('Error in allocating bka in param_dist')
           allocate(bk(3,nntot,num_kpts), stat=ierr )
           if (ierr/=0)&
-               call io_error('Error in allocating bk in pw90common_wanint_param_dist')
+               call io_error('Error in allocating bk in param_dist')
        end if
        
        call comms_bcast(nnlist(1,1),num_kpts*nntot)
