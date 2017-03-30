@@ -24,3 +24,4 @@ script:
     - ./test-suite/run_tests_travis.sh
 git:
   depth: 3
+
