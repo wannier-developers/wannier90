@@ -1201,7 +1201,7 @@ module w90_get_oper
     call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a),      'C', &
                         S_o(wm_a:wm_a+ns_a-1, wm_b:wm_b+ns_b-1), 'N', &
                         v_matrix(1:ns_b, 1:num_wann, ik_b),      'N', &
-                        S, eigval(:,ik_a), H)
+                        S, eigval(wm_a:wm_a+ns_a-1,ik_a), H)
   end subroutine get_gauge_overlap_matrix
 
 end module w90_get_oper
