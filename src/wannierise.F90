@@ -225,20 +225,20 @@ contains
     allocate( counts(0:num_nodes-1), displs(0:num_nodes-1), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating counts and displs in wann_main')
     call comms_array_split(num_kpts,counts,displs)
-    allocate( rnkb_loc (num_wann, nntot, counts(my_node_id)),stat=ierr    )     
+    allocate( rnkb_loc (num_wann, nntot, max(1,counts(my_node_id))),stat=ierr    )     
     if (ierr/=0) call io_error('Error in allocating rnkb_loc in wann_main')
-    allocate( ln_tmp_loc (num_wann, nntot, counts(my_node_id)), stat=ierr    )
+    allocate( ln_tmp_loc (num_wann, nntot, max(1,counts(my_node_id))), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating ln_tmp_loc in wann_main')
-    allocate( u_matrix_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
+    allocate( u_matrix_loc (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating u_matrix_loc in wann_main')   
-    allocate( m_matrix_loc (num_wann, num_wann, nntot, counts(my_node_id)),stat=ierr ) 
+    allocate( m_matrix_loc (num_wann, num_wann, nntot, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating m_matrix_loc in wann_main')
     allocate( m_matrix_1b  (num_wann, num_wann, num_kpts),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating m_matrix_1b in wann_main')
-    allocate( m_matrix_1b_loc  (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
+    allocate( m_matrix_1b_loc  (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating m_matrix_1b_loc in wann_main')
     if(precond) then
-       allocate(cdodq_precond_loc(num_wann,num_wann,counts(my_node_id)),stat=ierr)
+       allocate(cdodq_precond_loc(num_wann,num_wann,max(1,counts(my_node_id))),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating cdodq_precond_loc in wann_main')
     end if
     ! initialize local u and m matrices with global ones
@@ -250,17 +250,17 @@ contains
            u_matrix (:,:, nkp)
     end do
 
-    allocate( cdq_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
+    allocate( cdq_loc (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating cdq_loc in wann_main')
-    allocate( cdodq_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr ) 
+    allocate( cdodq_loc (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating cdodq_loc in wann_main')
-    allocate( cdqkeep_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr  )
+    allocate( cdqkeep_loc (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr  )
     if (ierr/=0) call io_error('Error in allocating cdqkeep_loc in wann_main')
     if(optimisation>0) then
-       allocate(  m0_loc (num_wann, num_wann, nntot, counts(my_node_id)),stat=ierr)
+       allocate(  m0_loc (num_wann, num_wann, nntot, max(1,counts(my_node_id))),stat=ierr)
     end if
     if (ierr/=0) call io_error('Error in allocating m0_loc in wann_main')
-    allocate(  u0_loc (num_wann, num_wann, counts(my_node_id)),stat=ierr)
+    allocate(  u0_loc (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating u0_loc in wann_main')
 
     allocate( cz (num_wann, num_wann),stat=ierr  )
@@ -531,15 +531,15 @@ contains
     ! the m matrix is sent by piece to avoid huge arrays
     do nn = 1, nntot
       m_matrix_1b_loc=m_matrix_loc(:,:,nn,:)
-      call comms_gatherv(m_matrix_1b_loc(1,1,1),num_wann*num_wann*counts(my_node_id),&
-                 m_matrix(1,1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
+      call comms_gatherv(m_matrix_1b_loc,num_wann*num_wann*counts(my_node_id),&
+                 m_matrix,num_wann*num_wann*counts,num_wann*num_wann*displs)
       call comms_bcast(m_matrix_1b(1,1,1),num_wann*num_wann*num_kpts)
       m_matrix(:,:,nn,:)=m_matrix_1b(:,:,:)
     end do!nn
      
     ! send u matrix
-    call comms_gatherv(u_matrix_loc(1,1,1),num_wann*num_wann*counts(my_node_id),&
-               u_matrix(1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
+    call comms_gatherv(u_matrix_loc,num_wann*num_wann*counts(my_node_id),&
+               u_matrix,num_wann*num_wann*counts,num_wann*num_wann*displs)
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)    
 
     if (on_root) then
@@ -1120,8 +1120,8 @@ contains
 
       ! each process communicates its result to other processes
       ! it would be enough to copy only next neighbors
-      call comms_gatherv(cdq_loc(1,1,1),num_wann*num_wann*counts(my_node_id),&
-                 cdq(1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
+      call comms_gatherv(cdq_loc,num_wann*num_wann*counts(my_node_id),&
+                 cdq,num_wann*num_wann*counts,num_wann*num_wann*displs)
       call comms_bcast(cdq(1,1,1),num_wann*num_wann*num_kpts)   
 
 
@@ -1894,8 +1894,8 @@ contains
 
     if(present(cdodq)) then
        ! each process communicates its result to other processes
-       call comms_gatherv(cdodq_loc(1,1,1),num_wann*num_wann*counts(my_node_id),&
-            cdodq(1,1,1),num_wann*num_wann*counts,num_wann*num_wann*displs)
+       call comms_gatherv(cdodq_loc,num_wann*num_wann*counts(my_node_id),&
+            cdodq,num_wann*num_wann*counts,num_wann*num_wann*displs)
        call comms_bcast(cdodq(1,1,1),num_wann*num_wann*num_kpts)   
        if (lsitesymmetry) then
           call sitesym_symmetrize_gradient(1,cdodq) !RS:

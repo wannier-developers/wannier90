@@ -97,15 +97,23 @@ module w90_comms
 
   interface comms_gatherv
 !     module procedure comms_gatherv_int    ! to be done
-     module procedure comms_gatherv_real
-     module procedure comms_gatherv_cmplx
+     module procedure comms_gatherv_real_1
+     module procedure comms_gatherv_real_2
+     module procedure comms_gatherv_real_3
+     module procedure comms_gatherv_real_2_3
+     module procedure comms_gatherv_cmplx_1
+     module procedure comms_gatherv_cmplx_2
+     module procedure comms_gatherv_cmplx_3
+     module procedure comms_gatherv_cmplx_3_4
   end interface comms_gatherv
 
   interface comms_scatterv
      module procedure comms_scatterv_int_1  
      module procedure comms_scatterv_int_2
      module procedure comms_scatterv_int_3
-     module procedure comms_scatterv_real
+     module procedure comms_scatterv_real_1
+     module procedure comms_scatterv_real_2
+     module procedure comms_scatterv_real_3
 !     module procedure comms_scatterv_cmplx
   end interface comms_scatterv
 
@@ -812,20 +820,20 @@ contains
   end subroutine comms_allreduce_cmplx
 
 
-  subroutine comms_gatherv_real(array,localcount,rootglobalarray,counts,displs)
-    !! Gather real data to root node
+  subroutine comms_gatherv_real_1(array,localcount,rootglobalarray,counts,displs)
+    !! Gather real data to root node (for arrays of rank 1)
     implicit none
 
-    real(kind=dp), intent(inout)              :: array
+    real(kind=dp), dimension(:), intent(inout)   :: array
     !! local array for sending data
-    integer, intent(in)                       :: localcount
+    integer, intent(in)                          :: localcount
     !! localcount elements will be sent to the root node
-    real(kind=dp), intent(inout)              :: rootglobalarray
+    real(kind=dp), dimension(:), intent(inout)   :: rootglobalarray
     !! array on the root node to which data will be sent
-    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in)    :: counts
     !! how data should be partitioned, see MPI documentation or
     !! function comms_array_split
-    integer, dimension(num_nodes), intent(in) :: displs
+    integer, dimension(num_nodes), intent(in)    :: displs
 
 #ifdef MPI
     integer :: error
@@ -834,7 +842,7 @@ contains
          displs,MPI_double_precision,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_gatherv_real')
+       call io_error('Error in comms_gatherv_real_1')
     end if
 
 #else
@@ -843,7 +851,106 @@ contains
 
     return
 
-  end subroutine comms_gatherv_real
+  end subroutine comms_gatherv_real_1
+
+  subroutine comms_gatherv_real_2(array,localcount,rootglobalarray,counts,displs)
+    !! Gather real data to root node (for arrays of rank 2)
+    implicit none
+
+    real(kind=dp), dimension(:,:), intent(inout) :: array
+    !! local array for sending data
+    integer, intent(in)                          :: localcount
+    !! localcount elements will be sent to the root node
+    real(kind=dp), dimension(:,:), intent(inout) :: rootglobalarray
+    !! array on the root node to which data will be sent
+    integer, dimension(num_nodes), intent(in)    :: counts
+    !! how data should be partitioned, see MPI documentation or
+    !! function comms_array_split
+    integer, dimension(num_nodes), intent(in)    :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_precision,rootglobalarray,counts,&
+         displs,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_real_2')
+    end if
+
+#else
+    call dcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_real_2
+
+  subroutine comms_gatherv_real_3(array,localcount,rootglobalarray,counts,displs)
+    !! Gather real data to root node (for arrays of rank 3)
+    implicit none
+
+    real(kind=dp), dimension(:,:,:), intent(inout) :: array
+    !! local array for sending data
+    integer, intent(in)                            :: localcount
+    !! localcount elements will be sent to the root node
+    real(kind=dp), dimension(:,:,:), intent(inout) :: rootglobalarray
+    !! array on the root node to which data will be sent
+    integer, dimension(num_nodes), intent(in)      :: counts
+    !! how data should be partitioned, see MPI documentation or
+    !! function comms_array_split
+    integer, dimension(num_nodes), intent(in)      :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_precision,rootglobalarray,counts,&
+         displs,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_real_3')
+    end if
+
+#else
+    call dcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_real_3
+
+  subroutine comms_gatherv_real_2_3(array,localcount,rootglobalarray,counts,displs)
+    !! Gather real data to root node (for arrays of rank 2 and 3, respectively)
+    implicit none
+
+    real(kind=dp), dimension(:,:), intent(inout) :: array
+    !! local array for sending data
+    integer, intent(in)                            :: localcount
+    !! localcount elements will be sent to the root node
+    real(kind=dp), dimension(:,:,:), intent(inout) :: rootglobalarray
+    !! array on the root node to which data will be sent
+    integer, dimension(num_nodes), intent(in)      :: counts
+    !! how data should be partitioned, see MPI documentation or
+    !! function comms_array_split
+    integer, dimension(num_nodes), intent(in)      :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_precision,rootglobalarray,counts,&
+         displs,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_real_2_3')
+    end if
+
+#else
+    call dcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_real_2_3
 
 
   ! Array: local array for sending data; localcount elements will be sent
@@ -851,15 +958,15 @@ contains
   ! rootglobalarray: array on the root node to which data will be sent
   ! counts, displs : how data should be partitioned, see MPI documentation or
   !                  function comms_array_split
-  subroutine comms_gatherv_cmplx(array,localcount,rootglobalarray,counts,displs)
-
+  subroutine comms_gatherv_cmplx_1(array,localcount,rootglobalarray,counts,displs)
+    !! Gather complex data to root node (for arrays of rank 1)
     implicit none
 
-    complex(kind=dp), intent(inout)           :: array
-    integer, intent(in)                       :: localcount
-    complex(kind=dp), intent(inout)           :: rootglobalarray
-    integer, dimension(num_nodes), intent(in) :: counts
-    integer, dimension(num_nodes), intent(in) :: displs
+    complex(kind=dp), dimension(:), intent(inout)     :: array
+    integer, intent(in)                               :: localcount
+    complex(kind=dp), dimension(:), intent(inout)     :: rootglobalarray
+    integer, dimension(num_nodes), intent(in)         :: counts
+    integer, dimension(num_nodes), intent(in)         :: displs
 
 #ifdef MPI
     integer :: error
@@ -868,7 +975,7 @@ contains
          displs,MPI_double_complex,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_gatherv_cmplx')
+       call io_error('Error in comms_gatherv_cmplx_1')
     end if
 
 #else
@@ -877,8 +984,91 @@ contains
 
     return
 
-  end subroutine comms_gatherv_cmplx
+  end subroutine comms_gatherv_cmplx_1
 
+  subroutine comms_gatherv_cmplx_2(array,localcount,rootglobalarray,counts,displs)
+    !! Gather complex data to root node (for arrays of rank 2)
+    implicit none
+
+    complex(kind=dp), dimension(:,:), intent(inout)   :: array
+    integer, intent(in)                               :: localcount
+    complex(kind=dp), dimension(:,:), intent(inout)   :: rootglobalarray
+    integer, dimension(num_nodes), intent(in)         :: counts
+    integer, dimension(num_nodes), intent(in)         :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_complex,rootglobalarray,counts,&
+         displs,MPI_double_complex,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_cmplx_2')
+    end if
+
+#else
+    call zcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_cmplx_2
+
+  subroutine comms_gatherv_cmplx_3(array,localcount,rootglobalarray,counts,displs)
+    !! Gather complex data to root node (for arrays of rank 3)
+    implicit none
+
+    complex(kind=dp), dimension(:,:,:), intent(inout) :: array
+    integer, intent(in)                               :: localcount
+    complex(kind=dp), dimension(:,:,:), intent(inout) :: rootglobalarray
+    integer, dimension(num_nodes), intent(in)         :: counts
+    integer, dimension(num_nodes), intent(in)         :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_complex,rootglobalarray,counts,&
+         displs,MPI_double_complex,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_cmplx_3')
+    end if
+
+#else
+    call zcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_cmplx_3
+
+  subroutine comms_gatherv_cmplx_3_4(array,localcount,rootglobalarray,counts,displs)
+    !! Gather complex data to root node (for arrays of rank 3 and 4, respectively)
+    implicit none
+
+    complex(kind=dp), dimension(:,:,:), intent(inout)   :: array
+    integer, intent(in)                                 :: localcount
+    complex(kind=dp), dimension(:,:,:,:), intent(inout) :: rootglobalarray
+    integer, dimension(num_nodes), intent(in)           :: counts
+    integer, dimension(num_nodes), intent(in)           :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_gatherv(array,localcount,MPI_double_complex,rootglobalarray,counts,&
+         displs,MPI_double_complex,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_gatherv_cmplx_3_4')
+    end if
+
+#else
+    call zcopy(localcount,array,1,rootglobalarray,1)
+#endif
+
+    return
+
+  end subroutine comms_gatherv_cmplx_3_4
 
   ! Array: local array for getting data; localcount elements will be fetched
   !        from the root node
@@ -886,30 +1076,28 @@ contains
   ! counts, displs : how data should be partitioned, see MPI documentation or
   !                  function comms_array_split
 
-  subroutine comms_scatterv_real(array,localcount,rootglobalarray,counts,displs)
-    !! Scatter data from root node
+  subroutine comms_scatterv_real_1(array,localcount,rootglobalarray,counts,displs)
+    !! Scatter real data from root node (array of rank 1)
     implicit none
 
-    real(kind=dp), intent(inout)              :: array
+    real(kind=dp), dimension(:), intent(inout) :: array
     !! local array for getting data
-    integer, intent(in)                       :: localcount
+    integer, intent(in)                        :: localcount
     !! localcount elements will be fetched from the root node
-    real(kind=dp), intent(inout)              :: rootglobalarray
+    real(kind=dp), dimension(:), intent(inout) :: rootglobalarray
     !! array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in) :: counts
+    integer, dimension(num_nodes), intent(in)  :: counts
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in) :: displs
+    integer, dimension(num_nodes), intent(in)  :: displs
 
 #ifdef MPI
     integer :: error
 
-!    call MPI_scatterv(array,localcount,MPI_double_precision,rootglobalarray,counts,&
-!         displs,MPI_double_precision,root_id,mpi_comm_world,error)
     call MPI_scatterv(rootglobalarray,counts,displs,MPI_double_precision,&
          array,localcount,MPI_double_precision,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_scatterv_real')
+       call io_error('Error in comms_scatterv_real_1')
     end if
 
 #else
@@ -918,7 +1106,71 @@ contains
 
     return
 
-  end subroutine comms_scatterv_real
+  end subroutine comms_scatterv_real_1
+
+  subroutine comms_scatterv_real_2(array,localcount,rootglobalarray,counts,displs)
+    !! Scatter real data from root node (array of rank 2)
+    implicit none
+
+    real(kind=dp), dimension(:,:), intent(inout) :: array
+    !! local array for getting data
+    integer, intent(in)                          :: localcount
+    !! localcount elements will be fetched from the root node
+    real(kind=dp), dimension(:,:), intent(inout) :: rootglobalarray
+    !! array on the root node from which data will be sent
+    integer, dimension(num_nodes), intent(in)    :: counts
+    !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, dimension(num_nodes), intent(in)    :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_scatterv(rootglobalarray,counts,displs,MPI_double_precision,&
+         array,localcount,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_scatterv_real_2')
+    end if
+
+#else
+    call dcopy(localcount,rootglobalarray,1,array,1)
+#endif
+
+    return
+
+  end subroutine comms_scatterv_real_2
+
+subroutine comms_scatterv_real_3(array,localcount,rootglobalarray,counts,displs)
+    !! Scatter real data from root node (array of rank 3)
+    implicit none
+
+    real(kind=dp), dimension(:,:,:), intent(inout) :: array
+    !! local array for getting data
+    integer, intent(in)                            :: localcount
+    !! localcount elements will be fetched from the root node
+    real(kind=dp), dimension(:,:,:), intent(inout) :: rootglobalarray
+    !! array on the root node from which data will be sent
+    integer, dimension(num_nodes), intent(in)      :: counts
+    !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, dimension(num_nodes), intent(in)      :: displs
+
+#ifdef MPI
+    integer :: error
+
+    call MPI_scatterv(rootglobalarray,counts,displs,MPI_double_precision,&
+         array,localcount,MPI_double_precision,root_id,mpi_comm_world,error)
+
+    if(error.ne.MPI_success) then
+       call io_error('Error in comms_scatterv_real_3')
+    end if
+
+#else
+    call dcopy(localcount,rootglobalarray,1,array,1)
+#endif
+
+    return
+
+  end subroutine comms_scatterv_real_3
 
   subroutine comms_scatterv_int_1(array,localcount,rootglobalarray,counts,displs)
     !! Scatter integer data from root node (array of rank 1)
@@ -974,7 +1226,7 @@ contains
          Array,localcount,MPI_Integer,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_scatterv_int_1')
+       call io_error('Error in comms_scatterv_int_2')
     end if
 
 #else
@@ -1017,8 +1269,6 @@ contains
     return
 
   end subroutine comms_scatterv_int_3
-
-
 
 end module w90_comms
 
