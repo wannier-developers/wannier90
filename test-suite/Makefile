@@ -50,7 +50,7 @@ run-tests-wannier-serial : clean prolog
 	        env QE_USE_MPI=0 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=wannier_all
 
 run-tests-wannier-parallel : clean prolog 
-	        env QE_USE_MPI=1 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=wannier_all
+	        env QE_USE_MPI=1 ${TESTCODE_DIR}/bin/testcode.py --verbose --category=wannier_par
 
 run-custom-test-serial : clean prolog 
 	@if test -d $(testdir); then \

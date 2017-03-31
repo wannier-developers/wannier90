@@ -1,10 +1,11 @@
 \chapter{Parameters}\label{chap:parameters}
 
 \section{Usage}
-{\tt
-\begin{quote}
-wannier90.x [-pp] [seedname]
-\end{quote} }
+{\tt wannier90.x} can be run in parallel using MPI libraries to
+reduce the computation time.
+
+For serial execution use: {\tt wannier90.x [-pp] [seedname]}
+
 \begin{itemize}
 \item{ {\tt seedname}: If a seedname string is given the code will read its input
 from a file {\tt seedname.win}. The default value is {\tt wannier}. One can also equivalently provide the string
@@ -13,6 +14,25 @@ from a file {\tt seedname.win}. The default value is {\tt wannier}. One can also
 a list of the required overlaps and then exit. 
 This information is written to the file {\tt seedname.nnkp}.}
 \end{itemize}
+
+For parallel execution use: {\tt mpirun -np NUMPROCS wannier90.x [-pp] [seedname]}
+
+\begin{itemize} \item 
+{\tt NUMPROCS}: substitute with the number of processors that you want
+to use.
+\end{itemize}
+
+Note that the {\tt mpirun} command and command-line flags may be
+different in your MPI implementation: read your MPI manual or ask your
+computer administrator.
+
+Note also that this requires that the {\tt wannier90.x} executable has been
+compiled in its parallel version (follow the instructions in the file
+{\tt README.install} in the main directory of the wannier90
+distribution) and
+that the MPI libraries and binaries are installed and correctly
+configured on your machine.
+
 
 \section{{\tt seedname.win} File\label{sec:seednamefile}}
 The \wannier\ input file {\tt seedname.win} has a flexible free-form
@@ -1252,8 +1272,8 @@ If {\tt fermi\_energy} is specified, {\tt
 %\wannier, it is a useful parameter to set as it will be written
 %into the bxsf file. 
 
-There is no default value.
-% The default value is 0.0
+% There is no default value.
+The default value is 0.0
 
 
 \subsection[fermi\_energy]{\tt real(kind=dp) :: fermi\_energy\_min}
