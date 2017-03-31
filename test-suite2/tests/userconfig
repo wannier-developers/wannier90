@@ -21,6 +21,18 @@ tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
               (1.0e-6, 1.0e-6, 'completeness_z'),
               (1.0e-6, 1.0e-6, 'completeness_weight'))
 
+[POSTW90_GENINTERPDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_geninterp_dat.parse
+tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
+	          (1.0e-6, 1.0e-6, 'bandkptx'),
+	          (1.0e-6, 1.0e-6, 'bandkpty'),
+	          (1.0e-6, 1.0e-6, 'bandkptz'),                            
+	          (1.0e-2, 1.0e-2, 'bandderivx'),
+	          (1.0e-2, 1.0e-2, 'bandderivy'),
+	          (1.0e-2, 1.0e-2, 'bandderivz'),                            
+              (1.0e-6, 1.0e-6, 'bandidx'))
+
 [WANNIER90_WERR_FAIL]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_werr.parse

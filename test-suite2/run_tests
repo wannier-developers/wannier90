@@ -13,10 +13,12 @@ DEFAULT_CATEGORY = 'default' # The default category
 this_folder = os.path.abspath(os.path.split(__file__)[0]) 
 testcode_exe = os.path.join(
     this_folder, 'testcode', 'bin', 'testcode.py')
+testfolder = os.path.join(
+    this_folder, 'tests')
 jobconfig = os.path.join(
-    this_folder, 'tests', 'jobconfig')
+    testfolder, 'jobconfig')
 userconfig = os.path.join(
-    this_folder, 'tests', 'userconfig')
+    testfolder, 'userconfig')
 
 
 def strip_slash(the_string):
@@ -109,6 +111,29 @@ if __name__ == "__main__":
                         help='never prompt the user for input, read values from options or stop '
                              'if missing')
     args = parser.parse_args()
+
+    # Run the make command on all folders that have a Makefile.
+    # This is needed to e.g. uncompress the checkpoint files.
+    for folder in os.listdir(testfolder):
+        folderabspath = os.path.join(testfolder, folder)
+        if not os.path.isdir(folderabspath):
+            continue
+        if not os.path.isfile(os.path.join(folderabspath, 'Makefile')):
+            continue
+
+        if args.verbose:
+            print "Creating needed files in {}...".format(folder)
+            return_code = subprocess.call(
+                ['make', '-C', folderabspath],
+                stdout=sys.stdout, stderr=sys.stderr)
+        else:
+            FNULL = open(os.devnull, 'w')
+            return_code = subprocess.call(
+                ['make', '-C', folderabspath],
+                stdout=FNULL, stderr=sys.stderr)
+            if return_code:
+                print "*** WARNING!! make failed... continuing anyway, but your tests might fail"
+
 
     the_category = args.category
     if the_category is None:
