@@ -1,0 +1,146 @@
+# Gallium Arsenide, valence bands
+[testw90_example01]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+
+# Lead, 4 lowest states; Fermi surface
+[testw90_example02]
+program = WANNIER90_WOUT_OK
+inputs_args = ('lead.win', '')
+output = lead.wout
+
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure
+[testw90_example03]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Copper, states around the Fermi level; Fermi surface
+[testw90_example04]
+program = WANNIER90_WOUT_OK
+inputs_args = ('copper.win', '')
+output = copper.wout
+
+# Diamond, valence states - test of the W90 part
+[testw90_example05]
+program = WANNIER90_WOUT_OK
+inputs_args = ('diamond.win', '')
+output = diamond.wout
+
+# Silane, valence states, Gamma only
+[testw90_example07/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silane.win', '')
+output = silane.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Test for the nnkpt file
+[testw90_nnkpt1/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for the nnkpt file
+[testw90_nnkpt2/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for the nnkpt file
+[testw90_nnkpt3/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Testing crash with respect to nnkpt option
+[testw90_nnkpt4/]
+program = WANNIER90_WERR_FAIL
+inputs_args = ('wannier.win', '-pp')
+output = wannier.werr
+
+# Testing crash when nnkpt is set in non postproc_setup mode
+[testw90_nnkpt5/]
+program = WANNIER90_WERR_FAIL
+inputs_args = ('wannier.win', '')
+output = wannier.werr
+
+# Testing symmetry-adapted WFs, from example21, case of As with s and p
+[testw90_example21_As_sp]
+program = WANNIER90_WOUT_OK
+inputs_args = ('GaAs.win', '')
+output = GaAs.wout
+
+# Basic wannier
+[testw90_basic1/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('wannier.win', '')
+output = wannier.wout
+
+# Basic wannier disentanglement
+[testw90_basic2/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('wannier.win', '')
+output = wannier.wout
+
+# Testing preconditioner
+[testw90_precond_1]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas1.win', '')
+output = gaas1.wout
+
+# Testing preconditioner
+[testw90_precond_2]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas2.win', '')
+output = gaas2.wout
+
+# Benzene, valence and conduction
+[testw90_benzene_gamma_valcond/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Benzene, valence bands
+[testw90_benzene_gamma_val/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Test of disentanglement in spheres in k-space
+[testw90_lavo3_dissphere/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('LaVO3.win', '')
+output = LaVO3.wout
+
+# Test of disentanglement in spheres in k-space
+[testpostw90_si_geninterp/]
+program = POSTW90_GENINTERPDAT_OK
+inputs_args = ('silicon.win', '')
+output = silicon_geninterp.dat
+# TODO: WE HAVE A BUG FOR GENINTERP IN PARALLEL, 
+# we run this test only in serial for now until when we fix issue
+# https://github.com/wannier-developers/wannier90/issues/123
+max_nprocs = 0
+
+# Test of disentanglement in spheres in k-space
+[testpostw90_si_geninterp_wsdistance/]
+program = POSTW90_GENINTERPDAT_OK
+inputs_args = ('silicon.win', '')
+output = silicon_geninterp.dat
+# TODO: WE HAVE A BUG FOR GENINTERP IN PARALLEL, 
+# we run this test only in serial for now until when we fix issue
+# https://github.com/wannier-developers/wannier90/issues/12
+max_nprocs = 0
+
+
+[categories]
+wannier_only = testw90_*
+postw90_only = testpostw90_*
+all = wannier_only postw90_only
+default =  all
