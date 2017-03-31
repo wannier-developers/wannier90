@@ -14,10 +14,10 @@ env:
    - W90BINARYPARALLEL=true W90VERBOSETESTS=true
 install:
 # Install Wannier
-    - ./test-suite2/tools/configure_travis_compilation.sh
+    - ./test-suite/tools/configure_travis_compilation.sh
     - make -j default w90chk2chk
 script:
-    - ./test-suite2/tools/run_tests_travis.sh
+    - ./test-suite/tools/run_tests_travis.sh
 git:
   depth: 3
 
