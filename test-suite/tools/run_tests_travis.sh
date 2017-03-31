@@ -15,9 +15,9 @@ if [ "$W90BINARYPARALLEL" == "true" ]
 then
     # If running in parallel: run also the tests in parallel
     echo ""
-    echo "************************"
-    echo "* RUNNING SERIAL TESTS *"
-    echo "************************"
+    echo "**************************"
+    echo "* RUNNING PARALLEL TESTS *"
+    echo "**************************"
     # I hardcode the numprocs to four, in case change it or set it as an ENV
     # var in the .travis.yml
     ./run_tests --category=default --numprocs=4

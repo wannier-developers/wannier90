@@ -10,8 +10,11 @@ addons:
         - openmpi-bin
         - libopenmpi-dev
 env:
-   - W90BINARYPARALLEL=false W90VERBOSETESTS=true
-   - W90BINARYPARALLEL=true W90VERBOSETESTS=true
+## Use these two lines instead of the other two if you want increased output
+#   - W90BINARYPARALLEL=false W90VERBOSETESTS=true
+#   - W90BINARYPARALLEL=true W90VERBOSETESTS=true
+   - W90BINARYPARALLEL=false
+   - W90BINARYPARALLEL=true
 install:
 # Install Wannier
     - ./test-suite/tools/configure_travis_compilation.sh
