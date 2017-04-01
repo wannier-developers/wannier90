@@ -880,8 +880,8 @@ module w90_berry
       end do
     end if
 
-    if(present(img_k_list)) img_k_list = cmplx_0
-    if(present(imh_k_list)) imh_k_list = cmplx_0
+    if(present(img_k_list)) img_k_list = 0.0_dp
+    if(present(imh_k_list)) imh_k_list = 0.0_dp
 
     if(present(img_k_list) .and. present(imh_k_list)) then
       allocate(BB(num_wann,num_wann,3))
