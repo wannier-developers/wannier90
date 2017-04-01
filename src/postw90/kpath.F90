@@ -118,8 +118,8 @@ contains
 
     ! Distribute coordinates
     allocate(my_plot_kpoint(3, my_num_pts))
-    call comms_scatterv(my_plot_kpoint(1,1), 3*my_num_pts, &
-                        plot_kpoint(1,1), 3*counts, 3*displs)
+    call comms_scatterv(my_plot_kpoint, 3*my_num_pts, &
+                        plot_kpoint, 3*counts, 3*displs)
 
     ! Value of the vertical coordinate in the actual plots: energy bands
     !
@@ -188,28 +188,28 @@ contains
     ! Send results to root process
     if(plot_bands) then
        allocate(eig(num_wann,total_pts))
-       call comms_gatherv(my_eig(1,1), num_wann*my_num_pts, &
-                          eig(1,1), num_wann*counts, num_wann*displs)
+       call comms_gatherv(my_eig, num_wann*my_num_pts, &
+                          eig, num_wann*counts, num_wann*displs)
        if(kpath_bands_colour/='none') then
           allocate(color(num_wann,total_pts))
-          call comms_gatherv(my_color(1,1), num_wann*my_num_pts, &
-                             color(1,1), num_wann*counts, num_wann*displs)
+          call comms_gatherv(my_color, num_wann*my_num_pts, &
+                             color, num_wann*counts, num_wann*displs)
        end if
     end if
 
     if(plot_curv) then
        allocate(curv(total_pts,3))
        do i = 1,3
-          call comms_gatherv(my_curv(1,i), my_num_pts, &
-                             curv(1,i), counts, displs)
+          call comms_gatherv(my_curv(:,i), my_num_pts, &
+                             curv(:,i), counts, displs)
        end do
     end if
 
     if(plot_morb) then
        allocate(morb(total_pts,3))
        do i = 1,3
-          call comms_gatherv(my_morb(1,i), my_num_pts, &
-                             morb(1,i), counts, displs)
+          call comms_gatherv(my_morb(:,i), my_num_pts, &
+                             morb(:,i), counts, displs)
        end do
     end if
 

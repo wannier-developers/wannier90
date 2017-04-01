@@ -1602,18 +1602,18 @@ contains
 
       ! for MPI
       call comms_array_split(num_kpts,counts,displs)
-      allocate(u_matrix_opt_loc(num_bands,num_wann,counts(my_node_id)),stat=ierr)
+      allocate(u_matrix_opt_loc(num_bands,num_wann,max(1,counts(my_node_id))),stat=ierr)
       if (ierr/=0) call io_error('Error allocating u_matrix_opt_loc in dis_extract')   
       ! Copy matrix elements from global U matrix to local U matrix
       do nkp_loc = 1, counts(my_node_id)
          nkp = nkp_loc + displs(my_node_id)
          u_matrix_opt_loc(:,:,nkp_loc) = u_matrix_opt(:,:,nkp)
       enddo  
-      allocate(wkomegai1_loc(counts(my_node_id)),stat=ierr)
+      allocate(wkomegai1_loc(max(1,counts(my_node_id))),stat=ierr)
       if (ierr/=0) call io_error('Error allocating wkomegai1_loc in dis_extract')
-      allocate(czmat_in_loc(num_bands,num_bands,counts(my_node_id)),stat=ierr)
+      allocate(czmat_in_loc(num_bands,num_bands,max(1,counts(my_node_id))),stat=ierr)
       if (ierr/=0) call io_error('Error allocating czmat_in_loc in dis_extract')
-      allocate(czmat_out_loc(num_bands,num_bands,counts(my_node_id)),stat=ierr)
+      allocate(czmat_out_loc(num_bands,num_bands,max(1,counts(my_node_id))),stat=ierr)
       if (ierr/=0) call io_error('Error allocating czmat_out_loc in dis_extract')
 
       allocate(wkomegai1(num_kpts),stat=ierr)
@@ -1759,7 +1759,7 @@ contains
       if (timing_level>1 .and. on_root) call io_stopwatch('dis: extract_3',1)
 
          ! send chunks of wkomegai1 to root node
-         call comms_gatherv(wkomegai1_loc(1),counts(my_node_id),wkomegai1(1),counts,displs)
+         call comms_gatherv(wkomegai1_loc,counts(my_node_id),wkomegai1,counts,displs)
          ! send back the whole wkomegai1 array to other nodes
          call comms_bcast(wkomegai1(1),num_kpts)
 
@@ -1829,7 +1829,7 @@ contains
                if (iter.eq.dis_num_iter) then  
                   allocate(camp(num_bands,num_bands,num_kpts),stat=ierr)
                   if (ierr/=0) call io_error('Error allocating camp in dis_extract')
-                  allocate(camp_loc(num_bands,num_bands,counts(my_node_id)),stat=ierr)
+                  allocate(camp_loc(num_bands,num_bands,max(1,counts(my_node_id))),stat=ierr)
                   if (ierr/=0) call io_error('Error allocating ucamp_loc in dis_extract') 
 
                   if (ndimwin(nkp).gt.num_wann) then  
@@ -1860,22 +1860,22 @@ contains
 
 
          ! send chunks of wkomegai1 to root node
-         call comms_gatherv(wkomegai1_loc(1),counts(my_node_id),wkomegai1(1),counts,displs)
+         call comms_gatherv(wkomegai1_loc,counts(my_node_id),wkomegai1,counts,displs)
          ! send back the whole wkomegai1 array to other nodes
          call comms_bcast(wkomegai1(1),num_kpts)
 
          call comms_allreduce(womegai1,1,'SUM')
 
          if ( num_wann.gt.ndimfroz(nkp) ) then  
-            call comms_gatherv(u_matrix_opt_loc(1,1,1),num_bands*num_wann*counts(my_node_id),&
-                 u_matrix_opt(1,1,1),num_bands*num_wann*counts,num_bands*num_wann*displs)
+            call comms_gatherv(u_matrix_opt_loc,num_bands*num_wann*counts(my_node_id),&
+                 u_matrix_opt,num_bands*num_wann*counts,num_bands*num_wann*displs)
             call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)    
          endif
 
          if(index(devel_flag,'compspace')>0) then      
             if (iter.eq.dis_num_iter) then
-               call comms_gatherv(camp_loc(1,1,1),num_bands*num_bands*counts(my_node_id),&
-                       camp(1,1,1),num_bands*num_bands*counts,num_bands*num_bands*displs)
+               call comms_gatherv(camp_loc,num_bands*num_bands*counts(my_node_id),&
+                       camp,num_bands*num_bands*counts,num_bands*num_bands*displs)
 
                call comms_bcast(camp(1,1,1),num_bands*num_bands*num_kpts)    
             endif

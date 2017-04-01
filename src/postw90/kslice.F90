@@ -255,8 +255,8 @@ module w90_kslice
     else
        allocate(coords(1,1))
     end if
-    call comms_gatherv(my_coords(1,1), 2*my_nkpts, &
-                       coords(1,1), 2*counts, 2*displs)
+    call comms_gatherv(my_coords, 2*my_nkpts, &
+                       coords, 2*counts, 2*displs)
 
     if(allocated(my_spndata)) then
        if(on_root) then
@@ -264,8 +264,8 @@ module w90_kslice
        else
           allocate(spndata(1,1))
        end if
-       call comms_gatherv(my_spndata(1,1), num_wann*my_nkpts, &
-                          spndata(1,1), num_wann*counts, num_wann*displs)
+       call comms_gatherv(my_spndata, num_wann*my_nkpts, &
+                          spndata, num_wann*counts, num_wann*displs)
     end if
 
     if(allocated(my_spnmask)) then
@@ -284,8 +284,8 @@ module w90_kslice
        else
           allocate(bandsdata(1,1))
        end if
-       call comms_gatherv(my_bandsdata(1,1), num_wann*my_nkpts, &
-                          bandsdata(1,1), num_wann*counts, num_wann*displs)
+       call comms_gatherv(my_bandsdata, num_wann*my_nkpts, &
+                          bandsdata, num_wann*counts, num_wann*displs)
     end if
 
     if(allocated(my_zdata)) then
@@ -294,8 +294,8 @@ module w90_kslice
        else
           allocate(zdata(1,1))
        end if
-       call comms_gatherv(my_zdata(1,1), 3*my_nkpts, &
-                          zdata(1,1), 3*counts, 3*displs)
+       call comms_gatherv(my_zdata, 3*my_nkpts, &
+                          zdata, 3*counts, 3*displs)
     end if
 
     ! Write output files
