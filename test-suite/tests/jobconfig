@@ -112,6 +112,14 @@ output = benzene.wout
 # This is a gamma-only test, can only run in serial
 max_nprocs = 0
 
+# Benzene, valence bands - in hexagonal cell
+[testw90_benzene_gamma_val_hexcell/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
 # Test of disentanglement in spheres in k-space
 [testw90_lavo3_dissphere/]
 program = WANNIER90_WOUT_OK
