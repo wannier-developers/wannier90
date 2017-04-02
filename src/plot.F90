@@ -1118,8 +1118,10 @@ end subroutine plot_interpolate_bands
       allocate(atomic_Z(num_species),stat=ierr)
       if (ierr.ne.0) call io_error('Error: allocating atomic_Z in wannier_plot')
 
-      lmol=index(wannier_plot_mode,'mol')      ! molecule mode
-      lcrys=index(wannier_plot_mode,'crys')   ! crystal mode
+      lmol=.false.
+      lcrys=.false.
+      if (index(wannier_plot_mode,'mol')>0) lmol=.true.      ! molecule mode
+      if (index(wannier_plot_mode,'crys')>0) lcrys=.true.    ! crystal mode
 
       val_Q = 1.0_dp ! dummy value for cube file
 
