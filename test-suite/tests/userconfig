@@ -1,0 +1,60 @@
+# Define here the codes, one per pair (input, output)
+# Note that you are not obliged to specify tolerances. If a tolerance
+# is not specified, then the default one is used.
+# Still, specifying it helps understanding what the test will compare.
+
+[WANNIER90_WOUT_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_wout.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
+              (1.0e-5, 1.0e-5, 'final_centres_y'),
+              (1.0e-5, 1.0e-5, 'final_centres_z'),
+              (1.0e-6, 1.0e-6, 'final_spreads'), 
+              (1.0e-6, 1.0e-6, 'omegaI'), 
+              (1.0e-6, 5.0e-6, 'omegaD'), 
+              (1.0e-6, 1.0e-6, 'omegaOD'), 
+              (1.0e-6, 1.0e-6, 'omegaTotal'),
+              (1.0e-6, 1.0e-6, 'near_neigh_dist'),
+              (1.0e-6, 1.0e-6, 'near_neigh_mult'),
+              (1.0e-6, 1.0e-6, 'completeness_x'),
+              (1.0e-6, 1.0e-6, 'completeness_y'),
+              (1.0e-6, 1.0e-6, 'completeness_z'),
+              (1.0e-6, 1.0e-6, 'completeness_weight'))
+
+[POSTW90_GENINTERPDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_geninterp_dat.parse
+tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
+	       (1.0e-6, 1.0e-6, 'bandkptx'),
+	       (1.0e-6, 1.0e-6, 'bandkpty'),
+	       (1.0e-6, 1.0e-6, 'bandkptz'),                            
+	       (1.0e-2, 1.0e-2, 'bandderivx'),
+	       (1.0e-2, 1.0e-2, 'bandderivy'),
+	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
+              (1.0e-6, 1.0e-6, 'bandidx'))
+
+[WANNIER90_WERR_FAIL]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_werr.parse
+tolerance = ( (0.1, 0.01, 'warning_msg'))
+can_fail = true
+
+[WANNIER90_NNKP_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_nnkp.parse
+tolerance = ( (1.0e-6, 1.0e-6, 'nnkpts_g1'),
+              (1.0e-6, 1.0e-6, 'nnkpts_g2'),
+              (1.0e-6, 1.0e-6, 'nnkpts_g3'),
+              (1.0e-6, 1.0e-6, 'nnkpts_k1'),
+              (1.0e-6, 1.0e-6, 'nnkpts_k2'),              
+              (1.0e-6, 1.0e-6, 'kpoints_k1'),
+              (1.0e-6, 1.0e-6, 'kpoints_k2'))
+
+[user]
+# This is the string (or list of strings) that identifies sets of tests
+# to be run - one could have multiple ones
+benchmark = default
+date_fmt = %d%m%Y
+vcs = git
+
+              

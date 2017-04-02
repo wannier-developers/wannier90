@@ -584,6 +584,7 @@ program w90chk2chk
   use w90_constants, only : dp
   use w90_io, only : io_file_unit, stdout, io_error, seedname
   use w90_conv
+  use w90_comms, only : num_nodes, comms_setup, comms_end
   implicit none
 
   ! Export mode:
@@ -592,8 +593,14 @@ program w90chk2chk
   logical :: file_found
   integer :: file_unit
 
+  call comms_setup
+
   stdout = io_file_unit()
   open(unit=stdout,file='w90chk2chk.log')
+
+  if (num_nodes /= 1) then
+    call io_error('w90chk2chk can only be used in serial...')
+  endif
 
   call conv_get_seedname
 
@@ -607,8 +614,8 @@ program w90chk2chk
 
 !  close(unit=stdout,status='delete')
   close(unit=stdout)
-  STOP
 
+  call comms_end
 
 end program w90chk2chk
 
