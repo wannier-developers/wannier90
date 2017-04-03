@@ -14,11 +14,11 @@ num_iter        = 100
 conv_tol        = 1e-10
 conv_window     = 5
 
-translate_home_cell=true
+#translate_home_cell=true
 
 guiding_centres = true
 
-iprint          = 2
+#iprint          = 4
 
 ## Plotting #################
 #restart             = plot
