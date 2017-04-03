@@ -14,8 +14,8 @@ num_wann        = 15
 #################################
 
 num_iter        = 100
-#conv_tol        = 1e-10
-#conv_window     = 5
+conv_tol        = 1e-10
+conv_window     = 5
 
 #translate_home_cell=true
 
