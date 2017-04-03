@@ -52,13 +52,14 @@ clean:
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
-	$(MAKE) -C $(ROOTDIR)/test-suite clean
+	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a
 	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
 	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
 	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
+	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
 	$(MAKE) -C $(ROOTDIR)/doc/user_guide 
