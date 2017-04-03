@@ -5653,6 +5653,7 @@ contains
     call comms_bcast(conv_noise_amp,1)
     call comms_bcast(conv_noise_num,1)
     call comms_bcast(wannier_plot_radius,1)
+    call comms_bcast(wannier_plot_scale,1)
     call comms_bcast(kmesh_tol,1)
     call comms_bcast(optimisation,1)
     call comms_bcast(write_vdw_data,1)

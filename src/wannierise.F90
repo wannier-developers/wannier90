@@ -2514,7 +2514,12 @@ contains
     if (ierr/=0) call io_error('Error in allocating cz in wann_main_gamma')
 
     cz=cmplx_0
-    
+
+    ! Set up the MPI arrays for a serial run.
+    allocate( counts(0:0), displs(0:0), stat=ierr )
+    if (ierr/=0) call io_error('Error in allocating counts and displs in wann_main_gamma')
+    counts(0)=0;displs(0)=0
+
     ! store original U before rotating
 !~    ! phase factor ph_g is applied to u_matrix
 !~    ! NB: ph_g is applied to u_matrix_opt if (have_disentangled)
