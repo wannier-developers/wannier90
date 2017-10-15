@@ -195,6 +195,7 @@ module w90_parameters
   logical,           public, save :: gyrotropic
   character(len=20), public, save :: gyrotropic_task
   integer,           public, save :: gyrotropic_kmesh(3)
+  real(kind=dp),     public, save :: gyrotropic_kmesh_spacing
   integer,           public, save :: gyrotropic_smr_index
   real(kind=dp),     public, save :: gyrotropic_smr_fixed_en_width
   real(kind=dp)                               :: gyrotropic_freq_min
@@ -203,6 +204,7 @@ module w90_parameters
   integer,                       public, save :: gyrotropic_nfreq
   complex(kind=dp), allocatable, public, save :: gyrotropic_freq_list(:)
   real(kind=dp),     public, save :: gyrotropic_box_corner(3),gyrotropic_box(3,3)
+  real(kind=dp)                   :: gyrotropic_box_tmp(3)
   real(kind=dp),     public, save :: gyrotropic_degen_thresh 
   integer, allocatable, public,save :: gyrotropic_band_list(:)
   integer,           public, save :: gyrotropic_num_bands
@@ -1056,7 +1058,54 @@ contains
              .and. index(berry_task,'kubo')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
 
+    ! Stepan
+    gyrotropic                  = .false.
+    call param_get_keyword('gyrotropic',found,l_value=berry)
+    gyrotropic_task ='all'
+    call param_get_keyword('gyrotropic_task',found,c_value=berry_task)
+    gyrotropic_box(:,:)=0.0
+    gyrotropic_degen_thresh=0.0_dp
+    call param_get_keyword('gyrotropic_degen_thresh',found,r_value=gyrotropic_degen_thresh) 
+
+    do i=1,3
+	gyrotropic_box(i,i)=1.0_dp
+	gyrotropic_box_tmp(:)=0.0_dp
+	call param_get_keyword_vector('gyrotropic_box_b'//achar(48+i),found,3,r_value=gyrotropic_box_tmp)
+	if (found) gyrotropic_box(i,:)=gyrotropic_box_tmp(:)
+    enddo
+    gyrotropic_box_corner(:)=0.0_dp
+    call param_get_keyword_vector('gyrotropic_box_center',found,3,r_value=gyrotropic_box_tmp)
+    if (found) gyrotropic_box_corner(:)=gyrotropic_box_tmp(:)-0.5*(gyrotropic_box(1,:)+gyrotropic_box(2,:)+gyrotropic_box(3,:))
     
+    call param_get_range_vector('gyrotropic_band_list',found,gyrotropic_num_bands,lcount=.true.)
+    if(found) then
+       if(gyrotropic_num_bands<1) call io_error('Error: problem reading gyrotropic_band_list')
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating gyrotropic_band_list in param_read')
+       call param_get_range_vector('gyrotropic_band_list',found,gyrotropic_num_bands,.false.,gyrotropic_band_list)
+       if (any(gyrotropic_band_list<1) .or. any(gyrotropic_band_list>num_wann) ) &
+            call io_error('Error: gyrotropic_band_list asks for a non-valid bands')
+    else
+       ! include all  bands in the calculation
+       gyrotropic_num_bands=num_wann
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating gyrotropic_band_list in param_read')
+       do loop=1,num_wann
+          gyrotropic_band_list(loop)=loop
+       end do
+    end if
+
+    smr_max_arg=5.0
+    call param_get_keyword('smr_max_arg',found,r_value=smr_max_arg)
+    if (found .and. ( smr_max_arg <= 0._dp)) &
+         call io_error('Error: smr_max_arg must be greater than zero')  
+
+    gyrotropic_smr_max_arg = smr_max_arg
+    call param_get_keyword('gyrotropic_smr_max_arg',found,&
+         r_value=gyrotropic_smr_max_arg)
+    if (found .and. (gyrotropic_smr_max_arg <= 0._dp)) call io_error&
+         ('Error: gyrotropic_smr_max_arg must be greater than zero')
+
 
 !-------------------------------------------------------
 !    alpha=0
@@ -1114,6 +1163,12 @@ contains
          r_value=kubo_smr_fixed_en_width)
     if (found .and. (kubo_smr_fixed_en_width < 0._dp)) call io_error&
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
+
+    gyrotropic_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('gyrotropic_smr_fixed_en_width',found,&
+         r_value=gyrotropic_smr_fixed_en_width)
+    if (found .and. (gyrotropic_smr_fixed_en_width < 0._dp)) call io_error&
+      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
@@ -1647,6 +1702,11 @@ contains
     call param_get_keyword('kubo_smr_type',found,c_value=ctmp)
     if (found) kubo_smr_index = get_smearing_index(ctmp,'kubo_smr_type')
 
+    ! By default: use the "global" smearing index 
+    gyrotropic_smr_index = smr_index
+    call param_get_keyword('gyrotropic_smr_type',found,c_value=ctmp)
+    if (found) gyrotropic_smr_index = get_smearing_index(ctmp,'gyrotropic_smr_type')
+
     ! By default: 10 fs relaxation time
     boltz_relax_time = 10._dp
     call param_get_keyword('boltz_relax_time',found,r_value=boltz_relax_time)
@@ -1710,6 +1770,8 @@ contains
        kubo_freq_max        = dis_win_max-dis_win_min+0.6667_dp
     end if
     call param_get_keyword('kubo_freq_max',found,r_value=kubo_freq_max)
+
+
     !
     kubo_freq_step=0.01_dp
     call param_get_keyword('kubo_freq_step',found,r_value=kubo_freq_step)
@@ -1731,6 +1793,25 @@ contains
     !
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
+
+    gyrotropic_freq_min        = 0.0_dp
+    gyrotropic_freq_max        = 0.0_dp
+    gyrotropic_freq_step        = 0.01_dp
+    call param_get_keyword('gyrotropic_freq_min',found,r_value=gyrotropic_freq_min)
+    call param_get_keyword('gyrotropic_freq_max',found,r_value=gyrotropic_freq_max)
+    call param_get_keyword('gyrotropic_freq_step',found,r_value=gyrotropic_freq_max)
+    gyrotropic_nfreq=nint((gyrotropic_freq_max-gyrotropic_freq_min)/gyrotropic_freq_step)+1
+    if(gyrotropic_nfreq<=1) gyrotropic_nfreq=2
+    gyrotropic_freq_step=(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)
+    if (allocated(gyrotropic_freq_list)) deallocate(gyrotropic_freq_list)
+    allocate(gyrotropic_freq_list(gyrotropic_nfreq),stat=ierr)
+    if (ierr/=0)&
+         call io_error('Error allocating gyrotropic_freq_list in param_read')
+    do i=1,gyrotropic_nfreq
+       gyrotropic_freq_list(i)=gyrotropic_freq_min&
+            +(i-1)*(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)
+    enddo
+
 
     if(frozen_states) then
        kubo_eigval_max=dis_froz_max+0.6667_dp
@@ -1910,6 +1991,12 @@ contains
          should_be_defined=berry, &
          module_kmesh=berry_kmesh, &
          module_kmesh_spacing=berry_kmesh_spacing)
+
+    call get_module_kmesh(moduleprefix='gyrotropic', &
+         should_be_defined=gyrotropic, &
+         module_kmesh=gyrotropic_kmesh, &
+         module_kmesh_spacing=gyrotropic_kmesh_spacing)
+
 
     call get_module_kmesh(moduleprefix='spin', &
          should_be_defined=spin_moment, &
