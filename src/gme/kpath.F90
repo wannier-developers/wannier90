@@ -15,7 +15,7 @@ module w90_kpath
 
   ! Calculates one of the following along a specified k-path:
   ! 
-  !  - Energy bands (eventually colored by the spin) 
+  !  - Energy bands (eventually colored by the spin or morb) 
   !
   !  - (Berry curvature)x(-1) summed over occupied bands
   !
@@ -41,34 +41,44 @@ contains
     use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
-    use w90_utility, only        : utility_diagonalize
-    use w90_postw90_common, only : pw90common_fourier_R_to_k
+    use w90_utility, only        : utility_diagonalize,utility_rotate
+    use w90_postw90_common, only : pw90common_fourier_R_to_k,pw90common_fourier_R_to_k_vec
     use w90_parameters, only     : num_wann,recip_metric,kpath_task,&
                                    kpath_num_points,bands_num_spec_points,&
                                    bands_spec_points,bands_label,&
                                    kpath_bands_colour,nfermi,fermi_energy_list,&
-                                   berry_curv_unit
+                                   berry_curv_unit,num_berry_bands,berry_band_list,&
+				   kubo_nfreq,kubo_freq_list
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
-                                   get_FF_R,get_SS_R
-    use w90_spin, only           : spin_get_nk
-    use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist
+                                   get_FF_R,get_SS_R,AA_R
+    use w90_spin, only           : spin_get_nk,get_S
+    use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist,&
+					berry_get_morb_nk,berry_get_morb_k, &
+					    berry_get_curv_k, berry_get_curv_w_k
     use w90_constants, only      : bohr
+    use w90_wan_ham, only        : wham_get_D_h
 
-    integer           :: i,j,n,num_paths,num_spts,loop_path,loop_kpt,&
+    integer           :: i,j,n,m,num_paths,num_spts,loop_path,loop_kpt,&
                          total_pts,counter,loop_i,dataunit,gnuunit,pyunit,&
                          kpath_pts(bands_num_spec_points/2)
     real(kind=dp)     :: ymin,ymax,vec(3),kpt(3),spn_k(num_wann),&
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),&
                          kpath_len(bands_num_spec_points/2),range
-    logical           :: plot_bands,plot_curv,plot_morb
+    logical           :: plot_bands,plot_curv,plot_morb,plot_pmn
     character(len=20) :: file_name
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
+    complex(kind=dp), allocatable :: D_h(:,:,:)
+    complex(kind=dp), allocatable :: AA(:,:,:)
+
+    complex(kind=dp), allocatable :: pmn(:,:,:,:)
     real(kind=dp), allocatable    :: xval(:),eig(:,:),curv(:,:),& 
                                      morb(:,:),color(:,:),&
-                                     plot_kpoint(:,:) 
+                                     plot_kpoint(:,:),curv_nk(:,:,:),curv_w_nk(:,:,:,:),&
+                                        morb_nk(:,:,:),spin_nk(:,:,:)
     character(len=3),allocatable  :: glabel(:)
 
     ! Everything is done on the root node (not worthwhile parallelizing) 
@@ -81,14 +91,22 @@ contains
     if(index(kpath_task,'curv')>0) plot_curv=.true.
     plot_morb=.false.
     if(index(kpath_task,'morb')>0)  plot_morb=.true.
+    plot_pmn=.false.
+    if(index(kpath_task,'pmn')>0)  plot_pmn=.true.
     ! Set up the needed Wannier matrix elements
     call get_HH_R
-    if(plot_curv.or.plot_morb) call get_AA_R
-    if(plot_morb) then
+    if(plot_curv.or.plot_morb.or.plot_morb.or.plot_pmn.or.(plot_bands .and. &
+		(kpath_bands_colour=='morb' .or. &
+		kpath_bands_colour=='mb' .or. kpath_bands_colour=='smb' &
+		 .or. kpath_bands_colour=='curv_w' &
+		    .or. kpath_bands_colour=='curv' )  )) call get_AA_R
+    if(plot_morb.or. (plot_bands .and. (kpath_bands_colour=='morb' .or. kpath_bands_colour=='smb' &
+	    .or. kpath_bands_colour=='mb')) ) then
        call get_BB_R
        call get_CC_R
     endif
-    if(plot_bands .and. kpath_bands_colour=='spin') call get_SS_R
+    
+    if (plot_bands .and. (kpath_bands_colour=='spin'.or. kpath_bands_colour=='smb' ) ) call get_SS_R
 
     if(on_root) then
 
@@ -103,6 +121,14 @@ contains
              write(stdout,'(/,3x,a)') '* Energy bands in eV'
           case("spin")
              write(stdout,'(/,3x,a)') '* Energy bands in eV, coloured by spin'
+          case("morb")
+             write(stdout,'(/,3x,a)') '* Energy bands in eV, coloured by morb'
+          case("mb")
+             write(stdout,'(/,3x,a)') '* Energy bands in eV, coloured by morb and berry curvature'
+          case("curv")
+             write(stdout,'(/,3x,a)') '* Energy bands in eV, coloured by berry curvature'
+          case("smb")
+             write(stdout,'(/,3x,a)') '* Energy bands in eV, coloured by spin,morb and berry curvature'
           end select
        end if
        if(plot_curv) then
@@ -119,6 +145,12 @@ contains
                '* Orbital magnetization k-space integrand in eV.Ang^2'
           if(nfermi/=1) call io_error(&
                'Must specify one Fermi level when kpath_task=morb')
+       end if
+       if(plot_pmn) then
+          write(stdout,'(/,3x,a)')& 
+               '* matrix elements of the p operator in eV.Ang^2'
+          if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kpath_task=pmn')
        end if
 
        ! Work out how many points there are in the total path, and the 
@@ -157,16 +189,31 @@ contains
 
        ! Value of the vertical coordinate in the actual plots: energy bands 
        !
-       if(plot_bands) then
+       if(plot_bands.or.plot_pmn) then
           allocate(HH(num_wann,num_wann))
           allocate(UU(num_wann,num_wann))
           allocate(eig(num_wann,total_pts))
           if(kpath_bands_colour/='none') allocate(color(num_wann,total_pts))
+          if(kpath_bands_colour=='smb') allocate( spin_nk(num_wann,total_pts,3),&
+        	curv_nk(num_wann,total_pts,3),morb_nk(num_wann,total_pts,3))
+          if(kpath_bands_colour=='mb') allocate( &
+        	curv_nk(num_wann,total_pts,3),morb_nk(num_wann,total_pts,3))
+          if(kpath_bands_colour=='curv') allocate( &
+        	curv_nk(num_wann,total_pts,3))
+          if(kpath_bands_colour=='curv_w') allocate( &
+        	curv_w_nk(num_wann,total_pts,kubo_nfreq,3))
        end if
 
        ! Value of the vertical coordinate in the actual plots
        !
        if(plot_curv) allocate(curv(total_pts,3)) 
+       if(plot_pmn) then 
+	    allocate(pmn(total_pts,num_berry_bands,num_berry_bands,3)) 
+            allocate(delHH(num_wann,num_wann,3))
+    	    allocate(D_h(num_wann,num_wann,3))
+	    allocate(AA(num_wann,num_wann,3))
+       endif
+       
        if(plot_morb) allocate(morb(total_pts,3))
 
        allocate(glabel(num_spts))
@@ -224,24 +271,76 @@ contains
              ! Color-code energy bands with the spin projection along the
              ! chosen spin quantization axis
              !
-             if(kpath_bands_colour=='spin') then
-                call spin_get_nk(kpt,spn_k)
+             if((kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')) then
+                if(kpath_bands_colour=='spin') call spin_get_nk(kpt,spn_k)
+                if(kpath_bands_colour=='morb') call berry_get_morb_nk(kpt,spn_k)
+
                 color(:,loop_kpt)=spn_k(:)
                 !
                 ! The following is needed to prevent bands from disappearing 
                 ! when the magnitude of the Wannier interpolated spn_k (very 
                 ! slightly) exceeds 1.0 (e.g. in bcc Fe along N--G--H)
                 !
-                do n=1,num_wann
-                   if(color(n,loop_kpt)>1.0_dp-eps8) then
-                      color(n,loop_kpt)=1.0_dp-eps8
-                   elseif(color(n,loop_kpt)<-1.0_dp+eps8) then
-                      color(n,loop_kpt)=-1.0_dp+eps8
-                   endif
-                enddo
+
+!                do n=1,num_wann
+!                   if(color(n,loop_kpt)>1.0_dp-eps8) then
+!                      color(n,loop_kpt)=1.0_dp-eps8
+!                   elseif(color(n,loop_kpt)<-1.0_dp+eps8) then
+!                      color(n,loop_kpt)=-1.0_dp+eps8
+!                   endif
+!                enddo
              end if
+
+             if(kpath_bands_colour=='smb') then
+		call get_S(kpt,spin_nk(:,loop_kpt,:))
+                call berry_get_morb_k(kpt,morb_nk(:,loop_kpt,:),curv_nk(:,loop_kpt,:))
+             end if
+
+
+
+             if(kpath_bands_colour=='mb') then
+                call berry_get_morb_k(kpt,morb_nk(:,loop_kpt,:),curv_nk(:,loop_kpt,:))
+             end if
+
+             if(kpath_bands_colour=='curv') then
+                call berry_get_curv_k(kpt,curv_nk(:,loop_kpt,:))
+             end if
+
+             if(kpath_bands_colour=='curv_w') then
+                call berry_get_curv_w_k(kpt,curv_w_nk(:,loop_kpt,:,:))
+             end if
+
+
           endif
 
+          if(plot_pmn) then
+             if (.not.plot_bands)  then
+                call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
+                call utility_diagonalize(HH,num_wann,eig(:,loop_kpt),UU)
+             endif
+             call wham_get_D_h(delHH,UU,eig(:,loop_kpt),D_h)
+             call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
+             do i=1,3
+                AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
+             enddo
+             AA=AA+cmplx_i*D_h ! Eq.(25) WYSV06
+             do n=1,num_berry_bands
+                do m=1,num_berry_bands
+                   !
+                   ! Off-diagonal matrix elements of the velocity
+                   ! operator \vec v, multiplied by hbar:
+                   !
+                   ! -------------------------------------------
+                   ! hbar*<m|\vec v|n> = i*(E_m-E_n)*\vec A_{mn}
+                   ! -------------------------------------------
+                   !
+                   pmn(loop_kpt,n,m,:)=&
+                        cmplx_i*(eig(berry_band_list(m),loop_kpt)-eig(berry_band_list(n),loop_kpt))&
+                        *AA(berry_band_list(m),berry_band_list(n),:)
+                enddo
+             enddo
+          end if
+          
           if(plot_curv) then
              call berry_get_imf_klist(kpt,imf_k_list)
              curv(loop_kpt,1)=sum(imf_k_list(:,1,1))
@@ -258,6 +357,7 @@ contains
              morb(loop_kpt,2)=sum(Morb_k(:,2))
              morb(loop_kpt,3)=sum(Morb_k(:,3))
           end if
+                    
 
        end do !loop_kpt
 
@@ -289,19 +389,66 @@ contains
           file_name=trim(seedname)//'-bands.dat'
           write(stdout,'(/,3x,a)') file_name
           open(dataunit,file=file_name,form='formatted')
+          if(kpath_bands_colour=='none') then
+		  write(dataunit,'(2a16)') '# k(A^-1)','  E(eV) '
+          elseif ((kpath_bands_colour=='smb').or.(kpath_bands_colour=='smb').or. &
+        	(kpath_bands_colour=='curv')) then
+		  write(dataunit,'(11a16)') '# k(A^-1) ',' E(eV)','Sx','Sy','Sx','Mx','My','My','Mz','Omegax','Omegay','Omegaz'
+          elseif (kpath_bands_colour=='curv_w') then
+                   write(dataunit,'(2a16,100F48.8)') '# k(A^-1) ',' E(eV)',real(kubo_freq_list(:))
+          endif
+                   
           do i=1,num_wann
              do loop_kpt=1,total_pts
                 if(kpath_bands_colour=='none') then
                    write(dataunit,'(2E16.8)') xval(loop_kpt),eig(i,loop_kpt)
+                elseif (kpath_bands_colour=='smb') then
+                   write(dataunit,'(11F16.8)') xval(loop_kpt),&
+                        eig(i,loop_kpt),spin_nk(i,loop_kpt,:),morb_nk(i,loop_kpt,:),curv_nk(i,loop_kpt,:)
+                elseif (kpath_bands_colour=='mb') then
+                   write(dataunit,'(11E16.8)') xval(loop_kpt),&
+                        eig(i,loop_kpt),0.,0.,0.,morb_nk(i,loop_kpt,:),curv_nk(i,loop_kpt,:)
+                elseif (kpath_bands_colour=='curv') then
+                   write(dataunit,'(11E16.8)') xval(loop_kpt),&
+                        eig(i,loop_kpt),0.,0.,0.,0.,0.,0.,curv_nk(i,loop_kpt,:)
+                elseif (kpath_bands_colour=='curv_w') then
+                   write(dataunit,'(1000E16.8)') xval(loop_kpt),&
+                        eig(i,loop_kpt),(curv_w_nk(i,loop_kpt,j,:),j=1,kubo_nfreq)
                 else
                    write(dataunit,'(3E16.8)') xval(loop_kpt),&
                         eig(i,loop_kpt),color(i,loop_kpt)  
-                end if
+                endif
              enddo
              write(dataunit,*) ' '
           enddo
           close(dataunit)
        endif
+
+	if (plot_pmn) then
+            dataunit=io_file_unit()
+            file_name=trim(seedname)//'-pmn.dat'
+            write(stdout,'(/,3x,a)') file_name
+            open(dataunit,file=file_name,form='formatted')
+    	    write(dataunit,'(a,100I4)') '# bands: ', berry_band_list(:)
+    	    write(dataunit,'(a,100I4)') '# band pairs: '
+    	    do m=1,num_berry_bands
+    	    do n=1,num_berry_bands
+		write(dataunit,*) '# ',(m-1)*num_berry_bands+n-1," : ", berry_band_list(m), " , ", berry_band_list(n)
+	    enddo
+	    enddo
+    	    do m=1,num_berry_bands
+    		do n=1,num_berry_bands
+    		    write(dataunit,*) '# bands ',berry_band_list(m),' and ',berry_band_list(n)
+        	    do loop_kpt=1,total_pts
+            		write(dataunit,'(7E16.8)') xval(loop_kpt),(pmn(loop_kpt,m,n,i),i=1,3)
+            	    enddo
+    		    write(dataunit,*) 
+    		    write(dataunit,*) 
+    		enddo
+    	    enddo
+          write(dataunit,*) ' '
+          close(dataunit)
+	endif
 
        if(plot_bands .and. .not.plot_curv .and. .not.plot_morb) then
           !
@@ -323,7 +470,8 @@ contains
                   (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
              write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
              write(gnuunit,*) 'plot ','"'//trim(seedname)//'-bands.dat','"' 
-          elseif(kpath_bands_colour=='spin') then
+          elseif((kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')&
+        	.or.(kpath_bands_colour=='mb').or.(kpath_bands_colour=='smb')) then
              !
              ! Only works with gnuplot v4.2 and higher
              !
@@ -352,7 +500,7 @@ contains
                "-bands.dat')"
           write(pyunit,'(a)') "x=data[:,0]"
           write(pyunit,'(a)') "y=data[:,1]"
-          if(kpath_bands_colour=='spin') write(pyunit,'(a)') "z=data[:,2]"
+          if((kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')) write(pyunit,'(a)') "z=data[:,2]"
           write(pyunit,'(a)') "tick_labels=[]"
           write(pyunit,'(a)') "tick_locs=[]"
           do j=1,num_spts
@@ -371,7 +519,7 @@ contains
           enddo
           if(kpath_bands_colour=='none') then
              write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-          elseif(kpath_bands_colour=='spin') then
+          elseif((kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')) then
              write(pyunit,'(a)')&
                   "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
           endif
@@ -384,7 +532,7 @@ contains
                //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
                //"linestyle='-',linewidth=0.5)"
           write(pyunit,'(a)') "pl.ylabel('Energy [eV]')"
-          if(kpath_bands_colour=='spin') then
+          if( (kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')) then
              write(pyunit,'(a)')&
                   "pl.axes().set_aspect(aspect=0.65*max(x)/(max(y)-min(y)))"
              write(pyunit,'(a)') "pl.colorbar(shrink=0.7)"
@@ -616,10 +764,11 @@ contains
                   "-bands.dat')"
              write(pyunit,'(a)') "x=data[:,0]"
              write(pyunit,'(a,F12.6)') "y=data[:,1]-",fermi_energy_list(1)
-             if(kpath_bands_colour=='spin') write(pyunit,'(a)') "z=data[:,2]"
+             if( (kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')) &
+		     write(pyunit,'(a)') "z=data[:,2]"
              if(kpath_bands_colour=='none') then
                 write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-             elseif(kpath_bands_colour=='spin') then
+             elseif( (kpath_bands_colour=='spin').or.(kpath_bands_colour=='morb')) then
                 write(pyunit,'(a)')&
                      "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
              endif

@@ -1,0 +1,10 @@
+changes for gyrotropic:
+optional parameter "occ" in subrotines:
+    berry_get_imf_klist
+    berry_get_imfgh_klist
+    wham_get_JJp_list
+    wham_get_JJm_list
+    wham_get_occ_mat_list (also reordered the parameters, so "eig" is now opional)
+
+new function
+    utility_det3

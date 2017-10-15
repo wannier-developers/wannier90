@@ -264,11 +264,50 @@ module w90_postw90_common
     call comms_bcast(berry_curv_adpt_kmesh,1)
     call comms_bcast(berry_curv_adpt_kmesh_thresh,1)
     call comms_bcast(berry_curv_unit,len(berry_curv_unit))
+    call comms_bcast(gme_task,len(gme_task))
+    call comms_bcast(gme_degen_thresh,1)  ! Tsirkin
+    call comms_bcast(num_berry_bands,1)  ! Tsirkin
+    call comms_bcast(num_berry_sphere_bands,1)  ! Tsirkin
+    call comms_bcast(berry_sphere_nk,1)  ! Tsirkin
+    call comms_bcast(berry_sphere_rad,1)  ! Tsirkin
+    call comms_bcast(berry_sphere_center(1),3)  ! Tsirkin
+    call comms_bcast(berry_box(1,1),9)  ! Tsirkin
+    call comms_bcast(berry_box_corner(1),3)  ! Tsirkin
+    call comms_bcast(gme_berry_adpt_kmesh_thresh,1)  ! Tsirkin
+    call comms_bcast(gme_spin_adpt_kmesh_thresh,1)   ! Tsirkin
+    call comms_bcast(gme_orb_adpt_kmesh_thresh,1)    ! Tsirkin
     call comms_bcast(kubo_adpt_smr,1)
     call comms_bcast(kubo_adpt_smr_fac,1)
+    call comms_bcast(kubo_smr_max_arg,1)
     call comms_bcast(kubo_adpt_smr_max,1)
     call comms_bcast(kubo_smr_fixed_en_width,1)
     call comms_bcast(kubo_smr_index,1)
+    
+    ! DGM: added January 2016
+    !
+    call comms_bcast(wp_search_verbosity,1)
+    call comms_bcast(kslice_coor,1)
+    call comms_bcast(wp_gap_thresh,1)
+    call comms_bcast(wp_det_thresh,1)
+    call comms_bcast(wp_dis_thresh,1)
+    call comms_bcast(wp_corner(1),3)
+    call comms_bcast(wp_box_delta,1)
+    call comms_bcast(wp_box_corner(1),3)
+    call comms_bcast(wp_box_b1(1),3)
+    call comms_bcast(wp_box_b2(1),3)
+    call comms_bcast(wp_box_b3(1),3)
+    call comms_bcast(wp_box_k3min,1)
+    call comms_bcast(wp_box_k3max,1)
+    call comms_bcast(wp_box_kmesh(1),3)
+    call comms_bcast(wp_num_filled_bands,1)
+
+
+    call comms_bcast(kubo_fermi_adpt_smr,1)
+    call comms_bcast(kubo_fermi_adpt_smr_fac,1)
+    call comms_bcast(kubo_fermi_adpt_smr_max,1)
+    call comms_bcast(kubo_fermi_smr_fixed_en_width,1)
+    call comms_bcast(kubo_fermi_smr_index,1)
+
     call comms_bcast(kubo_eigval_max,1)
     call comms_bcast(kubo_nfreq,1)
     call comms_bcast(nfermi,1)
@@ -298,6 +337,10 @@ module w90_postw90_common
     call comms_bcast(kpath_bands_colour,len(kpath_bands_colour)) 
     call comms_bcast(kslice,1) 
     call comms_bcast(kslice_task,len(kslice_task)) 
+    call comms_bcast(kslice_num_slices,1)
+    call comms_bcast(kslice_k3min,1)
+    call comms_bcast(kslice_k3max,1)
+
     call comms_bcast(transl_inv,1) 
     call comms_bcast(num_elec_per_state,1)
     call comms_bcast(scissors_shift,1)
@@ -356,6 +399,12 @@ module w90_postw90_common
        allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
        if (ierr/=0) call io_error(&
             'Error allocating kubo_freq_list in postw90_param_dist')
+       allocate(berry_band_list(num_berry_bands),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating berry_band_list in postw90_param_dist')
+       allocate(berry_sphere_band_list(num_berry_sphere_bands),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating berry_sphere_band_list in postw90_param_dist')
        allocate(dos_project(num_dos_project),stat=ierr)
        if (ierr/=0)&
             call io_error('Error allocating dos_project in postw90_param_dist')
@@ -368,8 +417,14 @@ module w90_postw90_common
           allocate(kpt_latt(3,num_kpts),stat=ierr)
           if (ierr/=0)&
                call io_error('Error allocating kpt_latt in postw90_param_dist')
+          allocate(wannier_centres(3,num_wann),stat=ierr)
+          if (ierr/=0) call io_error(&
+            'Error allocating wannier_centres in postw90_param_dist')
        endif
     end if
+    call comms_bcast(berry_band_list(1),num_berry_bands)  ! Tsirkin
+    call comms_bcast(berry_sphere_band_list(1),num_berry_sphere_bands)  ! Tsirkin
+    call comms_bcast(wannier_centres(1,1),3*num_wann)
     call comms_bcast(fermi_energy_list(1),nfermi)
     call comms_bcast(kubo_freq_list(1),kubo_nfreq)
     call comms_bcast(dos_project(1),num_dos_project)
@@ -649,8 +704,8 @@ module w90_postw90_common
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-   if(use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
-    
+   if (use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
+   
     OO(:,:)=cmplx_0
     do ir=1,nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90

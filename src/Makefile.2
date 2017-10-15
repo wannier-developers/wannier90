@@ -11,7 +11,7 @@ OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
 OBJS2  =  wannier_lib.o
 
 OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
-             postw90_common.o wan_ham.o spin.o dos.o berry.o kpath.o kslice.o boltzwann.o geninterp.o
+             postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o  kpath.o kslice.o boltzwann.o geninterp.o
 
 LIBRARY = ../../libwannier.a
 
@@ -145,6 +145,9 @@ kslice.o: $(POSTDIR)kslice.F90 comms.o parameters.o constants.o io.o spin.o berr
 
 berry.o: $(POSTDIR)berry.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)berry.F90
+
+gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)gyrotropic.F90
 
 wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o constants.o utility.o postw90_common.o get_oper.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)wan_ham.F90

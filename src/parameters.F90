@@ -192,6 +192,24 @@ module w90_parameters
 !  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
 
+  logical,           public, save :: gyrotropic
+  character(len=20), public, save :: gyrotropic_task
+  integer,           public, save :: gyrotropic_kmesh(3)
+  integer,           public, save :: gyrotropic_smr_index
+  real(kind=dp),     public, save :: gyrotropic_smr_fixed_en_width
+  real(kind=dp)                               :: gyrotropic_freq_min
+  real(kind=dp)                               :: gyrotropic_freq_max
+  real(kind=dp)                               :: gyrotropic_freq_step
+  integer,                       public, save :: gyrotropic_nfreq
+  complex(kind=dp), allocatable, public, save :: gyrotropic_freq_list(:)
+  real(kind=dp),     public, save :: gyrotropic_box_corner(3),gyrotropic_box(3,3)
+  real(kind=dp),     public, save :: gyrotropic_degen_thresh 
+  integer, allocatable, public,save :: gyrotropic_band_list(:)
+  integer,           public, save :: gyrotropic_num_bands
+  real(kind=dp)                   :: smr_max_arg 
+  real(kind=dp) ,    public, save :: gyrotropic_smr_max_arg 
+
+
   logical                                  :: fermi_energy_scan
   real(kind=dp)                            :: fermi_energy_min
   real(kind=dp)                            :: fermi_energy_max

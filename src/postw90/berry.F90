@@ -773,13 +773,14 @@ module w90_berry
   end subroutine berry_main
 
 
-  subroutine berry_get_imf_klist(kpt,imf_k_list)
+  subroutine berry_get_imf_klist(kpt,imf_k_list,occ)
   !============================================================!
   !                                                            !
   !! Calculates the Berry curvature traced over the occupied
   !! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list 
   !! of Fermi energies, and stores it in axial-vector form 
-  !                                                            !
+  !!
+  !  added the fake occupancies occ  for calculations of band-resolved Bery curvature  !
   !============================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
@@ -793,6 +794,7 @@ module w90_berry
     !
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), intent(out), dimension(:,:,:) :: imf_k_list
+    real(kind=dp), intent(in), optional, dimension(:) :: occ
 
     complex(kind=dp), allocatable :: UU(:,:)
     complex(kind=dp), allocatable :: f_list(:,:,:)
@@ -803,22 +805,35 @@ module w90_berry
     complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
     complex(kind=dp), allocatable :: mdum(:,:)
     real(kind=dp)                 :: eig(num_wann)
-    integer                       :: i,if
+    integer                       :: i,if,nfermi_loc
 
     allocate(UU(num_wann,num_wann))
-    allocate(f_list(num_wann,num_wann,nfermi))
-    allocate(g_list(num_wann,num_wann,nfermi))
-    allocate(JJp_list(num_wann,num_wann,nfermi,3))
-    allocate(JJm_list(num_wann,num_wann,nfermi,3))
     allocate(AA(num_wann,num_wann,3))
     allocate(OOmega(num_wann,num_wann,3))
     allocate(mdum(num_wann,num_wann))
 
+     if(present(occ)) then
+        nfermi_loc=1
+     else
+        nfermi_loc=nfermi
+     endif
+     allocate(f_list(num_wann,num_wann,nfermi_loc))
+     allocate(g_list(num_wann,num_wann,nfermi_loc))
+     allocate(JJp_list(num_wann,num_wann,nfermi_loc,3))
+     allocate(JJm_list(num_wann,num_wann,nfermi_loc,3))
+
+
+
     ! Gather W-gauge matrix objects
-    !
-    call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
     ! occupation matrices f and g=1-f
-    call wham_get_occ_mat_list(eig,UU,f_list,g_list)
+    !
+     if(present(occ)) then
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list,occ=occ)
+        call wham_get_occ_mat_list(UU,f_list,g_list,occ=occ)
+     else
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
+        call wham_get_occ_mat_list(UU,f_list,g_list,eig=eig)
+     endif
 
     ! Eqs.(39-40) WYSV06
     !
@@ -826,7 +841,7 @@ module w90_berry
 
     ! Trace formula, Eq.(51) LVTS12
     !
-    do if=1,nfermi
+    do if=1,nfermi_loc
        do i=1,3
           !
           ! J0 term (Omega_bar term of WYSV06)
@@ -848,7 +863,7 @@ module w90_berry
   end subroutine berry_get_imf_klist
 
 
-  subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
+  subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list,occ)
   !=========================================================!
   !                                                         !
   !! Calculates the three quantities needed for the orbital
@@ -861,6 +876,8 @@ module w90_berry
   !! Fourier calls) for a list of Fermi energies, and stored
   !! in axial-vector form. 
   !                                                         !
+  !  added the fake occupancies occ  for calculations of    !
+  !  band-resolved Bery curvature and orbital magnetic momens    !
   !=========================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
@@ -876,6 +893,7 @@ module w90_berry
     real(kind=dp), intent(out), dimension(:,:,:) :: imf_k_list
     real(kind=dp), intent(out), dimension(:,:,:) :: img_k_list
     real(kind=dp), intent(out), dimension(:,:,:) :: imh_k_list
+    real(kind=dp), intent(in), optional, dimension(:) :: occ
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
@@ -890,7 +908,7 @@ module w90_berry
     complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
     complex(kind=dp), allocatable :: mdum(:,:)
     real(kind=dp)                 :: eig(num_wann)
-    integer                       :: i,j,if
+    integer                       :: i,j,if,nfermi_loc
 
     allocate(HH(num_wann,num_wann))
     allocate(UU(num_wann,num_wann))
@@ -905,10 +923,22 @@ module w90_berry
     allocate(LLambda_i(num_wann,num_wann))
     allocate(mdum(num_wann,num_wann))
 
+     if(present(occ)) then
+        nfermi_loc=1
+     else
+        nfermi_loc=nfermi
+     endif
+
+
     ! Gather W-gauge matrix objects
     !
-    call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
-    call wham_get_occ_mat_list(eig,UU,f_list,g_list)
+     if(present(occ)) then
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list,occ=occ)
+        call wham_get_occ_mat_list(UU,f_list,g_list,occ=occ)
+     else
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
+        call wham_get_occ_mat_list(UU,f_list,g_list,eig=eig)
+     endif
 
     call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega) 
     call pw90common_fourier_R_to_k_vec(kpt,BB_R,OO_true=BB)
@@ -921,7 +951,7 @@ module w90_berry
 
     ! Trace formula for -2Im[f], Eq.(51) LVTS12
     !
-    do if=1,nfermi
+    do if=1,nfermi_loc
        do i=1,3
           !
           ! J0 term (Omega_bar term of WYSV06)
@@ -948,7 +978,7 @@ module w90_berry
        ! LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
        LLambda_i=cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
               -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
-       do if=1,nfermi
+       do if=1,nfermi_loc
           mdum=matmul(f_list(:,:,if),LLambda_i)
           img_k_list(1,i,if)=utility_re_tr(mdum)
           mdum=matmul(f_list(:,:,if),matmul(HH,matmul(AA(:,:,alpha_A(i)),&
@@ -969,7 +999,7 @@ module w90_berry
 
     ! Trace formula for -2Im[h], Eq.(56) LVTS12
     !
-    do if=1,nfermi
+    do if=1,nfermi_loc
        do i=1,3
           !
           ! J0 term

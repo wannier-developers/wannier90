@@ -38,6 +38,7 @@ module w90_parameters
   real(kind=dp)                   :: adpt_smr_fac
   real(kind=dp)                   :: adpt_smr_max
   real(kind=dp)                   :: smr_fixed_en_width
+  real(kind=dp)                   :: smr_max_arg
   !IVO
   logical,                    public, save :: spin_moment
   real(kind=dp),              public, save :: spin_axis_polar
@@ -85,12 +86,18 @@ module w90_parameters
   real(kind=dp),     public, save :: conv_tol
   integer,           public, save :: conv_window
   logical,           public, save :: wannier_plot
-  integer, allocatable, public,save :: wannier_plot_list(:)
   integer,           public, save :: wannier_plot_supercell(3)
+  integer, allocatable, public,save :: wannier_plot_list(:)
+  integer, allocatable, public,save :: berry_band_list(:)
+  integer, allocatable, public,save :: berry_sphere_band_list(:)
+  real(kind=dp),     public, save :: berry_sphere_center(3)
+  real(kind=dp),     public, save :: berry_sphere_rad
+  integer,           public, save :: berry_sphere_nk
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
   logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
+  logical,           public, save :: write_wavefun
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
@@ -122,8 +129,17 @@ module w90_parameters
   real(kind=dp),     public, save :: kslice_corner(3)
   real(kind=dp),     public, save :: kslice_b1(3)
   real(kind=dp),     public, save :: kslice_b2(3)
+  real(kind=dp),     public, save :: kslice_b3(3)
+  real(kind=dp),     public, save :: kslice_k3min 
+  real(kind=dp),     public, save :: kslice_k3max
+  integer,           public, save :: kslice_num_slices
+
   integer,           public, save :: kslice_2dkmesh(2)
   character(len=20), public, save :: kslice_fermi_lines_colour
+  character(len=20), public, save :: kslice_fermi_lines_texture 
+
+  real(kind=dp),     public, save :: berry_box_corner(3),berry_box(3,3)
+
 
   ! module  d o s
   logical,           public, save    :: dos
@@ -150,19 +166,32 @@ module w90_parameters
   character(len=20), public, save :: berry_task
   real(kind=dp),     public, save :: berry_kmesh_spacing
   integer,           public, save :: berry_kmesh(3)
+  character(len=20), public, save :: gme_task
+  real(kind=dp),     public, save :: gme_degen_thresh 
   ! --------------remove eventually----------------
 !  integer,           public, save :: alpha
 !  integer,           public, save :: beta
 !  integer,           public, save :: gamma
   ! --------------remove eventually----------------
   integer,           public, save :: berry_curv_adpt_kmesh
-  real(kind=dp),     public, save :: berry_curv_adpt_kmesh_thresh
+  real(kind=dp),     public, save :: berry_curv_adpt_kmesh_thresh,&
+                                     gme_berry_adpt_kmesh_thresh,&
+                                     gme_spin_adpt_kmesh_thresh,&
+                                     gme_orb_adpt_kmesh_thresh
+                                     
   character(len=20), public, save :: berry_curv_unit
   logical,           public, save :: kubo_adpt_smr
   real(kind=dp),     public, save :: kubo_adpt_smr_fac
   integer,           public, save :: kubo_smr_index
   real(kind=dp),     public, save :: kubo_smr_fixed_en_width
+  real(kind=dp),     public, save :: kubo_smr_max_arg
+  real(kind=dp),     public, save :: kubo_fermi_smr_max_arg
   real(kind=dp),     public, save :: kubo_adpt_smr_max
+  logical,           public, save :: kubo_fermi_adpt_smr
+  real(kind=dp),     public, save :: kubo_fermi_adpt_smr_fac
+  integer,           public, save :: kubo_fermi_smr_index
+  real(kind=dp),     public, save :: kubo_fermi_smr_fixed_en_width
+  real(kind=dp),     public, save :: kubo_fermi_adpt_smr_max
   logical,           public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
@@ -180,6 +209,32 @@ module w90_parameters
   integer,                       public, save :: kubo_nfreq
   complex(kind=dp), allocatable, public, save :: kubo_freq_list(:)
   real(kind=dp),                 public, save :: kubo_eigval_max
+
+  integer                                  :: band_list_len
+  !
+  ! DGM: added January 2016
+  !
+  logical,           public, save :: wp_search_verbosity
+  logical,           public, save :: kslice_coor
+  real(kind=dp),     public, save :: wp_gap_thresh
+  real(kind=dp),     public, save :: wp_det_thresh
+  real(kind=dp),     public, save :: wp_dis_thresh
+  real(kind=dp),     public, save :: wp_corner(3) 
+  real(kind=dp),     public, save :: wp_box_delta
+  real(kind=dp),     public, save :: wp_box_corner(3)
+  real(kind=dp),     public, save :: wp_box_b1(3)
+  real(kind=dp),     public, save :: wp_box_b2(3)
+  real(kind=dp),     public, save :: wp_box_b3(3)
+  real(kind=dp),     public, save :: wp_box_k3min
+  real(kind=dp),     public, save :: wp_box_k3max
+  integer,           public, save :: wp_box_kmesh(3)
+  integer,           public, save :: wp_num_filled_bands
+  integer,           public, save :: num_c4_axis
+  real(kind=dp), allocatable, public, save :: c4_axis(:,:)
+  integer,           public, save :: num_c6_axis
+  real(kind=dp), allocatable, public, save :: c6_axis(:,:)
+
+
 
 ! Module  s p i n
   real(kind=dp),     public, save :: spin_kmesh_spacing
@@ -330,6 +385,8 @@ module w90_parameters
   logical,           public, save :: disentanglement
   real(kind=dp),     public, save :: lenconfac
   integer,           public, save :: num_wannier_plot
+  integer,           public, save :: num_berry_bands
+  integer,           public, save :: num_berry_sphere_bands
   integer,           public, save :: num_bands_project
   integer,           public, save :: num_exclude_bands
   logical,           public, save :: lfixstep
@@ -416,6 +473,7 @@ module w90_parameters
   character(len=maxlen), allocatable :: in_data(:)
   character(len=maxlen)              :: ctmp
   logical                            :: ltmp
+  real(kind=dp)                      :: berry_box_tmp(3)
   ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
   logical                            :: hr_plot 
 
@@ -762,6 +820,9 @@ contains
        end do
     end if
 
+
+
+
     wannier_plot_radius = 3.5_dp
     call param_get_keyword('wannier_plot_radius',found,r_value=wannier_plot_radius)
 
@@ -779,6 +840,10 @@ contains
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
+
+    write_wavefun                = .false.
+    call param_get_keyword('write_wavefun',found,l_value=write_wavefun)
+
 
     bands_num_points          = 100
     call param_get_keyword('bands_num_points',found,i_value=bands_num_points)
@@ -860,16 +925,18 @@ contains
        if(found .and. fermi_energy_step<=0.0_dp) call io_error(&
             'Error: fermi_energy_step must be positive')
        nfermi=nint((fermi_energy_max-fermi_energy_min)/fermi_energy_step)+1
+              if(nfermi==1) nfermi=2
+       fermi_energy_step=(fermi_energy_max-fermi_energy_min)/(nfermi-1)
     endif
     !
     if(found_fermi_energy) then
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
-       allocate(fermi_energy_list(0:nfermi),stat=ierr)
-       do i=0,nfermi
+       allocate(fermi_energy_list(nfermi),stat=ierr)
+       do i=1,nfermi
           fermi_energy_list(i)=fermi_energy_min&
-               +i*(fermi_energy_max-fermi_energy_min)/real(nfermi,dp)
+               +(i-1)*fermi_energy_step
        enddo
     elseif(nfermi==0) then 
        ! This happens when both found_fermi_energy=.false. and
@@ -895,6 +962,7 @@ contains
     call param_get_keyword('kslice_task',found,c_value=kslice_task)
        if(kslice .and. index(kslice_task,'fermi_lines')==0 .and.&
           index(kslice_task,'curv')==0 .and.&
+          index(kslice_task,'eig')==0 .and.&
           index(kslice_task,'morb')==0) call io_error&
             ('Error: value of kslice_task not recognised in param_read')
        if(kslice .and. index(kslice_task,'curv')>0 .and.&
@@ -933,6 +1001,39 @@ contains
     kslice_b2(3)=0.0_dp
     call param_get_keyword_vector('kslice_b2',found,3,r_value=kslice_b2)
 
+    kslice_b3(1)=0.0_dp
+    kslice_b3(2)=0.0_dp
+    kslice_b3(3)=1.0_dp
+    call param_get_keyword_vector('kslice_b3',found,3,r_value=kslice_b3)
+
+
+    berry_box(:,:)=0.0
+
+    do i=1,3
+	berry_box(i,i)=1.0_dp
+	berry_box_tmp(:)=0.0_dp
+	call param_get_keyword_vector('berry_box_b'//achar(48+i),found,3,r_value=berry_box_tmp)
+	if (found) berry_box(i,:)=berry_box_tmp(:)
+    enddo
+    
+    berry_box_corner(:)=0.0_dp
+    call param_get_keyword_vector('berry_box_center',found,3,r_value=berry_box_tmp)
+    if (found) berry_box_corner(:)=berry_box_tmp(:)-0.5*(berry_box(1,:)+berry_box(2,:)+berry_box(3,:))
+
+    kslice_num_slices=1
+    call param_get_keyword('kslice_num_slices',found,&
+         i_value=kslice_num_slices)
+    if(kslice_num_slices<1) call io_error("Must choose kslice_num_slices>1")
+
+    kslice_k3min = 0.0_dp
+    call param_get_keyword('kslice_k3min',found,&
+         r_value=kslice_k3min)
+
+    kslice_k3max = 1.0_dp
+    call param_get_keyword('kslice_k3max',found,&
+         r_value=kslice_k3max)
+
+
     kslice_fermi_lines_colour='none'                 
     call param_get_keyword('kslice_fermi_lines_colour',found,&
          c_value=kslice_fermi_lines_colour)
@@ -941,6 +1042,15 @@ contains
          ('Error: value of kslice_fermi_lines_colour not recognised '&
          //'in param_read')
 
+    kslice_fermi_lines_texture='none'
+    call param_get_keyword('kslice_fermi_lines_texture',found,&
+         c_value=kslice_fermi_lines_texture)
+    if(kslice .and. index(kslice_fermi_lines_texture,'none')==0 .and.&
+         index(kslice_fermi_lines_texture,'spin')==0 .and.&
+         index(kslice_fermi_lines_texture,'morb')==0 .and.&
+         index(kslice_fermi_lines_texture,'curv')==0) call io_error&
+         ('Error: value of kslice_fermi_lines_texture not recognised '&
+         //'in param_read')
 
 !    slice_plot_format         = 'plotmv'
 !    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
@@ -961,6 +1071,12 @@ contains
     call param_get_keyword('adpt_smr_fac',found,r_value=adpt_smr_fac)
     if (found .and. (adpt_smr_fac <= 0._dp)) &
          call io_error('Error: adpt_smr_fac must be greater than zero')  
+
+    smr_max_arg=5.0
+    call param_get_keyword('smr_max_arg',found,r_value=smr_max_arg)
+    if (found .and. ( smr_max_arg <= 0._dp)) &
+         call io_error('Error: smr_max_arg must be greater than zero')  
+
 
     ! By default: 1 eV
     adpt_smr_max=1.0_dp
@@ -993,7 +1109,17 @@ contains
     if(berry .and. .not.found) call io_error &
          ('Error: berry=T and berry_task is not set')
     if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-             .and. index(berry_task,'kubo')==0) call io_error&
+             .and. index(berry_task,'gme')==0&
+             .and. index(berry_task,'morg')==0&
+             .and. index(berry_task,'spin')==0&
+             .and. index(berry_task,'kubcur')==0&
+             .and. index(berry_task,'cpge')==0&
+             .and. index(berry_task,'noa')==0&
+             .and. index(berry_task,'cpgb')==0&
+             .and. index(berry_task,'sphere')==0&
+             .and. index(berry_task,'eigval')==0&
+             .and. index(berry_task,'wpsearch')==0&
+	     .and. index(berry_task,'kubo')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
 
     
@@ -1009,6 +1135,72 @@ contains
 !    call param_get_keyword('gamma',found,i_value=gamma)
 !-------------------------------------------------------
 
+    gme_task='spin+orb+berry+ohmic'
+    call param_get_keyword('gme_task',found,c_value=gme_task)
+    if(index(gme_task,'spin')==0.and.&
+       index(gme_task,'orb')==0.and.&
+       index(gme_task,'ohmic')==0.and.&
+       index(gme_task,'berry')==0) call io_error&
+          ('Error: value of gme_task not recognised in param_read')
+
+    call param_get_keyword('gme_degen_thresh',found,r_value=gme_degen_thresh)   ! Tsirkin
+
+    call param_get_range_vector('berry_band_list',found,num_berry_bands,lcount=.true.)
+    if(found) then
+       if(num_berry_bands<1) call io_error('Error: problem reading berry_band_list')
+       allocate(berry_band_list(num_berry_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating berry_band_list in param_read')
+       call param_get_range_vector('berry_band_list',found,num_berry_bands,.false.,berry_band_list)
+       if (any(berry_band_list<1) .or. any(berry_band_list>num_wann) ) &
+            call io_error('Error: berry_band_list asks for a non-valid bands')
+       ! write(*,*) "num_berry_bands= ",num_berry_bands
+       ! write(*,*) "berry_band_list : ",(berry_band_list(i) , i=1,num_berry_bands)
+    else
+       ! include all  bands in the calculation
+       num_berry_bands=num_wann
+       allocate(berry_band_list(num_berry_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating berry_band_list in param_read')
+       do loop=1,num_wann
+          berry_band_list(loop)=loop
+       end do
+       ! write(*,*) "num_berry_bands= ",num_berry_bands
+       ! write(*,*) "berry_band_list : ",(berry_band_list(i) , i=1,num_berry_bands)
+    end if
+
+
+    call param_get_range_vector('berry_sphere_band_list',found,num_berry_sphere_bands,lcount=.true.)
+    if(found) then
+       if(num_berry_sphere_bands<1) call io_error('Error: problem reading berry_sphere_band_list')
+       allocate(berry_sphere_band_list(num_berry_sphere_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating berry_sphere_band_list in param_read')
+       call param_get_range_vector('berry_sphere_band_list',found,num_berry_sphere_bands,.false.,berry_sphere_band_list)
+       if (any(berry_sphere_band_list<1) .or. any(berry_sphere_band_list>num_wann) ) &
+            call io_error('Error: berry_sphere_band_list asks for a non-valid bands')
+!       write(*,*) "num_berry_sphere_bands= ",num_berry_sphere_bands
+!       write(*,*) "berry_sphere bands are : ",(berry_sphere_band_list(i) , i=1,num_berry_sphere_bands)
+    else
+       ! include all  bands in the calculation
+       num_berry_sphere_bands=num_wann
+       allocate(berry_sphere_band_list(num_berry_sphere_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating berry_sphere_band_list in param_read')
+       do loop=1,num_wann
+          berry_sphere_band_list(loop)=loop
+       end do
+!       write(*,*) "num_berry_sphere_bands= ",num_berry_sphere_bands
+!       write(*,*) "berry_sphere bands are : ",(berry_sphere_band_list(i) , i=1,num_berry_sphere_bands)
+    end if
+
+
+    berry_sphere_center(:)=0.0_dp
+    call param_get_keyword_vector('berry_sphere_center',found,3,r_value=berry_sphere_center)
+
+    berry_sphere_nk=50
+    call param_get_keyword('berry_sphere_nk',found,i_value=berry_sphere_nk)
+
+    berry_sphere_rad=50
+    call param_get_keyword('berry_sphere_rad',found,r_value=berry_sphere_rad)
+
+
     berry_curv_adpt_kmesh           = 1
     call param_get_keyword('berry_curv_adpt_kmesh',found,&
          i_value=berry_curv_adpt_kmesh)
@@ -1019,6 +1211,107 @@ contains
     berry_curv_adpt_kmesh_thresh           = 100.0_dp
     call param_get_keyword('berry_curv_adpt_kmesh_thresh',found,&
          r_value=berry_curv_adpt_kmesh_thresh)
+
+    gme_berry_adpt_kmesh_thresh           = 100000000000.0_dp
+    call param_get_keyword('gme_berry_adpt_kmesh_thresh',found,&
+         r_value=gme_berry_adpt_kmesh_thresh)
+
+    gme_orb_adpt_kmesh_thresh           = 100000000000.0_dp
+    call param_get_keyword('gme_orb_adpt_kmesh_thresh',found,&
+         r_value=gme_orb_adpt_kmesh_thresh)
+
+    gme_spin_adpt_kmesh_thresh           = 100000000000.0_dp
+    call param_get_keyword('gme_spin_adpt_kmesh_thresh',found,&
+         r_value=gme_spin_adpt_kmesh_thresh)
+
+    ! DGM: added January 2016
+    wp_search_verbosity = .false.
+    call param_get_keyword('wp_search_verbosity',found,l_value= wp_search_verbosity)
+    kslice_coor = .false.
+    call param_get_keyword('kslice_coor',found,l_value= kslice_coor)
+    wp_gap_thresh = 0.00001_dp
+    call param_get_keyword('wp_gap_thresh',found,r_value=&
+                           wp_gap_thresh)
+    wp_det_thresh = 0.00001_dp
+    call param_get_keyword('wp_det_thresh',found,r_value=&
+                           wp_det_thresh)
+    wp_dis_thresh = 0.0001_dp
+    call param_get_keyword('wp_dis_thresh',found,r_value=&
+                           wp_dis_thresh)
+    wp_corner(1)=0.0_dp
+    wp_corner(2)=0.0_dp
+    wp_corner(3)=0.0_dp
+    call param_get_keyword_vector('wp_corner',found,3,r_value=wp_corner)
+
+    wp_box_delta = 0.001_dp
+    call param_get_keyword('wp_box_delta',found,r_value=&
+                           wp_box_delta)
+
+    wp_box_corner(1)=0.0_dp
+    
+    wp_box_corner(2)=0.0_dp
+    wp_box_corner(3)=0.0_dp
+    call param_get_keyword_vector('wp_box_corner',found,3,r_value=wp_box_corner)
+
+    wp_box_b1(1)=1.0_dp
+    wp_box_b1(2)=0.0_dp
+    wp_box_b1(3)=0.0_dp
+    call param_get_keyword_vector('wp_box_b1',found,3,r_value=wp_box_b1)
+
+    wp_box_b2(1)=0.0_dp
+    wp_box_b2(2)=1.0_dp
+    wp_box_b2(3)=0.0_dp
+    call param_get_keyword_vector('wp_box_b2',found,3,r_value=wp_box_b2)
+
+    wp_box_b3(1)=0.0_dp
+    wp_box_b3(2)=0.0_dp
+    wp_box_b3(3)=1.0_dp
+    call param_get_keyword_vector('wp_box_b3',found,3,r_value=wp_box_b3)
+
+    wp_box_k3min = 0.0_dp
+    call param_get_keyword('wp_box_k3min',found,&
+         r_value=wp_box_k3min)
+
+    wp_box_k3max = 1.0_dp
+    call param_get_keyword('wp_box_k3max',found,&
+         r_value=wp_box_k3max)
+
+    wp_box_kmesh(1)=10
+    wp_box_kmesh(2)=10
+    wp_box_kmesh(3)=10
+    call param_get_keyword_vector('wp_box_kmesh',found,3,&
+         i_value=wp_box_kmesh)
+
+    wp_num_filled_bands = 0
+    call param_get_keyword('wp_num_filled_bands',found,&
+         i_value=wp_num_filled_bands)
+    if(found .and. (wp_num_filled_bands < 1 .or.&
+                    wp_num_filled_bands > num_wann))&
+                    call io_error&
+                    ('Error: wp_num_filled_bands must be between'&
+                    //' 0 and num_wann')
+
+    num_c4_axis=0
+    call param_get_block_length('c4_rotation_axis',found,i_temp)
+    if(found) then
+       num_c4_axis=i_temp
+       allocate(c4_axis(3,num_c4_axis),stat=ierr)
+       if (ierr/=0)&
+            call io_error('Error allocating c4_axis in postw90_param_read')
+       call param_get_keyword_block('c4_rotation_axis',found,num_c4_axis,3,r_value=c4_axis)
+    endif
+
+    num_c6_axis=0
+    call param_get_block_length('c6_rotation_axis',found,i_temp)
+    if(found) then
+       num_c6_axis=i_temp
+       allocate(c6_axis(3,num_c6_axis),stat=ierr)
+       if (ierr/=0)&
+            call io_error('Error allocating c6_axis in postw90_param_read')
+       call param_get_keyword_block('c6_rotation_axis',found,num_c6_axis,3,r_value=c6_axis)
+    endif
+
+
 
     berry_curv_unit     =  'ang2' 
     call param_get_keyword('berry_curv_unit',found,c_value=berry_curv_unit)
@@ -1042,6 +1335,18 @@ contains
     if (found .and. (kubo_adpt_smr_fac <= 0._dp)) call io_error&
          ('Error: kubo_adpt_smr_fac must be greater than zero')
 
+    kubo_smr_max_arg = smr_max_arg
+    call param_get_keyword('kubo_smr_max_arg',found,&
+         r_value=kubo_smr_max_arg)
+    if (found .and. (kubo_smr_max_arg <= 0._dp)) call io_error&
+         ('Error: kubo_smr_max_arg must be greater than zero')
+
+    kubo_fermi_smr_max_arg = kubo_smr_max_arg
+    call param_get_keyword('kubo_fermi_smr_max_arg',found,&
+         r_value=kubo_fermi_smr_max_arg)
+    if (found .and. (kubo_fermi_smr_max_arg <= 0._dp)) call io_error&
+         ('Error: kubo_fermi_smr_max_arg must be greater than zero')
+
 
     kubo_adpt_smr_max = adpt_smr_max
     call param_get_keyword('kubo_adpt_smr_max',found,&
@@ -1054,6 +1359,30 @@ contains
          r_value=kubo_smr_fixed_en_width)
     if (found .and. (kubo_smr_fixed_en_width < 0._dp)) call io_error&
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
+
+
+
+    kubo_fermi_adpt_smr = .false.
+    call param_get_keyword('kubo_fermi_adpt_smr',found,l_value=kubo_fermi_adpt_smr)
+
+    kubo_fermi_adpt_smr_fac = kubo_adpt_smr_fac
+    call param_get_keyword('kubo_fermi_adpt_smr_fac',found,&
+         r_value=kubo_fermi_adpt_smr_fac)
+    if (found .and. (kubo_fermi_adpt_smr_fac <= 0._dp)) call io_error&
+         ('Error: kubo_fermi_adpt_smr_fac must be greater than zero')
+
+    kubo_fermi_adpt_smr_max = kubo_adpt_smr_max
+    call param_get_keyword('kubo_fermi_adpt_smr_max',found,&
+         r_value=kubo_fermi_adpt_smr_max)
+    if (kubo_fermi_adpt_smr_max <= 0._dp) call io_error&
+         ('Error: kubo_fermi_adpt_smr_max must be greater than zero')
+
+    kubo_fermi_smr_fixed_en_width = kubo_smr_fixed_en_width
+    call param_get_keyword('kubo_fermi_smr_fixed_en_width',found,&
+         r_value=kubo_fermi_smr_fixed_en_width)
+    if (found .and. (kubo_fermi_smr_fixed_en_width < 0._dp)) call io_error&
+      ('Error: kubo_fermi_smr_fixed_en_width must be greater than or equal to zero')
+
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
@@ -1092,6 +1421,7 @@ contains
     call param_get_keyword('kpath_task',found,c_value=kpath_task)
     if(kpath .and. index(kpath_task,'bands')==0 .and.&
          index(kpath_task,'curv')==0 .and.&
+         index(kpath_task,'pmn')==0 .and.&
          index(kpath_task,'morb')==0) call io_error&
          ('Error: value of kpath_task not recognised in param_read')
 
@@ -1104,9 +1434,11 @@ contains
     kpath_bands_colour='none'                 
     call param_get_keyword('kpath_bands_colour',found,&
          c_value=kpath_bands_colour)
-    if(kpath .and. index(kpath_bands_colour,'none')==0 .and.&
-         index(kpath_bands_colour,'spin')==0) call io_error&
-         ('Error: value of kpath_bands_colour not recognised in param_read')
+    if(kpath .and. .not.( (kpath_bands_colour=='none') .or. (kpath_bands_colour=='spin') &
+	.or. (kpath_bands_colour=='morb') .or.  (kpath_bands_colour=='mb') .or. &
+	     (kpath_bands_colour=='smb') .or.  (kpath_bands_colour=='curv') &
+	     .or. (kpath_bands_colour=='curv_w')) )  &
+	call io_error  ('Error: value of kpath_bands_colour not recognised in param_read')
 
     ! set to a negative default value
     num_valence_bands=-99
@@ -1583,6 +1915,11 @@ contains
     kubo_smr_index = smr_index
     call param_get_keyword('kubo_smr_type',found,c_value=ctmp)
     if (found) kubo_smr_index = get_smearing_index(ctmp,'kubo_smr_type')
+
+    ! By default: use the "f-d" smearing
+    kubo_fermi_smr_index = -99
+    call param_get_keyword('kubo_fermi_smr_type',found,c_value=ctmp)
+    if (found) kubo_fermi_smr_index = get_smearing_index(ctmp,'kubo_fermi_smr_type')
 
     ! By default: 10 fs relaxation time
     boltz_relax_time = 10._dp
@@ -2116,6 +2453,8 @@ contains
        end if
     elseif(index(string,'f-d')>0) then
        get_smearing_index = -99
+    elseif(index(string,'lorentzian')>0) then
+       get_smearing_index = -2
     ! Some aliases
     elseif(index(string,'cold')>0) then
        get_smearing_index = -1
@@ -3056,6 +3395,14 @@ contains
     if ( allocated( wannier_plot_list )  ) then
        deallocate( wannier_plot_list, stat=ierr  )
        if (ierr/=0) call io_error('Error in deallocating wannier_plot_list in param_dealloc')
+    end if
+    if ( allocated( berry_band_list )  ) then
+       deallocate( berry_band_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating berry_band_list in param_dealloc')
+    end if
+    if ( allocated( berry_sphere_band_list )  ) then
+       deallocate( berry_sphere_band_list, stat=ierr  )
+       if (ierr/=0) call io_error('Error in deallocating berry_sphere_band_list in param_dealloc')
     end if
     if( allocated( exclude_bands ) ) then
        deallocate( exclude_bands, stat=ierr  )
