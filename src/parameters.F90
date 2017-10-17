@@ -210,6 +210,7 @@ module w90_parameters
   integer,           public, save :: gyrotropic_num_bands
   real(kind=dp)                   :: smr_max_arg 
   real(kind=dp) ,    public, save :: gyrotropic_smr_max_arg 
+  real(kind=dp),                 public, save :: gyrotropic_eigval_max
 
 
   logical                                  :: fermi_energy_scan
@@ -486,7 +487,7 @@ contains
   !! Read parameters and calculate derived values                    
   !                                                                  !
   !===================================================================  
-    use w90_constants, only : bohr, eps6
+    use w90_constants, only : bohr, eps6, cmplx_i
     use w90_utility,   only : utility_recip_lattice,utility_metric
     use w90_io,        only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
@@ -1809,7 +1810,8 @@ contains
          call io_error('Error allocating gyrotropic_freq_list in param_read')
     do i=1,gyrotropic_nfreq
        gyrotropic_freq_list(i)=gyrotropic_freq_min&
-            +(i-1)*(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)
+            +(i-1)*(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)&
+	      +cmplx_i*gyrotropic_smr_fixed_en_width
     enddo
 
 
@@ -1821,6 +1823,18 @@ contains
        kubo_eigval_max=dis_win_max+0.6667_dp
     end if
     call param_get_keyword('kubo_eigval_max',found,r_value=kubo_eigval_max)
+
+    if(frozen_states) then
+       gyrotropic_eigval_max=dis_froz_max+0.6667_dp
+    elseif(allocated(eigval)) then
+       gyrotropic_eigval_max=maxval(eigval)+0.6667_dp
+    else
+       gyrotropic_eigval_max=dis_win_max+0.6667_dp
+    end if
+    call param_get_keyword('gyrotropic_eigval_max',found,r_value=gyrotropic_eigval_max)
+
+
+
 
 
     automatic_translation=.true.
@@ -2922,6 +2936,43 @@ contains
 
 
 
+    if(gyrotropic .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute Gyrotropic properties    :',gyrotropic,'|'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  gyrotropic_task    :',gyrotropic_task,'|'
+     call  parameters_gyro_write_task(gyrotropic_task,'D0','calculate the D tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'D0','calculate the D tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'C','calculate the C tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'K','calculate the K tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'noa','calculate the interbad natural optical activity')
+     call  parameters_gyro_write_task(gyrotropic_task,'dos','calculate the density of states')
+
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for             :',gyrotropic_freq_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for             :',gyrotropic_freq_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for frequency         :',gyrotropic_freq_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue                :',gyrotropic_eigval_max,'|'
+       if( gyrotropic_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==gyrotropic_smr_index) then
+          write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
+       else
+          write(stdout,'(1x,a78)') '|  Using local  smearing parameters                                          |'
+       endif
+          write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing      :','       T','|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width            :',gyrotropic_smr_fixed_en_width,'|'
+          write(stdout,'(1x,a21,5x,a47,4x,a1)')    '|  Smearing Function         :    ',&
+		trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
+
+       if(kmesh(1)==gyrotropic_kmesh(1) .and. kmesh(2)==gyrotropic_kmesh(2) .and. kmesh(3)==gyrotropic_kmesh(3) ) then
+          write(stdout,'(1x,a78)') '|  Using global k-point set for interpolation                                |'
+       elseif(gyrotropic_kmesh_spacing>0.0_dp) then
+             write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+                  gyrotropic_kmesh(1),'x',gyrotropic_kmesh(2),'x',gyrotropic_kmesh(3),' Spacing = ',gyrotropic_kmesh_spacing,'|'
+        else
+             write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
+                  ,gyrotropic_kmesh(1),'x',gyrotropic_kmesh(2),'x',gyrotropic_kmesh(3),'|'
+       endif
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :','    not implemented','|'
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
 
 
     if(boltzwann .or. iprint>2) then
@@ -5629,6 +5680,7 @@ contains
     call comms_bcast(fermi_surface_num_points,1)
     call comms_bcast(fermi_surface_plot_format,len(fermi_surface_plot_format))
     call comms_bcast(fermi_energy,1) !! used?
+
     call comms_bcast(berry,1)
     call comms_bcast(berry_task,len(berry_task))
     call comms_bcast(berry_kmesh_spacing,1)
@@ -5636,6 +5688,24 @@ contains
     call comms_bcast(berry_curv_adpt_kmesh,1)
     call comms_bcast(berry_curv_adpt_kmesh_thresh,1)
     call comms_bcast(berry_curv_unit,len(berry_curv_unit))
+!  Stepan Tsirkin
+    call comms_bcast(gyrotropic,1)
+    call comms_bcast(gyrotropic_task,len(gyrotropic_task))
+    call comms_bcast(gyrotropic_kmesh_spacing,1)
+    call comms_bcast(gyrotropic_kmesh(1),3)
+    call comms_bcast(gyrotropic_smr_fixed_en_width,1)
+    call comms_bcast(gyrotropic_smr_index,1)
+    call comms_bcast(gyrotropic_eigval_max,1)
+    call comms_bcast(gyrotropic_nfreq,1)
+    call comms_bcast(gyrotropic_degen_thresh,1)  
+    call comms_bcast(gyrotropic_num_bands,1)  
+    call comms_bcast(gyrotropic_box(1,1),9)
+    call comms_bcast(gyrotropic_box_corner(1),3) 
+    call comms_bcast(gyrotropic_smr_max_arg,1)
+    call comms_bcast(gyrotropic_smr_fixed_en_width,1)
+    call comms_bcast(gyrotropic_smr_index,1)
+    call comms_bcast(smr_max_arg,1)
+
     call comms_bcast(kubo_adpt_smr,1)
     call comms_bcast(kubo_adpt_smr_fac,1)
     call comms_bcast(kubo_adpt_smr_max,1)
@@ -5792,9 +5862,18 @@ contains
           if (ierr/=0)&
                call io_error('Error allocating kpt_latt in postw90_param_dist')
        endif
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating gyrotropic_num_bands in postw90_param_dist')
+       allocate(gyrotropic_freq_list(gyrotropic_nfreq),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating gyrotropic_freq_list in postw90_param_dist')
     end if
+
     if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
     if(kubo_nfreq>0) call comms_bcast(kubo_freq_list(1),kubo_nfreq)
+    if(gyrotropic_nfreq>0) call comms_bcast(gyrotropic_freq_list(1),gyrotropic_nfreq)
+    if(gyrotropic_num_bands>0) call comms_bcast(gyrotropic_band_list(1),gyrotropic_num_bands)
     if(num_dos_project>0) call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then
        if (eig_found) then
@@ -5866,6 +5945,18 @@ contains
 
   end subroutine param_dist
 
+
+     subroutine  parameters_gyro_write_task(task,key,comment)
+      use w90_io,        only : stdout
+
+      character(len=*), intent(in) :: task,key,comment
+
+       if((index(task,key)>0) .or.(index(task,'all')>0)) then
+          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment, ' :','       T','|'
+       else
+          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment, ' :','       F','|'
+       endif
+     end subroutine parameters_gyro_write_task
 
 
 end module w90_parameters

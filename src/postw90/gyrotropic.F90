@@ -70,14 +70,14 @@ module w90_gyrotropic
   !============================================================!
 
     use w90_constants, only      : dp,cmplx_0,elem_charge_SI,hbar_SI,&
-                                   eV_au,bohr,elec_mass_SI,twopi
+                                   eV_au,bohr,elec_mass_SI,twopi,eps0_SI
     use w90_comms, only          : on_root,num_nodes,my_node_id,comms_reduce
     use w90_utility, only        : utility_det3
     use w90_io, only             : io_error,stdout,io_file_unit,seedname,&
                                    io_stopwatch
     use w90_postw90_common, only : nrpts,irvec,num_int_kpts_on_node,int_kpts,&
                                    weight
-    use w90_parameters, only     : timing_level,iprint,num_wann,berry_kmesh,&
+    use w90_parameters, only     : timing_level,iprint,num_wann,gyrotropic_kmesh,&
                                    cell_volume,transl_inv,gyrotropic_task,&
                                    gyrotropic_nfreq,gyrotropic_freq_list,nfermi,&
                                    fermi_energy_list,gyrotropic_box,gyrotropic_box_corner,spinors
@@ -104,15 +104,15 @@ module w90_gyrotropic
     logical           :: eval_K,eval_C,eval_D,eval_Dw,eval_NOA,eval_spn,eval_DOS
 
     if(nfermi==0) call io_error(&
-         'Must specify one or more Fermi levels when berry=true')
+         'Must specify one or more Fermi levels when gyrotropic=true')
 
     if (timing_level>1.and.on_root) call io_stopwatch('gyrotropic: prelims',1)
 
     ! Mesh spacing in reduced coordinates
     !
-    db1=1.0_dp/real(berry_kmesh(1),dp)
-    db2=1.0_dp/real(berry_kmesh(2),dp)
-    db3=1.0_dp/real(berry_kmesh(3),dp)
+    db1=1.0_dp/real(gyrotropic_kmesh(1),dp)
+    db2=1.0_dp/real(gyrotropic_kmesh(2),dp)
+    db3=1.0_dp/real(gyrotropic_kmesh(3),dp)
     
     if(index(gyrotropic_task,'K')>0)   eval_K=.true.
     if(index(gyrotropic_task,'C')>0)   eval_C=.true.
@@ -126,10 +126,13 @@ module w90_gyrotropic
 	eval_C=.true.
         eval_D=.true.
         eval_Dw=.true.
-        eval_spn=.true.
+        if (spinors) eval_spn=.true.
         eval_NOA=.true.
         eval_DOS=.true.
     endif
+
+    if (.not. spinors .and. eval_spin) call io_error(&
+	"spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
 
     ! Wannier matrix elements, allocations and initializations
     !
@@ -222,12 +225,12 @@ module w90_gyrotropic
 
        kweight=db1*db2*db3*utility_det3(gyrotropic_box)
 
-       do loop_xyz=my_node_id,PRODUCT(berry_kmesh)-1,num_nodes
-          loop_x= loop_xyz/(berry_kmesh(2)*berry_kmesh(3))
-          loop_y=(loop_xyz-loop_x*(berry_kmesh(2)&
-               *berry_kmesh(3)))/berry_kmesh(3)
-          loop_z=loop_xyz-loop_x*(berry_kmesh(2)*berry_kmesh(3))&
-                -loop_y*berry_kmesh(3)
+       do loop_xyz=my_node_id,PRODUCT(gyrotropic_kmesh)-1,num_nodes
+          loop_x= loop_xyz/(gyrotropic_kmesh(2)*gyrotropic_kmesh(3))
+          loop_y=(loop_xyz-loop_x*(gyrotropic_kmesh(2)&
+               *gyrotropic_kmesh(3)))/gyrotropic_kmesh(3)
+          loop_z=loop_xyz-loop_x*(gyrotropic_kmesh(2)*gyrotropic_kmesh(3))&
+                -loop_y*gyrotropic_kmesh(3)
           kpt(1)=loop_x*db1
           kpt(2)=loop_y*db2
           kpt(3)=loop_z*db3
@@ -262,14 +265,14 @@ module w90_gyrotropic
 
     if(eval_NOA) then
        call comms_reduce(gyro_NOA_orb(1,1,1,1),3*3*nfermi*gyrotropic_nfreq,'SUM')
-       if (eval_spn) call comms_reduce(gyro_NOA_orb(1,1,1,1),3*3*nfermi*gyrotropic_nfreq,'SUM')
+       if (eval_spn) call comms_reduce(gyro_NOA_spn(1,1,1,1),3*3*nfermi*gyrotropic_nfreq,'SUM')
     endif
     
     if(on_root) then
 
        if (timing_level>1) call io_stopwatch('gyrotropic: k-interpolation',2)
        write(stdout,'(1x,a)') ' '
-       write(stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ',berry_kmesh(1:3)
+       write(stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ',gyrotropic_kmesh(1:3)
 
 	if (eval_K) then
           if (eval_spn) then
@@ -287,7 +290,8 @@ module w90_gyrotropic
           ! ==============================
           fac=-1.0e20_dp*elem_charge_SI*hbar_SI/(2.*elec_mass_SI*cell_volume)
           gyro_K_spn(:,:,:)=gyro_K_spn(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('K_spin',arrEf=gyro_K_spn,units="Ampere")
+	  call gyrotropic_outprint_tensor('K_spin',arrEf=gyro_K_spn,units="Ampere",&
+		comment="spin part of the K tensor -- Eq. 3 of TAS17")
 	  endif  ! eval_K && eval_spin
 
           ! At this point gme_orb_list contains
@@ -305,20 +309,23 @@ module w90_gyrotropic
           ! ====================================
           fac=elem_charge_SI**2/(2.*hbar_SI*cell_volume)
           gyro_K_orb(:,:,:)=gyro_K_orb(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('K_orb',arrEf=gyro_K_orb,units="Ampere")
+	  call gyrotropic_outprint_tensor('K_orb',arrEf=gyro_K_orb,units="Ampere",&
+		comment="orbital part of the K tensor -- Eq. 3 of TAS17")
 	  endif ! eval_K
 
 	if (eval_D) then
           fac=1./cell_volume
           gyro_D(:,:,:)=gyro_D(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('D',arrEf=gyro_D,units="dimensionless")
+	  call gyrotropic_outprint_tensor('D',arrEf=gyro_D,units="dimensionless",&
+		comment="the D tensor -- Eq. 2 of TAS17")
 	endif
 
 
 	if (eval_Dw) then
           fac=1./cell_volume
           gyro_Dw(:,:,:,:)=gyro_Dw(:,:,:,:)*fac
-	  call gyrotropic_outprint_tensor('tildeD',arrEfW=gyro_Dw,units="dimensionless")
+	  call gyrotropic_outprint_tensor('tildeD',arrEfW=gyro_Dw,units="dimensionless",&
+		comment="the tildeD tensor -- Eq. 12 of TAS17")
 	endif
 
 	if (eval_C) then
@@ -335,8 +342,35 @@ module w90_gyrotropic
           !
           fac=1.0e+8_dp*elem_charge_SI**2/(twopi*hbar_SI*cell_volume)
           gyro_C(:,:,:)=gyro_C(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('C',arrEf=gyro_C,units="Ampere/cm")
+	  call gyrotropic_outprint_tensor('C',arrEf=gyro_C,units="Ampere/cm",comment="the C tensor -- Eq. B6 of TAS17")
 	endif
+
+         if(eval_noa) then
+          ! at this point gyro_NOA_orb  is in eV^-1.Ang^3   !
+          !  We want the result in angstrems  !
+          !   * Divide by V_c in Ang^3 to make it eV^{-1}
+	  !   * Divide by e in SI to get J^{-1}
+	  !   * multiply by e^2/eps_0 to get meters
+	  !   *multiply dy 1e10 to get Ang
+          fac=1e+10_dp*elem_charge_SI/(cell_volume*eps0_SI)
+          gyro_NOA_orb=gyro_NOA_orb*fac
+	  call gyrotropic_outprint_tensor('NOA_orb',arrEfW=gyro_NOA_orb,units="Ang",&
+		comment="the tensor \tilde gamma_{ab}=1/2*sum_{cd}eps_{acd}gamma_{cdb}^orb}")
+
+          if (eval_spn) then
+	  ! at this point gyro_NOA_spn  is in eV^-2.Ang   !
+          !  We want the result in angstrems  !
+          !   * Divide by V_c in Ang^3 to make it (eV.Ang)^{-2}
+	  !   * multiply by 1e20/e^2 in SI to get (J.m)^{-2}
+	  !   * multiply by e^2/eps_0 to get (J.m)^{-1}
+	  !   *multiply dy hbar^2/m_e to get m
+          !   *multiply by 1e10 to get Ang
+	     fac=1e+30_dp*hbar_SI**2/(cell_volume*eps0_SI*elec_mass_SI)
+	     gyro_NOA_spn=gyro_NOA_spn*fac
+	      call gyrotropic_outprint_tensor('NOA_orb',arrEfW=gyro_NOA_spn,units="Ang",&
+		comment="the tensor \tilde gamma_{ab}=1/2*sum_{cd}eps_{acd}gamma_{cdb}^spin}")
+	  endif
+	endif  !eval_NOA
 
 	if (eval_DOS) then
           ! At this point gyro_C contains
@@ -497,7 +531,6 @@ module w90_gyrotropic
                    orb_nk(i)=sum(imh_k(:,i,1))-sum(img_k(:,i,1))
                    curv_nk(i)=sum(imf_k(:,i,1))
                 enddo
-                got_orb_n=.true. ! Do it for only one value of ifermi
              else if(eval_D)  then
                 occ=0.0_dp
                 occ(n)=1.0_dp
@@ -507,6 +540,10 @@ module w90_gyrotropic
                 enddo
                 got_orb_n=.true. ! Do it for only one value of ifermi
              endif
+
+	     if(eval_Dw)  call gyrotropic_get_curv_w_k(eig,AA,curv_w_k)
+
+                got_orb_n=.true. ! Do it for only one value of ifermi
           endif
           !
           delta=utility_w0gauss(arg,gyrotropic_smr_index)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
@@ -533,6 +570,8 @@ module w90_gyrotropic
        enddo !ifermi
     enddo !n
 
+!     if (eval_NOA) call gyrotropic_eval_NOA(eig,del_eig,AA
+
   end subroutine gyrotropic_get_k_list
 
 
@@ -542,9 +581,9 @@ module w90_gyrotropic
   ! calculation of the band-resolved                                     !
   ! frequency-dependent   berry curvature                                !
   !                                                                      !
-  ! tildeOmeg(w)=                                                        !
+  ! tildeOmega(w)=                                                        !
   !     -eps_{bcd}sum_m ( w_mn^2/(wmn^2-w^2)) *Im[A_{nm,c}A_{mn,d}       !
-  !  and optionall berry-curvature                                       !
+  !                                        !
   !======================================================================!
 
     use w90_constants, only      : dp
@@ -578,6 +617,258 @@ module w90_gyrotropic
     enddo !n
 
   end subroutine gyrotropic_get_curv_w_k
+
+  subroutine gyrotropic_get_NOA_k(kpt,eig,del_eig,gyro_NOA_orb,gyro_NOA_spn) 
+  !====================================================================!
+  !                                                                    !
+  ! Contribution from point k to the real (antisymmetric) part         !
+  ! of the natural  complex interband optical conductivity             !
+  !                                                                    !
+  ! Re gyro_NOA_orb  =  SUM_{n,l}^{oe}  hbar^{-2}/(w_nl^2-w^2) *  
+  !   Re (  A_lnb Bnlac -Alna Bnlbc)
+  !     -SUM_{n,l}^{oe}  hbar^{-2}(3*w_ln^2-w^2)/(w_nl^2-w^2)^2 *  
+  ! Im (  A_lnb Bnlac -Alna Bnlac)nm_a A_mn_b )
+  ! [units of Ang^3/eV]                                                !
+
+  ! [units of Ang^3]                                                !
+  ! Re gyro_NOA_orb_{ab,c}  =  SUM_{n,l}^{oe}  hbar^{-2}/(w_nl^2-w^2) *  
+  !   Re (  A_lnb Bnlac -Alna Bnlbc)
+  ! [units of Ang/eV^2]                                                !
+  !         
+  !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
+  !====================================================================!
+
+    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi
+    use w90_utility, only        : utility_rotate
+    use w90_parameters, only     : num_wann,kubo_nfreq,kubo_freq_list,kubo_smr_fixed_en_width,&
+                                   fermi_energy_list,nfermi,kubo_eigval_max,&
+                                   num_berry_bands,berry_band_list
+                                   
+    use w90_comms, only          : on_root
+    use w90_io, only          : stdout,io_time,io_error
+
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec,&
+				   pw90common_fourier_R_to_k_new,&
+                                   pw90common_kmesh_spacing
+    use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
+    use w90_get_oper, only       : AA_R,SS_R
+    use w90_spin, only           : get_S
+
+    ! Arguments
+    !
+    real(kind=dp),                     intent(in)  :: kpt(3)
+    real(kind=dp), dimension(:,:,:), intent(out) :: sigma_m_orb_k,sigma_e_k ! ifreq,ab,c
+    real(kind=dp), dimension(:,:,:),optional, intent(out) :: sigma_m_spin_k ! ifreq,ab,c
+
+
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: D_h(:,:,:)
+    complex(kind=dp), allocatable :: AA(:,:,:)
+    complex(kind=dp), allocatable :: Bnl_orb(:,:,:,:)
+    complex(kind=dp), allocatable :: Bnl_spin(:,:,:,:)
+    complex(kind=dp), allocatable :: SS(:,:,:)
+    complex(kind=dp), allocatable :: S_h(:,:,:)
+    complex(kind=dp)              :: W(kubo_nfreq)
+!    real(kind=dp)              :: W(kubo_nfreq)
+    
+    real(kind=dp) :: multWe(kubo_nfreq),multWm(kubo_nfreq)
+
+    integer ::  num_occ,num_unocc,occ_list(num_wann),unocc_list(num_wann)
+     
+    real(kind=dp)    :: del_eig(num_wann,3),joint_level_spacing,level_spacing,&
+                    	time0,time1,time2,wmn
+    
+    integer          :: i,j,n,l,n1,l1,a,b,c,ab
+    real(kind=dp)    :: eig(num_wann),wln
+    logical :: deltaWzero,AAcalculated
+    allocate(HH(num_wann,num_wann))
+    allocate(delHH(num_wann,num_wann,3))
+    allocate(UU(num_wann,num_wann))
+    allocate(SS(num_wann,num_wann,3))
+    allocate(S_h(num_wann,num_wann,3))
+
+    if (on_root) write(stdout,*) "kpt=",kpt
+
+    W=real(kubo_freq_list(:))+cmplx_i*kubo_smr_fixed_en_width
+!    W=real(kubo_freq_list(:)) ! +cmplx_i*kubo_smr_fixed_en_width
+
+    if (on_root) write(stdout,*) "W[10]=",W(10)
+
+    call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+  
+    num_occ=0
+    num_unocc=0
+    do n=1,num_berry_bands
+	if (eig(berry_band_list(n))<fermi_energy_list(1) ) then
+	    num_occ=num_occ+1
+	    occ_list(num_occ)=berry_band_list(n)
+	elseif (eig(berry_band_list(n))<kubo_eigval_max) then
+	    num_unocc=num_unocc+1
+	    unocc_list(num_unocc)=berry_band_list(n)
+	endif
+    enddo
+
+    if (num_occ==0) then 
+	call io_error("no occupied bands included in the calculation")
+    endif
+
+    if (num_unocc==0) then 
+	call io_error("no unoccupied bands included in the calculation")
+    endif
+
+
+    allocate(D_h(num_wann,num_wann,3))
+    allocate(AA(num_wann,num_wann,3))
+    call wham_get_D_h(delHH,UU,eig,D_h)
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
+    do i=1,3
+        AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
+    enddo
+    AA=AA+cmplx_i*D_h ! Eq.(25) WYSV06
+
+    allocate (Bnl_orb(num_occ,num_unocc,3,3))    
+    call berry_get_NOA_Bnl_orb(eig,del_eig,AA,num_occ,occ_list,num_unocc,unocc_list,Bnl_orb)
+    sigma_m_orb_k=cmplx_0
+    sigma_e_k=cmplx_0
+
+
+    if (present(sigma_m_spin_k)) then
+       do j=1,3 ! spin direction
+          call pw90common_fourier_R_to_k_new(kpt,SS_R(:,:,:,j),OO=SS(:,:,j))
+          S_h(:,:,j)=utility_rotate(SS(:,:,j),UU,num_wann)
+       enddo
+	allocate (Bnl_spin(num_occ,num_unocc,3,3))
+	call berry_get_NOA_Bnl_spin(S_h,num_occ,occ_list,num_unocc,unocc_list,Bnl_spin)
+	sigma_m_spin_k=cmplx_0
+    endif
+
+
+
+
+    
+    do n1=1,num_occ
+	n=occ_list(n1)
+	do l1=1,num_unocc
+	    l=unocc_list(l1)
+
+!	    if (on_root) write(stdout,*) n1,l1,n,l
+
+            wln=eig(l)-eig(n)
+
+	    multWm=real(W(:))*real(1./(wln*wln-W(:)*W(:)))
+	    multWe=real(-multWm*(3*wln*wln-W(:)*W(:))/(wln*wln-W(:)*W(:)))
+	    do ab=1,3
+	      a=alpha_A(ab)
+	      b=beta_A(ab)
+	      do c=1,3
+        	sigma_m_orb_k(ab,c,:)=sigma_m_orb_k(ab,c,:)+&
+        	    multWm*real(AA(l,n,b)*Bnl_orb(n1,l1,a,c)-AA(l,n,a)*Bnl_orb(n1,l1,b,c))
+        	if (present(sigma_m_spin_k)) then
+        	    sigma_m_spin_k(ab,c,:)=sigma_m_spin_k(ab,c,:)+&
+        		multWm*real(AA(l,n,b)*Bnl_spin(n1,l1,a,c)-AA(l,n,a)*Bnl_spin(n1,l1,b,c))
+        	endif
+        	sigma_e_k(ab,c,:)=sigma_e_k(ab,c,:)+&
+        	    multWe*(del_eig(n,c)+del_eig(l,c))*imag(AA(n,l,a)*AA(l,n,b))
+    	      enddo
+    	    enddo
+    	enddo  ! l1
+    enddo ! n1
+
+  end subroutine gyrotropic_get_NOA_k
+
+
+
+  subroutine gyrotropic_get_NOA_Bnl_orb(eig,del_eig,AA,&
+	num_occ,occ_list,num_unocc,unocc_list,Bnl) 
+  !====================================================================!
+  !                                                                    !
+  ! Calculating the matrix                                             !
+  ! B_{nl,ac}(num_occ,num_unocc,3,3)=                    !
+  !      -sum_m(  (E_m-E_n)A_nma*Amlc +(E_l-E_m)A_nmc*A_mla -          !
+  !      -i( del_a (E_n+E_l) A_nlc                                     !
+  !   in units eV*Ang^2                                                !
+  !====================================================================!
+
+    use w90_constants, only      : dp,cmplx_i,cmplx_0
+    use w90_parameters, only     : gyrotropic_num_bands,gyrotropic__band_list
+
+    ! Arguments
+    !
+    integer,                              intent(in) ::num_occ,num_unocc
+    integer,          dimension(:),       intent(in) ::occ_list , unocc_list
+    real(kind=dp),    dimension(:),       intent(in) ::eig     !  n
+    real(kind=dp),    dimension(:,:),     intent(in) ::del_eig !  n
+    complex(kind=dp), dimension(:,:,:),   intent(in) ::AA      !  n,l,a
+    complex(kind=dp), dimension(:,:,:,:), intent(out)::Bnl     !   n,l,a,c
+    integer n,m,l,a,c,n1,m1,l1
+
+    Bnl(:,:,:,:)=cmplx_0
+    
+    
+    do a=1,3
+    do c=1,3
+	do n1=1,num_occ
+	    n=occ_list(n1)
+	    do l1=1,num_unocc
+		l=unocc_list(l1)
+		Bnl(n1,l1,a,c)=-cmplx_i*(del_eig(n,a)+del_eig(l,a))*AA(n,l,c)
+		do m1=1,gyrotopic_num_bands
+		    m=gyrotropic_band_list(m1)
+		    Bnl(n1,l1,a,c)=Bnl(n1,l1,a,c)+ &
+		        (eig(n)-eig(m))*AA(n,m,a)*AA(m,l,c)- &
+			(eig(l)-eig(m))*AA(n,m,c)*AA(m,l,a)
+		enddo ! m1
+	    enddo !l1
+	enddo !n1
+    enddo !c
+    enddo !a
+
+  end subroutine gyrotropic_get_NOA_Bnl_orb
+
+
+  subroutine gyrotropic_get_NOA_Bnl_spin( S_h,&
+	num_occ,occ_list,num_unocc,unocc_list,Bnl)
+  !====================================================================!
+  !                                                                    !
+  ! Calculating the matrix                                             !
+  ! B_{nl,ac}^spin(num_occ,num_unocc,3,3)=                             !
+  !      -i  eps_{abc}  < u_n | sigma_b | u_l >                        !
+  !   ( dimensionless )                                                !
+  !====================================================================!
+
+    use w90_constants, only      : dp,cmplx_i,cmplx_0
+
+    ! Arguments
+    !
+    integer,                              intent(in) ::num_occ,num_unocc
+    integer,          dimension(:),       intent(in) ::occ_list , unocc_list
+    complex(kind=dp), dimension(:,:,:),   intent(in) ::S_h     !  n,l,a
+    complex(kind=dp), dimension(:,:,:,:), intent(out)::Bnl     !   n,l,a,c
+    integer n,l,a,b,c,n1,l1
+
+    Bnl(:,:,:,:)=cmplx_0
+        
+    do b=1,3
+!	if (on_root) write(stdout,*) b
+	c=alpha_A(b)
+	a=beta_A(b)
+!	if (on_root) write(stdout,*) a,b,c
+	do n1=1,num_occ
+	    n=occ_list(n1)
+	    do l1=1,num_unocc
+		l=unocc_list(l1)
+!		if (on_root) write(stdout,*) a,b,c,n1,n,l1,l
+		Bnl(n1,l1,a,c)=S_h(n,l,b)
+	    enddo !l1
+	enddo !n1
+    enddo !b
+    
+    Bnl=Bnl*(-cmplx_i)
+
+  end subroutine gyrotropic_get_NOA_Bnl_spin
+
 
 
   subroutine gyrotropic_outprint_tensor(f_out_name,arrEf,arrEF1D,arrEfW,units,comment)
