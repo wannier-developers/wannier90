@@ -217,7 +217,7 @@ module w90_wan_ham
           enddo
        end do
     end do
-    do if=1,nfermi
+    do if=1,nfermi_loc
        JJm_list(:,:,if)=&
             utility_rotate(JJm_list(:,:,if),conjg(transpose(UU)),num_wann)
     enddo
