@@ -193,7 +193,7 @@ module w90_parameters
   logical,           public, save :: transl_inv
 
   logical,           public, save :: gyrotropic
-  character(len=20), public, save :: gyrotropic_task
+  character(len=50), public, save :: gyrotropic_task
   integer,           public, save :: gyrotropic_kmesh(3)
   real(kind=dp),     public, save :: gyrotropic_kmesh_spacing
   integer,           public, save :: gyrotropic_smr_index
@@ -916,17 +916,21 @@ contains
             r_value=fermi_energy_step)
        if(found .and. fermi_energy_step<=0.0_dp) call io_error(&
             'Error: fermi_energy_step must be positive')
-       nfermi=nint((fermi_energy_max-fermi_energy_min)/fermi_energy_step)+1
+       nfermi=nint(abs((fermi_energy_max-fermi_energy_min)/fermi_energy_step))+1
     endif
     !
     if(found_fermi_energy) then
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
-       allocate(fermi_energy_list(0:nfermi),stat=ierr)
-       do i=0,nfermi
-          fermi_energy_list(i)=fermi_energy_min&
-               +i*(fermi_energy_max-fermi_energy_min)/real(nfermi,dp)
+	if (nfermi.eq.1) then 
+	    fermi_energy_step=0.0_dp
+	else
+	    fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
+	endif
+	allocate(fermi_energy_list(nfermi),stat=ierr)
+        do i=1,nfermi
+    	    fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
        enddo
 !!    elseif(nfermi==0) then 
 !!        ! This happens when both found_fermi_energy=.false. and
@@ -1061,9 +1065,9 @@ contains
 
     ! Stepan
     gyrotropic                  = .false.
-    call param_get_keyword('gyrotropic',found,l_value=berry)
+    call param_get_keyword('gyrotropic',found,l_value=gyrotropic)
     gyrotropic_task ='all'
-    call param_get_keyword('gyrotropic_task',found,c_value=berry_task)
+    call param_get_keyword('gyrotropic_task',found,c_value=gyrotropic_task)
     gyrotropic_box(:,:)=0.0
     gyrotropic_degen_thresh=0.0_dp
     call param_get_keyword('gyrotropic_degen_thresh',found,r_value=gyrotropic_degen_thresh) 
@@ -1800,7 +1804,7 @@ contains
     gyrotropic_freq_step        = 0.01_dp
     call param_get_keyword('gyrotropic_freq_min',found,r_value=gyrotropic_freq_min)
     call param_get_keyword('gyrotropic_freq_max',found,r_value=gyrotropic_freq_max)
-    call param_get_keyword('gyrotropic_freq_step',found,r_value=gyrotropic_freq_max)
+    call param_get_keyword('gyrotropic_freq_step',found,r_value=gyrotropic_freq_step)
     gyrotropic_nfreq=nint((gyrotropic_freq_max-gyrotropic_freq_min)/gyrotropic_freq_step)+1
     if(gyrotropic_nfreq<=1) gyrotropic_nfreq=2
     gyrotropic_freq_step=(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)
@@ -2938,28 +2942,30 @@ contains
 
     if(gyrotropic .or. iprint>2) then
        write(stdout,'(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
-       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  Compute Gyrotropic properties    :',gyrotropic,'|'
-       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '|  gyrotropic_task    :',gyrotropic_task,'|'
-     call  parameters_gyro_write_task(gyrotropic_task,'D0','calculate the D tensor')
-     call  parameters_gyro_write_task(gyrotropic_task,'D0','calculate the D tensor')
-     call  parameters_gyro_write_task(gyrotropic_task,'C','calculate the C tensor')
-     call  parameters_gyro_write_task(gyrotropic_task,'K','calculate the K tensor')
-     call  parameters_gyro_write_task(gyrotropic_task,'noa','calculate the interbad natural optical activity')
-     call  parameters_gyro_write_task(gyrotropic_task,'dos','calculate the density of states')
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '| Compute Gyrotropic properties              :',gyrotropic,'|'
+       write(stdout,'(1x,a46,10x,a20,1x,a1)')    '| gyrotropic_task                            :',gyrotropic_task,'|'
+     call  parameters_gyro_write_task(gyrotropic_task,'-d0','calculate the D tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-dw','calculate the tildeD tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-c','calculate the C tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-k','calculate the K tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-noa','calculate the interbad natural optical activity')
+     call  parameters_gyro_write_task(gyrotropic_task,'-dos','calculate the density of states')
 
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for             :',gyrotropic_freq_min,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for             :',gyrotropic_freq_max,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for frequency         :',gyrotropic_freq_step,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue                :',gyrotropic_eigval_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for tildeD,NOA            :',gyrotropic_freq_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency                           :',gyrotropic_freq_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for frequency                   :',gyrotropic_freq_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue                          :',gyrotropic_eigval_max,'|'
        if( gyrotropic_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==gyrotropic_smr_index) then
           write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
        else
           write(stdout,'(1x,a78)') '|  Using local  smearing parameters                                          |'
        endif
-          write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing      :','       T','|'
-          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width            :',gyrotropic_smr_fixed_en_width,'|'
-          write(stdout,'(1x,a21,5x,a47,4x,a1)')    '|  Smearing Function         :    ',&
+          write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',&
+        	gyrotropic_smr_fixed_en_width,'|'
+          write(stdout,'(1x,a21,5x,a47,4x,a1)')    '|  Smearing Function                         :',&
 		trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  degen_thresh                              :',gyrotropic_degen_thresh,'|'
 
        if(kmesh(1)==gyrotropic_kmesh(1) .and. kmesh(2)==gyrotropic_kmesh(2) .and. kmesh(3)==gyrotropic_kmesh(3) ) then
           write(stdout,'(1x,a78)') '|  Using global k-point set for interpolation                                |'
@@ -5704,7 +5710,6 @@ contains
     call comms_bcast(gyrotropic_smr_max_arg,1)
     call comms_bcast(gyrotropic_smr_fixed_en_width,1)
     call comms_bcast(gyrotropic_smr_index,1)
-    call comms_bcast(smr_max_arg,1)
 
     call comms_bcast(kubo_adpt_smr,1)
     call comms_bcast(kubo_adpt_smr_fac,1)
@@ -5872,8 +5877,8 @@ contains
 
     if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
     if(kubo_nfreq>0) call comms_bcast(kubo_freq_list(1),kubo_nfreq)
-    if(gyrotropic_nfreq>0) call comms_bcast(gyrotropic_freq_list(1),gyrotropic_nfreq)
-    if(gyrotropic_num_bands>0) call comms_bcast(gyrotropic_band_list(1),gyrotropic_num_bands)
+    call comms_bcast(gyrotropic_freq_list(1),gyrotropic_nfreq)
+    call comms_bcast(gyrotropic_band_list(1),gyrotropic_num_bands)
     if(num_dos_project>0) call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then
        if (eig_found) then
@@ -5950,11 +5955,13 @@ contains
       use w90_io,        only : stdout
 
       character(len=*), intent(in) :: task,key,comment
-
+      character(len=42) :: comment1
+      
+      comment1=comment
        if((index(task,key)>0) .or.(index(task,'all')>0)) then
-          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment, ' :','       T','|'
+          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment1, ' :','       T','|'
        else
-          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment, ' :','       F','|'
+          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment1, ' :','       F','|'
        endif
      end subroutine parameters_gyro_write_task
 
