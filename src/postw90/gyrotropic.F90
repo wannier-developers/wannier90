@@ -743,12 +743,14 @@ module w90_gyrotropic
 	enddo
 
         if (num_occ==0) then
-	    write(stdout,*) "WARNING no occupied bands included in the calculation for kpt=",kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
+	    write(stdout,*) "WARNING no occupied bands included in the calculation for kpt=",& 
+		kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
 	    cycle 
 	endif
 
 	if (num_unocc==0) then 
-	    write(stdout,*) "WARNING no unoccupied bands included in the calculation for kpt=",kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
+	    write(stdout,*) "WARNING no unoccupied bands included in the calculation for kpt=",& 
+		kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
 	    cycle 
 	endif
 
