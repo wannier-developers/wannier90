@@ -36,6 +36,7 @@ module w90_parameters
   !! Read the wvfn from fortran formatted file
   logical,           public, save :: spn_formatted
   !! Read the spin from fortran formatted file
+  logical,           public, save :: uHu_formatted
   logical,           public, save :: berry_uHu_formatted
   !! Read the uHu from fortran formatted file
   integer,           public, save :: spin
@@ -566,7 +567,10 @@ contains
     spn_formatted  =  .false.       ! formatted or "binary" file
     call param_get_keyword('spn_formatted',found,l_value=spn_formatted)
 
-    berry_uHu_formatted  =  .false.       ! formatted or "binary" file
+
+    uHu_formatted  =  .false.       ! formatted or "binary" file
+    call param_get_keyword('uHu_formatted',found,l_value=uHu_formatted)
+    berry_uHu_formatted  =  uHu_formatted   
     call param_get_keyword('berry_uHu_formatted',found,l_value=berry_uHu_formatted)
 
     spin=1
@@ -5590,6 +5594,7 @@ contains
     call comms_bcast(length_unit,1) 
     call comms_bcast(wvfn_formatted,1) 
     call comms_bcast(spn_formatted,1) 
+    call comms_bcast(uHu_formatted,1) 
     call comms_bcast(berry_uHu_formatted,1) 
     call comms_bcast(spin,1) 
     call comms_bcast(num_dump_cycles,1)
