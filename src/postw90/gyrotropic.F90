@@ -145,24 +145,20 @@ module w90_gyrotropic
 	"spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
 
     ! Wannier matrix elements, allocations and initializations
-    !
 
     call get_HH_R 
-    write(stdout,*) "get_HH_R - OK"
-    call get_AA_R
-    write(stdout,*) "get_AA_R - OK"
+    if(eval_D.or.eval_Dw.or.eval_K.or.eval_NOA) then
+	call get_AA_R
+    endif 
 
     if (eval_spn) then
 	call get_SS_R
-	write(stdout,*) "get_SS_R - OK"
     endif
     
 
     if(eval_K) then
        call get_BB_R
-    write(stdout,*) "get_BB_R - OK"
        call get_CC_R
-    write(stdout,*) "get_CC_R - OK"
        allocate(gyro_K_orb(3,3,nfermi))
        gyro_K_orb=0.0_dp
        if (eval_spn) then
@@ -264,10 +260,9 @@ module w90_gyrotropic
           kpt(3)=loop_z*db3
           kpt(:)=gyrotropic_box_corner(:)+matmul(kpt,gyrotropic_box)
 
-      write(*,*) "kpt=",kpt
-          call  gyrotropic_get_k_list(kpt,kweight,&
-    gyro_K_spn, gyro_K_orb,gyro_D,gyro_Dw,gyro_C,&
-    gyro_DOS,gyro_NOA_orb,gyro_NOA_spn,&
+          call  gyrotropic_get_k_list(kpt,kweight,& 
+    gyro_K_spn, gyro_K_orb,gyro_D,gyro_Dw,gyro_C,& 
+    gyro_DOS,gyro_NOA_orb,gyro_NOA_spn,& 
     eval_K,eval_D,eval_Dw,eval_NOA,eval_spn,eval_C,eval_dos)
 
 
@@ -280,16 +275,16 @@ module w90_gyrotropic
        if (eval_spn) call comms_reduce(gyro_K_spn(1,1,1),3*3*nfermi,'SUM')
     endif
 
-    if(eval_D) &
+    if(eval_D) & 
        call comms_reduce(gyro_D(1,1,1),3*3*nfermi,'SUM')
 
-    if(eval_C) &
+    if(eval_C) & 
        call comms_reduce(gyro_C(1,1,1),3*3*nfermi,'SUM')
 
-    if(eval_Dw) &
+    if(eval_Dw) & 
        call comms_reduce(gyro_Dw(1,1,1,1),3*3*nfermi*gyrotropic_nfreq,'SUM')
 
-    if(eval_dos) &
+    if(eval_dos) & 
 	call comms_reduce(gyro_DOS(1),nfermi,'SUM')
 
     if(eval_NOA) then
@@ -319,7 +314,7 @@ module w90_gyrotropic
           ! ==============================
           fac=-1.0e20_dp*elem_charge_SI*hbar_SI/(2.*elec_mass_SI*cell_volume)
           gyro_K_spn(:,:,:)=gyro_K_spn(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('K_spin',arrEf=gyro_K_spn,units="Ampere",&
+	  call gyrotropic_outprint_tensor('K_spin',arrEf=gyro_K_spn,units="Ampere",& 
 		comment="spin part of the K tensor -- Eq. 3 of TAS17")
 	  endif  ! eval_K && eval_spin
 
@@ -338,14 +333,14 @@ module w90_gyrotropic
           ! ====================================
           fac=elem_charge_SI**2/(2.*hbar_SI*cell_volume)
           gyro_K_orb(:,:,:)=gyro_K_orb(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('K_orb',arrEf=gyro_K_orb,units="Ampere",&
+	  call gyrotropic_outprint_tensor('K_orb',arrEf=gyro_K_orb,units="Ampere",& 
 		comment="orbital part of the K tensor -- Eq. 3 of TAS17")
 	  endif ! eval_K
 
 	if (eval_D) then
           fac=1./cell_volume
           gyro_D(:,:,:)=gyro_D(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('D',arrEf=gyro_D,units="dimensionless",&
+	  call gyrotropic_outprint_tensor('D',arrEf=gyro_D,units="dimensionless",& 
 		comment="the D tensor -- Eq. 2 of TAS17")
 	endif
 
@@ -371,7 +366,8 @@ module w90_gyrotropic
           !
           fac=1.0e+8_dp*elem_charge_SI**2/(twopi*hbar_SI*cell_volume)
           gyro_C(:,:,:)=gyro_C(:,:,:)*fac
-	  call gyrotropic_outprint_tensor('C',arrEf=gyro_C,units="Ampere/cm",comment="the C tensor -- Eq. B6 of TAS17")
+	  call gyrotropic_outprint_tensor('C',arrEf=gyro_C,units="Ampere/cm",& 
+		    comment="the C tensor -- Eq. B6 of TAS17")
 	endif
 
          if(eval_noa) then
@@ -384,7 +380,7 @@ module w90_gyrotropic
           fac=1e+10_dp*elem_charge_SI/(cell_volume*eps0_SI)
           gyro_NOA_orb=gyro_NOA_orb*fac
 	  call gyrotropic_outprint_tensor('NOA_orb',arrEfW=gyro_NOA_orb,units="Ang",& 
-		comment="the tensor \tilde gamma_{ab}=1/2*sum_{cd}eps_{acd}gamma_{cdb}^orb}")
+		comment="the tensor $gamma_{abc}^{orb}$ (Eq. C10 of TAS17)",symmetrize=.false.)
 
           if (eval_spn) then
 	  ! at this point gyro_NOA_spn  is in eV^-2.Ang   !
@@ -397,7 +393,7 @@ module w90_gyrotropic
 	     fac=1e+30_dp*hbar_SI**2/(cell_volume*eps0_SI*elec_mass_SI)
 	     gyro_NOA_spn=gyro_NOA_spn*fac
 	      call gyrotropic_outprint_tensor('NOA_spin',arrEfW=gyro_NOA_spn,units="Ang",& 
-		comment="the tensor \tilde gamma_{ab}=1/2*sum_{cd}eps_{acd}gamma_{cdb}^spin}")
+		comment="the tensor $gamma_{abc}^{spin}$ (Eq. C10 of TAS17)",symmetrize=.false.)
 	  endif
 	endif  !eval_NOA
 
@@ -407,7 +403,7 @@ module w90_gyrotropic
 	  ! in units of eV^{-1}
 	  ! divide by V_c in Ang^3 to get units 1./(eV*Ang^3)
           gyro_DOS(:)=gyro_DOS(:)/cell_volume
-	  call gyrotropic_outprint_tensor('DOS',arrEf1d=gyro_DOS,units="eV^{-1}.Ang^{-3}")
+	  call gyrotropic_outprint_tensor('DOS',arrEf1d=gyro_DOS,units="eV^{-1}.Ang^{-3}",comment="density of states")
 	endif
        
     end if !on_root
@@ -595,8 +591,9 @@ module w90_gyrotropic
 		endif
                 if(eval_C) gyro_C(:,j,ifermi)=& 
                      gyro_C(:,j,ifermi)+del_eig(n,:)*del_eig(n,j)*delta
-                if(eval_dos) gyro_DOS(ifermi)=gyro_DOS(ifermi)+delta
           enddo !j
+          if(eval_dos) gyro_DOS(ifermi)=gyro_DOS(ifermi)+delta
+          
        enddo !ifermi
     enddo !n
 
@@ -674,21 +671,17 @@ module w90_gyrotropic
   !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
   !====================================================================!
 
-    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi
+    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi,cmplx_1
     use w90_utility, only        : utility_rotate
     use w90_parameters, only     : num_wann,gyrotropic_nfreq,gyrotropic_freq_list,& 
-				   gyrotropic_smr_fixed_en_width,& 
                                    fermi_energy_list,nfermi,gyrotropic_eigval_max,& 
                                    gyrotropic_num_bands,gyrotropic_band_list
                                    
     use w90_comms, only          : on_root
     use w90_io, only          : stdout,io_time,io_error
 
-    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec,& 
-				   pw90common_fourier_R_to_k_new,& 
-                                   pw90common_kmesh_spacing
-    use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
-    use w90_get_oper, only       : AA_R,SS_R
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_new
+    use w90_get_oper, only       : SS_R
     use w90_spin, only           : spin_get_S
 
     ! Arguments
@@ -706,15 +699,15 @@ module w90_gyrotropic
     complex(kind=dp), allocatable :: Bnl_spin(:,:,:,:)
     complex(kind=dp), allocatable :: SS(:,:,:)
     complex(kind=dp), allocatable :: S_h(:,:,:)
-    complex(kind=dp)              :: W(gyrotropic_nfreq)
     
+    complex(kind=dp)              :: multW1(gyrotropic_nfreq)
     real(kind=dp) :: multWe(gyrotropic_nfreq),multWm(gyrotropic_nfreq)
 
     integer ::  num_occ,num_unocc,occ_list(num_wann),unocc_list(num_wann)
      
     real(kind=dp)    ::  wmn
     
-    integer          :: j,n,l,n1,l1,a,b,c,ab,ifermi
+    integer          :: i,j,n,l,n1,l1,a,b,c,ab,ifermi
     real(kind=dp)    :: wln
 
     if (present(gyro_NOA_spn)) then
@@ -770,20 +763,20 @@ module w90_gyrotropic
 		l=unocc_list(l1)
 
 		wln=eig(l)-eig(n)
-		multWm=real(1./(wln*wln-W(:)*W(:)))*kweight
-		multWe=real(-multWm*(3*wln*wln-W(:)*W(:))/(wln*wln-W(:)*W(:)))*kweight
+		multW1(:)=cmplx_1/(wln*wln-gyrotropic_freq_list(:)**2)
+		multWm(:)=real(multW1)*kweight
+		multWe(:)=real(-multW1(:)*(2*wln**2*multW1(:)+cmplx_1))*kweight
 		do ab=1,3
 		    a=alpha_A(ab)
 		    b=beta_A(ab)
 		    do c=1,3
-
         		gyro_NOA_orb(ab,c,ifermi,:)=gyro_NOA_orb(ab,c,ifermi,:)+& 
-        		    multWm*real(AA(l,n,b)*Bnl_orb(n1,l1,a,c)-AA(l,n,a)*Bnl_orb(n1,l1,b,c)) +& 
-        		    multWe*(del_eig(n,c)+del_eig(l,c))*imag(AA(n,l,a)*AA(l,n,b))
+        		    multWm(:)*real(AA(l,n,b)*Bnl_orb(n1,l1,a,c)-AA(l,n,a)*Bnl_orb(n1,l1,b,c))+& 
+        		    multWe(:)*(del_eig(n,c)+del_eig(l,c))*imag(AA(n,l,a)*AA(l,n,b))
 
         		if (present(gyro_NOA_spn)) & 
         		    gyro_NOA_spn(ab,c,ifermi,:)=gyro_NOA_spn(ab,c,ifermi,:)+& 
-        			multWm*real(AA(l,n,b)*Bnl_spin(n1,l1,a,c)-AA(l,n,a)*Bnl_spin(n1,l1,b,c))
+        			multWm(:)*real(AA(l,n,b)*Bnl_spin(n1,l1,a,c)-AA(l,n,a)*Bnl_spin(n1,l1,b,c))
 
     		    enddo ! c 
     		enddo ! ab
@@ -868,15 +861,12 @@ module w90_gyrotropic
     Bnl(:,:,:,:)=cmplx_0
         
     do b=1,3
-!	if (on_root) write(stdout,*) b
 	c=alpha_A(b)
 	a=beta_A(b)
-!	if (on_root) write(stdout,*) a,b,c
 	do n1=1,num_occ
 	    n=occ_list(n1)
 	    do l1=1,num_unocc
 		l=unocc_list(l1)
-!		if (on_root) write(stdout,*) a,b,c,n1,n,l1,l
 		Bnl(n1,l1,a,c)=S_h(n,l,b)
 	    enddo !l1
 	enddo !n1
@@ -887,8 +877,7 @@ module w90_gyrotropic
   end subroutine gyrotropic_get_NOA_Bnl_spin
 
 
-
-  subroutine gyrotropic_outprint_tensor(f_out_name,arrEf,arrEF1D,arrEfW,units,comment)
+  subroutine gyrotropic_outprint_tensor(f_out_name,arrEf,arrEF1D,arrEfW,units,comment,symmetrize)
     use w90_parameters, only     : gyrotropic_nfreq,gyrotropic_freq_list,& 
                                    nfermi,fermi_energy_list
     use w90_io, only             : io_file_unit,seedname,stdout
@@ -899,10 +888,14 @@ module w90_gyrotropic
     real(kind=dp), dimension(:,:,:), intent(in),optional :: arrEf
     real(kind=dp), dimension(:,:,:,:), intent(in),optional :: arrEfW
     real(kind=dp), dimension(:), intent(in),optional :: arrEf1D
+    logical,                     optional,intent(in) :: symmetrize  
 
     character(len=120)  :: file_name
     integer             :: i,file_unit
+    logical             :: lsym
     
+    lsym=.true.
+    if(present(symmetrize).and.(.not.symmetrize)) lsym=.false.
 
     file_name= trim(seedname)//"_gyrotropic_"//f_out_name//".dat"
     file_name=trim(file_name)
@@ -914,10 +907,10 @@ module w90_gyrotropic
     if (present(units)) write(file_unit,*) "# in units of [ ",units," ] "
 
     if (present(arrEf)) then
-         call gyrotropic_outprint_tensor_w(file_unit,0.0_dp,arr33N=arrEf)
+         call gyrotropic_outprint_tensor_w(file_unit,0.0_dp,arr33N=arrEf,symmetrize=lsym)
     elseif (present(arrEfW)) then
       do i=1,gyrotropic_nfreq
-         call gyrotropic_outprint_tensor_w(file_unit,real(gyrotropic_freq_list(i)),arr33N=arrEfW(:,:,:,i))
+         call gyrotropic_outprint_tensor_w(file_unit,real(gyrotropic_freq_list(i)),arr33N=arrEfW(:,:,:,i),symmetrize=lsym)
       enddo
     elseif (present(arrEf1D)) then
          call gyrotropic_outprint_tensor_w(file_unit,0.0_dp,arrN=arrEf1D)
@@ -928,14 +921,17 @@ module w90_gyrotropic
   end subroutine gyrotropic_outprint_tensor
 
 
-  subroutine gyrotropic_outprint_tensor_w(file_unit,omega,arr33N,arrN)
+  subroutine gyrotropic_outprint_tensor_w(file_unit,omega,arr33N,arrN,symmetrize)
   use w90_parameters, only    :  nfermi,fermi_energy_list
 
   integer,                        intent(in) :: file_unit
   real(kind=dp),                  intent(in) :: omega
   real(kind=dp), dimension(:,:,:),optional,intent(in) :: arr33N
   real(kind=dp), dimension(:),optional,intent(in) :: arrN
-
+! symmetrize= True  - get symmetric and assimetric parts
+! symmetrize= False - write the asymmetric (in xy) tensor gamma_{xyz} 
+! symmetrize not present - write as is 
+  logical,                   optional,intent(in) :: symmetrize  
 
   real(kind=dp) ::  xx(nfermi),yy(nfermi),zz(nfermi),& 
 		    xy(nfermi),xz(nfermi),yz(nfermi),& 
@@ -943,6 +939,7 @@ module w90_gyrotropic
   integer       ::  i
 
     if(present(arr33N)) then
+	if (present(symmetrize).and.symmetrize) then 
                 ! Symmetric part
                 xx=arr33N(1,1,:)
                 yy=arr33N(2,2,:)
@@ -954,12 +951,36 @@ module w90_gyrotropic
                 x=(arr33N(2,3,:)-arr33N(3,2,:))/2.0_dp
                 y=(arr33N(3,1,:)-arr33N(1,3,:))/2.0_dp
                 z=(arr33N(1,2,:)-arr33N(2,1,:))/2.0_dp
-	write(file_unit,'(11a15)') '# EFERMI(eV)',"omega(eV)",'xx','yy','zz','xy','xz','yz','x','y','z'
+            else
+                xx=arr33N(1,1,:)
+                yy=arr33N(2,2,:)
+                zz=arr33N(3,3,:)
+                xy=arr33N(1,2,:)
+                xz=arr33N(1,3,:)
+                yz=arr33N(2,3,:)
+                x =arr33N(3,2,:)
+                y =arr33N(3,1,:)
+                z =arr33N(2,1,:)
+        endif
+        
+
+	if (present(symmetrize)) then
+	    if (symmetrize) then 
+        	    write(file_unit,'(a1,29x,a1,38x,a14,37x,a2,14x,a15,14x,a1)') '#',"|","symmetric part","||","asymmetric part","|"
+		    write(file_unit,'(11a15)') '# EFERMI(eV)',"omega(eV)",'xx','yy','zz','xy','xz','yz','x','y','z'
+	    else
+		    write(file_unit,'(11a15)') '# EFERMI(eV)',"omega(eV)",'yzx','zxy','xyz','yzy','yzz','zxz','xyy','yzz','zxx'
+	    endif
+	else
+	    write(file_unit,'(11a15)') '# EFERMI(eV)',"omega(eV)",'xx','yy','zz','xy','xz','yz','zy','xz','yx'
+	endif
 
 	do i=1,nfermi
     	    write(file_unit,'(11E15.6)') fermi_energy_list(i),omega,xx(i),yy(i),zz(i),xy(i),xz(i),yz(i),x(i),y(i),z(i)
 	enddo
-   elseif(present(arrN))then
+    endif
+    
+    if (present(arrN)) then
 	write(file_unit,'(2a15)') '# EFERMI(eV) '
 	do i=1,nfermi
     	    write(file_unit,'(11E15.6)') fermi_energy_list(i),arrN(i)
