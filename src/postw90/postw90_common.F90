@@ -381,7 +381,8 @@ module w90_postw90_common
         
        allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
        if (ierr/=0) call io_error(&
-            'Error allocating gyrotropic_num_bands in postw90_param_dist')
+            'Error allocating gyrotropic_band_list in postw90_param_dist')
+            
        allocate(gyrotropic_freq_list(gyrotropic_nfreq),stat=ierr)
        if (ierr/=0) call io_error(&
             'Error allocating gyrotropic_freq_list in postw90_param_dist')
