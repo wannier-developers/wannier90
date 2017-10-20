@@ -36,7 +36,7 @@ module w90_parameters
   !! Read the wvfn from fortran formatted file
   logical,           public, save :: spn_formatted
   !! Read the spin from fortran formatted file
-  logical,           public, save :: uHu_formatted
+  logical                         :: uHu_formatted
   logical,           public, save :: berry_uHu_formatted
   !! Read the uHu from fortran formatted file
   integer,           public, save :: spin
@@ -567,11 +567,11 @@ contains
     spn_formatted  =  .false.       ! formatted or "binary" file
     call param_get_keyword('spn_formatted',found,l_value=spn_formatted)
 
-
     uHu_formatted  =  .false.       ! formatted or "binary" file
-    call param_get_keyword('uHu_formatted',found,l_value=uHu_formatted)
-    berry_uHu_formatted  =  uHu_formatted   
-    call param_get_keyword('berry_uHu_formatted',found,l_value=berry_uHu_formatted)
+    call param_get_keyword('uhu_formatted',found,l_value=uHu_formatted)
+
+    berry_uHu_formatted  =  uHu_formatted       ! formatted or "binary" file
+    call param_get_keyword('berry_uhu_formatted',found,l_value=berry_uHu_formatted)
 
     spin=1
     call param_get_keyword('spin',found,c_value=spin_str)
@@ -2740,8 +2740,8 @@ contains
        else
           write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Spn file-type                   :','unformatted','|'
        endif
-       if(uHu_formatted) then
-          write(stdout,'(1x,a46,9x,a9,13x,a1)')  '|  uHu file-type                   :','formatted','|'
+       if(berry_uHu_formatted) then
+          write(stdout,'(1x,a46,9x,a9,13x,a1)')   '|  uHu file-type                   :','formatted','|'
        else
           write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  uHu file-type                   :','unformatted','|'
        endif
