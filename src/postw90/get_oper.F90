@@ -755,7 +755,7 @@ module w90_get_oper
                 if (berry_uHu_formatted) then
                    do m=1,num_bands
                       do n=1,num_bands
-                         read(uHu_in,'(2ES20.10)',err=106,end=106) c_real,c_img
+                         read(uHu_in,*,err=106,end=106) c_real,c_img
                          Ho_qb1_q_qb2(n,m) = cmplx(c_real,c_img,dp)
                       end do
                    end do
