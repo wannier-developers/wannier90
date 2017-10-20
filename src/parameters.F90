@@ -2740,6 +2740,11 @@ contains
        else
           write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  Spn file-type                   :','unformatted','|'
        endif
+       if(uHu_formatted) then
+          write(stdout,'(1x,a46,9x,a9,13x,a1)')  '|  uHu file-type                   :','formatted','|'
+       else
+          write(stdout,'(1x,a46,7x,a11,13x,a1)') '|  uHu file-type                   :','unformatted','|'
+       endif
     end if
 
     if (size(fermi_energy_list) == 1) then
