@@ -98,7 +98,7 @@ module w90_gyrotropic
     real(kind=dp)     :: kweight,kpt(3),&
                          db1,db2,db3,fac,freq
     integer           :: n,i,j,k,ikpt,if,ierr,loop_x,loop_y,loop_z,&
-                         loop_xyz,loop_adpt,adpt_counter_list(nfermi),ifreq,&
+                         loop_xyz,ifreq,&
                          file_unit
     character(len=24) :: file_name
     logical           :: eval_K,eval_C,eval_D,eval_Dw,eval_NOA,eval_spn,eval_DOS
@@ -897,7 +897,7 @@ module w90_gyrotropic
     lsym=.true.
     if(present(symmetrize).and.(.not.symmetrize)) lsym=.false.
 
-    file_name= trim(seedname)//"_gyrotropic_"//f_out_name//".dat"
+    file_name= trim(seedname)//"-gyrotropic-"//f_out_name//".dat"
     file_name=trim(file_name)
     file_unit=io_file_unit()
     write(stdout,'(/,3x,a)') '* '//file_name

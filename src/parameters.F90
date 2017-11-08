@@ -173,7 +173,7 @@ module w90_parameters
 
 ! Module  b e r r y
   logical,           public, save :: berry
-  character(len=20), public, save :: berry_task
+  character(len=120), public, save :: berry_task
   real(kind=dp),     public, save :: berry_kmesh_spacing
   integer,           public, save :: berry_kmesh(3)
   ! --------------remove eventually----------------
@@ -194,7 +194,7 @@ module w90_parameters
   logical,           public, save :: transl_inv
 
   logical,           public, save :: gyrotropic
-  character(len=50), public, save :: gyrotropic_task
+  character(len=120), public, save :: gyrotropic_task
   integer,           public, save :: gyrotropic_kmesh(3)
   real(kind=dp),     public, save :: gyrotropic_kmesh_spacing
   integer,           public, save :: gyrotropic_smr_index
@@ -1769,6 +1769,7 @@ contains
 
 
     kubo_freq_min        = 0.0_dp
+    gyrotropic_freq_min  = kubo_freq_min
     call param_get_keyword('kubo_freq_min',found,r_value=kubo_freq_min)
     !
     if(frozen_states) then
@@ -1778,6 +1779,7 @@ contains
     else
        kubo_freq_max        = dis_win_max-dis_win_min+0.6667_dp
     end if
+    gyrotropic_freq_max  = kubo_freq_max 
     call param_get_keyword('kubo_freq_max',found,r_value=kubo_freq_max)
 
 
@@ -1803,8 +1805,6 @@ contains
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
 
-    gyrotropic_freq_min        = 0.0_dp
-    gyrotropic_freq_max        = 0.0_dp
     gyrotropic_freq_step        = 0.01_dp
     call param_get_keyword('gyrotropic_freq_min',found,r_value=gyrotropic_freq_min)
     call param_get_keyword('gyrotropic_freq_max',found,r_value=gyrotropic_freq_max)
@@ -1830,15 +1830,9 @@ contains
     else
        kubo_eigval_max=dis_win_max+0.6667_dp
     end if
-    call param_get_keyword('kubo_eigval_max',found,r_value=kubo_eigval_max)
+    gyrotropic_eigval_max=kubo_eigval_max
 
-    if(frozen_states) then
-       gyrotropic_eigval_max=dis_froz_max+0.6667_dp
-    elseif(allocated(eigval)) then
-       gyrotropic_eigval_max=maxval(eigval)+0.6667_dp
-    else
-       gyrotropic_eigval_max=dis_win_max+0.6667_dp
-    end if
+    call param_get_keyword('kubo_eigval_max',found,r_value=kubo_eigval_max)
     call param_get_keyword('gyrotropic_eigval_max',found,r_value=gyrotropic_eigval_max)
 
 

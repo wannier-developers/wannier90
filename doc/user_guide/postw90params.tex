@@ -88,6 +88,11 @@ The currently available modules in \texttt{postw90.x} are:
   anomalous Hall conductivity, orbital magnetisation, and optical
   conductivity (see Chap.~\ref{ch:berry} and examples 18 and 19 of the
   tutorial).
+\item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
+    including natural and current0induced optical rotation, 
+and the current-induced magnetization
+   (see Chap.~\ref{ch:gyrotropic} and examples ??? of the
+  tutorial).
 \item \texttt{BoltzWann}: Calculation of electronic transport
   properties for bulk materials using the semiclassical Boltzmann
   transport equation (see Chap.~\ref{ch:boltzwann} and example 16 of
@@ -296,6 +301,52 @@ the optical frequency in the specified range\\
   real number, P for a physical value, L for a logical value and S for
   a text string.}
 \label{parameter_keywords_berry}
+\end{center}
+\end{table}
+
+
+
+
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|c|c|p{6cm}|}
+  \hline
+  Keyword & Type & Description \\
+  &      &             \\
+  \hline\hline
+  \multicolumn{3}{|c|}{{\tt berry} Parameters} \\
+  \hline
+  {\sc gyrotropic}  & L & Calculate gyrotropic quantities \\
+  {\sc gyrotropic\_task}& L  & List of properties to compute \\
+  {\sc [gyrotropic\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
+  (one or three integers)\\ 
+  {\sc [gyrotropic\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in 
+  \AA$^{-1}$\\
+  {\sc gyrotropic\_freq\_min} & P & Lower limit of the frequency range for
+  optical rotation (eV) \\
+  {\sc gyrotropic\_freq\_max}& P & Upper limit of the frequency range for
+  optical rotation (eV) \\
+  {\sc gyrotropic\_freq\_step}& P &  Step for increasing
+the optical frequency in the specified range\\
+  {\sc gyrotropic\_eigval\_max}& P &  Maximum energy eigenvalue
+  included when evaluating the interband natural optical activity\\
+  {\sc gyrotropic\_degen\_thresh}& P &  threshold to exclude degenerate bands from the calculation\\
+  {\sc [gyrotropic\_]smr\_type} & S & Analytical form used for the broadened delta function\\  
+  {\sc [gyrotropic\_]smr\_fixed\_en\_width} & P  & Energy smearing (eV) \\\hline
+  {\sc [gyrotropic\_]band\_list} & I  & list of bands used in the calculation \\\hline
+  {\sc gyrotropic\_box\_center} & R  &  \multirow{4}{6cm}{The center and three basis vectors, %
+defining the box for integration (in reduced coordinates, three real numbers for each vector) } \\
+  {\sc gyrotropic\_box\_b1} & R  &  \\
+  {\sc gyrotropic\_box\_b2} & R  &  \\
+  {\sc gyrotropic\_box\_b3} & R  &  \\
+  \hline
+\end{tabular}
+\caption[Parameter file keywords controlling the Gyrotropic module.]  {{\tt
+    seedname.win} file keywords controlling the {\tt gyrotropic}
+  module. Argument types are represented by, I for a integer, R for a
+  real number, P for a physical value, L for a logical value and S for
+  a text string.}
+\label{parameter_keywords_gyrotropic}
 \end{center}
 \end{table}
 
@@ -1111,6 +1162,139 @@ Sec.~\ref{sec:postw90-globalflags}).
 kubo\_smr\_type}
 Overrides the \verb#smr_type# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
+
+
+\clearpage
+\section{Gyrotropic}
+
+\subsection[gyrotropic]{\tt logical :: gyrotropic}
+Determines whether to enter the gyrotropic routines.
+
+The default value is \verb#false#.
+
+
+\subsection[gyrotropic\_task]{\tt character(len=120) ::  gyrotropic\_task}
+The quantity to compute when {\tt gyrotropic=true}
+
+May contain one or more of the following valid options (notem that each option starts with a '-'):
+
+\begin{itemize}
+
+\item \verb#-D0#  The Berry-curvature dipole tensor \eq{D_ab} (dimensionless) \\
+Output file: {\tt seedname-gyrotropic-D.dat}
+( see Sec. \ref{sec:gyrotropic:format} for file format description)
+
+\item \verb#-Dw# The finite-frequency  Berry-curvature dipole tensor \eq{D-tilde} (dimensionless) \\
+Output file: {\tt seedname-gyrotropic-tildeD.dat}
+( see Sec. \ref{sec:gyrotropic:format} for file format description)
+
+
+\item \verb#-C# The ohmic conductivity tensor \eq{C_ab} (Ampere/cm) \\
+Output file: {\tt seedname-gyrotropic-C.dat}
+( see Sec. \ref{sec:gyrotropic:format} for file format description)
+
+\item \verb#-K# The orbital contribution to the kME tensor \eq{K_ab} (Ampere) \\
+Output file: {\tt seedname-gyrotropic-K\_orb.dat}
+( see Sec. \ref{sec:gyrotropic:format} for file format description)
+    \begin{itemize}
+	\item[$\circ$] \verb#-spin# : if this task is present, compute also the spin contribution.\\
+	Output file: {\tt seedname-gyrotropic-K\_spin.dat}
+    \end{itemize}
+
+\item \verb#-NOA# The orbital contribution to the NOA \eq{K_ab} (\AA) \\
+Output file: {\tt seedname-gyrotropic-NOA\_orb.dat}
+( see Sec. \ref{sec:gyrotropic:format} for file format description)
+    \begin{itemize}
+	\item[$\circ$] \verb#-spin# : if this task is present, compute also the spin contribution. \\
+	Output file: {\tt seedname-gyrotropic-NOA\_spin.dat}
+    \end{itemize}
+
+\item \verb#-dos# the density of states
+Output file: {\tt seedname-gyrotropic-DOS.dat}. First column - energy (eV), second column - DOS ($1/(\mathrm{eV}\times\mathrm{\AA}^3)$)
+
+\end{itemize}
+
+There is no default value.
+
+\subsubsection{output data format \label{sec:gyrotropic:format}}
+The calculated tensors are written as functions of Fermi level $E_F$ (first column) 
+and frequency $\omega$ (second column).
+If the tensor does not denend on $\omega$, the second column is filled by zeros. 
+Data is grouped in blocks of the same $\omega$ separated by two blank lines.
+In case of natural optical activity the columns 3 to 11 contain the independent 
+components of $\gamma_{abc}$ (antisymmetric in $ab$): $yzx$, $zxy$ ,$xyz$, $yzy$, $yzz$, $zxz$, $xyy$, $yzz$ and $zxx$.
+For tensors $C_{ab}$, $D_{ab}$, $\widetilde D_{ab}$, $K_{ab}$ the symmetric and antisymmetric components are writted.
+Thus, the columns 3 to 11 are marked as $xx$, $yy$, $zz$, $xy$, $xz$, $yz$, $x$, $y$, $z$, wich correspond ,e.g., for $D_{ab}$ to 
+$D_{xx}$, $D_{yy}$, $D_{zz}$, $(D_{xy}+D_{yx})/2$, $(D_{xz}+D_{zx})/2$, $(D_{yz}+D_{zy})/2$, $(D_{yz}-D_{zy})/2$, $(D_{zx}-D_{xz})/2$ , $(D_{xy}-D_{yx})/2$
+
+\subsection[gyrotropic\_kmesh]{\tt integer :: gyrotropic\_kmesh(:)}
+Overrides the \verb#kmesh# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+\subsection[gyrotropic\_kmesh\_spacing]{\tt real(kind=dp) ::
+  gyrotropic\_kmesh\_spacing}
+Overrides the \verb#kmesh_spacing# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+
+\subsection[gyrotropic\_freq\_min]{\tt real(kind=dp) :: gyrotropic\_freq\_min}
+Lower limit of the frequency range for computing the optical activity. 
+
+Units are eV.
+The default value 0.0.
+
+\subsection[gyrotropic\_freq\_max]{\tt real(kind=dp) :: gyrotropic\_freq\_max}
+Upper limit of the frequency range for computing the optical activity. Units are eV.
+
+If an inner energy window was specified, the default value is {\tt
+  dis\_froz\_max}-{\tt fermi\_energy}+0.6667.  Otherwise it is the
+difference between the maximum and the minimum energy eigenvalue
+stored in {\tt seedname.eig}, plus 0.6667.
+
+\subsection[gyrotropic\_freq\_step]{\tt real(kind=dp) :: gyrotropic\_freq\_step}
+Difference between consecutive values of the optical frequency
+between {\tt gyrotropic\_freq\_min} and {\tt gyrotropic\_freq\_max}. 
+
+Units are eV.
+The default value is 0.01.
+
+\subsection[gyrotropic\_eigval\_max]{\tt real(kind=dp) ::  gyrotropic\_eigval\_max}
+Maximum energy eigenvalue of the eigenstates to be included in the
+evaluation of the Natural optical activity.   Units are eV.
+
+If an inner energy window was specified, the default value is the
+upper bound of the inner energy window plus 0.6667.  Otherwise it is
+the maximum energy eigenvalue stored in {\tt seedname.eig} plus
+0.6667.
+
+\subsection[gyrotropic\_smr\_fixed\_en\_width]{\tt logical :: gyrotropic\_smr\_fixed\_en\_width}
+Overrides the \verb#smr_fixed_en_width# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+\subsection[gyrotropic\_smr\_type]{\tt  character(len=120) :: gyrotropic\_smr\_type}
+Overrides the \verb#smr_type# global variable (see
+Sec.~\ref{sec:postw90-globalflags}).
+
+\subsection[gyrotropic\_degen\_thresh]{\tt  character(len=120) :: gyrotropic\_degen\_thresh}
+The threshould to eliminate degenerate bands from the calculation
+in order to avoid divergences.
+
+Units are eV. The  dfault value is 0.
+
+\subsection[gyrotropic\_box\_center]{\tt  character(len=120) :: gyrotropic\_box\_center} - three real numbers
+Optionally the integration may be restricted to a parallelogram, centered at {\tt gyrotropic\_box\_center}
+and defined by vectors {\tt gyrotropic\_box\_b\{1,2,3\}}
+
+In reduced coordinates. Default value is 0.5 0.5 0.5
+
+\subsection[gyrotropic\_box\_b1]{\tt  character(len=120) :: gyrotropic\_box\_b1} - three real numbers
+In reduced coordinates. Default value is 1.0 0.0 0.0
+
+\subsection[gyrotropic\_box\_b2]{\tt  character(len=120) :: gyrotropic\_box\_b2} - three real numbers
+In reduced coordinates. Default value is 0.0 1.0 0.0
+
+\subsection[gyrotropic\_box\_b3]{\tt  character(len=120) :: gyrotropic\_box\_b3} - three real numbers
+In reduced coordinates. Default value is 0.0 0.0 1.0
 
 \clearpage
 \section{BoltzWann}
