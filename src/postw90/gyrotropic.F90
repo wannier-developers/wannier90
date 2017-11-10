@@ -675,7 +675,7 @@ module w90_gyrotropic
     use w90_utility, only        : utility_rotate
     use w90_parameters, only     : num_wann,gyrotropic_nfreq,gyrotropic_freq_list,& 
                                    fermi_energy_list,nfermi,gyrotropic_eigval_max,& 
-                                   gyrotropic_num_bands,gyrotropic_band_list
+                                   gyrotropic_num_bands,gyrotropic_band_list,iprint
                                    
     use w90_comms, only          : on_root
     use w90_io, only          : stdout,io_time,io_error
@@ -736,14 +736,16 @@ module w90_gyrotropic
 	enddo
 
         if (num_occ==0) then
-	    write(stdout,*) "WARNING no occupied bands included in the calculation for kpt=",& 
-		kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
+    	    if (iprint.ge.2)
+		write(stdout,*) "WARNING no occupied bands included in the calculation for kpt=",& 
+		    kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
 	    cycle 
 	endif
 
 	if (num_unocc==0) then 
-	    write(stdout,*) "WARNING no unoccupied bands included in the calculation for kpt=",& 
-		kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
+    	    if (iprint.ge.2)
+		write(stdout,*) "WARNING no unoccupied bands included in the calculation for kpt=",& 
+		    kpt,", EF[",ifermi,"]=",fermi_energy_list(ifermi),"eV"
 	    cycle 
 	endif
 

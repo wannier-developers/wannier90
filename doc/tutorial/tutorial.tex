@@ -2578,6 +2578,144 @@ After you completed the tutorial for the valence bands only, you can repeat the 
 %\cleardoublepage
 
 
+\sectiontitle{24: Tellurium -- gyrotropic effects}
+
+
+\begin{itemize}
+\item{Outline: \it{Calculate the gyrotropic effects in trigonal right-handed Te}}
+\item{Directory: {\tt examples/example24/}}
+\item{Input files}
+\begin{itemize}
+\item{ {\tt Te.scf} {\it The \pwscf\ input file for ground state
+    calculation}}
+\item{ {\tt Te.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Te.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Te.win} {\it The {\tt wannier90} input
+      file}}
+\end{itemize}
+\end{itemize}
+
+To make things easy, the example treats Te without spin-orbit
+
+
+One may skip steps 1-4, by copying the files {\tt Te.eig, Te.mmn, Te.amn, Te.uHu} 
+from the directory {\tt examples/example24/wan_files}. However, this steps are needed 
+to perform a calculation on a denser grid, or include spin-orbit coupling.
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of tellurium\\
+{\tt pw.x < Te.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform {\tt 3x3x4} k-point
+  grid\\ 
+{\tt pw.x < Te.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Te.nnkp} file).\\
+{\tt wannier90.x -pp Te}
+
+\item Run {\tt pw2wannier90} to compute:
+  \begin{itemize}
+
+  \item[{\bf --}] The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
+          b}}\rangle$ (written in the {\tt Te.mmn} file)
+
+  \item[{\bf --}] The projections for the starting guess (written in the {\tt
+        Te.amn} file)
+
+  \item[{\bf --}] The matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert
+      H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$ (written in the
+      {\tt Te.uHu} file)
+
+  \item[{\bf --}] The spin matrix elements $\langle \psi_{n{\bf
+        k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$ (written in the
+    {\tt Te.spn} file)  (only if spin-orbit is included.
+
+  \end{itemize}
+{\tt pw2wannier90.x < Fe.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x Fe}
+
+\item Run \postw\ to compute the orbital magnetization.\\
+  {\tt postw90.x Fe} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
+  8 MPI processes) 
+
+
+\end{enumerate}
+
+The orbital magnetization is computed as the BZ integral of the
+quantity ${\bf M}^{\rm orb}({\bf k})$ defined in Eq.~(11.20) of the
+User Guide. The relevant lines in {\tt Fe.win} are
+%
+{\tt
+\begin{quote}
+berry = true
+
+berry\_task = morb
+
+berry\_kmesh = 25 25 25
+
+fermi\_energy = [insert your value here]
+\end{quote} }
+%
+After running {\tt postw90}, compare the value of the orbital
+magnetization reported in {\tt Fe.wpout} with the spin magnetization
+in {\tt scf.out}. Set {\tt iprint = 2} to report the decomposition of
+${\bf M}^{\rm orb}$ into the terms $J0$, $J1$, and $J2$ defined in
+Ref.~\cite{lopez-prb12}.
+%\footnote{Alternatively, the
+%spin magnetization can be computed by {\tt postw90}. This requires adding the
+%instruction {\tt spin\_moment = T} to {\tt Fe.win}, assuming that {\tt pw2wannier90}
+%was executed with {\tt write\_spn = .true.} in {\tt Fe.pw2wan}.} 
+%Both point along $\hat{\bf
+%  z}$, but the orbital contribution is much smaller (it is strongly
+%quenched by the crystal field).
+
+To plot $M_z^{\rm orb}({\bf k})$ along high-symmetry lines set {\tt
+  berry = false} and uncomment in {\tt Fe.win} the block of
+instructions containing {\tt
+\begin{quote}
+kpath = true
+
+kpath\_task = bands+morb
+\end{quote}
+}
+After running {\tt postw90}, issue
+%
+{\tt
+\begin{quote}
+myshell> python Fe-bands+morb\_z.py
+\end{quote} } 
+%
+Compare with Fig.~2 of Ref.~\cite{lopez-prb12}, bearing in mind the
+factor of $-1/2$ difference in the definition of ${\bf M}^{\rm
+  orb}({\bf k})$ (see Ch.~11 in the User Guide).
+
+To plot $M_z^{\rm orb}({\bf k})$ together with the Fermi contours on the
+(010) BZ plane set {\tt kpath = false}, uncomment in {\tt
+  Fe.win} the block of instructions containing 
+{\tt
+\begin{quote}
+kslice = true
+
+kslice\_task = morb+fermi\_lines
+\end{quote}
+} 
+re-run {\tt postw90}, and issue
+{\tt
+\begin{quote}
+myshell> python Fe-kslice-morb\_z+fermi\_lines.py
+\end{quote} }
+%
+$M_z^{\rm orb}({\bf k})$ is much more evenly distributed in $k$-space
+than the Berry curvature (see Example 18). As a result, the integrated
+orbital magnetization converges more rapidly with the BZ sampling.
+
+
+
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}
 
