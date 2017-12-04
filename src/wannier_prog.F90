@@ -153,6 +153,7 @@ program wannier
   else                      ! restart a previous calculation
      if(on_root) call param_read_chkpt()
      call param_chkpt_dist
+     if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
 
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
