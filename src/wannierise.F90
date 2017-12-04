@@ -532,7 +532,7 @@ contains
     do nn = 1, nntot
       m_matrix_1b_loc=m_matrix_loc(:,:,nn,:)
       call comms_gatherv(m_matrix_1b_loc,num_wann*num_wann*counts(my_node_id),&
-                 m_matrix,num_wann*num_wann*counts,num_wann*num_wann*displs)
+                 m_matrix_1b,num_wann*num_wann*counts,num_wann*num_wann*displs)
       call comms_bcast(m_matrix_1b(1,1,1),num_wann*num_wann*num_kpts)
       m_matrix(:,:,nn,:)=m_matrix_1b(:,:,:)
     end do!nn
@@ -2514,11 +2514,11 @@ contains
     if (ierr/=0) call io_error('Error in allocating cz in wann_main_gamma')
 
     cz=cmplx_0
-    
-    ! Set up the MPI arrays for a serial run.
+
     allocate( counts(0:0), displs(0:0), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating counts and displs in wann_main_gamma')
-    counts(0)=0; displs(0)=0    
+    counts(0)=0;displs(0)=0
+    
     ! store original U before rotating
 !~    ! phase factor ph_g is applied to u_matrix
 !~    ! NB: ph_g is applied to u_matrix_opt if (have_disentangled)
