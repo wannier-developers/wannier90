@@ -10,6 +10,12 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('lead.win', '')
 output = lead.wout
 
+# Lead, 4 lowest states - test the restart feature
+[testw90_example02_restart]
+program = WANNIER90_WOUT_OK
+inputs_args = ('lead.win', '')
+output = lead.wout
+
 # Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure
 [testw90_example03]
 program = WANNIER90_WOUT_OK
