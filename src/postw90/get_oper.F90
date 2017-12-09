@@ -647,7 +647,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
                                   num_bands,ndimwin,wb,bk,&
                                   have_disentangled,timing_level,&
-                                  scissors_shift,  berry_uHu_formatted
+                                  scissors_shift,  uHu_formatted
     use w90_postw90_common, only : nrpts,v_matrix
     use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
                                   seedname
@@ -691,7 +691,7 @@ module w90_get_oper
        enddo
        
        uHu_in=io_file_unit()
-       if (berry_uHu_formatted) then
+       if (uHu_formatted) then
           open(unit=uHu_in, file=trim(seedname)//".uHu",form='formatted',&
                status='old',action='read',err=105)
           write(stdout,'(/a)',advance='no')&
@@ -730,10 +730,10 @@ module w90_get_oper
                 ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}> 
                 ! between the original ab initio eigenstates
                 !
-                if (berry_uHu_formatted) then
+                if (uHu_formatted) then
                    do m=1,num_bands
                       do n=1,num_bands
-                         read(uHu_in,'(2ES20.10)',err=106,end=106) c_real,c_img
+                         read(uHu_in,*,err=106,end=106) c_real,c_img
                          Ho_qb1_q_qb2(n,m) = cmplx(c_real,c_img,dp)
                       end do
                    end do

@@ -36,17 +36,17 @@ def get_valid_categories():
 
     config = configparser.ConfigParser()
     config.read(jobconfig)
-    all_sections = config.values()
+    all_sections = config.sections()
     retlist = []
-    for section in all_sections:
-        if section.name == 'categories':
+    for section_name in all_sections:
+        if section_name == 'categories':
             # Append categories as well
-            for category in section.keys():
+            for category in config.options(section_name):
                 retlist.append(category)
-        elif section.name == "DEFAULT":
+        elif section_name == "DEFAULT":
             pass
         else:
-            retlist.append(strip_slash(section.name))
+            retlist.append(strip_slash(section_name))
 
     return sorted(set(retlist)) # Remove duplicates, sort
 

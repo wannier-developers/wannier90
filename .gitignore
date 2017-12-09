@@ -5,3 +5,4 @@ make.inc
 w90chk2chk.x
 libwannier.a
 *~
+*.x.dSYM
