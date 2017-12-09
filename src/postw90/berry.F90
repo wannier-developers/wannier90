@@ -97,7 +97,7 @@ module w90_berry
     !
     ! First index labels J0,J1,J2 terms, second labels the Cartesian component 
     !
-    real(kind=dp) :: imf_k_list(3,3,nfermi),imf_list(3,3,nfermi)
+    real(kind=dp) :: imf_k_list(3,3,nfermi),imf_list(3,3,nfermi),imf_list2(3,3,nfermi)
     real(kind=dp) :: img_k_list(3,3,nfermi),img_list(3,3,nfermi)
     real(kind=dp) :: imh_k_list(3,3,nfermi),imh_list(3,3,nfermi)
     real(kind=dp) :: ahc_list(3,3,nfermi)
@@ -166,7 +166,7 @@ module w90_berry
        call get_AA_R
        call get_BB_R
        call get_CC_R
-       imf_list=0.0_dp
+       imf_list2=0.0_dp
        img_list=0.0_dp
        imh_list=0.0_dp
     endif
@@ -326,7 +326,7 @@ module w90_berry
 
           if(eval_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
-             imf_list=imf_list+imf_k_list*kweight
+             imf_list2=imf_list2+imf_k_list*kweight
              img_list=img_list+img_k_list*kweight
              imh_list=imh_list+imh_k_List*kweight
           endif
@@ -395,7 +395,7 @@ module w90_berry
 
           if(eval_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
-             imf_list=imf_list+imf_k_list*kweight
+             imf_list2=imf_list2+imf_k_list*kweight
              img_list=img_list+img_k_list*kweight
              imh_list=imh_list+imh_k_List*kweight
           endif
@@ -431,7 +431,7 @@ module w90_berry
     endif
 
     if(eval_morb) then
-       call comms_reduce(imf_list(1,1,1),3*3*nfermi,'SUM')
+       call comms_reduce(imf_list2(1,1,1),3*3*nfermi,'SUM')
        call comms_reduce(img_list(1,1,1),3*3*nfermi,'SUM')
        call comms_reduce(imh_list(1,1,1),3*3*nfermi,'SUM')
     end if
@@ -618,9 +618,9 @@ module w90_berry
           endif
           do if=1,nfermi
              LCtil_list(:,:,if)=(img_list(:,:,if)&
-                  -fermi_energy_list(if)*imf_list(:,:,if))*fac
+                  -fermi_energy_list(if)*imf_list2(:,:,if))*fac
              ICtil_list(:,:,if)=(imh_list(:,:,if)&
-                  -fermi_energy_list(if)*imf_list(:,:,if))*fac
+                  -fermi_energy_list(if)*imf_list2(:,:,if))*fac
              Morb_list(:,:,if)=LCtil_list(:,:,if)+ICtil_list(:,:,if)
              if(nfermi>1) write(file_unit,'(4(F12.6,1x))')&
                   fermi_energy_list(if),sum(Morb_list(1:3,1,if)),&
