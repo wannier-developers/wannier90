@@ -10,6 +10,12 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('lead.win', '')
 output = lead.wout
 
+# Lead, 4 lowest states - test the restart feature
+[testw90_example02_restart]
+program = WANNIER90_WOUT_OK
+inputs_args = ('lead.win', '')
+output = lead.wout
+
 # Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure
 [testw90_example03]
 program = WANNIER90_WOUT_OK
@@ -106,6 +112,14 @@ max_nprocs = 0
 
 # Benzene, valence bands
 [testw90_benzene_gamma_val/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Benzene, valence bands - in hexagonal cell
+[testw90_benzene_gamma_val_hexcell/]
 program = WANNIER90_WOUT_OK
 inputs_args = ('benzene.win', '')
 output = benzene.wout
