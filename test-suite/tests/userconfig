@@ -33,6 +33,18 @@ tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
               (1.0e-6, 1.0e-6, 'bandidx'))
 
+[POSTW90_WPOUT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_wpout.parse
+tolerance = ( (1.0e-3, 2.0e-3, 'ahc_x'),
+               (1.0e-3, 2.0e-3, 'ahc_y'),
+               (1.0e-3, 2.0e-3, 'ahc_z'),
+               (1.0e-3, 2.0e-3, 'morb_x'),
+               (1.0e-3, 2.0e-3, 'morb_y'),
+               (1.0e-3, 2.0e-3, 'morb_z'))
+
+
+
 [WANNIER90_WERR_FAIL]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_werr.parse
