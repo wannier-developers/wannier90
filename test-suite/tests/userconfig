@@ -69,8 +69,8 @@ tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_kubo_dat.parse
 tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
-               (1.0e-4, 1.0e-4, 'recond'),
-               (1.0e-4, 1.0e-4, 'imcond'))
+               (1.0e-4, 1.0e+2, 'recond'),
+               (1.0e-4, 1.0e+2, 'imcond'))
 
 [WANNIER90_WERR_FAIL]
 exe = ../../wannier90.x
