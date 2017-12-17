@@ -45,9 +45,9 @@ tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_curv_dat.parse
 tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
-               (1.0e-4, 1.0e-4, 'bandcurvx'),
-               (1.0e-4, 1.0e-4, 'bandcurvy'),
-               (1.0e-4, 1.0e-4, 'bandcurvz'))
+               (1.0e-4, 1.0e+2, 'bandcurvx'),
+               (1.0e-4, 1.0e+2, 'bandcurvy'),
+               (1.0e-4, 1.0e+2, 'bandcurvz'))
 
 
 
