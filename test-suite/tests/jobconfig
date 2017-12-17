@@ -186,6 +186,27 @@ program = POSTW90_MORBDAT_OK
 inputs_args = ('Fe.win', '')
 output = Fe-kslice-morb.dat
 
+# Test of Kubo JDOS  for bcc iron
+[testpostw90_fe_kubo_jdos/]
+program = POSTW90_JDOS_OK
+inputs_args = ('Fe.win', '')
+output = Fe-jdos.dat
+
+# Test of Kubo Axy  for bcc iron
+[testpostw90_fe_kubo_Axy/]
+program = POSTW90_KUBO_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kubo_A_xy.dat
+
+# Test of Kubo Szz  for bcc iron
+[testpostw90_fe_kubo_Szz/]
+program = POSTW90_KUBO_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kubo_S_zz.dat
+
+
+
+
 
 [categories]
 wannier_only = testw90_*
