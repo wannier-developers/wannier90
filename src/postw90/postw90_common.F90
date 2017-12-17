@@ -443,7 +443,8 @@ module w90_postw90_common
                                io_date,io_time,io_stopwatch
     use w90_parameters, only : num_wann,num_kpts,num_bands,have_disentangled,&
                                u_matrix_opt,u_matrix,m_matrix,&
-                               ndimwin,lwindow,nntot,wannier_centres
+                               ndimwin,lwindow,nntot,wannier_centres,&
+                               num_valence_bands,scissors_shift
 
     implicit none
 
@@ -487,23 +488,28 @@ module w90_postw90_common
              enddo
           enddo 
        endif
-       ! *** TODO *** Deallocate u_matrix_opt to save memory (on root)?
+       if (allocated(u_matrix_opt)) deallocate(u_matrix_opt)
+       if(.not.(num_valence_bands>0 .and. abs(scissors_shift)>1.0e-7_dp)) then
+          if (allocated(u_matrix)) deallocate(u_matrix)
+       endif
     endif
     call comms_bcast(v_matrix(1,1,1),num_bands*num_wann*num_kpts)
 
+    if(num_valence_bands>0 .and. abs(scissors_shift)>1.0e-7_dp) then
     if (.not.on_root .and. .not.allocated(u_matrix)) then
        allocate(u_matrix(num_wann,num_wann,num_kpts),stat=ierr)
        if (ierr/=0)&
             call io_error('Error allocating u_matrix in pw90common_wanint_data_dist')
     endif
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
-
-    if (.not.on_root .and. .not.allocated(m_matrix)) then
-       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-       if (ierr/=0)&
-            call io_error('Error allocating m_matrix in pw90common_wanint_data_dist')
     endif
-    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+
+!    if (.not.on_root .and. .not.allocated(m_matrix)) then
+!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+!       if (ierr/=0)&
+!            call io_error('Error allocating m_matrix in pw90common_wanint_data_dist')
+!    endif
+!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
     
     call comms_bcast(have_disentangled,1)
 
@@ -513,12 +519,11 @@ module w90_postw90_common
           ! Do we really need these 'if not allocated'? Didn't use them for 
           ! eigval and kpt_latt above!
           
-          ! ***NOTE*** This should eventually be removed
-          if (.not.allocated(u_matrix_opt)) then
-             allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
-             if (ierr/=0)&
-              call io_error('Error allocating u_matrix_opt in pw90common_wanint_data_dist')
-          endif
+!          if (.not.allocated(u_matrix_opt)) then
+!             allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
+!             if (ierr/=0)&
+!              call io_error('Error allocating u_matrix_opt in pw90common_wanint_data_dist')
+!          endif
           
           if (.not.allocated(lwindow)) then
              allocate(lwindow(num_bands,num_kpts),stat=ierr)
@@ -534,7 +539,7 @@ module w90_postw90_common
      
        end if
 
-       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
+!       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
        call comms_bcast(lwindow(1,1),num_bands*num_kpts)
        call comms_bcast(ndimwin(1),num_kpts)
     end if
