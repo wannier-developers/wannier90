@@ -162,6 +162,30 @@ program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
 output = Fe.wpout
 
+# Test of KPATH Berry Curvature plus Orbital Magnetisation for bcc iron
+[testpostw90_fe_kpathmorbcurv/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-morb.dat
+
+# Test of KPATH Berry Curvature  for bcc iron
+[testpostw90_fe_kpathcurv/]
+program = POSTW90_CURVDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-curv.dat
+
+# Test of KSLICE Berry Curvature  for bcc iron
+[testpostw90_fe_kslicecurv/]
+program = POSTW90_CURVDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kslice-curv.dat
+
+# Test of KSLICE Morb  for bcc iron
+[testpostw90_fe_kslicemorb/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kslice-morb.dat
+
 
 [categories]
 wannier_only = testw90_*
