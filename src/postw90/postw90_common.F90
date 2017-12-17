@@ -241,6 +241,7 @@ module w90_postw90_common
     call comms_bcast(num_wann,1)
     call comms_bcast(timing_level,1)
     call comms_bcast(iprint,1)
+    call comms_bcast(ws_distance_tol,1)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1,1),9)
@@ -371,7 +372,7 @@ module w90_postw90_common
                call io_error('Error allocating kpt_latt in postw90_param_dist')
        endif
     end if
-    call comms_bcast(fermi_energy_list(1),nfermi)
+    if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
     call comms_bcast(kubo_freq_list(1),kubo_nfreq)
     call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then
@@ -437,12 +438,21 @@ module w90_postw90_common
                                io_date,io_time,io_stopwatch
     use w90_parameters, only : num_wann,num_kpts,num_bands,have_disentangled,&
                                u_matrix_opt,u_matrix,m_matrix,&
-                               ndimwin,lwindow,nntot
+                               ndimwin,lwindow,nntot,wannier_centres
 
     implicit none
 
     integer :: ierr,loop_kpt,m,i,j
 
+    if (.not.on_root) then
+       ! wannier_centres is allocated in param_read, so only on root node
+       ! It is then read in param_read_chpkt
+       ! Therefore, now we need to allocate it on all nodes, and then broadcast it
+       allocate(wannier_centres(3,num_wann),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating wannier_centres in pw90common_wanint_data_dist')
+    end if
+    call comms_bcast(wannier_centres(1,1),3*num_wann)
+    
     ! -------------------
     ! Ivo: added 8april11
     ! -------------------

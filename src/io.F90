@@ -17,7 +17,6 @@ module w90_io
 
 
   use w90_constants, only : dp
-
   implicit none
 
   private
@@ -59,6 +58,7 @@ module w90_io
   public :: io_print_timings
   public :: io_get_seedname
   public :: io_time
+  public :: io_wallclocktime
   public :: io_date
   public :: io_error
   public :: io_file_unit
@@ -211,23 +211,32 @@ contains
 
 #ifdef MPI
          character(len=50) :: filename
-         integer           :: stderr,ierr,whoami
+         integer           :: stderr,ierr,whoami,num_nodes
 
          call mpi_comm_rank(mpi_comm_world, whoami, ierr)
-         if(whoami>99999) then
-            write(filename,'(a,a,I0,a)')trim(seedname),'.node_',whoami,'.werr'
-         else
-            write(filename,'(a,a,I5.5,a)')trim(seedname),'.node_',whoami,'.werr'
-         endif
-         stderr=io_file_unit()
-         open(unit=stderr,file=trim(filename),form='formatted',err=105)
-         write(stderr, '(1x,a)') trim(error_msg)
-         close(stderr)
+         call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
+         if(num_nodes>1) then
+            if(whoami>99999) then
+               write(filename,'(a,a,I0,a)')trim(seedname),'.node_',whoami,'.werr'
+            else
+               write(filename,'(a,a,I5.5,a)')trim(seedname),'.node_',whoami,'.werr'
+            endif
+            stderr=io_file_unit()
+            open(unit=stderr,file=trim(filename),form='formatted',err=105)
+            write(stderr, '(1x,a)') trim(error_msg)
+            close(stderr)
+         end if
 
 105      write(*,'(1x,a)') trim(error_msg)
 106      write(*,'(1x,a,I0,a)') "Error on node ", &
               whoami, ": examine the output/error files for details"
          
+         if(whoami==0) then
+            write(stdout,*)  'Exiting.......' 
+            write(stdout, '(1x,a)') trim(error_msg)
+            close(stdout)
+         end if
+
          call MPI_abort(MPI_comm_world,1,ierr)
 
 #else
@@ -307,6 +316,36 @@ contains
     endif
     return
   end function io_time
+
+
+    !==================================================================!
+      function io_wallclocktime()
+    !==================================================================!
+    !                                                                  !
+    ! Returns elapsed wall clock time in seconds since its first call  !
+    !                                                                  !
+    !===================================================================  
+    use w90_constants, only : dp
+    implicit none
+
+    real(kind=dp) :: io_wallclocktime
+
+    integer :: c0,c1
+    integer :: rate
+    logical :: first=.true.
+    save first, rate, c0
+
+    if (first) then
+
+       call system_clock(c0, rate)
+       io_wallclocktime = 0.0_dp
+       first = .false.
+    else
+       call system_clock(c1)
+       io_wallclocktime = real(c1 - c0)/real(rate)
+    endif
+    return
+  end function io_wallclocktime
 
   !===========================================
   function io_file_unit()

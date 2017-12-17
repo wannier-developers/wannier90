@@ -232,13 +232,14 @@ contains
     call comms_array_split(TempNumPoints * MuNumPoints,counts,displs)
 
     ! I allocate the arrays for the spectra
-    allocate(LocalElCond(6,counts(my_node_id)),stat=ierr)
+    ! Allocate at least 1 entry
+    allocate(LocalElCond(6,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalElCond in boltzwann_main')
-    allocate(LocalSigmaS(6,counts(my_node_id)),stat=ierr)
+    allocate(LocalSigmaS(6,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalSigmaS in boltzwann_main')
-    allocate(LocalSeebeck(9,counts(my_node_id)),stat=ierr)
+    allocate(LocalSeebeck(9,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalSeebeck in boltzwann_main')
-    allocate(LocalKappa(6,counts(my_node_id)),stat=ierr)
+    allocate(LocalKappa(6,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating LocalKappa in boltzwann_main')
     LocalElCond = 0._dp
     LocalSeebeck = 0._dp
@@ -462,10 +463,10 @@ contains
 
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
-    call comms_gatherv(LocalElCond(1,1),6*counts(my_node_id),ElCond(1,1,1),6*counts,6*displs)
-    call comms_gatherv(LocalSigmaS(1,1),6*counts(my_node_id),SigmaS(1,1,1),6*counts,6*displs)
-    call comms_gatherv(LocalSeebeck(1,1),9*counts(my_node_id),Seebeck(1,1,1),9*counts,9*displs)
-    call comms_gatherv(LocalKappa(1,1),6*counts(my_node_id),Kappa(1,1,1),6*counts,6*displs)
+    call comms_gatherv(LocalElCond,6*counts(my_node_id),ElCond,6*counts,6*displs)
+    call comms_gatherv(LocalSigmaS,6*counts(my_node_id),SigmaS,6*counts,6*displs)
+    call comms_gatherv(LocalSeebeck,9*counts(my_node_id),Seebeck,9*counts,9*displs)
+    call comms_gatherv(LocalKappa,6*counts(my_node_id),Kappa,6*counts,6*displs)
 
     if(on_root .and. (timing_level>0)) call io_stopwatch('boltzwann_main: calc_props',2)
 
