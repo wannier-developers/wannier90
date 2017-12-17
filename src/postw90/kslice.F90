@@ -61,7 +61,7 @@ module w90_kslice
     integer, dimension(0:num_nodes-1) :: counts, displs
 
     integer           :: iloc,itot,i1,i2,n,n1,n2,n3,i,nkpts,my_nkpts
-    integer           :: scriptunit
+    integer           :: scriptunit,dataunit,loop_kpt
     real(kind=dp)     :: avec_2d(3,3),avec_3d(3,3),bvec(3,3),yvec(3),zvec(3),&
                          b1mod,b2mod,ymod,cosb1b2,kcorner_cart(3),&
                          areab1b2,cosyb2,kpt(3),kpt_x,kpt_y,k1,k2,&
@@ -288,6 +288,7 @@ module w90_kslice
                           bandsdata, num_wann*counts, num_wann*displs)
     end if
 
+    ! This holds either -curv or morb
     if(allocated(my_zdata)) then
        if(on_root) then
           allocate(zdata(3,nkpts))
@@ -340,6 +341,24 @@ module w90_kslice
                                  reshape(spndata, [1, num_wann, nkpts]), &
                                  spnmask)
        end if
+
+       if(allocated(my_zdata)) then
+          if(plot_curv.or.plot_morb) then
+             dataunit=io_file_unit()
+             if(plot_morb) then ! ugly. But to keep the logic the same as other places
+                filename=trim(seedname)//'-kslice-morb.dat'
+             elseif(plot_curv) then
+                filename=trim(seedname)//'-kslice-curv.dat'
+             endif
+             write(stdout,'(/,3x,a)') filename
+             open(dataunit,file=filename,form='formatted')
+             do loop_kpt=1,nkpts
+                write(dataunit,'(4E16.8)') zdata(:,loop_kpt)
+             end do
+             write(dataunit,*) ' '
+             close(dataunit)
+          end if
+       endif
 
        if(plot_fermi_lines .and. .not.fermi_lines_color .and. .not.heatmap) then
           !
