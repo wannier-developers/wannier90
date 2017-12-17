@@ -147,17 +147,30 @@ contains
           allocate(globaldeleig(num_wann,3,num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating globaldeleig in geinterp_main.')
        end if
+    else
+       ! On the other nodes, I still allocate them with size 1 to avoid 
+       ! that some compilers still try to access the memory
+       allocate(kpointidx(1),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpointidx in geinterp_main.')
+       allocate(kpoints(1,1),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpoints in geinterp_main.')
+       if (geninterp_single_file) then
+          allocate(globaleig(num_wann,1),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating globaleig in geinterp_main.')
+          allocate(globaldeleig(num_wann,3,1),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating globaldeleig in geinterp_main.')
+       end if        
     end if
        
     ! I precalculate how to split on different nodes
     call comms_array_split(num_kpts,counts,displs)
        
-    allocate(localkpoints(3,counts(my_node_id)),stat=ierr)
+    allocate(localkpoints(3,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error allocating localkpoints in geinterp_main.')       
     
-    allocate(localeig(num_wann,counts(my_node_id)),stat=ierr)
+    allocate(localeig(num_wann,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error allocating localeig in geinterp_main.')
-    allocate(localdeleig(num_wann,3,counts(my_node_id)),stat=ierr)
+    allocate(localdeleig(num_wann,3,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error allocating localdeleig in geinterp_main.')
 
 
@@ -184,11 +197,12 @@ contains
     end if
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
-    call comms_scatterv(localkpoints(1,1),3*counts(my_node_id),kpoints(1,1),3*counts, 3*displs)
+    call comms_scatterv(localkpoints,3*counts(my_node_id),kpoints,3*counts, 3*displs)
     if  (.not.geninterp_single_file) then
-       allocate(localkpointidx(counts(my_node_id)),stat=ierr)
+       ! Allocate at least one entry, even if we don't use it
+       allocate(localkpointidx(max(1,counts(my_node_id))),stat=ierr)
        if (ierr/=0) call io_error('Error allocating localkpointidx in geinterp_main.')
-       call comms_scatterv(localkpointidx(:),counts(my_node_id),kpointidx(:),counts, displs)
+       call comms_scatterv(localkpointidx,counts(my_node_id),kpointidx,counts, displs)
     end if
 
     ! I open the output file(s)
@@ -228,11 +242,11 @@ contains
        
     if (geninterp_single_file) then
        ! Now, I get the results from the different nodes
-       call comms_gatherv(localeig(1,1),num_wann*counts(my_node_id),globaleig(1,1), &
+       call comms_gatherv(localeig,num_wann*counts(my_node_id),globaleig, &
             num_wann*counts, num_wann*displs)
        
        if (geninterp_alsofirstder) then
-          call comms_gatherv(localdeleig(1,1,1),3*num_wann*counts(my_node_id),globaldeleig(1,1,1), &
+          call comms_gatherv(localdeleig,3*num_wann*counts(my_node_id),globaldeleig, &
                3*num_wann*counts, 3*num_wann*displs)          
        end if
        

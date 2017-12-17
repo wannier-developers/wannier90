@@ -2544,7 +2544,7 @@ SUBROUTINE compute_orb
    integer                  :: npw_b1, npw_b2, i_b1, i_b2, ikp_b1, ikp_b2
    integer, allocatable     :: igk_b1(:), igk_b2(:)
    complex(DP), allocatable :: evc_b1(:,:),evc_b2(:,:),evc_aux(:,:),H_evc(:,:)
-   complex(DP), allocatable :: uHu(:,:),uIu(:,:),spn(:,:)
+   complex(DP), allocatable :: uHu(:,:),uIu(:,:)
    ! end change Lopez, Thonhauser, Souza
    integer                  :: ibnd_n, ibnd_m
 
@@ -2894,7 +2894,6 @@ SUBROUTINE compute_orb
       DEALLOCATE(aux)
    ENDIF
    DEALLOCATE(evcq)
-   if(write_spn.and.noncolin) deallocate(spn)
 
    IF(any_uspp) THEN
       DEALLOCATE (  qb)

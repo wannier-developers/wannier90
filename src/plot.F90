@@ -1419,7 +1419,7 @@ end subroutine plot_interpolate_bands
         do nkp=1,num_kpts
             write(matunit,*)
             write(matunit,'(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:,nkp)
-            write(matunit,'(f15.10,sp,f15.10)') ((u_matrix_opt(i,j,nkp),i=1,num_wann),j=1,num_bands)
+            write(matunit,'(f15.10,sp,f15.10)') ((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann)
         end do
         close(matunit)
     endif
