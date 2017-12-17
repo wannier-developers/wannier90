@@ -33,6 +33,24 @@ tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
               (1.0e-6, 1.0e-6, 'bandidx'))
 
+[POSTW90_MORBDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_morb_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e-4, 'bandmorbx'),
+               (1.0e-4, 1.0e-4, 'bandmorby'),
+               (1.0e-4, 1.0e-4, 'bandmorbz'))
+
+[POSTW90_CURVDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_curv_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e-4, 'bandcurvx'),
+               (1.0e-4, 1.0e-4, 'bandcurvy'),
+               (1.0e-4, 1.0e-4, 'bandcurvz'))
+
+
+
 [POSTW90_WPOUT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_wpout.parse
