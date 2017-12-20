@@ -668,7 +668,7 @@ subroutine script_fermi_lines(scriptunit)
   write(scriptunit,'(a)') " "
   write(scriptunit,'(a)')&
        "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"
-  write(scriptunit,'(a)') "numbands=bands.size/num_pt"
+  write(scriptunit,'(a)') "numbands=int(bands.size/num_pt)"
   write(scriptunit,'(a)') "if square:"
   write(scriptunit,'(a)')&
        "  bbands=bands.reshape((dimy,dimx,numbands))"
