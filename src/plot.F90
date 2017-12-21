@@ -1080,12 +1080,12 @@ end subroutine plot_interpolate_bands
                    do loop_w=1,num_wannier_plot            
                       if (.not.spinors) then
                          wann_func(nxx,nyy,nzz,loop_w)=wann_func(nxx,nyy,nzz,loop_w)+ &
-                                                       u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn(npoint,loop_b)*catmp
+                                                  u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn(npoint,loop_b)*catmp
                       else
                          wann_func_nc(nxx,nyy,nzz,1,loop_w)=wann_func_nc(nxx,nyy,nzz,1,loop_w)+ & ! up-spinor
-                                                            u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,1)*catmp
+                                              u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,1)*catmp
                          wann_func_nc(nxx,nyy,nzz,2,loop_w)=wann_func_nc(nxx,nyy,nzz,2,loop_w)+ & ! down-spinor
-                                                            u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,2)*catmp
+                                              u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,2)*catmp
                          upspinor=real(wann_func_nc(nxx,nyy,nzz,1,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,1,loop_w)),dp)
                          dnspinor=real(wann_func_nc(nxx,nyy,nzz,2,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,2,loop_w)),dp)
                          select case (wannier_plot_spinor_mode)
