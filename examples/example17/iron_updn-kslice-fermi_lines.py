@@ -20,7 +20,7 @@ ef=   12.625600
  
 bands_up=np.loadtxt('iron_up-kslice-bands.dat')
 bands_dn=np.loadtxt('iron_dn-kslice-bands.dat')
-numbands=int(bands_up.size/num_pt)
+numbands=bands_up.size//num_pt
 bbands_up=bands_up.reshape((dimx,dimy,numbands))
 bbands_dn=bands_dn.reshape((dimx,dimy,numbands))
 for i in range(numbands):
