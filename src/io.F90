@@ -234,6 +234,7 @@ contains
          if(whoami==0) then
             write(stdout,*)  'Exiting.......' 
             write(stdout, '(1x,a)') trim(error_msg)
+            close(stdout)
          end if
 
          call MPI_abort(MPI_comm_world,1,ierr)
