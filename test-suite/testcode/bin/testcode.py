@@ -12,8 +12,8 @@ Available actions:
   diff                  diff set of test outputs from a previous testcode
                         run against the benchmark outputs.
   make-benchmarks       create a new set of benchmarks and update the userconfig
-                        file with the new benchmark id.  Also runs the 'run'
-                        action unless the 'compare' action is also given.
+                        file with the new benchmark id.  Also forces the tests
+                        to be run unless the 'compare' action is also given.
   recheck               compare a set of test outputs and rerun failed tests.
   run                   run a set of tests and compare against the benchmark
                         outputs.  Default action.
@@ -169,6 +169,10 @@ actions: list of testcode2 actions to run.
             ' case all test programs are set to use that value, or in the'
             ' format program_name=value, which affects only the specified'
             ' program.')
+    parser.add_option('-f', '--first-run', action='store_true', default=False,
+            dest='first_run', help='Run tests that were not were not run in '
+            'the previous testcode run.  Only relevant to the recheck action.  '
+            'Default: %default.')
     parser.add_option('-i', '--insert', action='store_true', default=False,
             help='Insert the new benchmark into the existing list of benchmarks'
             ' in userconfig rather than overwriting it.  Only relevant to the'
@@ -213,7 +217,7 @@ actions: list of testcode2 actions to run.
 
     # Default action.
     if not args or ('make-benchmarks' in args and 'compare' not in args
-            and 'run' not in args):
+            and 'run' not in args and 'recheck' not in args):
         # Run tests by default if no action provided.
         # Run tests before creating benchmark by default.
         args.append('run')
@@ -421,7 +425,8 @@ number of tests not checked due to test output file not existing.
 
     return not_checked
 
-def recheck_tests(tests, verbose=1, cluster_queue=None, tot_nprocs=0):
+def recheck_tests(tests, verbose=1, cluster_queue=None, tot_nprocs=0,
+                  first_run=False):
     '''Check tests and re-run any failed/skipped tests.
 
 tests: list of tests.
@@ -434,6 +439,7 @@ tot_nprocs: total number of processors available to run tests on.  As many
     cluster_queue is specified, then all tests are submitted to the cluster at
     the same time.  If less than one and cluster_queue is not set, then
     tot_nprocs is ignored and the tests are run sequentially (default).
+first_run: if true, run tests that were not run in the previous invocation.
 
 Returns:
 
@@ -455,6 +461,10 @@ not_checked: number of tests not checked due to missing test output.
     for test in tests:
         stat = test.get_status()
         if sum(stat[key] for key in ('failed', 'unknown')) != 0:
+            # Tests which failed or are unknown should be rerun.
+            rerun_tests.append(test)
+        elif stat['ran'] == 0 and first_run:
+            # Or if they were never run and want to be run...
             rerun_tests.append(test)
         elif stat['ran'] != 0:
             # mark tests as skipped using an internal API (naughty!)
@@ -572,30 +582,23 @@ insert_id: insert the new benchmark id into the existing list of benchmark ids i
             return None
 
     # Get vcs info.
-#    vcs = {}
-#    for (key, program) in test_programs.items():
-#        if program.vcs and program.vcs.vcs:
-#            vcs[key] = program.vcs.get_code_id()
-#        else:
-#            print('Program not under (known) version control system')
-#            vcs[key] = testcode2.compatibility.compat_input(
-#                    'Enter revision id for %s: ' % (key))
-
-    # HACK
-    code_id = testcode2.compatibility.compat_input(
-                    'Enter new revision id : ')
+    vcs = {}
+    for (key, program) in test_programs.items():
+        if program.vcs and program.vcs.vcs:
+            vcs[key] = program.vcs.get_code_id()
+        else:
+            print('Program not under (known) version control system')
+            vcs[key] = testcode2.compatibility.compat_input(
+                    'Enter revision id for %s: ' % (key))
 
     # Benchmark label from vcs info.
-#    if len(vcs) == 1:
-#        benchmark = vcs.popitem()[1]
-#    else:
-#        benchmark = []
-#        for (key, code_id) in vcs.items():
-#            benchmark.append('%s-%s' % (key, code_id))
-#        benchmark = '.'.join(benchmark)
-
-    # HACK
-    benchmark = code_id
+    if len(vcs) == 1:
+        benchmark = vcs.popitem()[1]
+    else:
+        benchmark = []
+        for (key, code_id) in vcs.items():
+            benchmark.append('%s-%s' % (key, code_id))
+        benchmark = '.'.join(benchmark)
 
     # Create benchmarks.
     for test in tests:
@@ -735,7 +738,7 @@ final: final call (so print a goodbye messge).
             print('Failed %s in:\n\t%s' % (failed_test, '\n\t'.join(failures)))
         if warnings:
             print('%s in:\n\t%s' % (warning.title(), '\n\t'.join(warnings)))
-        if skipped:
+        if skipped and verbose > 1:
             print('Skipped %s in:\n\t%s' % (skipped_test, '\n\t'.join(skipped)))
     else:
         print(' [%s/%s%s]'% (npassed, nran, add_info_msg))
@@ -779,8 +782,8 @@ args: command-line arguments passed to testcode2.
         run_tests(tests, verbose, options.queue_system, options.tot_nprocs)
         ret_val = end_status(tests, 0, verbose)
     if 'recheck' in actions:
-        not_checked = recheck_tests(tests, verbose,
-                                        options.queue_system,options.tot_nprocs)
+        not_checked = recheck_tests(tests, verbose, options.queue_system,
+                                    options.tot_nprocs, options.first_run)
         ret_val = end_status(tests, not_checked, verbose)
     if 'compare' in actions:
         not_checked = compare_tests(tests, verbose)
