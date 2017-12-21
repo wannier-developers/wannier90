@@ -112,6 +112,7 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
+  character(len=20), public, save :: wannier_plot_spinor_mode
   logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
@@ -779,6 +780,9 @@ contains
 
     wannier_plot_mode       = 'crystal'
     call param_get_keyword('wannier_plot_mode',found,c_value=wannier_plot_mode)
+
+    wannier_plot_spinor_mode= 'total'
+    call param_get_keyword('wannier_plot_spinor_mode',found,c_value=wannier_plot_spinor_mode)
     
     call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,lcount=.true.)
     if(found) then
@@ -807,6 +811,9 @@ contains
             call io_error('Error: wannier_plot_format not recognised')
        if ( (index(wannier_plot_mode,'crys').eq.0) .and. (index(wannier_plot_mode,'mol').eq.0) ) &
             call io_error('Error: wannier_plot_mode not recognised')
+       if ( (index(wannier_plot_spinor_mode,'total').eq.0) .and. (index(wannier_plot_spinor_mode,'up').eq.0) &
+            .and. (index(wannier_plot_spinor_mode,'down').eq.0) ) &
+            call io_error('Error: wannier_plot_spinor_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
 
@@ -2425,6 +2432,7 @@ contains
           end if
 
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :',trim(wannier_plot_spinor_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           if (index(wannier_plot_format,'cube')>0 .or. iprint>2) &
           write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :',wannier_plot_radius,'|'
@@ -5499,6 +5507,7 @@ contains
     call comms_bcast(wannier_plot_supercell(1),3)
     call comms_bcast(wannier_plot_format,len(wannier_plot_format))
     call comms_bcast(wannier_plot_mode,len(wannier_plot_mode))
+    call comms_bcast(wannier_plot_spinor_mode,len(wannier_plot_spinor_mode))
     call comms_bcast(write_u_matrices,1)
     call comms_bcast(bands_plot,1)
     call comms_bcast(bands_num_points,1)
