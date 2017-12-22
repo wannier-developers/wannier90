@@ -158,8 +158,14 @@ dist:
 		./CHANGE.log \
 	)
 
-test: 
-	(cd $(ROOTDIR)/test-suite && $(MAKE) run-tests )
+test-serial: 
+	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
+
+test-parallel:
+	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default --numprocs=4 )
+
+# Alias
+tests: test-serial test-parallel
 
 dist-lite:
 	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
@@ -187,4 +193,4 @@ objdirp:
 		then mkdir src/objp ; \
 	fi ) ;
 
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test dist-lite objdir objdirp serialobjs
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests
