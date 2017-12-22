@@ -249,7 +249,7 @@ module w90_get_oper
     use w90_parameters, only    : num_kpts,nntot,num_wann,wb,bk,timing_level,&
                                   num_bands,ndimwin,nnlist,have_disentangled,&
                                   transl_inv,nncell,effective_model
-    use w90_postw90_common, only : nrpts,v_matrix
+    use w90_postw90_common, only : nrpts
     use w90_io, only            : stdout,io_file_unit,io_error,io_stopwatch,&
                                   seedname
     use w90_comms, only         : on_root,comms_bcast
@@ -258,7 +258,7 @@ module w90_get_oper
     complex(kind=dp), allocatable :: AA_q_diag(:,:)
     complex(kind=dp), allocatable :: S_o(:,:)   
     complex(kind=dp), allocatable :: S(:,:) 
-    integer                       :: n,m,i,ii,j,jj,winmin_q,winmin_qb,&
+    integer                       :: n,m,i,j,&
                                      ik,ik2,ik_prev,nn,inn,nnl,nnm,nnn,&
                                      idir,ncount,nn_count,mmn_in,&
                                      nb_tmp,nkp_tmp,nntot_tmp,file_unit,&
@@ -419,22 +419,10 @@ module w90_get_oper
 
           ! Wannier-gauge overlap matrix S in the projected subspace
           !
-          call get_win_min(ik,winmin_q)
-          call get_win_min(nnlist(ik,nn),winmin_qb)
-          S=cmplx_0
-          do m=1,num_wann
-             do n=1,num_wann
-                do i=1,num_states(ik)
-                   ii=winmin_q+i-1
-                   do j=1,num_states(nnlist(ik,nn))
-                      jj=winmin_qb+j-1
-                      S(n,m)=S(n,m)&
-                           +conjg(v_matrix(i,n,ik))*S_o(ii,jj)&
-                           *v_matrix(j,m,nnlist(ik,nn))
-                   enddo
-                enddo
-             enddo
-          enddo
+          call get_gauge_overlap_matrix( &
+                  ik, num_states(ik), &
+                  nnlist(ik,nn), num_states(nnlist(ik,nn)), &
+                  S_o, S)
           
           ! Berry connection matrix
           ! Assuming all neighbors of a given point are read in sequence!
@@ -615,20 +603,10 @@ module w90_get_oper
           
           call get_win_min(ik,winmin_q)
           call get_win_min(nnlist(ik,nn),winmin_qb)
-          H_q_qb(:,:)=cmplx_0
-          do m=1,num_wann
-             do n=1,num_wann
-                do i=1,num_states(ik)
-                   ii=winmin_q+i-1
-                   do j=1,num_states(nnlist(ik,nn))
-                      jj=winmin_qb+j-1
-                      H_q_qb(n,m)=H_q_qb(n,m)&
-                           +conjg(v_matrix(i,n,ik))*eigval(ii,ik)&
-                           *S_o(ii,jj)*v_matrix(j,m,nnlist(ik,nn))
-                   enddo
-                enddo
-             enddo
-          enddo
+          call get_gauge_overlap_matrix( &
+                  ik, num_states(ik), &
+                  nnlist(ik,nn), num_states(nnlist(ik,nn)), &
+                  S_o, H=H_q_qb)
           do idir=1,3
              BB_q(:,:,ik,idir)=BB_q(:,:,ik,idir)&
                   +cmplx_i*wb(nn)*bk(idir,nn,ik)*H_q_qb(:,:)
@@ -774,21 +752,10 @@ module w90_get_oper
                 !
                 ! Transform to projected subspace, Wannier gauge
                 !
-                H_qb1_q_qb2(:,:)=cmplx_0
-                do m=1,num_wann
-                   do n=1,num_wann
-                      do i=1,num_states(qb1)
-                         ii=winmin_qb1+i-1
-                         do j=1,num_states(qb2)
-                            jj=winmin_qb2+j-1
-                            H_qb1_q_qb2(n,m)=H_qb1_q_qb2(n,m)&
-                                 +conjg(v_matrix(i,n,qb1))&
-                                 *Ho_qb1_q_qb2(ii,jj)&
-                                 *v_matrix(j,m,qb2)
-                         enddo
-                      enddo
-                   enddo
-                enddo
+                call get_gauge_overlap_matrix(&
+                   qb1, num_states(qb1), &
+                   qb2, num_states(qb2), &
+                   Ho_qb1_q_qb2, H_qb1_q_qb2)
                 do b=1,3
                    do a=1,b
                       CC_q(:,:,ik,a,b)=CC_q(:,:,ik,a,b)+wb(nn1)*bk(a,nn1,ik)&
@@ -1095,22 +1062,11 @@ module w90_get_oper
        !
        SS_q(:,:,:,:)=cmplx_0
        do ik=1,num_kpts
-          call get_win_min(ik,winmin)
           do is=1,3
-             do m=1,num_wann
-                do n=1,m
-                   do i=1,num_states(ik)
-                      ii=winmin+i-1
-                      do j=1,num_states(ik)
-                         jj=winmin+j-1
-                         SS_q(n,m,ik,is)=SS_q(n,m,ik,is)&
-                              +conjg(v_matrix(i,n,ik))*spn_o(ii,jj,ik,is)&
-                              *v_matrix(j,m,ik)
-                      enddo !j
-                   enddo !i
-                   SS_q(m,n,ik,is)=conjg(SS_q(n,m,ik,is))
-                enddo !n
-             enddo !m
+             call get_gauge_overlap_matrix( &
+                  ik, num_states(ik), &
+                  ik, num_states(ik), &
+                  spn_o(:,:,ik,is), SS_q(:,:,ik,is))
           enddo !is
        enddo !ik
 
@@ -1214,5 +1170,38 @@ module w90_get_oper
     end do
     
   end subroutine get_win_min
+
+  !==========================================================
+  subroutine get_gauge_overlap_matrix(ik_a, ns_a, ik_b, ns_b, S_o, S, H)
+  !==========================================================
+  !
+  ! Wannier-gauge overlap matrix S in the projected subspace
+  !
+  ! TODO: Update this documentation of this routine and
+  ! possibliy give it a better name. The routine has been
+  ! generalized multiple times.
+  !
+  !==========================================================
+
+    use w90_constants, only      : dp, cmplx_0
+    use w90_postw90_common, only : v_matrix
+    use w90_parameters, only     : num_wann, eigval
+    use w90_utility, only        : utility_zgemmm
+
+    integer, intent(in) :: ik_a, ns_a, ik_b, ns_b
+
+    complex(kind=dp), dimension(:,:), intent(in)            :: S_o
+    complex(kind=dp), dimension(:,:), intent(out), optional :: S, H
+
+    integer :: wm_a, wm_b
+
+    call get_win_min(ik_a, wm_a)
+    call get_win_min(ik_b, wm_b)
+
+    call utility_zgemmm(v_matrix(1:ns_a, 1:num_wann, ik_a),      'C', &
+                        S_o(wm_a:wm_a+ns_a-1, wm_b:wm_b+ns_b-1), 'N', &
+                        v_matrix(1:ns_b, 1:num_wann, ik_b),      'N', &
+                        S, eigval(wm_a:wm_a+ns_a-1,ik_a), H)
+  end subroutine get_gauge_overlap_matrix
 
 end module w90_get_oper
