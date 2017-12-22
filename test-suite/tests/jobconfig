@@ -144,6 +144,69 @@ program = POSTW90_GENINTERPDAT_OK
 inputs_args = ('silicon.win', '')
 output = silicon_geninterp.dat
 
+# Test of AHC for bcc iron 
+[testpostw90_fe_ahc/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout 
+
+# Test of Orbital Magnetisation for bcc iron
+[testpostw90_fe_morb/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout
+
+# Test of AHC plus Orbital Magnetisation for bcc iron
+[testpostw90_fe_morbandahc/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout
+
+# Test of KPATH Berry Curvature plus Orbital Magnetisation for bcc iron
+[testpostw90_fe_kpathmorbcurv/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-morb.dat
+
+# Test of KPATH Berry Curvature  for bcc iron
+[testpostw90_fe_kpathcurv/]
+program = POSTW90_CURVDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-curv.dat
+
+# Test of KSLICE Berry Curvature  for bcc iron
+[testpostw90_fe_kslicecurv/]
+program = POSTW90_CURVDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kslice-curv.dat
+
+# Test of KSLICE Morb  for bcc iron
+[testpostw90_fe_kslicemorb/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kslice-morb.dat
+
+# Test of Kubo JDOS  for bcc iron
+[testpostw90_fe_kubo_jdos/]
+program = POSTW90_JDOS_OK
+inputs_args = ('Fe.win', '')
+output = Fe-jdos.dat
+
+# Test of Kubo Axy  for bcc iron
+[testpostw90_fe_kubo_Axy/]
+program = POSTW90_KUBO_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kubo_A_xy.dat
+
+# Test of Kubo Szz  for bcc iron
+[testpostw90_fe_kubo_Szz/]
+program = POSTW90_KUBO_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kubo_S_zz.dat
+
+
+
+
 
 [categories]
 wannier_only = testw90_*
