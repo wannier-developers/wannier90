@@ -915,7 +915,7 @@ end subroutine plot_interpolate_bands
     if (spinors) then
        allocate(wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1)+1)/2)*ngx-1,&
             -((ngs(2))/2)*ngy:((ngs(2)+1)/2)*ngy-1,&
-            -((ngs(3))/2)*ngz:((ngs(3)+1)/2)*ngz-1,2,num_wannier_plot),stat=ierr ) 
+            -((ngs(3))/2)*ngz:((ngs(3)+1)/2)*ngz-1,2,num_wannier_plot),stat=ierr )
        if (ierr/=0) call io_error('Error in allocating wann_func_nc in plot_wannier')
        wann_func_nc=cmplx_0
     endif
@@ -1086,19 +1086,23 @@ end subroutine plot_interpolate_bands
                                               u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,1)*catmp
                          wann_func_nc(nxx,nyy,nzz,2,loop_w)=wann_func_nc(nxx,nyy,nzz,2,loop_w)+ & ! down-spinor
                                               u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,2)*catmp
+                         if(loop_b==num_wann) then ! last loop
                          upspinor=real(wann_func_nc(nxx,nyy,nzz,1,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,1,loop_w)),dp)
                          dnspinor=real(wann_func_nc(nxx,nyy,nzz,2,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,2,loop_w)),dp)
                          select case (wannier_plot_spinor_mode)
                          case ('total')
                             wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor+dnspinor), 0.0_dp, dp)
                          case ('up')
-                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor), 0.0_dp, dp)
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor), 0.0_dp, dp)&
+                                      *sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,1,loop_w),dp))
                          case ('down')
-                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(dnspinor), 0.0_dp, dp)
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(dnspinor), 0.0_dp, dp)&
+                                     *sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,2,loop_w),dp))
                          case default
                             call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(wannier_plot_spinor_mode))
                          end select
                          wann_func(nxx,nyy,nzz,loop_w)= wann_func(nxx,nyy,nzz,loop_w)/ real(num_kpts,dp)
+                      endif
                       endif
                    end do
                 end do
