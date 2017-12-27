@@ -991,8 +991,6 @@ end subroutine plot_interpolate_bands
                    read(file_unit) (r_wvfn_tmp(nx,counter),nx=1,ngx*ngy*ngz)
                 else
                    read(file_unit) (r_wvfn_tmp_nc(nx,counter,1),nx=1,ngx*ngy*ngz) ! up-spinor
-                endif
-                if (spinors) then
                    read(file_unit) (r_wvfn_tmp_nc(nx,counter,2),nx=1,ngx*ngy*ngz) ! down-spinor
                 endif
              end if
