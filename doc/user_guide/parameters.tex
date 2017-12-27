@@ -54,13 +54,12 @@ num\_wann : 4
 A logical keyword can be set to {\tt true} using any of the following
 strings: {\tt T}, {\tt true}, {\tt .true.}.
 
-For further examples see Section~\ref{winfile} and the the \wannier\ Tutorial.
-
+For further examples see Section~\ref{winfile} and the the \wannier\ Tutorial. 
 
 \section{Keyword List}
 \label{parameter_data}
 
-\begin{table}
+\begin{table}[b]
 \begin{center}
 \begin{tabular}{|c|c|p{6cm}|}
 \hline
@@ -101,6 +100,7 @@ the same input file. }}
 \end{center}
 \end{table}
 
+\clearpage 
 
 \begin{table}
 \begin{center}
@@ -236,9 +236,9 @@ the same input file. **Cannot be used in conjunction with disentanglement.
 
 
 
-\begin{table}
-\begin{center}
-\begin{tabular}{|c|c|p{6cm}|}
+\begin{longtable}{|c|c|p{6cm}|}
+%\begin{center}
+%\begin{tabular}{|c|c|p{6cm}|}
   \hline
   Keyword & Type & Description \\
   &      &             \\
@@ -253,7 +253,8 @@ the same input file. **Cannot be used in conjunction with disentanglement.
   WF \\
   {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
   WF, molecule or crystal \\ 
-  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
+  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\
+ {\sc wannier\_plot\_spinor\_mode } & S& Quantity to plot for spinor WF\\ 
   {\sc bands\_plot }   & L & Plot interpolated band structure \\
   {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
   {\sc bands\_num\_points }   & I & Number of points along the first
@@ -301,15 +302,15 @@ Hamiltonian, and position operator in WF basis} \\
 %smearing for the dos plot \\
 %{\sc dos\_plot\_format }   & S & Format of the dos plot \\
 \hline
-\end{tabular}
+%\end{tabular}
 \caption[Parameter file keywords controlling plotting.]
 {{\tt seedname.win} file keywords controlling the  plotting.  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. * Only
 applies when {\sc wannier\_plot\_format} is {\tt cube}.}
 \label{parameter_keywords6}
-\end{center}
-\end{table}
+%\end{center}
+\end{longtable}
 
 
 
@@ -1144,6 +1145,16 @@ If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt
   0. Units are \AA.
 
 The default value is 3.5. 
+
+
+\subsection[wannier\_plot\_spinor\_mode]{\tt character(len=20) :: wannier\_plot\_spinor\_mode}
+If $\verb#spinors#=\verb#true#$ then this parameter controls the
+quantity to plot. For a spinor WF with components $[\phi,\psi]$ the quatity plotted is 
+\begin{itemize}
+\item[{\bf --}] \verb#total# (default). $\sqrt{[|\phi|^2+|\psi|^2}$
+\item[{\bf --}] \verb#up#. $|\phi|\times sign(Re\{\phi\})$
+\item[{\bf --}] \verb#down#. $|\psi|\times sign(Re\{\psi\})$
+\end{itemize}
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
