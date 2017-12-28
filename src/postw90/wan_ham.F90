@@ -267,11 +267,11 @@ module w90_wan_ham
           do n=1,num_wann
              if(present(occ)) then
                 if(occ(m)<0.5_dp.and.occ(n)>0.5_dp) then
-                   JJm_list(n,m,if)=cmplx_i*delHH_bar(n,m)/(eig(m)-eig(n))
-                   JJp_list(m,n,if)=cmplx_i*delHH_bar(m,n)/(eig(n)-eig(m))
+                   JJm_list(n,m,ife)=cmplx_i*delHH(n,m)/(eig(m)-eig(n))
+                   JJp_list(m,n,ife)=cmplx_i*delHH(m,n)/(eig(n)-eig(m))
                 else
-                   JJm_list(n,m,if)=cmplx_0
-                   JJp_list(m,n,if)=cmplx_0
+                   JJm_list(n,m,ife)=cmplx_0
+                   JJp_list(m,n,ife)=cmplx_0
                 end if
              else
                if(eig(n)>fe .and. eig(m)<fe) then

@@ -37,6 +37,7 @@ module w90_parameters
   logical,           public, save :: spn_formatted
   !! Read the spin from fortran formatted file
   logical,           public, save :: uHu_formatted
+  logical,           public, save :: berry_uHu_formatted
   !! Read the uHu from fortran formatted file
   integer,           public, save :: spin
   !! Spin up=1 down=2
