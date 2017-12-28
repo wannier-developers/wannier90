@@ -788,7 +788,7 @@ module w90_berry
     real(kind=dp), intent(in), optional, dimension(:) :: occ
 
     if (present(occ)) then 
-        call berry_get_imfgh_klist(kpt,imf_k_list,occ)
+        call berry_get_imfgh_klist(kpt,imf_k_list,occ=occ)
     else
         call berry_get_imfgh_klist(kpt,imf_k_list)
     endif
@@ -865,11 +865,13 @@ module w90_berry
 
     ! Gather W-gauge matrix objects
     !
+
+
      if(present(occ)) then
-        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list,occ=occ)
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list,occ=occ)
         call wham_get_occ_mat_list(UU,f_list,g_list,occ=occ)
      else
-        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list,eig)
         call wham_get_occ_mat_list(UU,f_list,g_list,eig=eig)
      endif
 
