@@ -97,7 +97,7 @@ module w90_berry
     !
     ! First index labels J0,J1,J2 terms, second labels the Cartesian component 
     !
-    real(kind=dp) :: imf_k_list(3,3,nfermi),imf_list(3,3,nfermi)
+    real(kind=dp) :: imf_k_list(3,3,nfermi),imf_list(3,3,nfermi),imf_list2(3,3,nfermi)
     real(kind=dp) :: img_k_list(3,3,nfermi),img_list(3,3,nfermi)
     real(kind=dp) :: imh_k_list(3,3,nfermi),imh_list(3,3,nfermi)
     real(kind=dp) :: ahc_list(3,3,nfermi)
@@ -166,7 +166,7 @@ module w90_berry
        call get_AA_R
        call get_BB_R
        call get_CC_R
-       imf_list=0.0_dp
+       imf_list2=0.0_dp
        img_list=0.0_dp
        imh_list=0.0_dp
     endif
@@ -326,7 +326,7 @@ module w90_berry
 
           if(eval_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
-             imf_list=imf_list+imf_k_list*kweight
+             imf_list2=imf_list2+imf_k_list*kweight
              img_list=img_list+img_k_list*kweight
              imh_list=imh_list+imh_k_List*kweight
           endif
@@ -395,7 +395,7 @@ module w90_berry
 
           if(eval_morb) then
              call berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
-             imf_list=imf_list+imf_k_list*kweight
+             imf_list2=imf_list2+imf_k_list*kweight
              img_list=img_list+img_k_list*kweight
              imh_list=imh_list+imh_k_List*kweight
           endif
@@ -431,7 +431,7 @@ module w90_berry
     endif
 
     if(eval_morb) then
-       call comms_reduce(imf_list(1,1,1),3*3*nfermi,'SUM')
+       call comms_reduce(imf_list2(1,1,1),3*3*nfermi,'SUM')
        call comms_reduce(img_list(1,1,1),3*3*nfermi,'SUM')
        call comms_reduce(imh_list(1,1,1),3*3*nfermi,'SUM')
     end if
@@ -618,9 +618,9 @@ module w90_berry
           endif
           do if=1,nfermi
              LCtil_list(:,:,if)=(img_list(:,:,if)&
-                  -fermi_energy_list(if)*imf_list(:,:,if))*fac
+                  -fermi_energy_list(if)*imf_list2(:,:,if))*fac
              ICtil_list(:,:,if)=(imh_list(:,:,if)&
-                  -fermi_energy_list(if)*imf_list(:,:,if))*fac
+                  -fermi_energy_list(if)*imf_list2(:,:,if))*fac
              Morb_list(:,:,if)=LCtil_list(:,:,if)+ICtil_list(:,:,if)
              if(nfermi>1) write(file_unit,'(4(F12.6,1x))')&
                   fermi_energy_list(if),sum(Morb_list(1:3,1,if)),&
@@ -779,93 +779,26 @@ module w90_berry
   !! Calculates the Berry curvature traced over the occupied
   !! states, -2Im[f(k)] [Eq.33 CTVR06, Eq.6 LVTS12] for a list 
   !! of Fermi energies, and stores it in axial-vector form 
-  !!
-  !  added the fake occupancies occ  for calculations of band-resolved Bery curvature  !
+  !                                                            !
   !============================================================!
-
-    use w90_constants, only      : dp,cmplx_0,cmplx_i
-    use w90_utility, only        : utility_re_tr,utility_im_tr
-    use w90_parameters, only     : num_wann,nfermi
-    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec
-    use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list
-    use w90_get_oper, only       : AA_R
-
     ! Arguments
     !
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), intent(out), dimension(:,:,:) :: imf_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
 
-    complex(kind=dp), allocatable :: UU(:,:)
-    complex(kind=dp), allocatable :: f_list(:,:,:)
-    complex(kind=dp), allocatable :: g_list(:,:,:)
-    complex(kind=dp), allocatable :: AA(:,:,:)
-    complex(kind=dp), allocatable :: OOmega(:,:,:)
-    complex(kind=dp), allocatable :: JJp_list(:,:,:,:)
-    complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
-    complex(kind=dp), allocatable :: mdum(:,:)
-    real(kind=dp)                 :: eig(num_wann)
-    integer                       :: i,if,nfermi_loc
-
-    allocate(UU(num_wann,num_wann))
-    allocate(AA(num_wann,num_wann,3))
-    allocate(OOmega(num_wann,num_wann,3))
-    allocate(mdum(num_wann,num_wann))
-
-     if(present(occ)) then
-        nfermi_loc=1
-     else
-        nfermi_loc=nfermi
-     endif
-     allocate(f_list(num_wann,num_wann,nfermi_loc))
-     allocate(g_list(num_wann,num_wann,nfermi_loc))
-     allocate(JJp_list(num_wann,num_wann,nfermi_loc,3))
-     allocate(JJm_list(num_wann,num_wann,nfermi_loc,3))
-
-
-
-    ! Gather W-gauge matrix objects
-    ! occupation matrices f and g=1-f
-    !
-     if(present(occ)) then
-        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list,occ=occ)
-        call wham_get_occ_mat_list(UU,f_list,g_list,occ=occ)
-     else
-        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
-        call wham_get_occ_mat_list(UU,f_list,g_list,eig=eig)
-     endif
-
-    ! Eqs.(39-40) WYSV06
-    !
-    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega)
-
-    ! Trace formula, Eq.(51) LVTS12
-    !
-    do if=1,nfermi_loc
-       do i=1,3
-          !
-          ! J0 term (Omega_bar term of WYSV06)
-          mdum=matmul(f_list(:,:,if),OOmega(:,:,i))
-          imf_k_list(1,i,if)=utility_re_tr(mdum)
-          !
-          ! J1 term (DA term of WYSV06)
-          mdum =matmul(AA(:,:,alpha_A(i)),JJp_list(:,:,if,beta_A(i)))&
-               +matmul(JJm_list(:,:,if,alpha_A(i)),AA(:,:,beta_A(i)))
-          imf_k_list(2,i,if)=-2.0_dp*utility_im_tr(mdum)
-          !
-          ! J2 term (DD of WYSV06)
-          mdum=matmul(JJm_list(:,:,if,alpha_A(i)),JJp_list(:,:,if,beta_A(i)))
-          imf_k_list(3,i,if)=-2.0_dp*utility_im_tr(mdum)
-          !
-       end do
-    enddo
+    if (present(occ)) then 
+        call berry_get_imfgh_klist(kpt,imf_k_list,occ)
+    else
+        call berry_get_imfgh_klist(kpt,imf_k_list)
+    endif
 
   end subroutine berry_get_imf_klist
 
 
   subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list,occ)
   !=========================================================!
-  !                                                         !
+  !
   !! Calculates the three quantities needed for the orbital
   !! magnetization: 
   !!  
@@ -875,25 +808,27 @@ module w90_berry
   !! They are calculated together (to reduce the number of  
   !! Fourier calls) for a list of Fermi energies, and stored
   !! in axial-vector form. 
-  !                                                         !
-  !  added the fake occupancies occ  for calculations of    !
-  !  band-resolved Bery curvature and orbital magnetic momens    !
+  !
+  ! The two optional output parameters 'imh_k_list' and
+  ! 'img_k_list' are only calculated if both of them are
+  ! present.
+  !
   !=========================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i
-    use w90_utility, only        : utility_re_tr,utility_im_tr
+    use w90_utility, only        : utility_re_tr_prod,utility_im_tr_prod
     use w90_parameters, only     : num_wann,nfermi
     use w90_postw90_common, only : pw90common_fourier_R_to_k_vec,pw90common_fourier_R_to_k
     use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list
     use w90_get_oper, only       : AA_R,BB_R,CC_R
+    use w90_utility, only        : utility_zgemm_new
 
     ! Arguments
     !
-    real(kind=dp), intent(in)                    :: kpt(3)
-    real(kind=dp), intent(out), dimension(:,:,:) :: imf_k_list
-    real(kind=dp), intent(out), dimension(:,:,:) :: img_k_list
-    real(kind=dp), intent(out), dimension(:,:,:) :: imh_k_list
-    real(kind=dp), intent(in), optional, dimension(:) :: occ
+    real(kind=dp), intent(in)     :: kpt(3)
+    real(kind=dp), intent(out), dimension(:,:,:), optional & 
+                                  :: imf_k_list, img_k_list, imh_k_list
+    real(kind=dp), intent(in), optional, dimension(:) :: occ 
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
@@ -903,25 +838,14 @@ module w90_berry
     complex(kind=dp), allocatable :: BB(:,:,:)
     complex(kind=dp), allocatable :: CC(:,:,:,:)
     complex(kind=dp), allocatable :: OOmega(:,:,:)
-    complex(kind=dp), allocatable :: LLambda_i(:,:)
     complex(kind=dp), allocatable :: JJp_list(:,:,:,:)
     complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
-    complex(kind=dp), allocatable :: mdum(:,:)
     real(kind=dp)                 :: eig(num_wann)
-    integer                       :: i,j,if,nfermi_loc
+    integer                       :: i,j,ife,nfermi_loc
+    real(kind=dp)                 :: s
 
-    allocate(HH(num_wann,num_wann))
-    allocate(UU(num_wann,num_wann))
-    allocate(f_list(num_wann,num_wann,nfermi))
-    allocate(g_list(num_wann,num_wann,nfermi))
-    allocate(JJp_list(num_wann,num_wann,nfermi,3))
-    allocate(JJm_list(num_wann,num_wann,nfermi,3))
-    allocate(AA(num_wann,num_wann,3))
-    allocate(BB(num_wann,num_wann,3))
-    allocate(CC(num_wann,num_wann,3,3))
-    allocate(OOmega(num_wann,num_wann,3))
-    allocate(LLambda_i(num_wann,num_wann))
-    allocate(mdum(num_wann,num_wann))
+    ! Temporary space for matrix products
+    complex(kind=dp), allocatable, dimension(:,:,:) :: tmp
 
      if(present(occ)) then
         nfermi_loc=1
@@ -930,99 +854,134 @@ module w90_berry
      endif
 
 
+    allocate(HH(num_wann,num_wann))
+    allocate(UU(num_wann,num_wann))
+    allocate(f_list(num_wann,num_wann,nfermi_loc))
+    allocate(g_list(num_wann,num_wann,nfermi_loc))
+    allocate(JJp_list(num_wann,num_wann,nfermi_loc,3))
+    allocate(JJm_list(num_wann,num_wann,nfermi_loc,3))
+    allocate(AA(num_wann,num_wann,3))
+    allocate(OOmega(num_wann,num_wann,3))
+
     ! Gather W-gauge matrix objects
     !
      if(present(occ)) then
-        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list,occ=occ)
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list,occ=occ)
         call wham_get_occ_mat_list(UU,f_list,g_list,occ=occ)
      else
-        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,mdum,JJp_list,JJm_list)
         call wham_get_occ_mat_list(UU,f_list,g_list,eig=eig)
      endif
 
-    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega) 
-    call pw90common_fourier_R_to_k_vec(kpt,BB_R,OO_true=BB)
-    do j=1,3
-       do i=1,j
-          call pw90common_fourier_R_to_k(kpt,CC_R(:,:,:,i,j),CC(:,:,i,j),0)
-          CC(:,:,j,i)=conjg(transpose(CC(:,:,i,j)))
-       enddo
-    enddo
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega)
 
-    ! Trace formula for -2Im[f], Eq.(51) LVTS12
-    !
-    do if=1,nfermi_loc
-       do i=1,3
+    if(present(imf_k_list)) then
+      ! Trace formula for -2Im[f], Eq.(51) LVTS12
+      !
+      do ife=1,nfermi_loc
+        do i=1,3
           !
           ! J0 term (Omega_bar term of WYSV06)
-          mdum=matmul(f_list(:,:,if),OOmega(:,:,i))
-          imf_k_list(1,i,if)=utility_re_tr(mdum)
+          imf_k_list(1,i,ife) = &
+             utility_re_tr_prod(f_list(:,:,ife), OOmega(:,:,i))
           !
           ! J1 term (DA term of WYSV06)
-          mdum =matmul(AA(:,:,alpha_A(i)),JJp_list(:,:,if,beta_A(i)))&
-               +matmul(JJm_list(:,:,if,alpha_A(i)),AA(:,:,beta_A(i)))
-          imf_k_list(2,i,if)=-2.0_dp*utility_im_tr(mdum)
+          imf_k_list(2,i,ife) = -2.0_dp * &
+          ( &
+              utility_im_tr_prod(AA(:,:,alpha_A(i)), JJp_list(:,:,ife,beta_A(i))) &
+            + utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)), AA(:,:,beta_A(i))) &
+          )
           !
           ! J2 term (DD of WYSV06)
-          mdum=matmul(JJm_list(:,:,if,alpha_A(i)),JJp_list(:,:,if,beta_A(i)))
-          imf_k_list(3,i,if)=-2.0_dp*utility_im_tr(mdum)
-          !
-       end do
-    enddo
+          imf_k_list(3,i,ife) = -2.0_dp * &
+            utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)),JJp_list(:,:,ife,beta_A(i)))
+        end do
+      end do
+    end if
 
-    ! Trace formula for -2Im[g], Eq.(66) LVTS12
-    !
-    do i=1,3
-       !
-       ! J0 term
-       ! LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
-       LLambda_i=cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
-              -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
-       do if=1,nfermi_loc
-          mdum=matmul(f_list(:,:,if),LLambda_i)
-          img_k_list(1,i,if)=utility_re_tr(mdum)
-          mdum=matmul(f_list(:,:,if),matmul(HH,matmul(AA(:,:,alpha_A(i)),&
-               matmul(f_list(:,:,if),AA(:,:,beta_A(i))))))
-          img_k_list(1,i,if)=img_k_list(1,i,if)-2.0_dp*utility_im_tr(mdum)
-          !
-          ! J1 term
-          mdum=matmul(JJm_list(:,:,if,alpha_A(i)),BB(:,:,beta_A(i)))&
-               -matmul(JJm_list(:,:,if,beta_A(i)),BB(:,:,alpha_A(i)))
-          img_k_list(2,i,if)=-2.0_dp*utility_im_tr(mdum)
-          !
-          ! J2 term
-          mdum=matmul(JJm_list(:,:,if,alpha_A(i)),&
-               matmul(HH,JJp_list(:,:,if,beta_A(i))))
-          img_k_list(3,i,if)=-2.0_dp*utility_im_tr(mdum)
-       enddo
-    enddo
+    if(present(img_k_list)) img_k_list = 0.0_dp
+    if(present(imh_k_list)) imh_k_list = 0.0_dp
 
-    ! Trace formula for -2Im[h], Eq.(56) LVTS12
-    !
-    do if=1,nfermi_loc
-       do i=1,3
+    if(present(img_k_list) .and. present(imh_k_list)) then
+      allocate(BB(num_wann,num_wann,3))
+      allocate(CC(num_wann,num_wann,3,3))
+
+      allocate(tmp(num_wann,num_wann,5))
+      ! tmp(:,:,1:3) ... not dependent on inner loop variables
+      ! tmp(:,:,1) ..... HH . AA(:,:,alpha_A(i))
+      ! tmp(:,:,2) ..... LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
+      ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
+      ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
+
+      call pw90common_fourier_R_to_k_vec(kpt,BB_R,OO_true=BB)
+      do j=1,3
+        do i=1,j
+          call pw90common_fourier_R_to_k(kpt,CC_R(:,:,:,i,j),CC(:,:,i,j),0)
+          CC(:,:,j,i)=conjg(transpose(CC(:,:,i,j)))
+        end do
+      end do
+
+      ! Trace formula for -2Im[g], Eq.(66) LVTS12
+      ! Trace formula for -2Im[h], Eq.(56) LVTS12
+      !
+      do i=1,3
+        call utility_zgemm_new(HH, AA(:,:,alpha_A(i)), tmp(:,:,1))
+        call utility_zgemm_new(HH, OOmega(:,:,i), tmp(:,:,3))
+        !
+        ! LLambda_ij [Eq. (37) LVTS12] expressed as a pseudovector
+        tmp(:,:,2) = cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
+                     -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
+
+        do ife=1,nfermi_loc
           !
-          ! J0 term
-          mdum=matmul(f_list(:,:,if),matmul(HH,OOmega(:,:,i)))
-          imh_k_list(1,i,if)=utility_re_tr(mdum)
-          mdum=matmul(f_list(:,:,if),matmul(HH,matmul(AA(:,:,alpha_A(i)),&
-               matmul(f_list(:,:,if),AA(:,:,beta_A(i))))))
-          imh_k_list(1,i,if)=imh_k_list(1,i,if)+2.0_dp*utility_im_tr(mdum)
+          ! J0 terms for -2Im[g] and -2Im[h]
           !
-          ! J1 term
-          mdum=matmul(HH,matmul(AA(:,:,alpha_A(i)),JJp_list(:,:,if,beta_A(i))))&
-              +matmul(HH,matmul(JJm_list(:,:,if,alpha_A(i)),AA(:,:,beta_A(i))))
-          imh_k_list(2,i,if)=-2.0_dp*utility_im_tr(mdum)
+          ! tmp(:,:,5) = HH . AA(:,:,alpha_A(i)) . f_list(:,:,ife) . AA(:,:,beta_A(i))
+          call utility_zgemm_new(tmp(:,:,1), f_list(:,:,ife),   tmp(:,:,4))
+          call utility_zgemm_new(tmp(:,:,4), AA(:,:,beta_A(i)), tmp(:,:,5))
+
+          s = 2.0_dp * utility_im_tr_prod(f_list(:,:,ife), tmp(:,:,5));
+          img_k_list(1,i,ife) = utility_re_tr_prod(f_list(:,:,ife), tmp(:,:,2)) - s
+          imh_k_list(1,i,ife) = utility_re_tr_prod(f_list(:,:,ife), tmp(:,:,3)) + s
+
           !
-          ! J2 term
-          mdum=matmul(HH,matmul(JJm_list(:,:,if,alpha_A(i)),&
-               JJp_list(:,:,if,beta_A(i))))
-          imh_k_list(3,i,if)=-2.0_dp*utility_im_tr(mdum)
+          ! J1 terms for -2Im[g] and -2Im[h]
           !
-       enddo
-    enddo
+          ! tmp(:,:,1) = HH . AA(:,:,alpha_A(i))
+          ! tmp(:,:,4) = HH . JJm_list(:,:,ife,alpha_A(i))
+          call utility_zgemm_new(HH, JJm_list(:,:,ife,alpha_A(i)), tmp(:,:,4))
+
+          img_k_list(2,i,ife) = -2.0_dp * &
+          ( &
+              utility_im_tr_prod(JJm_list(:,:,ife,alpha_A(i)),BB(:,:,beta_A(i))) &
+            - utility_im_tr_prod(JJm_list(:,:,ife,beta_A(i)),BB(:,:,alpha_A(i))) &
+          )
+          imh_k_list(2,i,ife) = -2.0_dp * &
+          ( &
+              utility_im_tr_prod(tmp(:,:,1), JJp_list(:,:,ife,beta_A(i))) &
+            + utility_im_tr_prod(tmp(:,:,4), AA(:,:,beta_A(i))) &
+          )
+
+          !
+          ! J2 terms for -2Im[g] and -2Im[h]
+          !
+          ! tmp(:,:,4) = JJm_list(:,:,ife,alpha_A(i)) . HH
+          ! tmp(:,:,5) = HH . JJm_list(:,:,ife,alpha_A(i))
+          call utility_zgemm_new(JJm_list(:,:,ife,alpha_A(i)), HH, tmp(:,:,4))
+          call utility_zgemm_new(HH, JJm_list(:,:,ife,alpha_A(i)), tmp(:,:,5))
+
+          img_k_list(3,i,ife) = -2.0_dp * &
+             utility_im_tr_prod(tmp(:,:,4), JJp_list(:,:,ife,beta_A(i)))
+          imh_k_list(3,i,ife) = -2.0_dp * &
+             utility_im_tr_prod(tmp(:,:,5), JJp_list(:,:,ife,beta_A(i)))
+        end do
+      end do
+      deallocate(tmp)
+    end if
 
   end subroutine berry_get_imfgh_klist
+
+
 
 
   !===========================================================!

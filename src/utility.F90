@@ -33,13 +33,18 @@ module w90_utility
   public :: utility_lowercase
   public :: utility_strip
   public :: utility_zgemm
+  public :: utility_zgemm_new
+  public :: utility_zgemmm
   public :: utility_translate_home
   public :: utility_rotate
+  public :: utility_rotate_new
   public :: utility_matmul_diag
   public :: utility_rotate_diag
   public :: utility_commutator_diag
   public :: utility_re_tr
+  public :: utility_re_tr_prod
   public :: utility_im_tr
+  public :: utility_im_tr_prod
   public :: utility_w0gauss
   public :: utility_wgauss
   public :: utility_diagonalize
@@ -96,6 +101,119 @@ contains
 		A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
    return 
    end function utility_det3
+
+  !=============================================================!
+  subroutine utility_zgemm_new(a,b,c,transa_opt,transb_opt)
+    !=============================================================!
+    !                                                             !
+    ! Return matrix product of complex matrices a and b:          !
+    !                                                             !
+    !                       C = Op(A) Op(B)                       !
+    !                                                             !
+    ! transa = 'N'  ==> Op(A) = A                                 !
+    ! transa = 'T'  ==> Op(A) = transpose(A)                      !
+    ! transa = 'C'  ==> Op(A) = congj(transpose(A))               !
+    !                                                             !
+    ! similarly for B                                             !
+    !                                                             !
+    ! Due to the use of assumed shape arrays, this routine is a   !
+    ! safer and more general replacement for the above routine    !
+    ! utility_zgemm. Consider removing utility_zgemm and using    !
+    ! utility_zgemm_new throughout.                               !
+    !                                                             !
+    !=============================================================!
+
+    use w90_constants, only: cmplx_0,cmplx_1
+
+    implicit none
+
+    complex(kind=dp),  intent(in)            :: a(:,:)
+    complex(kind=dp),  intent(in)            :: b(:,:)
+    complex(kind=dp),  intent(out)           :: c(:,:)
+    character(len=1),  intent(in), optional  :: transa_opt
+    character(len=1),  intent(in), optional  :: transb_opt
+
+    integer          :: m,n,k
+    character(len=1) :: transa, transb
+
+    transa='N'
+    transb='N'
+    if(present(transa_opt)) transa=transa_opt
+    if(present(transb_opt)) transb=transb_opt
+
+    ! m ... number of rows in Op(A) and C
+    ! n ... number of columns in Op(B) and C
+    ! k ... number of columns in Op(A) resp. rows in Op(B)
+    m = size(c,1)
+    n = size(c,2)
+
+    if(transa /= 'N') then
+      k = size(a,1)
+    else
+      k = size(a,2)
+    end if
+
+    call zgemm(transa,transb,m,n,k,cmplx_1,a,size(a,1),b,size(b,1),cmplx_0,c,m)
+
+  end subroutine utility_zgemm_new
+
+  !=============================================================!
+  subroutine utility_zgemmm(a, transa, b, transb, c, transc, &
+                            prod1, eigval, prod2)
+    !===============================================================!
+    ! Returns the complex matrix-matrix-matrix product              !
+    ! --> prod1 = op(a).op(b).op(c),                                !
+    ! where op(a/b/c) are defined according to transa/transb/transc !
+    ! (see also documentation of utility_zgemm above)               !
+    !                                                               !
+    ! If eigval and prod2 are present, also                         !
+    ! --> prod2 = op(a).diag(eigval).op(b).op(c)                    !
+    ! is returned.                                                  !
+    !===============================================================!
+
+    complex(kind=dp), dimension(:,:), intent(in)  :: a, b, c
+    character(len=1), intent(in)                  :: transa, transb, transc
+    real(kind=dp), dimension(:), optional, &
+                                 intent(in)       :: eigval
+    complex(kind=dp), dimension(:,:), optional, &
+                                      intent(out) :: prod1, prod2
+
+    complex(kind=dp), dimension(:,:), allocatable :: tmp
+    integer                                       :: nb, mc, i, j
+
+    ! query matrix sizes
+    ! naming convention:
+    ! matrix op(a) [resp. op(b) and op(c)] is of size na x ma [resp. nb x mb and nc x mc]
+    ! only nb (=ma) and mc are explicitly needed
+    if(transb /= 'N') then
+      nb = size(b,2)
+    else
+      nb = size(b,1)
+    end if
+    if(transc /= 'N') then
+      mc = size(c,1)
+    else
+      mc = size(c,2)
+    end if
+
+    ! tmp = op(b).op(c)
+    allocate(tmp(nb,mc))
+    call utility_zgemm_new(b, c, tmp, transb, transc)
+
+    ! prod1 = op(a).tmp
+    if(present(prod1)) then
+      call utility_zgemm_new(a, tmp, prod1, transa, 'N')
+    end if
+
+    if(present(prod2) .and. present(eigval)) then
+      ! tmp = diag(eigval).tmp
+      forall(i=1:nb, j=1:mc)
+        tmp(i,j) = eigval(i) * tmp(i,j)
+      end forall
+      ! prod2 = op(a).tmp
+      call utility_zgemm_new(a, tmp, prod2, transa, 'N')
+    end if
+  end subroutine
 
 
   !===================================================================
@@ -591,6 +709,43 @@ contains
   end function utility_rotate
 
   !===========================================================!
+  subroutine utility_rotate_new(mat,rot,N,reverse)
+    !==============================================================!
+    !                                                              !
+    ! Rotates the N x N matrix 'mat' according to                  !
+    ! * (rot)^dagger.mat.rot (reverse = .false. or not present) OR !
+    ! * rot.mat.(rot)^dagger (reverse = .true.),                   !
+    ! where 'rot' is a unitary matrix.                             !
+    ! The matrix 'mat' is overwritten.                             !
+    !                                                              !
+    !==============================================================!
+
+    use w90_constants, only : dp
+
+    integer, intent(in)             :: N
+    logical, optional, intent(in)   :: reverse
+    complex(kind=dp), intent(inout) :: mat(N,N)
+    complex(kind=dp), intent(in)    :: rot(N,N)
+    complex(kind=dp)                :: tmp(N,N)
+    logical                         :: rev
+
+    if(.not. present(reverse)) then
+       rev = .false.
+    else
+       rev = reverse
+    end if
+
+    if(rev) then
+       call utility_zgemm_new(rot, mat, tmp, 'N', 'C')
+       call utility_zgemm_new(rot, tmp, mat, 'N', 'C')
+    else
+       call utility_zgemm_new(mat, rot, tmp, 'C', 'N')
+       call utility_zgemm_new(tmp, rot, mat, 'C', 'N')
+    end if
+
+  end subroutine utility_rotate_new
+
+  !===========================================================!
   function utility_matmul_diag(mat1,mat2,dim)
     !===========================================================!
     !                                                           !
@@ -633,9 +788,10 @@ contains
     complex(kind=dp) :: utility_rotate_diag(dim)
     complex(kind=dp) :: mat(dim,dim)
     complex(kind=dp) :: rot(dim,dim)
+    complex(kind=dp) :: tmp(dim,dim)
 
-
-    utility_rotate_diag=utility_matmul_diag(matmul(transpose(conjg(rot)),mat),rot,dim)
+    call utility_zgemm_new(rot, mat, tmp, 'C', 'N')
+    utility_rotate_diag=utility_matmul_diag(tmp,rot,dim)
 
   end function utility_rotate_diag
 
@@ -659,6 +815,61 @@ contains
 
   end function utility_commutator_diag
 
+  !===================================================!
+  function utility_re_tr_prod(a,b)
+     !================================================!
+     !                                                !
+     ! Return Re(tr(a.b)), i.e. the real part of the  !
+     ! trace of the matrix product of a and b.        !
+     !                                                !
+     !================================================!
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+
+
+    complex(kind=dp), dimension(:,:), intent(in) :: a, b
+    real(kind=dp) :: utility_re_tr_prod
+    real(kind=dp) :: s
+    integer       :: i, j, n, m
+
+    n = min(size(a,1),size(b,2))
+    m = min(size(a,2),size(b,1))
+
+    s = 0
+    do i=1,n
+      do j=1,m
+        s = s + dble(a(i,j) * b(j,i))
+      end do
+    end do
+    utility_re_tr_prod = s
+  end function
+
+  !===================================================!
+  function utility_im_tr_prod(a,b)
+     !====================================================!
+     !                                                    !
+     ! Return Im(tr(a.b)), i.e. the imaginary part of the !
+     ! trace of the matrix product of a and b.            !
+     !                                                    !
+     !====================================================!
+    use w90_constants, only  : dp,cmplx_0,cmplx_i
+
+    complex(kind=dp), dimension(:,:), intent(in) :: a, b
+
+    real(kind=dp) :: utility_im_tr_prod
+    real(kind=dp) :: s
+    integer       :: i, j, n, m
+
+    n = min(size(a,1),size(b,2))
+    m = min(size(a,2),size(b,1))
+
+    s = 0
+    do i=1,n
+      do j=1,m
+        s = s + aimag(a(i,j) * b(j,i))
+      end do
+    end do
+    utility_im_tr_prod = s
+  end function
 
   !===================================================!
   function utility_re_tr(mat)

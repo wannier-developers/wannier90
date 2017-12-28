@@ -109,7 +109,7 @@ module w90_wan_ham
 
   end subroutine wham_get_D_h
 
-
+  ! TODO: Remove
   subroutine wham_get_JJp_list(delHH,UU,eig,JJp_list,occ)
   !====================================!
   !                                    !
@@ -166,7 +166,7 @@ module w90_wan_ham
 
   end subroutine wham_get_JJp_list
 
-
+  ! TODO: Remove
   subroutine wham_get_JJm_list(delHH,UU,eig,JJm_list,occ)
   !====================================!
   !                                    !
@@ -260,7 +260,6 @@ module w90_wan_ham
         nfermi_loc=nfermi
      endif
 
-
     call utility_rotate_new(delHH,UU,num_wann)
     do ife=1,nfermi_loc
        fe = fermi_energy_list(ife)
@@ -292,8 +291,8 @@ module w90_wan_ham
   end subroutine wham_get_JJp_JJm_list
 
 
-
   subroutine wham_get_occ_mat_list(UU,f_list,g_list,eig,occ)
+!  subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
   !================================!
   !                                !
   !! Occupation matrix f, and g=1-f 
