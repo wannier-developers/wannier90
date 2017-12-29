@@ -254,7 +254,8 @@ the same input file. **Cannot be used in conjunction with disentanglement.
   {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
   WF, molecule or crystal \\ 
   {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\
- {\sc wannier\_plot\_spinor\_mode } & S& Quantity to plot for spinor WF\\ 
+  {\sc wannier\_plot\_spinor\_mode } & S& Quantity to plot for spinor WF\\ 
+  {\sc wannier\_plot\_spinor\_phase } & L& Include the ``phase'' when plotting spinor WF\\ 
   {\sc bands\_plot }   & L & Plot interpolated band structure \\
   {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
   {\sc bands\_num\_points }   & I & Number of points along the first
@@ -1152,9 +1153,21 @@ If $\verb#spinors#=\verb#true#$ then this parameter controls the
 quantity to plot. For a spinor WF with components $[\phi,\psi]$ the quatity plotted is 
 \begin{itemize}
 \item[{\bf --}] \verb#total# (default). $\sqrt{[|\phi|^2+|\psi|^2}$
-\item[{\bf --}] \verb#up#. $|\phi|\times sign(Re\{\phi\})$
-\item[{\bf --}] \verb#down#. $|\psi|\times sign(Re\{\psi\})$
+\item[{\bf --}] \verb#up#. $|\phi|\times sign(Re\{\phi\})$ if $\verb#wannier_plot_spinor_mode#=\verb#true#$,
+ otherwise $|\phi|$
+\item[{\bf --}] \verb#down#. $|\psi|\times sign(Re\{\psi\})$ if
+  $\verb#wannier_plot_spinor_mode#=\verb#true#$, otherwise $|\psi|$
 \end{itemize}
+Note: making a visual representation of a spinor WF is not as
+straightforward as for a scalar WF. While  a scalar WF is typically a
+real valued function, a spinor WF is a complex, two component
+spinor. \wannier\ is able to plot several different quantities derived
+from a spinor WF which should give you a good idea of the nature of
+the WF. 
+
+\subsection[bands\_plot]{\tt logical ::   wannier\_plot\_spinor\_phase}
+If $\verb#wannier_plot_spinor_phase#=\verb#true#$ phase information will
+be taken into account when plotting a spinor WF.
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
