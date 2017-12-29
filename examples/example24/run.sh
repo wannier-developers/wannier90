@@ -1,23 +1,15 @@
 #!/bin/bash
-#PBS -q parallel
-#PBS -l nodes=1:ppn=12
-#PBS -l mem=4gb
-#PBS -l cput=100:00:00
-#PBS -N Te
 
-
-
-module load QuantumESPRESSO/6.1-intel-2015b
-cd $PBS_O_WORKDIR
 
 NPROC=12
 mpirun="mpirun -np $NPROC"
+mpirun=""
 
 PWpath=""
-WANpath="./"
+WANpath="../../"
 
 
-pwcmd="$mpirun  ${PWpath}pw.x -nk 4"
+pwcmd="$mpirun  ${PWpath}pw.x "
 pw2wancmd="$mpirun  ${PWpath}pw2wannier90.x"
 wan90cmd="${WANpath}wannier90.x"
 postw90cmd="$mpirun  ${WANpath}postw90.x"
@@ -29,7 +21,7 @@ cp Te.win-0 Te.win
 
 $pwcmd < Te.scf  > Te.out.scf
 
-rm -r Te.save/K0*
+rm -r Te.save/wfc*.dat
 
 $pwcmd  < Te.nscf  > Te.out.nscf
 
@@ -38,7 +30,7 @@ $wan90cmd -pp Te
 $pw2wancmd < Te.pw2wan > pw2wan.out
 
 rm Te.wfc*
-rm Te.save/K0*
+rm Te.save/wfc*.dat
 
 $wan90cmd Te
 
