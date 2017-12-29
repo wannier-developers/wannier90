@@ -859,13 +859,13 @@ end subroutine plot_interpolate_bands
          atoms_symbol,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
          wannier_plot_mode,wvfn_formatted,timing_level,wannier_plot_format, &
-         spinors, wannier_plot_spinor_mode
+         spinors, wannier_plot_spinor_mode, wannier_plot_spinor_phase
 
     implicit none
 
     real(kind=dp) :: scalfac,tmax,tmaxx,x_0ang,y_0ang,z_0ang
     real(kind=dp) :: fxcry(3),dirl(3,3),w_real,w_imag,ratmax,ratio
-    real(kind=dp) :: upspinor, dnspinor
+    real(kind=dp) :: upspinor, dnspinor,upphase,dnphase
     complex(kind=dp), allocatable :: wann_func(:,:,:,:)
     complex(kind=dp), allocatable :: r_wvfn(:,:)
     complex(kind=dp), allocatable :: r_wvfn_tmp(:,:)
@@ -1087,15 +1087,19 @@ end subroutine plot_interpolate_bands
                          if(loop_b==num_wann) then ! last loop
                          upspinor=real(wann_func_nc(nxx,nyy,nzz,1,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,1,loop_w)),dp)
                          dnspinor=real(wann_func_nc(nxx,nyy,nzz,2,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,2,loop_w)),dp)
+                         if(wannier_plot_spinor_phase) then
+                            upphase=sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,1,loop_w),dp))
+                            dnphase=sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,2,loop_w),dp))
+                         else
+                           upphase=1.0_dp;dnphase=1.0_dp
+                         endif
                          select case (wannier_plot_spinor_mode)
                          case ('total')
                             wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor+dnspinor), 0.0_dp, dp)
                          case ('up')
-                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor), 0.0_dp, dp)&
-                                      *sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,1,loop_w),dp))
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor), 0.0_dp, dp)*upphase
                          case ('down')
-                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(dnspinor), 0.0_dp, dp)&
-                                     *sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,2,loop_w),dp))
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                          case default
                             call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(wannier_plot_spinor_mode))
                          end select

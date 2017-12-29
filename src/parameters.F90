@@ -113,6 +113,7 @@ module w90_parameters
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
   character(len=20), public, save :: wannier_plot_spinor_mode
+  logical,           public, save :: wannier_plot_spinor_phase
   logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
@@ -673,8 +674,6 @@ contains
     else
        if (found.and.on_root) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
-!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
-!       call io_error('Error: For spinor WF num_wann must be even')
     
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
@@ -783,7 +782,10 @@ contains
 
     wannier_plot_spinor_mode= 'total'
     call param_get_keyword('wannier_plot_spinor_mode',found,c_value=wannier_plot_spinor_mode)
-    
+    wannier_plot_spinor_phase=.true.
+   call param_get_keyword('wannier_plot_spinor_phase',found,l_value=wannier_plot_spinor_phase)   
+
+ 
     call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,lcount=.true.)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
@@ -2432,7 +2434,12 @@ contains
           end if
 
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
-          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :',trim(wannier_plot_spinor_mode),'|'
+          if(spinors) then
+            write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :',&
+                                                                               trim(wannier_plot_spinor_mode),'|'
+            write(stdout,'(1x,a46,10x,L8,13x,a1)') '|   Include phase for spinor WFs             :',&
+                                                                                    wannier_plot_spinor_phase,'|'
+          end if
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           if (index(wannier_plot_format,'cube')>0 .or. iprint>2) &
           write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :',wannier_plot_radius,'|'
