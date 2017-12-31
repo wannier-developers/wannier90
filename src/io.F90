@@ -228,6 +228,7 @@ contains
 
          post_proc_flag=.false.
          print_help=.false.
+         print_version=.false.
          dryrun=.false.
 
          num_arg=command_argument_count()
@@ -260,7 +261,7 @@ contains
                dryrun=.true.
                seedname=trim(ctemp(2))
                if(seedname(1:1)=='-') print_help=.true.
-            elseif(index(ctemp(1),'-pp')>1) then
+            elseif(index(ctemp(1),'-pp')>0) then
                post_proc_flag=.true.
                seedname=trim(ctemp(2))
                if(seedname(1:1)=='-') print_help=.true.
@@ -276,6 +277,15 @@ contains
                seedname = seedname(:len(trim(seedname))-4)
             end if
          end if
+
+         do loop=1,num_arg
+            write(*,*) loop,ctemp(loop)
+         end do
+         write(*,*) 'print_help',print_help
+         write(*,*) 'print_version',print_version
+         write(*,*) 'dryrun',dryrun
+         write(*,*) 'post_proc_flag',post_proc_flag
+         write(*,*) 'seedname',seedname
 
          if(print_help) then
             if(prog=='wannier90') then
