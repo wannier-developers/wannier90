@@ -34,6 +34,9 @@ module w90_io
   !! Max column width of input file
   logical, public, save           :: post_proc_flag  
   !! Are we in post processing mode 
+!  character(len=10), public, parameter:: w90_version='2.1.0     '
+   character(len=10), public, parameter:: w90_version='2.1.0+git '
+   !! Label for this version of wannier90
 
   type timing_data
       !! Data about each stopwatch - for timing routines
@@ -55,6 +58,7 @@ module w90_io
   !! Number of active stopwatches
 
   public :: io_stopwatch
+  public :: io_commandline
   public :: io_print_timings
   public :: io_get_seedname
   public :: io_time
@@ -197,6 +201,116 @@ contains
 
        end subroutine io_get_seedname
 
+
+
+    !=======================================
+       subroutine io_commandline(prog,dryrun)
+    !=======================================
+    !                                     
+    !! Parse the commandline
+    !=======================================
+         
+         implicit none
+
+         character(len=50), intent(in) :: prog
+         !! Name of the calling program
+         logical, intent(out) :: dryrun
+         !! Have we been asked for a dryrun
+        
+         integer :: num_arg,loop
+         character(len=50),allocatable :: ctemp(:) 
+         logical :: print_help,print_version
+         character(len=10) :: help_flag(3),version_flag(3),dryrun_flag(3)
+
+         help_flag(1)='-h    ';help_flag(2)='-help ';help_flag(3)='--help ';
+         version_flag(1)='-v    ';version_flag(2)='-version ';version_flag(3)='--version ';
+         dryrun_flag(1)='-d    ';dryrun_flag(2)='-dryrun ';dryrun_flag(3)='--dryrun ';
+
+         post_proc_flag=.false.
+         print_help=.false.
+         dryrun=.false.
+
+         num_arg=command_argument_count()
+         allocate(ctemp(num_arg))
+         do loop=1,num_arg
+            call get_command_argument(loop,ctemp(loop))
+         end do
+
+         if(num_arg==0) then
+            ! program called without any argument
+            print_help=.true.
+         elseif(num_arg==1) then
+            ! program called with one argument
+            if(any(index(ctemp(1),help_flag(:))>0)) then
+               print_help=.true.
+            elseif(any(index(ctemp(1),version_flag(:))>0)) then
+               print_version=.true.
+            elseif((ctemp(1)(1:1)=='-')) then
+               !catch any other flag. Note seedname can't start with '-'
+               print_help=.true.
+            else  ! must be the seedname
+               seedname=trim(ctemp(1))
+            endif
+         else ! not 2 - as mpi call might add commands to argument list
+            if(any(index(ctemp(1),help_flag(:))>0)) then
+               print_help=.true.
+            elseif(any(index(ctemp(1),version_flag(:))>0)) then
+               print_version=.true.
+            elseif(any(index(ctemp(1),dryrun_flag(:))>0)) then
+               dryrun=.true.
+               seedname=trim(ctemp(2))
+               if(seedname(1:1)=='-') print_help=.true.
+            elseif(index(ctemp(1),'-pp')>1) then
+               post_proc_flag=.true.
+               seedname=trim(ctemp(2))
+               if(seedname(1:1)=='-') print_help=.true.
+            else  ! must be the seedname
+               seedname=trim(ctemp(1))
+               if(seedname(1:1)=='-') print_help=.true.
+            endif
+         endif
+
+         ! If on the command line the whole seedname.win was passed, I strip the last ".win"
+         if (len(trim(seedname)).ge.5) then
+            if (seedname(len(trim(seedname))-4+1:).eq.".win") then
+               seedname = seedname(:len(trim(seedname))-4)
+            end if
+         end if
+
+         if(print_help) then
+            if(prog=='wannier90') then
+               write(6,'(a)') 'Wannier90: The Maximally Localised Wannier Function Code'
+               write(6,'(a)') 'http://www.wannier.org'
+               write(6,'(a)') ' Usage:'
+               write(6,'(a)') '  wannier90.x <seedname>               : Runs file <seedname>.win'
+               write(6,'(a)') '  wannier90.x -pp <seedname>           : Write postprocessing files for <seedname>.win'
+               write(6,'(a)') '  wannier90.x [-d|--dryrun] <seedname> : Perform a dryrun calculation on files <seedname>.win'
+               write(6,'(a)') '  wannier90.x [-v|--version]           : print version information'
+               write(6,'(a)') '  wannier90.x [-h|--help]              : print this help message'
+            elseif(prog=='postw90') then
+               write(6,'(a)') 'postw90: Post-processing for the Wannier90 code'
+               write(6,'(a)') 'http://www.wannier.org'
+               write(6,'(a)') ' Usage:'
+               write(6,'(a)') '  First run wannier90.x then'
+               write(6,'(a)') '  postw90.x <seedname>               : Runs file <seedname>.win'
+               write(6,'(a)') '  postw90.x [-d|--dryrun] <seedname> : Perform a dryrun calculation on files <seedname>.win'
+               write(6,'(a)') '  postw90.x [-v|--version]           : print version information'
+               write(6,'(a)') '  postw90.x [-h|--help]              : print this help message'
+            end if
+            stop
+         endif
+
+         if(print_version) then
+            if(prog=='wannier90') then
+               write(6,'(a,a)') 'Wannier90: ',trim(w90_version)
+            elseif(prog=='postw90') then
+               write(6,'(a,a)') 'Postw90: ',trim(w90_version)
+            endif
+            stop
+         end if
+
+
+       end subroutine io_commandline
 
 
     !========================================
