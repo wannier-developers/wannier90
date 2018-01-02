@@ -91,7 +91,7 @@ The currently available modules in \texttt{postw90.x} are:
 \item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
     including natural and current0induced optical rotation, 
 and the current-induced magnetization
-   (see Chap.~\ref{ch:gyrotropic} and examples ??? of the
+   (see Chap.~\ref{ch:gyrotropic} and examples  of the
   tutorial).
 \item \texttt{BoltzWann}: Calculation of electronic transport
   properties for bulk materials using the semiclassical Boltzmann
@@ -1176,7 +1176,7 @@ The default value is \verb#false#.
 \subsection[gyrotropic\_task]{\tt character(len=120) ::  gyrotropic\_task}
 The quantity to compute when {\tt gyrotropic=true}
 
-May contain one or more of the following valid options (notem that each option starts with a '-'):
+May contain one or more of the following valid options (note that each option starts with a '-'):
 
 \begin{itemize}
 
@@ -1216,7 +1216,7 @@ Output file: {\tt seedname-gyrotropic-DOS.dat}. First column - energy (eV), seco
 
 There is no default value.
 
-\subsubsection{output data format \label{sec:gyrotropic:format}}
+\subsection{output data format \label{sec:gyrotropic:format}}
 The calculated tensors are written as functions of Fermi level $E_F$ (first column) 
 and frequency $\omega$ (second column).
 If the tensor does not denend on $\omega$, the second column is filled by zeros. 
@@ -1225,7 +1225,7 @@ In case of natural optical activity the columns 3 to 11 contain the independent
 components of $\gamma_{abc}$ (antisymmetric in $ab$): $yzx$, $zxy$ ,$xyz$, $yzy$, $yzz$, $zxz$, $xyy$, $yzz$ and $zxx$.
 For tensors $C_{ab}$, $D_{ab}$, $\widetilde D_{ab}$, $K_{ab}$ the symmetric and antisymmetric components are writted.
 Thus, the columns 3 to 11 are marked as $xx$, $yy$, $zz$, $xy$, $xz$, $yz$, $x$, $y$, $z$, wich correspond ,e.g., for $D_{ab}$ to 
-$D_{xx}$, $D_{yy}$, $D_{zz}$, $(D_{xy}+D_{yx})/2$, $(D_{xz}+D_{zx})/2$, $(D_{yz}+D_{zy})/2$, $(D_{yz}-D_{zy})/2$, $(D_{zx}-D_{xz})/2$ , $(D_{xy}-D_{yx})/2$
+$D_{xx}$, $D_{yy}$, $D_{zz}$, $(D_{xy}+D_{yx})/2$, $(D_{xz}+D_{zx})/2$, $(D_{yz}+D_{zy})/2$, $(D_{yz}-D_{zy})/2$, $(D_{zx}-D_{xz})/2$, $(D_{xy}-D_{yx})/2$
 
 \subsection[gyrotropic\_kmesh]{\tt integer :: gyrotropic\_kmesh(:)}
 Overrides the \verb#kmesh# global variable (see
@@ -1281,19 +1281,19 @@ in order to avoid divergences.
 
 Units are eV. The  dfault value is 0.
 
-\subsection[gyrotropic\_box\_center]{\tt  character(len=120) :: gyrotropic\_box\_center} - three real numbers
+\subsection[gyrotropic\_box\_center]{\tt  character(len=120) :: gyrotropic\_box\_center} - three real numbers.
 Optionally the integration may be restricted to a parallelogram, centered at {\tt gyrotropic\_box\_center}
 and defined by vectors {\tt gyrotropic\_box\_b\{1,2,3\}}
 
 In reduced coordinates. Default value is 0.5 0.5 0.5
 
-\subsection[gyrotropic\_box\_b1]{\tt  character(len=120) :: gyrotropic\_box\_b1} - three real numbers
+\subsection[gyrotropic\_box\_b1]{\tt  character(len=120) :: gyrotropic\_box\_b1} - three real numbers.
 In reduced coordinates. Default value is 1.0 0.0 0.0
 
-\subsection[gyrotropic\_box\_b2]{\tt  character(len=120) :: gyrotropic\_box\_b2} - three real numbers
+\subsection[gyrotropic\_box\_b2]{\tt  character(len=120) :: gyrotropic\_box\_b2} - three real numbers.
 In reduced coordinates. Default value is 0.0 1.0 0.0
 
-\subsection[gyrotropic\_box\_b3]{\tt  character(len=120) :: gyrotropic\_box\_b3} - three real numbers
+\subsection[gyrotropic\_box\_b3]{\tt  character(len=120) :: gyrotropic\_box\_b3} - three real numbers.
 In reduced coordinates. Default value is 0.0 0.0 1.0
 
 \clearpage

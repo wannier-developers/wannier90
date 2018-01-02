@@ -53,7 +53,7 @@ gyrotropic_box_center=0.33333 0.33333 0.5
 gyrotropic_kmesh=100 100 100
 EOF
 
-cat Te.win-0 >> Te.win
+cat input/Te.win >> Te.win
 $postw90cmd Te
 
 cp Te.win Te.win-gyrotropic
@@ -72,7 +72,7 @@ gyrotropic_band_list=4-9
 gyrotropic_kmesh=100 100 100
 EOF
 
-cat Te.win-0 >> Te.win
+cat input/Te.win >> Te.win
 $postw90cmd Te
 cp Te.win Te.win-NOA
 mv Te.wpout Te.wpout-NOA
