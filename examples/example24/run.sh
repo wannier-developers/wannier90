@@ -38,7 +38,7 @@ cat >Te.win <<EOF
 gyrotropic=true
 gyrotropic_task=-C-dos-D0-Dw-K
 fermi_energy_step=0.0025
-fermi_energy_min=5.9
+fermi_energy_min=5.8
 fermi_energy_max=6.2
 gyrotropic_freq_step=0.0025
 gyrotropic_freq_min=0.0
@@ -50,7 +50,7 @@ gyrotropic_box_b1=0.2 0.0 0.0
 gyrotropic_box_b2=0.0 0.2 0.0
 gyrotropic_box_b3=0.0 0.0 0.2
 gyrotropic_box_center=0.33333 0.33333 0.5
-gyrotropic_kmesh=100 100 100
+gyrotropic_kmesh=50 50 50
 EOF
 
 cat input/Te.win >> Te.win
@@ -69,7 +69,7 @@ gyrotropic_freq_max=0.3
 gyrotropic_smr_fixed_en_width=0.01
 gyrotropic_smr_max_arg=5
 gyrotropic_band_list=4-9
-gyrotropic_kmesh=100 100 100
+gyrotropic_kmesh=50 50 50
 EOF
 
 cat input/Te.win >> Te.win
