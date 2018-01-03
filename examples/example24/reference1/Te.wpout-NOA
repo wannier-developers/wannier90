@@ -90,7 +90,7 @@
              | 675 Mass Ave, Cambridge, MA 02139, USA.           |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on  3Jan2018 at 12:07:29     |
+             |    Execution started on 10Nov2017 at 16:13:06     |
              +---------------------------------------------------+
  
  ******************************************************************************
@@ -100,7 +100,8 @@
  ******************************************************************************
  
 
- Running in serial (with parallel executable)
+ Running in parallel on  12 CPUs
+
  
                                     ------
                                     SYSTEM
@@ -132,7 +133,7 @@
  |  Number of electrons per state             :                 2             |
  |  Scissor shift applied to conduction bands :             0.000             |
  |  Number of valence bands                   :       not defined             |
- |  Fermi energy     :     161 steps from    5.800 to    6.200 eV             |
+ |  Fermi energy (eV)                         :             5.950             |
  |  Output verbosity (1=low, 5=high)          :                 1             |
  |  Timing Level (1=low, 5=high)              :                 1             |
  |  Optimisation (0=memory, 3=speed)          :                 3             |
@@ -148,22 +149,22 @@
  *----------------------------------------------------------------------------*
  *--------------------------------- GYROTROPIC   ------------------------------
  | Compute Gyrotropic properties              :                 T             |
- | gyrotropic_task                            :          -c-dos-d0-dw-k       |
- | calculate the D tensor                     :                 T             |
- | calculate the tildeD tensor                :                 T             |
- | calculate the C tensor                     :                 T             |
- | calculate the K tensor                     :                 T             |
- | calculate the interbad natural optical act :                 F             |
- | calculate the density of states            :                 T             |
+ | gyrotropic_task                            :          -noa                 |
+ | calculate the D tensor                     :                 F             |
+ | calculate the tildeD tensor                :                 F             |
+ | calculate the C tensor                     :                 F             |
+ | calculate the K tensor                     :                 F             |
+ | calculate the interbad natural optical act :                 T             |
+ | calculate the density of states            :                 F             |
  |  Lower frequency for tildeD,NOA            :             0.000             |
- |  Upper frequency                           :             0.100             |
+ |  Upper frequency                           :             0.300             |
  |  Step size for frequency                   :             0.003             |
  |  Upper eigenvalue                          :             8.667             |
  |  Using local  smearing parameters                                          |
  |  Fixed width smearing                      :                 T             |
  |  Smearing width                            :             0.010             |
  |  Smearing Function                                             Gaussian    |
- |  degen_thresh                              :             0.001             |
+ |  degen_thresh                              :             0.000             |
  |  Grid size                                 :   100 x 100 x 100             |
  |  Adaptive refinement                       :              not              |
  *----------------------------------------------------------------------------*
@@ -221,54 +222,76 @@
  |             4         0.469911   -0.271303    0.000000                     |
  +----------------------------------------------------------------------------+
   
- Time to get kmesh              0.020 (sec)
+ Time to get kmesh              0.008 (sec)
  Reading restart information from file Te.chk :
- written on  3Jan2018 at 12:07:29 ... done
+ written on 10Nov2017 at 16:12:34 ... done
 
 
  Time to read and process       0.004 (sec)
 
- Reading overlaps from Te.mmn in get_AA_R   :  Created on  3Jan2018 at 12: 7: 5
-
- Reading overlaps from Te.mmn in get_BB_R   :  Created on  3Jan2018 at 12: 7: 5
-
- Reading uHu overlaps from Te.uHu in get_CC_R: Created
+ Reading overlaps from Te.mmn in get_AA_R   :  Created on 10Nov2017 at 16:12: 9
 
 
  Properties calculated in module  g y r o t r o p i c
  ------------------------------------------
 
-   * D-tensor  --- Eq.2 of TAS17 
-
-   * density of states 
-
-   * K-tensor  --- Eq.3 of TAS17 
+   * gamma-tensor of NOA --- Eq.C12 of TAS17 
        * excluding spin component 
-
-   * Dw-tensor  --- Eq.12 of TAS17 
-
-   * C-tensor  --- Eq.B6 of TAS17 
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.310000000000000       0.350000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.320000000000000       0.340000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.330000000000000       0.330000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.340000000000000       0.320000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.340000000000000       0.350000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.350000000000000       0.310000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.350000000000000       0.340000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.650000000000000       0.670000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.660000000000000       0.660000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.660000000000000       0.690000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.670000000000000       0.650000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.670000000000000       0.680000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.680000000000000       0.670000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.690000000000000       0.660000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
   
  Interpolation grid: 100 100 100
 
-   * Te-gyrotropic-K_orb.dat                                                                                                 
+   * Te-gyrotropic-NOA_orb.dat                                                                                               
 
-   * Te-gyrotropic-D.dat                                                                                                     
-
-   * Te-gyrotropic-tildeD.dat                                                                                                
-
-   * Te-gyrotropic-C.dat                                                                                                     
-
-   * Te-gyrotropic-DOS.dat                                                                                                   
-
- Total Execution Time         266.121 (sec)
+ Total Execution Time          11.389 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.020|
+ |kmesh: get                                        :         1         0.008|
  *---------------------------------------------------------------------------*
  
 
