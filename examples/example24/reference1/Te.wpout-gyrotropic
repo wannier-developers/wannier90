@@ -90,7 +90,7 @@
              | 675 Mass Ave, Cambridge, MA 02139, USA.           |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on  3Jan2018 at 12:07:29     |
+             |    Execution started on 10Nov2017 at 16:12:35     |
              +---------------------------------------------------+
  
  ******************************************************************************
@@ -100,7 +100,8 @@
  ******************************************************************************
  
 
- Running in serial (with parallel executable)
+ Running in parallel on  12 CPUs
+
  
                                     ------
                                     SYSTEM
@@ -132,7 +133,7 @@
  |  Number of electrons per state             :                 2             |
  |  Scissor shift applied to conduction bands :             0.000             |
  |  Number of valence bands                   :       not defined             |
- |  Fermi energy     :     161 steps from    5.800 to    6.200 eV             |
+ |  Fermi energy     :     121 steps from    5.900 to    6.200 eV             |
  |  Output verbosity (1=low, 5=high)          :                 1             |
  |  Timing Level (1=low, 5=high)              :                 1             |
  |  Optimisation (0=memory, 3=speed)          :                 3             |
@@ -221,16 +222,16 @@
  |             4         0.469911   -0.271303    0.000000                     |
  +----------------------------------------------------------------------------+
   
- Time to get kmesh              0.020 (sec)
+ Time to get kmesh              0.008 (sec)
  Reading restart information from file Te.chk :
- written on  3Jan2018 at 12:07:29 ... done
+ written on 10Nov2017 at 16:12:34 ... done
 
 
  Time to read and process       0.004 (sec)
 
- Reading overlaps from Te.mmn in get_AA_R   :  Created on  3Jan2018 at 12: 7: 5
+ Reading overlaps from Te.mmn in get_AA_R   :  Created on 10Nov2017 at 16:12: 9
 
- Reading overlaps from Te.mmn in get_BB_R   :  Created on  3Jan2018 at 12: 7: 5
+ Reading overlaps from Te.mmn in get_BB_R   :  Created on 10Nov2017 at 16:12: 9
 
  Reading uHu overlaps from Te.uHu in get_CC_R: Created
 
@@ -261,14 +262,14 @@
 
    * Te-gyrotropic-DOS.dat                                                                                                   
 
- Total Execution Time         266.121 (sec)
+ Total Execution Time          22.453 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.020|
+ |kmesh: get                                        :         1         0.008|
  *---------------------------------------------------------------------------*
  
 

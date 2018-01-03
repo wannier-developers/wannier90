@@ -90,7 +90,7 @@
              | 675 Mass Ave, Cambridge, MA 02139, USA.           |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 10Nov2017 at 16:13:06     |
+             |    Execution started on  3Jan2018 at 12:11:57     |
              +---------------------------------------------------+
  
  ******************************************************************************
@@ -100,8 +100,7 @@
  ******************************************************************************
  
 
- Running in parallel on  12 CPUs
-
+ Running in serial (with parallel executable)
  
                                     ------
                                     SYSTEM
@@ -168,7 +167,7 @@
  |  Grid size                                 :   100 x 100 x 100             |
  |  Adaptive refinement                       :              not              |
  *----------------------------------------------------------------------------*
- Time to read parameters        0.008 (sec)
+ Time to read parameters        0.004 (sec)
 
  *---------------------------------- K-MESH ----------------------------------*
  +----------------------------------------------------------------------------+
@@ -222,14 +221,14 @@
  |             4         0.469911   -0.271303    0.000000                     |
  +----------------------------------------------------------------------------+
   
- Time to get kmesh              0.008 (sec)
+ Time to get kmesh              0.012 (sec)
  Reading restart information from file Te.chk :
- written on 10Nov2017 at 16:12:34 ... done
+ written on  3Jan2018 at 12:07:29 ... done
 
 
  Time to read and process       0.004 (sec)
 
- Reading overlaps from Te.mmn in get_AA_R   :  Created on 10Nov2017 at 16:12: 9
+ Reading overlaps from Te.mmn in get_AA_R   :  Created on  3Jan2018 at 12: 7: 5
 
 
  Properties calculated in module  g y r o t r o p i c
@@ -237,61 +236,19 @@
 
    * gamma-tensor of NOA --- Eq.C12 of TAS17 
        * excluding spin component 
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.310000000000000       0.350000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.320000000000000       0.340000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.330000000000000       0.330000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.340000000000000       0.320000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.340000000000000       0.350000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.350000000000000       0.310000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.350000000000000       0.340000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.650000000000000       0.670000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.660000000000000       0.660000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.660000000000000       0.690000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.670000000000000       0.650000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.670000000000000       0.680000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.680000000000000       0.670000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
- WARNING no unoccupied bands included in the calculation for kpt=
-  0.690000000000000       0.660000000000000       0.000000000000000E+000 , EF[
-           1 ]=   5.95000000000000      eV
   
  Interpolation grid: 100 100 100
 
    * Te-gyrotropic-NOA_orb.dat                                                                                               
 
- Total Execution Time          11.389 (sec)
+ Total Execution Time         103.058 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.008|
+ |kmesh: get                                        :         1         0.012|
  *---------------------------------------------------------------------------*
  
 
