@@ -109,121 +109,6 @@ module w90_wan_ham
 
   end subroutine wham_get_D_h
 
-  ! TODO: Remove
-  subroutine wham_get_JJp_list(delHH,UU,eig,JJp_list,occ)
-  !====================================!
-  !                                    !
-  !! Compute JJ^+_a (a=Cartesian index) 
-  !! for a list of Fermi energies       
-  !                                    !
-  !====================================!
-
-    use w90_constants, only  : dp,cmplx_0,cmplx_i
-    use w90_parameters, only : num_wann,nfermi,fermi_energy_list
-    use w90_utility, only    : utility_rotate
-
-    complex(kind=dp), dimension(:,:), intent(in)    :: delHH
-    complex(kind=dp), dimension(:,:), intent(in)    :: UU
-    real(kind=dp),    dimension(:),   intent(in)    :: eig
-    complex(kind=dp), dimension(:,:,:), intent(out) :: JJp_list
-     real(kind=dp), intent(in), optional, dimension(:) :: occ
-
-    complex(kind=dp), allocatable :: delHH_bar(:,:)
-    integer                       :: n,m,if,nfermi_loc
-
-     if(present(occ)) then
-        nfermi_loc=1
-     else
-        nfermi_loc=nfermi
-     endif
-
-    allocate(delHH_bar(num_wann,num_wann))
-    delHH_bar=utility_rotate(delHH,UU,num_wann)
-    do if=1,nfermi_loc
-       do m=1,num_wann
-          do n=1,num_wann
-             if(present(occ)) then
-                if(occ(n)<0.5_dp .and. occ(m)>0.5_dp) then
-                   JJp_list(n,m,if)=cmplx_i*delHH_bar(n,m)/(eig(m)-eig(n))
-                else
-                   JJp_list(n,m,if)=cmplx_0
-                endif
-             else
-                if(eig(n)>fermi_energy_list(if) .and.&
-                     eig(m)<fermi_energy_list(if)) then
-                   JJp_list(n,m,if)=cmplx_i*delHH_bar(n,m)/(eig(m)-eig(n))
-                else
-                   JJp_list(n,m,if)=cmplx_0
-                endif
-             endif
-          enddo
-       end do
-    end do
-    do if=1,nfermi_loc
-       JJp_list(:,:,if)=&
-            utility_rotate(JJp_list(:,:,if),conjg(transpose(UU)),num_wann)
-    enddo
-
-  end subroutine wham_get_JJp_list
-
-  ! TODO: Remove
-  subroutine wham_get_JJm_list(delHH,UU,eig,JJm_list,occ)
-  !====================================!
-  !                                    !
-  !! Compute JJ^-_a (a=Cartesian index)!
-  !! for a list of Fermi energies      !
-  !                                    !
-  !  added the optional occ parameter  !
-  !====================================!
-
-    use w90_constants, only  : dp,cmplx_0,cmplx_i
-    use w90_parameters, only : num_wann,nfermi,fermi_energy_list
-    use w90_utility, only    : utility_rotate
-
-    complex(kind=dp), dimension(:,:), intent(in)   :: delHH
-    complex(kind=dp), dimension(:,:), intent(in)   :: UU
-    real(kind=dp),    dimension(:),   intent(in)   :: eig
-    complex(kind=dp), dimension(:,:,:), intent(out) :: JJm_list
-    real(kind=dp), intent(in), optional, dimension(:) :: occ
-
-    complex(kind=dp), allocatable :: delHH_bar(:,:)
-    integer                       :: n,m,if,nfermi_loc
-
-     if(present(occ)) then
-        nfermi_loc=1
-     else
-        nfermi_loc=nfermi
-     endif
-
-    allocate(delHH_bar(num_wann,num_wann))
-    delHH_bar=utility_rotate(delHH,UU,num_wann)
-    do if=1,nfermi_loc
-       do m=1,num_wann
-          do n=1,num_wann
-	     if(present(occ)) then
-                if(occ(m)<0.5_dp.and.occ(n)>0.5_dp) then
-                   JJm_list(n,m,if)=cmplx_i*delHH_bar(n,m)/(eig(m)-eig(n))
-                else
-                   JJm_list(n,m,if)=cmplx_0
-                end if
-             else
-                if(eig(m)>fermi_energy_list(if) .and.&
-                     eig(n)<fermi_energy_list(if)) then
-                   JJm_list(n,m,if)=cmplx_i*delHH_bar(n,m)/(eig(m)-eig(n))
-                else
-                   JJm_list(n,m,if)=cmplx_0
-                end if
-             endif
-          enddo
-       end do
-    end do
-    do if=1,nfermi_loc
-       JJm_list(:,:,if)=&
-            utility_rotate(JJm_list(:,:,if),conjg(transpose(UU)),num_wann)
-    enddo
-
-  end subroutine wham_get_JJm_list
-
 
   subroutine wham_get_JJp_JJm_list(delHH,UU,eig,JJp_list,JJm_list,occ)
   !===============================================!
@@ -235,8 +120,8 @@ module w90_wan_ham
   ! wham_get_JJp_list and wham_getJJm_list.       !
   ! It computes both lists at once in a more      !
   ! efficient manner.                             !
-  !                                    !
-  !  added the optional occ parameter  !
+  !                                               !
+  !  Tsirkin:   added the optional occ parameter  !
   !                                               !
   !===============================================!
 
@@ -528,12 +413,8 @@ module w90_wan_ham
     do i=1,3
         if(present(occ)) then
            call wham_get_JJp_JJm_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i),JJm_list(:,:,:,i),occ=occ)
-           !call wham_get_JJp_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i),occ=occ)
-           !call wham_get_JJm_list(delHH(:,:,i),UU,eig,JJm_list(:,:,:,i),occ=occ)
         else                                     
            call wham_get_JJp_JJm_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i),JJm_list(:,:,:,i))
-           !call wham_get_JJp_list(delHH(:,:,i),UU,eig,JJp_list(:,:,:,i))
-           !call wham_get_JJm_list(delHH(:,:,i),UU,eig,JJm_list(:,:,:,i))
         endif
     enddo
 
