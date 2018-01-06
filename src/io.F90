@@ -278,15 +278,6 @@ contains
             end if
          end if
 
-         do loop=1,num_arg
-            write(*,*) loop,ctemp(loop)
-         end do
-         write(*,*) 'print_help',print_help
-         write(*,*) 'print_version',print_version
-         write(*,*) 'dryrun',dryrun
-         write(*,*) 'post_proc_flag',post_proc_flag
-         write(*,*) 'seedname',seedname
-
          if(print_help) then
             if(prog=='wannier90') then
                write(6,'(a)') 'Wannier90: The Maximally Localised Wannier Function Code'
