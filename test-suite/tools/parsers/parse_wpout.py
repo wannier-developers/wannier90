@@ -48,6 +48,13 @@ ahc_re = re.compile("^\s*==========\s+([-+]?[0-9]*\.?[0-9]+)\s+([-+]?[0-9]*\.?[0
 # 2: morb_z
 morb_re = re.compile("^\s*======================\s+([-+]?[0-9]*\.?[0-9]+)\s+([-+]?[0-9]*\.?[0-9]+)\s+([-+]?[0-9]*\.?[0-9]+)\s*")
 
+# Match the spin
+
+spinx_re = re.compile("x\ component:\s*([0-9\.-]+)\s*$")
+spiny_re = re.compile("y\ component:\s*([0-9\.-]+)\s*$")
+spinz_re = re.compile("z\ component:\s*([0-9\.-]+)\s*$")
+spinp_re = re.compile("Polar\ theta\ \(deg\):\s*([0-9\.-]+)\s*$")
+spina_re = re.compile("Azim.\ phi\ \(deg\):\s*([0-9\.-]+)\s*$")
 
 # Match the lines with the Omegas
 # Groups:
@@ -98,6 +105,29 @@ def parse(fname):
                 retdict["morb_y"].append(float(y))
                 retdict["morb_z"].append(float(z))
             continue
+
+
+        match = spinx_re.search(l)
+        if match:
+            retdict["spin_x"].append(float(match.groups()[0]))
+            continue
+        match = spiny_re.search(l)
+        if match:
+            retdict["spin_y"].append(float(match.groups()[0]))
+            continue
+        match = spinz_re.search(l)
+        if match:
+            retdict["spin_z"].append(float(match.groups()[0]))
+            continue
+        match = spinp_re.search(l)
+        if match:
+            retdict["spin_p"].append(float(match.groups()[0]))
+            continue
+        match = spina_re.search(l)
+        if match:
+            retdict["spin_a"].append(float(match.groups()[0]))
+            continue
+
 
 
 
