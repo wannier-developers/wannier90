@@ -57,7 +57,13 @@ tolerance = ( (1.0e-3, 2.0e-3, 'ahc_x'),
                (1.0e-3, 2.0e-3, 'ahc_z'),
                (1.0e-3, 2.0e-3, 'morb_x'),
                (1.0e-3, 2.0e-3, 'morb_y'),
-               (1.0e-3, 2.0e-3, 'morb_z'))
+               (1.0e-3, 2.0e-3, 'morb_z'),
+               (1.0e-3, 2.0e-3, 'spin_x'),
+               (1.0e-3, 2.0e-3, 'spin_y'),
+               (1.0e-3, 2.0e-3, 'spin_z'),
+               (1.0e-2, 2.0e-2, 'spin_p'),
+               (1.0e-2, 2.0e-2, 'spin_a'))
+
 
 [POSTW90_JDOS_OK]
 exe = ../../postw90.x
