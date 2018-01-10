@@ -218,6 +218,18 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('silicon.win', '')
 output = silicon.wout
 
+# Test of DOS for Cu 
+[testpostw90_example04_dos/]
+program = POSTW90_DOS_OK
+inputs_args = ('copper.win', '')
+output = copper-dos.dat 
+
+# Test of PDOS for Cu
+[testpostw90_example04_pdos/]
+program = POSTW90_DOS_OK
+inputs_args = ('copper.win', '')
+output = copper-dos.dat
+
 
 
 [categories]
