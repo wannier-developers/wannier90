@@ -311,6 +311,7 @@ module w90_parameters
   real(kind=dp),     public, save :: conv_noise_amp
   integer,           public, save :: conv_noise_num
   real(kind=dp),     public, save :: wannier_plot_radius
+  real(kind=dp),     public, save :: wannier_plot_scale
   integer,           public, save :: search_shells   !for kmesh
   real(kind=dp),     public, save :: kmesh_tol
   integer,           public, save :: optimisation
@@ -800,6 +801,9 @@ contains
 
     wannier_plot_radius = 3.5_dp
     call param_get_keyword('wannier_plot_radius',found,r_value=wannier_plot_radius)
+    
+    wannier_plot_scale = 1.0_dp
+    call param_get_keyword('wannier_plot_scale',found,r_value=wannier_plot_scale)
 
     ! checks
     if (wannier_plot) then
@@ -808,6 +812,7 @@ contains
        if ( (index(wannier_plot_mode,'crys').eq.0) .and. (index(wannier_plot_mode,'mol').eq.0) ) &
             call io_error('Error: wannier_plot_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
+       if ( wannier_plot_scale  < 0.0_dp ) call io_error('Error: wannier_plot_scale must be positive')
     endif
 
     write_u_matrices = .false.
@@ -1970,14 +1975,14 @@ contains
        if (ierr/=0) call io_error('Error allocating lwindow in param_read')
     endif
     
-    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
-       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
-       cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
-       cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
-       cosa = abs(cosa)
-       if (any(cosa.gt.eps6)) &
-            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
-    endif
+!    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
+!       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
+!       cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
+!       cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
+!       cosa = abs(cosa)
+!       if (any(cosa.gt.eps6)) &
+!            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
+!    endif
 
     ! Initialise
     omega_total = -999.0_dp
@@ -2426,8 +2431,10 @@ contains
 
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
-          if (index(wannier_plot_format,'cube')>0 .or. iprint>2) &
-          write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :',wannier_plot_radius,'|'
+          if (index(wannier_plot_format,'cub')>0 .or. iprint>2) then
+             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :',wannier_plot_radius,'|'
+             write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :',wannier_plot_scale, '|'
+          endif
           write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        end if
        !
@@ -5651,6 +5658,7 @@ contains
     call comms_bcast(conv_noise_amp,1)
     call comms_bcast(conv_noise_num,1)
     call comms_bcast(wannier_plot_radius,1)
+    call comms_bcast(wannier_plot_scale,1)
     call comms_bcast(kmesh_tol,1)
     call comms_bcast(optimisation,1)
     call comms_bcast(write_vdw_data,1)
