@@ -266,6 +266,26 @@ module w90_postw90_common
     call comms_bcast(berry_curv_adpt_kmesh,1)
     call comms_bcast(berry_curv_adpt_kmesh_thresh,1)
     call comms_bcast(berry_curv_unit,len(berry_curv_unit))
+
+! Tsirkin
+    call comms_bcast(gyrotropic,1)
+    call comms_bcast(gyrotropic_task,len(gyrotropic_task))
+    call comms_bcast(gyrotropic_kmesh_spacing,1)
+    call comms_bcast(gyrotropic_kmesh(1),3)
+    call comms_bcast(gyrotropic_smr_fixed_en_width,1)
+    call comms_bcast(gyrotropic_smr_index,1)
+    call comms_bcast(gyrotropic_eigval_max,1)
+    call comms_bcast(gyrotropic_nfreq,1)
+    call comms_bcast(gyrotropic_degen_thresh,1)  
+    call comms_bcast(gyrotropic_num_bands,1)  
+    call comms_bcast(gyrotropic_box(1,1),9)
+    call comms_bcast(gyrotropic_box_corner(1),3) 
+    call comms_bcast(gyrotropic_smr_max_arg,1)
+    call comms_bcast(gyrotropic_smr_fixed_en_width,1)
+    call comms_bcast(gyrotropic_smr_index,1)
+
+    call comms_bcast(spinors,1)
+
     call comms_bcast(kubo_adpt_smr,1)
     call comms_bcast(kubo_adpt_smr_fac,1)
     call comms_bcast(kubo_adpt_smr_max,1)
@@ -363,6 +383,15 @@ module w90_postw90_common
        allocate(kubo_freq_list(kubo_nfreq),stat=ierr)
        if (ierr/=0) call io_error(&
             'Error allocating kubo_freq_list in postw90_param_dist')
+        
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating gyrotropic_band_list in postw90_param_dist')
+            
+       allocate(gyrotropic_freq_list(gyrotropic_nfreq),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating gyrotropic_freq_list in postw90_param_dist')
+            
        allocate(dos_project(num_dos_project),stat=ierr)
        if (ierr/=0)&
             call io_error('Error allocating dos_project in postw90_param_dist')
@@ -378,6 +407,8 @@ module w90_postw90_common
        endif
     end if
     if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
+    call comms_bcast(gyrotropic_freq_list(1),gyrotropic_nfreq)
+    call comms_bcast(gyrotropic_band_list(1),gyrotropic_num_bands)
     call comms_bcast(kubo_freq_list(1),kubo_nfreq)
     call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then

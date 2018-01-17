@@ -3,6 +3,7 @@
 \usepackage{footnote}
 \usepackage{amsbsy}
 \usepackage{graphicx}
+\usepackage{longtable}
 \usepackage{fancyhdr}
 \usepackage[T1]{fontenc} % important for having searchable underscores
 \usepackage{bm}
@@ -21,6 +22,7 @@
 
 \usepackage{amsmath}
 
+\usepackage{multirow}
 
 % Print only chapters in the Table Of Contents
 \setcounter{tocdepth}{0} 
@@ -116,7 +118,52 @@
 \newcommand{\omt}{\widetilde{\Omega}}
 \newcommand{\bvec}[1]{\bm{\mathrm{#1}}}
 
+
+%%% Tsirkin
+\def\nn{\nonumber\\}
+\def\dk{[d\kk]}
+\def\im{{\rm Im}}
+\def\re{{\rm Re}}
+\def\tr{{\rm Tr}}
+\def\beq{\begin{equation}}
+\def\eeq{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\ket#1{\vert#1\rangle}
+\def\bra#1{\langle#1\vert}
+\def\ip#1#2{\langle#1\vert#2\rangle}
+\def\me#1#2#3{\langle#1\vert#2\vert#3\rangle}
+\def\wt#1{\widetilde{#1}}
+\def\kpar{{\boldsymbol\kappa}}
+\def\T{\mathcal T}
+\def\P{\mathcal P}
+\def\ww{\omega}
+\def\kk{{\bm k}}
+\def\KK{{\bm K}}
+\def\kz{K_z}
+\def\qq{{\bm q}}
+\def\rr{{\bm r}}
+\def\RR{{\bm R}}
+\def\GG{{\bm G}}
+\def\EE{{\bm E}}
+\def\BB{{\bm B}}
+\def\MM{{\bm M}}
+\def\jj{{\bm j}}
+\def\E{{\mathcal E}}
+\def\bE{{\bm{\mathcal E}}}
+\def\ee{\hat{\bm e}}
+\def\eps{\epsilon}
+\def\vareps{\varepsilon}
+\def\alfa{{\mathfrak a}}
+\newcommand{\eq}[1]{Eq.~(\ref{eq:#1})}
+\newcommand{\eqs}[2]{Eqs.~(\ref{eq:#1}) and~(\ref{eq:#2})}
+
+
+
+
+
 \maketitle
+
 
 \tableofcontents
 
@@ -155,6 +202,8 @@
 \include{postw90params}
 
 \include{berry}
+
+\include{gyrotropic}
 
 \include{boltzwann}
 

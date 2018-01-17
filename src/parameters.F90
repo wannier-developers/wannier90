@@ -37,6 +37,7 @@ module w90_parameters
   logical,           public, save :: spn_formatted
   !! Read the spin from fortran formatted file
   logical,           public, save :: uHu_formatted
+  logical,           public, save :: berry_uHu_formatted
   !! Read the uHu from fortran formatted file
   integer,           public, save :: spin
   !! Spin up=1 down=2
@@ -112,6 +113,8 @@ module w90_parameters
   integer,           public, save :: wannier_plot_supercell(3)
   character(len=20), public, save :: wannier_plot_format
   character(len=20), public, save :: wannier_plot_mode
+  character(len=20), public, save :: wannier_plot_spinor_mode
+  logical,           public, save :: wannier_plot_spinor_phase
   logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
   integer,           public, save :: bands_num_points
@@ -172,7 +175,7 @@ module w90_parameters
 
 ! Module  b e r r y
   logical,           public, save :: berry
-  character(len=20), public, save :: berry_task
+  character(len=120), public, save :: berry_task
   real(kind=dp),     public, save :: berry_kmesh_spacing
   integer,           public, save :: berry_kmesh(3)
   ! --------------remove eventually----------------
@@ -191,6 +194,27 @@ module w90_parameters
   logical,           public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
+
+  logical,           public, save :: gyrotropic
+  character(len=120), public, save :: gyrotropic_task
+  integer,           public, save :: gyrotropic_kmesh(3)
+  real(kind=dp),     public, save :: gyrotropic_kmesh_spacing
+  integer,           public, save :: gyrotropic_smr_index
+  real(kind=dp),     public, save :: gyrotropic_smr_fixed_en_width
+  real(kind=dp)                               :: gyrotropic_freq_min
+  real(kind=dp)                               :: gyrotropic_freq_max
+  real(kind=dp)                               :: gyrotropic_freq_step
+  integer,                       public, save :: gyrotropic_nfreq
+  complex(kind=dp), allocatable, public, save :: gyrotropic_freq_list(:)
+  real(kind=dp),     public, save :: gyrotropic_box_corner(3),gyrotropic_box(3,3)
+  real(kind=dp)                   :: gyrotropic_box_tmp(3)
+  real(kind=dp),     public, save :: gyrotropic_degen_thresh 
+  integer, allocatable, public,save :: gyrotropic_band_list(:)
+  integer,           public, save :: gyrotropic_num_bands
+  real(kind=dp)                   :: smr_max_arg 
+  real(kind=dp) ,    public, save :: gyrotropic_smr_max_arg 
+  real(kind=dp),                 public, save :: gyrotropic_eigval_max
+
 
   logical                                  :: fermi_energy_scan
   real(kind=dp)                            :: fermi_energy_min
@@ -466,7 +490,7 @@ contains
   !! Read parameters and calculate derived values                    
   !                                                                  !
   !===================================================================  
-    use w90_constants, only : bohr, eps6
+    use w90_constants, only : bohr, eps6, cmplx_i
     use w90_utility,   only : utility_recip_lattice,utility_metric
     use w90_io,        only : io_error,io_file_unit,seedname,post_proc_flag
     implicit none
@@ -672,8 +696,6 @@ contains
     else
        if (found.and.on_root) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
-!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
-!       call io_error('Error: For spinor WF num_wann must be even')
     
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
@@ -779,7 +801,13 @@ contains
 
     wannier_plot_mode       = 'crystal'
     call param_get_keyword('wannier_plot_mode',found,c_value=wannier_plot_mode)
-    
+
+    wannier_plot_spinor_mode= 'total'
+    call param_get_keyword('wannier_plot_spinor_mode',found,c_value=wannier_plot_spinor_mode)
+    wannier_plot_spinor_phase=.true.
+   call param_get_keyword('wannier_plot_spinor_phase',found,l_value=wannier_plot_spinor_phase)   
+
+ 
     call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,lcount=.true.)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
@@ -807,6 +835,9 @@ contains
             call io_error('Error: wannier_plot_format not recognised')
        if ( (index(wannier_plot_mode,'crys').eq.0) .and. (index(wannier_plot_mode,'mol').eq.0) ) &
             call io_error('Error: wannier_plot_mode not recognised')
+       if ( (index(wannier_plot_spinor_mode,'total').eq.0) .and. (index(wannier_plot_spinor_mode,'up').eq.0) &
+            .and. (index(wannier_plot_spinor_mode,'down').eq.0) ) &
+            call io_error('Error: wannier_plot_spinor_mode not recognised')
        if ( wannier_plot_radius < 0.0_dp ) call io_error('Error: wannier_plot_radius must be positive')
     endif
 
@@ -895,17 +926,21 @@ contains
             r_value=fermi_energy_step)
        if(found .and. fermi_energy_step<=0.0_dp) call io_error(&
             'Error: fermi_energy_step must be positive')
-       nfermi=nint((fermi_energy_max-fermi_energy_min)/fermi_energy_step)+1
+       nfermi=nint(abs((fermi_energy_max-fermi_energy_min)/fermi_energy_step))+1
     endif
     !
     if(found_fermi_energy) then
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
-       allocate(fermi_energy_list(0:nfermi),stat=ierr)
-       do i=0,nfermi
-          fermi_energy_list(i)=fermi_energy_min&
-               +i*(fermi_energy_max-fermi_energy_min)/real(nfermi,dp)
+	if (nfermi.eq.1) then 
+	    fermi_energy_step=0.0_dp
+	else
+	    fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
+	endif
+	allocate(fermi_energy_list(nfermi),stat=ierr)
+        do i=1,nfermi
+    	    fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
        enddo
 !!    elseif(nfermi==0) then 
 !!        ! This happens when both found_fermi_energy=.false. and
@@ -1038,7 +1073,54 @@ contains
              .and. index(berry_task,'kubo')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
 
+    ! Stepan
+    gyrotropic                  = .false.
+    call param_get_keyword('gyrotropic',found,l_value=gyrotropic)
+    gyrotropic_task ='all'
+    call param_get_keyword('gyrotropic_task',found,c_value=gyrotropic_task)
+    gyrotropic_box(:,:)=0.0
+    gyrotropic_degen_thresh=0.0_dp
+    call param_get_keyword('gyrotropic_degen_thresh',found,r_value=gyrotropic_degen_thresh) 
+
+    do i=1,3
+	gyrotropic_box(i,i)=1.0_dp
+	gyrotropic_box_tmp(:)=0.0_dp
+	call param_get_keyword_vector('gyrotropic_box_b'//achar(48+i),found,3,r_value=gyrotropic_box_tmp)
+	if (found) gyrotropic_box(i,:)=gyrotropic_box_tmp(:)
+    enddo
+    gyrotropic_box_corner(:)=0.0_dp
+    call param_get_keyword_vector('gyrotropic_box_center',found,3,r_value=gyrotropic_box_tmp)
+    if (found) gyrotropic_box_corner(:)=gyrotropic_box_tmp(:)-0.5*(gyrotropic_box(1,:)+gyrotropic_box(2,:)+gyrotropic_box(3,:))
     
+    call param_get_range_vector('gyrotropic_band_list',found,gyrotropic_num_bands,lcount=.true.)
+    if(found) then
+       if(gyrotropic_num_bands<1) call io_error('Error: problem reading gyrotropic_band_list')
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating gyrotropic_band_list in param_read')
+       call param_get_range_vector('gyrotropic_band_list',found,gyrotropic_num_bands,.false.,gyrotropic_band_list)
+       if (any(gyrotropic_band_list<1) .or. any(gyrotropic_band_list>num_wann) ) &
+            call io_error('Error: gyrotropic_band_list asks for a non-valid bands')
+    else
+       ! include all  bands in the calculation
+       gyrotropic_num_bands=num_wann
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating gyrotropic_band_list in param_read')
+       do loop=1,num_wann
+          gyrotropic_band_list(loop)=loop
+       end do
+    end if
+
+    smr_max_arg=5.0
+    call param_get_keyword('smr_max_arg',found,r_value=smr_max_arg)
+    if (found .and. ( smr_max_arg <= 0._dp)) &
+         call io_error('Error: smr_max_arg must be greater than zero')  
+
+    gyrotropic_smr_max_arg = smr_max_arg
+    call param_get_keyword('gyrotropic_smr_max_arg',found,&
+         r_value=gyrotropic_smr_max_arg)
+    if (found .and. (gyrotropic_smr_max_arg <= 0._dp)) call io_error&
+         ('Error: gyrotropic_smr_max_arg must be greater than zero')
+
 
 !-------------------------------------------------------
 !    alpha=0
@@ -1096,6 +1178,12 @@ contains
          r_value=kubo_smr_fixed_en_width)
     if (found .and. (kubo_smr_fixed_en_width < 0._dp)) call io_error&
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
+
+    gyrotropic_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('gyrotropic_smr_fixed_en_width',found,&
+         r_value=gyrotropic_smr_fixed_en_width)
+    if (found .and. (gyrotropic_smr_fixed_en_width < 0._dp)) call io_error&
+      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
@@ -1629,6 +1717,11 @@ contains
     call param_get_keyword('kubo_smr_type',found,c_value=ctmp)
     if (found) kubo_smr_index = get_smearing_index(ctmp,'kubo_smr_type')
 
+    ! By default: use the "global" smearing index 
+    gyrotropic_smr_index = smr_index
+    call param_get_keyword('gyrotropic_smr_type',found,c_value=ctmp)
+    if (found) gyrotropic_smr_index = get_smearing_index(ctmp,'gyrotropic_smr_type')
+
     ! By default: 10 fs relaxation time
     boltz_relax_time = 10._dp
     call param_get_keyword('boltz_relax_time',found,r_value=boltz_relax_time)
@@ -1682,6 +1775,7 @@ contains
 
 
     kubo_freq_min        = 0.0_dp
+    gyrotropic_freq_min  = kubo_freq_min
     call param_get_keyword('kubo_freq_min',found,r_value=kubo_freq_min)
     !
     if(frozen_states) then
@@ -1691,7 +1785,10 @@ contains
     else
        kubo_freq_max        = dis_win_max-dis_win_min+0.6667_dp
     end if
+    gyrotropic_freq_max  = kubo_freq_max 
     call param_get_keyword('kubo_freq_max',found,r_value=kubo_freq_max)
+
+
     !
     kubo_freq_step=0.01_dp
     call param_get_keyword('kubo_freq_step',found,r_value=kubo_freq_step)
@@ -1714,6 +1811,24 @@ contains
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
 
+    gyrotropic_freq_step        = 0.01_dp
+    call param_get_keyword('gyrotropic_freq_min',found,r_value=gyrotropic_freq_min)
+    call param_get_keyword('gyrotropic_freq_max',found,r_value=gyrotropic_freq_max)
+    call param_get_keyword('gyrotropic_freq_step',found,r_value=gyrotropic_freq_step)
+    gyrotropic_nfreq=nint((gyrotropic_freq_max-gyrotropic_freq_min)/gyrotropic_freq_step)+1
+    if(gyrotropic_nfreq<=1) gyrotropic_nfreq=2
+    gyrotropic_freq_step=(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)
+    if (allocated(gyrotropic_freq_list)) deallocate(gyrotropic_freq_list)
+    allocate(gyrotropic_freq_list(gyrotropic_nfreq),stat=ierr)
+    if (ierr/=0)&
+         call io_error('Error allocating gyrotropic_freq_list in param_read')
+    do i=1,gyrotropic_nfreq
+       gyrotropic_freq_list(i)=gyrotropic_freq_min&
+            +(i-1)*(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)&
+	      +cmplx_i*gyrotropic_smr_fixed_en_width
+    enddo
+
+
     if(frozen_states) then
        kubo_eigval_max=dis_froz_max+0.6667_dp
     elseif(allocated(eigval)) then
@@ -1721,7 +1836,13 @@ contains
     else
        kubo_eigval_max=dis_win_max+0.6667_dp
     end if
+    gyrotropic_eigval_max=kubo_eigval_max
+
     call param_get_keyword('kubo_eigval_max',found,r_value=kubo_eigval_max)
+    call param_get_keyword('gyrotropic_eigval_max',found,r_value=gyrotropic_eigval_max)
+
+
+
 
 
     automatic_translation=.true.
@@ -1892,6 +2013,12 @@ contains
          should_be_defined=berry, &
          module_kmesh=berry_kmesh, &
          module_kmesh_spacing=berry_kmesh_spacing)
+
+    call get_module_kmesh(moduleprefix='gyrotropic', &
+         should_be_defined=gyrotropic, &
+         module_kmesh=gyrotropic_kmesh, &
+         module_kmesh_spacing=gyrotropic_kmesh_spacing)
+
 
     call get_module_kmesh(moduleprefix='spin', &
          should_be_defined=spin_moment, &
@@ -2425,6 +2552,12 @@ contains
           end if
 
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :',trim(wannier_plot_mode),'|'
+          if(spinors) then
+            write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :',&
+                                                                               trim(wannier_plot_spinor_mode),'|'
+            write(stdout,'(1x,a46,10x,L8,13x,a1)') '|   Include phase for spinor WFs             :',&
+                                                                                    wannier_plot_spinor_phase,'|'
+          end if
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :',trim(wannier_plot_format),'|'
           if (index(wannier_plot_format,'cube')>0 .or. iprint>2) &
           write(stdout,'(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :',wannier_plot_radius,'|'
@@ -2822,6 +2955,45 @@ contains
 
 
 
+    if(gyrotropic .or. iprint>2) then
+       write(stdout,'(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
+       write(stdout,'(1x,a46,10x,L8,13x,a1)')    '| Compute Gyrotropic properties              :',gyrotropic,'|'
+       write(stdout,'(1x,a46,10x,a20,1x,a1)')    '| gyrotropic_task                            :',gyrotropic_task,'|'
+     call  parameters_gyro_write_task(gyrotropic_task,'-d0','calculate the D tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-dw','calculate the tildeD tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-c','calculate the C tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-k','calculate the K tensor')
+     call  parameters_gyro_write_task(gyrotropic_task,'-noa','calculate the interbad natural optical activity')
+     call  parameters_gyro_write_task(gyrotropic_task,'-dos','calculate the density of states')
+
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for tildeD,NOA            :',gyrotropic_freq_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency                           :',gyrotropic_freq_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for frequency                   :',gyrotropic_freq_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue                          :',gyrotropic_eigval_max,'|'
+       if( gyrotropic_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==gyrotropic_smr_index) then
+          write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
+       else
+          write(stdout,'(1x,a78)') '|  Using local  smearing parameters                                          |'
+       endif
+          write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
+          write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',&
+        	gyrotropic_smr_fixed_en_width,'|'
+          write(stdout,'(1x,a21,5x,a47,4x,a1)')    '|  Smearing Function                         :',&
+		trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  degen_thresh                              :',gyrotropic_degen_thresh,'|'
+
+       if(kmesh(1)==gyrotropic_kmesh(1) .and. kmesh(2)==gyrotropic_kmesh(2) .and. kmesh(3)==gyrotropic_kmesh(3) ) then
+          write(stdout,'(1x,a78)') '|  Using global k-point set for interpolation                                |'
+       elseif(gyrotropic_kmesh_spacing>0.0_dp) then
+             write(stdout,'(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+                  gyrotropic_kmesh(1),'x',gyrotropic_kmesh(2),'x',gyrotropic_kmesh(3),' Spacing = ',gyrotropic_kmesh_spacing,'|'
+        else
+             write(stdout,'(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :'&
+                  ,gyrotropic_kmesh(1),'x',gyrotropic_kmesh(2),'x',gyrotropic_kmesh(3),'|'
+       endif
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :','    not implemented','|'
+       write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
 
 
     if(boltzwann .or. iprint>2) then
@@ -5435,6 +5607,7 @@ contains
     call comms_bcast(wvfn_formatted,1) 
     call comms_bcast(spn_formatted,1) 
     call comms_bcast(uHu_formatted,1) 
+    call comms_bcast(berry_uHu_formatted,1) 
     call comms_bcast(spin,1) 
     call comms_bcast(num_dump_cycles,1)
     call comms_bcast(num_print_cycles,1)
@@ -5500,6 +5673,7 @@ contains
     call comms_bcast(wannier_plot_supercell(1),3)
     call comms_bcast(wannier_plot_format,len(wannier_plot_format))
     call comms_bcast(wannier_plot_mode,len(wannier_plot_mode))
+    call comms_bcast(wannier_plot_spinor_mode,len(wannier_plot_spinor_mode))
     call comms_bcast(write_u_matrices,1)
     call comms_bcast(bands_plot,1)
     call comms_bcast(bands_num_points,1)
@@ -5530,6 +5704,7 @@ contains
     call comms_bcast(fermi_surface_num_points,1)
     call comms_bcast(fermi_surface_plot_format,len(fermi_surface_plot_format))
     call comms_bcast(fermi_energy,1) !! used?
+
     call comms_bcast(berry,1)
     call comms_bcast(berry_task,len(berry_task))
     call comms_bcast(berry_kmesh_spacing,1)
@@ -5537,6 +5712,23 @@ contains
     call comms_bcast(berry_curv_adpt_kmesh,1)
     call comms_bcast(berry_curv_adpt_kmesh_thresh,1)
     call comms_bcast(berry_curv_unit,len(berry_curv_unit))
+!  Stepan Tsirkin
+    call comms_bcast(gyrotropic,1)
+    call comms_bcast(gyrotropic_task,len(gyrotropic_task))
+    call comms_bcast(gyrotropic_kmesh_spacing,1)
+    call comms_bcast(gyrotropic_kmesh(1),3)
+    call comms_bcast(gyrotropic_smr_fixed_en_width,1)
+    call comms_bcast(gyrotropic_smr_index,1)
+    call comms_bcast(gyrotropic_eigval_max,1)
+    call comms_bcast(gyrotropic_nfreq,1)
+    call comms_bcast(gyrotropic_degen_thresh,1)  
+    call comms_bcast(gyrotropic_num_bands,1)  
+    call comms_bcast(gyrotropic_box(1,1),9)
+    call comms_bcast(gyrotropic_box_corner(1),3) 
+    call comms_bcast(gyrotropic_smr_max_arg,1)
+    call comms_bcast(gyrotropic_smr_fixed_en_width,1)
+    call comms_bcast(gyrotropic_smr_index,1)
+
     call comms_bcast(kubo_adpt_smr,1)
     call comms_bcast(kubo_adpt_smr_fac,1)
     call comms_bcast(kubo_adpt_smr_max,1)
@@ -5693,9 +5885,18 @@ contains
           if (ierr/=0)&
                call io_error('Error allocating kpt_latt in postw90_param_dist')
        endif
+       allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating gyrotropic_num_bands in postw90_param_dist')
+       allocate(gyrotropic_freq_list(gyrotropic_nfreq),stat=ierr)
+       if (ierr/=0) call io_error(&
+            'Error allocating gyrotropic_freq_list in postw90_param_dist')
     end if
+
     if(nfermi>0) call comms_bcast(fermi_energy_list(1),nfermi)
     if(kubo_nfreq>0) call comms_bcast(kubo_freq_list(1),kubo_nfreq)
+    call comms_bcast(gyrotropic_freq_list(1),gyrotropic_nfreq)
+    call comms_bcast(gyrotropic_band_list(1),gyrotropic_num_bands)
     if(num_dos_project>0) call comms_bcast(dos_project(1),num_dos_project)
     if(.not.effective_model) then
        if (eig_found) then
@@ -5767,6 +5968,20 @@ contains
 
   end subroutine param_dist
 
+
+     subroutine  parameters_gyro_write_task(task,key,comment)
+      use w90_io,        only : stdout
+
+      character(len=*), intent(in) :: task,key,comment
+      character(len=42) :: comment1
+      
+      comment1=comment
+       if((index(task,key)>0) .or.(index(task,'all')>0)) then
+          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment1, ' :','       T','|'
+       else
+          write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment1, ' :','       F','|'
+       endif
+     end subroutine parameters_gyro_write_task
 
 
 end module w90_parameters
