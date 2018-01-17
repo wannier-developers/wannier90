@@ -2918,7 +2918,7 @@ contains
 
   subroutine param_write_header
     !! Write a suitable header for the calculation - version authors etc
-    use w90_io, only : io_date
+    use w90_io, only : io_date,w90_version
     use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
     implicit none
 
@@ -2999,7 +2999,8 @@ contains
     write(stdout,*)  '            |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |'
     write(stdout,*)  '            |        David Vanderbilt and Nicola Marzari        |'
     write(stdout,*)  '            |                                                   |'
-    write(stdout,*)  '            |        Release: 2.1.0   13th January 2017         |'
+!    write(stdout,*)  '            |        Release: 2.1.0   13th January 2017         |'
+    write(stdout,*)  '            |      Release: ',adjustl(w90_version),'  13th January 2017       |'
     write(stdout,*)  '            |                                                   |'
     write(stdout,*)  '            | This program is free software; you can            |'
     write(stdout,*)  '            | redistribute it and/or modify it under the terms  |'
