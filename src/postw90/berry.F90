@@ -773,7 +773,7 @@ module w90_berry
   end subroutine berry_main
 
 
-  subroutine berry_get_imf_klist(kpt,imf_k_list)
+  subroutine berry_get_imf_klist(kpt,imf_k_list,occ)
   !============================================================!
   !                                                            !
   !! Calculates the Berry curvature traced over the occupied
@@ -785,12 +785,18 @@ module w90_berry
     !
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), intent(out), dimension(:,:,:) :: imf_k_list
+    real(kind=dp), intent(in), optional, dimension(:) :: occ
 
-    call berry_get_imfgh_klist(kpt,imf_k_list)
+    if (present(occ)) then 
+        call berry_get_imfgh_klist(kpt,imf_k_list,occ=occ)
+    else
+        call berry_get_imfgh_klist(kpt,imf_k_list)
+    endif
+
   end subroutine berry_get_imf_klist
 
 
-  subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list)
+  subroutine berry_get_imfgh_klist(kpt,imf_k_list,img_k_list,imh_k_list,occ)
   !=========================================================!
   !
   !! Calculates the three quantities needed for the orbital
@@ -820,8 +826,9 @@ module w90_berry
     ! Arguments
     !
     real(kind=dp), intent(in)     :: kpt(3)
-    real(kind=dp), intent(out), dimension(:,:,:), optional &
+    real(kind=dp), intent(out), dimension(:,:,:), optional & 
                                   :: imf_k_list, img_k_list, imh_k_list
+    real(kind=dp), intent(in), optional, dimension(:) :: occ 
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
@@ -834,32 +841,46 @@ module w90_berry
     complex(kind=dp), allocatable :: JJp_list(:,:,:,:)
     complex(kind=dp), allocatable :: JJm_list(:,:,:,:)
     real(kind=dp)                 :: eig(num_wann)
-    integer                       :: i,j,ife
+    integer                       :: i,j,ife,nfermi_loc
     real(kind=dp)                 :: s
 
     ! Temporary space for matrix products
     complex(kind=dp), allocatable, dimension(:,:,:) :: tmp
 
+     if(present(occ)) then
+        nfermi_loc=1
+     else
+        nfermi_loc=nfermi
+     endif
+
+
     allocate(HH(num_wann,num_wann))
     allocate(UU(num_wann,num_wann))
-    allocate(f_list(num_wann,num_wann,nfermi))
-    allocate(g_list(num_wann,num_wann,nfermi))
-    allocate(JJp_list(num_wann,num_wann,nfermi,3))
-    allocate(JJm_list(num_wann,num_wann,nfermi,3))
+    allocate(f_list(num_wann,num_wann,nfermi_loc))
+    allocate(g_list(num_wann,num_wann,nfermi_loc))
+    allocate(JJp_list(num_wann,num_wann,nfermi_loc,3))
+    allocate(JJm_list(num_wann,num_wann,nfermi_loc,3))
     allocate(AA(num_wann,num_wann,3))
     allocate(OOmega(num_wann,num_wann,3))
 
     ! Gather W-gauge matrix objects
     !
-    call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
-    call wham_get_occ_mat_list(eig,UU,f_list,g_list)
+
+
+     if(present(occ)) then
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list,occ=occ)
+        call wham_get_occ_mat_list(UU,f_list,g_list,occ=occ)
+     else
+        call wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list)
+        call wham_get_occ_mat_list(UU,f_list,g_list,eig=eig)
+     endif
 
     call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA,OO_pseudo=OOmega)
 
     if(present(imf_k_list)) then
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
       !
-      do ife=1,nfermi
+      do ife=1,nfermi_loc
         do i=1,3
           !
           ! J0 term (Omega_bar term of WYSV06)
@@ -913,7 +934,7 @@ module w90_berry
         tmp(:,:,2) = cmplx_i*(CC(:,:,alpha_A(i),beta_A(i))&
                      -conjg(transpose(CC(:,:,alpha_A(i),beta_A(i)))))
 
-        do ife=1,nfermi
+        do ife=1,nfermi_loc
           !
           ! J0 terms for -2Im[g] and -2Im[h]
           !
@@ -961,6 +982,8 @@ module w90_berry
     end if
 
   end subroutine berry_get_imfgh_klist
+
+
 
 
   !===========================================================!

@@ -30,7 +30,7 @@ module w90_io
   !! Unit on which stdout is written
   character(len=50), public, save :: seedname
   !! The seedname for this run
-  integer, parameter, public      :: maxlen = 120  
+  integer, parameter, public      :: maxlen = 255  
   !! Max column width of input file
   logical, public, save           :: post_proc_flag  
   !! Are we in post processing mode 

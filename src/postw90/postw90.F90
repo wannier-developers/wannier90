@@ -27,6 +27,7 @@ program postw90
   !
   use w90_dos
   use w90_berry
+  use w90_gyrotropic
   use w90_spin
   use w90_kpath
   use w90_kslice
@@ -243,6 +244,8 @@ program postw90
   if(geninterp) call geninterp_main
 
   if(boltzwann) call boltzwann_main
+
+  if(gyrotropic) call gyrotropic_main
 
   if(on_root.and.boltzwann) then
      time2=io_time()

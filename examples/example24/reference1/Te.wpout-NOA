@@ -1,0 +1,298 @@
+ 
+             +---------------------------------------------------+
+             |                                                   |
+             |                   WANNIER90                       |
+             |                                                   |
+             +---------------------------------------------------+
+             |                                                   |
+             |        Welcome to the Maximally-Localized         |
+             |        Generalized Wannier Functions code         |
+             |            http://www.wannier.org                 |
+             |                                                   |
+             |  Wannier90 v2.x Authors:                          |
+             |    Arash A. Mostofi  (Imperial College London)    |
+             |    Giovanni Pizzi    (EPFL)                       |
+             |    Ivo Souza         (Universidad del Pais Vasco) |
+             |    Jonathan R. Yates (University of Oxford)       |
+             |                                                   |
+             |  Wannier90 Contributors:                          |
+             |    Young-Su Lee       (KIST, S. Korea)            |
+             |    Matthew Shelley    (Imperial College London)   |
+             |    Nicolas Poilvert   (Penn State University)     |
+             |    Raffaello Bianco   (Paris 6 and CNRS)          |
+             |    Gabriele Sclauzero (ETH Zurich)                |
+             |    David Strubbe (MIT, USA)                       |
+             |    Rei Sakuma (Lund University, Sweden)           |
+             |    Yusuke Nomura (U. Tokyo, Japan)                |
+             |    Takashi Koretsune (Riken, Japan)               |
+             |    Yoshiro Nohara (ASMS Co. Ltd., Japan)          |
+             |    Ryotaro Arita (Riken, Japan)                   |
+             |    Lorenzo Paulatto (UPMC Paris)                  |
+             |    Florian Thole (ETH Zurich)                     |
+             |    Pablo Garcia Fernandez (Unican, Spain)         |
+             |    Dominik Gresch (ETH Zurich)                    |
+             |    Samuel Ponce (University of Oxford)            |
+             |    Marco Gibertini (EPFL)                         |
+             |    Christian Stieger (ETHZ, CH)                   |
+             |    Stepan Tsirkin (Universidad del Pais Vasco)    |
+             |                                                   |
+             |  Wannier77 Authors:                               |
+             |    Nicola Marzari    (EPFL)                       |
+             |    Ivo Souza         (Universidad del Pais Vasco) |
+             |    David Vanderbilt  (Rutgers University)         |
+             |                                                   |
+             |  Please cite                                      |
+             |                                                   |
+             |  [ref] "An updated version of Wannier90:          |
+             |        A Tool for Obtaining Maximally Localised   |
+             |        Wannier Functions", A. A. Mostofi,         |
+             |        J. R. Yates, G. Pizzi, Y. S. Lee,          |
+             |        I. Souza, D. Vanderbilt and N. Marzari,    |
+             |        Comput. Phys. Commun. 185, 2309 (2014)     |
+             |        http://dx.doi.org/10.1016/j.cpc.2014.05.003|
+             |                                                   |
+             |  in any publications arising from the use of      |
+             |  this code. For the method please cite            |
+             |                                                   |
+             |  [ref] "Maximally Localized Generalised Wannier   |
+             |         Functions for Composite Energy Bands"     |
+             |         N. Marzari and D. Vanderbilt              |
+             |         Phys. Rev. B 56 12847 (1997)              |
+             |                                                   |
+             |  [ref] "Maximally Localized Wannier Functions     |
+             |         for Entangled Energy Bands"               |
+             |         I. Souza, N. Marzari and D. Vanderbilt    |
+             |         Phys. Rev. B 65 035109 (2001)             |
+             |                                                   |
+             |                                                   |
+             | Copyright (c) 1996-2017                           |
+             |        Arash A. Mostofi, Jonathan R. Yates,       |
+             |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |
+             |        David Vanderbilt and Nicola Marzari        |
+             |                                                   |
+             |        Release: 2.1.0   13th January 2017         |
+             |                                                   |
+             | This program is free software; you can            |
+             | redistribute it and/or modify it under the terms  |
+             | of the GNU General Public License as published by |
+             | the Free Software Foundation; either version 2 of |
+             | the License, or (at your option) any later version|
+             |                                                   |
+             | This program is distributed in the hope that it   |
+             | will be useful, but WITHOUT ANY WARRANTY; without |
+             | even the implied warranty of MERCHANTABILITY or   |
+             | FITNESS FOR A PARTICULAR PURPOSE. See the GNU     |
+             | General Public License for more details.          |
+             |                                                   |
+             | You should have received a copy of the GNU General|
+             | Public License along with this program; if not,   |
+             | write to the Free Software Foundation, Inc.,      |
+             | 675 Mass Ave, Cambridge, MA 02139, USA.           |
+             |                                                   |
+             +---------------------------------------------------+
+             |    Execution started on 10Nov2017 at 16:13:06     |
+             +---------------------------------------------------+
+ 
+ ******************************************************************************
+ * -> Using CODATA 2006 constant values                                       *
+ *    (http://physics.nist.gov/cuu/Constants/index.html)                      *
+ * -> Using Bohr value from CODATA                                            *
+ ******************************************************************************
+ 
+
+ Running in parallel on  12 CPUs
+
+ 
+                                    ------
+                                    SYSTEM
+                                    ------
+ 
+                              Lattice Vectors (Ang)
+                    a_1     4.457000   0.000000   0.000000
+                    a_2    -2.228500   3.859875   0.000000
+                    a_3     0.000000   0.000000   5.958118
+ 
+                   Unit Cell Volume:     102.50026  (Ang^3)
+ 
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1     1.409734   0.813910   0.000000
+                    b_2     0.000000   1.627821   0.000000
+                    b_3     0.000000   0.000000   1.054559
+  
+ *----------------------------------------------------------------------------*
+ |   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |
+ +----------------------------------------------------------------------------+
+ | Te   1   0.27404   0.27404   0.00000   |    0.61069   1.05774   0.00000    |
+ | Te   2  -0.27404   0.00000   0.33333   |   -1.22138   0.00000   1.98604    |
+ | Te   3   0.00000  -0.27404   0.66667   |    0.61069  -1.05774   3.97208    |
+ *----------------------------------------------------------------------------*
+  
+  
+ *-------------------------------- POSTW90 -----------------------------------*
+ |  Number of Wannier Functions               :                 9             |
+ |  Number of electrons per state             :                 2             |
+ |  Scissor shift applied to conduction bands :             0.000             |
+ |  Number of valence bands                   :       not defined             |
+ |  Fermi energy (eV)                         :             5.950             |
+ |  Output verbosity (1=low, 5=high)          :                 1             |
+ |  Timing Level (1=low, 5=high)              :                 1             |
+ |  Optimisation (0=memory, 3=speed)          :                 3             |
+ |  Length Unit                               :               Ang             |
+ *----------------------------------------------------------------------------*
+ *------------------------ Global Smearing Parameters ------------------------*
+ |  Adaptive width smearing                   :                 T             |
+ |  Adaptive smearing factor                  :             1.414             |
+ |  Maximum allowed smearing width (eV)       :             1.000             |
+ |  Smearing Function                                             Gaussian    |
+ |  Global interpolation k-points defined     :                 F             |
+ *----------------------------------------------------------------------------*
+ *----------------------------------------------------------------------------*
+ *--------------------------------- GYROTROPIC   ------------------------------
+ | Compute Gyrotropic properties              :                 T             |
+ | gyrotropic_task                            :          -noa                 |
+ | calculate the D tensor                     :                 F             |
+ | calculate the tildeD tensor                :                 F             |
+ | calculate the C tensor                     :                 F             |
+ | calculate the K tensor                     :                 F             |
+ | calculate the interbad natural optical act :                 T             |
+ | calculate the density of states            :                 F             |
+ |  Lower frequency for tildeD,NOA            :             0.000             |
+ |  Upper frequency                           :             0.300             |
+ |  Step size for frequency                   :             0.003             |
+ |  Upper eigenvalue                          :             8.667             |
+ |  Using local  smearing parameters                                          |
+ |  Fixed width smearing                      :                 T             |
+ |  Smearing width                            :             0.010             |
+ |  Smearing Function                                             Gaussian    |
+ |  degen_thresh                              :             0.000             |
+ |  Grid size                                 :   100 x 100 x 100             |
+ |  Adaptive refinement                       :              not              |
+ *----------------------------------------------------------------------------*
+ Time to read parameters        0.008 (sec)
+
+ *---------------------------------- K-MESH ----------------------------------*
+ +----------------------------------------------------------------------------+
+ |                    Distance to Nearest-Neighbour Shells                    |
+ |                    ------------------------------------                    |
+ |          Shell             Distance (Ang^-1)          Multiplicity         |
+ |          -----             -----------------          ------------         |
+ |             1                   0.263640                      2            |
+ |             2                   0.527279                      2            |
+ |             3                   0.542607                      6            |
+ |             4                   0.603265                     12            |
+ |             5                   0.756602                     12            |
+ |             6                   0.790919                      2            |
+ |             7                   0.939823                      6            |
+ |             8                   0.959153                     12            |
+ |             9                   0.976101                     12            |
+ |            10                   1.054559                      2            |
+ |            11                   1.077632                     12            |
+ |            12                   1.085214                      6            |
+ +----------------------------------------------------------------------------+
+ | The b-vectors are chosen automatically                                     |
+ | The following shells are used:   1,  3                                     |
+ +----------------------------------------------------------------------------+
+ |                        Shell   # Nearest-Neighbours                        |
+ |                        -----   --------------------                        |
+ |                          1               2                                 |
+ |                          3               6                                 |
+ +----------------------------------------------------------------------------+
+ | Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |
+ +----------------------------------------------------------------------------+
+ |                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |
+ |                  ----------------------------------------                  |
+ |            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |
+ |            ---        --------------------------------     --------        |
+ |             1         0.000000    0.000000    0.263640     7.193635        |
+ |             2         0.000000    0.000000   -0.263640     7.193635        |
+ |             3         0.000000    0.542607    0.000000     1.132161        |
+ |             4         0.469911    0.271303    0.000000     1.132161        |
+ |             5         0.000000   -0.542607    0.000000     1.132161        |
+ |             6         0.469911   -0.271303    0.000000     1.132161        |
+ |             7        -0.469911   -0.271303    0.000000     1.132161        |
+ |             8        -0.469911    0.271303    0.000000     1.132161        |
+ +----------------------------------------------------------------------------+
+ |                           b_k Directions (Ang^-1)                          |
+ |                           -----------------------                          |
+ |            No.           x           y           z                         |
+ |            ---        --------------------------------                     |
+ |             1         0.000000    0.000000    0.263640                     |
+ |             2         0.000000    0.542607    0.000000                     |
+ |             3         0.469911    0.271303    0.000000                     |
+ |             4         0.469911   -0.271303    0.000000                     |
+ +----------------------------------------------------------------------------+
+  
+ Time to get kmesh              0.008 (sec)
+ Reading restart information from file Te.chk :
+ written on 10Nov2017 at 16:12:34 ... done
+
+
+ Time to read and process       0.004 (sec)
+
+ Reading overlaps from Te.mmn in get_AA_R   :  Created on 10Nov2017 at 16:12: 9
+
+
+ Properties calculated in module  g y r o t r o p i c
+ ------------------------------------------
+
+   * gamma-tensor of NOA --- Eq.C12 of TAS17 
+       * excluding spin component 
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.310000000000000       0.350000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.320000000000000       0.340000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.330000000000000       0.330000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.340000000000000       0.320000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.340000000000000       0.350000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.350000000000000       0.310000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.350000000000000       0.340000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.650000000000000       0.670000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.660000000000000       0.660000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.660000000000000       0.690000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.670000000000000       0.650000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.670000000000000       0.680000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.680000000000000       0.670000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+ WARNING no unoccupied bands included in the calculation for kpt=
+  0.690000000000000       0.660000000000000       0.000000000000000E+000 , EF[
+           1 ]=   5.95000000000000      eV
+  
+ Interpolation grid: 100 100 100
+
+   * Te-gyrotropic-NOA_orb.dat                                                                                               
+
+ Total Execution Time          11.389 (sec)
+
+ *===========================================================================*
+ |                             TIMING INFORMATION                            |
+ *===========================================================================*
+ |    Tag                                                Ncalls      Time (s)|
+ |---------------------------------------------------------------------------|
+ |kmesh: get                                        :         1         0.008|
+ *---------------------------------------------------------------------------*
+ 
+
+ All done: postw90 exiting
