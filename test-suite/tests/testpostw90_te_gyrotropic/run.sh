@@ -37,25 +37,3 @@ $wan90cmd Te
 
 $postw90cmd Te
 
-exit
-
-cat >Te.win <<EOF
-gyrotropic=true
-gyrotropic_task=-C-dos-D0-Dw-K-NOA
-fermi_energy_step=2
-fermi_energy_min=2
-fermi_energy_max=10
-gyrotropic_freq_step=0.05
-gyrotropic_freq_min=0.0
-gyrotropic_freq_max=0.1
-gyrotropic_smr_fixed_en_width=0.1
-gyrotropic_smr_max_arg=5
-gyrotropic_degen_thresh=0.001
-gyrotropic_box_b1=0.2 0.0 0.0
-gyrotropic_box_b2=0.0 0.2 0.0
-gyrotropic_box_b3=0.0 0.0 0.2
-gyrotropic_box_center=0.33333 0.33333 0.5
-gyrotropic_kmesh=5 5 5
-EOF
-
-cat input/Te.win >> Te.win
