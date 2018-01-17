@@ -1,0 +1,9 @@
+&inputpp
+    outdir='./'
+    prefix='Te',
+    seedname = 'Te'
+    write_mmn = .true.
+    write_amn = .true.
+    write_uHu = .true.
+    uHu_formatted=.true.
+/
