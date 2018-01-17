@@ -211,6 +211,47 @@ program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
 output = Fe.wpout
 
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-C.dat 
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_C/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-C.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_D0/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-D.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_Dw/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-tildeD.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_K/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-K_orb.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_NOA/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-NOA_orb.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_dos/]
+program = POSTW90_DOS_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-DOS.dat
 
 # Silicon, 4 valence bands + 4 conduction bands - opt=0
 [testw90_example03_optmem]
