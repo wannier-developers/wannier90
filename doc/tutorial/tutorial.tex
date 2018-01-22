@@ -2578,6 +2578,121 @@ After you completed the tutorial for the valence bands only, you can repeat the 
 %\cleardoublepage
 
 
+\sectiontitle{24: Tellurium -- gyrotropic effects}
+
+
+\begin{itemize}
+\item{Outline: {\it Calculate the gyrotropic effects in trigonal right-handed Te} Similar to the calculations of \cite{tsirkin-arxiv17}}
+\item{Directory: {\tt examples/example24/}}
+\item{Input files}
+\begin{itemize}
+\item{ {\tt Te.scf} {\it The \pwscf\ input file for ground state
+    calculation}}
+\item{ {\tt Te.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Te.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Te.win} {\it The {\tt wannier90} input
+      file}}
+\end{itemize}
+\end{itemize}
+
+To make things easy, the example treats Te without spin-orbit
+
+
+One may skip steps 1-4, by copying the files {\tt Te.eig, Te.mmn, Te.amn, Te.uHu} 
+from the directory {\tt examples/example24/wan\_files}. However, this steps are needed 
+to perform a calculation on a denser grid, or include spin-orbit coupling.
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of tellurium\\
+{\tt pw.x < Te.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform {\tt 3x3x4} k-point
+  grid\\ 
+{\tt pw.x < Te.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Te.nnkp} file).\\
+{\tt wannier90.x -pp Te}
+
+\item Run {\tt pw2wannier90} to compute:
+  \begin{itemize}
+
+  \item[{\bf --}] The overlaps $\langle u_{n{\bf k}}\vert u_{m{\bf k}+{\bf
+          b}}\rangle$ (written in the {\tt Te.mmn} file)
+
+  \item[{\bf --}] The projections for the starting guess (written in the {\tt
+        Te.amn} file)
+
+  \item[{\bf --}] The matrix elements $\langle u_{n{\bf k}+{\bf b}_1}\vert
+      H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle$ (written in the
+      {\tt Te.uHu} file)
+
+  \item[{\bf --}] The spin matrix elements $\langle \psi_{n{\bf
+        k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$ (would be written in the
+    {\tt Te.spn} file, but only if spin-orbit is included, which is not the case for the present example)
+
+  \end{itemize}
+{\tt pw2wannier90.x < Te.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x Te}
+
+\item  Add the following lines to the {\tt wannier90.win} file:\\
+{\tt gyrotropic=true  \\
+gyrotropic\_task=-C-dos-D0-Dw-K \\
+fermi\_energy\_step=0.0025\\
+fermi\_energy\_min=5.8\\
+fermi\_energy\_max=6.2\\
+gyrotropic\_freq\_step=0.0025\\
+gyrotropic\_freq\_min=0.0\\
+gyrotropic\_freq\_max=0.1\\
+gyrotropic\_smr\_fixed\_en\_width=0.01\\
+gyrotropic\_smr\_max\_arg=5\\
+gyrotropic\_degen\_thresh=0.001\\
+gyrotropic\_box\_b1=0.2 0.0 0.0\\
+gyrotropic\_box\_b2=0.0 0.2 0.0\\
+gyrotropic\_box\_b3=0.0 0.0 0.2\\
+gyrotropic\_box\_center=0.33333 0.33333 0.5\\
+gyrotropic\_kmesh=50 50 50
+}
+
+
+
+\item Run \postw\ \\to compute the gyrotropic properties: tensors $D$, $\widetilde{D}$, $K$, $C$ (See the User Guide):.\\
+  {\tt postw90.x Te} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Te} (example of parallel execution with
+  8 MPI processes) \\
+
+
+The integraton in the $k$-space is limited to a small area around the H point. Thus it is valid only for Fermi levels near the band gap. 
+And one needs to multiply the results by 2, to account forthe H' point. To integrate over the entire Brillouin zone, one needs to remove the 
+{\tt gyrotropic\_box\_$\ldots$} parameters
+
+\item Now change the above lines to \\ {\tt
+gyrotropic=true\\
+gyrotropic\_task=-NOA\\
+fermi\_energy=5.95\\
+gyrotropic\_freq\_step=0.0025\\
+gyrotropic\_freq\_min=0.0\\
+gyrotropic\_freq\_max=0.3\\
+gyrotropic\_smr\_fixed\_en\_width=0.01\\
+gyrotropic\_smr\_max\_arg=5\\
+gyrotropic\_band\_list=4-9\\
+gyrotropic\_kmesh=50 50 50\\
+}
+
+and compute the interband natural optical activity\\
+
+  {\tt postw90.x Te} (serial execution)\\
+  {\tt mpirun -np 8 postw90.x Te} (example of parallel execution with
+  8 MPI processes) \\
+
+
+\end{enumerate}
+
+
+
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}
 

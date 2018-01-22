@@ -23,6 +23,7 @@ module w90_utility
 
   public :: utility_inv3
   public :: utility_inv2
+  public :: utility_det3
   public :: utility_recip_lattice
   public :: utility_metric
   public :: utility_compar
@@ -84,6 +85,22 @@ contains
     return
 
   end subroutine utility_zgemm
+
+  !===================================================================
+  function utility_det3 (A)                   !
+    !==================================================================!
+    !                                                                  !
+    !    Return determinant of a  3x3 matrix A                         !
+    !                                                                  !
+    !===================================================================
+  
+   real(kind=dp), intent(in)  :: a (3, 3)
+   real(kind=dp)  :: utility_det3
+   utility_det3=A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))+&
+		A(1,2)*(A(2,3)*A(3,1)-A(2,1)*A(3,3))+&
+		A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
+   return 
+   end function utility_det3
 
   !=============================================================!
   subroutine utility_zgemm_new(a,b,c,transa_opt,transb_opt)
