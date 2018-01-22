@@ -475,6 +475,7 @@ The periodic part of the Bloch states represented on a regular real
  space grid, indexed by k-point \verb#p# (from 1 to \verb#num_kpts#)
  and spin \verb#s# (`1' for `up', `2' for `down').
 
+
 The name of the wavefunction file is assumed to have the form:
 
 \begin{verbatim}
@@ -487,14 +488,29 @@ The first line of each file should contain 5 integers: the number of
  \verb#ngz#), the k-point number \verb#ik# and the total number of
  bands \verb#num_band# in the file. The full file will be read by \wannier\ as:
 
-\begin{verbatim}
-read(file_unit) ngx,ngy,ngz,ik,nbnd
+\begin{verbatim} 
+read(file_unit) ngx,ngy,ngz,ik,nbnd  
 do loop_b=1,num_bands
   read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
 end do
 \end{verbatim}
 
-The file can be in formatted or unformatted style, this is controlled
+If \verb#spinors#=\verb#true# then \verb#s#=`NC', and the name of the wavefunction file is assumed to have the form:
+\begin{verbatim}
+    write(wfnname,200) p
+200 format ('UNK',i5.5,'.NC')
+\end{verbatim}
+and the file will be read by \wannier\ as:
+\begin{verbatim} 
+read(file_unit) ngx,ngy,ngz,ik,nbnd  
+do loop_b=1,num_bands
+   read(file_unit) (r_wvfn_nc(nx,loop_b,1),nx=1,ngx*ngy*ngz) ! up-spinor
+   read(file_unit) (r_wvfn_nc(nx,loop_b,2),nx=1,ngx*ngy*ngz) ! down-spinor
+end do  
+\end{verbatim}
+
+
+All  UNK files can be in formatted or unformatted style, this is controlled
 by the logical keyword \verb#wvfn_formatted#. 
 
 
