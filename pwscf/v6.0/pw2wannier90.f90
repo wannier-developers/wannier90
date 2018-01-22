@@ -2544,8 +2544,9 @@ SUBROUTINE compute_orb
    integer                  :: npw_b1, npw_b2, i_b1, i_b2, ikp_b1, ikp_b2
    integer, allocatable     :: igk_b1(:), igk_b2(:)
    complex(DP), allocatable :: evc_b1(:,:),evc_b2(:,:),evc_aux(:,:),H_evc(:,:)
-   complex(DP), allocatable :: uHu(:,:),uIu(:,:),spn(:,:)
+   complex(DP), allocatable :: uHu(:,:),uIu(:,:)
    ! end change Lopez, Thonhauser, Souza
+   integer                  :: ibnd_n, ibnd_m
 
    any_uspp = any(upf(1:ntyp)%tvanp)
 
@@ -2618,11 +2619,11 @@ SUBROUTINE compute_orb
            if(uHu_formatted) then
               open  (unit=iun_uhu, file=TRIM(seedname)//".uHu",form='FORMATTED')
               write (iun_uhu,*) header 
-              write (iun_uhu,*) nbnd, iknum, nnb
+              write (iun_uhu,*) num_bands, iknum, nnb
            else
               open  (unit=iun_uhu, file=TRIM(seedname)//".uHu",form='UNFORMATTED')
               write (iun_uhu) header 
-              write (iun_uhu) nbnd, iknum, nnb
+              write (iun_uhu) num_bands, iknum, nnb
            endif
         endif
      endif
@@ -2639,11 +2640,11 @@ SUBROUTINE compute_orb
            if(uIu_formatted) then
               open  (unit=iun_uIu, file=TRIM(seedname)//".uIu",form='FORMATTED')
               write (iun_uIu,*) header
-              write (iun_uIu,*) nbnd, iknum, nnb
+              write (iun_uIu,*) num_bands, iknum, nnb
            else
               open  (unit=iun_uIu, file=TRIM(seedname)//".uIu",form='UNFORMATTED')
               write (iun_uIu) header
-              write (iun_uIu) nbnd, iknum, nnb
+              write (iun_uIu) num_bands, iknum, nnb
            endif
         endif
      endif
@@ -2743,8 +2744,10 @@ SUBROUTINE compute_orb
               call invfft('Wave', phase, dffts)
               !
               ! loop on bands
+              ibnd_m = 0
               do m = 1, nbnd
                  if (excluded_band(m)) cycle
+                 ibnd_m = ibnd_m + 1
                  if(noncolin) then
                     aux_nc  = ( 0.0D0, 0.0D0 )
                     psic_nc = ( 0.0D0, 0.0D0 ) !ivo
@@ -2776,8 +2779,10 @@ SUBROUTINE compute_orb
                 !
                 !
                 if(write_uHu) then !ivo
+                   ibnd_n = 0
                    do n = 1, nbnd  ! loop over bands of already computed ket
                       if (excluded_band(n)) cycle
+                      ibnd_n = ibnd_n + 1
                       if(noncolin) then
                          mmn = zdotc (npw, aux_nc(1,1),1,H_evc(1,n),1) + &
                               zdotc (npw, aux_nc(1,2),1,H_evc(1+npwx,n),1)
@@ -2787,13 +2792,15 @@ SUBROUTINE compute_orb
                       mmn = mmn * rytoev ! because wannier90 works in eV
                       call mp_sum(mmn, intra_pool_comm)
 !                      if (ionode) write (iun_uhu) mmn
-                      uHu(n,m)=mmn
+                      uHu(ibnd_n,ibnd_m)=mmn
                       !
                    end do !n
                 endif
                 if(write_uIu) then !ivo
+                   ibnd_n = 0
                    do n = 1, nbnd  ! loop over bands of already computed ket
                       if (excluded_band(n)) cycle
+                      ibnd_n = ibnd_n + 1
                       if(noncolin) then
                          mmn = zdotc (npw, aux_nc(1,1),1,evc_aux(1,n),1) + &
                               zdotc (npw, aux_nc(1,2),1,evc_aux(1+npwx,n),1)
@@ -2802,7 +2809,7 @@ SUBROUTINE compute_orb
                       end if
                       call mp_sum(mmn, intra_pool_comm)
 !                      if (ionode) write (iun_uIu) mmn
-                      uIu(n,m)=mmn
+                      uIu(ibnd_n,ibnd_m)=mmn
                       !
                    end do !n
                 endif
@@ -2887,7 +2894,6 @@ SUBROUTINE compute_orb
       DEALLOCATE(aux)
    ENDIF
    DEALLOCATE(evcq)
-   if(write_spn.and.noncolin) deallocate(spn)
 
    IF(any_uspp) THEN
       DEALLOCATE (  qb)

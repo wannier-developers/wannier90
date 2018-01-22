@@ -9,7 +9,7 @@ extract_fn = tools parsers.parse_wout.parse
 tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
               (1.0e-5, 1.0e-5, 'final_centres_y'),
               (1.0e-5, 1.0e-5, 'final_centres_z'),
-              (1.0e-6, 1.0e-6, 'final_spreads'), 
+              (2.0e-6, 2.0e-6, 'final_spreads'), 
               (1.0e-6, 1.0e-6, 'omegaI'), 
               (1.0e-6, 5.0e-6, 'omegaD'), 
               (1.0e-6, 1.0e-6, 'omegaOD'), 
@@ -32,6 +32,45 @@ tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
 	       (1.0e-2, 1.0e-2, 'bandderivy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
               (1.0e-6, 1.0e-6, 'bandidx'))
+
+[POSTW90_MORBDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_morb_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e-4, 'bandmorbx'),
+               (1.0e-4, 1.0e-4, 'bandmorby'),
+               (1.0e-4, 1.0e-4, 'bandmorbz'))
+
+[POSTW90_CURVDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_curv_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e+2, 'bandcurvx'),
+               (1.0e-4, 1.0e+2, 'bandcurvy'),
+               (1.0e-4, 1.0e+2, 'bandcurvz'))
+
+[POSTW90_WPOUT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_wpout.parse
+tolerance = ( (1.0e-3, 2.0e-3, 'ahc_x'),
+               (1.0e-3, 2.0e-3, 'ahc_y'),
+               (1.0e-3, 2.0e-3, 'ahc_z'),
+               (1.0e-3, 2.0e-3, 'morb_x'),
+               (1.0e-3, 2.0e-3, 'morb_y'),
+               (1.0e-3, 2.0e-3, 'morb_z'))
+
+[POSTW90_JDOS_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_jdos_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-4, 'jdos'))
+
+[POSTW90_KUBO_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_kubo_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e+2, 'recond'),
+               (1.0e-4, 1.0e+2, 'imcond'))
 
 [WANNIER90_WERR_FAIL]
 exe = ../../wannier90.x
