@@ -858,21 +858,27 @@ end subroutine plot_interpolate_bands
          ngs=>wannier_plot_supercell,kpt_latt,num_species,atoms_species_num, &
          atoms_symbol,atoms_pos_cart,num_atoms,real_lattice,have_disentangled, &
          ndimwin,lwindow,u_matrix_opt,num_wannier_plot,wannier_plot_list, &
-         wannier_plot_mode,wvfn_formatted,timing_level,wannier_plot_format
+         wannier_plot_mode,wvfn_formatted,timing_level,wannier_plot_format, &
+         spinors, wannier_plot_spinor_mode, wannier_plot_spinor_phase
 
     implicit none
 
     real(kind=dp) :: scalfac,tmax,tmaxx,x_0ang,y_0ang,z_0ang
     real(kind=dp) :: fxcry(3),dirl(3,3),w_real,w_imag,ratmax,ratio
+    real(kind=dp) :: upspinor, dnspinor,upphase,dnphase
     complex(kind=dp), allocatable :: wann_func(:,:,:,:)
     complex(kind=dp), allocatable :: r_wvfn(:,:)
     complex(kind=dp), allocatable :: r_wvfn_tmp(:,:)
+    complex(kind=dp), allocatable :: wann_func_nc(:,:,:,:,:) ! add the spinor dim.
+    complex(kind=dp), allocatable :: r_wvfn_nc(:,:,:) ! add the spinor dim.
+    complex(kind=dp), allocatable :: r_wvfn_tmp_nc(:,:,:) ! add the spinor dim.
     complex(kind=dp) :: catmp,wmod
 
     logical :: have_file
     integer :: i,j,nsp,nat,nbnd,counter,ierr
     integer :: loop_kpt,ik,ix,iy,iz,nk,ngx,ngy,ngz,nxx,nyy,nzz
     integer :: loop_b,nx,ny,nz,npoint,file_unit,loop_w,num_inc
+    integer :: ispinor
     character(len=11) :: wfnname
     character(len=60) :: wanxsf,wancube
     character(len=9)  :: cdate, ctime
@@ -880,7 +886,11 @@ end subroutine plot_interpolate_bands
     !
     if (timing_level>1) call io_stopwatch('plot: wannier',1)
     !
-    write(wfnname,200 ) 1,spin
+    if (.not.spinors) then
+       write(wfnname,200 ) 1,spin
+    else
+       write(wfnname,199 ) 1
+    endif
     inquire(file=wfnname,exist=have_file)
     if(.not.have_file) call io_error('plot_wannier: file '//wfnname//' not found') 
 
@@ -895,18 +905,35 @@ end subroutine plot_interpolate_bands
     close(file_unit)
 
 200 format ('UNK',i5.5,'.',i1)
+199 format ('UNK',i5.5,'.','NC')
 
     allocate(wann_func(-((ngs(1))/2)*ngx:((ngs(1)+1)/2)*ngx-1,&
          -((ngs(2))/2)*ngy:((ngs(2)+1)/2)*ngy-1,&
          -((ngs(3))/2)*ngz:((ngs(3)+1)/2)*ngz-1,num_wannier_plot),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating wann_func in plot_wannier')
-    if(have_disentangled) then
-       allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)),stat=ierr )
-       if (ierr/=0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier')
-    end if
-    allocate(r_wvfn(ngx*ngy*ngz,num_wann),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating r_wvfn in plot_wannier')
     wann_func=cmplx_0
+    if (spinors) then
+       allocate(wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1)+1)/2)*ngx-1,&
+            -((ngs(2))/2)*ngy:((ngs(2)+1)/2)*ngy-1,&
+            -((ngs(3))/2)*ngz:((ngs(3)+1)/2)*ngz-1,2,num_wannier_plot),stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating wann_func_nc in plot_wannier')
+       wann_func_nc=cmplx_0
+    endif
+    if (.not.spinors) then
+       if(have_disentangled) then
+          allocate(r_wvfn_tmp(ngx*ngy*ngz,maxval(ndimwin)),stat=ierr )
+          if (ierr/=0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier')
+       end if
+       allocate(r_wvfn(ngx*ngy*ngz,num_wann),stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating r_wvfn in plot_wannier')
+    else
+       if(have_disentangled) then
+          allocate(r_wvfn_tmp_nc(ngx*ngy*ngz,maxval(ndimwin),2),stat=ierr )
+          if (ierr/=0) call io_error('Error in allocating r_wvfn_tmp_nc in plot_wannier')
+       end if
+       allocate(r_wvfn_nc(ngx*ngy*ngz,num_wann,2),stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating r_wvfn_nc in plot_wannier')
+    endif
 
 
     call io_date(cdate, ctime)
@@ -919,7 +946,11 @@ end subroutine plot_interpolate_bands
           num_inc=ndimwin(loop_kpt)
        end if
 
-       write(wfnname,200 ) loop_kpt,spin
+       if (.not.spinors) then
+          write(wfnname,200 ) loop_kpt,spin
+       else
+          write(wfnname,199 ) loop_kpt
+       endif
        file_unit=io_file_unit()
        if(wvfn_formatted) then
           open(unit=file_unit,file=wfnname,form='formatted')
@@ -943,10 +974,25 @@ end subroutine plot_interpolate_bands
              if(wvfn_formatted) then
                 do nx=1,ngx*ngy*ngz
                    read(file_unit,*) w_real, w_imag
-                   r_wvfn_tmp(nx,counter) = cmplx(w_real,w_imag,kind=dp)
+                   if (.not.spinors) then
+                      r_wvfn_tmp(nx,counter) = cmplx(w_real,w_imag,kind=dp)
+                   else
+                      r_wvfn_tmp_nc(nx,counter,1) = cmplx(w_real,w_imag,kind=dp) ! up-spinor
+                   endif
                 end do
+                if (spinors) then
+                   do nx=1,ngx*ngy*ngz
+                      read(file_unit,*) w_real, w_imag
+                      r_wvfn_tmp_nc(nx,counter,2) = cmplx(w_real,w_imag,kind=dp) ! down-spinor
+                   end do
+                endif
              else
-                read(file_unit) (r_wvfn_tmp(nx,counter),nx=1,ngx*ngy*ngz)
+                if (.not.spinors) then
+                   read(file_unit) (r_wvfn_tmp(nx,counter),nx=1,ngx*ngy*ngz)
+                else
+                   read(file_unit) (r_wvfn_tmp_nc(nx,counter,1),nx=1,ngx*ngy*ngz) ! up-spinor
+                   read(file_unit) (r_wvfn_tmp_nc(nx,counter,2),nx=1,ngx*ngy*ngz) ! down-spinor
+                endif
              end if
              if(inc_band(loop_b)) counter=counter+1
           end do
@@ -955,10 +1001,25 @@ end subroutine plot_interpolate_bands
              if(wvfn_formatted) then
                 do nx=1,ngx*ngy*ngz
                    read(file_unit,*) w_real, w_imag
-                   r_wvfn(nx,loop_b) = cmplx(w_real,w_imag,kind=dp)
+                   if (.not.spinors) then
+                      r_wvfn(nx,loop_b) = cmplx(w_real,w_imag,kind=dp)
+                   else
+                      r_wvfn_nc(nx,loop_b,1) = cmplx(w_real,w_imag,kind=dp) ! up-spinor
+                   endif
                 end do
+                if (spinors) then
+                   do nx=1,ngx*ngy*ngz
+                      read(file_unit,*) w_real, w_imag
+                      r_wvfn_nc(nx,loop_b,2) = cmplx(w_real,w_imag,kind=dp) ! down-spinor
+                   end do
+                endif
              else
-                read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+                if (.not.spinors) then
+                   read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+                else
+                   read(file_unit) (r_wvfn_nc(nx,loop_b,1),nx=1,ngx*ngy*ngz) ! up-spinor
+                   read(file_unit) (r_wvfn_nc(nx,loop_b,2),nx=1,ngx*ngy*ngz) ! down-spinor
+                endif
              end if
           end do
        end if
@@ -966,13 +1027,25 @@ end subroutine plot_interpolate_bands
        close(file_unit)
 
        if(have_disentangled) then
-          r_wvfn=cmplx_0
-          do loop_w=1,num_wann
-             do loop_b=1,num_inc
-                r_wvfn(:,loop_w)=r_wvfn(:,loop_w)+ &
-                     u_matrix_opt(loop_b,loop_w,loop_kpt)*r_wvfn_tmp(:,loop_b)
+          if (.not.spinors) then
+             r_wvfn=cmplx_0
+             do loop_w=1,num_wann
+                do loop_b=1,num_inc
+                   r_wvfn(:,loop_w)=r_wvfn(:,loop_w)+ &
+                                    u_matrix_opt(loop_b,loop_w,loop_kpt)*r_wvfn_tmp(:,loop_b)
+                end do
              end do
-          end do
+          else
+             r_wvfn_nc=cmplx_0
+             do loop_w=1,num_wann
+                do loop_b=1,num_inc
+                   call zaxpy(ngx*ngy*ngz, u_matrix_opt(loop_b,loop_w,loop_kpt), r_wvfn_tmp_nc(1,loop_b,1), 1, & ! up-spinor
+                              r_wvfn_nc(1,loop_w,1), 1)
+                   call zaxpy(ngx*ngy*ngz, u_matrix_opt(loop_b,loop_w,loop_kpt), r_wvfn_tmp_nc(1,loop_b,2), 1, & ! down-spinor
+                              r_wvfn_nc(1,loop_w,2), 1)
+                end do
+             end do
+          endif
        end if
 
 
@@ -1003,8 +1076,36 @@ end subroutine plot_interpolate_bands
                 catmp=exp(twopi*cmplx_i*scalfac)
                 do loop_b=1,num_wann
                    do loop_w=1,num_wannier_plot            
-                      wann_func(nxx,nyy,nzz,loop_w)=wann_func(nxx,nyy,nzz,loop_w)+ &
-                           u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn(npoint,loop_b)*catmp
+                      if (.not.spinors) then
+                         wann_func(nxx,nyy,nzz,loop_w)=wann_func(nxx,nyy,nzz,loop_w)+ &
+                                                  u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn(npoint,loop_b)*catmp
+                      else
+                         wann_func_nc(nxx,nyy,nzz,1,loop_w)=wann_func_nc(nxx,nyy,nzz,1,loop_w)+ & ! up-spinor
+                                              u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,1)*catmp
+                         wann_func_nc(nxx,nyy,nzz,2,loop_w)=wann_func_nc(nxx,nyy,nzz,2,loop_w)+ & ! down-spinor
+                                              u_matrix(loop_b,wannier_plot_list(loop_w),loop_kpt)*r_wvfn_nc(npoint,loop_b,2)*catmp
+                         if(loop_b==num_wann) then ! last loop
+                         upspinor=real(wann_func_nc(nxx,nyy,nzz,1,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,1,loop_w)),dp)
+                         dnspinor=real(wann_func_nc(nxx,nyy,nzz,2,loop_w)*conjg(wann_func_nc(nxx,nyy,nzz,2,loop_w)),dp)
+                         if(wannier_plot_spinor_phase) then
+                            upphase=sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,1,loop_w),dp))
+                            dnphase=sign(1.0_dp,real(wann_func_nc(nxx,nyy,nzz,2,loop_w),dp))
+                         else
+                           upphase=1.0_dp;dnphase=1.0_dp
+                         endif
+                         select case (wannier_plot_spinor_mode)
+                         case ('total')
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor+dnspinor), 0.0_dp, dp)
+                         case ('up')
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(upspinor), 0.0_dp, dp)*upphase
+                         case ('down')
+                            wann_func(nxx,nyy,nzz,loop_w)=cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
+                         case default
+                            call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(wannier_plot_spinor_mode))
+                         end select
+                         wann_func(nxx,nyy,nzz,loop_w)= wann_func(nxx,nyy,nzz,loop_w)/ real(num_kpts,dp)
+                      endif
+                      endif
                    end do
                 end do
              end do
@@ -1014,6 +1115,7 @@ end subroutine plot_interpolate_bands
 
     end do !loop over kpoints
 
+    if (.not.spinors) then !!!!! For spinor Wannier functions, the steps below are not necessary.
     ! fix the global phase by setting the wannier to
     ! be real at the point where it has max. modulus
 
@@ -1055,8 +1157,8 @@ end subroutine plot_interpolate_bands
        write(stdout,'(6x,a,i4,7x,a,f11.6)') 'Wannier Function Num: ',wannier_plot_list(loop_w),&
             'Maximum Im/Re Ratio = ',ratmax
     end do
+    endif !!!!!
     write(stdout,*) ' '
-
     if (wannier_plot_format.eq.'xcrysden') then
        call internal_xsf_format()
     elseif (wannier_plot_format.eq.'cube') then
@@ -1503,7 +1605,7 @@ end subroutine plot_interpolate_bands
         do nkp=1,num_kpts
             write(matunit,*)
             write(matunit,'(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:,nkp)
-            write(matunit,'(f15.10,sp,f15.10)') ((u_matrix_opt(i,j,nkp),i=1,num_wann),j=1,num_bands)
+            write(matunit,'(f15.10,sp,f15.10)') ((u_matrix_opt(i,j,nkp),i=1,num_bands),j=1,num_wann)
         end do
         close(matunit)
     endif
