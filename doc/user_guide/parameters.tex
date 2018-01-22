@@ -254,6 +254,7 @@ the same input file. **Cannot be used in conjunction with disentanglement.
   {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
   WF, molecule or crystal \\ 
   {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
+  {\sc wannier\_plot\_scale } & R & Scaling parameter for cube files \\ 
   {\sc bands\_plot }   & L & Plot interpolated band structure \\
   {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
   {\sc bands\_num\_points }   & I & Number of points along the first
@@ -1142,6 +1143,14 @@ If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt
   0. Units are \AA.
 
 The default value is 3.5. 
+
+\subsection[wannier\_plot\_scale]{\tt real(kind=dp) ::
+  wannier\_plot\_scale}
+If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt wannier\_plot\_scale} 
+scales a cube by a constant factor, producing a larger or smaller cube. {\tt wannier\_plot\_scale} must 
+be greater than 0. Units are \AA
+
+The default value is 1.0.
 
 \subsection[bands\_plot]{\tt logical :: bands\_plot}
 
