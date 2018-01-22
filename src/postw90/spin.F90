@@ -21,7 +21,7 @@ module w90_spin
 
   private
 
-  public :: spin_get_moment,spin_get_nk
+  public :: spin_get_moment,spin_get_nk,spin_get_S
 
   contains
 
@@ -241,5 +241,51 @@ module w90_spin
     enddo
 
   end subroutine spin_get_moment_k
+
+    subroutine spin_get_S(kpt,S)
+  !===========================================================!
+  !                                                           !
+  ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
+  ! where S = (S_x,S_y,S_z) is the vector of Pauli matrices   !
+  !                                                           !
+  !========================================================== !
+
+    use w90_constants, only     : dp,pi,cmplx_0,cmplx_i
+    use w90_io, only            : io_error
+    use w90_utility, only       : utility_diagonalize,utility_rotate_diag
+    use w90_parameters, only    : num_wann
+    use w90_postw90_common, only : pw90common_fourier_R_to_k
+    use w90_get_oper, only      : HH_R,SS_R
+
+    ! Arguments
+    !
+    real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), intent(out) :: S(num_wann,3)
+
+    ! Physics
+    !
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: SS(:,:,:)
+    real(kind=dp)                 :: eig(num_wann)
+     
+    ! Misc/Dummy
+    !
+    integer :: i
+
+    allocate(HH(num_wann,num_wann))
+    allocate(UU(num_wann,num_wann))
+    allocate(SS(num_wann,num_wann,3))
+    
+    call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
+    call utility_diagonalize(HH,num_wann,eig,UU)
+
+    do i=1,3
+       call pw90common_fourier_R_to_k(kpt,SS_R(:,:,:,i),SS(:,:,i),0)
+       S(:,i)=real(utility_rotate_diag(SS(:,:,i),UU,num_wann),dp)
+    enddo
+ 
+  end subroutine spin_get_S
+
 
 end module w90_spin
