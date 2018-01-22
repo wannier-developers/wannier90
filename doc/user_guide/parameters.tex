@@ -253,7 +253,8 @@ the same input file. **Cannot be used in conjunction with disentanglement.
   WF \\
   {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
   WF, molecule or crystal \\ 
-  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\
+  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
+  {\sc wannier\_plot\_scale } & R & Scaling parameter for cube files \\ 
   {\sc wannier\_plot\_spinor\_mode } & S& Quantity to plot for spinor WF\\ 
   {\sc wannier\_plot\_spinor\_phase } & L& Include the ``phase'' when plotting spinor WF\\ 
   {\sc bands\_plot }   & L & Plot interpolated band structure \\
@@ -1104,14 +1105,12 @@ format. The valid options for this parameter are:
 
 If {\tt wannier\_plot\_format=cube}: Most visualisation programs
 (including XCrySDen) are only able to handle cube files for systems
-with orthogonal lattice vectors.\footnote{It's worth noting that the
-  visualisation program VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), for example, is able to
+with orthogonal lattice vectors. However, there exist visulaisation program capable of dealing with non-orthogonal lattice vectors, such as VESTA. 
+  See \url{http://jp-minerals.org/vesta/en/}.\footnote{It's worth noting that another 
+  visualisation program is VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), for example, which is able to
   deal with certain special cases of non-orthogonal lattice
-  vectors. See \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.
-    At present \wannier\ only supports orthogonal lattice vectors for cube output.}  
-\wannier\ checks this on reading the {\tt seedname.win} and reports an
-error if cube format has been selected and the lattice vectors are not
-mutually orthogonal.
+  vectors. See \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.}
+  Hence, it is now possible in \wannier\ to output Gaussian cube files for systems with non-orthogonal lattice vectors.
 
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
@@ -1147,6 +1146,13 @@ If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt
 
 The default value is 3.5. 
 
+\subsection[wannier\_plot\_scale]{\tt real(kind=dp) ::
+  wannier\_plot\_scale}
+If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt wannier\_plot\_scale} 
+scales a cube by a constant factor, producing a larger or smaller cube. {\tt wannier\_plot\_scale} must 
+be greater than 0. Units are \AA
+
+The default value is 1.0.
 
 \subsection[wannier\_plot\_spinor\_mode]{\tt character(len=20) :: wannier\_plot\_spinor\_mode}
 If $\verb#spinors#=\verb#true#$ then this parameter controls the
@@ -1165,7 +1171,7 @@ spinor. \wannier\ is able to plot several different quantities derived
 from a spinor WF which should give you a good idea of the nature of
 the WF. 
 
-\subsection[bands\_plot]{\tt logical ::   wannier\_plot\_spinor\_phase}
+\subsection[wannier\_plot\_spinor\_phase]{\tt logical ::   wannier\_plot\_spinor\_phase}
 If $\verb#wannier_plot_spinor_phase#=\verb#true#$ phase information will
 be taken into account when plotting a spinor WF.
 
