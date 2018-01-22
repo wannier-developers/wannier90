@@ -1186,21 +1186,24 @@ end subroutine plot_interpolate_bands
       use w90_constants,  only: bohr
       use w90_parameters, only: recip_lattice,iprint,&
            wannier_plot_radius,wannier_centres,atoms_symbol, &
-           translate_home_cell
-      use w90_utility,    only: utility_translate_home
+           wannier_plot_scale,atoms_pos_frac,num_atoms
+      use w90_utility,    only: utility_translate_home, &
+           utility_cart_to_frac,utility_frac_to_cart
 
       implicit none
 
       real(kind=dp), allocatable :: wann_cube(:,:,:)
       real(kind=dp) :: rstart(3),rend(3),rlength(3),orig(3),dgrid(3)
       real(kind=dp) :: moda(3),modb(3)
-      real(kind=dp) :: radius,val_Q
-      real(kind=dp) :: wc(3,num_wann) 
+      real(kind=dp) :: val_Q
+      real(kind=dp) :: comf(3),wcf(3),diff(3),difc(3),dist
       integer :: ierr,iname,max_elements,iw
       integer :: isp,iat,nzz,nyy,nxx,loop_w,qxx,qyy,qzz,wann_index
       integer :: istart(3),iend(3),ilength(3)
       integer :: ixx,iyy,izz
+      integer :: irdiff(3),icount
       integer, allocatable :: atomic_Z(:)
+      logical :: lmol,lcrys
       character(len=2), dimension(109) :: periodic_table= (/ &
            & 'H ',                                                                                'He', &
            & 'Li','Be',                                                  'B ','C ','N ','O ','F ','Ne', &
@@ -1217,7 +1220,11 @@ end subroutine plot_interpolate_bands
       allocate(atomic_Z(num_species),stat=ierr)
       if (ierr.ne.0) call io_error('Error: allocating atomic_Z in wannier_plot')
 
-      radius = wannier_plot_radius
+      lmol=.false.
+      lcrys=.false.
+      if (index(wannier_plot_mode,'mol')>0) lmol=.true.      ! molecule mode
+      if (index(wannier_plot_mode,'crys')>0) lcrys=.true.    ! crystal mode
+
       val_Q = 1.0_dp ! dummy value for cube file
 
       ! Assign atomic numbers to species
@@ -1246,13 +1253,14 @@ end subroutine plot_interpolate_bands
       ! Grid spacing in each lattice direction
       dgrid(1) = moda(1)/ngx; dgrid(2) = moda(2)/ngy; dgrid(3)=moda(3)/ngz
 
-      ! Translate centres to home unit cell
-      wc = wannier_centres
-      if (translate_home_cell) then
-         do iw=1,num_wann
-            call utility_translate_home(wc(:,iw),real_lattice,recip_lattice)
+      ! Find "centre of mass" of atomic positions (in fractional coordinates)
+      comf(:) = 0.0_dp
+      do isp=1,num_species
+         do iat=1,atoms_species_num(isp)
+            comf(:) = comf(:) + atoms_pos_frac(:,iat,isp)
          enddo
-      endif
+      enddo
+      comf(:) = comf(:)/num_atoms
 
       ! Loop over WFs
       do loop_w=1,num_wannier_plot
@@ -1260,15 +1268,17 @@ end subroutine plot_interpolate_bands
          wann_index = wannier_plot_list(loop_w)
          write(wancube,202) trim(seedname),wann_index
 
-         ! Find start and end of cube wrt simulation cell origin
+         ! Find start and end of cube wrt simulation (home) cell origin
          do i=1,3
             ! ... in terms of distance along each lattice vector direction i
-            rstart(i) = ( wc(1,wann_index)*recip_lattice(i,1) &
-                 + wc(2,wann_index)*recip_lattice(i,2) &
-                 + wc(3,wann_index)*recip_lattice(i,3) - radius*modb(i) ) * moda(i) / twopi
-            rend(i) = ( wc(1,wann_index)*recip_lattice(i,1) &
-                 + wc(2,wann_index)*recip_lattice(i,2) &
-                 + wc(3,wann_index)*recip_lattice(i,3) + radius*modb(i) ) * moda(i) / twopi
+            rstart(i) = ( wannier_centres(1,wann_index)*recip_lattice(i,1) &
+                 + wannier_centres(2,wann_index)*recip_lattice(i,2) &
+                 + wannier_centres(3,wann_index)*recip_lattice(i,3) ) * moda(i) / twopi &
+                 - twopi * wannier_plot_radius / ( moda(i) * modb(i) )
+            rend(i) = ( wannier_centres(1,wann_index)*recip_lattice(i,1) &
+                 + wannier_centres(2,wann_index)*recip_lattice(i,2) &
+                 + wannier_centres(3,wann_index)*recip_lattice(i,3) ) * moda(i) / twopi &
+                 + twopi * wannier_plot_radius / ( moda(i) * modb(i) )
          enddo
 
          rlength(:) = rend(:) - rstart(:)
@@ -1278,7 +1288,7 @@ end subroutine plot_interpolate_bands
          istart(:)  = floor(rstart(:)/dgrid(:)) + 1
          iend(:)    = istart(:) + ilength(:) - 1 
 
-         ! Origin of cube wrt simulation cell in Cartesian co-ordinates
+         ! Origin of cube wrt simulation (home) cell in Cartesian co-ordinates
          do i=1,3
             orig(i) = real(istart(1)-1,dp)*dgrid(1)*real_lattice(1,i)/moda(1) &
                  + real(istart(2)-1,dp)*dgrid(2)*real_lattice(2,i)/moda(2) &
@@ -1287,7 +1297,9 @@ end subroutine plot_interpolate_bands
 
          ! Debugging
          if (iprint>3) then
-            write(stdout,'(a,3i12)')     'ngi     =', ngx,ngy,ngz
+            write(stdout,'(a,i12)')      'loop_w  =',loop_w
+            write(stdout,'(a,3f12.6)')   'comf    =',(comf(i),i=1,3)
+            write(stdout,'(a,3i12)')     'ngi     =',ngx,ngy,ngz
             write(stdout,'(a,3f12.6)')   'dgrid   =',(dgrid(i),i=1,3)
             write(stdout,'(a,3f12.6)')   'rstart  =',(rstart(i),i=1,3)
             write(stdout,'(a,3f12.6)')   'rend    =',(rend(i),i=1,3)
@@ -1296,7 +1308,7 @@ end subroutine plot_interpolate_bands
             write(stdout,'(a,3i12)')     'iend    =',(iend(i),i=1,3)
             write(stdout,'(a,3i12)')     'ilength =',(ilength(i),i=1,3)
             write(stdout,'(a,3f12.6)')   'orig    =',(orig(i),i=1,3)
-            write(stdout,'(a,3f12.6,/)') 'wann_cen=',(wannier_centres(i,wann_index),i=1,3)
+            write(stdout,'(a,3f12.6)')   'wann_cen=',(wannier_centres(i,wann_index),i=1,3)
          endif
 
          allocate(wann_cube(1:ilength(1),1:ilength(2),1:ilength(3)),stat=ierr)
@@ -1349,14 +1361,60 @@ end subroutine plot_interpolate_bands
             enddo
          enddo
 
+         ! WF centre in fractional coordinates
+         call utility_cart_to_frac(wannier_centres(:,wann_index),wcf(:),recip_lattice)
+
+         ! The vector (in fractional coordinates) from WF centre to "centre of mass"
+         diff(:) = comf(:) - wcf(:)
+
+         ! Corresponding nearest cell vector
+         irdiff(:) = nint(diff(:))
+
+         if (iprint>3) then
+            write(stdout,'(a,3f12.6)')   'wcf     =',(wcf(i),i=1,3)
+            write(stdout,'(a,3f12.6)')   'diff    =',(diff(i),i=1,3)
+            write(stdout,'(a,3i12)')     'irdiff  =',(irdiff(i),i=1,3)
+         endif
+
+         if (lmol) then ! In "molecule mode" translate origin of cube to bring it in coincidence with the atomic positions
+            orig(:) = orig(:) + real(irdiff(1),kind=dp)*real_lattice(1,:) &
+                           + real(irdiff(2),kind=dp)*real_lattice(2,:) &
+                           + real(irdiff(3),kind=dp)*real_lattice(3,:)
+            if (iprint>3) write(stdout,'(a,3f12.6,/)') 'orig-new=',(orig(i),i=1,3)
+         else ! In "crystal mode" count number of atoms within a given radius of wannier centre
+            icount=0
+            do isp=1,num_species
+               do iat=1,atoms_species_num(isp)
+                  do nzz=-ngs(3)/2, (ngs(3)+1)/2
+                     do nyy=-ngs(2)/2, (ngs(2)+1)/2
+                        do nxx=-ngs(1)/2, (ngs(1)+1)/2
+                           diff(:) = atoms_pos_frac(:,iat,isp) - wcf(:) &
+                                     + (/ real(nxx,kind=dp),real(nyy,kind=dp),real(nzz,kind=dp) /)
+                           call utility_frac_to_cart(diff,difc,real_lattice)
+                           dist = sqrt( difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3) )
+                           if (dist.le.(wannier_plot_scale*wannier_plot_radius)) then
+                               icount=icount+1
+                           endif
+                        enddo
+                     enddo
+                  enddo
+               enddo ! iat
+            enddo ! isp
+            if (iprint>3) write(stdout,'(a,i12)') 'icount  =',icount
+         endif
+
          ! Write cube file (everything in Bohr)
          file_unit=io_file_unit()
          open(unit=file_unit,file=trim(wancube),form='formatted',status='unknown')
          ! First two lines are comments
          write(file_unit,*) '     Generated by Wannier90 code http://www.wannier.org'
          write(file_unit,*) '     On ',cdate,' at ',ctime
-         ! Number of atoms, origin of cube (Cartesians) wrt simulation cell
-         write(file_unit,'(i4,3f13.5)') num_atoms, orig(1)/bohr, orig(2)/bohr, orig(3)/bohr
+         ! Number of atoms, origin of cube (Cartesians) wrt simulation (home) cell
+         if (lmol) then
+            write(file_unit,'(i4,3f13.5)') num_atoms, orig(1)/bohr, orig(2)/bohr, orig(3)/bohr
+         else
+            write(file_unit,'(i4,3f13.5)') icount, orig(1)/bohr, orig(2)/bohr, orig(3)/bohr
+         endif
          ! Number of grid points in each direction, lattice vector
          write(file_unit,'(i4,3f13.5)') ilength(1), real_lattice(1,1)/(real(ngx,dp)*bohr), &
               real_lattice(1,2)/(real(ngy,dp)*bohr), real_lattice(1,3)/(real(ngz,dp)*bohr)
@@ -1366,11 +1424,37 @@ end subroutine plot_interpolate_bands
               real_lattice(3,2)/(real(ngy,dp)*bohr), real_lattice(3,3)/(real(ngz,dp)*bohr)
 
          ! Atomic number, valence charge, position of atom
+!         do isp=1,num_species
+!            do iat=1,atoms_species_num(isp)
+!               write(file_unit,'(i4,4f13.5)') atomic_Z(isp), val_Q, (atoms_pos_cart(i,iat,isp)/bohr,i=1,3)
+!            end do
+!         end do
+
          do isp=1,num_species
             do iat=1,atoms_species_num(isp)
-               write(file_unit,'(i4,4f13.5)') atomic_Z(isp), val_Q, (atoms_pos_cart(i,iat,isp)/bohr,i=1,3)
-            end do
-         end do
+               if (lmol) then ! In "molecule mode", write atomic coordinates as they appear in input file
+                  write(file_unit,'(i4,4f13.5)') atomic_Z(isp), val_Q, (atoms_pos_cart(i,iat,isp)/bohr,i=1,3)
+               else           ! In "crystal mode", write atoms in supercell within a given radius of Wannier centre
+                  do nzz=-ngs(3)/2, (ngs(3)+1)/2
+                     do nyy=-ngs(2)/2, (ngs(2)+1)/2
+                        do nxx=-ngs(1)/2, (ngs(1)+1)/2
+                           diff(:) = atoms_pos_frac(:,iat,isp) - wcf(:) &
+                                     + (/ real(nxx,kind=dp),real(nyy,kind=dp),real(nzz,kind=dp) /)
+                           call utility_frac_to_cart(diff,difc,real_lattice)
+                           dist = sqrt( difc(1)*difc(1) + difc(2)*difc(2) + difc(3)*difc(3) )
+                           if (dist.le.(wannier_plot_scale*wannier_plot_radius)) then
+                               diff(:) = atoms_pos_frac(:,iat,isp) &
+                                           + (/ real(nxx,kind=dp),real(nyy,kind=dp),real(nzz,kind=dp) /)
+                               call utility_frac_to_cart(diff,difc,real_lattice)
+                               write(file_unit,'(i4,4f13.5)') atomic_Z(isp), val_Q, (difc(i)/bohr,i=1,3)
+                           endif 
+                        enddo
+                     enddo
+                  enddo
+               endif 
+            enddo ! iat
+         enddo ! isp
+
 
          ! Volumetric data in batches of 6 values per line, 'z'-direction first.
          do nxx=1,ilength(1)
