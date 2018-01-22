@@ -1102,14 +1102,12 @@ format. The valid options for this parameter are:
 
 If {\tt wannier\_plot\_format=cube}: Most visualisation programs
 (including XCrySDen) are only able to handle cube files for systems
-with orthogonal lattice vectors.\footnote{It's worth noting that the
-  visualisation program VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), for example, is able to
+with orthogonal lattice vectors. However, there exist visulaisation program capable of dealing with non-orthogonal lattice vectors, such as VESTA. 
+  See \url{http://jp-minerals.org/vesta/en/}.\footnote{It's worth noting that another 
+  visualisation program is VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), for example, which is able to
   deal with certain special cases of non-orthogonal lattice
-  vectors. See \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.
-    At present \wannier\ only supports orthogonal lattice vectors for cube output.}  
-\wannier\ checks this on reading the {\tt seedname.win} and reports an
-error if cube format has been selected and the lattice vectors are not
-mutually orthogonal.
+  vectors. See \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.}
+  Hence, it is now possible in \wannier\ to output Gaussian cube files for systems with non-orthogonal lattice vectors.
 
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
