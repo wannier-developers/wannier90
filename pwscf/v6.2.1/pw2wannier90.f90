@@ -1077,12 +1077,12 @@ SUBROUTINE scan_file_to (keyword,found)
 END SUBROUTINE scan_file_to
 !
 !-----------------------------------------------------------------------
-SUBROUTINE pw2wan_set_symm (sr, tvec)
+SUBROUTINE pw2wan_set_symm (nsym, sr, tvec)
    !-----------------------------------------------------------------------
    !
    ! Uses nkqs and index_sym from module pw2wan, computes rir
    !
-   USE symm_base,            ONLY : nsym, s, ftau, allfrac
+   USE symm_base,       ONLY : s, ftau, allfrac
    USE fft_base,        ONLY : dffts
    USE cell_base,       ONLY : at, bg
    USE wannier,         ONLY : rir, read_sym
@@ -1091,7 +1091,8 @@ SUBROUTINE pw2wan_set_symm (sr, tvec)
    !
    IMPLICIT NONE
    !
-   REAL(DP) :: sr(3,3,nsym), tvec(3,nsym)
+   INTEGER  , intent(in) :: nsym
+   REAL(DP) , intent(in) :: sr(3,3,nsym), tvec(3,nsym)
    REAL(DP) :: st(3,3), v(3)
    INTEGER, allocatable :: s_in(:,:,:), ftau_in(:,:)
    !REAL(DP), allocatable:: ftau_in(:,:)
@@ -1335,7 +1336,7 @@ SUBROUTINE compute_dmn
       end if
    end do
 
-   CALL pw2wan_set_symm ( sr, tvec )
+   CALL pw2wan_set_symm ( nsym, sr, tvec )
 
    any_uspp = any(upf(1:ntyp)%tvanp)
 
@@ -1701,6 +1702,7 @@ SUBROUTINE compute_dmn
             psic(nls(igk_k(1:npwq,ikp))) = evcq(1:npwq,n)
             ! go to real space
             CALL invfft ('Wave', psic, dffts)
+#if defined(__MPI)
             ! gather among all the CPUs
             CALL gather_grid(dffts, psic, temppsic_all)
             ! apply rotation
@@ -1708,6 +1710,9 @@ SUBROUTINE compute_dmn
             psic_all(rir(1:nxxs,isym)) = temppsic_all(1:nxxs)
             ! scatter back a piece to each CPU
             CALL scatter_grid(dffts, psic_all, psic)
+#else
+            psic(rir(1:nxxs, isym)) = psic(1:nxxs)
+#endif
             ! apply phase k -> k+G
             psic(1:dffts%nnr) = psic(1:dffts%nnr) * phase(1:dffts%nnr)
             ! go back to G space
