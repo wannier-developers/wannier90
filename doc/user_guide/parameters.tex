@@ -119,6 +119,10 @@ Keyword & Type & Description \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
 {\sc wvfn\_formatted }   & L & Read the wavefunctions from a  (un)formatted file  \\
+{\sc scdm\_proj} & L & Whether to use the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}  \\
+{\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
+{\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
+{\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
 {\sc spin }   & S & Which spin channel to read \\
 {\sc devel\_flag }   & S & Flag for development use \\
 {\sc timing\_level } & I & Determines amount of timing information
@@ -448,7 +452,6 @@ are the atom's position in fractional coordinates $\mathbf{F} = F_1
 \mathbf{A}_{1} + F_2 \mathbf{A}_{2} + F_3 \mathbf{A}_{3}$
 relative to the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$. 
 
-
 \subsection[mp\_grid]{\tt integer, dimension :: mp\_grid(3)}
 Dimensions of the regular (Monkhorst-Pack) k-point mesh. For example,
 for a $2\times2\times2$ grid:
@@ -611,7 +614,8 @@ The default value is 0.000001 Ang.
 \section{Projection}
 
  The projections block defines a set of localised functions used to
- generate an initial guess for the unitary transformations. 
+ generate an initial guess for the unitary transformations. The projection block can be specified
+in conjunction with {\tt scdm\_proj=true} (see belove). This is only used to read the centers of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
@@ -736,6 +740,31 @@ transferability is required (i.e., for test cases).
 
 The default value of this parameter is $\verb#false#$.
 
+\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
+If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the other three {\tt scdm} keywords. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code). It is not possible to set {\tt scdm\_proj=true} and simultaneously specify a projection block.
+
+The default value is {\tt false}.
+
+\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
+Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
+Only three integer values are allowed:
+\begin{itemize}
+\item[{\tt 0}] $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+\item[{\tt 1}] The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+\item[{\tt 2}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
+\end{itemize}
+
+The default value is {\tt 0}.
+
+\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
+The value of the $\mu$ parameter in the formulas above. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=1}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=2}, it gives the mean value of the gaussian instead. 
+
+The default value is {\tt fermi\_energy eV}
+
+\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
+The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It defines the spread of the occupation numbers matrix around $\mu$, and as such it cannot be negative. It must be given in units of eV. 
+
+The default value is {\tt 0.0 eV} 
 
 \subsection[spin]{\tt character(len=20) :: spin}
 For bands from a spin polarised calculation {\tt spin} determines which set

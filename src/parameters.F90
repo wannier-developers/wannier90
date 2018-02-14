@@ -459,6 +459,12 @@ module w90_parameters
   logical,          public, save              :: automatic_translation
   integer,          public, save              :: one_dim_dir
 
+  ! vv: SCDM method
+  logical,          public, save              :: scdm_proj
+  integer,          public, save              :: scdm_entanglement
+  real(kind=dp),         public, save              :: scdm_mu
+  real(kind=dp),         public, save              :: scdm_sigma
+
   ! Private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
@@ -1898,6 +1904,39 @@ contains
     skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
     
+    !vv: SCDM flags
+    scdm_proj = .false.
+    scdm_mu = 0._dp
+    scdm_sigma = 0._dp
+    scdm_entanglement = 0
+    call param_get_keyword('scdm_proj',found,l_value=scdm_proj)
+    if(found .and. allocated(proj_site)) &
+        call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
+    if(found .and. scdm_proj .and. spinors) &
+        call io_error('Error: SCDM method is not compatible with spinors yet.')
+    if(found .and. scdm_proj .and. guiding_centres) &
+        call io_error('Error: guiding_centre is not compatible with the SCDM method yet.')
+    if(found_fermi_energy) scdm_mu = fermi_energy
+
+    call param_get_keyword('scdm_mu',found,r_value=scdm_mu)
+    call param_get_keyword('scdm_sigma',found,r_value=scdm_sigma)
+    if (found .and. (scdm_sigma < 0._dp)) & 
+       call io_error('Error: The parameter sigma in the SCDM method has to be positive.')
+    call param_get_keyword('scdm_entanglement',found,c_value=ctmp)
+    if (found) then
+       if(ctmp=='isolated') then
+         scdm_entanglement = 0
+       elseif(ctmp=='erfc') then
+         scdm_entanglement = 1
+       elseif(ctmp=='gaussian') then
+         scdm_entanglement = 1
+       else
+         call io_error('Error: Can not recognize the choice for scdm_entanglement. Valid options are: isolated, erfc and gaussian') 
+       endif
+       if( scdm_entanglement > 3 .or. scdm_entanglement < 0)  &
+       call io_error('Error: The only allowed values for the parameter scdm_entanglement are 0, 1 and 2.')
+    endif
+
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
@@ -2057,7 +2096,13 @@ contains
 
     ! Projections
     call param_get_block_length('projections',found,i_temp)
-    if (found) call param_get_projections
+    if (found) then
+       ! if (scdm_proj) then
+       !   call io_error('param_read: Can not specify the projection block and scdm_proj=true at the same time.')
+       ! else 
+          call param_get_projections
+       ! end if
+    end if
     if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) & 
        call io_error('param_read: Guiding centres requested, but no projection block found')
 
@@ -5859,6 +5904,12 @@ contains
     call comms_bcast(lfixstep,1)
     call comms_bcast(lsitesymmetry,1)
     call comms_bcast(frozen_states,1)
+
+    !vv: SCDM keywords
+    call comms_bcast(scdm_proj,1)
+    call comms_bcast(scdm_mu,1)
+    call comms_bcast(scdm_sigma,1)
+    call comms_bcast(scdm_entanglement,1)
 
     call comms_bcast(num_proj,1)
     if(num_proj>0) then
