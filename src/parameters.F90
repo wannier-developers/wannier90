@@ -1907,7 +1907,7 @@ contains
     !vv: SCDM flags
     scdm_proj = .false.
     scdm_mu = 0._dp
-    scdm_sigma = 0._dp
+    scdm_sigma = 1._dp
     scdm_entanglement = 0
     call param_get_keyword('scdm_proj',found,l_value=scdm_proj)
     !if(found .and. allocated(proj_site)) &
@@ -1937,7 +1937,7 @@ contains
     call param_get_keyword('scdm_mu',found,r_value=scdm_mu)
     call param_get_keyword('scdm_sigma',found,r_value=scdm_sigma)
     if (found .and. (scdm_sigma <= 0._dp)) & 
-       call io_error('Error: The parameter sigma in the SCDM method has to be positive.')
+       call io_error('Error: The parameter sigma in the SCDM method must be positive.')
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'

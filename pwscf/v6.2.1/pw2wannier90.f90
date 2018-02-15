@@ -974,7 +974,7 @@ SUBROUTINE read_nnkp
   scdm_proj = .false.
   scdm_entanglement = 0
   scdm_mu = 0.0_DP
-  scdm_sigma = 0.0_DP
+  scdm_sigma = 1.0_DP
   IF (ionode) THEN
      CALL scan_file_to('scdm_info',found)
      !IF(.NOT. found) THEN
