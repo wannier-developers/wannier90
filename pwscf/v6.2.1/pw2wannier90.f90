@@ -2892,7 +2892,6 @@ SUBROUTINE compute_orb
       DEALLOCATE(aux)
    ENDIF
    DEALLOCATE(evcq)
-   if(write_spn.and.noncolin) deallocate(spn)
 
    IF(any_uspp) THEN
       DEALLOCATE (  qb)
