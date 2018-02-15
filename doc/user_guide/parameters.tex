@@ -754,17 +754,17 @@ Only three integer values are allowed:
 \item[{\tt gaussian}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
 \end{itemize}
 
-The default value is {\tt 0}.
+The default value is {\tt isolated}.
 
 \subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
 The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead. 
 
-The default value is {\tt fermi\_energy eV}
+The default value is {\tt 0 eV}
 
 \subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
-The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it cannot be negative. It must be given in units of eV. 
+The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV. 
 
-The default value is {\tt 0.0 eV} 
+The default value is {\tt 1.0 eV}.  
 
 \subsection[spin]{\tt character(len=20) :: spin}
 For bands from a spin polarised calculation {\tt spin} determines which set
