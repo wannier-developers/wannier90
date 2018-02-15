@@ -1910,32 +1910,34 @@ contains
     scdm_sigma = 0._dp
     scdm_entanglement = 0
     call param_get_keyword('scdm_proj',found,l_value=scdm_proj)
-    if(found .and. allocated(proj_site)) &
-        call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
+    !if(found .and. allocated(proj_site)) &
+    !    call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
     if(found .and. scdm_proj .and. spinors) &
         call io_error('Error: SCDM method is not compatible with spinors yet.')
-    if(found .and. scdm_proj .and. guiding_centres) &
-        call io_error('Error: guiding_centre is not compatible with the SCDM method yet.')
-    if(found_fermi_energy) scdm_mu = fermi_energy
+    !if(found .and. scdm_proj .and. guiding_centres) &
+    !    call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
+    !if(found_fermi_energy) scdm_mu = fermi_energy
 
-    call param_get_keyword('scdm_mu',found,r_value=scdm_mu)
-    call param_get_keyword('scdm_sigma',found,r_value=scdm_sigma)
-    if (found .and. (scdm_sigma < 0._dp)) & 
-       call io_error('Error: The parameter sigma in the SCDM method has to be positive.')
     call param_get_keyword('scdm_entanglement',found,c_value=ctmp)
     if (found) then
-       if(ctmp=='isolated') then
-         scdm_entanglement = 0
-       elseif(ctmp=='erfc') then
-         scdm_entanglement = 1
-       elseif(ctmp=='gaussian') then
-         scdm_entanglement = 1
+       if (scdm_proj) then
+          if(ctmp=='isolated') then
+            scdm_entanglement = 0
+          elseif(ctmp=='erfc') then
+            scdm_entanglement = 1
+          elseif(ctmp=='gaussian') then
+            scdm_entanglement = 2
+          else
+            call io_error('Error: Can not recognize the choice for scdm_entanglement. Valid options are: isolated, erfc and gaussian') 
+          endif
        else
-         call io_error('Error: Can not recognize the choice for scdm_entanglement. Valid options are: isolated, erfc and gaussian') 
+          call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
        endif
-       if( scdm_entanglement > 3 .or. scdm_entanglement < 0)  &
-       call io_error('Error: The only allowed values for the parameter scdm_entanglement are 0, 1 and 2.')
     endif
+    call param_get_keyword('scdm_mu',found,r_value=scdm_mu)
+    call param_get_keyword('scdm_sigma',found,r_value=scdm_sigma)
+    if (found .and. (scdm_sigma <= 0._dp)) & 
+       call io_error('Error: The parameter sigma in the SCDM method has to be positive.')
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'

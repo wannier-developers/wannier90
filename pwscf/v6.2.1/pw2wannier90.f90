@@ -989,11 +989,6 @@ SUBROUTINE read_nnkp
            READ (iun_nnkp,*) scdm_entanglement
            READ (iun_nnkp,*) scdm_mu, scdm_sigma
         ENDIF
-     ELSE
-        WRITE(stdout,'(//," ****** begin WARNING ****** ",/)') 
-        WRITE(stdout,'(" You are using an old version of Wannier90, ")')
-        WRITE(stdout,'(" for which the SCDM method is not supported. ")') 
-        WRITE(stdout,'(/," ******  end WARNING  ****** ",//)') 
      ENDIF
   ENDIF
 

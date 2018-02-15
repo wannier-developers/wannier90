@@ -738,7 +738,7 @@ nnshell=0
 
     ! vv: SCDM block
     write(nnkpout, '(a)') 'begin scdm_info'
-    if(.not. allocated(proj_site)) then
+    if(scdm_proj) then
        write(nnkpout, '(i6)') 1
        write(nnkpout, '(i6)') num_wann
        write(nnkpout, '(i6)') scdm_entanglement
