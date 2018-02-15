@@ -615,7 +615,7 @@ The default value is 0.000001 Ang.
 
  The projections block defines a set of localised functions used to
  generate an initial guess for the unitary transformations. The projection block can be specified
-in conjunction with {\tt scdm\_proj=true} (see belove). This is only used to read the centers of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
+in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centers of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
@@ -741,7 +741,7 @@ transferability is required (i.e., for test cases).
 The default value of this parameter is $\verb#false#$.
 
 \subsection[scdm\_proj]{\tt logical :: scdm\_proj}
-If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the other three {\tt scdm} keywords. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code). It is not possible to set {\tt scdm\_proj=true} and simultaneously specify a projection block.
+If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code). 
 
 The default value is {\tt false}.
 
@@ -749,20 +749,20 @@ The default value is {\tt false}.
 Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
 Only three integer values are allowed:
 \begin{itemize}
-\item[{\tt 0}] $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
-\item[{\tt 1}] The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
-\item[{\tt 2}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
+\item[{\tt isolated}] $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+\item[{\tt erfc}] The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+\item[{\tt gaussian}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
 \end{itemize}
 
 The default value is {\tt 0}.
 
 \subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
-The value of the $\mu$ parameter in the formulas above. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=1}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=2}, it gives the mean value of the gaussian instead. 
+The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead. 
 
 The default value is {\tt fermi\_energy eV}
 
 \subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
-The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It defines the spread of the occupation numbers matrix around $\mu$, and as such it cannot be negative. It must be given in units of eV. 
+The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it cannot be negative. It must be given in units of eV. 
 
 The default value is {\tt 0.0 eV} 
 
