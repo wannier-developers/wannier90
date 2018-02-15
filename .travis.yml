@@ -23,4 +23,6 @@ script:
     - ./test-suite/tools/run_tests_travis.sh
 git:
   depth: 3
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
