@@ -1100,6 +1100,8 @@ module w90_berry
              joint_level_spacing=sqrt(dot_product(vdum(:),vdum(:)))*Delta_k
              eta_smr=min(joint_level_spacing*kubo_adpt_smr_fac,&
                   kubo_adpt_smr_max)
+          else
+             eta_smr=kubo_smr_fixed_en_width
           endif
           rfac1=(occ(m)-occ(n))*(eig(m)-eig(n))
           occ_prod=occ(n)*(1.0_dp-occ(m))
