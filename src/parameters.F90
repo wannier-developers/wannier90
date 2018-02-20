@@ -944,14 +944,14 @@ contains
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
-	if (nfermi.eq.1) then 
-	    fermi_energy_step=0.0_dp
-	else
-	    fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
-	endif
-	allocate(fermi_energy_list(nfermi),stat=ierr)
-        do i=1,nfermi
-    	    fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
+       if (nfermi.eq.1) then 
+          fermi_energy_step=0.0_dp
+       else
+          fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
+       endif
+       allocate(fermi_energy_list(nfermi),stat=ierr)
+       do i=1,nfermi
+          fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
        enddo
 !!    elseif(nfermi==0) then 
 !!        ! This happens when both found_fermi_energy=.false. and
@@ -1094,10 +1094,10 @@ contains
     call param_get_keyword('gyrotropic_degen_thresh',found,r_value=gyrotropic_degen_thresh) 
 
     do i=1,3
-	gyrotropic_box(i,i)=1.0_dp
-	gyrotropic_box_tmp(:)=0.0_dp
-	call param_get_keyword_vector('gyrotropic_box_b'//achar(48+i),found,3,r_value=gyrotropic_box_tmp)
-	if (found) gyrotropic_box(i,:)=gyrotropic_box_tmp(:)
+       gyrotropic_box(i,i)=1.0_dp
+       gyrotropic_box_tmp(:)=0.0_dp
+       call param_get_keyword_vector('gyrotropic_box_b'//achar(48+i),found,3,r_value=gyrotropic_box_tmp)
+       if (found) gyrotropic_box(i,:)=gyrotropic_box_tmp(:)
     enddo
     gyrotropic_box_corner(:)=0.0_dp
     call param_get_keyword_vector('gyrotropic_box_center',found,3,r_value=gyrotropic_box_tmp)
@@ -1836,7 +1836,7 @@ contains
     do i=1,gyrotropic_nfreq
        gyrotropic_freq_list(i)=gyrotropic_freq_min&
             +(i-1)*(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)&
-	      +cmplx_i*gyrotropic_smr_fixed_en_width
+            +cmplx_i*gyrotropic_smr_fixed_en_width
     enddo
 
 
@@ -3031,9 +3031,9 @@ contains
        endif
           write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',&
-        	gyrotropic_smr_fixed_en_width,'|'
+               gyrotropic_smr_fixed_en_width,'|'
           write(stdout,'(1x,a21,5x,a47,4x,a1)')    '|  Smearing Function                         :',&
-		trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
+             trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  degen_thresh                              :',gyrotropic_degen_thresh,'|'
 
        if(kmesh(1)==gyrotropic_kmesh(1) .and. kmesh(2)==gyrotropic_kmesh(2) .and. kmesh(3)==gyrotropic_kmesh(3) ) then
