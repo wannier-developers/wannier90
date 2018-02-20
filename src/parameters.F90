@@ -1928,7 +1928,8 @@ contains
           elseif(ctmp=='gaussian') then
             scdm_entanglement = 2
           else
-            call io_error('Error: Can not recognize the choice for scdm_entanglement. Valid options are: isolated, erfc and gaussian') 
+            call io_error('Error: Can not recognize the choice for scdm_entanglement. &
+                 Valid options are: isolated, erfc and gaussian') 
           endif
        else
           call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
