@@ -3503,11 +3503,11 @@ SUBROUTINE compute_amn_with_scdm
          norm_psi = sqrt(real(sum(psic(1:nrtot)*conjg(psic(1:nrtot))),kind=DP))
          psic(1:nrtot) = psic(1:nrtot)/ norm_psi 
          DO iw = 1,n_wannier
-            phase(iw,iw) = cmplx(COS(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + & 
+            phase(iw) = cmplx(COS(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + & 
                   &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))), &    !*ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)),& 
                   &SIN(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + &
                   &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))),kind=DP) !ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)))
-            nowfc(iw,locibnd) = phase(iw,iw)*psic(piv(iw))*focc(locibnd)
+            nowfc(iw,locibnd) = phase(iw)*psic(piv(iw))*focc(locibnd)
 
          ENDDO
 #endif
