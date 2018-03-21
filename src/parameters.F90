@@ -615,7 +615,11 @@ contains
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
     end if
-    if (library) num_bands = num_bands - num_exclude_bands
+    ! RM_2018-03-21: this should only be done once, but param_read is called both in wannier_setup and wannier_run
+    ! RM_2018-03-21: commented line below, as now the correct value for
+    ! num_bands (already substracted) is set in library mode before calling
+    ! param_read
+!    if (library) num_bands = num_bands - num_exclude_bands
     if (.not. effective_model) then
        if(found .and. num_bands<num_wann) then
           call io_error('Error: num_bands must be greater than or equal to num_wann')
