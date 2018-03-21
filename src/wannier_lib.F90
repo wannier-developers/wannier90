@@ -134,11 +134,10 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   spinors=spinors_loc
 
   ! AAM_2016-09-14: initialise num_bands as it's used in param_read()
-  num_bands = num_bands_tot
+  ! RM_2018-03-21: num_exclude_bands is now subtracted below
+  num_bands = num_bands_tot - num_exclude_bands
   call param_read()
-  ! set num_bands and cell_volume as they are written to output in param_write
-  ! AAM_2016-09-14: num_exclude_bands is now subtracted in param_read
-  ! num_bands = num_bands_tot - num_exclude_bands
+  ! set cell_volume as it is written to output in param_write
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
                 real_lattice(1,3)*(real_lattice(2,1)*real_lattice(3,2)-real_lattice(3,1)*real_lattice(2,2))
@@ -168,7 +167,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   nntot_loc       = nntot        
   nnlist_loc(:,1:nntot)   =  nnlist(:,1:nntot)       
   nncell_loc(:,:,1:nntot) =  nncell(:,:,1:nntot)       
-  num_bands_loc=num_bands_tot-num_exclude_bands
+  num_bands_loc=num_bands
   num_wann_loc=num_wann
   if(allocated(proj_site)) then
      proj_site_loc(:,1:num_proj)   = proj_site(:,1:num_proj)    
