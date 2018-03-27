@@ -736,6 +736,18 @@ nnshell=0
        write(nnkpout,'(a/)') 'end projections'
     endif
 
+    ! vv: SCDM block
+    write(nnkpout, '(a)') 'begin scdm_info'
+    if(scdm_proj) then
+       write(nnkpout, '(i6)') 1
+       write(nnkpout, '(i6)') num_wann
+       write(nnkpout, '(i6)') scdm_entanglement
+       write(nnkpout, '(2x,2f10.5)') scdm_mu, scdm_sigma
+    else
+       write(nnkpout, '(i6)') 0
+    endif
+    write(nnkpout, '(a/)') 'end scdm_info'
+
     ! Nearest neighbour k-points
     write(nnkpout,'(a)') 'begin nnkpts'
     write(nnkpout,'(i4)') nntot
