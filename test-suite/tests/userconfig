@@ -33,6 +33,76 @@ tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
               (1.0e-6, 1.0e-6, 'bandidx'))
 
+[POSTW90_MORBDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_morb_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e-4, 'bandmorbx'),
+               (1.0e-4, 1.0e-4, 'bandmorby'),
+               (1.0e-4, 1.0e-4, 'bandmorbz'))
+
+[POSTW90_CURVDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_curv_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e+2, 'bandcurvx'),
+               (1.0e-4, 1.0e+2, 'bandcurvy'),
+               (1.0e-4, 1.0e+2, 'bandcurvz'))
+
+[POSTW90_WPOUT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_wpout.parse
+tolerance = ( (1.0e-3, 2.0e-3, 'ahc_x'),
+               (1.0e-3, 2.0e-3, 'ahc_y'),
+               (1.0e-3, 2.0e-3, 'ahc_z'),
+               (1.0e-3, 2.0e-3, 'morb_x'),
+               (1.0e-3, 2.0e-3, 'morb_y'),
+               (1.0e-3, 2.0e-3, 'morb_z'),
+               (1.0e-3, 2.0e-3, 'spin_x'),
+               (1.0e-3, 2.0e-3, 'spin_y'),
+               (1.0e-3, 2.0e-3, 'spin_z'),
+               (1.0e-2, 2.0e-2, 'spin_p'),
+               (1.0e-2, 2.0e-2, 'spin_a'))
+
+
+[POSTW90_JDOS_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_jdos_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-4, 'jdos'))
+
+[POSTW90_DOS_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_dos_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-4, 'dos'))
+
+
+[POSTW90_KUBO_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_kubo_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e+2, 'recond'),
+               (1.0e-4, 1.0e+2, 'imcond'))
+
+[POSTW90_GYRO_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_gyro_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-2, 'omega'),
+               (1.0e-4, 1.0e-2, 'gyro_xx'),
+              (1.0e-4, 1.0e-2, 'gyro_yy'),
+              (1.0e-4, 1.0e-2, 'gyro_zz'),
+              (1.0e-4, 1.0e-2, 'gyro_xy'),
+              (1.0e-4, 1.0e-2, 'gyro_xz'),
+              (1.0e-4, 1.0e-2, 'gyro_yz'),
+              (1.0e-4, 1.0e-2, 'gyro_x'),
+              (1.0e-4, 1.0e-2, 'gyro_y'),
+              (1.0e-4, 1.0e-2, 'gyro_z'),
+               (1.0e-4, 1.0e+2, 'imcond'))
+
+
+
 [WANNIER90_WERR_FAIL]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_werr.parse

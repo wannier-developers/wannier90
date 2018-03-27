@@ -1,5 +1,10 @@
  Wannier90 test suite
 
+## Dependencies
+
+The code needs the `configparser` module, that can be installed e.g. via
+`pip install --user configparser`.
+
 ## How to write a new test
 
 ### Writing a new test for wannier90.x
