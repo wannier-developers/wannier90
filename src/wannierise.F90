@@ -177,8 +177,8 @@ contains
     ! sub vars passed into other subs 
     allocate( csheet (num_wann, nntot, num_kpts), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating csheet in wann_main')
-!    allocate( cdodq (num_wann, num_wann, num_kpts),stat=ierr ) 
-!    if (ierr/=0) call io_error('Error in allocating cdodq in wann_main')
+    allocate( cdodq (num_wann, num_wann, num_kpts),stat=ierr ) 
+    if (ierr/=0) call io_error('Error in allocating cdodq in wann_main')
     allocate( sheet (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating sheet in wann_main')
     allocate( rave (3, num_wann), stat=ierr ) 
@@ -211,8 +211,7 @@ contains
        end if
     end if
 
-!    csheet=cmplx_1;cdodq=cmplx_0
-    csheet=cmplx_1
+    csheet=cmplx_1;cdodq=cmplx_0
     sheet=0.0_dp;rave=0.0_dp;r2ave=0.0_dp;rave2=0.0_dp;rguide=0.0_dp
 
     ! sub vars not passed into other subs
@@ -672,8 +671,8 @@ contains
     if (ierr/=0) call io_error('Error in deallocating rave in wann_main')
     deallocate(sheet,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating sheet in wann_main')
-!    deallocate(cdodq,stat=ierr)
-!    if (ierr/=0) call io_error('Error in deallocating cdodq in wann_main')
+    deallocate(cdodq,stat=ierr)
+    if (ierr/=0) call io_error('Error in deallocating cdodq in wann_main')
     deallocate(csheet,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating csheet in wann_main')
     
