@@ -409,6 +409,7 @@ module w90_parameters
 
   complex(kind=dp), allocatable, save, public :: a_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix_orig(:,:,:,:)
+  complex(kind=dp), allocatable, save, public :: m_matrix_orig_local(:,:,:,:)
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
   logical,                       save, public :: eig_found
 
@@ -429,6 +430,7 @@ module w90_parameters
 
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
+  complex(kind=dp), allocatable, save, public :: m_matrix_local(:,:,:,:)
 
   ! RS: symmetry-adapted Wannier functions
   logical,       public, save :: lsitesymmetry=.false.
@@ -3710,12 +3712,12 @@ contains
     endif
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
 
-    if (.not.on_root .and. .not.allocated(m_matrix)) then
-       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-       if (ierr/=0)&
-            call io_error('Error allocating m_matrix in param_chkpt_dist')
-    endif
-    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+!    if (.not.on_root .and. .not.allocated(m_matrix)) then
+!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+!       if (ierr/=0)&
+!            call io_error('Error allocating m_matrix in param_chkpt_dist')
+!    endif
+!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
     
     call comms_bcast(have_disentangled,1)
 
@@ -5719,6 +5721,7 @@ contains
     call comms_bcast(num_cg_steps,1)
     call comms_bcast(conv_tol,1)
     call comms_bcast(conv_window,1)
+    call comms_bcast(guiding_centres,1)
     call comms_bcast(wannier_plot,1)
     call comms_bcast(num_wannier_plot,1)
     if(num_wannier_plot>0) then
