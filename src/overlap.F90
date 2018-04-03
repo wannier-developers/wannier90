@@ -44,8 +44,11 @@ contains
 
     use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
-                           m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only ![ysl]
+                           m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only,& ![ysl]
+                           m_matrix_local, m_matrix_orig_local
     use w90_io,         only : io_file_unit, io_error, seedname, io_stopwatch
+    use w90_comms, only : my_node_id, num_nodes,&
+                          comms_array_split, comms_scatterv
 
     implicit none
 
@@ -57,29 +60,46 @@ contains
     complex(kind=dp), allocatable :: mmn_tmp(:,:)
     character(len=50) :: dummy
     logical :: nn_found
+    ! Needed to split an array on different nodes
+    integer, dimension(0:num_nodes-1) :: counts
+    integer, dimension(0:num_nodes-1) :: displs
 
     if (timing_level>0) call io_stopwatch('overlap: read',1)
+
+    call comms_array_split(num_kpts,counts,displs)
 
     allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
     u_matrix = cmplx_0
 
     if (disentanglement) then
+       if (on_root) then
        allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating m_matrix_orig in overlap_read')
+       endif
+       allocate(m_matrix_orig_local(num_bands,num_bands,nntot,counts(my_node_id)),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating m_matrix_orig_local in overlap_read')
        allocate(a_matrix(num_bands,num_wann,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating a_matrix in overlap_read')
        allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
     else
+       if (on_root) then
        allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
        m_matrix = cmplx_0
+       endif
+       allocate ( m_matrix_local( num_wann,num_wann,nntot,counts(my_node_id)),stat=ierr)
+       if (ierr/=0) call io_error('Error in allocating m_matrix_local in overlap_read')
+       m_matrix_local = cmplx_0
     endif
 
     
     if (disentanglement) then
+       if (on_root) then
        m_matrix_orig = cmplx_0
+       endif
+       m_matrix_orig_local = cmplx_0
        a_matrix      = cmplx_0
        u_matrix_opt  = cmplx_0
     endif
@@ -155,9 +175,13 @@ contains
     endif
     
     if(disentanglement) then
-       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
+!       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
+       call comms_scatterv(m_matrix_orig_local,num_bands*num_bands*nntot*counts(my_node_id),&
+                          m_matrix_orig,num_bands*num_bands*nntot*counts,num_bands*num_bands*nntot*displs)
     else
-       call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+!       call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+       call comms_scatterv(m_matrix_local,num_wann*num_wann*nntot*counts(my_node_id),&
+                          m_matrix,num_wann*num_wann*nntot*counts,num_wann*num_wann*nntot*displs)
     endif
 
     if(.not. use_bloch_phases) then
@@ -500,7 +524,8 @@ return
     !! Dellocate memory
 
     use w90_parameters, only : u_matrix,m_matrix,m_matrix_orig,&
-                       a_matrix,u_matrix_opt
+                       a_matrix,u_matrix_opt,&
+                       m_matrix_local,m_matrix_orig_local
     use w90_io,     only : io_error
 
     implicit none
@@ -515,9 +540,15 @@ return
        deallocate( a_matrix, stat=ierr )
        if (ierr/=0) call io_error('Error deallocating a_matrix in overlap_dealloc')
     end if
+    if (on_root) then
     if (allocated( m_matrix_orig)) then
        deallocate( m_matrix_orig, stat=ierr )
        if (ierr/=0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc')
+    endif
+    endif
+    if (allocated( m_matrix_orig_local)) then
+       deallocate( m_matrix_orig_local, stat=ierr )
+       if (ierr/=0) call io_error('Error deallocating m_matrix_orig_local in overlap_dealloc')
     endif
 !~![ysl-b]
 !~    if (allocated( ph_g)) then
@@ -527,10 +558,29 @@ return
 !~![ysl-e]
 
 
-    deallocate ( m_matrix, stat=ierr )
-    if (ierr/=0) call io_error('Error deallocating m_matrix in overlap_dealloc')
-    deallocate ( u_matrix, stat=ierr )
-    if (ierr/=0) call io_error('Error deallocating u_matrix in overlap_dealloc')
+!    if (on_root) then
+!    deallocate ( m_matrix, stat=ierr )
+!    if (ierr/=0) call io_error('Error deallocating m_matrix in overlap_dealloc')
+!    endif
+!    deallocate ( m_matrix_local, stat=ierr )
+!    if (ierr/=0) call io_error('Error deallocating m_matrix_local in overlap_dealloc')
+!    deallocate ( u_matrix, stat=ierr )
+!    if (ierr/=0) call io_error('Error deallocating u_matrix in overlap_dealloc')
+    if (on_root) then
+       if (allocated( m_matrix)) then
+          deallocate ( m_matrix, stat=ierr )
+          if (ierr/=0) call io_error('Error deallocating m_matrix in overlap_dealloc')
+       endif
+    endif
+    if (allocated( m_matrix_local)) then
+       deallocate ( m_matrix_local, stat=ierr )
+       if (ierr/=0) call io_error('Error deallocating m_matrix_local in overlap_dealloc')
+    endif
+    if (allocated( u_matrix)) then
+       deallocate ( u_matrix, stat=ierr )
+       if (ierr/=0) call io_error('Error deallocating u_matrix in overlap_dealloc')
+    endif
+
 
     return
 
@@ -551,10 +601,13 @@ return
     use w90_constants
     use w90_io,         only : io_error,io_stopwatch
     use w90_parameters, only : num_bands,num_wann,num_kpts,timing_level,&
-                           u_matrix,m_matrix,nntot,nnlist
+                           u_matrix,m_matrix,nntot,nnlist,&
+                           m_matrix_local
     use w90_utility,    only : utility_zgemm
     use w90_parameters, only : lsitesymmetry !RS:
     use w90_sitesym,    only : sitesym_symmetrize_u_matrix !RS:
+    use w90_comms, only : my_node_id, num_nodes,&
+                          comms_array_split, comms_scatterv, comms_gatherv
 
     implicit none
 
@@ -567,8 +620,13 @@ return
     complex(kind=dp), allocatable :: cwork(:)
     complex(kind=dp), allocatable :: cz(:,:)
     complex(kind=dp), allocatable :: cvdag(:,:)
+    ! Needed to split an array on different nodes
+    integer, dimension(0:num_nodes-1) :: counts
+    integer, dimension(0:num_nodes-1) :: displs
 
     if (timing_level>1) call io_stopwatch('overlap: project',1)
+
+    call comms_array_split(num_kpts,counts,displs)
 
     allocate(svals(num_bands),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating svals in overlap_project')
@@ -638,16 +696,18 @@ return
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated 
-    do nkp=1, num_kpts 
+    do nkp=1, counts(my_node_id)
        do nn=1,nntot
-          nkp2=nnlist(nkp,nn)
+          nkp2=nnlist(nkp+displs(my_node_id),nn)
           ! cvdag = U^{dagger} . M   (use as workspace)
-          call utility_zgemm(cvdag,u_matrix(:,:,nkp),'C',m_matrix(:,:,nn,nkp),'N',num_wann)
+          call utility_zgemm(cvdag,u_matrix(:,:,nkp+displs(my_node_id)),'C',m_matrix_local(:,:,nn,nkp),'N',num_wann)
           ! cz = cvdag . U
           call utility_zgemm(cz,cvdag,'N',u_matrix(:,:,nkp2),'N',num_wann)
-          m_matrix(:,:,nn,nkp) = cz(:,:)
+          m_matrix_local(:,:,nn,nkp) = cz(:,:)
        end do
     end do
+    call comms_gatherv(m_matrix_local,num_wann*num_wann*nntot*counts(my_node_id),&
+         m_matrix,num_wann*num_wann*nntot*counts,num_wann*num_wann*nntot*displs)
     
     deallocate(cwork,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cwork in overlap_project')
