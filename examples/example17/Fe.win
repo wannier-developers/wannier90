@@ -32,8 +32,8 @@ P 0.75 0.25 -0.25        N 0.5 0.0 0.0
 end kpoint_path
 
 #kslice = true
-#kslice_task = fermi\_lines
-#kslice\_fermi\_level = 
+#kslice_task = fermi_lines
+#fermi_energy = [insert your value here]
 #kslice_2dkmesh = 200 200
 #kslice_corner = 0.0  0.0  0.0
 #kslice_b1 =     0.5 -0.5 -0.5

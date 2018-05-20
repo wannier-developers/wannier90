@@ -1,28 +1,31 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_dos
-
+  !! Compute Density of States
   use w90_constants, only : dp
 
   implicit none
 
   private
 
-  public :: dos_main, get_levelspacing, get_dos_k
+  public :: dos_main, dos_get_levelspacing, dos_get_k
 
   integer       :: num_freq
+  !! Number of sampling points
   real(kind=dp) :: d_omega
+  !! Step between energies
 
 contains
 
@@ -33,10 +36,10 @@ contains
   subroutine dos_main
     !=======================================================!
     !                                                       !
-    ! Computes the electronic density of states. Can        !
-    ! resolve into up-spin and down-spin parts, project     !
-    ! onto selected Wannier orbitals, and use adaptive      !
-    ! broadening, as in PRB 75, 195121 (2007) [YWVS07].     !
+    !! Computes the electronic density of states. Can 
+    !! resolve into up-spin and down-spin parts, project 
+    !! onto selected Wannier orbitals, and use adaptive 
+    !! broadening, as in PRB 75, 195121 (2007) [YWVS07].
     !                                                       !
     !=======================================================!
 
@@ -44,7 +47,7 @@ contains
                                    seedname,stdout
     use w90_comms, only          : on_root,num_nodes,my_node_id,comms_reduce
     use w90_postw90_common, only : num_int_kpts_on_node,int_kpts,weight,&
-                                   fourier_R_to_k
+                                   pw90common_fourier_R_to_k
     use w90_parameters, only     : num_wann,dos_energy_min,dos_energy_max,&
                                    dos_energy_step,timing_level,&
                                    wanint_kpoint_file,dos_kmesh,&
@@ -53,7 +56,7 @@ contains
                                    dos_smr_fixed_en_width,&
                                    dos_project,num_dos_project
     use w90_get_oper, only       : get_HH_R,get_SS_R,HH_R
-    use w90_wan_ham, only        : get_eig_deleig
+    use w90_wan_ham, only        : wham_get_eig_deleig
     use w90_utility, only        : utility_diagonalize
 
     ! 'dos_k' contains contrib. from one k-point, 
@@ -153,18 +156,18 @@ contains
        do loop_tot=1,num_int_kpts_on_node(my_node_id)
           kpt(:)=int_kpts(:,loop_tot)
           if (dos_adpt_smr) then
-             call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-             call get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
-             call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
+             call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+             call dos_get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
+             call dos_get_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   adpt_smr_fac=dos_adpt_smr_fac,&
                   adpt_smr_max=dos_adpt_smr_max,&
                   levelspacing_k=levelspacing_k,&
                   UU=UU)
           else
-             call fourier_R_to_k(kpt,HH_R,HH,0) 
+             call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
              call utility_diagonalize(HH,num_wann,eig,UU) 
-             call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
+             call dos_get_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   smr_fixed_en_width=dos_smr_fixed_en_width,&
                   UU=UU)
@@ -187,18 +190,18 @@ contains
           kpt(2)=real(loop_y,dp)/real(dos_kmesh(2),dp)
           kpt(3)=real(loop_z,dp)/real(dos_kmesh(3),dp)
           if (dos_adpt_smr) then
-             call get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-             call get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
-             call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
+             call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+             call dos_get_levelspacing(del_eig,dos_kmesh,levelspacing_k)
+             call dos_get_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   adpt_smr_fac=dos_adpt_smr_fac,&
                   adpt_smr_max=dos_adpt_smr_max,&
                   levelspacing_k=levelspacing_k,&
                   UU=UU)
           else
-             call fourier_R_to_k(kpt,HH_R,HH,0) 
+             call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
              call utility_diagonalize(HH,num_wann,eig,UU) 
-             call get_dos_k(kpt,dos_energyarray,eig,dos_k,&
+             call dos_get_k(kpt,dos_energyarray,eig,dos_k,&
                   smr_index=dos_smr_index,&
                   smr_fixed_en_width=dos_smr_fixed_en_width,&
                   UU=UU)             
@@ -237,197 +240,197 @@ contains
 
   ! =========================================================================
 
-!! The next routine is commented. It should be working (apart for a
-!! missing broadcast at the very end, see comments there).  However,
-!! it should be debugged, and probably the best thing is to avoid to
-!! resample the BZ, but rather use the calculated DOS (maybe it can be
-!! something that is done at the end of the DOS routine?)
-!!$  subroutine find_fermi_level
-!!$    !==============================================!
-!!$    !                                              !
-!!$    ! Finds the Fermi level by integrating the DOS !
-!!$    !                                              !
-!!$    !==============================================!
-!!$
-!!$    use w90_io, only            : stdout,io_error
-!!$    use w90_comms
-!!$    use w90_postw90_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
-!!$         int_kpts,weight
-!!$    use w90_parameters, only    : nfermi,fermi_energy_list,&
-!!$         num_valence_bands,&
-!!$         num_wann,dos_num_points,dos_min_energy,&
-!!$         dos_max_energy,dos_energy_step,&
-!!$         wanint_kpoint_file
-!!$
-!!$#ifdef MPI 
-!!$    include 'mpif.h'
-!!$#endif
-!!$
-!!$    real(kind=dp) :: kpt(3),sum_max_node,sum_max_all,&
-!!$         sum_mid_node,sum_mid_all,emin,emax,emid,&
-!!$         emin_node(0:num_nodes-1),emax_node(0:num_nodes-1),&
-!!$         ef
-!!$    integer       :: loop_x,loop_y,loop_z,loop_kpt,loop_nodes,&
-!!$         loop_iter,ierr,num_int_kpts,ikp
-!!$
-!!$    real(kind=dp), allocatable :: eig_node(:,:)
-!!$    real(kind=dp), allocatable :: levelspacing_node(:,:)
-!!$
-!!$    if(on_root) write(stdout,'(/,a)') 'Finding the value of the Fermi level'
-!!$
-!!$    if(.not.wanint_kpoint_file) then
-!!$       !
-!!$       ! Already done in wanint_get_kpoint_file if 
-!!$       ! wanint_kpoint_file=.true.
-!!$       !
-!!$       allocate(num_int_kpts_on_node(0:num_nodes-1))
-!!$       num_int_kpts=dos_num_points**3
-!!$       !
-!!$       ! Local k-point counter on each node (lazy way of doing it, there is
-!!$       ! probably a smarter way)
-!!$       !
-!!$       ikp=0
-!!$       do loop_kpt=my_node_id,num_int_kpts-1,num_nodes
-!!$          ikp=ikp+1
-!!$       end do
-!!$       num_int_kpts_on_node(my_node_id)=ikp
-!!$#ifdef MPI
-!!$       call MPI_reduce(ikp,max_int_kpts_on_node,1,MPI_integer,&
-!!$            MPI_MAX,0,MPI_COMM_WORLD,ierr)
-!!$#else
-!!$       max_int_kpts_on_node=ikp
-!!$#endif
-!!$       call comms_bcast(max_int_kpts_on_node,1)
-!!$    end if
-!!$
-!!$    allocate(eig_node(num_wann,max_int_kpts_on_node),stat=ierr)
-!!$    if (ierr/=0)&
-!!$         call io_error('Error in allocating eig_node in find_fermi_level')
-!!$    eig_node=0.0_dp
-!!$    allocate(levelspacing_node(num_wann,max_int_kpts_on_node),stat=ierr)
-!!$    if (ierr/=0)&
-!!$         call io_error('Error in allocating levelspacing in find_fermi_level')
-!!$    levelspacing_node=0.0_dp
-!!$
-!!$    if(wanint_kpoint_file) then
-!!$       if(on_root) write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
-!!$       do loop_kpt=1,num_int_kpts_on_node(my_node_id)
-!!$          kpt(:)=int_kpts(:,loop_kpt)
-!!$          call get_eig_levelspacing_k(kpt,eig_node(:,loop_kpt),&
-!!$               levelspacing_node(:,loop_kpt))
-!!$       end do
-!!$    else
-!!$       if (on_root)&
-!!$            write(stdout,'(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
-!!$       allocate(weight(max_int_kpts_on_node),stat=ierr)
-!!$       if (ierr/=0)&
-!!$            call io_error('Error in allocating weight in find_fermi_level')
-!!$       weight=0.0_dp
-!!$       ikp=0
-!!$       do loop_kpt=my_node_id,num_int_kpts-1,num_nodes
-!!$          ikp=ikp+1
-!!$          loop_x=loop_kpt/dos_num_points**2
-!!$          loop_y=(loop_kpt-loop_x*dos_num_points**2)/dos_num_points
-!!$          loop_z=loop_kpt-loop_x*dos_num_points**2-loop_y*dos_num_points
-!!$          kpt(1)=real(loop_x,dp)/dos_num_points
-!!$          kpt(2)=real(loop_y,dp)/dos_num_points
-!!$          kpt(3)=real(loop_z,dp)/dos_num_points
-!!$          weight(ikp)=1.0_dp/dos_num_points**3
-!!$          call get_eig_levelspacing_k(kpt,eig_node(:,ikp),&
-!!$               levelspacing_node(:,ikp))
-!!$       end do
-!!$    end if
-!!$
-!!$    ! Find minimum and maximum band energies within projected subspace
-!!$    !
-!!$    emin_node(my_node_id)=&
-!!$         minval(eig_node(1,1:num_int_kpts_on_node(my_node_id)))
-!!$    emax_node(my_node_id)=&
-!!$         maxval(eig_node(num_wann,1:num_int_kpts_on_node(my_node_id)))
-!!$    if(.not.on_root) then
-!!$       call comms_send(emin_node(my_node_id),1,root_id)
-!!$       call comms_send(emax_node(my_node_id),1,root_id)
-!!$    else
-!!$       do loop_nodes=1,num_nodes-1
-!!$          call comms_recv(emin_node(loop_nodes),1,loop_nodes)
-!!$          call comms_recv(emax_node(loop_nodes),1,loop_nodes)
-!!$       end do
-!!$       emin=minval(emin_node)
-!!$       emax=maxval(emax_node)
-!!$    end if
-!!$    call comms_bcast(emin,1)
-!!$    call comms_bcast(emax,1)
-!!$
-!!$    ! Check that the Fermi level lies within the projected subspace
-!!$    !
-!!$    sum_max_node=count_states(emax,eig_node,levelspacing_node,&
-!!$         num_int_kpts_on_node(my_node_id))
-!!$#ifdef MPI
-!!$    call MPI_reduce(sum_max_node,sum_max_all,1,MPI_DOUBLE_PRECISION,&
-!!$         MPI_SUM,0,MPI_COMM_WORLD,ierr)
-!!$#else
-!!$    sum_max_all=sum_max_node
-!!$#endif
-!!$    if(on_root) then
-!!$       if(num_valence_bands>sum_max_all) then
-!!$          write(stdout,*) 'Something wrong in find_fermi_level:'
-!!$          write(stdout,*)&
-!!$               '   Fermi level does not lie within projected subspace'
-!!$          write(stdout,*) 'num_valence_bands= ',num_valence_bands
-!!$          write(stdout,*) 'sum_max_all= ',sum_max_all
-!!$          stop 'Stopped: see output file'
-!!$       end if
-!!$    end if
-!!$
-!!$    ! Now interval search for the Fermi level
-!!$    !
-!!$    do loop_iter=1,1000
-!!$       emid=(emin+emax)/2.0_dp
-!!$       sum_mid_node=count_states(emid,eig_node,levelspacing_node,&
-!!$            num_int_kpts_on_node(my_node_id))
-!!$#ifdef MPI
-!!$       call MPI_reduce(sum_mid_node,sum_mid_all,1,MPI_DOUBLE_PRECISION,&
-!!$            MPI_SUM,0,MPI_COMM_WORLD,ierr)
-!!$#else
-!!$       sum_mid_all=sum_mid_node
-!!$#endif
-!!$       ! This is needed because MPI_reduce only returns sum_mid_all to the 
-!!$       ! root (To understand: could we use MPI_Allreduce instead?)
-!!$       !
-!!$       call comms_bcast(sum_mid_all,1)
-!!$       if(abs(sum_mid_all-num_valence_bands) < 1.e-10_dp) then
-!!$          !
-!!$          ! NOTE: Here should assign a value to an entry in a fermi-level 
-!!$          !       vector. Then at the end average over adaptive smearing 
-!!$          !       widths and broadcast the result
-!!$          !
-!!$          ef=emid
-!!$          exit
-!!$       elseif((sum_mid_all-num_valence_bands) < -1.e-10_dp) then
-!!$          emin=emid
-!!$       else
-!!$          emax=emid
-!!$       end if
-!!$    end do
-!!$    
-!!$    nfermi=1
-!!$    allocate(fermi_energy_list(1))
-!!$    fermi_energy_list(1)=ef
-!!$    !!! PROBABLY HERE YOU MAY WANT TO BROADCAST THE ABOVE TWO VARIABLES!!
-!!$    if(on_root) then
-!!$       write(stdout,*) ' '
-!!$       write(stdout,'(1x,a,f10.6,a)')&
-!!$            'Fermi energy = ',ef, ' eV'
-!!$       write(stdout,'(1x,a)')&
-!!$            '---------------------------------------------------------'
-!!$    end if
-!!$
-!!$  end subroutine find_fermi_level
+! The next routine is commented. It should be working (apart for a
+! missing broadcast at the very end, see comments there).  However,
+! it should be debugged, and probably the best thing is to avoid to
+! resample the BZ, but rather use the calculated DOS (maybe it can be
+! something that is done at the end of the DOS routine?)
+!~  subroutine find_fermi_level
+!~    !==============================================!
+!~    !                                              !
+!~    ! Finds the Fermi level by integrating the DOS !
+!~    !                                              !
+!~    !==============================================!
+!~
+!~    use w90_io, only            : stdout,io_error
+!~    use w90_comms
+!~    use w90_postw90_common, only : max_int_kpts_on_node,num_int_kpts_on_node,&
+!~         int_kpts,weight
+!~    use w90_parameters, only    : nfermi,fermi_energy_list,&
+!~         num_valence_bands,&
+!~         num_wann,dos_num_points,dos_min_energy,&
+!~         dos_max_energy,dos_energy_step,&
+!~         wanint_kpoint_file
+!~
+!~#ifdef MPI 
+!~    include 'mpif.h'
+!~#endif
+!~
+!~    real(kind=dp) :: kpt(3),sum_max_node,sum_max_all,&
+!~         sum_mid_node,sum_mid_all,emin,emax,emid,&
+!~         emin_node(0:num_nodes-1),emax_node(0:num_nodes-1),&
+!~         ef
+!~    integer       :: loop_x,loop_y,loop_z,loop_kpt,loop_nodes,&
+!~         loop_iter,ierr,num_int_kpts,ikp
+!~
+!~    real(kind=dp), allocatable :: eig_node(:,:)
+!~    real(kind=dp), allocatable :: levelspacing_node(:,:)
+!~
+!~    if(on_root) write(stdout,'(/,a)') 'Finding the value of the Fermi level'
+!~
+!~    if(.not.wanint_kpoint_file) then
+!~       !
+!~       ! Already done in pw90common_wanint_get_kpoint_file if 
+!~       ! wanint_kpoint_file=.true.
+!~       !
+!~       allocate(num_int_kpts_on_node(0:num_nodes-1))
+!~       num_int_kpts=dos_num_points**3
+!~       !
+!~       ! Local k-point counter on each node (lazy way of doing it, there is
+!~       ! probably a smarter way)
+!~       !
+!~       ikp=0
+!~       do loop_kpt=my_node_id,num_int_kpts-1,num_nodes
+!~          ikp=ikp+1
+!~       end do
+!~       num_int_kpts_on_node(my_node_id)=ikp
+!~#ifdef MPI
+!~       call MPI_reduce(ikp,max_int_kpts_on_node,1,MPI_integer,&
+!~            MPI_MAX,0,MPI_COMM_WORLD,ierr)
+!~#else
+!~       max_int_kpts_on_node=ikp
+!~#endif
+!~       call comms_bcast(max_int_kpts_on_node,1)
+!~    end if
+!~
+!~    allocate(eig_node(num_wann,max_int_kpts_on_node),stat=ierr)
+!~    if (ierr/=0)&
+!~         call io_error('Error in allocating eig_node in find_fermi_level')
+!~    eig_node=0.0_dp
+!~    allocate(levelspacing_node(num_wann,max_int_kpts_on_node),stat=ierr)
+!~    if (ierr/=0)&
+!~         call io_error('Error in allocating levelspacing in find_fermi_level')
+!~    levelspacing_node=0.0_dp
+!~
+!~    if(wanint_kpoint_file) then
+!~       if(on_root) write(stdout,'(/,1x,a)') 'Sampling the irreducible BZ only'
+!~       do loop_kpt=1,num_int_kpts_on_node(my_node_id)
+!~          kpt(:)=int_kpts(:,loop_kpt)
+!~          call dos_get_eig_levelspacing_k(kpt,eig_node(:,loop_kpt),&
+!~               levelspacing_node(:,loop_kpt))
+!~       end do
+!~    else
+!~       if (on_root)&
+!~            write(stdout,'(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
+!~       allocate(weight(max_int_kpts_on_node),stat=ierr)
+!~       if (ierr/=0)&
+!~            call io_error('Error in allocating weight in find_fermi_level')
+!~       weight=0.0_dp
+!~       ikp=0
+!~       do loop_kpt=my_node_id,num_int_kpts-1,num_nodes
+!~          ikp=ikp+1
+!~          loop_x=loop_kpt/dos_num_points**2
+!~          loop_y=(loop_kpt-loop_x*dos_num_points**2)/dos_num_points
+!~          loop_z=loop_kpt-loop_x*dos_num_points**2-loop_y*dos_num_points
+!~          kpt(1)=real(loop_x,dp)/dos_num_points
+!~          kpt(2)=real(loop_y,dp)/dos_num_points
+!~          kpt(3)=real(loop_z,dp)/dos_num_points
+!~          weight(ikp)=1.0_dp/dos_num_points**3
+!~          call dos_get_eig_levelspacing_k(kpt,eig_node(:,ikp),&
+!~               levelspacing_node(:,ikp))
+!~       end do
+!~    end if
+!~
+!~    ! Find minimum and maximum band energies within projected subspace
+!~    !
+!~    emin_node(my_node_id)=&
+!~         minval(eig_node(1,1:num_int_kpts_on_node(my_node_id)))
+!~    emax_node(my_node_id)=&
+!~         maxval(eig_node(num_wann,1:num_int_kpts_on_node(my_node_id)))
+!~    if(.not.on_root) then
+!~       call comms_send(emin_node(my_node_id),1,root_id)
+!~       call comms_send(emax_node(my_node_id),1,root_id)
+!~    else
+!~       do loop_nodes=1,num_nodes-1
+!~          call comms_recv(emin_node(loop_nodes),1,loop_nodes)
+!~          call comms_recv(emax_node(loop_nodes),1,loop_nodes)
+!~       end do
+!~       emin=minval(emin_node)
+!~       emax=maxval(emax_node)
+!~    end if
+!~    call comms_bcast(emin,1)
+!~    call comms_bcast(emax,1)
+!~
+!~    ! Check that the Fermi level lies within the projected subspace
+!~    !
+!~    sum_max_node=count_states(emax,eig_node,levelspacing_node,&
+!~         num_int_kpts_on_node(my_node_id))
+!~#ifdef MPI
+!~    call MPI_reduce(sum_max_node,sum_max_all,1,MPI_DOUBLE_PRECISION,&
+!~         MPI_SUM,0,MPI_COMM_WORLD,ierr)
+!~#else
+!~    sum_max_all=sum_max_node
+!~#endif
+!~    if(on_root) then
+!~       if(num_valence_bands>sum_max_all) then
+!~          write(stdout,*) 'Something wrong in find_fermi_level:'
+!~          write(stdout,*)&
+!~               '   Fermi level does not lie within projected subspace'
+!~          write(stdout,*) 'num_valence_bands= ',num_valence_bands
+!~          write(stdout,*) 'sum_max_all= ',sum_max_all
+!~          stop 'Stopped: see output file'
+!~       end if
+!~    end if
+!~
+!~    ! Now interval search for the Fermi level
+!~    !
+!~    do loop_iter=1,1000
+!~       emid=(emin+emax)/2.0_dp
+!~       sum_mid_node=count_states(emid,eig_node,levelspacing_node,&
+!~            num_int_kpts_on_node(my_node_id))
+!~#ifdef MPI
+!~       call MPI_reduce(sum_mid_node,sum_mid_all,1,MPI_DOUBLE_PRECISION,&
+!~            MPI_SUM,0,MPI_COMM_WORLD,ierr)
+!~#else
+!~       sum_mid_all=sum_mid_node
+!~#endif
+!~       ! This is needed because MPI_reduce only returns sum_mid_all to the 
+!~       ! root (To understand: could we use MPI_Allreduce instead?)
+!~       !
+!~       call comms_bcast(sum_mid_all,1)
+!~       if(abs(sum_mid_all-num_valence_bands) < 1.e-10_dp) then
+!~          !
+!~          ! NOTE: Here should assign a value to an entry in a fermi-level 
+!~          !       vector. Then at the end average over adaptive smearing 
+!~          !       widths and broadcast the result
+!~          !
+!~          ef=emid
+!~          exit
+!~       elseif((sum_mid_all-num_valence_bands) < -1.e-10_dp) then
+!~          emin=emid
+!~       else
+!~          emax=emid
+!~       end if
+!~    end do
+!~    
+!~    nfermi=1
+!~    allocate(fermi_energy_list(1))
+!~    fermi_energy_list(1)=ef
+!~    !~~ PROBABLY HERE YOU MAY WANT TO BROADCAST THE ABOVE TWO VARIABLES~!
+!~    if(on_root) then
+!~       write(stdout,*) ' '
+!~       write(stdout,'(1x,a,f10.6,a)')&
+!~            'Fermi energy = ',ef, ' eV'
+!~       write(stdout,'(1x,a)')&
+!~            '---------------------------------------------------------'
+!~    end if
+!~
+!~  end subroutine find_fermi_level
 
 
   !> This subroutine calculates the contribution to the DOS of a single k point
   !> 
-  !> \todo still to do: adapt get_spin_nk to read in input the UU rotation matrix
+  !> \todo still to do: adapt spin_get_nk to read in input the UU rotation matrix
   !> 
   !> \note This routine simply provides the dos contribution of a given
   !>       point. This must be externally summed after proper weighting.
@@ -461,18 +464,17 @@ contains
   !>                    levelspacing_k parameter IS given
   !> \param levelspacing_k optional array with the level spacings, i.e. how much each level changes
   !>                    near a given point of the interpolation mesh, as given by the
-  !>                    get_levelspacing() routine
+  !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-
-  subroutine get_dos_k(kpt,EnergyArray,eig_k,dos_k,smr_index,&
+  subroutine dos_get_k(kpt,EnergyArray,eig_k,dos_k,smr_index,&
        smr_fixed_en_width,adpt_smr_fac,adpt_smr_max,levelspacing_k,UU)
     use w90_io, only            : io_error
     use w90_constants, only     : dp, smearing_cutoff,min_smearing_binwidth_ratio
-    use w90_utility, only       : w0gauss
+    use w90_utility, only       : utility_w0gauss
     use w90_parameters, only    : num_wann,spin_decomp,num_elec_per_state,&
                                   num_dos_project,dos_project
-    use w90_spin, only          : get_spin_nk
+    use w90_spin, only          : spin_get_nk
 
     ! Arguments
     !
@@ -524,7 +526,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if(spin_decomp) call get_spin_nk(kpt,spn_nk)
+    if(spin_decomp) call spin_get_nk(kpt,spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
     
@@ -570,7 +572,7 @@ contains
           ! kind of smearing read from input (internal smearing_index variable)
           if (DoSmearing) then
              arg=(EnergyArray(loop_f)-eig_k(i))/eta_smr
-             rdum=w0gauss(arg,smr_index)/eta_smr
+             rdum=utility_w0gauss(arg,smr_index)/eta_smr
           else
              rdum=1._dp/(EnergyArray(2)-EnergyArray(1))
           end if
@@ -613,128 +615,127 @@ contains
        enddo !loop_f
     end do !loop over bands
 
-  end subroutine get_dos_k
+  end subroutine dos_get_k
 
   ! =========================================================================
 
-  !> This subroutine calculates the level spacing, i.e. how much the level changes
-  !> near a given point of the interpolation mesh
-  !>
-  !> \param del_eig Band velocities, already corrected when degeneracies occur
-  !> \param kmesh array of three integers, giving the number of k points along
-  !>        each of the three directions defined by the reciprocal lattice vectors
-  !> \param levelspacing On output, the spacing for each of the bands (in eV)
-  subroutine get_levelspacing(del_eig,kmesh,levelspacing)
+  subroutine dos_get_levelspacing(del_eig,kmesh,levelspacing)
+  !! This subroutine calculates the level spacing, i.e. how much the level changes
+  !! near a given point of the interpolation mesh
     use w90_parameters, only: num_wann
-    use w90_postw90_common, only : kmesh_spacing
+    use w90_postw90_common, only : pw90common_kmesh_spacing
     
     real(kind=dp), dimension(num_wann,3), intent(in) :: del_eig
+    !! Band velocities, already corrected when degeneracies occur
     integer, dimension(3), intent(in)                :: kmesh
+    !! array of three integers, giving the number of k points along
+    !! each of the three directions defined by the reciprocal lattice vectors
     real(kind=dp), dimension(num_wann), intent(out)  :: levelspacing
-    
+    !! On output, the spacing for each of the bands (in eV)
+
     real(kind=dp) :: Delta_k
     integer :: band
     
 
-    Delta_k=kmesh_spacing(kmesh)
+    Delta_k=pw90common_kmesh_spacing(kmesh)
     do band=1,num_wann
        levelspacing(band)=&
             sqrt(dot_product(del_eig(band,:),del_eig(band,:)))*Delta_k
     end do
 
-  end subroutine get_levelspacing
+  end subroutine dos_get_levelspacing
 
-!!!!! Next routine is commented; it is the older version
-!!$  subroutine get_eig_levelspacing_k(kpt,eig,levelspacing)
-!!$
-!!$    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-!!$    use w90_io, only            : io_error
-!!$    use w90_utility, only   : utility_diagonalize
-!!$    use w90_parameters, only    : num_wann,dos_num_points
-!!$    use w90_postw90_common, only : fourier_R_to_k,kmesh_spacing
-!!$    use w90_get_oper, only      : HH_R
-!!$    use w90_wan_ham, only   : get_deleig_a
-!!$
-!!$    ! Arguments
-!!$    !
-!!$    real(kind=dp), intent(in)  :: kpt(3)
-!!$    real(kind=dp), intent(out) :: eig(num_wann)
-!!$    real(kind=dp), intent(out) :: levelspacing(num_wann)
-!!$
-!!$    complex(kind=dp), allocatable :: HH(:,:)
-!!$    complex(kind=dp), allocatable :: delHH(:,:,:)
-!!$    complex(kind=dp), allocatable :: UU(:,:)
-!!$
-!!$    ! Adaptive smearing
-!!$    !
-!!$    real(kind=dp) :: del_eig(num_wann,3),Delta_k
-!!$
-!!$    integer          :: i
-!!$
-!!$    allocate(HH(num_wann,num_wann))
-!!$    allocate(delHH(num_wann,num_wann,3))
-!!$    allocate(UU(num_wann,num_wann))
-!!$
-!!$    call fourier_R_to_k(kpt,HH_R,HH,0) 
-!!$    call utility_diagonalize(HH,num_wann,eig,UU) 
-!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
-!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
-!!$    call fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
-!!$    call get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
-!!$    call get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
-!!$    call get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
-!!$
-!!$    Delta_k=kmesh_spacing(dos_num_points)
-!!$    do i=1,num_wann
-!!$       levelspacing(i)=&
-!!$            sqrt(dot_product(del_eig(i,:),del_eig(i,:)))*Delta_k
-!!$    end do
-!!$
-!!$  end subroutine get_eig_levelspacing_k
+! Next routine is commented; it is the older version
+!~  subroutine dos_get_eig_levelspacing_k(kpt,eig,levelspacing)
+!~
+!~    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
+!~    use w90_io, only            : io_error
+!~    use w90_utility, only   : utility_diagonalize
+!~    use w90_parameters, only    : num_wann,dos_num_points
+!~    use w90_postw90_common, only : pw90common_fourier_R_to_k,pw90common_kmesh_spacing
+!~    use w90_get_oper, only      : HH_R
+!~    use w90_wan_ham, only   : wham_get_deleig_a
+!~
+!~    ! Arguments
+!~    !
+!~    real(kind=dp), intent(in)  :: kpt(3)
+!~    real(kind=dp), intent(out) :: eig(num_wann)
+!~    real(kind=dp), intent(out) :: levelspacing(num_wann)
+!~
+!~    complex(kind=dp), allocatable :: HH(:,:)
+!~    complex(kind=dp), allocatable :: delHH(:,:,:)
+!~    complex(kind=dp), allocatable :: UU(:,:)
+!~
+!~    ! Adaptive smearing
+!~    !
+!~    real(kind=dp) :: del_eig(num_wann,3),Delta_k
+!~
+!~    integer          :: i
+!~
+!~    allocate(HH(num_wann,num_wann))
+!~    allocate(delHH(num_wann,num_wann,3))
+!~    allocate(UU(num_wann,num_wann))
+!~
+!~    call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
+!~    call utility_diagonalize(HH,num_wann,eig,UU) 
+!~    call pw90common_fourier_R_to_k(kpt,HH_R,delHH(:,:,1),1) 
+!~    call pw90common_fourier_R_to_k(kpt,HH_R,delHH(:,:,2),2) 
+!~    call pw90common_fourier_R_to_k(kpt,HH_R,delHH(:,:,3),3) 
+!~    call wham_get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+!~    call wham_get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+!~    call wham_get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+!~
+!~    Delta_k=pw90common_kmesh_spacing(dos_num_points)
+!~    do i=1,num_wann
+!~       levelspacing(i)=&
+!~            sqrt(dot_product(del_eig(i,:),del_eig(i,:)))*Delta_k
+!~    end do
+!~
+!~  end subroutine dos_get_eig_levelspacing_k
 
-!!$  !=========================================================!
-!!$  !                   PRIVATE PROCEDURES                    ! 
-!!$  !=========================================================!
-!!$
-!!$
-!!$  function count_states(energy,eig,levelspacing,npts)
-!!$
-!!$    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-!!$    use w90_utility, only       : wgauss
-!!$    use w90_postw90_common, only : weight
-!!$    use w90_parameters, only    : num_wann,dos_adpt_smr_fac
-!!$
-!!$    real(kind=dp) :: count_states
-!!$
-!!$    ! Arguments
-!!$    !
-!!$    real(kind=dp)                  :: energy
-!!$    real(kind=dp), dimension (:,:) :: eig
-!!$    real(kind=dp), dimension (:,:) :: levelspacing
-!!$    integer                        :: npts
-!!$
-!!$    ! Misc/Dummy
-!!$    !
-!!$    integer       :: loop_k,i
-!!$    real(kind=dp) :: sum,eta_smr,arg
-!!$
-!!$    count_states=0.0_dp
-!!$    do loop_k=1,npts
-!!$       sum=0.0_dp
-!!$       do i=1,num_wann
-!!$          eta_smr=levelspacing(i,loop_k)*dos_adpt_smr_fac
-!!$          arg=(energy-eig(i,loop_k))/eta_smr
-!!$          !
-!!$          ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P
-!!$          ! smearing, and E_f=12.6512 with F-D smearing
-!!$          !
-!!$          !          sum=sum+wgauss(arg,-99) ! Fermi-Dirac
-!!$          sum=sum+wgauss(arg,1)    ! Methfessel-Paxton case
-!!$       end do
-!!$       count_states=count_states+weight(loop_k)*sum
-!!$    end do
-!!$
-!!$  end function count_states
+!~  !=========================================================!
+!~  !                   PRIVATE PROCEDURES                    ! 
+!~  !=========================================================!
+!~
+!~
+!~  function count_states(energy,eig,levelspacing,npts)
+!~
+!~    use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
+!~    use w90_utility, only       : utility_wgauss
+!~    use w90_postw90_common, only : weight
+!~    use w90_parameters, only    : num_wann,dos_adpt_smr_fac
+!~
+!~    real(kind=dp) :: count_states
+!~
+!~    ! Arguments
+!~    !
+!~    real(kind=dp)                  :: energy
+!~    real(kind=dp), dimension (:,:) :: eig
+!~    real(kind=dp), dimension (:,:) :: levelspacing
+!~    integer                        :: npts
+!~
+!~    ! Misc/Dummy
+!~    !
+!~    integer       :: loop_k,i
+!~    real(kind=dp) :: sum,eta_smr,arg
+!~
+!~    count_states=0.0_dp
+!~    do loop_k=1,npts
+!~       sum=0.0_dp
+!~       do i=1,num_wann
+!~          eta_smr=levelspacing(i,loop_k)*dos_adpt_smr_fac
+!~          arg=(energy-eig(i,loop_k))/eta_smr
+!~          !
+!~          ! For Fe and a 125x125x125 interpolation mesh, E_f=12.6306 with M-P
+!~          ! smearing, and E_f=12.6512 with F-D smearing
+!~          !
+!~          !          sum=sum+utility_wgauss(arg,-99) ! Fermi-Dirac
+!~          sum=sum+utility_wgauss(arg,1)    ! Methfessel-Paxton case
+!~       end do
+!~       count_states=count_states+weight(loop_k)*sum
+!~    end do
+!~
+!~  end function count_states
 
 end module w90_dos
 

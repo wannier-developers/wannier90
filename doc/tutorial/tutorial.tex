@@ -38,9 +38,9 @@
 
 \title{\wannier: Tutorial}
 
-\author{Version 2.0.1}
+\author{Version 2.1.0}
 
-\date{2nd April 2015}
+\date{13th January 2017}
 %\date{\today}
 
 %%% THIS SHOULD BE THE LAST PACKAGE TO BE LOADED!
@@ -121,13 +121,11 @@ files from \wannier, version 1.4 or later must be used.\\
 
 \sectiontitle{Parallel execution}
 \label{sec:parallel}
-Presently, {\tt wannier90.x} is a serial-only executable, so it
-\emph{cannot} be run in parallel using MPI libraries. On the contrary,
-{\tt postw90.x} can be run in parallel to speed up the calculations,
-using the MPI libraries.
+{\tt postw90.x} and {\tt wannier90.x} can be run in parallel to speed up
+the calculations, using the MPI libraries.
 
 To enable the parallel version to be built, you must specify some
-flags in the {\tt make.sys} file of {\tt wannier90} and {\tt postw90};
+flags in the {\tt make.inc} file of {\tt wannier90} and {\tt postw90};
 for further information, please refer to the {\tt README.install} file
 in the top directory of the {\tt wannier90} distribution.
 
@@ -158,20 +156,17 @@ will need to install and compile elements of the {\tt
   pw2wannier90.x}, in order to run these
 examples. Please visit \url{http://www.quantum-espresso.org} to download the
 package, and for installation instructions. 
-The tutorial examples work with \pwscf\ v5.0.0 - v5.0.2 with the exception of the Berry phase related properties in examples 17-19 which require the
-very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v5.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}.
-We expect this will be included as standard in the next release of \pwscf\
+The tutorial examples work with \pwscf\ v5.1.x and v6.0.x. The exception are the examples on symmetry adapted Wannier functions which require v6.0.x together with the  
+very latest version of {\tt pw2wannier90.f90}. This can be found in the directory {\tt pwscf/v6.0} in the wannier distribution. It should be moved to {\tt PP/src} in the \pwscf\ distribution and compiled using {\tt make pp}. Later versions v6.x.x should have the most up-to-date version 
+ of pw2wannier90.f90 already included in the Quantum ESPRESSO  
+ distribution. 
 
 
 There are interfaces to a number of other electronic structure codes
 including {\sc abinit} (\url{http://www.abinit.org}), {\sc fleur}
-(\url{http://www.flapw.de}), {\sc VASP} (\url{http://www.vasp.at}), and
+(\url{http://www.flapw.de}),  {\sc OpenMX} (\url{http://www.openmx-square.org/}), 
+{\sc GPAW} (\url{https://wiki.fysik.dtu.dk/gpaw/}), {\sc VASP} (\url{http://www.vasp.at}), and
 {\sc Wien2k} (\url{http://www.wien2k.at})
-
-For images of MLWFs, see our gallery at
-  \url{http://www.wannier.org/gallery.html}. If you have any images that
-  you would like to submit to the gallery, please email us.
-% at\\ {\tt developers@wannier.org}.
 
 \sectiontitle{Contact us}
 
@@ -235,7 +230,7 @@ using {\tt XCrySDen},\footnote{Once {\tt XCrySDen} starts, click on
   {\tt Tools} $\rightarrow$ {\tt Data Grid} in order to specify an
   isosurface value to plot.} e.g., {\tt
 \begin{quote}
-xcrysden --xsf gaas\_00001.xsf
+xcrysden \texttt{-{}-}xsf gaas\_00001.xsf
 \end{quote} }
 
 For large systems, plotting the MLWFs may be time consuming
@@ -323,7 +318,7 @@ points).  The Fermi surface file {\tt lead.bxsf} can be viewed using
 %
 {\tt
 \begin{quote}
-xcrysden --bxsf lead.bxsf
+xcrysden \texttt{-{}-}bxsf lead.bxsf
 \end{quote} }
 \end{enumerate}
 
@@ -622,7 +617,7 @@ default value is 50 (i.e., 50$^3$ points).  The Fermi surface file
 %
 {\tt
 \begin{quote}
-xcrysden --bxsf copper.bxsf
+xcrysden \texttt{-{}-}bxsf copper.bxsf
 \end{quote} }
 
 
@@ -972,7 +967,7 @@ wannier\_plot\_supercell = 3
 and re-running \wannier. Visualise it using {\tt XCrySDen},
 {\tt
 \begin{quote}
-xcrysden --xsf BaTiO3\_00002.xsf
+xcrysden \texttt{-{}-}xsf BaTiO3\_00002.xsf
 \end{quote} }
 
 We can now simulate the ferroelectric phase by displacing the Ti
@@ -1091,7 +1086,7 @@ wannier\_plot = true
 and re-running \wannier. Visualise them using {\tt XCrySDen}, e.g.,
 {\tt
 \begin{quote}
-xcrysden --xsf silicon\_00001.xsf
+xcrysden \texttt{-{}-}xsf silicon\_00001.xsf
 \end{quote} }
 
 \subsection*{Valence + Conduction States}
@@ -1514,7 +1509,7 @@ defect (red).}
 
 \subsection*{Further ideas}
 \begin{itemize}
-\item Set {\tt hr\_plot = true} in the bulk case. Consider the magnitude of Hamiltonian 
+\item Set {\tt write\_hr = true} in the bulk case. Consider the magnitude of Hamiltonian 
 	elements between Wannier functions in increasingly distant unit cells. Are two 
 	unit cell principal layers really large enough, or are significant errors introduced?
 \item Does one unit cell either side of the defected unit cell shield the disorder
@@ -1769,7 +1764,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-kslice\_fermi\_level = [insert your value here] 
+fermi\_energy = [insert your value here] 
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -1827,7 +1822,7 @@ kslice = true
 
 kslice\_task = fermi\_lines
 
-kslice\_fermi\_level = [insert your value here] 
+fermi\_energy = [insert your value here] 
 
 kslice\_corner = 0.0  0.0  0.0
 
@@ -2412,8 +2407,176 @@ For instance, the $A$ point in the simple tetragonal lattice of this example is 
   Also the index \verb+dis_sphere_first_wan+ needs to be adapted to the new disentanglement window, which here contains also states below the lowest-lying Wannier function (at variance with the LaVO$_3$ case).
 \end{itemize}
 
+%\cleardoublepage
+
+\sectiontitle{21: Gallium Arsenide -- Symmetry-adapted Wannier functions}
+
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
+
+\begin{itemize}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions out of four valence bands of GaAs. 
+For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
+\item{Directory: {\tt examples/example21/atom\_centered\_As\_sp/} \\
+\phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_p/}    \\
+\phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_s/}    \\
+\phantom{Directory: }{\tt examples/example21/atom\_centered\_Ga\_sp/}    \\
+\phantom{Directory: }{\tt examples/example21/bond\_centered/}    
+}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt GaAs.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt GaAs.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt GaAs.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt GaAs.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of GaAs\\
+{\tt pw.x < GaAs.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < GaAs.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt GaAs.nnkp} file).\\ 
+{\tt wannier90.x -pp GaAs}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
+  {\tt GaAs.mmn}, {\tt GaAs.amn}, and {\tt GaAs.dmn} files, respectively).\\  
+{\tt pw2wannier90.x < GaAs.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x GaAs}
+\end{enumerate}
+
+Each directory creates different kind of symmetry-adapted Wannier function. 
+See more detail in {\tt examples/example21/README}. 
+%Compare the results with those of Sec. III.A in R. Sakuma, Phys. Rev. B {\bf 87}, 235109 (2013). 
+
 
 %\cleardoublepage
+
+\sectiontitle{22: Copper -- Symmetry-adapted Wannier functions}
+
+Note: This example requires a recent version of the {\tt pw2wannier90} interface.
+
+\begin{itemize}
+\item{Outline: \it{Obtain symmetry-adapted Wannier functions for Cu. By symmetry-adapted mode, for example, we can make atomic centered $s$-like Wannier function, which is not possible in the usual procedure to create maximally localized Wannier functions.
+For the theoretical background of the symmetry-adapted Wannier functions, see R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013).}}
+\item{Directory: {\tt examples/example22/s\_at\_0.00/} \\
+\phantom{Directory: }{\tt examples/example22/s\_at\_0.25/}    \\
+\phantom{Directory: }{\tt examples/example22/s\_at\_0.50/}    
+}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt Cu.scf}  {\it The \pwscf\ input file for ground state
+    calculation}} 
+\item{ {\tt Cu.nscf}  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}} 
+\item{ {\tt Cu.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt Cu.sym}  {\it Used only in {\tt examples/example22/s\_at\_0.25/}. {\tt pw2wannier90} reads this file when {\tt ``read\_sym = .true.''} in {\tt Cu.pw2wan}. By default, {\tt ``read\_sym = .false.'' and {\tt Cu.sym} is the output of {\tt pw2wannier90}}, in which the symmetry operations employed in the calculation are written for reference. } } 
+\item{ {\tt Cu.win}  {\it The {\tt wannier90} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Run \pwscf\ to obtain the ground state of Cu\\
+{\tt pw.x < Cu.scf > scf.out}
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < Cu.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt Cu.nnkp} file).\\ 
+{\tt wannier90.x -pp Cu}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states, the projections for the starting guess, and the symmetry information needed for symmetry-adapted mode (written in the
+  {\tt Cu.mmn}, {\tt Cu.amn}, and {\tt Cu.dmn} files, respectively).\\  
+{\tt pw2wannier90.x < Cu.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x Cu}
+\end{enumerate}
+
+Each directory creates $s$-like symmetry-adapted Wannier function centered at different position on top of atomic centered $d$-like Wannier functions. 
+See more detail in {\tt examples/example22/README}. 
+%Compare the results with those of Sec. III.B in R. Sakuma,  Phys. Rev. B {\bf 87}, 235109 (2013). 
+
+
+\sectiontitle{23: Silicon -- $G_0W_0$ bands structure interpolation}
+
+Note: This example requires a recent version of the {\tt ypp} post-processing code of {\tt yambo}.
+
+\begin{itemize}
+\item{Outline: \it{Interpolate the bands structure of silicon obtained from many-body pertubation theory at the $G_0W_0$ level. Using the {\tt yambo} code, the quasi-particle corrections (QP) are summed to Kohn-Sham eigenvalues, while the wavefunctions remain the same. }}
+\item{Directory: {\tt examples/example23/}}
+\item{Input Files}
+\begin{itemize}
+\item{ {\tt silicon.scf}  {\it The \pwscf\ input file for the ground state
+    calculation}} 
+\item{ {\tt silicon.nscf }  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid}}
+\item{ {\tt silicon.gw.nscf }  {\it The \pwscf\ input file to obtain Bloch
+    states on a reduced grid with many empty bands}}  
+\item{ {\tt silicon.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\item{ {\tt silicon.win}  {\it The {\tt wannier90} input file}}
+\item{ {\tt silicon.gw.win}  {\it The {\tt wannier90} input file} (for the $G_0W_0$ step)}
+\item{ {\tt yambo.in}  {\it The {\tt yambo} input file}}
+\item{ {\tt ypp.in}  {\it The {\tt ypp} input file}}
+\end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\item Copy the input files from the {\tt INPUT directory} into a working directory (e.g. {\tt WORK})
+\item Run \pwscf\ to obtain the ground state charge of silicon \\
+{\tt pw.x < silicon.scf > scf.out}
+\item Run \pwscf\ to obtain the Bloch states reduced grid. We use a 8x8x8 with many bands (many empy bands are needed to perform a $G_0W_0$ with {\tt yambo})\\
+{\tt pw.x < silicon.gw.nscf > nscf.gw.out}
+\item Use the {\tt k\_mapper.py} utility to find the indeces of a 4x4x4 uniform grid into the 8x8x8 reduced grid \\
+{\tt ./k\_mapper.py 4 4 4 "../examples/example23/WORK/nscf.gw.out"}\\
+Use the output to complete the {\tt yambo.in} input file (you also need to specify the on how many bands you want to compute the QP corrections, here you can use all the bands from 1 to 14). Then, you should have obtained something like:\\
+ {\tt 
+1| 1|  1|14| \\
+3| 3|  1|14| \\ 
+5| 5|  1|14| \\ 
+13| 13|  1|14| \\
+...\tt}
+\item Enter the {\tt si.save} directory and run {\tt p2y}. A {\tt SAVE} folder is created, you can move it up in the {\tt /WORK/} directory.\\
+\item Run a $G_0W_0$ calculation from the {\tt /WORK/} directory (remeber, we are using a 8x8x8 grid but computing QP corrections only on a 4x4x4 grid)\\
+{\tt yambo }
+
+
+\item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid\\
+{\tt pw.x < silicon.nscf > nscf.out}
+
+\item Run \wannier\ to generate a list of the required overlaps (written
+  into the {\tt silicon.nnkp} file).\\ 
+{\tt wannier90.x -pp silicon}
+
+\item Run {\tt pw2wannier90} to compute the overlap between Bloch
+  states, the projections for the starting guess (written in the
+  {\tt silicon.mmn} and {\tt silicon.amn} respectively).\\  
+{\tt pw2wannier90.x < silicon.pw2wan > pw2wan.out}
+
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x silicon}\\
+At this point, you should have obtained the interpolated valence bands for silicon at the DFT level.
+\item Run a {\tt ypp} calculation (just type {\tt ypp})\\
+You should obtain a file {\tt silicon.gw.unsorted.eig} which contains the QP corrections on a uniform 4x4x4 grid.
+\item Run the gw2wannier90.py script to reorder, align and correct all matrices and files using the QP corrections\\
+{\tt ../../../utility/gw2wannier90.py silicon mmn amn}
+\item Run \wannier\ to compute the MLWFs.\\
+{\tt wannier90.x silicon.gw}\\
+At this point, you should have obtained the interpolated valence bands for silicon at the $G_0W_0$ level.
+\end{enumerate}
+After you completed the tutorial for the valence bands only, you can repeat the final steps to interpolate also some conduction bands using disentanglement (the code is already present as comments in the input files).
+%\cleardoublepage
+
 
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}

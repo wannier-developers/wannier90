@@ -1,0 +1,8 @@
+&inputpp
+    outdir='./work'
+    prefix='Cu',
+    seedname = 'Cu'
+    write_unk = .true.
+    write_dmn = .true.  ! additional input for symmetry-adapted mode 
+   ! read_sym = .true.  
+/

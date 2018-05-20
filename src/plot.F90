@@ -1,22 +1,23 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
 !                                                            !
+! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
 module w90_plot
+  !! This module handles various plots
 
   implicit none
 
   private
-
   public :: plot_main
 
 
@@ -24,15 +25,20 @@ contains
 
   !============================================!
   subroutine plot_main( )
-    !============================================!
+    !! Main plotting routine
+  !============================================!
 
     use w90_constants,   only : eps6
     use w90_io,          only : stdout,io_stopwatch
-    use w90_parameters,  only : num_kpts,bands_plot,dos_plot,hr_plot, &
+    use w90_parameters,  only : num_kpts,bands_plot,dos_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level
+                                wannier_plot,timing_level,&
+                                write_hr,write_rmn,write_tb,write_u_matrices
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
-                                hamiltonian_setup
+                                hamiltonian_setup,hamiltonian_write_rmn,&
+                                hamiltonian_write_tb, nrpts, irvec
+    use w90_ws_distance, only : done_ws_distance, ws_translate_dist, &
+                                ws_write_vec
 
     implicit none
 
@@ -46,7 +52,7 @@ contains
     write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
     write(stdout,*)
 
-    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. hr_plot) then
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr) then
        ! Check if the kmesh includes the gamma point
        have_gamma=.false.
        do nkp=1,num_kpts
@@ -65,11 +71,21 @@ contains
        !
        if(fermi_surface_plot) call plot_fermi_surface
        !
-       if(hr_plot) call hamiltonian_write_hr()
+       if(write_hr) call hamiltonian_write_hr()
        !
+       if(write_rmn) call hamiltonian_write_rmn()
+       !
+       if(write_tb) call hamiltonian_write_tb()
+       ! 
+       if (write_hr.or.write_rmn.or.write_tb) then
+          if (.not.done_ws_distance) call ws_translate_dist(nrpts,irvec)
+          call ws_write_vec(nrpts,irvec) 
+       end if
     end if
 
     if(wannier_plot) call plot_wannier
+
+    if(write_u_matrices) call plot_u_matrices
 
     if (timing_level>0) call io_stopwatch('plot: main',2)
 
@@ -88,7 +104,7 @@ contains
   subroutine plot_interpolate_bands
     !============================================!
     !                                            !
-    !     Plots the interpolated band structure  !
+    !! Plots the interpolated band structure 
     !                                            !
     !============================================!
 
@@ -98,8 +114,11 @@ contains
     use w90_parameters, only  : num_wann,bands_num_points,recip_metric,&
                                 bands_num_spec_points,timing_level, &
                                 bands_spec_points,bands_label,bands_plot_format, &
-                                bands_plot_mode,num_bands_project,bands_plot_project
+                                bands_plot_mode,num_bands_project,bands_plot_project, &
+                                use_ws_distance
     use w90_hamiltonian, only : irvec,nrpts,ndegen,ham_r
+    use w90_ws_distance, only : irdist_ws,wdist_ndeg, &
+                                ws_translate_dist
 
     implicit none
 
@@ -122,7 +141,7 @@ contains
     integer, allocatable :: iwork(:),ifail(:)
     integer              :: info,i,j
     integer              :: irpt,nfound,loop_kpt,counter
-    integer              :: loop_spts,total_pts,loop_i,nkp
+    integer              :: loop_spts,total_pts,loop_i,nkp,ideg
     integer              :: num_paths,num_spts,ierr
     integer              :: bndunit,gnuunit,loop_w,loop_p
     character(len=3),allocatable   :: glabel(:)
@@ -216,24 +235,67 @@ contains
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
+    if(use_ws_distance)then
+      if (index(bands_plot_mode,'s-k').ne.0) then
+        call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
+      elseif (index(bands_plot_mode,'cut').ne.0) then
+        call ws_translate_dist(nrpts_cut, irvec_cut, force_recompute=.true.)
+      else
+        call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
+      endif
+    endif
+
+    ! [lp] the s-k and cut codes are very similar when use_ws_distance is used, a complete
+    !      mercge after this point is not impossible
     do loop_kpt=1,total_pts
        ham_kprm=cmplx_0
+       !
        if (index(bands_plot_mode,'s-k').ne.0) then
           do irpt=1,nrpts
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
-             fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
-             ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+            if(use_ws_distance)then
+               do j=1,num_wann
+               do i=1,num_wann
+                  do ideg = 1,wdist_ndeg(i,j,irpt)
+                     rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),&
+                                             real(irdist_ws(:,ideg,i,j,irpt),dp))
+                     fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt)*wdist_ndeg(i,j,irpt),dp)
+                     ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r(i,j,irpt)
+                  enddo
+               enddo
+               enddo 
+            else
+! [lp] Original code, without IJ-dependent shift:
+              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec(:,irpt))
+              fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt),dp)
+              ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
+            endif
           end do
+       ! end of s-k mode
        elseif (index(bands_plot_mode,'cut').ne.0) then
           do irpt=1,nrpts_cut
-             rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
-!!$[aam] check divide by ndegen?
-             fac=exp(cmplx_i*rdotk)
-             ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
+            if(use_ws_distance)then
+               do j=1,num_wann
+               do i=1,num_wann
+                  do ideg = 1,wdist_ndeg(j,i,irpt)
+                     rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt), &
+                                             real(irdist_ws(:,ideg,i,j,irpt),dp))
+                     fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(wdist_ndeg(i,j,irpt),dp)
+                     ham_kprm(i,j)=ham_kprm(i,j)+fac*ham_r_cut(i,j,irpt)
+                  enddo
+                enddo
+                enddo
+! [lp] Original code, without IJ-dependent shift:
+            else
+              rdotk=twopi*dot_product(plot_kpoint(:,loop_kpt),irvec_cut(:,irpt))
+!~[aam] check divide by ndegen?
+              fac=cmplx(cos(rdotk),sin(rdotk),dp)
+              ham_kprm=ham_kprm+fac*ham_r_cut(:,:,irpt)
+            endif ! end of use_ws_distance
           end do
-       else
-          call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
-       endif
+       endif ! end of "cut" mode
+       !
        ! Diagonalise H_k (->basis of eigenstates)
        do j=1,num_wann
           do i=1,j
@@ -292,20 +354,20 @@ contains
   subroutine plot_cut_hr() 
     !============================================!
     !                                                           
-    !  In real-space picture, ham_r(j,i,k) is an interaction between                   
-    !  j_th WF at 0 and i_th WF at the lattice point translated 
-    !  by matmul(real_lattice(:,:),irvec(:,k))                          
-    !  We truncate Hamiltonian matrix when                                                               
-    !   1) |  r_i(0) - r_j (R) | > dist_cutoff               
-    !   2) |  ham_r(i,j,k)     | < hr_cutoff              
-    !  while the condition 1) is essential to get a meaningful band structure, 
-    !    ( dist_cutoff must be smaller than the shortest distance from
-    !      the center of W-S supercell to the points at the cell boundaries )
-    !  the condition 2) is optional.
-    !      
-    !  limitation: when bands_plot_dim .ne. 3
-    !      one_dim_vec must be parallel to one of the cartesian axis
-    !      and perpendicular to the other two primitive lattice vectors                         
+    !!  In real-space picture, ham_r(j,i,k) is an interaction between                   
+    !!  j_th WF at 0 and i_th WF at the lattice point translated 
+    !!  by matmul(real_lattice(:,:),irvec(:,k))                          
+    !!  We truncate Hamiltonian matrix when                                                               
+    !!   1) |  r_i(0) - r_j (R) | > dist_cutoff               
+    !!   2) |  ham_r(i,j,k)     | < hr_cutoff              
+    !!  while the condition 1) is essential to get a meaningful band structure, 
+    !!    ( dist_cutoff must be smaller than the shortest distance from
+    !!      the center of W-S supercell to the points at the cell boundaries )
+    !!  the condition 2) is optional.
+    !!      
+    !!  limitation: when bands_plot_dim .ne. 3
+    !!      one_dim_vec must be parallel to one of the cartesian axis
+    !!      and perpendicular to the other two primitive lattice vectors                         
     !============================================!
 
     use w90_constants,   only : dp,cmplx_0, eps8
@@ -471,8 +533,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
   subroutine plot_interpolate_gnuplot
     !============================================!
     !                                            !
-    !     Plots the interpolated band structure  !
-    !           in gnuplot format                !
+    !! Plots the interpolated band structure in gnuplot format
     !============================================!
 
     use w90_constants,  only : dp
@@ -553,8 +614,7 @@ loop_n3:  do n3 = -irvec_max(3), irvec_max(3)
   subroutine plot_interpolate_xmgrace
     !============================================!
     !                                            !
-    !     Plots the interpolated band structure  !
-    !         in Xmgrace format                  !
+    !! Plots the interpolated band structure in Xmgrace format 
     !============================================!
 
     use w90_io,         only : io_file_unit,seedname,io_date
@@ -649,7 +709,7 @@ end subroutine plot_interpolate_bands
   subroutine plot_fermi_surface
     !===========================================================!
     !                                                           !
-    !  Prepares a Xcrysden bxsf file to view the fermi surface  !
+    !!  Prepares a Xcrysden bxsf file to view the fermi surface 
     !                                                           !
     !===========================================================!
 
@@ -716,7 +776,7 @@ end subroutine plot_interpolate_bands
                 rdotk=twopi*real( (loop_x-1)*irvec(1,irpt)+ &
                      (loop_y-1)*irvec(2,irpt) + (loop_z-1)* &
                      irvec(3,irpt) ,dp)/real(fermi_surface_num_points,dp)
-                fac=exp(cmplx_i*rdotk)/real(ndegen(irpt),dp)
+                fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(irpt),dp)
                 ham_kprm=ham_kprm+fac*ham_r(:,:,irpt)
              end do
              ! Diagonalise H_k (->basis of eigenstates)
@@ -786,8 +846,8 @@ end subroutine plot_interpolate_bands
   subroutine plot_wannier
     !============================================!
     !                                            !
-    ! Plot the WF in Xcrysden format             !
-    !  based on code written by Michel Posternak !
+    !! Plot the WF in Xcrysden format
+    !! based on code written by Michel Posternak
     !                                            !
     !============================================!
 
@@ -1016,7 +1076,7 @@ end subroutine plot_interpolate_bands
     subroutine internal_cube_format()
     !============================================!
     !                                            !
-    ! Write WFs in Gaussian cube format.         !
+    !! Write WFs in Gaussian cube format. 
     !                                            !
     !============================================!
 
@@ -1313,6 +1373,58 @@ end subroutine plot_interpolate_bands
     end subroutine internal_xsf_format
 
   end subroutine plot_wannier
+
+
+  !============================================!
+  subroutine plot_u_matrices
+    !============================================!
+    !                                            !
+    !! Plot u_matrix and u_matrix_opt to textfiles in readable format 
+    !                                            !
+    !============================================!
+
+    use w90_parameters, only : num_bands, num_kpts, num_wann, have_disentangled,&
+                               kpt_latt, u_matrix, u_matrix_opt
+    use w90_io,         only  : io_error,stdout,io_file_unit,seedname,&
+                                io_time,io_stopwatch,io_date
+
+    implicit none
+    integer             :: matunit
+    integer             :: i,j,nkp
+    character (len=33)  :: header
+    character (len=9)   :: cdate,ctime
+
+    call io_date(cdate,ctime)
+    header = 'written on '//cdate//' at '//ctime
+    
+    matunit=io_file_unit()
+    open(matunit,file=trim(seedname)//'_u.mat',form='formatted')
+    
+    write(matunit,*) header
+    write(matunit,*) num_kpts, num_wann, num_wann
+    
+    do nkp=1,num_kpts
+        write(matunit,*)
+        write(matunit,'(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:,nkp)
+        write(matunit,'(f15.10,sp,f15.10)') ((u_matrix(i,j,nkp),i=1,num_wann),j=1,num_wann)
+    end do
+    close(matunit)    
+    
+
+    if (have_disentangled) then
+        matunit=io_file_unit()
+        open(matunit,file=trim(seedname)//'_u_dis.mat',form='formatted')
+        write(matunit,*) header
+        write(matunit,*) num_kpts, num_wann, num_bands
+        do nkp=1,num_kpts
+            write(matunit,*)
+            write(matunit,'(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:,nkp)
+            write(matunit,'(f15.10,sp,f15.10)') ((u_matrix_opt(i,j,nkp),i=1,num_wann),j=1,num_bands)
+        end do
+        close(matunit)
+    endif
+  
+  end subroutine plot_u_matrices
 
 end module w90_plot
  

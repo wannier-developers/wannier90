@@ -1,0 +1,26 @@
+language: python
+python:
+    - "2.7"
+addons:
+  apt:
+    packages:
+        - gfortran 
+        - libblas-dev 
+        - liblapack-dev 
+        - openmpi-bin
+        - libopenmpi-dev
+env:
+## Use these two lines instead of the other two if you want increased output
+#   - W90BINARYPARALLEL=false W90VERBOSETESTS=true
+#   - W90BINARYPARALLEL=true W90VERBOSETESTS=true
+   - W90BINARYPARALLEL=false
+   - W90BINARYPARALLEL=true
+install:
+# Install Wannier
+    - ./test-suite/tools/configure_travis_compilation.sh
+    - make -j default w90chk2chk
+script:
+    - ./test-suite/tools/run_tests_travis.sh
+git:
+  depth: 3
+

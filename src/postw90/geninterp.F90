@@ -1,24 +1,26 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! This file is distributed as part of the Wannier90 code and !
+! under the terms of the GNU General Public License. See the !
+! file `LICENSE' in the root directory of the Wannier90      !
+! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
 !                                                            !
-! Copyright (C) 2007-13 Jonathan Yates, Arash Mostofi,       !
-!                Giovanni Pizzi, Young-Su Lee,               !
-!                Nicola Marzari, Ivo Souza, David Vanderbilt !
+! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! The Wannier90 code is hosted on GitHub:                    !
+!                                                            !
+! https://github.com/wannier-developers/wannier90            !
+!------------------------------------------------------------!
+!                                                            !
 !                                                            !
 !------------------------------------------------------------!
-!============================================================!
-!                                                            !
-! Generic Interpolation Routine written by Giovanni Pizzi    !
-! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)       !
-! June, 2012                                                 !
-!                                                            !
-!============================================================!
 
 module w90_geninterp
+  !! Generic Interpolation Routine 
+  !!
+  !! written by Giovanni Pizzi
+  !! THEOS, EPFL, Station 12, 1015 Lausanne (Switzerland)  
+  !! June, 2012 
 
   use w90_constants
   use w90_parameters, only    : geninterp_alsofirstder, num_wann, recip_lattice, real_lattice, &
@@ -27,8 +29,8 @@ module w90_geninterp
   use w90_get_oper, only      : get_HH_R, HH_R
   use w90_comms
   use w90_utility, only       : utility_diagonalize
-  use w90_postw90_common, only : fourier_R_to_k
-  use w90_wan_ham, only       : get_eig_deleig
+  use w90_postw90_common, only : pw90common_fourier_R_to_k
+  use w90_wan_ham, only       : wham_get_eig_deleig
   use w90_io, only            : io_date
   implicit none
 
@@ -37,13 +39,13 @@ module w90_geninterp
 
 contains 
 
-  ! Writes a header for the output file(s).
-  !
-  ! \param outdat_unit Integer with the output file unit. The file must be already open.
-  ! \param commentline String with the comment taken from the output, to be written on the output
   subroutine internal_write_header(outdat_unit,commentline)
+  !! Writes a header for the output file(s).
+
     integer, intent(in) :: outdat_unit
-    character(len=*)    :: commentline
+    !! Integer with the output file unit. The file must be already open.
+    character(len=*)    :: commentline !! no intent?
+    !! String with the comment taken from the output, to be written on the output
 
     character(len=9)   :: cdate, ctime
 
@@ -60,15 +62,15 @@ contains
     end if
   end subroutine internal_write_header
     
-  !> This routine prints the band energies (and possibly the band derivatives) 
-  !>
-  !> This routine is parallel, even if ***the scaling is very bad*** since at the moment
-  !> everything must be written by the root node (we need that the output is sorted).
-  !> But at least if works independently of the number of processors.
-  !> I think that a way to write in parallel to the output would help a lot,
-  !> so that we don't have to send all eigenvalues to the root node.
   subroutine geninterp_main()
-    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
+  !! This routine prints the band energies (and possibly the band derivatives) 
+  !!
+  !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
+  !! everything must be written by the root node (we need that the output is sorted).
+  !! But at least if works independently of the number of processors.
+  !! I think that a way to write in parallel to the output would help a lot,
+  !! so that we don't have to send all eigenvalues to the root node.
+    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
@@ -145,17 +147,30 @@ contains
           allocate(globaldeleig(num_wann,3,num_kpts),stat=ierr)
           if (ierr/=0) call io_error('Error allocating globaldeleig in geinterp_main.')
        end if
+    else
+       ! On the other nodes, I still allocate them with size 1 to avoid 
+       ! that some compilers still try to access the memory
+       allocate(kpointidx(1),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpointidx in geinterp_main.')
+       allocate(kpoints(1,1),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating kpoints in geinterp_main.')
+       if (geninterp_single_file) then
+          allocate(globaleig(num_wann,1),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating globaleig in geinterp_main.')
+          allocate(globaldeleig(num_wann,3,1),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating globaldeleig in geinterp_main.')
+       end if        
     end if
        
     ! I precalculate how to split on different nodes
     call comms_array_split(num_kpts,counts,displs)
        
-    allocate(localkpoints(3,counts(my_node_id)),stat=ierr)
+    allocate(localkpoints(3,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error allocating localkpoints in geinterp_main.')       
     
-    allocate(localeig(num_wann,counts(my_node_id)),stat=ierr)
+    allocate(localeig(num_wann,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error allocating localeig in geinterp_main.')
-    allocate(localdeleig(num_wann,3,counts(my_node_id)),stat=ierr)
+    allocate(localdeleig(num_wann,3,max(1,counts(my_node_id))),stat=ierr)
     if (ierr/=0) call io_error('Error allocating localdeleig in geinterp_main.')
 
 
@@ -182,11 +197,12 @@ contains
     end if
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
-    call comms_scatterv(localkpoints(1,1),3*counts(my_node_id),kpoints(1,1),3*counts, 3*displs)
+    call comms_scatterv(localkpoints,3*counts(my_node_id),kpoints,3*counts, 3*displs)
     if  (.not.geninterp_single_file) then
-       allocate(localkpointidx(counts(my_node_id)),stat=ierr)
+       ! Allocate at least one entry, even if we don't use it
+       allocate(localkpointidx(max(1,counts(my_node_id))),stat=ierr)
        if (ierr/=0) call io_error('Error allocating localkpointidx in geinterp_main.')
-       call comms_scatterv(localkpointidx(1),counts(my_node_id),kpointidx(1),counts, displs)
+       call comms_scatterv(localkpointidx,counts(my_node_id),kpointidx,counts, displs)
     end if
 
     ! I open the output file(s)
@@ -217,20 +233,20 @@ contains
        kpt = localkpoints(:,i)
        ! Here I get the band energies and the velocities (if required)
        if (geninterp_alsofirstder) then
-          call get_eig_deleig(kpt,localeig(:,i),localdeleig(:,1,i),HH,delHH,UU)
+          call wham_get_eig_deleig(kpt,localeig(:,i),localdeleig(:,:,i),HH,delHH,UU)
        else
-          call fourier_R_to_k(kpt,HH_R,HH,0) 
+          call pw90common_fourier_R_to_k(kpt,HH_R,HH,0) 
           call utility_diagonalize(HH,num_wann,localeig(:,i),UU) 
        end if
     end do
        
     if (geninterp_single_file) then
        ! Now, I get the results from the different nodes
-       call comms_gatherv(localeig(1,1),num_wann*counts(my_node_id),globaleig(1,1), &
+       call comms_gatherv(localeig,num_wann*counts(my_node_id),globaleig, &
             num_wann*counts, num_wann*displs)
        
        if (geninterp_alsofirstder) then
-          call comms_gatherv(localdeleig(1,1,1),3*num_wann*counts(my_node_id),globaldeleig(1,1,1), &
+          call comms_gatherv(localdeleig,3*num_wann*counts(my_node_id),globaldeleig, &
                3*num_wann*counts, 3*num_wann*displs)          
        end if
        

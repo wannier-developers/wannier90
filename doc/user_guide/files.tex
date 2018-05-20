@@ -69,6 +69,10 @@ Chapter~\ref{ch:wann-pp} for details.
 INPUT. Written by the underlying electronic structure code. See
 Chapter~\ref{ch:wann-pp} for details. 
 
+\section{{\tt seedname.dmn}}
+INPUT. Read if \verb#site_symmetry = .true.# (symmetry-adapted mode).
+Written by the underlying electronic structure code. See Chapter~\ref{ch:wann-pp} for details.
+
 \section{{\tt seedname.eig}}
 INPUT. Written by the underlying electronic structure code. See
 Chapter~\ref{ch:wann-pp} for details.
@@ -88,7 +92,9 @@ minimal information.
 \subsection{Header}
 
 The header provides some basic information about \wannier, the
-authors, and the execution time of the current run.
+authors, and the execution time of the current run. For instance,
+in version 2.0, it printed the following (the string will be 
+slightly different for newer versions):
 
 \begin{verbatim}
 
@@ -500,7 +506,7 @@ visualiser ({\tt jmol}, {\tt gopenmol}, {\tt vmd}, etc.).
 
 \section{{\tt seedname\_hr.dat}}
 
-OUTPUT. Written if {\tt hr\_plot=.TRUE.}. The first line gives the date and
+OUTPUT. Written if {\tt write\_hr=.TRUE.}. The first line gives the date and
 time at which the file was created. 
 The second line states the number of Wannier functions {\tt num\_wann}. The third
 line gives the number of Wigner-Seitz grid-points {\tt nrpts}. The next block of 
@@ -526,6 +532,51 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
     .
     .
     .
+\end{verbatim}
+
+\section{{\tt seedname\_r.dat}}
+OUTPUT.
+Written if $\verb#write_rmn#=\verb#true#$. The matrix elements
+$\langle m\mathbf{0}|\mathbf{r}|n\mathbf{R}\rangle$ (where $n\mathbf{R}$ refers to MLWF $n$ in unit cell $\mathbf{R}$). The first line gives the date and time at which the file was created. 
+The second line states the number of Wannier functions {\tt num\_wann}. 
+Similar to the case of the Hamiltonian matrix above, the 
+remaining {\tt num\_wann}$^2 \times$ {\tt nrpts} lines
+each contain, respectively, the components of the vector $\mathbf{R}$
+in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
+and $n$, and the real and imaginary parts of the position matrix element
+in the WF basis.
+
+\section{{\tt seedname\_wsvec.dat}}
+OUTPUT.
+Written if $\verb#write_hr#=\verb#true#$ or $\verb#write_rmn#=\verb#true#$ or $\verb#write_tb#=\verb#true#$. The first line gives the date and
+time at which the file was created and the value of {\tt use\_ws\_distance}. 
+For each pair of Wannier functions (identified by the components of the vector $\mathbf{R}$ separating their unit cells and their indices) it gives: (i) the number of lattice vectors of the periodic supercell $\mathbf{T}$ that bring the Wannier function in $\mathbf{R}$ back in the Wigner-Seitz cell centred on the other Wannier function and (ii) the set of superlattice vectors $\mathbf{T}$ to make this transformation. 
+These superlattice vectors $\mathbf{T}$ should be added to the $\mathbf{R}$ vector to obtain the correct centre of the Wannier function that underlies a given matrix element (e.g. the Hamiltonian matrix elements in {\tt seedname\_hr.dat}) in order to correctly interpolate in reciprocal space.
+
+\begin{verbatim}
+## written on 20Sep2016 at 18:12:37  with use_ws_distance=.true.
+    0    0    0    1    1
+    1
+    0    0    0
+    0    0    0    1    2
+    1
+    0    0    0
+    0    0    0    1    3
+    1
+    0    0    0
+    0    0    0    1    4
+    1
+    0    0    0
+    0    0    0    1    5
+    1
+    0    0    0
+    0    0    0    1    6
+    2
+    0   -1   -1
+    1   -1   -1
+    .
+    .
+    .  
 \end{verbatim}
 
 \section{{\tt seedname\_qc.dat}}
@@ -820,4 +871,78 @@ Note the G-vectors ($a,b,c$) needed.
     .
     .
     .
+\end{verbatim}
+
+
+\section{{\tt seedname\_u.mat}}
+OUTPUT. Written if $\verb#write_u_matrices#=\verb#.TRUE.#$. The first line gives the date and
+time at which the file was created.
+The second line states the number of kpoints {\tt num\_kpts} and the number of wannier
+functions {\tt num\_wann} twice. The third line is empty.
+Then there are {\tt num\_kpts} blocks of data, each of which starts with a line containing the kpoint 
+(in fractional coordinates of the reciprocal lattice vectors) 
+followed by {\tt num\_wann * num\_wann} lines containing the matrix elements (real and imaginary parts) of
+$\mathbf{U}^{(\mathbf{k})}$.
+The matrix elements are in column-major order (ie, cycling over rows first and then columns).
+There is an empty line between each block of data.
+
+\begin{verbatim}
+ written on 15Sep2016 at 16:33:46 
+           64           8           8
+	 
+   0.0000000000  +0.0000000000  +0.0000000000
+   0.4468355787  +0.1394579978
+  -0.0966033667  +0.4003934902
+  -0.0007748974  +0.0011788678
+  -0.0041177339  +0.0093821027
+   .
+   .
+   .
+
+   0.1250000000   0.0000000000  +0.0000000000
+   0.4694005589  +0.0364941808
+  +0.2287801742  -0.1135511138
+  -0.4776782452  -0.0511719121
+  +0.0142081014  +0.0006203139
+   .
+   .
+   .
+\end{verbatim}
+
+
+\section{{\tt seedname\_u\_dis.mat}}
+
+OUTPUT. Written if $\verb#write_u_matrices#=\verb#.TRUE.#$ and disentanglement is enabled.
+The first line gives the date and time at which the file was created.
+The second line states the number of kpoints {\tt num\_kpts}, the number of wannier
+functions {\tt num\_bands} and the number of {\tt num\_bands}.
+The third line is empty.
+Then there are {\tt num\_kpts} blocks of data, each of which starts with a line containing the kpoint 
+(in fractional coordinates of the reciprocal lattice vectors) 
+followed by {\tt num\_wann * num\_bands} lines containing the matrix elements (real and imaginary parts)
+of $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$.
+The matrix elements are in column-major order (ie, cycling over rows first and then columns).
+There is an empty line between each block of data.
+
+\begin{verbatim}
+ written on 15Sep2016 at 16:33:46 
+           64           8          16
+	    
+   0.0000000000  +0.0000000000  +0.0000000000
+   1.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+   .
+   .
+   .
+   
+   0.1250000000   0.0000000000  +0.0000000000
+   1.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+  +0.0000000000  +0.0000000000
+   .
+   .
+   .
 \end{verbatim}
