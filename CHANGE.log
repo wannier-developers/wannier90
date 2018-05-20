@@ -4,6 +4,9 @@
 
 	The Maximally-Localised Generalised Wannier Functions Code
 
+* bug fix in kslice.F90 & example17 (change to floor division in the python 
+  scripts for plotting Fermi lines), minor bug fix in example18 & tutorial
+
 v2.x.y (DATE)
 * G0W0 interface implemented (A. Marrazzo (EPFL, CH) and S. Tsirkin (DIPC, Spain)).
   Added two utilities (gw2wannier90.py and k_mapper.py) and example 23 on

@@ -73,8 +73,9 @@ program wannier
 
   real(kind=dp) time0,time1,time2
   character(len=9) :: stat,pos,cdate,ctime
-  logical :: wout_found
+  logical :: wout_found,dryrun
   integer :: len_seedname
+  character(len=50) :: prog
 
   call comms_setup
 
@@ -82,13 +83,16 @@ program wannier
 
   time0=io_time()
   
+
+
   if (on_root) then
-     call io_get_seedname()
+     prog='wannier90'
+     call io_commandline(prog,dryrun)
      len_seedname = len(seedname)
   end if
   call comms_bcast(len_seedname,1)
   call comms_bcast(seedname,len_seedname)
-
+  call comms_bcast(dryrun,1)
 
 
   if(on_root) then 
@@ -140,6 +144,18 @@ program wannier
        call param_memory_estimate
     end if
 
+    if(dryrun) then
+       if(on_root) then
+          write(stdout,*) ' '
+          write(stdout,*) '                       ==============================='
+          write(stdout,*) '                                   DRYRUN             '
+          write(stdout,*) '                       No problems found with win file'
+          write(stdout,*) '                       ==============================='
+       endif
+       stop
+    endif
+
+
   ! We now distribute the parameters to the other nodes
     call param_dist
     if(gamma_only.and.num_nodes>1) &
@@ -153,6 +169,7 @@ program wannier
   else                      ! restart a previous calculation
      if(on_root) call param_read_chkpt()
      call param_chkpt_dist
+     if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
 
      select case (restart)
         case ('default')    ! continue from where last checkpoint was written
