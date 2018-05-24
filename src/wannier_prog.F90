@@ -242,12 +242,14 @@ program wannier
 
 2002 continue
   if (on_root) then
+    ! I call the routine always; the if statements to decide if/what
+    ! to plot are inside the function
     time2=io_time()
-    if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
-       call plot_main()
-       time1=io_time()
-       write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
-    end if
+    call plot_main()
+    time1=io_time()
+    ! Now time is always printed, even if no plotting is done/required, but
+    ! it shouldn't be a problem.
+    write(stdout,'(1x,a25,f11.3,a)') 'Time for plotting        ',time1-time2,' (sec)'
   endif
 
 3003 continue
