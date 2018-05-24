@@ -409,6 +409,7 @@ module w90_parameters
 
   complex(kind=dp), allocatable, save, public :: a_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix_orig(:,:,:,:)
+  complex(kind=dp), allocatable, save, public :: m_matrix_orig_local(:,:,:,:)
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
   logical,                       save, public :: eig_found
 
@@ -429,6 +430,7 @@ module w90_parameters
 
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
+  complex(kind=dp), allocatable, save, public :: m_matrix_local(:,:,:,:)
 
   ! RS: symmetry-adapted Wannier functions
   logical,       public, save :: lsitesymmetry=.false.
@@ -458,6 +460,12 @@ module w90_parameters
   ! For Hamiltonian matrix in WF representation
   logical,          public, save              :: automatic_translation
   integer,          public, save              :: one_dim_dir
+
+  ! vv: SCDM method
+  logical,          public, save              :: scdm_proj
+  integer,          public, save              :: scdm_entanglement
+  real(kind=dp),         public, save              :: scdm_mu
+  real(kind=dp),         public, save              :: scdm_sigma
 
   ! Private data
   integer                            :: num_lines
@@ -609,7 +617,11 @@ contains
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
     end if
-    if (library) num_bands = num_bands - num_exclude_bands
+    ! RM_2018-03-21: this should only be done once, but param_read is called both in wannier_setup and wannier_run
+    ! RM_2018-03-21: commented line below, as now the correct value for
+    ! num_bands (already substracted) is set in library mode before calling
+    ! param_read
+!    if (library) num_bands = num_bands - num_exclude_bands
     if (.not. effective_model) then
        if(found .and. num_bands<num_wann) then
           call io_error('Error: num_bands must be greater than or equal to num_wann')
@@ -938,14 +950,14 @@ contains
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
-	if (nfermi.eq.1) then 
-	    fermi_energy_step=0.0_dp
-	else
-	    fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
-	endif
-	allocate(fermi_energy_list(nfermi),stat=ierr)
-        do i=1,nfermi
-    	    fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
+       if (nfermi.eq.1) then 
+          fermi_energy_step=0.0_dp
+       else
+          fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
+       endif
+       allocate(fermi_energy_list(nfermi),stat=ierr)
+       do i=1,nfermi
+          fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
        enddo
 !!    elseif(nfermi==0) then 
 !!        ! This happens when both found_fermi_energy=.false. and
@@ -1088,10 +1100,10 @@ contains
     call param_get_keyword('gyrotropic_degen_thresh',found,r_value=gyrotropic_degen_thresh) 
 
     do i=1,3
-	gyrotropic_box(i,i)=1.0_dp
-	gyrotropic_box_tmp(:)=0.0_dp
-	call param_get_keyword_vector('gyrotropic_box_b'//achar(48+i),found,3,r_value=gyrotropic_box_tmp)
-	if (found) gyrotropic_box(i,:)=gyrotropic_box_tmp(:)
+       gyrotropic_box(i,i)=1.0_dp
+       gyrotropic_box_tmp(:)=0.0_dp
+       call param_get_keyword_vector('gyrotropic_box_b'//achar(48+i),found,3,r_value=gyrotropic_box_tmp)
+       if (found) gyrotropic_box(i,:)=gyrotropic_box_tmp(:)
     enddo
     gyrotropic_box_corner(:)=0.0_dp
     call param_get_keyword_vector('gyrotropic_box_center',found,3,r_value=gyrotropic_box_tmp)
@@ -1830,7 +1842,7 @@ contains
     do i=1,gyrotropic_nfreq
        gyrotropic_freq_list(i)=gyrotropic_freq_min&
             +(i-1)*(gyrotropic_freq_max-gyrotropic_freq_min)/(gyrotropic_nfreq-1)&
-	      +cmplx_i*gyrotropic_smr_fixed_en_width
+            +cmplx_i*gyrotropic_smr_fixed_en_width
     enddo
 
 
@@ -1898,6 +1910,42 @@ contains
     skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
     
+    !vv: SCDM flags
+    scdm_proj = .false.
+    scdm_mu = 0._dp
+    scdm_sigma = 1._dp
+    scdm_entanglement = 0
+    call param_get_keyword('scdm_proj',found,l_value=scdm_proj)
+    !if(found .and. allocated(proj_site)) &
+    !    call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
+    if(found .and. scdm_proj .and. spinors) &
+        call io_error('Error: SCDM method is not compatible with spinors yet.')
+    !if(found .and. scdm_proj .and. guiding_centres) &
+    !    call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
+    !if(found_fermi_energy) scdm_mu = fermi_energy
+
+    call param_get_keyword('scdm_entanglement',found,c_value=ctmp)
+    if (found) then
+       if (scdm_proj) then
+          if(ctmp=='isolated') then
+            scdm_entanglement = 0
+          elseif(ctmp=='erfc') then
+            scdm_entanglement = 1
+          elseif(ctmp=='gaussian') then
+            scdm_entanglement = 2
+          else
+            call io_error('Error: Can not recognize the choice for scdm_entanglement. &
+                 Valid options are: isolated, erfc and gaussian') 
+          endif
+       else
+          call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
+       endif
+    endif
+    call param_get_keyword('scdm_mu',found,r_value=scdm_mu)
+    call param_get_keyword('scdm_sigma',found,r_value=scdm_sigma)
+    if (found .and. (scdm_sigma <= 0._dp)) & 
+       call io_error('Error: The parameter sigma in the SCDM method must be positive.')
+
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
     if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
@@ -2057,7 +2105,13 @@ contains
 
     ! Projections
     call param_get_block_length('projections',found,i_temp)
-    if (found) call param_get_projections
+    if (found) then
+       ! if (scdm_proj) then
+       !   call io_error('param_read: Can not specify the projection block and scdm_proj=true at the same time.')
+       ! else 
+          call param_get_projections
+       ! end if
+    end if
     if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) & 
        call io_error('param_read: Guiding centres requested, but no projection block found')
 
@@ -2984,9 +3038,9 @@ contains
        endif
           write(stdout,'(1x,a46,10x,a8,13x,a1)')   '|  Fixed width smearing                      :','       T','|'
           write(stdout,'(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :',&
-        	gyrotropic_smr_fixed_en_width,'|'
+               gyrotropic_smr_fixed_en_width,'|'
           write(stdout,'(1x,a21,5x,a47,4x,a1)')    '|  Smearing Function                         :',&
-		trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
+             trim(param_get_smearing_type(gyrotropic_smr_index)),'|'
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  degen_thresh                              :',gyrotropic_degen_thresh,'|'
 
        if(kmesh(1)==gyrotropic_kmesh(1) .and. kmesh(2)==gyrotropic_kmesh(2) .and. kmesh(3)==gyrotropic_kmesh(3) ) then
@@ -3658,12 +3712,12 @@ contains
     endif
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
 
-    if (.not.on_root .and. .not.allocated(m_matrix)) then
-       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-       if (ierr/=0)&
-            call io_error('Error allocating m_matrix in param_chkpt_dist')
-    endif
-    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+!    if (.not.on_root .and. .not.allocated(m_matrix)) then
+!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+!       if (ierr/=0)&
+!            call io_error('Error allocating m_matrix in param_chkpt_dist')
+!    endif
+!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
     
     call comms_bcast(have_disentangled,1)
 
@@ -5667,6 +5721,7 @@ contains
     call comms_bcast(num_cg_steps,1)
     call comms_bcast(conv_tol,1)
     call comms_bcast(conv_window,1)
+    call comms_bcast(guiding_centres,1)
     call comms_bcast(wannier_plot,1)
     call comms_bcast(num_wannier_plot,1)
     if(num_wannier_plot>0) then
@@ -5859,6 +5914,12 @@ contains
     call comms_bcast(lfixstep,1)
     call comms_bcast(lsitesymmetry,1)
     call comms_bcast(frozen_states,1)
+
+    !vv: SCDM keywords
+    call comms_bcast(scdm_proj,1)
+    call comms_bcast(scdm_mu,1)
+    call comms_bcast(scdm_sigma,1)
+    call comms_bcast(scdm_entanglement,1)
 
     call comms_bcast(num_proj,1)
     if(num_proj>0) then
