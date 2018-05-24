@@ -47,10 +47,14 @@ contains
 
     if (timing_level>0) call io_stopwatch('plot: main',1)
 
-    write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
-    write(stdout,'(1x,a)') '|                               PLOTTING                                    |'
-    write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
-    write(stdout,*)
+    ! Print the header only if there is something to plot
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+        wannier_plot .or. write_u_matrices) then
+        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+        write(stdout,'(1x,a)') '|                               PLOTTING                                    |'
+        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+        write(stdout,*)
+    end if
 
     if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr) then
        ! Check if the kmesh includes the gamma point
