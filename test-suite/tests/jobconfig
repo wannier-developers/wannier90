@@ -102,6 +102,11 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('gaas2.win', '')
 output = gaas2.wout
 
+[testw90_write_u_matrices]
+program = WANNIER90_UMAT
+inputs_args = ('gaas.win', '')
+output = gaas_u.mat
+
 # Benzene, valence and conduction
 [testw90_benzene_gamma_valcond/]
 program = WANNIER90_WOUT_OK
