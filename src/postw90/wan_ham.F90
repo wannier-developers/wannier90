@@ -21,8 +21,9 @@ module w90_wan_ham
 
   private
 
-  public :: wham_get_D_h, wham_get_eig_deleig
+  public :: wham_get_D_h, wham_get_eig_deleig, wham_get_eig_deleig_TB_conv, wham_get_D_h_P_value
   public :: wham_get_occ_mat_list, wham_get_eig_UU_HH_JJlist
+  public :: wham_get_eig_UU_HH_AA_sc, wham_get_eig_UU_HH_AA_sc_TB_conv 
 
   contains
 
@@ -108,6 +109,52 @@ module w90_wan_ham
     enddo
 
   end subroutine wham_get_D_h
+
+  subroutine wham_get_D_h_P_value(delHH,UU,eig,D_h)
+  !=========================================!
+  !                                         !
+  !! Compute D^H_a=UU^dag.del_a UU (a=x,y,z) 
+  !! using Eq.(24) of WYSV06                 
+  !  and prescription for energy denominator
+  !  from BK81 
+  !                                         !
+  !=========================================!
+
+    ! TO DO: Implement version where energy denominators only connect
+    !        occupied and empty states. In this case probably do not need
+    !        to worry about avoiding small energy denominators
+
+    use w90_constants, only     : dp,cmplx_0
+    use w90_parameters, only    : num_wann,sc_eta
+    use w90_utility, only       : utility_rotate
+
+    ! Arguments
+    !
+    complex(kind=dp), dimension(:,:,:), intent(in)  :: delHH
+    complex(kind=dp), dimension(:,:), intent(in)    :: UU
+    real(kind=dp),    dimension(:),   intent(in)    :: eig
+    complex(kind=dp), dimension(:,:,:), intent(out) :: D_h
+
+    complex(kind=dp), allocatable :: delHH_bar_i(:,:)
+    integer                       :: n,m,i
+    real(kind=dp)                 :: deltaE
+
+
+    allocate(delHH_bar_i(num_wann,num_wann))
+    D_h=cmplx_0
+    deltaE = 0.d0
+    do i=1,3
+       delHH_bar_i(:,:)=utility_rotate(delHH(:,:,i),UU,num_wann)
+       do m=1,num_wann
+          do n=1,num_wann
+             if(n==m) cycle
+             deltaE = eig(m)-eig(n)
+             D_h(n,m,i)=delHH_bar_i(n,m)*(deltaE/(deltaE**(2)+sc_eta**(2)))
+          end do
+       end do
+    enddo
+
+  end subroutine wham_get_D_h_P_value
 
 
   subroutine wham_get_JJp_JJm_list(delHH,UU,eig,JJp_list,JJm_list,occ)
@@ -378,6 +425,34 @@ module w90_wan_ham
 
   end subroutine wham_get_eig_deleig
 
+  subroutine wham_get_eig_deleig_TB_conv(kpt,eig,del_eig,delHH,UU)
+    ! modified version of wham_get_eig_deleig for the TB convention
+    ! avoids recalculating delHH and UU, works with input values
+ 
+    !! Given a k point, this function returns eigenvalues E and
+    !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
+    !
+    use w90_parameters, only: num_wann
+    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_postw90_common, only : pw90common_fourier_R_to_k
+    use w90_utility, only : utility_diagonalize
+
+    real(kind=dp), dimension(3), intent(in)         :: kpt
+    !! the three coordinates of the k point vector (in relative coordinates)
+    real(kind=dp), intent(out)                      :: del_eig(num_wann,3)
+    real(kind=dp), intent(in)                      :: eig(num_wann)
+    complex(kind=dp), dimension(:,:,:), intent(in) :: delHH
+    !! the delHH matrix (derivative of H) at kpt
+    complex(kind=dp), dimension(:,:), intent(in)   :: UU
+    !! the rotation matrix that gives the eigenvectors of HH
+
+    call wham_get_deleig_a(del_eig(:,1),eig,delHH(:,:,1),UU)
+    call wham_get_deleig_a(del_eig(:,2),eig,delHH(:,:,2),UU)
+    call wham_get_deleig_a(del_eig(:,3),eig,delHH(:,:,3),UU)
+
+  end subroutine wham_get_eig_deleig_TB_conv
+
+
   
   subroutine wham_get_eig_UU_HH_JJlist(kpt,eig,UU,HH,JJp_list,JJm_list,occ)
   !========================================================!
@@ -419,5 +494,71 @@ module w90_wan_ham
     enddo
 
   end subroutine wham_get_eig_UU_HH_JJlist
+
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt,eig,UU,HH,HH_da,HH_dadb)
+  !========================================================!
+  !                                                        ! 
+  ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
+  ! satisfying the TB phase convention
+  !                                                        ! 
+  !========================================================!
+
+    use w90_parameters, only     : num_wann
+    use w90_get_oper, only       : HH_R,get_HH_R,AA_R,get_AA_R
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv
+    use w90_utility, only        : utility_diagonalize
+
+    real(kind=dp), dimension(3), intent(in)           :: kpt
+    real(kind=dp), intent(out)                        :: eig(num_wann)
+    complex(kind=dp), dimension(:,:), intent(out)     :: UU
+    complex(kind=dp), dimension(:,:), intent(out)     :: HH
+    complex(kind=dp), dimension(:,:,:), intent(out)       :: HH_da
+    complex(kind=dp), dimension(:,:,:,:), intent(out)     :: HH_dadb
+
+    integer                       :: i
+
+    call get_HH_R
+    call get_AA_R
+
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt,HH_R,AA_R,OO=HH,&
+                                                OO_da=HH_da(:,:,:),&
+                                                OO_dadb=HH_dadb(:,:,:,:))
+    call utility_diagonalize(HH,num_wann,eig,UU) 
+
+  end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
+
+
+
+  subroutine wham_get_eig_UU_HH_AA_sc(kpt,eig,UU,HH,HH_da,HH_dadb)
+  !========================================================!
+  !                                                        ! 
+  !! Wrapper routine used to reduce number of Fourier calls
+  !                                                        ! 
+  !========================================================!
+
+    use w90_parameters, only     : num_wann
+    use w90_get_oper, only       : HH_R,get_HH_R
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_new_second_d
+    use w90_utility, only        : utility_diagonalize
+
+    real(kind=dp), dimension(3), intent(in)           :: kpt
+    real(kind=dp), intent(out)                        :: eig(num_wann)
+    complex(kind=dp), dimension(:,:), intent(out)     :: UU
+    complex(kind=dp), dimension(:,:), intent(out)     :: HH
+    complex(kind=dp), dimension(:,:,:), intent(out)       :: HH_da
+    complex(kind=dp), dimension(:,:,:,:), intent(out)     :: HH_dadb
+
+    integer                       :: i
+
+    call get_HH_R
+
+    call pw90common_fourier_R_to_k_new_second_d(kpt,HH_R,OO=HH,&
+                                                OO_da=HH_da(:,:,:),&
+                                                OO_dadb=HH_dadb(:,:,:,:))
+    call utility_diagonalize(HH,num_wann,eig,UU) 
+
+  end subroutine wham_get_eig_UU_HH_AA_sc
+
+
 
 end module w90_wan_ham
