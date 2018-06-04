@@ -2689,7 +2689,128 @@ and compute the interband natural optical activity\\
   8 MPI processes) \\
 
 
+
+
+
 \end{enumerate}
+
+\sectiontitle{25: Gallium Arsenide -- Nonlinear shift current}
+
+\begin{itemize}
+
+\item Outline: \textit{Calculate the nonlinear shift current of inversion assymetric fcc Gallium Arsenide. In preparation for this example it may be useful to read Ref.
+\cite{ibanez-azpiroz_ab_2018} }
+
+
+
+\item Directory: \verb|examples/example25/|
+
+\item Input files:
+
+\begin{itemize}
+
+\item[--] \verb|GaAs.scf| \textit{The {\tt PWSCF} input file for ground state calculation}
+\item[--] \verb|GaAs.nscf| \textit{The {\tt PWSCF} input file to obtain Bloch states on a uniform grid}
+\item[--] \verb|GaAs.pw2wan| \textit{The input file for} \verb|pw2wannier90|
+\item[--] \verb|GaAs.win| \textit{The} \verb|wannier90| \textit{and} \verb|postw90| \textit{input file}
+
+
+\end{itemize}
+
+
+\begin{enumerate}
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < GaAs.scf > scf.out|
+
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < GaAs.nscf > nscf.out|
+
+\item Run {\tt Wannier90} to generate a list of the required overlaps (written into the \verb|GaAs.nnkp| file)
+
+\verb|wannier90.x -pp GaAs|
+
+
+\item Run {\tt pw2wannier90} to compute:
+
+\begin{itemize}
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between spinor 
+Bloch states (written in the \verb|GaAs.mmn| file) 
+\item[--] The projections for the starting guess (written in the \verb|GaAs.amn| file)
+
+\end{itemize}
+
+
+\verb|pw2wannier90.x < GaAs.pw2wan > pw2wan.out|
+
+\item Run {\tt wannier90} to  compute MLWFs
+
+\verb|wannier90.x GaAs|
+
+\item Run {\tt postw90} to compute nonlinear shift current
+
+\verb|postw90.x GaAs| (serial execution)
+
+\verb|mpirun -np 8 postw90.x GaAs| (example of parallel execution with 8 MPI processes)
+
+\end{enumerate}
+
+
+
+
+\end{itemize}
+
+
+\subsection*{Shift current $\sigma^{abc}$}
+
+The shift current tensor of GaAs has only one independent component that is finite, namely $\sigma^{xyz}$. 
+For its computation, set
+\begin{verbatim}
+berry = true
+berry_task = sc
+\end{verbatim}
+Like the linear optical conductivity, the shift current is a frequency-dependent quantity. 
+The frequency window and step is controlled by \verb|kubo_freq_min|, \verb|kubo_freq_max| and 
+\verb|kubo_freq_step|, as explained in the users guide. 
+
+The shift current requires an integral over the Brillouin zone. The interpolated k-mesh is controlled by \verb|berry_kmesh|,
+which has been set to 
+\begin{verbatim}
+berry_kmesh = 100 100 100
+ \end{verbatim}
+We also need to input the value of the Fermi level in eV:
+\begin{verbatim}
+fermi_energy = [insert your value here]
+\end{verbatim}
+
+Due to the sum over intermediate states involved in the calculation of the shift current, 
+one needs to consider a small broadening parameter to avoid numerical problems due to possible degeneracies
+(see parameter $\eta$ in Eq. (36) of Ref. \cite{ibanez-azpiroz_ab_2018} and related discussion).
+This parameter is controlled by \verb|sc_eta|. It is normally found that values between 0.01 eV and 0.1 eV 
+yield an stable spectrum. The default value is set to  $0.04$ eV.
+
+Finally, \verb|sc_phase_conv| controls the phase convention used for the Bloch sums. 
+\verb|sc_phase_conv=1| uses the so-called tight-binding convention, whereby the Wannier centres are included
+into the phase, while   \verb|sc_phase_conv=2| leaves the Wannier centres out of the phase.
+These two possible conventions are explained in Ref. \cite{pythtb}. 
+Note that the overall shift-current spectrum does not depend on the chosen convention,
+but the individual terms that compose it do.
+
+
+On output, the program generates a set of 18 files named \verb|SEED-sc_***.dat|, 
+which correspond to the different tensor components  of the shift current
+(note that the 9 remaining components until totalling $3\times3\times3=27$ 
+can be obtained from the 18 outputed by taking into account that $\sigma^{abc}$ is 
+symmetric under $b\leftrightarrow c$ index exchange).
+For plotting the only finite shift-current component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as in the upper 
+panel of Fig. 3 in Ref. \cite{ibanez-azpiroz_ab_2018},
+\begin{verbatim}
+myshell> gnuplot
+gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
+\end{verbatim} 
 
 
 
