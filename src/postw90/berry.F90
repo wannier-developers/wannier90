@@ -61,7 +61,7 @@ module w90_berry
   integer,   dimension(6)   , parameter , public :: berry_alpha_S=alpha_S
   integer,   dimension(6)   , parameter, public::  berry_beta_S=beta_S
 !  integer,   dimension(3,3) , parameter, public::  berry_alpha_beta_S=  (/  (/1,4,5/), (/ 4,2,6 /)  , (/ 5,6,3 /)   /)
-  integer, parameter, public::  berry_alpha_beta_S(3,3) =  reshape((/ 1,4,5,    4,2,6,   5,6,3 /), (/3,3/))
+  integer, parameter, public:: berry_alpha_beta_S(3,3) = reshape((/ 1,4,5, 4,2,6, 5,6,3 /),(/3,3/))
 !(/  (/1,4,5/), (/ 4,2,6 /)  , (/ 5,6,3 /)   /)
 
 
@@ -1281,13 +1281,16 @@ module w90_berry
     !
     use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_re_tr,utility_im_tr,utility_w0gauss,utility_w0gauss_vec
-    use w90_parameters, only     : num_wann,nfermi,kubo_nfreq,kubo_freq_list,fermi_energy_list,kubo_smr_index,&
-                                   berry_kmesh,kubo_adpt_smr_fac,kubo_adpt_smr_max,kubo_adpt_smr,&
-                                   kubo_eigval_max,kubo_smr_fixed_en_width,sc_phase_conv,sc_w_thr
-    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec_dadb, pw90common_fourier_R_to_k_new_second_d,&
-                                   pw90common_get_occ, pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
-    use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list,wham_get_D_h, wham_get_eig_UU_HH_AA_sc,&
-                                   wham_get_eig_deleig,wham_get_D_h_P_value,wham_get_eig_deleig_TB_conv,wham_get_eig_UU_HH_AA_sc_TB_conv 
+    use w90_parameters, only     : num_wann,nfermi,kubo_nfreq,kubo_freq_list,fermi_energy_list,&
+                                   kubo_smr_index,berry_kmesh,kubo_adpt_smr_fac,&
+                                   kubo_adpt_smr_max,kubo_adpt_smr,kubo_eigval_max,&
+                                   kubo_smr_fixed_en_width,sc_phase_conv,sc_w_thr
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec_dadb, &
+                                   pw90common_fourier_R_to_k_new_second_d,pw90common_get_occ, &
+                                   pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
+    use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list,wham_get_D_h, &
+                                   wham_get_eig_UU_HH_AA_sc,wham_get_eig_deleig,wham_get_D_h_P_value,&
+                                   wham_get_eig_deleig_TB_conv,wham_get_eig_UU_HH_AA_sc_TB_conv 
     use w90_get_oper, only       : AA_R
     use w90_utility, only        : utility_rotate,utility_zdotu
     ! Arguments
@@ -1430,12 +1433,14 @@ module w90_berry
             ! its composed of 8 terms in total, see Eq (34) combined with (30) and
             ! (32) of IATS18
             gen_r_nm(:) = (     AA_da_bar(n,m,:,a)& 
-                                +( (AA_bar(n,n,:)-AA_bar(m,m,:))*D_h(n,m,a) + (AA_bar(n,n,a)-AA_bar(m,m,a))*D_h(n,m,:)) &
+                                +( (AA_bar(n,n,:)-AA_bar(m,m,:))*D_h(n,m,a) + &
+                                 (AA_bar(n,n,a)-AA_bar(m,m,a))*D_h(n,m,:)) &
                                 -cmplx_i*AA_bar(n,m,:)*(AA_bar(n,n,a)-AA_bar(m,m,a))&
                                 +sum_AD(:,a)& 
                                 +cmplx_i*(HH_dadb_bar(n,m,:,a)&
                                 +sum_HD(:,a)& 
-                                +(D_h(n,m,:)*(eig_da(n,a)-eig_da(m,a)) + D_h(n,m,a)*(eig_da(n,:)-eig_da(m,:))  ) )&  
+                                +(D_h(n,m,:)*(eig_da(n,a)-eig_da(m,a)) + &
+                                  D_h(n,m,a)*(eig_da(n,:)-eig_da(m,:))  ) )&  
                                  /(eig(m)-eig(n)) )
 
             ! loop over the remaining two indexes of the matrix product. 
@@ -1455,16 +1460,18 @@ module w90_berry
           ! multiply matrix elements with delta function for the relevant frequencies
           if (istart<=iend) then
               delta=0.0
-              delta(istart:iend)= utility_w0gauss_vec( (eig(m)-eig(n)+omega(istart:iend))/eta_smr,kubo_smr_index)/eta_smr 
-              call DGER( 18 , iend-istart+1 , occ_fac , I_nm , 1 , delta(istart:iend) , 1 , sc_k_list(:,:,istart:iend) , 18 )
+              delta(istart:iend)= &
+               utility_w0gauss_vec( (eig(m)-eig(n)+omega(istart:iend))/eta_smr,kubo_smr_index)/eta_smr 
+              call DGER(18,iend-istart+1,occ_fac,I_nm,1,delta(istart:iend),1,sc_k_list(:,:,istart:iend),18)
           endif
           ! same for delta(E_mn-w)
           istart=max(int( (eig(m)-eig(n)-sc_w_thr*eta_smr-wmin)/wstep+1 ),1)
           iend=  min(int( (eig(m)-eig(n)+sc_w_thr*eta_smr-wmin)/wstep+1 ),kubo_nfreq)
           if (istart<=iend) then
               delta=0.0
-              delta(istart:iend)= utility_w0gauss_vec( (eig(n)-eig(m)+omega(istart:iend))/eta_smr,kubo_smr_index)/eta_smr 
-              call DGER( 18 , iend-istart+1 , occ_fac , I_nm , 1 , delta(istart:iend) , 1 , sc_k_list(:,:,istart:iend) , 18 )
+              delta(istart:iend)= &
+               utility_w0gauss_vec( (eig(n)-eig(m)+omega(istart:iend))/eta_smr,kubo_smr_index)/eta_smr 
+              call DGER(18,iend-istart+1,occ_fac,I_nm,1,delta(istart:iend),1,sc_k_list(:,:,istart:iend),18)
           endif
 
         enddo ! bands
