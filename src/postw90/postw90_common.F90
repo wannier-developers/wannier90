@@ -35,7 +35,8 @@ module w90_postw90_common
   public :: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
   public :: num_int_kpts_on_node, int_kpts, weight
   public :: pw90common_kmesh_spacing
-  public :: pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv, pw90common_fourier_R_to_k_vec_dadb, pw90common_fourier_R_to_k_vec_dadb_TB_conv
+  public :: pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv, &
+            pw90common_fourier_R_to_k_vec_dadb, pw90common_fourier_R_to_k_vec_dadb_TB_conv
 
 ! AAM PROBABLY REMOVE THIS
   ! This 'save' statement could probably be ommited, since this module 
@@ -928,7 +929,8 @@ module w90_postw90_common
   !=======================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann, use_ws_distance, wannier_centres, recip_lattice
+    use w90_parameters, only    : timing_level,num_kpts,kpt_latt, num_wann, & 
+                                  use_ws_distance, wannier_centres, recip_lattice
     use w90_ws_distance, only   : irdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility,    only : utility_cart_to_frac
 
@@ -981,12 +983,14 @@ module w90_postw90_common
         do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
 
-              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir)+wannier_centres_frac(:,j)-wannier_centres_frac(:,i),dp))
+              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir)+&
+                    wannier_centres_frac(:,j)-wannier_centres_frac(:,i),dp))
               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
               if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
               if(present(OO_da)) then
                do a=1,3
-                  OO_da(i,j,a)=OO_da(i,j,a)+cmplx_i*(crvec(a,ir)+local_wannier_centres(a,j)-local_wannier_centres(a,i))*phase_fac*OO_R(i,j,ir)
+                  OO_da(i,j,a)=OO_da(i,j,a)+cmplx_i*(crvec(a,ir)+local_wannier_centres(a,j)-&
+                               local_wannier_centres(a,i))*phase_fac*OO_R(i,j,ir)
                enddo
               endif
               if(present(OO_dadb)) then
@@ -994,7 +998,8 @@ module w90_postw90_common
                   do b=1,3
                       OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)-&
                       (crvec(a,ir)+local_wannier_centres(a,j)-local_wannier_centres(a,i))*&
-                      (crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*phase_fac*OO_R(i,j,ir)
+                      (crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*&
+                       phase_fac*OO_R(i,j,ir)
                   enddo
                  enddo
               end if
@@ -1012,7 +1017,8 @@ module w90_postw90_common
           if(present(OO)) OO(i,j)=OO(i,j)+phase_fac*OO_R(i,j,ir)
           if(present(OO_da)) then
            do a=1,3
-             OO_da(i,j,a)=OO_da(i,j,a)+cmplx_i*(crvec(a,ir)+local_wannier_centres(a,j)-local_wannier_centres(a,i))*phase_fac*OO_R(i,j,ir)
+             OO_da(i,j,a)=OO_da(i,j,a)+cmplx_i*(crvec(a,ir)+&
+             local_wannier_centres(a,j)-local_wannier_centres(a,i))*phase_fac*OO_R(i,j,ir)
            enddo
           endif
           if(present(OO_dadb)) then
@@ -1020,7 +1026,8 @@ module w90_postw90_common
               do b=1,3
                   OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)-&
                       (crvec(a,ir)+local_wannier_centres(a,j)-local_wannier_centres(a,i))*&
-                      (crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*phase_fac*OO_R(i,j,ir)
+                      (crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*&
+                       phase_fac*OO_R(i,j,ir)
               enddo
              enddo
           end if
@@ -1214,7 +1221,8 @@ module w90_postw90_common
   !====================================================================!
 
     use w90_constants, only     : dp,cmplx_0,cmplx_i,twopi
-    use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance, wannier_centres, recip_lattice
+    use w90_parameters, only    : num_kpts,kpt_latt, num_wann, use_ws_distance, &
+                                  wannier_centres, recip_lattice
     use w90_ws_distance, only   : irdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility,    only : utility_cart_to_frac
 
@@ -1285,7 +1293,8 @@ module w90_postw90_common
         do i=1,num_wann
             do ideg = 1,wdist_ndeg(j,i,ir)
 
-              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir)+wannier_centres_frac(:,j)-wannier_centres_frac(:,i),dp))
+              rdotk=twopi*dot_product(kpt(:),real(irdist_ws(:,ideg,i,j,ir)+&
+                    wannier_centres_frac(:,j)-wannier_centres_frac(:,i),dp))
               phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
 !              rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
 !              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
@@ -1307,7 +1316,8 @@ module w90_postw90_common
                else 
                 do a=1,3
                  do b=1,3
-                  OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)+cmplx_i*(crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*phase_fac*OO_R(i,j,ir,a)
+                  OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)+cmplx_i*(crvec(b,ir)+local_wannier_centres(b,j)-&
+                                   local_wannier_centres(b,i))*phase_fac*OO_R(i,j,ir,a)
                  enddo
                 enddo
                endif
@@ -1346,7 +1356,8 @@ module w90_postw90_common
            if ((irvec(1,ir).eq.0).and.(irvec(2,ir).eq.0).and.(irvec(3,ir).eq.0).and.(i.eq.j)) then
             do a=1,3
              do b=1,3
-              OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)+cmplx_i*(crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*phase_fac*&
+              OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)+cmplx_i*(crvec(b,ir)+local_wannier_centres(b,j)-&
+                                local_wannier_centres(b,i))*phase_fac*&
                                ( OO_R(i,j,ir,a)-local_wannier_centres(a,j) )
              enddo
             enddo
@@ -1354,7 +1365,8 @@ module w90_postw90_common
            else 
             do a=1,3
              do b=1,3
-              OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)+cmplx_i*(crvec(b,ir)+local_wannier_centres(b,j)-local_wannier_centres(b,i))*phase_fac*OO_R(i,j,ir,a)
+              OO_dadb(i,j,a,b)=OO_dadb(i,j,a,b)+cmplx_i*(crvec(b,ir)+local_wannier_centres(b,j)-&
+                               local_wannier_centres(b,i))*phase_fac*OO_R(i,j,ir,a)
              enddo
             enddo
            endif
