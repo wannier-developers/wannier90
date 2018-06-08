@@ -489,6 +489,7 @@ module w90_parameters
   public :: param_lib_set_atoms
   public :: param_memory_estimate
   public :: param_get_smearing_type
+  public :: param_get_convention_type
   public :: param_dist
   public :: param_chkpt_dist
 
@@ -2328,6 +2329,26 @@ contains
 
   end function param_get_smearing_type
 
+  function param_get_convention_type(sc_phase_conv)
+  !! This function returns a string describing the convention
+  !! associated to a sc_phase_conv integer value.
+    integer, intent(in) :: sc_phase_conv
+    !! The integer index for which we want to get the string
+    character(len=80)   :: param_get_convention_type
+
+    character(len=4)   :: orderstr
+
+    if (sc_phase_conv .eq. 1) then
+       param_get_convention_type = "Tight-binding convention"
+    else if (sc_phase_conv .eq. 2) then
+       param_get_convention_type = "Wannier90 convention"
+    else
+       param_get_convention_type = "Unknown type of convention"
+    end if
+
+  end function param_get_convention_type
+
+
 
   function get_smearing_index(string,keyword)
   !! This function parses a string containing the type of 
@@ -3003,11 +3024,8 @@ contains
        if(index(berry_task,'sc')>0) then
         write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Smearing factor for shift current         :',sc_eta,'|'
         write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Frequency theshold for shift current      :',sc_w_thr,'|'
-        if (sc_phase_conv.eq.1) then
-         write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Using TB phase convention, number             :',sc_phase_conv,'|'
-        else
-         write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Using W90 phase convention, number            :',sc_phase_conv,'|'
-        end if 
+        write(stdout,'(1x,a46,1x,a27,3x,a1)')     '|  Bloch sums                                :',&
+                                                   trim(param_get_convention_type(sc_phase_conv)),'|'
        end if
        if(kubo_adpt_smr.eqv.adpt_smr .and. kubo_adpt_smr_fac==adpt_smr_fac .and. kubo_adpt_smr_max==adpt_smr_max &
             .and. kubo_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==kubo_smr_index) then
