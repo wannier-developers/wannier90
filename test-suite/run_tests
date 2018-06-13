@@ -3,11 +3,21 @@
 This script runs the tests either asking interactively if you want to run 
 only one, or runs them all with the proper command-line options.
 """
+from __future__ import print_function
+
+import sys
 import os
 import subprocess
 import sys
 
 DEFAULT_CATEGORY = 'default' # The default category
+
+if sys.version_info >= (3, 0):
+    my_input = input
+else:
+    # python 2.x.
+    my_input = raw_input
+
 
 # Folder of this file
 this_folder = os.path.abspath(os.path.split(__file__)[0]) 
@@ -59,16 +69,16 @@ def prompt_for_category():
     valid_categories_with_type = get_valid_categories()
     valid_categories = [_[0] for _ in valid_categories_with_type]
 
-    print "This is the list of valid categories:"
+    print("This is the list of valid categories:")
     for idx, (cat, is_single_test) in enumerate(
             valid_categories_with_type, start=1):
-        print "{:10s} [{}] {}".format("TEST" if is_single_test else "CATEGORY",
-                                      idx, cat)
-    print " ----------------------------------------------------------------------------"
-    print " -- If you don't want this prompt, or want more options, call this command --"
-    print " -- with a '-h' option to get help on the command-line options             --"
-    print " ----------------------------------------------------------------------------"
-    ans = raw_input("Which category do you want to run? [{}] ".format(DEFAULT_CATEGORY))
+        print("{:10s} [{}] {}".format("TEST" if is_single_test else "CATEGORY",
+                                      idx, cat))
+    print(" ----------------------------------------------------------------------------")
+    print(" -- If you don't want this prompt, or want more options, call this command --")
+    print(" -- with a '-h' option to get help on the command-line options             --")
+    print(" ----------------------------------------------------------------------------")
+    ans = my_input("Which category do you want to run? [{}] ".format(DEFAULT_CATEGORY))
     try:
         chosen_idx = int(ans)
         chosen_idx -= 1
@@ -84,12 +94,12 @@ def prompt_for_category():
     if chosen_test == '':
         chosen_test = DEFAULT_CATEGORY
 
-    print "Chosen test(s): {}".format(chosen_test)
+    print("Chosen test(s): {}".format(chosen_test))
     if chosen_test not in valid_categories:
-        print "*"*72
-        print "WARNING! I'm going to ask 'testcode' to run category '{}', but ".format(chosen_test)
-        print "I'm quite confident it's not a valid category or test..."
-        print "*"*72
+        print("*"*72)
+        print("WARNING! I'm going to ask 'testcode' to run category '{}', but ".format(chosen_test))
+        print("I'm quite confident it's not a valid category or test...")
+        print("*"*72)
     return chosen_test
 
 if __name__ == "__main__":
@@ -122,7 +132,7 @@ if __name__ == "__main__":
             continue
 
         if args.verbose:
-            print "Creating needed files in {}...".format(folder)
+            print("Creating needed files in {}...".format(folder))
             return_code = subprocess.call(
                 ['make', '-C', folderabspath],
                 stdout=sys.stdout, stderr=sys.stderr)
@@ -132,7 +142,7 @@ if __name__ == "__main__":
                 ['make', '-C', folderabspath],
                 stdout=FNULL, stderr=sys.stderr)
             if return_code:
-                print "*** WARNING!! make failed... continuing anyway, but your tests might fail"
+                print("*** WARNING!! make failed... continuing anyway, but your tests might fail")
 
 
     the_category = args.category
@@ -143,7 +153,7 @@ if __name__ == "__main__":
             the_category = prompt_for_category()
     else:
         if args.default:
-            print >> sys.stderr, "You cannot specify both --default and --category"
+            print("You cannot specify both --default and --category", file=sys.stderr)
             sys.exit(1)
 
 
@@ -167,8 +177,8 @@ if __name__ == "__main__":
         command_pieces.append("--processors={}".format(args.numprocs))
 
     if args.verbose:
-        print "I will run the following command:"
-        print " ".join(command_pieces)   
+        print("I will run the following command:")
+        print(" ".join(command_pieces))
 
     return_code = subprocess.call(
         command_pieces
