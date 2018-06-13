@@ -6,6 +6,8 @@ only one, or runs them all with the proper command-line options.
 NOTE: give a look also to 'testcode.py tidy', that however does not do
       exactly what we want.
 """
+from __future__ import print_function
+
 import argparse
 import os
 import shutil
@@ -78,11 +80,11 @@ if __name__ == "__main__":
             # between glob.fnmatch and glob.glob)
             continue
         if testname not in valid_categories:
-            print "WARNING: '{}' found but it's not listed as a test, skipping".format(testname)
+            print("WARNING: '{}' found but it's not listed as a test, skipping".format(testname))
             continue
 
 
-        print "[{}]".format(testname)
+        print("[{}]".format(testname))
         
         entries_to_delete = []
         for pattern in global_patterns_to_delete:
@@ -114,7 +116,7 @@ if __name__ == "__main__":
                 entries_gitignored.append(fname)
 
         for entry in entries_to_delete:
-            print "    Deleting {}...".format(entry)
+            print("    Deleting {}...".format(entry))
             entryfname = os.path.join(the_folder, entry)
             if os.path.isfile(entryfname):
                 os.remove(entryfname)
@@ -127,11 +129,11 @@ if __name__ == "__main__":
         for entry in entries_gitignored:
             entryfname = os.path.join(the_folder, entry)
             if args.also_ignored:
-                print "    Deleting git-ignored {}...".format(entry)
+                print("    Deleting git-ignored {}...".format(entry))
                 # These are always ignored
                 os.remove(entryfname)
             else:
-                print "    ** Potentially deletable (use -i option to delete): {}".format(entry)
+                print("    ** Potentially deletable (use -i option to delete): {}".format(entry))
 
 
 
