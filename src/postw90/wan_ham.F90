@@ -505,7 +505,8 @@ module w90_wan_ham
 
     use w90_parameters, only     : num_wann
     use w90_get_oper, only       : HH_R,get_HH_R,AA_R,get_AA_R
-    use w90_postw90_common, only : pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_new_second_d, &
+                                   pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_utility, only        : utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
