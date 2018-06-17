@@ -139,9 +139,9 @@ output = LaVO3.wout
 
 # Lead, 4 lowest states; Fermi surface, print bvec
 [testw90_bvec]
-program = WANNIER90_WOUT_OK
+program = WANNIER90_BVEC
 inputs_args = ('lead.win', '')
-output = lead.wout
+output = lead.bvec
 
 
 # Test of disentanglement in spheres in k-space

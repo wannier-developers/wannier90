@@ -657,23 +657,6 @@ contains
     end do
     
     close(file_unit)
-!  
-!   RM and SP - write to file vectors b and their weight wb for each k-point 
-!   This is used by EPW to compute the velocity. 
-!   Note that you need to put in your Wannier input:
-!     write_hr        = .true.
-!     write_rmn       = .true.
-!     write_bvec      = .true. 
-    if (write_bvec) then
-      open(file_unit,file=trim(seedname)//'.bvec',form='formatted',status='unknown',err=101)
-      write(file_unit,*) nntot
-      do nkp = 1, num_kpts
-         do nn = 1, nntot
-            write (file_unit,'(4F12.6)') bk(:,nn,nkp), wb(nn)
-         enddo
-      enddo
-      close(file_unit)
-    endif
 
     return
 
