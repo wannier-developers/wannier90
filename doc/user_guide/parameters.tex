@@ -1101,45 +1101,10 @@ The default value is 1.0E-3.
 \subsection[wannier\_plot]{\tt logical :: wannier\_plot}
 
 If $\verb#wannier_plot#=\verb#true#$, then the code will write out the
-Wannier functions in a super-cell whose size is defined by the
-variable \verb#wannier_plot_supercell#, and in a format specified by
-\verb#wannier_plot_format#
+Wannier functions in a format specified by \verb#wannier_plot_format#
 
 The default value of this parameter is \verb#false#.
 
-\subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
-
-Dimension of the `super-unit-cell' in which the WF are
-plotted. The super-unit-cell is \verb#wannier_plot_supercell# times
-the unit cell along all three linear dimensions (the `home' unit cell
-is kept approximately in the middle) if \verb#wannier_plot_supercell#
-is provided as a single integer.
-
-Otherwise, if three integers are
-provided, the super-unit-cell is \verb#wannier_plot_supercell(i)#
-times the unit cell along the $i-$th linear dimension.
-
-The default value is 2$\times$2$\times$2.
-
-\subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
-
-WF can be plotted in either XCrySDen (xsf) format or Gaussian cube
-format. The valid options for this parameter are:
-\begin{itemize}
-\item[{\bf --}] \verb#xcrysden# (default)
-\item[{\bf --}] \verb#cube#
-%\item[{\bf --}] gopenmol
-%\item[{\bf --}] dan
-\end{itemize}
-
-If {\tt wannier\_plot\_format=cube}: Most visualisation programs
-(including XCrySDen) are only able to handle cube files for systems
-with orthogonal lattice vectors. However, there exist visulaisation program capable of dealing with non-orthogonal lattice vectors, such as VESTA. 
-  See \url{http://jp-minerals.org/vesta/en/}.\footnote{It's worth noting that another 
-  visualisation program is VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), for example, which is able to
-  deal with certain special cases of non-orthogonal lattice
-  vectors. See \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.}
-  Hence, it is now possible in \wannier\ to output Gaussian cube files for systems with non-orthogonal lattice vectors.
 
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
@@ -1153,10 +1118,51 @@ with orthogonal lattice vectors. However, there exist visulaisation program capa
  \verb#wannier_plot_list : 4-6, 10#
 
 
+\subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
+
+The code generates the WFs on a grid corresponding to a `super-unit-cell'. 
+If \verb#wannier_plot_supercell# is provided as a single integer, 
+then the size of the super-unit-cell is \verb#wannier_plot_supercell# times
+the size of the unit cell along all three linear dimensions (the `home' unit cell
+is kept approximately in the middle); otherwise, if three integers are
+provided, the size of the super-unit-cell is \verb#wannier_plot_supercell(i)#
+times the size of the unit cell along the $i-$th linear dimension.
+
+The default value is 2.
+
+
+\subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
+
+WF can be plotted in either XCrySDen (xsf) format or Gaussian cube
+format. The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}] \verb#xcrysden# (default)
+\item[{\bf --}] \verb#cube#
+%\item[{\bf --}] gopenmol
+%\item[{\bf --}] dan
+\end{itemize}
+
+If {\tt wannier\_plot\_format=xsf}: the code outputs the WF on the entire super-unit-cell 
+specified by {\tt wannier\_plot\_supercell}. 
+
+If {\tt wannier\_plot\_format=cube}: the code outputs the WF on a grid that is smaller 
+than the super-unit-cell specified by {\tt wannier\_plot\_supercell}. This grid is 
+determined by {\tt wannier\_plot\_mode}, {\tt wannier\_plot\_radius} and {\tt wannier\_plot\_scale}, 
+described in detail below. 
+
+The code is able to output Gaussian cube files for systems with non-orthogonal lattice vectors.
+Many visualisation programs (including XCrySDen), however, are only able to handle cube files for systems
+with \emph{orthogonal} lattice vectors. One visualisation program that is capable of dealing with non-orthogonal lattice vectors is 
+VESTA (\url{http://jp-minerals.org/vesta/en/}).\footnote{It's worth noting that another 
+  visualisation program, VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), is able to
+  deal with certain special cases of non-orthogonal lattice
+  vectors; see \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html} for details.}
+
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 
 Choose the mode in which to plot the WF, either as a molecule
-or as a crystal. Only relevant if {\tt wannier\_plot\_format=xcrysden}. 
+or as a crystal. 
+%Only relevant if {\tt wannier\_plot\_format=xcrysden}. 
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -1164,22 +1170,28 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#molecule# 
 \end{itemize}
 
+If {\tt wannier\_plot\_format=cube}: 
+\begin{itemize}
+\item if {\tt wannier\_plot\_mode = molecule}, then wherever the WF centre sits in the supercell, the origin of the cube is shifted (for the purpose of plotting only, ie, nothing is done to the U matrices etc) to coincide with the centre of mass of the atomic positions specified by the user in the {\tt *.win} input file. These atomic positions are also written to the cube file, so when it is visualised, the WF appears superimposed on the molecular structure. 
+\item if {\tt wannier\_plot\_mode = crystal}, then the WF is not shifted, but instead the code searches for atoms that are within a radius of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file. In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre.
+\item {\tt crystal} mode can be used for molecules, and {\tt molecule} mode can be used for crystals.
+\end{itemize}
 
 \subsection[wannier\_plot\_radius]{\tt real(kind=dp) ::
   wannier\_plot\_radius}
 
-If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt
-  wannier\_plot\_radius} determines the cut-off radius of the WF for
-  the purpose of plotting. {\tt wannier\_plot\_radius} must be greater than
+If {\tt wannier\_plot\_format=cube}, then {\tt
+  wannier\_plot\_radius} is the radius of the sphere that must fit inside the parallelepiped in which the WF is plotted. {\tt wannier\_plot\_radius} must be greater than
   0. Units are \AA.
 
 The default value is 3.5. 
 
 \subsection[wannier\_plot\_scale]{\tt real(kind=dp) ::
   wannier\_plot\_scale}
-If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt wannier\_plot\_scale} 
-scales a cube by a constant factor, producing a larger or smaller cube. {\tt wannier\_plot\_scale} must 
-be greater than 0. Units are \AA
+If {\tt wannier\_plot\_format=cube} and {\tt wannier\_plot\_mode=crystal}, then the code searches for atoms that are within a radius 
+of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file. 
+In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre. {\tt wannier\_plot\_scale} must 
+be greater than 0. This parameter is dimensionless.
 
 The default value is 1.0.
 

@@ -620,7 +620,6 @@ contains
 
     complex(kind=dp)     :: fac
     real(kind=dp)        :: rdotk
-    real(kind=dp)        :: delta
     integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit
     complex(kind=dp)     :: position(3)
     character (len=33) :: header
@@ -633,29 +632,40 @@ contains
     header='written on '//cdate//' at '//ctime
     write(file_unit,*) header ! Date and time
     write(file_unit,*) num_wann
+    write(file_unit,*) nrpts
 
     do loop_rpt=1,nrpts
        do m=1,num_wann
           do n=1,num_wann
-             delta=0._dp
-             if (m.eq.n) delta=1._dp
              position(:)=0._dp
              do nkp=1,num_kpts
                 rdotk=twopi*dot_product(kpt_latt(:,nkp),real(irvec(:,loop_rpt),dp))
                 fac=exp(-cmplx_i*rdotk)/real(num_kpts,dp)
                 do ind = 1, 3  
                    do nn = 1, nntot 
-                      ! Eq. C16 of Marzari and Vanderbilt PRB 56, 12847 (1997)     !
-                      position(ind) = position(ind) + &
-                                      wb(nn) * bk(ind,nn,nkp) * (m_matrix(n,m,nn,nkp) - delta) * fac
+                      if(m.eq.n) then
+                         ! For loop_rpt==rpt_origin, this reduces to
+                         ! Eq.(32) of Marzari and Vanderbilt PRB 56,
+                         ! 12847 (1997). Otherwise, is is Eq.(44)
+                         ! Wang, Yates, Souza and Vanderbilt PRB 74,
+                         ! 195118 (2006), modified according to
+                         ! Eqs.(27,29) of Marzari and Vanderbilt
+                         position(ind)=position(ind) - &
+                              wb(nn)*bk(ind,nn,nkp)*aimag(log(m_matrix(n,m,nn,nkp)))*fac
+                      else
+                         ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
+                         position(ind)=position(ind) + &
+                              cmplx_i*wb(nn)*bk(ind,nn,nkp)*m_matrix(n,m,nn,nkp)*fac
+                      endif
                    end do   
                 end do
-             end do
-             write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,cmplx_i*position(:)  
+             end do     
+             write( file_unit ,'(5I5,6F12.6)') irvec(:,loop_rpt),n,m,position(:)  
           end do
        end do
     end do
-    
+
+
     close(file_unit)
 
     return
@@ -686,7 +696,7 @@ contains
     character (len=33) :: header
     character (len=9)  :: cdate,ctime
     complex(kind=dp)   :: fac,pos_r(3)
-    real(kind=dp)      :: rdotk,delta
+    real(kind=dp)      :: rdotk
 
     if (tb_written) return
 
@@ -728,8 +738,6 @@ contains
        write(file_unit,'(/,3I5)') irvec(:,irpt)
        do i=1,num_wann
           do j=1,num_wann
-             delta=0._dp
-             if (i==j) delta=1._dp
              pos_r(:)=0._dp
              do ik=1,num_kpts
                 rdotk=twopi*dot_product(kpt_latt(:,ik),real(irvec(:,irpt),dp))
@@ -748,7 +756,7 @@ contains
                       else
                          ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
                          pos_r(idir)=pos_r(idir)+&
-                              cmplx_i*wb(nn)*bk(idir,nn,ik)*(m_matrix(j,i,nn,ik)-delta)*fac
+                              cmplx_i*wb(nn)*bk(idir,nn,ik)*m_matrix(j,i,nn,ik)*fac
                       endif
                    end do
                 end do

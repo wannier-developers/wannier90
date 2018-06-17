@@ -1,6 +1,8 @@
 """
 Parser function parse() to parse the _u.mat output file of Wannier90 (u matrices).
 """
+from __future__ import print_function
+
 import inspect
 import re
 from collections import defaultdict
@@ -17,8 +19,8 @@ def parse(fname):
     retdict = defaultdict(list)
 
     if show_output:
-        print "[{}.{}] Parsing file '{}'".format(
-            __name__, inspect.currentframe().f_code.co_name, fname)
+        print("[{}.{}] Parsing file '{}'".format(
+            __name__, inspect.currentframe().f_code.co_name, fname))
 
     with open(fname) as f:
         lines = f.readlines()
@@ -29,6 +31,6 @@ def parse(fname):
     retdict = dict(retdict)
     if show_output:
         for k in sorted(retdict):
-            print "  {}: {}".format(k, retdict[k])
-        print "-"*72
+            print("  {}: {}".format(k, retdict[k]))
+        print("-"*72)
     return retdict
