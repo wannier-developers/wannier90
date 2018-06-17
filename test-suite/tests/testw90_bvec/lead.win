@@ -3,8 +3,6 @@
  num_wann        =   4 
  num_iter        = 20 
 
- write_hr        = .true.
- write_rmn       = .true.
  write_bvec      = .true.
 
 ! SYSTEM
