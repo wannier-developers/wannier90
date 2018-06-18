@@ -46,7 +46,9 @@ module w90_utility
   public :: utility_im_tr
   public :: utility_im_tr_prod
   public :: utility_w0gauss
+  public :: utility_w0gauss_vec
   public :: utility_wgauss
+  public :: utility_zdotu
   public :: utility_diagonalize
 
 
@@ -156,6 +158,13 @@ contains
     call zgemm(transa,transb,m,n,k,cmplx_1,a,size(a,1),b,size(b,1),cmplx_0,c,m)
 
   end subroutine utility_zgemm_new
+  !=============================================================!
+   function utility_zdotu(a,b)
+    complex(kind=dp), intent(in),dimension(:)  :: a ,b
+    complex(kind=dp) :: utility_zdotu
+    utility_zdotu = sum(a*b)
+    return
+  end function utility_zdotu
 
   !=============================================================!
   subroutine utility_zgemmm(a, transa, b, transb, c, transc, &
@@ -1077,6 +1086,62 @@ contains
     enddo
     return
   end function utility_w0gauss
+
+
+  function utility_w0gauss_vec (x, n) result (res)
+    !-----------------------------------------------------------------------
+    !  Stepan Tsirkin: a vectorized version of the outine, gets x as an array.
+    !  
+    !! the derivative of utility_wgauss:  an approximation to the delta function
+    !!
+    !! (n>=0) : derivative of the corresponding Methfessel-Paxton utility_wgauss
+    !!
+    !! (n=-1 ): derivative of cold smearing:
+    !!              1/sqrt(pi)*exp(-(x-1/sqrt(2))**2)*(2-sqrt(2)*x)
+    !!
+    !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
+    !
+    use w90_constants, only : dp,pi
+    use w90_io, only        : io_error
+    implicit none
+    real(kind=dp),intent(in)   ::  x(:)
+    real(kind=dp),allocatable  :: res(:),arg(:)
+    
+    !! output: the value of the function
+    !! input: the point where to compute the function
+
+    integer :: n
+    !! input: the order of the smearing function
+    !
+    !    here the local variables
+    !
+    real(kind=dp) :: sqrtpm1
+
+    allocate ( res(size(x)) )
+    allocate ( arg(size(x)) )
+    sqrtpm1=1.0_dp/sqrt(pi)
+
+    if (n.eq. - 99) then
+       call io_error('utility_w0gauss_vec not implemented for n == 99')
+    endif
+
+    ! cold smearing  (Marzari-Vanderbilt)
+    if (n.eq. - 1) then
+       call io_error('utility_w0gauss_vec not implemented for n == -1')
+    endif
+
+    if (n.gt.10 .or. n.lt.0) &
+         call io_error('utility_w0gauss higher order smearing is untested and unstable')
+
+    ! Methfessel-Paxton
+    arg = min (200.0_dp, x**2)
+    res = exp ( - arg) * sqrtpm1
+    if (n.eq.0) return
+    call io_error('utility_w0gauss_vec not implemented for n >0 ')
+    return
+  end function utility_w0gauss_vec
+
+
 
   function qe_erf (x)  
     !---------------------------------------------------------------------
