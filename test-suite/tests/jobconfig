@@ -276,7 +276,11 @@ program = POSTW90_DOS_OK
 inputs_args = ('copper.win', '')
 output = copper-dos.dat
 
-
+# Test of shift current for GaAs
+[testpostw90_gaas_sc_xyz/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
 
 [categories]
 wannier_only = testw90_*

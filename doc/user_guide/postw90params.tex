@@ -85,8 +85,9 @@ The currently available modules in \texttt{postw90.x} are:
   slice of the BZ (see examples 17 and 18 of the tutorial).
 \item \texttt{berry}: Calculation of properties related to the BZ
   integral of the Berry curvature and Berry connection, including
-  anomalous Hall conductivity, orbital magnetisation, and optical
-  conductivity (see Chap.~\ref{ch:berry} and examples 18 and 19 of the
+  anomalous Hall conductivity, orbital magnetisation, optical
+  conductivity and nonlinear shift current 
+  (see Chap.~\ref{ch:berry} and examples 18, 19 and 25 of the
   tutorial).
 \item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
     including natural and current0induced optical rotation, 
@@ -277,22 +278,25 @@ magnetic moment per cell\\
   {\sc berry\_curv\_adpt\_kmesh\_thresh} & P & Threshold magnitude
   of the Berry curvature for adaptive refinement\\ 
   {\sc kubo\_freq\_min} & P & Lower limit of the frequency range for
-  optical spectra and JDOS (eV) \\
+  optical spectra, JDOS and shift current (eV) \\
   {\sc kubo\_freq\_max}& P & Upper limit of the frequency range for
-  optical spectra and JDOS (eV) \\
+  optical spectra, JDOS and shift current (eV) \\
   {\sc kubo\_freq\_step}& R &  Step for increasing
 the optical frequency in the specified range\\
   {\sc kubo\_eigval\_max}& P &  Maximum energy eigenvalue
-  included when evaluating the Kubo-Greenwood conductivity and JDOS\\
+  included when evaluating the Kubo-Greenwood conductivity, JDOS and shift current\\
   {\sc [kubo\_]adpt\_smr} & L & Use adaptive energy smearing for the 
-  optical conductivity and JDOS \\
+  optical conductivity, JDOS and shift current \\
   {\sc [kubo\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
   {\sc[kubo\_]adpt\_smr\_max} & P & Maximum allowed value for the 
   adaptive energy smearing (eV) \\
   {\sc [kubo\_]smr\_type} & S & Analytical form used for the broadened delta function
-  when computing the optical conductivity and JDOS\\  
+  when computing the optical conductivity, JDOS and shift current\\  
   {\sc [kubo\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
-  for the optical conductivity and JDOS (eV) \\
+  for the optical conductivity, JDOS and shift current (eV) \\
+  {\sc sc\_eta} & R  & Energy broadening of energy differences in the sum over virtual states when computing shift current\\
+  {\sc sc\_phase\_conv} & I  & Convention for phase factor of Bloch states when computing shift current\\
+  {\sc sc\_w\_thr} & R  & Frequency threshold for speeding up delta function integration when computing shift current\\
   \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
@@ -634,6 +638,65 @@ Unit in which the Berry curvature is specified at input (in {\tt
 \end{itemize}
 
 The default value is {\tt ang2}.
+
+\subsection{\tt real(kind=dp) :: sc\_eta}
+
+The width $\eta$ used to broaden energy differences in denominators of the form 
+%
+$$
+\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}}\rightarrow
+\text{Re}\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}+i\eta}.
+$$ 
+%
+The above is needed in shift-current calculations in order to avoid numerical problems
+caused by near-degeneracies in the sum over virtual states. 
+
+The units are eV. The default value is 0.4.
+
+
+\subsection{\tt integer :: sc\_phase\_conv}
+
+Convention for the expansion of the Bloch states in shift-current calculations. It can only take the values one or two.
+We follow the convention of Ref.~\cite{pythtb}:
+\begin{itemize}
+
+\item
+  1: Include Wannier centre ${\bm \tau}_{n}=\langle w_{n{\bf 0}}|{\bf r}| w_{n{\bf 0}} \rangle$ in the phase factor
+  (so-called tight-binding convention):
+%
+$$
+|u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}-{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
+$$ 
+%
+
+\item
+  2: Do not include Wannier centre in the phase factor (usual \verb|Wannier90| convention):
+%
+$$
+|u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}| w_{n\bf{R}} \rangle
+$$ 
+%
+\end{itemize}
+The convention does not affect the full shift-current matrix element, but it does affect
+the weights of the internal components that compose it (see Ref. \cite{ibanez-azpiroz_ab_2018}). 
+
+The default value is 1. 
+
+
+\subsection{\tt real(kind=dp)  :: sc\_w\_thr}
+
+Parameter $\alpha_{t}$ for speeding up the frequency integration in shift-current calculations.
+It settles the frequency threshold $\omega_{t}=\alpha_{t}\eta_{n{\bf k}}$
+(a factor times the broadening)
+beyond which the delta functions are taken as zero. 
+
+
+The default value is 5.0. 
+
+
+
+
+
 
 \clearpage
 \section{DOS}
