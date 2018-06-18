@@ -192,6 +192,9 @@ module w90_parameters
   integer,           public, save :: kubo_smr_index
   real(kind=dp),     public, save :: kubo_smr_fixed_en_width
   real(kind=dp),     public, save :: kubo_adpt_smr_max
+  integer,           public, save :: sc_phase_conv
+  real(kind=dp),     public, save :: sc_eta 
+  real(kind=dp),     public, save :: sc_w_thr 
   logical,           public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
@@ -476,6 +479,7 @@ module w90_parameters
   ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
   logical                            :: hr_plot 
 
+
   public :: param_read
   public :: param_write
   public :: param_postw90_write
@@ -486,6 +490,7 @@ module w90_parameters
   public :: param_lib_set_atoms
   public :: param_memory_estimate
   public :: param_get_smearing_type
+  public :: param_get_convention_type
   public :: param_dist
   public :: param_chkpt_dist
 
@@ -710,6 +715,8 @@ contains
     else
        if (found.and.on_root) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
+!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
+!       call io_error('Error: For spinor WF num_wann must be even')
     
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
@@ -1091,7 +1098,7 @@ contains
     if(berry .and. .not.found) call io_error &
          ('Error: berry=T and berry_task is not set')
     if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-             .and. index(berry_task,'kubo')==0) call io_error&
+             .and. index(berry_task,'kubo')==0.and. index(berry_task,'sc')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
@@ -1205,6 +1212,10 @@ contains
          r_value=gyrotropic_smr_fixed_en_width)
     if (found .and. (gyrotropic_smr_fixed_en_width < 0._dp)) call io_error&
       ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+
+    sc_phase_conv = 1
+    call param_get_keyword('sc_phase_conv',found,i_value=sc_phase_conv)
+    if ((sc_phase_conv.ne.1).and.((sc_phase_conv.ne.2))) call io_error('Error: sc_phase_conv must be either 1 or 2')     
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
@@ -1874,6 +1885,12 @@ contains
        automatic_translation=.false.
     endif
 
+    sc_eta  = 0.04
+    call param_get_keyword('sc_eta',found,r_value=sc_eta)
+
+    sc_w_thr = 5.0d0
+    call param_get_keyword('sc_w_thr',found,r_value=sc_w_thr)
+
     use_bloch_phases = .false.
     call param_get_keyword('use_bloch_phases',found,l_value=use_bloch_phases)
     if(disentanglement .and. use_bloch_phases) &
@@ -2315,6 +2332,26 @@ contains
     end if
 
   end function param_get_smearing_type
+
+  function param_get_convention_type(sc_phase_conv)
+  !! This function returns a string describing the convention
+  !! associated to a sc_phase_conv integer value.
+    integer, intent(in) :: sc_phase_conv
+    !! The integer index for which we want to get the string
+    character(len=80)   :: param_get_convention_type
+
+    character(len=4)   :: orderstr
+
+    if (sc_phase_conv .eq. 1) then
+       param_get_convention_type = "Tight-binding convention"
+    else if (sc_phase_conv .eq. 2) then
+       param_get_convention_type = "Wannier90 convention"
+    else
+       param_get_convention_type = "Unknown type of convention"
+    end if
+
+  end function param_get_convention_type
+
 
 
   function get_smearing_index(string,keyword)
@@ -2974,15 +3011,26 @@ contains
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :','       F','|'
        endif
+       if(index(berry_task,'sc')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :','       F','|'
+       endif
        if(index(berry_task,'kubo')>0) then
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       T','|'
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       F','|'
        endif
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for optical conductivity  :',kubo_freq_min,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for optical conductivity  :',kubo_freq_max,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for optical conductivity        :',kubo_freq_step,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue for optical conductivity :',kubo_eigval_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for optical responses     :',kubo_freq_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for optical responses     :',kubo_freq_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for optical responses           :',kubo_freq_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue for optical responses    :',kubo_eigval_max,'|'
+       if(index(berry_task,'sc')>0) then
+        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Smearing factor for shift current         :',sc_eta,'|'
+        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Frequency theshold for shift current      :',sc_w_thr,'|'
+        write(stdout,'(1x,a46,1x,a27,3x,a1)')     '|  Bloch sums                                :',&
+                                                   trim(param_get_convention_type(sc_phase_conv)),'|'
+       end if
        if(kubo_adpt_smr.eqv.adpt_smr .and. kubo_adpt_smr_fac==adpt_smr_fac .and. kubo_adpt_smr_max==adpt_smr_max &
             .and. kubo_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==kubo_smr_index) then
           write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
