@@ -49,13 +49,15 @@ module w90_parameters
   !! Number of steps between writing output
   integer,           public, save :: jprime
   !! Number of objective Wannier functions (others excluded from spread functional)
-  real(kind=dp),     public, save :: lambdac
-  !! Global Lagrange multiplier for constraining centres
-  real(kind=dp), dimension(1:3), public,save :: r0
+  logical,           public, save :: selective_loc
+  !! Selective localization
+  logical,           public, save :: constrain_centres
   !! Constrained centres
   real(kind=dp), allocatable, public, save :: ccentres_frac(:,:)
   real(kind=dp), allocatable, public, save :: ccentres_cart(:,:)
   real(kind=dp), allocatable, public, save :: lambdas(:)
+  real(kind=dp),     public, save :: constrain_centres_tol
+  real(kind=dp),     public, save :: init_lfac
   !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
   !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
   character(len=50), public, save :: devel_flag
@@ -793,20 +795,30 @@ contains
     precond=.false.
     call param_get_keyword('precond',found,l_value=precond)
 
-    lambdac=0.0_dp
-    call param_get_keyword('lambdac',found,r_value=lambdac)
-    if (found .and. lambdac < 0.0_dp) call io_error('Error: lambdac must be > 0.0')
-
-    r0=(/0.0_dp,0.0_dp,0.0_dp/)
-    call param_get_keyword_vector('r0',found,3,r_value=r0)
-
     jprime=num_wann
+    selective_loc = .false.
     call param_get_keyword('jprime',found,i_value=jprime)
     if (found) then
        if (jprime .gt. num_wann .or. jprime .lt. 1) then
           call io_error('Error: jprime must be an between 1 and num_wann')
        end if
+       if (jprime .lt. num_wann) selective_loc = .true.
     end if
+
+    constrain_centres=.false.
+    call param_get_keyword('constrain_centres',found,l_value=constrain_centres)
+
+    constrain_centres_tol = 1.0e-5_dp
+    call param_get_keyword('constrain_centres_tol',found,r_value=constrain_centres_tol)
+    if (found) then
+       if (constrain_centres_tol < 0.0_dp) call io_error('Error: constrain_centres_tol must be positive.')
+    endif
+
+    init_lfac = 1.0_dp
+    call param_get_keyword('init_lfac',found,r_value=init_lfac)
+    !if (found) then
+    !   if (init_lfac < 0.0_dp) call io_error('Error: init_lfac  must be positive.')
+    !endif
 
     !%%%%%%%%%
     ! Plotting
@@ -4758,7 +4770,7 @@ contains
          ccentres_frac(loop1, loop2) = proj_site(loop2, loop1)
        end do
      end do
-     lambdas(:) = lambdac
+     if(constrain_centres) lambdas(:) = 1.0_dp
 
      constraint_num = 0
      do loop1=1, num_lines
@@ -6074,6 +6086,15 @@ contains
     call comms_bcast(scdm_mu,1)
     call comms_bcast(scdm_sigma,1)
     call comms_bcast(scdm_entanglement,1)
+
+    !vv: Constrained centres
+    call comms_bcast(jprime,1)
+    call comms_bcast(constrain_centres_tol,1)
+    call comms_bcast(init_lfac,1)
+    call comms_bcast(constrain_centres,1)
+    call comms_bcast(selective_loc,1)
+    call comms_bcast(ccentres_frac(1,1),3*num_wann)
+    call comms_bcast(ccentres_cart(1,1),3*num_wann)
 
     call comms_bcast(num_proj,1)
     if(num_proj>0) then
