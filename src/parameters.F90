@@ -822,9 +822,6 @@ contains
        if (ierr/=0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
        allocate( lambdas(num_wann),stat=ierr)
        if (ierr/=0) call io_error('Error allocating lambdas in param_get_centre_constraints')
-       ! Centre constraints block
-       call param_get_block_length('constraints',found,i_temp)
-       if (found) call param_get_centre_constraints
     end if
 
 
@@ -2006,7 +2003,7 @@ contains
             scdm_entanglement = 2
           else
             call io_error('Error: Can not recognize the choice for scdm_entanglement. &
-                 Valid options are: isolated, erfc and gaussian')
+                 &Valid options are: isolated, erfc and gaussian')
           endif
        else
           call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
@@ -2186,6 +2183,13 @@ contains
     if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) &
        call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
+
+    ! Constrain centres
+    if (selective_loc .and. constrain_centres) then
+       ! Centre constraints block
+       call param_get_block_length('constraints',found,i_temp)
+       if (found) call param_get_centre_constraints
+    end if
 
 302  continue
 
@@ -6152,9 +6156,11 @@ contains
     call comms_bcast(init_lfac,1)
     call comms_bcast(constrain_centres,1)
     call comms_bcast(selective_loc,1)
-    call comms_bcast(ccentres_frac(1,1),3*num_wann)
-    call comms_bcast(ccentres_cart(1,1),3*num_wann)
-    call comms_bcast(lambdas(1),num_wann)
+    if (selective_loc .and. constrain_centres) then
+       call comms_bcast(ccentres_frac(1,1),3*num_wann)
+       call comms_bcast(ccentres_cart(1,1),3*num_wann)
+       call comms_bcast(lambdas(1),num_wann)
+    end if
 
     call comms_bcast(num_proj,1)
     if(num_proj>0) then
