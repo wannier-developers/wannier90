@@ -2566,11 +2566,11 @@ contains
     if (selective_loc .and. constrain_centres) then
        write(stdout,*) ' '
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
-       write(stdout,'(1x,a)') '|   Wannier#       Constrained Centre       x           y          z         |'
+       write(stdout,'(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       do i=1,num_wann
-          write(stdout,'(1x,a1,1x,a2,1x,i3,4x, 3F10.5,3x,4x,a17)') &
-&                    '|','  ',i,ccentres_frac(i,:),'                |'
+       do i=1,jprime
+          write(stdout,'(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+&                    '|',i,ccentres_frac(i,:),'|',wannier_centres(:,i),'|'
        end do
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
     end if
