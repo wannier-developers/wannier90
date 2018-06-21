@@ -1653,7 +1653,7 @@ end subroutine plot_interpolate_bands
     !
     return
     !
-101 call io_error('Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'.bvec')
+101 call io_error('Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
 
   end subroutine plot_bvec
 
