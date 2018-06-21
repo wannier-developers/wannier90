@@ -5,6 +5,7 @@ GaAs
      prefix          =  'GaAs',
      pseudo_dir      =  '../../pseudo/',
      outdir          =  './'
+     wf_collect      = .true.
 /
  &system
      ibrav           =   2,

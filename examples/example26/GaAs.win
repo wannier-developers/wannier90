@@ -19,7 +19,7 @@ f= 0.125, -.375, 0.125: s
 end projections
 
 begin centre_constraints
-1 0.00 0.00 0.00 
+1 0.25 0.25 0.25 
 end centre_constraints
 
 begin unit_cell_cart

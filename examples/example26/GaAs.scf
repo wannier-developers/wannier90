@@ -3,8 +3,9 @@ GaAs
      calculation     =  'scf'
      restart_mode    =  'from_scratch'
      prefix          =  'GaAs',
-     pseudo_dir      =  '../../../pseudo/',
+     pseudo_dir      =  '../../pseudo/',
      outdir          =  './'
+     wf_collect      =  .true.
 /
  &system
      ibrav           =   2,

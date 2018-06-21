@@ -2836,7 +2836,7 @@ gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 
 \end{itemize}
 
-If you have already done example25 you can re-use the output from the scf and nscf calculation. Otherwise 
+If you have already done example25 you can re-use the output from the scf, nscf and pw2wannier90 calculations. However, in this case the wannierisation will be slower since in example25 the number of \textbf{k}-points was set to 1000, whereas here is 64. Otherwise 
 
 \begin{enumerate}
 
@@ -2866,13 +2866,20 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \verb|pw2wannier90.x < GaAs.pw2wan > pw2wan.out|
 
-\item Inspect the {\tt .win} file. Make sure you understand the new keywords and block. Run {\tt wannier90} to  compute the OWFs centred on the As atom
+\item Inspect the {\tt .win} file.
+
+\begin{itemize}
+\item[--] Make sure you understand the new keywords and block. 
+\item[--] Run {\tt wannier90} to  compute the OWFs centred on the As atom
+
+\end{itemize}
+
 
 \verb|wannier90.x GaAs|
 
 \end{enumerate}
 
-\item Try to change the constraint in the {\tt centre_constraints} block , e.g. constraining the centre of the OWF to be on the Ga atom. Take a look at the result in Vesta and explain what you see. Do these OWFs respect the symmetry of the point group of their centres? 
+Try to change the constraint in the {\tt centre\_constraints} block , e.g. constraining the centre of the OWF to be on the Ga atom. Take a look at the result in Vesta and explain what you see. Do these OWFs respect the symmetry of the point group of their centres? 
 
 
 \end{itemize}
