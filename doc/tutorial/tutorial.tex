@@ -2812,6 +2812,70 @@ myshell> gnuplot
 gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 \end{verbatim} 
 
+\sectiontitle{26: Gallium Arsenide -- Selective localization and Constrained centres}
+
+\begin{itemize}
+
+\item Outline: \textit{Calculate one Objective Wannier Function, centred on the As atom, from 4 $s$ initial projections for Gallium Arsenide. In preparation for this example it may be useful to read Ref.
+\cite{Marianetti} }
+
+
+
+\item Directory: \verb|examples/example26/|
+
+
+\item Input files:
+
+\begin{itemize}
+
+\item[--] \verb|GaAs.scf| \textit{The {\tt PWSCF} input file for ground state calculation}
+\item[--] \verb|GaAs.nscf| \textit{The {\tt PWSCF} input file to obtain Bloch states on a uniform grid}
+\item[--] \verb|GaAs.pw2wan| \textit{The input file for} \verb|pw2wannier90|
+\item[--] \verb|GaAs.win| \textit{The} \verb|wannier90| \textit{and} \verb|postw90| \textit{input file}
+
+
+\end{itemize}
+
+If you have already done example25 you can re-use the output from the scf and nscf calculation. Otherwise 
+
+\begin{enumerate}
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < GaAs.scf > scf.out|
+
+
+\item Run {\tt PWSCF} to obtain the ground state of Gallium Arsenide
+
+\verb|pw.x < GaAs.nscf > nscf.out|
+
+\item Run {\tt Wannier90} to generate a list of the required overlaps (written into the \verb|GaAs.nnkp| file)
+
+\verb|wannier90.x -pp GaAs|
+
+
+\item Run {\tt pw2wannier90} to compute:
+
+\begin{itemize}
+\item[--] The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$ between  
+Bloch states (written in the \verb|GaAs.mmn| file) 
+\item[--] The projections for the starting guess (written in the \verb|GaAs.amn| file)
+
+\end{itemize}
+
+
+\verb|pw2wannier90.x < GaAs.pw2wan > pw2wan.out|
+
+\item Inspect the {\tt .win} file. Make sure you understand the new keywords and block. Run {\tt wannier90} to  compute the OWFs centred on the As atom
+
+\verb|wannier90.x GaAs|
+
+\end{enumerate}
+
+\item Try to change the constraint in the {\tt centre_constraints} block , e.g. constraining the centre of the OWF to be on the Ga atom. Take a look at the result in Vesta and explain what you see. Do these OWFs respect the symmetry of the point group of their centres? 
+
+
+\end{itemize}
 
 
 \bibliographystyle{apsrev4-1}
