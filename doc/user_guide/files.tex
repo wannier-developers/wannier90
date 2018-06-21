@@ -563,6 +563,16 @@ in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
 and $n$, and the real and imaginary parts of the position matrix element
 in the WF basis.
 
+\section{{\tt seedname.bvec}}
+OUTPUT.
+Written if $\verb#write_bvec#=\verb#true#$. This file contains 
+the matrix elements of bvector and their weights.
+The first line gives the date and time at which the file was created.
+The second line states the number of k-points and 
+the total number of neighbours for each k-point {\tt nntot}.
+Then all the other lines contain the b-vector (x,y,z) coordinate and weigths
+for each k-points and each of its neighbours. 
+
 \section{{\tt seedname\_wsvec.dat}}
 OUTPUT.
 Written if $\verb#write_hr#=\verb#true#$ or $\verb#write_rmn#=\verb#true#$ or $\verb#write_tb#=\verb#true#$. The first line gives the date and
