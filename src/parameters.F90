@@ -19,7 +19,6 @@ module w90_parameters
 
   use w90_constants, only : dp
   use w90_io,        only : stdout,maxlen
-  use w90_comms,     only : on_root,num_nodes
 
   implicit none
 
@@ -515,7 +514,11 @@ contains
   subroutine param_read ( )
   !==================================================================!
   !                                                                  !
-  !! Read parameters and calculate derived values
+  !! Read parameters and calculate derived values                    
+  !!
+  !! Note on parallelization: this function should be called 
+  !! from the root node only!
+  !!
   !                                                                  !
   !===================================================================
     use w90_constants, only : bohr, eps6, cmplx_i
@@ -543,9 +546,6 @@ contains
 
     ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
-!jry    if (lsitesymmetry.and.num_nodes>1) then
-!jry       call io_error('Error: site symmetry can not be used in parallel mode')
-!jry    end if
 
 
     !%%%%%%%%%%%%%%%%
@@ -631,7 +631,7 @@ contains
     ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
 !    num_bands       =   -1
     call param_get_keyword('num_bands',found,i_value=i_temp)
-    if(found.and.library.and.on_root) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
+    if(found.and.library) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not.effective_model) then
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
@@ -660,7 +660,7 @@ contains
 
 !    mp_grid=-99
     call param_get_keyword_vector('mp_grid',found,3,i_value=iv_temp)
-    if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <mp_grid> in input file'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <mp_grid> in input file'
     if(.not.library .and. .not.effective_model) then
        if(found) mp_grid=iv_temp
        if (.not. found) then
@@ -679,7 +679,7 @@ contains
        if ( gamma_only .and. (num_kpts.ne.1) ) &
             call io_error('Error: gamma_only is true, but num_kpts > 1')
     else
-       if (found.and.on_root) write(stdout,'(a)') ' Ignoring <gamma_only> in input file'
+       if (found) write(stdout,'(a)') ' Ignoring <gamma_only> in input file'
     endif
 ![ysl-e]
 
@@ -726,7 +726,7 @@ contains
     if (.not.library) then
        spinors=ltmp
     else
-       if (found.and.on_root) write(stdout,'(a)') ' Ignoring <spinors> in input file'
+       if (found) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
 !    if(spinors .and. (2*(num_wann/2))/=num_wann) &
 !       call io_error('Error: For spinor WF num_wann must be even')
@@ -1558,8 +1558,13 @@ contains
              do k=1,num_kpts
                 do n=1,num_bands
                    read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
+<<<<<<< HEAD
                    if ((((i.ne.n).or.(j.ne.k))).and.on_root) then
                       write(stdout,'(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
+=======
+                   if ((i.ne.n).or.(j.ne.k)) then
+                      write(stdout,'(a)') 'Found a mismatch in '//trim(seedname)//'.eig' 
+>>>>>>> ffc32b506326e5136d204e6af7d47f7000f4cce2
                       write(stdout,'(a,i0,a,i0)') 'Wanted band  : ',n,' found band  : ',i
                       write(stdout,'(a,i0,a,i0)') 'Wanted kpoint: ',k,' found kpoint: ',j
                       write(stdout,'(a)') ' '
@@ -2002,8 +2007,13 @@ contains
           elseif(ctmp=='gaussian') then
             scdm_entanglement = 2
           else
+<<<<<<< HEAD
             call io_error('Error: Can not recognize the choice for scdm_entanglement. &
                  &Valid options are: isolated, erfc and gaussian')
+=======
+            call io_error('Error: Can not recognize the choice for scdm_entanglement. '&
+                //'Valid options are: isolated, erfc and gaussian') 
+>>>>>>> ffc32b506326e5136d204e6af7d47f7000f4cce2
           endif
        else
           call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
@@ -2015,7 +2025,7 @@ contains
        call io_error('Error: The parameter sigma in the SCDM method must be positive.')
 
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
-    if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
        real_lattice=transpose(real_lattice_tmp)
        if(.not. found) call io_error('Error: Did not find the cell information in the input file')
@@ -2033,7 +2043,7 @@ contains
     end if
 
     call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_cart)
-    if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <kpoints> in input file'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not.effective_model) then
        kpt_latt=kpt_cart
        if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
@@ -2154,9 +2164,9 @@ contains
     ! Atoms
     if (.not.library) num_atoms=0
     call param_get_block_length('atoms_frac',found,i_temp)
-    if (found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <atoms_frac> in input file'
+    if (found.and.library) write(stdout,'(a)') ' Ignoring <atoms_frac> in input file'
     call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
-    if (found2.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <atoms_cart> in input file'
+    if (found2.and.library) write(stdout,'(a)') ' Ignoring <atoms_cart> in input file'
     if (.not.library) then
        if (found.and.found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
        if (found .and. i_temp>0) then
@@ -2193,7 +2203,7 @@ contains
 
 302  continue
 
-    if ( any(len_trim(in_data(:))>0 ).and.on_root) then
+    if ( any(len_trim(in_data(:))>0 ) ) then
        write(stdout,'(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
        write(stdout,*)
        do loop=1,num_lines
@@ -3670,7 +3680,16 @@ contains
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
+<<<<<<< HEAD
     !! accordingly also the w90chk2chk.x utility!
+=======
+    !! accordingly also the w90chk2chk.x utility!  
+    !!
+    !! Note on parallelization: this function should be called 
+    !! from the root node only!
+    !!
+    !! This function should be called    
+>>>>>>> ffc32b506326e5136d204e6af7d47f7000f4cce2
     !=================================================!
 
     use w90_constants, only : eps6
@@ -3683,14 +3702,14 @@ contains
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands),tmp_mp_grid(1:3)
 
-    if (on_root) write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
+    write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
 
     chk_unit=io_file_unit()
     open(unit=chk_unit,file=trim(seedname)//'.chk',status='old',form='unformatted',err=121)
 
     ! Read comment line
     read(chk_unit) header
-    if (on_root) write(stdout,'(1x,a)',advance='no') trim(header)
+    write(stdout,'(1x,a)',advance='no') trim(header)
 
     ! Consistency checks
     read(chk_unit) ntmp                           ! Number of bands
@@ -3794,7 +3813,7 @@ contains
 
     close(chk_unit)
 
-    if (on_root) write(stdout,'(a/)') ' ... done'
+    write(stdout,'(a/)') ' ... done'
 
     return
 
@@ -5623,6 +5642,8 @@ contains
     !                                           !
     !===========================================!
 
+    use w90_comms,      only : on_root
+
     implicit none
 
     real(kind=dp), parameter :: size_log=1.0_dp
@@ -5876,7 +5897,7 @@ contains
     use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
     use w90_io,         only : io_error,io_file_unit,io_date,io_time,&
                                io_stopwatch
-    use w90_comms,      only : comms_bcast
+    use w90_comms,      only : comms_bcast, on_root
 
     integer :: ierr
 
@@ -6273,13 +6294,10 @@ contains
        endif
     endif
 
-
-
-
   end subroutine param_dist
 
 
-     subroutine  parameters_gyro_write_task(task,key,comment)
+  subroutine  parameters_gyro_write_task(task,key,comment)
       use w90_io,        only : stdout
 
       character(len=*), intent(in) :: task,key,comment
@@ -6291,7 +6309,7 @@ contains
        else
           write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment1, ' :','       F','|'
        endif
-     end subroutine parameters_gyro_write_task
+  end subroutine parameters_gyro_write_task
 
 
 end module w90_parameters
