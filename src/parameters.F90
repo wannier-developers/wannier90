@@ -117,6 +117,7 @@ module w90_parameters
   logical,           public, save :: wannier_plot_spinor_phase
   logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
+  logical,           public, save :: write_bvec
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
@@ -870,6 +871,9 @@ contains
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
+
+    write_bvec                = .false.
+    call param_get_keyword('write_bvec',found,l_value=write_bvec)
 
     bands_num_points          = 100
     call param_get_keyword('bands_num_points',found,i_value=bands_num_points)
@@ -5786,6 +5790,7 @@ contains
     call comms_bcast(wannier_plot_spinor_mode,len(wannier_plot_spinor_mode))
     call comms_bcast(write_u_matrices,1)
     call comms_bcast(bands_plot,1)
+    call comms_bcast(write_bvec,1)
     call comms_bcast(bands_num_points,1)
     call comms_bcast(bands_plot_format,len(bands_plot_format))
     call comms_bcast(bands_plot_mode,len(bands_plot_mode))
