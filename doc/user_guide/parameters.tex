@@ -288,7 +288,8 @@ Fermi energy in the specified range\\
   \old{\sc hr\_plot} & L & \old{This parameter is not used anymore. Use {\sc write\_hr} instead.} \\
   \new{\sc write\_hr} & L & \new{Write the Hamiltonian in the WF basis} \\
   \new{\sc write\_rmn } & L & \new{Write the position operator in the WF basis} \\
-\new{\sc write\_tb }  & L & \new{Write lattice vectors,
+  \new{\sc write\_bvec } & L & \new{Write to file the matrix elements of the bvectors and their weights} \\
+\new{\sc write\_tb }  & L & \new{Write lattice vectors, 
 Hamiltonian, and position operator in WF basis} \\
   {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
   {\sc dist\_cutoff} & P & Cut-off for the distance between WF \\
@@ -1423,6 +1424,14 @@ If $\verb#write_rmn#=\verb#true#$, then the position operator in the
 WF basis will be written to a file {\tt seedname\_r.dat}.
 
 The default value is {\tt false}.
+
+\subsection[write\_bvec]{\tt logical :: write\_bvec}
+
+If $\verb#write_bvec#=\verb#true#$, then the the matrix elements of 
+bvector and their weights will be written to a file {\tt seedname.bvec}.
+
+The default value is {\tt false}.
+
 
 \subsection[write\_tb]{\tt logical :: write\_tb}
 
