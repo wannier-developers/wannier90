@@ -62,6 +62,7 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   use w90_parameters
   use w90_io
   use w90_kmesh
+  use w90_comms, only: comms_setup_vars
  
   implicit none
 
@@ -101,6 +102,8 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
 
   time0=io_time()
 
+  call comms_setup_vars
+
   library=.true.
 !  seedname="wannier"
   seedname=trim(adjustl(seed__name))
@@ -137,6 +140,8 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   ! RM_2018-03-21: num_exclude_bands is now subtracted below
   num_bands = num_bands_tot - num_exclude_bands
   call param_read()
+  ! I have to set it again now
+  num_bands = num_bands_tot - num_exclude_bands
   ! set cell_volume as it is written to output in param_write
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
