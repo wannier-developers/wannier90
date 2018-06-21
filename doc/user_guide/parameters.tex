@@ -223,8 +223,9 @@ of $\Omega$, instead of doing a parabolic line search \\
 {\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
 {\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
 {\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
-{\sc jprime} & I & The number of objective Wannier Functions \\
-{\sc lambdac} & R & The lagrange multiplier in the constrained \Omega \\
+{\sc jprime} & I & The number of objective Wannier Functions for selective localization \\
+{\sc constrain_centres} & L & To constrain the centres of the OWFs \\
+{\sc constrain_centres_tol} & R & The convergence tolerance for the constrained $\Omega$ \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -634,20 +635,18 @@ For details see Section~\ref{sec:proj}.
 
 \section{Constrains on centres}
 
-The constrained centres block defines the centers and the Lagrange multipliers for the WFs whose centers are meant to be constrained. 
+The constrained centres block defines the target positions, in fractional co-ordinates, for the OWFs whose centres are meant to be constrained. 
 
+The block below shows all possible ways of setting the constraints. In particular, assuming J'$=5<$J :
 \noindent \verb#begin centre_constraints# \\
 2 0.0 0.0 0.0
-5 1.0 0.0 0.5 10
-7 
+4 0.25 0.0 0.0 
 \verb#end centre_constraints#
 
-The above block shows all possible ways of setting the constraints. In particular :
 \begin{itemize}
-\item The first line sets the constrain for the centre of Wannier function number 2 (as defined in the projection block) to (0,0,0) in fractional co-ordinates with $\lambda_2$ = 1 (default value if fifth column is missing).
-\item The second line sets the constrain for the centre of Wannier function number 5 (as defined in the projection block) to (1,0,0.5) in fractional co-ordinates with $\lambda_5$ = 10
-\item The third line sets the constrain for the centre of Wannier function number 7 (as defined in the projection block) to it's initial projection centre with $\lambda_7$ = 1
-\item The centres of all the other Wannier functions are set to their initial projection centres with $\lambda_n$ equal to {\tt lambdac} (which defaults to 0).
+\item The first line sets the constraint for the centre of Wannier function number 2 (as defined in the projection block) to (0.0,0.0,0.0) in fractional co-ordinates.
+\item The second line sets the constraint for the centre of Wannier function number 4 (as defined in the projection block) to (0.25,0.0,0.0) in fractional co-ordinates.
+\item The centres of all the other Objective Wannier functions, i.e. 1,3,5, etc. are set to their initial projection centres.
 \end{itemize}
 
 \section{Job Control}
@@ -1108,10 +1107,17 @@ The number of objective Wannier Functions, see \cite{Marianetti} for definition 
 
 The default is {\tt num\_wann}
 
-\subsection[lambdac]{\tt real(kind=dp) :: lambdac}
-Global value of the Lagrange multiplier $\lambda$ in the spread functional $\Omega_c$ from the constrainted centres algorithm of Marianetti \textit{et al} \cite{Marianetti}. It must be a positive real number. A value of $0.0$ means that no constraints are applied to the original spread functional.
+\subsection[constrain_centres]{\tt logical :: constrain_centres}
+If \tt{true} the centres of the objective Wannier Functions are constrained to either the centres of the projection functions or to new positions specified in the \tt{centre_constrains} block. A modified spread functional, $\Omega_c$, with the addition of a penalty function, is minimized in this case, see Marianetti \textit{et al} \cite{Marianetti}. 
 
-The default is {\tt 0.0}
+The default is {\tt false}
+
+\subsection[constrain_centres_tol]{\tt real(kind=dp) :: constrain_centres_tol}
+In the constrained centres approach the minimisation is said to be converged when either the change in $\Omega_c$ over {\tt
+  conv\_window} successive iterations is less than {\tt
+  conv\_tol} (these keywords must be defined in the input file) or the change in the target WF centres is less than {\tt constrain_centres_tol}. If these two criterion are not satisfied the algorithm ends after {\tt num_iter} iterations.
+
+The default is {\tt 1.0E-9}.
 
 \section{Post-Processing}
 \label{sec:post-p}

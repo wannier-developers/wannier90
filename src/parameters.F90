@@ -816,7 +816,7 @@ contains
     constrain_centres=.false.
     call param_get_keyword('constrain_centres',found,l_value=constrain_centres)
 
-    constrain_centres_tol = 1.0e-5_dp
+    constrain_centres_tol = 1.0e-9_dp
     call param_get_keyword('constrain_centres_tol',found,r_value=constrain_centres_tol)
     if (found) then
        if (constrain_centres_tol < 0.0_dp) call io_error('Error: constrain_centres_tol must be positive.')
