@@ -1558,13 +1558,8 @@ contains
              do k=1,num_kpts
                 do n=1,num_bands
                    read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
-<<<<<<< HEAD
-                   if ((((i.ne.n).or.(j.ne.k))).and.on_root) then
-                      write(stdout,'(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
-=======
                    if ((i.ne.n).or.(j.ne.k)) then
                       write(stdout,'(a)') 'Found a mismatch in '//trim(seedname)//'.eig' 
->>>>>>> ffc32b506326e5136d204e6af7d47f7000f4cce2
                       write(stdout,'(a,i0,a,i0)') 'Wanted band  : ',n,' found band  : ',i
                       write(stdout,'(a,i0,a,i0)') 'Wanted kpoint: ',k,' found kpoint: ',j
                       write(stdout,'(a)') ' '
@@ -2007,13 +2002,8 @@ contains
           elseif(ctmp=='gaussian') then
             scdm_entanglement = 2
           else
-<<<<<<< HEAD
-            call io_error('Error: Can not recognize the choice for scdm_entanglement. &
-                 &Valid options are: isolated, erfc and gaussian')
-=======
             call io_error('Error: Can not recognize the choice for scdm_entanglement. '&
                 //'Valid options are: isolated, erfc and gaussian') 
->>>>>>> ffc32b506326e5136d204e6af7d47f7000f4cce2
           endif
        else
           call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
@@ -3680,16 +3670,12 @@ contains
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
-<<<<<<< HEAD
-    !! accordingly also the w90chk2chk.x utility!
-=======
     !! accordingly also the w90chk2chk.x utility!  
     !!
     !! Note on parallelization: this function should be called 
     !! from the root node only!
     !!
     !! This function should be called    
->>>>>>> ffc32b506326e5136d204e6af7d47f7000f4cce2
     !=================================================!
 
     use w90_constants, only : eps6
