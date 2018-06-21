@@ -219,19 +219,27 @@ program wannier
     if(on_root) then
       raw_unit=io_file_unit()
       open(unit=raw_unit,file='MMN',form='formatted',status='replace',position='rewind')
-      do l=1,num_kpts
-        do k=1,nntot
-          do j=1,num_wann
-            do i=1,num_wann
-              if (disentanglement) then
+      if (disentanglement) then
+        do l=1,num_kpts
+          do k=1,nntot
+            do j=1,num_bands
+              do i=1,num_bands
                 write(raw_unit,'(2G25.17)') m_matrix_orig(i,j,k,l)
-              else
-                write(raw_unit,'(2G25.17)') m_matrix(i,j,k,l)
-              end if
+              end do
             end do
           end do
         end do
-      end do
+      else
+        do l=1,num_kpts
+          do k=1,nntot
+            do j=1,num_wann
+              do i=1,num_wann
+                write(raw_unit,'(2G25.17)') m_matrix_orig(i,j,k,l)
+              end do
+            end do
+          end do
+        end do
+      end if
       close(raw_unit)
 
       raw_unit=io_file_unit()

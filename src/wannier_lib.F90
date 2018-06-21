@@ -136,12 +136,13 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   gamma_only=gamma_only_loc
   spinors=spinors_loc
 
-  ! AAM_2016-09-14: initialise num_bands as it's used in param_read()
-  ! RM_2018-03-21: num_exclude_bands is now subtracted below
-  num_bands = num_bands_tot - num_exclude_bands
+  ! GP: at this point we don't know yet the number of excluded bands...
+  num_bands = num_bands_tot
+  library_param_read_first_pass = .true.
   call param_read()
-  ! I have to set it again now
-  num_bands = num_bands_tot - num_exclude_bands
+  ! Following calls will all NOT be first_pass, and I need to pass 
+  ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
+  library_param_read_first_pass = .false.
   ! set cell_volume as it is written to output in param_write
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 

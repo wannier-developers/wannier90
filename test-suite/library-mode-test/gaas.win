@@ -1,6 +1,6 @@
 devel_flag = print_raw_mmn_amn_eig_and_exit
 
-num_bands         =   13
+num_bands         =   12
 num_wann          =   8 
 
 num_iter          = 1000

@@ -54,6 +54,8 @@ module w90_parameters
   real(kind=dp)                   :: adpt_smr_fac
   real(kind=dp)                   :: adpt_smr_max
   real(kind=dp)                   :: smr_fixed_en_width
+  ! GP: added a flag to check if this is the first run of param_read in library mode or not
+  logical,                    public, save :: library_param_read_first_pass
   !IVO
   logical,                    public, save :: spin_moment
   real(kind=dp),              public, save :: spin_axis_polar
@@ -624,17 +626,15 @@ contains
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
     end if
-    ! RM_2018-03-21: this should only be done once, but param_read is called both in wannier_setup and wannier_run
-    ! RM_2018-03-21: commented line below, as now the correct value for
-    ! num_bands (already substracted) is set in library mode before calling
-    ! param_read
-!    if (library) num_bands = num_bands - num_exclude_bands
+    ! GP: I subtract it here, but only the first time when I pass the total number of bands
+    ! In later calls, I need to pass instead num_bands already subtracted.
+    if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
     if (.not. effective_model) then
-       if(found .and. num_bands<num_wann) then
-          write(stdout, *) 'num_bands', num_bands
-          write(stdout, *) 'num_wann', num_wann
-          call io_error('Error: num_bands must be greater than or equal to num_wann')
-       endif
+      if(found .and. num_bands<num_wann) then
+        write(stdout, *) 'num_bands', num_bands
+        write(stdout, *) 'num_wann', num_wann
+        call io_error('Error: num_bands must be greater than or equal to num_wann')
+      endif
     endif
 
     num_dump_cycles =   100          ! frequency to write backups at
