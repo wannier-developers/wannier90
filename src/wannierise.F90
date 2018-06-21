@@ -31,7 +31,7 @@ module w90_wannierise
   ! Data to avoid large allocation within iteration loop
   real(kind=dp),    allocatable  :: rnkb (:,:,:)
   real(kind=dp),    allocatable  :: rnkb_loc (:,:,:)
-  real(kind=dp),    allocatable  :: rcnkb (:,:,:)
+  !real(kind=dp),    allocatable  :: rcnkb (:,:,:)
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
   real(kind=dp),    allocatable  :: ln_tmp_loc(:,:,:)
@@ -181,8 +181,8 @@ contains
 !    if (ierr/=0) call io_error('Error in allocating u0 in wann_main')
     allocate( rnkb (num_wann, nntot, num_kpts),stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating rnkb in wann_main')
-    allocate( rcnkb (num_wann, nntot, num_kpts),stat=ierr    )
-    if (ierr/=0) call io_error('Error in allocating rcnkb in wann_main')
+    !allocate( rcnkb (num_wann, nntot, num_kpts),stat=ierr    )
+    !if (ierr/=0) call io_error('Error in allocating rcnkb in wann_main')
     allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main')
     if (selective_loc) then 
@@ -191,7 +191,7 @@ contains
     end if
 
     rnkb=0.0_dp
-    rcnkb=0.0_dp
+    !rcnkb=0.0_dp
 
     ! sub vars passed into other subs
     allocate( csheet (num_wann, nntot, num_kpts), stat=ierr )
@@ -341,13 +341,13 @@ contains
 
     ! constrained centres part
 
-    do nkp = 1, num_kpts
-       do nn=1,nntot
-          do n=1,num_wann
-             rcnkb(n, nn,nkp) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
-          end do
-       end do
-    end do
+    !do nkp = 1, num_kpts
+    !   do nn=1,nntot
+    !      do n=1,num_wann
+    !         rcnkb(n, nn,nkp) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
+    !      end do
+    !   end do
+    !end do
 
     ! calculate initial centers and spread
     call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
@@ -833,8 +833,8 @@ contains
     if (ierr/=0) call io_error('Error in deallocating cdodq in wann_main')
     deallocate(csheet,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating csheet in wann_main')
-    deallocate( rcnkb,stat=ierr    )
-    if (ierr/=0) call io_error('Error in deallocating rcnkb in wann_main')
+    !deallocate( rcnkb,stat=ierr    )
+    !if (ierr/=0) call io_error('Error in deallocating rcnkb in wann_main')
     if (selective_loc) then 
        deallocate( rnr0n2,stat=ierr    )
        if (ierr/=0) call io_error('Error in deallocating rnr0n2 in wann_main')

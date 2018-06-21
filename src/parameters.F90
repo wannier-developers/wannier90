@@ -815,6 +815,18 @@ contains
 
     constrain_centres=.false.
     call param_get_keyword('constrain_centres',found,l_value=constrain_centres)
+    if(found .and. constrain_centres) then
+       allocate( ccentres_frac(num_wann,3),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
+       allocate( ccentres_cart(num_wann,3),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
+       allocate( lambdas(num_wann),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating lambdas in param_get_centre_constraints')
+       ! Centre constraints block
+       call param_get_block_length('constraints',found,i_temp)
+       if (found) call param_get_centre_constraints
+    end if
+
 
     constrain_centres_tol = 1.0e-9_dp
     call param_get_keyword('constrain_centres_tol',found,r_value=constrain_centres_tol)
@@ -2173,7 +2185,6 @@ contains
     end if
     if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) &
        call io_error('param_read: Guiding centres requested, but no projection block found')
-    call param_get_centre_constraints
     ! check to see that there are no unrecognised keywords
 
 302  continue
@@ -2547,16 +2558,18 @@ contains
     else
        write(stdout,'(25x,a)') 'No atom positions specified'
     end if
-    write(stdout,*) ' '
-    write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
-    write(stdout,'(1x,a)') '|   Wannier#       Constrained Centre             Lagrange Multiplier        |'
-    write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-    do i=1,num_wann
-       write(stdout,'(1x,a1,1x,a2,1x,i3,4x, 3F10.5,3x,a1,1x,F10.5,4x,a17)') &
-&                 '|','  ',i,ccentres_frac(i,:),&
-&                 '|',lambdas(i),'                |'
-    end do
-    write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+    ! Constrained centres
+    if (selective_loc .and. constrain_centres) then
+       write(stdout,*) ' '
+       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+       write(stdout,'(1x,a)') '|   Wannier#       Constrained Centre       x           y          z         |'
+       write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
+       do i=1,num_wann
+          write(stdout,'(1x,a1,1x,a2,1x,i3,4x, 3F10.5,3x,4x,a17)') &
+&                    '|','  ',i,ccentres_frac(i,:),'                |'
+       end do
+       write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
+    end if
     ! Projections
     if(iprint>1 .and. allocated(proj_site) ) then
        write(stdout,'(32x,a)') '-----------'
@@ -4810,13 +4823,6 @@ contains
      !logical           :: found
      character(len=maxlen) :: dummy
 
-     allocate( ccentres_frac(num_wann,3),stat=ierr)
-     if (ierr/=0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
-     allocate( ccentres_cart(num_wann,3),stat=ierr)
-     if (ierr/=0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
-     allocate( lambdas(num_wann),stat=ierr)
-     if (ierr/=0) call io_error('Error allocating lambdas in param_get_centre_constraints')
-
      do loop1=1, num_wann
        do loop2=1,3
          ccentres_frac(loop1, loop2) = proj_site(loop2, loop1)
@@ -6148,6 +6154,7 @@ contains
     call comms_bcast(selective_loc,1)
     call comms_bcast(ccentres_frac(1,1),3*num_wann)
     call comms_bcast(ccentres_cart(1,1),3*num_wann)
+    call comms_bcast(lambdas(1),num_wann)
 
     call comms_bcast(num_proj,1)
     if(num_proj>0) then
