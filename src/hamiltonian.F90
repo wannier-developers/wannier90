@@ -612,7 +612,7 @@ contains
     !! Write out the matrix elements of r
   !============================================!
     use w90_parameters, only : m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
-                               nntot
+                               nntot, write_bvec
     use w90_constants, only  : twopi, cmplx_i
     use w90_io,         only : io_error, io_file_unit, seedname,io_date
 
