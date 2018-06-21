@@ -160,7 +160,7 @@ contains
     real(kind=dp) :: alpha_precond
     integer :: irpt,loop_kpt
     logical :: cconverged
-    real(kind=dp) :: glpar, cvalue_old, cvalue_new
+    real(kind=dp) :: glpar, cvalue_new
     real(kind=dp), allocatable :: rnr0n2(:)
 
     if (timing_level>0.and.on_root) call io_stopwatch('wann: main',1)
@@ -375,14 +375,11 @@ contains
        cconverged = .false.
 
        if (constrain_centres) then
-          rnr0n2=0.0_dp; cvalue_old=0.0_dp;cvalue_new=0.0_dp
+          rnr0n2=0.0_dp; cvalue_new=0.0_dp
           do iw=1,jprime
              rnr0n2(iw) = (wannier_centres(1,iw) - ccentres_cart(iw,1))**2 &
                          + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2 &
                          + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2
-            !cvalue_old = cvalue_old + (wannier_centres(1,iw) - ccentres_cart(iw,1))**2 &
-            !            + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2 &
-            !            + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2
           end do
           if (sum(rnr0n2(:)) .gt. eps2) lambdai = dabs(wann_spread%om_tot / sum(rnr0n2(:)))
           glpar= 1.0_dp + 0.001_dp
@@ -634,7 +631,6 @@ contains
           else
             if (cvalue_new .gt. eps5) lambdai = lambdai*glpar
           endif
-          !cvalue_old = cvalue_new
        end if
 
        ! Public array of Wannier centres and spreads
@@ -2058,8 +2054,10 @@ contains
     if (ierr/=0) call io_error('Error in allocating cr in wann_domega')
     allocate(  crt (num_wann, num_wann),stat=ierr )
     if (ierr/=0) call io_error('Error in allocating crt in wann_domega')
-    allocate( r0kb (num_wann, nntot, num_kpts),stat=ierr )
-    if (ierr/=0) call io_error('Error in allocating r0kb in wann_domega')
+    if ( selective_loc .and. constrain_centres) then
+       allocate( r0kb (num_wann, nntot, num_kpts),stat=ierr )
+       if (ierr/=0) call io_error('Error in allocating r0kb in wann_domega')
+    end if
 
 
     do nkp_loc = 1, counts(my_node_id)
@@ -2093,14 +2091,24 @@ contains
     call comms_allreduce(rave(1,1),num_wann*3,'SUM')
 
     ! R_mn=M_mn/M_nn and q_m^{k,b} = Im phi_m^{k,b} + b.r_n are calculated
+    if ( selective_loc .and. constrain_centres) then
+       r0kb = 0.0_dp
+       do nkp_loc = 1, counts(my_node_id)
+          nkp = nkp_loc + displs(my_node_id)
+          do nn=1,nntot
+             do n=1,num_wann
+                r0kb(n,nn,nkp_loc) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
+             enddo
+          enddo
+       enddo
+    end if
+
     rnkb = 0.0_dp
-    r0kb = 0.0_dp
     rnkb_loc = 0.0_dp
     do nkp_loc = 1, counts(my_node_id)
        nkp = nkp_loc + displs(my_node_id)
        do nn=1,nntot
           do n=1,num_wann
-             r0kb(n,nn,nkp_loc) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
              rnkb_loc(n,nn,nkp_loc) = sum(bk(:,nn,nkp)*rave(:,n))
           enddo
        enddo
@@ -2173,7 +2181,7 @@ contains
            	           * crt(m,n) * cmplx(0.0_dp,-0.5_dp,kind=dp)*(ln_tmp_loc(n,nn,nkp_loc) + rnkb_loc(n,nn,nkp_loc)) &
                            - lambdai*wb(nn) * cmplx(0.0_dp,-0.5_dp,kind=dp)*crt(m,n)*ln_tmp_loc(n,nn,nkp_loc)
                       cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambdai & 
-                           * cmplx(0.0_dp,-0.5_dp) * r0kb(n,nn,nkp_loc)*crt(m,n)
+                           * cmplx(0.0_dp,-0.5_dp,kind=dp) * r0kb(n,nn,nkp_loc)*crt(m,n)
                    end if
            	else
            	     cdodq_loc(m,n,nkp_loc)=cdodq_loc(m,n,nkp_loc)
