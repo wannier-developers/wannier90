@@ -555,12 +555,23 @@ OUTPUT.
 Written if $\verb#write_rmn#=\verb#true#$. The matrix elements
 $\langle m\mathbf{0}|\mathbf{r}|n\mathbf{R}\rangle$ (where $n\mathbf{R}$ refers to MLWF $n$ in unit cell $\mathbf{R}$). The first line gives the date and time at which the file was created. 
 The second line states the number of Wannier functions {\tt num\_wann}. 
+The third line states the number of $\mathbf{R}$ vectors {\tt nrpts}. 
 Similar to the case of the Hamiltonian matrix above, the 
 remaining {\tt num\_wann}$^2 \times$ {\tt nrpts} lines
 each contain, respectively, the components of the vector $\mathbf{R}$
 in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
 and $n$, and the real and imaginary parts of the position matrix element
 in the WF basis.
+
+\section{{\tt seedname.bvec}}
+OUTPUT.
+Written if $\verb#write_bvec#=\verb#true#$. This file contains 
+the matrix elements of bvector and their weights.
+The first line gives the date and time at which the file was created.
+The second line states the number of k-points and 
+the total number of neighbours for each k-point {\tt nntot}.
+Then all the other lines contain the b-vector (x,y,z) coordinate and weigths
+for each k-points and each of its neighbours. 
 
 \section{{\tt seedname\_wsvec.dat}}
 OUTPUT.

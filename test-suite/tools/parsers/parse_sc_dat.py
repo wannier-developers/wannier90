@@ -1,8 +1,7 @@
 """
-Parser function parse() to parse the <seedname>_dos.dat output file of postw90.x.
-"""
-from __future__ import print_function
+Parser function parse() to parse the <seedname>_sc*.dat output file of postw90.x.
 
+"""
 import inspect
 import re
 from collections import defaultdict
@@ -16,8 +15,8 @@ def parse(fname):
     retdict = defaultdict(list)
 
     if show_output:
-        print("[{}.{}] Parsing file '{}'".format(
-            __name__, inspect.currentframe().f_code.co_name, fname))
+        print "[{}.{}] Parsing file '{}'".format(
+            __name__, inspect.currentframe().f_code.co_name, fname)
 
     with open(fname) as f:
         lines = f.readlines()
@@ -28,23 +27,24 @@ def parse(fname):
             # Skip headers
             continue
 
-        pieces = l.split()
+	pieces = l.split()
 
-        if len(pieces) == 0 :
-            # skip blank line
-            continue
+   	if len(pieces) == 0 :
+	    # skip blank line
+ 	    continue
 
         if len(pieces) == 2 : 
             retdict['energy'].append(float(pieces[0]))
-            retdict['dos'].append(float(pieces[1]))
+            retdict['shiftcurr'].append(float(pieces[1]))
+
         else:
-            raise ValueError("Wrong line length ({}, instead of 2); line content: {}".format(
+            raise ValueError("Wrong line length ({}, instead of 3); line content: {}".format(
                 len(pieces)), l)
 
 
     retdict = dict(retdict)
     if show_output:
         for k in sorted(retdict):
-            print("  {}: {}".format(k, retdict[k]))
-        print("-"*72)
+            print "  {}: {}".format(k, retdict[k])
+        print "-"*72
     return retdict
