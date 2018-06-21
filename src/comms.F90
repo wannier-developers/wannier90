@@ -45,6 +45,7 @@ module w90_comms
   integer, parameter :: mpi_send_tag=77 !abitrary
 
   public :: comms_setup
+  public :: comms_setup_vars
   public :: comms_end
 !  public :: comms_abort     ! [GP]: do not use, use io_error instead
   public :: comms_bcast      ! send data from the root node
@@ -131,6 +132,19 @@ contains
 
     call mpi_init(ierr)
     if (ierr.ne.0) call io_error('MPI initialisation error')
+#endif
+
+    call comms_setup_vars
+
+  end subroutine comms_setup
+
+  subroutine comms_setup_vars
+    !! Set up variables related to communicators
+    !! This should be called also in library mode
+    implicit none
+
+#ifdef MPI
+    integer :: ierr
     call mpi_comm_rank(mpi_comm_world, my_node_id, ierr)
     call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
 #else
@@ -141,7 +155,7 @@ contains
     on_root=.false.
     if(my_node_id==root_id) on_root=.true.
     
-  end subroutine comms_setup
+  end subroutine comms_setup_vars
 
   subroutine comms_array_split(numpoints,counts,displs)
     !! Given an array of size numpoints, we want to split on num_nodes nodes. This function returns
@@ -158,6 +172,7 @@ contains
     !! on all nodes:
     !! do i=displs(my_node_id)+1,displs(my_node_id)+counts(my_node_id)
     !!
+    use w90_io
     integer, intent(in) :: numpoints
     !! Number of elements of the array to be scattered
     integer, dimension(0:num_nodes-1), intent(out) :: counts

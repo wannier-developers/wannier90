@@ -608,6 +608,7 @@ contains
     call param_get_range_vector('exclude_bands',found,num_exclude_bands,lcount=.true.)
     if(found) then
        if(num_exclude_bands<1) call io_error('Error: problem reading exclude_bands')
+       if (allocated(exclude_bands)) deallocate(exclude_bands)
        allocate(exclude_bands(num_exclude_bands),stat=ierr)
        if (ierr/=0) call io_error('Error allocating exclude_bands in param_read')
        call param_get_range_vector('exclude_bands',found,num_exclude_bands,.false.,exclude_bands)
@@ -630,6 +631,8 @@ contains
 !    if (library) num_bands = num_bands - num_exclude_bands
     if (.not. effective_model) then
        if(found .and. num_bands<num_wann) then
+          write(stdout, *) 'num_bands', num_bands
+          write(stdout, *) 'num_wann', num_wann
           call io_error('Error: num_bands must be greater than or equal to num_wann')
        endif
     endif
@@ -832,6 +835,7 @@ contains
     call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,lcount=.true.)
     if(found) then
        if(num_wannier_plot<1) call io_error('Error: problem reading wannier_plot_list')
+       if (allocated(wannier_plot_list)) deallocate(wannier_plot_list)
        allocate(wannier_plot_list(num_wannier_plot),stat=ierr)
        if (ierr/=0) call io_error('Error allocating wannier_plot_list in param_read')
        call param_get_range_vector('wannier_plot_list',found,num_wannier_plot,.false.,wannier_plot_list)
@@ -840,6 +844,7 @@ contains
     else
        ! we plot all wannier functions
        num_wannier_plot=num_wann
+       if (allocated(wannier_plot_list)) deallocate(wannier_plot_list)
        allocate(wannier_plot_list(num_wannier_plot),stat=ierr)
        if (ierr/=0) call io_error('Error allocating wannier_plot_list in param_read')
        do loop=1,num_wann
@@ -891,6 +896,7 @@ contains
     call param_get_range_vector('bands_plot_project',found,num_bands_project,lcount=.true.)
     if(found) then
        if(num_bands_project<1) call io_error('Error: problem reading bands_plot_project')
+       if (allocated(bands_plot_project)) deallocate(bands_plot_project)
        allocate(bands_plot_project(num_bands_project),stat=ierr)
        if (ierr/=0) call io_error('Error allocating bands_plot_project in param_read')
        call param_get_range_vector('bands_plot_project',found,num_bands_project,.false.,bands_plot_project)
@@ -902,8 +908,10 @@ contains
     call param_get_block_length('kpoint_path',found,i_temp)
     if (found) then
        bands_num_spec_points=i_temp*2
+       if (allocated(bands_label)) deallocate(bands_label)
        allocate(bands_label(bands_num_spec_points),stat=ierr)
        if (ierr/=0) call io_error('Error allocating bands_label in param_read')
+       if (allocated(bands_spec_points)) deallocate(bands_spec_points)
        allocate(bands_spec_points(3,bands_num_spec_points),stat=ierr)
        if (ierr/=0) call io_error('Error allocating bands_spec_points in param_read')
        call param_get_keyword_kpath
@@ -958,6 +966,7 @@ contains
     endif
     !
     if(found_fermi_energy) then
+       if (allocated(fermi_energy_list)) deallocate(fermi_energy_list)
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=fermi_energy
     elseif(fermi_energy_scan) then
@@ -966,6 +975,7 @@ contains
        else
           fermi_energy_step=(fermi_energy_max-fermi_energy_min)/real(nfermi-1,dp)
        endif
+       if (allocated(fermi_energy_list)) deallocate(fermi_energy_list)
        allocate(fermi_energy_list(nfermi),stat=ierr)
        do i=1,nfermi
           fermi_energy_list(i)=fermi_energy_min+(i-1)*fermi_energy_step 
@@ -979,6 +989,7 @@ contains
 !! AAM_2017-03-27: if nfermi is zero (ie, fermi_energy* parameters are not set in input file)
 !! then allocate fermi_energy_list with length 1 and set to zero as default. 
     else
+       if (allocated(fermi_energy_list)) deallocate(fermi_energy_list)
        allocate(fermi_energy_list(1),stat=ierr)
        fermi_energy_list(1)=0.0_dp
     endif
@@ -1123,14 +1134,16 @@ contains
     call param_get_range_vector('gyrotropic_band_list',found,gyrotropic_num_bands,lcount=.true.)
     if(found) then
        if(gyrotropic_num_bands<1) call io_error('Error: problem reading gyrotropic_band_list')
+       if (allocated(gyrotropic_band_list)) deallocate(gyrotropic_band_list)
        allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
        if (ierr/=0) call io_error('Error allocating gyrotropic_band_list in param_read')
        call param_get_range_vector('gyrotropic_band_list',found,gyrotropic_num_bands,.false.,gyrotropic_band_list)
        if (any(gyrotropic_band_list<1) .or. any(gyrotropic_band_list>num_wann) ) &
             call io_error('Error: gyrotropic_band_list asks for a non-valid bands')
     else
-       ! include all  bands in the calculation
+       ! include all bands in the calculation
        gyrotropic_num_bands=num_wann
+       if (allocated(gyrotropic_band_list)) deallocate(gyrotropic_band_list)
        allocate(gyrotropic_band_list(gyrotropic_num_bands),stat=ierr)
        if (ierr/=0) call io_error('Error allocating gyrotropic_band_list in param_read')
        do loop=1,num_wann
@@ -1333,6 +1346,7 @@ contains
          lcount=.true.)
     if(found) then
        if(num_dos_project<1) call io_error('Error: problem reading dos_project')
+       if (allocated(dos_project)) deallocate(dos_project)
        allocate(dos_project(num_dos_project),stat=ierr)
        if (ierr/=0) call io_error('Error allocating dos_project in param_read')
        call param_get_range_vector('dos_project',found,num_dos_project,&
@@ -1342,6 +1356,7 @@ contains
     else
        ! by default plot all
        num_dos_project=num_wann
+       if (allocated(dos_project)) deallocate(dos_project)
        allocate(dos_project(num_dos_project),stat=ierr) 
        if (ierr/=0) call io_error('Error allocating dos_project in param_read')
        do i=1,num_dos_project
@@ -1909,12 +1924,14 @@ contains
     if(found) then
        if(num_shells<0 .or. num_shells>max_shells) &
             call io_error('Error: number of shell in shell_list must be between zero and six')
+       if (allocated(shell_list)) deallocate(shell_list)
        allocate(shell_list(num_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating shell_list in param_read')
        call param_get_range_vector('shell_list',found,num_shells,.false.,shell_list)
        if (any(shell_list<1)  ) &
             call io_error('Error: shell_list must contain positive numbers')
     else
+       if (allocated(shell_list)) deallocate(shell_list)
        allocate( shell_list(max_shells),stat=ierr)
        if (ierr/=0) call io_error('Error allocating shell_list in param_read')
     end if
@@ -2006,6 +2023,7 @@ contains
        if (modulo(rows, num_kpts) /= 0) then 
           call io_error('The number of rows in nnkpts must be a multiple of num_kpts')
        end if
+       if (allocated(nnkpts_block)) deallocate(nnkpts_block)
        allocate(nnkpts_block(5, rows), stat=ierr)
        if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
        call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
@@ -2014,13 +2032,16 @@ contains
             call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
        ! assign the values in nnkpts_block to nnlist and nncell
        ! this keeps track of how many neighbours have been seen for each k-point
+       if (allocated(nnkpts_idx)) deallocate(nnkpts_idx)     
        allocate(nnkpts_idx(num_kpts), stat=ierr)
        if (ierr /= 0) call io_error('Error allocating nnkpts_idx in param_read')
        nnkpts_idx = 1
        ! allocating "global" nnlist & nncell
        ! These are deallocated in kmesh_dealloc
+       if (allocated(nnlist)) deallocate(nnlist)     
        allocate(nnlist(num_kpts, nntot), stat=ierr)
        if (ierr /= 0) call io_error('Error allocating nnlist in param_read')
+       if (allocated(nncell)) deallocate(nncell)     
        allocate(nncell(3, num_kpts, nntot), stat=ierr)
        if (ierr /= 0) call io_error('Error allocating nncell in param_read')
        do i=1,num_kpts * nntot
@@ -2171,8 +2192,10 @@ contains
 !    if (restart.ne.' ') disentanglement=.false.
 
     if (disentanglement) then 
+       if (allocated(ndimwin)) deallocate(ndimwin)     
        allocate(ndimwin(num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error allocating ndimwin in param_read')
+       if (allocated(lwindow)) deallocate(lwindow)     
        allocate(lwindow(num_bands,num_kpts),stat=ierr)
        if (ierr/=0) call io_error('Error allocating lwindow in param_read')
     endif
@@ -2192,9 +2215,11 @@ contains
     omega_invariant = -999.0_dp
     have_disentangled = .false.
 
+    if (allocated(wannier_centres)) deallocate(wannier_centres)   
     allocate(wannier_centres(3,num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error allocating wannier_centres in param_read')
     wannier_centres=0.0_dp
+    if (allocated(wannier_spreads)) deallocate(wannier_spreads)   
     allocate(wannier_spreads(num_wann),stat=ierr)
     if (ierr/=0) call io_error('Error in allocating wannier_spreads in param_read')
     wannier_spreads=0.0_dp

@@ -74,7 +74,8 @@ program wannier
   real(kind=dp) time0,time1,time2
   character(len=9) :: stat,pos,cdate,ctime
   logical :: wout_found,dryrun
-  integer :: len_seedname
+  integer :: len_seedname, i, j, k, l
+  integer :: raw_unit
   character(len=50) :: prog
 
   call comms_setup
@@ -198,7 +199,6 @@ program wannier
      end select
   endif
 
-
   if (postproc_setup) then
      if(on_root) call kmesh_write()
      call kmesh_dealloc()
@@ -214,6 +214,55 @@ program wannier
 
   time1=io_time()
   if (on_root) write(stdout,'(/1x,a25,f11.3,a)') 'Time to read overlaps    ',time1-time2,' (sec)'
+
+  if(index(devel_flag,'print_raw_mmn_amn_eig_and_exit')>0) then
+    if(on_root) then
+      raw_unit=io_file_unit()
+      open(unit=raw_unit,file='MMN',form='formatted',status='replace',position='rewind')
+      do l=1,num_kpts
+        do k=1,nntot
+          do j=1,num_wann
+            do i=1,num_wann
+              if (disentanglement) then
+                write(raw_unit,'(2G25.17)') m_matrix_orig(i,j,k,l)
+              else
+                write(raw_unit,'(2G25.17)') m_matrix(i,j,k,l)
+              end if
+            end do
+          end do
+        end do
+      end do
+      close(raw_unit)
+
+      raw_unit=io_file_unit()
+      open(unit=raw_unit,file='AMN',form='formatted',status='replace',position='rewind')
+      do k=1,num_kpts
+        do j=1,num_wann
+          do i=1,num_bands
+            write(raw_unit,'(2G25.17)') a_matrix(i,j,k)
+          end do
+        end do
+      end do
+      close(raw_unit)
+
+      raw_unit=io_file_unit()
+      open(unit=raw_unit,file='EIG',form='formatted',status='replace',position='rewind')
+      do j=1,num_kpts
+        do i=1,num_bands
+          write(raw_unit,'(2G25.17)') eigval(i,j)
+        end do
+      end do
+      close(raw_unit)
+      WRITE(*,*) "Wrote the AMN, MMN, EIG files. Now exiting. (devel_flag = print_raw_mmn_amn_eig_and_exit)"
+    endif 
+
+    if (lsitesymmetry) call sitesym_dealloc() !YN:
+    call overlap_dealloc()
+    call kmesh_dealloc()
+    call param_dealloc()
+    call comms_end
+    stop
+  endif 
 
   have_disentangled = .false.
 
