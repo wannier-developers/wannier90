@@ -1,8 +1,6 @@
 num_bands         =     4 
 num_wann          =     4
-conv_tol          = 1E-9
-conv_window       = 3
-num_iter          = 10000
+num_iter          =   100
 
 exclude_bands     = 1-5,10-18
 
