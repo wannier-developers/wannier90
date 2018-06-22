@@ -2170,6 +2170,9 @@ contains
 
     ! Projections
     call param_get_block_length('projections',found,i_temp)
+    if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) &
+       call io_error('param_read: Guiding centres requested, but no projection block found')
+    ! check to see that there are no unrecognised keywords
     if (found) then
        ! if (scdm_proj) then
        !   call io_error('param_read: Can not specify the projection block and scdm_proj=true at the same time.')
@@ -2183,9 +2186,6 @@ contains
           call param_get_centre_constraints
        end if
     end if
-    if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) &
-       call io_error('param_read: Guiding centres requested, but no projection block found')
-    ! check to see that there are no unrecognised keywords
 
 
 302  continue
