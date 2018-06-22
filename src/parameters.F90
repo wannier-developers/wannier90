@@ -54,7 +54,6 @@ module w90_parameters
   !! Constrained centres
   real(kind=dp), allocatable, public, save :: ccentres_frac(:,:)
   real(kind=dp), allocatable, public, save :: ccentres_cart(:,:)
-  real(kind=dp), allocatable, public, save :: lambdas(:)
   real(kind=dp),     public, save :: constrain_centres_tol
   real(kind=dp),     public, save :: init_lfac
   !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
@@ -820,14 +819,12 @@ contains
        if (ierr/=0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
        allocate( ccentres_cart(num_wann,3),stat=ierr)
        if (ierr/=0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
-       allocate( lambdas(num_wann),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating lambdas in param_get_centre_constraints')
     end if
 
 
     constrain_centres_tol = 1.0e-9_dp
     call param_get_keyword('constrain_centres_tol',found,r_value=constrain_centres_tol)
-    if (found) then
+    if (found .and. constrain_centres) then
        if (constrain_centres_tol < 0.0_dp) call io_error('Error: constrain_centres_tol must be positive.')
     endif
 
@@ -2179,17 +2176,17 @@ contains
        ! else
           call param_get_projections
        ! end if
+       ! Constrain centres
+       call param_get_block_length('constraints',found,i_temp)
+       if (found .and. selective_loc .and. constrain_centres) then
+          ! Centre constraints block
+          call param_get_centre_constraints
+       end if
     end if
     if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) &
        call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
 
-    ! Constrain centres
-    if (selective_loc .and. constrain_centres) then
-       ! Centre constraints block
-       call param_get_block_length('constraints',found,i_temp)
-       if (found) call param_get_centre_constraints
-    end if
 
 302  continue
 
@@ -3513,10 +3510,6 @@ contains
      deallocate( ccentres_cart,stat=ierr)
      if (ierr/=0) call io_error('Error deallocating ccentres_cart in param_dealloc')
     end if
-    if( allocated( lambdas ) ) then
-     deallocate( lambdas,stat=ierr)
-     if (ierr/=0) call io_error('Error deallocating lambdas in param_dealloc')
-    end if
     return
 
   end subroutine param_dealloc
@@ -4837,7 +4830,6 @@ contains
          ccentres_frac(loop1, loop2) = proj_site(loop2, loop1)
        end do
      end do
-     if(constrain_centres) lambdas(:) = 1.0_dp
 
      constraint_num = 0
      do loop1=1, num_lines
@@ -4876,9 +4868,6 @@ contains
            end if
          end do
          in_data(loop1)(1:maxlen) = ' '
-         if (column > 0 .and. column < 5) then
-           lambdas(wann) = 1.0_dp
-         end if
          constraint_num = constraint_num + 1
        end if
        index1 = index(dummy, 'centre_constraints')
@@ -4911,7 +4900,6 @@ contains
       if (column > 0) then
         if (column > 4) call io_error("Didn't expect anything else after Lagrange multiplier")
         if (column < 4) read(dummy(start:finish), '(f10.10)') ccentres_frac(wann, column)
-        if (column == 4) read(dummy(start:finish), '(f10.10)') lambdas(wann)
       end if
       column = column + 1
    end subroutine param_get_centre_constraint_from_column
@@ -6164,9 +6152,14 @@ contains
     call comms_bcast(constrain_centres,1)
     call comms_bcast(selective_loc,1)
     if (selective_loc .and. constrain_centres) then
+       if(.not.on_root) then
+          allocate( ccentres_frac(num_wann,3),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
+          allocate( ccentres_cart(num_wann,3),stat=ierr)
+          if (ierr/=0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
+       endif
        call comms_bcast(ccentres_frac(1,1),3*num_wann)
        call comms_bcast(ccentres_cart(1,1),3*num_wann)
-       call comms_bcast(lambdas(1),num_wann)
     end if
 
     call comms_bcast(num_proj,1)
