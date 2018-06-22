@@ -1932,11 +1932,11 @@ contains
              enddo
           enddo
 
+          call comms_allreduce(wann_spread%om_nu,1,'SUM')
+
           do n=1, jprime
             wann_spread%om_nu = wann_spread%om_nu + lambdai *sum(ccentres_cart(n,:)**2)
           end do
-
-          call comms_allreduce(wann_spread%om_nu,1,'SUM')
 
           wann_spread%om_nu = wann_spread%om_nu / real(num_kpts,dp)
 
