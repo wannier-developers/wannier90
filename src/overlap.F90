@@ -93,6 +93,7 @@ contains
     !! Note: one needs to call overlap_allocate first!
 
     use w90_parameters, only: num_bands, num_wann, num_kpts, nntot, nncell, nnlist, &
+      num_proj, lselproj, proj2wann_map, &
       devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
       m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only, & ![ysl]
       m_matrix_local, m_matrix_orig_local
@@ -105,7 +106,7 @@ contains
     integer :: nkp, nkp2, inn, nn, n, m, i, j
     integer :: mmn_in, amn_in, num_mmn, num_amn
     integer :: nnl, nnm, nnn, ncount
-    integer :: nb_tmp, nkp_tmp, nntot_tmp, nw_tmp, ierr
+    integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
     real(kind=dp) :: m_real, m_imag, a_real, a_imag
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
@@ -220,27 +221,32 @@ contains
         if (on_root) write (stdout, '(a)') trim(dummy)
 
         ! Read the number of bands, k-points and wannier functions
-        read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, nw_tmp
+        read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
 
         ! Checks
         if (nb_tmp .ne. num_bands) &
           call io_error(trim(seedname)//'.amn has not the right number of bands')
         if (nkp_tmp .ne. num_kpts) &
           call io_error(trim(seedname)//'.amn has not the right number of k-points')
-        if (nw_tmp .ne. num_wann) &
-          call io_error(trim(seedname)//'.amn has not the right number of Wannier functions')
+        if (np_tmp .ne. num_proj) &
+          call io_error(trim(seedname)//'.amn has not the right number of projections')
+
+        if (num_proj > num_wann .and. .not. lselproj) &
+          call io_error(trim(seedname)//'.amn has too many projections to be used without selecting a subset')
 
         ! Read the projections
-        num_amn = num_bands*num_wann*num_kpts
+        num_amn = num_bands*num_proj*num_kpts
         if (disentanglement) then
           do ncount = 1, num_amn
             read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
-            a_matrix(m, n, nkp) = cmplx(a_real, a_imag, kind=dp)
+            if (proj2wann_map(n) < 0) cycle
+            a_matrix(m, proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
           end do
         else
           do ncount = 1, num_amn
             read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
-            u_matrix(m, n, nkp) = cmplx(a_real, a_imag, kind=dp)
+            if (proj2wann_map(n) < 0) cycle
+            u_matrix(m, proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
           end do
         end if
         close (amn_in)
