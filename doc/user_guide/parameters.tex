@@ -71,6 +71,7 @@ Keyword & Type & Description \\
 \hline
 {\sc num\_wann }   & I & Number of WF \\
 {\sc num\_bands }   & I & Number of bands passed to the code \\
+{\sc num\_proj }   & I & Number of projections defined \\
 {\sc unit\_cell\_cart }   & P & Unit cell vectors in Cartesian coordinates \\
 {\sc atoms\_cart }*   & P & Positions of atoms in Cartesian coordinates \\
 {\sc atoms\_frac }*   & R & Positions of atoms in fractional
@@ -116,6 +117,7 @@ Keyword & Type & Description \\
 %{\sc cp\_pp }   & L & CP code post-processing \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
+{\sc select\_projections }   & I & List of projections to use in Wannierisation \\
 {\sc restart }   & S & Restart from checkpoint file \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
@@ -387,6 +389,14 @@ No default.
 Total number of bands passed to the code in the {\tt seedname.mmn} file.
 
 Default \verb#num_bands#=\verb#num_wann#
+
+\subsection[num\_proj]{\tt integer :: num\_proj}
+
+Total number of projections that have been defined in the projections block.
+This only needs to be specified if the number of projections is greater than the number of Wannier functions.
+In that case, use \verb#select_projections# to select the initial projections that are used for wannierisation.
+
+Default \verb#num_proj#=\verb#num_wann#
 
 \subsection[Cell Lattice Vectors]{Cell Lattice Vectors}
 
@@ -731,6 +741,15 @@ A k-point independent list of states to excluded from the calculation
  and 12:
 
  \verb#exclude_bands : 2, 6-8, 12#
+
+\subsection[select\_projections]{\tt integer :: select\_projections(:)}
+
+A list of projections to be included in the wannierisation procedure.
+In the case that \verb#num_proj# is greater than \verb#num_wann#,
+  this keyword allows a subset of the projections in the projection matrices to be used.
+For example, to select the projections given by the indices 2, 6, 7, 8 and 12:
+
+ \verb#select_projections : 2, 6-8, 12#
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
