@@ -127,8 +127,10 @@ module w90_berry
     real(kind=dp), allocatable :: jdos_spn(:,:)
 
     ! Spin Hall conductivity
-    real(kind=dp)  :: shc_k
-    real(kind=dp)  :: shc
+    ! first index kpt, second index fermi energy
+    real(kind=dp), allocatable  :: shc_k_list(:,:)
+    real(kind=dp)               :: shc_k_list_dummy(nfermi)
+    real(kind=dp)               :: shc_list(nfermi)
    
     real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),&
                          db1,db2,db3,fac,freq,rdum,vdum(3)
@@ -214,8 +216,11 @@ module w90_berry
         call get_HH_R
         call get_AA_R
         call get_SS_R
-        shc=0.0_dp
-        shc_k=0.0_dp
+
+        allocate(shc_k_list(PRODUCT(berry_kmesh),nfermi))
+        shc_list=0.0_dp
+        shc_k_list=0.0_dp
+        adpt_counter_list=0
     endif
 
 
@@ -446,8 +451,30 @@ module w90_berry
           ! ***END CODE BLOCK 1***
 
           if(eval_shc) then
-             call berry_get_shc_k(kpt,shc_k)
-             shc=shc+shc_k*kweight
+             call berry_get_shc_k(kpt,shc_k_list(loop_xyz,:))
+
+             do if=1,nfermi
+                 !vdum(1)=sum(imf_k_list(:,1,if))
+                 !vdum(2)=sum(imf_k_list(:,2,if))
+                 !vdum(3)=sum(imf_k_list(:,3,if))
+                 !if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
+                 !rdum=sqrt(dot_product(vdum,vdum))
+                 rdum=abs(shc_k_list(loop_xyz,if))
+                 if(rdum>berry_curv_adpt_kmesh_thresh) then
+                     adpt_counter_list(if)=adpt_counter_list(if)+1
+                     do loop_adpt=1,berry_curv_adpt_kmesh**3
+                         ! Using shc_k_list here would corrupt values for other
+                         ! kpt, hence dummy. Only if-th element is used
+                         call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
+                                 shc_k_list_dummy)
+                         shc_list(if)=shc_list(if)&
+                                 +shc_k_list_dummy(if)*kweight_adpt
+                     end do
+                 else
+                     shc_list(if)=shc_list(if)+shc_k_list(loop_xyz,if)*kweight
+                 endif
+             enddo
+
              write(stdout,'(a6,i4,a6,3(f8.5,1x))') 'node ',my_node_id,&
                      ' kpt ',kpt(1:3)
           end if
@@ -481,14 +508,15 @@ module w90_berry
     endif
 
     if(eval_shc) then
-       call comms_reduce(shc,1,'SUM')
+       call comms_reduce(shc_list(1),nfermi,'SUM')
+       call comms_reduce(shc_k_list(1,1),PRODUCT(berry_kmesh)*nfermi,'SUM')
     end if
     
     if(on_root) then
 
        if (timing_level>1) call io_stopwatch('berry: k-interpolation',2)
        write(stdout,'(1x,a)') ' '
-       if(eval_ahc .and. berry_curv_adpt_kmesh.ne.1) then
+       if((eval_ahc .or. eval_shc) .and. berry_curv_adpt_kmesh.ne.1) then
           if(.not.wanint_kpoint_file) write(stdout, '(1x,a28,3(i0,1x))')&
                'Regular interpolation grid: ',berry_kmesh
           write(stdout, '(1x,a28,3(i0,1x))') 'Adaptive refinement grid: ',&
@@ -814,7 +842,8 @@ module w90_berry
            ! Convert to S/cm
            !fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
            fac=elem_charge_SI*hbar_SI/cell_volume
-           shc=shc*fac
+           shc_list=shc_list*fac
+           shc_k_list=shc_k_list*fac
            !
            write(stdout,'(/,1x,a)')&
                    '----------------------------------------------------------'
@@ -823,16 +852,17 @@ module w90_berry
            write(stdout,'(1x,a)')&
                    '----------------------------------------------------------'
            !
-           do n=1,6
-               file_name= trim(seedname)//'-shc_xy_sz'//'.dat'
-               file_name=trim(file_name)
-               file_unit=io_file_unit()
-               write(stdout,'(/,3x,a)') '* '//file_name
-               open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-               write(file_unit,'(3E16.8)') &
-                   real(shc,dp)
-               close(file_unit)
+           file_name= trim(seedname)//'-shc_xy_sz'//'.dat'
+           file_name=trim(file_name)
+           file_unit=io_file_unit()
+           write(stdout,'(/,3x,a)') '* '//file_name
+           open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+           write(file_unit,'(a,3x,a,3x,a)') 'No.','Fermi energy','SHC'
+           do n=1,nfermi
+               write(file_unit,'(I4,2E16.8)') &
+                   n,fermi_energy_list(n),shc_list(n)
            enddo
+           close(file_unit)
 
        endif
        
@@ -1241,15 +1271,15 @@ module w90_berry
                                    kubo_adpt_smr,kubo_smr_fixed_en_width,&
                                    kubo_adpt_smr_max,kubo_adpt_smr_fac,&
                                    kubo_smr_index,berry_kmesh,&
-                                   fermi_energy_list
+                                   fermi_energy_list,nfermi
     use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
                                    pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
     use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
 
 
-    real(kind=dp),                                  intent(in)  :: kpt(3)
-    real(kind=dp),                                  intent(out) :: shc_k
+    real(kind=dp),              intent(in)  :: kpt(3)
+    real(kind=dp),              intent(out) :: shc_k(nfermi)
 
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: delHH(:,:,:)
@@ -1264,7 +1294,7 @@ module w90_berry
                         eta_smr,Delta_k,arg,vdum(3)
 
     integer          :: i,j,n,m,ispn
-    real(kind=dp)    :: eig(num_wann),occ(num_wann)
+    real(kind=dp)    :: eig(num_wann),occ_list(num_wann,nfermi)
     real(kind=dp)    :: omega,rfac
     complex(kind=dp) :: prod
 
@@ -1284,7 +1314,6 @@ module w90_berry
                                         OO_dz=delHH(:,:,3))
        call utility_diagonalize(HH,num_wann,eig,UU)
     endif
-    call pw90common_get_occ(eig,occ,fermi_energy_list(1))
     call wham_get_D_h(delHH,UU,eig,D_h)
 
     call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
@@ -1298,6 +1327,11 @@ module w90_berry
     shc_k=0.0_dp
     omega=0.0_dp
 
+    ! get occ for different fermi_energy
+    do i=1,nfermi
+       call pw90common_get_occ(eig,occ_list(:,i),fermi_energy_list(i))
+    end do
+
     do n=1,num_wann
        ! get \Omega_{n,xy}^{sz}
        do m=1,num_wann
@@ -1309,7 +1343,9 @@ module w90_berry
           omega = omega + rfac*real(prod,dp)
        enddo
 
-       shc_k = shc_k + occ(n)*omega
+       do i=1,nfermi
+          shc_k(i) = shc_k(i) + occ_list(n,i)*omega
+       end do
     enddo
 
   end subroutine berry_get_shc_k
