@@ -1087,7 +1087,7 @@ contains
     if(berry .and. .not.found) call io_error &
          ('Error: berry=T and berry_task is not set')
     if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-             .and. index(berry_task,'kubo')==0) call io_error&
+             .and. index(berry_task,'kubo')==0 .and. index(berry_task,'shc')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan

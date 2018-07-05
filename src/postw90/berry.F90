@@ -125,6 +125,10 @@ module w90_berry
     ! decomposition into up-up, down-down and spin-flip transitions
     real(kind=dp), allocatable :: jdos_k_spn(:,:)
     real(kind=dp), allocatable :: jdos_spn(:,:)
+
+    ! Spin Hall conductivity
+    real(kind=dp)  :: shc_k
+    real(kind=dp)  :: shc
    
     real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),&
                          db1,db2,db3,fac,freq,rdum,vdum(3)
@@ -132,7 +136,7 @@ module w90_berry
                          loop_xyz,loop_adpt,adpt_counter_list(nfermi),ifreq,&
                          file_unit
     character(len=24) :: file_name
-    logical           :: eval_ahc,eval_morb,eval_kubo,not_scannable
+    logical           :: eval_ahc,eval_morb,eval_kubo,not_scannable,eval_shc
 
     if(nfermi==0) call io_error(&
          'Must specify one or more Fermi levels when berry=true')
@@ -148,9 +152,11 @@ module w90_berry
     eval_ahc=.false.
     eval_morb=.false.
     eval_kubo=.false.
+    eval_shc=.false.
     if(index(berry_task,'ahc')>0) eval_ahc=.true.
     if(index(berry_task,'morb')>0) eval_morb=.true.
     if(index(berry_task,'kubo')>0) eval_kubo=.true.
+    if(index(berry_task,'shc')>0) eval_shc=.true.
 
     ! Wannier matrix elements, allocations and initializations
     !
@@ -204,6 +210,15 @@ module w90_berry
        endif
     endif
 
+    if(eval_shc) then
+        call get_HH_R
+        call get_AA_R
+        call get_SS_R
+        shc=0.0_dp
+        shc_k=0.0_dp
+    endif
+
+
     if(on_root) then
 
        write(stdout,'(/,/,1x,a)')&
@@ -226,6 +241,12 @@ module w90_berry
              write(stdout,'(/,3x,a)') '* Complex optical conductivity'
              write(stdout,'(/,3x,a)') '* Joint density of states'
           endif
+       endif
+
+       if(eval_shc) then
+           write(stdout,'(/,3x,a)') '* Spin Hall conductivity'
+           write(stdout,'(/,3x,a)') '  Note spin axis will be set along z direction to calculate \sigma_xy^spinz, i.e. '
+           write(stdout,'(/,3x,a)') '  spin_axis_polar = 0, spin_axis_polar = 0'
        endif
 
        if(transl_inv) then
@@ -350,6 +371,11 @@ module w90_berry
           !
           ! ***END COPY OF CODE BLOCK 1***
 
+          if(eval_shc) then
+              call io_error(&
+                      'Kpoints read from kpoint.dat for SHC calculation is not implemented')
+          end if
+
        end do !loop_xyz
 
     else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
@@ -418,6 +444,13 @@ module w90_berry
           endif
           !
           ! ***END CODE BLOCK 1***
+
+          if(eval_shc) then
+             call berry_get_shc_k(kpt,shc_k)
+             shc=shc+shc_k*kweight
+             write(stdout,'(a6,i4,a6,3(f8.5,1x))') 'node ',my_node_id,&
+                     ' kpt ',kpt(1:3)
+          end if
           
        end do !loop_xyz
    
@@ -446,6 +479,10 @@ module w90_berry
           call comms_reduce(jdos_spn(1,1),3*kubo_nfreq,'SUM')
        endif
     endif
+
+    if(eval_shc) then
+       call comms_reduce(shc,1,'SUM')
+    end if
     
     if(on_root) then
 
@@ -766,6 +803,37 @@ module w90_berry
              endif
           enddo
           close(file_unit)
+       endif
+
+       ! -----------------------!
+       ! Spin Hall conductivity !
+       ! -----------------------!
+       !
+       if(eval_shc) then
+           !
+           ! Convert to S/cm
+           !fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+           fac=elem_charge_SI*hbar_SI/cell_volume
+           shc=shc*fac
+           !
+           write(stdout,'(/,1x,a)')&
+                   '----------------------------------------------------------'
+           write(stdout,'(1x,a)')&
+                   'Output data files related to Spin Hall conductivity:'
+           write(stdout,'(1x,a)')&
+                   '----------------------------------------------------------'
+           !
+           do n=1,6
+               file_name= trim(seedname)//'-shc_xy_sz'//'.dat'
+               file_name=trim(file_name)
+               file_unit=io_file_unit()
+               write(stdout,'(/,3x,a)') '* '//file_name
+               open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+               write(file_unit,'(3E16.8)') &
+                   real(shc,dp)
+               close(file_unit)
+           enddo
+
        endif
        
     end if !on_root
@@ -1152,5 +1220,158 @@ module w90_berry
     enddo
 
   end subroutine berry_get_kubo_k
+
+
+
+
+  !===========================================================!
+  !                   PRIVATE PROCEDURES                      !
+  !===========================================================!
+
+  subroutine berry_get_shc_k(kpt,shc_k)
+  !====================================================================!
+  !                                                                    !
+  !! Contribution from point k to the Spin Hall conductivity
+  !                                                                    !
+  !====================================================================!
+
+    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi,hbar_SI
+    use w90_utility, only        : utility_diagonalize,utility_rotate,utility_w0gauss
+    use w90_parameters, only     : num_wann,kubo_eigval_max,&
+                                   kubo_adpt_smr,kubo_smr_fixed_en_width,&
+                                   kubo_adpt_smr_max,kubo_adpt_smr_fac,&
+                                   kubo_smr_index,berry_kmesh,&
+                                   fermi_energy_list
+    use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
+                                   pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
+    use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
+    use w90_get_oper, only       : HH_R,AA_R
+
+
+    real(kind=dp),                                  intent(in)  :: kpt(3)
+    real(kind=dp),                                  intent(out) :: shc_k
+
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: D_h(:,:,:)
+    complex(kind=dp), allocatable :: AA(:,:,:)
+    complex(kind=dp), allocatable :: shc_sv_k(:,:)
+
+    ! Adaptive smearing
+    !
+    real(kind=dp)    :: del_eig(num_wann,3),joint_level_spacing,&
+                        eta_smr,Delta_k,arg,vdum(3)
+
+    integer          :: i,j,n,m,ispn
+    real(kind=dp)    :: eig(num_wann),occ(num_wann)
+    real(kind=dp)    :: omega,rfac
+    complex(kind=dp) :: prod
+
+    allocate(HH(num_wann,num_wann))
+    allocate(delHH(num_wann,num_wann,3))
+    allocate(UU(num_wann,num_wann))
+    allocate(D_h(num_wann,num_wann,3))
+    allocate(AA(num_wann,num_wann,3))
+
+    if(kubo_adpt_smr) then
+       call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+       Delta_k=pw90common_kmesh_spacing(berry_kmesh)
+    else
+       call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+                                        OO_dx=delHH(:,:,1),&
+                                        OO_dy=delHH(:,:,2),&
+                                        OO_dz=delHH(:,:,3))
+       call utility_diagonalize(HH,num_wann,eig,UU)
+    endif
+    call pw90common_get_occ(eig,occ,fermi_energy_list(1))
+    call wham_get_D_h(delHH,UU,eig,D_h)
+
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
+    do i=1,3
+       AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
+    enddo
+    AA=AA+cmplx_i*D_h ! Eq.(25) WYSV06
+
+    call berry_get_szvx_k(kpt,eig,del_eig(:,1),AA(:,:,1),shc_sv_k)
+
+    shc_k=0.0_dp
+    omega=0.0_dp
+
+    do n=1,num_wann
+       ! get \Omega_{n,xy}^{sz}
+       do m=1,num_wann
+          if(m==n) cycle
+          if(eig(m)>kubo_eigval_max .or. eig(n)>kubo_eigval_max) cycle
+
+          rfac = 1.0_dp/(eig(m)-eig(n))/hbar_SI
+          prod = (shc_sv_k(n,m)+conjg(shc_sv_k(m,n)))*AA(m,n,1)
+          omega = omega + rfac*real(prod,dp)
+       enddo
+
+       shc_k = shc_k + occ(n)*omega
+    enddo
+
+  end subroutine berry_get_shc_k
+
+  !===========================================================!
+  !                   PRIVATE PROCEDURES                      !
+  !===========================================================!
+
+  subroutine berry_get_szvx_k(kpt,eig,delx_eig,AA_x,shc_sv_k)
+  !====================================================================!
+  !                                                                    !
+  !! Contribution from point k to the
+  !!    < \psi_nk | s_z v_x | \psi_mk >
+  !
+  !  Junfeng Qiao (6/25/2018)
+  !                                                                    !
+  !====================================================================!
+
+    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi
+    use w90_utility, only        : utility_diagonalize,utility_rotate,utility_w0gauss
+    use w90_parameters, only     : num_wann,kubo_eigval_max,&
+                                   spin_axis_polar,spin_axis_azimuth
+    use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
+                                   pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
+    use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
+    use w90_get_oper, only       : HH_R,AA_R
+    use w90_spin, only           : spin_get_nm_k
+
+
+    real(kind=dp),                                  intent(in)  :: kpt(3)
+    real(kind=dp),              dimension(:),       intent(in)  :: eig
+    real(kind=dp),              dimension(:),       intent(in)  :: delx_eig
+    complex(kind=dp),           dimension(:,:),     intent(in)  :: AA_x
+    complex(kind=dp),           dimension(:,:),     intent(out) :: shc_sv_k
+
+
+    integer          :: i,j,n,m,r
+    complex(kind=dp) :: spn_nm_k(num_wann,num_wann)
+    complex(kind=dp) :: aax_all
+
+
+    shc_sv_k = cmplx_0
+
+    ! get < \psi_nk | \sigma_z | \psi_mk >
+    spin_axis_polar = 0
+    spin_axis_azimuth = 0
+    call spin_get_nm_k(kpt,spin_axis_polar,spin_axis_azimuth,spn_nm_k)
+
+    do n=1,num_wann
+       do m=1,num_wann
+          do r=1,num_wann
+             if (r==m) then
+                aax_all = delx_eig(m)
+             else
+                aax_all = - cmplx_i * (eig(m)-eig(r))*AA_x(r,m)
+             end if
+             shc_sv_k(n,m) = shc_sv_k(n,m) + spn_nm_k(n,r)*aax_all
+          end do
+          shc_sv_k(n,m) = 0.5_dp*shc_sv_k(n,m)
+       end do
+    end do
+
+  end subroutine berry_get_szvx_k
 
 end module w90_berry
