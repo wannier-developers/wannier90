@@ -217,7 +217,8 @@ module w90_berry
         call get_AA_R
         call get_SS_R
 
-        allocate(shc_k_list(PRODUCT(berry_kmesh),nfermi))
+        allocate(shc_k_list(PRODUCT(berry_kmesh),nfermi),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating shc_k_list in berry')
         shc_list=0.0_dp
         shc_k_list=0.0_dp
         adpt_counter_list=0
@@ -249,7 +250,7 @@ module w90_berry
        endif
 
        if(eval_shc) then
-           write(stdout,'(/,3x,a)') '* Spin Hall conductivity'
+           write(stdout,'(/,3x,a)') '* Spin Hall Conductivity'
            write(stdout,'(/,3x,a)') '  Note spin axis will be set along z direction to calculate \sigma_xy^spinz, i.e. '
            write(stdout,'(/,3x,a)') '  spin_axis_polar = 0, spin_axis_polar = 0'
        endif
@@ -451,7 +452,8 @@ module w90_berry
           ! ***END CODE BLOCK 1***
 
           if(eval_shc) then
-             call berry_get_shc_k(kpt,shc_k_list(loop_xyz,:))
+            ! be aware that index starts from 1 
+             call berry_get_shc_k(kpt,shc_k_list(loop_xyz+1,:))
 
              do if=1,nfermi
                  !vdum(1)=sum(imf_k_list(:,1,if))
@@ -459,7 +461,7 @@ module w90_berry
                  !vdum(3)=sum(imf_k_list(:,3,if))
                  !if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
                  !rdum=sqrt(dot_product(vdum,vdum))
-                 rdum=abs(shc_k_list(loop_xyz,if))
+                 rdum=abs(shc_k_list(loop_xyz+1,if))
                  if(rdum>berry_curv_adpt_kmesh_thresh) then
                      adpt_counter_list(if)=adpt_counter_list(if)+1
                      do loop_adpt=1,berry_curv_adpt_kmesh**3
@@ -471,7 +473,7 @@ module w90_berry
                                  +shc_k_list_dummy(if)*kweight_adpt
                      end do
                  else
-                     shc_list(if)=shc_list(if)+shc_k_list(loop_xyz,if)*kweight
+                     shc_list(if)=shc_list(if)+shc_k_list(loop_xyz+1,if)*kweight
                  endif
              enddo
 
@@ -841,7 +843,8 @@ module w90_berry
            !
            ! Convert to S/cm
            !fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
-           fac=elem_charge_SI*hbar_SI/cell_volume
+           !fac=elem_charge_SI*hbar_SI/cell_volume
+           fac=1.0e8_dp*elem_charge_SI**2/cell_volume
            shc_list=shc_list*fac
            shc_k_list=shc_k_list*fac
            !
@@ -867,6 +870,8 @@ module w90_berry
        endif
        
     end if !on_root
+
+    write(stdout,'(a,i4)') 'berry_main end, my_node_id',my_node_id
 
   end subroutine berry_main
 
@@ -1286,7 +1291,8 @@ module w90_berry
     complex(kind=dp), allocatable :: UU(:,:)
     complex(kind=dp), allocatable :: D_h(:,:,:)
     complex(kind=dp), allocatable :: AA(:,:,:)
-    complex(kind=dp), allocatable :: shc_sv_k(:,:)
+
+    complex(kind=dp)              :: shc_sv_k(num_wann,num_wann)
 
     ! Adaptive smearing
     !
