@@ -55,7 +55,7 @@ module w90_parameters
   real(kind=dp), allocatable, public, save :: ccentres_frac(:,:)
   real(kind=dp), allocatable, public, save :: ccentres_cart(:,:)
   real(kind=dp),     public, save :: constrain_centres_tol
-  real(kind=dp),     public, save :: init_lfac
+  real(kind=dp),     public, save :: lambdac
   !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
   !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
   character(len=50), public, save :: devel_flag
@@ -828,10 +828,10 @@ contains
        if (constrain_centres_tol < 0.0_dp) call io_error('Error: constrain_centres_tol must be positive.')
     endif
 
-    init_lfac = 1.0_dp
-    call param_get_keyword('init_lfac',found,r_value=init_lfac)
+    lambdac = 1.0_dp
+    call param_get_keyword('lambdac',found,r_value=lambdac)
     !if (found) then
-    !   if (init_lfac < 0.0_dp) call io_error('Error: init_lfac  must be positive.')
+    !   if (lambdac < 0.0_dp) call io_error('Error: lambdac  must be positive.')
     !endif
 
     !%%%%%%%%%
@@ -6148,7 +6148,7 @@ contains
     !vv: Constrained centres
     call comms_bcast(jprime,1)
     call comms_bcast(constrain_centres_tol,1)
-    call comms_bcast(init_lfac,1)
+    call comms_bcast(lambdac,1)
     call comms_bcast(constrain_centres,1)
     call comms_bcast(selective_loc,1)
     if (selective_loc .and. constrain_centres) then
