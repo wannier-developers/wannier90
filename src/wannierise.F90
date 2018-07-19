@@ -31,7 +31,6 @@ module w90_wannierise
   ! Data to avoid large allocation within iteration loop
   real(kind=dp),    allocatable  :: rnkb (:,:,:)
   real(kind=dp),    allocatable  :: rnkb_loc (:,:,:)
-  !real(kind=dp),    allocatable  :: rcnkb (:,:,:)
   real(kind=dp),    allocatable  :: ln_tmp(:,:,:)
 
   real(kind=dp),    allocatable  :: ln_tmp_loc(:,:,:)
@@ -100,7 +99,7 @@ contains
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
          write_hr_diag,kpt_latt, bk, ccentres_cart, jprime, selective_loc, &
-         constrain_centres, constrain_centres_tol, init_lfac
+         constrain_centres, constrain_centres_tol, lambdac
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
     use w90_parameters, only : lsitesymmetry                !RS:
     use w90_sitesym,    only : sitesym_symmetrize_gradient  !RS:
@@ -181,8 +180,6 @@ contains
 !    if (ierr/=0) call io_error('Error in allocating u0 in wann_main')
     allocate( rnkb (num_wann, nntot, num_kpts),stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating rnkb in wann_main')
-    !allocate( rcnkb (num_wann, nntot, num_kpts),stat=ierr    )
-    !if (ierr/=0) call io_error('Error in allocating rcnkb in wann_main')
     allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main')
     if (selective_loc) then 
@@ -191,7 +188,6 @@ contains
     end if
 
     rnkb=0.0_dp
-    !rcnkb=0.0_dp
 
     ! sub vars passed into other subs
     allocate( csheet (num_wann, nntot, num_kpts), stat=ierr )
@@ -334,20 +330,11 @@ contains
        irguide=1
     endif
 
+    ! constrained centres part
     if (selective_loc .and. constrain_centres) then
        lambdai = 0.0_dp
-       lambdai = init_lfac
+       lambdai = lambdac
     end if
-
-    ! constrained centres part
-
-    !do nkp = 1, num_kpts
-    !   do nn=1,nntot
-    !      do n=1,num_wann
-    !         rcnkb(n, nn,nkp) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
-    !      end do
-    !   end do
-    !end do
 
     ! calculate initial centers and spread
     call wann_omega(csheet,sheet,rave,r2ave,rave2,wann_spread)
@@ -371,21 +358,6 @@ contains
     ncg  = 0
     iter = 0
     old_spread%om_tot = 0.0_dp
-    if (selective_loc) then
-       cconverged = .false.
-
-       if (constrain_centres) then
-          rnr0n2=0.0_dp; cvalue_new=0.0_dp
-          do iw=1,jprime
-             rnr0n2(iw) = (wannier_centres(1,iw) - ccentres_cart(iw,1))**2 &
-                         + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2 &
-                         + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2
-          end do
-          if (sum(rnr0n2(:)) .gt. eps2) lambdai = dabs(wann_spread%om_tot / sum(rnr0n2(:)))
-          glpar= 1.0_dp + 0.001_dp
-       end if
-    end if
-
 
     ! print initial state
     if (on_root) then
@@ -615,24 +587,6 @@ contains
           end if
        end if
 
-       if (constrain_centres) then
-          cvalue_new = 0.0_dp
-          do n=1,jprime
-             rnr0n2(n) = sqrt((rave(1,n) - wannier_centres(1,n) )**2 &
-                         +     (rave(2,n) - wannier_centres(2,n) )**2 &
-                         +     (rave(3,n) - wannier_centres(3,n) )**2)
-             cvalue_new =  cvalue_new + ((rave(1,n) - ccentres_cart(n,1))**2 &
-                                      +  (rave(2,n) - ccentres_cart(n,2))**2 &
-                                      +  (rave(3,n) - ccentres_cart(n,3))**2)
- 
-          end do
-          if (all(rnr0n2(:) .lt. constrain_centres_tol) .and. (cvalue_new .lt. eps5) .and. iter > 1) then
-             cconverged = .true.
-          else
-            if (cvalue_new .gt. eps5) lambdai = lambdai*glpar
-          endif
-       end if
-
        ! Public array of Wannier centres and spreads
        wannier_centres = rave
        wannier_spreads = r2ave - rave2
@@ -654,12 +608,6 @@ contains
           write(stdout,'(/13x,a,es10.3,a,i2,a)') &
                '<<<     Delta <',conv_tol,&
                '  over ',conv_window,' iterations     >>>'
-          write(stdout,'(13x,a/)')  '<<< Wannierisation convergence criteria satisfied >>>'
-          exit
-       elseif(selective_loc .and. constrain_centres .and. cconverged) then
-          write(stdout,'(/13x,a,es10.3,a)') &
-               '<<<     Delta constraint <',constrain_centres_tol,&
-               ' >>>'
           write(stdout,'(13x,a/)')  '<<< Wannierisation convergence criteria satisfied >>>'
           exit
        endif
@@ -829,8 +777,6 @@ contains
     if (ierr/=0) call io_error('Error in deallocating cdodq in wann_main')
     deallocate(csheet,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating csheet in wann_main')
-    !deallocate( rcnkb,stat=ierr    )
-    !if (ierr/=0) call io_error('Error in deallocating rcnkb in wann_main')
     if (selective_loc) then 
        deallocate( rnr0n2,stat=ierr    )
        if (ierr/=0) call io_error('Error in deallocating rnr0n2 in wann_main')
@@ -1932,11 +1878,11 @@ contains
              enddo
           enddo
 
-          call comms_allreduce(wann_spread%om_nu,1,'SUM')
-
           do n=1, jprime
             wann_spread%om_nu = wann_spread%om_nu + lambdai *sum(ccentres_cart(n,:)**2)
           end do
+
+          call comms_allreduce(wann_spread%om_nu,1,'SUM')
 
           wann_spread%om_nu = wann_spread%om_nu / real(num_kpts,dp)
 
@@ -2071,8 +2017,6 @@ contains
       end do
     end do
 
-
-
     ! recalculate rave
     rave = 0.0_dp
     do iw = 1, num_wann
@@ -2090,7 +2034,7 @@ contains
 
     call comms_allreduce(rave(1,1),num_wann*3,'SUM')
 
-    ! R_mn=M_mn/M_nn and q_m^{k,b} = Im phi_m^{k,b} + b.r_n are calculated
+    ! b.r_0n are calculated
     if ( selective_loc .and. constrain_centres) then
        r0kb = 0.0_dp
        do nkp_loc = 1, counts(my_node_id)
@@ -2103,7 +2047,6 @@ contains
        enddo
     end if
 
-    rnkb = 0.0_dp
     rnkb_loc = 0.0_dp
     do nkp_loc = 1, counts(my_node_id)
        nkp = nkp_loc + displs(my_node_id)
@@ -2142,9 +2085,6 @@ contains
                          cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) &
                               * ( crt(m,n) * rnkb_loc(n,nn,nkp_loc) + conjg(crt(n,m) &
                               * rnkb_loc(m,nn,nkp_loc)) ) * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                         ! +(lambdac-1)S[T^{k,b}]-lambdac S[Tc^{k,b}]
-                         !S[T] = (T+Tdag)/2i ; T_mn = Rt_mn q_n; Tc_mn = Rt_mn qc_n
-                         !q_n^{k,b} = Im ln M_nn^{k,b} + b.r_n; qc_n^{k,b} = Im ln M_nn^{k,b} + b.r0
                          if (constrain_centres) then
                             cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * lambdai &
                                  * ( crt(m,n) * ln_tmp_loc(n,nn,nkp_loc)  &
@@ -2186,23 +2126,6 @@ contains
            	else
            	     cdodq_loc(m,n,nkp_loc)=cdodq_loc(m,n,nkp_loc)
                 end if
-            !! chjo     ! A[R^{k,b}]=(R-Rdag)/2
-            !! chjo     cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) &
-            !! chjo          + wb(nn) * 0.5_dp &
-            !! chjo          *( cr(m,n) - conjg(cr(n,m)) )
-            !! chjo     ! +(lambdac-1)S[T^{k,b}]-lambdac S[Tc^{k,b}]
-            !! chjo     !S[T] = (T+Tdag)/2i ; T_mn = Rt_mn q_n; Tc_mn = Rt_mn qc_n
-            !! chjo     !q_n^{k,b} = Im ln M_nn^{k,b} + b.r_n; qc_n^{k,b} = Im ln M_nn^{k,b} + b.r0
-            !! chjo     cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - &
-            !! chjo           ( crt(m,n) * ln_tmp_loc(n,nn,nkp_loc)  &
-            !! chjo          + conjg( crt(n,m) * ln_tmp_loc(m,nn,nkp_loc) ) ) &
-            !! chjo          * cmplx(0.0_dp,-0.5_dp,kind=dp)
-            !! chjo     cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * (lambdas(n) - 1.0_dp) &
-            !! chjo          * ( crt(m,n) * rnkb_loc(n,nn,nkp_loc) + conjg(crt(n,m) &
-            !! chjo          * rnkb_loc(m,nn,nkp_loc)) ) * cmplx(0.0_dp,-0.5_dp,kind=dp)
-            !! chjo     cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - lambdas(n) * wb(nn) &
-            !! chjo          * ( crt(m,n) * rcnkb(n,nn,nkp_loc) + conjg(crt(n,m) &
-            !! chjo          * rcnkb(m,nn,nkp_loc)) ) * cmplx(0.0_dp,-0.5_dp,kind=dp)
                 enddo
              enddo
           else
