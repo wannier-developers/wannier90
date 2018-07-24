@@ -210,6 +210,7 @@ program wannier
   endif
 
   if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
+  call overlap_allocate()
   call overlap_read()
 
   time1=io_time()

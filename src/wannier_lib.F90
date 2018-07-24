@@ -317,20 +317,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
-  allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
-  
-  if (disentanglement) then
-     allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating m_matrix_orig in overlap_read')
-     allocate(a_matrix(num_bands,num_wann,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating a_matrix in overlap_read')
-     allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
-  else
-     allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
-  endif
+  call overlap_allocate()
     
   if (disentanglement) then
      m_matrix_orig = m_matrix_loc
