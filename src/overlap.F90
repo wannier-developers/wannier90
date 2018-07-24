@@ -117,7 +117,9 @@ contains
     integer, dimension(0:num_nodes-1) :: displs
 
     if (timing_level>0) call io_stopwatch('overlap: read',1)
-    
+
+    call comms_array_split(num_kpts,counts,displs)
+
     if (disentanglement) then
        if (on_root) then
        m_matrix_orig = cmplx_0

@@ -82,14 +82,41 @@ program test_library
     real(kind=dp), allocatable :: wann_spreads_loc(:)
     real(kind=dp), dimension(3) :: spread_loc
 
-    integer :: i, j, k, l, ierr
+    integer :: i, j, k, l, ierr, mmn_in, amn_in, nn, inn
+    logical :: nn_found
     character(len=50) :: dummy
     real(kind=dp) :: re_tmp, im_tmp
 
+    integer, parameter :: stdout = 6
+    integer, parameter :: root_id = 0
+    integer :: nb_tmp, nkp_tmp, nntot_tmp, nw_tmp, num_mmn, num_amn, ncount
+    integer :: nkp,nkp2,nnl,nnm,nnn,m,n
+    real(kind=dp) :: m_real, m_imag, a_real, a_imag
+    complex(kind=dp), allocatable :: mmn_tmp(:,:)
+
+    integer :: num_nodes, my_node_id
+
     NAMELIST / PARAMS / seed__name, mp_grid_loc, num_bands_tot, gamma_only_loc, spinors_loc
 
-    print*, "STARTING..."
+#ifdef MPI
 
+    call mpi_init(ierr)
+    if (ierr.ne.0) then
+        write(stderr, '(/a/)') 'MPI initialisation error'
+        stop 1
+    end if
+
+    call mpi_comm_rank(mpi_comm_world, my_node_id, ierr)
+    call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
+    if (my_node_id == 0) then
+        print*, "COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
+    end if
+#else
+    num_nodes=1
+    my_node_id=0
+    print*, "COMPILED IN SERIAL"
+#endif
+    
     OPEN(unit=100, file='PARAMS', status='old', action='read')
     READ (UNIT=100, NML=PARAMS)
     CLOSE(100)
@@ -119,7 +146,8 @@ program test_library
     ! 3x3 cell, each row is a vector (so transpose w.r.t. fortran)
     OPEN(unit=100, file='CELL', status='old', action='read')
     DO i=1, 3
-        READ(100,*) real_lattice_loc(:, i)
+        ! Index inverted to read in directly the transpose
+        READ(100,*) real_lattice_loc(i, :)
     END DO
     !real_lattice_loc = TRANSPOSE(real_lattice_loc)
     CLOSE(100)
@@ -233,41 +261,171 @@ program test_library
     print*, 'num_wann_loc:', num_wann_loc
     !print*, 'proj_site_loc:', proj_site_loc
     
-    ! The next three matrices should be generated from the .mmn, ... files
-    ! running wannier90.x on gaas.win using 'devel_flag=print_raw_mmn_amn_eig_and_exit' in the input
     allocate(M_matrix_loc(num_bands_loc,num_bands_loc,nntot_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
         write(0,*) "ERROR DURING ALLOCATION"
         stop 1
     end if
-    OPEN(unit=100, file='MMN', status='old', action='read')
-    do l=1,num_kpts_loc
-        do k=1,nntot_loc
-            do j=1,num_bands_loc
-                do i=1,num_bands_loc
-                    read(100,'(2G25.17)') re_tmp, im_tmp
-                    m_matrix_loc(i,j,k,l) = COMPLEX(re_tmp, im_tmp)
-                end do
-            end do
-        end do
-    end do
-    CLOSE(100)
+    M_matrix_loc = 0.
 
     allocate(A_matrix_loc(num_bands_loc,num_wann_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
         write(0,*) "ERROR DURING ALLOCATION"
         stop 1
     end if
-    OPEN(unit=100, file='AMN', status='old', action='read')
-    do k=1,num_kpts_loc
-        do j=1,num_wann_loc
-            do i=1,num_bands_loc
-                read(100,'(2G25.17)') re_tmp, im_tmp
-                a_matrix_loc(i,j,k) = COMPLEX(re_tmp, im_tmp)
+    A_matrix_loc = 0.
+
+    ! Use the usual .mmn and .amn files
+
+    if (my_node_id == root_id) then
+        ! Read M_matrix_orig from file
+        mmn_in=100 ! Unit number
+        open(unit=mmn_in,file=trim(seed__name)//'.mmn',&
+                form='formatted',status='old',action='read',err=101)
+                
+        write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seed__name)//'.mmn    : '
+    
+        ! Read the comment line
+        read(mmn_in,'(a)',err=103,end=103) dummy
+        write(stdout,'(a)') trim(dummy)
+    
+        ! Read the number of bands, k-points and nearest neighbours
+        read(mmn_in,*,err=103,end=103) nb_tmp,nkp_tmp,nntot_tmp
+    
+        ! Checks
+        if (nb_tmp.ne.num_bands_loc) then
+            write(stdout,'(/a/)') trim(seed__name)//'.mmn has not the right number of bands'
+            stop 1
+        end if
+        if (nkp_tmp.ne.num_kpts_loc) then
+            write(stdout, '(/a/)') trim(seed__name)//'.mmn has not the right number of k-points'
+            stop 1
+        end if
+        if (nntot_tmp.ne.nntot_loc) then
+            write(stdout, '(/a/)') trim(seed__name)//'.mmn has not the right number of nearest neighbours'
+            stop 1
+        end if  
+    
+        ! Read the overlaps
+        num_mmn=num_kpts_loc*nntot_loc
+        allocate(mmn_tmp(num_bands_loc,num_bands_loc),stat=ierr)
+        if (ierr/=0) then
+            write(stdout, '(/a/)') 'Error in allocating mmn_tmp in overlap_read'
+            stop 1
+        end if
+        do ncount = 1, num_mmn
+            read(mmn_in,*,err=103,end=103) nkp,nkp2,nnl,nnm,nnn
+            do n=1,num_bands_loc
+                do m=1,num_bands_loc
+                    read(mmn_in,*,err=103,end=103) m_real, m_imag
+                    mmn_tmp(m,n) = cmplx(m_real,m_imag,kind=dp)
+                enddo
+            enddo
+            nn=0
+            nn_found=.false.
+            do inn = 1, nntot_loc 
+                if ((nkp2.eq.nnlist_loc(nkp,inn)).and. &
+                    (nnl.eq.nncell_loc(1,nkp,inn)).and. &
+                    (nnm.eq.nncell_loc(2,nkp,inn)).and. &
+                    (nnn.eq.nncell_loc(3,nkp,inn)) ) then
+                    if (.not.nn_found) then
+                        nn_found=.true.
+                        nn=inn
+                    else
+                        write(stdout,'(/a/)') 'Error reading '//trim(seed__name)// &
+                            '.mmn. More than one matching nearest neighbour found'
+                        stop 1
+                    endif
+                endif
             end do
+            if (nn.eq.0) then
+                write(stdout,'(/a,i8,2i5,i4,2x,3i3)') &
+                    ' Error reading '//trim(seed__name)//'.mmn, Neighbor not found:', &
+                    ncount,nkp,nkp2,nn,nnl,nnm,nnn
+
+                !do i=1, num_kpts_loc
+                !    write(stdout, *) nnlist_loc(i, :)
+                !end do
+
+                write(stdout, *) 'nkp:', nkp
+                write(stdout, *) 'nkp2:', nkp2
+                do inn=1, nntot_loc
+                    write(stdout, '(a,I1,a,I10,a)', advance='no') 'nnlist(nkp,', inn, '):', nnlist_loc(nkp, inn), '  ---> '
+                    write(stdout, '(a,I1,a,3I5)') 'nncell(nkp,', inn, ',:):', nncell_loc(:,nkp,inn)
+                enddo
+
+                write(stdout, *) 'KPOINTS:'
+                do i=1, num_kpts_loc
+                    write(stdout, '(3G18.10)') kpt_latt_loc(:, i)
+                END DO
+                !write(stdout, *) '_____'
+                !write(stdout, *) nncell_loc
+                stop 1
+            end if
+            m_matrix_loc(:,:,nn,nkp) = mmn_tmp(:,:)
         end do
-    end do
-    CLOSE(100)
+        deallocate(mmn_tmp,stat=ierr)
+        if (ierr/=0) then
+            write(stdout,'(/a/)') 'Error in deallocating mmn_tmp in overlap_read'
+            stop 1
+        end if
+        close(mmn_in)
+    end if
+
+    ! Broadcast
+#ifdef MPI
+    call MPI_bcast(m_matrix_loc(1,1,1,1),num_bands_loc*num_bands_loc*nntot_loc*num_kpts_loc,&
+        MPI_double_complex, root_id, mpi_comm_world, ierr)    
+    if(ierr.ne.MPI_success) then
+        write(stdout,'(/a/)') 'Error in comms_bcast_cmplx'
+        stop 1
+    end if
+#endif
+    if (my_node_id == root_id) then     
+        ! Read A_matrix from file wannier.amn
+        amn_in=100 ! Unit number
+        open(unit=amn_in,file=trim(seed__name)//'.amn',form='formatted',status='old',err=102)
+        
+        write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seed__name)//'.amn : '
+        
+        ! Read the comment line
+        read(amn_in,'(a)',err=104,end=104) dummy
+        write(stdout,'(a)') trim(dummy)
+        
+        ! Read the number of bands, k-points and wannier functions
+        read(amn_in,*,err=104,end=104) nb_tmp, nkp_tmp, nw_tmp
+        
+        ! Checks
+        if (nb_tmp.ne.num_bands_loc) then
+            write(stdout, '(/a/)') trim(seed__name)//'.amn has not the right number of bands'
+            stop 1
+        end if  
+        if (nkp_tmp.ne.num_kpts_loc) then
+            write(stdout, '(/a/)') trim(seed__name)//'.amn has not the right number of k-points'
+            stop 1
+        end if
+        if (nw_tmp.ne.num_wann_loc) then
+            write(stdout, '(/a/)') trim(seed__name)//'.amn has not the right number of Wannier functions'
+            stop 1
+        end if
+        
+        ! Read the projections
+        num_amn = num_bands_loc*num_wann_loc*num_kpts_loc
+        do ncount = 1, num_amn
+            read(amn_in,*,err=104,end=104) m,n,nkp,a_real,a_imag
+            a_matrix_loc(m,n,nkp) = cmplx(a_real,a_imag,kind=dp)
+        end do
+        close(amn_in)
+    end if
+
+#ifdef MPI
+    call MPI_bcast(a_matrix_loc(1,1,1),num_bands_loc*num_wann_loc*num_kpts_loc,&
+        MPI_double_complex, root_id, mpi_comm_world, ierr)    
+    if(ierr.ne.MPI_success) then
+        write(stdout,'(/a/)') 'Error in comms_bcast_cmplx'
+        stop 1
+    end if
+#endif
 
     allocate(eigenvalues_loc(num_bands_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
@@ -318,5 +476,16 @@ program test_library
         wann_spreads_loc,spread_loc)
 
     print*, "WANNIER_RUN CALLED."
+
+    stop
+
+    101    write(stdout, '(/a/)') 'Error: Problem opening input file .mmn'
+    stop 1
+    102    write(stdout, '(/a/)') 'Error: Problem opening input file .amn'
+    stop 1
+    103    write(stdout, '(/a/)') 'Error: Problem reading input file .mmn'
+    stop 1
+    104    write(stdout, '(/a/)') 'Error: Problem reading input file .amn'
+    stop 1
 
 end program test_library

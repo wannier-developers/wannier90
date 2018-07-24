@@ -233,6 +233,8 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   use w90_wannierise
   use w90_plot
   use w90_transport
+  use w90_comms, only : my_node_id, num_nodes,&
+      comms_array_split, comms_scatterv
 
   implicit none
 
@@ -266,8 +268,12 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
 
   integer :: nkp,nn,n,m
 
-  time0=io_time()
+! Needed to split an array on different nodes
+  integer, dimension(0:num_nodes-1) :: counts
+  integer, dimension(0:num_nodes-1) :: displs
 
+  time0=io_time()
+  
   library=.true.
 !  seedname="wannier"
   seedname=trim(adjustl(seed__name))
@@ -317,6 +323,7 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
+  call comms_array_split(num_kpts,counts,displs)
   call overlap_allocate()
     
   if (disentanglement) then
@@ -327,6 +334,16 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   else
      m_matrix=m_matrix_loc
      u_matrix=a_matrix_loc
+  endif
+
+  ! IMPORTANT NOTE: _loc are variables local to this function, passed in as variables
+  ! Instead, _local are variables local to the MPI process.
+  if(disentanglement) then
+      call comms_scatterv(m_matrix_orig_local,num_bands*num_bands*nntot*counts(my_node_id),&
+                          m_matrix_orig,num_bands*num_bands*nntot*counts,num_bands*num_bands*nntot*displs)
+  else
+      call comms_scatterv(m_matrix_local,num_wann*num_wann*nntot*counts(my_node_id),&
+                          m_matrix,num_wann*num_wann*nntot*counts,num_wann*num_wann*nntot*displs)
   endif
 
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
