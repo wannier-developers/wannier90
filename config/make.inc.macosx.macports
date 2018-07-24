@@ -29,7 +29,10 @@ CC = cc
 COMMS=mpi
 MPIF90=mpif90-openmpi-mp
 
-
+## These two lines define mac-specific flags for
+## the dynamic library (.dylib, while on linux it's .so)
+DYNLIBRARYEXTENSION=dylib
+SHAREDLIBFLAGS=-dynamiclib
 
 ## IMPORTANT!! the -ff2c is needed if one wants to
 ## use the BLAS and LAPACK libraries shipped with

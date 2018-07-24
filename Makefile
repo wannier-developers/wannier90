@@ -24,6 +24,9 @@ wannier: objdir serialobjs
 lib: objdir serialobjs
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
 
+dynlib: objdir serialobjs
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) dynlibs)
+
 w90pov:
 	(cd $(ROOTDIR)/utility/w90pov && $(MAKE) )
 
