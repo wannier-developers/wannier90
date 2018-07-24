@@ -1915,11 +1915,9 @@ contains
 
          call comms_allreduce(womegai1,1,'SUM')
 
-         if ( num_wann.gt.ndimfroz(nkp) ) then  
-            call comms_gatherv(u_matrix_opt_loc,num_bands*num_wann*counts(my_node_id),&
-                 u_matrix_opt,num_bands*num_wann*counts,num_bands*num_wann*displs)
-            call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)    
-         endif
+         call comms_gatherv(u_matrix_opt_loc,num_bands*num_wann*counts(my_node_id),&
+              u_matrix_opt,num_bands*num_wann*counts,num_bands*num_wann*displs)
+         call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)    
 
          if(index(devel_flag,'compspace')>0) then      
             if (iter.eq.dis_num_iter) then
