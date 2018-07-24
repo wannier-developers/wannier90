@@ -74,8 +74,7 @@ program wannier
   real(kind=dp) time0,time1,time2
   character(len=9) :: stat,pos,cdate,ctime
   logical :: wout_found,dryrun
-  integer :: len_seedname, i, j, k, l
-  integer :: raw_unit
+  integer :: len_seedname
   character(len=50) :: prog
 
   call comms_setup
@@ -199,6 +198,7 @@ program wannier
      end select
   endif
 
+
   if (postproc_setup) then
      if(on_root) call kmesh_write()
      call kmesh_dealloc()
@@ -215,14 +215,6 @@ program wannier
 
   time1=io_time()
   if (on_root) write(stdout,'(/1x,a25,f11.3,a)') 'Time to read overlaps    ',time1-time2,' (sec)'
-
-    if (lsitesymmetry) call sitesym_dealloc() !YN:
-    call overlap_dealloc()
-    call kmesh_dealloc()
-    call param_dealloc()
-    call comms_end
-    stop
-  endif 
 
   have_disentangled = .false.
 
