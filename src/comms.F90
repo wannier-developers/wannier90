@@ -1097,7 +1097,7 @@ contains
          displs,MPI_double_complex,root_id,mpi_comm_world,error)
 
     if(error.ne.MPI_success) then
-       call io_error('Error in comms_gatherv_cmplx_3')
+       call io_error('Error in comms_gatherv_cmplx_4')
     end if
 
 #else
