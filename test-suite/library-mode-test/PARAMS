@@ -6,4 +6,5 @@
     num_bands_tot = 17,
     gamma_only_loc = .false.,
     spinors_loc = .false.,
+!    verbosity = 'high'
 /

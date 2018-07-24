@@ -35,6 +35,9 @@ subroutine get_recip_lattice (real_lat,recip_lat)  !
 end subroutine get_recip_lattice
 
 program test_library
+    !! NOTE! THIS PROGRAM ONLY WORKS IN SERIAL FOR NOW 
+    !! (even if there are some stubs that could make you think
+    !! it works in parallel...)
     implicit none
 
     integer, parameter :: dp = kind(1.0d0)
@@ -84,7 +87,7 @@ program test_library
 
     integer :: i, j, k, l, ierr, mmn_in, amn_in, nn, inn
     logical :: nn_found
-    character(len=50) :: dummy
+    character(len=50) :: dummy, verbosity
     real(kind=dp) :: re_tmp, im_tmp
 
     integer, parameter :: stdout = 6
@@ -96,7 +99,9 @@ program test_library
 
     integer :: num_nodes, my_node_id
 
-    NAMELIST / PARAMS / seed__name, mp_grid_loc, num_bands_tot, gamma_only_loc, spinors_loc
+    logical :: verbose
+
+    NAMELIST / PARAMS / seed__name, mp_grid_loc, num_bands_tot, gamma_only_loc, spinors_loc, verbosity
 
 #ifdef MPI
 
@@ -109,18 +114,28 @@ program test_library
     call mpi_comm_rank(mpi_comm_world, my_node_id, ierr)
     call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
     if (my_node_id == 0) then
-        print*, "COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
+        if (verbose) print*, "COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
     end if
 #else
     num_nodes=1
     my_node_id=0
-    print*, "COMPILED IN SERIAL"
+    if (verbose) print*, "COMPILED IN SERIAL"
 #endif
     
+    verbosity = 'low'
     OPEN(unit=100, file='PARAMS', status='old', action='read')
     READ (UNIT=100, NML=PARAMS)
     CLOSE(100)
     num_kpts_loc = PRODUCT(mp_grid_loc)
+
+    if (TRIM(verbosity) == 'high') then
+        verbose = .true.
+    elseif (TRIM(verbosity) == 'low') then
+        verbose = .false.
+    else
+        write(0,*) "INVALID VERBOSITY VALUE, can be only 'low' or 'high'"
+        stop 1
+    end if
 
     ! First line: num_atoms
     ! Next num_atoms lines: positions
@@ -161,13 +176,15 @@ program test_library
     END DO
     CLOSE(100)
    
-    print*, "INPUTS READ."
+    if (verbose) then
+        print*, "INPUTS READ."
 
-    print*, 'seed_name:', trim(seed__name)
-    print*, 'num_atoms_loc:', num_atoms_loc
-    print*, 'num_kpts_loc:', num_kpts_loc
-    print*, 'num_nnmax:', num_nnmax
-    print*, 'num_bands_tot:', num_bands_tot
+        print*, 'seed_name:', trim(seed__name)
+        print*, 'num_atoms_loc:', num_atoms_loc
+        print*, 'num_kpts_loc:', num_kpts_loc
+        print*, 'num_nnmax:', num_nnmax
+        print*, 'num_bands_tot:', num_bands_tot
+    end if
 
     allocate(nnlist_loc(num_kpts_loc,num_nnmax),stat=ierr)
     if (ierr/=0) then
@@ -230,20 +247,22 @@ program test_library
         stop 1
     end if
 
-    print*, 'seed_name:', trim(seed__name)
-    print*, 'mp_grid_loc:', mp_grid_loc
-    print*, 'num_kpts_loc:', num_kpts_loc
-    print*, 'real_lattice_loc(vec1):', real_lattice_loc(1,:)
-    print*, 'real_lattice_loc(vec2):', real_lattice_loc(2,:)
-    print*, 'real_lattice_loc(vec3):', real_lattice_loc(3,:)
-    !print*, 'recip_lattice_loc(vec1):', recip_lattice_loc(:,1)
-    !print*, 'recip_lattice_loc(vec2):', recip_lattice_loc(:,2)
-    !print*, 'recip_lattice_loc(vec3):', recip_lattice_loc(:,3)
-    !print*, 'kpt_latt_loc:', kpt_latt_loc
-    !print*, 'atom_symbols_loc:', atom_symbols_loc
-    !print*, 'atoms_cart_loc:', atoms_cart_loc
-    print*, 'gamma_only_loc:', gamma_only_loc
-    print*, 'spinors_loc:', spinors_loc
+    if (verbose) then
+        print*, 'seed_name:', trim(seed__name)
+        print*, 'mp_grid_loc:', mp_grid_loc
+        print*, 'num_kpts_loc:', num_kpts_loc
+        print*, 'real_lattice_loc(vec1):', real_lattice_loc(1,:)
+        print*, 'real_lattice_loc(vec2):', real_lattice_loc(2,:)
+        print*, 'real_lattice_loc(vec3):', real_lattice_loc(3,:)
+        !print*, 'recip_lattice_loc(vec1):', recip_lattice_loc(:,1)
+        !print*, 'recip_lattice_loc(vec2):', recip_lattice_loc(:,2)
+        !print*, 'recip_lattice_loc(vec3):', recip_lattice_loc(:,3)
+        !print*, 'kpt_latt_loc:', kpt_latt_loc
+        !print*, 'atom_symbols_loc:', atom_symbols_loc
+        !print*, 'atoms_cart_loc:', atoms_cart_loc
+        print*, 'gamma_only_loc:', gamma_only_loc
+        print*, 'spinors_loc:', spinors_loc
+    end if  
 
     call wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
         real_lattice_loc,recip_lattice_loc,kpt_latt_loc,num_bands_tot, &
@@ -252,15 +271,17 @@ program test_library
         proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
         proj_x_loc,proj_zona_loc,exclude_bands_loc,proj_s_loc,proj_s_qaxis_loc)
 
-    print*, "WANNIER_SETUP CALLED."
+    if (verbose) then
+        print*, "WANNIER_SETUP CALLED."
 
-    print*, "nntot_loc", nntot_loc
-    !print*, "nnlist_loc", nnlist_loc
-    !print*, "nncell_loc", nncell_loc
-    print*, 'num_bands_loc:', num_bands_loc
-    print*, 'num_wann_loc:', num_wann_loc
-    !print*, 'proj_site_loc:', proj_site_loc
-    
+        print*, "nntot_loc", nntot_loc
+        !print*, "nnlist_loc", nnlist_loc
+        !print*, "nncell_loc", nncell_loc
+        print*, 'num_bands_loc:', num_bands_loc
+        print*, 'num_wann_loc:', num_wann_loc
+        !print*, 'proj_site_loc:', proj_site_loc
+    end if 
+        
     allocate(M_matrix_loc(num_bands_loc,num_bands_loc,nntot_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
         write(0,*) "ERROR DURING ALLOCATION"
@@ -283,11 +304,11 @@ program test_library
         open(unit=mmn_in,file=trim(seed__name)//'.mmn',&
                 form='formatted',status='old',action='read',err=101)
                 
-        write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seed__name)//'.mmn    : '
+        if (verbose) write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seed__name)//'.mmn    : '
     
         ! Read the comment line
         read(mmn_in,'(a)',err=103,end=103) dummy
-        write(stdout,'(a)') trim(dummy)
+        if (verbose) write(stdout,'(a)') trim(dummy)
     
         ! Read the number of bands, k-points and nearest neighbours
         read(mmn_in,*,err=103,end=103) nb_tmp,nkp_tmp,nntot_tmp
@@ -386,11 +407,11 @@ program test_library
         amn_in=100 ! Unit number
         open(unit=amn_in,file=trim(seed__name)//'.amn',form='formatted',status='old',err=102)
         
-        write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seed__name)//'.amn : '
+        if (verbose) write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seed__name)//'.amn : '
         
         ! Read the comment line
         read(amn_in,'(a)',err=104,end=104) dummy
-        write(stdout,'(a)') trim(dummy)
+        if (verbose) write(stdout,'(a)') trim(dummy)
         
         ! Read the number of bands, k-points and wannier functions
         read(amn_in,*,err=104,end=104) nb_tmp, nkp_tmp, nw_tmp
@@ -466,7 +487,7 @@ program test_library
         stop 1
     end if
 
-    print*, "SECOND ALLOCATION PHASE COMPLETED."
+    if (verbose) print*, "SECOND ALLOCATION PHASE COMPLETED."
 
     call wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
         real_lattice_loc,recip_lattice_loc,kpt_latt_loc,num_bands_loc, &
@@ -475,7 +496,7 @@ program test_library
         U_matrix_loc,U_matrix_opt_loc,lwindow_loc,wann_centres_loc, &
         wann_spreads_loc,spread_loc)
 
-    print*, "WANNIER_RUN CALLED."
+    if (verbose) print*, "WANNIER_RUN CALLED."
 
     stop
 

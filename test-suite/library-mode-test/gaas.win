@@ -3,6 +3,8 @@ num_wann          =   8
 
 num_iter          = 1000
 num_print_cycles  = 40
+conv_tol          = 1.e-10
+conv_window       = 3
 
 dis_win_max       = 24.0d0
 dis_froz_max      =  14.0d0
