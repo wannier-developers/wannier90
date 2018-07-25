@@ -102,6 +102,11 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('gaas2.win', '')
 output = gaas2.wout
 
+[testw90_write_u_matrices]
+program = WANNIER90_UMAT
+inputs_args = ('gaas.win', '')
+output = gaas_u.mat
+
 # Benzene, valence and conduction
 [testw90_benzene_gamma_valcond/]
 program = WANNIER90_WOUT_OK
@@ -131,6 +136,20 @@ max_nprocs = 0
 program = WANNIER90_WOUT_OK
 inputs_args = ('LaVO3.win', '')
 output = LaVO3.wout
+
+# Lead, 4 lowest states; Fermi surface, print bvec
+[testw90_bvec]
+program = WANNIER90_BVEC
+inputs_args = ('lead.win', '')
+output = lead.bvec
+
+# GaAs - this test verifies that the bug introduced
+# with the parallel version of W90 is fixed (see issue #192)
+[testw90_gaas_disentanglement_issue192]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+
 
 # Test of disentanglement in spheres in k-space
 [testpostw90_si_geninterp/]
@@ -271,7 +290,11 @@ program = POSTW90_DOS_OK
 inputs_args = ('copper.win', '')
 output = copper-dos.dat
 
-
+# Test of shift current for GaAs
+[testpostw90_gaas_sc_xyz/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
 
 [categories]
 wannier_only = testw90_*

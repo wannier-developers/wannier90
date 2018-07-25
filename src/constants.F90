@@ -99,6 +99,8 @@ module w90_constants
   !! $$c$$
   real(kind=dp), parameter, public :: eV_au=3.674932540e-2_dp              ! (see table of Conv. Factors)
   !! eV in atomic units
+  real(kind=dp), parameter, public :: eV_seconds=6.582119e-16_dp
+  !! Electron Volt in seconds
   real(kind=dp), parameter, public :: bohr_angstrom_internal=0.52917720859_dp 
   !! Bohr to $$\AA$$
   ! Leave the length to this value, and don't exceed in length (needed for output formatting)
@@ -125,6 +127,8 @@ module w90_constants
   !! Speed of light
   real(kind=dp), parameter, public :: eV_au=3.674932379e-2_dp
   !! Electron Volt in atomic units
+  real(kind=dp), parameter, public :: eV_seconds=6.582119e-16_dp
+  !! Electron Volt in seconds
   real(kind=dp), parameter, public :: bohr_angstrom_internal=0.52917721092_dp
   !! Bohr to Anstrom Conversion factor
   ! Leave the length to this value, and don't exceed in length (needed for output formatting)

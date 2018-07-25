@@ -18,7 +18,8 @@ module w90_wannierise
   use w90_constants
   use w90_comms, only : on_root, my_node_id, num_nodes,&
                         comms_bcast, comms_array_split,&
-                        comms_gatherv, comms_allreduce
+                        comms_gatherv, comms_allreduce,&
+                        comms_scatterv
 
   implicit none
 
@@ -233,10 +234,10 @@ contains
     if (ierr/=0) call io_error('Error in allocating u_matrix_loc in wann_main')   
     allocate( m_matrix_loc (num_wann, num_wann, nntot, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating m_matrix_loc in wann_main')
-    allocate( m_matrix_1b  (num_wann, num_wann, num_kpts),stat=ierr ) 
-    if (ierr/=0) call io_error('Error in allocating m_matrix_1b in wann_main')
-    allocate( m_matrix_1b_loc  (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
-    if (ierr/=0) call io_error('Error in allocating m_matrix_1b_loc in wann_main')
+!    allocate( m_matrix_1b  (num_wann, num_wann, num_kpts),stat=ierr ) 
+!    if (ierr/=0) call io_error('Error in allocating m_matrix_1b in wann_main')
+!    allocate( m_matrix_1b_loc  (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
+!    if (ierr/=0) call io_error('Error in allocating m_matrix_1b_loc in wann_main')
     if(precond) then
        allocate(cdodq_precond_loc(num_wann,num_wann,max(1,counts(my_node_id))),stat=ierr)
        if (ierr/=0) call io_error('Error in allocating cdodq_precond_loc in wann_main')
@@ -244,11 +245,13 @@ contains
     ! initialize local u and m matrices with global ones
     do nkp_loc = 1, counts(my_node_id)
        nkp = nkp_loc + displs(my_node_id)
-       m_matrix_loc (:,:,:, nkp_loc) = &
-           m_matrix (:,:,:, nkp)
+!       m_matrix_loc (:,:,:, nkp_loc) = &
+!           m_matrix (:,:,:, nkp)
        u_matrix_loc (:,:, nkp_loc) = &
            u_matrix (:,:, nkp)
     end do
+    call comms_scatterv(m_matrix_loc,num_wann*num_wann*nntot*counts(my_node_id),&
+                        m_matrix,num_wann*num_wann*nntot*counts,num_wann*num_wann*nntot*displs)
 
     allocate( cdq_loc (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr ) 
     if (ierr/=0) call io_error('Error in allocating cdq_loc in wann_main')
@@ -410,7 +413,8 @@ contains
           u0_loc=u_matrix_loc
 
           if(optimisation<=0) then
-             write(page_unit)   m_matrix
+!             write(page_unit)   m_matrix
+             write(page_unit)   m_matrix_loc
              rewind(page_unit)
           else
              m0_loc=m_matrix_loc
@@ -457,7 +461,8 @@ contains
           if (.not.lfixstep) then 
              u_matrix_loc=u0_loc
              if(optimisation<=0) then
-                read(page_unit)  m_matrix
+!                read(page_unit)  m_matrix
+                read(page_unit)  m_matrix_loc
                 rewind(page_unit)
              else
                 m_matrix_loc=m0_loc
@@ -529,14 +534,17 @@ contains
     ! end of the minimization loop
 
     ! the m matrix is sent by piece to avoid huge arrays
-    do nn = 1, nntot
-      m_matrix_1b_loc=m_matrix_loc(:,:,nn,:)
-      call comms_gatherv(m_matrix_1b_loc,num_wann*num_wann*counts(my_node_id),&
-                 m_matrix_1b,num_wann*num_wann*counts,num_wann*num_wann*displs)
-      call comms_bcast(m_matrix_1b(1,1,1),num_wann*num_wann*num_kpts)
-      m_matrix(:,:,nn,:)=m_matrix_1b(:,:,:)
-    end do!nn
-     
+    ! But, I want to reduce the memory usage as much as possible.
+!    do nn = 1, nntot
+!      m_matrix_1b_loc=m_matrix_loc(:,:,nn,:)
+!      call comms_gatherv(m_matrix_1b_loc,num_wann*num_wann*counts(my_node_id),&
+!                 m_matrix_1b,num_wann*num_wann*counts,num_wann*num_wann*displs)
+!      call comms_bcast(m_matrix_1b(1,1,1),num_wann*num_wann*num_kpts)
+!      m_matrix(:,:,nn,:)=m_matrix_1b(:,:,:)
+!    end do!nn
+    call comms_gatherv(m_matrix_loc,num_wann*num_wann*nntot*counts(my_node_id),&
+         m_matrix,num_wann*num_wann*nntot*counts,num_wann*num_wann*nntot*displs)
+
     ! send u matrix
     call comms_gatherv(u_matrix_loc,num_wann*num_wann*counts(my_node_id),&
                u_matrix,num_wann*num_wann*counts,num_wann*num_wann*displs)
@@ -587,11 +595,13 @@ contains
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
-    if (iprint>2) call wann_svd_omega_i()
+!    if (iprint>2) call wann_svd_omega_i()
+    if (iprint>2.and.on_root) call wann_svd_omega_i()
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
-    if (write_r2mn) call wann_write_r2mn()
+!    if (write_r2mn) call wann_write_r2mn()
+    if (write_r2mn.and.on_root) call wann_write_r2mn()
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) call wann_calc_projection()
@@ -624,10 +634,10 @@ contains
     if (ierr/=0) call io_error('Error in deallocating u_matrix_loc in wann_main')
     deallocate(m_matrix_loc,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating m_matrix_loc in wann_main')
-    deallocate(m_matrix_1b,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating m_matrix_1b in wann_main')
-    deallocate(m_matrix_1b_loc,stat=ierr)
-    if (ierr/=0) call io_error('Error in deallocating m_matrix_1b_loc in wann_main')
+!    deallocate(m_matrix_1b,stat=ierr)
+!    if (ierr/=0) call io_error('Error in deallocating m_matrix_1b in wann_main')
+!    deallocate(m_matrix_1b_loc,stat=ierr)
+!    if (ierr/=0) call io_error('Error in deallocating m_matrix_1b_loc in wann_main')
     deallocate(cdq_loc,stat=ierr)
     if (ierr/=0) call io_error('Error in deallocating cdq_loc in wann_main')
     deallocate(cdodq_loc,stat=ierr)
@@ -1372,7 +1382,7 @@ contains
     !                                                                  !
     !===================================================================  
     use w90_constants,  only : eps6
-    use w90_parameters, only : num_wann,m_matrix,nntot,neigh, &
+    use w90_parameters, only : num_wann,nntot,neigh, &
          nnh,bk,bka,num_kpts,timing_level
     use w90_io,         only : io_stopwatch
     use w90_utility,    only : utility_inv3
@@ -1580,7 +1590,7 @@ contains
     !!   Calculate the Wannier Function spread
     !                                                                  !
     !===================================================================  
-    use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
+    use w90_parameters, only : num_wann,nntot,wb,bk,num_kpts,&
                            omega_invariant,timing_level
     use w90_io,         only : io_stopwatch
 
@@ -1789,7 +1799,7 @@ contains
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
     !===================================================================  
-    use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts,timing_level
+    use w90_parameters, only : num_wann,wb,bk,nntot,num_kpts,timing_level
     use w90_io,         only : io_stopwatch,io_error
     use w90_parameters, only : lsitesymmetry !RS:
     use w90_sitesym,    only : sitesym_symmetrize_gradient !RS:
@@ -2519,7 +2529,7 @@ contains
     allocate( counts(0:0), displs(0:0), stat=ierr )
     if (ierr/=0) call io_error('Error in allocating counts and displs in wann_main_gamma')
     counts(0)=0;displs(0)=0
-
+    
     ! store original U before rotating
 !~    ! phase factor ph_g is applied to u_matrix
 !~    ! NB: ph_g is applied to u_matrix_opt if (have_disentangled)
