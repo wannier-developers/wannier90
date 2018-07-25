@@ -119,6 +119,10 @@ Keyword & Type & Description \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
 {\sc wvfn\_formatted }   & L & Read the wavefunctions from a  (un)formatted file  \\
+{\sc scdm\_proj} & L & Whether to use the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}  \\
+{\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
+{\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
+{\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
 {\sc spin }   & S & Which spin channel to read \\
 {\sc devel\_flag }   & S & Flag for development use \\
 {\sc timing\_level } & I & Determines amount of timing information
@@ -282,6 +286,7 @@ Fermi energy in the specified range\\
   \old{\sc hr\_plot} & L & \old{This parameter is not used anymore. Use {\sc write\_hr} instead.} \\
   \new{\sc write\_hr} & L & \new{Write the Hamiltonian in the WF basis} \\
   \new{\sc write\_rmn } & L & \new{Write the position operator in the WF basis} \\
+  \new{\sc write\_bvec } & L & \new{Write to file the matrix elements of the bvectors and their weights} \\
 \new{\sc write\_tb }  & L & \new{Write lattice vectors, 
 Hamiltonian, and position operator in WF basis} \\
   {\sc hr\_cutoff} & P &  Cut-off for the absolute value of the Hamiltonian \\
@@ -448,7 +453,6 @@ are the atom's position in fractional coordinates $\mathbf{F} = F_1
 \mathbf{A}_{1} + F_2 \mathbf{A}_{2} + F_3 \mathbf{A}_{3}$
 relative to the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$. 
 
-
 \subsection[mp\_grid]{\tt integer, dimension :: mp\_grid(3)}
 Dimensions of the regular (Monkhorst-Pack) k-point mesh. For example,
 for a $2\times2\times2$ grid:
@@ -611,7 +615,8 @@ The default value is 0.000001 Ang.
 \section{Projection}
 
  The projections block defines a set of localised functions used to
- generate an initial guess for the unitary transformations. 
+ generate an initial guess for the unitary transformations. The projection block can be specified
+in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centers of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
@@ -736,6 +741,31 @@ transferability is required (i.e., for test cases).
 
 The default value of this parameter is $\verb#false#$.
 
+\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
+If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code). 
+
+The default value is {\tt false}.
+
+\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
+Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
+Only three integer values are allowed:
+\begin{itemize}
+\item[{\tt isolated}] $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+\item[{\tt erfc}] The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+\item[{\tt gaussian}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
+\end{itemize}
+
+The default value is {\tt isolated}.
+
+\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
+The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead. 
+
+The default value is {\tt 0 eV}
+
+\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
+The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV. 
+
+The default value is {\tt 1.0 eV}.  
 
 \subsection[spin]{\tt character(len=20) :: spin}
 For bands from a spin polarised calculation {\tt spin} determines which set
@@ -1072,45 +1102,10 @@ The default value is 1.0E-3.
 \subsection[wannier\_plot]{\tt logical :: wannier\_plot}
 
 If $\verb#wannier_plot#=\verb#true#$, then the code will write out the
-Wannier functions in a super-cell whose size is defined by the
-variable \verb#wannier_plot_supercell#, and in a format specified by
-\verb#wannier_plot_format#
+Wannier functions in a format specified by \verb#wannier_plot_format#
 
 The default value of this parameter is \verb#false#.
 
-\subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
-
-Dimension of the `super-unit-cell' in which the WF are
-plotted. The super-unit-cell is \verb#wannier_plot_supercell# times
-the unit cell along all three linear dimensions (the `home' unit cell
-is kept approximately in the middle) if \verb#wannier_plot_supercell#
-is provided as a single integer.
-
-Otherwise, if three integers are
-provided, the super-unit-cell is \verb#wannier_plot_supercell(i)#
-times the unit cell along the $i-$th linear dimension.
-
-The default value is 2$\times$2$\times$2.
-
-\subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
-
-WF can be plotted in either XCrySDen (xsf) format or Gaussian cube
-format. The valid options for this parameter are:
-\begin{itemize}
-\item[{\bf --}] \verb#xcrysden# (default)
-\item[{\bf --}] \verb#cube#
-%\item[{\bf --}] gopenmol
-%\item[{\bf --}] dan
-\end{itemize}
-
-If {\tt wannier\_plot\_format=cube}: Most visualisation programs
-(including XCrySDen) are only able to handle cube files for systems
-with orthogonal lattice vectors. However, there exist visulaisation program capable of dealing with non-orthogonal lattice vectors, such as VESTA. 
-  See \url{http://jp-minerals.org/vesta/en/}.\footnote{It's worth noting that another 
-  visualisation program is VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), for example, which is able to
-  deal with certain special cases of non-orthogonal lattice
-  vectors. See \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html}.}
-  Hence, it is now possible in \wannier\ to output Gaussian cube files for systems with non-orthogonal lattice vectors.
 
 \subsection[wannier\_plot\_list]{\tt integer :: wannier\_plot\_list(:)}
 
@@ -1124,10 +1119,51 @@ with orthogonal lattice vectors. However, there exist visulaisation program capa
  \verb#wannier_plot_list : 4-6, 10#
 
 
+\subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
+
+The code generates the WFs on a grid corresponding to a `super-unit-cell'. 
+If \verb#wannier_plot_supercell# is provided as a single integer, 
+then the size of the super-unit-cell is \verb#wannier_plot_supercell# times
+the size of the unit cell along all three linear dimensions (the `home' unit cell
+is kept approximately in the middle); otherwise, if three integers are
+provided, the size of the super-unit-cell is \verb#wannier_plot_supercell(i)#
+times the size of the unit cell along the $i-$th linear dimension.
+
+The default value is 2.
+
+
+\subsection[wannier\_plot\_format]{\tt character(len=20) :: wannier\_plot\_format}
+
+WF can be plotted in either XCrySDen (xsf) format or Gaussian cube
+format. The valid options for this parameter are:
+\begin{itemize}
+\item[{\bf --}] \verb#xcrysden# (default)
+\item[{\bf --}] \verb#cube#
+%\item[{\bf --}] gopenmol
+%\item[{\bf --}] dan
+\end{itemize}
+
+If {\tt wannier\_plot\_format=xsf}: the code outputs the WF on the entire super-unit-cell 
+specified by {\tt wannier\_plot\_supercell}. 
+
+If {\tt wannier\_plot\_format=cube}: the code outputs the WF on a grid that is smaller 
+than the super-unit-cell specified by {\tt wannier\_plot\_supercell}. This grid is 
+determined by {\tt wannier\_plot\_mode}, {\tt wannier\_plot\_radius} and {\tt wannier\_plot\_scale}, 
+described in detail below. 
+
+The code is able to output Gaussian cube files for systems with non-orthogonal lattice vectors.
+Many visualisation programs (including XCrySDen), however, are only able to handle cube files for systems
+with \emph{orthogonal} lattice vectors. One visualisation program that is capable of dealing with non-orthogonal lattice vectors is 
+VESTA (\url{http://jp-minerals.org/vesta/en/}).\footnote{It's worth noting that another 
+  visualisation program, VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), is able to
+  deal with certain special cases of non-orthogonal lattice
+  vectors; see \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html} for details.}
+
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 
 Choose the mode in which to plot the WF, either as a molecule
-or as a crystal. Only relevant if {\tt wannier\_plot\_format=xcrysden}. 
+or as a crystal. 
+%Only relevant if {\tt wannier\_plot\_format=xcrysden}. 
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -1135,22 +1171,28 @@ The valid options for this parameter are:
 \item[{\bf --}] \verb#molecule# 
 \end{itemize}
 
+If {\tt wannier\_plot\_format=cube}: 
+\begin{itemize}
+\item if {\tt wannier\_plot\_mode = molecule}, then wherever the WF centre sits in the supercell, the origin of the cube is shifted (for the purpose of plotting only, ie, nothing is done to the U matrices etc) to coincide with the centre of mass of the atomic positions specified by the user in the {\tt *.win} input file. These atomic positions are also written to the cube file, so when it is visualised, the WF appears superimposed on the molecular structure. 
+\item if {\tt wannier\_plot\_mode = crystal}, then the WF is not shifted, but instead the code searches for atoms that are within a radius of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file. In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre.
+\item {\tt crystal} mode can be used for molecules, and {\tt molecule} mode can be used for crystals.
+\end{itemize}
 
 \subsection[wannier\_plot\_radius]{\tt real(kind=dp) ::
   wannier\_plot\_radius}
 
-If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt
-  wannier\_plot\_radius} determines the cut-off radius of the WF for
-  the purpose of plotting. {\tt wannier\_plot\_radius} must be greater than
+If {\tt wannier\_plot\_format=cube}, then {\tt
+  wannier\_plot\_radius} is the radius of the sphere that must fit inside the parallelepiped in which the WF is plotted. {\tt wannier\_plot\_radius} must be greater than
   0. Units are \AA.
 
 The default value is 3.5. 
 
 \subsection[wannier\_plot\_scale]{\tt real(kind=dp) ::
   wannier\_plot\_scale}
-If {\tt wannier\_plot\_format} is {\tt cube}, then {\tt wannier\_plot\_scale} 
-scales a cube by a constant factor, producing a larger or smaller cube. {\tt wannier\_plot\_scale} must 
-be greater than 0. Units are \AA
+If {\tt wannier\_plot\_format=cube} and {\tt wannier\_plot\_mode=crystal}, then the code searches for atoms that are within a radius 
+of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file. 
+In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre. {\tt wannier\_plot\_scale} must 
+be greater than 0. This parameter is dimensionless.
 
 The default value is 1.0.
 
@@ -1352,6 +1394,14 @@ If $\verb#write_rmn#=\verb#true#$, then the position operator in the
 WF basis will be written to a file {\tt seedname\_r.dat}.
 
 The default value is {\tt false}.
+
+\subsection[write\_bvec]{\tt logical :: write\_bvec}
+
+If $\verb#write_bvec#=\verb#true#$, then the the matrix elements of 
+bvector and their weights will be written to a file {\tt seedname.bvec}.
+
+The default value is {\tt false}.
+
 
 \subsection[write\_tb]{\tt logical :: write\_tb}
 

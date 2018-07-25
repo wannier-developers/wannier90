@@ -1,0 +1,30 @@
+&control
+    calculation = 'scf'
+    restart_mode='from_scratch',
+    prefix='GaAs',
+    verbosity='high'
+    pseudo_dir = '../../pseudo/',
+    outdir='./'
+/
+&system
+ ibrav = 2,
+ celldm(1) = 10.68,
+ ecutwfc = 50.0,
+ nat = 2,
+ ntyp = 2,
+ occupations = 'smearing'
+ smearing = 'm-p'
+ degauss = 0.01
+/
+&electrons
+ mixing_beta = 0.7
+ conv_thr = 1.0d-8
+/
+ATOMIC_SPECIES
+Ga  68.926  Ga.pbe-dn-kjpaw_psl.0.2.UPF 
+As  74.922  As.pbe-n-kjpaw_psl.0.2.UPF
+ATOMIC_POSITIONS {crystal}
+Ga 0.00 0.00 0.00
+As 0.25 0.25 0.25
+K_POINTS {automatic}
+8 8 8 0 0 0

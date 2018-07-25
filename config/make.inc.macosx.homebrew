@@ -22,6 +22,11 @@ CC = cc
 COMMS=mpi
 MPIF90=mpifort
 
+## These two lines define mac-specific flags for
+## the dynamic library (.dylib, while on linux it's .so)
+DYNLIBRARYEXTENSION=dylib
+SHAREDLIBFLAGS=-dynamiclib
+
 ## Note: we could use -framework Accelerate, but we should
 ## then compile with the -ff2c option to gfortran to use
 ## C-style conventions for functions returning complex values -

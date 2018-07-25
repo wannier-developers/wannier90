@@ -32,7 +32,7 @@ contains
     use w90_io,          only : stdout,io_stopwatch
     use w90_parameters,  only : num_kpts,bands_plot,dos_plot, &
                                 kpt_latt,fermi_surface_plot, &
-                                wannier_plot,timing_level,&
+                                wannier_plot,timing_level, write_bvec, &
                                 write_hr,write_rmn,write_tb,write_u_matrices
     use w90_hamiltonian, only : hamiltonian_get_hr,hamiltonian_write_hr, &
                                 hamiltonian_setup,hamiltonian_write_rmn,&
@@ -47,10 +47,14 @@ contains
 
     if (timing_level>0) call io_stopwatch('plot: main',1)
 
-    write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
-    write(stdout,'(1x,a)') '|                               PLOTTING                                    |'
-    write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
-    write(stdout,*)
+    ! Print the header only if there is something to plot
+    if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+        wannier_plot .or. write_u_matrices) then
+        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+        write(stdout,'(1x,a)') '|                               PLOTTING                                    |'
+        write(stdout,'(1x,a)') '*---------------------------------------------------------------------------*'
+        write(stdout,*)
+    end if
 
     if(bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr) then
        ! Check if the kmesh includes the gamma point
@@ -84,6 +88,8 @@ contains
     end if
 
     if(wannier_plot) call plot_wannier
+  
+    if(write_bvec) call plot_bvec
 
     if(write_u_matrices) call plot_u_matrices
 
@@ -1611,6 +1617,47 @@ end subroutine plot_interpolate_bands
     endif
   
   end subroutine plot_u_matrices
+
+  !============================================!
+  subroutine plot_bvec()
+    !!
+    !! June 2018: RM and SP 
+    !! Write to file the matrix elements of bvector and their weights
+    !! This is used by EPW to compute the velocity.
+    !! You need "write_bvec = .true." in your wannier input
+    !!  
+  !============================================!
+    use w90_parameters, only : wb, bk, num_kpts, nntot 
+    use w90_io,         only : io_error, io_file_unit, seedname, io_date
+    ! 
+    implicit none
+    !
+    integer            :: nkp, nn, file_unit
+    character (len=33) :: header
+    character (len=9)  :: cdate, ctime
+    ! 
+    file_unit=io_file_unit()
+    open(file_unit,file=trim(seedname)//'.bvec',form='formatted',status='unknown',err=101)
+    call io_date(cdate,ctime)
+    header='written on '//cdate//' at '//ctime
+    !
+    open(file_unit,file=trim(seedname)//'.bvec',form='formatted',status='unknown',err=101)
+    write(file_unit,*) header ! Date and time 
+    write(file_unit,*) num_kpts, nntot
+    do nkp = 1, num_kpts
+      do nn = 1, nntot
+        write (file_unit,'(4F12.6)') bk(:,nn,nkp), wb(nn)
+      enddo
+    enddo
+    close(file_unit)
+    !
+    return
+    !
+101 call io_error('Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec')
+
+  end subroutine plot_bvec
+
+
 
 end module w90_plot
  

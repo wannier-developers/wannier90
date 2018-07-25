@@ -19,7 +19,6 @@ module w90_parameters
 
   use w90_constants, only : dp
   use w90_io,        only : stdout,maxlen
-  use w90_comms,     only : on_root,num_nodes
 
   implicit none
 
@@ -117,6 +116,7 @@ module w90_parameters
   logical,           public, save :: wannier_plot_spinor_phase
   logical,           public, save :: write_u_matrices
   logical,           public, save :: bands_plot
+  logical,           public, save :: write_bvec
   integer,           public, save :: bands_num_points
   character(len=20), public, save :: bands_plot_format
   character(len=20), public, save :: bands_plot_mode
@@ -191,6 +191,9 @@ module w90_parameters
   integer,           public, save :: kubo_smr_index
   real(kind=dp),     public, save :: kubo_smr_fixed_en_width
   real(kind=dp),     public, save :: kubo_adpt_smr_max
+  integer,           public, save :: sc_phase_conv
+  real(kind=dp),     public, save :: sc_eta 
+  real(kind=dp),     public, save :: sc_w_thr 
   logical,           public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
@@ -409,6 +412,7 @@ module w90_parameters
 
   complex(kind=dp), allocatable, save, public :: a_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix_orig(:,:,:,:)
+  complex(kind=dp), allocatable, save, public :: m_matrix_orig_local(:,:,:,:)
   real(kind=dp),    allocatable, save, public :: eigval(:,:)
   logical,                       save, public :: eig_found
 
@@ -429,6 +433,7 @@ module w90_parameters
 
   complex(kind=dp), allocatable, save, public :: u_matrix(:,:,:)
   complex(kind=dp), allocatable, save, public :: m_matrix(:,:,:,:)
+  complex(kind=dp), allocatable, save, public :: m_matrix_local(:,:,:,:)
 
   ! RS: symmetry-adapted Wannier functions
   logical,       public, save :: lsitesymmetry=.false.
@@ -459,6 +464,12 @@ module w90_parameters
   logical,          public, save              :: automatic_translation
   integer,          public, save              :: one_dim_dir
 
+  ! vv: SCDM method
+  logical,          public, save              :: scdm_proj
+  integer,          public, save              :: scdm_entanglement
+  real(kind=dp),         public, save              :: scdm_mu
+  real(kind=dp),         public, save              :: scdm_sigma
+
   ! Private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
@@ -466,6 +477,7 @@ module w90_parameters
   logical                            :: ltmp
   ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
   logical                            :: hr_plot 
+
 
   public :: param_read
   public :: param_write
@@ -477,6 +489,7 @@ module w90_parameters
   public :: param_lib_set_atoms
   public :: param_memory_estimate
   public :: param_get_smearing_type
+  public :: param_get_convention_type
   public :: param_dist
   public :: param_chkpt_dist
 
@@ -489,6 +502,10 @@ contains
   !==================================================================!
   !                                                                  !
   !! Read parameters and calculate derived values                    
+  !!
+  !! Note on parallelization: this function should be called 
+  !! from the root node only!
+  !!
   !                                                                  !
   !===================================================================  
     use w90_constants, only : bohr, eps6, cmplx_i
@@ -516,9 +533,6 @@ contains
 
     ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps',found,r_value=symmetrize_eps)!YN:
-!jry    if (lsitesymmetry.and.num_nodes>1) then
-!jry       call io_error('Error: site symmetry can not be used in parallel mode')
-!jry    end if
 
 
     !%%%%%%%%%%%%%%%%
@@ -604,12 +618,16 @@ contains
     ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
 !    num_bands       =   -1   
     call param_get_keyword('num_bands',found,i_value=i_temp)
-    if(found.and.library.and.on_root) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
+    if(found.and.library) write(stdout,'(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not.effective_model) then
        if(found) num_bands=i_temp
        if(.not.found) num_bands=num_wann
     end if
-    if (library) num_bands = num_bands - num_exclude_bands
+    ! RM_2018-03-21: this should only be done once, but param_read is called both in wannier_setup and wannier_run
+    ! RM_2018-03-21: commented line below, as now the correct value for
+    ! num_bands (already substracted) is set in library mode before calling
+    ! param_read
+!    if (library) num_bands = num_bands - num_exclude_bands
     if (.not. effective_model) then
        if(found .and. num_bands<num_wann) then
           call io_error('Error: num_bands must be greater than or equal to num_wann')
@@ -629,7 +647,7 @@ contains
 
 !    mp_grid=-99
     call param_get_keyword_vector('mp_grid',found,3,i_value=iv_temp)
-    if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <mp_grid> in input file'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <mp_grid> in input file'
     if(.not.library .and. .not.effective_model) then
        if(found) mp_grid=iv_temp
        if (.not. found) then
@@ -648,7 +666,7 @@ contains
        if ( gamma_only .and. (num_kpts.ne.1) ) &
             call io_error('Error: gamma_only is true, but num_kpts > 1')
     else
-       if (found.and.on_root) write(stdout,'(a)') ' Ignoring <gamma_only> in input file'
+       if (found) write(stdout,'(a)') ' Ignoring <gamma_only> in input file'
     endif
 ![ysl-e]
 
@@ -695,8 +713,10 @@ contains
     if (.not.library) then
        spinors=ltmp
     else
-       if (found.and.on_root) write(stdout,'(a)') ' Ignoring <spinors> in input file'
+       if (found) write(stdout,'(a)') ' Ignoring <spinors> in input file'
     endif
+!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
+!       call io_error('Error: For spinor WF num_wann must be even')
     
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
@@ -851,6 +871,9 @@ contains
 
     bands_plot                = .false.
     call param_get_keyword('bands_plot',found,l_value=bands_plot)
+
+    write_bvec                = .false.
+    call param_get_keyword('write_bvec',found,l_value=write_bvec)
 
     bands_num_points          = 100
     call param_get_keyword('bands_num_points',found,i_value=bands_num_points)
@@ -1075,7 +1098,7 @@ contains
     if(berry .and. .not.found) call io_error &
          ('Error: berry=T and berry_task is not set')
     if(berry .and. index(berry_task,'ahc')==0 .and. index(berry_task,'morb')==0&
-             .and. index(berry_task,'kubo')==0) call io_error&
+             .and. index(berry_task,'kubo')==0.and. index(berry_task,'sc')==0) call io_error&
           ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
@@ -1189,6 +1212,10 @@ contains
          r_value=gyrotropic_smr_fixed_en_width)
     if (found .and. (gyrotropic_smr_fixed_en_width < 0._dp)) call io_error&
       ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+
+    sc_phase_conv = 1
+    call param_get_keyword('sc_phase_conv',found,i_value=sc_phase_conv)
+    if ((sc_phase_conv.ne.1).and.((sc_phase_conv.ne.2))) call io_error('Error: sc_phase_conv must be either 1 or 2')     
 
     scissors_shift=0.0_dp
     call param_get_keyword('scissors_shift',found,&
@@ -1484,7 +1511,7 @@ contains
              do k=1,num_kpts
                 do n=1,num_bands
                    read(eig_unit,*,err=106,end=106) i,j,eigval(n,k)
-                   if ((((i.ne.n).or.(j.ne.k))).and.on_root) then
+                   if ((i.ne.n).or.(j.ne.k)) then
                       write(stdout,'(a)') 'Found a mismatch in '//trim(seedname)//'.eig' 
                       write(stdout,'(a,i0,a,i0)') 'Wanted band  : ',n,' found band  : ',i
                       write(stdout,'(a,i0,a,i0)') 'Wanted kpoint: ',k,' found kpoint: ',j
@@ -1858,6 +1885,12 @@ contains
        automatic_translation=.false.
     endif
 
+    sc_eta  = 0.04
+    call param_get_keyword('sc_eta',found,r_value=sc_eta)
+
+    sc_w_thr = 5.0d0
+    call param_get_keyword('sc_w_thr',found,r_value=sc_w_thr)
+
     use_bloch_phases = .false.
     call param_get_keyword('use_bloch_phases',found,l_value=use_bloch_phases)
     if(disentanglement .and. use_bloch_phases) &
@@ -1898,8 +1931,44 @@ contains
     skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
     
+    !vv: SCDM flags
+    scdm_proj = .false.
+    scdm_mu = 0._dp
+    scdm_sigma = 1._dp
+    scdm_entanglement = 0
+    call param_get_keyword('scdm_proj',found,l_value=scdm_proj)
+    !if(found .and. allocated(proj_site)) &
+    !    call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
+    if(found .and. scdm_proj .and. spinors) &
+        call io_error('Error: SCDM method is not compatible with spinors yet.')
+    !if(found .and. scdm_proj .and. guiding_centres) &
+    !    call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
+    !if(found_fermi_energy) scdm_mu = fermi_energy
+
+    call param_get_keyword('scdm_entanglement',found,c_value=ctmp)
+    if (found) then
+       if (scdm_proj) then
+          if(ctmp=='isolated') then
+            scdm_entanglement = 0
+          elseif(ctmp=='erfc') then
+            scdm_entanglement = 1
+          elseif(ctmp=='gaussian') then
+            scdm_entanglement = 2
+          else
+            call io_error('Error: Can not recognize the choice for scdm_entanglement. '&
+                //'Valid options are: isolated, erfc and gaussian') 
+          endif
+       else
+          call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
+       endif
+    endif
+    call param_get_keyword('scdm_mu',found,r_value=scdm_mu)
+    call param_get_keyword('scdm_sigma',found,r_value=scdm_sigma)
+    if (found .and. (scdm_sigma <= 0._dp)) & 
+       call io_error('Error: The parameter sigma in the SCDM method must be positive.')
+
     call param_get_keyword_block('unit_cell_cart',found,3,3,r_value=real_lattice_tmp)
-    if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
        real_lattice=transpose(real_lattice_tmp)
        if(.not. found) call io_error('Error: Did not find the cell information in the input file')
@@ -1917,7 +1986,7 @@ contains
     end if
 
     call param_get_keyword_block('kpoints',found,num_kpts,3,r_value=kpt_cart)
-    if(found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <kpoints> in input file'
+    if(found.and.library) write(stdout,'(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not.effective_model) then
        kpt_latt=kpt_cart
        if(.not. found) call io_error('Error: Did not find the kpoint information in the input file')
@@ -2038,9 +2107,9 @@ contains
     ! Atoms
     if (.not.library) num_atoms=0
     call param_get_block_length('atoms_frac',found,i_temp)
-    if (found.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <atoms_frac> in input file'
+    if (found.and.library) write(stdout,'(a)') ' Ignoring <atoms_frac> in input file'
     call param_get_block_length('atoms_cart',found2,i_temp2,lunits)
-    if (found2.and.library.and.on_root) write(stdout,'(a)') ' Ignoring <atoms_cart> in input file'
+    if (found2.and.library) write(stdout,'(a)') ' Ignoring <atoms_cart> in input file'
     if (.not.library) then
        if (found.and.found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
        if (found .and. i_temp>0) then
@@ -2057,7 +2126,13 @@ contains
 
     ! Projections
     call param_get_block_length('projections',found,i_temp)
-    if (found) call param_get_projections
+    if (found) then
+       ! if (scdm_proj) then
+       !   call io_error('param_read: Can not specify the projection block and scdm_proj=true at the same time.')
+       ! else 
+          call param_get_projections
+       ! end if
+    end if
     if (guiding_centres .and. .not. found .and. .not.(gamma_only.and.use_bloch_phases)) & 
        call io_error('param_read: Guiding centres requested, but no projection block found')
 
@@ -2065,7 +2140,7 @@ contains
 
 302  continue
 
-    if ( any(len_trim(in_data(:))>0 ).and.on_root) then
+    if ( any(len_trim(in_data(:))>0 ) ) then
        write(stdout,'(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
        write(stdout,*) 
        do loop=1,num_lines
@@ -2257,6 +2332,26 @@ contains
     end if
 
   end function param_get_smearing_type
+
+  function param_get_convention_type(sc_phase_conv)
+  !! This function returns a string describing the convention
+  !! associated to a sc_phase_conv integer value.
+    integer, intent(in) :: sc_phase_conv
+    !! The integer index for which we want to get the string
+    character(len=80)   :: param_get_convention_type
+
+    character(len=4)   :: orderstr
+
+    if (sc_phase_conv .eq. 1) then
+       param_get_convention_type = "Tight-binding convention"
+    else if (sc_phase_conv .eq. 2) then
+       param_get_convention_type = "Wannier90 convention"
+    else
+       param_get_convention_type = "Unknown type of convention"
+    end if
+
+  end function param_get_convention_type
+
 
 
   function get_smearing_index(string,keyword)
@@ -2916,15 +3011,26 @@ contains
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :','       F','|'
        endif
+       if(index(berry_task,'sc')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :','       F','|'
+       endif
        if(index(berry_task,'kubo')>0) then
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       T','|'
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       F','|'
        endif
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for optical conductivity  :',kubo_freq_min,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for optical conductivity  :',kubo_freq_max,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for optical conductivity        :',kubo_freq_step,'|'
-       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue for optical conductivity :',kubo_eigval_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for optical responses     :',kubo_freq_min,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for optical responses     :',kubo_freq_max,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for optical responses           :',kubo_freq_step,'|'
+       write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper eigenvalue for optical responses    :',kubo_eigval_max,'|'
+       if(index(berry_task,'sc')>0) then
+        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Smearing factor for shift current         :',sc_eta,'|'
+        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Frequency theshold for shift current      :',sc_w_thr,'|'
+        write(stdout,'(1x,a46,1x,a27,3x,a1)')     '|  Bloch sums                                :',&
+                                                   trim(param_get_convention_type(sc_phase_conv)),'|'
+       end if
        if(kubo_adpt_smr.eqv.adpt_smr .and. kubo_adpt_smr_fac==adpt_smr_fac .and. kubo_adpt_smr_max==adpt_smr_max &
             .and. kubo_smr_fixed_en_width==smr_fixed_en_width .and. smr_index==kubo_smr_index) then
           write(stdout,'(1x,a78)') '|  Using global smearing parameters                                          |'
@@ -3488,7 +3594,12 @@ contains
     !=================================================!
     !! Read checkpoint file                            
     !! IMPORTANT! If you change the chkpt format, adapt
-    !! accordingly also the w90chk2chk.x utility!      
+    !! accordingly also the w90chk2chk.x utility!  
+    !!
+    !! Note on parallelization: this function should be called 
+    !! from the root node only!
+    !!
+    !! This function should be called    
     !=================================================!
 
     use w90_constants, only : eps6
@@ -3501,14 +3612,14 @@ contains
     real(kind=dp) :: tmp_latt(3,3), tmp_kpt_latt(3,num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands),tmp_mp_grid(1:3)
 
-    if (on_root) write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
+    write(stdout,'(1x,3a)') 'Reading restart information from file ',trim(seedname),'.chk :'
 
     chk_unit=io_file_unit()
     open(unit=chk_unit,file=trim(seedname)//'.chk',status='old',form='unformatted',err=121)
 
     ! Read comment line
     read(chk_unit) header
-    if (on_root) write(stdout,'(1x,a)',advance='no') trim(header)
+    write(stdout,'(1x,a)',advance='no') trim(header)
 
     ! Consistency checks
     read(chk_unit) ntmp                           ! Number of bands
@@ -3612,7 +3723,7 @@ contains
 
     close(chk_unit)
 
-    if (on_root) write(stdout,'(a/)') ' ... done'
+    write(stdout,'(a/)') ' ... done'
 
     return
 
@@ -3658,12 +3769,12 @@ contains
     endif
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
 
-    if (.not.on_root .and. .not.allocated(m_matrix)) then
-       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-       if (ierr/=0)&
-            call io_error('Error allocating m_matrix in param_chkpt_dist')
-    endif
-    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+!    if (.not.on_root .and. .not.allocated(m_matrix)) then
+!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
+!       if (ierr/=0)&
+!            call io_error('Error allocating m_matrix in param_chkpt_dist')
+!    endif
+!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
     
     call comms_bcast(have_disentangled,1)
 
@@ -5341,6 +5452,8 @@ contains
     !                                           !
     !===========================================!
 
+    use w90_comms,      only : on_root
+
     implicit none
 
     real(kind=dp), parameter :: size_log=1.0_dp
@@ -5594,7 +5707,7 @@ contains
     use w90_constants,  only : dp,cmplx_0,cmplx_i,twopi
     use w90_io,         only : io_error,io_file_unit,io_date,io_time,&
                                io_stopwatch
-    use w90_comms,      only : comms_bcast
+    use w90_comms,      only : comms_bcast, on_root
 
     integer :: ierr
 
@@ -5667,6 +5780,7 @@ contains
     call comms_bcast(num_cg_steps,1)
     call comms_bcast(conv_tol,1)
     call comms_bcast(conv_window,1)
+    call comms_bcast(guiding_centres,1)
     call comms_bcast(wannier_plot,1)
     call comms_bcast(num_wannier_plot,1)
     if(num_wannier_plot>0) then
@@ -5683,6 +5797,7 @@ contains
     call comms_bcast(wannier_plot_spinor_mode,len(wannier_plot_spinor_mode))
     call comms_bcast(write_u_matrices,1)
     call comms_bcast(bands_plot,1)
+    call comms_bcast(write_bvec,1)
     call comms_bcast(bands_num_points,1)
     call comms_bcast(bands_plot_format,len(bands_plot_format))
     call comms_bcast(bands_plot_mode,len(bands_plot_mode))
@@ -5860,6 +5975,12 @@ contains
     call comms_bcast(lsitesymmetry,1)
     call comms_bcast(frozen_states,1)
 
+    !vv: SCDM keywords
+    call comms_bcast(scdm_proj,1)
+    call comms_bcast(scdm_mu,1)
+    call comms_bcast(scdm_sigma,1)
+    call comms_bcast(scdm_entanglement,1)
+
     call comms_bcast(num_proj,1)
     if(num_proj>0) then
        if(.not.on_root) then
@@ -5971,13 +6092,10 @@ contains
        endif
     endif
 
-
-
-
   end subroutine param_dist
 
 
-     subroutine  parameters_gyro_write_task(task,key,comment)
+  subroutine  parameters_gyro_write_task(task,key,comment)
       use w90_io,        only : stdout
 
       character(len=*), intent(in) :: task,key,comment
@@ -5989,7 +6107,7 @@ contains
        else
           write(stdout,'(1x,a2,a42,a2,10x,a8,13x,a1)') '| ',comment1, ' :','       F','|'
        endif
-     end subroutine parameters_gyro_write_task
+  end subroutine parameters_gyro_write_task
 
 
 end module w90_parameters
