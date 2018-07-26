@@ -5,9 +5,9 @@ num_iter          =   100
 exclude_bands     = 1-5,10-18
 
 ! Perform selective localization with constrained center
-jprime = 1
-constrain_centres = .true.
-lambdac = 10
+sel_loc_num = 1
+sel_loc_constrain = true
+sel_loc_constrain_lambda = 1
 
 begin projections
 f= 0.125, 0.125, 0.125: s

@@ -2816,9 +2816,7 @@ gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 
 \begin{itemize}
 
-\item Outline: \textit{Calculate one Objective Wannier Function, centred on the As atom, from 4 $s$ initial projections for Gallium Arsenide. In preparation for this example it may be useful to read Ref.
-\cite{Marianetti} }
-
+\item Outline: \textit{Calculate one Objective Wannier Function (OWF) for Gallium Arsenide (GaAs), using as initial guess 4 $s$-like orbitals each centred on the middle of a As-Ga bond. In preparation for this example it is essential to read Ref. \cite{Marianetti}, as we will strictly follow the test on GaAs reported in it. }
 
 
 \item Directory: \verb|examples/example26/|
@@ -2835,8 +2833,6 @@ gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 
 
 \end{itemize}
-
-If you have already done example25 you can re-use the output from the scf, nscf and pw2wannier90 calculations. However, in this case the wannierisation will be slower since in example25 the number of \textbf{k}-points was set to 1000, whereas here is 64. Otherwise 
 
 \begin{enumerate}
 
@@ -2869,8 +2865,8 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 \item Inspect the {\tt .win} file.
 
 \begin{itemize}
-\item[--] Make sure you understand the new keywords and block. 
-\item[--] Run {\tt wannier90} to  compute the OWFs centred on the As atom
+\item[--] Make sure you understand the new keywords corresponding to the selective localisation algorithm. 
+\item[--] Run {\tt wannier90} to compute the single objective Wannier function or in this case the selectively localized Wannier function (SLWF).
 
 \end{itemize}
 
@@ -2879,7 +2875,13 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \end{enumerate}
 
-Try to change the constraint in the {\tt centre\_constraints} block , e.g. constraining the centre of the OWF to be on the Ga atom. Take a look at the result in Vesta and explain what you see. Do these OWFs respect the symmetry of the point group of their centres? 
+To constrain the center of the SLWF you need to add \mbox{{\tt sel\_loc\_constrain = true}} and \\ 
+\mbox{{\tt sel\_loc\_constrain\_lambda = 1}} to the input file and uncomment the \mbox{{\tt centre\_constraints}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom, as explained in Ref.~\cite{Marianetti}, particularly from eq. 24 to eq. 35.  
+Look at the value of the penalty functional, is this what you would expect at convergence? 
+Does this value of {\tt sel\_loc\_constrain\_lambda}, i.e. the Lagrange multiplier, give a SLWF function centred on the As atom?   
+Alternatively, you can modify the {\tt centre\_constraints} block to constrain the centre of the SWF to be on the Ga atom. 
+Do you need a different value of {\tt sel\_loc\_constrain\_lambda} in this case to converge?
+Take a look at the result in Vesta and explain what you see. Do these functions transform like the identity under the action of the $T_d$ group? 
 
 
 \end{itemize}

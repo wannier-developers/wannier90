@@ -46,16 +46,15 @@ module w90_parameters
   !! Number of steps before writing checkpoint
   integer,           public, save :: num_print_cycles
   !! Number of steps between writing output
-  integer,           public, save :: jprime
+  integer,           public, save :: sel_loc_num
   !! Number of objective Wannier functions (others excluded from spread functional)
   logical,           public, save :: selective_loc
   !! Selective localization
-  logical,           public, save :: constrain_centres
+  logical,           public, save :: sel_loc_constrain
   !! Constrained centres
   real(kind=dp), allocatable, public, save :: ccentres_frac(:,:)
   real(kind=dp), allocatable, public, save :: ccentres_cart(:,:)
-  real(kind=dp),     public, save :: constrain_centres_tol
-  real(kind=dp),     public, save :: lambdac
+  real(kind=dp),     public, save :: sel_loc_constrain_lambda
   !! Centre constraints for each Wannier function. Co-ordinates of centre constraint defaults
   !! to centre of trial orbital. Individual Lagrange multipliers, lambdas, default to global Lagrange multiplier.
   character(len=50), public, save :: devel_flag
@@ -802,19 +801,19 @@ contains
     precond=.false.
     call param_get_keyword('precond',found,l_value=precond)
 
-    jprime=num_wann
+    sel_loc_num=num_wann
     selective_loc = .false.
-    call param_get_keyword('jprime',found,i_value=jprime)
+    call param_get_keyword('sel_loc_num',found,i_value=sel_loc_num)
     if (found) then
-       if (jprime .gt. num_wann .or. jprime .lt. 1) then
-          call io_error('Error: jprime must be an between 1 and num_wann')
+       if (sel_loc_num .gt. num_wann .or. sel_loc_num .lt. 1) then
+          call io_error('Error: sel_loc_num must be an between 1 and num_wann')
        end if
-       if (jprime .lt. num_wann) selective_loc = .true.
+       if (sel_loc_num .lt. num_wann) selective_loc = .true.
     end if
 
-    constrain_centres=.false.
-    call param_get_keyword('constrain_centres',found,l_value=constrain_centres)
-    if(found .and. constrain_centres) then
+    sel_loc_constrain=.false.
+    call param_get_keyword('sel_loc_constrain',found,l_value=sel_loc_constrain)
+    if(found .and. sel_loc_constrain) then
        allocate( ccentres_frac(num_wann,3),stat=ierr)
        if (ierr/=0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
        allocate( ccentres_cart(num_wann,3),stat=ierr)
@@ -822,17 +821,11 @@ contains
     end if
 
 
-    constrain_centres_tol = 1.0e-9_dp
-    call param_get_keyword('constrain_centres_tol',found,r_value=constrain_centres_tol)
-    if (found .and. constrain_centres) then
-       if (constrain_centres_tol < 0.0_dp) call io_error('Error: constrain_centres_tol must be positive.')
+    sel_loc_constrain_lambda = 1.0_dp
+    call param_get_keyword('sel_loc_constrain_lambda',found,r_value=sel_loc_constrain_lambda)
+    if (found) then
+       if (sel_loc_constrain_lambda < 0.0_dp) call io_error('Error: sel_loc_constrain_lambda  must be positive.')
     endif
-
-    lambdac = 1.0_dp
-    call param_get_keyword('lambdac',found,r_value=lambdac)
-    !if (found) then
-    !   if (lambdac < 0.0_dp) call io_error('Error: lambdac  must be positive.')
-    !endif
 
     !%%%%%%%%%
     ! Plotting
@@ -2180,11 +2173,20 @@ contains
           call param_get_projections
        ! end if
        ! Constrain centres
-       call param_get_block_length('constraints',found,i_temp)
-       if (found .and. selective_loc .and. constrain_centres) then
+    end if
+
+    call param_get_block_length('constraints',found,i_temp)
+    if (found) then
+       if( selective_loc .and. sel_loc_constrain .and. allocated(proj_site)) then
           ! Centre constraints block
           call param_get_centre_constraints
+       else
+          call io_error('Error: found <centre_constraints> in input file and either no sel_loc_num, &
+               & or sel_loc_constrain=true or a projection_block.')
        end if
+    else
+       if( selective_loc .and. sel_loc_constrain .and. allocated(proj_site)) &
+          write(stdout, '(a)') ' No centre_constraints block. Desired centres are the same as projection centres'
     end if
 
 
@@ -2560,12 +2562,12 @@ contains
        write(stdout,'(25x,a)') 'No atom positions specified'
     end if
     ! Constrained centres
-    if (selective_loc .and. constrain_centres) then
+    if (selective_loc .and. sel_loc_constrain) then
        write(stdout,*) ' '
        write(stdout,'(1x,a)') '*----------------------------------------------------------------------------*'
        write(stdout,'(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
        write(stdout,'(1x,a)') '+----------------------------------------------------------------------------+'
-       do i=1,jprime
+       do i=1,sel_loc_num
           write(stdout,'(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
 &                    '|',i,ccentres_frac(i,:),'|',wannier_centres(:,i),'|'
        end do
@@ -2617,7 +2619,7 @@ contains
     write(stdout,*) ' '
     write(stdout,'(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :',num_wann,'|'
-    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :',jprime,'|'
+    write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :',sel_loc_num,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :',num_bands,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :',iprint,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :',timing_level,'|'
@@ -2669,6 +2671,14 @@ contains
     if(guiding_centres .or. iprint>2) then
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations before starting guiding centres:',num_no_guide_iter,'|'
     write(stdout,'(1x,a46,10x,I8,13x,a1)')   '|  Iterations between using guiding centres  :',num_guide_cycles,'|'
+    end if
+    if(selective_loc .or. iprint>2) then
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Perform selective localization            :',selective_loc,'|'
+    end if
+    if(sel_loc_constrain .or. iprint>2) then
+    write(stdout,'(1x,a46,10x,L8,13x,a1)')   '|  Use constrains in selective localization  :',sel_loc_constrain,'|'
+    write(stdout,'(1x,a46,8x,E10.3,13x,a1)') '|  Value of the Lagrange multiplier          :',&
+         &sel_loc_constrain_lambda,'|' 
     end if
     write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
     !
@@ -6146,12 +6156,11 @@ contains
     call comms_bcast(scdm_entanglement,1)
 
     !vv: Constrained centres
-    call comms_bcast(jprime,1)
-    call comms_bcast(constrain_centres_tol,1)
-    call comms_bcast(lambdac,1)
-    call comms_bcast(constrain_centres,1)
+    call comms_bcast(sel_loc_num,1)
+    call comms_bcast(sel_loc_constrain,1)
+    call comms_bcast(sel_loc_constrain_lambda,1)
     call comms_bcast(selective_loc,1)
-    if (selective_loc .and. constrain_centres) then
+    if (selective_loc .and. sel_loc_constrain) then
        if(.not.on_root) then
           allocate( ccentres_frac(num_wann,3),stat=ierr)
           if (ierr/=0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
