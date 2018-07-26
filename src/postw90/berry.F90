@@ -217,7 +217,11 @@ module w90_berry
         call get_AA_R
         call get_SS_R
 
-        allocate(shc_k_list(PRODUCT(berry_kmesh),nfermi),stat=ierr)
+        if (wanint_kpoint_file) then
+            allocate(shc_k_list(PRODUCT(berry_kmesh),nfermi),stat=ierr)
+        else
+            allocate(shc_k_list(1,nfermi),stat=ierr)
+        end if
         if (ierr/=0) call io_error('Error in allocating shc_k_list in berry')
         shc_list=0.0_dp
         shc_k_list=0.0_dp
@@ -378,8 +382,35 @@ module w90_berry
           ! ***END COPY OF CODE BLOCK 1***
 
           if(eval_shc) then
-              call io_error(&
-                      'Kpoints read from kpoint.dat for SHC calculation is not implemented')
+              ! be aware that index starts from 1
+              call berry_get_shc_k(kpt,shc_k_list(loop_xyz+1,:))
+
+              do if=1,nfermi
+                  !vdum(1)=sum(imf_k_list(:,1,if))
+                  !vdum(2)=sum(imf_k_list(:,2,if))
+                  !vdum(3)=sum(imf_k_list(:,3,if))
+                  !if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
+                  !rdum=sqrt(dot_product(vdum,vdum))
+                  !rdum=abs(shc_k_list(loop_xyz+1,if))
+                  !if(rdum>berry_curv_adpt_kmesh_thresh) then
+                  !    adpt_counter_list(if)=adpt_counter_list(if)+1
+                  !    do loop_adpt=1,berry_curv_adpt_kmesh**3
+                  !        ! Using shc_k_list here would corrupt values for other
+                  !        ! kpt, hence dummy. Only if-th element is used
+                  !        call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
+                  !                shc_k_list_dummy)
+                  !        shc_list(if)=shc_list(if)&
+                  !                +shc_k_list_dummy(if)*kweight_adpt
+                  !    end do
+                  !else
+                      shc_list(if)=shc_list(if)+shc_k_list(loop_xyz+1,if)*kweight
+                  !endif
+              enddo
+
+              write(stdout,'(a6,i4,a6,3(f8.5,1x))') 'node ',my_node_id,&
+                      ' kpt ',kpt(1:3)
+              !call io_error(&
+              !        'Kpoints read from kpoint.dat for SHC calculation is not implemented')
           end if
 
        end do !loop_xyz
@@ -453,7 +484,7 @@ module w90_berry
 
           if(eval_shc) then
             ! be aware that index starts from 1 
-             call berry_get_shc_k(kpt,shc_k_list(loop_xyz+1,:))
+             call berry_get_shc_k(kpt,shc_k_list(1,:))
 
              do if=1,nfermi
                  !vdum(1)=sum(imf_k_list(:,1,if))
@@ -461,23 +492,24 @@ module w90_berry
                  !vdum(3)=sum(imf_k_list(:,3,if))
                  !if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
                  !rdum=sqrt(dot_product(vdum,vdum))
-                 rdum=abs(shc_k_list(loop_xyz+1,if))
-                 if(rdum>berry_curv_adpt_kmesh_thresh) then
-                     adpt_counter_list(if)=adpt_counter_list(if)+1
-                     do loop_adpt=1,berry_curv_adpt_kmesh**3
-                         ! Using shc_k_list here would corrupt values for other
-                         ! kpt, hence dummy. Only if-th element is used
-                         call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
-                                 shc_k_list_dummy)
-                         shc_list(if)=shc_list(if)&
-                                 +shc_k_list_dummy(if)*kweight_adpt
-                     end do
-                 else
-                     shc_list(if)=shc_list(if)+shc_k_list(loop_xyz+1,if)*kweight
-                 endif
+                 !!!!!!!!!!!!!!!!!!!!
+                 !rdum=abs(shc_k_list(loop_xyz+1,if))
+                 !if(rdum>berry_curv_adpt_kmesh_thresh) then
+                 !    adpt_counter_list(if)=adpt_counter_list(if)+1
+                 !    do loop_adpt=1,berry_curv_adpt_kmesh**3
+                 !        ! Using shc_k_list here would corrupt values for other
+                 !        ! kpt, hence dummy. Only if-th element is used
+                 !        call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
+                 !                shc_k_list_dummy)
+                 !        shc_list(if)=shc_list(if)&
+                 !                +shc_k_list_dummy(if)*kweight_adpt
+                 !    end do
+                 !else
+                     shc_list(if)=shc_list(if)+shc_k_list(1,if)*kweight
+                 !endif
              enddo
 
-             write(stdout,'(a6,i4,a6,3(f8.5,1x))') 'node ',my_node_id,&
+             write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
                      ' kpt ',kpt(1:3)
           end if
           
@@ -511,7 +543,8 @@ module w90_berry
 
     if(eval_shc) then
        call comms_reduce(shc_list(1),nfermi,'SUM')
-       call comms_reduce(shc_k_list(1,1),PRODUCT(berry_kmesh)*nfermi,'SUM')
+       if (wanint_kpoint_file) &
+         call comms_reduce(shc_k_list(1,1),PRODUCT(berry_kmesh)*nfermi,'SUM')
     end if
     
     if(on_root) then
@@ -871,7 +904,22 @@ module w90_berry
        
     end if !on_root
 
-    write(stdout,'(a,i4)') 'berry_main end, my_node_id',my_node_id
+    !write(stdout,'(a,i4)') 'berry_main end, my_node_id',my_node_id
+    !if (eval_shc .and. wanint_kpoint_file) then
+    !    write(file_name,'(a,a,I5.5,a)') trim(seedname),'-omega_xy_sz',my_node_id,'.dat'
+    !    file_name=trim(file_name)
+    !    file_unit=io_file_unit()
+    !    write(stdout,'(/,3x,a)') '* '//file_name
+    !    open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
+    !    write(file_unit,'(a,3x,a,3x,a)') 'kpt(x,y,z)','nbnd','Omega'
+    !    do loop_xyz=1,num_int_kpts_on_node(my_node_id)
+    !        kpt(:)=int_kpts(:,loop_xyz)
+    !        do n=1,num_wann
+    !            write(file_unit,'(3E8.5,1I4,1E16.8)') &
+    !                kpt(1),kpt(2),kpt(3),shc_k_list(n)
+    !    enddo
+    !    close(file_unit)
+    !end if
 
   end subroutine berry_main
 
@@ -1310,16 +1358,17 @@ module w90_berry
     allocate(D_h(num_wann,num_wann,3))
     allocate(AA(num_wann,num_wann,3))
 
-    if(kubo_adpt_smr) then
-       call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
-       Delta_k=pw90common_kmesh_spacing(berry_kmesh)
-    else
-       call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
-                                        OO_dx=delHH(:,:,1),&
-                                        OO_dy=delHH(:,:,2),&
-                                        OO_dz=delHH(:,:,3))
-       call utility_diagonalize(HH,num_wann,eig,UU)
-    endif
+    !if(kubo_adpt_smr) then
+    !   call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
+    !   Delta_k=pw90common_kmesh_spacing(berry_kmesh)
+    !else
+    !   call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+    !                                    OO_dx=delHH(:,:,1),&
+    !                                    OO_dy=delHH(:,:,2),&
+    !                                    OO_dz=delHH(:,:,3))
+    !   call utility_diagonalize(HH,num_wann,eig,UU)
+    !endif
+    call wham_get_eig_deleig(kpt,eig,del_eig,HH,delHH,UU)
     call wham_get_D_h(delHH,UU,eig,D_h)
 
     call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
@@ -1345,9 +1394,12 @@ module w90_berry
           if(eig(m)>kubo_eigval_max .or. eig(n)>kubo_eigval_max) cycle
 
           rfac = 1.0_dp/(eig(m)-eig(n))/hbar_SI
-          prod = (shc_sv_k(n,m)+conjg(shc_sv_k(m,n)))*AA(m,n,1)
+          prod = (shc_sv_k(n,m)+conjg(shc_sv_k(m,n)))*AA(m,n,2)
           omega = omega + rfac*real(prod,dp)
        enddo
+
+       write(*,'(3(f9.6,1x),1I4,1E16.8)') &
+               kpt(1),kpt(2),kpt(3),n,omega
 
        do i=1,nfermi
           shc_k(i) = shc_k(i) + occ_list(n,i)*omega
