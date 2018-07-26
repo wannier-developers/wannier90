@@ -274,7 +274,7 @@ command {\tt grep}:
 
 \subsection{Wannierisation}
 
-The next part of the input file provides information on the
+The next part of the output file provides information on the
 minimisation of $\omt$. At each iteration, the centre and spread of
 each WF is reported.
 
@@ -376,6 +376,145 @@ which, for each iteration, reports the value of the diagonal and
 off-diagonal parts of the non-gauge-invariant spread, as well as the
 total spread, respectively. Recall from Section~\ref{sec:method} that
 $\Omega = \omi + \Omega_{\mathrm{D}} + \Omega_{\mathrm{OD}}$. 
+
+\subsubsection{Wannierisation with selective localization and constrained centres}
+When performing selective localization only few things change in the output file
+and in general the same principles shown in the above section will apply. It is strongly
+reccomanded, that the Reader has acquired some familiarity with   
+the original work of Marianetti \textit{et al.} \cite{Marianetti}. 
+In particular, when minimising the spread with respect to the degrees of freedom of only a subset 
+of functions, it is not possible to cast the total spread functional $\Omega$ as a sum of a 
+gauge-invariant part and a gauge-dependent part. Instead, one has
+$\Omega^{'} = \Omega_{\mathrm{IOD}} + \Omega_{\mathrm{D}}$, where
+$$\Omega^{'} = \sum_{n=1}^{J'<J} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_n\right]$$
+and 
+$$\Omega_{\mathrm{IOD}} = \sum_{n=1}^{J'<J} \left[\langle r^2_n \rangle- \sum_{\mathbf{R}} \vert\langle\mathbf{R}n\vert \mathbf{r} \vert n\mathbf{R}\rangle\vert^2 \right].$$
+The total number of Wannier function is $J$, whereas $J'$ is the number functions to be selectively localized.
+The information on the number of functions which are going to be selectively localized \mbox{({\tt Number of Objective Wannier Functions})}
+is given in the {\tt MAIN} section
+\begin{verbatim}
+ *---------------------------------- MAIN ------------------------------------*
+ |  Number of Wannier Functions               :                 4             |
+ |  Number of Objective Wannier Functions     :                 1             |
+ |  Number of input Bloch states              :                 4             |
+\end{verbatim}
+Whether or not the selective localization procedure has been switched on is reported in
+the {\tt WANNIERISE} section as
+\begin{verbatim}
+ |  Perform selective localization            :                 T             |
+\end{verbatim}
+
+The next part of the output files provides information of the minimisation of the 
+new spread functional.
+\begin{verbatim}
+ *------------------------------- WANNIERISE ---------------------------------*
+ +--------------------------------------------------------------------+<-- CONV
+ | Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV
+ +--------------------------------------------------------------------+<-- CONV
+
+ ------------------------------------------------------------------------------
+ Initial State
+  WF centre and spread    1  ( -0.857524,  0.857524,  0.857524 )     1.80463310
+  WF centre and spread    2  (  0.857524, -0.857524,  0.857524 )     1.80463311
+  WF centre and spread    3  (  0.857524,  0.857524, -0.857524 )     1.80463311
+  WF centre and spread    4  ( -0.857524, -0.857524, -0.857524 )     1.80463311
+  Sum of centres and spreads ( -0.000000, -0.000000,  0.000000 )     7.21853243
+
+      0    -0.317E+01     0.0000000000       -3.1653368719       0.00  <-- CONV
+       O_D=      0.0000000 O_IOD=     -3.1653369 O_TOT=     -3.1653369 <-- SPRD
+ ------------------------------------------------------------------------------
+ Cycle:      1
+  WF centre and spread    1  ( -0.853260,  0.853260,  0.853260 )     1.70201498
+  WF centre and spread    2  (  0.857352, -0.857352,  0.862454 )     1.84658331
+  WF centre and spread    3  (  0.857352,  0.862454, -0.857352 )     1.84658331
+  WF centre and spread    4  ( -0.862454, -0.857352, -0.857352 )     1.84658331
+  Sum of centres and spreads ( -0.001010,  0.001010,  0.001010 )     7.24176492
+
+      1    -0.884E-01     0.2093698260       -3.2536918930       0.00  <-- CONV
+    0.100E+01
+       O_IOD=     -3.2536919 O_D=      0.0000000 O_TOT=     -3.2536919 <-- SPRD
+Delta: O_IOD= -0.1245020E+00 O_D=  0.0000000E+00 O_TOT= -0.8835502E-01 <-- DLTA
+ ------------------------------------------------------------------------------
+                                      .
+                                      .
+ ------------------------------------------------------------------------------
+ Final State
+  WF centre and spread    1  ( -0.890189,  0.890189,  0.890189 )     1.42375495
+  WF centre and spread    2  (  0.895973, -0.895973,  0.917426 )     2.14313664
+  WF centre and spread    3  (  0.895973,  0.917426, -0.895973 )     2.14313664
+  WF centre and spread    4  ( -0.917426, -0.895973, -0.895973 )     2.14313664
+  Sum of centres and spreads ( -0.015669,  0.015669,  0.015669 )     7.85316486
+ 
+         Spreads (Ang^2)       Omega IOD    =     1.423371553
+        ================       Omega D      =     0.000383395
+                               Omega Rest   =     9.276919811
+    Final Spread (Ang^2)       Omega Total  =     1.423754947
+ ------------------------------------------------------------------------------
+
+\end{verbatim}
+ 
+When comparing the output from a selective localization calculation with a standard 
+wannierisation (see previous section), there only differences are in the definition of
+ the spread functional. Hence, during the minimization \texttt{O\_OD} is replaced by \texttt{O\_IOD}
+and \texttt{O\_TOT} now reflects the fact that the new total spread
+functional is $\Omega^{'}$.    
+The part on the final state has one more information: the value of the difference
+between the global spread functional and the new spread functional given by 
+\texttt{Omega Rest}
+$$\Omega_{R} = \sum_{n=1}^{J-J'} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_n \right]$$
+
+If adding constrains to the centres of the selectively localized Wannier functions,
+you will find the information about the centres of the original projections and 
+the desired centres in the {\tt SYSTEM} section
+\begin{verbatim}
+ *----------------------------------------------------------------------------*
+ | Wannier#        Original Centres              Constrained centres          |
+ +----------------------------------------------------------------------------+
+ |    1     0.25000   0.25000   0.25000   |    0.00000   0.00000   0.00000    |
+ *----------------------------------------------------------------------------*
+\end{verbatim}
+As before one can check that the selective localization with constrains is on by
+looking at the {\tt WANNIERISE} section
+\begin{verbatim}
+ |  Perform selective localization            :                 T             |
+ |  Use constrains in selective localization  :                 T             |
+ |  Value of the Lagrange multiplier          :         0.100E+01             |
+ *----------------------------------------------------------------------------*
+\end{verbatim}
+which also gives the selected value for the Lagrange multiplier.
+The output file for the minimisation section is modified as follow: 
+both {\tt O\_IOD} and {\tt O\_TOT} now take into account
+the factors coming from the new term in the functional due to the constraint,
+which is implemented using the following penalty functional
+$$\lambda_c \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n} \right)^2,$$
+where $\mathbf{r}_{0n}$ is the desired centre for the $n$-th Wannier function, see \cite{Marianetti}.
+Consequently, the layout of the output file remains the same during the minimisation,
+apart from one extra line, below the line with {\tt <\-\- CONV} tag, which report the value
+of the Lagrange multiplier, as shown below for $\lambda_c = 1$
+\begin{verbatim}
+      1    -0.884E-01     0.2093698260       -3.2536918930       0.00  <-- CONV
+    0.100E+01
+\end{verbatim}
+
+As regarding the final state, the only addition is the information on the value
+of the constraint {\tt Penalty func}, which should be zero if the final centres
+of the Wannier functions lie on top of the desired centres
+\begin{verbatim}
+ Final State
+  WF centre and spread    1  ( -1.412902,  1.412902,  1.412902 )     1.63408756
+  WF centre and spread    2  (  1.239678, -1.239678,  1.074012 )     2.74801593
+  WF centre and spread    3  (  1.239678,  1.074012, -1.239678 )     2.74801592
+  WF centre and spread    4  ( -1.074012, -1.239678, -1.239678 )     2.74801592
+  Sum of centres and spreads ( -0.007559,  0.007559,  0.007559 )     9.87813534
+
+         Spreads (Ang^2)       Omega IOD_C   =    -4.261222001
+        ================       Omega D       =     0.000000000
+                               Omega Rest    =     5.616913337
+                               Penalty func  =     0.000000000
+    Final Spread (Ang^2)       Omega Total_C =    -4.261222001
+ ------------------------------------------------------------------------------
+\end{verbatim}
+
 
 \subsection{Plotting}
 

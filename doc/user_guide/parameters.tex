@@ -223,9 +223,10 @@ of $\Omega$, instead of doing a parabolic line search \\
 {\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
 {\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
 {\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
-{\sc jprime} & I & The number of objective Wannier Functions for selective localization \\
-{\sc constrain\_centres} & L & To constrain the centres of the OWFs \\
-{\sc constrain\_centres\_tol} & R & The convergence tolerance for the constrained $\Omega$ \\
+{\sc sel\_loc\_num} & I & The number of Objective Wannier Functions (OWFs) for selective localization \\
+{\sc sel\_loc\_constrain} & L & Whether to constrain the centres of the OWFs \\
+{\sc sel\_loc\_constrain\_lambda} & R & Value of the Lagrange multiplier $\lambda$ 
+associated to the constrain on the centres of the OWFs \\  
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -1085,40 +1086,39 @@ The default value is {\tt false}.
 \subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
 Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
 Only three integer values are allowed:
-\begin{itemize}
-\item[{\tt isolated}] $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
-\item[{\tt erfc}] The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
-\item[{\tt gaussian}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
-\end{itemize}
+
+\noindent {\tt isolated}: $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+
+\noindent {\tt erfc}: The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+
+\noindent {\tt gaussian}: The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
 
 The default value is {\tt isolated}.
 
 \subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
 The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead.
 
-The default value is {\tt 0 eV}
+The default value is {\tt 0 eV}.
 
 \subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
 The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV.
 
 The default value is {\tt 1.0 eV}.
 
-\subsection[jprime]{\tt integer :: jprime}
-The number of objective Wannier Functions, see \cite{Marianetti} for definition and use.
+\subsection[sel\_loc\_num]{\tt integer :: sel\_loc\_num}
+The number of Wannier functions for selective localisation as defined in \cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt sel\_loc\_num} $<$ {\tt num\_wann} functions. Here we follow the original nomenclatur are named objective Wannier Functions (OWFs). At convergence, the OWFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} - {\tt sel\_loc\_num} functions are left unoptimised. The initial guesses for the OWFs are given by the first {\tt sel\_loc\_num} orbitals in the {\tt projection block}. 
 
-The default is {\tt num\_wann}
+The default is {\tt num\_wann}.
 
-\subsection[constrain\_centres]{\tt logical :: constrain\_centres}
-If \tt{true} the centres of the objective Wannier Functions are constrained to either the centres of the projection functions or to new positions specified in the \tt{centre\_constrains} block. A modified spread functional, $\Omega_c$, with the addition of a penalty function, is minimized in this case, see Marianetti \textit{et al} \cite{Marianetti}. 
+\subsection[sel\_loc\_constrain]{\tt logical :: sel\_loc\_constrain}
+If {\tt true} the centres of the objective Wannier Functions are constrained to either the centres of the first {\tt sel\_loc\_num} orbitals in the projection block or to new positions specified in the {\tt centre\_constrains} block. A modified spread functional, $\Omega_c$, with the addition of a constrain, is minimized in this case, see Marianetti \textit{et al} \cite{Marianetti} for the details of the minimisation. 
 
 The default is {\tt false}
 
-\subsection[constrain\_centres\_tol]{\tt real(kind=dp) :: constrain\_centres\_tol}
-In the constrained centres approach the minimisation is said to be converged when either the change in $\Omega_c$ over {\tt
-  conv\_window} successive iterations is less than {\tt
-  conv\_tol} (these keywords must be defined in the input file) or the change in the target WF centres is less than {\tt constrain\_centres\_tol}. If these two criterion are not satisfied the algorithm ends after {\tt num\_iter} iterations.
+\subsection[sel\_loc\_constrain\_lambda]{\tt real(kind=dp) :: sel\_loc\_constrain\_lambda}
+Value of the Lagrange multiplier for the constraint $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)$, where $J'$ is {\tt sel\_loc\_num} and $\mathbf{r}_{0i}$ is the desired centre for the i-th objective function. 
 
-The default is {\tt 1.0E-9}.
+The default is {\tt 0.0}.
 
 \section{Post-Processing}
 \label{sec:post-p}
