@@ -331,8 +331,8 @@ contains
     endif
 
     ! constrained centres part
+    lambdai = 0.0_dp
     if (selective_loc .and. sel_loc_constrain) then
-       lambdai = 0.0_dp
        lambdai = sel_loc_constrain_lambda
     end if
 
@@ -1850,9 +1850,11 @@ contains
              do n = 1, sel_loc_num
                 summ = summ &
                        + real( m_matrix_loc(n,n,nn,nkp_loc) &
-                       * conjg(m_matrix_loc(n,n,nn,nkp_loc)), kind=dp ) &
-                       !! Centre constraint contribution. Zero if sel_loc_constrain=false
-                       - lambdai * ln_tmp_loc(n,nn,nkp_loc) ** 2
+                       * conjg(m_matrix_loc(n,n,nn,nkp_loc)), kind=dp )
+                if ( sel_loc_constrain) then
+                   !! Centre constraint contribution. Zero if sel_loc_constrain=false
+                   summ = summ  - lambdai * ln_tmp_loc(n,nn,nkp_loc) ** 2
+                end if
              enddo
              wann_spread%om_iod = wann_spread%om_iod &
                   + wb(nn) * (real(sel_loc_num,dp) - summ)
@@ -1893,11 +1895,11 @@ contains
              enddo
           enddo
 
-          do n=1, sel_loc_num
-            wann_spread%om_nu = wann_spread%om_nu + lambdai *sum(ccentres_cart(n,:)**2)
-          end do
-
           call comms_allreduce(wann_spread%om_nu,1,'SUM')
+
+          do n=1, sel_loc_num
+            wann_spread%om_nu = wann_spread%om_nu + lambdai * sum(ccentres_cart(n,:)**2)
+          end do
 
           wann_spread%om_nu = wann_spread%om_nu / real(num_kpts,dp)
 
@@ -2052,10 +2054,11 @@ contains
     ! b.r_0n are calculated
     if ( selective_loc .and. sel_loc_constrain) then
        r0kb = 0.0_dp
-       do nkp = 1, num_kpts
+       do nkp_loc = 1, counts(my_node_id)
+          nkp = nkp_loc + displs(my_node_id)
           do nn=1,nntot
              do n=1,num_wann
-                r0kb(n,nn,nkp) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
+                r0kb(n,nn,nkp_loc) = sum(bk(:,nn,nkp)*ccentres_cart(n,:))
              enddo
           enddo
        enddo
