@@ -143,6 +143,13 @@ program = WANNIER90_BVEC
 inputs_args = ('lead.win', '')
 output = lead.bvec
 
+# GaAs - this test verifies that the bug introduced
+# with the parallel version of W90 is fixed (see issue #192)
+[testw90_gaas_disentanglement_issue192]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+
 
 # Test of disentanglement in spheres in k-space
 [testpostw90_si_geninterp/]
