@@ -309,7 +309,8 @@ fermi\_energy = 5.2676
 fermi\_surface\_plot = true
 \end{quote} } and re-run \wannier. The value of the Fermi energy
 (5.2676\,eV) was obtained from the initial first principles
-calculation. \wannier\ calculates the band energies, through wannier
+calculation. \wannier\ calculates the band energies, through 
+
 interpolation, on a dense mesh of k-points in the Brillouin zone. The
 density of this grid is controlled by the keyword {\tt
   fermi\_surface\_num\_points}. The default value is 50 (i.e., 50$^3$
@@ -609,7 +610,7 @@ fermi\_energy = [insert your value here]
 fermi\_surface\_plot = true
 \end{quote} } and re-run \wannier. The value of the Fermi energy can
 be obtained from the initial first principles calculation. \wannier\
-calculates the band energies, through wannier interpolation, on a
+calculates the band energies, through Wannier interpolation, on a
 dense mesh of k-points in the Brillouin zone. The density of this grid
 is controlled by the keyword {\tt fermi\_surface\_num\_points}. The
 default value is 50 (i.e., 50$^3$ points).  The Fermi surface file
@@ -645,7 +646,7 @@ end kpoint\_path
 \begin{itemize}
 \item Compare the Wannier interpolated bandstructure with the full
   \pwscf\ bandstructure. Obtain MLWFs using a denser k-point grid.
-To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the small fortran program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}.
+To plot the bandstructure you can use the \pwscf\ tool {\tt bands.x} or the small FORTRAN program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}.
 \item Investigate the effects of the outer and inner energy windows on
   the interpolated bands. 
 \item Instead of extracting a subspace of seven states, we could
@@ -1394,7 +1395,7 @@ tran\_num\_bb = 2
 
 The defected system uses a 13 atom supercell with the central atom
 position altered to break symmetry. Setting {\tt transport\_mode = lcr} with tell 
-\wannier\ to treat the system as an infinte sytsem with the defect at its centre.
+\wannier\ to treat the system as an infinite system with the defect at its centre.
 The supercell is chosen so that is conforms to the 2c2 geometry (see User Guide 
 for details). Each principal layer is 2 atoms long so that the conductor 
 region contains the defected atom plus a single atom on either side.
@@ -1678,7 +1679,7 @@ their number.
 
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ferromagnetic ground state of
-  iron\footnote{Please note the following counterintiutive feature in
+  iron\footnote{Please note the following counterintuitive feature in
     {\tt pwscf}: in order to obtain a ground state with magnetization
     along the {\it positive} $z$-axis, one should use a {\it negative}
     value for the variable {\tt starting\_magnetization}.}\\
@@ -2099,7 +2100,7 @@ earlier corresponds to $\sigma_{xy}$ in the limit $\omega\rightarrow
 0$. At finite frequency $\sigma_{xy}=-\sigma_{yx}$ acquires an
 imaginary part which describes magnetic circular dichoism (MCD).
 
-To compute the complex optical conductivy for $\hbar\omega$
+To compute the complex optical conductivity for $\hbar\omega$
 up to 7~eV, replace 
 {\tt
 \begin{quote}
@@ -2513,7 +2514,7 @@ See more detail in {\tt examples/example22/README}.
 Note: This example requires a recent version of the {\tt ypp} post-processing code of {\tt yambo}.
 
 \begin{itemize}
-\item{Outline: \it{Interpolate the bands structure of silicon obtained from many-body pertubation theory at the $G_0W_0$ level. Using the {\tt yambo} code, the quasi-particle corrections (QP) are summed to Kohn-Sham eigenvalues, while the wavefunctions remain the same. }}
+\item{Outline: \it{Interpolate the bands structure of silicon obtained from many-body perturbation theory at the $G_0W_0$ level. Using the {\tt yambo} code, the quasi-particle corrections (QP) are summed to Kohn-Sham eigenvalues, while the wavefunctions remain the same. }}
 \item{Directory: {\tt examples/example23/}}
 \item{Input Files}
 \begin{itemize}
@@ -2535,9 +2536,9 @@ Note: This example requires a recent version of the {\tt ypp} post-processing co
 \item Copy the input files from the {\tt INPUT directory} into a working directory (e.g. {\tt WORK})
 \item Run \pwscf\ to obtain the ground state charge of silicon \\
 {\tt pw.x < silicon.scf > scf.out}
-\item Run \pwscf\ to obtain the Bloch states reduced grid. We use a 8x8x8 with many bands (many empy bands are needed to perform a $G_0W_0$ with {\tt yambo})\\
+\item Run \pwscf\ to obtain the Bloch states reduced grid. We use a 8x8x8 with many bands (many empty bands are needed to perform a $G_0W_0$ with {\tt yambo})\\
 {\tt pw.x < silicon.gw.nscf > nscf.gw.out}
-\item Use the {\tt k\_mapper.py} utility to find the indeces of a 4x4x4 uniform grid into the 8x8x8 reduced grid \\
+\item Use the {\tt k\_mapper.py} utility to find the indexes of a 4x4x4 uniform grid into the 8x8x8 reduced grid \\
 {\tt ./k\_mapper.py 4 4 4 "../examples/example23/WORK/nscf.gw.out"}\\
 Use the output to complete the {\tt yambo.in} input file (you also need to specify the on how many bands you want to compute the QP corrections, here you can use all the bands from 1 to 14). Then, you should have obtained something like:\\
  {\tt 
@@ -2547,7 +2548,7 @@ Use the output to complete the {\tt yambo.in} input file (you also need to speci
 13| 13|  1|14| \\
 ...\tt}
 \item Enter the {\tt si.save} directory and run {\tt p2y}. A {\tt SAVE} folder is created, you can move it up in the {\tt /WORK/} directory.\\
-\item Run a $G_0W_0$ calculation from the {\tt /WORK/} directory (remeber, we are using a 8x8x8 grid but computing QP corrections only on a 4x4x4 grid)\\
+\item Run a $G_0W_0$ calculation from the {\tt /WORK/} directory (remember, we are using a 8x8x8 grid but computing QP corrections only on a 4x4x4 grid)\\
 {\tt yambo }
 
 
@@ -2665,8 +2666,8 @@ gyrotropic\_kmesh=50 50 50
   8 MPI processes) \\
 
 
-The integraton in the $k$-space is limited to a small area around the H point. Thus it is valid only for Fermi levels near the band gap. 
-And one needs to multiply the results by 2, to account forthe H' point. To integrate over the entire Brillouin zone, one needs to remove the 
+The integration in the $k$-space is limited to a small area around the H point. Thus it is valid only for Fermi levels near the band gap. 
+And one needs to multiply the results by 2, to account for the H' point. To integrate over the entire Brillouin zone, one needs to remove the 
 {\tt gyrotropic\_box\_$\ldots$} parameters
 
 \item Now change the above lines to \\ {\tt
@@ -2698,7 +2699,7 @@ and compute the interband natural optical activity\\
 
 \begin{itemize}
 
-\item Outline: \textit{Calculate the nonlinear shift current of inversion assymetric fcc Gallium Arsenide. In preparation for this example it may be useful to read Ref.
+\item Outline: \textit{Calculate the nonlinear shift current of inversion asymmetric fcc Gallium Arsenide. In preparation for this example it may be useful to read Ref.
 \cite{ibanez-azpiroz_ab_2018} }
 
 
@@ -2802,7 +2803,7 @@ but the individual terms that compose it do.
 
 On output, the program generates a set of 18 files named \verb|SEED-sc_***.dat|, 
 which correspond to the different tensor components  of the shift current
-(note that the 9 remaining components until totalling $3\times3\times3=27$ 
+(note that the 9 remaining components until totaling $3\times3\times3=27$ 
 can be obtained from the 18 outputed by taking into account that $\sigma^{abc}$ is 
 symmetric under $b\leftrightarrow c$ index exchange).
 For plotting the only finite shift-current component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as in the upper 
@@ -2812,7 +2813,109 @@ myshell> gnuplot
 gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 \end{verbatim} 
 
+\sectiontitle{27: Silicon -- Selected columns of density matrix algorithm for automated MLWFs}
 
+Note: This example requires a recent version of the {\tt pw2wannier90.x} post-processing code of {\tt Quantum ESPRESSO}.
+
+\begin{itemize}
+\item{Outline: \it{For bulk crystalline Silicon, generate the $A_{mn}$ matrices via the selected columns of density matrix (SCDM) algorithm  and the corresponding MLWFs for 1) Valence bands 2) Valence bands and 4 low-lying conduction bands 3) Conduction bands only. To better understand the input files and the results of these calculations, it is crucial that the Reader has familiarized with the concepts and methods explained in Ref.~\cite{LinLin-ArXiv2017}. More info on the keywords related to the SCDM method may be found in the user\_guide.}}
+\item{Directory: {\tt examples/example27/}}
+\item{Input Files: {\tt input\_files}, and in the three subfolders {\tt isolated, erfc} and {\tt gaussian}. 
+The {\tt input\_files} folder contains:}
+\begin{itemize}
+\item{ {\tt si.scf}  {\it The \pwscf\ input file for the ground state
+    calculation}} 
+\item{ {\tt si\_4bands.nscf }  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid for 4 bands.}}
+\item{ {\tt si\_12bands.nscf }  {\it The \pwscf\ input file to obtain Bloch
+    states on a uniform grid for 12 bands.}}
+\item{ {\tt silicon.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+\end{itemize}
+\item{ Whereas the three subfolders {\tt isolated, erfc} and {\tt gaussian} contain the {\tt si.win} \wannier~ input files each corresponding to one of the situations described in the outline.}
+\end{itemize}
+
+
+\begin{itemize}
+  \item[1]{Valence bands: In this case we will compute 4 localized WFs corresponding to the 4 valence bands of Silicon. These 4 bands constitute a manifold that is separated in energy from other bands. In this case the columns of the density matrix are already localized in real space and no extra parameter is required.}
+  \begin{enumerate}
+    \item Copy the input files {\tt si.scf, si\_4bands.nscf} and {\tt si.pw2wan} from the {\tt input\_files directory} into the {\tt isolated} folder
+    \item Run \pwscf\ to obtain the ground state charge of bulk Silicon. \\
+    {\tt pw.x < si.scf > scf.out}
+
+    \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 4 bands. \\
+    {\tt pw.x < si\_4bands.nscf > nscf.out}
+    
+    \item Inspect the \wannier input file. You will find two new keywords, i.e. {\tt scdm\_proj} and {\tt scdm\_entanglement}. The former, will instruct the pw2wannier90 code whether to use the SCDM method or not when generating the $A_mn$ matrix. This information is stored in the {\tt .nnkp} file that you will generate. The latter, defines which formula to adopt for the function $f(\varepsilon_{n\mathbf{k}})$ (see \cite{LinLin-ArXiv2017} and point below).
+    \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
+    into the {\tt si.nnkp} file).\\ 
+    {\tt wannier90.x -pp si}
+    \item Check the {\tt si.nnkp} file and make sure you find the following block for the SCDM method
+    \begin{verbatim}
+    begin scdm_info
+     1
+     4
+     0
+     0.00000   1.00000
+    end scdm_info
+    \end{verbatim}
+
+    \item Run {\tt pw2wannier90} to compute the overlap between Bloch
+    states and the projections via the SCDM method (written in the
+    {\tt si.mmn} and {\tt si.amn} respectively).\\  
+    {\tt pw2wannier90.x < si.pw2wan > pw2wan.out}
+
+    \item Run \wannier\ to compute the MLWFs.\\
+    {\tt wannier90.x si}\\
+    At this point, you should have obtained 4 Wannier functions and the interpolated valence bands for Silicon. Inspect the output file {\tt si.wout}. In particular, look at the geometric centres of each WF, do they lie at the centre of the Si-Si bond as for the MLWFs computed from user-defined initial $s$-like projections (see Example11)?
+    Plot these WFs using Vesta. Do they show the $\sigma$ character one would expect from chemical arguments?
+  \end{enumerate}
+  \item[2]{Valence bands + conduction bands: In this case we will compute 8 localized WFs corresponding to the 4 valence bands and 4 low-lying conduction bands. Here, we don't have a separate manifold, since the conduction bands are entangled with other high-energy bands and the columns of the density matrix are not exponentially localized by construction. A modified density matrix is required defined as\cite{LinLin-ArXiv2017}: $$P(\mathbf{r},\mathbf{r}') = \sum_{n,\mathbf{k}} \psi_{n\mathbf{k}}(\mathbf{r})f(\varepsilon_{n,\mathbf{k}})\psi_{n\mathbf{k}}^\ast(\mathbf{r}'),$$
+  where $\psi_{n\mathbf{k}}$ and $\varepsilon_{n,\mathbf{k}}$ are the energy eigestates and eigenvalues from the first-principle calculation respectively. The function $f(\varepsilon_{n,\mathbf{k}})$ contains two free parameters $\mu$ and $\sigma$ and is defined as a complementary error function: $$f(\varepsilon_{n,\mathbf{k}}) = \frac{1}{2}\mathrm{erfc}\left(\frac{\varepsilon_{n,\mathbf{k}} - \mu}{\sigma}\right).$$ }
+  \begin{enumerate}
+    \item Copy the input files {\tt si.scf, si\_12bands.nscf} and {\tt si.pw2wan} from the {\tt input\_files} folder into the {\tt erfc} folder
+    \item Run \pwscf\ to obtain the ground state charge of bulk Silicon. \\
+    {\tt pw.x < si.scf > scf.out}
+
+    \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 12 bands this time. \\
+    {\tt pw.x < si\_12bands.nscf > nscf.out}
+    
+    \item Inspect the \wannier input file. You will find other two new keywords, i.e. {\tt scdm\_mu} and {\tt scdm\_sigma}. These are the values in eV of $\mu$ and $\sigma$ in $f(\varepsilon_{n,\mathbf{k}})$, respectively. They are read by pw2wannier90 from the SCDM block in the {\tt .nnkp} file (last line).
+    \item Run \wannier\ to generate a list of the required overlaps and info on the SCDM method (written
+    into the {\tt si.nnkp} file).\\ 
+    {\tt wannier90.x -pp si}
+
+    \item Run {\tt pw2wannier90} to compute the overlap between Bloch
+    states and the projections via the SCDM method (written in the
+    {\tt si.mmn} and {\tt si.amn} respectively).\\  
+    {\tt pw2wannier90.x < si.pw2wan > pw2wan.out}
+
+    \item Run \wannier\ to compute the MLWFs.\\
+    {\tt wannier90.x si}\\
+    At this point, you should have obtained 8 localized Wannier functions and the interpolated valence and conduction bands for Silicon. Again, compare the results for the geometric centres and the individual spreads with the ones from Example11. Is the final value of total spread bigger or smaller than the one from Example11? Look at the WFs with Vesta. Can you explain what you see? Where do the major lobes of the $sp3$-like WFs point in this case?  
+  \end{enumerate}
+  \item[3]{Conduction bands only: In this case we will compute 4 localized WFs corresponding to the 4 low-lying conduction bands only. As for the previous point, we need to define a modified density matrix\cite{LinLin-ArXiv2017}. Since we are only interested in a subset of the conduction states, within a bounded energy region, a good choice for $f(\varepsilon_{n,\mathbf{k}})$ is: $$f(\varepsilon_{n,\mathbf{k}}) = \exp\left(-\frac{(\varepsilon_{n,\mathbf{k}} - \mu)^2}{\sigma^2}\right).$$}
+    \begin{enumerate}
+    \item Copy the input files {\tt si.scf, si\_12bands.nscf} and {\tt si.pw2wan} from the {\tt input\_files directory} into the {\tt gaussian} folder
+    \item Run \pwscf\ to obtain the ground state charge of bulk Silicon. \\
+    {\tt pw.x < si.scf > scf.out}
+
+    \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 12 bands this time. \\
+    {\tt pw.x < si\_12bands.nscf > nscf.out}
+    
+    \item Run \wannier\ to generate a list of the required overlaps (written
+    into the {\tt si.nnkp} file).\\ 
+    {\tt wannier90.x -pp si}
+
+    \item Run {\tt pw2wannier90} to compute the overlap between Bloch
+    states, the projections for the starting guess via the SCDM method (written in the
+    {\tt si.mmn} and {\tt si.amn} respectively).\\  
+    {\tt pw2wannier90.x < si.pw2wan > pw2wan.out}
+
+    \item Run \wannier\ to compute the MLWFs.\\
+    {\tt wannier90.x si}\\
+    At this point, you should have obtained 4 localized Wannier functions and the interpolated conduction bands for Silicon. From chemical intuition, we would expect these functions to be similar to anti-bonding orbitals of molecules with tetrahedral symmetry. Plot the WFs and check if this is confirmed. 
+  \end{enumerate}
+\end{itemize}
 
 \bibliographystyle{apsrev4-1}
 \bibliography{../wannier90}
