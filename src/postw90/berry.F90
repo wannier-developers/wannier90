@@ -1340,7 +1340,7 @@ module w90_berry
     complex(kind=dp), allocatable :: D_h(:,:,:)
     complex(kind=dp), allocatable :: AA(:,:,:)
 
-    complex(kind=dp)              :: shc_sv_k(num_wann,num_wann)
+    complex(kind=dp)              :: shc_sj_k(num_wann,num_wann)
 
     ! Adaptive smearing
     !
@@ -1377,7 +1377,7 @@ module w90_berry
     enddo
     AA=AA+cmplx_i*D_h ! Eq.(25) WYSV06
 
-    call berry_get_szvx_k(kpt,eig,del_eig(:,1),AA(:,:,1),shc_sv_k)
+    call berry_get_sj_k(kpt,eig,del_eig(:,1),AA(:,:,1),shc_sj_k)
 
     shc_k=0.0_dp
     omega=0.0_dp
@@ -1394,7 +1394,7 @@ module w90_berry
           if(eig(m)>kubo_eigval_max .or. eig(n)>kubo_eigval_max) cycle
 
           rfac = 1.0_dp/(eig(m)-eig(n))/hbar_SI
-          prod = (shc_sv_k(n,m)+conjg(shc_sv_k(m,n)))*AA(m,n,2)
+          prod = shc_sj_k(n,m)*AA(m,n,2)
           omega = omega + rfac*real(prod,dp)
        enddo
 
@@ -1412,11 +1412,11 @@ module w90_berry
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine berry_get_szvx_k(kpt,eig,delx_eig,AA_x,shc_sv_k)
+  subroutine berry_get_sj_k(kpt,eig,delx_eig,AA_x,shc_sj_k)
   !====================================================================!
   !                                                                    !
   !! Contribution from point k to the
-  !!    < \psi_nk | s_z v_x | \psi_mk >
+  !!    < \psi_nk | s_z v_x + v_x s_z | \psi_mk >
   !
   !  Junfeng Qiao (6/25/2018)
   !                                                                    !
@@ -1437,7 +1437,7 @@ module w90_berry
     real(kind=dp),              dimension(:),       intent(in)  :: eig
     real(kind=dp),              dimension(:),       intent(in)  :: delx_eig
     complex(kind=dp),           dimension(:,:),     intent(in)  :: AA_x
-    complex(kind=dp),           dimension(:,:),     intent(out) :: shc_sv_k
+    complex(kind=dp),           dimension(:,:),     intent(out) :: shc_sj_k
 
 
     integer          :: i,j,n,m,r
@@ -1445,7 +1445,7 @@ module w90_berry
     complex(kind=dp) :: aax_all
 
 
-    shc_sv_k = cmplx_0
+    shc_sj_k = cmplx_0
 
     ! get < \psi_nk | \sigma_z | \psi_mk >
     spin_axis_polar = 0
@@ -1460,12 +1460,18 @@ module w90_berry
              else
                 aax_all = - cmplx_i * (eig(m)-eig(r))*AA_x(r,m)
              end if
-             shc_sv_k(n,m) = shc_sv_k(n,m) + spn_nm_k(n,r)*aax_all
+             shc_sj_k(n,m) = shc_sj_k(n,m) + spn_nm_k(n,r)*aax_all
+             if (r==n) then
+                 aax_all = delx_eig(n)
+             else
+                 aax_all = - cmplx_i * (eig(r)-eig(n))*AA_x(n,r)
+             end if
+             shc_sj_k(n,m) = shc_sj_k(n,m) + aax_all*spn_nm_k(r,m)
           end do
-          shc_sv_k(n,m) = 0.5_dp*shc_sv_k(n,m)
+          shc_sj_k(n,m) = 0.5_dp*shc_sj_k(n,m)
        end do
     end do
 
-  end subroutine berry_get_szvx_k
+  end subroutine berry_get_sj_k
 
 end module w90_berry
