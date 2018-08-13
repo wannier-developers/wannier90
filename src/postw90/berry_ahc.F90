@@ -1490,7 +1490,8 @@ module w90_berry
           !write(*,'((a),3(f9.6,1x),2I4,2E16.8)') 'prod', &
           !        kpt(1),kpt(2),kpt(3),m,n,real(prod,dp),aimag(prod)
           !prod = cmplx_i*Jsi_k(n,m) * prod
-          prod = Jsi_k(n,m) * prod
+          !prod = Jsi_k(n,m) * prod
+           prod = -rfac * cmplx_i * AA(n,m,ipol) * prod
           !prod = Jsi_k(n,m) * cmplx_i*rfac*AA(m,n,jpol)
           !prod = Jsi_k(n,m) * vv(loop_xyz,m,n)
           rfac = -2.0_dp/(rfac**2+kubo_smr_fixed_en_width**2)
@@ -1538,8 +1539,8 @@ module w90_berry
     use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
                                    pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
     use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
-    use w90_get_oper, only       : HH_R,AA_R,SS_R,SR_R,SHR_R,SH_R
-    !use w90_spin, only           : spin_get_SS_k
+    use w90_get_oper, only       : HH_R,AA_R,SR_R,SHR_R,SH_R
+    use w90_spin, only           : spin_get_SS_k
 
     ! args
     real(kind=dp),                                  intent(in)  :: kpt(3)
@@ -1562,22 +1563,17 @@ module w90_berry
     complex(kind=dp)    :: SH(num_wann,num_wann,3)
     complex(kind=dp)    :: eig_mat(num_wann,num_wann)
     complex(kind=dp)    :: del_eig_mat(num_wann,num_wann)
-    complex(kind=dp)    :: S_w(num_wann,num_wann)
 
     !===========
     js_k = cmplx_0
 
-    !=========== S_k ===========
-    ! < u_k | s_spol | u_k >
-    !call spin_get_SS_k(kpt,spol,S_k)
-    call pw90common_fourier_R_to_k_new(kpt,SS_R(:,:,:,spol),OO=S_w)
-    S_k(:,:)=utility_rotate(S_w,UU,num_wann)
+    call spin_get_SS_k(kpt,spol,S_k)
 
     !=========== K_k ===========
     ! < u_k | s_spol | \partial_ipol u_k >
     call pw90common_fourier_R_to_k_vec(kpt,SR_R(:,:,:,spol,:),OO_true=SR)
     SR_i = -cmplx_i * utility_rotate(SR(:,:,ipol),UU,num_wann)
-    K_k = SR_i + matmul(S_k,D_i_h) !
+    K_k = SR_i + S_k*D_i_h !
 
 
     !=========== L_k ===========
@@ -1586,7 +1582,7 @@ module w90_berry
     SHR_i = -cmplx_i * utility_rotate(SHR(:,:,ipol),UU,num_wann)
     call pw90common_fourier_R_to_k_vec(kpt,SH_R,OO_true=SH)
     SH(:,:,spol) = utility_rotate(SH(:,:,spol),UU,num_wann)
-    L_k = SHR_i + matmul(SH(:,:,spol),D_i_h) !
+    L_k = SHR_i + SH(:,:,spol)*D_i_h !
 
 
     !=========== B_k ===========
