@@ -22,7 +22,6 @@ module w90_spin
   private
 
   public :: spin_get_moment,spin_get_nk,spin_get_S
-  public :: spin_get_SS_k
 
   contains
 
@@ -288,53 +287,5 @@ module w90_spin
  
   end subroutine spin_get_S
 
-! =========================================================================
-
-  subroutine spin_get_SS_k(kpt,spol,SS_k)
-  !=============================================================!
-  !                                                             !
-  !! Computes <psi_{k}^(H)|S^spol|psi_{k}^(H)> matrix
-  !! where spol = 1,2,3 (x,y,z, respectively)
-  !!
-  !!
-  !                                                             !
-  !============================================================ !
-
-    use w90_constants, only      : dp,pi,cmplx_0,cmplx_i
-    use w90_io, only             : io_error
-    use w90_utility, only        : utility_diagonalize,utility_rotate
-    use w90_parameters, only     : num_wann
-    use w90_postw90_common, only : pw90common_fourier_R_to_k
-    use w90_get_oper, only       : HH_R,SS_R
-
-    ! Arguments
-    !
-    real(kind=dp), intent(in)     :: kpt(3)
-    integer,       intent(in)     :: spol
-    complex(kind=dp), intent(out) :: SS_k(num_wann,num_wann)
-
-    ! Physics
-    !
-    complex(kind=dp), allocatable :: HH(:,:)
-    complex(kind=dp), allocatable :: UU(:,:)
-    complex(kind=dp), allocatable :: SS_w(:,:)
-
-    ! Misc/Dummy
-    !
-    integer          :: is
-    real(kind=dp)    :: eig(num_wann),alpha(3),conv
-
-    allocate(HH(num_wann,num_wann))
-    allocate(UU(num_wann,num_wann))
-    allocate(SS_w(num_wann,num_wann))
-
-    call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
-    call utility_diagonalize(HH,num_wann,eig,UU)
-
-    call pw90common_fourier_R_to_k(kpt,SS_R(:,:,:,spol),SS_w(:,:),0)
-
-    SS_k(:,:)=utility_rotate(SS_w,UU,num_wann)
-
-  end subroutine spin_get_SS_k
 
 end module w90_spin

@@ -195,6 +195,12 @@ module w90_parameters
 !  logical,           public, save :: sigma_abc_onlyorb
   logical,           public, save :: transl_inv
 
+  ! spin Hall conductivity
+  logical,           public, save :: shc_freq_scan
+  integer,           public, save :: shc_ipol
+  integer,           public, save :: shc_jpol
+  integer,           public, save :: shc_spol
+
   logical,           public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
   integer,           public, save :: gyrotropic_kmesh(3)
@@ -1195,6 +1201,24 @@ contains
          r_value=kubo_smr_fixed_en_width)
     if (found .and. (kubo_smr_fixed_en_width < 0._dp)) call io_error&
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
+
+    shc_freq_scan = .false.
+    call param_get_keyword('shc_freq_scan',found,l_value=shc_freq_scan)
+
+    shc_ipol = 1
+    call param_get_keyword('shc_ipol',found,i_value=shc_ipol)
+    if (shc_ipol<1 .or. shc_ipol>3)&
+            call io_error('Error:  shc_ipol must be 1,2 or 3')
+
+    shc_jpol = 2
+    call param_get_keyword('shc_jpol',found,i_value=shc_jpol)
+    if (shc_jpol<1 .or. shc_jpol>3)&
+            call io_error('Error:  shc_jpol must be 1,2 or 3')
+
+    shc_spol = 3
+    call param_get_keyword('shc_spol',found,i_value=shc_spol)
+    if (shc_spol<1 .or. shc_spol>3)&
+            call io_error('Error:  shc_spol must be 1,2 or 3')
 
     gyrotropic_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('gyrotropic_smr_fixed_en_width',found,&
@@ -5804,6 +5828,11 @@ contains
     call comms_bcast(spin_kmesh_spacing,1)
     call comms_bcast(spin_kmesh(1),3)
     call comms_bcast(wanint_kpoint_file,1)
+
+    call comms_bcast(shc_freq_scan,1)
+    call comms_bcast(shc_ipol,1)
+    call comms_bcast(shc_jpol,1)
+    call comms_bcast(shc_spol,1)
 
     call comms_bcast(devel_flag,len(devel_flag))
     call comms_bcast(spin_moment,1) 
