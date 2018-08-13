@@ -87,7 +87,7 @@ module w90_berry
                                    wanint_kpoint_file,cell_volume,transl_inv,&
                                    berry_task,berry_curv_unit,spin_decomp,&
                                    kubo_nfreq,kubo_freq_list,nfermi,&
-                                   fermi_energy_list,shc_scan_freq
+                                   fermi_energy_list,shc_freq_scan
     use w90_get_oper, only       : get_HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_SS_R,get_SHC_R
 
@@ -129,7 +129,7 @@ module w90_berry
     ! Spin Hall conductivity
     real(kind=dp), allocatable  :: shc(:),shc_k(:)
     ! for fermi energy scan, adaptive kmesh
-    real(kind=dp)               :: shc_k_dummy(nfermi)
+    real(kind=dp), allocatable  :: shc_k_dummy(:)
 
     real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),&
                          db1,db2,db3,fac,freq,rdum,vdum(3)
@@ -223,6 +223,7 @@ module w90_berry
         else
             allocate(shc(nfermi))
             allocate(shc_k(nfermi))
+            allocate(shc_k_dummy(nfermi))
         end if
 
         shc=0.0_dp
@@ -258,7 +259,7 @@ module w90_berry
 
        if(eval_shc) then
            write(stdout,'(/,3x,a)') '* Spin Hall Conductivity'
-           if (shc_scan_freq) then
+           if (shc_freq_scan) then
                write(stdout,'(/,3x,a)') '  frequency scan'
            else
                write(stdout,'(/,3x,a)') '  fermi energy scan'
@@ -389,32 +390,29 @@ module w90_berry
 
           if(eval_shc) then
               ! be aware that index starts from 1
-              call io_error('not implemented')
-              !call berry_get_shc_k(kpt,shc_k_list(loop_xyz+1,:))
+              call berry_get_shc_k(kpt,shc_k)
 
-              do if=1,nfermi
-                  !vdum(1)=sum(imf_k_list(:,1,if))
-                  !vdum(2)=sum(imf_k_list(:,2,if))
-                  !vdum(3)=sum(imf_k_list(:,3,if))
-                  !if(berry_curv_unit=='bohr2') vdum=vdum/bohr**2
-                  !rdum=sqrt(dot_product(vdum,vdum))
-                  !rdum=abs(shc_k_list(loop_xyz+1,if))
-                  !if(rdum>berry_curv_adpt_kmesh_thresh) then
-                  !    adpt_counter_list(if)=adpt_counter_list(if)+1
-                  !    do loop_adpt=1,berry_curv_adpt_kmesh**3
-                  !        ! Using shc_k_list here would corrupt values for other
-                  !        ! kpt, hence dummy. Only if-th element is used
-                  !        call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
-                  !                shc_k_list_dummy)
-                  !        shc_list(if)=shc_list(if)&
-                  !                +shc_k_list_dummy(if)*kweight_adpt
-                  !    end do
-                  !else
-                      shc_list(if)=shc_list(if)+shc_k_list(loop_xyz+1,if)*kweight
-                  !endif
-              enddo
+              if (.not. shc_freq_scan) then
+                  do if=1,nfermi
+                      rdum=abs(shc_k(if))
+                      if(rdum>berry_curv_adpt_kmesh_thresh) then
+                          adpt_counter_list(if)=adpt_counter_list(if)+1
+                          do loop_adpt=1,berry_curv_adpt_kmesh**3
+                              ! Using shc_k here would corrupt values for other
+                              ! kpt, hence dummy. Only if-th element is used
+                              call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
+                                      shc_k_dummy)
+                              shc(if)=shc(if)+shc_k_dummy(if)*kweight_adpt
+                          end do
+                      else
+                          shc(if)=shc(if)+shc_k(if)*kweight
+                      endif
+                  enddo
+              else ! freq_scan, no adaptive kmesh
+                  shc = shc + kweight*shc_k
+              end if
 
-              write(stdout,'(a6,i4,a6,3(f8.5,1x))') 'node ',my_node_id,&
+              write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
                       ' kpt ',kpt(1:3)
               !call io_error(&
               !        'Kpoints read from kpoint.dat for SHC calculation is not implemented')
@@ -943,6 +941,7 @@ module w90_berry
                do n=1,kubo_nfreq
                    write(file_unit,'(I4,2E16.8)') &
                            n,kubo_freq_list(n),shc(n)
+               end do
            end if
            close(file_unit)
 
@@ -1372,7 +1371,7 @@ module w90_berry
                                    kubo_adpt_smr,kubo_smr_fixed_en_width,&
                                    kubo_adpt_smr_max,kubo_adpt_smr_fac,&
                                    kubo_smr_index,berry_kmesh,&
-                                   fermi_energy_list,nfermi,shc_scan_freq,&
+                                   fermi_energy_list,nfermi,shc_freq_scan,&
                                    ipol=>shc_ipol,jpol=>shc_jpol,spol=>shc_spol
     use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
                                    pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
@@ -1399,7 +1398,7 @@ module w90_berry
     real(kind=dp)    :: del_eig(num_wann,3),joint_level_spacing,&
                         eta_smr,Delta_k,arg,vdum(3)
 
-    integer          :: n,m,ispn,i
+    integer          :: n,m,ispn,i,ifreq
     real(kind=dp)    :: eig(num_wann)
     real(kind=dp),allocatable :: occ_list(:,:),omega_list(:)
     real(kind=dp)    :: omega,rfac
@@ -1411,7 +1410,7 @@ module w90_berry
     allocate(UU(num_wann,num_wann))
     allocate(D_h(num_wann,num_wann,3))
     allocate(AA(num_wann,num_wann,3))
-    if (shc_scan_freq) then
+    if (shc_freq_scan) then
         allocate(shc_k(kubo_nfreq))
         allocate(occ_list(num_wann,1))
         allocate(omega_list(kubo_nfreq))
@@ -1430,13 +1429,13 @@ module w90_berry
     enddo
     AA=AA+cmplx_i*D_h ! Eq.(25) WYSV06
 
-    call berry_get_js_k(kpt,ipol,spol,&
+    call berry_get_js_k(kpt,&
             eig,del_eig(:,ipol),D_h(:,:,ipol),UU,&
             Jsi_k)
 
     shc_k=0.0_dp
 
-    if (shc_scan_freq) then
+    if (shc_freq_scan) then
         if(kubo_adpt_smr) then
            Delta_k=pw90common_kmesh_spacing(berry_kmesh)
         end if
@@ -1469,7 +1468,7 @@ module w90_berry
           else
               eta_smr=kubo_smr_fixed_en_width
           endif
-          if (shc_scan_freq) then
+          if (shc_freq_scan) then
               do ifreq=1,kubo_nfreq
                   cdum = real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
                   cfac = -2.0_dp/(rfac**2-cdum**2)
@@ -1484,7 +1483,7 @@ module w90_berry
        !write(*,'(3(f9.6,1x),1I4,1E16.8)') &
        !        kpt(1),kpt(2),kpt(3),n,omega
 
-       if (.not. shc_scan_freq) then
+       if (.not. shc_freq_scan) then
          do i=1,nfermi
             shc_k(i) = shc_k(i) + occ_list(n,i)*omega
          end do
@@ -1527,7 +1526,6 @@ module w90_berry
 
     ! args
     real(kind=dp),                                  intent(in)  :: kpt(3)
-    integer,                                        intent(in)  :: ipol,spol
     real(kind=dp),              dimension(:),       intent(in)  :: eig
     real(kind=dp),              dimension(:),       intent(in)  :: del_i_eig
     complex(kind=dp),           dimension(:,:),     intent(in)  :: D_i_h
