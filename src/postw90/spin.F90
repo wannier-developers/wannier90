@@ -22,7 +22,7 @@ module w90_spin
   private
 
   public :: spin_get_moment,spin_get_nk,spin_get_S
-  public :: spin_get_nm_k
+  public :: spin_get_SS_k
 
   contains
 
@@ -290,14 +290,13 @@ module w90_spin
 
 ! =========================================================================
 
-  subroutine spin_get_nm_k(kpt,saxis_polar,saxis_azimuth,spn_nm_k)
+  subroutine spin_get_SS_k(kpt,spol,SS_k)
   !=============================================================!
   !                                                             !
-  !! Computes <psi_{nk}^(H)|S.n|psi_{mk}^(H)> (n,m=1,...,num_wann)
-  !! where S.n = n_x.S_x + n_y.S_y + n_z.Z_z
+  !! Computes <psi_{k}^(H)|S^spol|psi_{k}^(H)> matrix
+  !! where spol = 1,2,3 (x,y,z, respectively)
   !!
-  !! S_i are the Pauli matrices and n=(n_x,n_y,n_z) is the unit
-  !! vector along the chosen spin quantization axis
+  !!
   !                                                             !
   !============================================================ !
 
@@ -311,14 +310,14 @@ module w90_spin
     ! Arguments
     !
     real(kind=dp), intent(in)     :: kpt(3)
-    real(kind=dp), intent(in)     :: saxis_polar,saxis_azimuth
-    complex(kind=dp), intent(out) :: spn_nm_k(num_wann,num_wann)
+    integer,       intent(in)     :: spol
+    complex(kind=dp), intent(out) :: SS_k(num_wann,num_wann)
 
     ! Physics
     !
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: UU(:,:)
-    complex(kind=dp), allocatable :: SS(:,:,:),SS_n(:,:)
+    complex(kind=dp), allocatable :: SS_w(:,:)
 
     ! Misc/Dummy
     !
@@ -327,29 +326,15 @@ module w90_spin
 
     allocate(HH(num_wann,num_wann))
     allocate(UU(num_wann,num_wann))
-    allocate(SS(num_wann,num_wann,3))
-    allocate(SS_n(num_wann,num_wann))
+    allocate(SS_w(num_wann,num_wann))
 
     call pw90common_fourier_R_to_k(kpt,HH_R,HH,0)
     call utility_diagonalize(HH,num_wann,eig,UU)
 
-    do is=1,3
-       call pw90common_fourier_R_to_k(kpt,SS_R(:,:,:,is),SS(:,:,is),0)
-    enddo
+    call pw90common_fourier_R_to_k(kpt,SS_R(:,:,:,spol),SS_w(:,:),0)
 
-    ! Unit vector along the magnetization direction
-    !
-    conv=180.0_dp/pi
-    alpha(1)=sin(saxis_polar/conv)*cos(saxis_azimuth/conv)
-    alpha(2)=sin(saxis_polar/conv)*sin(saxis_azimuth/conv)
-    alpha(3)=cos(saxis_polar/conv)
+    SS_k(:,:)=utility_rotate(SS_w,UU,num_wann)
 
-    ! Vector of spin matrices projected along the quantization axis
-    !
-    SS_n(:,:)=alpha(1)*SS(:,:,1)+alpha(2)*SS(:,:,2)+alpha(3)*SS(:,:,3)
-
-    spn_nm_k(:,:)=utility_rotate(SS_n,UU,num_wann)
-
-  end subroutine spin_get_nm_k
+  end subroutine spin_get_SS_k
 
 end module w90_spin
