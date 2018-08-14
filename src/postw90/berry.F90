@@ -1441,7 +1441,7 @@ module w90_berry
 
     call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
     do i=1,3
-       AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
+        AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
     enddo
     AA=AA+cmplx_i*D_h ! Eq.(25) WYSV06
 
@@ -1451,59 +1451,63 @@ module w90_berry
 
     if (shc_freq_scan) then
         if(kubo_adpt_smr) then
-           Delta_k=pw90common_kmesh_spacing(berry_kmesh)
+            Delta_k=pw90common_kmesh_spacing(berry_kmesh)
         end if
         call pw90common_get_occ(eig,occ_list(:,1),fermi_energy_list(1))
     else
-      ! get occ for different fermi_energy
-      do i=1,nfermi
-         call pw90common_get_occ(eig,occ_list(:,i),fermi_energy_list(i))
-      end do
+        ! get occ for different fermi_energy
+        do i=1,nfermi
+            call pw90common_get_occ(eig,occ_list(:,i),fermi_energy_list(i))
+        end do
     end if
 
     !write(*,'((a),3(f9.6,1x))') 'kpt', kpt(1),kpt(2),kpt(3)
     do n=1,num_wann
        ! get \Omega_{n,ipol jpol}^{spol}
-       omega=0.0_dp
-       do m=1,num_wann
-          if(m==n) cycle
-          if(eig(m)>kubo_eigval_max .or. eig(n)>kubo_eigval_max) cycle
+        if (shc_freq_scan) then
+            omega_list = cmplx_0
+        else
+            omega=0.0_dp
+        end if
+        do m=1,num_wann
+            if(m==n) cycle
+            if(eig(m)>kubo_eigval_max .or. eig(n)>kubo_eigval_max) cycle
 
-          rfac = eig(m)-eig(n)
-          !this will calculate AHC
-          !prod = -rfac*cmplx_i*AA(n,m,ipol) * rfac*cmplx_i*AA(m,n,jpol)
-          prod = Jsi_k(n,m) * cmplx_i*rfac*AA(m,n,jpol)
-          if (kubo_adpt_smr) then
-              ! Eq.(35) YWVS07
-              vdum(:)=del_eig(m,:)-del_eig(n,:)
-              joint_level_spacing=sqrt(dot_product(vdum(:),vdum(:)))*Delta_k
-              eta_smr=min(joint_level_spacing*kubo_adpt_smr_fac,&
-                      kubo_adpt_smr_max)
-          else
-              eta_smr=kubo_smr_fixed_en_width
-          endif
-          if (shc_freq_scan) then
-              do ifreq=1,kubo_nfreq
-                  cdum = real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
-                  cfac = (occ_list(m,1)-occ_list(n,1))/(rfac**2-cdum**2)
-                  omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
-              end do
-          else
-            rfac = -2.0_dp/(rfac**2+eta_smr**2)
-            omega = omega + rfac*aimag(prod)
-          end if
-       enddo
+            rfac = eig(m)-eig(n)
+            !this will calculate AHC
+            !prod = -rfac*cmplx_i*AA(n,m,ipol) * rfac*cmplx_i*AA(m,n,jpol)
+            prod = Jsi_k(n,m) * cmplx_i*rfac*AA(m,n,jpol)
+            if (kubo_adpt_smr) then
+                ! Eq.(35) YWVS07
+                vdum(:)=del_eig(m,:)-del_eig(n,:)
+                joint_level_spacing=sqrt(dot_product(vdum(:),vdum(:)))*Delta_k
+                eta_smr=min(joint_level_spacing*kubo_adpt_smr_fac,&
+                        kubo_adpt_smr_max)
+            else
+                eta_smr=kubo_smr_fixed_en_width
+            endif
+            if (shc_freq_scan) then
+                do ifreq=1,kubo_nfreq
+                    cdum = real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
+                    cfac = -2.0_dp/(rfac**2-cdum**2)
+                    omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
+                end do
+            else
+                rfac = -2.0_dp/(rfac**2+eta_smr**2)
+                omega = omega + rfac*aimag(prod)
+            end if
+        enddo
 
-       !write(*,'(3(f9.6,1x),1I4,1E16.8)') &
-       !        kpt(1),kpt(2),kpt(3),n,omega
+        !write(*,'(3(f9.6,1x),1I4,1E16.8)') &
+        !        kpt(1),kpt(2),kpt(3),n,omega
 
-       if (.not. shc_freq_scan) then
-         do i=1,nfermi
-            shc_k_fermi(i) = shc_k_fermi(i) + occ_list(n,i)*omega
-         end do
-       else
-         shc_k_freq = shc_k_freq + omega_list
-       end if
+        if (.not. shc_freq_scan) then
+            do i=1,nfermi
+                shc_k_fermi(i) = shc_k_fermi(i) + occ_list(n,i)*omega
+            end do
+        else
+            shc_k_freq = shc_k_freq + occ_list(n,1)*omega_list
+        end if
     enddo
 
     !do i = 1,nfermi
