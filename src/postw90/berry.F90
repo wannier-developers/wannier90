@@ -127,9 +127,10 @@ module w90_berry
     real(kind=dp), allocatable :: jdos_spn(:,:)
 
     ! Spin Hall conductivity
-    real(kind=dp), allocatable  :: shc(:),shc_k(:)
+    real(kind=dp), allocatable   :: shc_fermi(:),shc_k_fermi(:)
+    complex(kind=dp),allocatable :: shc_freq(:),shc_k_freq(:)
     ! for fermi energy scan, adaptive kmesh
-    real(kind=dp), allocatable  :: shc_k_dummy(:)
+    real(kind=dp), allocatable   :: shc_k_fermi_dummy(:)
 
     real(kind=dp)     :: kweight,kweight_adpt,kpt(3),kpt_ad(3),&
                          db1,db2,db3,fac,freq,rdum,vdum(3)
@@ -218,18 +219,21 @@ module w90_berry
         call get_SHC_R
 
         if (shc_freq_scan) then
-            allocate(shc(kubo_nfreq))
-            allocate(shc_k(kubo_nfreq))
+            allocate(shc_freq(kubo_nfreq))
+            allocate(shc_k_freq(kubo_nfreq))
+            shc_freq=0.0_dp
+            shc_k_freq=0.0_dp
         else
-            allocate(shc(nfermi))
-            allocate(shc_k(nfermi))
-            allocate(shc_k_dummy(nfermi))
+            allocate(shc_fermi(nfermi))
+            allocate(shc_k_fermi(nfermi))
+            allocate(shc_k_fermi_dummy(nfermi))
+            shc_fermi=0.0_dp
+            shc_k_fermi=0.0_dp
+            !only used for fermiscan
+            shc_k_fermi_dummy=0.0_dp
+            adpt_counter_list=0
         end if
 
-        shc=0.0_dp
-        shc_k=0.0_dp
-        shc_k_dummy=0.0_dp
-        adpt_counter_list=0
     endif
 
 
@@ -385,38 +389,37 @@ module w90_berry
                 jdos_spn=jdos_spn+jdos_k_spn*kweight
              endif
           endif
-          !
-          ! ***END COPY OF CODE BLOCK 1***
 
           if(eval_shc) then
               ! be aware that index starts from 1
-              call berry_get_shc_k(kpt,shc_k)
 
               if (.not. shc_freq_scan) then
+                  call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
                   do if=1,nfermi
-                      rdum=abs(shc_k(if))
+                      rdum=abs(shc_k_fermi(if))
                       if(rdum>berry_curv_adpt_kmesh_thresh) then
                           adpt_counter_list(if)=adpt_counter_list(if)+1
                           do loop_adpt=1,berry_curv_adpt_kmesh**3
                               ! Using shc_k here would corrupt values for other
                               ! kpt, hence dummy. Only if-th element is used
                               call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
-                                      shc_k_dummy)
-                              shc(if)=shc(if)+shc_k_dummy(if)*kweight_adpt
+                                      shc_k_fermi_dummy)
+                              shc_fermi(if)=shc_fermi(if)+shc_k_fermi_dummy(if)*kweight_adpt
                           end do
                       else
-                          shc(if)=shc(if)+shc_k(if)*kweight
+                          shc_fermi(if)=shc_fermi(if)+shc_k_fermi(if)*kweight
                       endif
                   enddo
               else ! freq_scan, no adaptive kmesh
-                  shc = shc + kweight*shc_k
+                  call berry_get_shc_k(kpt,shc_k_freq=shc_k_freq)
+                  shc_freq = shc_freq + kweight*shc_k_freq
               end if
 
-              write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
-                      ' kpt ',kpt(1:3)
-              !call io_error(&
-              !        'Kpoints read from kpoint.dat for SHC calculation is not implemented')
+              !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
+              !        ' kpt ',kpt(1:3)
           end if
+          !
+          ! ***END COPY OF CODE BLOCK 1***
 
        end do !loop_xyz
 
@@ -484,37 +487,38 @@ module w90_berry
                 jdos_spn=jdos_spn+jdos_k_spn*kweight
              endif
           endif
-          !
-          ! ***END CODE BLOCK 1***
 
           if(eval_shc) then
             ! be aware that index starts from 1 
-             call berry_get_shc_k(kpt,shc_k)
 
              if (.not. shc_freq_scan) then
+                 call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
                  do if=1,nfermi
-                     rdum=abs(shc_k(if))
+                     rdum=abs(shc_k_fermi(if))
                      if(rdum>berry_curv_adpt_kmesh_thresh) then
                          adpt_counter_list(if)=adpt_counter_list(if)+1
                          do loop_adpt=1,berry_curv_adpt_kmesh**3
                              ! Using shc_k here would corrupt values for other
                              ! kpt, hence dummy. Only if-th element is used
                              call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
-                                     shc_k_dummy)
-                             shc(if)=shc(if)+shc_k_dummy(if)*kweight_adpt
+                                     shc_k_fermi_dummy)
+                             shc_fermi(if)=shc_fermi(if)+shc_k_fermi_dummy(if)*kweight_adpt
                          end do
                      else
-                        shc(if)=shc(if)+shc_k(if)*kweight
+                        shc_fermi(if)=shc_fermi(if)+shc_k_fermi(if)*kweight
                      endif
                  enddo
              else ! freq_scan, no adaptive kmesh
-                 shc = shc + kweight*shc_k
+                 call berry_get_shc_k(kpt,shc_k_freq=shc_k_freq)
+                 shc_freq = shc_freq + kweight*shc_k_freq
              end if
 
-             write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
-                     ' kpt ',kpt(1:3)
+             !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
+             !        ' kpt ',kpt(1:3)
           end if
-          
+          !
+          ! ***END CODE BLOCK 1***
+
        end do !loop_xyz
    
     end if !wanint_kpoint_file
@@ -545,9 +549,9 @@ module w90_berry
 
     if(eval_shc) then
        if (shc_freq_scan) then
-           call comms_reduce(shc(1),kubo_nfreq,'SUM')
+           call comms_reduce(shc_freq(1),kubo_nfreq,'SUM')
        else
-           call comms_reduce(shc(1),nfermi,'SUM')
+           call comms_reduce(shc_fermi(1),nfermi,'SUM')
        end if
     end if
     
@@ -912,7 +916,11 @@ module w90_berry
            !fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
            !fac=elem_charge_SI*hbar_SI/cell_volume
            fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
-           shc=shc*fac
+           if (shc_freq_scan) then
+               shc_freq=shc_freq*fac
+           else
+               shc_fermi=shc_fermi*fac
+           end if
            !
            write(stdout,'(/,1x,a)')&
                    '----------------------------------------------------------'
@@ -933,14 +941,14 @@ module w90_berry
            if (.not. shc_freq_scan) then
                write(file_unit,'(a,3x,a,3x,a)') 'No.','Fermi energy(eV)','SHC(S/cm)'
                do n=1,nfermi
-                   write(file_unit,'(I4,2E16.8)') &
-                       n,fermi_energy_list(n),shc(n)
+                   write(file_unit,'(I4,1x,F12.6,1x,E16.8)') &
+                       n,fermi_energy_list(n),shc_fermi(n)
                enddo
            else
                write(file_unit,'(a,3x,a,3x,a)') 'No.','Frequency(eV)','SHC(S/cm)'
                do n=1,kubo_nfreq
-                   write(file_unit,'(I4,2E16.8)') &
-                           n,kubo_freq_list(n),shc(n)
+                   write(file_unit,'(I4,1x,F12.6,1x,E16.8)') &
+                           n,kubo_freq_list(n),shc_freq(n)
                end do
            end if
            close(file_unit)
@@ -1356,7 +1364,7 @@ module w90_berry
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine berry_get_shc_k(kpt,shc_k)
+  subroutine berry_get_shc_k(kpt,shc_k_fermi,shc_k_freq)
   !====================================================================!
   !                                                                    !
   !! Contribution from point k to the Spin Hall conductivity
@@ -1377,12 +1385,14 @@ module w90_berry
                                    pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
     use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
+    use w90_comms,only           : my_node_id
     !!!
     use w90_io, only             : io_error,io_file_unit
 
     ! args
     real(kind=dp),              intent(in)  :: kpt(3)
-    real(kind=dp), allocatable, intent(out) :: shc_k(:)
+    real(kind=dp), allocatable, optional, intent(out)    :: shc_k_fermi(:)
+    complex(kind=dp), allocatable, optional, intent(out) :: shc_k_freq(:)
 
     ! internal vars
     complex(kind=dp), allocatable :: HH(:,:)
@@ -1400,10 +1410,13 @@ module w90_berry
 
     integer          :: n,m,ispn,i,ifreq
     real(kind=dp)    :: eig(num_wann)
-    real(kind=dp),allocatable :: occ_list(:,:),omega_list(:)
+    real(kind=dp),allocatable    :: occ_list(:,:)
+    complex(kind=dp),allocatable :: omega_list(:)
     real(kind=dp)    :: omega,rfac
     complex(kind=dp) :: prod,cdum,cfac
 
+    write(*,'((a),1x,1I4,1x,3(f9.6,1x))') &
+            'node',my_node_id,kpt(1:3)
 
     allocate(HH(num_wann,num_wann))
     allocate(delHH(num_wann,num_wann,3))
@@ -1411,12 +1424,14 @@ module w90_berry
     allocate(D_h(num_wann,num_wann,3))
     allocate(AA(num_wann,num_wann,3))
     if (shc_freq_scan) then
-        allocate(shc_k(kubo_nfreq))
+        allocate(shc_k_freq(kubo_nfreq))
         allocate(occ_list(num_wann,1))
         allocate(omega_list(kubo_nfreq))
+        shc_k_freq=0.0_dp
     else
-        allocate(shc_k(nfermi))
+        allocate(shc_k_fermi(nfermi))
         allocate(occ_list(num_wann,nfermi))
+        shc_k_fermi=0.0_dp
     end if
 
 
@@ -1432,8 +1447,6 @@ module w90_berry
     call berry_get_js_k(kpt,&
             eig,del_eig(:,ipol),D_h(:,:,ipol),UU,&
             Jsi_k)
-
-    shc_k=0.0_dp
 
     if (shc_freq_scan) then
         if(kubo_adpt_smr) then
@@ -1485,10 +1498,10 @@ module w90_berry
 
        if (.not. shc_freq_scan) then
          do i=1,nfermi
-            shc_k(i) = shc_k(i) + occ_list(n,i)*omega
+            shc_k_fermi(i) = shc_k_fermi(i) + occ_list(n,i)*omega
          end do
        else
-         shc_k = shc_k + occ_list(n,1)*omega_list
+         shc_k_freq = shc_k_freq + occ_list(n,1)*omega_list
        end if
     enddo
 
