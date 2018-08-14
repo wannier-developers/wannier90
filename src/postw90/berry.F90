@@ -495,6 +495,7 @@ module w90_berry
                  call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
                  do if=1,nfermi
                      rdum=abs(shc_k_fermi(if))
+                     !TODO if adpt_kmesh=1, will this do the same kpt calculation again? add check adpt_kmesh!=1?
                      if(rdum>berry_curv_adpt_kmesh_thresh) then
                          adpt_counter_list(if)=adpt_counter_list(if)+1
                          do loop_adpt=1,berry_curv_adpt_kmesh**3
@@ -941,14 +942,14 @@ module w90_berry
            if (.not. shc_freq_scan) then
                write(file_unit,'(a,3x,a,3x,a)') 'No.','Fermi energy(eV)','SHC(S/cm)'
                do n=1,nfermi
-                   write(file_unit,'(I4,1x,F12.6,1x,E16.8)') &
+                   write(file_unit,'(I4,1x,F12.6,1x,E17.8)') &
                        n,fermi_energy_list(n),shc_fermi(n)
                enddo
            else
-               write(file_unit,'(a,3x,a,3x,a)') 'No.','Frequency(eV)','SHC(S/cm)'
+               write(file_unit,'(a,3x,a,3x,a,3x,a)') 'No.','Frequency(eV)','Re(sigma)(S/cm)','Im(sigma)(S/cm)'
                do n=1,kubo_nfreq
-                   write(file_unit,'(I4,1x,F12.6,1x,E16.8)') &
-                           n,kubo_freq_list(n),shc_freq(n)
+                   write(file_unit,'(I4,1x,F12.6,1x,1x,2(E17.8,1x))') &
+                           n,real(kubo_freq_list(n),dp),real(shc_freq(n),dp),aimag(shc_freq(n))
                end do
            end if
            close(file_unit)
@@ -1484,7 +1485,7 @@ module w90_berry
           if (shc_freq_scan) then
               do ifreq=1,kubo_nfreq
                   cdum = real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
-                  cfac = -2.0_dp/(rfac**2-cdum**2)
+                  cfac = (occ_list(m,1)-occ_list(n,1))/(rfac**2-cdum**2)
                   omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
               end do
           else
@@ -1501,7 +1502,7 @@ module w90_berry
             shc_k_fermi(i) = shc_k_fermi(i) + occ_list(n,i)*omega
          end do
        else
-         shc_k_freq = shc_k_freq + occ_list(n,1)*omega_list
+         shc_k_freq = shc_k_freq + omega_list
        end if
     enddo
 
