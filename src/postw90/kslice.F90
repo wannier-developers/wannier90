@@ -21,6 +21,8 @@ module w90_kslice
   !!
   !!  - The k-integrand of the orbital magnetization formula
   !!
+  !!  - The k-integrand of the spin Hall conductivity formula
+  !!
   !! The slice is defined in reduced coordinates by three input variables:
   !!
   !!    kslice_corner(1:3) is the lower left corner 
@@ -52,10 +54,10 @@ module w90_kslice
                                    kslice_fermi_lines_colour,recip_lattice,&
                                    nfermi,fermi_energy_list,berry_curv_unit
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
-                                   get_SS_R
+                                   get_SS_R,get_SHC_R
     use w90_wan_ham, only        : wham_get_eig_deleig
     use w90_spin, only           : spin_get_nk
-    use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist
+    use w90_berry, only          : berry_get_imf_klist,berry_get_imfgh_klist,berry_get_shc_k
     use w90_constants, only      : bohr
 
     integer, dimension(0:num_nodes-1) :: counts, displs
@@ -68,9 +70,9 @@ module w90_kslice
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
                          spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
-                         zhat(3),vdum(3),rdum
+                         zhat(3),vdum(3),rdum,shc_k_fermi(nfermi)
     logical           :: plot_fermi_lines,plot_curv,plot_morb,&
-                         fermi_lines_color,heatmap
+                         fermi_lines_color,heatmap,plot_shc
     character(len=40) :: filename,square
 
     integer,          allocatable :: bnddataunit(:)
@@ -89,16 +91,17 @@ module w90_kslice
     plot_fermi_lines  = index(kslice_task,'fermi_lines') > 0
     plot_curv         = index(kslice_task,'curv') > 0
     plot_morb         = index(kslice_task,'morb') > 0
+    plot_morb         = index(kslice_task,'shc') > 0
     fermi_lines_color = kslice_fermi_lines_colour /= 'none'
-    heatmap           = plot_curv .or. plot_morb
+    heatmap           = plot_curv .or. plot_morb .or. plot_shc
     if(plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
          call io_error('Error: spin-colored Fermi lines not allowed in '&
-         //'curv/morb heatmap plots') 
+         //'curv/morb/shc heatmap plots')
     end if
 
     if(on_root) then
        call kslice_print_info(plot_fermi_lines, fermi_lines_color, &
-                              plot_curv, plot_morb)
+                              plot_curv, plot_morb, plot_shc)
     end if
 
     call get_HH_R
@@ -107,6 +110,11 @@ module w90_kslice
        call get_BB_R
        call get_CC_R
     endif
+    if(plot_shc) then
+       call get_AA_R
+       call get_SS_R
+       call get_SHC_R
+    end if
     if(fermi_lines_color) call get_SS_R
 
        ! Set Cartesian components of the vectors (b1,b2) spanning the slice
@@ -245,6 +253,9 @@ module w90_kslice
              morb(2)=sum(Morb_k(:,2))
              morb(3)=sum(Morb_k(:,3))
              my_zdata(:,iloc) = morb(:)
+          else if(plot_shc) then
+             call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
+             my_zdata(1,iloc) = shc_k_fermi(1)
           end if
 
        end do !iloc
@@ -349,12 +360,20 @@ module w90_kslice
                 filename=trim(seedname)//'-kslice-morb.dat'
              elseif(plot_curv) then
                 filename=trim(seedname)//'-kslice-curv.dat'
+             elseif(plot_shc) then
+                filename=trim(seedname)//'-kslice-shc.dat'
              endif
              write(stdout,'(/,3x,a)') filename
              open(dataunit,file=filename,form='formatted')
-             do loop_kpt=1,nkpts
-                write(dataunit,'(4E16.8)') zdata(:,loop_kpt)
-             end do
+             if (plot_shc) then
+                do loop_kpt=1,nkpts
+                   write(dataunit,'(1E16.8)') zdata(1,loop_kpt)
+                end do
+             else
+                do loop_kpt=1,nkpts
+                   write(dataunit,'(4E16.8)') zdata(:,loop_kpt)
+                end do
+             end if
              write(dataunit,*) ' '
              close(dataunit)
           end if
@@ -506,9 +525,9 @@ module w90_kslice
           close(scriptunit)
        endif ! plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap
 
-       if(heatmap) then
+       if(heatmap .and. (.not. plot_shc)) then
           !
-          ! python script for curvature/Morb heatmaps [+ black Fermi lines]
+          ! python script for curvature/Morb/shc heatmaps [+ black Fermi lines]
           !
           do i=1,3
 
@@ -620,6 +639,67 @@ module w90_kslice
 
        endif !heatmap
 
+       if(heatmap .and. plot_shc) then
+          scriptunit=io_file_unit()
+          if(.not.plot_fermi_lines) then
+             filename=trim(seedname)//'-kslice-shc'//'.py'
+             write(stdout,'(/,3x,a)') filename
+             open(scriptunit,file=filename,form='formatted')
+          elseif(plot_fermi_lines) then
+             filename=trim(seedname)//'-kslice-shc'//&
+                     '+fermi_lines.py'
+             write(stdout,'(/,3x,a)') filename
+             open(scriptunit,file=filename,form='formatted')
+          endif
+          call script_common(scriptunit,areab1b2,square)
+          if(plot_fermi_lines) call script_fermi_lines(scriptunit)
+
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
+                  "-kslice-shc"//".pdf'"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)')&
+                  "val = np.loadtxt('"//trim(seedname)//&
+                          "-kslice-shc.dat', usecols=(0,))"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)')&
+                  "val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
+                          &if abs(elem)>10 else elem/10.0 for elem in val])"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)') "if square: "
+          write(scriptunit,'(a)') "  Z=val_log.reshape(dimy,dimx)"
+          write(scriptunit,'(a)') "  mn=int(np.floor(Z.min()))"
+          write(scriptunit,'(a)') "  mx=int(np.ceil(Z.max()))"
+          write(scriptunit,'(a)') "  ticks=range(mn,mx+1)"
+          write(scriptunit,'(a)') "  pl.contourf(x_coord,y_coord,Z,"&
+                  //"ticks,origin='lower')"
+          write(scriptunit,'(a)') "  #pl.imshow(Z,origin='lower',"&
+                  //"extent=(min(x_coord),max(x_coord),min(y_coord),"&
+                  //"max(y_coord)))"
+          write(scriptunit,'(a)') "else: "
+          write(scriptunit,'(a)') "  valint = ml.griddata(points_x,"&
+                  //"points_y, val_log, xint, yint)"
+          write(scriptunit,'(a)') "  mn=int(np.floor(valint.min()))"
+          write(scriptunit,'(a)') "  mx=int(np.ceil(valint.max()))"
+          write(scriptunit,'(a)') "  ticks=range(mn,mx+1)"
+          write(scriptunit,'(a)') "  pl.contourf(xint,yint,valint,ticks)"
+          write(scriptunit,'(a)') "  #pl.imshow(valint,origin='lower',"&
+                  //"extent=(min(xint),max(xint),min(yint),max(yint)))"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)') "ticklabels=[]"
+          write(scriptunit,'(a)') "for n in ticks:"
+          write(scriptunit,'(a)') " if n<0: "
+          write(scriptunit,'(a)')&
+                  "  ticklabels.append('-$10^{%d}$' % abs(n))"
+          write(scriptunit,'(a)') " elif n==0:"
+          write(scriptunit,'(a)') "  ticklabels.append(' $%d$' %  n)"
+          write(scriptunit,'(a)') " else:"
+          write(scriptunit,'(a)') "  ticklabels.append(' $10^{%d}$' % n)"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)') "cbar=pl.colorbar()"
+          write(scriptunit,'(a)') "cbar.set_ticks(ticks)"
+          write(scriptunit,'(a)') "cbar.set_ticklabels(ticklabels)"
+       end if
        write(stdout,*) ' '
 
     end if ! on_root
@@ -630,11 +710,11 @@ end subroutine k_slice
   !                   PRIVATE PROCEDURES
   !===========================================================!
 
-  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb)
+  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc)
     use w90_io,         only : stdout, io_error
     use w90_parameters, only : nfermi, fermi_energy_list, berry_curv_unit
 
-    logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb
+    logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
 
     write(stdout,'(/,/,1x,a)')&
          'Properties calculated in module  k s l i c e'
@@ -666,6 +746,11 @@ end subroutine k_slice
             '* Orbital magnetization k-space integrand in eV.Ang^2'
        if(nfermi/=1) call io_error(&
             'Must specify one Fermi level when kslice_task=morb')
+    elseif(plot_shc) then
+       write(stdout,'(/,3x,a)')&
+               '* Spin Hall conductivity k-space integrand in eV.Ang^2'
+       if(nfermi/=1) call io_error(&
+               'Must specify one Fermi level when kslice_task=shc')
     endif
 
   end subroutine kslice_print_info
