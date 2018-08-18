@@ -66,7 +66,7 @@ contains
     real(kind=dp)     :: ymin,ymax,kpt(3),spn_k(num_wann),&
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),&
-                         range
+                         range,zmin,zmax
     real(kind=dp)     :: shc_k_list(num_wann),shc_k_fermi(nfermi)
     real(kind=dp), allocatable, dimension(:) :: kpath_len
     logical           :: plot_bands,plot_curv,plot_morb,plot_shc
@@ -351,6 +351,30 @@ contains
              write(gnuunit,*) 'set zrange [-1:1]'
              write(gnuunit,*) 'splot ','"'//trim(seedname)//'-bands.dat',& 
                   '" with dots palette'
+          else if(kpath_bands_colour=='shc') then
+              !
+              ! Only works with gnuplot v4.2 and higher
+              !
+              write(gnuunit,706) xval(total_pts),ymin,ymax
+              write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
+                      (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
+              write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
+              zmin=minval(shc)
+              zmax=maxval(shc)
+              write(gnuunit,'(a)',advance="no")&
+                      'set palette defined ('
+              write(gnuunit,'(1E17.8)',advance="no") zmin
+              write(gnuunit,'(a)',advance="no")' "blue", 0 "green", '
+              write(gnuunit,'(1E17.8)',advance="no") zmax
+              write(gnuunit,'(a)') ' "red")'
+              write(gnuunit,'(a)') 'set pm3d map'
+              write(gnuunit,'(a)',advance="no") 'set zrange ['
+              write(gnuunit,'(1E17.8)',advance="no") zmin
+              write(gnuunit,'(a)',advance="no") ':'
+              write(gnuunit,'(1E17.8)',advance="no") zmax
+              write(gnuunit,'(a)') ']'
+              write(gnuunit,*) 'splot ','"'//trim(seedname)//'-bands.dat',&
+                      '" with dots palette'
           end if
           close(gnuunit)
           !
@@ -366,7 +390,8 @@ contains
                "-bands.dat')"
           write(pyunit,'(a)') "x=data[:,0]"
           write(pyunit,'(a)') "y=data[:,1]"
-          if(kpath_bands_colour=='spin') write(pyunit,'(a)') "z=data[:,2]"
+          if(kpath_bands_colour=='spin'.or.kpath_bands_colour=='shc') &
+                  write(pyunit,'(a)') "z=data[:,2]"
           write(pyunit,'(a)') "tick_labels=[]"
           write(pyunit,'(a)') "tick_locs=[]"
           do j=1,num_spts
@@ -385,7 +410,7 @@ contains
           end do
           if(kpath_bands_colour=='none') then
              write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-          else if(kpath_bands_colour=='spin') then
+          else if(kpath_bands_colour=='spin'.or.kpath_bands_colour=='shc') then
              write(pyunit,'(a)')&
                   "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
           end if
@@ -398,7 +423,7 @@ contains
                //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
                //"linestyle='-',linewidth=0.5)"
           write(pyunit,'(a)') "pl.ylabel('Energy [eV]')"
-          if(kpath_bands_colour=='spin') then
+          if(kpath_bands_colour=='spin'.or.kpath_bands_colour=='shc') then
              write(pyunit,'(a)')&
                   "pl.axes().set_aspect(aspect=0.65*max(x)/(max(y)-min(y)))"
              write(pyunit,'(a)') "pl.colorbar(shrink=0.7)"
