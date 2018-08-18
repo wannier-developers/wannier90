@@ -995,11 +995,18 @@ contains
     call param_get_keyword('kslice_task',found,c_value=kslice_task)
        if(kslice .and. index(kslice_task,'fermi_lines')==0 .and.&
           index(kslice_task,'curv')==0 .and.&
-          index(kslice_task,'morb')==0) call io_error&
+          index(kslice_task,'morb')==0 .and.&
+          index(kslice_task,'shc')==0) call io_error&
             ('Error: value of kslice_task not recognised in param_read')
        if(kslice .and. index(kslice_task,'curv')>0 .and.&
             index(kslice_task,'morb')>0) call io_error&
-          ("Error: kslice_task cannot include both 'curv' and 'morb'")
+            ("Error: kslice_task cannot include both 'curv' and 'morb'")
+       if(kslice .and. index(kslice_task,'shc')>0 .and.&
+            index(kslice_task,'morb')>0) call io_error&
+            ("Error: kslice_task cannot include both 'shc' and 'morb'")
+       if(kslice .and. index(kslice_task,'shc')>0 .and.&
+            index(kslice_task,'curv')>0) call io_error&
+            ("Error: kslice_task cannot include both 'shc' and 'curv'")
 
     kslice_2dkmesh(1:2) = 50
     call param_get_vector_length('kslice_2dkmesh',found,length=i)
@@ -1263,7 +1270,8 @@ contains
     call param_get_keyword('kpath_task',found,c_value=kpath_task)
     if(kpath .and. index(kpath_task,'bands')==0 .and.&
          index(kpath_task,'curv')==0 .and.&
-         index(kpath_task,'morb')==0) call io_error&
+         index(kpath_task,'morb')==0 .and.&
+         index(kpath_task,'shc')==0) call io_error&
          ('Error: value of kpath_task not recognised in param_read')
 
     kpath_num_points=100
@@ -1276,7 +1284,8 @@ contains
     call param_get_keyword('kpath_bands_colour',found,&
          c_value=kpath_bands_colour)
     if(kpath .and. index(kpath_bands_colour,'none')==0 .and.&
-         index(kpath_bands_colour,'spin')==0) call io_error&
+         index(kpath_bands_colour,'spin')==0 .and.&
+         index(kpath_bands_colour,'shc')==0) call io_error&
          ('Error: value of kpath_bands_colour not recognised in param_read')
 
     ! set to a negative default value
@@ -2936,6 +2945,11 @@ contains
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       F','|'
        endif
+       if(index(kpath_task,'shc')>0) then
+         write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :','       T','|'
+       else
+         write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :','       F','|'
+       endif
        write(stdout,'(1x,a46,10x,a8,13x,a1)')    '|  Property used to colour code the bands    :',trim(kpath_bands_colour),'|'
        write(stdout,'(1x,a78)') '*----------------------------------------------------------------------------*'
        write(stdout,'(1x,a78)') '|   K-space path sections:                                                   |'
@@ -2969,6 +2983,11 @@ contains
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       T','|'
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :','       F','|'
+       endif
+       if(index(kslice_task,'shc')>0) then
+         write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :','       T','|'
+       else
+         write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :','       F','|'
        endif
        write(stdout,'(1x,a46,10x,a8,13x,a1)')    '|  Property used to colour code the lines    :', &
             trim(kslice_fermi_lines_colour),'|'
