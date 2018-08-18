@@ -91,7 +91,7 @@ module w90_kslice
     plot_fermi_lines  = index(kslice_task,'fermi_lines') > 0
     plot_curv         = index(kslice_task,'curv') > 0
     plot_morb         = index(kslice_task,'morb') > 0
-    plot_morb         = index(kslice_task,'shc') > 0
+    plot_shc         = index(kslice_task,'shc') > 0
     fermi_lines_color = kslice_fermi_lines_colour /= 'none'
     heatmap           = plot_curv .or. plot_morb .or. plot_shc
     if(plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
