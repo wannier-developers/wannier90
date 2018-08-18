@@ -1111,7 +1111,8 @@ module w90_get_oper
     use w90_constants, only     : dp,cmplx_0,cmplx_i
     use w90_parameters, only    : num_kpts,nntot,num_wann,wb,bk,timing_level,&
                                   num_bands,ndimwin,nnlist,have_disentangled,&
-                                  transl_inv,nncell,spn_formatted,eigval
+                                  transl_inv,nncell,spn_formatted,eigval,&
+                                  scissors_shift,num_valence_bands
     use w90_postw90_common, only : nrpts
     use w90_io, only            : stdout,io_file_unit,io_error,io_stopwatch,&
                                   seedname
@@ -1264,6 +1265,12 @@ module w90_get_oper
                 !ii=winmin_q+i-1
                 H_o(m,m,ik)=eigval(m,ik)
             enddo
+            !scissors shift
+            if(num_valence_bands>0 .and. abs(scissors_shift)>1.0e-7_dp) then
+                do m=num_valence_bands+1,num_bands
+                    H_o(m,m,ik)=H_o(m,m,ik)+scissors_shift
+                end do
+            end if
         enddo
     endif !on_root
     ! end copying from get_HH_R, Junfeng Qiao
