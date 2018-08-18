@@ -359,19 +359,19 @@ contains
               write(gnuunit,702, advance="no") glabel(1),0.0_dp,&
                       (glabel(i+1),sum(kpath_len(1:i)),i=1,num_paths-1)
               write(gnuunit,703) glabel(1+num_paths),sum(kpath_len(:))
-              zmin=minval(shc)
-              zmax=maxval(shc)
+              zmin=minval(color)
+              zmax=maxval(color)
               write(gnuunit,'(a)',advance="no")&
                       'set palette defined ('
-              write(gnuunit,'(1E17.8)',advance="no") zmin
+              write(gnuunit,'(1E16.8)',advance="no") zmin
               write(gnuunit,'(a)',advance="no")' "blue", 0 "green", '
-              write(gnuunit,'(1E17.8)',advance="no") zmax
+              write(gnuunit,'(1E16.8)',advance="no") zmax
               write(gnuunit,'(a)') ' "red")'
               write(gnuunit,'(a)') 'set pm3d map'
               write(gnuunit,'(a)',advance="no") 'set zrange ['
-              write(gnuunit,'(1E17.8)',advance="no") zmin
+              write(gnuunit,'(1E16.8)',advance="no") zmin
               write(gnuunit,'(a)',advance="no") ':'
-              write(gnuunit,'(1E17.8)',advance="no") zmax
+              write(gnuunit,'(1E16.8)',advance="no") zmax
               write(gnuunit,'(a)') ']'
               write(gnuunit,*) 'splot ','"'//trim(seedname)//'-bands.dat',&
                       '" with dots palette'
