@@ -1432,6 +1432,10 @@ module w90_berry
     allocate(UU(num_wann,num_wann))
     allocate(D_h(num_wann,num_wann,3))
     allocate(AA(num_wann,num_wann,3))
+
+    lfreq = .false.
+    lfermi = .false.
+    llist = .false.
     if (present(shc_k_freq)) then
         shc_k_freq=0.0_dp
         lfreq = .true.
@@ -1459,10 +1463,10 @@ module w90_berry
             eig,del_eig(:,ipol),D_h(:,:,ipol),UU,&
             Jsi_k)
 
+    if(kubo_adpt_smr) then
+        Delta_k=pw90common_kmesh_spacing(berry_kmesh)
+    end if
     if (lfreq) then
-        if(kubo_adpt_smr) then
-            Delta_k=pw90common_kmesh_spacing(berry_kmesh)
-        end if
         call pw90common_get_occ(eig,occ_freq,fermi_energy_list(1))
     else if (lfermi) then
         ! get occ for different fermi_energy
