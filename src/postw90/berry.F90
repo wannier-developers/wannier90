@@ -1365,12 +1365,17 @@ module w90_berry
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine berry_get_shc_k(kpt,shc_k_fermi,shc_k_freq)
+  subroutine berry_get_shc_k(kpt,shc_k_fermi,shc_k_freq,shc_k_list)
   !====================================================================!
   !                                                                    !
   !! Contribution from point k to the Spin Hall conductivity
   !! \sigma_{ipol,jpol}^{spol}(k), ipol,jpol,spol=1,2,3 (x,y,z,respectively)
-  !                                                                    !
+  !
+  !    shc_k_fermi: return a list with different fermi energies
+  !    shc_k_freq: return a list with different frequency
+  !    shc_k_list: return a list of sigma for each band
+  !
+  !   Junfeng Qiao (18/8/2018)                                         !
   !====================================================================!
 
     use w90_constants, only      : dp,cmplx_0,cmplx_i,pi,hbar_SI
@@ -1380,7 +1385,7 @@ module w90_berry
                                    kubo_adpt_smr,kubo_smr_fixed_en_width,&
                                    kubo_adpt_smr_max,kubo_adpt_smr_fac,&
                                    kubo_smr_index,berry_kmesh,&
-                                   fermi_energy_list,nfermi,shc_freq_scan,&
+                                   fermi_energy_list,nfermi,&
                                    ipol=>shc_ipol,jpol=>shc_jpol,spol=>shc_spol
     use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
                                    pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
@@ -1394,8 +1399,10 @@ module w90_berry
     real(kind=dp),              intent(in)  :: kpt(3)
     real(kind=dp), allocatable, optional, intent(out)    :: shc_k_fermi(:)
     complex(kind=dp), allocatable, optional, intent(out) :: shc_k_freq(:)
+    real(kind=dp), allocatable, optional, intent(out)    :: shc_k_list(:)
 
     ! internal vars
+    logical                       :: lfreq, lfermi, llist
     complex(kind=dp), allocatable :: HH(:,:)
     complex(kind=dp), allocatable :: delHH(:,:,:)
     complex(kind=dp), allocatable :: UU(:,:)
@@ -1424,15 +1431,23 @@ module w90_berry
     allocate(UU(num_wann,num_wann))
     allocate(D_h(num_wann,num_wann,3))
     allocate(AA(num_wann,num_wann,3))
-    if (shc_freq_scan) then
+    if (present(shc_k_freq)) then
         allocate(shc_k_freq(kubo_nfreq))
         allocate(occ_list(num_wann,1))
         allocate(omega_list(kubo_nfreq))
         shc_k_freq=0.0_dp
-    else
+        lfreq = .true.
+    end if
+    if (present(shc_k_fermi)) then
         allocate(shc_k_fermi(nfermi))
         allocate(occ_list(num_wann,nfermi))
         shc_k_fermi=0.0_dp
+        lfermi = .true.
+    end if
+    if (present(shc_k_list)) then
+        allocate(shc_k_list(num_wann))
+        shc_k_list = 0.0_dp
+        llist = .true.
     end if
 
 
@@ -1449,12 +1464,12 @@ module w90_berry
             eig,del_eig(:,ipol),D_h(:,:,ipol),UU,&
             Jsi_k)
 
-    if (shc_freq_scan) then
+    if (lfreq) then
         if(kubo_adpt_smr) then
             Delta_k=pw90common_kmesh_spacing(berry_kmesh)
         end if
         call pw90common_get_occ(eig,occ_list(:,1),fermi_energy_list(1))
-    else
+    else if (lfermi) then
         ! get occ for different fermi_energy
         do i=1,nfermi
             call pw90common_get_occ(eig,occ_list(:,i),fermi_energy_list(i))
@@ -1464,9 +1479,9 @@ module w90_berry
     !write(*,'((a),3(f9.6,1x))') 'kpt', kpt(1),kpt(2),kpt(3)
     do n=1,num_wann
        ! get \Omega_{n,ipol jpol}^{spol}
-        if (shc_freq_scan) then
+        if (lfreq) then
             omega_list = cmplx_0
-        else
+        else if (lfermi .or. llist) then
             omega=0.0_dp
         end if
         do m=1,num_wann
@@ -1486,13 +1501,13 @@ module w90_berry
             else
                 eta_smr=kubo_smr_fixed_en_width
             endif
-            if (shc_freq_scan) then
+            if (lfreq) then
                 do ifreq=1,kubo_nfreq
                     cdum = real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
                     cfac = -2.0_dp/(rfac**2-cdum**2)
                     omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
                 end do
-            else
+            else if (lfermi .or. llist) then
                 rfac = -2.0_dp/(rfac**2+eta_smr**2)
                 omega = omega + rfac*aimag(prod)
             end if
@@ -1501,12 +1516,14 @@ module w90_berry
         !write(*,'(3(f9.6,1x),1I4,1E16.8)') &
         !        kpt(1),kpt(2),kpt(3),n,omega
 
-        if (.not. shc_freq_scan) then
+        if (lfermi) then
             do i=1,nfermi
                 shc_k_fermi(i) = shc_k_fermi(i) + occ_list(n,i)*omega
             end do
-        else
+        else if (lfreq) then
             shc_k_freq = shc_k_freq + occ_list(n,1)*omega_list
+        else if (llist) then
+            shc_k_list(n) = omega
         end if
     enddo
 
