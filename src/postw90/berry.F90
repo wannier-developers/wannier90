@@ -34,7 +34,8 @@ module w90_berry
 
   private
 
-  public :: berry_main,berry_get_imf_klist,berry_get_imfgh_klist
+  public :: berry_main,berry_get_imf_klist,berry_get_imfgh_klist,&
+            berry_get_shc_k
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -1397,9 +1398,9 @@ module w90_berry
 
     ! args
     real(kind=dp),              intent(in)  :: kpt(3)
-    real(kind=dp), allocatable, optional, intent(out)    :: shc_k_fermi(:)
-    complex(kind=dp), allocatable, optional, intent(out) :: shc_k_freq(:)
-    real(kind=dp), allocatable, optional, intent(out)    :: shc_k_list(:)
+    real(kind=dp),    optional, intent(out) :: shc_k_fermi(nfermi)
+    complex(kind=dp), optional, intent(out) :: shc_k_freq(kubo_nfreq)
+    real(kind=dp),    optional, intent(out) :: shc_k_list(num_wann)
 
     ! internal vars
     logical                       :: lfreq, lfermi, llist
@@ -1418,8 +1419,8 @@ module w90_berry
 
     integer          :: n,m,ispn,i,ifreq
     real(kind=dp)    :: eig(num_wann)
-    real(kind=dp),allocatable    :: occ_list(:,:)
-    complex(kind=dp),allocatable :: omega_list(:)
+    real(kind=dp)    :: occ_fermi(num_wann,nfermi),occ_freq(num_wann)
+    complex(kind=dp) :: omega_list(kubo_nfreq)
     real(kind=dp)    :: omega,rfac
     complex(kind=dp) :: prod,cdum,cfac
 
@@ -1432,20 +1433,14 @@ module w90_berry
     allocate(D_h(num_wann,num_wann,3))
     allocate(AA(num_wann,num_wann,3))
     if (present(shc_k_freq)) then
-        allocate(shc_k_freq(kubo_nfreq))
-        allocate(occ_list(num_wann,1))
-        allocate(omega_list(kubo_nfreq))
         shc_k_freq=0.0_dp
         lfreq = .true.
     end if
     if (present(shc_k_fermi)) then
-        allocate(shc_k_fermi(nfermi))
-        allocate(occ_list(num_wann,nfermi))
         shc_k_fermi=0.0_dp
         lfermi = .true.
     end if
     if (present(shc_k_list)) then
-        allocate(shc_k_list(num_wann))
         shc_k_list = 0.0_dp
         llist = .true.
     end if
@@ -1468,11 +1463,11 @@ module w90_berry
         if(kubo_adpt_smr) then
             Delta_k=pw90common_kmesh_spacing(berry_kmesh)
         end if
-        call pw90common_get_occ(eig,occ_list(:,1),fermi_energy_list(1))
+        call pw90common_get_occ(eig,occ_freq,fermi_energy_list(1))
     else if (lfermi) then
         ! get occ for different fermi_energy
         do i=1,nfermi
-            call pw90common_get_occ(eig,occ_list(:,i),fermi_energy_list(i))
+            call pw90common_get_occ(eig,occ_fermi(:,i),fermi_energy_list(i))
         end do
     end if
 
@@ -1518,10 +1513,10 @@ module w90_berry
 
         if (lfermi) then
             do i=1,nfermi
-                shc_k_fermi(i) = shc_k_fermi(i) + occ_list(n,i)*omega
+                shc_k_fermi(i) = shc_k_fermi(i) + occ_fermi(n,i)*omega
             end do
         else if (lfreq) then
-            shc_k_freq = shc_k_freq + occ_list(n,1)*omega_list
+            shc_k_freq = shc_k_freq + occ_freq(n)*omega_list
         else if (llist) then
             shc_k_list(n) = omega
         end if
