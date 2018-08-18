@@ -354,7 +354,7 @@ module w90_kslice
        end if
 
        if(allocated(my_zdata)) then
-          if(plot_curv.or.plot_morb) then
+          if(plot_curv.or.plot_morb.or.plot_shc) then
              dataunit=io_file_unit()
              if(plot_morb) then ! ugly. But to keep the logic the same as other places
                 filename=trim(seedname)//'-kslice-morb.dat'
