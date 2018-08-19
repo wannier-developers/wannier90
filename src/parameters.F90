@@ -3018,6 +3018,11 @@ contains
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       F','|'
        endif
+       if(index(berry_task,'shc')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall conductivity            :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall conductivity            :','       F','|'
+       end if
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Lower frequency for optical conductivity  :',kubo_freq_min,'|'
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Upper frequency for optical conductivity  :',kubo_freq_max,'|'
        write(stdout,'(1x,a46,10x,f8.3,13x,a1)')  '|  Step size for optical conductivity        :',kubo_freq_step,'|'
