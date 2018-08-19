@@ -677,8 +677,9 @@ module w90_kslice
                   //"extent=(min(x_coord),max(x_coord),min(y_coord),"&
                   //"max(y_coord)))"
           write(scriptunit,'(a)') "else: "
-          write(scriptunit,'(a)') "  valint = ml.griddata(points_x,"&
-                  //"points_y, val_log, xint, yint)"
+          write(scriptunit,'(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
+          write(scriptunit,'(a)') "  valint = interpolate.griddata((points_x,"&
+                  //"points_y), val_log, (grid_x,grid_y), method='nearest')"
           write(scriptunit,'(a)') "  mn=int(np.floor(valint.min()))"
           write(scriptunit,'(a)') "  mx=int(np.ceil(valint.max()))"
           write(scriptunit,'(a)') "  ticks=range(mn,mx+1)"
@@ -699,6 +700,13 @@ module w90_kslice
           write(scriptunit,'(a)') "cbar=pl.colorbar()"
           write(scriptunit,'(a)') "cbar.set_ticks(ticks)"
           write(scriptunit,'(a)') "cbar.set_ticklabels(ticklabels)"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)') "ax = pl.gca()"
+          write(scriptunit,'(a)') "ax.xaxis.set_visible(False)"
+          write(scriptunit,'(a)') "ax.yaxis.set_visible(False)"
+          write(scriptunit,'(a)') " "
+          write(scriptunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
+          write(scriptunit,'(a)') "pl.show()"
        end if
        write(stdout,*) ' '
 
@@ -835,6 +843,7 @@ subroutine script_common(scriptunit,areab1b2,square)
   write(scriptunit,'(a)') "import pylab as pl"
   write(scriptunit,'(a)') "import numpy as np"
   write(scriptunit,'(a)') "import matplotlib.mlab as ml"
+  write(scriptunit,'(a)') "from scipy import interpolate"
   write(scriptunit,'(a)') "from collections import OrderedDict"
   write(scriptunit,'(a)') " "
   write(scriptunit,'(a)') "points = np.loadtxt('"//trim(seedname)//&
@@ -895,10 +904,12 @@ subroutine script_fermi_lines(scriptunit)
   write(scriptunit,'(a)') "  bbands=bands.reshape((num_pt,"&
        //"numbands))"
   write(scriptunit,'(a)') "  bandint=[]"
+  write(scriptunit,'(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
   write(scriptunit,'(a)') "  for i in range(numbands):"
-  write(scriptunit,'(a)') "    bandint.append(ml.griddata"&
-       //"(points_x,points_y, bbands[:,i], xint, yint))"
-  write(scriptunit,'(a)') "    pl.contour(xint,yint,"&
+  write(scriptunit,'(a)') "    bandint.append(interpolate.griddata"&
+       //"((points_x,points_y), bbands[:,i], (grid_x,grid_y), "&
+       //"method='nearest'))"
+  write(scriptunit,'(a)') "    pl.contour(grid_x,grid_y,"&
        //"bandint[i],[ef],colors='black')"     
 
 end subroutine script_fermi_lines
