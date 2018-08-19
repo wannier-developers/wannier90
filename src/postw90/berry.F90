@@ -535,7 +535,6 @@ module w90_berry
                          if(rdum>berry_curv_adpt_kmesh_thresh) then
                              adpt_counter_list(if)=adpt_counter_list(if)+1
                              ladpt_kmesh = .true.
-                             exit
                          endif
                      enddo
                  else
