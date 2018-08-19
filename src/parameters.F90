@@ -3013,7 +3013,7 @@ contains
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :','       F','|'
        endif
-       if(index(berry_task,'kubo')>0) then
+       if(index(berry_task,'morb')>0) then
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       T','|'
        else
           write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :','       F','|'
