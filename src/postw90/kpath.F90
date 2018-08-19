@@ -408,6 +408,9 @@ contains
                      sum(kpath_len(1:j-1)),")"
              end if
           end do
+          write(pyunit,'(a,f12.6)') "ef=",fermi_energy_list(1)
+          write(pyunit,'(a)') "pl.plot([tick_locs[0],tick_locs[-1]],[ef,ef],"&
+                  //"color='black',linestyle='--',linewidth=0.5)"
           if(kpath_bands_colour=='none') then
              write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
           else if(kpath_bands_colour=='spin'.or.kpath_bands_colour=='shc') then
