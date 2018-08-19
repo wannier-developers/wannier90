@@ -848,8 +848,9 @@ subroutine script_common(scriptunit,areab1b2,square)
   write(scriptunit,'(a)') " "
   write(scriptunit,'(a)') "points = np.loadtxt('"//trim(seedname)//&
        "-kslice-coord.dat')"
-  write(scriptunit,'(a)') "points_x=points[:,0]"
-  write(scriptunit,'(a)') "points_y=points[:,1]"
+  write(scriptunit,'(a)') "# Avoid numerical noise"
+  write(scriptunit,'(a)') "points_x=np.around(points[:,0],decimals=10)"
+  write(scriptunit,'(a)') "points_y=np.around(points[:,1],decimals=10)"
   write(scriptunit,'(a)') "num_pt=len(points)"           
   write(scriptunit,'(a)') " "
   write(scriptunit,'(a,f12.6)') "area=",areab1b2
