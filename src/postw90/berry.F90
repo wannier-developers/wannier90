@@ -140,6 +140,7 @@ module w90_berry
                          file_unit
     character(len=24) :: file_name
     logical           :: eval_ahc,eval_morb,eval_kubo,not_scannable,eval_shc
+    logical           :: ladpt_kmesh
 
     if(nfermi==0) call io_error(&
          'Must specify one or more Fermi levels when berry=true')
@@ -396,21 +397,42 @@ module w90_berry
 
               if (.not. shc_freq_scan) then
                   call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
-                  do if=1,nfermi
-                      rdum=abs(shc_k_fermi(if))
-                      if(rdum>berry_curv_adpt_kmesh_thresh) then
-                          adpt_counter_list(if)=adpt_counter_list(if)+1
-                          do loop_adpt=1,berry_curv_adpt_kmesh**3
-                              ! Using shc_k here would corrupt values for other
-                              ! kpt, hence dummy. Only if-th element is used
-                              call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
-                                      shc_k_fermi_dummy)
-                              shc_fermi(if)=shc_fermi(if)+shc_k_fermi_dummy(if)*kweight_adpt
-                          end do
-                      else
-                          shc_fermi(if)=shc_fermi(if)+shc_k_fermi(if)*kweight
-                      endif
-                  enddo
+                  !check whether need to tigger adpt kmesh or not
+                  !since the computational burden of calculating shc_k at each
+                  !fermi energy is the same as calcuating shc_k at all the
+                  !fermi energies, if we find out that at a specific
+                  !fermi energy shc_k(if) > thresh,
+                  !then we will update shc_k at all
+                  !the other fermi energies as well. This also avoids repeated
+                  !calculation if shc_k(if) > thresh is satisfied at more
+                  !than one fermi energies
+                  ladpt_kmesh = .false.
+                  !if adpt_kmesh==1, no need to do the same kpt
+                  !calculation again. This happens if adpt_kmesh==1
+                  !while berry_curv_adpt_kmesh_thresh is low
+                  if (berry_curv_adpt_kmesh>1) then
+                      do if=1,nfermi
+                          rdum=abs(shc_k_fermi(if))
+                          if(rdum>berry_curv_adpt_kmesh_thresh) then
+                              adpt_counter_list(if)=adpt_counter_list(if)+1
+                              ladpt_kmesh = .true.
+                              exit
+                          endif
+                      enddo
+                  else
+                      ladpt_kmesh = .false.
+                  end if
+                  if (ladpt_kmesh) then
+                      do loop_adpt=1,berry_curv_adpt_kmesh**3
+                          ! Using shc_k here would corrupt values for other
+                          ! kpt, hence dummy. Only if-th element is used
+                          call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
+                                  shc_k_fermi_dummy)
+                          shc_fermi=shc_fermi+kweight_adpt*shc_k_fermi_dummy
+                      end do
+                  else
+                      shc_fermi=shc_fermi+kweight*shc_k_fermi
+                  end if
               else ! freq_scan, no adaptive kmesh
                   call berry_get_shc_k(kpt,shc_k_freq=shc_k_freq)
                   shc_freq = shc_freq + kweight*shc_k_freq
@@ -494,22 +516,42 @@ module w90_berry
 
              if (.not. shc_freq_scan) then
                  call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
-                 do if=1,nfermi
-                     rdum=abs(shc_k_fermi(if))
-                     !TODO if adpt_kmesh=1, will this do the same kpt calculation again? add check adpt_kmesh!=1?
-                     if(rdum>berry_curv_adpt_kmesh_thresh) then
-                         adpt_counter_list(if)=adpt_counter_list(if)+1
-                         do loop_adpt=1,berry_curv_adpt_kmesh**3
-                             ! Using shc_k here would corrupt values for other
-                             ! kpt, hence dummy. Only if-th element is used
-                             call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
-                                     shc_k_fermi_dummy)
-                             shc_fermi(if)=shc_fermi(if)+shc_k_fermi_dummy(if)*kweight_adpt
-                         end do
-                     else
-                        shc_fermi(if)=shc_fermi(if)+shc_k_fermi(if)*kweight
-                     endif
-                 enddo
+                 !check whether need to tigger adpt kmesh or not
+                 !since the computational burden of calculating shc_k at each
+                 !fermi energy is the same as calcuating shc_k at all the
+                 !fermi energies, if we find out that at a specific
+                 !fermi energy shc_k(if) > thresh,
+                 !then we will update shc_k at all
+                 !the other fermi energies as well. This also avoids repeated
+                 !calculation if shc_k(if) > thresh is satisfied at more
+                 !than one fermi energies
+                 ladpt_kmesh = .false.
+                 !if adpt_kmesh==1, no need to do the same kpt
+                 !calculation again. This happens if adpt_kmesh==1
+                 !while berry_curv_adpt_kmesh_thresh is low
+                 if (berry_curv_adpt_kmesh>1) then
+                     do if=1,nfermi
+                         rdum=abs(shc_k_fermi(if))
+                         if(rdum>berry_curv_adpt_kmesh_thresh) then
+                             adpt_counter_list(if)=adpt_counter_list(if)+1
+                             ladpt_kmesh = .true.
+                             exit
+                         endif
+                     enddo
+                 else
+                     ladpt_kmesh = .false.
+                 end if
+                 if (ladpt_kmesh) then
+                     do loop_adpt=1,berry_curv_adpt_kmesh**3
+                         ! Using shc_k here would corrupt values for other
+                         ! kpt, hence dummy. Only if-th element is used
+                         call berry_get_shc_k(kpt(:)+adkpt(:,loop_adpt),&
+                                 shc_k_fermi_dummy)
+                         shc_fermi=shc_fermi+kweight_adpt*shc_k_fermi_dummy
+                     end do
+                 else
+                     shc_fermi=shc_fermi+kweight*shc_k_fermi
+                 end if
              else ! freq_scan, no adaptive kmesh
                  call berry_get_shc_k(kpt,shc_k_freq=shc_k_freq)
                  shc_freq = shc_freq + kweight*shc_k_freq
