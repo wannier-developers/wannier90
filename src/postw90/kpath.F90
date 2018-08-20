@@ -42,7 +42,8 @@ contains
     !! Main routine
 
     use w90_comms
-    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8
+    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8,&
+                                   elem_charge_SI,hbar_SI
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize
@@ -50,7 +51,8 @@ contains
     use w90_parameters, only     : num_wann,kpath_task,&
                                    bands_num_spec_points,bands_label,&
                                    kpath_bands_colour,nfermi,fermi_energy_list,&
-                                   berry_curv_unit,shc_ipol,shc_jpol,shc_spol
+                                   berry_curv_unit,&
+                                   shc_ipol,shc_jpol,shc_spol,cell_volume
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_FF_R,get_SS_R,get_SHC_R
     use w90_spin, only           : spin_get_nk
@@ -67,7 +69,7 @@ contains
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),&
                          range,zmin,zmax
-    real(kind=dp)     :: shc_k_list(num_wann),shc_k_fermi(nfermi)
+    real(kind=dp)     :: shc_k_list(num_wann),shc_k_fermi(nfermi),fac
     real(kind=dp), allocatable, dimension(:) :: kpath_len
     logical           :: plot_bands,plot_curv,plot_morb,plot_shc
     character(len=20) :: file_name
@@ -103,6 +105,7 @@ contains
        call get_AA_R
        call get_SS_R
        call get_SHC_R
+       fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
     end if
 
     if(plot_bands .and. kpath_bands_colour=='spin') call get_SS_R
@@ -180,7 +183,7 @@ contains
              end do
           else if(kpath_bands_colour=='shc') then
               call berry_get_shc_k(kpt,shc_k_list=shc_k_list)
-              my_color(:,loop_kpt)=shc_k_list(:)
+              my_color(:,loop_kpt)=shc_k_list(:)*fac
               !
               ! The following is needed to prevent bands from disappearing
               ! when the magnitude of the Wannier interpolated spn_k (very
@@ -217,7 +220,7 @@ contains
 
        if(plot_shc) then
           call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
-          my_shc(loop_kpt)=shc_k_fermi(1)
+          my_shc(loop_kpt)=shc_k_fermi(1)*fac
        end if
     end do !loop_kpt
 
