@@ -638,7 +638,7 @@ module w90_berry
                    write(stdout, '(1x,a28,3(i0,1x))') &
                            'Adaptive refinement grid: ',&
                             berry_curv_adpt_kmesh,berry_curv_adpt_kmesh,berry_curv_adpt_kmesh
-                   write(stdout, '(1x,a28,a17,f6.2,a)')&
+                   write(stdout, '(1x,a28,a17,f10.2,a)')&
                        'Refinement threshold: ','SHC >',&
                        berry_curv_adpt_kmesh_thresh,' S/cm'
                    if(nfermi==1) then
