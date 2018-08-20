@@ -1433,7 +1433,7 @@ module w90_berry
                                    pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
     use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
     use w90_get_oper, only       : HH_R,AA_R
-    use w90_comms,only           : my_node_id
+    !use w90_comms,only           : my_node_id
     !!!
     use w90_io, only             : io_error,io_file_unit
 
@@ -1465,8 +1465,8 @@ module w90_berry
     real(kind=dp)    :: omega,rfac
     complex(kind=dp) :: prod,cdum,cfac
 
-    write(*,'((a),1x,1I4,1x,3(f9.6,1x))') &
-            'node',my_node_id,kpt(1:3)
+    !write(*,'((a),1x,1I4,1x,3(f9.6,1x))') &
+    !        'node',my_node_id,kpt(1:3)
 
     allocate(HH(num_wann,num_wann))
     allocate(delHH(num_wann,num_wann,3))
@@ -1571,6 +1571,10 @@ module w90_berry
     !  write(*,'(3(f9.6,1x),1I4,1E16.8)') &
     !        kpt(1),kpt(2),kpt(3),i,shc_k(i)
     !end do
+    if (lfermi) then
+        write(*,'(3(f9.6,1x),f16.8,1x,1E16.8)') &
+                kpt(1),kpt(2),kpt(3),fermi_energy_list(1),shc_k_fermi(1)
+    end if
 
     return
 
