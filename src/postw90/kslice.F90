@@ -44,7 +44,7 @@ module w90_kslice
     !! Main routine
 
     use w90_comms
-    use w90_constants,  only     : dp,twopi,eps8
+    use w90_constants,  only     : dp,twopi,eps8,elem_charge_SI,hbar_SI
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize,utility_recip_lattice
@@ -52,7 +52,8 @@ module w90_kslice
     use w90_parameters, only     : num_wann,kslice,kslice_task,kslice_2dkmesh,&
                                    kslice_corner,kslice_b1,kslice_b2,&
                                    kslice_fermi_lines_colour,recip_lattice,&
-                                   nfermi,fermi_energy_list,berry_curv_unit
+                                   nfermi,fermi_energy_list,berry_curv_unit,&
+                                   cell_volume
     use w90_get_oper, only       : get_HH_R,HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_SS_R,get_SHC_R
     use w90_wan_ham, only        : wham_get_eig_deleig
@@ -70,7 +71,7 @@ module w90_kslice
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
                          spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
-                         zhat(3),vdum(3),rdum,shc_k_fermi(nfermi)
+                         zhat(3),vdum(3),rdum,shc_k_fermi(nfermi),fac
     logical           :: plot_fermi_lines,plot_curv,plot_morb,&
                          fermi_lines_color,heatmap,plot_shc
     character(len=40) :: filename,square
@@ -114,6 +115,7 @@ module w90_kslice
        call get_AA_R
        call get_SS_R
        call get_SHC_R
+       fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
     end if
     if(fermi_lines_color) call get_SS_R
 
@@ -255,7 +257,7 @@ module w90_kslice
              my_zdata(:,iloc) = morb(:)
           else if(plot_shc) then
              call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
-             my_zdata(1,iloc) = shc_k_fermi(1)
+             my_zdata(1,iloc) = shc_k_fermi(1)*fac
           end if
 
        end do !iloc
