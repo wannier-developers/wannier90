@@ -1,0 +1,10 @@
+&PARAMS
+    seed__name = "gaas",
+    mp_grid_loc(1) = 4,
+    mp_grid_loc(2) = 4,
+    mp_grid_loc(3) = 4,
+    num_bands_tot = 17,
+    gamma_only_loc = .false.,
+    spinors_loc = .false.,
+!    verbosity = 'high'
+/
