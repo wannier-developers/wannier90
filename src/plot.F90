@@ -299,8 +299,7 @@ contains
     ! Write out information on high-symmetry points in the path
     !
     bndunit=io_file_unit()
-    open(bndunit,file=trim(seedname)//'_band.labelinfo.kpt',form='formatted')
-    write(bndunit,*) bands_num_spec_points
+    open(bndunit,file=trim(seedname)//'_band.labelinfo.dat',form='formatted')
     do loop_spts=1,bands_num_spec_points
        if ( (MOD(loop_spts, 2) .eq. 1) .and. (kpath_print_first_point((loop_spts+1)/2).eqv..false.)) cycle
        write(bndunit,'(a,3x,I10,3x,4f18.10)') &
