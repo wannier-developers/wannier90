@@ -99,27 +99,28 @@ program test_library
 
     integer :: num_nodes, my_node_id
 
-    logical :: verbose
+    logical :: verbose 
 
     NAMELIST / PARAMS / seed__name, mp_grid_loc, num_bands_tot, gamma_only_loc, spinors_loc, verbosity
 
 #ifdef MPI
+  include 'mpif.h'
 
     call mpi_init(ierr)
     if (ierr.ne.0) then
-        write(stderr, '(/a/)') 'MPI initialisation error'
+        write(0, '(/a/)') '# MPI initialisation error'
         stop 1
     end if
 
     call mpi_comm_rank(mpi_comm_world, my_node_id, ierr)
     call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
     if (my_node_id == 0) then
-        if (verbose) print*, "COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
+        print*, "# COMPILED IN PARALLEL, RUNNING ON ", num_nodes, " NODES"
     end if
 #else
     num_nodes=1
     my_node_id=0
-    if (verbose) print*, "COMPILED IN SERIAL"
+    print*, "# COMPILED IN SERIAL"
 #endif
     
     verbosity = 'low'
@@ -133,7 +134,7 @@ program test_library
     elseif (TRIM(verbosity) == 'low') then
         verbose = .false.
     else
-        write(0,*) "INVALID VERBOSITY VALUE, can be only 'low' or 'high'"
+        write(0,*) "# INVALID VERBOSITY VALUE, can be only 'low' or 'high'"
         stop 1
     end if
 
@@ -144,12 +145,12 @@ program test_library
     READ(100,*) num_atoms_loc
     allocate(atom_symbols_loc(num_atoms_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(atoms_cart_loc(3,num_atoms_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     READ(100,*) atom_symbols_loc
@@ -177,91 +178,91 @@ program test_library
     CLOSE(100)
    
     if (verbose) then
-        print*, "INPUTS READ."
+        print*, "# INPUTS READ."
 
-        print*, 'seed_name:', trim(seed__name)
-        print*, 'num_atoms_loc:', num_atoms_loc
-        print*, 'num_kpts_loc:', num_kpts_loc
-        print*, 'num_nnmax:', num_nnmax
-        print*, 'num_bands_tot:', num_bands_tot
+        print*, '#seed_name:', trim(seed__name)
+        print*, '#num_atoms_loc:', num_atoms_loc
+        print*, '#num_kpts_loc:', num_kpts_loc
+        print*, '#num_nnmax:', num_nnmax
+        print*, '#num_bands_tot:', num_bands_tot
     end if
 
     allocate(nnlist_loc(num_kpts_loc,num_nnmax),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(nncell_loc(3,num_kpts_loc,num_nnmax),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_site_loc(3,num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_l_loc(num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_m_loc(num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_radial_loc(num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_z_loc(3,num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_x_loc(3,num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_zona_loc(num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(exclude_bands_loc(num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_s_loc(num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(proj_s_qaxis_loc(3,num_bands_tot),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
 
     if (verbose) then
-        print*, 'seed_name:', trim(seed__name)
-        print*, 'mp_grid_loc:', mp_grid_loc
-        print*, 'num_kpts_loc:', num_kpts_loc
-        print*, 'real_lattice_loc(vec1):', real_lattice_loc(1,:)
-        print*, 'real_lattice_loc(vec2):', real_lattice_loc(2,:)
-        print*, 'real_lattice_loc(vec3):', real_lattice_loc(3,:)
-        !print*, 'recip_lattice_loc(vec1):', recip_lattice_loc(:,1)
-        !print*, 'recip_lattice_loc(vec2):', recip_lattice_loc(:,2)
-        !print*, 'recip_lattice_loc(vec3):', recip_lattice_loc(:,3)
-        !print*, 'kpt_latt_loc:', kpt_latt_loc
-        !print*, 'atom_symbols_loc:', atom_symbols_loc
-        !print*, 'atoms_cart_loc:', atoms_cart_loc
-        print*, 'gamma_only_loc:', gamma_only_loc
-        print*, 'spinors_loc:', spinors_loc
+        print*, '#seed_name:', trim(seed__name)
+        print*, '#mp_grid_loc:', mp_grid_loc
+        print*, '#num_kpts_loc:', num_kpts_loc
+        print*, '#real_lattice_loc(vec1):', real_lattice_loc(1,:)
+        print*, '#real_lattice_loc(vec2):', real_lattice_loc(2,:)
+        print*, '#real_lattice_loc(vec3):', real_lattice_loc(3,:)
+        !print*, '#recip_lattice_loc(vec1):', recip_lattice_loc(:,1)
+        !print*, '#recip_lattice_loc(vec2):', recip_lattice_loc(:,2)
+        !print*, '#recip_lattice_loc(vec3):', recip_lattice_loc(:,3)
+        !print*, '#kpt_latt_loc:', kpt_latt_loc
+        !print*, '#atom_symbols_loc:', atom_symbols_loc
+        !print*, '#atoms_cart_loc:', atoms_cart_loc
+        print*, '#gamma_only_loc:', gamma_only_loc
+        print*, '#spinors_loc:', spinors_loc
     end if  
 
     call wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
@@ -272,26 +273,26 @@ program test_library
         proj_x_loc,proj_zona_loc,exclude_bands_loc,proj_s_loc,proj_s_qaxis_loc)
 
     if (verbose) then
-        print*, "WANNIER_SETUP CALLED."
+        print*, "# WANNIER_SETUP CALLED."
 
-        print*, "nntot_loc", nntot_loc
-        !print*, "nnlist_loc", nnlist_loc
-        !print*, "nncell_loc", nncell_loc
-        print*, 'num_bands_loc:', num_bands_loc
-        print*, 'num_wann_loc:', num_wann_loc
-        !print*, 'proj_site_loc:', proj_site_loc
+        print*, "# nntot_loc", nntot_loc
+        !print*, "# nnlist_loc", nnlist_loc
+        !print*, "# nncell_loc", nncell_loc
+        print*, '#num_bands_loc:', num_bands_loc
+        print*, '#num_wann_loc:', num_wann_loc
+        !print*, '#proj_site_loc:', proj_site_loc
     end if 
         
     allocate(M_matrix_loc(num_bands_loc,num_bands_loc,nntot_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     M_matrix_loc = 0.
 
     allocate(A_matrix_loc(num_bands_loc,num_wann_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     A_matrix_loc = 0.
@@ -304,26 +305,26 @@ program test_library
         open(unit=mmn_in,file=trim(seed__name)//'.mmn',&
                 form='formatted',status='old',action='read',err=101)
                 
-        if (verbose) write(stdout,'(/a)',advance='no') ' Reading overlaps from '//trim(seed__name)//'.mmn    : '
+        if (verbose) write(stdout,'(/a)',advance='no') '# Reading overlaps from '//trim(seed__name)//'.mmn    : '
     
         ! Read the comment line
         read(mmn_in,'(a)',err=103,end=103) dummy
-        if (verbose) write(stdout,'(a)') trim(dummy)
+        if (verbose) write(stdout,'(a)') '# '//trim(dummy)
     
         ! Read the number of bands, k-points and nearest neighbours
         read(mmn_in,*,err=103,end=103) nb_tmp,nkp_tmp,nntot_tmp
     
         ! Checks
         if (nb_tmp.ne.num_bands_loc) then
-            write(stdout,'(/a/)') trim(seed__name)//'.mmn has not the right number of bands'
+            write(stdout,'(/a/)') '# '//trim(seed__name)//'.mmn has not the right number of bands'
             stop 1
         end if
         if (nkp_tmp.ne.num_kpts_loc) then
-            write(stdout, '(/a/)') trim(seed__name)//'.mmn has not the right number of k-points'
+            write(stdout, '(/a/)') '# '//trim(seed__name)//'.mmn has not the right number of k-points'
             stop 1
         end if
         if (nntot_tmp.ne.nntot_loc) then
-            write(stdout, '(/a/)') trim(seed__name)//'.mmn has not the right number of nearest neighbours'
+            write(stdout, '(/a/)') '# '//trim(seed__name)//'.mmn has not the right number of nearest neighbours'
             stop 1
         end if  
     
@@ -331,7 +332,7 @@ program test_library
         num_mmn=num_kpts_loc*nntot_loc
         allocate(mmn_tmp(num_bands_loc,num_bands_loc),stat=ierr)
         if (ierr/=0) then
-            write(stdout, '(/a/)') 'Error in allocating mmn_tmp in overlap_read'
+            write(stdout, '(/a/)') '# Error in allocating mmn_tmp in overlap_read'
             stop 1
         end if
         do ncount = 1, num_mmn
@@ -353,7 +354,7 @@ program test_library
                         nn_found=.true.
                         nn=inn
                     else
-                        write(stdout,'(/a/)') 'Error reading '//trim(seed__name)// &
+                        write(stdout,'(/a/)') '# Error reading '//trim(seed__name)// &
                             '.mmn. More than one matching nearest neighbour found'
                         stop 1
                     endif
@@ -361,23 +362,23 @@ program test_library
             end do
             if (nn.eq.0) then
                 write(stdout,'(/a,i8,2i5,i4,2x,3i3)') &
-                    ' Error reading '//trim(seed__name)//'.mmn, Neighbor not found:', &
+                    '# Error reading '//trim(seed__name)//'.mmn, Neighbor not found:', &
                     ncount,nkp,nkp2,nn,nnl,nnm,nnn
 
                 !do i=1, num_kpts_loc
                 !    write(stdout, *) nnlist_loc(i, :)
                 !end do
 
-                write(stdout, *) 'nkp:', nkp
-                write(stdout, *) 'nkp2:', nkp2
+                write(stdout, *) '# nkp:', nkp
+                write(stdout, *) '# nkp2:', nkp2
                 do inn=1, nntot_loc
-                    write(stdout, '(a,I1,a,I10,a)', advance='no') 'nnlist(nkp,', inn, '):', nnlist_loc(nkp, inn), '  ---> '
-                    write(stdout, '(a,I1,a,3I5)') 'nncell(nkp,', inn, ',:):', nncell_loc(:,nkp,inn)
+                    write(stdout, '(a,I1,a,I10,a)', advance='no') '# nnlist(nkp,', inn, '):', nnlist_loc(nkp, inn), '  ---> '
+                    write(stdout, '(a,I1,a,3I5)') '# nncell(nkp,', inn, ',:):', nncell_loc(:,nkp,inn)
                 enddo
 
-                write(stdout, *) 'KPOINTS:'
+                write(stdout, *) '# KPOINTS:'
                 do i=1, num_kpts_loc
-                    write(stdout, '(3G18.10)') kpt_latt_loc(:, i)
+                    write(stdout, '(A,3G18.10)') '#', kpt_latt_loc(:, i)
                 END DO
                 !write(stdout, *) '_____'
                 !write(stdout, *) nncell_loc
@@ -387,7 +388,7 @@ program test_library
         end do
         deallocate(mmn_tmp,stat=ierr)
         if (ierr/=0) then
-            write(stdout,'(/a/)') 'Error in deallocating mmn_tmp in overlap_read'
+            write(stdout,'(/a/)') '# Error in deallocating mmn_tmp in overlap_read'
             stop 1
         end if
         close(mmn_in)
@@ -398,7 +399,7 @@ program test_library
     call MPI_bcast(m_matrix_loc(1,1,1,1),num_bands_loc*num_bands_loc*nntot_loc*num_kpts_loc,&
         MPI_double_complex, root_id, mpi_comm_world, ierr)    
     if(ierr.ne.MPI_success) then
-        write(stdout,'(/a/)') 'Error in comms_bcast_cmplx'
+        write(stdout,'(/a/)') '# Error in comms_bcast_cmplx'
         stop 1
     end if
 #endif
@@ -407,26 +408,26 @@ program test_library
         amn_in=100 ! Unit number
         open(unit=amn_in,file=trim(seed__name)//'.amn',form='formatted',status='old',err=102)
         
-        if (verbose) write(stdout,'(/a)',advance='no') ' Reading projections from '//trim(seed__name)//'.amn : '
+        if (verbose) write(stdout,'(/a)',advance='no') '# Reading projections from '//trim(seed__name)//'.amn : '
         
         ! Read the comment line
         read(amn_in,'(a)',err=104,end=104) dummy
-        if (verbose) write(stdout,'(a)') trim(dummy)
+        if (verbose) write(stdout,'(a)') '# '// trim(dummy)
         
         ! Read the number of bands, k-points and wannier functions
         read(amn_in,*,err=104,end=104) nb_tmp, nkp_tmp, nw_tmp
         
         ! Checks
         if (nb_tmp.ne.num_bands_loc) then
-            write(stdout, '(/a/)') trim(seed__name)//'.amn has not the right number of bands'
+            write(stdout, '(/a/)') '# '//trim(seed__name)//'.amn has not the right number of bands'
             stop 1
         end if  
         if (nkp_tmp.ne.num_kpts_loc) then
-            write(stdout, '(/a/)') trim(seed__name)//'.amn has not the right number of k-points'
+            write(stdout, '(/a/)') '# '//trim(seed__name)//'.amn has not the right number of k-points'
             stop 1
         end if
         if (nw_tmp.ne.num_wann_loc) then
-            write(stdout, '(/a/)') trim(seed__name)//'.amn has not the right number of Wannier functions'
+            write(stdout, '(/a/)') '# '//trim(seed__name)//'.amn has not the right number of Wannier functions'
             stop 1
         end if
         
@@ -443,14 +444,14 @@ program test_library
     call MPI_bcast(a_matrix_loc(1,1,1),num_bands_loc*num_wann_loc*num_kpts_loc,&
         MPI_double_complex, root_id, mpi_comm_world, ierr)    
     if(ierr.ne.MPI_success) then
-        write(stdout,'(/a/)') 'Error in comms_bcast_cmplx'
+        write(stdout,'(/a/)') '# Error in comms_bcast_cmplx'
         stop 1
     end if
 #endif
 
     allocate(eigenvalues_loc(num_bands_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     OPEN(unit=100, file='EIG', status='old', action='read')
@@ -463,31 +464,31 @@ program test_library
 
     allocate(U_matrix_loc(num_wann_loc,num_wann_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(U_matrix_opt_loc(num_bands_loc,num_wann_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(lwindow_loc(num_bands_loc,num_kpts_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(wann_centres_loc(3,num_wann_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
     allocate(wann_spreads_loc(num_wann_loc),stat=ierr)
     if (ierr/=0) then
-        write(0,*) "ERROR DURING ALLOCATION"
+        write(0,*) "# ERROR DURING ALLOCATION"
         stop 1
     end if
 
-    if (verbose) print*, "SECOND ALLOCATION PHASE COMPLETED."
+    if (verbose) print*, "# SECOND ALLOCATION PHASE COMPLETED."
 
     call wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
         real_lattice_loc,recip_lattice_loc,kpt_latt_loc,num_bands_loc, &
@@ -496,17 +497,26 @@ program test_library
         U_matrix_loc,U_matrix_opt_loc,lwindow_loc,wann_centres_loc, &
         wann_spreads_loc,spread_loc)
 
-    if (verbose) print*, "WANNIER_RUN CALLED."
+    if (verbose) print*, "# WANNIER_RUN CALLED."
+
+    print*, "# Wannier run completed without errors."
+
+    OPEN(unit=123, file='results.dat', action='write')
+    do i=1, num_wann_loc
+        write(123, '(4G18.10)') wann_centres_loc(:, i), wann_spreads_loc(i)
+    end do
+    CLOSE(123)
+    print*, "# MLWF centre_x centre_y centre_z spread writte in results.dat"
 
     stop
 
-    101    write(stdout, '(/a/)') 'Error: Problem opening input file .mmn'
+    101    write(stdout, '(/a/)') '# Error: Problem opening input file .mmn'
     stop 1
-    102    write(stdout, '(/a/)') 'Error: Problem opening input file .amn'
+    102    write(stdout, '(/a/)') '# Error: Problem opening input file .amn'
     stop 1
-    103    write(stdout, '(/a/)') 'Error: Problem reading input file .mmn'
+    103    write(stdout, '(/a/)') '# Error: Problem reading input file .mmn'
     stop 1
-    104    write(stdout, '(/a/)') 'Error: Problem reading input file .amn'
+    104    write(stdout, '(/a/)') '# Error: Problem reading input file .amn'
     stop 1
 
 end program test_library
