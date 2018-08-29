@@ -27,6 +27,7 @@ module w90_overlap
   private
 
 !~  public :: overlap_dis_read
+  public :: overlap_allocate
   public :: overlap_read
   public :: overlap_dealloc
   public :: overlap_project
@@ -35,12 +36,63 @@ module w90_overlap
 
 contains
 
+
+    !%%%%%%%%%%%%%%%%%%%%%
+    subroutine overlap_allocate( )
+    !%%%%%%%%%%%%%%%%%%%%%
+        !! Allocate memory to read Mmn and Amn from files
+        !! This must be called before calling overlap_read
+
+        use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, timing_level, &
+            u_matrix, m_matrix_orig, m_matrix_orig_local, a_matrix, &
+            u_matrix_opt, m_matrix, m_matrix_local
+        use w90_io,         only : io_error, io_stopwatch
+        use w90_comms, only: my_node_id, num_nodes, comms_array_split
+
+        integer :: ierr
+        ! Needed to split an array on different nodes
+        integer, dimension(0:num_nodes-1) :: counts
+        integer, dimension(0:num_nodes-1) :: displs
+
+        if (timing_level>0) call io_stopwatch('overlap: allocate',1)
+
+        call comms_array_split(num_kpts,counts,displs)
     
+        allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
+        if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
+        u_matrix = cmplx_0
+    
+        if (disentanglement) then
+           if (on_root) then
+           allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
+           if (ierr/=0) call io_error('Error in allocating m_matrix_orig in overlap_read')
+           endif
+           allocate(m_matrix_orig_local(num_bands,num_bands,nntot,counts(my_node_id)),stat=ierr)
+           if (ierr/=0) call io_error('Error in allocating m_matrix_orig_local in overlap_read')
+           allocate(a_matrix(num_bands,num_wann,num_kpts),stat=ierr)
+           if (ierr/=0) call io_error('Error in allocating a_matrix in overlap_read')
+           allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
+           if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
+        else
+           if (on_root) then
+           allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
+           if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
+           m_matrix = cmplx_0
+           endif
+           allocate ( m_matrix_local( num_wann,num_wann,nntot,counts(my_node_id)),stat=ierr)
+           if (ierr/=0) call io_error('Error in allocating m_matrix_local in overlap_read')
+           m_matrix_local = cmplx_0
+        endif
+    
+        if (timing_level>0) call io_stopwatch('overlap: allocate',2)
+
+    end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_read( )
   !%%%%%%%%%%%%%%%%%%%%%
-    !! Allocate and read the Mmn and Amn from files
+    !! Read the Mmn and Amn from files
+    !! Note: one needs to call overlap_allocate first!
 
     use w90_parameters, only : num_bands, num_wann, num_kpts, nntot, nncell, nnlist,&
                            devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
@@ -68,33 +120,6 @@ contains
 
     call comms_array_split(num_kpts,counts,displs)
 
-    allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
-    if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
-    u_matrix = cmplx_0
-
-    if (disentanglement) then
-       if (on_root) then
-       allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating m_matrix_orig in overlap_read')
-       endif
-       allocate(m_matrix_orig_local(num_bands,num_bands,nntot,counts(my_node_id)),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating m_matrix_orig_local in overlap_read')
-       allocate(a_matrix(num_bands,num_wann,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating a_matrix in overlap_read')
-       allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
-    else
-       if (on_root) then
-       allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
-       m_matrix = cmplx_0
-       endif
-       allocate ( m_matrix_local( num_wann,num_wann,nntot,counts(my_node_id)),stat=ierr)
-       if (ierr/=0) call io_error('Error in allocating m_matrix_local in overlap_read')
-       m_matrix_local = cmplx_0
-    endif
-
-    
     if (disentanglement) then
        if (on_root) then
        m_matrix_orig = cmplx_0
@@ -103,7 +128,6 @@ contains
        a_matrix      = cmplx_0
        u_matrix_opt  = cmplx_0
     endif
-
 
     if(on_root) then
 
