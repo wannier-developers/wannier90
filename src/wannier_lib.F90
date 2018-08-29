@@ -58,6 +58,14 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
      proj_x_loc,proj_zona_loc,exclude_bands_loc,proj_s_loc,proj_s_qaxis_loc)
 
+  !! This routine should be called first from a code calling the library
+  !! mode to setup all the variables.
+  !! NOTE! The library mode currently works ONLY in serial (when called from
+  !! a parallel code, make sure to run it only on 1 MPI process)
+  !! 
+  !! For more information, check a (minimal) example of how it can be used
+  !! in the folder test-suite/library-mode-test/test_library.F90
+
   use w90_constants
   use w90_parameters
   use w90_io
@@ -222,6 +230,13 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      U_matrix_loc,U_matrix_opt_loc,lwindow_loc,wann_centres_loc, &
      wann_spreads_loc,spread_loc)
 
+  !! This routine should be called after wannier_setup from a code calling 
+  !! the library mode to actually run the Wannier code.
+  !! NOTE! The library mode currently works ONLY in serial (when called from
+  !! a parallel code, make sure to run it only on 1 MPI process)
+  !! 
+  !! For more information, check a (minimal) example of how it can be used
+  !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_constants
   use w90_parameters
