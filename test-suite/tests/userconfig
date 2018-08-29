@@ -31,6 +31,11 @@ exe = ../../wannier90.x
 extract_fn = tools parsers.parse_bvec.parse
 tolerance = ( (1.0e-5, 1.0e-5, 'size'))
 
+[WANNIER90_CUBE]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_cube.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'origin'))
+
 [POSTW90_GENINTERPDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_geninterp_dat.parse
