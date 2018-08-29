@@ -450,6 +450,19 @@ interpolated band structure, in units of the reciprocal lattice
 vectors. This file can be used to generate a comparison band structure
 from a first-principles code.
 
+\section{{\tt seedname\_band.labelinfo.dat}}
+OUTPUT. Written if {\tt bands\_plot=.TRUE.}; Information on the high-symmetry
+point locations and labels used in the band plot of interpolated band structure.
+It contains one line per high-symmetry point. If the last point of a path segment
+is identical to the first of the next segment (both label and coordinates), the 
+point is not repeated twice. Each line consists of six components: the label of
+the k-point as specified in input (truncated to 20 characters, and converted
+to capital letters); the index in the {{\tt seedname\_band.kpt}}
+(1 is the first point) corresponding to this high-symmetry point, 
+the $x$ value that is used in the {{\tt seedname\_band.dat}} for this point,
+and the three coordinates of the k-point (same units as the 
+{{\tt seedname\_band.kpt}} file).
+
 \section{{\tt seedname.bxsf}}
 OUTPUT. Written if {\tt fermi\_surface\_plot=.TRUE.}; A Fermi surface plot file
 suitable for plotting with XCrySDen.
