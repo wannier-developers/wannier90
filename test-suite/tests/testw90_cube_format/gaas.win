@@ -43,7 +43,6 @@ end kpoints
 !should be used on production runs
 wvfn_formatted=.true.
 
-restart = plot
 wannier_plot = true
 wannier_plot_list = 1
 wannier_plot_supercell = 2
