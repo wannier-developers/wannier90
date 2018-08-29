@@ -1,0 +1,4 @@
+1. I took the example gaas.win with the amn, mmn, eig files
+2. I run it (important to have the devel_flag inside!) to create the AMN, EIG and MMN files. The other files (CELL, KPOINTS, PARAMS, POSITIONS) were created instead "by hand" from the .win file
+
+To test, run ./run.sh that creates the w90 library, then creates the executable using the library, and then runs it.
