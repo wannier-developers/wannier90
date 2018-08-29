@@ -25,8 +25,7 @@ librarytest: COMPILER = $(TEMP2)
 librarytest: test_library_serial.x
 
 test_library_serial.x: test_library.F90 $(LIBRARY)
-	$(COMPILER) $< $(POSTOPTS) $(LDOPTS) $(LIBS) $(LIBRARY) -o $@
-#	$(F90) -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace -fPIC $< ../../libwannier.a -lblas -llapack -o $@
+	$(COMPILER) $< $(POSTOPTS) $(LDOPTS) $(LIBRARY) $(LIBS) -o $@
 
 clean:
 	rm -f test_library_serial.x *~
