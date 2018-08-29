@@ -378,7 +378,7 @@ module w90_parameters
   real(kind=dp),     public, save :: real_metric(3,3)
   real(kind=dp),     public, save :: recip_metric(3,3)
   integer,           public, save :: bands_num_spec_points  
-  character(len=1), allocatable,    public, save ::bands_label(:)
+  character(len=20), allocatable,    public, save ::bands_label(:)
   real(kind=dp), allocatable,    public, save ::bands_spec_points(:,:)
   real(kind=dp), allocatable,    public, save ::kpt_cart(:,:) !kpoints in cartesians
   logical,           public, save :: disentanglement
@@ -2410,7 +2410,7 @@ contains
 
     implicit none
 
-    integer :: nsp,ic,loop
+    integer :: nsp,ic,loop,inner_loop
 
     ! Atom labels (eg, si --> Si)
     do nsp=1,num_species
@@ -2428,9 +2428,11 @@ contains
 
     ! Bands labels (eg, x --> X)
     do loop=1,bands_num_spec_points
-       ic=ichar(bands_label(loop))                           
+      do inner_loop=1, len(bands_label(loop))
+       ic=ichar(bands_label(loop)(inner_loop:inner_loop))
        if ((ic.ge.ichar('a')).and.(ic.le.ichar('z'))) &
-            bands_label(loop) = char(ic+ichar('Z')-ichar('z'))
+            bands_label(loop)(inner_loop:inner_loop) = char(ic+ichar('Z')-ichar('z'))
+      enddo
     enddo
 
     ! Length unit (ang --> Ang, bohr --> Bohr)
@@ -2696,7 +2698,7 @@ contains
              write(stdout,'(1x,a78)') '|     None defined                                                           |'
           else
              do loop=1,bands_num_spec_points,2
-                write(stdout,'(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:',bands_label(loop),&
+                write(stdout,'(1x,a10,1x,a5,1x,3F7.3,5x,a3,1x,a5,1x,3F7.3,3x,a1)') '|    From:',bands_label(loop),&
                      (bands_spec_points(i,loop),i=1,3),'To:',bands_label(loop+1),(bands_spec_points(i,loop+1),i=1,3),'|'
              end do
           end if
