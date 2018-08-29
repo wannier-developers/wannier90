@@ -1,0 +1,22 @@
+OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
+	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o
+
+OBJSLIB  =  wannier_lib.o
+
+OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
+             postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o  kpath.o kslice.o boltzwann.o geninterp.o
+
+LIBRARY = ../../libwannier.a
+
+## Dynamic library section
+## Define some defaults (good for linux) if none is defined in the make.inc
+## Different flags are needed depending on the compiler and on the OS
+## (e.g. on Mac, it's -dynamiclib and the extension if .dylib - even if
+## calling it .so and using -shared often works equally well)
+## NOTE: if you want to compile the dynamic library, you have to compile
+## everything with -fPIC usually, on 64bit systems
+DYNLIBRARYEXTENSION ?= so
+SHAREDLIBFLAGS ?= '-shared'
+
+## Define the filename
+DYNLIBRARY = ../../libwannier.$(DYNLIBRARYEXTENSION)
