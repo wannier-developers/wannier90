@@ -18,7 +18,7 @@ env:
 install:
 # Install Wannier
     - ./test-suite/tools/configure_travis_compilation.sh
-    - make -j default w90chk2chk
+    - make -j default w90chk2chk libs
 script:
     - ./test-suite/tools/run_tests_travis.sh
 git:
