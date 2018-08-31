@@ -58,10 +58,19 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
      proj_site_loc,proj_l_loc,proj_m_loc,proj_radial_loc,proj_z_loc, &
      proj_x_loc,proj_zona_loc,exclude_bands_loc,proj_s_loc,proj_s_qaxis_loc)
 
+  !! This routine should be called first from a code calling the library
+  !! mode to setup all the variables.
+  !! NOTE! The library mode currently works ONLY in serial (when called from
+  !! a parallel code, make sure to run it only on 1 MPI process)
+  !! 
+  !! For more information, check a (minimal) example of how it can be used
+  !! in the folder test-suite/library-mode-test/test_library.F90
+
   use w90_constants
   use w90_parameters
   use w90_io
   use w90_kmesh
+  use w90_comms, only: comms_setup_vars
  
   implicit none
 
@@ -101,6 +110,8 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
 
   time0=io_time()
 
+  call comms_setup_vars
+
   library=.true.
 !  seedname="wannier"
   seedname=trim(adjustl(seed__name))
@@ -133,10 +144,13 @@ subroutine wannier_setup(seed__name,mp_grid_loc,num_kpts_loc,&
   gamma_only=gamma_only_loc
   spinors=spinors_loc
 
-  ! AAM_2016-09-14: initialise num_bands as it's used in param_read()
-  ! RM_2018-03-21: num_exclude_bands is now subtracted below
-  num_bands = num_bands_tot - num_exclude_bands
+  ! GP: at this point we don't know yet the number of excluded bands...
+  num_bands = num_bands_tot
+  library_param_read_first_pass = .true.
   call param_read()
+  ! Following calls will all NOT be first_pass, and I need to pass 
+  ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
+  library_param_read_first_pass = .false.
   ! set cell_volume as it is written to output in param_write
   cell_volume = real_lattice(1,1)*(real_lattice(2,2)*real_lattice(3,3)-real_lattice(3,2)*real_lattice(2,3)) +&
                 real_lattice(1,2)*(real_lattice(2,3)*real_lattice(3,1)-real_lattice(3,3)*real_lattice(2,1)) +& 
@@ -216,6 +230,13 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
      U_matrix_loc,U_matrix_opt_loc,lwindow_loc,wann_centres_loc, &
      wann_spreads_loc,spread_loc)
 
+  !! This routine should be called after wannier_setup from a code calling 
+  !! the library mode to actually run the Wannier code.
+  !! NOTE! The library mode currently works ONLY in serial (when called from
+  !! a parallel code, make sure to run it only on 1 MPI process)
+  !! 
+  !! For more information, check a (minimal) example of how it can be used
+  !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_constants
   use w90_parameters
@@ -227,6 +248,8 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   use w90_wannierise
   use w90_plot
   use w90_transport
+  use w90_comms, only : my_node_id, num_nodes,&
+      comms_array_split, comms_scatterv
 
   implicit none
 
@@ -260,8 +283,12 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
 
   integer :: nkp,nn,n,m
 
-  time0=io_time()
+! Needed to split an array on different nodes
+  integer, dimension(0:num_nodes-1) :: counts
+  integer, dimension(0:num_nodes-1) :: displs
 
+  time0=io_time()
+  
   library=.true.
 !  seedname="wannier"
   seedname=trim(adjustl(seed__name))
@@ -311,20 +338,8 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   time2=io_time()
   write(stdout,'(1x,a25,f11.3,a)') 'Time to get kmesh        ',time2-time1,' (sec)'
 
-  allocate ( u_matrix( num_wann,num_wann,num_kpts),stat=ierr)
-  if (ierr/=0) call io_error('Error in allocating u_matrix in overlap_read')
-  
-  if (disentanglement) then
-     allocate(m_matrix_orig(num_bands,num_bands,nntot,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating m_matrix_orig in overlap_read')
-     allocate(a_matrix(num_bands,num_wann,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating a_matrix in overlap_read')
-     allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating u_matrix_opt in overlap_read')
-  else
-     allocate ( m_matrix( num_wann,num_wann,nntot,num_kpts),stat=ierr)
-     if (ierr/=0) call io_error('Error in allocating m_matrix in overlap_read')
-  endif
+  call comms_array_split(num_kpts,counts,displs)
+  call overlap_allocate()
     
   if (disentanglement) then
      m_matrix_orig = m_matrix_loc
@@ -334,6 +349,16 @@ subroutine wannier_run(seed__name,mp_grid_loc,num_kpts_loc, &
   else
      m_matrix=m_matrix_loc
      u_matrix=a_matrix_loc
+  endif
+
+  ! IMPORTANT NOTE: _loc are variables local to this function, passed in as variables
+  ! Instead, _local are variables local to the MPI process.
+  if(disentanglement) then
+      call comms_scatterv(m_matrix_orig_local,num_bands*num_bands*nntot*counts(my_node_id),&
+                          m_matrix_orig,num_bands*num_bands*nntot*counts,num_bands*num_bands*nntot*displs)
+  else
+      call comms_scatterv(m_matrix_local,num_wann*num_wann*nntot*counts(my_node_id),&
+                          m_matrix,num_wann*num_wann*nntot*counts,num_wann*num_wann*nntot*displs)
   endif
 
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
