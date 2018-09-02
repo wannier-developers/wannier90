@@ -6152,6 +6152,7 @@ contains
     end if
 
     call comms_bcast(num_proj, 1)
+    call comms_bcast(lhasproj,1)
     if(lhasproj) then
       if (.not. on_root) then
         allocate (proj_site(3, num_proj), stat=ierr)
