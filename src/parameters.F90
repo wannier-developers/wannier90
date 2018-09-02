@@ -639,6 +639,7 @@ contains
     call param_get_range_vector('select_projections',found,num_select_projections,lcount=.true.)
     if(found) then
        if(num_select_projections<1) call io_error('Error: problem reading select_projections')
+       if (allocated(select_projections)) deallocate(select_projections)
        allocate(select_projections(num_select_projections),stat=ierr)
        if (ierr/=0) call io_error('Error allocating select_projections in param_read')
        call param_get_range_vector('select_projections',found,num_select_projections,.false.,select_projections)
@@ -653,6 +654,7 @@ contains
        lselproj = .true.
     end if
 
+    if (allocated(proj2wann_map)) deallocate(proj2wann_map)
     allocate(proj2wann_map(num_proj),stat=ierr)
     if (ierr/=0) call io_error('Error allocating proj2wann_map in param_read')
     proj2wann_map = -1
