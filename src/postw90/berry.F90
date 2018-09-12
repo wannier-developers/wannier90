@@ -88,7 +88,9 @@ module w90_berry
                                    wanint_kpoint_file,cell_volume,transl_inv,&
                                    berry_task,berry_curv_unit,spin_decomp,&
                                    kubo_nfreq,kubo_freq_list,nfermi,&
-                                   fermi_energy_list,shc_freq_scan
+                                   fermi_energy_list,shc_freq_scan,&
+                                   kubo_adpt_smr,kubo_adpt_smr_fac,&
+                                   kubo_adpt_smr_max,kubo_smr_fixed_en_width
     use w90_get_oper, only       : get_HH_R,get_AA_R,get_BB_R,get_CC_R,&
                                    get_SS_R,get_SHC_R
 
@@ -659,6 +661,15 @@ module w90_berry
            else
                if(.not.wanint_kpoint_file) write(stdout, '(1x,a20,3(i0,1x))')&
                        'Interpolation grid: ',berry_kmesh(1:3)
+           endif
+           write(stdout,'(a)') ''
+           write(stdout,'(1x,a28,l)') 'adaptive smearing = ',kubo_adpt_smr
+           if(kubo_adpt_smr) then
+               write(stdout,'(1x,a28,f8.3)') ' adpt_smr_fac = ',kubo_adpt_smr_fac
+               write(stdout,'(1x,a28,f8.3)') ' adpt_smr_max = ',kubo_adpt_smr_max
+           else
+               write(stdout,'(1x,a28,f8.3)') ' kubo_smr_fixed_en_width = ',&
+                            &kubo_smr_fixed_en_width
            endif
        else
           if(.not.wanint_kpoint_file) write(stdout, '(1x,a20,3(i0,1x))')&
