@@ -654,7 +654,8 @@ contains
       do i = 1, num_paths - 1
         write (gnuunit, 705) sum(kpath_len(1:i)), emin, sum(kpath_len(1:i)), emax
       enddo
-    write(gnuunit,702, advance="no") TRIM(glabel(1)),0.0_dp,(TRIM(glabel(i+1)),sum(kpath_len(1:i)),i=1,bands_num_spec_points/2-1)
+      write (gnuunit, 702, advance="no") TRIM(glabel(1)), 0.0_dp, &
+        (TRIM(glabel(i + 1)), sum(kpath_len(1:i)), i=1, bands_num_spec_points/2 - 1)
       write (gnuunit, 703) TRIM(glabel(1 + bands_num_spec_points/2)), sum(kpath_len(:))
       write (gnuunit, *) 'plot ', '"'//trim(seedname)//'_band.dat', '"'
       close (gnuunit)
@@ -672,7 +673,8 @@ contains
         write (gnuunit, '(a)') 'set view 0,0'
         write (gnuunit, '(a,f9.5,a)') 'set xrange [0:', xval(total_pts), ']'
         write (gnuunit, '(a,f9.5,a,f9.5,a)') 'set yrange [', emin, ':', emax, ']'
-        write (gnuunit, 702, advance="no") glabel(1), 0.0_dp, (glabel(i + 1), sum(kpath_len(1:i)), i=1, bands_num_spec_points/2 - 1)
+        write (gnuunit, 702, advance="no") glabel(1), 0.0_dp, &
+          (glabel(i + 1), sum(kpath_len(1:i)), i=1, bands_num_spec_points/2 - 1)
         write (gnuunit, 703) glabel(1 + bands_num_spec_points/2), sum(kpath_len(:))
 
         write (gnuunit, '(a,a,a,a)') 'splot ', '"'//trim(seedname)//'_band.dat', '"', ' u 1:2:3 w p pt 13 palette'
@@ -1148,16 +1150,21 @@ contains
             do loop_b = 1, num_wann
               do loop_w = 1, num_wannier_plot
                 if (.not. spinors) then
-                  wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w) + &
-                                                  u_matrix(loop_b, wannier_plot_list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
+                  wann_func(nxx, nyy, nzz, loop_w) = &
+                    wann_func(nxx, nyy, nzz, loop_w) + &
+                    u_matrix(loop_b, wannier_plot_list(loop_w), loop_kpt)*r_wvfn(npoint, loop_b)*catmp
                 else
-                  wann_func_nc(nxx, nyy, nzz, 1, loop_w) = wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
-                                            u_matrix(loop_b, wannier_plot_list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
-                  wann_func_nc(nxx, nyy, nzz, 2, loop_w) = wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
-                                            u_matrix(loop_b, wannier_plot_list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
+                  wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
+                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
+                    u_matrix(loop_b, wannier_plot_list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
+                  wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
+                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
+                    u_matrix(loop_b, wannier_plot_list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
                   if (loop_b == num_wann) then ! last loop
-                    upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)*conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
-                    dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)*conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
+                    upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
+                                    conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
+                    dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
+                                    conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
                     if (wannier_plot_spinor_phase) then
                       upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
                       dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))

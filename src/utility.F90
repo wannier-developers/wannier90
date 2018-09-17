@@ -1192,17 +1192,13 @@ contains
     elseif (ax > 4.0_dp) then
       x2 = x**2
       xm2 = (1.0_dp/ax)**2
-      qe_erfc = (1.0_dp/ax)*exp(-x2)*(pim1 + xm2*(p3(1) &
-                                                  + xm2*(p3(2) + xm2*(p3(3) + xm2*(p3(4) + xm2*p3(5) &
-                                                                                   ))))/(q3(1) + xm2*(q3(2) + xm2*(q3(3) + xm2* &
-                                                                                                             (q3(4) + xm2*q3(5))))))
+      qe_erfc = (1.0_dp/ax)*exp(-x2)*(pim1 + xm2*(p3(1) + xm2*(p3(2) + xm2*(p3(3) + xm2*(p3(4) + xm2*p3(5)))))/ &
+                                      (q3(1) + xm2*(q3(2) + xm2*(q3(3) + xm2*(q3(4) + xm2*q3(5))))))
     elseif (ax > 0.47_dp) then
       x2 = x**2
-      qe_erfc = exp(-x2)*(p2(1) + ax*(p2(2) + ax*(p2(3) &
-                                                  + ax*(p2(4) + ax*(p2(5) + ax*(p2(6) + ax*(p2(7) &
-                                                                                        + ax*p2(8))))))))/(q2(1) + ax*(q2(2) + ax* &
-                                                                                  (q2(3) + ax*(q2(4) + ax*(q2(5) + ax*(q2(6) + ax* &
-                                                                                                            (q2(7) + ax*q2(8))))))))
+      qe_erfc = exp(-x2)* &
+                (p2(1) + ax*(p2(2) + ax*(p2(3) + ax*(p2(4) + ax*(p2(5) + ax*(p2(6) + ax*(p2(7) + ax*p2(8))))))))/ &
+                (q2(1) + ax*(q2(2) + ax*(q2(3) + ax*(q2(4) + ax*(q2(5) + ax*(q2(6) + ax*(q2(7) + ax*q2(8))))))))
     else
       qe_erfc = 1.0_dp - qe_erf(ax)
     endif
