@@ -573,8 +573,10 @@ contains
       ! Self-energy (Sigma_R^r) : sRr = (hB1)   * tot
       sLr = cmplx_0
       sRr = cmplx_0
- call ZGEMM('C', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, c1, tran_num_bb, tott, tran_num_bb, cmplx_0, sLr, tran_num_bb)
-  call ZGEMM('N', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, c1, tran_num_bb, tot, tran_num_bb, cmplx_0, sRr, tran_num_bb)
+      call ZGEMM('C', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, c1, &
+                 tran_num_bb, tott, tran_num_bb, cmplx_0, sLr, tran_num_bb)
+      call ZGEMM('N', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, c1, &
+                 tran_num_bb, tot, tran_num_bb, cmplx_0, sRr, tran_num_bb)
 
       ! Gamma_L = i(Sigma_L^r-Sigma_L^a)
       gL = cmplx_i*(sLr - conjg(transpose(sLr)))
@@ -585,11 +587,14 @@ contains
       s2 = cmplx_0
       c1 = cmplx_0
       ! s1 = Gamma_L * g_B^r
-   call ZGEMM('N', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, gL, tran_num_bb, g_B, tran_num_bb, cmplx_0, s1, tran_num_bb)
+      call ZGEMM('N', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, gL, &
+                 tran_num_bb, g_B, tran_num_bb, cmplx_0, s1, tran_num_bb)
       ! s2 = Gamma_L * g_B^r * Gamma_R
-    call ZGEMM('N', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, s1, tran_num_bb, gR, tran_num_bb, cmplx_0, s2, tran_num_bb)
+      call ZGEMM('N', 'N', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, s1, &
+                 tran_num_bb, gR, tran_num_bb, cmplx_0, s2, tran_num_bb)
       ! c1 = Gamma_L * g_B^r * Gamma_R * g_B^a
-   call ZGEMM('N', 'C', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, s2, tran_num_bb, g_B, tran_num_bb, cmplx_0, c1, tran_num_bb)
+      call ZGEMM('N', 'C', tran_num_bb, tran_num_bb, tran_num_bb, cmplx_1, s2, &
+                 tran_num_bb, g_B, tran_num_bb, cmplx_0, c1, tran_num_bb)
 
       qc = 0.0_dp
       do i = 1, tran_num_bb
@@ -838,7 +843,9 @@ contains
       ! g_C^-1 = -H - Sigma_L^r - Sigma_R^r
       do j = (tran_num_cc - tran_num_cr) + 1, tran_num_cc
         do i = max((tran_num_cc - tran_num_cr) + 1, j - (tran_num_cr - 1)), min(tran_num_cc, j + (tran_num_cr - 1))
-             g_C_inv(KL+KU+1+i-j,j)=g_C_inv(KL+KU+1+i-j,j)-sRr(i-(tran_num_cc-tran_num_cr),j-(tran_num_cc-tran_num_cr))
+          g_C_inv(KL + KU + 1 + i - j, j) = &
+            g_C_inv(KL + KU + 1 + i - j, j) - &
+            sRr(i - (tran_num_cc - tran_num_cr), j - (tran_num_cc - tran_num_cr))
         end do
       end do
 
@@ -1927,7 +1934,8 @@ contains
       write (fmt_1, '(i5)') size(central_region_groups)
       fmt_1 = adjustl(fmt_1)
       fmt_1 = '(a5,i5,a2,'//trim(fmt_1)//'i4,a1)'
- write (stdout, fmt_1) '     ', size(central_region_groups), ' (', (central_region_groups(j), j=1, size(central_region_groups)), ')'
+      write (stdout, fmt_1) '     ', size(central_region_groups), ' (', &
+        (central_region_groups(j), j=1, size(central_region_groups)), ')'
     endif
     !
     !Returns sorted central group region
@@ -2020,7 +2028,8 @@ contains
     cell_length = real_lattice(coord(1), coord(1))
     sort_iterator2 = 1
     do i = 1, tran_num_ll
-     distance = abs(abs(reference_position - wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1))) - cell_length)
+      distance = abs(abs(reference_position - wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1))) &
+                     - cell_length)
       if (distance .lt. tran_group_threshold) then
         wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1)) = &
           wannier_centres_translated(coord(1), tran_sorted_idx(num_wann - i + 1)) - cell_length
@@ -3025,7 +3034,9 @@ contains
       if (i == 1) then !Do diagonal only
         do j = 1, num_wann_cell_ll
           do k = 1, num_wann_cell_ll
-         sub_block(j, k) = hr_one_dim(tran_sorted_idx(num_wann - tran_num_ll + j), tran_sorted_idx((i - 1)*num_wann_cell_ll + k), 0)
+            sub_block(j, k) = hr_one_dim( &
+                              tran_sorted_idx(num_wann - tran_num_ll + j), &
+                              tran_sorted_idx((i - 1)*num_wann_cell_ll + k), 0)
           enddo
         enddo
         !
@@ -3033,7 +3044,8 @@ contains
         !
         do j = 1, tran_num_cell_ll - i + 1
           hL1((j - 1)*num_wann_cell_ll + 1:j*num_wann_cell_ll, &
-              (j - 1)*num_wann_cell_ll + 1 + (i - 1)*num_wann_cell_ll:j*num_wann_cell_ll + (i - 1)*num_wann_cell_ll) = sub_block
+              (j - 1)*num_wann_cell_ll + 1 + (i - 1)*num_wann_cell_ll:j*num_wann_cell_ll + (i - 1)* &
+              num_wann_cell_ll) = sub_block
         enddo
       endif
     enddo
@@ -3104,7 +3116,8 @@ contains
       if (i == 1) then  !Do diagonal only
         do j = 1, num_wann_cell_ll
           do k = 1, num_wann_cell_ll
-         sub_block(j, k) = hr_one_dim(tran_sorted_idx((i - 1)*num_wann_cell_ll + k), tran_sorted_idx(num_wann - tran_num_ll + j), 0)
+            sub_block(j, k) = hr_one_dim(tran_sorted_idx((i - 1)*num_wann_cell_ll + k), &
+                                         tran_sorted_idx(num_wann - tran_num_ll + j), 0)
           enddo
         enddo
         !

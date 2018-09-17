@@ -756,13 +756,15 @@ contains
             a = alpha_A(ab)
             b = beta_A(ab)
             do c = 1, 3
-              gyro_NOA_orb(ab, c, ifermi, :) = gyro_NOA_orb(ab, c, ifermi, :) + &
-                                           multWm(:)*real(AA(l, n, b)*Bnl_orb(n1, l1, a, c) - AA(l, n, a)*Bnl_orb(n1, l1, b, c)) + &
-                                               multWe(:)*(del_eig(n, c) + del_eig(l, c))*imag(AA(n, l, a)*AA(l, n, b))
+              gyro_NOA_orb(ab, c, ifermi, :) = &
+                gyro_NOA_orb(ab, c, ifermi, :) + &
+                multWm(:)*real(AA(l, n, b)*Bnl_orb(n1, l1, a, c) - AA(l, n, a)*Bnl_orb(n1, l1, b, c)) + &
+                multWe(:)*(del_eig(n, c) + del_eig(l, c))*imag(AA(n, l, a)*AA(l, n, b))
 
               if (present(gyro_NOA_spn)) &
-                gyro_NOA_spn(ab, c, ifermi, :) = gyro_NOA_spn(ab, c, ifermi, :) + &
-                                             multWm(:)*real(AA(l, n, b)*Bnl_spin(n1, l1, a, c) - AA(l, n, a)*Bnl_spin(n1, l1, b, c))
+                gyro_NOA_spn(ab, c, ifermi, :) = &
+                gyro_NOA_spn(ab, c, ifermi, :) + &
+                multWm(:)*real(AA(l, n, b)*Bnl_spin(n1, l1, a, c) - AA(l, n, a)*Bnl_spin(n1, l1, b, c))
 
             enddo ! c
           enddo ! ab
