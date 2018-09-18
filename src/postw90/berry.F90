@@ -417,7 +417,7 @@ module w90_berry
                           rdum=abs(shc_k_fermi(if))
                           if(berry_curv_unit=='bohr2') rdum=rdum/bohr**2
                           if(rdum>berry_curv_adpt_kmesh_thresh) then
-                              adpt_counter_list(if)=adpt_counter_list(if)+1
+                              adpt_counter_list(1)=adpt_counter_list(1)+1
                               ladpt_kmesh = .true.
                               exit
                           endif
@@ -515,7 +515,7 @@ module w90_berry
           endif
 
           if(eval_shc) then
-            ! be aware that index starts from 1 
+             ! be aware that index starts from 1
 
              if (.not. shc_freq_scan) then
                  call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
@@ -537,8 +537,9 @@ module w90_berry
                          rdum=abs(shc_k_fermi(if))
                          if(berry_curv_unit=='bohr2') rdum=rdum/bohr**2
                          if(rdum>berry_curv_adpt_kmesh_thresh) then
-                             adpt_counter_list(if)=adpt_counter_list(if)+1
+                             adpt_counter_list(1)=adpt_counter_list(1)+1
                              ladpt_kmesh = .true.
+                             exit
                          endif
                      enddo
                  else
@@ -599,6 +600,7 @@ module w90_berry
            call comms_reduce(shc_freq(1),kubo_nfreq,'SUM')
        else
            call comms_reduce(shc_fermi(1),nfermi,'SUM')
+           call comms_reduce(adpt_counter_list(1),nfermi,'SUM')
        end if
     end if
     
