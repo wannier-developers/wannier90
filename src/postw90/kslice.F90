@@ -44,7 +44,7 @@ module w90_kslice
     !! Main routine
 
     use w90_comms
-    use w90_constants,  only     : dp,twopi,eps8,elem_charge_SI,hbar_SI
+    use w90_constants,  only     : dp,twopi,eps8
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize,utility_recip_lattice
@@ -71,7 +71,7 @@ module w90_kslice
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),curv(3),morb(3),&
                          spn_k(num_wann),del_eig(num_wann,3),Delta_k,Delta_E,&
-                         zhat(3),vdum(3),rdum,shc_k_fermi(nfermi),fac
+                         zhat(3),vdum(3),rdum,shc_k_fermi(nfermi)
     logical           :: plot_fermi_lines,plot_curv,plot_morb,&
                          fermi_lines_color,heatmap,plot_shc
     character(len=40) :: filename,square
@@ -115,7 +115,6 @@ module w90_kslice
        call get_AA_R
        call get_SS_R
        call get_SHC_R
-       fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
     end if
     if(fermi_lines_color) call get_SS_R
 
@@ -257,7 +256,7 @@ module w90_kslice
              my_zdata(:,iloc) = morb(:)
           else if(plot_shc) then
              call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
-             my_zdata(1,iloc) = shc_k_fermi(1)*fac
+             my_zdata(1,iloc) = shc_k_fermi(1)
           end if
 
        end do !iloc
@@ -368,6 +367,7 @@ module w90_kslice
              write(stdout,'(/,3x,a)') filename
              open(dataunit,file=filename,form='formatted')
              if (plot_shc) then
+                if(berry_curv_unit=='bohr2') zdata=zdata/bohr**2
                 do loop_kpt=1,nkpts
                    write(dataunit,'(1E16.8)') zdata(1,loop_kpt)
                 end do
@@ -757,8 +757,13 @@ end subroutine k_slice
        if(nfermi/=1) call io_error(&
             'Must specify one Fermi level when kslice_task=morb')
     elseif(plot_shc) then
-       write(stdout,'(/,3x,a)')&
-               '* Spin Hall conductivity k-space integrand in eV.Ang^2'
+       if(berry_curv_unit=='ang2') then
+          write(stdout,'(/,3x,a)') '* Berry curvature-like term '&
+          //'of spin Hall conductivity in Ang^2'
+       elseif(berry_curv_unit=='bohr2') then
+          write(stdout,'(/,3x,a)') '* Berry curvature-like term '&
+          //'of spin Hall conductivity in Bohr^2'
+       endif
        if(nfermi/=1) call io_error(&
                'Must specify one Fermi level when kslice_task=shc')
     endif
