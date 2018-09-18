@@ -415,6 +415,7 @@ module w90_berry
                   if (berry_curv_adpt_kmesh>1) then
                       do if=1,nfermi
                           rdum=abs(shc_k_fermi(if))
+                          if(berry_curv_unit=='bohr2') rdum=rdum/bohr**2
                           if(rdum>berry_curv_adpt_kmesh_thresh) then
                               adpt_counter_list(if)=adpt_counter_list(if)+1
                               ladpt_kmesh = .true.
@@ -534,6 +535,7 @@ module w90_berry
                  if (berry_curv_adpt_kmesh>1) then
                      do if=1,nfermi
                          rdum=abs(shc_k_fermi(if))
+                         if(berry_curv_unit=='bohr2') rdum=rdum/bohr**2
                          if(rdum>berry_curv_adpt_kmesh_thresh) then
                              adpt_counter_list(if)=adpt_counter_list(if)+1
                              ladpt_kmesh = .true.
@@ -640,9 +642,17 @@ module w90_berry
                    write(stdout, '(1x,a28,3(i0,1x))') &
                            'Adaptive refinement grid: ',&
                             berry_curv_adpt_kmesh,berry_curv_adpt_kmesh,berry_curv_adpt_kmesh
-                   write(stdout, '(1x,a28,a17,f10.2,a)')&
-                       'Refinement threshold: ','SHC >',&
-                       berry_curv_adpt_kmesh_thresh,' S/cm'
+                   if(berry_curv_unit=='ang2') then
+                       write(stdout, '(1x,a28,a17,f6.2,a)')&
+                               'Refinement threshold: ','Berry curvature'&
+                               //'-like term >',&
+                               berry_curv_adpt_kmesh_thresh,' Ang^2'
+                   elseif(berry_curv_unit=='bohr2') then
+                       write(stdout, '(1x,a28,a17,f6.2,a)')&
+                               'Refinement threshold: ','Berry curvature'&
+                               //'-like term >',&
+                               berry_curv_adpt_kmesh_thresh,' bohr^2'
+                   endif
                    if(nfermi==1) then
                        if(wanint_kpoint_file) then
                            write(stdout,'(1x,a30,i5,a,f5.2,a)')&
@@ -966,10 +976,27 @@ module w90_berry
        !
        if(eval_shc) then
            !
-           ! Convert to S/cm
-           !fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
-           !fac=elem_charge_SI*hbar_SI/cell_volume
-           fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+           ! Convert to the unit: (hbar/e) S/cm
+           ! at this point, we need to
+           ! (i)   divide the result by hbar to recover the
+           !       velocity operator v_jpol, and multiply
+           !       -e to recover the charge current, so the
+           !       overall effect is -e/hbar
+           ! (ii)  divide the result by hbar to recover the
+           !       velocity operator v_ipol, and multiply
+           !       hbar/2 to recover the spin current, and
+           !       then multiply -2e/hbar to convert the spin
+           !       current to charge current, so the overall
+           !       effect is -e/hbar
+           ! (iii) multiply -hbar/(V*N_k) as in the QZYZ Equ.(2),
+           !       note 1/N_k is done by the kweight
+           ! (iv)  multiply (-1/2)*1e8 to convert it to the
+           !       unit hbar/e S/cm
+           ! so, the overall factor is
+           !    fac = 1.0e8 * e^2 / hbar / V / 2.0
+           ! and the final unit is (hbar/e) S/cm
+           !
+           fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)/2.0_dp
            if (shc_freq_scan) then
                shc_freq=shc_freq*fac
            else
@@ -1422,7 +1449,16 @@ module w90_berry
   !====================================================================!
   !                                                                    !
   !! Contribution from point k to the Spin Hall conductivity
-  !! \sigma_{ipol,jpol}^{spol}(k), ipol,jpol,spol=1,2,3 (x,y,z,respectively)
+  !!    \sigma_{ipol,jpol}^{spol}(k), ipol,jpol,spol=1,2,3
+  !!                                                (x,y,z,respectively)
+  !! i.e. the Berry curvature-like term of QZYZ Equ.(3).
+  !! The unit is angstrom^2.
+  !
+  !  Note the unit of berry_get_js_k() has not multiplied hbar/2
+  !  to recover spin current, and has not divided by hbar to recover
+  !  the velocity operator. The second velocity operator should be
+  !  divided by hbar as well. But these two hbar are canceled by
+  !  the preceding hbar^2 of QZYZ Equ.(3).
   !
   !    shc_k_fermi: return a list with different fermi energies
   !    shc_k_freq: return a list with different frequency
@@ -1431,7 +1467,7 @@ module w90_berry
   !   Junfeng Qiao (18/8/2018)                                         !
   !====================================================================!
 
-    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi,hbar_SI
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_diagonalize,utility_rotate,utility_w0gauss
     use w90_parameters, only     : num_wann,kubo_eigval_max,&
                                    kubo_nfreq,kubo_freq_list,&
@@ -1599,13 +1635,14 @@ module w90_berry
   !====================================================================!
   !                                                                    !
   !! Contribution from point k to the
-  !!    < \psi_k | 1/2 * (s_z v_x + v_x s_z) | \psi_k >
-  !
+  !!    < \psi_k | 1/2 * (sigma_z v_x + v_x sigma_z) | \psi_k >
+
+  !  QZYZ Equ.(22) without hbar/2
   !  Junfeng Qiao (8/7/2018)
   !                                                                    !
   !====================================================================!
 
-    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi
+    use w90_constants, only      : dp,cmplx_0,cmplx_i
     use w90_utility, only        : utility_diagonalize,utility_rotate,utility_w0gauss
     use w90_parameters, only     : num_wann,kubo_eigval_max,&
                                    ipol=>shc_ipol,spol=>shc_spol
@@ -1640,20 +1677,20 @@ module w90_berry
     js_k = cmplx_0
 
     !=========== S_k ===========
-    ! < u_k | s_spol | u_k >
+    ! < u_k | sigma_spol | u_k >, QZYZ Equ.(24)
     !call spin_get_SS_k(kpt,spol,S_k)
     call pw90common_fourier_R_to_k_new(kpt,SS_R(:,:,:,spol),OO=S_w)
     S_k(:,:)=utility_rotate(S_w,UU,num_wann)
 
     !=========== K_k ===========
-    ! < u_k | s_spol | \partial_ipol u_k >
+    ! < u_k | sigma_spol | \partial_ipol u_k >, QZYZ Equ.(25)
     call pw90common_fourier_R_to_k_vec(kpt,SR_R(:,:,:,spol,:),OO_true=SR)
     SR_i = -cmplx_i * utility_rotate(SR(:,:,ipol),UU,num_wann)
     K_k = SR_i + matmul(S_k,D_i_h) !
 
 
     !=========== L_k ===========
-    ! < u_k | s_spol.H | \partial_ipol u_k >
+    ! < u_k | sigma_spol.H | \partial_ipol u_k >, QZYZ Equ.(26)
     call pw90common_fourier_R_to_k_vec(kpt,SHR_R(:,:,:,spol,:),OO_true=SHR)
     SHR_i = -cmplx_i * utility_rotate(SHR(:,:,ipol),UU,num_wann)
     call pw90common_fourier_R_to_k_vec(kpt,SH_R,OO_true=SH)
@@ -1662,7 +1699,7 @@ module w90_berry
 
 
     !=========== B_k ===========
-    ! < \psi_nk | s_z v_x | \psi_mk >
+    ! < \psi_nk | sigma_z v_x | \psi_mk >, QZYZ Equ.(21)
     B_k = cmplx_0
     do i=1,num_wann
         eig_mat(i,:) = eig(:)
@@ -1673,10 +1710,12 @@ module w90_berry
 
 
     !=========== Js_k ===========
+    ! QZYZ Equ.(22)
     ! note the S in SR_R,SHR_R,SH_R of get_SHC_R is sigma,
-    ! we need to multiply it by hbar/2, and this is
-    ! cancelled by 1/hbar so only 1/2 is left
-    js_k = 1.0_dp/4.0_dp * (B_k + conjg(transpose(B_k)))
+    ! to get spin current, we need to multiply it by hbar/2,
+    ! also we need to divide it by hbar to recover the velocity
+    ! operator, these are done outside of this subroutine
+    js_k = 1.0_dp/2.0_dp * (B_k + conjg(transpose(B_k)))
 
   end subroutine berry_get_js_k
 

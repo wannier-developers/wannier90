@@ -17,10 +17,12 @@ module w90_kpath
   !! Calculates quantities along a specified k-path:
   !! 
   !!  - Energy bands (eventually colored by the spin) 
-  !!  - Energy bands (colored by the SHC)
+  !!  - Energy bands (colored by the Berry curvature-like
+  !!                  term of spin Hall conductivity)
   !!
   !!  - (Berry curvature)x(-1) summed over occupied bands
-  !!  - Spin Hall conductivity(SHC)
+  !!  - Berry curvature-like term of spin Hall conductivity
+  !!    summed over occupied bands
   !!
   !!  - Integrand of orbital magnetization Morb=LCtil+ICtil
 
@@ -42,8 +44,7 @@ contains
     !! Main routine
 
     use w90_comms
-    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8,&
-                                   elem_charge_SI,hbar_SI
+    use w90_constants,  only     : dp,cmplx_0,cmplx_i,twopi,eps8
     use w90_io,         only     : io_error,io_file_unit,seedname,&
                                    io_time,io_stopwatch,stdout
     use w90_utility, only        : utility_diagonalize
@@ -69,7 +70,7 @@ contains
                          imf_k_list(3,3,nfermi),img_k_list(3,3,nfermi),&
                          imh_k_list(3,3,nfermi),Morb_k(3,3),&
                          range,zmin,zmax
-    real(kind=dp)     :: shc_k_list(num_wann),shc_k_fermi(nfermi),fac
+    real(kind=dp)     :: shc_k_list(num_wann),shc_k_fermi(nfermi)
     real(kind=dp), allocatable, dimension(:) :: kpath_len
     logical           :: plot_bands,plot_curv,plot_morb,plot_shc
     character(len=20) :: file_name
@@ -105,7 +106,6 @@ contains
        call get_AA_R
        call get_SS_R
        call get_SHC_R
-       fac=1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
     end if
 
     if(plot_bands .and. kpath_bands_colour=='spin') call get_SS_R
@@ -183,19 +183,7 @@ contains
              end do
           else if(kpath_bands_colour=='shc') then
               call berry_get_shc_k(kpt,shc_k_list=shc_k_list)
-              my_color(:,loop_kpt)=shc_k_list(:)*fac
-              !
-              ! The following is needed to prevent bands from disappearing
-              ! when the magnitude of the Wannier interpolated spn_k (very
-              ! slightly) exceeds 1.0 (e.g. in bcc Fe along N--G--H)
-              !
-              !do n=1,num_wann
-              !    if(my_color(n,loop_kpt)>1.0_dp-eps8) then
-              !        my_color(n,loop_kpt)=1.0_dp-eps8
-              !    else if(my_color(n,loop_kpt)<-1.0_dp+eps8) then
-              !        my_color(n,loop_kpt)=-1.0_dp+eps8
-              !    end if
-              !end do
+              my_color(:,loop_kpt)=shc_k_list(:)
           end if
        end if
 
@@ -220,9 +208,10 @@ contains
 
        if(plot_shc) then
           call berry_get_shc_k(kpt,shc_k_fermi=shc_k_fermi)
-          my_shc(loop_kpt)=shc_k_fermi(1)*fac
+          my_shc(loop_kpt)=shc_k_fermi(1)
        end if
     end do !loop_kpt
+
 
     ! Send results to root process
     if(plot_bands) then
@@ -278,6 +267,13 @@ contains
           close(dataunit)
        end if
        if(plot_curv .and. berry_curv_unit=='bohr2') curv=curv/bohr**2
+
+       if(plot_bands .and. kpath_bands_colour=='shc') then
+           if(berry_curv_unit=='bohr2') color=color/bohr**2
+       end if
+       if(plot_shc) then
+           if(berry_curv_unit=='bohr2') shc=shc/bohr**2
+       end if
 
        ! Axis labels
        !
@@ -694,9 +690,17 @@ contains
            write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
                    //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
                    //"linestyle='-',linewidth=0.5)"
-           write(pyunit,'(a)') "pl.ylabel('$\sigma_{"//achar(119+shc_ipol)&
-                   //achar(119+shc_jpol)//"}^{"//achar(119+shc_spol)//"}"&
-                   //"(\mathbf{k})$  [ $(S cm)^{-1}$ ]')"
+           if(berry_curv_unit=='ang2') then
+               write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
+                       //achar(119+shc_ipol)//achar(119+shc_jpol)&
+                       //"}^{spin"//achar(119+shc_spol)&
+                       //"}(\mathbf{k})$  [ $\AA^2$ ]')"
+           else if(berry_curv_unit=='bohr2') then
+               write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
+                       //achar(119+shc_ipol)//achar(119+shc_jpol)&
+                       //"}^{spin"//achar(119+shc_spol)&
+                       //"}(\mathbf{k})$  [ bohr$^2$ ]')"
+           end if
            write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                    "-shc"//".pdf'"
            write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
@@ -779,9 +783,17 @@ contains
            write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
                    //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
                    //"linestyle='-',linewidth=0.5)"
-           write(pyunit,'(a)') "pl.ylabel('$-\sigma_{"//achar(119+shc_ipol)&
-                   //achar(119+shc_jpol)//"^"//achar(119+shc_spol)//"}"&
-                   //"(\mathbf{k})$  [ $\AA^2$ ]')"
+           if(berry_curv_unit=='ang2') then
+               write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
+                       //achar(119+shc_ipol)//achar(119+shc_jpol)&
+                       //"}^{spin"//achar(119+shc_spol)&
+                       //"}(\mathbf{k})$  [ $\AA^2$ ]')"
+           else if(berry_curv_unit=='bohr2') then
+               write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
+                       //achar(119+shc_ipol)//achar(119+shc_jpol)&
+                       //"}^{spin"//achar(119+shc_spol)&
+                       //"}(\mathbf{k})$  [ bohr$^2$ ]')"
+           end if
            write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
                    "-bands+shc"//".pdf'"
            write(pyunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
@@ -953,8 +965,13 @@ contains
                'Must specify one Fermi level when kpath_task=morb')
        end if
        if(plot_shc) then
-          write(stdout,'(/,3x,a)')&
-                  '* Spin Hall conductivity k-space integrand in eV.Ang^2'
+          if(berry_curv_unit=='ang2') then
+              write(stdout,'(/,3x,a)') '* Berry curvature-like term for'&
+              //'spin Hall conductivity in Ang^2'
+          else if(berry_curv_unit=='bohr2') then
+              write(stdout,'(/,3x,a)') '* Berry curvature-like term for'&
+              //'spin Hall conductivity in Bohr^2'
+          endif
           if(nfermi/=1) call io_error(&
                   'Must specify one Fermi level when kpath_task=shc')
        end if
