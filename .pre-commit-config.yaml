@@ -6,3 +6,5 @@
     exclude: (?x)^(
         pwscf/.*
       )$
+    verbose: true
+
