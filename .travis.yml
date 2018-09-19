@@ -22,7 +22,7 @@ install:
     - if [ "$RUNTESTS" == "true" ] ; then ./test-suite/tools/configure_travis_compilation.sh ; fi
     - if [ "$RUNTESTS" == "true" ] ; then make -j default w90chk2chk libs ; fi
 script:
-    - if [ "$RUNPRECOMMIT" == "true" ] ; then ./test-suite/run_precommit.sh ; fi
+    - if [ "$RUNPRECOMMIT" == "true" ] ; then ./test-suite/tools/run_precommit.sh ; fi
     - if [ "$RUNTESTS" == "true" ] ; then ./test-suite/tools/run_tests_travis.sh ; fi
 git:
   depth: 3
