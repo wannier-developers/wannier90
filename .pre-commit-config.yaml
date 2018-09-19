@@ -7,4 +7,5 @@
         pwscf/.*
       )$
     verbose: true
+    entry: ./test-suite/tools/fprettify-wrapper.py
 
