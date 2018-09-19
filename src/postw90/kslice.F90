@@ -847,6 +847,8 @@ subroutine script_common(scriptunit,areab1b2,square)
   real(kind=dp), intent(in) :: areab1b2
   character(len=25)         :: square
 
+  write(scriptunit,'(a)') "#import matplotlib"
+  write(scriptunit,'(a)') "#matplotlib.use('Agg')"
   write(scriptunit,'(a)') "import pylab as pl"
   write(scriptunit,'(a)') "import numpy as np"
   write(scriptunit,'(a)') "import matplotlib.mlab as ml"
