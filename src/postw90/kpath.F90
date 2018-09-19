@@ -967,10 +967,10 @@ contains
        if(plot_shc) then
           if(berry_curv_unit=='ang2') then
               write(stdout,'(/,3x,a)') '* Berry curvature-like term for'&
-              //'spin Hall conductivity in Ang^2'
+              //' spin Hall conductivity in Ang^2'
           else if(berry_curv_unit=='bohr2') then
               write(stdout,'(/,3x,a)') '* Berry curvature-like term for'&
-              //'spin Hall conductivity in Bohr^2'
+              //' spin Hall conductivity in Bohr^2'
           endif
           if(nfermi/=1) call io_error(&
                   'Must specify one Fermi level when kpath_task=shc')
