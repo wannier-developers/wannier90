@@ -729,12 +729,12 @@ module w90_kslice
                           "-kslice-shc.dat', usecols=(0,))"
           write(scriptunit,'(a)') " "
           write(scriptunit,'(a)')&
-                  "#val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
+                  "val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
                           &if abs(elem)>10 else elem/10.0 for elem in val])"
-          write(scriptunit,'(a)') "val_log = val"
+          write(scriptunit,'(a)') "#val_log = val"
           write(scriptunit,'(a)') "valmax=max(val)"
           write(scriptunit,'(a)') "valmin=min(val)"
-          write(scriptunit,'(a)') "cmnew=shiftedColorMap(matplotlib.cm.bwr,"&
+          write(scriptunit,'(a)') "#cmnew=shiftedColorMap(matplotlib.cm.bwr,"&
                   //"0,1-valmax/(valmax+abs(valmin)),1)"
           write(scriptunit,'(a)') " "
           write(scriptunit,'(a)') "if square: "
@@ -746,7 +746,7 @@ module w90_kslice
                   //"ticks,origin='lower')"
           write(scriptunit,'(a)') "  pl.imshow(Z,origin='lower',"&
                   //"extent=(min(x_coord),max(x_coord),min(y_coord),"&
-                  //"max(y_coord)),cmap=cmnew)"
+                  //"max(y_coord)))#,cmap=cmnew)"
           write(scriptunit,'(a)') "else: "
           write(scriptunit,'(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
           write(scriptunit,'(a)') "  valint = interpolate.griddata((points_x,"&
@@ -756,7 +756,7 @@ module w90_kslice
           write(scriptunit,'(a)') "  ticks=range(mn,mx+1)"
           write(scriptunit,'(a)') "  #pl.contourf(xint,yint,valint,ticks)"
           write(scriptunit,'(a)') "  pl.imshow(valint,origin='lower',"&
-                  //"extent=(min(xint),max(xint),min(yint),max(yint)),"&
+                  //"extent=(min(xint),max(xint),min(yint),max(yint)))#,"&
                   //"cmap=cmnew)"
           write(scriptunit,'(a)') " "
           write(scriptunit,'(a)') "ticklabels=[]"
