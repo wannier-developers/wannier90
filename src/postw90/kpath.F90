@@ -110,8 +110,13 @@ contains
 
     if(plot_bands .and. kpath_bands_colour=='spin') call get_SS_R
 
+    if(on_root.and.plot_bands.and.kpath_bands_colour=='shc') then
+        write(stdout,'(a)') 'WARNING: we advice using smearing when '&
+                //"kpath_bands_colour = 'shc', use with care if you set "&
+                //"kubo_adpt_smr = .false. and  kubo_smr_fixed_en_width = 0"
+    end if
+
     if(on_root) then
-        !TODO check *.win have kpath block or not! otherwise seg fault
        ! Determine the number of k-points (total_pts) as well as
        ! their reciprocal-lattice coordinates long the path (plot_kpoint)
        ! and their associated horizontal coordinate for the plot (xval)
