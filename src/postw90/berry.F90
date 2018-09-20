@@ -645,14 +645,12 @@ module w90_berry
                            'Adaptive refinement grid: ',&
                             berry_curv_adpt_kmesh,berry_curv_adpt_kmesh,berry_curv_adpt_kmesh
                    if(berry_curv_unit=='ang2') then
-                       write(stdout, '(1x,a28,a17,f6.2,a)')&
-                               'Refinement threshold: ','Berry curvature'&
-                               //'-like term >',&
+                       write(stdout, '(1x,a28,f6.2,a)')&
+                               'Refinement threshold: ',&
                                berry_curv_adpt_kmesh_thresh,' Ang^2'
                    elseif(berry_curv_unit=='bohr2') then
-                       write(stdout, '(1x,a28,a17,f6.2,a)')&
-                               'Refinement threshold: ','Berry curvature'&
-                               //'-like term >',&
+                       write(stdout, '(1x,a28,f6.2,a)')&
+                               'Refinement threshold: ',&
                                berry_curv_adpt_kmesh_thresh,' bohr^2'
                    endif
                    if(nfermi==1) then
@@ -1462,9 +1460,9 @@ module w90_berry
   !  divided by hbar as well. But these two hbar are canceled by
   !  the preceding hbar^2 of QZYZ Equ.(3).
   !
-  !    shc_k_fermi: return a list with different fermi energies
-  !    shc_k_freq: return a list with different frequency
-  !    shc_k_list: return a list of sigma for each band
+  !    shc_k_fermi: return a list for different fermi energies
+  !    shc_k_freq: return a list for different frequency
+  !    shc_k_list: return a list for each band
   !
   !   Junfeng Qiao (18/8/2018)                                         !
   !====================================================================!
