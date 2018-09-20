@@ -659,6 +659,10 @@ contains
            file_name=trim(seedname)//'-shc'//'.py'
            write(stdout,'(/,3x,a)') file_name
            open(pyunit,file=file_name,form='formatted')
+           write(pyunit,'(a)') "# uncomment these two lines if you are "&
+                   //"running in non-GUI environment"
+           write(pyunit,'(a)') "#import matplotlib"
+           write(pyunit,'(a)') "#matplotlib.use('Agg')"
            write(pyunit,'(a)') 'import pylab as pl'
            write(pyunit,'(a)') 'import numpy as np'
            write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
@@ -716,6 +720,10 @@ contains
            file_name=trim(seedname)//'-bands+shc'//'.py'
            write(stdout,'(/,3x,a)') file_name
            open(pyunit,file=file_name,form='formatted')
+           write(pyunit,'(a)') "# uncomment these two lines if you are "&
+                   //"running in non-GUI environment"
+           write(pyunit,'(a)') "#import matplotlib"
+           write(pyunit,'(a)') "#matplotlib.use('Agg')"
            write(pyunit,'(a)') 'import pylab as pl'
            write(pyunit,'(a)') 'import numpy as np'
            write(pyunit,'(a)') 'from matplotlib.gridspec import GridSpec'
