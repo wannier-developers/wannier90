@@ -653,6 +653,11 @@ module w90_kslice
              write(stdout,'(/,3x,a)') filename
              open(scriptunit,file=filename,form='formatted')
           endif
+          write(scriptunit,'(a)') "# uncomment these two lines if you are "&
+                  //"running in non-GUI environment"
+          write(scriptunit,'(a)') "#import matplotlib"
+          write(scriptunit,'(a)') "#matplotlib.use('Agg')"
+          write(scriptunit,'(a)') "import matplotlib.pyplot as plt"
           call script_common(scriptunit,areab1b2,square)
           if(plot_fermi_lines) call script_fermi_lines(scriptunit)
 
@@ -729,7 +734,6 @@ module w90_kslice
           write(scriptunit,'(a)') "val_log = val"
           write(scriptunit,'(a)') "valmax=max(val)"
           write(scriptunit,'(a)') "valmin=min(val)"
-          write(scriptunit,'(a)') "import matplotlib.pyplot as plt"
           write(scriptunit,'(a)') "cmnew=shiftedColorMap(matplotlib.cm.bwr,"&
                   //"0,1-valmax/(valmax+abs(valmin)),1)"
           write(scriptunit,'(a)') " "
@@ -913,8 +917,6 @@ subroutine script_common(scriptunit,areab1b2,square)
   real(kind=dp), intent(in) :: areab1b2
   character(len=25)         :: square
 
-  write(scriptunit,'(a)') "#import matplotlib"
-  write(scriptunit,'(a)') "#matplotlib.use('Agg')"
   write(scriptunit,'(a)') "import pylab as pl"
   write(scriptunit,'(a)') "import numpy as np"
   write(scriptunit,'(a)') "import matplotlib.mlab as ml"
