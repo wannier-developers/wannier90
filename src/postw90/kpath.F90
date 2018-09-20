@@ -760,6 +760,9 @@ contains
            write(pyunit,'(a,F12.6)') "y=data[:,1]-",fermi_energy_list(1)
            if(kpath_bands_colour=='spin' .or. kpath_bands_colour=='shc') &
                    write(pyunit,'(a)') "z=data[:,2]"
+           write(pyunit,'(a)')&
+                   "#z=np.array([np.log10(abs(elem))*np.sign(elem) &
+                           &if abs(elem)>10 else elem/10.0 for elem in z])"
            if(kpath_bands_colour=='none') then
                write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
            else if(kpath_bands_colour=='spin' &
@@ -787,6 +790,9 @@ contains
                    "-shc.dat')"
            write(pyunit,'(a)') "x=data[:,0]"
            write(pyunit,'(a)') "y=data[:,1]"
+           write(pyunit,'(a)')&
+                   "#y=np.array([np.log10(abs(elem))*np.sign(elem) &
+                           &if abs(elem)>10 else elem/10.0 for elem in y])"
            write(pyunit,'(a)') "pl.plot(x,y,color='k')"
            write(pyunit,'(a)') "pl.xlim([0,max(x)])"
            write(pyunit,'(a)') "pl.ylim([min(y)-0.025*(max(y)-min(y)),"&
