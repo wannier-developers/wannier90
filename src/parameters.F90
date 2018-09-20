@@ -1273,6 +1273,10 @@ contains
          index(kpath_task,'morb')==0 .and.&
          index(kpath_task,'shc')==0) call io_error&
          ('Error: value of kpath_task not recognised in param_read')
+    call param_get_block_length('kpoint_path',found,i_temp)
+    ! check *.win has kpath block or not, otherwise seg fault
+    if(.not.found .and. kpath) &
+         call io_error('A kpath plot has been requested but there is no kpoint_path block')
 
     kpath_num_points=100
     call param_get_keyword('kpath_num_points',found,&
