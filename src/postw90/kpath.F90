@@ -749,11 +749,11 @@ contains
                end if
            end do
            write(pyunit,'(a)') "fig = pl.figure()"
-           write(pyunit,'(a)') "gs = GridSpec(2, 1,hspace=0.00)"
+           write(pyunit,'(a)') "gs = GridSpec(2,52,hspace=0.00,wspace=1)"
            !
            ! upper panel (energy bands)
            !
-           write(pyunit,'(a)') "axes1 = pl.subplot(gs[0, 0:])"
+           write(pyunit,'(a)') "axes1 = pl.subplot(gs[0, :-2])"
            write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
                    "-bands.dat')"
            write(pyunit,'(a)') "x=data[:,0]"
@@ -761,7 +761,7 @@ contains
            if(kpath_bands_colour=='spin' .or. kpath_bands_colour=='shc') &
                    write(pyunit,'(a)') "z=data[:,2]"
            write(pyunit,'(a)')&
-                   "#z=np.array([np.log10(abs(elem))*np.sign(elem) &
+                   "z=np.array([np.log10(abs(elem))*np.sign(elem) &
                            &if abs(elem)>10 else elem/10.0 for elem in z])"
            if(kpath_bands_colour=='none') then
                write(pyunit,'(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
@@ -783,30 +783,44 @@ contains
            write(pyunit,'(a)') "pl.tick_params(axis='x',"&
                    //"which='both',bottom='off',top='off',labelbottom='off')"
            !
+           ! color bar for upper panel
+           !
+           write(pyunit,'(a)') "# Now adding the colorbar"
+           write(pyunit,'(a)') "cbaxes = pl.subplot(gs[:, -2:])"
+           write(pyunit,'(a)') "cb = pl.colorbar(cax = cbaxes,"&
+                   //"orientation='vertical') "
+           write(pyunit,'(a)') "#cblim = int(min(abs(max(z)),abs(min(z))))"
+           write(pyunit,'(a)') "#cb.set_ticks([-cblim,0,cblim])"
+           write(pyunit,'(a)') "#cblim = [min(z),0,max(z)]"
+           write(pyunit,'(a)') "#cb.set_ticks([min(z),0,max(z)])"
+           write(pyunit,'(a)') "#cb.set_ticklabels(['-','0','+'])"
+           !
            ! lower panel (SHC)
            !
-           write(pyunit,'(a)') "axes2 = pl.subplot(gs[1, 0:])"
+           write(pyunit,'(a)') "axes2 = pl.subplot(gs[1, :-2])"
            write(pyunit,'(a)') "data = np.loadtxt('"//trim(seedname)//&
                    "-shc.dat')"
            write(pyunit,'(a)') "x=data[:,0]"
            write(pyunit,'(a)') "y=data[:,1]"
            write(pyunit,'(a)')&
-                   "#y=np.array([np.log10(abs(elem))*np.sign(elem) &
+                   "y=np.array([np.log10(abs(elem))*np.sign(elem) &
                            &if abs(elem)>10 else elem/10.0 for elem in y])"
            write(pyunit,'(a)') "pl.plot(x,y,color='k')"
            write(pyunit,'(a)') "pl.xlim([0,max(x)])"
            write(pyunit,'(a)') "pl.ylim([min(y)-0.025*(max(y)-min(y)),"&
                    //"max(y)+0.025*(max(y)-min(y))])"
+           write(pyunit,'(a)') "pl.plot([0,max(x)],[0,0],color='black',"&
+                   //"linestyle='--',linewidth=0.5)"
            write(pyunit,'(a)') "pl.xticks(tick_locs,tick_labels)"
            write(pyunit,'(a)') "for n in range(1,len(tick_locs)):"
            write(pyunit,'(a)') "   pl.plot([tick_locs[n],tick_locs[n]],"&
                    //"[pl.ylim()[0],pl.ylim()[1]],color='gray',"&
                    //"linestyle='-',linewidth=0.5)"
            if(berry_curv_unit=='ang2') then
-               write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
+               write(pyunit,'(a)') "pl.ylabel('$log_{10}|\Omega_{"&
                        //achar(119+shc_ipol)//achar(119+shc_jpol)&
                        //"}^{spin"//achar(119+shc_spol)&
-                       //"}(\mathbf{k})$  [ $\AA^2$ ]')"
+                       //"}(\mathbf{k})|$  [ $\AA^2$ ]')"
            else if(berry_curv_unit=='bohr2') then
                write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
                        //achar(119+shc_ipol)//achar(119+shc_jpol)&
