@@ -732,8 +732,8 @@ module w90_kslice
                   "val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
                           &if abs(elem)>10 else elem/10.0 for elem in val])"
           write(scriptunit,'(a)') "#val_log = val"
-          write(scriptunit,'(a)') "valmax=max(val)"
-          write(scriptunit,'(a)') "valmin=min(val)"
+          write(scriptunit,'(a)') "valmax=max(val_log)"
+          write(scriptunit,'(a)') "valmin=min(val_log)"
           write(scriptunit,'(a)') "#cmnew=shiftedColorMap(matplotlib.cm.bwr,"&
                   //"0,1-valmax/(valmax+abs(valmin)),1)"
           write(scriptunit,'(a)') " "
