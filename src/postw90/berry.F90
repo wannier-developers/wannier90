@@ -653,7 +653,7 @@ module w90_berry
                                'Refinement threshold: ',&
                                berry_curv_adpt_kmesh_thresh,' bohr^2'
                    endif
-                   if(nfermi==1) then
+                   !if(nfermi==1) then
                        if(wanint_kpoint_file) then
                            write(stdout,'(1x,a30,i5,a,f5.2,a)')&
                                    ' Points triggering refinement: ',&
@@ -666,7 +666,7 @@ module w90_berry
                                    adpt_counter_list(1),'(',&
                                    100*real(adpt_counter_list(1),dp)/product(berry_kmesh),'%)'
                        endif
-                   endif
+                   !endif
                endif
            else
                if(.not.wanint_kpoint_file) write(stdout, '(1x,a20,3(i0,1x))')&
