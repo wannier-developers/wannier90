@@ -1020,13 +1020,13 @@ module w90_berry
            write(stdout,'(/,3x,a)') '* '//file_name
            open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
            if (.not. shc_freq_scan) then
-               write(file_unit,'(a,3x,a,3x,a)') 'No.','Fermi energy(eV)','SHC(S/cm)'
+               write(file_unit,'(a,3x,a,3x,a)') '#No.','Fermi energy(eV)','SHC(S/cm)'
                do n=1,nfermi
                    write(file_unit,'(I4,1x,F12.6,1x,E17.8)') &
                        n,fermi_energy_list(n),shc_fermi(n)
                enddo
            else
-               write(file_unit,'(a,3x,a,3x,a,3x,a)') 'No.','Frequency(eV)','Re(sigma)(S/cm)','Im(sigma)(S/cm)'
+               write(file_unit,'(a,3x,a,3x,a,3x,a)') '#No.','Frequency(eV)','Re(sigma)(S/cm)','Im(sigma)(S/cm)'
                do n=1,kubo_nfreq
                    write(file_unit,'(I4,1x,F12.6,1x,1x,2(E17.8,1x))') &
                            n,real(kubo_freq_list(n),dp),real(shc_freq(n),dp),aimag(shc_freq(n))
