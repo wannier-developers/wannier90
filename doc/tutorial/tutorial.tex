@@ -2814,11 +2814,11 @@ gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
 \end{verbatim} 
 
 
-\sectiontitle{26: Gallium Arsenide -- Selective localization and Constrained centres}
+\sectiontitle{26: Gallium Arsenide -- Selective localization and constrained centres}
 
 \begin{itemize}
 
-\item Outline: \textit{Calculate one Objective Wannier Function (OWF) for Gallium Arsenide (GaAs), using as initial guess 4 $s$-like orbitals each centred on the middle of a As-Ga bond. In preparation for this example it is essential to read Ref. \cite{Marianetti}, as we will strictly follow the test on GaAs reported in it. }
+\item Outline: \textit{Application of the selectively localised Wannier function (SLWF) method to gallium arsenide (GaAs), following the example in Ref. \cite{Marianetti}, which is essential reading for this tutorial example.}
 
 
 \item Directory: \verb|examples/example26/|
@@ -2868,7 +2868,7 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \begin{itemize}
 \item[--] Make sure you understand the new keywords corresponding to the selective localisation algorithm. 
-\item[--] Run {\tt wannier90} to compute the single objective Wannier function or in this case the selectively localized Wannier function (SLWF).
+\item[--] Run {\tt wannier90} to compute the SLWFs, in this case using one objective Wannier function. 
 
 \end{itemize}
 
@@ -2877,11 +2877,13 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \end{enumerate}
 
-To constrain the center of the SLWF you need to add \mbox{{\tt sel\_loc\_constrain = true}} and \\ 
-\mbox{{\tt sel\_loc\_constrain\_lambda = 1}} to the input file and uncomment the \mbox{{\tt centre\_constraints}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom, as explained in Ref.~\cite{Marianetti}, particularly from eq. 24 to eq. 35.  
+To constrain the centre of the SLWF you need to add \mbox{{\tt sel\_loc\_constrain = true}} and \\ 
+\mbox{{\tt sel\_loc\_constrain\_lambda = 1}} to the input file and uncomment the \mbox{{\tt centre\_constraints}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom (as explained in Ref.~\cite{Marianetti}, particularly from Eq.~24 to Eq.~35).  
+
 Look at the value of the penalty functional, is this what you would expect at convergence? 
-Does this value of {\tt sel\_loc\_constrain\_lambda}, i.e. the Lagrange multiplier, give a SLWF function centred on the As atom?   
-Alternatively, you can modify the {\tt centre\_constraints} block to constrain the centre of the SWF to be on the Ga atom. 
+Does the chosen value of the Lagrange multiplier {\tt sel\_loc\_constrain\_lambda} give a SLWF function centred on the As atom?   
+
+Alternatively, you can modify the {\tt centre\_constraints} block to constrain the centre of the SLWF to be on the Ga atom. 
 Do you need a different value of {\tt sel\_loc\_constrain\_lambda} in this case to converge?
 Take a look at the result in Vesta and explain what you see. Do these functions transform like the identity under the action of the $T_d$ group? 
 
@@ -3039,17 +3041,17 @@ Run \wannier\ to compute the MLWFs and output them in the Gaussian cube file.\\
 {\tt wannier90.x diamond}
 
 \item Plot the first MLWF with VESTA
-  {\tt vesta diamond_00001.cube}
+  {\tt vesta diamond\_00001.cube}
 \end{enumerate}
 
-Extra: Instead of using {\tt wannier_plot_mode = crystal} try to use the molecule mode as {\tt wannier_plot_mode = molecule} (see the user guide for the definition of this keyword).
+Extra: Instead of using {\tt wannier\_plot\_mode = crystal} try to use the molecule mode as {\tt wannier\_plot\_mode = molecule} (see the user guide for the definition of this keyword).
 Add the following line to the {\tt .win} file:
 \begin{verbatim}
 restart = plot
 \end{verbatim}
-and re-run \wannier\. Use VESTA to plot the resulting MLWFs, do you see any difference from the {\tt crystal} mode case? Can you explain why?
+and re-run \wannier. Use VESTA to plot the resulting MLWFs, do you see any difference from the {\tt crystal} mode case? Can you explain why?
 Try to change the size of the supercell from 3 to 5, do you expect the results to be different? ({\it Hint:} When using the Gaussian cube format the code outputs the WF on a grid that is smaller than the super
-unit-cell. The size of the grid is specified by {\tt wannier_plot_scale} and {\tt wannier_plot_radius}.)
+unit-cell. The size of the grid is specified by {\tt wannier\_plot\_scale} and {\tt wannier\_plot\_radius}.)
 
 
 

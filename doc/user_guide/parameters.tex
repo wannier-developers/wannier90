@@ -223,10 +223,11 @@ of $\Omega$, instead of doing a parabolic line search \\
 {\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
 {\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
 {\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
-{\sc sel\_loc\_num} & I & The number of Objective Wannier Functions (OWFs) for selective localization \\
-{\sc sel\_loc\_constrain} & L & Whether to constrain the centres of the OWFs \\
-{\sc sel\_loc\_constrain\_lambda} & R & Value of the Lagrange multiplier $\lambda$ 
-associated to the constrain on the centres of the OWFs \\  
+%% AAM: rename all of these slwf_*
+{\sc sel\_loc\_num} & I & The number of objective WFs for selective localization \\
+{\sc sel\_loc\_constrain} & L & Whether to constrain the centres of the objective WFs \\
+{\sc sel\_loc\_constrain\_lambda} & R & Value of the Lagrange multiplier for constraining the objective WFs \\
+{\sc centre\_constraints} & P & The centres to which the objective WFs are to be constrained \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -634,22 +635,22 @@ used as the guiding centres in the Wannierisation routine.
 
 For details see Section~\ref{sec:proj}.
 
-\section{Constrains on centres}
-
-The constrained centres block defines the target positions, in fractional co-ordinates, for the OWFs whose centres are meant to be constrained. 
-
-The block below shows all possible ways of setting the constraints. In particular, assuming $J'=5<J=${\tt num\_wann} :
-
-\noindent \verb#begin centre_constraints# \\
-2 0.0 0.0 0.0 \\
-4 0.25 0.0 0.0 \\
-\verb#end centre_constraints#
-
-\begin{itemize}
-\item The first line sets the constraint for the centre of OWF number 2 (as defined in the projection block) to (0.0,0.0,0.0) in fractional co-ordinates.
-\item The second line sets the constraint for the centre of OWF number 4 (as defined in the projection block) to (0.25,0.0,0.0) in fractional co-ordinates.
-\item The centres of all the other Objective Wannier functions, i.e. 1,3,5, etc. are set to their initial projection centres.
-\end{itemize}
+%\section{Constrains on centres}
+%
+%The constrained centres block defines the target positions, in fractional co-ordinates, for the OWFs whose centres are meant to be constrained. 
+%
+%The block below shows all possible ways of setting the constraints. In particular, assuming $J'=5<J=${\tt num\_wann} :
+%
+%\noindent \verb#begin centre_constraints# \\
+%2 0.0 0.0 0.0 \\
+%4 0.25 0.0 0.0 \\
+%\verb#end centre_constraints#
+%
+%\begin{itemize}
+%\item The first line sets the constraint for the centre of OWF number 2 (as defined in the projection block) to (0.0,0.0,0.0) in fractional co-ordinates.
+%\item The second line sets the constraint for the centre of OWF number 4 (as defined in the projection block) to (0.25,0.0,0.0) in fractional co-ordinates.
+%\item The centres of all the other Objective Wannier functions, i.e. 1,3,5, etc. are set to their initial projection centres.
+%\end{itemize}
 
 \section{Job Control}
 
@@ -1106,19 +1107,39 @@ The value of the $\sigma$ parameter in the formulas for the occupation numbers m
 The default value is {\tt 1.0 eV}.
 
 \subsection[sel\_loc\_num]{\tt integer :: sel\_loc\_num}
-The number of Wannier functions for selective localisation as defined in \cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt sel\_loc\_num} $<$ {\tt num\_wann} functions. Here we follow the original nomenclatur are named objective Wannier Functions (OWFs). At convergence, the OWFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} - {\tt sel\_loc\_num} functions are left unoptimised. The initial guesses for the OWFs are given by the first {\tt sel\_loc\_num} orbitals in the {\tt projection block}. 
+The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt sel\_loc\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt sel\_loc\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt sel\_loc\_num} orbitals in the {\tt projections} block. 
 
 The default is {\tt num\_wann}.
 
 \subsection[sel\_loc\_constrain]{\tt logical :: sel\_loc\_constrain}
-If {\tt true} the centres of the objective Wannier Functions are constrained to either the centres of the first {\tt sel\_loc\_num} orbitals in the projection block or to new positions specified in the {\tt centre\_constrains} block. A modified spread functional, $\Omega_c$, with the addition of a constrain, is minimized in this case, see Marianetti \textit{et al} \cite{Marianetti} for the details of the minimisation. 
+If {\tt sel\_loc\_constrain=true}, then the centres of the objective Wannier functions are constrained to either the centres of the first {\tt sel\_loc\_num} orbitals in the {\tt projections} block or to new positions specified in the {\tt centre\_constraints} block (see Sec.~\ref{sec:centre_constraints}). In this case, a modified spread functional, $\Omega_c$, with the addition of a constraint term, as described in Ref.~\cite{Marianetti}.
 
 The default is {\tt false}
 
 \subsection[sel\_loc\_constrain\_lambda]{\tt real(kind=dp) :: sel\_loc\_constrain\_lambda}
-Value of the Lagrange multiplier for the constraint $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)$, where $J'$ is {\tt sel\_loc\_num} and $\mathbf{r}_{0i}$ is the desired centre for the i-th objective function. 
+The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)$, where $J'$ is {\tt sel\_loc\_num} and $\mathbf{r}_{0i}$ is the desired centre for the $i^{\text{th}}$ objective WF. 
 
 The default is {\tt 0.0}.
+
+\subsection{Constraints on centres}
+\label{sec:centre_constraints}
+
+If {\tt sel\_loc\_constrain=true}, then by default the centres to which the {\tt sel\_loc\_num} objective Wannier function centres are constrained are given by the first {\tt sel\_loc\_num} rows of the {\tt projections} block. 
+
+Optionally, the {\tt centre\_constraints} block may be used to define alternative target centres for some or all of the {\tt sel\_loc\_num} objective Wannier functions.
+
+The block below shows an example of how to set the constraints:
+
+\noindent \verb#begin centre_constraints# \\
+\verb#   2  0.0   0.0  0.0# \\
+\verb#   4  0.25  0.0  0.0# \\
+\verb#end centre_constraints#
+
+\begin{itemize}
+\item The first line sets the constraint for the centre of objective WF number 2 (as defined by the order of WFs in the {\tt projections} block) to (0.0,0.0,0.0) in fractional co-ordinates.
+\item The second line sets the constraint for the centre of objective WF number 4 (as defined by the order of WFs in the {\tt projections} block) to (0.25,0.0,0.0) in fractional co-ordinates.
+\item The target centres of all other objective Wannier functions remain as the centres given in the corresponding rows of the {\tt projections} block.
+\end{itemize}
 
 \section{Post-Processing}
 \label{sec:post-p}
