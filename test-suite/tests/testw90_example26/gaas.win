@@ -5,9 +5,9 @@ num_iter          =   100
 exclude_bands     = 1-5,10-18
 
 ! Perform selective localization with constrained center
-sel_loc_num = 1
-sel_loc_constrain = true
-sel_loc_constrain_lambda = 1
+slwf_num = 1
+slwf_constrain = true
+slwf_lambda = 1
 
 begin projections
 f= 0.125, 0.125, 0.125: s
@@ -16,9 +16,9 @@ f= -.375, 0.125, 0.125: s
 f= 0.125, -.375, 0.125: s
 end projections
 
-begin centre_constraints
+begin slwf_centres
 1 0.25 0.25 0.25 
-end centre_constraints
+end slwf_centres
 
 begin unit_cell_cart
 bohr

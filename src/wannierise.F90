@@ -50,7 +50,7 @@ module w90_wannierise
   logical :: first_pass
   !! Used to trigger the calculation of the invarient spread
   !! we only need to do this on entering wann_main (_gamma)
-  real(kind=dp) :: lambdai
+  real(kind=dp) :: lambda_loc
 
 #ifdef MPI
   include 'mpif.h'
@@ -98,8 +98,8 @@ contains
          fixed_step,lfixstep,write_proj,have_disentangled,conv_tol,num_proj, &
          conv_window,conv_noise_amp,conv_noise_num,wannier_centres,write_xyz, &
          wannier_spreads,omega_total,omega_tilde,optimisation,write_vdw_data,&
-         write_hr_diag,kpt_latt, bk, ccentres_cart, sel_loc_num, selective_loc, &
-         sel_loc_constrain, sel_loc_constrain_lambda
+         write_hr_diag,kpt_latt, bk, ccentres_cart, slwf_num, selective_loc, &
+         slwf_constrain, slwf_lambda
     use w90_utility,    only : utility_frac_to_cart,utility_zgemm
     use w90_parameters, only : lsitesymmetry                !RS:
     use w90_sitesym,    only : sitesym_symmetrize_gradient  !RS:
@@ -183,7 +183,7 @@ contains
     allocate( ln_tmp (num_wann, nntot, num_kpts), stat=ierr    )
     if (ierr/=0) call io_error('Error in allocating ln_tmp in wann_main')
     if (selective_loc) then 
-       allocate( rnr0n2 (sel_loc_num), stat=ierr)
+       allocate( rnr0n2 (slwf_num), stat=ierr)
        if (ierr/=0) call io_error('Error in allocating rnr0n2 in wann_main')
     end if
 
@@ -331,9 +331,9 @@ contains
     endif
 
     ! constrained centres part
-    lambdai = 0.0_dp
-    if (selective_loc .and. sel_loc_constrain) then
-       lambdai = sel_loc_constrain_lambda
+    lambda_loc = 0.0_dp
+    if (selective_loc .and. slwf_constrain) then
+       lambda_loc = slwf_lambda
     end if
 
     ! calculate initial centers and spread
@@ -369,7 +369,7 @@ contains
        end do
        write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), (sum(r2ave)-sum(rave2))*lenconfac**2
        write(stdout,*)
-       if (selective_loc .and. sel_loc_constrain) then
+       if (selective_loc .and. slwf_constrain) then
           write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
                iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,sqrt(abs(gcnorm1))*lenconfac,&
                wann_spread%om_tot*lenconfac**2,io_wallclocktime(),'<-- CONV'
@@ -378,7 +378,7 @@ contains
                ' O_IOD=',(wann_spread%om_iod+wann_spread%om_nu)*lenconfac**2, &
                ' O_TOT=',wann_spread%om_tot*lenconfac**2,' <-- SPRD'
           write(stdout,'(1x,a78)') repeat('-',78)
-       elseif (selective_loc .and. .not. sel_loc_constrain) then
+       elseif (selective_loc .and. .not. slwf_constrain) then
           write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
                iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,sqrt(abs(gcnorm1))*lenconfac,&
                wann_spread%om_tot*lenconfac**2,io_wallclocktime(),'<-- CONV'
@@ -541,12 +541,12 @@ contains
           write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3), &
                (sum(r2ave)-sum(rave2))*lenconfac**2
           write(stdout,*)
-          if (selective_loc .and. sel_loc_constrain) then
+          if (selective_loc .and. slwf_constrain) then
              write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
                   iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,&
                   sqrt(abs(gcnorm1))*lenconfac,&
                   wann_spread%om_tot*lenconfac**2,io_wallclocktime(),'<-- CONV'
-             write(stdout,'(1x,E12.3)') lambdai
+             write(stdout,'(1x,E12.3)') lambda_loc
              write(stdout,'(7x,a,F15.7,a,F15.7,a,F15.7,a)') &
                   'O_IOD=',(wann_spread%om_iod+wann_spread%om_nu)*lenconfac**2,&
                   ' O_D=',wann_spread%om_d*lenconfac**2,&
@@ -557,7 +557,7 @@ contains
                   ' O_D=',(wann_spread%om_d-old_spread%om_d)*lenconfac**2,&
                   ' O_TOT=',(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,' <-- DLTA'
              write(stdout,'(1x,a78)') repeat('-',78)
-          elseif (selective_loc .and. .not. sel_loc_constrain) then
+          elseif (selective_loc .and. .not. slwf_constrain) then
              write(stdout,'(1x,i6,2x,E12.3,2x,F15.10,2x,F18.10,3x,F8.2,2x,a)') &
                   iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,&
                   sqrt(abs(gcnorm1))*lenconfac,&
@@ -634,9 +634,9 @@ contains
     call comms_bcast(u_matrix(1,1,1),num_wann*num_wann*num_kpts)
 
     ! Evaluate the penalty functional
-    if (selective_loc .and. sel_loc_constrain) then
+    if (selective_loc .and. slwf_constrain) then
        rnr0n2=0.0_dp
-       do iw=1,sel_loc_num
+       do iw=1,slwf_num
           rnr0n2(iw) = (wannier_centres(1,iw) - ccentres_cart(iw,1))**2 &
                       + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2 &
                       + (wannier_centres(2,iw) - ccentres_cart(iw,3))**2
@@ -652,7 +652,7 @@ contains
        write(stdout,1001) (sum(rave(ind,:))*lenconfac,ind=1,3),&
             (sum(r2ave)-sum(rave2))*lenconfac**2
        write(stdout,*)
-       if (selective_loc .and. sel_loc_constrain) then
+       if (selective_loc .and. slwf_constrain) then
           write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)',&
                '       Omega IOD_C   = ',(wann_spread%om_iod+wann_spread%om_nu)*lenconfac**2
           write(stdout,'(3x,a,f15.9)') '     ================       Omega D       = ',&
@@ -664,7 +664,7 @@ contains
           write(stdout,'(3x,a21,a,f15.9)') 'Final Spread ('//trim(length_unit)//'^2)',&
                '       Omega Total_C = ',wann_spread%om_tot*lenconfac**2
           write(stdout,'(1x,a78)') repeat('-',78)
-       else if (selective_loc .and. .not. sel_loc_constrain) then
+       else if (selective_loc .and. .not. slwf_constrain) then
           write(stdout,'(3x,a21,a,f15.9)') '     Spreads ('//trim(length_unit)//'^2)',&
                '       Omega IOD    = ',wann_spread%om_iod*lenconfac**2
           write(stdout,'(3x,a,f15.9)') '     ================       Omega D      = ',&
@@ -1712,7 +1712,7 @@ contains
     !===================================================================  
     use w90_parameters, only : num_wann,m_matrix,nntot,wb,bk,num_kpts,&
                            omega_invariant,timing_level, & 
-                           selective_loc, sel_loc_constrain, sel_loc_num,&
+                           selective_loc, slwf_constrain, slwf_num,&
                            ccentres_cart
     use w90_io,         only : io_stopwatch
 
@@ -1847,17 +1847,17 @@ contains
        do nkp_loc = 1, counts(my_node_id)
           do nn = 1, nntot
              summ = 0.0_dp
-             do n = 1, sel_loc_num
+             do n = 1, slwf_num
                 summ = summ &
                        + real( m_matrix_loc(n,n,nn,nkp_loc) &
                        * conjg(m_matrix_loc(n,n,nn,nkp_loc)), kind=dp )
-                if ( sel_loc_constrain) then
-                   !! Centre constraint contribution. Zero if sel_loc_constrain=false
-                   summ = summ  - lambdai * ln_tmp_loc(n,nn,nkp_loc) ** 2
+                if ( slwf_constrain) then
+                   !! Centre constraint contribution. Zero if slwf_constrain=false
+                   summ = summ  - lambda_loc * ln_tmp_loc(n,nn,nkp_loc) ** 2
                 end if
              enddo
              wann_spread%om_iod = wann_spread%om_iod &
-                  + wb(nn) * (real(sel_loc_num,dp) - summ)
+                  + wb(nn) * (real(slwf_num,dp) - summ)
           enddo
        enddo
 
@@ -1869,9 +1869,9 @@ contains
        do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
           do nn = 1, nntot
-             do n = 1, sel_loc_num
+             do n = 1, slwf_num
                 brn = sum(bk(:,nn,nkp)*rave(:,n))
-                wann_spread%om_d = wann_spread%om_d + (1.0_dp - lambdai) * wb(nn) &
+                wann_spread%om_d = wann_spread%om_d + (1.0_dp - lambda_loc) * wb(nn) &
                      * ( ln_tmp_loc(n,nn,nkp_loc) + brn)**2
              enddo
           enddo
@@ -1883,13 +1883,13 @@ contains
 
        wann_spread%om_nu = 0.0_dp
        !! Contribution from constrains on centres
-       if (sel_loc_constrain) then
+       if (slwf_constrain) then
           do nkp_loc = 1, counts(my_node_id)
              nkp = nkp_loc + displs(my_node_id)
              do nn = 1, nntot
-                do n=1, sel_loc_num
+                do n=1, slwf_num
                    wann_spread%om_nu = wann_spread%om_nu + 2.0_dp * wb(nn) * &
-                      ln_tmp_loc(n,nn,nkp_loc) * lambdai * &
+                      ln_tmp_loc(n,nn,nkp_loc) * lambda_loc * &
                       sum(bk(:,nn,nkp)*ccentres_cart(n,:))
                 enddo
              enddo
@@ -1897,8 +1897,8 @@ contains
 
           call comms_allreduce(wann_spread%om_nu,1,'SUM')
 
-          do n=1, sel_loc_num
-            wann_spread%om_nu = wann_spread%om_nu + lambdai * sum(ccentres_cart(n,:)**2)
+          do n=1, slwf_num
+            wann_spread%om_nu = wann_spread%om_nu + lambda_loc * sum(ccentres_cart(n,:)**2)
           end do
 
           wann_spread%om_nu = wann_spread%om_nu / real(num_kpts,dp)
@@ -1987,7 +1987,7 @@ contains
     !===================================================================  
     use w90_parameters, only : num_wann,wb,bk,nntot,m_matrix,num_kpts, &
                                timing_level, selective_loc, & 
-                               sel_loc_constrain, sel_loc_num, &
+                               slwf_constrain, slwf_num, &
                                ccentres_cart
     use w90_io,         only : io_stopwatch,io_error
     use w90_parameters, only : lsitesymmetry !RS:
@@ -2017,7 +2017,7 @@ contains
     if (ierr/=0) call io_error('Error in allocating cr in wann_domega')
     allocate(  crt (num_wann, num_wann),stat=ierr )
     if (ierr/=0) call io_error('Error in allocating crt in wann_domega')
-    if ( selective_loc .and. sel_loc_constrain) then
+    if ( selective_loc .and. slwf_constrain) then
        allocate( r0kb (num_wann, nntot, num_kpts),stat=ierr )
        if (ierr/=0) call io_error('Error in allocating r0kb in wann_domega')
     end if
@@ -2052,7 +2052,7 @@ contains
     call comms_allreduce(rave(1,1),num_wann*3,'SUM')
 
     ! b.r_0n are calculated
-    if ( selective_loc .and. sel_loc_constrain) then
+    if ( selective_loc .and. slwf_constrain) then
        r0kb = 0.0_dp
        do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
@@ -2089,8 +2089,8 @@ contains
           if (selective_loc) then
              do n = 1, num_wann
                 do m = 1, num_wann
-                   if (m<=sel_loc_num) then
-           	      if (n<=sel_loc_num) then
+                   if (m<=slwf_num) then
+           	      if (n<=slwf_num) then
                          ! A[R^{k,b}]=(R-Rdag)/2
                          cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) &
                               + wb(nn) * 0.5_dp * ( cr(m,n) - conjg(cr(n,m) ) )
@@ -2102,20 +2102,20 @@ contains
                               - ( crt(m,n) * rnkb_loc(n,nn,nkp_loc) + conjg(crt(n,m) &
                               * rnkb_loc(m,nn,nkp_loc) ) ) &
                               * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                         if (sel_loc_constrain) then
-                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambdai &
+                         if (slwf_constrain) then
+                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambda_loc &
                                  * ( crt(m,n) * ln_tmp_loc(n,nn,nkp_loc)  &
                                  + conjg( crt(n,m) * ln_tmp_loc(m,nn,nkp_loc) ) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * lambdai &
+                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * lambda_loc &
                                  * ( crt(m,n) * rnkb_loc(n,nn,nkp_loc) & 
                                  + conjg( crt(n,m) * rnkb_loc(m,nn,nkp_loc) ) ) & 
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)
-           	            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - lambdai &
+           	            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - lambda_loc &
                                  * ( crt(m,n) * ln_tmp_loc(n,nn,nkp_loc) &
                                  + conjg( crt(n,m) ) * ln_tmp_loc(m,nn,nkp_loc) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp) 
-                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambdai &
+                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambda_loc &
                                  * ( r0kb(n,nn,nkp_loc) * crt(m,n) & 
                                  + r0kb(m,nn,nkp_loc) * conjg( crt(n,m) ) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)
@@ -2126,29 +2126,29 @@ contains
                               - conjg( crt(n,m) * (ln_tmp_loc(m,nn,nkp_loc) &
                               + wb(nn) * rnkb_loc(m,nn,nkp_loc) ) ) &
                               * cmplx(0.0_dp,-0.5_dp,kind=dp) 
-                         if (sel_loc_constrain) then
-                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambdai & 
+                         if (slwf_constrain) then
+                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambda_loc & 
                                  * conjg( crt(n,m) * (ln_tmp_loc(m,nn,nkp_loc) & 
                                  + wb(nn) * rnkb_loc(m,nn,nkp_loc) ) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp) &
-                                 - lambdai * ( conjg(crt(n,m)) * ln_tmp_loc(m,nn,nkp_loc) ) &
+                                 - lambda_loc * ( conjg(crt(n,m)) * ln_tmp_loc(m,nn,nkp_loc) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)  
-                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambdai  &
+                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambda_loc  &
                                  * r0kb(m,nn,nkp_loc)*conjg( crt(n,m) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)
                          end if
                       end if
-           	else if (n<=sel_loc_num) then
+           	else if (n<=slwf_num) then
            	   cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * cr(m,n)*0.5_dp & 
                         - crt(m,n) * (ln_tmp_loc(n,nn,nkp_loc) + wb(nn) * rnkb_loc(n,nn,nkp_loc) ) &
                         * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                   if (sel_loc_constrain) then 
-                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambdai &
+                   if (slwf_constrain) then 
+                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambda_loc &
            	           * crt(m,n) * ( ln_tmp_loc(n,nn,nkp_loc) + wb(nn)*rnkb_loc(n,nn,nkp_loc) ) &
                            * cmplx(0.0_dp,-0.5_dp,kind=dp) &
-                           - lambdai * crt(m,n) * ln_tmp_loc(n,nn,nkp_loc) &
+                           - lambda_loc * crt(m,n) * ln_tmp_loc(n,nn,nkp_loc) &
                            * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambdai & 
+                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambda_loc & 
                            * r0kb(n,nn,nkp_loc) * crt(m,n) &
                            * cmplx(0.0_dp,-0.5_dp,kind=dp) 
                    end if

@@ -2877,14 +2877,14 @@ Bloch states (written in the \verb|GaAs.mmn| file)
 
 \end{enumerate}
 
-To constrain the centre of the SLWF you need to add \mbox{{\tt sel\_loc\_constrain = true}} and \\ 
-\mbox{{\tt sel\_loc\_constrain\_lambda = 1}} to the input file and uncomment the \mbox{{\tt centre\_constraints}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom (as explained in Ref.~\cite{Marianetti}, particularly from Eq.~24 to Eq.~35).  
+To constrain the centre of the SLWF you need to add \mbox{{\tt slwf\_constrain = true}} and \\ 
+\mbox{{\tt slwf\_lambda = 1}} to the input file and uncomment the \mbox{{\tt slwf\_centres}} block. This will add a penalty functional to the total spread, which will try to constrain the centre of the SLWF to be on the As atom (as explained in Ref.~\cite{Marianetti}, particularly from Eq.~24 to Eq.~35).  
 
 Look at the value of the penalty functional, is this what you would expect at convergence? 
-Does the chosen value of the Lagrange multiplier {\tt sel\_loc\_constrain\_lambda} give a SLWF function centred on the As atom?   
+Does the chosen value of the Lagrange multiplier {\tt slwf\_lambda} give a SLWF function centred on the As atom?   
 
-Alternatively, you can modify the {\tt centre\_constraints} block to constrain the centre of the SLWF to be on the Ga atom. 
-Do you need a different value of {\tt sel\_loc\_constrain\_lambda} in this case to converge?
+Alternatively, you can modify the {\tt slwf\_centres} block to constrain the centre of the SLWF to be on the Ga atom. 
+Do you need a different value of {\tt slwf\_lambda} in this case to converge?
 Take a look at the result in Vesta and explain what you see. Do these functions transform like the identity under the action of the $T_d$ group? 
 
 
