@@ -2090,7 +2090,7 @@ contains
              do n = 1, num_wann
                 do m = 1, num_wann
                    if (m<=slwf_num) then
-           	      if (n<=slwf_num) then
+                      if (n<=slwf_num) then
                          ! A[R^{k,b}]=(R-Rdag)/2
                          cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) &
                               + wb(nn) * 0.5_dp * ( cr(m,n) - conjg(cr(n,m) ) )
@@ -2111,7 +2111,7 @@ contains
                                  * ( crt(m,n) * rnkb_loc(n,nn,nkp_loc) & 
                                  + conjg( crt(n,m) * rnkb_loc(m,nn,nkp_loc) ) ) & 
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)
-           	            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - lambda_loc &
+                            cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - lambda_loc &
                                  * ( crt(m,n) * ln_tmp_loc(n,nn,nkp_loc) &
                                  + conjg( crt(n,m) ) * ln_tmp_loc(m,nn,nkp_loc) ) &
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp) 
@@ -2138,23 +2138,23 @@ contains
                                  * cmplx(0.0_dp,-0.5_dp,kind=dp)
                          end if
                       end if
-           	else if (n<=slwf_num) then
-           	   cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * cr(m,n)*0.5_dp & 
+                   else if (n<=slwf_num) then
+                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + wb(nn) * cr(m,n)*0.5_dp & 
                         - crt(m,n) * (ln_tmp_loc(n,nn,nkp_loc) + wb(nn) * rnkb_loc(n,nn,nkp_loc) ) &
                         * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                   if (slwf_constrain) then 
-                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambda_loc &
-           	           * crt(m,n) * ( ln_tmp_loc(n,nn,nkp_loc) + wb(nn)*rnkb_loc(n,nn,nkp_loc) ) &
-                           * cmplx(0.0_dp,-0.5_dp,kind=dp) &
-                           - lambda_loc * crt(m,n) * ln_tmp_loc(n,nn,nkp_loc) &
-                           * cmplx(0.0_dp,-0.5_dp,kind=dp)
-                      cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambda_loc & 
-                           * r0kb(n,nn,nkp_loc) * crt(m,n) &
-                           * cmplx(0.0_dp,-0.5_dp,kind=dp) 
+                      if (slwf_constrain) then 
+                         cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) + lambda_loc &
+                              * crt(m,n) * ( ln_tmp_loc(n,nn,nkp_loc) + wb(nn)*rnkb_loc(n,nn,nkp_loc) ) &
+                              * cmplx(0.0_dp,-0.5_dp,kind=dp) &
+                              - lambda_loc * crt(m,n) * ln_tmp_loc(n,nn,nkp_loc) &
+                              * cmplx(0.0_dp,-0.5_dp,kind=dp)
+                         cdodq_loc(m,n,nkp_loc) = cdodq_loc(m,n,nkp_loc) - wb(nn) * lambda_loc & 
+                              * r0kb(n,nn,nkp_loc) * crt(m,n) &
+                              * cmplx(0.0_dp,-0.5_dp,kind=dp) 
+                      end if
+                   else
+                      cdodq_loc(m,n,nkp_loc)=cdodq_loc(m,n,nkp_loc)
                    end if
-           	else
-           	     cdodq_loc(m,n,nkp_loc)=cdodq_loc(m,n,nkp_loc)
-                end if
                 enddo
              enddo
           else
