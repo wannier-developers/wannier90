@@ -224,10 +224,10 @@ of $\Omega$, instead of doing a parabolic line search \\
 {\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
 {\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
 %% AAM: rename all of these slwf_*
-{\sc sel\_loc\_num} & I & The number of objective WFs for selective localization \\
-{\sc sel\_loc\_constrain} & L & Whether to constrain the centres of the objective WFs \\
-{\sc sel\_loc\_constrain\_lambda} & R & Value of the Lagrange multiplier for constraining the objective WFs \\
-{\sc centre\_constraints} & P & The centres to which the objective WFs are to be constrained \\
+{\sc slwf\_num} & I & The number of objective WFs for selective localization \\
+{\sc slwf\_constrain} & L & Whether to constrain the centres of the objective WFs \\
+{\sc slwf\_lambda} & R & Value of the Lagrange multiplier for constraining the objective WFs \\
+{\sc slwf\_centres} & P & The centres to which the objective WFs are to be constrained \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
@@ -1106,27 +1106,27 @@ The value of the $\sigma$ parameter in the formulas for the occupation numbers m
 
 The default value is {\tt 1.0 eV}.
 
-\subsection[sel\_loc\_num]{\tt integer :: sel\_loc\_num}
-The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt sel\_loc\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt sel\_loc\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt sel\_loc\_num} orbitals in the {\tt projections} block. 
+\subsection[slwf\_num]{\tt integer :: slwf\_num}
+The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. 
 
 The default is {\tt num\_wann}.
 
-\subsection[sel\_loc\_constrain]{\tt logical :: sel\_loc\_constrain}
-If {\tt sel\_loc\_constrain=true}, then the centres of the objective Wannier functions are constrained to either the centres of the first {\tt sel\_loc\_num} orbitals in the {\tt projections} block or to new positions specified in the {\tt centre\_constraints} block (see Sec.~\ref{sec:centre_constraints}). In this case, a modified spread functional, $\Omega_c$, with the addition of a constraint term, as described in Ref.~\cite{Marianetti}.
+\subsection[slwf\_constrain]{\tt logical :: slwf\_constrain}
+If {\tt slwf\_constrain=true}, then the centres of the objective Wannier functions are constrained to either the centres of the first {\tt slwf\_num} orbitals in the {\tt projections} block or to new positions specified in the {\tt slwf\_centres} block (see Sec.~\ref{sec:centre_constraints}). In this case, a modified spread functional, $\Omega_c$, with the addition of a constraint term, as described in Ref.~\cite{Marianetti}.
 
 The default is {\tt false}
 
-\subsection[sel\_loc\_constrain\_lambda]{\tt real(kind=dp) :: sel\_loc\_constrain\_lambda}
-The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)$, where $J'$ is {\tt sel\_loc\_num} and $\mathbf{r}_{0i}$ is the desired centre for the $i^{\text{th}}$ objective WF. 
+\subsection[slwf\_lambda]{\tt real(kind=dp) :: slwf\_lambda}
+The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)$, where $J'$ is {\tt slwf\_num} and $\mathbf{r}_{0i}$ is the desired centre for the $i^{\text{th}}$ objective WF. 
 
 The default is {\tt 0.0}.
 
 \subsection{Constraints on centres}
 \label{sec:centre_constraints}
 
-If {\tt sel\_loc\_constrain=true}, then by default the centres to which the {\tt sel\_loc\_num} objective Wannier function centres are constrained are given by the first {\tt sel\_loc\_num} rows of the {\tt projections} block. 
+If {\tt slwf\_constrain=true}, then by default the centres to which the {\tt slwf\_num} objective Wannier function centres are constrained are given by the first {\tt slwf\_num} rows of the {\tt projections} block. 
 
-Optionally, the {\tt centre\_constraints} block may be used to define alternative target centres for some or all of the {\tt sel\_loc\_num} objective Wannier functions.
+Optionally, the {\tt slwf\_centres} block may be used to define alternative target centres for some or all of the {\tt slwf\_num} objective Wannier functions.
 
 The block below shows an example of how to set the constraints:
 
