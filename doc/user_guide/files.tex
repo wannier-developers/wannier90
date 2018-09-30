@@ -379,15 +379,14 @@ total spread, respectively. Recall from Section~\ref{sec:method} that
 $\Omega = \omi + \Omega_{\mathrm{D}} + \Omega_{\mathrm{OD}}$. 
 
 \subsubsection{Wannierisation with selective localization and constrained centres}
-When performing selective localization (the SLWF method) only few things change in the output file
-and in general the same principles shown in the above section will apply. It is strongly
-recommended, that the reader has acquired some familiarity with   
-the original work of Marianetti \textit{et al.} \cite{Marianetti}. 
+For full details of the selectively localised Wannier function (SLWF) method, the reader is referred to Ref.~\cite{Marianetti}. 
+When using the SLWF method, only a few things change in the output file
+and in general the same principles described above will apply. 
 In particular, when minimising the spread with respect to the degrees of freedom of only a subset 
 of functions, it is not possible to cast the total spread functional $\Omega$ as a sum of a 
 gauge-invariant part and a gauge-dependent part. Instead, one has
 $\Omega^{'} = \Omega_{\mathrm{IOD}} + \Omega_{\mathrm{D}}$, where
-$$\Omega^{'} = \sum_{n=1}^{J'<J} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_n\right]$$
+$$\Omega^{'} = \sum_{n=1}^{J'<J} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_{n}^{2}\right]$$
 and 
 $$\Omega_{\mathrm{IOD}} = \sum_{n=1}^{J'<J} \left[\langle r^2_n \rangle- \sum_{\mathbf{R}} \vert\langle\mathbf{R}n\vert \mathbf{r} \vert n\mathbf{R}\rangle\vert^2 \right].$$
 The total number of Wannier functions is $J$, whereas $J'$ is the number functions to be selectively localized (so-called \emph{objective WFs}).
@@ -462,7 +461,7 @@ functional is $\Omega^{'}$.
 The part on the final state has one more item of information: the value of the difference
 between the global spread functional and the new spread functional given by 
 \texttt{Omega Rest}
-$$\Omega_{R} = \sum_{n=1}^{J-J'} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_n \right]$$
+$$\Omega_{R} = \sum_{n=1}^{J-J'} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_{n}^{2} \right]$$
 
 If adding centre-constraints to the SLWFs,
 you will find the information about the centres of the original projections and 
