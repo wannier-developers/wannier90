@@ -1117,7 +1117,7 @@ If {\tt slwf\_constrain=true}, then the centres of the objective Wannier functio
 The default is {\tt false}
 
 \subsection[slwf\_lambda]{\tt real(kind=dp) :: slwf\_lambda}
-The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)$, where $J'$ is {\tt slwf\_num} and $\mathbf{r}_{0i}$ is the desired centre for the $i^{\text{th}}$ objective WF. 
+The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)^2$, where $J'$ is {\tt slwf\_num}, and $\overline{\mathbf{r}}_{n}$ and $\mathbf{r}_{0n}$ are the centre and target centre, respectively, for the $n^{\text{th}}$ objective WF. 
 
 The default is {\tt 0.0}.
 
