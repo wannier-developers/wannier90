@@ -546,7 +546,6 @@ contains
                   iter,(wann_spread%om_tot-old_spread%om_tot)*lenconfac**2,&
                   sqrt(abs(gcnorm1))*lenconfac,&
                   wann_spread%om_tot*lenconfac**2,io_wallclocktime(),'<-- CONV'
-             write(stdout,'(1x,E12.3)') lambda_loc
              write(stdout,'(7x,a,F15.7,a,F15.7,a,F15.7,a)') &
                   'O_IOD=',(wann_spread%om_iod+wann_spread%om_nu)*lenconfac**2,&
                   ' O_D=',wann_spread%om_d*lenconfac**2,&
