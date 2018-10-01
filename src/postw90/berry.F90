@@ -645,23 +645,23 @@ module w90_berry
                            'Adaptive refinement grid: ',&
                             berry_curv_adpt_kmesh,berry_curv_adpt_kmesh,berry_curv_adpt_kmesh
                    if(berry_curv_unit=='ang2') then
-                       write(stdout, '(1x,a28,f6.2,a)')&
+                       write(stdout, '(1x,a28,f12.2,a)')&
                                'Refinement threshold: ',&
                                berry_curv_adpt_kmesh_thresh,' Ang^2'
                    elseif(berry_curv_unit=='bohr2') then
-                       write(stdout, '(1x,a28,f6.2,a)')&
+                       write(stdout, '(1x,a28,f12.2,a)')&
                                'Refinement threshold: ',&
                                berry_curv_adpt_kmesh_thresh,' bohr^2'
                    endif
                    !if(nfermi==1) then
                        if(wanint_kpoint_file) then
-                           write(stdout,'(1x,a30,i5,a,f5.2,a)')&
+                           write(stdout,'(1x,a30,i8,a,f6.2,a)')&
                                    ' Points triggering refinement: ',&
                                    adpt_counter_list(1),'(',&
                                    100*real(adpt_counter_list(1),dp)&
                                            /sum(num_int_kpts_on_node),'%)'
                        else
-                           write(stdout,'(1x,a30,i5,a,f5.2,a)')&
+                           write(stdout,'(1x,a30,i8,a,f6.2,a)')&
                                    ' Points triggering refinement: ',&
                                    adpt_counter_list(1),'(',&
                                    100*real(adpt_counter_list(1),dp)/product(berry_kmesh),'%)'
