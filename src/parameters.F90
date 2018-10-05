@@ -809,7 +809,7 @@ contains
     call param_get_keyword('slwf_num',found,i_value=slwf_num)
     if (found) then
        if (slwf_num .gt. num_wann .or. slwf_num .lt. 1) then
-          call io_error('Error: slwf_num must be an between 1 and num_wann')
+          call io_error('Error: slwf_num must be an integer between 1 and num_wann')
        end if
        if (slwf_num .lt. num_wann) selective_loc = .true.
     end if
@@ -1995,8 +1995,8 @@ contains
     !    call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
     if(found .and. scdm_proj .and. spinors) &
         call io_error('Error: SCDM method is not compatible with spinors yet.')
-    !if(found .and. scdm_proj .and. guiding_centres) &
-    !    call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
+    if(found .and. scdm_proj .and. guiding_centres) &
+        call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
     !if(found_fermi_energy) scdm_mu = fermi_energy
 
     call param_get_keyword('scdm_entanglement',found,c_value=ctmp)
@@ -2193,21 +2193,22 @@ contains
        ! else
           call param_get_projections
        ! end if
-       ! Constrain centres
     end if
 
     call param_get_block_length('slwf_centres',found,i_temp)
     if (found) then
        if( selective_loc .and. slwf_constrain .and. allocated(proj_site)) then
+          if (scdm_proj) call io_error('Error: Selective localisation with constrains is not compatible with SCDM.')
           ! Centre constraints block
           call param_get_centre_constraints
        else
-          call io_error('Error: found <slwf_centres> in input file and either no slwf_num, &
-               & or slwf_constrain=true or a projection_block.')
+          call io_error('Error: <slwf_centres> block found, but either no slwf_num or &
+               & slwf_constrain=false or &
+               & no projection_block specified.')
        end if
     else
        if( selective_loc .and. slwf_constrain .and. allocated(proj_site)) &
-          write(stdout, '(a)') ' No slwf_centres block. Desired centres are the same as projection centres'
+          write(stdout, '(a)') 'No slwf_centres block requested. Desired centres for SLWF same as projection centres'
     end if
 
 
