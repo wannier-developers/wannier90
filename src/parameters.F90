@@ -1153,7 +1153,8 @@ contains
     enddo
     gyrotropic_box_corner(:) = 0.0_dp
     call param_get_keyword_vector('gyrotropic_box_center', found, 3, r_value=gyrotropic_box_tmp)
-    if (found) gyrotropic_box_corner(:)=gyrotropic_box_tmp(:)-0.5*(gyrotropic_box(1,:)+gyrotropic_box(2,:)+gyrotropic_box(3,:))
+    if (found) gyrotropic_box_corner(:) = &
+      gyrotropic_box_tmp(:) - 0.5*(gyrotropic_box(1, :) + gyrotropic_box(2, :) + gyrotropic_box(3, :))
 
     call param_get_range_vector('gyrotropic_band_list', found, gyrotropic_num_bands, lcount=.true.)
     if (found) then
@@ -2602,7 +2603,8 @@ contains
       endif
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nkp = 1, num_kpts
-       write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, kpt_latt(:, nkp), '|', kpt_cart(:, nkp)/lenconfac, '|'
+        write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, kpt_latt(:, nkp), '|', &
+          kpt_cart(:, nkp)/lenconfac, '|'
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       write (stdout, *) ' '
@@ -2945,8 +2947,8 @@ contains
     if (global_kmesh_set) then
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       T', '|'
       if (kmesh_spacing > 0.0_dp) then
-    write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', kmesh(1), 'x', kmesh(2), 'x', kmesh(3), &
-          ' Spacing = ', kmesh_spacing, '|'
+        write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+          kmesh(1), 'x', kmesh(2), 'x', kmesh(3), ' Spacing = ', kmesh_spacing, '|'
       else
         write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
           , kmesh(1), 'x', kmesh(2), 'x', kmesh(3), '|'
@@ -5759,12 +5761,13 @@ contains
         write (stdout, '(1x,a)') '|                                                                            |'
         write (stdout, '(1x,a)') '|   N.B. by setting optimisation=0 memory usage will be reduced to:          |'
         if (disentanglement) &
-          write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', (mem_param + mem_dis - &
-                                                                                max(mem_dis1, mem_dis2) + mem_dis1)/(1024**2), ' Mb'
+          write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Disentanglement:', &
+          (mem_param + mem_dis - max(mem_dis1, mem_dis2) + mem_dis1)/(1024**2), ' Mb'
         if (gamma_only) then
           write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', (mem_param + mem_wan)/(1024**2), ' Mb'
         else
-          write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', (mem_param + mem_wan - mem_wan1)/(1024**2), ' Mb'
+          write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'Wannierise:', &
+            (mem_param + mem_wan - mem_wan1)/(1024**2), ' Mb'
         end if
         write (stdout, '(1x,a)') '|   However, this will result in more i/o and slow down the calculation      |'
       endif
