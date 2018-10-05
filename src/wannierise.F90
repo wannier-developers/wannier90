@@ -809,10 +809,10 @@ contains
     return
 
 1000 format(2x, 'WF centre and spread', &
-        &       i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+&       i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
 1001 format(2x, 'Sum of centres and spreads', &
-        &       1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+&       1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
   contains
 
@@ -1022,7 +1022,8 @@ contains
             enddo
           enddo
         end if
- cdodq_precond_loc(:, :, 1:counts(my_node_id)) = cdodq_precond(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
+        cdodq_precond_loc(:, :, 1:counts(my_node_id)) = &
+          cdodq_precond(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
 
       end if
 
@@ -2136,9 +2137,10 @@ contains
                                          (crt(m, n)*ln_tmp_loc(n, nn, nkp_loc) &
                                           + conjg(crt(n, m)*ln_tmp_loc(m, nn, nkp_loc))) &
                                          *cmplx(0.0_dp, -0.5_dp, kind=dp)
-              cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) - wb(nn) &
-                                         *(crt(m, n)*rnkb_loc(n, nn, nkp_loc) + conjg(crt(n, m) &
-                                                                         *rnkb_loc(m, nn, nkp_loc)))*cmplx(0.0_dp, -0.5_dp, kind=dp)
+              cdodq_loc(m, n, nkp_loc) = &
+                cdodq_loc(m, n, nkp_loc) - wb(nn) &
+                *(crt(m, n)*rnkb_loc(n, nn, nkp_loc) + &
+                  conjg(crt(n, m)*rnkb_loc(m, nn, nkp_loc)))*cmplx(0.0_dp, -0.5_dp, kind=dp)
             enddo
           enddo
         end if
@@ -3037,10 +3039,10 @@ contains
     return
 
 1000 format(2x, 'WF centre and spread', &
-        &       i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+&       i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
 1001 format(2x, 'Sum of centres and spreads', &
-        &       1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+&       1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
   contains
 
