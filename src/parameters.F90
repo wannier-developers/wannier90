@@ -809,10 +809,15 @@ contains
     slwf_constrain = .false.
     call param_get_keyword('slwf_constrain', found, l_value=slwf_constrain)
     if (found .and. slwf_constrain) then
-      allocate (ccentres_frac(num_wann, 3), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
-      allocate (ccentres_cart(num_wann, 3), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
+      if (selective_loc) then
+        allocate (ccentres_frac(num_wann, 3), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
+        allocate (ccentres_cart(num_wann, 3), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
+      else
+        write (stdout, *) ' No selective localisation requested. Ignoring constraints on centres'
+        slwf_constrain = .false.
+      end if
     end if
 
     slwf_lambda = 1.0_dp
@@ -1963,13 +1968,14 @@ contains
     scdm_sigma = 1._dp
     scdm_entanglement = 0
     call param_get_keyword('scdm_proj', found, l_value=scdm_proj)
-    !if(found .and. allocated(proj_site)) &
-    !    call io_error('Error: Can not specify projections and scdm_proj=true at the same time.')
-    if (found .and. scdm_proj .and. spinors) &
-      call io_error('Error: SCDM method is not compatible with spinors yet.')
-    if (found .and. scdm_proj .and. guiding_centres) &
-      call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
-    !if(found_fermi_energy) scdm_mu = fermi_energy
+    if (found .and. scdm_proj) then
+      if (spinors) &
+        call io_error('Error: SCDM method is not compatible with spinors yet.')
+      if (guiding_centres) &
+        call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
+      if (slwf_constrain) &
+        call io_error('Error: constrained centres are not compatible with the SCDM method yet.')
+    end if
 
     call param_get_keyword('scdm_entanglement', found, c_value=ctmp)
     if (found) then
@@ -2159,28 +2165,26 @@ contains
       call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
     if (found) then
-      ! if (scdm_proj) then
-      !   call io_error('param_read: Can not specify the projection block and scdm_proj=true at the same time.')
-      ! else
       call param_get_projections
-      ! end if
     end if
 
+    ! Constrained centres
     call param_get_block_length('slwf_centres', found, i_temp)
-    if (found) then
-      if (selective_loc .and. slwf_constrain .and. allocated(proj_site)) then
-        if (scdm_proj) call io_error('Error: Selective localisation with constrains is not compatible with SCDM.')
-        ! Centre constraints block
-        call param_get_centre_constraints
-      else
-        call io_error('Error: <slwf_centres> block found, but either no slwf_num or &
-             & slwf_constrain=false or &
-             & no projection_block specified.')
-      end if
+    if (found .and. .not. slwf_constrain) then
+      write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
+      ! Check that either projections or constrained centres are specified if slwf_constrain=.true.
+    elseif (slwf_constrain .and. .not. (found .or. allocated(proj_site))) then
+      call io_error('Error: slwf_constrain = true, but neither &
+           & <slwf_centre> block  nor &
+           & <projection_block> are specified.')
     else
-      if (selective_loc .and. slwf_constrain .and. allocated(proj_site)) &
-        write (stdout, '(a)') 'No slwf_centres block requested. Desired centres for SLWF same as projection centres'
+      ! Allocate array for constrained centres
+      call param_get_centre_constraints
     end if
+    ! Warning
+    if (slwf_constrain .and. allocated(proj_site) .and. .not. found) &
+         & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
+           & Desired centres for SLWF same as projection centres.'
 
 302 continue
 
@@ -2445,7 +2449,7 @@ contains
 
   end function get_smearing_index
 
-  !===================================================================
+!===================================================================
   subroutine param_uppercase
     !===================================================================
     !                                                                  !
@@ -2488,7 +2492,7 @@ contains
 
   end subroutine param_uppercase
 
-  !===================================================================
+!===================================================================
   subroutine param_write
     !==================================================================!
     !                                                                  !
@@ -2546,8 +2550,8 @@ contains
       do nsp = 1, num_species
         do nat = 1, atoms_species_num(nsp)
           write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-&                 '|', atoms_symbol(nsp), nat, atoms_pos_frac(:, nat, nsp),&
-&                 '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
+  &                 '|', atoms_symbol(nsp), nat, atoms_pos_frac(:, nat, nsp),&
+  &                 '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
         end do
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
@@ -2562,7 +2566,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do i = 1, slwf_num
         write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-&                    '|', i, ccentres_frac(i, :), '|', wannier_centres(:, i), '|'
+  &                    '|', i, ccentres_frac(i, :), '|', wannier_centres(:, i), '|'
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
     end if
@@ -2577,7 +2581,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nsp = 1, num_proj
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
-&              '|', proj_site(1, nsp), proj_site(2, nsp), &
+  &              '|', proj_site(1, nsp), proj_site(2, nsp), &
              proj_site(3, nsp), proj_l(nsp), proj_m(nsp), proj_radial(nsp), &
              proj_z(1, nsp), proj_z(2, nsp), proj_z(3, nsp), proj_x(1, nsp), &
              proj_x(2, nsp), proj_x(3, nsp), proj_zona(nsp), '|'
@@ -2822,7 +2826,7 @@ contains
 
   end subroutine param_write
 
-  !===================================================================
+!===================================================================
   subroutine param_postw90_write
     !==================================================================!
     !                                                                  !
@@ -2878,8 +2882,8 @@ contains
       do nsp = 1, num_species
         do nat = 1, atoms_species_num(nsp)
           write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-&                 '|', atoms_symbol(nsp), nat, atoms_pos_frac(:, nat, nsp),&
-&                 '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
+  &                 '|', atoms_symbol(nsp), nat, atoms_pos_frac(:, nat, nsp),&
+  &                 '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
         end do
       end do
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
@@ -3359,7 +3363,7 @@ contains
 
   end subroutine param_write_header
 
-  !==================================================================!
+!==================================================================!
   subroutine param_dealloc
     !==================================================================!
     !                                                                  !
@@ -3586,7 +3590,7 @@ contains
 !~
 ! $  end subroutine param_read_um
 
-  !=================================================!
+!=================================================!
   subroutine param_write_chkpt(chkpt)
     !=================================================!
     !! Write checkpoint file
@@ -3646,7 +3650,7 @@ contains
 
   end subroutine param_write_chkpt
 
-  !=================================================!
+!=================================================!
   subroutine param_read_chkpt()
     !=================================================!
     !! Read checkpoint file
@@ -3799,7 +3803,7 @@ contains
 
   end subroutine param_read_chkpt
 
-  !===========================================================!
+!===========================================================!
   subroutine param_chkpt_dist
     !===========================================================!
     !                                                           !
@@ -3867,7 +3871,7 @@ contains
 
   end subroutine param_chkpt_dist
 
-  !=======================================!
+!=======================================!
   subroutine param_in_file
     !=======================================!
     !! Load the *.win file into a character
@@ -3942,7 +3946,7 @@ contains
 
   end subroutine param_in_file
 
-  !===========================================================================!
+!===========================================================================!
   subroutine param_get_keyword(keyword, found, c_value, l_value, i_value, r_value)
     !===========================================================================!
     !                                                                           !
@@ -4015,7 +4019,7 @@ contains
 
   end subroutine param_get_keyword
 
-  !=========================================================================================!
+!=========================================================================================!
   subroutine param_get_keyword_vector(keyword, found, length, c_value, l_value, i_value, r_value)
     !=========================================================================================!
     !                                                                                         !
@@ -4082,7 +4086,7 @@ contains
 
   end subroutine param_get_keyword_vector
 
-  !========================================================!
+!========================================================!
   subroutine param_get_vector_length(keyword, found, length)
     !======================================================!
     !                                                      !
@@ -4146,7 +4150,7 @@ contains
 
   end subroutine param_get_vector_length
 
-  !==============================================================================================!
+!==============================================================================================!
   subroutine param_get_keyword_block(keyword, found, rows, columns, c_value, l_value, i_value, r_value)
     !==============================================================================================!
     !                                                                                              !
@@ -4285,7 +4289,7 @@ contains
 
   end subroutine param_get_keyword_block
 
-  !=====================================================!
+!=====================================================!
   subroutine param_get_block_length(keyword, found, rows, lunits)
     !=====================================================!
     !                                                     !
@@ -4393,7 +4397,7 @@ contains
 
   end subroutine param_get_block_length
 
-  !===================================!
+!===================================!
   subroutine param_get_atoms(lunits)
     !===================================!
     !                                   !
@@ -4566,7 +4570,7 @@ contains
 
   end subroutine param_get_atoms
 
-  !=====================================================!
+!=====================================================!
   subroutine param_lib_set_atoms(atoms_label_tmp, atoms_pos_cart_tmp)
     !=====================================================!
     !                                                     !
@@ -4657,7 +4661,7 @@ contains
 
   end subroutine param_lib_set_atoms
 
-  !====================================================================!
+!====================================================================!
   subroutine param_get_range_vector(keyword, found, length, lcount, i_value)
     !====================================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
@@ -4853,7 +4857,7 @@ contains
     column = column + 1
   end subroutine param_get_centre_constraint_from_column
 
-  !===================================!
+!===================================!
   subroutine param_get_projections
     !===================================!
     !                                   !
@@ -5468,7 +5472,7 @@ contains
 
   end subroutine param_get_projections
 
-  !===================================!
+!===================================!
   subroutine param_get_keyword_kpath
     !===================================!
     !                                   !
@@ -5541,7 +5545,7 @@ contains
 
   end subroutine param_get_keyword_kpath
 
-  !===========================================!
+!===========================================!
   subroutine param_memory_estimate
     !===========================================!
     !                                           !
@@ -5791,7 +5795,7 @@ contains
     return
   end subroutine param_memory_estimate
 
-  !===========================================================!
+!===========================================================!
   subroutine param_dist
     !===========================================================!
     !                                                           !
