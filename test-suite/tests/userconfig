@@ -21,6 +21,25 @@ tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
               (1.0e-6, 1.0e-6, 'completeness_z'),
               (1.0e-6, 1.0e-6, 'completeness_weight'))
 
+[WANNIER90_SLWFC_WOUT_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_wout.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
+              (1.0e-5, 1.0e-5, 'final_centres_y'),
+              (1.0e-5, 1.0e-5, 'final_centres_z'),
+              (2.0e-6, 2.0e-6, 'final_spreads'), 
+              (1.0e-6, 1.0e-6, 'omegaIOD_C'), 
+              (1.0e-6, 5.0e-6, 'omegaD'), 
+              (1.0e-6, 1.0e-6, 'omegaRest'), 
+              (1.0e-6, 1.0e-6, 'penaltyfunc'), 
+              (1.0e-6, 1.0e-6, 'omegaTotal_C'),
+              (1.0e-6, 1.0e-6, 'near_neigh_dist'),
+              (1.0e-6, 1.0e-6, 'near_neigh_mult'),
+              (1.0e-6, 1.0e-6, 'completeness_x'),
+              (1.0e-6, 1.0e-6, 'completeness_y'),
+              (1.0e-6, 1.0e-6, 'completeness_z'),
+              (1.0e-6, 1.0e-6, 'completeness_weight'))
+
 [WANNIER90_LABELINFO]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_labelinfo.parse

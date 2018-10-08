@@ -310,7 +310,7 @@ output = gaas-sc_xyz.dat
 
 # Test of selective localization and constrained centres
 [testw90_example26]
-program = WANNIER90_WOUT_OK
+program = WANNIER90_SLWFC_WOUT_OK
 inputs_args = ('gaas.win', '')
 output = gaas.wout
 
