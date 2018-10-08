@@ -1680,8 +1680,12 @@ contains
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread)
     !==================================================================!
     !                                                                  !
-    !!   Calculate the Wannier Function spread
+    !!   Calculate the Wannier Function spread                         !
     !                                                                  !
+    ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
+    ! Jun 2018
+    ! Based on a previous implementation by Charles T. Johnson
+    ! and original implementation by Radu Miron
     !===================================================================
     use w90_parameters, only: num_wann, m_matrix, nntot, wb, bk, num_kpts, &
       omega_invariant, timing_level, &
@@ -1868,11 +1872,11 @@ contains
 
         call comms_allreduce(wann_spread%om_nu, 1, 'SUM')
 
+        wann_spread%om_nu = wann_spread%om_nu/real(num_kpts, dp)
+
         do n = 1, slwf_num
           wann_spread%om_nu = wann_spread%om_nu + lambda_loc*sum(ccentres_cart(n, :)**2)
         end do
-
-        wann_spread%om_nu = wann_spread%om_nu/real(num_kpts, dp)
 
       end if
 
@@ -1953,6 +1957,10 @@ contains
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
+    ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
+    ! Jun 2018
+    ! Based on a previous implementation by Charles T. Johnson
+    ! and original implementation by Radu Miron
     !===================================================================
     use w90_parameters, only: num_wann, wb, bk, nntot, m_matrix, num_kpts, &
       timing_level, selective_loc, &
@@ -2137,10 +2145,10 @@ contains
                                          (crt(m, n)*ln_tmp_loc(n, nn, nkp_loc) &
                                           + conjg(crt(n, m)*ln_tmp_loc(m, nn, nkp_loc))) &
                                          *cmplx(0.0_dp, -0.5_dp, kind=dp)
-              cdodq_loc(m, n, nkp_loc) = &
-                cdodq_loc(m, n, nkp_loc) - wb(nn) &
-                *(crt(m, n)*rnkb_loc(n, nn, nkp_loc) + &
-                  conjg(crt(n, m)*rnkb_loc(m, nn, nkp_loc)))*cmplx(0.0_dp, -0.5_dp, kind=dp)
+              cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) - wb(nn) &
+                                         *(crt(m, n)*rnkb_loc(n, nn, nkp_loc) &
+                                           + conjg(crt(n, m)*rnkb_loc(m, nn, nkp_loc))) &
+                                         *cmplx(0.0_dp, -0.5_dp, kind=dp)
             enddo
           enddo
         end if
