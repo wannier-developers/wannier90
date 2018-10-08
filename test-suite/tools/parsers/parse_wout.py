@@ -129,10 +129,6 @@ def parse(fname):
         if match:
             retdict["omegaTotal"].append(float(match.groups()[0]))
             continue
-        match = omegaIOD_re.search(l)
-        if match:
-            retdict["omegaIOD"].append(float(match.groups()[0]))
-            continue
         match = omegaIOD_C_re.search(l)
         if match:
             retdict["omegaIOD_C"].append(float(match.groups()[0]))
