@@ -2170,16 +2170,25 @@ contains
 
     ! Constrained centres
     call param_get_block_length('slwf_centres', found, i_temp)
-    if (found .and. .not. slwf_constrain) then
-      write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
+    if (found) then
+      if (slwf_constrain) then
+        ! Allocate array for constrained centres
+        call param_get_centre_constraints
+      else
+        write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
+      end if
       ! Check that either projections or constrained centres are specified if slwf_constrain=.true.
-    elseif (slwf_constrain .and. .not. (found .or. allocated(proj_site))) then
-      call io_error('Error: slwf_constrain = true, but neither &
-           & <slwf_centre> block  nor &
-           & <projection_block> are specified.')
-    else
-      ! Allocate array for constrained centres
-      call param_get_centre_constraints
+    elseif (.not. found) then
+      if (slwf_constrain) then
+        if (.not. allocated(proj_site)) then
+          call io_error('Error: slwf_constrain = true, but neither &
+               & <slwf_centre> block  nor &
+               & <projection_block> are specified.')
+        else
+          ! Allocate array for constrained centres
+          call param_get_centre_constraints
+        end if
+      end if
     end if
     ! Warning
     if (slwf_constrain .and. allocated(proj_site) .and. .not. found) &
