@@ -42,7 +42,6 @@ omegaI_re = re.compile("Omega\ I\s+=\s*([0-9\.-]+)\s*$")
 omegaD_re = re.compile("Omega\ D\s+=\s*([0-9\.-]+)\s*$")
 omegaOD_re = re.compile("Omega\ OD\s+=\s*([0-9\.-]+)\s*$")
 omegaTotal_re = re.compile("Omega\ Total\s+=\s*([0-9\.-]+)\s*$")
-omegaIOD_re = re.compile("Omega\ IOD\s+=\s*([0-9\.-]+)\s*$")
 omegaIOD_C_re = re.compile("Omega\ IOD_C\s+=\s*([0-9\.-]+)\s*$")
 omegaRest_re = re.compile("Omega\ Rest\s+=\s*([0-9\.-]+)\s*$")
 penaltyfunc_re = re.compile("Penalty\ func\s+=\s*([0-9\.-]+)\s*$")
@@ -129,10 +128,6 @@ def parse(fname):
         match = omegaTotal_re.search(l)
         if match:
             retdict["omegaTotal"].append(float(match.groups()[0]))
-            continue
-        match = omegaIOD_re.search(l)
-        if match:
-            retdict["omegaIOD"].append(float(match.groups()[0]))
             continue
         match = omegaIOD_C_re.search(l)
         if match:
