@@ -11,13 +11,13 @@ For serial execution use: {\tt wannier90.x [-pp] [seedname]}
 from a file {\tt seedname.win}. The default value is {\tt wannier}. One can also equivalently provide the string
   {\tt seedname.win} instead of  {\tt seedname}.}
 \item { {\tt -pp}: This optional flag tells the code to generate
-a list of the required overlaps and then exit. 
+a list of the required overlaps and then exit.
 This information is written to the file {\tt seedname.nnkp}.}
 \end{itemize}
 
 For parallel execution use: {\tt mpirun -np NUMPROCS wannier90.x [-pp] [seedname]}
 
-\begin{itemize} \item 
+\begin{itemize} \item
 {\tt NUMPROCS}: substitute with the number of processors that you want
 to use.
 \end{itemize}
@@ -36,7 +36,7 @@ configured on your machine.
 
 \section{{\tt seedname.win} File\label{sec:seednamefile}}
 The \wannier\ input file {\tt seedname.win} has a flexible free-form
-structure. 
+structure.
 
 The ordering of the keywords is not significant. Case is ignored (so
 \verb#num_bands# is the same as \verb#Num_Bands#). Characters after !, or \#
@@ -54,7 +54,7 @@ num\_wann : 4
 A logical keyword can be set to {\tt true} using any of the following
 strings: {\tt T}, {\tt true}, {\tt .true.}.
 
-For further examples see Section~\ref{winfile} and the the \wannier\ Tutorial. 
+For further examples see Section~\ref{winfile} and the the \wannier\ Tutorial.
 
 \section{Keyword List}
 \label{parameter_data}
@@ -95,12 +95,12 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.\\
  {\footnotesize
 * {\sc atoms\_cart } and  {\sc atoms\_frac } may not both be defined in
-the same input file. }} 
+the same input file. }}
 \label{parameter_keywords1}
 \end{center}
 \end{table}
 
-\clearpage 
+\clearpage
 
 \begin{table}
 \begin{center}
@@ -119,15 +119,11 @@ Keyword & Type & Description \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
 {\sc wvfn\_formatted }   & L & Read the wavefunctions from a  (un)formatted file  \\
-{\sc scdm\_proj} & L & Whether to use the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}  \\
-{\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
-{\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
-{\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
 {\sc spin }   & S & Which spin channel to read \\
 {\sc devel\_flag }   & S & Flag for development use \\
 {\sc timing\_level } & I & Determines amount of timing information
 written to output \\
-{\sc optimisation } & I & Optimisation level \\ 
+{\sc optimisation } & I & Optimisation level \\
 {\sc translate\_home\_cell } & L & To translate final Wannier centres
 to home unit cell when writing xyz file\\
 {\sc write\_xyz }  & L & To write atomic positions and final centres in xyz file format \\
@@ -168,15 +164,15 @@ of $\omi$ \\
 {\sc dis\_mix\_ratio }   & R & Mixing ratio during the minimisation of $\omi$\\
 {\sc dis\_conv\_tol }   & R & The convergence tolerance for finding $\omi$ \\
 {\sc dis\_conv\_window }   & I & The number of iterations over which
-convergence of $\omi$ is assessed. \\ 
+convergence of $\omi$ is assessed. \\
 {\sc dis\_spheres\_num }   & I & Number of spheres in k-space where disentaglement is performed\\
 {\sc dis\_spheres\_first\_wann }   & I & Index of the first band to be considered a Wannier function \\
-{\sc dis\_spheres } & R & List of centers and radii, for disentanglement only in spheres \\
+{\sc dis\_spheres } & R & List of centres and radii, for disentanglement only in spheres \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling disentanglement parameters.]
 {{\tt seedname.win} file keywords controlling the disentanglement.
-  Argument types 
+  Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.}
 \label{parameter_keywords4}
@@ -222,14 +218,23 @@ of $\Omega$\\
 of $\Omega$, instead of doing a parabolic line search \\
 {\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
 {\sc site\_symmetry}***   & L & To construct symmetry-adapted Wannier functions  \\
-{\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\ 
+{\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\
+{\sc scdm\_proj} & L & Whether to use the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}  \\
+{\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
+{\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
+{\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
+%% AAM: rename all of these slwf_*
+{\sc slwf\_num} & I & The number of objective WFs for selective localization \\
+{\sc slwf\_constrain} & L & Whether to constrain the centres of the objective WFs \\
+{\sc slwf\_lambda} & R & Value of the Lagrange multiplier for constraining the objective WFs \\
+{\sc slwf\_centres} & P & The centres to which the objective WFs are to be constrained \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling the Wannierise routine.]
 {{\tt seedname.win} file keywords controlling the wannierisation.
-  Argument types 
+  Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string. 
+physical value, L for a logical value and S for a text string.
 {\footnotesize
 * {\sc fixed\_step } and  {\sc trial\_step } may not both be defined in
 the same input file. **Cannot be used in conjunction with disentanglement.
@@ -256,11 +261,11 @@ the same input file. **Cannot be used in conjunction with disentanglement.
   {\sc wannier\_plot\_format }   & S & File format in which to plot the
   WF \\
   {\sc wannier\_plot\_mode }   & S & Mode in which to plot the
-  WF, molecule or crystal \\ 
-  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\ 
-  {\sc wannier\_plot\_scale } & R & Scaling parameter for cube files \\ 
-  {\sc wannier\_plot\_spinor\_mode } & S& Quantity to plot for spinor WF\\ 
-  {\sc wannier\_plot\_spinor\_phase } & L& Include the ``phase'' when plotting spinor WF\\ 
+  WF, molecule or crystal \\
+  {\sc wannier\_plot\_radius } & R & Cut-off radius of WF* \\
+  {\sc wannier\_plot\_scale } & R & Scaling parameter for cube files \\
+  {\sc wannier\_plot\_spinor\_mode } & S& Quantity to plot for spinor WF\\
+  {\sc wannier\_plot\_spinor\_phase } & L& Include the ``phase'' when plotting spinor WF\\
   {\sc bands\_plot }   & L & Plot interpolated band structure \\
   {\sc kpoint\_path }   & P & K-point path for the interpolated band structure  \\
   {\sc bands\_num\_points }   & I & Number of points along the first
@@ -279,7 +284,7 @@ the same input file. **Cannot be used in conjunction with disentanglement.
   the Fermi energy range\\
   {\sc fermi\_energy\_max }   & P & Upper limit of
   the Fermi energy range\\
-  {\sc fermi\_energy\_step }   & R & Step for increasing the 
+  {\sc fermi\_energy\_step }   & R & Step for increasing the
 Fermi energy in the specified range\\
   {\sc fermi\_surface\_plot\_format }   & S & File format for the Fermi
   surface plot \\
@@ -294,7 +299,7 @@ Hamiltonian, and position operator in WF basis} \\
   {\sc dist\_cutoff\_mode} & S & Dimension in which the distance between WF
   is calculated \\
   {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
-  final WF are translated \\ 
+  final WF are translated \\
   \new{\sc use\_ws\_distance } & L & \new{Improve interpolation using minimum distance between WFs, see Chap.~\ref{chap:interpolation}} \\
   \new{\sc ws\_distance\_tol } & R & \new{Absolute tolerance for the distance to equivalent positions.} \\
   \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
@@ -331,12 +336,12 @@ Keyword & Type & Description \\
 \multicolumn{3}{|c|}{Transport Parameters} \\
 \hline
 {\sc transport}   & L & Calculate quantum conductance and density of states \\
-{\sc transport\_mode }  & S & Bulk or left-lead\_conductor\_right-lead calculation \\ 
-{\sc tran\_win\_min } & P &  Bottom of the energy window for transport calculation\\  
-{\sc tran\_win\_max } & P &  Top of the energy window for transport calculation\\ 
-{\sc tran\_energy\_step } & R & Sampling interval of the energy values \\ 
+{\sc transport\_mode }  & S & Bulk or left-lead\_conductor\_right-lead calculation \\
+{\sc tran\_win\_min } & P &  Bottom of the energy window for transport calculation\\
+{\sc tran\_win\_max } & P &  Top of the energy window for transport calculation\\
+{\sc tran\_energy\_step } & R & Sampling interval of the energy values \\
 {\sc fermi\_energy } & R & The Fermi energy \\
-{\sc tran\_num\_bb } & I & Size of a bulk Hamiltonian \\  
+{\sc tran\_num\_bb } & I & Size of a bulk Hamiltonian \\
 {\sc tran\_num\_ll } & I & Size of a left-lead Hamiltonian \\
 {\sc tran\_num\_rr } & I & Size of a right-lead Hamiltonian \\
 {\sc tran\_num\_cc } & I & Size of a conductor Hamiltonian \\
@@ -344,8 +349,8 @@ Keyword & Type & Description \\
 {\sc tran\_num\_cr } & I & Number of rows in a conductor\_right-lead Hamiltonian \\
 {\sc tran\_num\_cell\_ll } & I & Number of unit cells in PL of left lead \\
 {\sc tran\_num\_cell\_rr } & I & Number of unit cells in PL of right lead \\
-{\sc tran\_num\_bandc } & I & Half-bandwidth+1 of a band-diagonal conductor Hamiltonian \\ 
-{\sc tran\_write\_ht } & L & Write the Hamiltonian for transport calculation \\ 
+{\sc tran\_num\_bandc } & I & Half-bandwidth+1 of a band-diagonal conductor Hamiltonian \\
+{\sc tran\_write\_ht } & L & Write the Hamiltonian for transport calculation \\
 {\sc tran\_read\_ht } & L & Read the Hamiltonian for transport calculation \\
 {\sc tran\_use\_same\_lead } & L & Left and right leads are the same \\
 {\sc tran\_group\_threshold } & R & Distance that determines the grouping of WFs \\
@@ -355,7 +360,7 @@ Keyword & Type & Description \\
 is calculated \\
 {\sc one\_dim\_axis} & S &  Extended direction for a one-dimensional system \\
 {\sc translation\_centre\_frac } & R & Centre of the unit cell to which
-final WF are translated \\ 
+final WF are translated \\
 \hline
 \end{tabular}
 \caption[Parameter file keywords controlling transport.]
@@ -376,7 +381,7 @@ Number of WF to be found.
 
 No default.
 
-\subsection[num\_bands]{\tt integer :: num\_bands} 
+\subsection[num\_bands]{\tt integer :: num\_bands}
 
 Total number of bands passed to the code in the {\tt seedname.mmn} file.
 
@@ -402,7 +407,7 @@ Here $A_{1x}$ is the $x$-component of the first lattice vector $\mathbf{A}_1$,
 $A_{2y}$ is the $y$-component of the second lattice vector $\mathbf{A}_2$, etc.
 
 \verb#[units]# specifies the units in which the lattice vectors are
-defined: either \verb#Bohr# or \verb#Ang#. 
+defined: either \verb#Bohr# or \verb#Ang#.
 
 The default value is \verb#Ang#.
 
@@ -451,7 +456,7 @@ $$
 The first entry on a line is the atomic symbol. The next three entries
 are the atom's position in fractional coordinates $\mathbf{F} = F_1
 \mathbf{A}_{1} + F_2 \mathbf{A}_{2} + F_3 \mathbf{A}_{3}$
-relative to the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$. 
+relative to the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$.
 
 \subsection[mp\_grid]{\tt integer, dimension :: mp\_grid(3)}
 Dimensions of the regular (Monkhorst-Pack) k-point mesh. For example,
@@ -524,7 +529,7 @@ $k$ points required by {\tt wannier90}. See Sec.~\ref{sec:kmesh}.
 \subsection[gamma\_only]{{\tt logical :: gamma\_only}}
 
 If {\tt gamma\_only=true}, then \wannier\ uses a branch of algorithms
-for disentanglement and localisation that exploit the fact that the 
+for disentanglement and localisation that exploit the fact that the
 Bloch eigenstates obtained from the underlying ab initio calculation
 are manifestly real. This can be the case when only the $\Gamma$-point
 is used to sample the Brillouin zone. The localisation procedure
@@ -536,7 +541,7 @@ The default value is {\tt false}.
 
 \subsection[spinors]{{\tt logical :: spinors}}
 
-If {\tt spinors=true}, then \wannier\ 
+If {\tt spinors=true}, then \wannier\
 assumes that the WF correspond to singularly occupied spinor states and {\tt num\_elec\_per\_state=1}.
 
 The default value is {\tt false}.
@@ -553,12 +558,12 @@ k-points. The vectors $\{{\bf b}\}$ connect each mesh-point ${\bf k}$
   (Eq.~B1 of Ref.~\cite{marzari-prb97}):
 \begin{equation}\label{eq:B1}
 \sum_{s}^{N_{\mathrm{sh}}} w_s \sum_i^{M_{\mathrm{s}}}
-b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:, 
+b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:,
 \end{equation}
 where ${\bf b}^{i,s}$, $i\in[1,M_s]$, is the
 $i^{\mathrm{th}}$ vector belonging to the $s^{\mathrm{th}}$ shell
 with associated weight $w_s$, and $\alpha$ and $\beta$ run over the
-three Cartesian indices. 
+three Cartesian indices.
 
 
 \subsection[shell\_list]{\tt integer :: shell\_list(:)}
@@ -572,7 +577,7 @@ absent, the shells are chosen automatically.
 Specifies the number of shells of neighbours over which to search in
 attempting to determine an automatic solution to the B1 condition
 Eq.~\ref{eq:B1}. Larger values than the default may be required in special
-cases e.g. for very long thin unit cells. 
+cases e.g. for very long thin unit cells.
 
 The default value is 12.
 
@@ -616,13 +621,13 @@ The default value is 0.000001 Ang.
 
  The projections block defines a set of localised functions used to
  generate an initial guess for the unitary transformations. The projection block can be specified
-in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centers of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
+in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centres of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
-\noindent \verb#begin projections# \\ 
-  . \\ 
-  . \\ 
+\noindent \verb#begin projections# \\
+  . \\
+  . \\
 \verb#end projections#
 
 If \verb#guiding_centres#={\tt true}, then the projection centres are
@@ -630,13 +635,30 @@ used as the guiding centres in the Wannierisation routine.
 
 For details see Section~\ref{sec:proj}.
 
+%\section{Constrains on centres}
+%
+%The constrained centres block defines the target positions, in fractional co-ordinates, for the OWFs whose centres are meant to be constrained. 
+%
+%The block below shows all possible ways of setting the constraints. In particular, assuming $J'=5<J=${\tt num\_wann} :
+%
+%\noindent \verb#begin centre_constraints# \\
+%2 0.0 0.0 0.0 \\
+%4 0.25 0.0 0.0 \\
+%\verb#end centre_constraints#
+%
+%\begin{itemize}
+%\item The first line sets the constraint for the centre of OWF number 2 (as defined in the projection block) to (0.0,0.0,0.0) in fractional co-ordinates.
+%\item The second line sets the constraint for the centre of OWF number 4 (as defined in the projection block) to (0.25,0.0,0.0) in fractional co-ordinates.
+%\item The centres of all the other Objective Wannier functions, i.e. 1,3,5, etc. are set to their initial projection centres.
+%\end{itemize}
+
 \section{Job Control}
 
 \subsection[postproc\_setup]{\tt logical :: postproc\_setup}
-If \verb#postproc_setup#=\verb#true#, then the wannier code will write 
+If \verb#postproc_setup#=\verb#true#, then the wannier code will write
  {\tt seedname.nnkp} file and exit.
-If \wannier\ is called with the option {\tt -pp}, then 
- \verb#postproc_setup# is set to 
+If \wannier\ is called with the option {\tt -pp}, then
+ \verb#postproc_setup# is set to
 \verb#true#, over-riding its
 value in the {\tt seedname.win} file.
 
@@ -658,10 +680,10 @@ The default value is 1.
 
 \subsection[optimisation]{\tt integer :: optimisation}
 
-This indicates the level of optimisation used in the code. This is a 
+This indicates the level of optimisation used in the code. This is a
 trade between speed and memory. A positive number indicates fastest execution time at the cost
 of more memory. Zero or negative numbers indicates a smaller memory footprint - at increased
-execution time. 
+execution time.
 
 At the moment the only values that have an effect are \verb#optimisation<=0# (low memory) and \verb#optimisation>0# (fast)
 
@@ -701,13 +723,13 @@ No default.
 \subsection[exclude\_bands]{\tt integer :: exclude\_bands(:)}
 
 A k-point independent list of states to excluded from the calculation
- of the overlap matrices; 
+ of the overlap matrices;
  for example to select only valence states, or ignore semi-core states.
  This keyword is passed to the first-principles code via the
  {\tt seedname.nnkp} file. For example, to exclude bands 2, 6, 7, 8
  and 12:
 
- \verb#exclude_bands : 2, 6-8, 12# 
+ \verb#exclude_bands : 2, 6-8, 12#
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
@@ -718,10 +740,10 @@ determines the position of the restart
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#default#. Restart from the point at which the
-  check file {\tt seedname.chk} was written  
+  check file {\tt seedname.chk} was written
 \item[{\bf --}]  \verb#wannierise#. Restart from the beginning of the
-  wannierise routine 
-\item[{\bf --}]  \verb#plot#. Go directly to the plotting phase 
+  wannierise routine
+\item[{\bf --}]  \verb#plot#. Go directly to the plotting phase
 \item[{\bf --}]  \verb#transport#. Go directly to the transport routines
 
 
@@ -741,31 +763,6 @@ transferability is required (i.e., for test cases).
 
 The default value of this parameter is $\verb#false#$.
 
-\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
-If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code). 
-
-The default value is {\tt false}.
-
-\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
-Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
-Only three integer values are allowed:
-\begin{itemize}
-\item[{\tt isolated}] $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
-\item[{\tt erfc}] The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
-\item[{\tt gaussian}] The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
-\end{itemize}
-
-The default value is {\tt isolated}.
-
-\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
-The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead. 
-
-The default value is {\tt 0 eV}
-
-\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
-The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV. 
-
-The default value is {\tt 1.0 eV}.  
 
 \subsection[spin]{\tt character(len=20) :: spin}
 For bands from a spin polarised calculation {\tt spin} determines which set
@@ -778,7 +775,7 @@ The default value of this parameter is \verb#up#.
 
 Determines the amount of timing information regarding the calculation
 that will be written to the output file. A value of 1 produces the
-least information. 
+least information.
 
 The default value is 1.
 
@@ -786,18 +783,18 @@ The default value is 1.
 
 Determines whether to translate the final Wannier centres to the home
 unit cell at the end of the calculation. Mainly useful for molecular
-systems in which the molecule resides entirely within the home unit 
+systems in which the molecule resides entirely within the home unit
 cell and user wants to write an xyz file ({\tt write\_xyz=.true.}) for
-the WF centres to compare with the structure. 
+the WF centres to compare with the structure.
 
-The default value is \verb#false#. 
+The default value is \verb#false#.
 
 \subsection[write\_xyz]{\tt logical :: write\_xyz}
 
-Determines whether to write the atomic positions and 
+Determines whether to write the atomic positions and
 final Wannier centres to an xyz file,
 \verb#seedname_centres.xyz#, for subsequent
-visualisation. 
+visualisation.
 
 The default value is \verb#false#.
 
@@ -835,7 +832,7 @@ are included in the disentanglement procedure).
 The lower bound of the inner energy window for the disentanglement
 procedure.  Units are eV.
 
-If \verb#dis_froz_max# is given, then the default for 
+If \verb#dis_froz_max# is given, then the default for
 \verb#dis_froz_min# is \verb#dis_win_min#.
 
 
@@ -861,7 +858,7 @@ in some cases.
 
 Restriction: $0.0<\:${\tt dis\_mix\_ratio}$\:\leq 1.0$
 
-The default value is 0.5 
+The default value is 0.5
 
 \subsection[dis\_conv\_tol]{\tt real(kind=dp) :: dis\_conv\_tol}
 
@@ -884,7 +881,7 @@ The default value of this parameter is 3.
 
 \subsection[dis\_spheres\_num]{\tt integer :: dis\_spheres\_num}
 Number of spheres in reciprocal space where the k-dependent
-disentanglement is performed. No disentanglement is performed for 
+disentanglement is performed. No disentanglement is performed for
 those k-points that are not included in any of the spheres.
 
 The default is 0, which means disentangle at every k-point in the full BZ (the standard mode in Wannier90).
@@ -905,7 +902,7 @@ Each line gives the coordinate $\mathbf{K}=K_1 \mathbf{B}_{1} + K_2
 \mathbf{B}_{2} + K_3 \mathbf{B}_3$ of a k-point representing the
 center of one of the spheres used for k-dependent disentanglement.
 The same crystallographic units as for {\tt kpoints} are used here.
-Each k-point coordinate $\mathbf{K}^i$ must the followed by the 
+Each k-point coordinate $\mathbf{K}^i$ must the followed by the
 respectice sphere radius $r_{i}$ in inverse angstrom (on the same line).
 
 The number of lines must be equal to {\tt dis\_spheres\_num}.
@@ -975,15 +972,15 @@ The default value is \verb#false#.
 
 If {\tt conv\_noise\_amp}$\:>0$, once convergence (as defined above) is
 achieved, some random noise $f$ is added to the search direction, and the
-minimisation is continued until convergence is achieved once more. If 
+minimisation is continued until convergence is achieved once more. If
 the same value of $\Omega$ as before is arrived at, then the calculation
 is considered to be converged. If not, then random noise is added
 again and the procedure repeated up to a maximum of {\tt
   conv\_noise\_num} times. {\tt conv\_noise\_amp} is the amplitude of
-the random noise $f$ that is added to the search direction: 
+the random noise $f$ that is added to the search direction:
 $0 < |f| <\:${\tt conv\_noise\_amp}. This functionality requires {\tt
   conv\_window}$\:>1$. If {\tt conv\_window} is not specified, it is set
-to the value 5 by default. 
+to the value 5 by default.
 
 If {\tt conv\_noise\_amp}$\:\leq 0$, then no noise is added (default).
 
@@ -1011,9 +1008,9 @@ The default is 1
 \subsection[write\_r2mn]{\tt logical :: write\_r2mn}
 
 If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
-$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to WF) are written 
+$\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to WF) are written
 to file \verb#seedname.r2mn# at the end of the Wannierisation
-procedure. 
+procedure.
 
 The default value of this parameter is \verb#false#.
 
@@ -1060,28 +1057,89 @@ There is no default value.
 
 Determines whether to use the Bloch functions as the
 initial guess for the projections. Can only be used if
-\verb#disentanglement = false#. 
+\verb#disentanglement = false#.
 
 The default value is \verb#false#.
 
 
 \subsection[site\_symmetry]{\tt logical :: site\_symmetry}
 
-Construct symmetry-adapted Wannier functions. 
-For the detail of the theoretical background, see Ref.~\cite{sakuma-prb13}. 
-Cannot be used in conjunction with the inner (frozen) energy window. 
+Construct symmetry-adapted Wannier functions.
+For the detail of the theoretical background, see Ref.~\cite{sakuma-prb13}.
+Cannot be used in conjunction with the inner (frozen) energy window.
 
 The default value is \verb#false#.
 
 \subsection[symmetrize\_eps]{\tt real(kind=dp) :: symmetrize\_eps}
 
 Convergence threshold to check whether the symmetry condition (Eq. (19) in Ref.~\cite{sakuma-prb13})
-on the unitary matrix $\Uk$ is satisfied or not.  
-See also Eq. (29) in Ref.~\cite{sakuma-prb13}. 
+on the unitary matrix $\Uk$ is satisfied or not.
+See also Eq. (29) in Ref.~\cite{sakuma-prb13}.
 Used when \verb#site_symmetry = .true#.
 
 The default value is 1.0E-3.
 
+\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
+If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code).
+
+The default value is {\tt false}.
+
+\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
+Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
+Only three integer values are allowed:
+
+\noindent {\tt isolated}: $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+
+\noindent {\tt erfc}: The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+
+\noindent {\tt gaussian}: The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
+
+The default value is {\tt isolated}.
+
+\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
+The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead.
+
+The default value is {\tt 0 eV}.
+
+\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
+The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV.
+
+The default value is {\tt 1.0 eV}.
+
+\subsection[slwf\_num]{\tt integer :: slwf\_num}
+The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. 
+
+The default is {\tt num\_wann}.
+
+\subsection[slwf\_constrain]{\tt logical :: slwf\_constrain}
+If {\tt slwf\_constrain=true}, then the centres of the objective Wannier functions are constrained to either the centres of the first {\tt slwf\_num} orbitals in the {\tt projections} block or to new positions specified in the {\tt slwf\_centres} block (see Sec.~\ref{sec:centre_constraints}). In this case, a modified spread functional, $\Omega_c$, with the addition of a constraint term, as described in Ref.~\cite{Marianetti}.
+
+The default is {\tt false}
+
+\subsection[slwf\_lambda]{\tt real(kind=dp) :: slwf\_lambda}
+The value of the Lagrange multiplier $\lambda$ for the constraint term in term added to modify the spread functional: $ \lambda \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n}\right)^2$, where $J'$ is {\tt slwf\_num}, and $\overline{\mathbf{r}}_{n}$ and $\mathbf{r}_{0n}$ are the centre and target centre, respectively, for the $n^{\text{th}}$ objective WF. 
+
+The default is {\tt 0.0}.
+
+\subsection{Constraints on centres}
+\label{sec:centre_constraints}
+
+If {\tt slwf\_constrain=true}, then by default the centres to which the {\tt slwf\_num} objective Wannier function centres are constrained are given by the first {\tt slwf\_num} rows of the {\tt projections} block. 
+
+Optionally, the {\tt slwf\_centres} block may be used to define alternative target centres for some or all of the {\tt slwf\_num} objective Wannier functions.
+
+The block below shows an example of how to set the constraints:
+
+\noindent \verb#begin centre_constraints# \\
+\verb#   2  0.0   0.0  0.0# \\
+\verb#   4  0.25  0.0  0.0# \\
+\verb#end centre_constraints#
+
+\begin{itemize}
+\item The first line sets the constraint for the centre of objective WF number 2 (as defined by the order of WFs in the {\tt projections} block) to (0.0,0.0,0.0) in fractional co-ordinates.
+\item The second line sets the constraint for the centre of objective WF number 4 (as defined by the order of WFs in the {\tt projections} block) to (0.25,0.0,0.0) in fractional co-ordinates.
+\item The target centres of all other objective Wannier functions remain as the centres given in the corresponding rows of the {\tt projections} block.
+\end{itemize}
 
 \section{Post-Processing}
 \label{sec:post-p}
@@ -1090,11 +1148,11 @@ The default value is 1.0E-3.
 
 \begin{itemize}
 \item[{\bf --}]  Plot the WF
-\item[{\bf --}]  Plot the interpolated band structure 		     
-\item[{\bf --}]  Plot the Fermi surface 
-\item[{\bf --}]  Output the Hamiltonian in the WF basis			     
+\item[{\bf --}]  Plot the interpolated band structure
+\item[{\bf --}]  Plot the Fermi surface
+\item[{\bf --}]  Output the Hamiltonian in the WF basis
 \item[{\bf --}]  Transport calculation (quantum conductance and
-  density of states)			     
+  density of states)
 %\item[{\bf --}]  Plot the density of states.
 \end{itemize}
 
@@ -1111,7 +1169,7 @@ The default value of this parameter is \verb#false#.
 
  A list of WF to plot. The WF numbered
  as per the {\tt seedname.wout} file after the minimisation of the
- spread. 
+ spread.
 
  The default behaviour is to plot all WF. For example,
  to plot WF 4, 5, 6 and 10:
@@ -1121,8 +1179,8 @@ The default value of this parameter is \verb#false#.
 
 \subsection[wannier\_plot\_supercell]{\tt integer :: wannier\_plot\_supercell}
 
-The code generates the WFs on a grid corresponding to a `super-unit-cell'. 
-If \verb#wannier_plot_supercell# is provided as a single integer, 
+The code generates the WFs on a grid corresponding to a `super-unit-cell'.
+If \verb#wannier_plot_supercell# is provided as a single integer,
 then the size of the super-unit-cell is \verb#wannier_plot_supercell# times
 the size of the unit cell along all three linear dimensions (the `home' unit cell
 is kept approximately in the middle); otherwise, if three integers are
@@ -1143,18 +1201,18 @@ format. The valid options for this parameter are:
 %\item[{\bf --}] dan
 \end{itemize}
 
-If {\tt wannier\_plot\_format=xsf}: the code outputs the WF on the entire super-unit-cell 
-specified by {\tt wannier\_plot\_supercell}. 
+If {\tt wannier\_plot\_format=xsf}: the code outputs the WF on the entire super-unit-cell
+specified by {\tt wannier\_plot\_supercell}.
 
-If {\tt wannier\_plot\_format=cube}: the code outputs the WF on a grid that is smaller 
-than the super-unit-cell specified by {\tt wannier\_plot\_supercell}. This grid is 
-determined by {\tt wannier\_plot\_mode}, {\tt wannier\_plot\_radius} and {\tt wannier\_plot\_scale}, 
-described in detail below. 
+If {\tt wannier\_plot\_format=cube}: the code outputs the WF on a grid that is smaller
+than the super-unit-cell specified by {\tt wannier\_plot\_supercell}. This grid is
+determined by {\tt wannier\_plot\_mode}, {\tt wannier\_plot\_radius} and {\tt wannier\_plot\_scale},
+described in detail below.
 
 The code is able to output Gaussian cube files for systems with non-orthogonal lattice vectors.
 Many visualisation programs (including XCrySDen), however, are only able to handle cube files for systems
-with \emph{orthogonal} lattice vectors. One visualisation program that is capable of dealing with non-orthogonal lattice vectors is 
-VESTA (\url{http://jp-minerals.org/vesta/en/}).\footnote{It's worth noting that another 
+with \emph{orthogonal} lattice vectors. One visualisation program that is capable of dealing with non-orthogonal lattice vectors is
+VESTA (\url{http://jp-minerals.org/vesta/en/}).\footnote{It's worth noting that another
   visualisation program, VMD (\url{http://www.ks.uiuc.edu/Research/vmd}), is able to
   deal with certain special cases of non-orthogonal lattice
   vectors; see \url{http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/cubeplugin.html} for details.}
@@ -1162,18 +1220,18 @@ VESTA (\url{http://jp-minerals.org/vesta/en/}).\footnote{It's worth noting that 
 \subsection[wannier\_plot\_mode]{\tt character(len=20) :: wannier\_plot\_mode}
 
 Choose the mode in which to plot the WF, either as a molecule
-or as a crystal. 
-%Only relevant if {\tt wannier\_plot\_format=xcrysden}. 
+or as a crystal.
+%Only relevant if {\tt wannier\_plot\_format=xcrysden}.
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#crystal# (default)
-\item[{\bf --}] \verb#molecule# 
+\item[{\bf --}] \verb#molecule#
 \end{itemize}
 
-If {\tt wannier\_plot\_format=cube}: 
+If {\tt wannier\_plot\_format=cube}:
 \begin{itemize}
-\item if {\tt wannier\_plot\_mode = molecule}, then wherever the WF centre sits in the supercell, the origin of the cube is shifted (for the purpose of plotting only, ie, nothing is done to the U matrices etc) to coincide with the centre of mass of the atomic positions specified by the user in the {\tt *.win} input file. These atomic positions are also written to the cube file, so when it is visualised, the WF appears superimposed on the molecular structure. 
+\item if {\tt wannier\_plot\_mode = molecule}, then wherever the WF centre sits in the supercell, the origin of the cube is shifted (for the purpose of plotting only, ie, nothing is done to the U matrices etc) to coincide with the centre of mass of the atomic positions specified by the user in the {\tt *.win} input file. These atomic positions are also written to the cube file, so when it is visualised, the WF appears superimposed on the molecular structure.
 \item if {\tt wannier\_plot\_mode = crystal}, then the WF is not shifted, but instead the code searches for atoms that are within a radius of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file. In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre.
 \item {\tt crystal} mode can be used for molecules, and {\tt molecule} mode can be used for crystals.
 \end{itemize}
@@ -1185,20 +1243,20 @@ If {\tt wannier\_plot\_format=cube}, then {\tt
   wannier\_plot\_radius} is the radius of the sphere that must fit inside the parallelepiped in which the WF is plotted. {\tt wannier\_plot\_radius} must be greater than
   0. Units are \AA.
 
-The default value is 3.5. 
+The default value is 3.5.
 
 \subsection[wannier\_plot\_scale]{\tt real(kind=dp) ::
   wannier\_plot\_scale}
-If {\tt wannier\_plot\_format=cube} and {\tt wannier\_plot\_mode=crystal}, then the code searches for atoms that are within a radius 
-of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file. 
-In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre. {\tt wannier\_plot\_scale} must 
+If {\tt wannier\_plot\_format=cube} and {\tt wannier\_plot\_mode=crystal}, then the code searches for atoms that are within a radius
+of {\tt wannier\_plot\_scale} $\times$ {\tt wannier\_plot\_radius} of the WF centre and writes the coordinates of these atoms to the cube file.
+In this way, when the cube file is visualised, the WF appears superimposed on the nearest atoms to the WF centre. {\tt wannier\_plot\_scale} must
 be greater than 0. This parameter is dimensionless.
 
 The default value is 1.0.
 
 \subsection[wannier\_plot\_spinor\_mode]{\tt character(len=20) :: wannier\_plot\_spinor\_mode}
 If $\verb#spinors#=\verb#true#$ then this parameter controls the
-quantity to plot. For a spinor WF with components $[\phi,\psi]$ the quatity plotted is 
+quantity to plot. For a spinor WF with components $[\phi,\psi]$ the quatity plotted is
 \begin{itemize}
 \item[{\bf --}] \verb#total# (default). $\sqrt{[|\phi|^2+|\psi|^2}$
 \item[{\bf --}] \verb#up#. $|\phi|\times sign(Re\{\phi\})$ if $\verb#wannier_plot_spinor_mode#=\verb#true#$,
@@ -1211,7 +1269,7 @@ straightforward as for a scalar WF. While  a scalar WF is typically a
 real valued function, a spinor WF is a complex, two component
 spinor. \wannier\ is able to plot several different quantities derived
 from a spinor WF which should give you a good idea of the nature of
-the WF. 
+the WF.
 
 \subsection[wannier\_plot\_spinor\_phase]{\tt logical ::   wannier\_plot\_spinor\_phase}
 If $\verb#wannier_plot_spinor_phase#=\verb#true#$ phase information will
@@ -1224,7 +1282,7 @@ structure, through Wannier interpolation,
  along
 the path in k-space defined by \verb#bands_kpath# using \verb#bands_num_points# along the first
 section of the path and write out an output file in a format specified
-by \verb#bands_plot_format#. 
+by \verb#bands_plot_format#.
 
 The default value is \verb#false#.
 
@@ -1253,7 +1311,7 @@ There is no default
 If $\verb#bands_plot#=\verb#true#$, then the number of points along
 the first section of the bandstructure plot given by
 \verb#kpoint_path#. Other sections will have the same density of
-k-points. 
+k-points.
 
 The default value for \verb#bands_num_points# is 100.
 
@@ -1275,7 +1333,7 @@ $\verb#bands_format#=\verb#gnuplot xmgrace#$
 
 If present \wannier\ will compute the contribution of this set of WF to the
 states at each point of the interpolated band structure.
-The WF are numbered according to the seedname.wout file. The result is written 
+The WF are numbered according to the seedname.wout file. The result is written
 in the {\tt seedname\_band.dat} file, and a corresponding gnuplot script to
 {\tt seedname\_band\_proj.dat} .
 
@@ -1288,9 +1346,9 @@ in the {\tt seedname\_band.dat} file, and a corresponding gnuplot script to
 
 To interpolate the band structure along the k-point path,
 either use the Slater-Koster interpolation scheme
-or truncate the Hamiltonian matrix in the WF basis. 
+or truncate the Hamiltonian matrix in the WF basis.
 Truncation criteria are provided by \verb#hr_cutoff#
-and \verb#dist_cutoff#. 
+and \verb#dist_cutoff#.
 
 The valid options for this parameter are:
 \begin{itemize}
@@ -1342,7 +1400,7 @@ If {\tt fermi\_energy} is specified, {\tt
 
 %Whilst this is not directly used by the
 %\wannier, it is a useful parameter to set as it will be written
-%into the bxsf file. 
+%into the bxsf file.
 
 % There is no default value.
 The default value is 0.0
@@ -1373,9 +1431,9 @@ The default value is 0.01.
 
 
 \subsection[fermi\_surface\_plot\_format]{\tt character(len=20) ::
-  fermi\_surface\_plot\_format} 
+  fermi\_surface\_plot\_format}
 
-Format in which to plot the Fermi surface. 
+Format in which to plot the Fermi surface.
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#xcrysden#  (default)
@@ -1429,7 +1487,7 @@ The default value of this parameter is \verb#false#.
 
 If $\verb#transport_mode#=\verb#bulk#$, quantum conductance
 and density of states are calculated for a perfectly-periodic one-dimensional system.
-In this case, the transport part can either use 
+In this case, the transport part can either use
 the Hamiltonian matrix in the WF basis generated by \wannier\
 or a Hamiltonian matrix provided by the external file
 {\tt seedname\_htB.dat}.
@@ -1447,30 +1505,30 @@ the five external files:
 {\tt seedname\_htL.dat, seedname\_htLC.dat, seedname\_htC.dat,
 seedname\_htCR.dat, seedname\_htR.dat}.
 If $\verb#tran_read_ht# = \verb#false#$ then the Hamiltonian
-matrices are found automatically provided the supercell adheres to 
+matrices are found automatically provided the supercell adheres to
 conditions outlined in Section~\ref{sec:2c2}.
 
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#bulk#  (default)
-\item[{\bf --}] \verb#lcr# 
+\item[{\bf --}] \verb#lcr#
 \end{itemize}
 
 \subsection[tran\_win\_min]{\tt real(kind=dp) :: tran\_win\_min}
-The lower bound of the energy window for the transport calculation. 
+The lower bound of the energy window for the transport calculation.
 Units are eV.
 
 The default value is -3.0.
 
 \subsection[tran\_win\_max]{\tt real(kind=dp) :: tran\_win\_max}
-The upper bound of the energy window for the transport calculation. 
+The upper bound of the energy window for the transport calculation.
 Units are eV.
 
 The default value is 3.0.
 
 \subsection[tran\_energy\_step]{\tt real(kind=dp) :: tran\_energy\_step}
-Sampling interval of the energy values from \verb#tran_win_min# 
-to \verb#tran_win_max#. 
+Sampling interval of the energy values from \verb#tran_win_min#
+to \verb#tran_win_max#.
 Units are eV.
 
 The default value is 0.01.
@@ -1484,7 +1542,7 @@ The default value is 0.0
 \subsection[tran\_num\_bb]{\tt integer :: tran\_num\_bb}
 Size of a bulk Hamiltonian matrix.
 This number is equal to the number of WFs in one principal
-layer. 
+layer.
 
 A one-dimensional system can be viewed
 as an array of principal layers
@@ -1495,15 +1553,15 @@ In \wannier\ a principal layer will be an integer multiple
 of a unit cell, and the size is determined by
 \verb#hr_cutoff# and/or \verb#dist_cutoff#.
 The criterion is rather arbitrary
-when WFs are adopted as a localized basis set, 
+when WFs are adopted as a localized basis set,
 and it is up to a user's choice.
 
 The default value is 0.
 
 \subsection[tran\_num\_ll]{\tt integer :: tran\_num\_ll}
-Size of a left-lead Hamiltonian matrix. 
-If $\verb#transport_mode# = \verb#lcr#$ and 
-$\verb#tran_read_ht# = \verb#false#$ then 
+Size of a left-lead Hamiltonian matrix.
+If $\verb#transport_mode# = \verb#lcr#$ and
+$\verb#tran_read_ht# = \verb#false#$ then
 \verb#tran_num_ll# is the number of Wannier functions
 in a principal layer.
 
@@ -1522,7 +1580,7 @@ The default value is 0.
 \subsection[tran\_num\_lc]{\tt integer :: tran\_num\_lc}
 Number of columns in a left-lead\_conductor Hamiltonian matrix.
 Number of rows must be equal to \verb#tran_num_ll#.
- 
+
 
 The default value is 0.
 
@@ -1533,14 +1591,14 @@ Number of columns must be equal to \verb#tran_num_rr#.
 The default value is 0.
 
 \subsection[tran\_num\_cell\_ll]{\tt integer :: tran\_num\_cell\_ll}
-Number of unit cells in one principal layer of left lead. 
-Used if $\verb#transport_mode# = \verb#lcr#$ and 
+Number of unit cells in one principal layer of left lead.
+Used if $\verb#transport_mode# = \verb#lcr#$ and
 $\verb#tran_read_ht# = \verb#false#$.
 
-The default value is 0. 
- 
+The default value is 0.
+
 \subsection[tran\_num\_cell\_rr]{\tt integer :: tran\_num\_cell\_rr}
-Number of unit cells in one principal layer of right lead. 
+Number of unit cells in one principal layer of right lead.
 Not used at present.
 
 The default value is 0.
@@ -1554,7 +1612,7 @@ read from \verb#seedname_htC.dat#, will be diagonally dominant
 when \verb#tran_num_cc# is very large.
 \verb#tran_num_bandc# is used to construct
 a compact matrix which contains
-the non-zero band-diagonal part of a full conductor Hamiltonian matrix. 
+the non-zero band-diagonal part of a full conductor Hamiltonian matrix.
 Setting this parameter is only meaningful when
 \verb#tran_num_bandc# is greater than
 \verb#tran_num_lc# and \verb#tran_num_cr#.
@@ -1563,8 +1621,8 @@ The default value is 0.
 
 \subsection[tran\_write\_ht]{\tt logical :: tran\_write\_ht}
 
-If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix 
-formatted for the transport calculation will be written 
+If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix
+formatted for the transport calculation will be written
 to a file \verb#seedname_htB.dat#.
 
 The default value is {\tt false}.
@@ -1574,8 +1632,8 @@ The default value is {\tt false}.
 If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix
 formatted for the transport calculation will be read
 from a set of files described in the
-parameter \verb#transport_mode#. 
-Set $\verb#tran_write_ht#=\verb#false#$ to perform automated 
+parameter \verb#transport_mode#.
+Set $\verb#tran_write_ht#=\verb#false#$ to perform automated
 lcr calculations (see Section~\ref{sec:2c2}).
 
 The default value is {\tt false}.
@@ -1583,7 +1641,7 @@ The default value is {\tt false}.
 \subsection[tran\_use\_same\_lead]{\tt logical :: tran\_use\_same\_lead}
 
 If $\verb#tran_use_same_lead#=\verb#true#$, then the
-left and the right leads are the same. In this case, 
+left and the right leads are the same. In this case,
 \verb#seedname_htR.dat# is not required.
 
 The default value is {\tt true}.
@@ -1601,7 +1659,7 @@ The default is 0.15
 Centre of the unit cell to which the final Wannier centres are
 translated. Numbers are in fractional coordinates with respect to the
 lattice vectors.
- 
+
 The default value is (0.0,0.0,0.0).
 
 \subsection[use\_ws\_distance]{\tt logical :: use\_ws\_distance}
@@ -1649,7 +1707,7 @@ and is discarded. Units are eV.
 %Hamiltonian in the WF basis at lattice vector $\mathbf{R}$ is given by
 %$h_{\mathrm{max}}(\mathbf{R}) = \left|\mathrm{max}\:\:
 %H_{mn}(\mathbf{R})\right|$. If $h_{\mathrm{max}}(\mathbf{R})>\:${\tt
-%  hr\_cutoff}, then the matrix elements 
+%  hr\_cutoff}, then the matrix elements
 %$H_{mn}(\mathbf{R})$ are retained in the Hamiltonian that is written
 %to {\tt seedname.h.dat}. Otherwise they are deemed to be insignificant
 %and are discarded.
@@ -1661,7 +1719,7 @@ The default value is 0.0.
 The largest distance between two WFs for which
 the Hamiltonian matrix element is retained and used in
 the band interpolation (when $\verb#bands_plot_mode#=\verb#cut#$)
-or in the transport calculation. Units are \AA. 
+or in the transport calculation. Units are \AA.
 
 The default value is 1000.0.
 
@@ -1670,7 +1728,7 @@ The default value is 1000.0.
 Dimension in which the distance between two WFs is calculated.
 The vector connecting two WFs may be projected
 to a line (\verb#one_dim#) or a plane (\verb#two_dim#).
-The size of the projected vector 
+The size of the projected vector
 is calculated, and \verb#dist_cutoff# is applied.
 When \verb#one_dim# or \verb#two_dim#
 is used, \verb#one_dim_axis# must be given
@@ -1679,8 +1737,8 @@ to specify extended or confined direction.
 The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#three_dim#  (default)
-\item[{\bf --}] \verb#two_dim#  
-\item[{\bf --}] \verb#one_dim# 
+\item[{\bf --}] \verb#two_dim#
+\item[{\bf --}] \verb#one_dim#
 \end{itemize}
 
 \subsection[one\_dim\_axis]{\tt character(len=20) :: one\_dim\_axis}
@@ -1693,7 +1751,7 @@ The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}] \verb#x#
 \item[{\bf --}] \verb#y#
-\item[{\bf --}] \verb#z# 
+\item[{\bf --}] \verb#z#
 \end{itemize}
 
 No default.
