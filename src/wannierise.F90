@@ -1683,9 +1683,8 @@ contains
     !!   Calculate the Wannier Function spread                         !
     !                                                                  !
     ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
-    ! Jun 2018
-    ! Based on a previous implementation by Charles T. Johnson
-    ! and original implementation by Radu Miron
+    ! Jun 2018, based on previous work by Charles T. Johnson and       !
+    ! Radu Miron at Implerial College London
     !===================================================================
     use w90_parameters, only: num_wann, m_matrix, nntot, wb, bk, num_kpts, &
       omega_invariant, timing_level, &
@@ -1958,9 +1957,8 @@ contains
     !   Calculate the Gradient of the Wannier Function spread          !
     !                                                                  !
     ! Modified by Valerio Vitale for the SLWF+C method (PRB 90, 165125)!
-    ! Jun 2018
-    ! Based on a previous implementation by Charles T. Johnson
-    ! and original implementation by Radu Miron
+    ! Jun 2018, based on previous work by Charles T. Johnson and       !
+    ! Radu Miron at Implerial College London
     !===================================================================
     use w90_parameters, only: num_wann, wb, bk, nntot, m_matrix, num_kpts, &
       timing_level, selective_loc, &
