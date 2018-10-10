@@ -12,6 +12,15 @@ Eq.~(22)). Once the overlaps and projection have been computed,
 calling \verb#wannier_run# activates the minimisation and plotting
 routines in \wannier.
 
+\textbf{IMPORTANT NOTE:} the library mode ONLY works in serial. Please
+call it from a serial code, or if compiled in parallel, make sure to run
+it from a single MPI process.
+
+You can find a minimal example of how the library mode can be used
+among the tests, in the file 
+\verb|test-suite/library-mode-test/test_library.F90| 
+in the Wannier90 git repository.
+
 %\section{Dependencies}
 %\begin{itemize}
 %\item Parameters

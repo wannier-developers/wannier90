@@ -22,6 +22,12 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('silicon.win', '')
 output = silicon.wout
 
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure, checking the labelinfo.dat file
+[testw90_example03_labelinfo]
+program = WANNIER90_LABELINFO
+inputs_args = ('silicon.win', '')
+output = silicon_band.labelinfo.dat
+
 # Copper, states around the Fermi level; Fermi surface
 [testw90_example04]
 program = WANNIER90_WOUT_OK
@@ -150,6 +156,12 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('gaas.win', '')
 output = gaas.wout
 
+# GaAs - this verifies the plotting routine for
+# Gaussian cube format
+[testw90_cube_format]
+program = WANNIER90_CUBE
+inputs_args = ('gaas.win', '')
+output = gaas_00001.cube
 
 # Test of disentanglement in spheres in k-space
 [testpostw90_si_geninterp/]
@@ -295,6 +307,12 @@ output = copper-dos.dat
 program = POSTW90_SC_OK
 inputs_args = ('gaas.win', '')
 output = gaas-sc_xyz.dat
+
+# Test of selective localization and constrained centres
+[testw90_example26]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
 
 [categories]
 wannier_only = testw90_*
