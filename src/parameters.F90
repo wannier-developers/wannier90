@@ -371,7 +371,7 @@ module w90_parameters
   integer, public, save :: num_species
 
   ! Projections
-  logical,                        public, save :: lhasproj
+  logical, public, save :: lhasproj
   real(kind=dp), allocatable, public, save :: proj_site(:, :)
   integer, allocatable, public, save :: proj_l(:)
   integer, allocatable, public, save :: proj_m(:)
@@ -383,10 +383,10 @@ module w90_parameters
   real(kind=dp), allocatable, public, save :: proj_zona(:)
   integer, public, save :: num_proj
   ! projections selection
-  logical,                        public, save :: lselproj
-  integer,                        public, save :: num_select_projections
-  integer, allocatable,           public, save :: select_projections(:)
-  integer, allocatable,           public, save :: proj2wann_map(:)
+  logical, public, save :: lselproj
+  integer, public, save :: num_select_projections
+  integer, allocatable, public, save :: select_projections(:)
+  integer, allocatable, public, save :: proj2wann_map(:)
 
   !parameters dervied from input
   integer, public, save :: num_kpts
@@ -630,45 +630,45 @@ contains
     end if
 
     num_proj = num_wann
-    call param_get_keyword('num_proj',found,i_value=num_proj)
-    if (num_proj<0) call io_error('Error: num_proj must be positive')
-    if (num_proj<num_wann) call io_error('Error: num_proj must be at least num_wann')
+    call param_get_keyword('num_proj', found, i_value=num_proj)
+    if (num_proj < 0) call io_error('Error: num_proj must be positive')
+    if (num_proj < num_wann) call io_error('Error: num_proj must be at least num_wann')
 
     lselproj = .false.
-    num_select_projections=0
-    call param_get_range_vector('select_projections',found,num_select_projections,lcount=.true.)
-    if(found) then
-       if(num_select_projections<1) call io_error('Error: problem reading select_projections')
-       if (allocated(select_projections)) deallocate(select_projections)
-       allocate(select_projections(num_select_projections),stat=ierr)
-       if (ierr/=0) call io_error('Error allocating select_projections in param_read')
-       call param_get_range_vector('select_projections',found,num_select_projections,.false.,select_projections)
-       if (any(select_projections<1)  ) &
-            call io_error('Error: select_projections must contain positive numbers')
-       if (num_select_projections<num_wann) &
-            call io_error('Error: too few projections selected')
-       if (num_select_projections>num_wann) &
-            call io_error('Error: too many projections selected')
-       if (maxval(select_projections(:))>num_proj) &
-            call io_error('Error: select_projections contains a number greater than num_proj')
-       lselproj = .true.
+    num_select_projections = 0
+    call param_get_range_vector('select_projections', found, num_select_projections, lcount=.true.)
+    if (found) then
+      if (num_select_projections < 1) call io_error('Error: problem reading select_projections')
+      if (allocated(select_projections)) deallocate (select_projections)
+      allocate (select_projections(num_select_projections), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating select_projections in param_read')
+      call param_get_range_vector('select_projections', found, num_select_projections, .false., select_projections)
+      if (any(select_projections < 1)) &
+        call io_error('Error: select_projections must contain positive numbers')
+      if (num_select_projections < num_wann) &
+        call io_error('Error: too few projections selected')
+      if (num_select_projections > num_wann) &
+        call io_error('Error: too many projections selected')
+      if (maxval(select_projections(:)) > num_proj) &
+        call io_error('Error: select_projections contains a number greater than num_proj')
+      lselproj = .true.
     end if
 
-    if (allocated(proj2wann_map)) deallocate(proj2wann_map)
-    allocate(proj2wann_map(num_proj),stat=ierr)
-    if (ierr/=0) call io_error('Error allocating proj2wann_map in param_read')
+    if (allocated(proj2wann_map)) deallocate (proj2wann_map)
+    allocate (proj2wann_map(num_proj), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating proj2wann_map in param_read')
     proj2wann_map = -1
 
     if (lselproj) then
-       do i=1,num_proj
-          do j=1,num_wann
-             if (select_projections(j)==i) proj2wann_map(i)=j
-          enddo
-       enddo
+      do i = 1, num_proj
+        do j = 1, num_wann
+          if (select_projections(j) == i) proj2wann_map(i) = j
+        enddo
+      enddo
     else
-       do i=1,num_wann
-          proj2wann_map(i)=i
-       enddo
+      do i = 1, num_wann
+        proj2wann_map(i) = i
+      enddo
     endif
 
     ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
@@ -2213,7 +2213,7 @@ contains
       call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
     if (found) then
-      lhasproj=.true.
+      lhasproj = .true.
       call param_get_projections
     end if
 
@@ -5429,7 +5429,7 @@ contains
       ! check there are enough projections and add random projections if required
       if (.not. lpartrandom) then
         if (counter .ne. num_proj) call io_error( &
-             'param_get_projections: too few projection functions defined')
+          'param_get_projections: too few projection functions defined')
       end if
     end if ! .not. lrandom
 
@@ -6152,8 +6152,8 @@ contains
     end if
 
     call comms_bcast(num_proj, 1)
-    call comms_bcast(lhasproj,1)
-    if(lhasproj) then
+    call comms_bcast(lhasproj, 1)
+    if (lhasproj) then
       if (.not. on_root) then
         allocate (proj_site(3, num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating proj_site in param_dist')
