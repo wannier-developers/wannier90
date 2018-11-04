@@ -71,7 +71,6 @@ Keyword & Type & Description \\
 \hline
 {\sc num\_wann }   & I & Number of WF \\
 {\sc num\_bands }   & I & Number of bands passed to the code \\
-{\sc num\_proj }   & I & Number of projections defined \\
 {\sc unit\_cell\_cart }   & P & Unit cell vectors in Cartesian coordinates \\
 {\sc atoms\_cart }*   & P & Positions of atoms in Cartesian coordinates \\
 {\sc atoms\_frac }*   & R & Positions of atoms in fractional
@@ -389,14 +388,6 @@ No default.
 Total number of bands passed to the code in the {\tt seedname.mmn} file.
 
 Default \verb#num_bands#=\verb#num_wann#
-
-\subsection[num\_proj]{\tt integer :: num\_proj}
-
-Total number of projections that have been defined in the projections block.
-This only needs to be specified if the number of projections is greater than the number of Wannier functions.
-In that case, use \verb#select_projections# to select the initial projections that are used for wannierisation.
-
-Default \verb#num_proj#=\verb#num_wann#
 
 \subsection[Cell Lattice Vectors]{Cell Lattice Vectors}
 

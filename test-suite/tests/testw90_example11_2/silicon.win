@@ -1,5 +1,4 @@
 num_bands        =   12
-num_proj         =   12
 
 num_iter         =  100
 dis_num_iter     =  100

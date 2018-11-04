@@ -90,24 +90,6 @@ program = WANNIER90_WERR_FAIL
 inputs_args = ('wannier.win', '')
 output = wannier.werr
 
-# Testing nnkpt with num_proj defined
-[testw90_nnkpt6/]
-program = WANNIER90_NNKP_OK
-inputs_args = ('wannier.win', '-pp')
-output = wannier.nnkp
-
-# Testing nnkpt with num_proj defined
-[testw90_nnkpt7/]
-program = WANNIER90_WERR_FAIL
-inputs_args = ('wannier.win', '-pp')
-output = wannier.werr
-
-# Testing nnkpt with num_proj defined
-[testw90_nnkpt8/]
-program = WANNIER90_WERR_FAIL
-inputs_args = ('wannier.win', '-pp')
-output = wannier.werr
-
 # Testing symmetry-adapted WFs, from example21, case of As with s and p
 [testw90_example21_As_sp]
 program = WANNIER90_WOUT_OK
