@@ -678,20 +678,20 @@ contains
     if (spinors) then
       ! Projections
       write (nnkpout, '(a)') 'begin spinor_projections'
-      if (allocated(proj_site)) then
+      if (allocated(input_proj_site)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            proj_site(1, i), proj_site(2, i), proj_site(3, i), &
-            proj_l(i), proj_m(i), proj_radial(i)
+            input_proj_site(1, i), input_proj_site(2, i), input_proj_site(3, i), &
+            input_proj_l(i), input_proj_m(i), input_proj_radial(i)
 !~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            proj_z(1, i), proj_z(2, i), proj_z(3, i), &
-            proj_x(1, i), proj_x(2, i), proj_x(3, i), &
-            proj_zona(i)
+            input_proj_z(1, i), input_proj_z(2, i), input_proj_z(3, i), &
+            input_proj_x(1, i), input_proj_x(2, i), input_proj_x(3, i), &
+            input_proj_zona(i)
           write (nnkpout, '(2x,1i3,1x,3f11.7)') &
-            proj_s(i), &
-            proj_s_qaxis(1, i), proj_s_qaxis(2, i), proj_s_qaxis(3, i)
+            input_proj_s(i), &
+            input_proj_s_qaxis(1, i), input_proj_s_qaxis(2, i), input_proj_s_qaxis(3, i)
         enddo
       else
         ! No projections
@@ -701,17 +701,17 @@ contains
     else
       ! Projections
       write (nnkpout, '(a)') 'begin projections'
-      if (allocated(proj_site)) then
+      if (allocated(input_proj_site)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            proj_site(1, i), proj_site(2, i), proj_site(3, i), &
-            proj_l(i), proj_m(i), proj_radial(i)
+            input_proj_site(1, i), input_proj_site(2, i), input_proj_site(3, i), &
+            input_proj_l(i), input_proj_m(i), input_proj_radial(i)
 !~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            proj_z(1, i), proj_z(2, i), proj_z(3, i), &
-            proj_x(1, i), proj_x(2, i), proj_x(3, i), &
-            proj_zona(i)
+            input_proj_z(1, i), input_proj_z(2, i), input_proj_z(3, i), &
+            input_proj_x(1, i), input_proj_x(2, i), input_proj_x(3, i), &
+            input_proj_zona(i)
         enddo
       else
         ! No projections
