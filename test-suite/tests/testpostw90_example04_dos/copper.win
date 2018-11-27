@@ -1,6 +1,7 @@
  num_bands       = 12
  num_wann        =  7 
  num_iter        = 200 
+ use_ws_distance = .false.
 
 dis_win_max       = 38.0
 dis_froz_max      = 13.0

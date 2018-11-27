@@ -1,5 +1,6 @@
 num_bands         =   4 
 num_wann          =   4
+use_ws_distance = .false.
 
 !===========  additional input for symmetry-adapted mode
 site_symmetry = .true.
