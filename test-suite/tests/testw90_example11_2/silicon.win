@@ -21,16 +21,16 @@ Si:sp3
 end projections
 
 !! (1) Valence bands
-num_wann        =   4
-select_projections 1 2 3 4
-dis_froz_max    =   6.5
-dis_win_max     =   6.5
+!! num_wann        =   4
+!! select_projections 1 2 3 4
+!! dis_froz_max    =   6.5
+!! dis_win_max     =   6.5
 
 !! !! (2) Valence + conduction bands
-!! num_wann        =   8
-!! select_projections 5-12
-!! dis_froz_max    =   6.5
-!! dis_win_max     =  17.0
+num_wann        =   8
+select_projections 5-12
+dis_froz_max    =   6.5
+dis_win_max     =  17.0
 
 
 begin unit_cell_cart
