@@ -5124,24 +5124,24 @@ contains
     lrandom = .false.
     lpartrandom = .false.
     if (index(dummy, 'ang') .ne. 0) then
-      in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
     elseif (index(dummy, 'bohr') .ne. 0) then
-      in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
       lconvert = .true.
     elseif (index(dummy, 'random') .ne. 0) then
-      in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
       if (index(in_data(line_s + 1), end_st) .ne. 0) then
         lrandom = .true.     ! all projections random
       else
         lpartrandom = .true. ! only some projections random
         if (index(in_data(line_s + 1), 'ang') .ne. 0) then
-          in_data(line_s) (1:maxlen) = ' '
+          if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
           line_s = line_s + 1
         elseif (index(in_data(line_s + 1), 'bohr') .ne. 0) then
-          in_data(line_s) (1:maxlen) = ' '
+          if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
           line_s = line_s + 1
           lconvert = .true.
         endif
@@ -5561,7 +5561,8 @@ contains
       enddo
     endif
 
-    in_data(line_s:line_e) (1:maxlen) = ' '
+    ! I shouldn't get here, but just in case
+    if (.not. lcount) in_data(line_s:line_e) (1:maxlen) = ' '
 
 !~     ! Check
 !~     do loop=1,num_wann
