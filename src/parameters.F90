@@ -1446,7 +1446,7 @@ contains
 
 301 continue
 
-    use_ws_distance = .false.
+    use_ws_distance = .true.
     call param_get_keyword('use_ws_distance', found, l_value=use_ws_distance)
 
     ws_distance_tol = 1.e-5_dp
