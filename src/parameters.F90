@@ -1940,7 +1940,7 @@ contains
     if (disentanglement .and. use_bloch_phases) &
       call io_error('Error: Cannot use bloch phases for disentanglement')
 
-    search_shells = 12
+    search_shells = 36
     call param_get_keyword('search_shells', found, i_value=search_shells)
     if (search_shells < 0) call io_error('Error: search_shells must be positive')
 
