@@ -371,6 +371,16 @@ module w90_parameters
   integer, public, save :: num_species
 
   ! Projections
+  logical, public, save :: lhasproj
+  real(kind=dp), allocatable, public, save :: input_proj_site(:, :)
+  integer, allocatable, public, save :: input_proj_l(:)
+  integer, allocatable, public, save :: input_proj_m(:)
+  integer, allocatable, public, save :: input_proj_s(:)
+  real(kind=dp), allocatable, public, save :: input_proj_s_qaxis(:, :)
+  real(kind=dp), allocatable, public, save :: input_proj_z(:, :)
+  real(kind=dp), allocatable, public, save :: input_proj_x(:, :)
+  integer, allocatable, public, save :: input_proj_radial(:)
+  real(kind=dp), allocatable, public, save :: input_proj_zona(:)
   real(kind=dp), allocatable, public, save :: proj_site(:, :)
   integer, allocatable, public, save :: proj_l(:)
   integer, allocatable, public, save :: proj_m(:)
@@ -381,6 +391,11 @@ module w90_parameters
   integer, allocatable, public, save :: proj_radial(:)
   real(kind=dp), allocatable, public, save :: proj_zona(:)
   integer, public, save :: num_proj
+  ! projections selection
+  logical, public, save :: lselproj
+  integer, public, save :: num_select_projections
+  integer, allocatable, public, save :: select_projections(:)
+  integer, allocatable, public, save :: proj2wann_map(:)
 
   !parameters dervied from input
   integer, public, save :: num_kpts
@@ -2160,13 +2175,59 @@ contains
     endif
 
     ! Projections
+    num_proj = 0
     call param_get_block_length('projections', found, i_temp)
     if (guiding_centres .and. .not. found .and. .not. (gamma_only .and. use_bloch_phases)) &
       call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
     if (found) then
-      call param_get_projections
+      lhasproj = .true.
+      call param_get_projections(num_proj, lcount=.true.)
+    else
+      lhasproj = .false.
+      num_proj = num_wann
     end if
+
+    lselproj = .false.
+    num_select_projections = 0
+    call param_get_range_vector('select_projections', found, num_select_projections, lcount=.true.)
+    if (found) then
+      if (num_select_projections < 1) call io_error('Error: problem reading select_projections')
+      if (allocated(select_projections)) deallocate (select_projections)
+      allocate (select_projections(num_select_projections), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating select_projections in param_read')
+      call param_get_range_vector('select_projections', found, num_select_projections, .false., select_projections)
+      if (any(select_projections < 1)) &
+        call io_error('Error: select_projections must contain positive numbers')
+      if (num_select_projections < num_wann) &
+        call io_error('Error: too few projections selected')
+      if (num_select_projections > num_wann) &
+        call io_error('Error: too many projections selected')
+      if (.not. lhasproj) &
+        call io_error('Error: select_projections cannot be used without defining the projections')
+      if (maxval(select_projections(:)) > num_proj) &
+        call io_error('Error: select_projections contains a number greater than num_proj')
+      lselproj = .true.
+    end if
+
+    if (allocated(proj2wann_map)) deallocate (proj2wann_map)
+    allocate (proj2wann_map(num_proj), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating proj2wann_map in param_read')
+    proj2wann_map = -1
+
+    if (lselproj) then
+      do i = 1, num_proj
+        do j = 1, num_wann
+          if (select_projections(j) == i) proj2wann_map(i) = j
+        enddo
+      enddo
+    else
+      do i = 1, num_wann
+        proj2wann_map(i) = i
+      enddo
+    endif
+
+    if (lhasproj) call param_get_projections(num_proj, lcount=.false.)
 
     ! Constrained centres
     call param_get_block_length('slwf_centres', found, i_temp)
@@ -2580,7 +2641,7 @@ contains
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
     end if
     ! Projections
-    if (iprint > 1 .and. allocated(proj_site)) then
+    if (iprint > 1 .and. allocated(input_proj_site)) then
       write (stdout, '(32x,a)') '-----------'
       write (stdout, '(32x,a)') 'PROJECTIONS'
       write (stdout, '(32x,a)') '-----------'
@@ -2589,6 +2650,26 @@ contains
       write (stdout, '(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       do nsp = 1, num_proj
+        write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
+  &              '|', input_proj_site(1, nsp), input_proj_site(2, nsp), &
+             input_proj_site(3, nsp), input_proj_l(nsp), input_proj_m(nsp), input_proj_radial(nsp), &
+             input_proj_z(1, nsp), input_proj_z(2, nsp), input_proj_z(3, nsp), input_proj_x(1, nsp), &
+             input_proj_x(2, nsp), input_proj_x(3, nsp), input_proj_zona(nsp), '|'
+      end do
+      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+      write (stdout, *) ' '
+    end if
+
+    if (iprint > 1 .and. lselproj .and. allocated(proj_site)) then
+      write (stdout, '(30x,a)') '--------------------'
+      write (stdout, '(30x,a)') 'SELECTED PROJECTIONS'
+      write (stdout, '(30x,a)') '--------------------'
+      write (stdout, *) ' '
+      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
+      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+      do nsp = 1, num_wann
+        if (proj2wann_map(nsp) < 0) cycle
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
   &              '|', proj_site(1, nsp), proj_site(2, nsp), &
              proj_site(3, nsp), proj_l(nsp), proj_m(nsp), proj_radial(nsp), &
@@ -3435,6 +3516,42 @@ contains
     if (allocated(atoms_species_num)) then
       deallocate (atoms_species_num, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc')
+    end if
+    if (allocated(input_proj_site)) then
+      deallocate (input_proj_site, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_site in param_dealloc')
+    end if
+    if (allocated(input_proj_l)) then
+      deallocate (input_proj_l, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_l in param_dealloc')
+    end if
+    if (allocated(input_proj_m)) then
+      deallocate (input_proj_m, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_m in param_dealloc')
+    end if
+    if (allocated(input_proj_s)) then
+      deallocate (input_proj_s, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_s in param_dealloc')
+    end if
+    if (allocated(input_proj_s_qaxis)) then
+      deallocate (input_proj_s_qaxis, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_s_qaxis in param_dealloc')
+    end if
+    if (allocated(input_proj_z)) then
+      deallocate (input_proj_z, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_z in param_dealloc')
+    end if
+    if (allocated(input_proj_x)) then
+      deallocate (input_proj_x, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_x in param_dealloc')
+    end if
+    if (allocated(input_proj_radial)) then
+      deallocate (input_proj_radial, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_radial in param_dealloc')
+    end if
+    if (allocated(input_proj_zona)) then
+      deallocate (input_proj_zona, stat=ierr)
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in param_dealloc')
     end if
     if (allocated(proj_site)) then
       deallocate (proj_site, stat=ierr)
@@ -4867,7 +4984,7 @@ contains
   end subroutine param_get_centre_constraint_from_column
 
 !===================================!
-  subroutine param_get_projections
+  subroutine param_get_projections(num_proj, lcount)
     !===================================!
     !                                   !
     !!  Fills the projection data block
@@ -4880,6 +4997,9 @@ contains
     use w90_io, only: io_error
 
     implicit none
+
+    integer, intent(inout) :: num_proj
+    logical, intent(in)    :: lcount
 
     real(kind=dp)     :: pos_frac(3)
     real(kind=dp)     :: pos_cart(3)
@@ -4921,28 +5041,50 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    num_proj = num_wann
 !     if(spinors) num_proj=num_wann/2
 
-    allocate (proj_site(3, num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_site in param_get_projections')
-    allocate (proj_l(num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_l in param_get_projections')
-    allocate (proj_m(num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_m in param_get_projections')
-    allocate (proj_z(3, num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_z in param_get_projections')
-    allocate (proj_x(3, num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_x in param_get_projections')
-    allocate (proj_radial(num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_radial in param_get_projections')
-    allocate (proj_zona(num_proj), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating proj_zona in param_get_projections')
-    if (spinors) then
-      allocate (proj_s(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_s in param_get_projections')
-      allocate (proj_s_qaxis(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_s_qaxis in param_get_projections')
+    if (.not. lcount) then
+      allocate (input_proj_site(3, num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_site in param_get_projections')
+      allocate (input_proj_l(num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_l in param_get_projections')
+      allocate (input_proj_m(num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_m in param_get_projections')
+      allocate (input_proj_z(3, num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_z in param_get_projections')
+      allocate (input_proj_x(3, num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_x in param_get_projections')
+      allocate (input_proj_radial(num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_radial in param_get_projections')
+      allocate (input_proj_zona(num_proj), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating input_proj_zona in param_get_projections')
+      if (spinors) then
+        allocate (input_proj_s(num_proj), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating input_proj_s in param_get_projections')
+        allocate (input_proj_s_qaxis(3, num_proj), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating input_proj_s_qaxis in param_get_projections')
+      endif
+
+      allocate (proj_site(3, num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_site in param_get_projections')
+      allocate (proj_l(num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_l in param_get_projections')
+      allocate (proj_m(num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_m in param_get_projections')
+      allocate (proj_z(3, num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_z in param_get_projections')
+      allocate (proj_x(3, num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_x in param_get_projections')
+      allocate (proj_radial(num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_radial in param_get_projections')
+      allocate (proj_zona(num_wann), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating proj_zona in param_get_projections')
+      if (spinors) then
+        allocate (proj_s(num_wann), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating proj_s in param_get_projections')
+        allocate (proj_s_qaxis(3, num_wann), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating proj_s_qaxis in param_get_projections')
+      endif
     endif
 
     do loop = 1, num_lines
@@ -5310,13 +5452,13 @@ contains
             read (ctemp, *, err=105, end=105) proj_radial_tmp
           endif
         end if
-        if (sites == -1) then
-          if (counter + spn_counter*sum(ang_states) > num_proj) &
-            call io_error('param_get_projection: too many projections defined')
-        else
-          if (counter + spn_counter*sites*sum(ang_states) > num_proj) &
-            call io_error('param_get_projection: too many projections defined')
-        end if
+        ! if (sites == -1) then
+        !   if (counter + spn_counter*sum(ang_states) > num_proj) &
+        !     call io_error('param_get_projection: too many projections defined')
+        ! else
+        !   if (counter + spn_counter*sites*sum(ang_states) > num_proj) &
+        !     call io_error('param_get_projection: too many projections defined')
+        ! end if
         !
         if (sites == -1) then
           do loop_l = min_l, max_l
@@ -5324,22 +5466,23 @@ contains
               if (ang_states(loop_m, loop_l) == 1) then
                 do loop_s = 1, spn_counter
                   counter = counter + 1
-                  proj_site(:, counter) = pos_frac
-                  proj_l(counter) = loop_l
-                  proj_m(counter) = loop_m
-                  proj_z(:, counter) = proj_z_tmp
-                  proj_x(:, counter) = proj_x_tmp
-                  proj_radial(counter) = proj_radial_tmp
-                  proj_zona(counter) = proj_zona_tmp
+                  if (lcount) cycle
+                  input_proj_site(:, counter) = pos_frac
+                  input_proj_l(counter) = loop_l
+                  input_proj_m(counter) = loop_m
+                  input_proj_z(:, counter) = proj_z_tmp
+                  input_proj_x(:, counter) = proj_x_tmp
+                  input_proj_radial(counter) = proj_radial_tmp
+                  input_proj_zona(counter) = proj_zona_tmp
                   if (spinors) then
                     if (spn_counter == 1) then
-                      if (proj_u_tmp) proj_s(counter) = 1
-                      if (proj_d_tmp) proj_s(counter) = -1
+                      if (proj_u_tmp) input_proj_s(counter) = 1
+                      if (proj_d_tmp) input_proj_s(counter) = -1
                     else
-                      if (loop_s == 1) proj_s(counter) = 1
-                      if (loop_s == 2) proj_s(counter) = -1
+                      if (loop_s == 1) input_proj_s(counter) = 1
+                      if (loop_s == 2) input_proj_s(counter) = -1
                     endif
-                    proj_s_qaxis(:, counter) = proj_s_qaxis_tmp
+                    input_proj_s_qaxis(:, counter) = proj_s_qaxis_tmp
                   endif
                 end do
               endif
@@ -5352,22 +5495,23 @@ contains
                 if (ang_states(loop_m, loop_l) == 1) then
                   do loop_s = 1, spn_counter
                     counter = counter + 1
-                    proj_site(:, counter) = atoms_pos_frac(:, loop_sites, species)
-                    proj_l(counter) = loop_l
-                    proj_m(counter) = loop_m
-                    proj_z(:, counter) = proj_z_tmp
-                    proj_x(:, counter) = proj_x_tmp
-                    proj_radial(counter) = proj_radial_tmp
-                    proj_zona(counter) = proj_zona_tmp
+                    if (lcount) cycle
+                    input_proj_site(:, counter) = atoms_pos_frac(:, loop_sites, species)
+                    input_proj_l(counter) = loop_l
+                    input_proj_m(counter) = loop_m
+                    input_proj_z(:, counter) = proj_z_tmp
+                    input_proj_x(:, counter) = proj_x_tmp
+                    input_proj_radial(counter) = proj_radial_tmp
+                    input_proj_zona(counter) = proj_zona_tmp
                     if (spinors) then
                       if (spn_counter == 1) then
-                        if (proj_u_tmp) proj_s(counter) = 1
-                        if (proj_d_tmp) proj_s(counter) = -1
+                        if (proj_u_tmp) input_proj_s(counter) = 1
+                        if (proj_d_tmp) input_proj_s(counter) = -1
                       else
-                        if (loop_s == 1) proj_s(counter) = 1
-                        if (loop_s == 2) proj_s(counter) = -1
+                        if (loop_s == 1) input_proj_s(counter) = 1
+                        if (loop_s == 2) input_proj_s(counter) = -1
                       endif
-                      proj_s_qaxis(:, counter) = proj_s_qaxis_tmp
+                      input_proj_s_qaxis(:, counter) = proj_s_qaxis_tmp
                     endif
                   end do
                 end if
@@ -5380,30 +5524,39 @@ contains
 
       ! check there are enough projections and add random projections if required
       if (.not. lpartrandom) then
-        if (counter .ne. num_proj) call io_error( &
-          'param_get_projections: Fewer projections defined than the number of Wannier functions requested')
+        if (counter .lt. num_wann) call io_error( &
+          'param_get_projections: too few projection functions defined')
       end if
     end if ! .not. lrandom
 
+    if (lcount) then
+      if (counter .lt. num_wann) then
+        num_proj = num_wann
+      else
+        num_proj = counter
+      endif
+      return
+    endif
+
     if (lpartrandom .or. lrandom) then
       call random_seed()  ! comment out this line for reproducible random positions!
-      do loop = counter + 1, num_proj
-        call random_number(proj_site(:, loop))
-        proj_l(loop) = 0
-        proj_m(loop) = 1
-        proj_z(:, loop) = proj_z_def
-        proj_x(:, loop) = proj_x_def
-        proj_zona(loop) = proj_zona_def
-        proj_radial(loop) = proj_radial_def
+      do loop = counter + 1, num_wann
+        call random_number(input_proj_site(:, loop))
+        input_proj_l(loop) = 0
+        input_proj_m(loop) = 1
+        input_proj_z(:, loop) = proj_z_def
+        input_proj_x(:, loop) = proj_x_def
+        input_proj_zona(loop) = proj_zona_def
+        input_proj_radial(loop) = proj_radial_def
         if (spinors) then
           if (modulo(loop, 2) == 1) then
-            proj_s(loop) = 1
+            input_proj_s(loop) = 1
           else
-            proj_s(loop) = -1
+            input_proj_s(loop) = -1
           end if
-          proj_s_qaxis(1, loop) = 0.
-          proj_s_qaxis(2, loop) = 0.
-          proj_s_qaxis(3, loop) = 1.
+          input_proj_s_qaxis(1, loop) = 0.
+          input_proj_s_qaxis(2, loop) = 0.
+          input_proj_s_qaxis(3, loop) = 1.
         end if
       enddo
     endif
@@ -5421,27 +5574,27 @@ contains
     ! Normalise z-axis and x-axis and check/fix orthogonality
     do loop = 1, num_proj
 
-      znorm = sqrt(sum(proj_z(:, loop)*proj_z(:, loop)))
-      xnorm = sqrt(sum(proj_x(:, loop)*proj_x(:, loop)))
-      proj_z(:, loop) = proj_z(:, loop)/znorm             ! normalise z
-      proj_x(:, loop) = proj_x(:, loop)/xnorm             ! normalise x
-      cosphi = sum(proj_z(:, loop)*proj_x(:, loop))
+      znorm = sqrt(sum(input_proj_z(:, loop)*input_proj_z(:, loop)))
+      xnorm = sqrt(sum(input_proj_x(:, loop)*input_proj_x(:, loop)))
+      input_proj_z(:, loop) = input_proj_z(:, loop)/znorm             ! normalise z
+      input_proj_x(:, loop) = input_proj_x(:, loop)/xnorm             ! normalise x
+      cosphi = sum(input_proj_z(:, loop)*input_proj_x(:, loop))
 
       ! Check whether z-axis and z-axis are orthogonal
       if (abs(cosphi) .gt. eps6) then
 
         ! Special case of circularly symmetric projections (pz, dz2, fz3)
         ! just choose an x-axis that is perpendicular to the given z-axis
-        if ((proj_l(loop) .ge. 0) .and. (proj_m(loop) .eq. 1)) then
-          proj_x_tmp(:) = proj_x(:, loop)            ! copy of original x-axis
+        if ((input_proj_l(loop) .ge. 0) .and. (input_proj_m(loop) .eq. 1)) then
+          proj_x_tmp(:) = input_proj_x(:, loop)            ! copy of original x-axis
           call random_seed()
           call random_number(proj_z_tmp(:))         ! random vector
           ! calculate new x-axis as the cross (vector) product of random vector with z-axis
-          proj_x(1, loop) = proj_z_tmp(2)*proj_z(3, loop) - proj_z_tmp(3)*proj_z(2, loop)
-          proj_x(2, loop) = proj_z_tmp(3)*proj_z(1, loop) - proj_z_tmp(1)*proj_z(3, loop)
-          proj_x(3, loop) = proj_z_tmp(1)*proj_z(2, loop) - proj_z_tmp(2)*proj_z(1, loop)
-          xnorm_new = sqrt(sum(proj_x(:, loop)*proj_x(:, loop)))
-          proj_x(:, loop) = proj_x(:, loop)/xnorm_new   ! normalise
+          input_proj_x(1, loop) = proj_z_tmp(2)*input_proj_z(3, loop) - proj_z_tmp(3)*input_proj_z(2, loop)
+          input_proj_x(2, loop) = proj_z_tmp(3)*input_proj_z(1, loop) - proj_z_tmp(1)*input_proj_z(3, loop)
+          input_proj_x(3, loop) = proj_z_tmp(1)*input_proj_z(2, loop) - proj_z_tmp(2)*input_proj_z(1, loop)
+          xnorm_new = sqrt(sum(input_proj_x(:, loop)*input_proj_x(:, loop)))
+          input_proj_x(:, loop) = input_proj_x(:, loop)/xnorm_new   ! normalise
           goto 555
         endif
 
@@ -5455,13 +5608,13 @@ contains
         ! If projection axes are "reasonably orthogonal", project x-axis
         ! onto plane perpendicular to z-axis to make them more so
         sinphi = sqrt(1 - cosphi*cosphi)
-        proj_x_tmp(:) = proj_x(:, loop)               ! copy of original x-axis
+        proj_x_tmp(:) = input_proj_x(:, loop)               ! copy of original x-axis
         ! calculate new x-axis:
         ! x = z \cross (x_tmp \cross z) / sinphi = ( x_tmp - z(z.x_tmp) ) / sinphi
-        proj_x(:, loop) = (proj_x_tmp(:) - cosphi*proj_z(:, loop))/sinphi
+        input_proj_x(:, loop) = (proj_x_tmp(:) - cosphi*input_proj_z(:, loop))/sinphi
 
         ! Final check
-555     cosphi_new = sum(proj_z(:, loop)*proj_x(:, loop))
+555     cosphi_new = sum(input_proj_z(:, loop)*input_proj_x(:, loop))
         if (abs(cosphi_new) .gt. eps6) then
           write (stdout, *) ' Projection:', loop
           call io_error(' Error: z and x axes are still not orthogonal after projection')
@@ -5470,6 +5623,25 @@ contains
       endif
 
     enddo
+
+    do loop = 1, num_proj
+      if (proj2wann_map(loop) < 0) cycle
+      proj_site(:, proj2wann_map(loop)) = input_proj_site(:, loop)
+      proj_l(proj2wann_map(loop)) = input_proj_l(loop)
+      proj_m(proj2wann_map(loop)) = input_proj_m(loop)
+      proj_z(:, proj2wann_map(loop)) = input_proj_z(:, loop)
+      proj_x(:, proj2wann_map(loop)) = input_proj_x(:, loop)
+      proj_radial(proj2wann_map(loop)) = input_proj_radial(loop)
+      proj_zona(proj2wann_map(loop)) = input_proj_zona(loop)
+    enddo
+
+    if (spinors) then
+      do loop = 1, num_proj
+        if (proj2wann_map(loop) < 0) cycle
+        proj_s(proj2wann_map(loop)) = input_proj_s(loop)
+        proj_s_qaxis(:, proj2wann_map(loop)) = input_proj_s_qaxis(:, loop)
+      enddo
+    endif
 
     return
 
@@ -5600,14 +5772,24 @@ contains
       mem_param = mem_param + (3*maxval(atoms_species_num)*num_species)*size_real  !atoms_pos_cart
     endif
 
+    if (allocated(input_proj_site)) then
+      mem_param = mem_param + (3*num_proj)*size_real              !input_proj_site
+      mem_param = mem_param + (num_proj)*size_int                !input_proj_l
+      mem_param = mem_param + (num_proj)*size_int                 !input_proj_m
+      mem_param = mem_param + (3*num_proj)*size_real             !input_proj_z
+      mem_param = mem_param + (3*num_proj)*size_real             !input_proj_x
+      mem_param = mem_param + (num_proj)*size_real                !input_proj_radial
+      mem_param = mem_param + (num_proj)*size_real                !input_proj_zona
+    endif
+
     if (allocated(proj_site)) then
-      mem_param = mem_param + (3*num_proj)*size_real              !proj_site
-      mem_param = mem_param + (num_proj)*size_int                !proj_l
-      mem_param = mem_param + (num_proj)*size_int                 !proj_m
-      mem_param = mem_param + (3*num_proj)*size_real             !proj_z
-      mem_param = mem_param + (3*num_proj)*size_real             !proj_x
-      mem_param = mem_param + (num_proj)*size_real                !proj_radial
-      mem_param = mem_param + (num_proj)*size_real                !proj_zona
+      mem_param = mem_param + (3*num_wann)*size_real              !proj_site
+      mem_param = mem_param + (num_wann)*size_int                !proj_l
+      mem_param = mem_param + (num_wann)*size_int                 !proj_m
+      mem_param = mem_param + (3*num_wann)*size_real             !proj_z
+      mem_param = mem_param + (3*num_wann)*size_real             !proj_x
+      mem_param = mem_param + (num_wann)*size_real                !proj_radial
+      mem_param = mem_param + (num_wann)*size_real                !proj_zona
     endif
 
     mem_param = mem_param + num_kpts*nntot*size_int                  !nnlist
@@ -6104,12 +6286,16 @@ contains
     end if
 
     call comms_bcast(num_proj, 1)
-    if (num_proj > 0) then
+    call comms_bcast(lhasproj, 1)
+    if (lhasproj) then
       if (.not. on_root) then
-        allocate (proj_site(3, num_proj), stat=ierr)
+        allocate (input_proj_site(3, num_proj), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating input_proj_site in param_dist')
+        allocate (proj_site(3, num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating proj_site in param_dist')
       endif
-      call comms_bcast(proj_site(1, 1), 3*num_proj)
+      call comms_bcast(input_proj_site(1, 1), 3*num_proj)
+      call comms_bcast(proj_site(1, 1), 3*num_wann)
     endif
 
     ! These variables are different from the ones above in that they are

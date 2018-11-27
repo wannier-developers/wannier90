@@ -1,3 +1,4 @@
+%!TEX root=./user_guide.tex
 \chapter{Parameters}\label{chap:parameters}
 
 \section{Usage}
@@ -115,6 +116,7 @@ Keyword & Type & Description \\
 %{\sc cp\_pp }   & L & CP code post-processing \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
+{\sc select\_projections }   & I & List of projections to use in Wannierisation \\
 {\sc restart }   & S & Restart from checkpoint file \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
@@ -730,6 +732,15 @@ A k-point independent list of states to excluded from the calculation
  and 12:
 
  \verb#exclude_bands : 2, 6-8, 12#
+
+\subsection[select\_projections]{\tt integer :: select\_projections(:)}
+
+A list of projections to be included in the wannierisation procedure.
+In the case that \verb#num_proj# is greater than \verb#num_wann#,
+  this keyword allows a subset of the projections in the projection matrices to be used.
+For example, to select the projections given by the indices 2, 6, 7, 8 and 12:
+
+ \verb#select_projections : 2, 6-8, 12#
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
