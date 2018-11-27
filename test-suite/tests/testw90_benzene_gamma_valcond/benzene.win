@@ -6,6 +6,7 @@ dis_froz_max    = -6.0
 dis_win_max     =  4.0
 dis_num_iter    =  1000
 #################################
+use_ws_distance = .false.
 
 num_iter        = 100
 conv_tol        = 1e-10

@@ -4,7 +4,8 @@
  num_iter        = 20 
 
  write_bvec      = .true.
-
+ use_ws_distance = .false.
+ 
 ! SYSTEM
 
 begin unit_cell_cart
