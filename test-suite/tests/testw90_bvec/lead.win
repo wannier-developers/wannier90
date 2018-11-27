@@ -5,6 +5,7 @@
 
  write_bvec      = .true.
  use_ws_distance = .false.
+search_shells=12
  
 ! SYSTEM
 

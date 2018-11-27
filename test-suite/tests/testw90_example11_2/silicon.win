@@ -3,6 +3,7 @@ num_bands        =   12
 num_iter         =  100
 dis_num_iter     =  100
 use_ws_distance = .false.
+search_shells=12
 
 iprint           =    2
 num_dump_cycles  =   10
