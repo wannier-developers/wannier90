@@ -505,9 +505,10 @@ contains
 
     logical, intent(in) :: count_pts
     !! Only count points and return
-
+    integer, parameter :: search_size = 2
+    real(kind=dp), parameter :: dist2_threshold = eps7
     integer       :: ndiff(3)
-    real(kind=dp) :: dist(125), tot, dist_min
+    real(kind=dp) :: dist(((search_size + 1)*2 + 1)**3), tot, dist_min
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
@@ -515,8 +516,8 @@ contains
     ! The Wannier functions live in a supercell of the real space unit cell
     ! this supercell is mp_grid unit cells long in each direction
     !
-    ! We loop over grid points r on a unit cell that is 8 times larger than this
-    ! primitive supercell.
+    ! We loop over grid points r on a unit cell that is (2*search_size+1)**3 times
+    ! larger than this primitive supercell.
     !
     ! One of these points is in the W-S cell if it is closer to R=0 than any of the
     ! other points, R (where R are the translation vectors of the supercell)
@@ -525,15 +526,21 @@ contains
     ! points that have been found in the Wigner-Seitz cell
 
     nrpts = 0
-    do n1 = -mp_grid(1), mp_grid(1)
-      do n2 = -mp_grid(2), mp_grid(2)
-        do n3 = -mp_grid(3), mp_grid(3)
-          ! Loop over the 125 points R. R=0 corresponds to
-          ! i1=i2=i3=0, or icnt=63
+    ! Loop over the lattice vectors of the primitive cell
+    ! that live in a supercell which is (2*search_size+1)**2
+    ! larger than the Born-von Karman supercell.
+    ! We need to find which among these live in the Wigner-Seitz cell
+    do n1 = -search_size*mp_grid(1), search_size*mp_grid(1)
+      do n2 = -search_size*mp_grid(2), search_size*mp_grid(2)
+        do n3 = -search_size*mp_grid(3), search_size*mp_grid(3)
+          ! Loop over the lattice vectors R of the Born-von Karman supercell
+          ! that contains all the points of the previous loop.
+          ! There are (2*(search_size+1)+1)**3 points R. R=0 corresponds to
+          ! i1=i2=i3=0, or icnt=((2*(search_size+1)+1)**3 + 1)/2
           icnt = 0
-          do i1 = -2, 2
-            do i2 = -2, 2
-              do i3 = -2, 2
+          do i1 = -search_size - 1, search_size + 1
+            do i2 = -search_size - 1, search_size + 1
+              do i3 = -search_size - 1, search_size + 1
                 icnt = icnt + 1
                 ! Calculate distance squared |r-R|^2
                 ndiff(1) = n1 - i1*mp_grid(1)
@@ -548,17 +555,15 @@ contains
                 enddo
               enddo
             enddo
-
-            ! AAM: On first pass, we reference unallocated variables (ndegen,irvec)
-
           enddo
+          ! AAM: On first pass, we reference unallocated variables (ndegen,irvec)
           dist_min = minval(dist)
-          if (abs(dist(63) - dist_min) .lt. eps7) then
+          if (abs(dist((((search_size + 1)*2 + 1)**3 + 1)/2) - dist_min) .lt. dist2_threshold) then
             nrpts = nrpts + 1
             if (.not. count_pts) then
               ndegen(nrpts) = 0
-              do i = 1, 125
-                if (abs(dist(i) - dist_min) .lt. eps7) ndegen(nrpts) = ndegen(nrpts) + 1
+              do i = 1, ((search_size + 1)*2 + 1)**3
+                if (abs(dist(i) - dist_min) .lt. dist2_threshold) ndegen(nrpts) = ndegen(nrpts) + 1
               end do
               irvec(1, nrpts) = n1
               irvec(2, nrpts) = n2
@@ -578,18 +583,21 @@ contains
     !
     if (count_pts) return
 
+    ! Check the "sum rule"
+    tot = 0.0_dp
+    do i = 1, nrpts
+      tot = tot + 1.0_dp/real(ndegen(i), dp)
+    enddo
+
     if (iprint >= 3 .and. on_root) then
       write (stdout, '(1x,i4,a,/)') nrpts, ' lattice points in Wigner-Seitz supercell:'
       do i = 1, nrpts
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1, i), irvec(2, i), &
           irvec(3, i), '  degeneracy: ', ndegen(i)
       enddo
+      write (stdout, *) ' tot = ', tot
+      write (stdout, *) ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     endif
-    ! Check the "sum rule"
-    tot = 0.0_dp
-    do i = 1, nrpts
-      tot = tot + 1.0_dp/real(ndegen(i), dp)
-    enddo
     if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > eps8) then
       call io_error('ERROR in hamiltonian_wigner_seitz: error in finding Wigner-Seitz points')
     endif
