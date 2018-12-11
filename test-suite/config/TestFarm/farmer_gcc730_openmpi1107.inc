@@ -4,8 +4,8 @@
 F90 = gfortran
 
 #Add next two lines for parallel postw90. Choose the correct name of the mpi f90 wrapper
-#COMMS  = mpi 
-#MPIF90 = mpgfortran #mpif90
+COMMS  = mpi 
+MPIF90 = mpif90
 
 FCOPTS = -O3 -g -x f95-cpp-input -I/mnt/buildbot/binary/openmpi1107_gcc730/include/
 LDOPTS = -g -pthread
