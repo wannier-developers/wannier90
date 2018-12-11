@@ -135,9 +135,9 @@ tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
               (1.0e-4, 1.0e-2, 'gyro_xy'),
               (1.0e-4, 1.0e-2, 'gyro_xz'),
               (1.0e-4, 1.0e-2, 'gyro_yz'),
-              (1.0e-4, 1.0e-2, 'gyro_x'),
-              (1.0e-4, 1.0e-2, 'gyro_y'),
-              (1.0e-4, 1.0e-2, 'gyro_z'),
+              (1.0e-4, None, 'gyro_x'),
+              (1.0e-4, None, 'gyro_y'),
+              (1.0e-4, None, 'gyro_z'),
                (1.0e-4, 1.0e+2, 'imcond'))
 
 [POSTW90_SC_OK]
