@@ -5,10 +5,10 @@
 F90 = pgf90
 
 #Add next two lines for parallel postw90. Choose the correct name of the mpi f90 wrapper
-#COMMS = mpi
+COMMS = mpi
 MPIF90 =  mpif90
 
-FCOPTS = -O2 -g -x f95-cpp-input -I/mnt/buildbot/binary/mvapich23_pgi185/include
+FCOPTS = -O2 -g f95-cpp-input -I/mnt/buildbot/binary/mvapich23_pgi185/include
 LDOPTS = -O2
 
 # Debug options
