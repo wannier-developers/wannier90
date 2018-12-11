@@ -1446,7 +1446,7 @@ contains
 
 301 continue
 
-    use_ws_distance = .false.
+    use_ws_distance = .true.
     call param_get_keyword('use_ws_distance', found, l_value=use_ws_distance)
 
     ws_distance_tol = 1.e-5_dp
@@ -1940,7 +1940,7 @@ contains
     if (disentanglement .and. use_bloch_phases) &
       call io_error('Error: Cannot use bloch phases for disentanglement')
 
-    search_shells = 12
+    search_shells = 36
     call param_get_keyword('search_shells', found, i_value=search_shells)
     if (search_shells < 0) call io_error('Error: search_shells must be positive')
 
