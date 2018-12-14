@@ -198,7 +198,7 @@ contains
     endif
 
     if (on_root) then
-
+      call flush(stdout)
       write (stdout, '(/,/,1x,a)') 'Properties calculated in module  g y r o t r o p i c'
       write (stdout, '(1x,a)') '------------------------------------------'
 
@@ -241,6 +241,10 @@ contains
         call io_stopwatch('gyrotropic: prelims', 2)
         call io_stopwatch('gyrotropic: k-interpolation', 1)
       endif
+
+      write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic_kmesh(1:3)
+
+      call flush(stdout)
 
     end if !on_root
 
@@ -294,7 +298,8 @@ contains
 
       if (timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2)
       write (stdout, '(1x,a)') ' '
-      write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic_kmesh(1:3)
+      write (stdout, *) 'Calculation finished, writing results'
+      call flush(stdout)
 
       if (eval_K) then
         if (eval_spn) then
@@ -382,7 +387,7 @@ contains
           f_out_name_tmp='C'
           units_tmp="Ampere/cm"
           comment_tmp="the C tensor -- Eq. B6 of TAS17"
-          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_D, units=units_tmp, &
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_C, units=units_tmp, &
                                           comment=comment_tmp)
       endif
 
@@ -917,14 +922,14 @@ contains
     endif 
     
     
-    file_name = trim(seedname)//"-gyrotropic-"//f_out_name//".dat"
+    file_name = trim(seedname)//"-gyrotropic-"//trim(f_out_name)//".dat"
     file_name = trim(file_name)
     file_unit = io_file_unit()
     write (stdout, '(/,3x,a)') '* '//file_name
     open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
 
-    if (present(comment)) write (file_unit, *) "#", comment
-    if (present(units)) write (file_unit, *) "# in units of [ ", units, " ] "
+    if (present(comment)) write (file_unit, *) "#"//trim(comment)
+    if (present(units)) write (file_unit, *) "# in units of [ "//trim(units)//" ] "
 
     if (present(arrEf)) then
       call gyrotropic_outprint_tensor_w(file_unit, 0.0_dp, arr33N=arrEf, symmetrize=lsym)
