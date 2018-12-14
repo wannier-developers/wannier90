@@ -92,12 +92,17 @@ contains
     real(kind=dp), allocatable    :: gyro_NOA_spn(:, :, :, :)
     real(kind=dp), allocatable    :: gyro_NOA_orb(:, :, :, :)
 
+
+    character(len=30) :: f_out_name_tmp
+    character(len=30) :: units_tmp
+    character(len=120) :: comment_tmp
+
+
     real(kind=dp)     :: kweight, kpt(3), &
                          db1, db2, db3, fac, freq
     integer           :: n, i, j, k, ikpt, if, ierr, loop_x, loop_y, loop_z, &
                          loop_xyz, ifreq, &
                          file_unit
-    character(len=24) :: file_name
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
     if (nfermi == 0) call io_error( &
@@ -307,8 +312,11 @@ contains
           ! ==============================
           fac = -1.0e20_dp*elem_charge_SI*hbar_SI/(2.*elec_mass_SI*cell_volume)
           gyro_K_spn(:, :, :) = gyro_K_spn(:, :, :)*fac
-          call gyrotropic_outprint_tensor('K_spin', arrEf=gyro_K_spn, units="Ampere", &
-                                          comment="spin part of the K tensor -- Eq. 3 of TAS17")
+          f_out_name_tmp='K_spin'
+          units_tmp="Ampere"
+          comment_tmp="spin part of the K tensor -- Eq. 3 of TAS17"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_K_spn, units=units_tmp, &
+                                          comment=comment_tmp)
         endif  ! eval_K && eval_spin
 
         ! At this point gme_orb_list contains
@@ -326,22 +334,34 @@ contains
         ! ====================================
         fac = elem_charge_SI**2/(2.*hbar_SI*cell_volume)
         gyro_K_orb(:, :, :) = gyro_K_orb(:, :, :)*fac
-        call gyrotropic_outprint_tensor('K_orb', arrEf=gyro_K_orb, units="Ampere", &
-                                        comment="orbital part of the K tensor -- Eq. 3 of TAS17")
+
+          f_out_name_tmp='K_orb'
+          units_tmp="Ampere"
+          comment_tmp="orbital part of the K tensor -- Eq. 3 of TAS17"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_K_orb, units=units_tmp, &
+                                          comment=comment_tmp)
       endif ! eval_K
 
       if (eval_D) then
         fac = 1./cell_volume
         gyro_D(:, :, :) = gyro_D(:, :, :)*fac
-        call gyrotropic_outprint_tensor('D', arrEf=gyro_D, units="dimensionless", &
-                                        comment="the D tensor -- Eq. 2 of TAS17")
+
+          f_out_name_tmp='D'
+          units_tmp="dimensionless"
+          comment_tmp="the D tensor -- Eq. 2 of TAS17"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_D, units=units_tmp, &
+                                          comment=comment_tmp)
       endif
 
       if (eval_Dw) then
         fac = 1./cell_volume
         gyro_Dw(:, :, :, :) = gyro_Dw(:, :, :, :)*fac
-        call gyrotropic_outprint_tensor('tildeD', arrEfW=gyro_Dw, units="dimensionless", &
-                                        comment="the tildeD tensor -- Eq. 12 of TAS17")
+
+          f_out_name_tmp='tildeD'
+          units_tmp="dimensionless"
+          comment_tmp="the tildeD tensor -- Eq. 12 of TAS17"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEfW=gyro_Dw, units=units_tmp, &
+                                          comment=comment_tmp)
       endif
 
       if (eval_C) then
@@ -358,8 +378,12 @@ contains
         !
         fac = 1.0e+8_dp*elem_charge_SI**2/(twopi*hbar_SI*cell_volume)
         gyro_C(:, :, :) = gyro_C(:, :, :)*fac
-        call gyrotropic_outprint_tensor('C', arrEf=gyro_C, units="Ampere/cm", &
-                                        comment="the C tensor -- Eq. B6 of TAS17")
+
+          f_out_name_tmp='C'
+          units_tmp="Ampere/cm"
+          comment_tmp="the C tensor -- Eq. B6 of TAS17"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf=gyro_D, units=units_tmp, &
+                                          comment=comment_tmp)
       endif
 
       if (eval_noa) then
@@ -371,8 +395,11 @@ contains
         !   *multiply dy 1e10 to get Ang
         fac = 1e+10_dp*elem_charge_SI/(cell_volume*eps0_SI)
         gyro_NOA_orb = gyro_NOA_orb*fac
-        call gyrotropic_outprint_tensor('NOA_orb', arrEfW=gyro_NOA_orb, units="Ang", &
-                                        comment="the tensor $gamma_{abc}^{orb}$ (Eq. C10 of TAS17)", symmetrize=.false.)
+          f_out_name_tmp='NOA_orb'
+          units_tmp="Ang"
+          comment_tmp="the tensor $gamma_{abc}^{orb}$ (Eq. C12,C14 of TAS17)"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEfW=gyro_NOA_orb, units=units_tmp, &
+                                          comment=comment_tmp, symmetrize=.false.)
 
         if (eval_spn) then
           ! at this point gyro_NOA_spn  is in eV^-2.Ang   !
@@ -384,8 +411,11 @@ contains
           !   *multiply by 1e10 to get Ang
           fac = 1e+30_dp*hbar_SI**2/(cell_volume*eps0_SI*elec_mass_SI)
           gyro_NOA_spn = gyro_NOA_spn*fac
-          call gyrotropic_outprint_tensor('NOA_spin', arrEfW=gyro_NOA_spn, units="Ang", &
-                                          comment="the tensor $gamma_{abc}^{spin}$ (Eq. C10 of TAS17)", symmetrize=.false.)
+          f_out_name_tmp='NOA_spin'
+          units_tmp="Ang"
+          comment_tmp="the tensor $gamma_{abc}^{spin}$ (Eq. C12,C15 of TAS17)"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEfW=gyro_NOA_spn, units=units_tmp, &
+                                          comment=comment_tmp, symmetrize=.false.)
         endif
       endif  !eval_NOA
 
@@ -395,7 +425,11 @@ contains
         ! in units of eV^{-1}
         ! divide by V_c in Ang^3 to get units 1./(eV*Ang^3)
         gyro_DOS(:) = gyro_DOS(:)/cell_volume
-        call gyrotropic_outprint_tensor('DOS', arrEf1d=gyro_DOS, units="eV^{-1}.Ang^{-3}", comment="density of states")
+          f_out_name_tmp='DOS'
+          units_tmp="eV^{-1}.Ang^{-3}"
+          comment_tmp="density of states"
+          call gyrotropic_outprint_tensor(f_out_name_tmp, arrEf1d=gyro_DOS, units=units_tmp, &
+                                          comment=comment_tmp)
       endif
 
     end if !on_root
@@ -865,9 +899,9 @@ contains
       nfermi, fermi_energy_list
     use w90_io, only: io_file_unit, seedname, stdout
 
-    character(len=*), intent(in) :: f_out_name
-    character(len=*), intent(in), optional :: units
-    character(len=*), intent(in), optional :: comment
+    character(len=30), intent(in) :: f_out_name
+    character(len=30), intent(in), optional :: units
+    character(len=120), intent(in), optional :: comment
     real(kind=dp), dimension(:, :, :), intent(in), optional :: arrEf
     real(kind=dp), dimension(:, :, :, :), intent(in), optional :: arrEfW
     real(kind=dp), dimension(:), intent(in), optional :: arrEf1D
@@ -878,8 +912,11 @@ contains
     logical             :: lsym
 
     lsym = .true.
-    if (present(symmetrize) .and. (.not. symmetrize)) lsym = .false.
-
+    if (present(symmetrize)) then 
+      if  (.not. symmetrize) lsym = .false.
+    endif 
+    
+    
     file_name = trim(seedname)//"-gyrotropic-"//f_out_name//".dat"
     file_name = trim(file_name)
     file_unit = io_file_unit()
@@ -919,9 +956,14 @@ contains
                      xy(nfermi), xz(nfermi), yz(nfermi), &
                      x(nfermi), y(nfermi), z(nfermi)
     integer       ::  i
-
+    logical lsym
+    
+    
     if (present(arr33N)) then
-      if (present(symmetrize) .and. symmetrize) then
+      lsym=.false.
+      if (present(symmetrize)) lsym=symmetrize 
+      
+      if (lsym) then
         ! Symmetric part
         xx = arr33N(1, 1, :)
         yy = arr33N(2, 2, :)
