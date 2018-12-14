@@ -1,5 +1,7 @@
 num_wann        =  4 
 num_iter        = 20
+use_ws_distance = .false.
+search_shells=12
 
 begin atoms_cart
    Si      0.000000000    0.000000000    0.000000000

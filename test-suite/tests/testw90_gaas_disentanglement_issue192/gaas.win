@@ -10,6 +10,8 @@ dis_win_max       = 24.0d0
 dis_froz_max      =  14.0d0
 dis_num_iter      =  100
 dis_mix_ratio     = 1.d0
+use_ws_distance = .false.
+search_shells=12
 
 exclude_bands :  1-5
 

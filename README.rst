@@ -63,6 +63,13 @@ The Wannier90 code is licensed under GPLv2.
 You can read the licence text in the LICENSE file in the root directory 
 of the Wannier90 distribution.
 
+FAQ
+++++
+
+Detailed information on how to install, contribute and report issues/bugs may be found on the `FAQ page`_.  Common issues encountered by the Wannier90-user community are also addressed there.
+
+.. _FAQ page: https://github.com/wannier-developers/wannier90/wiki/FAQ
+
 Authors and contributors
 ++++++++++++++++++++++++
 
