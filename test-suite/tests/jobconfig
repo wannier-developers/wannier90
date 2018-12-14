@@ -48,6 +48,18 @@ output = silane.wout
 # This is a gamma-only test, can only run in serial
 max_nprocs = 0
 
+# Silicon, valence states
+[testw90_example11_1/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Silicon, valence and conduction states
+[testw90_example11_2/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
 # Test for the nnkpt file
 [testw90_nnkpt1/]
 program = WANNIER90_NNKP_OK
@@ -310,7 +322,7 @@ output = gaas-sc_xyz.dat
 
 # Test of selective localization and constrained centres
 [testw90_example26]
-program = WANNIER90_WOUT_OK
+program = WANNIER90_SLWFC_WOUT_OK
 inputs_args = ('gaas.win', '')
 output = gaas.wout
 

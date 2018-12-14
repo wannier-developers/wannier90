@@ -2,6 +2,8 @@ berry = true
 berry_task=sc   
 berry_kmesh = 25 25 25 
 fermi_energy=7.7414
+use_ws_distance = .false.
+search_shells=12
 
 kubo_freq_min= 0.0
 kubo_freq_max= 10.0

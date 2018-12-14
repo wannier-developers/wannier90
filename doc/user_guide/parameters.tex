@@ -1,3 +1,4 @@
+se%!TEX root=./user_guide.tex
 \chapter{Parameters}\label{chap:parameters}
 
 \section{Usage}
@@ -115,6 +116,7 @@ Keyword & Type & Description \\
 %{\sc cp\_pp }   & L & CP code post-processing \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
+{\sc select\_projections }   & I & List of projections to use in Wannierisation \\
 {\sc restart }   & S & Restart from checkpoint file \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
@@ -579,7 +581,7 @@ attempting to determine an automatic solution to the B1 condition
 Eq.~\ref{eq:B1}. Larger values than the default may be required in special
 cases e.g. for very long thin unit cells.
 
-The default value is 12.
+The default value is 36.
 
 \subsection[skip\_B1\_tests]{\tt logical :: skip\_B1\_tests}
 
@@ -673,8 +675,8 @@ The default value is \verb#false#.
 
 \subsection[iprint]{\tt integer :: iprint}
 
-This indicates the level of verbosity of the output from 0,
-the bare minimum, to 3, which corresponds to full debugging output.
+This indicates the level of verbosity of the output from 0 (``low''),
+the bare minimum, to 3 (``high''), which corresponds to full debugging output.
 
 The default value is 1.
 
@@ -730,6 +732,15 @@ A k-point independent list of states to excluded from the calculation
  and 12:
 
  \verb#exclude_bands : 2, 6-8, 12#
+
+\subsection[select\_projections]{\tt integer :: select\_projections(:)}
+
+A list of projections to be included in the wannierisation procedure.
+In the case that \verb#num_proj# is greater than \verb#num_wann#,
+  this keyword allows a subset of the projections in the projection matrices to be used.
+For example, to select the projections given by the indices 2, 6, 7, 8 and 12:
+
+ \verb#select_projections : 2, 6-8, 12#
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
@@ -1675,7 +1686,7 @@ For a longer explanation, see Chapter~\ref{chap:interpolation}.
 
 If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
 
-The default value is {\tt false}. Introduced in v2.1.
+The default value is {\tt true} (default changed since v.3.0). Introduced in v2.1.
 
 \subsection[ws\_distance\_tol]{\tt real(kind=dp) :: ws\_distance\_tol}
 

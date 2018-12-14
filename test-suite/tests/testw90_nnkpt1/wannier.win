@@ -1,5 +1,8 @@
 num_wann 10
 num_bands 10
+use_ws_distance = .false.
+search_shells=12
+
 spinors : false
 num_iter 0
 shell_list 1
