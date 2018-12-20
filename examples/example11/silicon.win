@@ -10,27 +10,27 @@ num_print_cycles =   10
 length_unit      =  bohr
 
 
-!! (1) Valence bands
-num_wann        =   4
-dis_froz_max    =   6.5
-dis_win_max     =   6.5
-!! !! Bond-centred s-orbitals
 begin projections
+!! !! Bond-centred s-orbitals
 f=-0.125,-0.125, 0.375:s
 f= 0.375,-0.125,-0.125:s
 f=-0.125, 0.375,-0.125:s
 f=-0.125,-0.125,-0.125:s
+!! !! Atom-centred sp3-orbitals
+Si:sp3
 end projections
 
+!! (1) Valence bands
+num_wann        =   4
+select_projections 1 2 3 4
+dis_froz_max    =   6.5
+dis_win_max     =   6.5
 
 !! !! (2) Valence + conduction bands
 !! num_wann        =   8
+!! select_projections 5-12
 !! dis_froz_max    =   6.5
 !! dis_win_max     =  17.0
-!! !! Atom-centred sp3-orbitals
-!! begin projections
-!! Si:sp3
-!! end projections
 
 
 begin unit_cell_cart

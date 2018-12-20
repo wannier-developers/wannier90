@@ -1,7 +1,9 @@
+%!TEX root=./user_guide.tex
 \chapter{\label{chap:interpolation}Some notes on the interpolation}
 
 In \wannier{} v.2.1, a new flag {\tt use\_ws\_distance} has been 
-introduced. Setting it to {\tt .false.} reproduces the 
+introduced (and it is set to {\tt .true.} by default since
+version v3.0). Setting it to {\tt .false.} reproduces the 
 ``standard'' behavior of \wannier{} in v.2.0.1 and earlier,
 while setting it to {\tt .true.} changes the interpolation method
 as described below. In general, this allows a smoother interpolation,

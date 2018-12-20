@@ -12,6 +12,8 @@ num_wann        = 15
 #dis_win_max     =  4.0
 #dis_num_iter    =  100
 #################################
+use_ws_distance = .false.
+search_shells=12
 
 num_iter        = 100
 conv_tol        = 1e-10
