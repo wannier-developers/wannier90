@@ -1,5 +1,5 @@
 gyrotropic=true
-gyrotropic_task=-C-dos-D0-Dw-K-NOA
+gyrotropic_task=-Dw
 fermi_energy_step=2
 fermi_energy_min=2
 fermi_energy_max=10
