@@ -235,8 +235,17 @@ contains
     if (ierr /= 0) call io_error('Error in allocating cdq in wann_main')
 
     ! for MPI
-    allocate (counts(0:num_nodes - 1), displs(0:num_nodes - 1), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main')
+    if (allocated(counts)) deallocate (counts)
+    allocate (counts(0:num_nodes - 1), stat=ierr)
+    if (ierr /= 0) then
+      call io_error('Error in allocating counts in wann_main')
+    end if
+
+    if (allocated(displs)) deallocate (displs)
+    allocate (displs(0:num_nodes - 1), stat=ierr)
+    if (ierr /= 0) then
+      call io_error('Error in allocating displs in wann_main')
+    end if
     call comms_array_split(num_kpts, counts, displs)
     allocate (rnkb_loc(num_wann, nntot, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating rnkb_loc in wann_main')
@@ -800,6 +809,9 @@ contains
       deallocate (m0_loc, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating m0_loc in wann_main')
     end if
+
+    if (allocated(counts)) deallocate (counts)
+    if (allocated(displs)) deallocate (displs)
 
     deallocate (history, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating history in wann_main')
