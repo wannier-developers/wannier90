@@ -533,7 +533,6 @@ contains
 
       u_opt_r(:, :) = real(u_matrix_opt(1:ndimwin(1), 1:num_wann, 1), dp)
 
-      write (77, *) size(a_matrix_r, 1), size(a_matrix, 1)
       a_matrix_r(:, :) = real(a_matrix(1:ndimwin(1), 1:num_wann, 1), kind=dp)
 
       call dgemm('T', 'N', num_wann, num_wann, ndimwin(1), 1.0_dp, &
