@@ -48,6 +48,14 @@ output = silane.wout
 # This is a gamma-only test, can only run in serial
 max_nprocs = 0
 
+# Silane, valence states, Gamma only
+[testw90_na_chain_gamma/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('Na_chain.win', '')
+output = Na_chain.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
 # Silicon, valence states
 [testw90_example11_1/]
 program = WANNIER90_WOUT_OK

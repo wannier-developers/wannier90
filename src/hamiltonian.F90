@@ -152,6 +152,14 @@ contains
       if (ierr /= 0) call io_error('Error in deallocating wannier_centres_translated in param_dealloc')
     end if
 
+    ham_have_setup = .false.
+    have_translated = .false.
+    use_translation = .false.
+    have_ham_r = .false.
+    have_ham_k = .false.
+    hr_written = .false.
+    tb_written = .false.
+
     return
   end subroutine hamiltonian_dealloc
 

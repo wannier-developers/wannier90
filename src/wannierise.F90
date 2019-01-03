@@ -235,8 +235,17 @@ contains
     if (ierr /= 0) call io_error('Error in allocating cdq in wann_main')
 
     ! for MPI
-    allocate (counts(0:num_nodes - 1), displs(0:num_nodes - 1), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main')
+    if (allocated(counts)) deallocate (counts)
+    allocate (counts(0:num_nodes - 1), stat=ierr)
+    if (ierr /= 0) then
+      call io_error('Error in allocating counts in wann_main')
+    end if
+
+    if (allocated(displs)) deallocate (displs)
+    allocate (displs(0:num_nodes - 1), stat=ierr)
+    if (ierr /= 0) then
+      call io_error('Error in allocating displs in wann_main')
+    end if
     call comms_array_split(num_kpts, counts, displs)
     allocate (rnkb_loc(num_wann, nntot, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating rnkb_loc in wann_main')
@@ -800,6 +809,9 @@ contains
       deallocate (m0_loc, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating m0_loc in wann_main')
     end if
+
+    if (allocated(counts)) deallocate (counts)
+    if (allocated(displs)) deallocate (displs)
 
     deallocate (history, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating history in wann_main')
@@ -1480,7 +1492,7 @@ contains
     !===================================================================
     use w90_constants, only: eps6
     use w90_parameters, only: num_wann, nntot, neigh, &
-      nnh, bk, bka, num_kpts, timing_level
+      nnh, bk, bka, num_kpts, timing_level, m_matrix, gamma_only
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
 
@@ -1517,14 +1529,25 @@ contains
 
       if (.not. present(m_w)) then
         ! get average phase for each unique bk direction
-        do na = 1, nnh
-          csum(na) = cmplx_0
-          do nkp_loc = 1, counts(my_node_id)
-            nkp = nkp_loc + displs(my_node_id)
-            nn = neigh(nkp, na)
-            csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
+        if (gamma_only) then
+          do na = 1, nnh
+            csum(na) = cmplx_0
+            do nkp_loc = 1, counts(my_node_id)
+              nkp = nkp_loc + displs(my_node_id)
+              nn = neigh(nkp, na)
+              csum(na) = csum(na) + m_matrix(loop_wann, loop_wann, nn, nkp_loc)
+            enddo
           enddo
-        enddo
+        else
+          do na = 1, nnh
+            csum(na) = cmplx_0
+            do nkp_loc = 1, counts(my_node_id)
+              nkp = nkp_loc + displs(my_node_id)
+              nn = neigh(nkp, na)
+              csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
+            enddo
+          enddo
+        endif
 
       else
 
@@ -2773,7 +2796,7 @@ contains
     ! Set up the MPI arrays for a serial run.
     allocate (counts(0:0), displs(0:0), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
-    counts(0) = 0; displs(0) = 0
+    counts(0) = 1; displs(0) = 0
 
     ! store original U before rotating
 !~    ! phase factor ph_g is applied to u_matrix
