@@ -6134,7 +6134,7 @@ contains
     call comms_bcast(dist_cutoff_hc, 1)
     call comms_bcast(one_dim_axis, len(one_dim_axis))
     call comms_bcast(use_ws_distance, 1)
-!    call comms_bcast(ws_distance_tol,1)
+    call comms_bcast(ws_distance_tol, 1)
     call comms_bcast(ws_search_size(1), 3)
     call comms_bcast(fermi_surface_plot, 1)
     call comms_bcast(fermi_surface_num_points, 1)
