@@ -39,7 +39,7 @@ $\bvec{d}_{ij\bvec{R}} = \bvec{\tau}_i - (\bvec{\tau}_j+\bvec{R})$
 and all its superlattice periodic equivalents
 $\bvec{d}_{ij\bvec{R}}+ \bvec{\tilde R}_{nml}$, with 
 $\bvec{\tilde R}_{nml} = (Nn\bvec{a}_1 + Mm\bvec{a}_2 + Ll\bvec{a}_3)$
-and $n,l,m = {-3,-2,...0,...3}$.
+and $n,l,m = {-L,-L+1,...0,...,L-1,L}$, with $L$ controlled by the parameter {\tt ws\_search\_size}.
 
 Then,
 \begin{enumerate}
@@ -51,6 +51,9 @@ Then,
 \item if it is on the border/corner of the WS then it is the shortest, but there 
 are other choices of $(n,m,l)$ which are equivalent, find all of them
 \end{enumerate}
+
+In all distance comparisons, a small but finite tolerance is considered,
+which can be controlled with the parameter {\tt ws\_distance\_tol}.
 
 Because of how the Fourier transform is defined in the \wannier{} code (not the only 
 possible choice) it is only $\bvec{R}+\bvec{\tilde R}_{nml}$ 
