@@ -1031,6 +1031,9 @@ The default value of this parameter is \verb#false#.
 Use guiding centres during the minimisation, in order to avoid
 local minima.
 
+\wannier\ uses a logarithm definition of the spread functional. As we are taking the log of a complex argument there is a possibility that the algorithm might make inconsistent choices for the branch cut. This manifests itself as complex WF with a large spread. By using guiding centres the code will attempt to make a consistent choice of branch cut. Experience shows that with \verb#guiding_centres# set to true this problem is avoided and doing so
+does not cause any problems. For this reason we recommend setting \verb#guiding_centres# to true where possible (it is only not possible if an explicit projection block is not defined).
+
 The default value is \verb#false#.
 
 \subsection[num\_guide\_cycles]{\tt integer :: num\_guide\_cycles}

@@ -1487,7 +1487,7 @@ contains
   subroutine wann_phases(csheet, sheet, rguide, irguide, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
-    !! consistent choice of branch cut for the spread definction
+    !! consistent choice of branch cut for the spread definition
     !                                                                  !
     !===================================================================
     use w90_constants, only: eps6
