@@ -1702,7 +1702,8 @@ If \verb#ws_search_size# is provided as a single integer,
 then the number of repetitions of the Born-von Karman cell is the same 
 along all three linear dimensions; otherwise, if three integers are
 provided, the number of repetitions along the $i-$th linear dimension is \verb#ws_search_size(i)#. 
-The value default is generally sufficient, but might need to be increased in case of elongated cells.
+The variable is used both in \verb#hamiltonian.F90# and in \verb#ws_distance.F90#. In the latter case, its value is incremented by one in order to account for WFs whose centre wanders away from the original reference unit cell.\\
+The default value is generally sufficient, but might need to be increased in case of elongated cells.
 
 The default value is 2.
 

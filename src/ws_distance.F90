@@ -175,10 +175,12 @@ contains
     ! In this first loop, I just look for the shortest vector that I obtain
     ! by trying to displace the second Wannier function by all
     ! 'large-supercell' vectors
-    ! (in a ws_search_size(1) x ws_search_size(2) x  ws_search_size(3) large-supercell grid).
-    do i = -ws_search_size(1), ws_search_size(1)
-      do j = -ws_search_size(2), ws_search_size(2)
-        do k = -ws_search_size(3), ws_search_size(3)
+    ! The size of the supercell, controlled by ws_search_size,
+    ! is incremented by one unit in order to account for WFs whose centre
+    ! wanders away from the original reference unit cell
+    do i = -ws_search_size(1) - 1, ws_search_size(1) + 1
+      do j = -ws_search_size(2) - 1, ws_search_size(2) + 1
+        do k = -ws_search_size(3) - 1, ws_search_size(3) + 1
 
           R_f = R_in_f + REAL((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
                               kind=DP)
@@ -206,6 +208,9 @@ contains
     ! Now, second loop to find the list of R_out that differ from R_in
     ! by a large-supercell lattice vector and are equally distant from R0
     ! (i.e. that are on the edges of the WS cell centered on R0)
+    ! As above, the size of the supercell, controlled by ws_search_size,
+    ! is incremented by one unit in order to account for WFs whose centre
+    ! wanders away from the original reference unit cell
 
     ! I start from the last R_bz found
     mod2_R_bz = SUM((R_bz - R0)**2)
@@ -220,9 +225,9 @@ contains
     ! take R_bz to cryst(frac) coord for translating
     call utility_cart_to_frac(R_bz, R_in_f, recip_lattice)
 
-    do i = -ws_search_size(1), ws_search_size(1)
-      do j = -ws_search_size(2), ws_search_size(2)
-        do k = -ws_search_size(3), ws_search_size(3)
+    do i = -ws_search_size(1) - 1, ws_search_size(1) + 1
+      do j = -ws_search_size(2) - 1, ws_search_size(2) + 1
+        do k = -ws_search_size(3) - 1, ws_search_size(3) + 1
 
           R_f = R_in_f + REAL((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
                               kind=DP)
