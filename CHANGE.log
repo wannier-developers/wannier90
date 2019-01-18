@@ -4,7 +4,7 @@
 
 	The Maximally-Localised Generalised Wannier Functions Code
 
-v3.0.0 (18th December 2018)
+v3.0.0 (27th February 2019)
 * G0W0 interface implemented (A. Marrazzo (EPFL, CH) and S. Tsirkin (DIPC, Spain)).
   Added two utilities (gw2wannier90.py and k_mapper.py) and example 23 on
   G0W0 bands interpolation with Yambo.
@@ -15,12 +15,12 @@ v3.0.0 (18th December 2018)
   (contributed by Guillaume Geranton, FZ Julich)
 * Implemented a new berry_task option for the calculation of nonlinear shift current.
   Added description of parameters into the users guide, and example 25
-  on the shift-current calculation in Gallium Arsenide.  
+  on the shift-current calculation in Gallium Arsenide.
   (J. Ibañez-Azpiroz (CFM, Spain) and S. Tsirkin (CFM, Spain),
    see J. Ibañez-Azpiroz, S. S. Tsirkin and I. Souza, arXiv:1804.04030 (2018) )
 * adapted the subroutine hamiltonian_write_rmn in file hamiltonian.f90
   to produce the same results as in hamiltonian_write_tb.
-* bug fix in kslice.F90 & example17 (change to floor division in the python 
+* bug fix in kslice.F90 & example17 (change to floor division in the python
   scripts for plotting Fermi lines), minor bug fix in example18 & tutorial
 * Changed some defaults (in particular, `use_ws_distance` now is set to `.true.` by default, `search_shells` is now set to 36 by default).
 
