@@ -145,6 +145,9 @@ module w90_parameters
   logical, public, save :: use_ws_distance
   real(kind=dp), public, save :: ws_distance_tol
   !! absolute tolerance for the distance to equivalent positions
+  integer, public, save :: ws_search_size(3)
+  !! maximum extension in each direction of the supercell of the BvK cell
+  !! to search for points inside the Wigner-Seitz cell
   logical, public, save :: fermi_surface_plot
   integer, public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -1451,6 +1454,25 @@ contains
 
     ws_distance_tol = 1.e-5_dp
     call param_get_keyword('ws_distance_tol', found, r_value=ws_distance_tol)
+
+    ws_search_size = 2
+
+    call param_get_vector_length('ws_search_size', found, length=i)
+    if (found) then
+      if (i .eq. 1) then
+        call param_get_keyword_vector('ws_search_size', found, 1, &
+                                      i_value=ws_search_size)
+        ws_search_size(2) = ws_search_size(1)
+        ws_search_size(3) = ws_search_size(1)
+      elseif (i .eq. 3) then
+        call param_get_keyword_vector('ws_search_size', found, 3, &
+                                      i_value=ws_search_size)
+      else
+        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers')
+      end if
+      if (any(ws_search_size <= 0)) &
+        call io_error('Error: ws_search_size elements must be greater than zero')
+    end if
 
     !%%%%%%%%%%%%%%%%
     ! Transport
@@ -6112,7 +6134,8 @@ contains
     call comms_bcast(dist_cutoff_hc, 1)
     call comms_bcast(one_dim_axis, len(one_dim_axis))
     call comms_bcast(use_ws_distance, 1)
-!    call comms_bcast(ws_distance_tol,1)
+    call comms_bcast(ws_distance_tol, 1)
+    call comms_bcast(ws_search_size(1), 3)
     call comms_bcast(fermi_surface_plot, 1)
     call comms_bcast(fermi_surface_num_points, 1)
     call comms_bcast(fermi_surface_plot_format, len(fermi_surface_plot_format))
