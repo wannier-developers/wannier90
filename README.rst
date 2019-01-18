@@ -135,7 +135,6 @@ We also acknowledge individuals not already mentioned above who participated in 
 
 * Daniel Fritsch
 * Victor Garcia Suarez
-* Pablo Garcia Fernandez
 * Jan-Philipp Hanke
 * Ji Hoon Ryoo
 * Jürg Hutter
@@ -143,7 +142,6 @@ We also acknowledge individuals not already mentioned above who participated in 
 * Liang Liang
 * Michael Obermeyer
 * Gianluca Prandini
-* Christian Stieger
 * Paolo Umari
 
 Wannier90 Version 2.x was written by:
