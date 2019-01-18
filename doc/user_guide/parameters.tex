@@ -304,6 +304,7 @@ Hamiltonian, and position operator in WF basis} \\
   final WF are translated \\
   \new{\sc use\_ws\_distance } & L & \new{Improve interpolation using minimum distance between WFs, see Chap.~\ref{chap:interpolation}} \\
   \new{\sc ws\_distance\_tol } & R & \new{Absolute tolerance for the distance to equivalent positions.} \\
+  \new{\sc ws\_search\_size } & I & \new{Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell}\\
   \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
@@ -1693,6 +1694,19 @@ The default value is {\tt true} (default changed since v.3.0). Introduced in v2.
 Tolerance when determining whether two values $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as defined in chapter~\ref{chap:interpolation}) for the shortest distance between two Wannier functions are equivalent. If the difference in distance (in Angstrom) is less than \texttt{ws\_distance\_tol}, they are taken to be equivalent.
 
 The default value is $10^{-5}$.
+
+\subsection[ws\_search\_size]{\tt :: ws\_search\_size}
+Maximum absolute value for the integers $n,m,l$ that identify the super-lattice vectors $\tilde{\mathbf{R}}_{nml}$ (see chapter~\ref{chap:interpolation})
+when searching for points inside the Wigner-Seitz cell. 
+If \verb#ws_search_size# is provided as a single integer,
+then the number of repetitions of the Born-von Karman cell is the same 
+along all three linear dimensions; otherwise, if three integers are
+provided, the number of repetitions along the $i-$th linear dimension is \verb#ws_search_size(i)#. 
+The variable is used both in \verb#hamiltonian.F90# and in \verb#ws_distance.F90#. In the latter case, its value is incremented by one in order to account for WFs whose centre wanders away from the original reference unit cell.\\
+The default value is generally sufficient, but might need to be increased in case of elongated cells.
+
+The default value is 2.
+
 
 \subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
 

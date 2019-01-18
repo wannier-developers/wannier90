@@ -145,6 +145,9 @@ module w90_parameters
   logical, public, save :: use_ws_distance
   real(kind=dp), public, save :: ws_distance_tol
   !! absolute tolerance for the distance to equivalent positions
+  integer, public, save :: ws_search_size(3)
+  !! maximum extension in each direction of the supercell of the BvK cell
+  !! to search for points inside the Wigner-Seitz cell
   logical, public, save :: fermi_surface_plot
   integer, public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -1451,6 +1454,25 @@ contains
 
     ws_distance_tol = 1.e-5_dp
     call param_get_keyword('ws_distance_tol', found, r_value=ws_distance_tol)
+
+    ws_search_size = 2
+
+    call param_get_vector_length('ws_search_size', found, length=i)
+    if (found) then
+      if (i .eq. 1) then
+        call param_get_keyword_vector('ws_search_size', found, 1, &
+                                      i_value=ws_search_size)
+        ws_search_size(2) = ws_search_size(1)
+        ws_search_size(3) = ws_search_size(1)
+      elseif (i .eq. 3) then
+        call param_get_keyword_vector('ws_search_size', found, 3, &
+                                      i_value=ws_search_size)
+      else
+        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers')
+      end if
+      if (any(ws_search_size <= 0)) &
+        call io_error('Error: ws_search_size elements must be greater than zero')
+    end if
 
     !%%%%%%%%%%%%%%%%
     ! Transport
@@ -3359,37 +3381,20 @@ contains
     write (stdout, *) '            |        Generalized Wannier Functions code         |'
     write (stdout, *) '            |            http://www.wannier.org                 |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  Wannier90 v2.x Authors:                          |'
-    write (stdout, *) '            |    Arash A. Mostofi  (Imperial College London)    |'
+    write (stdout, *) '            |                                                   |'
+    write (stdout, *) '            |  Wannier90 Developer Group:                       |'
     write (stdout, *) '            |    Giovanni Pizzi    (EPFL)                       |'
-    write (stdout, *) '            |    Ivo Souza         (Universidad del Pais Vasco) |'
-    write (stdout, *) '            |    Jonathan R. Yates (University of Oxford)       |'
-    write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  Wannier90 Contributors:                          |'
-    write (stdout, *) '            |    Young-Su Lee       (KIST, S. Korea)            |'
-    write (stdout, *) '            |    Matthew Shelley    (Imperial College London)   |'
-    write (stdout, *) '            |    Nicolas Poilvert   (Penn State University)     |'
-    write (stdout, *) '            |    Raffaello Bianco   (Paris 6 and CNRS)          |'
-    write (stdout, *) '            |    Gabriele Sclauzero (ETH Zurich)                |'
-    write (stdout, *) '            |    David Strubbe (MIT, USA)                       |'
-    write (stdout, *) '            |    Rei Sakuma (Lund University, Sweden)           |'
-    write (stdout, *) '            |    Yusuke Nomura (U. Tokyo, Japan)                |'
-    write (stdout, *) '            |    Takashi Koretsune (Riken, Japan)               |'
-    write (stdout, *) '            |    Yoshiro Nohara (ASMS Co. Ltd., Japan)          |'
-    write (stdout, *) '            |    Ryotaro Arita (Riken, Japan)                   |'
-    write (stdout, *) '            |    Lorenzo Paulatto (UPMC Paris)                  |'
-    write (stdout, *) '            |    Florian Thole (ETH Zurich)                     |'
-    write (stdout, *) '            |    Pablo Garcia Fernandez (Unican, Spain)         |'
-    write (stdout, *) '            |    Dominik Gresch (ETH Zurich)                    |'
-    write (stdout, *) '            |    Samuel Ponce (University of Oxford)            |'
-    write (stdout, *) '            |    Marco Gibertini (EPFL)                         |'
-    write (stdout, *) '            |    Christian Stieger (ETHZ, CH)                   |'
-    write (stdout, *) '            |    Stepan Tsirkin (Universidad del Pais Vasco)    |'
-    write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  Wannier77 Authors:                               |'
+    write (stdout, *) '            |    Valerio Vitale    (Cambridge)                  |'
+    write (stdout, *) '            |    David Vanderbilt  (Rutgers University)         |'
     write (stdout, *) '            |    Nicola Marzari    (EPFL)                       |'
     write (stdout, *) '            |    Ivo Souza         (Universidad del Pais Vasco) |'
-    write (stdout, *) '            |    David Vanderbilt  (Rutgers University)         |'
+    write (stdout, *) '            |    Arash A. Mostofi  (Imperial College London)    |'
+    write (stdout, *) '            |    Jonathan R. Yates (University of Oxford)       |'
+    write (stdout, *) '            |                                                   |'
+    write (stdout, *) '            |  For the full list of Wannier90 3.x authors,      |'
+    write (stdout, *) '            |  please check the code documentation and the      |'
+    write (stdout, *) '            |  README on the GitHub page of the code            |'
+    write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  Please cite                                      |'
     write (stdout, *) '            |                                                   |'
@@ -3415,13 +3420,11 @@ contains
     write (stdout, *) '            |         Phys. Rev. B 65 035109 (2001)             |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            | Copyright (c) 1996-2017                           |'
-    write (stdout, *) '            |        Arash A. Mostofi, Jonathan R. Yates,       |'
-    write (stdout, *) '            |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |'
-    write (stdout, *) '            |        David Vanderbilt and Nicola Marzari        |'
+    write (stdout, *) '            | Copyright (c) 1996-2019                           |'
+    write (stdout, *) '            |        The Wannier90 Developer Group and          |'
+    write (stdout, *) '            |        individual contributors                    |'
     write (stdout, *) '            |                                                   |'
-!    write(stdout,*)  '            |        Release: 2.1.0   13th January 2017         |'
-    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  13th January 2017       |'
+    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  27th February 2019      |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
@@ -6112,7 +6115,8 @@ contains
     call comms_bcast(dist_cutoff_hc, 1)
     call comms_bcast(one_dim_axis, len(one_dim_axis))
     call comms_bcast(use_ws_distance, 1)
-!    call comms_bcast(ws_distance_tol,1)
+    call comms_bcast(ws_distance_tol, 1)
+    call comms_bcast(ws_search_size(1), 3)
     call comms_bcast(fermi_surface_plot, 1)
     call comms_bcast(fermi_surface_num_points, 1)
     call comms_bcast(fermi_surface_plot_format, len(fermi_surface_plot_format))
