@@ -83,7 +83,7 @@ The Wannier90 Developer Group includes:
 * Arash A. Mostofi  (Imperial College London, GB)
 * Jonathan R. Yates (University of Oxford, GB)
 
-In addition ot the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
+In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
 
 * Ryotaro Arita (Riken and U. Tokyo, JP): Symmetry-adapted Wannier functions
 * Stefan Blügel (FZ  Jülich, DE): Parallelization of the core routines
@@ -131,7 +131,7 @@ Contributors to the code include:
 * David Strubbe: various bugfixes/improvements
 * Timo Thonhauser: extension of pw2wannier90 to add terms needed for orbital magnetisation
 
-We also acknowledge the participants of the first Wannier90 community meeting (San Sebastian, 2016) for the useful discussions:
+We also acknowledge individuals not already mentioned above who participated in the first Wannier90 community meeting (San Sebastian, 2016) for useful discussions:
 
 * Daniel Fritsch
 * Victor Garcia Suarez
