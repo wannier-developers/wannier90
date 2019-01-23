@@ -1,0 +1,22 @@
+\section*{Preliminaries}
+\label{sec:preliminaries}
+\addcontentsline{toc}{section}{Preliminaries}
+Welcome to \Wannier{}! This is the solution booklet for the examples in the \Wannier{} \version{} tutorial \mbox{\url{http://www.wannier.org/doc/tutorial.pdf}}.  
+Info on the installation process and the theory of Maximally Localized Wannier Functions (\MLWFs) is not reported here as they can be found elsewhere\footnote{\footnotesize{To install \Wannier{} you can follow the instructions in the \myfont{readme} file of the \Wannier{} distribution. For an introduction to the theory, you can look at the \Wannier{} User guide \url{http://www.wannier.org/user_guide.html}, the \Wannier{} Tutorial and references therein.}}. The solutions in this booklet are for the \version{} only! The following (open-source) programs are required to reproduce the plots and figures in this booklet:
+\begin{itemize}
+\item \texttt{gnuplot} is used to plot bandstructures. It is available for many operating systems and is often
+installed by default on Unix/Linux distributions. In particular, we used gnuplot 4.6 patchlevel~6.\\ 
+\url{http://www.gnuplot.info}
+\item \texttt{Grace} is another plotting tool to visualise bandstructures. \\ 
+\url{http://plasma-gate.weizmann.ac.il/Grace/}
+\item \texttt{Vesta} is the default 3D visualisation program\cite{vesta} adopted in this booklet. It is used to visualise crystal structures, volumetric data (such as WFs and  denisities).
+Download is available for several OS here: \url{http://jp-minerals.org/vesta/en/}.
+\item \texttt{XCrySDen} is also used to visualise crystal structures and Fermi surfaces in particular. It is available
+for Unix/Linux, Windows (using cygwin), and OSX. To correctly display files from wannier90,
+version 1.4 or later must be used. \\ 
+\url{http://www.xcrysden.org}
+\item \texttt{VMD} may also be used to visualise crystal structures and 3D-fields. It can also read a great variety of input formats and it comes with handy postprocessing tools.
+\url{http://www.ks.uiuc.edu/Research/vmd}
+\end{itemize}
+
+\textbf{Disclaimer:} All the band structure interpolations have been carried out with \mbox{{\tt ws\_distance = .false.}}, which is the default value for the version 2.1. However, in the new \Wannier{} release, corresponding to version 3.0, the default value of {\tt ws\_distance} has been changed to {\tt .true.}, as, to the best of our knowledge, the Wigner-Seitz interpolation scheme never lowers the quality of the interpolation and it is often superior to the default scheme.  
