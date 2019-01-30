@@ -33,7 +33,7 @@ module w90_io
   logical, public, save           :: post_proc_flag
   !! Are we in post processing mode
 !  character(len=10), public, parameter:: w90_version='2.1.0     '
-  character(len=10), public, parameter:: w90_version = '2.1.0+git '
+  character(len=10), public, parameter:: w90_version = '3.0 '
   !! Label for this version of wannier90
 
   type timing_data
