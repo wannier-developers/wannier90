@@ -96,7 +96,7 @@ contains
       num_proj, lselproj, proj2wann_map, &
       devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
       m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only, & ![ysl]
-      m_matrix_local, m_matrix_orig_local
+      m_matrix_local, m_matrix_orig_local, lhasproj
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv
@@ -107,7 +107,7 @@ contains
     integer :: mmn_in, amn_in, num_mmn, num_amn
     integer :: nnl, nnm, nnn, ncount
     integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
-    real(kind=dp) :: m_real, m_imag, a_real, a_imag
+    real(kind=dp) :: m_real, m_imag, a_real, a_imag, mu_tmp, sigma_tmp
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
     logical :: nn_found
@@ -220,8 +220,29 @@ contains
         read (amn_in, '(a)', err=104, end=104) dummy
         if (on_root) write (stdout, '(a)') trim(dummy)
 
-        ! Read the number of bands, k-points and wannier functions
-        read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
+        ! Check if SCDM and projections --> Warning
+        ! if SCDM and select_projections --> STOP
+        if (index(trim(dummy), 'SCDM') > 0) then
+          if (lhasproj) then
+            if (on_root) write (stdout, '(6x,a,6x)') '****** begin WARNING ******'
+            if (on_root) write (stdout, '(a)') ' The A matrices have been computed with the SCDM'
+            if (on_root) write (stdout, '(a)') ' method but you have also specified a projection block'
+            if (on_root) write (stdout, '(a)') ' in the input file. If this is NOT the intended '
+            if (on_root) write (stdout, '(a)') ' behaviour please modify the pw2wannier90 input file accordingly'
+            if (on_root) write (stdout, '(a)') ' and re-run wannier90.x -pp and pw2wannier90.x.'
+            if (on_root) write (stdout, '(6x,a,6x)') '****** end WARNING ******'
+
+            if (lselproj) call io_error('Error: selected projections and SCDM method are not compatible.')
+
+            num_proj = num_wann
+            call comms_bcast(num_proj, 1)
+            ! Read the number of bands, k-points and wannier functions
+            read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp, mu_tmp, sigma_tmp
+          endif
+        else
+          ! Read the number of bands, k-points and wannier functions
+          read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
+        endif
 
         ! Checks
         if (nb_tmp .ne. num_bands) &

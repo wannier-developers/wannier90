@@ -493,12 +493,6 @@ module w90_parameters
   logical, public, save              :: automatic_translation
   integer, public, save              :: one_dim_dir
 
-  ! vv: SCDM method
-  logical, public, save              :: scdm_proj
-  integer, public, save              :: scdm_entanglement
-  real(kind=dp), public, save              :: scdm_mu
-  real(kind=dp), public, save              :: scdm_sigma
-
   ! Private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
@@ -1998,43 +1992,6 @@ contains
     ! By default: .false. (perform the tests)
     skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
-
-    !vv: SCDM flags
-    scdm_proj = .false.
-    scdm_mu = 0._dp
-    scdm_sigma = 1._dp
-    scdm_entanglement = 0
-    call param_get_keyword('scdm_proj', found, l_value=scdm_proj)
-    if (found .and. scdm_proj) then
-      if (spinors) &
-        call io_error('Error: SCDM method is not compatible with spinors yet.')
-      if (guiding_centres) &
-        call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
-      if (slwf_constrain) &
-        call io_error('Error: constrained centres are not compatible with the SCDM method yet.')
-    end if
-
-    call param_get_keyword('scdm_entanglement', found, c_value=ctmp)
-    if (found) then
-      if (scdm_proj) then
-        if (ctmp == 'isolated') then
-          scdm_entanglement = 0
-        elseif (ctmp == 'erfc') then
-          scdm_entanglement = 1
-        elseif (ctmp == 'gaussian') then
-          scdm_entanglement = 2
-        else
-          call io_error('Error: Can not recognize the choice for scdm_entanglement. ' &
-                        //'Valid options are: isolated, erfc and gaussian')
-        endif
-      else
-        call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
-      endif
-    endif
-    call param_get_keyword('scdm_mu', found, r_value=scdm_mu)
-    call param_get_keyword('scdm_sigma', found, r_value=scdm_sigma)
-    if (found .and. (scdm_sigma <= 0._dp)) &
-      call io_error('Error: The parameter sigma in the SCDM method must be positive.')
 
     call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
@@ -6267,12 +6224,6 @@ contains
     call comms_bcast(lfixstep, 1)
     call comms_bcast(lsitesymmetry, 1)
     call comms_bcast(frozen_states, 1)
-
-    !vv: SCDM keywords
-    call comms_bcast(scdm_proj, 1)
-    call comms_bcast(scdm_mu, 1)
-    call comms_bcast(scdm_sigma, 1)
-    call comms_bcast(scdm_entanglement, 1)
 
     !vv: Constrained centres
     call comms_bcast(slwf_num, 1)
