@@ -10,12 +10,6 @@ conv_window       =    3
 dis_num_iter      = 0
 length_unit       =  bohr
 
-! SCDM keywords
-scdm_proj         = true
-scdm_entanglement = erfc
-scdm_mu           = 10
-scdm_sigma        =  4
-
 ! SYSTEM
 begin unit_cell_cart
  bohr

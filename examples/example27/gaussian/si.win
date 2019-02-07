@@ -13,12 +13,6 @@ dis_num_iter      =  2000
 ! dis_win_max       =  17.5
 length_unit       =  bohr
 
-! SCDM keywords
-scdm_proj         = true
-scdm_entanglement = gaussian
-scdm_mu           = 12.5
-scdm_sigma        =  2
-
 ! SYSTEM
 begin unit_cell_cart
  bohr
