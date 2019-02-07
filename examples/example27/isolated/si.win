@@ -7,10 +7,6 @@ conv_tol          = 1.0d-10
 conv_window       =    3
 length_unit       =  bohr
 
-! SCDM keywords
-scdm_proj         = true
-scdm_entanglement = isolated
-
 ! SYSTEM
 begin unit_cell_cart
  bohr
