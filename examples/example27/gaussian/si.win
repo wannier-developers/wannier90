@@ -1,6 +1,3 @@
-!! Input file for example27 on the SCDM-k method to generate initial projections
-!! entanglement case: erfc
-
 ! Valence + conduction bands
 num_bands         =    8
 num_wann          =    4
@@ -8,9 +5,10 @@ exclude_bands     =  1-4
 num_iter          =  2000
 conv_tol          = 1.0d-10
 conv_window       =    3
-! No disentanglement
-dis_num_iter      =  2000
-! dis_win_max       =  17.5
+
+dis_num_iter      =  100
+dis_win_max       =  17.0
+dis_win_min      =   6.5
 length_unit       =  bohr
 
 ! SYSTEM
