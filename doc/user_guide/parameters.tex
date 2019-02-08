@@ -221,11 +221,6 @@ of $\Omega$, instead of doing a parabolic line search \\
 {\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
 {\sc site\_symmetry}***   & L & To construct symmetry-adapted Wannier functions  \\
 {\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\
-{\sc scdm\_proj} & L & Whether to use the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}  \\
-{\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
-{\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
-{\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
-%% AAM: rename all of these slwf_*
 {\sc slwf\_num} & I & The number of objective WFs for selective localization \\
 {\sc slwf\_constrain} & L & Whether to constrain the centres of the objective WFs \\
 {\sc slwf\_lambda} & R & Value of the Lagrange multiplier for constraining the objective WFs \\
@@ -623,8 +618,8 @@ The default value is 0.000001 Ang.
 \section{Projection}
 
  The projections block defines a set of localised functions used to
- generate an initial guess for the unitary transformations. The projection block can be specified
-in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centres of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
+ generate an initial guess for the unitary transformations. %The projection block can be specified
+%in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centres of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
@@ -1094,32 +1089,33 @@ Used when \verb#site_symmetry = .true#.
 
 The default value is 1.0E-3.
 
-\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
-If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code).
-
-The default value is {\tt false}.
-
-\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
-Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
-Only three integer values are allowed:
-
-\noindent {\tt isolated}: $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
-
-\noindent {\tt erfc}: The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
-
-\noindent {\tt gaussian}: The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
-
-The default value is {\tt isolated}.
-
-\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
-The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead.
-
-The default value is {\tt 0 eV}.
-
-\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
-The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV.
-
-The default value is {\tt 1.0 eV}.
+% VV: Removed from Wannier90 and moved to pw2wannier90.f90
+%\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
+%If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code).
+%
+%The default value is {\tt false}.
+%
+%\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
+%Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
+%Only three integer values are allowed:
+%
+%\noindent {\tt isolated}: $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+%
+%\noindent {\tt erfc}: The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+%
+%\noindent {\tt gaussian}: The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
+%
+%The default value is {\tt isolated}.
+%
+%\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
+%The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead.
+%
+%The default value is {\tt 0 eV}.
+%
+%\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
+%The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV.
+%
+%The default value is {\tt 1.0 eV}.
 
 \subsection[slwf\_num]{\tt integer :: slwf\_num}
 The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. 
