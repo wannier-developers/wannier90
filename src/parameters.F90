@@ -399,6 +399,9 @@ module w90_parameters
   integer, public, save :: num_select_projections
   integer, allocatable, public, save :: select_projections(:)
   integer, allocatable, public, save :: proj2wann_map(:)
+  ! a u t o m a t i c   p r o j e c t i o n s
+  ! vv: Writes a new block in .nnkp
+  logical, public, save :: auto_projections
 
   !parameters dervied from input
   integer, public, save :: num_kpts
@@ -2154,15 +2157,19 @@ contains
     endif
 
     ! Projections
+    auto_projections = .false.
+    call param_get_keyword('auto_projections', found, l_value=auto_projections)
+    if (auto_projections .and. spinors) call io_error('Error: Cannot automatically generate spinor projections.')
     num_proj = 0
     call param_get_block_length('projections', found, i_temp)
-    if (guiding_centres .and. .not. found .and. .not. (gamma_only .and. use_bloch_phases)) &
-      call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
     if (found) then
+      if (auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block')
       lhasproj = .true.
       call param_get_projections(num_proj, lcount=.true.)
     else
+      if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
+        call io_error('param_read: Guiding centres requested, but no projection block found')
       lhasproj = .false.
       num_proj = num_wann
     end if
@@ -6240,6 +6247,9 @@ contains
       call comms_bcast(ccentres_frac(1, 1), 3*num_wann)
       call comms_bcast(ccentres_cart(1, 1), 3*num_wann)
     end if
+
+    ! vv: automatic projections
+    call comms_bcast(auto_projections, 1)
 
     call comms_bcast(num_proj, 1)
     call comms_bcast(lhasproj, 1)

@@ -2892,7 +2892,7 @@ Take a look at the result in Vesta and explain what you see. Do these functions 
 
 \sectiontitle{27: Silicon -- Selected columns of density matrix algorithm for automated MLWFs}
 
-Note: This example requires a recent version of the {\tt pw2wannier90.x} post-processing code of {\tt Quantum ESPRESSO}.
+Note: This example requires a recent version of the {\tt pw2wannier90.x} post-processing code of {\tt Quantum ESPRESSO} (v6.4 or above).
 
 \begin{itemize}
 \item{Outline: \it{For bulk crystalline Silicon, generate the $A_{mn}$ matrices via the selected columns of density matrix (SCDM) algorithm  and the corresponding MLWFs for 1) Valence bands 2) Valence bands and 4 low-lying conduction bands 3) Conduction bands only. To better understand the input files and the results of these calculations, it is crucial that the Reader has familiarized with the concepts and methods explained in Ref.~\cite{LinLin-ArXiv2017}. More info on the keywords related to the SCDM method may be found in the user\_guide.}}
@@ -2921,10 +2921,11 @@ The {\tt input\_files} folder contains:}
     \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 4 bands. \\
     {\tt pw.x < si\_4bands.nscf > nscf.out}
     
+    \item Inspect the {\tt si.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projections block is present.
     \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
     into the {\tt si.nnkp} file).\\ 
     {\tt wannier90.x -pp si}
-    \item Check the {\tt si.nnkp} file and make sure you find the no projection block has been written.
+    \item Inspect the {\tt si.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
 
     \item Inspect the {\tt .pw2wan} input file. You will find two new keywords, i.e. {\tt scdm\_proj} and {\tt scdm\_entanglement}. The former, will instruct {\tt pw2wannier90.x}  to use the SCDM method when generating the $A_{mn}$ matrix. The latter, defines which formula to adopt for the function $f(\varepsilon_{n\mathbf{k}})$ (see \cite{LinLin-ArXiv2017} and point below).
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
@@ -2947,9 +2948,11 @@ The {\tt input\_files} folder contains:}
     \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 12 bands this time. \\
     {\tt pw.x < si\_12bands.nscf > nscf.out}
     
-    \item Run \wannier\ to generate a list of the required overlaps (written
+    \item Inspect the {\tt si.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projection block is present.
+    \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
     into the {\tt si.nnkp} file).\\ 
     {\tt wannier90.x -pp si}
+    \item Inspect the {\tt si.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
 
     \item Inspect the {\tt .pw2wan} input file. You will find other two new keywords, i.e. {\tt scdm\_mu} and {\tt scdm\_sigma}. These are the values in eV of $\mu$ and $\sigma$ in $f(\varepsilon_{n,\mathbf{k}})$, respectively.
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
@@ -2970,9 +2973,11 @@ The {\tt input\_files} folder contains:}
     \item Run \pwscf\ to obtain the Bloch states on a uniform k-point grid of 4x4x4 for 12 bands this time. \\
     {\tt pw.x < si\_12bands.nscf > nscf.out}
     
-    \item Run \wannier\ to generate a list of the required overlaps (written
+    \item Inspect the {\tt si.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projections block is present.
+    \item Run \wannier\ to generate a list of the required overlaps and also info on the SCDM method (written
     into the {\tt si.nnkp} file).\\ 
     {\tt wannier90.x -pp si}
+    \item Inspect the {\tt si.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
 
     \item Run {\tt pw2wannier90} to compute the overlap between Bloch
     states, the projections for the starting guess via the SCDM method (written in the
