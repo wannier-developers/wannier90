@@ -6,7 +6,8 @@
 
 - Selective localization and constrained centres from Marianetti et al. [PRB 90, 165125 (2014)] [[#187]](https://github.com/wannier-developers/wannier90/pull/187) [[#207]](https://github.com/wannier-developers/wannier90/pull/207) [[#206]](https://github.com/wannier-developers/wannier90/pull/206) [[#205]](https://github.com/wannier-developers/wannier90/pull/205)
 
-- Implementation of the SCDM method in Wannier90 [[#167]](https://github.com/wannier-developers/wannier90/pull/167) [[#202]](https://github.com/wannier-developers/wannier90/pull/202) and added an example for the tutorial [[#194]](https://github.com/wannier-developers/wannier90/pull/194) 
+- Implementation of the SCDM method in Wannier90 [[#167]](https://github.com/wannier-developers/wannier90/pull/167) [[#202]](https://github.com/wannier-developers/wannier90/pull/202) and added an example for the tutorial [[#194]](https://github.com/wannier-developers/wannier90/pull/194). Note that during development we have adapted the interface of the SCDM input flags; Quantum ESPRESSO v6.4 has the current implementation. [[#238]](https://github.com/wannier-developers/wannier90/pull/239)
+
 
 - Parallelisation of the core Wannier90 routines [[#193]](https://github.com/wannier-developers/wannier90/pull/193) [[#185]](https://github.com/wannier-developers/wannier90/pull/185) [[#173]](https://github.com/wannier-developers/wannier90/pull/173) [[#151]](https://github.com/wannier-developers/wannier90/pull/151) [[#149]](https://github.com/wannier-developers/wannier90/pull/149) [[#125]](https://github.com/wannier-developers/wannier90/pull/125) [[#120]](https://github.com/wannier-developers/wannier90/pull/120) [[#76]](https://github.com/wannier-developers/wannier90/pull/76)
 
@@ -40,7 +41,11 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 
 ### Various improvements and bugfixes
 
+- New extensive solution booklet, contributed by V. Vitale, with solutions for examples 1-22 [[#233]](https://github.com/wannier-developers/wannier90/pull/233)
+
 - Fix guiding center gamma point bug [[#223]](https://github.com/wannier-developers/wannier90/pull/223)
+
+- Fixed issue in the search for points inside the Wigner-Seitz cell, making the code more robust for very anisotropic/stretched cells [[#216]](https://github.com/wannier-developers/wannier90/pull/216)
 
 - Fixes to bugs in library mode [[#196]](https://github.com/wannier-developers/wannier90/pull/196) [[#224]](https://github.com/wannier-developers/wannier90/pull/224) [[#170]](https://github.com/wannier-developers/wannier90/pull/170)
 
@@ -65,6 +70,9 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 - Fix Fermi energy initialisation in parameters [[#121]](https://github.com/wannier-developers/wannier90/pull/121)
 
 - Improvements to the Wigner-Seitz detection routines [[#117]](https://github.com/wannier-developers/wannier90/pull/117) [[#109]](https://github.com/wannier-developers/wannier90/pull/109)
+
+
+
 
 
 ### Improvement for compilation and for developers
