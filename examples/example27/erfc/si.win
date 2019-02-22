@@ -9,6 +9,9 @@ dis_win_max       = 17.0
 dis_froz_max      = 6.5
 length_unit       =  bohr
 
+! Automatic generation of initial projections
+auto_projections = .true.
+
 ! SYSTEM
 begin unit_cell_cart
  bohr

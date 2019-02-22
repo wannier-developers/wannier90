@@ -220,29 +220,8 @@ contains
         read (amn_in, '(a)', err=104, end=104) dummy
         if (on_root) write (stdout, '(a)') trim(dummy)
 
-        ! Check if SCDM and projections --> Warning
-        ! if SCDM and select_projections --> STOP
-        if (index(trim(dummy), 'SCDM') > 0) then
-          if (lhasproj) then
-            ! VV: Stop if lselproj = T (select_projections)
-            if (lselproj) call io_error('Error: selected projections and SCDM method are not compatible.')
-
-            if (on_root) write (stdout, '(6x,a,6x)') '****** begin WARNING ******'
-            if (on_root) write (stdout, '(a)') ' The A matrices have been computed with the SCDM'
-            if (on_root) write (stdout, '(a)') ' method but you have also specified a projection block'
-            if (on_root) write (stdout, '(a)') ' in the input file. If this is NOT the intended '
-            if (on_root) write (stdout, '(a)') ' behaviour please modify the pw2wannier90 input file accordingly'
-            if (on_root) write (stdout, '(a)') ' and re-run wannier90.x -pp and pw2wannier90.x.'
-            if (on_root) write (stdout, '(6x,a,6x)') '****** end WARNING ******'
-          end if
-          num_proj = num_wann
-          call comms_bcast(num_proj, 1)
-          ! Read the number of bands, k-points and wannier functions
-          read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp, mu_tmp, sigma_tmp
-        else
-          ! Read the number of bands, k-points and wannier functions
-          read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
-        endif
+        ! Read the number of bands, k-points and wannier functions
+        read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
 
         ! Checks
         if (nb_tmp .ne. num_bands) &

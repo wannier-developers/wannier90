@@ -715,10 +715,18 @@ contains
         enddo
       else
         ! No projections
-        write (nnkpout, '(2i6)') 0, num_proj
+        write (nnkpout, '(i6)') 0
       end if
       write (nnkpout, '(a/)') 'end projections'
     endif
+
+    ! Info for automatic generation of projections
+    if (auto_projections) then
+      write (nnkpout, '(a)') 'begin auto_projections'
+      write (nnkpout, '(i6)') num_proj
+      write (nnkpout, '(i6)') 0
+      write (nnkpout, '(a/)') 'end auto_projections'
+    end if
 
     ! Nearest neighbour k-points
     write (nnkpout, '(a)') 'begin nnkpts'

@@ -117,6 +117,7 @@ Keyword & Type & Description \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
 {\sc select\_projections }   & I & List of projections to use in Wannierisation \\
+{\sc auto\_projections } & L & To automatically generate initial projections \\
 {\sc restart }   & S & Restart from checkpoint file \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
@@ -737,6 +738,21 @@ In the case that \verb#num_proj# is greater than \verb#num_wann#,
 For example, to select the projections given by the indices 2, 6, 7, 8 and 12:
 
  \verb#select_projections : 2, 6-8, 12#
+
+\subsection[auto\_projections]{\tt logical :: auto\_projections}
+
+If {\tt .true.} and no projections block is defined than \wannier\ writes an additional block in the {\tt .nnkp} file during the pre-processing step, to instruct the interface code to automatically generate the $A_{mn}^{(\mathbf{k})}$. The {\tt auto\_projections} block has the following syntax
+
+\noindent \verb#begin auto_projections# \\
+ \verb# num_wannier# \\
+ \verb# 0# \\
+ \verb#end auto_projections#
+
+The choice of an additional block has been made in order to maintain back-compatibility with codes that interface with \wannier, e.g. {\tt pw2wannier90}.
+The first entry in the block is the total number of target projections and it is equal to the number of sought Wannier functions.
+The second entry is a reserved flag for the time being and must be zero. In the future, we plan to combine the automatic generation of initial projections with the selection of projections via a projections block. This will allow the User to specify only a subset of initial projections in the projections block and leave the interface code to automatically generate the remaining ones. In that case the constraint on the second entry will be lift, so that it can take on the meaning of the number of projections that need to be generated automatically.
+The selected columns of the density matrix (SCDM) method\cite{LinLin-ArXiv2017} is one way of generating the initial $A_{mn}^{(\mathbf{k})}$ in an automatic way. This has been implemented in the {\tt pw2wannier90} interface code (you need v6.4 or above), see for instance Example 27 in the \wannier\ tutorial that shows how to use it.
+N.B. Automatic generation of initial projections is not compatible with spinor-WFs yet.
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
