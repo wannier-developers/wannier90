@@ -1,15 +1,11 @@
-!! Input file for example27 on the SCDM-k method to generate initial projections
-!! entanglement case: isolated
-
 ! Valence bands
 num_wann        =   4
 conv_tol          = 1.0d-10
 conv_window       =    3
 length_unit       =  bohr
 
-! SCDM keywords
-scdm_proj         = true
-scdm_entanglement = isolated
+! Automatic generation of initial projections
+auto_projections = .true.
 
 ! SYSTEM
 begin unit_cell_cart

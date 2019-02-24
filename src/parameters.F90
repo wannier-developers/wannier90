@@ -399,6 +399,9 @@ module w90_parameters
   integer, public, save :: num_select_projections
   integer, allocatable, public, save :: select_projections(:)
   integer, allocatable, public, save :: proj2wann_map(:)
+  ! a u t o m a t i c   p r o j e c t i o n s
+  ! vv: Writes a new block in .nnkp
+  logical, public, save :: auto_projections
 
   !parameters dervied from input
   integer, public, save :: num_kpts
@@ -492,12 +495,6 @@ module w90_parameters
   ! For Hamiltonian matrix in WF representation
   logical, public, save              :: automatic_translation
   integer, public, save              :: one_dim_dir
-
-  ! vv: SCDM method
-  logical, public, save              :: scdm_proj
-  integer, public, save              :: scdm_entanglement
-  real(kind=dp), public, save              :: scdm_mu
-  real(kind=dp), public, save              :: scdm_sigma
 
   ! Private data
   integer                            :: num_lines
@@ -1999,43 +1996,6 @@ contains
     skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
 
-    !vv: SCDM flags
-    scdm_proj = .false.
-    scdm_mu = 0._dp
-    scdm_sigma = 1._dp
-    scdm_entanglement = 0
-    call param_get_keyword('scdm_proj', found, l_value=scdm_proj)
-    if (found .and. scdm_proj) then
-      if (spinors) &
-        call io_error('Error: SCDM method is not compatible with spinors yet.')
-      if (guiding_centres) &
-        call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
-      if (slwf_constrain) &
-        call io_error('Error: constrained centres are not compatible with the SCDM method yet.')
-    end if
-
-    call param_get_keyword('scdm_entanglement', found, c_value=ctmp)
-    if (found) then
-      if (scdm_proj) then
-        if (ctmp == 'isolated') then
-          scdm_entanglement = 0
-        elseif (ctmp == 'erfc') then
-          scdm_entanglement = 1
-        elseif (ctmp == 'gaussian') then
-          scdm_entanglement = 2
-        else
-          call io_error('Error: Can not recognize the choice for scdm_entanglement. ' &
-                        //'Valid options are: isolated, erfc and gaussian')
-        endif
-      else
-        call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
-      endif
-    endif
-    call param_get_keyword('scdm_mu', found, r_value=scdm_mu)
-    call param_get_keyword('scdm_sigma', found, r_value=scdm_sigma)
-    if (found .and. (scdm_sigma <= 0._dp)) &
-      call io_error('Error: The parameter sigma in the SCDM method must be positive.')
-
     call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
@@ -2197,15 +2157,19 @@ contains
     endif
 
     ! Projections
+    auto_projections = .false.
+    call param_get_keyword('auto_projections', found, l_value=auto_projections)
+    if (auto_projections .and. spinors) call io_error('Error: Cannot automatically generate spinor projections.')
     num_proj = 0
     call param_get_block_length('projections', found, i_temp)
-    if (guiding_centres .and. .not. found .and. .not. (gamma_only .and. use_bloch_phases)) &
-      call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
     if (found) then
+      if (auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block')
       lhasproj = .true.
       call param_get_projections(num_proj, lcount=.true.)
     else
+      if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
+        call io_error('param_read: Guiding centres requested, but no projection block found')
       lhasproj = .false.
       num_proj = num_wann
     end if
@@ -6268,12 +6232,6 @@ contains
     call comms_bcast(lsitesymmetry, 1)
     call comms_bcast(frozen_states, 1)
 
-    !vv: SCDM keywords
-    call comms_bcast(scdm_proj, 1)
-    call comms_bcast(scdm_mu, 1)
-    call comms_bcast(scdm_sigma, 1)
-    call comms_bcast(scdm_entanglement, 1)
-
     !vv: Constrained centres
     call comms_bcast(slwf_num, 1)
     call comms_bcast(slwf_constrain, 1)
@@ -6289,6 +6247,9 @@ contains
       call comms_bcast(ccentres_frac(1, 1), 3*num_wann)
       call comms_bcast(ccentres_cart(1, 1), 3*num_wann)
     end if
+
+    ! vv: automatic projections
+    call comms_bcast(auto_projections, 1)
 
     call comms_bcast(num_proj, 1)
     call comms_bcast(lhasproj, 1)

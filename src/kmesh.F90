@@ -720,17 +720,13 @@ contains
       write (nnkpout, '(a/)') 'end projections'
     endif
 
-    ! vv: SCDM block
-    write (nnkpout, '(a)') 'begin scdm_info'
-    if (scdm_proj) then
-      write (nnkpout, '(i6)') 1
-      write (nnkpout, '(i6)') num_wann
-      write (nnkpout, '(i6)') scdm_entanglement
-      write (nnkpout, '(2x,2f10.5)') scdm_mu, scdm_sigma
-    else
+    ! Info for automatic generation of projections
+    if (auto_projections) then
+      write (nnkpout, '(a)') 'begin auto_projections'
+      write (nnkpout, '(i6)') num_proj
       write (nnkpout, '(i6)') 0
-    endif
-    write (nnkpout, '(a/)') 'end scdm_info'
+      write (nnkpout, '(a/)') 'end auto_projections'
+    end if
 
     ! Nearest neighbour k-points
     write (nnkpout, '(a)') 'begin nnkpts'

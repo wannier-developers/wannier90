@@ -1,20 +1,16 @@
-!! Input file for example27 on the SCDM-k method to generate initial projections
-!! entanglement case: erfc
-
 ! Valence + conduction bands
 num_bands         =  12
 num_wann          =   8
 conv_tol          = 1.0d-10
 conv_window       =    3
-! No disentanglement
-dis_num_iter      = 0
+
+dis_num_iter      = 1000
+dis_win_max       = 17.0
+dis_froz_max      = 6.5
 length_unit       =  bohr
 
-! SCDM keywords
-scdm_proj         = true
-scdm_entanglement = erfc
-scdm_mu           = 10
-scdm_sigma        =  4
+! Automatic generation of initial projections
+auto_projections = .true.
 
 ! SYSTEM
 begin unit_cell_cart
