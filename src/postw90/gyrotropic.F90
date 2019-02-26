@@ -196,7 +196,7 @@ contains
     endif
 
     if (on_root) then
-      call flush(stdout)
+      flush(stdout)
       write (stdout, '(/,/,1x,a)') 'Properties calculated in module  g y r o t r o p i c'
       write (stdout, '(1x,a)') '------------------------------------------'
 
@@ -242,7 +242,7 @@ contains
 
       write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic_kmesh(1:3)
 
-      call flush(stdout)
+      flush(stdout)
 
     end if !on_root
 
@@ -297,7 +297,7 @@ contains
       if (timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
-      call flush(stdout)
+      flush(stdout)
 
       if (eval_K) then
         if (eval_spn) then
@@ -669,7 +669,7 @@ contains
         multWre(:) = real(wmn**2/(wmn**2 - gyrotropic_freq_list(:)**2))
         do i = 1, 3
           curv_w_k(n, :, i) = curv_w_k(n, :, i) - &
-                              2_dp*imag(AA(n, m, alpha_A(i))*AA(m, n, beta_A(i)))*multWre
+                              2_dp*aimag(AA(n, m, alpha_A(i))*AA(m, n, beta_A(i)))*multWre
         enddo
       enddo !m
     enddo !n
@@ -796,7 +796,7 @@ contains
               gyro_NOA_orb(ab, c, ifermi, :) = &
                 gyro_NOA_orb(ab, c, ifermi, :) + &
                 multWm(:)*real(AA(l, n, b)*Bnl_orb(n1, l1, a, c) - AA(l, n, a)*Bnl_orb(n1, l1, b, c)) + &
-                multWe(:)*(del_eig(n, c) + del_eig(l, c))*imag(AA(n, l, a)*AA(l, n, b))
+                multWe(:)*(del_eig(n, c) + del_eig(l, c))*aimag(AA(n, l, a)*AA(l, n, b))
 
               if (present(gyro_NOA_spn)) &
                 gyro_NOA_spn(ab, c, ifermi, :) = &
