@@ -208,6 +208,26 @@ The first line is the number of states to exclude, the following lines give
 the states for be excluded.
 
 
+\subsection{\label{sec:auto-projections-block}{\tt auto\_projections} block}
+\begin{verbatim}
+begin auto_projections
+   8
+   0
+end auto_projections
+\end{verbatim}
+
+This block is only printed if \verb#auto_projections=true# in the input.
+The choice of an additional block has been made in order to maintain back-compatibility with codes that interface with \wannier, e.g. {\tt pw2wannier90}.
+The first entry in the block (in the example above, \verb#8#) is the total number of target projections and it is equal to the number of sought Wannier functions.
+
+The second entry is a reserved flag with the value of zero. The implementations of the interface codes MUST check for this value to be zero and stop otherwise. In the future, one possible extension that we plan is to combine the automatic generation of initial projections with the selection of projections via a projections block. This will allow the user to specify only a subset of initial projections in the projections block and leave the interface code to automatically generate the remaining ones. In that case the constraint on the second entry will be lifted, so that it can take on the meaning of the number of projections that need to be generated automatically.
+
+The selected columns of the density matrix (SCDM) method~\cite{LinLin-ArXiv2017} is one way of generating the initial $A_{mn}^{(\mathbf{k})}$ in an automatic way. This has been implemented in the {\tt pw2wannier90} interface code (you need v6.3 with the files provided in the \texttt{pwscf} folder of Wannier90, or v6.4), see for instance Example 27 in the \wannier\ tutorial that shows how to use it.
+
+N.B. Automatic generation of initial projections is not compatible with spinor-WFs yet.
+
+
+
 \subsection{An example of projections}\label{sec:proj_example}
 
 As a concrete example: one wishes to have a set of four sp$^3$ projection
