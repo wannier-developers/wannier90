@@ -167,10 +167,10 @@ dist-legacy:
 		./CHANGE.log \
 	)
 
-test-serial: 
+test-serial: w90chk2chk wannier post  
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
 
-test-parallel:
+test-parallel: w90chk2chk wannier post 
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default --numprocs=4 )
 
 # Alias
