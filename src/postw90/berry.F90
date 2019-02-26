@@ -1435,7 +1435,7 @@ contains
           do bc = 1, 6
             b = alpha_S(bc)
             c = beta_S(bc)
-            I_nm(a, bc) = imag(r_mn(b)*gen_r_nm(c) + r_mn(c)*gen_r_nm(b))
+            I_nm(a, bc) = aimag(r_mn(b)*gen_r_nm(c) + r_mn(c)*gen_r_nm(b))
           enddo ! bc
         enddo ! a
 
