@@ -69,6 +69,10 @@ if __name__ == "__main__":
                         help='Remove also files that are ignored by git (otherwise, just warn about their presence')
     args = parser.parse_args()
 
+    is_git_repo = True
+    errcode = subprocess.call(['git', '-C', test_folder, 'rev-parse', '--git-dir'])
+    if errcode != 0:
+        is_git_repo = False
 
     valid_categories = get_valid_categories()
     for testname in os.listdir(test_folder):
@@ -110,10 +114,11 @@ if __name__ == "__main__":
                 # Only consider files (anyway folders cannot be
                 # ignored in git)
                 continue
-            errcode = subprocess.call(['git', 'check-ignore', "-q", entryfname])
-            if errcode == 0:
-                # It is ignored
-                entries_gitignored.append(fname)
+            if is_git_repo:
+                errcode = subprocess.call(['git', 'check-ignore', "-q", entryfname])
+                if errcode == 0:
+                    # It is ignored
+                    entries_gitignored.append(fname)
 
         for entry in entries_to_delete:
             print("    Deleting {}...".format(entry))
@@ -135,6 +140,9 @@ if __name__ == "__main__":
             else:
                 print("    ** Potentially deletable (use -i option to delete): {}".format(entry))
 
+    if not is_git_repo:
+        print("*** Warning! I am not able to fully clean the test directories ***")
+        print("*** as this is not a git repository                            ***")
 
 
 
