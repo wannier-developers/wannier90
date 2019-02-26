@@ -961,7 +961,8 @@ SUBROUTINE read_nnkp
            ELSE
               READ (iun_nnkp, *) n_wannier
               READ (iun_nnkp, *) tmp_auto
-              IF (tmp_auto /= 0) CALL errore( 'pw2wannier90', 'Second entry in auto_projections block is not 0. See Wannier90 User Guide in the auto_projections section for clarifications.', 1 )
+              IF (tmp_auto /= 0) CALL errore( 'pw2wannier90', 'Second entry in auto_projections block is not 0. ' // &
+              'See Wannier90 User Guide in the auto_projections section for clarifications.', 1 )
            ENDIF
         ELSE
            ! Fire an error whether or not a projections block is found
