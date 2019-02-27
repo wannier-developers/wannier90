@@ -1,0 +1,78 @@
+gyrotropic=true
+gyrotropic_task=-K
+fermi_energy_step=2
+fermi_energy_min=2
+fermi_energy_max=10
+gyrotropic_freq_step=0.05
+gyrotropic_freq_min=0.0
+gyrotropic_freq_max=0.1
+gyrotropic_smr_fixed_en_width=0.1
+gyrotropic_smr_max_arg=5
+gyrotropic_degen_thresh=0.001
+gyrotropic_box_b1=0.2 0.0 0.0
+gyrotropic_box_b2=0.0 0.2 0.0
+gyrotropic_box_b3=0.0 0.0 0.2
+gyrotropic_box_center=0.33333 0.33333 0.5
+gyrotropic_kmesh=5 5 5
+use_ws_distance = .false.
+search_shells=12
+
+num_iter=1000
+
+uHu_formatted=.true.
+
+dis_win_min=-0.5
+dis_win_max=10
+dis_froz_min=0.0
+dis_froz_max=8
+
+
+bands_plot=true
+bands_num_points=200
+begin kpoint_path
+A 0.0  0.0  0.5  G 0.0  0.0  0.0   
+G 0.0  0.0  0.0  H 0.33333 0.33333 0.5 
+H 0.33333 0.33333 0.5  A 0.0  0.0  0.5   
+A 0.0  0.0  0.5  L 0.5  0.0  0.5  
+L 0.5  0.0  0.5   H 0.33333 0.33333 0.5  
+H 0.33333 0.33333 0.5  K 0.33333 0.33333 0.0  
+K 0.33333 0.33333 0.0 G 0.0  0.0  0.0  
+G 0.0  0.0  0.0   M 0.5  0.0  0.0   
+M 0.5  0.0  0.0   K 0.33333 0.33333 0.0  
+end kpoint_path
+
+
+num_bands=12
+num_wann=9
+Begin Projections
+f=  0.274036,   0.274036,  0.0000000000000000000  :px,py,pz:z= 0,0,1:x=0.5,0.866025404,0 
+f= -0.274036,   0.000000,  0.3333333333333333357  :px,py,pz:z= 0,0,1:x=-1,0,0
+f= -0.000000,  -0.274036,  0.6666666666666666643  :px,py,pz:z= 0,0,1:x=0.5,-0.866025404,0
+end projections
+
+spinors = .false.
+
+begin unit_cell_cart
+     4.4570000     0.0000000     0.0000000
+    -2.2285000     3.8598752     0.0000000
+     0.0000000     0.0000000     5.9581176
+end unit_cell_cart
+
+begin atoms_frac
+Te   0.274036   0.274036  0.00000000000000000000000000  
+Te  -0.274036   0.000000  0.33333333333333333333333357  
+Te  -0.000000  -0.274036  0.66666666666666666666666643  
+end atoms_frac
+
+mp_grid =     2 2 2
+
+begin kpoints
+  0.00000000  0.00000000  0.00000000  1.250000e-01 
+  0.00000000  0.00000000  0.50000000  1.250000e-01 
+  0.00000000  0.50000000  0.00000000  1.250000e-01 
+  0.00000000  0.50000000  0.50000000  1.250000e-01 
+  0.50000000  0.00000000  0.00000000  1.250000e-01 
+  0.50000000  0.00000000  0.50000000  1.250000e-01 
+  0.50000000  0.50000000  0.00000000  1.250000e-01 
+  0.50000000  0.50000000  0.50000000  1.250000e-01 
+ end kpoints

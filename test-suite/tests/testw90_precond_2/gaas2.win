@@ -1,0 +1,48 @@
+! Gallium Arsenide: Tutorial Example 1
+! Test preconditioner with optimisation = 2 (non-GEMM version)
+
+ num_wann    =  4 
+ num_iter    = 40
+ precond = true
+ optimisation = 2
+ use_ws_distance = .false.
+search_shells=12
+
+! SYSTEM
+
+begin unit_cell_cart
+bohr
+-5.367  0.000  5.367
+ 0.000  5.367  5.367
+-5.367  5.367  0.000
+end unit_cell_cart
+
+begin atoms_frac
+Ga 0.00   0.00   0.00
+As 0.25  0.25  0.25 
+end atoms_frac
+ 
+begin projections
+As:sp3
+end projections
+
+! KPOINTS
+
+mp_grid : 2 2 2
+
+begin kpoints
+0.0 0.0 0.0 
+0.0 0.0 0.5 
+0.0 0.5 0.0 
+0.0 0.5 0.5 
+0.5 0.0 0.0 
+0.5 0.0 0.5 
+0.5 0.5 0.0 
+0.5 0.5 0.5 
+end kpoints
+
+!We set this flag to read the bloch states from
+!a formatted file. This is to ensure the example
+!works on all platforms. The default (.false.) state
+!should be used on production runs
+wvfn_formatted=.true.

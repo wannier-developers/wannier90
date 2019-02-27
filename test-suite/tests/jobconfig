@@ -1,0 +1,341 @@
+# Gallium Arsenide, valence bands
+[testw90_example01]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+
+# Lead, 4 lowest states; Fermi surface
+[testw90_example02]
+program = WANNIER90_WOUT_OK
+inputs_args = ('lead.win', '')
+output = lead.wout
+
+# Lead, 4 lowest states - test the restart feature
+[testw90_example02_restart]
+program = WANNIER90_WOUT_OK
+inputs_args = ('lead.win', '')
+output = lead.wout
+
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure
+[testw90_example03]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure, checking the labelinfo.dat file
+[testw90_example03_labelinfo]
+program = WANNIER90_LABELINFO
+inputs_args = ('silicon.win', '')
+output = silicon_band.labelinfo.dat
+
+# Copper, states around the Fermi level; Fermi surface
+[testw90_example04]
+program = WANNIER90_WOUT_OK
+inputs_args = ('copper.win', '')
+output = copper.wout
+
+# Diamond, valence states - test of the W90 part
+[testw90_example05]
+program = WANNIER90_WOUT_OK
+inputs_args = ('diamond.win', '')
+output = diamond.wout
+
+# Silane, valence states, Gamma only
+[testw90_example07/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silane.win', '')
+output = silane.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Silane, valence states, Gamma only
+[testw90_na_chain_gamma/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('Na_chain.win', '')
+output = Na_chain.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Silicon, valence states
+[testw90_example11_1/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Silicon, valence and conduction states
+[testw90_example11_2/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Test for the nnkpt file
+[testw90_nnkpt1/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for the nnkpt file
+[testw90_nnkpt2/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for the nnkpt file
+[testw90_nnkpt3/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Testing crash with respect to nnkpt option
+[testw90_nnkpt4/]
+program = WANNIER90_WERR_FAIL
+inputs_args = ('wannier.win', '-pp')
+output = wannier.werr
+
+# Testing crash when nnkpt is set in non postproc_setup mode
+[testw90_nnkpt5/]
+program = WANNIER90_WERR_FAIL
+inputs_args = ('wannier.win', '')
+output = wannier.werr
+
+# Testing symmetry-adapted WFs, from example21, case of As with s and p
+[testw90_example21_As_sp]
+program = WANNIER90_WOUT_OK
+inputs_args = ('GaAs.win', '')
+output = GaAs.wout
+
+# Basic wannier
+[testw90_basic1/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('wannier.win', '')
+output = wannier.wout
+
+# Basic wannier disentanglement
+[testw90_basic2/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('wannier.win', '')
+output = wannier.wout
+
+# Testing preconditioner
+[testw90_precond_1]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas1.win', '')
+output = gaas1.wout
+
+# Testing preconditioner
+[testw90_precond_2]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas2.win', '')
+output = gaas2.wout
+
+[testw90_write_u_matrices]
+program = WANNIER90_UMAT
+inputs_args = ('gaas.win', '')
+output = gaas_u.mat
+
+# Benzene, valence and conduction
+[testw90_benzene_gamma_valcond/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Benzene, valence bands
+[testw90_benzene_gamma_val/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Benzene, valence bands - in hexagonal cell
+[testw90_benzene_gamma_val_hexcell/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('benzene.win', '')
+output = benzene.wout
+# This is a gamma-only test, can only run in serial
+max_nprocs = 0
+
+# Test of disentanglement in spheres in k-space
+[testw90_lavo3_dissphere/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('LaVO3.win', '')
+output = LaVO3.wout
+
+# Lead, 4 lowest states; Fermi surface, print bvec
+[testw90_bvec]
+program = WANNIER90_BVEC
+inputs_args = ('lead.win', '')
+output = lead.bvec
+
+# GaAs - this test verifies that the bug introduced
+# with the parallel version of W90 is fixed (see issue #192)
+[testw90_gaas_disentanglement_issue192]
+program = WANNIER90_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+
+# GaAs - this verifies the plotting routine for
+# Gaussian cube format
+[testw90_cube_format]
+program = WANNIER90_CUBE
+inputs_args = ('gaas.win', '')
+output = gaas_00001.cube
+
+# Test of disentanglement in spheres in k-space
+[testpostw90_si_geninterp/]
+program = POSTW90_GENINTERPDAT_OK
+inputs_args = ('silicon.win', '')
+output = silicon_geninterp.dat
+
+# Test of disentanglement in spheres in k-space
+[testpostw90_si_geninterp_wsdistance/]
+program = POSTW90_GENINTERPDAT_OK
+inputs_args = ('silicon.win', '')
+output = silicon_geninterp.dat
+
+# Test of AHC for bcc iron 
+[testpostw90_fe_ahc/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout 
+
+# Test of Orbital Magnetisation for bcc iron
+[testpostw90_fe_morb/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout
+
+# Test of AHC plus Orbital Magnetisation for bcc iron
+[testpostw90_fe_morbandahc/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout
+
+# Test of KPATH Berry Curvature plus Orbital Magnetisation for bcc iron
+[testpostw90_fe_kpathmorbcurv/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-morb.dat
+
+# Test of KPATH Berry Curvature  for bcc iron
+[testpostw90_fe_kpathcurv/]
+program = POSTW90_CURVDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-curv.dat
+
+# Test of KSLICE Berry Curvature  for bcc iron
+[testpostw90_fe_kslicecurv/]
+program = POSTW90_CURVDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kslice-curv.dat
+
+# Test of KSLICE Morb  for bcc iron
+[testpostw90_fe_kslicemorb/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kslice-morb.dat
+
+# Test of Kubo JDOS  for bcc iron
+[testpostw90_fe_kubo_jdos/]
+program = POSTW90_JDOS_OK
+inputs_args = ('Fe.win', '')
+output = Fe-jdos.dat
+
+# Test of Kubo Axy  for bcc iron
+[testpostw90_fe_kubo_Axy/]
+program = POSTW90_KUBO_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kubo_A_xy.dat
+
+# Test of Kubo Szz  for bcc iron
+[testpostw90_fe_kubo_Szz/]
+program = POSTW90_KUBO_OK
+inputs_args = ('Fe.win', '')
+output = Fe-kubo_S_zz.dat
+
+
+# Test of spin  for bcc iron
+[testpostw90_fe_spin/]
+program = POSTW90_WPOUT_OK
+inputs_args = ('Fe.win', '')
+output = Fe.wpout
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-C.dat 
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_C/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-C.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_D0/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-D.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_Dw/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-tildeD.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_K/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-K_orb.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_NOA/]
+program = POSTW90_GYRO_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-NOA_orb.dat
+
+# testpostw90_te_gyrotropic
+[testpostw90_te_gyrotropic_dos/]
+program = POSTW90_DOS_OK
+inputs_args = ('Te.win', '')
+output = Te-gyrotropic-DOS.dat
+
+# Silicon, 4 valence bands + 4 conduction bands - opt=0
+[testw90_example03_optmem]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
+
+# Test of DOS for Cu 
+[testpostw90_example04_dos/]
+program = POSTW90_DOS_OK
+inputs_args = ('copper.win', '')
+output = copper-dos.dat 
+
+# Test of PDOS for Cu
+[testpostw90_example04_pdos/]
+program = POSTW90_DOS_OK
+inputs_args = ('copper.win', '')
+output = copper-dos.dat
+
+# Test of shift current for GaAs
+[testpostw90_gaas_sc_xyz/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
+
+# Test of selective localization and constrained centres
+[testw90_example26]
+program = WANNIER90_SLWFC_WOUT_OK
+inputs_args = ('gaas.win', '')
+output = gaas.wout
+
+[categories]
+wannier_only = testw90_*
+postw90_only = testpostw90_*
+all = wannier_only postw90_only
+default =  all

@@ -4,4 +4,7 @@ postw90.x
 make.inc
 w90chk2chk.x
 libwannier.a
+libwannier.so
+libwannier.dylib
 *~
+*.x.dSYM

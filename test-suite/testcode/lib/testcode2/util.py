@@ -157,6 +157,22 @@ of removing additional whitespace.'''
 
 def pretty_print_table(labels, dicts):
     '''Print data in dictionaries of identical size in a tabular format.'''
+    # Fill in the dicts with missing data.
+    # This can be hit if the missing data fields are ignored...
+    for dict1 in dicts:
+        for key in dict1.keys():
+            if type(dict1[key]) is tuple or type(dict1[key]) is list:
+                nitems = len(dict1[key])
+                val = ('n/a',)*nitems
+                iterable = True
+            else:
+                val = 'n/a'
+                iterable = False
+            for dict2 in dicts:
+                if key not in dict2:
+                    dict2[key] = val
+                elif iterable and nitems != len(dict2[key]):
+                    dict2[key] += nitems - len(dict2[key])
     # Loop through all elements in order to calculate the field width.
     # Create header line as we go.
     fmt = dict(_tc_label='%%-%is' % (max(len(str(label)) for label in labels)))

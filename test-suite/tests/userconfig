@@ -1,0 +1,175 @@
+# Define here the codes, one per pair (input, output)
+# Note that you are not obliged to specify tolerances. If a tolerance
+# is not specified, then the default one is used.
+# Still, specifying it helps understanding what the test will compare.
+
+[WANNIER90_WOUT_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_wout.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
+              (1.0e-5, 1.0e-5, 'final_centres_y'),
+              (1.0e-5, 1.0e-5, 'final_centres_z'),
+              (3.0e-6, 3.0e-6, 'final_spreads'), 
+              (1.0e-6, 1.0e-6, 'omegaI'), 
+              (1.0e-6, 5.0e-6, 'omegaD'), 
+              (1.0e-6, 1.0e-6, 'omegaOD'), 
+              (1.0e-6, 1.0e-6, 'omegaTotal'),
+              (1.0e-6, 1.0e-6, 'near_neigh_dist'),
+              (1.0e-6, 1.0e-6, 'near_neigh_mult'),
+              (1.0e-6, 1.0e-6, 'completeness_x'),
+              (1.0e-6, 1.0e-6, 'completeness_y'),
+              (1.0e-6, 1.0e-6, 'completeness_z'),
+              (1.0e-6, 1.0e-6, 'completeness_weight'))
+
+[WANNIER90_SLWFC_WOUT_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_wout.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
+              (1.0e-5, 1.0e-5, 'final_centres_y'),
+              (1.0e-5, 1.0e-5, 'final_centres_z'),
+              (3.0e-6, 3.0e-6, 'final_spreads'), 
+              (1.0e-6, 1.0e-6, 'omegaIOD_C'), 
+              (1.0e-6, 5.0e-6, 'omegaD'), 
+              (1.0e-5, 1.0e-5, 'omegaRest'), 
+              (1.0e-5, 1.0e-5, 'penaltyfunc'), 
+              (1.0e-6, 1.0e-6, 'omegaTotal_C'),
+              (1.0e-6, 1.0e-6, 'near_neigh_dist'),
+              (1.0e-6, 1.0e-6, 'near_neigh_mult'),
+              (1.0e-6, 1.0e-6, 'completeness_x'),
+              (1.0e-6, 1.0e-6, 'completeness_y'),
+              (1.0e-6, 1.0e-6, 'completeness_z'),
+              (1.0e-6, 1.0e-6, 'completeness_weight'))
+
+[WANNIER90_LABELINFO]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_labelinfo.parse
+#tolerance = ( (1.0e-5, 1.0e-5, 'size'))
+
+[WANNIER90_UMAT]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_umat.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'size'))
+
+[WANNIER90_BVEC]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_bvec.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'size'))
+
+[WANNIER90_CUBE]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_cube.parse
+tolerance = ( (1.0e-5, 1.0e-5, 'origin'))
+
+[POSTW90_GENINTERPDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_geninterp_dat.parse
+tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
+	       (1.0e-6, 1.0e-6, 'bandkptx'),
+	       (1.0e-6, 1.0e-6, 'bandkpty'),
+	       (1.0e-6, 1.0e-6, 'bandkptz'),                            
+	       (1.0e-2, 1.0e-2, 'bandderivx'),
+	       (1.0e-2, 1.0e-2, 'bandderivy'),
+	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
+              (1.0e-6, 1.0e-6, 'bandidx'))
+
+[POSTW90_MORBDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_morb_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e-4, 'bandmorbx'),
+               (1.0e-4, 1.0e-4, 'bandmorby'),
+               (1.0e-4, 1.0e-4, 'bandmorbz'))
+
+[POSTW90_CURVDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_curv_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'bandpath'),
+               (1.0e-4, 1.0e+2, 'bandcurvx'),
+               (1.0e-4, 1.0e+2, 'bandcurvy'),
+               (1.0e-4, 1.0e+2, 'bandcurvz'))
+
+[POSTW90_WPOUT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_wpout.parse
+tolerance = ( (1.0e-3, 2.0e-3, 'ahc_x'),
+               (1.0e-3, 2.0e-3, 'ahc_y'),
+               (1.0e-3, 2.0e-3, 'ahc_z'),
+               (1.0e-3, 2.0e-3, 'morb_x'),
+               (1.0e-3, 2.0e-3, 'morb_y'),
+               (1.0e-3, 2.0e-3, 'morb_z'),
+               (1.0e-3, 2.0e-3, 'spin_x'),
+               (1.0e-3, 2.0e-3, 'spin_y'),
+               (1.0e-3, 2.0e-3, 'spin_z'),
+               (1.0e-2, 2.0e-2, 'spin_p'),
+               (1.0e-2, 2.0e-2, 'spin_a'))
+
+
+[POSTW90_JDOS_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_jdos_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-4, 'jdos'))
+
+[POSTW90_DOS_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_dos_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-4, 'dos'))
+
+
+[POSTW90_KUBO_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_kubo_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e+2, 'recond'),
+               (1.0e-4, 1.0e+2, 'imcond'))
+
+[POSTW90_GYRO_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_gyro_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e-2, 'omega'),
+               (1.0e-4, 1.0e-2, 'gyro_xx'),
+              (1.0e-4, 1.0e-2, 'gyro_yy'),
+              (1.0e-4, 1.0e-2, 'gyro_zz'),
+              (1.0e-4, 1.0e-2, 'gyro_xy'),
+              (1.0e-4, 1.0e-2, 'gyro_xz'),
+              (1.0e-4, 1.0e-2, 'gyro_yz'),
+              (1.0e-4, None, 'gyro_x'),
+              (1.0e-4, None, 'gyro_y'),
+              (1.0e-4, None, 'gyro_z'),
+               (1.0e-4, 1.0e+2, 'imcond'))
+
+[POSTW90_SC_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_sc_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
+               (1.0e-4, 1.0e+2, 'shiftcurr'))
+
+
+
+[WANNIER90_WERR_FAIL]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_werr.parse
+tolerance = ( (0.1, 0.01, 'warning_msg'))
+can_fail = true
+
+[WANNIER90_NNKP_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_nnkp.parse
+tolerance = ( (1.0e-6, 1.0e-6, 'nnkpts_g1'),
+              (1.0e-6, 1.0e-6, 'nnkpts_g2'),
+              (1.0e-6, 1.0e-6, 'nnkpts_g3'),
+              (1.0e-6, 1.0e-6, 'nnkpts_k1'),
+              (1.0e-6, 1.0e-6, 'nnkpts_k2'),              
+              (1.0e-6, 1.0e-6, 'kpoints_k1'),
+              (1.0e-6, 1.0e-6, 'kpoints_k2'))
+
+[user]
+# This is the string (or list of strings) that identifies sets of tests
+# to be run - one could have multiple ones
+benchmark = default
+date_fmt = %d%m%Y
+vcs = git
+
+              

@@ -1,0 +1,21 @@
+#===================================
+# gfortran for the travis-ci service
+# This file for MPI builds
+#===================================
+F90 = gfortran
+
+COMMS  = mpi 
+MPIF90 = mpif90 
+
+# Options for debugging  When we move to 4.9 add -fsanitize=leak
+FCOPTS = -fprofile-arcs -ftest-coverage  -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
+LDOPTS = -fprofile-arcs -ftest-coverage -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
+
+#=======================
+# System LAPACK and BLAS
+# e.g. use
+#   sudo apt-get install libblas-dev liblapack-dev
+# on Ubuntu
+#=======================
+LIBS = -llapack -lblas
+
