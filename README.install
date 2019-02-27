@@ -48,7 +48,7 @@
                    the user guide)
    make w90vdw     build the van der Waals code
    make w90pov     build the ray-tracing code
-   make test       run test cases
+   make tests      run test cases
    make doc        build the documentation
    make dist       make a tar-ball of the distribution
    make dist-lite  make a tar-ball of the src and tests only

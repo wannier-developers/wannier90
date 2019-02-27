@@ -1,0 +1,45 @@
+#=================================================
+# For Mac Os X (tested on 10.12 Sierra)
+#=================================================
+## The following requires a working gfortran compiler.
+## You can use for instance HomeBrew to obtain it
+## (https://brew.sh).
+## After installation and configuration of HomeBrew,
+## install a recent version of gcc to get (also)
+## gfortran.
+## For instance:
+##  brew install gcc
+F90 = gfortran
+CC = cc
+
+
+## The next two lines are needed if you want a
+## parallel version of postw90.x. If you are OK
+## with a serial version, simply comment the next
+## two lines.
+## To get openmpi with HomeBrew, use for instance
+##  brew install openmpi
+COMMS=mpi
+MPIF90=mpifort
+
+## These two lines define mac-specific flags for
+## the dynamic library (.dylib, while on linux it's .so)
+DYNLIBRARYEXTENSION=dylib
+SHAREDLIBFLAGS=-dynamiclib
+
+## Note: we could use -framework Accelerate, but we should
+## then compile with the -ff2c option to gfortran to use
+## C-style conventions for functions returning complex values -
+## otherwise, we get sigsev... however, -ff2c is not compatible
+## with openmpi from brew!!! (at least on March 2017). 
+## This is because -ff2c implies -fsecond-underscore
+## (see https://gcc.gnu.org/onlinedocs/gfortran/Code-Gen-Options.html)
+## 
+## Therefore, you need first to install blas/lapack libraries from
+##  brew install homebrew/science/openblas
+## and then use the following options
+FCOPTS=-O2 
+LDOPTS=-O2 
+LIBS   = -L/usr/local/opt/openblas/lib -lblas -llapack
+
+

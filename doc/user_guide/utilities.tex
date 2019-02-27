@@ -1,3 +1,4 @@
+%!TEX root=./user_guide.tex
 \chapter{Utilities}\label{ch:utilities}
 
 The \wannier\ code is shipped with a few utility programs that may be
@@ -191,3 +192,20 @@ the PovRay utility) is provided inside \verb|utility/w90pov|.
 
 Please refer to the documentation inside \verb|utility/w90pov/doc|
 for more information.
+
+
+\section{$\tt{k\_mapper.py}$}
+\label{sec:k_mapper}
+The \wannier\ code requires the definition of a full Monkhorst--Pack
+grid of $\mathbf{k}$-vectors, which can be obtained by means of the \verb|kmesh.pl| utility.
+In order to perform a GW calculation with the Yambo code, you need to perform a nscf calculation on a grid in the irreducible BZ. Moreover, you may need a finer grid to converge the GW calculation than what you need to interpolate the band structure. The \verb|k_mapper.py| tools helps in finding the $\mathbf{k}$-vectors indeces of a full grid needed for interpolation into the reduced grid needed for the GW calculation with Yambo. \newline \newline
+Within the \verb|/utility| folder type:\newline 
+\verb|./k_mapper.py nx ny nz "path_of_the_QE_nscf_output_file_given_to_Yambo"|
+\section{$\tt{gw2wannier90.py}$}
+This utility allows to sort in energy the input data of \verb|wannier90| (e.g. overlap matrices and energy eigenvalues). \verb|gw2wannier90.py| allows to use \verb|wannier90| at the $G_0W_0$ level, where quasi-particle corrections can change the energy ordering of eigenvalues (Some \verb|wannier90| modules require states to be ordered in energy).\newline \newline
+Within the work directory type:
+\verb|./gw2wannier90.py seedname options|
+\newline \newline
+NB: Binary files are supported, though not reccommended.
+\label{sec:w90aaa}
+

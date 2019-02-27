@@ -14,12 +14,19 @@ import pipes
 import shutil
 import subprocess
 import sys
+import warnings
 
 try:
     import yaml
     _HAVE_YAML = True
 except ImportError:
     _HAVE_YAML = False
+
+try:
+    import importlib
+    _HAVE_IMPORTLIB_ = True
+except ImportError:
+    _HAVE_IMPORTLIB_ = False
 
 import testcode2.dir_lock as dir_lock
 import testcode2.exceptions as exceptions
@@ -74,6 +81,10 @@ class TestProgram:
         self.skip_program = None
         self.skip_args = ''
         self.verify = False
+        self.extract_fn = None
+        # By default, the job is expected to exit with error code 0.
+        # Setting it to True will discard the exit status/error code.
+        self.can_fail = False
 
         # Info
         self.vcs = None
@@ -86,6 +97,22 @@ class TestProgram:
         # extract command template.
         if self.verify and 'extract_cmd_template' not in kwargs:
             self.extract_cmd_template = 'tc.extract tc.args tc.test tc.bench'
+
+        if self.extract_fn:
+            if _HAVE_IMPORTLIB_:
+                self.extract_fn = self.extract_fn.split()
+                if len(self.extract_fn) == 2:
+                    sys.path.append(self.extract_fn[0])
+                (mod, fn) = self.extract_fn[-1].rsplit('.', 1)
+                mod = importlib.import_module(mod)
+                self.extract_fn = mod.__getattribute__(fn)
+            elif self.extract_program:
+                warnings.warn('importlib not available.  Will attempt to '
+                              'analyse data via an external script.')
+                self.extract_fn = None
+            else:
+                raise exceptions.TestCodeError('importlib not available and '
+                              'no data extraction program supplied.')
 
         # Can we actually extract the data?
         if self.extract_fmt == 'yaml' and not _HAVE_YAML:
@@ -145,10 +172,13 @@ class TestProgram:
         '''Create skip command.'''
         test_file = util.testcode_filename(FILESTEM['test'], self.test_id,
                 input_file, args)
+        error_file = util.testcode_filename(FILESTEM['error'], self.test_id,
+                input_file, args)
         cmd = self.skip_cmd_template
         cmd = cmd.replace('tc.skip', pipes.quote(self.skip_program))
         cmd = cmd.replace('tc.args', self.skip_args)
         cmd = cmd.replace('tc.test', pipes.quote(test_file))
+        cmd = cmd.replace('tc.error', pipes.quote(error_file))
         return cmd
 
     def select_benchmark_file(self, path, input_file, args):
@@ -285,10 +315,11 @@ class Test:
                             err.append(sys.exc_info()[1])
                     status = validation.Status()
                     if job.returncode != 0:
-                        err.insert(0, 'Error running job.  Return code: %i'
-                                        % job.returncode)
-                        (status, msg) = self.skip_job(test_input, test_arg,
-                                                      verbose)
+                        if not self.test_program.can_fail:
+                            err.insert(0, 'Error running job.  Return code: %i'
+                                            % job.returncode)
+                            (status, msg) = self.skip_job(test_input, test_arg,
+                                                          verbose)
                     if status.skipped():
                         self._update_status(status, (test_input, test_arg))
                         if verbose > 0 and verbose < 3:
@@ -302,6 +333,7 @@ class Test:
                         raise exceptions.RunError(err[0])
                     else:
                         self.verify_job(test_input, test_arg, verbose, rundir)
+                sys.stdout.flush()
         except exceptions.RunError:
             err = sys.exc_info()[1]
             if verbose > 2:
@@ -329,6 +361,7 @@ class Test:
                                                    test_arg, rundir)
                         sys.stdout.write(info_line)
                     status.print_status(err, verbose)
+                sys.stdout.flush()
 
     def _start_job(self, cmd, cluster_queue=None, verbose=1):
         '''Start test running.  Requires directory lock.
@@ -530,18 +563,24 @@ Assume function is executed in self.path.'''
 
 Assume function is executed in self.path.'''
         tp_ptr = self.test_program
+        data_files = [
+                      tp_ptr.select_benchmark_file(self.path, input_file, args),
+                      util.testcode_filename(FILESTEM['test'],
+                      tp_ptr.test_id, input_file, args),
+                     ]
         if tp_ptr.data_tag:
             # Using internal data extraction function.
-            data_files = [
-                    tp_ptr.select_benchmark_file(self.path, input_file, args),
-                    util.testcode_filename(FILESTEM['test'],
-                            tp_ptr.test_id, input_file, args),
-                         ]
             if verbose > 2:
                 print('Analysing output using data_tag %s in %s on files %s.' %
                         (tp_ptr.data_tag, self.path, ' and '.join(data_files)))
             outputs = [util.extract_tagged_data(tp_ptr.data_tag, dfile)
                     for dfile in data_files]
+        elif tp_ptr.extract_fn:
+            if verbose > 2:
+                print('Analysing output using function %s in %s on files %s.' %
+                        (tp_ptr.extract_fn.__name__, self.path,
+                         ' and '.join(data_files)))
+            outputs = [tp_ptr.extract_fn(dfile) for dfile in data_files]
         else:
             # Using external data extraction script.
             # Get extraction commands.
@@ -554,39 +593,20 @@ Assume function is executed in self.path.'''
                     if verbose > 2:
                         print('Analysing output using %s in %s.' %
                                 (cmd, self.path))
-                    # Samuel Ponce: Popen.wait() creates deadlock if the data is too large
-                    # See documented issue for example in: 
-                    # https://docs.python.org/2/library/subprocess.html#subprocess.Popen.returncode
-                    #
-                    # Previous code that create deadlock:
-                    #extract_popen = subprocess.Popen(cmd, shell=True,
-                    #        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    #extract_popen.wait()
-                    #
-                    # New code (this might not be the best but work for me):
-                    extract_popen = subprocess.Popen(cmd, bufsize=1, shell=True,
-                         stdin=open(os.devnull), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-                    lines = []
-                    for line in iter(extract_popen.stdout.readline, ''):
-                      #print line,
-                      lines.append(line)                    
-
+                    extract_popen = subprocess.Popen(cmd, shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    extract_popen.wait()
                 except OSError:
                     # slightly odd syntax in order to be compatible with python
                     # 2.5 and python 2.6/3
                     err = 'Analysing output failed: %s' % (sys.exc_info()[1],)
                     raise exceptions.AnalysisError(err)
                 # Convert data string from extract command to dictionary format.
-                
-                # SP: Because of the above change, the test below cannot be done:
-                #if extract_popen.returncode != 0:
-                #    err = extract_popen.communicate()[1].decode('utf-8')
-                #    err = 'Analysing output failed: %s' % (err)
-                #    raise exceptions.AnalysisError(err)
-                #data_string = extract_popen.communicate()[0].decode('utf-8')
-                data_string = ''.join(lines)                 
-
+                if extract_popen.returncode != 0:
+                    err = extract_popen.communicate()[1].decode('utf-8')
+                    err = 'Analysing output failed: %s' % (err)
+                    raise exceptions.AnalysisError(err)
+                data_string = extract_popen.communicate()[0].decode('utf-8')
                 if self.test_program.extract_fmt == 'table':
                     outputs.append(util.dict_table_string(data_string))
                 elif self.test_program.extract_fmt == 'yaml':

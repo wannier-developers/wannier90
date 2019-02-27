@@ -63,58 +63,103 @@ The Wannier90 code is licensed under GPLv2.
 You can read the licence text in the LICENSE file in the root directory 
 of the Wannier90 distribution.
 
+FAQ
+++++
+
+Detailed information on how to install, contribute and report issues/bugs may be found on the `FAQ page`_.  Common issues encountered by the Wannier90-user community are also addressed there.
+
+.. _FAQ page: https://github.com/wannier-developers/wannier90/wiki/FAQ
+
 Authors and contributors
 ++++++++++++++++++++++++
 
-Wannier90 Versions 2.x have been written by: 
+The Wannier90 Developer Group includes:
 
-* Arash A. Mostofi   (Imperial College London, UK)
-* Giovanni Pizzi     (EPFL, Switzerland)
-* Ivo Souza          (Universidad del Pais Vasco, Spain)
-* Jonathan R. Yates  (University of Oxford, UK)
+* Giovanni Pizzi    (EPFL, CH)
+* Valerio Vitale    (Cambridge, GB)
+* David Vanderbilt  (Rutgers University, US)
+* Nicola Marzari    (EPFL, CH)
+* Ivo Souza         (Universidad del Pais Vasco, ES)
+* Arash A. Mostofi  (Imperial College London, GB)
+* Jonathan R. Yates (University of Oxford, GB)
+
+In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
+
+* Ryotaro Arita (Riken and U. Tokyo, JP): Symmetry-adapted Wannier functions
+* Stefan Blügel (FZ  Jülich, DE): Parallelization of the core routines
+* Frank Freimuth (FZ  Jülich, DE): Parallelization of the core routines
+* Guillame Géranton (FZ  Jülich, DE): Parallelization of the core routines
+* Marco Gibertini (EPFL and University of Geneva, CH): Improvements to the interpolation routines
+* Dominik Gresch (ETHZ, CH): FORD infrastructure for code documentation, AiiDA-Wannier90 interface
+* Charles Johnson (Imperial College London, GB): Selectively-localised WFs and constrained centres
+* Takashi Koretsune (Tohoku University and JST PRESTO, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
+* Julen Ibañez-Azpiroz (Universidad del Pais Vasco, ES): shift-current calculation
+* Hyungjun Lee (EPFL, CH): Spinor-valued WFs, parallelisation of the core Wannier90 routines
+* Daniel Marchand (EPFL, CH): AiiDA-Wannier90 interface
+* Antimo Marrazzo (EPFL, CH): GW bands interpolation, AiiDA-Wannier90 interface
+* Yuriy Mokrousov (FZ  Jülich, DE): Parallelization of the core routines
+* Jamal I. Mustafa (UC Berkeley, USA): Subselection of projections
+* Yoshiro Nohara (Tokyo, JP): Symmetry-adapted Wannier functions
+* Yusuke Nomura (U. Tokyo, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
+* Lorenzo Paulatto (Sorbonne Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
+* Samuel Poncé (Oxford University, GB): Test suite for Wannier90
+* Thomas Ponweiser (RISC Software GmbH, AT): performance optimizations for postw90
+* Florian Thöle (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
+* Stepan Tsirkin (Universidad del Pais Vasco, ES): GW bands interpolation, gyrotropic module, shift-current calculation, bug fixes in the berry module
+* Małgorzata Wierzbowska (Polish Academy of Science, PL): performance optimizations for postw90
 
 Contributors to the code include:
 
-* Young-Su Lee (KIST, S. Korea): specialised Gamma point routines & transport
-* Matthew Shelley (Imperial College London, UK): transport
-* Nicolas Poilvert (Penn State University, USA): transport
-* Raffaello Bianco (Univ. Pierre et Marie Curie Paris 6 and CNRS):  k-slice plotting
-* Gabriele Sclauzero (ETH, Zurich, Switzerland): disentanglement in spheres in k-space
-* David Strubbe (MIT, USA): various bugfixes/improvements
-* Rei Sakuma (Lund University, Sweden): Symmetry-adapted Wannier functions
-* Yusuke Nomura (U. Tokyo, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
-* Takashi Koretsune (Riken, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
-* Yoshiro Nohara (Atomic-scale material simulations, Co., Ltd.): Symmetry-adapted Wannier functions
-* Ryotaro Arita (Riken, JP): Symmetry-adapted Wannier functions
-* Lorenzo Paulatto (UPMC Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
-* Florian Thole (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
-* Pablo Garcia Fernandez (Unican, ES): Matrix elements of the position operator
-* Dominik Gresch (ETHZ, CH): FORD infrastructure for code documentation
-* Samuel Ponce (Oxford University, UK): Test suite for Wannier90
-* Marco Gibertini (EPFL, CH): Improvements to the interpolation routines
-* Christian Stieger (ETHZ, CH): Routine to print the U matrices
-* Stepan Tsirkin (Universidad del Pais Vasco, Spain): bug fixes in the berry module
+* Daniel Aberg: w90pov code
+* Lampros Andrinopoulos: w90vdw code
+* Pablo Aguado Puente: gyrotropic routines
+* Raffaello Bianco: k-slice plotting
+* Marco Buongiorno Nardelli: `dosqc` v1.0 subroutines upon which `transport.f90` is based.
+* Stefano De Gironcoli: `pw2wannier90.x` interface to Quantum ESPRESSO
+* Pablo Garcia Fernandez: Matrix elements of the position operator
+* Nicholas D. M. Hine: w90vdw code
+* Young-Su Lee: specialised Gamma point routines & transport
+* Antoine Levitt: preconditioning
+* Graham Lopez: extension of pw2wannier90 to add terms needed for orbital magnetisation
+* Radu Miron: constrained centres
+* Nicolas Poilvert: transport routines
+* Michel Posternak: original plotting routines
+* Rei Sakuma: Symmetry-adapted Wannier functions
+* Gabriele Sclauzero: disentanglement in spheres in k-space
+* Matthew Shelley: transport routines
+* Christian Stieger: routine to print the U matrices
+* David Strubbe: various bugfixes/improvements
+* Timo Thonhauser: extension of pw2wannier90 to add terms needed for orbital magnetisation
 
-Moreover:
+We also acknowledge individuals not already mentioned above who participated in the first Wannier90 community meeting (San Sebastian, 2016) for useful discussions:
 
-* ``w90vdw`` was written by:
-  Lampros Andrinopoulos, Nicholas D. M. Hine and Arash A. Mostofi
-* ``w90pov`` (povray plotting) was written by:
-  Daniel Aberg (LLNL, USA)
+* Daniel Fritsch
+* Victor Garcia Suarez
+* Jan-Philipp Hanke
+* Ji Hoon Ryoo
+* Jürg Hutter
+* Javier Junquera
+* Liang Liang
+* Michael Obermeyer
+* Gianluca Prandini
+* Paolo Umari
 
-We gratefully acknowledge Marco Buongiorno Nardelli for the `dosqc
-v1.0` subroutines for the calculation of the density of states and the
-quantum transport, upon which `transport.f90` is based. 
+Wannier90 Version 2.x was written by:
+
+* Arash A. Mostofi   (Imperial College London, GB)
+* Giovanni Pizzi     (EPFL, CH)
+* Ivo Souza          (Universidad del Pais Vasco, ES)
+* Jonathan R. Yates  (University of Oxford, GB)
 
 Wannier90 Version 1.0 was written by:
 
-* Arash A. Mostofi   (Imperial College London, UK)
-* Jonathan R. Yates  (University of Oxford, UK)
-* Young-Su Lee       (KIST, S. Korea)
+* Arash A. Mostofi   (Imperial College London, GB)
+* Jonathan R. Yates  (University of Oxford, GB)
+* Young-Su Lee       (KIST, KR)
 
 Wannier90 is based on Fortran 77 codes written by:
 
-* Nicola Marzari (EPFL, Switzerland)
-* Ivo Souza (Universidad del Pais Vasco, Spain)
-* David Vanderbilt (Rutgers University, USA)
+* Nicola Marzari (EPFL, CH)
+* Ivo Souza (Universidad del Pais Vasco, ES)
+* David Vanderbilt (Rutgers University, US)
 

@@ -1,0 +1,189 @@
+#!/usr/bin/env python
+"""
+This script runs the tests either asking interactively if you want to run 
+only one, or runs them all with the proper command-line options.
+"""
+from __future__ import print_function
+
+import sys
+import os
+import subprocess
+import sys
+
+DEFAULT_CATEGORY = 'default' # The default category
+
+if sys.version_info >= (3, 0):
+    my_input = input
+else:
+    # python 2.x.
+    my_input = raw_input
+
+
+# Folder of this file
+this_folder = os.path.abspath(os.path.split(__file__)[0]) 
+testcode_exe = os.path.join(
+    this_folder, 'testcode', 'bin', 'testcode.py')
+testfolder = os.path.join(
+    this_folder, 'tests')
+jobconfig = os.path.join(
+    testfolder, 'jobconfig')
+userconfig = os.path.join(
+    testfolder, 'userconfig')
+
+
+def strip_slash(the_string):
+    """
+    Remove trailing slashes, if any
+    """
+    if the_string.endswith('/'):
+        return strip_slash(the_string[:-1])
+    else:
+        return the_string
+
+def get_valid_categories():
+    """
+    Return a list of tuples in the format
+    (category_name, is_single_test)
+    where category_name is a string, and is_single_test
+    is a boolean (True for single tests, False for categories)
+    """
+    import configparser
+
+    config = configparser.ConfigParser()
+    config.read(jobconfig)
+    all_sections = config.sections()
+    retlist = []
+    for section_name in all_sections:
+        if section_name == 'categories':
+            # Append categories as well
+            for category in config.options(section_name):
+                retlist.append((category,False))
+        elif section_name == "DEFAULT":
+            pass
+        else:
+            retlist.append((strip_slash(section_name),True))
+
+    return sorted(set(retlist)) # Remove duplicates, sort
+
+def prompt_for_category():
+    valid_categories_with_type = get_valid_categories()
+    valid_categories = [_[0] for _ in valid_categories_with_type]
+
+    print("This is the list of valid categories:")
+    for idx, (cat, is_single_test) in enumerate(
+            valid_categories_with_type, start=1):
+        print("{:10s} [{}] {}".format("TEST" if is_single_test else "CATEGORY",
+                                      idx, cat))
+    print(" ----------------------------------------------------------------------------")
+    print(" -- If you don't want this prompt, or want more options, call this command --")
+    print(" -- with a '-h' option to get help on the command-line options             --")
+    print(" ----------------------------------------------------------------------------")
+    ans = my_input("Which category do you want to run? [{}] ".format(DEFAULT_CATEGORY))
+    try:
+        chosen_idx = int(ans)
+        chosen_idx -= 1
+        # I put this in place mainly for negative numbers, that might not
+        # return a ValueError
+        if chosen_idx < 0 or chosen_idx >= len(valid_categories):
+            raise ValueError # So we try this as a test folder name
+        chosen_test = valid_categories[chosen_idx]
+    except ValueError: # Invalid number
+        chosen_test = ans
+
+    # Default choice
+    if chosen_test == '':
+        chosen_test = DEFAULT_CATEGORY
+
+    print("Chosen test(s): {}".format(chosen_test))
+    if chosen_test not in valid_categories:
+        print("*"*72)
+        print("WARNING! I'm going to ask 'testcode' to run category '{}', but ".format(chosen_test))
+        print("I'm quite confident it's not a valid category or test...")
+        print("*"*72)
+    return chosen_test
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Run the tests (or a subset of them).')
+    parser.add_argument('-c', '--category', type=str, default=None,
+                        help='The category (i.e., the group) of tests you want to run. '
+                             'You can also specify a single test name')
+    parser.add_argument('-n', '--numprocs', type=int, default=None,
+                        help='The number of processors (if specified, runs with mpirun even if the value is 1')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Enforce increased verbosity of tests, by printing all parsed results. '
+                             'Without this variable, the verbosity is set by the '
+                             'value of the environment variable W90VERBOSETESTS (setting it to the '
+                             'string "true" increases verbosity, any other string keeps it low')
+    parser.add_argument('-d', '--default', action='store_true',
+                        help='never prompt the user for input, read values from options or stop '
+                             'if missing')
+    args = parser.parse_args()
+
+    # Run the make command on all folders that have a Makefile.
+    # This is needed to e.g. uncompress the checkpoint files.
+    for folder in os.listdir(testfolder):
+        folderabspath = os.path.join(testfolder, folder)
+        if not os.path.isdir(folderabspath):
+            continue
+        if not os.path.isfile(os.path.join(folderabspath, 'Makefile')):
+            continue
+
+        if args.verbose:
+            print("Creating needed files in {}...".format(folder))
+            return_code = subprocess.call(
+                ['make', '-C', folderabspath],
+                stdout=sys.stdout, stderr=sys.stderr)
+        else:
+            FNULL = open(os.devnull, 'w')
+            return_code = subprocess.call(
+                ['make', '-C', folderabspath],
+                stdout=FNULL, stderr=sys.stderr)
+            if return_code:
+                print("*** WARNING!! make failed... continuing anyway, but your tests might fail")
+
+
+    the_category = args.category
+    if the_category is None:
+        if args.default:
+            the_category = DEFAULT_CATEGORY
+        else:
+            the_category = prompt_for_category()
+    else:
+        if args.default:
+            print("You cannot specify both --default and --category", file=sys.stderr)
+            sys.exit(1)
+
+
+    verbose_cmd = ["--verbose"] 
+    new_env = os.environ.copy()
+    if args.verbose:
+        new_env["W90VERBOSETESTS"] = "true"
+        # Put twice --verbose, to set the verbosity level at 3
+        # and therefore, e.g. print the actual command being run
+        # (with mpirun etc.)
+        verbose_cmd *= 2
+
+    command_pieces = [
+        testcode_exe] + verbose_cmd + [
+        "--category={}".format(the_category),
+        "--jobconfig={}".format(jobconfig),
+        "--userconfig={}".format(userconfig)
+        ]
+    
+    if args.numprocs:
+        command_pieces.append("--processors={}".format(args.numprocs))
+
+    if args.verbose:
+        print("I will run the following command:")
+        print(" ".join(command_pieces))
+
+    return_code = subprocess.call(
+        command_pieces
+        , stdout=sys.stdout, stderr=sys.stderr, env=new_env)
+
+    # Exit with the same error code
+    sys.exit(return_code)
+

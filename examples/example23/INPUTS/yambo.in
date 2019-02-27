@@ -1,0 +1,38 @@
+#                                                           
+#   __   __     _        __  __       ____      U  ___  u   
+#   \ \ / / U  /"\  U u |" \/ "| u U | __") u    \/"_ \/    
+#    \ V /   \/ _ \/   \| |\/| |/   \|  _ \/     | | | |    
+#   U_|"|_u  / ___ \    | |  | |     | |_) | .-,_| |_| |    
+#     |_|   /_/   \_\   |_|  |_|     |____/   \_)-\___/     
+# .-,//|(_   \\    >>  <<,-,,-.     _|| \\_        \\       
+#  \_) (__) (__)  (__)  (./  \.)   (__) (__)      (__)      
+#                                                           
+#                                                           
+#              GPL Version 4.0.2 Revision 90                
+#                        MPI Build                          
+#                http://www.yambo-code.org                  
+#
+em1d                         # [R Xd] Dynamical Inverse Dielectric Matrix
+gw0                          # [R GW] GoWo Quasiparticle energy levels
+ppa                          # [R Xp] Plasmon Pole Approximation
+HF_and_locXC                 # [R XX] Hartree-Fock Self-energy and Vxc
+EXXRLvcs=  4477        RL    # [XX] Exchange RL components
+Chimod= "hartree"            # [X] IP/Hartree/ALDA/LRC/BSfxc
+% BndsRnXp
+   1 | 100 |                 # [Xp] Polarization function bands
+%
+NGsBlkXp= 1            RL    # [Xp] Response block size
+% LongDrXp
+ 1.000000 | 0.000000 | 0.000000 |        # [Xp] [cc] Electric Field
+%
+PPAPntXp= 27.21138     eV    # [Xp] PPA imaginary energy
+% GbndRnge
+   1 | 100 |                 # [GW] G[W] bands range
+%
+GDamping=  0.10000     eV    # [GW] G[W] damping
+dScStep=  0.10000      eV    # [GW] Energy step to evaluate Z factors
+GTermKind= "none"            # [GW] GW terminator ("none","BG" Bruneval-Gonze,"BRS" Berger-Reining-Sottile)
+DysSolver= "n"               # [GW] Dyson Equation solver ("n","s","g")
+%QPkrange                    # [GW] QP generalized Kpoint/Band indices
+!!! insert here the QP corrections you want to compute!!!
+%

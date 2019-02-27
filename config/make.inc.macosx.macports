@@ -1,0 +1,63 @@
+#=================================================
+# For Mac Os X (tested on 10.10 Yosemite)
+#=================================================
+## The following requires a working gfortran compiler.
+## You can use for instance MacPorts to obtain it
+## (http://www.macports.org/).
+## After installation and configuration of MacPorts,
+## install a recent version of gcc to get (also)
+## gfortran.
+## For instance:
+##  sudo port install gcc5
+## Note: update version number in port and F90 below as necessary
+##
+F90 = gfortran-mp-5
+CC = cc
+
+
+## The next two lines are needed if you want a
+## parallel version of postw90.x. If you are OK
+## with a serial version, simply comment the next
+## two lines.
+## To get openmpi with MacPorts, use for instance
+##  sudo port install openmpi-default
+## Note that with MacPorts, the 
+## 'mpirun' executable needed to run the code
+## is called 'mpirun-openmpirun-mp'
+## (You could also use mpich instead of openmpi.)
+##
+COMMS=mpi
+MPIF90=mpif90-openmpi-mp
+
+## These two lines define mac-specific flags for
+## the dynamic library (.dylib, while on linux it's .so)
+DYNLIBRARYEXTENSION=dylib
+SHAREDLIBFLAGS=-dynamiclib
+
+## IMPORTANT!! the -ff2c is needed if one wants to
+## use the BLAS and LAPACK libraries shipped with
+## Apple Mac OS X (using -framework Accelerate).
+## (at least on recent Mac OS X versions).
+## This is beacause some routines (as ZDOTC) in the
+## libraries provided by Apple are compiled with the
+## C interface instead of the Fortran interface.
+## Instead, remove the -ff2c flags (both from FCOPTS
+## and from LDOPTS) if you have downloaded and 
+## compiled the BLAS and LAPACK libraries from netlib.org.
+##
+## IF YOU DON'T DO THE CORRECT THING, THE CODE COMPILES BUT
+## THEN EITHER CRASHES OR GIVES WRONG RESULTS!
+##
+## THUS: ALWAYS TRY AT LEAST THE PROVIDED TEST EXAMPLES
+## TO SEE IF YOUR EXECUTABLE IS PROVIDING SENSIBLE RESULTS!
+## (i.e.: run
+##  make test
+## and then compare the results)
+FCOPTS=-O2 -ff2c
+LDOPTS=-O2 -ff2c
+LIBS   =  -framework Accelerate
+
+# other options: do not use -ff2c but instead:
+# port vecLibfort (wrapper to Accelerate): LIBS = -L/opt/local/lib -lvecLibFort
+# port atlas: LIBS = -L/opt/local/lib -lsatlas
+# port openblas +lapack: LIBS = -L/opt/local/lib -lopenblas

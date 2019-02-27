@@ -1,0 +1,148 @@
+#!/usr/bin/env python
+"""
+This script runs the tests either asking interactively if you want to run 
+only one, or runs them all with the proper command-line options.
+
+NOTE: give a look also to 'testcode.py tidy', that however does not do
+      exactly what we want.
+"""
+from __future__ import print_function
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import glob
+
+# Folder of this file
+this_folder = os.path.abspath(os.path.split(__file__)[0]) 
+test_folder = os.path.join(
+    this_folder, 'tests')
+jobconfig = os.path.join(
+    test_folder, 'jobconfig')
+userconfig = os.path.join(
+    test_folder, 'userconfig')
+
+def strip_slash(the_string):
+    """
+    Remove trailing slashes, if any
+    """
+    if the_string.endswith('/'):
+        return strip_slash(the_string[:-1])
+    else:
+        return the_string
+
+def get_valid_categories():
+    import configparser
+
+    config = configparser.ConfigParser()
+    config.read(jobconfig)
+    all_sections = config.sections()
+    retlist = []
+    for section_name in all_sections:
+        if section_name == 'categories':
+            # Append categories as well
+            for category in config.options(section_name):
+                retlist.append(category)
+        elif section_name == "DEFAULT":
+            pass
+        else:
+            retlist.append(strip_slash(section_name))
+
+    return sorted(set(retlist)) # Remove duplicates, sort
+
+# Patterns to delete, using shell syntax as recognized by glob.fnmatch
+# These are going to be deleted for sure. Other files, ignored by git
+# but not in this list, will just be printed out.
+global_patterns_to_delete = [
+    "test.out.*", # Created by testcode
+    "test.err.*", # Created by testcode
+    "test.prev.*", # Created by testcode
+    ]
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(
+        description='Cleans the test folders from generated files.')
+    parser.add_argument('-i', '--also-ignored', action='store_true',
+                        help='Remove also files that are ignored by git (otherwise, just warn about their presence')
+    args = parser.parse_args()
+
+    is_git_repo = True
+    errcode = subprocess.call(['git', '-C', test_folder, 'rev-parse', '--git-dir'])
+    if errcode != 0:
+        is_git_repo = False
+
+    valid_categories = get_valid_categories()
+    for testname in os.listdir(test_folder):
+        the_folder = os.path.join(test_folder, testname)
+        if not os.path.isdir(the_folder):
+            continue
+        if testname.startswith('.'):
+            # Skip anything hidden (this is also, btw, the difference
+            # between glob.fnmatch and glob.glob)
+            continue
+        if testname not in valid_categories:
+            print("WARNING: '{}' found but it's not listed as a test, skipping".format(testname))
+            continue
+
+
+        print("[{}]".format(testname))
+        
+        entries_to_delete = []
+        for pattern in global_patterns_to_delete:
+            # Check all files to delete
+            entries_to_delete += glob.fnmatch.filter(
+                os.listdir(the_folder), pattern)
+        # Remove duplicates if a file matches more than one pattern
+        # Also leave it as a set for efficiency in the next step
+        entries_to_delete = set(entries_to_delete)
+
+        # This will list only GIT IGNORED FILES (so no folders, or
+        # no files that would show up in 'Untracked files' by 'git status')
+        # (This is a safety mechanism to make sure you really intended to
+        # ignore those files - otherwise adding a new test and running this
+        # cleaning code would delete also the tests...)
+        entries_gitignored = []
+        for fname in os.listdir(the_folder):
+            entryfname = os.path.join(the_folder, fname)
+            if fname in entries_to_delete:
+                # This is already something I will delete
+                continue
+            if not os.path.isfile(entryfname):
+                # Only consider files (anyway folders cannot be
+                # ignored in git)
+                continue
+            if is_git_repo:
+                errcode = subprocess.call(['git', 'check-ignore', "-q", entryfname])
+                if errcode == 0:
+                    # It is ignored
+                    entries_gitignored.append(fname)
+
+        for entry in entries_to_delete:
+            print("    Deleting {}...".format(entry))
+            entryfname = os.path.join(the_folder, entry)
+            if os.path.isfile(entryfname):
+                os.remove(entryfname)
+            else:
+                # If it's neither a file or a directory, this
+                # will be triggered and probably fail... We'll
+                # take care of this when such case happens.
+                shutil.rmtree(entryfname)
+
+        for entry in entries_gitignored:
+            entryfname = os.path.join(the_folder, entry)
+            if args.also_ignored:
+                print("    Deleting git-ignored {}...".format(entry))
+                # These are always ignored
+                os.remove(entryfname)
+            else:
+                print("    ** Potentially deletable (use -i option to delete): {}".format(entry))
+
+    if not is_git_repo:
+        print("*** Warning! I am not able to fully clean the test directories ***")
+        print("*** as this is not a git repository                            ***")
+
+
+

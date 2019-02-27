@@ -4,15 +4,8 @@
 
 include ../../make.inc
 
-OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
-	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o
-
-OBJS2  =  wannier_lib.o
-
-OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
-             postw90_common.o wan_ham.o spin.o dos.o berry.o kpath.o kslice.o boltzwann.o geninterp.o
-
-LIBRARY = ../../libwannier.a
+# Contains definition of OBJS, OBJSLIB, OBJS_POST, LIBRARY, DYNLIBRARY
+include ../Makefile.header
 
 POSTDIR = ../postw90/
 
@@ -31,8 +24,8 @@ TEMP2 = $(F90)
 endif
 
 
-wannier libs w90chk2chk serialobjs: POSTOPTS = 
-wannier libs w90chk2chk serialobjs: COMPILER = $(F90)
+wannier libs dynlibs w90chk2chk serialobjs: POSTOPTS = $(TEMP1) 
+wannier libs dynlibs w90chk2chk serialobjs: COMPILER = $(TEMP2)
 wannier: ../../wannier90.x 
 w90chk2chk: ../../w90chk2chk.x
 
@@ -42,7 +35,7 @@ serialobjs: $(OBJS)
 	$(COMPILER) ../w90chk2chk.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90chk2chk.x
 
 ../../wannier90.x: $(OBJS) ../wannier_prog.F90
-	$(COMPILER) ../wannier_prog.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
+	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
 
 post: POSTOPTS = $(TEMP1)
 post: COMPILER = $(TEMP2)
@@ -73,8 +66,14 @@ endif
 
 libs:     $(LIBRARY)
 
-$(LIBRARY): $(OBJS) $(OBJS2) 
-	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS2) $(OBJS)
+dynlibs: $(DYNLIBRARY)
+
+$(LIBRARY): $(OBJS) $(OBJSLIB) 
+	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJSLIB) $(OBJS)
+
+$(DYNLIBRARY): $(OBJS) $(OBJSLIB)
+	echo $(COMPILER)
+	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(OBJS) $(OBJSLIB) $(LIBS) -o $@
 
 clean:
 	rm -f *.o *.mod *.MOD *.obj
@@ -88,7 +87,7 @@ io.o: ../io.F90 constants.o
 utility.o: ../utility.F90  constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../utility.F90
 
-parameters.o: ../parameters.F90 constants.o io.o utility.o
+parameters.o: ../parameters.F90 constants.o io.o utility.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../parameters.F90
 
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o parameters.o
@@ -100,10 +99,10 @@ overlap.o: ../overlap.F90 constants.o io.o utility.o parameters.o sitesym.o
 kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o 
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../kmesh.F90
 
-disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o
+disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../disentangle.F90
 
-wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o
+wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannierise.F90
 
 plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o ws_distance.o
@@ -118,8 +117,8 @@ transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
-comms.o: $(POSTDIR)comms.F90 constants.o io.o
-	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90
+comms.o: ../comms.F90 constants.o io.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms.F90
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90
@@ -144,6 +143,9 @@ kslice.o: $(POSTDIR)kslice.F90 comms.o parameters.o constants.o io.o spin.o berr
 
 berry.o: $(POSTDIR)berry.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)berry.F90
+
+gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o parameters.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o berry.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)gyrotropic.F90
 
 wan_ham.o: $(POSTDIR)wan_ham.F90 parameters.o constants.o utility.o postw90_common.o get_oper.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)wan_ham.F90

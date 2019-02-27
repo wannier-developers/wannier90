@@ -1,0 +1,160 @@
+%!TEX root=./user_guide.tex
+\chapter{Overview of the {\tt gyrotropic} module \label{ch:gyrotropic}}
+
+
+The {\tt gyrotropic} module of {\tt postw90} is called by setting {\tt
+  gyrotropic = true} and choosing one or more of the available options for
+{\tt gyrotropic\_task}. The module computes the quantities, studied in 
+ \cite{tsirkin-arxiv17}, where more details may be found.
+
+\section{{\tt berry\_task=-d0}: the Berry curvature dipole  }
+
+The traceless dimensionless tensor
+\begin{equation}
+\label{eq:D_ab}
+D_{ab}=\int\dk\sum_n
+\frac{\partial E_n}{\partial{k_a}}
+\Omega_n^b
+\left(-\frac{\partial f_0}{\partial E}\right)_{E=E_n},
+\end{equation}
+
+
+\section{{\tt berry\_task=-dw}: the finite-frequency generalization of the Berry curvature dipole  }
+
+\begin{equation}
+\label{eq:D-tilde}
+\widetilde{D}_{ab}(\ww)=\int\dk\sum_n
+\frac{\partial E_n}{\partial{k_a}}\widetilde\Omega^b_n(\ww)
+\left(-\frac{\partial f_0}{\partial E}\right)_{E=E_n},
+\end{equation}
+
+where $\widetilde{\bm\Omega}_{\kk n}(\ww)$ is a finite-frequency
+generalization of the Berry curvature:
+%
+%
+\begin{equation}
+\label{eq:curv-w}
+\widetilde{\bm\Omega}_{\kk n}(\ww)=-
+\sum_m\,\frac{\ww^2_{\kk mn}}{\ww^2_{\kk mn}-\ww^2}
+\im\left({\bm A}_{\kk nm}\times{\bm A}_{\kk mn}\right)
+\end{equation}
+Contrary to the Berry
+  curvature, the divergence of $\tilde{\bm\Omega}_{\kk n}(\ww)$ is
+  generally nonzero. As a result, $\wt D(\ww)$ 
+can have a nonzero trace at finite frequencies, $\tilde{D}_\|\neq-2\tilde{D}_\perp$ in Te.
+
+\section{{\tt berry\_task=-C}: the ohmic  conductivity }
+
+In the constant relaxation-time
+approximation  the ohmic conductivity is expressed as
+ $\sigma_{ab}=(2\pi e\tau/\hbar)C_{ab}$,  with
+%
+\beq
+\label{eq:C_ab}
+C_{ab}=\frac{e}{h}\int\dk\sum_n\,
+\frac{\partial E_n}{\partial{k_a}} \frac{\partial E_n}{\partial{k_b}}
+\left(-\frac{\partial f_0}{\partial E}\right)_{E=E_n}
+\eeq
+a positive quantity with
+units of surface current density (A/cm).
+
+
+\section{{\tt berry\_task=-K}: the kinetic magnetoelectric effect (kME) }
+
+A microscopic theory of the intrinsic kME effect in bulk crystals was
+recently developed~\cite{yoda-sr15,zhong-prl16}.  
+
+The response is described by
+\beq
+\label{eq:K_ab}
+K_{ab}=\int\dk\sum_n\frac{\partial E_n}{\partial{k_a}} m_n^b 
+\left(-\frac{\partial f_0}{\partial E}\right)_{E=E_n},
+\eeq
+%
+which has the same form as \eq{D_ab}, but with the Berry
+curvature replaced by the intrinsic magnetic moment ${\bm m}_{\kk n}$
+of the Bloch electrons, which has the  spin and orbital components
+ given by~\cite{xiao-rmp10} 
+%
+\bea
+\label{eq:m-spin}
+m^{\rm spin}_{\kk n}&=&-\frac{1}{2}g_s\mu_{\rm B} \me{\psi_{\kk
+      n}}{\bf \sigma}{\psi_{\kk n}}\\
+\label{eq:m-orb}
+{\bm m}^{\rm orb}_{\kk n}&=&\frac{e}{2\hbar}\im
+\bra{{\bm\partial}_\kk u_{\kk n}}\times
+(H_\kk-E_{\kk n})\ket{{\bm\partial}_\kk u_{\kk n}},
+\eea
+%
+where $g_s\approx 2$ and we chose $e>0$. 
+
+\section{{\tt berry\_task=-dos}: the density of states }
+
+The density of states is calculated with the same width and type of smearing, as the other properties of the {\tt gyrotropic} module
+
+\section{{\tt berry\_task=-noa}: the interband contributionto the natural optical activity }
+
+Natural optical rotatory power is given by \cite{ivchenko-spss75}
+%
+\beq
+\label{eq:rho-c}
+\rho_0(\ww)=\frac{\ww^2}{2c^2}\re\,\gamma_{xyz}(\ww).
+\eeq
+%
+for light propagating ling the main symmetry axis of a crystal $z$. Here $\gamma_{xyz}(\ww)$
+is an anti-symmetric (in $xy$) tensor with units of length, which has both inter- and intraband contributions.
+
+Following Ref.~\cite{malashevich-prb10} for the interband contribution we writewe write,
+with $\partial_c\equiv\partial/\partial k_c$,
+%
+\begin{multline}
+\re\,\gamma_{abc}^{\mathrm{inter}}(\ww)=\frac{e^2}{\varepsilon_0\hbar^2}
+\int[d\kk]
+\sum_{n,l}^{o,e}\,
+\Bigl[ \frac{1}{\ww_{ln}^2-\ww^2} 
+\re\left(A_{ln}^bB_{nl}^{ac}-A_{ln}^aB_{nl}^{bc}\right) \\
+-\frac{3\ww_{ln}^2-\ww^2}{(\ww_{ln}^2-\ww^2)^2} 
+\partial_c(E_l+E_n)\im\left(A_{nl}^aA_{ln}^b\right)   
+\Bigr].
+\label{eq:gamma-inter}
+\end{multline}
+%
+The summations over $n$ and $l$ span the occupied ($o$) and empty
+($e$) bands respectively, $\ww_{ln}=(E_l-E_n)/\hbar$,
+and  ${\bm A}_{ln}(\kk)$ is given by (\ref{eq:berry-connection-matrix}) Finally, the matrix
+$B_{nl}^{ac}$ has both orbital and spin contributions given by
+%
+\beq
+\label{eq:B-ac-orb}
+B_{nl}^{ac\,({\rm orb})}=
+  \bra{u_n}(\partial_aH)\ket{\partial_c u_l}
+ -\bra{\partial_c u_n}(\partial_aH)\ket{u_l}
+\eeq
+%
+and
+%
+\beq
+\label{eq:B-ac-spin}
+B_{nl}^{ac\,({\rm spin})}=-\frac{i\hbar^2}{m_e}\epsilon_{abc}
+\bra{u_n}\sigma_b\ket{u_l}.
+\eeq
+%
+The spin matrix elements contribute less than 0.5\% of the total
+$\rho_0^{\rm inter}$ of Te.  Expanding
+$H=\sum_m \ket{u_m} E_m \bra{u_m}$ we obtain for the orbital matrix
+elements
+\beq
+B_{nl}^{ac\,({\rm orb})}=-i\partial_a(E_n+E_l)A_{nl}^c \sum_m \Bigl\{ (E_n-E_m) A_{nm}^aA_{ml}^c -(E_l-E_m) A_{nm}^cA_{ml}^a \Bigr\}.
+\label{eq:Bnl-sum}
+\eeq
+%
+This reduces the calculation of $B^{\text{(orb)}}$ to the evaluation
+of band gradients and off-diagonal elements of the Berry connection
+matrix. Both operations can be carried out efficiently in a
+Wannier-function basis following Ref.~\cite{yates-prb07}.
+
+
+\section{{\tt berry\_task=-spin}: compute also the spin component of NOA and KME }
+
+Unless this task is specified, only the orbital contributions are calcuated in NOA and KME, thus contributions from \eqs{m-spin}{B-ac-spin} are omitted.
+
