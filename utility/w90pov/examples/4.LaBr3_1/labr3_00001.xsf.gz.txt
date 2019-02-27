@@ -1,0 +1,3 @@
+The example file labr3_00001.xsf.gz is not part of the packaged distribution of Wannier90 but can be found online on the GitHub repository, at the address:
+
+https://github.com/wannier-developers/wannier90/raw/v2.1/utility/w90pov/examples/4.LaBr3_1/labr3_00001.xsf.gz
