@@ -1,1 +1,4 @@
 test-suite/* linguist-vendored
+# Add here files that should not be added to the distribution 
+# (via git archive)
+.gitignore export-ignore
