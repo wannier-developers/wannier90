@@ -1563,10 +1563,6 @@ If instead you do not have Quantum ESPRESSO installed, or you do not want to
 use it, you can start from step 5 using the files in the
 {\tt examples/example16-noqe/} folder.
 
-Note that in the following, steps 1, 2, 4 and 6 can be possibly run in parallel
-on multiple processors (using {\tt mpirun}), while steps 3 and 5 must
-be run in serial.
-
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of silicon\\
 {\tt pw.x < Si.scf > scf.out}
@@ -1716,10 +1712,9 @@ their number.
 
 \item Run \postw\ to compute the energy eigenvalues and spin
   expectation values.\\
-  {\tt postw90.x Fe} (serial execution) 
-
-  Note: the routines for {\tt kpath=true} and {\tt kslice=true} are
-  currently not parallelized over $k$-points.\\
+  {\tt postw90.x Fe} (serial execution) \\
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
+  8 MPI processes) 
 
 \end{enumerate}
 
