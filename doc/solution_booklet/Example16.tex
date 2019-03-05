@@ -15,7 +15,7 @@
 \begin{itemize}
 	\item[1-5] For this example we are only going to show the solutions from point 6 onwards, as the first 5 steps are the usual steps to obtain MLWFs.
 	\item[6] {\it Run {\tt postw90} to calculate the transport coefficients.}
-	\item {\it Inspect the output file {\tt Si.wpout}. Check if no warnings are issued. Note that if no special flags are passed to {\sc BoltzWann}, it assumes that the ab-initio calculation did not include magnetization effects, and thus it sets to 2 the number of electrons per state.}
+	\item {\it Inspect the output file {\tt Si.wpout}. Check if no warnings are issued. Note that if no special flags are passed to {\sc BoltzWann}, it assumes that the {\it ab-initio} calculation did not include magnetization effects, and thus it sets to 2 the number of electrons per state.}
 
 Below the section in the {\tt Si.wpout} relative to the Boltzmann transport, where it reports the number of electrons per state and the relaxation time in fs.
 \end{itemize}
@@ -82,7 +82,7 @@ Plot of the two DOS with $40\times40\times40$ (red line) and $60\times60\times60
 
   \item {\it Change the {\tt Si.win} input file so that it calculates the transport coefficients for temperatures from
 $300$ to $700$ K, with steps of $200$ K. Rerun {\tt postw90} and verify that the increase in execution time
-is neglibile (in fact, most of the time is spent to interpolate the band structure on the k mesh).
+is negligible (in fact, most of the time is spent to interpolate the band structure on the k mesh).
 Plot the Seebeck coefficient for the three temperatures $T = 300$ K, $T = 500$ K and $T = 700$ K.
 To do this, you have to filter the {\tt Si\_seebeck.dat} to select only those lines where the second
 column is equal to the required temperature. A possible script to select the $S_{xx}$ component of the
@@ -93,7 +93,7 @@ awk '{if (\$2 == 500) {print \$1, \$3;}}' < Si\_seebeck.dat > Si\_seebeck\_xx\_5
 \end{quote}}
 }
 
-Below is shown the total walltime for the two calculations done with the original set up, \ie{} $T_{min} = T_{max} = 300$ K and $T_{min} = 300$ K, $T_{max} = 700$ K, $\Delta T = 200$ K.
+Below is shown the total wall-time for the two calculations done with the original set up, \ie{} $T_{min} = T_{max} = 300$ K and $T_{min} = 300$ K, $T_{max} = 700$ K, $\Delta T = 200$ K.
 
 \begin{tcolorbox}[sharp corners,boxrule=0.5pt]
 {\small
@@ -125,13 +125,13 @@ $\mu(T)$ of the chemical potential as a function of the temperature, so as to re
 of $n$. Then, you have to write a small program/script to interpolate the output of {\sc BoltzWann},
 that you should have run on a suitable grid of $(\mu,T)$ points.}
 
-ASSUMPTIONS: 1) The addition of a $n-$type dopant does not modify the electronic structure, it only moves the fermi level up; 2) The density of states is temperature-independent. $\mu(T)$ is a decreasing monotonic function of $T$.
+ASSUMPTIONS: 1) The addition of a $n-$type dopant does not modify the electronic structure, it only moves the Fermi level up; 2) The density of states is temperature-independent. $\mu(T)$ is a decreasing monotonic function of $T$.
 
 To obtain a $\mu(T)$ in a consistent way we use the above assumptions and the following equation:
 \begin{equation}
 N_c + N_v = \int_{-\infty}^{+\infty}\! \mathrm{d}\varepsilon \, g(\varepsilon,T=0)\,f(\varepsilon,\mu(T)),\label{eq16.1}
 \end{equation}
-where $N_v=8$, number of valence electrons per unit cell when no dopants are considered, $N_c= nV_{cell}$ is the number of cariers per unit cell ($V_{cell}$ is the volume of the unit cell in cm$^{-3}$). $g(\varepsilon,T=0)$ is the density of states at $T=0$K and by assumption it does not change with $T$. Finally, $f(\varepsilon,\mu(T))$ is the Fermi-Dirac distribution as a function of $\varepsilon$ and $T$
+where $N_v=8$, number of valence electrons per unit cell when no dopants are considered, $N_c= nV_{cell}$ is the number of carriers per unit cell ($V_{cell}$ is the volume of the unit cell in cm$^{-3}$). $g(\varepsilon,T=0)$ is the density of states at $T=0$K and by assumption it does not change with $T$. Finally, $f(\varepsilon,\mu(T))$ is the Fermi-Dirac distribution as a function of $\varepsilon$ and $T$
 \begin{equation}
 f(\varepsilon,\mu(T)) = \frac{1}{1 + \exp[\frac{\varepsilon - \mu(T)}{\kappa_B T}]}
 \end{equation}
