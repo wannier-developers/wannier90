@@ -1312,6 +1312,8 @@ contains
         index(kpath_task, 'curv') == 0 .and. &
         index(kpath_task, 'morb') == 0) call io_error &
       ('Error: value of kpath_task not recognised in param_read')
+    if (bands_num_spec_points == 0 .and. kpath) &
+      call io_error('Error: a kpath plot has been requested but there is no kpoint_path block')
 
     kpath_num_points = 100
     call param_get_keyword('kpath_num_points', found, &
