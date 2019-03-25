@@ -71,6 +71,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 
 - Improvements to the Wigner-Seitz detection routines [[#117]](https://github.com/wannier-developers/wannier90/pull/117) [[#109]](https://github.com/wannier-developers/wannier90/pull/109)
 
+- Fix berry_task check for morb, and add check for kpoint_path block in parameters
 
 
 
