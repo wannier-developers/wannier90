@@ -288,12 +288,12 @@ contains
         '* Shift current'
 
       if (eval_shc) then
-          write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
-          if (shc_freq_scan) then
-              write (stdout, '(/,3x,a)') '  frequency scan'
-          else
-              write (stdout, '(/,3x,a)') '  fermi energy scan'
-          endif
+        write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
+        if (shc_freq_scan) then
+          write (stdout, '(/,3x,a)') '  frequency scan'
+        else
+          write (stdout, '(/,3x,a)') '  fermi energy scan'
+        endif
       endif
 
       if (transl_inv) then
@@ -421,53 +421,53 @@ contains
         end if
 
         if (eval_shc) then
-            ! be aware that index starts from 1
-            if (.not. shc_freq_scan) then
-                call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
-                !check whether need to tigger adpt kmesh or not
-                !since the computational burden of calculating shc_k at each
-                !fermi energy is the same as calcuating shc_k at all the
-                !fermi energies, if we find out that at a specific
-                !fermi energy shc_k(if) > thresh,
-                !then we will update shc_k at all
-                !the other fermi energies as well. This also avoids repeated
-                !calculation if shc_k(if) > thresh is satisfied at more
-                !than one fermi energies
-                ladpt_kmesh = .false.
-                !if adpt_kmesh==1, no need to do the same kpt
-                !calculation again. This happens if adpt_kmesh==1
-                !while berry_curv_adpt_kmesh_thresh is low
-                if (berry_curv_adpt_kmesh > 1) then
-                    do if=1, nfermi
-                        rdum = abs(shc_k_fermi(if))
-                        if (berry_curv_unit == 'bohr2') rdum = rdum/bohr**2
-                        if (rdum > berry_curv_adpt_kmesh_thresh) then
-                            adpt_counter_list(1) = adpt_counter_list(1) + 1
-                            ladpt_kmesh = .true.
-                            exit
-                        endif
-                    enddo
-                else
-                    ladpt_kmesh = .false.
+          ! be aware that index starts from 1
+          if (.not. shc_freq_scan) then
+            call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
+            !check whether need to tigger adpt kmesh or not
+            !since the computational burden of calculating shc_k at each
+            !fermi energy is the same as calcuating shc_k at all the
+            !fermi energies, if we find out that at a specific
+            !fermi energy shc_k(if) > thresh,
+            !then we will update shc_k at all
+            !the other fermi energies as well. This also avoids repeated
+            !calculation if shc_k(if) > thresh is satisfied at more
+            !than one fermi energies
+            ladpt_kmesh = .false.
+            !if adpt_kmesh==1, no need to do the same kpt
+            !calculation again. This happens if adpt_kmesh==1
+            !while berry_curv_adpt_kmesh_thresh is low
+            if (berry_curv_adpt_kmesh > 1) then
+              do if = 1, nfermi
+                rdum = abs(shc_k_fermi(if))
+                if (berry_curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (rdum > berry_curv_adpt_kmesh_thresh) then
+                  adpt_counter_list(1) = adpt_counter_list(1) + 1
+                  ladpt_kmesh = .true.
+                  exit
                 endif
-                if (ladpt_kmesh) then
-                    do loop_adpt = 1, berry_curv_adpt_kmesh**3
-                        ! Using shc_k here would corrupt values for other
-                        ! kpt, hence dummy. Only if-th element is used
-                        call berry_get_shc_k(kpt(:) + adkpt(:, loop_adpt), &
-                                shc_k_fermi_dummy)
-                        shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
-                    end do
-                else
-                    shc_fermi = shc_fermi + kweight*shc_k_fermi
-                endif
-            else ! freq_scan, no adaptive kmesh
-                call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
-                shc_freq = shc_freq + kweight*shc_k_freq
-            end if
+              enddo
+            else
+              ladpt_kmesh = .false.
+            endif
+            if (ladpt_kmesh) then
+              do loop_adpt = 1, berry_curv_adpt_kmesh**3
+                ! Using shc_k here would corrupt values for other
+                ! kpt, hence dummy. Only if-th element is used
+                call berry_get_shc_k(kpt(:) + adkpt(:, loop_adpt), &
+                                     shc_k_fermi_dummy)
+                shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
+              end do
+            else
+              shc_fermi = shc_fermi + kweight*shc_k_fermi
+            endif
+          else ! freq_scan, no adaptive kmesh
+            call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
+            shc_freq = shc_freq + kweight*shc_k_freq
+          end if
 
-            !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
-            !        ' kpt ',kpt(1:3)
+          !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
+          !        ' kpt ',kpt(1:3)
         end if
         !
         ! ***END COPY OF CODE BLOCK 1***
@@ -545,52 +545,52 @@ contains
         end if
 
         if (eval_shc) then
-            ! be aware that index starts from 1
-            if (.not. shc_freq_scan) then
-                call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
-                !check whether need to tigger adpt kmesh or not
-                !since the computational burden of calculating shc_k at each
-                !fermi energy is the same as calcuating shc_k at all the
-                !fermi energies, if we find out that at a specific
-                !fermi energy shc_k(if) > thresh,
-                !then we will update shc_k at all
-                !the other fermi energies as well. This also avoids repeated
-                !calculation if shc_k(if) > thresh is satisfied at more
-                !than one fermi energies
-                ladpt_kmesh = .false.
-                !if adpt_kmesh==1, no need to do the same kpt
-                !calculation again. This happens if adpt_kmesh==1
-                !while berry_curv_adpt_kmesh_thresh is low
-                if (berry_curv_adpt_kmesh > 1) then
-                    do if = 1, nfermi
-                        rdum = abs(shc_k_fermi(if))
-                        if (berry_curv_unit == 'bohr2') rdum = rdum/bohr**2
-                        if (rdum > berry_curv_adpt_kmesh_thresh) then
-                            adpt_counter_list(1) = adpt_counter_list(1) + 1
-                            ladpt_kmesh = .true.
-                            exit
-                        endif
-                    enddo
-                else
-                    ladpt_kmesh = .false.
-                end if
-                if (ladpt_kmesh) then
-                    do loop_adpt = 1, berry_curv_adpt_kmesh**3
-                        ! Using shc_k here would corrupt values for other
-                        ! kpt, hence dummy. Only if-th element is used
-                        call berry_get_shc_k(kpt(:) + adkpt(:, loop_adpt), &
-                                shc_k_fermi_dummy)
-                        shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
-                    end do
-                else
-                    shc_fermi = shc_fermi + kweight*shc_k_fermi
-                end if
-            else ! freq_scan, no adaptive kmesh
-                call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
-                shc_freq = shc_freq + kweight*shc_k_freq
+          ! be aware that index starts from 1
+          if (.not. shc_freq_scan) then
+            call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
+            !check whether need to tigger adpt kmesh or not
+            !since the computational burden of calculating shc_k at each
+            !fermi energy is the same as calcuating shc_k at all the
+            !fermi energies, if we find out that at a specific
+            !fermi energy shc_k(if) > thresh,
+            !then we will update shc_k at all
+            !the other fermi energies as well. This also avoids repeated
+            !calculation if shc_k(if) > thresh is satisfied at more
+            !than one fermi energies
+            ladpt_kmesh = .false.
+            !if adpt_kmesh==1, no need to do the same kpt
+            !calculation again. This happens if adpt_kmesh==1
+            !while berry_curv_adpt_kmesh_thresh is low
+            if (berry_curv_adpt_kmesh > 1) then
+              do if = 1, nfermi
+                rdum = abs(shc_k_fermi(if))
+                if (berry_curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (rdum > berry_curv_adpt_kmesh_thresh) then
+                  adpt_counter_list(1) = adpt_counter_list(1) + 1
+                  ladpt_kmesh = .true.
+                  exit
+                endif
+              enddo
+            else
+              ladpt_kmesh = .false.
             end if
-            !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
-            !        ' kpt ',kpt(1:3)
+            if (ladpt_kmesh) then
+              do loop_adpt = 1, berry_curv_adpt_kmesh**3
+                ! Using shc_k here would corrupt values for other
+                ! kpt, hence dummy. Only if-th element is used
+                call berry_get_shc_k(kpt(:) + adkpt(:, loop_adpt), &
+                                     shc_k_fermi_dummy)
+                shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
+              end do
+            else
+              shc_fermi = shc_fermi + kweight*shc_k_fermi
+            end if
+          else ! freq_scan, no adaptive kmesh
+            call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
+            shc_freq = shc_freq + kweight*shc_k_freq
+          end if
+          !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
+          !        ' kpt ',kpt(1:3)
         end if
         !
         ! ***END CODE BLOCK 1***
@@ -692,10 +692,10 @@ contains
                 100*real(adpt_counter_list(1), dp)/sum(num_int_kpts_on_node), '%)'
             else
               write (stdout, '(1x,a30,i8,a,f6.2,a)') &
-                ' Points triggering refinement: ', adpt_counter_list(1), '(' ,&
+                ' Points triggering refinement: ', adpt_counter_list(1), '(', &
                 100*real(adpt_counter_list(1), dp)/product(berry_kmesh), '%)'
             endif
-          !endif
+            !endif
           endif
         else
           if (.not. wanint_kpoint_file) write (stdout, '(1x,a20,3(i0,1x))') &
@@ -1130,7 +1130,7 @@ contains
         close (file_unit)
 
       endif
-       
+
     end if !on_root
 
     !write(stdout,'(a,i4)') 'berry_main end, my_node_id',my_node_id
@@ -1770,7 +1770,7 @@ contains
     use w90_parameters, only: num_wann, kubo_eigval_max, kubo_nfreq, &
       kubo_freq_list, kubo_adpt_smr, kubo_smr_fixed_en_width, &
       kubo_adpt_smr_max, kubo_adpt_smr_fac, kubo_smr_index, berry_kmesh, &
-      fermi_energy_list, nfermi, ipol=>shc_ipol, jpol=>shc_jpol, spol=>shc_spol
+      fermi_energy_list, nfermi, ipol => shc_ipol, jpol => shc_jpol, spol => shc_spol
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1780,10 +1780,10 @@ contains
     use w90_io, only: io_error, io_file_unit
 
     ! args
-    real(kind=dp),              intent(in)  :: kpt(3)
-    real(kind=dp),    optional, intent(out) :: shc_k_fermi(nfermi)
+    real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), optional, intent(out) :: shc_k_fermi(nfermi)
     complex(kind=dp), optional, intent(out) :: shc_k_freq(kubo_nfreq)
-    real(kind=dp),    optional, intent(out) :: shc_k_list(num_wann)
+    real(kind=dp), optional, intent(out) :: shc_k_list(num_wann)
 
     ! internal vars
     logical                       :: lfreq, lfermi, llist
@@ -1798,7 +1798,7 @@ contains
     ! Adaptive smearing
     !
     real(kind=dp)    :: del_eig(num_wann, 3), joint_level_spacing, &
-      eta_smr, Delta_k, arg, vdum(3)
+                        eta_smr, Delta_k, arg, vdum(3)
 
     integer          :: n, m, ispn, i, ifreq
     real(kind=dp)    :: eig(num_wann)
@@ -1810,11 +1810,11 @@ contains
     !write(*,'((a),1x,1I4,1x,3(f9.6,1x))') &
     !        'node',my_node_id,kpt(1:3)
 
-    allocate(HH(num_wann, num_wann))
-    allocate(delHH(num_wann, num_wann, 3))
-    allocate(UU(num_wann, num_wann))
-    allocate(D_h(num_wann, num_wann, 3))
-    allocate(AA(num_wann, num_wann, 3))
+    allocate (HH(num_wann, num_wann))
+    allocate (delHH(num_wann, num_wann, 3))
+    allocate (UU(num_wann, num_wann))
+    allocate (D_h(num_wann, num_wann, 3))
+    allocate (AA(num_wann, num_wann, 3))
 
     lfreq = .false.
     lfermi = .false.
@@ -1836,7 +1836,7 @@ contains
     call wham_get_D_h(delHH, UU, eig, D_h)
 
     call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
-    do i = 1,3
+    do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
     AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
@@ -1851,43 +1851,43 @@ contains
     elseif (lfermi) then
       ! get occ for different fermi_energy
       do i = 1, nfermi
-        call pw90common_get_occ(eig,occ_fermi(:,i),fermi_energy_list(i))
+        call pw90common_get_occ(eig, occ_fermi(:, i), fermi_energy_list(i))
       end do
     end if
 
     !write(*,'((a),3(f9.6,1x))') 'kpt', kpt(1),kpt(2),kpt(3)
-    do n=1,num_wann
+    do n = 1, num_wann
       ! get \Omega_{n,ipol jpol}^{spol}
       if (lfreq) then
         omega_list = cmplx_0
       else if (lfermi .or. llist) then
-        omega=0.0_dp
+        omega = 0.0_dp
       end if
-      do m=1,num_wann
-        if(m==n) cycle
-        if(eig(m)>kubo_eigval_max .or. eig(n)>kubo_eigval_max) cycle
+      do m = 1, num_wann
+        if (m == n) cycle
+        if (eig(m) > kubo_eigval_max .or. eig(n) > kubo_eigval_max) cycle
 
-        rfac = eig(m)-eig(n)
+        rfac = eig(m) - eig(n)
         !this will calculate AHC
         !prod = -rfac*cmplx_i*AA(n,m,ipol) * rfac*cmplx_i*AA(m,n,jpol)
-        prod = Jsi_k(n,m) * cmplx_i*rfac*AA(m,n,jpol)
+        prod = Jsi_k(n, m)*cmplx_i*rfac*AA(m, n, jpol)
         if (kubo_adpt_smr) then
           ! Eq.(35) YWVS07
-          vdum(:)=del_eig(m,:)-del_eig(n,:)
-          joint_level_spacing=sqrt(dot_product(vdum(:),vdum(:)))*Delta_k
-          eta_smr=min(joint_level_spacing*kubo_adpt_smr_fac,&
-                  kubo_adpt_smr_max)
+          vdum(:) = del_eig(m, :) - del_eig(n, :)
+          joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
+          eta_smr = min(joint_level_spacing*kubo_adpt_smr_fac, &
+                        kubo_adpt_smr_max)
         else
-          eta_smr=kubo_smr_fixed_en_width
+          eta_smr = kubo_smr_fixed_en_width
         endif
         if (lfreq) then
-          do ifreq=1,kubo_nfreq
-            cdum = real(kubo_freq_list(ifreq),dp)+cmplx_i*eta_smr
-            cfac = -2.0_dp/(rfac**2-cdum**2)
+          do ifreq = 1, kubo_nfreq
+            cdum = real(kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+            cfac = -2.0_dp/(rfac**2 - cdum**2)
             omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
           end do
         else if (lfermi .or. llist) then
-          rfac = -2.0_dp/(rfac**2+eta_smr**2)
+          rfac = -2.0_dp/(rfac**2 + eta_smr**2)
           omega = omega + rfac*aimag(prod)
         end if
       enddo
@@ -1896,8 +1896,8 @@ contains
       !        kpt(1),kpt(2),kpt(3),n,omega
 
       if (lfermi) then
-        do i=1,nfermi
-          shc_k_fermi(i) = shc_k_fermi(i) + occ_fermi(n,i)*omega
+        do i = 1, nfermi
+          shc_k_fermi(i) = shc_k_fermi(i) + occ_fermi(n, i)*omega
         end do
       else if (lfreq) then
         shc_k_freq = shc_k_freq + occ_freq(n)*omega_list
@@ -1911,8 +1911,8 @@ contains
     !        kpt(1),kpt(2),kpt(3),i,shc_k(i)
     !end do
     if (lfermi) then
-      write(*,'(3(f9.6,1x),f16.8,1x,1E16.8)') &
-              kpt(1),kpt(2),kpt(3),fermi_energy_list(1),shc_k_fermi(1)
+      write (*, '(3(f9.6,1x),f16.8,1x,1E16.8)') &
+        kpt(1), kpt(2), kpt(3), fermi_energy_list(1), shc_k_fermi(1)
     end if
 
     return
@@ -1923,7 +1923,7 @@ contains
     !                   PRIVATE PROCEDURES                      !
     !===========================================================!
 
-    subroutine berry_get_js_k(kpt,eig,del_i_eig,D_i_h,UU,js_k)
+    subroutine berry_get_js_k(kpt, eig, del_i_eig, D_i_h, UU, js_k)
       !====================================================================!
       !                                                                    !
       !! Contribution from point k to the
@@ -1934,36 +1934,36 @@ contains
       !                                                                    !
       !====================================================================!
 
-      use w90_constants, only      : dp,cmplx_0,cmplx_i
-      use w90_utility, only        : utility_diagonalize,utility_rotate,utility_w0gauss
-      use w90_parameters, only     : num_wann,kubo_eigval_max,&
-              ipol=>shc_ipol,spol=>shc_spol
-      use w90_postw90_common, only : pw90common_get_occ,pw90common_fourier_R_to_k_new,&
-              pw90common_fourier_R_to_k_vec,pw90common_kmesh_spacing
-      use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_deleig
-      use w90_get_oper, only       : HH_R,AA_R,SS_R,SR_R,SHR_R,SH_R
+      use w90_constants, only: dp, cmplx_0, cmplx_i
+      use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
+      use w90_parameters, only: num_wann, kubo_eigval_max, &
+        ipol => shc_ipol, spol => shc_spol
+      use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
+        pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
+      use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
+      use w90_get_oper, only: HH_R, AA_R, SS_R, SR_R, SHR_R, SH_R
 
       ! args
-      real(kind=dp),                                  intent(in)  :: kpt(3)
-      real(kind=dp),              dimension(:),       intent(in)  :: eig
-      real(kind=dp),              dimension(:),       intent(in)  :: del_i_eig
-      complex(kind=dp),           dimension(:,:),     intent(in)  :: D_i_h
-      complex(kind=dp),           dimension(:,:),     intent(in)  :: UU
-      complex(kind=dp),           dimension(:,:),     intent(out) :: js_k
+      real(kind=dp), intent(in)  :: kpt(3)
+      real(kind=dp), dimension(:), intent(in)  :: eig
+      real(kind=dp), dimension(:), intent(in)  :: del_i_eig
+      complex(kind=dp), dimension(:, :), intent(in)  :: D_i_h
+      complex(kind=dp), dimension(:, :), intent(in)  :: UU
+      complex(kind=dp), dimension(:, :), intent(out) :: js_k
 
       ! internal vars
-      complex(kind=dp)    :: K_k(num_wann,num_wann)
-      complex(kind=dp)    :: L_k(num_wann,num_wann)
-      complex(kind=dp)    :: B_k(num_wann,num_wann)
-      complex(kind=dp)    :: S_k(num_wann,num_wann)
-      complex(kind=dp)    :: SR(num_wann,num_wann,3)
-      complex(kind=dp)    :: SR_i(num_wann,num_wann)
-      complex(kind=dp)    :: SHR(num_wann,num_wann,3)
-      complex(kind=dp)    :: SHR_i(num_wann,num_wann)
-      complex(kind=dp)    :: SH(num_wann,num_wann,3)
-      complex(kind=dp)    :: eig_mat(num_wann,num_wann)
-      complex(kind=dp)    :: del_eig_mat(num_wann,num_wann)
-      complex(kind=dp)    :: S_w(num_wann,num_wann)
+      complex(kind=dp)    :: K_k(num_wann, num_wann)
+      complex(kind=dp)    :: L_k(num_wann, num_wann)
+      complex(kind=dp)    :: B_k(num_wann, num_wann)
+      complex(kind=dp)    :: S_k(num_wann, num_wann)
+      complex(kind=dp)    :: SR(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SR_i(num_wann, num_wann)
+      complex(kind=dp)    :: SHR(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SHR_i(num_wann, num_wann)
+      complex(kind=dp)    :: SH(num_wann, num_wann, 3)
+      complex(kind=dp)    :: eig_mat(num_wann, num_wann)
+      complex(kind=dp)    :: del_eig_mat(num_wann, num_wann)
+      complex(kind=dp)    :: S_w(num_wann, num_wann)
 
       !===========
       js_k = cmplx_0
@@ -1971,35 +1971,32 @@ contains
       !=========== S_k ===========
       ! < u_k | sigma_spol | u_k >, QZYZ Equ.(24)
       !call spin_get_SS_k(kpt,spol,S_k)
-      call pw90common_fourier_R_to_k_new(kpt,SS_R(:,:,:,spol),OO=S_w)
-      S_k(:,:)=utility_rotate(S_w,UU,num_wann)
+      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, spol), OO=S_w)
+      S_k(:, :) = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
       ! < u_k | sigma_spol | \partial_ipol u_k >, QZYZ Equ.(25)
-      call pw90common_fourier_R_to_k_vec(kpt,SR_R(:,:,:,spol,:),OO_true=SR)
-      SR_i = -cmplx_i * utility_rotate(SR(:,:,ipol),UU,num_wann)
-      K_k = SR_i + matmul(S_k,D_i_h) !
-
+      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, spol, :), OO_true=SR)
+      SR_i = -cmplx_i*utility_rotate(SR(:, :, ipol), UU, num_wann)
+      K_k = SR_i + matmul(S_k, D_i_h) !
 
       !=========== L_k ===========
       ! < u_k | sigma_spol.H | \partial_ipol u_k >, QZYZ Equ.(26)
-      call pw90common_fourier_R_to_k_vec(kpt,SHR_R(:,:,:,spol,:),OO_true=SHR)
-      SHR_i = -cmplx_i * utility_rotate(SHR(:,:,ipol),UU,num_wann)
-      call pw90common_fourier_R_to_k_vec(kpt,SH_R,OO_true=SH)
-      SH(:,:,spol) = utility_rotate(SH(:,:,spol),UU,num_wann)
-      L_k = SHR_i + matmul(SH(:,:,spol),D_i_h) !
-
+      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, spol, :), OO_true=SHR)
+      SHR_i = -cmplx_i*utility_rotate(SHR(:, :, ipol), UU, num_wann)
+      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH)
+      SH(:, :, spol) = utility_rotate(SH(:, :, spol), UU, num_wann)
+      L_k = SHR_i + matmul(SH(:, :, spol), D_i_h) !
 
       !=========== B_k ===========
       ! < \psi_nk | sigma_z v_x | \psi_mk >, QZYZ Equ.(21)
       B_k = cmplx_0
-      do i=1,num_wann
-        eig_mat(i,:) = eig(:)
-        del_eig_mat(i,:) = del_i_eig(:)
+      do i = 1, num_wann
+        eig_mat(i, :) = eig(:)
+        del_eig_mat(i, :) = del_i_eig(:)
       end do
       ! note * is not matmul
-      B_k =  del_eig_mat*S_k + eig_mat*K_k - L_k
-
+      B_k = del_eig_mat*S_k + eig_mat*K_k - L_k
 
       !=========== Js_k ===========
       ! QZYZ Equ.(22)
@@ -2007,7 +2004,7 @@ contains
       ! to get spin current, we need to multiply it by hbar/2,
       ! also we need to divide it by hbar to recover the velocity
       ! operator, these are done outside of this subroutine
-      js_k = 1.0_dp/2.0_dp * (B_k + conjg(transpose(B_k)))
+      js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
 
     end subroutine berry_get_js_k
 
