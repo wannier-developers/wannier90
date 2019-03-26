@@ -4,16 +4,8 @@
 
 include ../../make.inc
 
-OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
-	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o
-
-
-OBJS2  =  wannier_lib.o
-
-OBJS_POST  = ws_distance.o parameters.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
-             postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o  kpath.o kslice.o boltzwann.o geninterp.o
-
-LIBRARY = ../../libwannier.a
+# Contains definition of OBJS, OBJSLIB, OBJS_POST, LIBRARY, DYNLIBRARY
+include ../Makefile.header
 
 POSTDIR = ../postw90/
 
@@ -32,8 +24,8 @@ TEMP2 = $(F90)
 endif
 
 
-wannier libs w90chk2chk serialobjs: POSTOPTS = $(TEMP1) 
-wannier libs w90chk2chk serialobjs: COMPILER = $(TEMP2)
+wannier libs dynlibs w90chk2chk serialobjs: POSTOPTS = $(TEMP1) 
+wannier libs dynlibs w90chk2chk serialobjs: COMPILER = $(TEMP2)
 wannier: ../../wannier90.x 
 w90chk2chk: ../../w90chk2chk.x
 
@@ -74,8 +66,14 @@ endif
 
 libs:     $(LIBRARY)
 
-$(LIBRARY): $(OBJS) $(OBJS2) 
-	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS2) $(OBJS)
+dynlibs: $(DYNLIBRARY)
+
+$(LIBRARY): $(OBJS) $(OBJSLIB) 
+	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJSLIB) $(OBJS)
+
+$(DYNLIBRARY): $(OBJS) $(OBJSLIB)
+	echo $(COMPILER)
+	$(COMPILER) $(SHAREDLIBFLAGS) $(POSTOPTS) $(LDOPTS) $(OBJS) $(OBJSLIB) $(LIBS) -o $@
 
 clean:
 	rm -f *.o *.mod *.MOD *.obj
@@ -119,8 +117,8 @@ transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
-comms.o: $(POSTDIR)comms.F90 constants.o io.o
-	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)comms.F90
+comms.o: ../comms.F90 constants.o io.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms.F90
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)boltzwann.F90

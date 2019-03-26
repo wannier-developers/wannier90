@@ -55,4 +55,14 @@ example21: Gallium Arsenide - Symmetry-adapted Wannier functions
 
 example22: Copper - Symmetry-adapted Wannier functions
 
-example23 : Silicon - G0W0 bands structure interpolation
+example23: Silicon - G0W0 bands structure interpolation
+
+example24: Tellurium - gyrotropic effects
+
+example25: Gallium Arsenide - Nonlinear shift current  
+
+example26: Gallium Arsenide - Selective localization and constrained centres
+
+example27: Silicon - Selected columns of density matrix algorithm for automated MLWFs
+
+example28: Diamond - plotting of MLWFs using Gaussian cube format and VESTA

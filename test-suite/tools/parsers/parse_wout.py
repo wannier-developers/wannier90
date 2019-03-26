@@ -1,6 +1,8 @@
 """
 Parser function parse() to parse the .wout output file of Wannier90.
 """
+from __future__ import print_function
+
 import inspect
 import re
 from collections import defaultdict
@@ -40,6 +42,10 @@ omegaI_re = re.compile("Omega\ I\s+=\s*([0-9\.-]+)\s*$")
 omegaD_re = re.compile("Omega\ D\s+=\s*([0-9\.-]+)\s*$")
 omegaOD_re = re.compile("Omega\ OD\s+=\s*([0-9\.-]+)\s*$")
 omegaTotal_re = re.compile("Omega\ Total\s+=\s*([0-9\.-]+)\s*$")
+omegaIOD_C_re = re.compile("Omega\ IOD_C\s+=\s*([0-9\.-]+)\s*$")
+omegaRest_re = re.compile("Omega\ Rest\s+=\s*([0-9\.-]+)\s*$")
+penaltyfunc_re = re.compile("Penalty\ func\s+=\s*([0-9\.-]+)\s*$")
+omegaTotal_C_re = re.compile("Omega\ Total_C\s+=\s*([0-9\.-]+)\s*$")
 
 ## A comment on regexps: re.match only checks the beginning of the line, while
 ## re.search anywhere in the string (like perl)
@@ -51,8 +57,8 @@ def parse(fname):
     retdict = defaultdict(list)
 
     if show_output:
-        print "[{}.{}] Parsing file '{}'".format(
-            __name__, inspect.currentframe().f_code.co_name, fname)
+        print("[{}.{}] Parsing file '{}'".format(
+            __name__, inspect.currentframe().f_code.co_name, fname))
 
     with open(fname) as f:
         lines = f.readlines()
@@ -123,12 +129,28 @@ def parse(fname):
         if match:
             retdict["omegaTotal"].append(float(match.groups()[0]))
             continue
+        match = omegaIOD_C_re.search(l)
+        if match:
+            retdict["omegaIOD_C"].append(float(match.groups()[0]))
+            continue
+        match = omegaRest_re.search(l)
+        if match:
+            retdict["omegaRest"].append(float(match.groups()[0]))
+            continue
+        match = penaltyfunc_re.search(l)
+        if match:
+            retdict["penaltyfunc"].append(float(match.groups()[0]))
+            continue
+        match = omegaTotal_C_re.search(l)
+        if match:
+            retdict["omegaTotal_C"].append(float(match.groups()[0]))
+            continue
         ###############################################################
         
 
     retdict = dict(retdict)
     if show_output:
         for k in sorted(retdict):
-            print "  {}: {}".format(k, retdict[k])
-        print "-"*72
+            print("  {}: {}".format(k, retdict[k]))
+        print("-"*72)
     return retdict

@@ -1,4 +1,5 @@
-*.wpout 
-*.chk 
-w90chk2chk.log 
+*.wpout
+*.chk
+w90chk2chk.log
 *.uHu
+*.mmn
