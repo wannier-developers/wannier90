@@ -6,6 +6,8 @@ only one, or runs them all with the proper command-line options.
 NOTE: give a look also to 'testcode.py tidy', that however does not do
       exactly what we want.
 """
+from __future__ import print_function
+
 import argparse
 import os
 import shutil
@@ -67,6 +69,10 @@ if __name__ == "__main__":
                         help='Remove also files that are ignored by git (otherwise, just warn about their presence')
     args = parser.parse_args()
 
+    is_git_repo = True
+    errcode = subprocess.call(['git', '-C', test_folder, 'rev-parse', '--git-dir'])
+    if errcode != 0:
+        is_git_repo = False
 
     valid_categories = get_valid_categories()
     for testname in os.listdir(test_folder):
@@ -78,11 +84,11 @@ if __name__ == "__main__":
             # between glob.fnmatch and glob.glob)
             continue
         if testname not in valid_categories:
-            print "WARNING: '{}' found but it's not listed as a test, skipping".format(testname)
+            print("WARNING: '{}' found but it's not listed as a test, skipping".format(testname))
             continue
 
 
-        print "[{}]".format(testname)
+        print("[{}]".format(testname))
         
         entries_to_delete = []
         for pattern in global_patterns_to_delete:
@@ -108,13 +114,14 @@ if __name__ == "__main__":
                 # Only consider files (anyway folders cannot be
                 # ignored in git)
                 continue
-            errcode = subprocess.call(['git', 'check-ignore', "-q", entryfname])
-            if errcode == 0:
-                # It is ignored
-                entries_gitignored.append(fname)
+            if is_git_repo:
+                errcode = subprocess.call(['git', 'check-ignore', "-q", entryfname])
+                if errcode == 0:
+                    # It is ignored
+                    entries_gitignored.append(fname)
 
         for entry in entries_to_delete:
-            print "    Deleting {}...".format(entry)
+            print("    Deleting {}...".format(entry))
             entryfname = os.path.join(the_folder, entry)
             if os.path.isfile(entryfname):
                 os.remove(entryfname)
@@ -127,12 +134,15 @@ if __name__ == "__main__":
         for entry in entries_gitignored:
             entryfname = os.path.join(the_folder, entry)
             if args.also_ignored:
-                print "    Deleting git-ignored {}...".format(entry)
+                print("    Deleting git-ignored {}...".format(entry))
                 # These are always ignored
                 os.remove(entryfname)
             else:
-                print "    ** Potentially deletable (use -i option to delete): {}".format(entry)
+                print("    ** Potentially deletable (use -i option to delete): {}".format(entry))
 
+    if not is_git_repo:
+        print("*** Warning! I am not able to fully clean the test directories ***")
+        print("*** as this is not a git repository                            ***")
 
 
 

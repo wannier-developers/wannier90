@@ -1,5 +1,7 @@
 num_bands         =   12       
 num_wann          =   8
+use_ws_distance = .false.
+search_shells=12
 
 dis_win_max       = 17.0d0
 dis_froz_max      =  6.4d0
