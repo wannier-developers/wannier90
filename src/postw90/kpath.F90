@@ -52,7 +52,7 @@ contains
     use w90_parameters, only: num_wann, kpath_task, &
       bands_num_spec_points, bands_label, &
       kpath_bands_colour, nfermi, fermi_energy_list, &
-      berry_curv_unit, shc_ipol, shc_jpol, shc_spol
+      berry_curv_unit, shc_alpha, shc_beta, shc_gamma, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_FF_R, get_SS_R, get_SHC_R
     use w90_spin, only: spin_get_nk
@@ -69,7 +69,7 @@ contains
                          imf_k_list(3, 3, nfermi), img_k_list(3, 3, nfermi), &
                          imh_k_list(3, 3, nfermi), Morb_k(3, 3), &
                          range, zmin, zmax
-    real(kind=dp)     :: shc_k_list(num_wann), shc_k_fermi(nfermi)
+    real(kind=dp)     :: shc_k_band(num_wann), shc_k_fermi(nfermi)
     real(kind=dp), allocatable, dimension(:) :: kpath_len
     logical           :: plot_bands, plot_curv, plot_morb, plot_shc
     character(len=20) :: file_name
@@ -92,6 +92,14 @@ contains
     plot_curv = index(kpath_task, 'curv') > 0
     plot_morb = index(kpath_task, 'morb') > 0
     plot_shc  = index(kpath_task, 'shc') > 0
+
+    if (on_root) then
+      if (plot_shc .or. (plot_bands .and. kpath_bands_colour == 'shc')) then
+        if (kubo_adpt_smr) call io_error( &
+          'Error: Must use fixed smearing when plotting spin Hall conductivity')
+      end if
+    endif
+
     call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
 
     ! Set up the needed Wannier matrix elements
@@ -109,12 +117,6 @@ contains
     endif
 
     if (plot_bands .and. kpath_bands_colour == 'spin') call get_SS_R
-
-    if (on_root .and. plot_bands .and. kpath_bands_colour == 'shc') then
-      write (stdout, '(a)') 'WARNING: we advice using smearing when '&
-               //"kpath_bands_colour = 'shc', use with care if you set "&
-               //"kubo_adpt_smr = .false. and  kubo_smr_fixed_en_width = 0"
-    endif
 
     if (on_root) then
       ! Determine the number of k-points (total_pts) as well as
@@ -185,8 +187,8 @@ contains
             end if
           end do
         else if (kpath_bands_colour == 'shc') then
-          call berry_get_shc_k(kpt, shc_k_list=shc_k_list)
-          my_color(:, loop_kpt) = shc_k_list(:)
+          call berry_get_shc_k(kpt, shc_k_band=shc_k_band)
+          my_color(:, loop_kpt) = shc_k_band(:)
         end if
       end if
 
@@ -670,13 +672,13 @@ if(plot_shc .and. .not.plot_bands) then
           //"linestyle='-',linewidth=0.5)"
   if(berry_curv_unit=='ang2') then
     write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
-            //achar(119+shc_ipol)//achar(119+shc_jpol)&
-            //"}^{spin"//achar(119+shc_spol)&
+            //achar(119+shc_alpha)//achar(119+shc_beta)&
+            //"}^{spin"//achar(119+shc_gamma)&
             //"}(\mathbf{k})$  [ $\AA^2$ ]')"
   else if(berry_curv_unit=='bohr2') then
     write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
-            //achar(119+shc_ipol)//achar(119+shc_jpol)&
-            //"}^{spin"//achar(119+shc_spol)&
+            //achar(119+shc_alpha)//achar(119+shc_beta)&
+            //"}^{spin"//achar(119+shc_gamma)&
             //"}(\mathbf{k})$  [ bohr$^2$ ]')"
   end if
   write(pyunit,'(a)') "outfile = '"//trim(seedname)//&
@@ -787,13 +789,13 @@ if(plot_bands .and. plot_shc) then
           //"linestyle='-',linewidth=0.5)"
   if(berry_curv_unit=='ang2') then
     write(pyunit,'(a)') "pl.ylabel('$log_{10}|\Omega_{"&
-            //achar(119+shc_ipol)//achar(119+shc_jpol)&
-            //"}^{spin"//achar(119+shc_spol)&
+            //achar(119+shc_alpha)//achar(119+shc_beta)&
+            //"}^{spin"//achar(119+shc_gamma) &
             //"}(\mathbf{k})|$  [ $\AA^2$ ]')"
   else if(berry_curv_unit=='bohr2') then
     write(pyunit,'(a)') "pl.ylabel('$\Omega_{"&
-            //achar(119+shc_ipol)//achar(119+shc_jpol)&
-            //"}^{spin"//achar(119+shc_spol)&
+            //achar(119+shc_alpha)//achar(119+shc_beta)&
+            //"}^{spin"//achar(119+shc_gamma)&
             //"}(\mathbf{k})$  [ bohr$^2$ ]')"
   end if
   write(pyunit,'(a)') "outfile = '"//trim(seedname)//&

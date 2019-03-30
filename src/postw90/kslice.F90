@@ -52,7 +52,7 @@ contains
     use w90_parameters, only: num_wann, kslice, kslice_task, kslice_2dkmesh, &
       kslice_corner, kslice_b1, kslice_b2, &
       kslice_fermi_lines_colour, recip_lattice, &
-      nfermi, fermi_energy_list, berry_curv_unit
+      nfermi, fermi_energy_list, berry_curv_unit, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -97,6 +97,10 @@ contains
     if (plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
       call io_error('Error: spin-colored Fermi lines not allowed in ' &
                     //'curv/morb/shc heatmap plots')
+    end if
+    if (plot_shc .and. kubo_adpt_smr) then
+      call io_error( &
+        'Error: Must use fixed smearing when plotting spin Hall conductivity')
     end if
 
     if (on_root) then

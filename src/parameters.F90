@@ -215,9 +215,9 @@ module w90_parameters
 
   ! spin Hall conductivity
   logical, public, save :: shc_freq_scan
-  integer, public, save :: shc_ipol
-  integer, public, save :: shc_jpol
-  integer, public, save :: shc_spol
+  integer, public, save :: shc_alpha
+  integer, public, save :: shc_beta
+  integer, public, save :: shc_gamma
 
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
@@ -1061,18 +1061,18 @@ contains
 
     kslice_task = 'fermi_lines'
     call param_get_keyword('kslice_task', found, c_value=kslice_task)
-    if(kslice .and. index(kslice_task, 'fermi_lines') == 0 .and. &
+    if (kslice .and. index(kslice_task, 'fermi_lines') == 0 .and. &
         index(kslice_task, 'curv') == 0 .and. &
         index(kslice_task, 'morb') == 0 .and. &
         index(kslice_task, 'shc') == 0) call io_error&
       ('Error: value of kslice_task not recognised in param_read')
-    if(kslice .and. index(kslice_task, 'curv') > 0 .and. &
+    if (kslice .and. index(kslice_task, 'curv') > 0 .and. &
         index(kslice_task, 'morb') > 0) call io_error &
       ("Error: kslice_task cannot include both 'curv' and 'morb'")
-    if(kslice .and. index(kslice_task, 'shc') > 0 .and. &
+    if (kslice .and. index(kslice_task, 'shc') > 0 .and. &
         index(kslice_task, 'morb') > 0) call io_error &
       ("Error: kslice_task cannot include both 'shc' and 'morb'")
-    if(kslice .and. index(kslice_task, 'shc') > 0 .and. &
+    if (kslice .and. index(kslice_task, 'shc') > 0 .and. &
         index(kslice_task, 'curv') > 0) call io_error &
       ("Error: kslice_task cannot include both 'shc' and 'curv'")
 
@@ -1278,22 +1278,22 @@ contains
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
 
     shc_freq_scan = .false.
-    call param_get_keyword('shc_freq_scan',found,l_value=shc_freq_scan)
+    call param_get_keyword('shc_freq_scan', found, l_value=shc_freq_scan)
 
-    shc_ipol = 1
-    call param_get_keyword('shc_ipol',found,i_value=shc_ipol)
-    if (shc_ipol<1 .or. shc_ipol>3)&
-            call io_error('Error:  shc_ipol must be 1,2 or 3')
+    shc_alpha = 1
+    call param_get_keyword('shc_alpha', found, i_value=shc_alpha)
+    if (found .and. (shc_alpha < 1 .or. shc_alpha > 3)) call io_error &
+      ('Error:  shc_alpha must be 1, 2 or 3')
 
-    shc_jpol = 2
-    call param_get_keyword('shc_jpol',found,i_value=shc_jpol)
-    if (shc_jpol<1 .or. shc_jpol>3)&
-            call io_error('Error:  shc_jpol must be 1,2 or 3')
+    shc_beta = 2
+    call param_get_keyword('shc_beta', found, i_value=shc_beta)
+    if (found .and. (shc_beta < 1 .or. shc_beta > 3)) call io_error &
+      ('Error:  shc_beta must be 1, 2 or 3')
 
-    shc_spol = 3
-    call param_get_keyword('shc_spol',found,i_value=shc_spol)
-    if (shc_spol<1 .or. shc_spol>3)&
-            call io_error('Error:  shc_spol must be 1,2 or 3')
+    shc_gamma = 3
+    call param_get_keyword('shc_gamma', found, i_value=shc_gamma)
+    if (found .and. (shc_gamma < 1 .or. shc_gamma > 3)) call io_error &
+      ('Error:  shc_gamma must be 1, 2 or 3')
 
     gyrotropic_smr_fixed_en_width = smr_fixed_en_width
     call param_get_keyword('gyrotropic_smr_fixed_en_width', found, &
@@ -1363,6 +1363,9 @@ contains
         index(kpath_bands_colour, 'spin') == 0 .and. &
         index(kpath_bands_colour, 'shc') == 0) call io_error &
       ('Error: value of kpath_bands_colour not recognised in param_read')
+    if (kpath .and. index(kpath_task, 'shc') > 0 .and. &
+        index(kpath_task, 'spin') > 0) call io_error &
+      ("Error: kpath_task cannot include both 'shc' and 'spin'")
 
     ! set to a negative default value
     num_valence_bands = -99
@@ -6178,9 +6181,9 @@ contains
     call comms_bcast(wanint_kpoint_file, 1)
 ! Junfeng Qiao
     call comms_bcast(shc_freq_scan, 1)
-    call comms_bcast(shc_ipol, 1)
-    call comms_bcast(shc_jpol, 1)
-    call comms_bcast(shc_spol, 1)
+    call comms_bcast(shc_alpha, 1)
+    call comms_bcast(shc_beta, 1)
+    call comms_bcast(shc_gamma, 1)
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)

@@ -1072,11 +1072,11 @@ contains
         ! Convert to the unit: (hbar/e) S/cm
         ! at this point, we need to
         ! (i)   divide the result by hbar to recover the
-        !       velocity operator v_jpol, and multiply
+        !       velocity operator v_beta, and multiply
         !       -e to recover the charge current, so the
         !       overall effect is -e/hbar
         ! (ii)  divide the result by hbar to recover the
-        !       velocity operator v_ipol, and multiply
+        !       velocity operator v_alpha, and multiply
         !       hbar/2 to recover the spin current, and
         !       then multiply -2e/hbar to convert the spin
         !       current to charge current, so the overall
@@ -1145,7 +1145,7 @@ contains
     !        kpt(:)=int_kpts(:,loop_xyz)
     !        do n=1,num_wann
     !            write(file_unit,'(3E8.5,1I4,1E16.8)') &
-    !                kpt(1),kpt(2),kpt(3),shc_k_list(n)
+    !                kpt(1),kpt(2),kpt(3),shc_k_band(n)
     !    enddo
     !    close(file_unit)
     !end if
@@ -1743,11 +1743,11 @@ contains
 
   end subroutine berry_get_sc_klist
 
-  subroutine berry_get_shc_k(kpt, shc_k_fermi, shc_k_freq, shc_k_list)
+  subroutine berry_get_shc_k(kpt, shc_k_fermi, shc_k_freq, shc_k_band)
     !====================================================================!
     !                                                                    !
     !! Contribution from point k to the Spin Hall conductivity
-    !!    \sigma_{ipol,jpol}^{spol}(k), ipol,jpol,spol=1,2,3
+    !!    sigma_{alpha,beta}^{gamma}(k), alpha,beta,gamma=1,2,3
     !!                                                (x,y,z,respectively)
     !! i.e. the Berry curvature-like term of QZYZ Equ.(3).
     !! The unit is angstrom^2.
@@ -1760,7 +1760,7 @@ contains
     !
     !    shc_k_fermi: return a list for different fermi energies
     !    shc_k_freq: return a list for different frequency
-    !    shc_k_list: return a list for each band
+    !    shc_k_band: return a list for each band
     !
     !   Junfeng Qiao (18/8/2018)                                         !
     !====================================================================!
@@ -1770,7 +1770,7 @@ contains
     use w90_parameters, only: num_wann, kubo_eigval_max, kubo_nfreq, &
       kubo_freq_list, kubo_adpt_smr, kubo_smr_fixed_en_width, &
       kubo_adpt_smr_max, kubo_adpt_smr_fac, kubo_smr_index, berry_kmesh, &
-      fermi_energy_list, nfermi, ipol => shc_ipol, jpol => shc_jpol, spol => shc_spol
+      fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1783,17 +1783,17 @@ contains
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), optional, intent(out) :: shc_k_fermi(nfermi)
     complex(kind=dp), optional, intent(out) :: shc_k_freq(kubo_nfreq)
-    real(kind=dp), optional, intent(out) :: shc_k_list(num_wann)
+    real(kind=dp), optional, intent(out) :: shc_k_band(num_wann)
 
     ! internal vars
-    logical                       :: lfreq, lfermi, llist
+    logical                       :: lfreq, lfermi, lband
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
     complex(kind=dp), allocatable :: UU(:, :)
     complex(kind=dp), allocatable :: D_h(:, :, :)
     complex(kind=dp), allocatable :: AA(:, :, :)
 
-    complex(kind=dp)              :: Jsi_k(num_wann, num_wann)
+    complex(kind=dp)              :: Js_k(num_wann, num_wann)
 
     ! Adaptive smearing
     !
@@ -1818,7 +1818,7 @@ contains
 
     lfreq = .false.
     lfermi = .false.
-    llist = .false.
+    lband = .false.
     if (present(shc_k_freq)) then
       shc_k_freq = 0.0_dp
       lfreq = .true.
@@ -1827,9 +1827,9 @@ contains
       shc_k_fermi = 0.0_dp
       lfermi = .true.
     endif
-    if (present(shc_k_list)) then
-      shc_k_list = 0.0_dp
-      llist = .true.
+    if (present(shc_k_band)) then
+      shc_k_band = 0.0_dp
+      lband = .true.
     endif
 
     call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
@@ -1841,8 +1841,11 @@ contains
     enddo
     AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
 
-    call berry_get_js_k(kpt, eig, del_eig(:, ipol), D_h(:, :, ipol), UU, Jsi_k)
+    call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), &
+                        D_h(:, :, shc_alpha), UU, Js_k)
 
+    ! adpt_smr only works with berry_kmesh, so do not use
+    ! adpt_smr in kpath or kslice plots.
     if (kubo_adpt_smr) then
       Delta_k = pw90common_kmesh_spacing(berry_kmesh)
     endif
@@ -1855,12 +1858,11 @@ contains
       end do
     end if
 
-    !write(*,'((a),3(f9.6,1x))') 'kpt', kpt(1),kpt(2),kpt(3)
     do n = 1, num_wann
-      ! get \Omega_{n,ipol jpol}^{spol}
+      ! get Omega_{n,alpha beta}^{gamma}
       if (lfreq) then
         omega_list = cmplx_0
-      else if (lfermi .or. llist) then
+      else if (lfermi .or. lband) then
         omega = 0.0_dp
       end if
       do m = 1, num_wann
@@ -1869,8 +1871,8 @@ contains
 
         rfac = eig(m) - eig(n)
         !this will calculate AHC
-        !prod = -rfac*cmplx_i*AA(n,m,ipol) * rfac*cmplx_i*AA(m,n,jpol)
-        prod = Jsi_k(n, m)*cmplx_i*rfac*AA(m, n, jpol)
+        !prod = -rfac*cmplx_i*AA(n, m, alpha) * rfac*cmplx_i*AA(m,n,beta)
+        prod = Js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
         if (kubo_adpt_smr) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)
@@ -1886,14 +1888,11 @@ contains
             cfac = -2.0_dp/(rfac**2 - cdum**2)
             omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
           end do
-        else if (lfermi .or. llist) then
+        else if (lfermi .or. lband) then
           rfac = -2.0_dp/(rfac**2 + eta_smr**2)
           omega = omega + rfac*aimag(prod)
         end if
       enddo
-
-      !write(*,'(3(f9.6,1x),1I4,1E16.8)') &
-      !        kpt(1),kpt(2),kpt(3),n,omega
 
       if (lfermi) then
         do i = 1, nfermi
@@ -1901,15 +1900,11 @@ contains
         end do
       else if (lfreq) then
         shc_k_freq = shc_k_freq + occ_freq(n)*omega_list
-      else if (llist) then
-        shc_k_list(n) = omega
+      else if (lband) then
+        shc_k_band(n) = omega
       end if
     enddo
 
-    !do i = 1,nfermi
-    !  write(*,'(3(f9.6,1x),1I4,1E16.8)') &
-    !        kpt(1),kpt(2),kpt(3),i,shc_k(i)
-    !end do
     if (lfermi) then
       write (*, '(3(f9.6,1x),f16.8,1x,1E16.8)') &
         kpt(1), kpt(2), kpt(3), fermi_energy_list(1), shc_k_fermi(1)
@@ -1922,7 +1917,6 @@ contains
     !===========================================================!
     !                   PRIVATE PROCEDURES                      !
     !===========================================================!
-
     subroutine berry_get_js_k(kpt, eig, del_i_eig, D_i_h, UU, js_k)
       !====================================================================!
       !                                                                    !
@@ -1937,7 +1931,7 @@ contains
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
       use w90_parameters, only: num_wann, kubo_eigval_max, &
-        ipol => shc_ipol, spol => shc_spol
+        shc_alpha, shc_gamma
       use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
         pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
       use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1969,27 +1963,27 @@ contains
       js_k = cmplx_0
 
       !=========== S_k ===========
-      ! < u_k | sigma_spol | u_k >, QZYZ Equ.(24)
-      !call spin_get_SS_k(kpt,spol,S_k)
-      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, spol), OO=S_w)
+      ! < u_k | sigma_gamma | u_k >, QZYZ Equ.(24)
+      !call spin_get_SS_k(kpt, shc_gamma, S_k)
+      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
       S_k(:, :) = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
-      ! < u_k | sigma_spol | \partial_ipol u_k >, QZYZ Equ.(25)
-      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, spol, :), OO_true=SR)
-      SR_i = -cmplx_i*utility_rotate(SR(:, :, ipol), UU, num_wann)
+      ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ Equ.(25)
+      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR)
+      SR_i = -cmplx_i*utility_rotate(SR(:, :, shc_alpha), UU, num_wann)
       K_k = SR_i + matmul(S_k, D_i_h) !
 
       !=========== L_k ===========
-      ! < u_k | sigma_spol.H | \partial_ipol u_k >, QZYZ Equ.(26)
-      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, spol, :), OO_true=SHR)
-      SHR_i = -cmplx_i*utility_rotate(SHR(:, :, ipol), UU, num_wann)
+      ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ Equ.(26)
+      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR)
+      SHR_i = -cmplx_i*utility_rotate(SHR(:, :, shc_alpha), UU, num_wann)
       call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH)
-      SH(:, :, spol) = utility_rotate(SH(:, :, spol), UU, num_wann)
-      L_k = SHR_i + matmul(SH(:, :, spol), D_i_h) !
+      SH(:, :, shc_gamma) = utility_rotate(SH(:, :, shc_gamma), UU, num_wann)
+      L_k = SHR_i + matmul(SH(:, :, shc_gamma), D_i_h) !
 
       !=========== B_k ===========
-      ! < \psi_nk | sigma_z v_x | \psi_mk >, QZYZ Equ.(21)
+      ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ Equ.(21)
       B_k = cmplx_0
       do i = 1, num_wann
         eig_mat(i, :) = eig(:)
