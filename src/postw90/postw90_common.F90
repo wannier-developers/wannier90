@@ -288,9 +288,9 @@ contains
     call comms_bcast(spinors, 1)
 
     call comms_bcast(shc_freq_scan, 1)
-    call comms_bcast(shc_ipol, 1)
-    call comms_bcast(shc_jpol, 1)
-    call comms_bcast(shc_spol, 1)
+    call comms_bcast(shc_alpha, 1)
+    call comms_bcast(shc_beta, 1)
+    call comms_bcast(shc_gamma, 1)
 
     call comms_bcast(kubo_adpt_smr, 1)
     call comms_bcast(kubo_adpt_smr_fac, 1)
