@@ -3,13 +3,13 @@
                 restart_mode = 'from_scratch'
                       outdir = './tempdir/'
                   pseudo_dir = '../../pseudo/'
-                      prefix = 'Pt'
+                      prefix = 'GaAs'
  /
  &SYSTEM
                        ibrav = 2
-                           a = 3.92
-                         nat = 1
-                        ntyp = 1
+                           a = 5.654
+                         nat = 2
+                        ntyp = 2
                      ecutwfc = 90
                      ecutrho = 1080
                  occupations = 'smearing'
@@ -23,11 +23,13 @@
  /
 
 ATOMIC_SPECIES
-   Pt    195.07800  Pt.rel-pbe-n-kjpaw_psl.0.1.UPF
-
-ATOMIC_POSITIONS {bohr}
-Pt      0.0000000   0.0000000   0.0000000
+   Ga     234.00000  Ga.rel-pbe-dn-kjpaw_psl.0.2.UPF 
+   As     123.00000  As.rel-pbe-n-kjpaw_psl.0.2.UPF  
+ 
+ATOMIC_POSITIONS {crystal}
+Ga       0.00        0.00        0.00
+As       0.25        0.25        0.25
 
 K_POINTS {automatic}
-10  10  10    0  0  0
+10 10 10  0  0  0
 
