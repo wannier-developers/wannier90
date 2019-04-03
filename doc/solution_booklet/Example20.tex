@@ -17,7 +17,7 @@
 	\item [1-5] These are the usual steps to generate MLWFs and are not reported here.
 
 	\item {\it Inspect the output file {\tt LaVO3.wout}. In the initial summary, you will see that the disentanglement was
-performed only within one sphere of radius 0.2 arount the point {\tt A = (0.5, 0.5, 0.5)} in reciprocal space:}
+performed only within one sphere of radius 0.2 around the point {\tt A = (0.5, 0.5, 0.5)} in reciprocal space:}
 
 {\small 
 \begin{tcolorbox}[sharp corners,boxrule=0.5pt]
@@ -34,9 +34,9 @@ performed only within one sphere of radius 0.2 arount the point {\tt A = (0.5, 0
 \end{tcolorbox}
 }
 
-\item {\it Compare the band structure that Wannier90 produced with the one obtained using Quantum ESPRESSO.}
+\item {\it Compare the band structure that \Wannier{} produced with the one obtained using Quantum ESPRESSO.}
 
-To obtain the band structure from the Quantum ESPRESSO calculation we can use the {\tt bands.x} program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}, see minitutorial at the end of Ex.~\ref{sec6:copper}. Here, we only report the {\tt .inp} file used to generate the $k$-point mesh for the non-scf calculation
+To obtain the band structure from the Quantum ESPRESSO calculation we can use the {\tt bands.x} program available at \url{http://www.tcm.phy.cam.ac.uk/~jry20/bands.html}, see mini-tutorial at the end of Ex.~\ref{sec6:copper}. Here, we only report the {\tt .inp} file used to generate the $k$-point mesh for the non-scf calculation
 {\small 
 \begin{tcolorbox}[title=bands.x input file LaVO3.inp,sharp corners,boxrule=0.5pt]
 \begin{verbatim}
@@ -69,7 +69,7 @@ Plot of the interpolated band structure is shown in Fig.~(\ref{fig20.1}). In the
 \begin{itemize}
 	\item {\it Try to obtain the Wannier functions using the standard disentanglement procedure \dots}
 
-	Plots of the band structure of LaVO$_3$ with full disentanglement and no disentanglement are shown in Fig.~(\ref{fig20.2}). These are plotted against the quantum ESPRESSO band structure (solid black lines) and the Wannier90-interpolated one with disentanglement performed only within a sphere centred in A (red dots). We see that the other two methods diverge from the DFT calculation in region of $k$-space where the bands of interest are not entangled with other unwanted bands. For example, in the zone between $\Gamma$ and M and Z and A the interpolated bands with full disentanglement and no disentanglement diverge substantially from the DFT calculation.  
+	Plots of the band structure of LaVO$_3$ with full disentanglement and no disentanglement are shown in Fig.~(\ref{fig20.2}). These are plotted against the quantum ESPRESSO band structure (solid black lines) and the \Wannier{}-interpolated one with disentanglement performed only within a sphere centred in A (red dots). We see that the other two methods diverge from the DFT calculation in region of $k$-space where the bands of interest are not entangled with other unwanted bands. For example, in the zone between $\Gamma$ and M and Z and A the interpolated bands with full disentanglement and no disentanglement diverge substantially from the DFT calculation.  
 
 	\item {\it In order to illustrate all possible cases, it is instructive to apply this method to SrMnO$_3$ \dots}
 
@@ -81,19 +81,19 @@ Plot of the interpolated band structure is shown in Fig.~(\ref{fig20.1}). In the
 \centering
 \subfloat[Full BS]{\includegraphics[width=0.7\columnwidth]{figure/example20/LaVO3_full_bandstructure.pdf}}\\
 \subfloat[BS around Fermi energy]{\includegraphics[width=0.7\columnwidth]{figure/example20/LaVO3_bandstructure.pdf}}
-\caption{Top panel: full band structure of epitaxially-strained (tetragonal) LaVO$_3$ along the $\Gamma$-M-X-$\Gamma$-Z-A-R-X from DFT calculation (solid black) and interpolation from Wannier90 (red dots). Bottom panel: magnification around Fermi energy $16.6049$ (dashed line). The disentanglement was performed only for $k$-points within a sphere of radius 0.2 $\si{\angstrom}^{-1}$ centered in A.}
+\caption{Top panel: full band structure of epitaxially-strained (tetragonal) LaVO$_3$ along the $\Gamma$-M-X-$\Gamma$-Z-A-R-X from DFT calculation (solid black) and interpolation from \Wannier{} (red dots). Bottom panel: magnification around Fermi energy $16.6049$ (dashed line). The disentanglement was performed only for $k$-points within a sphere of radius 0.2 $\si{\angstrom}^{-1}$ centred in A.}
 \label{fig20.1}
 \end{figure}
 
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.7\columnwidth]{figure/example20/LaVO3_bandstructure_all.pdf}
-\caption{Comparison of interpolated band structure of epitaxially-strained (tetragonal) LaVO$_3$ with disentanglement on a sphere of radius 0.2 $\si{\angstrom}^{-1}$ centered in A (red dots), full disentanglement (blue dots) and no disentanglement (green dots). Fermy energy is shown with a dashed line.}\label{fig20.2}
+\caption{Comparison of interpolated band structure of epitaxially-strained (tetragonal) LaVO$_3$ with disentanglement on a sphere of radius 0.2 $\si{\angstrom}^{-1}$ centred in A (red dots), full disentanglement (blue dots) and no disentanglement (green dots). Fermi energy is shown with a dashed line.}\label{fig20.2}
 \end{figure}
 
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.7\columnwidth]{figure/example20/SrMnO3_allbands.pdf}
-\caption{Wannier90-interpolated bands of SrMnO$_3$. From only $t_{2g}$ states (solid green cones), from only $e_g$ states (solid blue circles), or all Mn-3d-derived states ($t_{2g} + e_g$) (empty red circles).}
+\caption{\Wannier{}-interpolated bands of SrMnO$_3$. From only $t_{2g}$ states (solid green cones), from only $e_g$ states (solid blue circles), or all Mn-3d-derived states ($t_{2g} + e_g$) (empty red circles).}
 \label{fig20.4}
 \end{figure}

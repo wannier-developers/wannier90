@@ -44,15 +44,15 @@ are the cell-periodic Bloch functions.
 \end{figure}
 
 \begin{itemize}
-	\item {\it Combine the plot of the Fermi lines on the $k_y$ plane with a heatmap plot of (minus) the Berry curvature}
+	\item {\it Combine the plot of the Fermi lines on the $k_y$ plane with a heat-map plot of (minus) the Berry curvature}
 
-	The plot of the Fermi lines with a colormap of $-\Omega_z(k_x,0,k_z)$ is shown in \Fig{fig18.2}.
+	The plot of the Fermi lines with a colour-map of $-\Omega_z(k_x,0,k_z)$ is shown in \Fig{fig18.2}.
 \end{itemize}
 
 \begin{figure}[b!]
 \centering
 \includegraphics[width=0.5\columnwidth]{figure/example18/Fe_Fermi_surface+Berry_phase.png}
-\caption{(Color online) Calculated total Berry curvature $−\Omega_z(\bfk)$ in the plane $k_y=0$ (note log scale). Intersections of the Fermi surface
+\caption{(Colour online) Calculated total Berry curvature $−\Omega_z(\bfk)$ in the plane $k_y=0$ (note log scale). Intersections of the Fermi surface
 with this plane are shown.}\label{fig18.3}
 \end{figure}
 
@@ -107,7 +107,7 @@ with this plane are shown.}\label{fig18.3}
 }
 \end{tcolorbox}
 
-Since these are quite demanding calculations, we only report the value of the AHC for a $125\times125\times125$ BZ mesh with a $5\times5\times5$ adaptive refinement grid (see snippet below). The value for the \textit{z}-component is 729.8276 $(\Omega \mathrm{cm})^{-1}$, which is in much closer agreement with the converged result from Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92}. Also, the magnituted of \textit{x,y}-component is greatly reduced as expected. 
+Since these are quite demanding calculations, we only report the value of the AHC for a $125\times125\times125$ BZ mesh with a $5\times5\times5$ adaptive refinement grid (see snippet below). The value for the \textit{z}-component is 729.8276 $(\Omega \mathrm{cm})^{-1}$, which is in much closer agreement with the converged result from Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92}. Also, the magnitude of \textit{x,y}-component is greatly reduced as expected. 
 
 \begin{tcolorbox}[title={$125\times125\times125$ BZ mesh with a $5\times5\times5$ adaptive refinement grid}]
 {\small
@@ -169,9 +169,9 @@ The three components $J0, J1$ and $J2$ for the $k$-point sampling of $125\times1
 \end{equation}
 
 	\item {\it
-The dc AHC calculated earlier corresponds to $\sigma_{xy}$ in the limit $\omega \rightarrow 0$. At finite frequency $\sigma_{xy} = -\sigma_{yx}$ acquires
-an imaginary part which describes magnetic circular dichoism (MCD).
-Compute the complex optical conductivy for $\hbar\omega$ up to $7$ eV
+The DC AHC calculated earlier corresponds to $\sigma_{xy}$ in the limit $\omega \rightarrow 0$. At finite frequency $\sigma_{xy} = -\sigma_{yx}$ acquires
+an imaginary part which describes magnetic circular dichroism (MCD).
+Compute the complex optical conductivity for $\hbar\omega$ up to $7$ eV
 }
 
 The plot for the ac AHC is shown in \Fig{fig18.4}.
@@ -184,7 +184,7 @@ The plot for the ac AHC is shown in \Fig{fig18.4}.
 \end{figure}
 
 \begin{itemize}
-	\item {\it Comapare the $\omega \rightarrow 0$ limit of $\sigma_{xy}$ with the result obtained earlier by integrating the Berry curvature.}
+	\item {\it Compare the $\omega \rightarrow 0$ limit of $\sigma_{xy}$ with the result obtained earlier by integrating the Berry curvature.}
 
 	The result obtained by integrating the Berry curvature is 729.83 $(\Omega \mathrm{cm})^{-1}$ and the $\omega \rightarrow 0$ limit of the complex optical conductivity is $669.37$ $(\Omega \mathrm{cm})^{-1}$.
 
@@ -196,14 +196,14 @@ The plot for the ac AHC is shown in \Fig{fig18.4}.
 \begin{figure}[t!]
 \centering
 \includegraphics[width=0.7\columnwidth]{figure/example18/Fe_MCD_xy_125_sp3d2_projections.pdf}
-\caption{The magnetic circular dicrhoism from interpolation of the Kubo-Greenwood formula.}
+\caption{The magnetic circular dichroism from interpolation of the Kubo-Greenwood formula.}
 \label{fig18.5}
 \end{figure}
 \clearpage
 \subsection*{Further ideas}
 \begin{itemize}
 	\item {\it Recompute the AHC and optical spectra of bcc Fe using projected s, p, and d-type Wannier
-functions instead of the hybridrized MLWFs (see Example 8), and compare the results.}
+functions instead of the hybridrised MLWFs (see Example 8), and compare the results.}
 
 First we have to modify the projection block in the input file {\tt Fe.win} as did in Ex.~\ref{sec8:Iron}
 
