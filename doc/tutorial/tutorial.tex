@@ -509,9 +509,7 @@ do so.  Note that, unless you specify {\tt wf\_collect=.true.} in your
 {\tt pw.x} input file, you must run {\tt pw2wannier90} with the same
 number of processors as {\tt pw.x}.
 
-Moreover we remind here that, as discussed in the ``Parallel
-execution'' section at page \pageref{sec:parallel}, while the
-\wannier\ executable is serial-only, {\tt postw90.x} can be run in
+Moreover we remind here that both the \wannier\ executable and {\tt postw90.x} can be run in
 parallel. In this case any number of processors can be used,
 independently of the number used for {\tt pw.x} and {\tt
   pw2wannier90.x}.
@@ -1565,10 +1563,6 @@ If instead you do not have Quantum ESPRESSO installed, or you do not want to
 use it, you can start from step 5 using the files in the
 {\tt examples/example16-noqe/} folder.
 
-Note that in the following, steps 1, 2, 4 and 6 can be possibly run in parallel
-on multiple processors (using {\tt mpirun}), while steps 3 and 5 must
-be run in serial.
-
 \begin{enumerate}
 \item Run \pwscf\ to obtain the ground state of silicon\\
 {\tt pw.x < Si.scf > scf.out}
@@ -1718,10 +1712,9 @@ their number.
 
 \item Run \postw\ to compute the energy eigenvalues and spin
   expectation values.\\
-  {\tt postw90.x Fe} (serial execution) 
-
-  Note: the routines for {\tt kpath=true} and {\tt kslice=true} are
-  currently not parallelized over $k$-points.\\
+  {\tt postw90.x Fe} (serial execution) \\
+  {\tt mpirun -np 8 postw90.x Fe} (example of parallel execution with
+  8 MPI processes) 
 
 \end{enumerate}
 
