@@ -15,7 +15,7 @@
 
 \item {\it Inspect the output file {\tt gaas.wout}.}
 
-\Tab{tab1.1} shows the converged values (after 20 iterations) for a $2\times2\times2$ \bfk-point mesh of the the total spread functional $\Omega$ and its three components, \ie{} the gauge-invariant component $\Omega\tinysub{I}$, the off-diagonal component of the gauge-dependent part $\Omega\tinysub{OD}$, and the diagonal component of the gauge-dependent part $\Omega\tinysub{D}$, respectively. These can be found at the end of the {\tt gaas.wout} file, from the line starting with {\tt Final State}. You will find the \MLWF{} centres and their spreads together with the information on the spread functional components as reported below, and summarized in tab.\ref{tab1.1}.
+\Tab{tab1.1} shows the converged values (after 20 iterations) for a $2\times2\times2$ \bfk-point mesh of the total spread functional $\Omega$ and its three components, \ie{} the gauge-invariant component $\Omega\tinysub{I}$, the off-diagonal component of the gauge-dependent part $\Omega\tinysub{OD}$, and the diagonal component of the gauge-dependent part $\Omega\tinysub{D}$, respectively. These can be found at the end of the {\tt gaas.wout} file, from the line starting with {\tt Final State}. You will find the \MLWF{} centres and their spreads together with the information on the spread functional components as reported below, and summarized in tab.\ref{tab1.1}.
 \begin{tcolorbox}[sharp corners,boxrule=0.5pt]
 {\small
 \begin{verbatim}
@@ -72,13 +72,13 @@ Render +/- isovalue = yes
 \subfloat[$3\tinysup{rd}$ valence \MLWF{}]{\includegraphics[width=0.25\columnwidth,trim={120px 120px 120px 120px},clip]{figure/example01/gaas_00003_rotate.png}}
 \centering
 \subfloat[$4\tinysup{th}$ valence \MLWF{}]{\includegraphics[width=0.25\columnwidth,trim={120px 120px 120px 120px},clip]{figure/example01/gaas_00004_rotate.png}}
-\caption{Four valence \MLWFs{} for the Ga-As system plotted using the \xcrysden{} visulisation program.}\label{fig1.2}
+\caption{Four valence \MLWFs{} for the Ga-As system plotted using the \xcrysden{} visualisation program.}\label{fig1.2}
 \end{figure}
 
-\item[Extra :] {\it Plot the 3rd MLWFs in a supercell of size 3. Choose a low value for the isosurface (say 0.5). Can
+\item[Extra :] {\it Plot the 3$rd$ MLWFs in a supercell of size 3. Choose a low value for the isosurface (say 0.5). Can
 you explain what you see?}
 
-With \xcrysden{} we can also plot the $3\tinysup{rd}$ \MLWF{} to check its periodicity. The period in each direction is given by the spacing used to sample the first irriducible Brillouin zone, \ie{} the \bfk-point mesh. We used a $2\times2\times2$ \bfk-point mesh, hence we expect to find a periodic image of our \MLWF{} in a supercell which is 2 times larger than the unit cell along each direction. This is shown in \Fig{fig1.3}, where the $3\tinysup{rd}$ has been plotted using both the \xcrysden{} program and the \vesta{} program.   
+With \xcrysden{} we can also plot the $3\tinysup{rd}$ \MLWF{} to check its periodicity. The period in each direction is given by the spacing used to sample the first irreducible Brillouin zone, \ie{} the \bfk-point mesh. We used a $2\times2\times2$ \bfk-point mesh, hence we expect to find a periodic image of our \MLWF{} in a supercell which is 2 times larger than the unit cell along each direction. This is shown in \Fig{fig1.3}, where the $3\tinysup{rd}$ has been plotted using both the \xcrysden{} program and the \vesta{} program.   
 \end{enumerate}
 
 \begin{figure}[h!]
