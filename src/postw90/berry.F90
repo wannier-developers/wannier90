@@ -98,7 +98,9 @@ contains
       kubo_nfreq, kubo_freq_list, nfermi, &
       fermi_energy_list, shc_freq_scan, &
       kubo_adpt_smr, kubo_adpt_smr_fac, &
-      kubo_adpt_smr_max, kubo_smr_fixed_en_width
+      kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
+      scissors_shift, num_valence_bands, &
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -702,13 +704,22 @@ contains
             'Interpolation grid: ', berry_kmesh(1:3)
         endif
         write (stdout, '(a)') ''
-        write (stdout, '(1x,a28,l)') 'adaptive smearing = ', kubo_adpt_smr
         if (kubo_adpt_smr) then
-          write (stdout, '(1x,a28,f8.3)') ' adpt_smr_fac = ', kubo_adpt_smr_fac
-          write (stdout, '(1x,a28,f8.3)') ' adpt_smr_max = ', kubo_adpt_smr_max
+          write (stdout, '(1x,a28)') 'Using adaptive smearing'
+          write (stdout, '(1x,a28,f8.3)') ' adptive smearing prefactor ', kubo_adpt_smr_fac
+          write (stdout, '(1x,a28,f8.3)') ' adptive smearing max width ', kubo_adpt_smr_max
         else
-          write (stdout, '(1x,a28,f8.3)') ' kubo_smr_fixed_en_width = ', &
+          write (stdout, '(1x,a28)') 'Using fixed smearing'
+          write (stdout, '(1x,a28,f8.3)') ' fixed smearing width ', &
             kubo_smr_fixed_en_width
+        endif
+        if (abs(scissors_shift) > 1.0e-7_dp) then
+          write (stdout, '(1X,A,I0,A,G18.10,A)') "Using scissors_shift to shift energy bands with index > ", &
+            num_valence_bands, " by ", scissors_shift, " eV."
+        endif
+        if (shc_bandshift) then
+          write (stdout, '(1X,A,I0,A,G18.10,A)') "Using shc_bandshift to shift energy bands with index >= ", &
+            shc_bandshift_firstband, " by ", shc_bandshift_energyshift, " eV."
         endif
       else
         if (.not. wanint_kpoint_file) write (stdout, '(1x,a20,3(i0,1x))') &
@@ -1770,7 +1781,8 @@ contains
     use w90_parameters, only: num_wann, kubo_eigval_max, kubo_nfreq, &
       kubo_freq_list, kubo_adpt_smr, kubo_smr_fixed_en_width, &
       kubo_adpt_smr_max, kubo_adpt_smr_fac, kubo_smr_index, berry_kmesh, &
-      fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma
+      fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma, &
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1833,6 +1845,12 @@ contains
     endif
 
     call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+
+    ! Here I apply a scissor operator to the conduction bands, if required in the input
+    if (shc_bandshift) then
+      eig(shc_bandshift_firstband:) = eig(shc_bandshift_firstband:) + shc_bandshift_energyshift
+    end if
+
     call wham_get_D_h(delHH, UU, eig, D_h)
 
     call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)

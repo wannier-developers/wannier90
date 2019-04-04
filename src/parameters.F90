@@ -218,6 +218,9 @@ module w90_parameters
   integer, public, save :: shc_alpha
   integer, public, save :: shc_beta
   integer, public, save :: shc_gamma
+  logical, public, save :: shc_bandshift
+  integer, public, save :: shc_bandshift_firstband
+  real(kind=dp), public, save :: shc_bandshift_energyshift
 
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
@@ -1277,6 +1280,20 @@ contains
     if (found .and. (kubo_smr_fixed_en_width < 0._dp)) call io_error &
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
 
+    gyrotropic_smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('gyrotropic_smr_fixed_en_width', found, &
+                           r_value=gyrotropic_smr_fixed_en_width)
+    if (found .and. (gyrotropic_smr_fixed_en_width < 0._dp)) call io_error &
+      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+
+    sc_phase_conv = 1
+    call param_get_keyword('sc_phase_conv', found, i_value=sc_phase_conv)
+    if ((sc_phase_conv .ne. 1) .and. ((sc_phase_conv .ne. 2))) call io_error('Error: sc_phase_conv must be either 1 or 2')
+
+    scissors_shift = 0.0_dp
+    call param_get_keyword('scissors_shift', found, &
+                           r_value=scissors_shift)
+
     shc_freq_scan = .false.
     call param_get_keyword('shc_freq_scan', found, l_value=shc_freq_scan)
 
@@ -1295,19 +1312,23 @@ contains
     if (found .and. (shc_gamma < 1 .or. shc_gamma > 3)) call io_error &
       ('Error:  shc_gamma must be 1, 2 or 3')
 
-    gyrotropic_smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('gyrotropic_smr_fixed_en_width', found, &
-                           r_value=gyrotropic_smr_fixed_en_width)
-    if (found .and. (gyrotropic_smr_fixed_en_width < 0._dp)) call io_error &
-      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+    shc_bandshift = .false.
+    call param_get_keyword('shc_bandshift', found, l_value=shc_bandshift)
+    shc_bandshift = shc_bandshift .and. berry .and. .not. (index(berry_task, 'shc') == 0)
+    if ((abs(scissors_shift) > 1.0e-7_dp) .and. shc_bandshift) &
+      call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously')
 
-    sc_phase_conv = 1
-    call param_get_keyword('sc_phase_conv', found, i_value=sc_phase_conv)
-    if ((sc_phase_conv .ne. 1) .and. ((sc_phase_conv .ne. 2))) call io_error('Error: sc_phase_conv must be either 1 or 2')
+    shc_bandshift_firstband = 0
+    call param_get_keyword('shc_bandshift_firstband', found, i_value=shc_bandshift_firstband)
+    if (shc_bandshift .and. (.not. found)) &
+      call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided')
+    if (shc_bandshift_firstband < 1) &
+      call io_error('Error: shc_bandshift_firstband must >= 1')
 
-    scissors_shift = 0.0_dp
-    call param_get_keyword('scissors_shift', found, &
-                           r_value=scissors_shift)
+    shc_bandshift_energyshift = 0._dp
+    call param_get_keyword('shc_bandshift_energyshift', found, r_value=shc_bandshift_energyshift)
+    if (shc_bandshift .and. (.not. found)) &
+      call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
 
     spin_moment = .false.
     call param_get_keyword('spin_moment', found, &
@@ -6184,6 +6205,9 @@ contains
     call comms_bcast(shc_alpha, 1)
     call comms_bcast(shc_beta, 1)
     call comms_bcast(shc_gamma, 1)
+    call comms_bcast(shc_bandshift, 1)
+    call comms_bcast(shc_bandshift_firstband, 1)
+    call comms_bcast(shc_bandshift_energyshift, 1)
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)
