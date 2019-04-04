@@ -40,10 +40,18 @@ The ac SHC is plotted as \Fig{fig30.1}.
 
 \item If further increasing kmesh to $250\times250\times250$, and using adaptive smearing, 
 a nice converged plot could be produced as \Fig{fig30.2}. 
-Note that a scissors shift of 1.117~eV is applied. 
+Note that by using keywords \smallskip {\tt
+	\begin{quote}
+		shc\_bandshift = true
+		
+		shc\_bandshift\_firstband = 9
+		
+		shc\_bandshift\_energyshift = 1.117
+\end{quote} }
+a scissors shift of 1.117~eV is applied. 
 \Fig{fig30.2} can be viewed as \Fig{fig30.1} translated 
 1~eV along the horizontal axis. 
-\begin{figure}
+\begin{figure}[!htb]
 \centering
 \includegraphics[width=0.8\columnwidth]{figure/example30/gaas_freqscan.pdf}
 \caption{Frequency scan plots for GaAs ac SHC, using 

@@ -3317,8 +3317,10 @@ the next tutorial.
 		kubo\_freq\_min,
 		kubo\_freq\_max,
 		kubo\_freq\_step,
-		scissors\_shift,
-		num\_valence\_bands
+		shc\_bandshift,
+		
+		shc\_bandshift\_firstband,
+		shc\_bandshift\_energyshift
 		
 		\# smearing
 		
@@ -3449,6 +3451,9 @@ Ref.~\cite{qiao-prb2018}, {\tt
 			
 			kubo\_adpt\_smr\_max = [insert here your maximum smearing]
 	\end{quote} }
+
+	\item Adaptive kmesh refinement is not implemented for ac SHC calculations.
+
 	\item The first 10 semi-core states are excluded from the calculation by using the following keywords\smallskip {\tt
 		\begin{quote}
 			exclude\_bands = 1-10
@@ -3463,9 +3468,11 @@ Ref.~\cite{qiao-prb2018}, {\tt
 	the experimental band gap by using the 
 	following keywords\smallskip {\tt
 		\begin{quote}
-			scissors\_shift = 1.1171896290719894
+			shc\_bandshift = true
+						
+			shc\_bandshift\_firstband = 9
 			
-			num\_valence\_bands = 8
+			shc\_bandshift\_energyshift = 1.117
 	\end{quote} }
 \end{itemize}
 

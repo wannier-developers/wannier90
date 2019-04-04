@@ -305,6 +305,9 @@ the optical frequency in the specified range\\
   {\sc shc\_alpha} & I  & The spin current direction of spin Hall conductivity\\
   {\sc shc\_beta} & I  & The direction of applied electrical field of spin Hall conductivity\\
   {\sc shc\_gamma} & I  & The spin direction of the spin current of spin Hall conductivity\\
+  {\sc shc\_bandshift} & L & Rigid bandshift of the conduction bands\\
+  {\sc shc\_bandshift\_firstband} & I & Index of the first band to shift\\
+  {\sc shc\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
   \hline
 %\end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
@@ -316,8 +319,6 @@ the optical frequency in the specified range\\
 %\end{center}
 %\end{table}
 \end{longtable}
-
-
 
 
 \begin{table}[h!]
@@ -1318,6 +1319,28 @@ The $\gamma$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\
 The default value is \verb#3#.
 
 If all the {\tt shc\_alpha}, {\tt shc\_beta} and {\tt shc\_gamma} are set as default values, the $\sigma_{xy}^{\text{spin}z}$ is computed.
+
+\subsection[shc\_bandshift]{\tt logical :: shc\_bandshift}
+Shift all conduction bands by a given amount (defined by {\tt shc\_bandshift\_energyshift}). 
+%An exact rigid shift is applied \emph{after} interpolation.
+
+Note: this flag slightly differs from the global {\tt scissors\_shift} flag: with {\tt shc\_bandshift}, an exact rigid shift is applied \emph{after} interpolation; {\tt scissors\_shift} applies instead the shift \emph{before} interpolation. As a consequence, results may slightly differ (and this is why we provide both possibilities). Note also that with {\tt scissors\_shift} you have to provide the number of valence bands {\tt num\_valence\_bands}, while with {\tt shc\_bandshift} you should provide the first band to shift {\tt shc\_bandshift\_firstband} = {\tt num\_valence\_bands}$+1$.
+
+The default value is \verb#false#.
+
+\subsection[shc\_bandshift\_firstband]{\tt integer :: shc\_bandshift\_firstband}
+Index of the first conduction band to shift.
+
+That means that all bands with index $i\ge {\tt shc\_bandshift\_firstband}$ will be shifted by  \\{\tt shc\_bandshift\_energyshift}, if {\tt shc\_bandshift} is \verb#true#.
+
+The units are eV.
+No default value; if {\tt shc\_bandshift} is \verb#true#, this flag must be provided.
+
+\subsection[shc\_bandshift\_energyshift]{\tt real(kind=dp) :: shc\_bandshift\_energyshift}
+Energy shift of the conduction bands.
+
+The units are eV.
+No default value; if {\tt shc\_bandshift} is \verb#true#, this flag must be provided.
 
 \clearpage
 \section{Gyrotropic}
