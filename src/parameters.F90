@@ -1322,7 +1322,7 @@ contains
     call param_get_keyword('shc_bandshift_firstband', found, i_value=shc_bandshift_firstband)
     if (shc_bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided')
-    if (shc_bandshift_firstband < 1) &
+    if ((shc_bandshift_firstband < 1) .and. found) &
       call io_error('Error: shc_bandshift_firstband must >= 1')
 
     shc_bandshift_energyshift = 0._dp
