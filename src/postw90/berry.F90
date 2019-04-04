@@ -293,9 +293,9 @@ contains
       if (eval_shc) then
         write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
         if (shc_freq_scan) then
-          write (stdout, '(/,3x,a)') '  frequency scan'
+          write (stdout, '(/,3x,a)') '  Frequency scan'
         else
-          write (stdout, '(/,3x,a)') '  fermi energy scan'
+          write (stdout, '(/,3x,a)') '  Fermi energy scan'
         endif
       endif
 
