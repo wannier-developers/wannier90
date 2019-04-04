@@ -3132,7 +3132,7 @@ using the script generated at runtime,
 and compare with Fig.~2 of Ref.~\cite{qiao-prb2018}. Note a 
 large fixed smearing of 1 eV is used to recover the result in Ref.~\cite{qiao-prb2018}. 
 However, you may adjust the {\tt kubo\_smr\_fixed\_en\_width} 
-as you like to draw a visually appealing plot. 
+as you like to draw a visually appealing figure. 
 A {\tt kpath} plot of 0.05 eV smearing is shown in the 
 Solution Booklet.
 
@@ -3161,7 +3161,8 @@ easing the plotting in the generated {\tt python} script.  Re-run {\tt postw90},
 \end{quote} }
 \medskip
 %
-Compare with Fig.~3 in Ref.~\cite{qiao-prb2018}. 
+Compare with Fig.~3 in Ref.~\cite{qiao-prb2018}, or 
+the Solution Booklet. 
 
 \subsection*{Notes}
 %
@@ -3225,7 +3226,7 @@ by commenting the following two lines
 		
 		\#kubo\_smr\_fixed\_en\_width = 1
 \end{quote} }
-The set the Fermi energy as a value
+Then set the Fermi energy as a value
 {\tt
 	\begin{quote}
 		fermi\_energy = [insert your value here]
@@ -3244,7 +3245,7 @@ and re-run {\tt postw90}.
 The SHC is written in the
 output file {\tt Pt-shc-fermiscan.dat}.
 If only {\tt fermi\_energy} is set, the output file will contain 
-SHC at this specific value; If a list of Fermi energies are set, 
+SHC at this specific energy; if a list of Fermi energies are set, 
 the output file will contain SHC calculated at each  
 energy point in the list: we call this the ``Fermi energy scan'' of SHC. 
 
@@ -3285,12 +3286,12 @@ percentage of points triggering adaptive refinement is reported in
 {\tt Pt.wpout}.
 
 Compare the converged SHC value with those obtained in
-Refs.~\cite{qiao-prb2018} and~\cite{yao-prl04}.
+Refs.~\cite{qiao-prb2018} and~\cite{guo-prl2008}.
 
 Finally, we provide a list of input parameters that 
 can be used to control the SHC calculation, including 
 the calculation of alternating current (ac) SHC which will be introduced in 
-the next example.
+the next tutorial.
 \smallskip {\tt
 	\begin{quote}
 		\# general controls for SHC
@@ -3300,7 +3301,9 @@ the next example.
 		shc\_beta,
 		shc\_gamma,
 		kubo\_eigval\_max,
-		exclude\_bands
+		exclude\_bands, 
+		
+		berry\_curv\_unit
 		
 		\# kmesh
 		
@@ -3308,7 +3311,7 @@ the next example.
 		berry\_kmesh,
 		berry\_curv\_adpt\_kmesh,
 		berry\_curv\_adpt\_kmesh\_thresh
-		
+						
 		\# ac SHC
 		
 		kubo\_freq\_min,
@@ -3424,7 +3427,7 @@ add the lines
 		kubo\_freq\_step = 0.01
 \end{quote} }
 %
-and re-run {\tt postw90}. Reasonably converged spectra can be
+and re-run {\tt postw90}. The file {\tt GaAs-shc-freqscan.dat} contains the calculated ac SHC. Reasonably converged spectra can be
 obtained with a $250\times 250\times 250$ $k$-point mesh. Let us first
 plot the ac SHC in $\frac{\hbar}{e}$S/cm, as in the Fig.~4 in
 Ref.~\cite{qiao-prb2018}, {\tt
@@ -3432,17 +3435,6 @@ Ref.~\cite{qiao-prb2018}, {\tt
 		myshell> gnuplot
 		
 		gnuplot> plot `GaAs-shc-freqscan.dat' u 2:3 w l title `Re', `GaAs-shc-freqscan.dat' u 2:4 w l title `Im'
-\end{quote} }
-
-Next we plot the MCD spectrum. Following Ref.~\cite{yao-prl04}, we
-plot ${\rm Im}[\omega\sigma_{xy}(\hbar\omega)]$, in units of
-$10^{29}$~sec$^{-2}$. The needed conversion factor is $9\times
-10^{-18}\times e/\hbar\simeq 0.0137$ ($e$ and $\hbar$ in SI units),
-{\tt
-	\begin{quote}
-		gnuplot> set yrange[-5:15]
-		
-		gnuplot> plot `GaAs-shc-freqscan.dat' u 1:(\$1)*(\$3)*0.0137 w l, 
 \end{quote} }
 
 \subsection*{Notes}
@@ -3469,7 +3461,7 @@ $10^{29}$~sec$^{-2}$. The needed conversion factor is $9\times
 	\end{quote} }
 	\item Since the band gap is often under estimated by LDA/GGA calculations, a scissors shift is applied to recover 
 	the experimental band gap by using the 
-	following keyword\smallskip {\tt
+	following keywords\smallskip {\tt
 		\begin{quote}
 			scissors\_shift = 1.1171896290719894
 			
