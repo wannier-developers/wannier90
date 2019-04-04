@@ -50,6 +50,7 @@ Bottom panel: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\
 	\label{fig29.2}
 \end{figure}
 
+\clearpage
 \subsection*{Spin Hall conductivity}
 
 \begin{itemize}
@@ -99,6 +100,52 @@ compare the Fermi energy scan plots of the two calculations in the \Fig{fig29.3}
 	with $25\times25\times25$ and $100\times100\times100$ kmeshes.}
 \label{fig29.3}
 \end{figure}
+
+\item The {\tt seedname.wpout} will print the percentage of k-points which 
+have been calculated at the moment, as 
+shown in the following snippet. 
+This might be helpful as you can roughly 
+estimate the total computational time 
+of your calculation, or it might give credence to the code that it is actually functioning.
+\begin{tcolorbox}[title=Pt.wpout,sharp corners,boxrule=0.5pt]
+{\small
+\begin{verbatim}
+ Properties calculated in module  b e r r y
+ ------------------------------------------
+
+   * Spin Hall Conductivity
+
+     Fermi energy scan
+ 
+ Calculation started
+    0% k-points calculated
+   10% k-points calculated
+   20% k-points calculated
+   30% k-points calculated
+   40% k-points calculated
+   50% k-points calculated
+   60% k-points calculated
+   70% k-points calculated
+   80% k-points calculated
+   90% k-points calculated
+  100% k-points calculated
+
+
+ Interpolation grid: 25 25 25
+
+ Using adaptive smearing
+       adptive smearing prefactor    1.414
+       adptive smearing max width    1.000 eV
+
+
+ ----------------------------------------------------------
+ Output data files related to Spin Hall conductivity:
+ ----------------------------------------------------------
+
+   * Pt-shc-fermiscan.dat
+\end{verbatim}
+}
+\end{tcolorbox}
 
 \end{itemize}
 
