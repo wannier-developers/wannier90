@@ -152,6 +152,7 @@ contains
     integer           :: n, i, j, k, jk, ikpt, if, ispn, ierr, loop_x, loop_y, loop_z, &
                          loop_xyz, loop_adpt, adpt_counter_list(nfermi), ifreq, &
                          file_unit
+    logical, dimension(9) :: kmesh_processed = (/ (.false., i = 1, 9) /)
     character(len=24) :: file_name
     logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc
     logical           :: ladpt_kmesh
@@ -421,8 +422,35 @@ contains
           call berry_get_sc_klist(kpt, sc_k_list)
           sc_list = sc_list + sc_k_list*kweight
         end if
+        !
+        ! ***END COPY OF CODE BLOCK 1***
 
         if (eval_shc) then
+          ! print calculation progress, from 0%, 10%, ... to 100%
+          if (on_root) then
+            if (loop_xyz == 1) then
+              write (stdout, '(1x,a)') ''
+              write (stdout, '(1x,a)') 'Calculation started'
+              write (stdout, '(1x,a)') '   0% k-points calculated'
+            else if (loop_xyz == num_int_kpts_on_node(my_node_id)) then
+              write (stdout, '(1x,a)') ' 100% k-points calculated'
+              write (stdout, '(1x,a)') ''
+            else
+              rdum = 10.0_dp*loop_xyz/(1.0_dp*num_int_kpts_on_node(my_node_id))
+              do n = 1, size(kmesh_processed)
+                if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
+                  do i = n, size(kmesh_processed)
+                    if (i <= rdum) then
+                      j = i
+                      kmesh_processed(i) = .true.
+                    end if
+                  end do
+                  write (stdout, '(3x,i1,a)') j, '0% k-points calculated'
+                  exit
+                end if
+              end do
+            end if
+          end if
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
@@ -467,12 +495,7 @@ contains
             call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
-
-          !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
-          !        ' kpt ',kpt(1:3)
         end if
-        !
-        ! ***END COPY OF CODE BLOCK 1***
 
       end do !loop_xyz
 
@@ -545,8 +568,35 @@ contains
           call berry_get_sc_klist(kpt, sc_k_list)
           sc_list = sc_list + sc_k_list*kweight
         end if
+        !
+        ! ***END CODE BLOCK 1***
 
         if (eval_shc) then
+          ! print calculation progress, from 0%, 10%, ... to 100%
+          if (on_root) then
+            if (loop_xyz == my_node_id) then
+              write (stdout, '(1x,a)') ''
+              write (stdout, '(1x,a)') 'Calculation started'
+              write (stdout, '(1x,a)') '   0% k-points calculated'
+            else if (loop_xyz == (PRODUCT(berry_kmesh)/num_nodes*num_nodes)) then
+              write (stdout, '(1x,a)') ' 100% k-points calculated'
+              write (stdout, '(1x,a)') ''
+            else
+              rdum = 10.0_dp*loop_xyz/(1.0_dp*PRODUCT(berry_kmesh))
+              do n = 1, size(kmesh_processed)
+                if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
+                  do i = n, size(kmesh_processed)
+                    if (i <= rdum) then
+                      j = i
+                      kmesh_processed(i) = .true.
+                    end if
+                  end do
+                  write (stdout, '(3x,i1,a)') j, '0% k-points calculated'
+                  exit
+                end if
+              end do
+            end if
+          end if
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
@@ -591,11 +641,7 @@ contains
             call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
-          !write(stdout,'(a6,i4,a6,3(f9.6,1x))') 'node ',my_node_id,&
-          !        ' kpt ',kpt(1:3)
         end if
-        !
-        ! ***END CODE BLOCK 1***
 
       end do !loop_xyz
 
@@ -705,14 +751,15 @@ contains
         endif
         write (stdout, '(a)') ''
         if (kubo_adpt_smr) then
-          write (stdout, '(1x,a28)') 'Using adaptive smearing'
-          write (stdout, '(1x,a28,f8.3)') ' adptive smearing prefactor ', kubo_adpt_smr_fac
-          write (stdout, '(1x,a28,f8.3)') ' adptive smearing max width ', kubo_adpt_smr_max
+          write (stdout, '(1x,a)') 'Using adaptive smearing'
+          write (stdout, '(7x,a,f8.3)') 'adptive smearing prefactor ', kubo_adpt_smr_fac
+          write (stdout, '(7x,a,f8.3,a)') 'adptive smearing max width ', kubo_adpt_smr_max, ' eV'
         else
-          write (stdout, '(1x,a28)') 'Using fixed smearing'
-          write (stdout, '(1x,a28,f8.3)') ' fixed smearing width ', &
-            kubo_smr_fixed_en_width
+          write (stdout, '(1x,a)') 'Using fixed smearing'
+          write (stdout, '(7x,a,f8.3,a)') 'fixed smearing width ', &
+            kubo_smr_fixed_en_width, ' eV'
         endif
+        write (stdout, '(a)') ''
         if (abs(scissors_shift) > 1.0e-7_dp) then
           write (stdout, '(1X,A,I0,A,G18.10,A)') "Using scissors_shift to shift energy bands with index > ", &
             num_valence_bands, " by ", scissors_shift, " eV."
@@ -1923,10 +1970,10 @@ contains
       end if
     enddo
 
-    if (lfermi) then
-      write (*, '(3(f9.6,1x),f16.8,1x,1E16.8)') &
-        kpt(1), kpt(2), kpt(3), fermi_energy_list(1), shc_k_fermi(1)
-    end if
+    !if (lfermi) then
+    !  write (*, '(3(f9.6,1x),f16.8,1x,1E16.8)') &
+    !    kpt(1), kpt(2), kpt(3), fermi_energy_list(1), shc_k_fermi(1)
+    !end if
 
     return
 
