@@ -1106,7 +1106,8 @@ contains
     use w90_parameters, only: num_kpts, nntot, num_wann, wb, bk, timing_level, &
       num_bands, ndimwin, nnlist, have_disentangled, &
       transl_inv, nncell, spn_formatted, eigval, &
-      scissors_shift, num_valence_bands
+      scissors_shift, num_valence_bands, &
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
@@ -1256,10 +1257,14 @@ contains
           !ii=winmin_q+i-1
           H_o(m, m, ik) = eigval(m, ik)
         enddo
-        !scissors shift
+        ! scissors shift applied to the original Hamiltonian
         if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
           do m = num_valence_bands + 1, num_bands
             H_o(m, m, ik) = H_o(m, m, ik) + scissors_shift
+          end do
+        else if (shc_bandshift) then
+          do m = shc_bandshift_firstband, num_bands
+            H_o(m, m, ik) = H_o(m, m, ik) + shc_bandshift_energyshift
           end do
         end if
       enddo

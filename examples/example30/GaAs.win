@@ -9,16 +9,19 @@ berry_kmesh = 100 #250
 
 fermi_energy = 7.9366
 
-# for freq scan
 kubo_freq_min = 0.0
 kubo_freq_max = 8.0
 kubo_freq_step = 0.01
 #kubo_eigval_max
 
-scissors_shift = 1.1171896290719894
+# use scissors_shift
+scissors_shift = 1.117
 num_valence_bands = 8
+# or use shc_bandshift
+#shc_bandshift = true
+#shc_bandshift_firstband = 9
+#shc_bandshift_energyshift = 1.117
 
-# for both scan
 kubo_adpt_smr = true #false
 kubo_adpt_smr_fac = 1.414
 kubo_adpt_smr_max = 1.0
