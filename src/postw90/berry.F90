@@ -1892,13 +1892,12 @@ contains
     endif
 
     call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+    call wham_get_D_h(delHH, UU, eig, D_h)
 
     ! Here I apply a scissor operator to the conduction bands, if required in the input
     if (shc_bandshift) then
       eig(shc_bandshift_firstband:) = eig(shc_bandshift_firstband:) + shc_bandshift_energyshift
     end if
-
-    call wham_get_D_h(delHH, UU, eig, D_h)
 
     call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
     do i = 1, 3
