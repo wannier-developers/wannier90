@@ -48,9 +48,9 @@ end projections
 
 begin unit_cell_cart
 bohr
-	-5.342256	0		5.342256
-	0		5.342256	5.342256
-	-5.342256	5.342256	0
+-5.342256    0           5.342256
+0            5.342256    5.342256
+-5.342256    5.342256    0
 end unit_cell_cart
 
 begin atoms_frac
