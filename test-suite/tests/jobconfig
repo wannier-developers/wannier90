@@ -336,7 +336,7 @@ output = gaas.wout
 
 # Test of SHC for fcc platinum
 [testpostw90_pt_shc/]
-program = POSTW90_SHC_OK
+program = POSTW90_SHCFERMIDAT_OK
 inputs_args = ('Pt.win', '')
 output = Pt-shc-fermiscan.dat 
 
