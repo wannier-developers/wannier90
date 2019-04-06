@@ -37,7 +37,7 @@ dis_conv_tol      = 1.0e-10
 conv_tol          = 1.0e-10
 conv_window       = 40
 
-num_iter          = 8000
+num_iter          = 20000
 guiding_centres = T
 
 spinors = true
