@@ -334,6 +334,12 @@ program = WANNIER90_SLWFC_WOUT_OK
 inputs_args = ('gaas.win', '')
 output = gaas.wout
 
+# Test of SHC for fcc platinum
+[testpostw90_pt_shc/]
+program = POSTW90_SHC_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc-fermiscan.dat 
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*
