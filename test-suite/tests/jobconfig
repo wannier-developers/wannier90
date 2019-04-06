@@ -340,6 +340,12 @@ program = POSTW90_SHCFERMIDAT_OK
 inputs_args = ('Pt.win', '')
 output = Pt-shc-fermiscan.dat 
 
+# Test of ac SHC for GaAs
+[testpostw90_gaas_shc/]
+program = POSTW90_SHCFREQDAT_OK
+inputs_args = ('GaAs.win', '')
+output = GaAs-shc-freqscan.dat
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*
