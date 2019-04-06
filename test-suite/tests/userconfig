@@ -165,6 +165,19 @@ tolerance = ( (1.0e-6, 1.0e-6, 'nnkpts_g1'),
               (1.0e-6, 1.0e-6, 'kpoints_k1'),
               (1.0e-6, 1.0e-6, 'kpoints_k2'))
 
+[POSTW90_SHCFERMIDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_dat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'energy'),
+              (1.0e-4, 1.0e+2, 'shc'))
+
+[POSTW90_SHCFREQDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_dat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'frequency'),
+              (1.0e-4, 1.0e+2, 'shc_re'),
+              (1.0e-4, 1.0e+2, 'shc_im'))
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones
