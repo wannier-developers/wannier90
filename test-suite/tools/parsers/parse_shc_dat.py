@@ -6,14 +6,13 @@ import inspect
 import re
 from collections import defaultdict
 
-#from . import show_output
+from . import show_output
 
 def parse(fname):
     """
     Open the file, parses it and return the values.
     """
     retdict = defaultdict(list)
-    show_output = True
 
     if show_output:
         print("[{}.{}] Parsing file '{}'".format(
