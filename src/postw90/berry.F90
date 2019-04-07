@@ -87,7 +87,7 @@ contains
       eV_au, bohr, pi, eV_seconds
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
-      io_stopwatch
+      io_stopwatch, io_wallclocktime
     use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
       weight
     use w90_parameters, only: timing_level, iprint, num_wann, berry_kmesh, &
@@ -156,6 +156,7 @@ contains
     character(len=24) :: file_name
     logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc
     logical           :: ladpt_kmesh
+    real(kind=dp)     :: prev_time, cur_time
 
     if (nfermi == 0) call io_error( &
       'Must specify one or more Fermi levels when berry=true')
@@ -577,9 +578,16 @@ contains
             if (loop_xyz == my_node_id) then
               write (stdout, '(1x,a)') ''
               write (stdout, '(1x,a)') 'Calculation started'
-              write (stdout, '(1x,a)') '   0% k-points calculated'
+              write (stdout, '(1x,a)') '-------------------------------'
+              write (stdout, '(1x,a)') '  k-points       wall      diff'
+              write (stdout, '(1x,a)') ' calculated      time      time'
+              write (stdout, '(1x,a)') ' ----------      ----      ----'
+              cur_time = io_wallclocktime()
+              prev_time = cur_time
+              write (stdout, '(5x,a,3x,f10.1,f10.1)') '  0%', cur_time, cur_time - prev_time
             else if (loop_xyz == (PRODUCT(berry_kmesh)/num_nodes*num_nodes)) then
-              write (stdout, '(1x,a)') ' 100% k-points calculated'
+              cur_time = io_wallclocktime()
+              write (stdout, '(5x,a,3x,f10.1,f10.1)') '100%', cur_time, cur_time - prev_time
               write (stdout, '(1x,a)') ''
             else
               rdum = 10.0_dp*loop_xyz/(1.0_dp*PRODUCT(berry_kmesh))
@@ -591,12 +599,14 @@ contains
                       kmesh_processed(i) = .true.
                     end if
                   end do
-                  write (stdout, '(3x,i1,a)') j, '0% k-points calculated'
+                  cur_time = io_wallclocktime()
+                  write (stdout, '(5x,i2,a,3x,f10.1,f10.1)') j, '0%', cur_time, cur_time - prev_time
+                  prev_time = cur_time
                   exit
                 end if
               end do
             end if
-          end if
+          end if ! print progress
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
