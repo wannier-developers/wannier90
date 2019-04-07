@@ -585,12 +585,13 @@ contains
               cur_time = io_wallclocktime()
               prev_time = cur_time
               write (stdout, '(5x,a,3x,f10.1,f10.1)') '  0%', cur_time, cur_time - prev_time
-            else if (loop_xyz == (PRODUCT(berry_kmesh)/num_nodes*num_nodes)) then
+            else if (loop_xyz == ((CEILING(PRODUCT(berry_kmesh)/real(num_nodes))-1)*num_nodes)) then
+              ! The RHS of == is the last loop_xyz on root node
               cur_time = io_wallclocktime()
               write (stdout, '(5x,a,3x,f10.1,f10.1)') '100%', cur_time, cur_time - prev_time
               write (stdout, '(1x,a)') ''
             else
-              rdum = 10.0_dp*loop_xyz/(1.0_dp*PRODUCT(berry_kmesh))
+              rdum = 10.0_dp*loop_xyz/real(PRODUCT(berry_kmesh))
               do n = 1, size(kmesh_processed)
                 if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
                   do i = n, size(kmesh_processed)
