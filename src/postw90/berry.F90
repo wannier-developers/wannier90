@@ -762,8 +762,8 @@ contains
         write (stdout, '(a)') ''
         if (kubo_adpt_smr) then
           write (stdout, '(1x,a)') 'Using adaptive smearing'
-          write (stdout, '(7x,a,f8.3)') 'adptive smearing prefactor ', kubo_adpt_smr_fac
-          write (stdout, '(7x,a,f8.3,a)') 'adptive smearing max width ', kubo_adpt_smr_max, ' eV'
+          write (stdout, '(7x,a,f8.3)') 'adaptive smearing prefactor ', kubo_adpt_smr_fac
+          write (stdout, '(7x,a,f8.3,a)') 'adaptive smearing max width ', kubo_adpt_smr_max, ' eV'
         else
           write (stdout, '(1x,a)') 'Using fixed smearing'
           write (stdout, '(7x,a,f8.3,a)') 'fixed smearing width ', &
