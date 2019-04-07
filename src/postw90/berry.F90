@@ -574,6 +574,10 @@ contains
 
         if (eval_shc) then
           ! print calculation progress, from 0%, 10%, ... to 100%
+          ! Note the 1st call to berry_get_shc_k will be much longer
+          ! than later calls due to the time spent on
+          !   berry_get_shc_k -> wham_get_eig_deleig ->
+          !   pw90common_fourier_R_to_k -> ws_translate_dist
           if (on_root) then
             if (loop_xyz == my_node_id) then
               write (stdout, '(1x,a)') ''
