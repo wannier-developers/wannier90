@@ -3286,7 +3286,10 @@ percentage of points triggering adaptive refinement is reported in
 {\tt Pt.wpout}.
 
 Compare the converged SHC value with those obtained in
-Refs.~\cite{qiao-prb2018} and~\cite{guo-prl2008}.
+Refs.~\cite{qiao-prb2018} and~\cite{guo-prl2008}. 
+
+Note some rough estimations of computation progress and time are reported in {\tt Pt.wpout} 
+(see the SHC part of the Solution Booklet). These may be helpful if the computation time is very long. 
 
 Finally, we provide a list of input parameters that 
 can be used to control the SHC calculation, including 
@@ -3317,10 +3320,14 @@ the next tutorial.
 		kubo\_freq\_min,
 		kubo\_freq\_max,
 		kubo\_freq\_step,
-		shc\_bandshift,
 		
+		shc\_bandshift,		
 		shc\_bandshift\_firstband,
-		shc\_bandshift\_energyshift
+		shc\_bandshift\_energyshift,
+		
+		scissors\_shift,
+		num\_valence\_bands	
+		
 		
 		\# smearing
 		
@@ -3474,6 +3481,12 @@ Ref.~\cite{qiao-prb2018}, {\tt
 			
 			shc\_bandshift\_energyshift = 1.117
 	\end{quote} }
+or by\smallskip {\tt
+	\begin{quote}		
+		num\_valence\_bands = 8
+		
+		scissors\_shift = 1.117
+\end{quote} }
 \end{itemize}
 
 %\cleardoublepage

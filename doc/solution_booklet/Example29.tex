@@ -102,11 +102,15 @@ compare the Fermi energy scan plots of the two calculations in the \Fig{fig29.3}
 \end{figure}
 
 \item The {\tt seedname.wpout} will print the percentage of k-points which 
-have been calculated at the moment, as 
+have been calculated at the moment, as well as the corresponding calculation time, as 
 shown in the following snippet. 
 This might be helpful as you can roughly 
 estimate the total computational time 
-of your calculation, or it might give credence to the code that it is actually functioning.
+of your calculation, or it might give credence to the code that it is actually functioning :). 
+Note this report is merely based on the ``root'' computation node. It is accurate if the {\tt postw90} is run in serial, or the load on each node is balanced if running in parallel. However, the estimation is rough if loads are not balanced among nodes. This may happen if the performance of nodes in your cluster are not identical, or adaptive k-mesh refinements are triggered so some nodes may compute much more k-points than others. 
+Besides, if you are careful enough, you may find the diff time of 10\% is much larger than later ones. This 
+is caused by some done-once-and-for-all computations carried out at the beginning, thus 
+later computations are much faster. 
 \begin{tcolorbox}[title=Pt.wpout,sharp corners,boxrule=0.5pt]
 {\small
 \begin{verbatim}
@@ -118,17 +122,21 @@ of your calculation, or it might give credence to the code that it is actually f
      Fermi energy scan
  
  Calculation started
-    0% k-points calculated
-   10% k-points calculated
-   20% k-points calculated
-   30% k-points calculated
-   40% k-points calculated
-   50% k-points calculated
-   60% k-points calculated
-   70% k-points calculated
-   80% k-points calculated
-   90% k-points calculated
-  100% k-points calculated
+ -------------------------------
+   k-points       wall      diff
+  calculated      time      time
+  ----------      ----      ----
+       0%          0.0       0.0
+      10%         22.7      22.7
+      20%         36.5      13.8
+      30%         50.4      14.0
+      40%         64.4      14.0
+      50%         78.4      14.0
+      60%         92.5      14.1
+      70%        106.5      14.0
+      80%        120.4      13.9
+      90%        134.2      13.8
+     100%        147.9      13.7
 
 
  Interpolation grid: 25 25 25
@@ -136,13 +144,7 @@ of your calculation, or it might give credence to the code that it is actually f
  Using adaptive smearing
        adptive smearing prefactor    1.414
        adptive smearing max width    1.000 eV
-
-
- ----------------------------------------------------------
- Output data files related to Spin Hall conductivity:
- ----------------------------------------------------------
-
-   * Pt-shc-fermiscan.dat
+       
 \end{verbatim}
 }
 \end{tcolorbox}

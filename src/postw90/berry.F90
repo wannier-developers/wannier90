@@ -87,7 +87,7 @@ contains
       eV_au, bohr, pi, eV_seconds
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
-      io_stopwatch, io_wallclocktime
+      io_stopwatch
     use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
       weight
     use w90_parameters, only: timing_level, iprint, num_wann, berry_kmesh, &
@@ -152,11 +152,9 @@ contains
     integer           :: n, i, j, k, jk, ikpt, if, ispn, ierr, loop_x, loop_y, loop_z, &
                          loop_xyz, loop_adpt, adpt_counter_list(nfermi), ifreq, &
                          file_unit
-    logical, dimension(9) :: kmesh_processed = (/ (.false., i = 1, 9) /)
     character(len=24) :: file_name
     logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc
     logical           :: ladpt_kmesh
-    real(kind=dp)     :: prev_time, cur_time
 
     if (nfermi == 0) call io_error( &
       'Must specify one or more Fermi levels when berry=true')
@@ -428,30 +426,11 @@ contains
 
         if (eval_shc) then
           ! print calculation progress, from 0%, 10%, ... to 100%
-          if (on_root) then
-            if (loop_xyz == 1) then
-              write (stdout, '(1x,a)') ''
-              write (stdout, '(1x,a)') 'Calculation started'
-              write (stdout, '(1x,a)') '   0% k-points calculated'
-            else if (loop_xyz == num_int_kpts_on_node(my_node_id)) then
-              write (stdout, '(1x,a)') ' 100% k-points calculated'
-              write (stdout, '(1x,a)') ''
-            else
-              rdum = 10.0_dp*loop_xyz/(1.0_dp*num_int_kpts_on_node(my_node_id))
-              do n = 1, size(kmesh_processed)
-                if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
-                  do i = n, size(kmesh_processed)
-                    if (i <= rdum) then
-                      j = i
-                      kmesh_processed(i) = .true.
-                    end if
-                  end do
-                  write (stdout, '(3x,i1,a)') j, '0% k-points calculated'
-                  exit
-                end if
-              end do
-            end if
-          end if
+          ! Note the 1st call to berry_get_shc_k will be much longer
+          ! than later calls due to the time spent on
+          !   berry_get_shc_k -> wham_get_eig_deleig ->
+          !   pw90common_fourier_R_to_k -> ws_translate_dist
+          call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1)
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
@@ -578,40 +557,7 @@ contains
           ! than later calls due to the time spent on
           !   berry_get_shc_k -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
-          if (on_root) then
-            if (loop_xyz == my_node_id) then
-              write (stdout, '(1x,a)') ''
-              write (stdout, '(1x,a)') 'Calculation started'
-              write (stdout, '(1x,a)') '-------------------------------'
-              write (stdout, '(1x,a)') '  k-points       wall      diff'
-              write (stdout, '(1x,a)') ' calculated      time      time'
-              write (stdout, '(1x,a)') ' ----------      ----      ----'
-              cur_time = io_wallclocktime()
-              prev_time = cur_time
-              write (stdout, '(5x,a,3x,f10.1,f10.1)') '  0%', cur_time, cur_time - prev_time
-            else if (loop_xyz == ((CEILING(PRODUCT(berry_kmesh)/real(num_nodes))-1)*num_nodes)) then
-              ! The RHS of == is the last loop_xyz on root node
-              cur_time = io_wallclocktime()
-              write (stdout, '(5x,a,3x,f10.1,f10.1)') '100%', cur_time, cur_time - prev_time
-              write (stdout, '(1x,a)') ''
-            else
-              rdum = 10.0_dp*loop_xyz/real(PRODUCT(berry_kmesh))
-              do n = 1, size(kmesh_processed)
-                if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
-                  do i = n, size(kmesh_processed)
-                    if (i <= rdum) then
-                      j = i
-                      kmesh_processed(i) = .true.
-                    end if
-                  end do
-                  cur_time = io_wallclocktime()
-                  write (stdout, '(5x,i2,a,3x,f10.1,f10.1)') j, '0%', cur_time, cur_time - prev_time
-                  prev_time = cur_time
-                  exit
-                end if
-              end do
-            end if
-          end if ! print progress
+          call berry_print_progress(loop_xyz, my_node_id, PRODUCT(berry_kmesh) - 1, num_nodes)
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
@@ -2082,5 +2028,62 @@ contains
     end subroutine berry_get_js_k
 
   end subroutine berry_get_shc_k
+
+  subroutine berry_print_progress(loop_k, start_k, end_k, step_k)
+    !============================================================!
+    ! print k-points calculation progress, seperated into 11 points,
+    ! from 0%, 10%, ... to 100%
+    ! start_k, end_k are inclusive
+    ! loop_k should in the array start_k to end_k with step step_k
+    !============================================================!
+    use w90_comms, only: on_root
+    use w90_io, only: stdout, io_wallclocktime
+
+    integer, intent(in) :: loop_k, start_k, end_k, step_k
+
+    real(kind=dp) :: cur_time, rdum
+    real(kind=dp), save :: prev_time
+    integer :: i, j, n, last_k
+    logical, dimension(9) :: kmesh_processed = (/ (.false., i = 1, 9) /)
+
+    if (on_root) then
+      ! The last loop_k in the array start:step:end
+      ! e.g. 4 of 0:4:7 = [0, 4], 11 of 3:4:11 = [3, 7, 11]
+      last_k = (CEILING((end_k - start_k + 1)/real(step_k)) - 1)*step_k + start_k
+
+      if (loop_k == start_k) then
+        write (stdout, '(1x,a)') ''
+        write (stdout, '(1x,a)') 'Calculation started'
+        write (stdout, '(1x,a)') '-------------------------------'
+        write (stdout, '(1x,a)') '  k-points       wall      diff'
+        write (stdout, '(1x,a)') ' calculated      time      time'
+        write (stdout, '(1x,a)') ' ----------      ----      ----'
+        cur_time = io_wallclocktime()
+        prev_time = cur_time
+        write (stdout, '(5x,a,3x,f10.1,f10.1)') '  0%', cur_time, cur_time - prev_time
+      else if (loop_k == last_k) then
+        cur_time = io_wallclocktime()
+        write (stdout, '(5x,a,3x,f10.1,f10.1)') '100%', cur_time, cur_time - prev_time
+        write (stdout, '(1x,a)') ''
+      else
+        rdum = 10.0_dp*real(loop_k - start_k + 1)/real(end_k - start_k + 1)
+        do n = 1, size(kmesh_processed)
+          if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
+            do i = n, size(kmesh_processed)
+              if (i <= rdum) then
+                j = i
+                kmesh_processed(i) = .true.
+              end if
+            end do
+            cur_time = io_wallclocktime()
+            write (stdout, '(5x,i2,a,3x,f10.1,f10.1)') j, '0%', cur_time, cur_time - prev_time
+            prev_time = cur_time
+            exit
+          end if
+        end do
+      end if
+    end if ! on_root
+
+  end subroutine berry_print_progress
 
 end module w90_berry
