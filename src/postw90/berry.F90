@@ -1082,23 +1082,16 @@ contains
         !
         ! Convert to the unit: (hbar/e) S/cm
         ! at this point, we need to
-        ! (i)   divide the result by hbar to recover the
-        !       velocity operator v_beta, and multiply
-        !       -e to recover the charge current, so the
-        !       overall effect is -e/hbar
-        ! (ii)  divide the result by hbar to recover the
-        !       velocity operator v_alpha, and multiply
-        !       hbar/2 to recover the spin current, and
-        !       then multiply -2e/hbar to convert the spin
-        !       current to charge current, so the overall
-        !       effect is -e/hbar
-        ! (iii) multiply -hbar/(V*N_k) as in the QZYZ18 Eq.(2),
-        !       note 1/N_k is done by the kweight
-        ! (iv)  multiply (-1/2)*1e8 to convert it to the
-        !       unit hbar/e S/cm
-        ! so, the overall factor is
-        !    fac = 1.0e8 * e^2 / hbar / V / 2.0
-        ! and the final unit of spin Hall conductivity is (hbar/e) S/cm
+        ! (i)   multiply -e^2/hbar/(V*N_k) as in the QZYZ18 Eq.(5),
+        !       note 1/N_k has already been applied by the kweight
+        ! (ii)  convert charge current to spin current:
+        !       divide the result by -e and multiply hbar/2 to
+        !       recover the spin current, so the overall
+        !       effect is -hbar/2/e
+        ! (iii) multiply 1e8 to convert it to the unit S/cm
+        ! So, the overall factor is
+        !   fac = 1.0e8 * e^2 / hbar / V / 2.0
+        ! and the final unit of spin Hall conductivity is (hbar/e)S/cm
         !
         fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)/2.0_dp
         if (shc_freq_scan) then
