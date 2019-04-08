@@ -199,7 +199,7 @@ contains
 
     ! List here berry_tasks that assume nfermi=1
     !
-    not_scannable = eval_kubo
+    not_scannable = eval_kubo .or. (eval_shc .and. shc_freq_scan)
     if (not_scannable .and. nfermi .ne. 1) call io_error( &
       'The berry_task(s) you chose require that you specify a single ' &
       //'Fermi energy: scanning the Fermi energy is not implemented')
