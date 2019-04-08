@@ -24,6 +24,7 @@ module w90_berry
   !! *  LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
   !! *  IATS18 = arXiv:1804.04030 (2018) (nonlinear shift current)
+  !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -421,6 +422,7 @@ contains
           call berry_get_sc_klist(kpt, sc_k_list)
           sc_list = sc_list + sc_k_list*kweight
         end if
+
         !
         ! ***END COPY OF CODE BLOCK 1***
 
@@ -548,6 +550,7 @@ contains
           call berry_get_sc_klist(kpt, sc_k_list)
           sc_list = sc_list + sc_k_list*kweight
         end if
+
         !
         ! ***END CODE BLOCK 1***
 
@@ -1151,23 +1154,6 @@ contains
       endif
 
     end if !on_root
-
-    !write(stdout,'(a,i4)') 'berry_main end, my_node_id',my_node_id
-    !if (eval_shc .and. wanint_kpoint_file) then
-    !    write(file_name,'(a,a,I5.5,a)') trim(seedname),'-omega_xy_sz',my_node_id,'.dat'
-    !    file_name=trim(file_name)
-    !    file_unit=io_file_unit()
-    !    write(stdout,'(/,3x,a)') '* '//file_name
-    !    open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')
-    !    write(file_unit,'(a,3x,a,3x,a)') 'kpt(x,y,z)','nbnd','Omega'
-    !    do loop_xyz=1,num_int_kpts_on_node(my_node_id)
-    !        kpt(:)=int_kpts(:,loop_xyz)
-    !        do n=1,num_wann
-    !            write(file_unit,'(3E8.5,1I4,1E16.8)') &
-    !                kpt(1),kpt(2),kpt(3),shc_k_band(n)
-    !    enddo
-    !    close(file_unit)
-    !end if
 
   end subroutine berry_main
 
