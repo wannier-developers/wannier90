@@ -1,5 +1,10 @@
 # CHANGELOG of Wannier90
 
+### New postw90 features, optimizations and new post-processing codes
+
+- Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + example 29,30 + test suites [[#]](https://github.com/wannier-developers/wannier90/pull/)
+
+
 ## v3.0.0 (27th February 2019)
 
 ### New Wannier90 features
