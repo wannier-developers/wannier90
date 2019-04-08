@@ -1357,7 +1357,6 @@ contains
     call param_get_keyword('degen_thr', found, r_value=degen_thr)
 
     kpath = .false.
-
     call param_get_keyword('kpath', found, l_value=kpath)
 
     kpath_task = 'bands'

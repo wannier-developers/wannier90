@@ -647,143 +647,143 @@ contains
       endif !heatmap
 
       if (heatmap .and. plot_shc) then
-          scriptunit=io_file_unit()
-          if(.not.plot_fermi_lines) then
-              filename=trim(seedname)//'-kslice-shc'//'.py'
-              write(stdout,'(/,3x,a)') filename
-              open(scriptunit,file=filename,form='formatted')
-          elseif(plot_fermi_lines) then
-              filename=trim(seedname)//'-kslice-shc'//&
-                      '+fermi_lines.py'
-              write(stdout,'(/,3x,a)') filename
-              open(scriptunit,file=filename,form='formatted')
-          endif
-          write(scriptunit,'(a)') "# uncomment these two lines if you are "&
-                  //"running in non-GUI environment"
-          write(scriptunit,'(a)') "#import matplotlib"
-          write(scriptunit,'(a)') "#matplotlib.use('Agg')"
-          write(scriptunit,'(a)') "import matplotlib.pyplot as plt"
-          call script_common(scriptunit,areab1b2,square)
-          if(plot_fermi_lines) call script_fermi_lines(scriptunit)
+        scriptunit = io_file_unit()
+        if (.not. plot_fermi_lines) then
+          filename = trim(seedname)//'-kslice-shc'//'.py'
+          write (stdout, '(/,3x,a)') filename
+          open (scriptunit, file=filename, form='formatted')
+        elseif (plot_fermi_lines) then
+          filename = trim(seedname)//'-kslice-shc'// &
+                     '+fermi_lines.py'
+          write (stdout, '(/,3x,a)') filename
+          open (scriptunit, file=filename, form='formatted')
+        endif
+        write (scriptunit, '(a)') "# uncomment these two lines if you are " &
+          //"running in non-GUI environment"
+        write (scriptunit, '(a)') "#import matplotlib"
+        write (scriptunit, '(a)') "#matplotlib.use('Agg')"
+        write (scriptunit, '(a)') "import matplotlib.pyplot as plt"
+        call script_common(scriptunit, areab1b2, square)
+        if (plot_fermi_lines) call script_fermi_lines(scriptunit)
 
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "def shiftedColorMap(cmap, start=0, "&
-                  //"midpoint=0.5, stop=1.0, name='shiftedcmap'):"
-          write(scriptunit,'(a)') "  '''"
-          write(scriptunit,'(a)') '  Function to offset the "center" '&
-                  //'of a colormap. Useful for'
-          write(scriptunit,'(a)') '  data with a negative min and '&
-                  //'positive max and you want the'
-          write(scriptunit,'(a)') "  middle of the colormap's dynamic "&
-                  //"range to be at zero."
-          write(scriptunit,'(a)') '  '
-          write(scriptunit,'(a)') '  Input'
-          write(scriptunit,'(a)') '  -----'
-          write(scriptunit,'(a)') '  cmap : The matplotlib colormap to '&
-                  //'be altered'
-          write(scriptunit,'(a)') "  start : Offset from lowest point in "&
-                  //"the colormap's range."
-          write(scriptunit,'(a)') '    Defaults to 0.0 (no lower offset). '&
-                  //'Should be between'
-          write(scriptunit,'(a)') '    0.0 and `midpoint`.'
-          write(scriptunit,'(a)') '  midpoint : The new center of the '&
-                  //'colormap. Defaults to '
-          write(scriptunit,'(a)') '    0.5 (no shift). Should be between '&
-                  //'0.0 and 1.0. In'
-          write(scriptunit,'(a)') '    general, this should be  1 - '&
-                  //'vmax / (vmax + abs(vmin))'
-          write(scriptunit,'(a)') '    For example if your data range from '&
-                  //'-15.0 to +5.0 and'
-          write(scriptunit,'(a)') '    you want the center of the colormap '&
-                  //'at 0.0, `midpoint`'
-          write(scriptunit,'(a)') '    should be set to  1 - 5/(5 + 15)) '&
-                  //'or 0.75'
-          write(scriptunit,'(a)') "  stop : Offset from highest point in "&
-                  //"the colormap's range."
-          write(scriptunit,'(a)') '    Defaults to 1.0 (no upper offset). '&
-                  //'Should be between'
-          write(scriptunit,'(a)') '    `midpoint` and 1.0.'
-          write(scriptunit,'(a)') "  '''"
-          write(scriptunit,'(a)') "  cdict = {'red': [],'green': [],"&
-                  //"'blue': [],'alpha': []}"
-          write(scriptunit,'(a)') '  # regular index to compute the colors'
-          write(scriptunit,'(a)') '  reg_index = np.linspace(start, stop, 257)'
-          write(scriptunit,'(a)') '  # shifted index to match the data'
-          write(scriptunit,'(a)') '  shift_index = np.hstack(['
-          write(scriptunit,'(a)') '    np.linspace(0.0, midpoint, 128, '&
-                  //'endpoint=False),'
-          write(scriptunit,'(a)') '    np.linspace(midpoint, 1.0, 129, '&
-                  //'endpoint=True)'
-          write(scriptunit,'(a)') '  ])'
-          write(scriptunit,'(a)') '  for ri, si in zip(reg_index, shift_index):'
-          write(scriptunit,'(a)') '    r, g, b, a = cmap(ri)'
-          write(scriptunit,'(a)') "    cdict['red'].append((si, r, r))"
-          write(scriptunit,'(a)') "    cdict['green'].append((si, g, g))"
-          write(scriptunit,'(a)') "    cdict['blue'].append((si, b, b))"
-          write(scriptunit,'(a)') "    cdict['alpha'].append((si, a, a))"
-          write(scriptunit,'(a)') '  newcmap = matplotlib.colors'&
-                  //'.LinearSegmentedColormap(name, cdict)'
-          write(scriptunit,'(a)') '  plt.register_cmap(cmap=newcmap)'
-          write(scriptunit,'(a)') '  return newcmap'
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "outfile = '"//trim(seedname)//&
-                  "-kslice-shc"//".pdf'"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)')&
-                  "val = np.loadtxt('"//trim(seedname)//&
-                          "-kslice-shc.dat', usecols=(0,))"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)')&
-                  "val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
-                          &if abs(elem)>10 else elem/10.0 for elem in val])"
-          write(scriptunit,'(a)') "#val_log = val"
-          write(scriptunit,'(a)') "valmax=max(val_log)"
-          write(scriptunit,'(a)') "valmin=min(val_log)"
-          write(scriptunit,'(a)') "#cmnew=shiftedColorMap(matplotlib.cm.bwr,"&
-                  //"0,1-valmax/(valmax+abs(valmin)),1)"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "if square: "
-          write(scriptunit,'(a)') "  Z=val_log.reshape(dimy,dimx)"
-          write(scriptunit,'(a)') "  mn=int(np.floor(Z.min()))"
-          write(scriptunit,'(a)') "  mx=int(np.ceil(Z.max()))"
-          write(scriptunit,'(a)') "  ticks=range(mn,mx+1)"
-          write(scriptunit,'(a)') "  #pl.contourf(x_coord,y_coord,Z,"&
-                  //"ticks,origin='lower')"
-          write(scriptunit,'(a)') "  pl.imshow(Z,origin='lower',"&
-                  //"extent=(min(x_coord),max(x_coord),min(y_coord),"&
-                  //"max(y_coord)))#,cmap=cmnew)"
-          write(scriptunit,'(a)') "else: "
-          write(scriptunit,'(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
-          write(scriptunit,'(a)') "  valint = interpolate.griddata((points_x,"&
-                  //"points_y), val_log, (grid_x,grid_y), method='nearest')"
-          write(scriptunit,'(a)') "  mn=int(np.floor(valint.min()))"
-          write(scriptunit,'(a)') "  mx=int(np.ceil(valint.max()))"
-          write(scriptunit,'(a)') "  ticks=range(mn,mx+1)"
-          write(scriptunit,'(a)') "  #pl.contourf(xint,yint,valint,ticks)"
-          write(scriptunit,'(a)') "  pl.imshow(valint,origin='lower',"&
-                  //"extent=(min(xint),max(xint),min(yint),max(yint)))#,"&
-                  //"cmap=cmnew)"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "ticklabels=[]"
-          write(scriptunit,'(a)') "for n in ticks:"
-          write(scriptunit,'(a)') " if n<0: "
-          write(scriptunit,'(a)')&
-                  "  ticklabels.append('-$10^{%d}$' % abs(n))"
-          write(scriptunit,'(a)') " elif n==0:"
-          write(scriptunit,'(a)') "  ticklabels.append(' $%d$' %  n)"
-          write(scriptunit,'(a)') " else:"
-          write(scriptunit,'(a)') "  ticklabels.append(' $10^{%d}$' % n)"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "cbar=pl.colorbar()"
-          write(scriptunit,'(a)') "#cbar.set_ticks(ticks)"
-          write(scriptunit,'(a)') "#cbar.set_ticklabels(ticklabels)"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "ax = pl.gca()"
-          write(scriptunit,'(a)') "ax.xaxis.set_visible(False)"
-          write(scriptunit,'(a)') "ax.yaxis.set_visible(False)"
-          write(scriptunit,'(a)') " "
-          write(scriptunit,'(a)') "pl.savefig(outfile,bbox_inches='tight')"
-          write(scriptunit,'(a)') "pl.show()"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "def shiftedColorMap(cmap, start=0, " &
+          //"midpoint=0.5, stop=1.0, name='shiftedcmap'):"
+        write (scriptunit, '(a)') "  '''"
+        write (scriptunit, '(a)') '  Function to offset the "center" ' &
+          //'of a colormap. Useful for'
+        write (scriptunit, '(a)') '  data with a negative min and ' &
+          //'positive max and you want the'
+        write (scriptunit, '(a)') "  middle of the colormap's dynamic " &
+          //"range to be at zero."
+        write (scriptunit, '(a)') '  '
+        write (scriptunit, '(a)') '  Input'
+        write (scriptunit, '(a)') '  -----'
+        write (scriptunit, '(a)') '  cmap : The matplotlib colormap to ' &
+          //'be altered'
+        write (scriptunit, '(a)') "  start : Offset from lowest point in " &
+          //"the colormap's range."
+        write (scriptunit, '(a)') '    Defaults to 0.0 (no lower offset). ' &
+          //'Should be between'
+        write (scriptunit, '(a)') '    0.0 and `midpoint`.'
+        write (scriptunit, '(a)') '  midpoint : The new center of the ' &
+          //'colormap. Defaults to '
+        write (scriptunit, '(a)') '    0.5 (no shift). Should be between ' &
+          //'0.0 and 1.0. In'
+        write (scriptunit, '(a)') '    general, this should be  1 - ' &
+          //'vmax / (vmax + abs(vmin))'
+        write (scriptunit, '(a)') '    For example if your data range from ' &
+          //'-15.0 to +5.0 and'
+        write (scriptunit, '(a)') '    you want the center of the colormap ' &
+          //'at 0.0, `midpoint`'
+        write (scriptunit, '(a)') '    should be set to  1 - 5/(5 + 15)) ' &
+          //'or 0.75'
+        write (scriptunit, '(a)') "  stop : Offset from highest point in " &
+          //"the colormap's range."
+        write (scriptunit, '(a)') '    Defaults to 1.0 (no upper offset). ' &
+          //'Should be between'
+        write (scriptunit, '(a)') '    `midpoint` and 1.0.'
+        write (scriptunit, '(a)') "  '''"
+        write (scriptunit, '(a)') "  cdict = {'red': [],'green': []," &
+          //"'blue': [],'alpha': []}"
+        write (scriptunit, '(a)') '  # regular index to compute the colors'
+        write (scriptunit, '(a)') '  reg_index = np.linspace(start, stop, 257)'
+        write (scriptunit, '(a)') '  # shifted index to match the data'
+        write (scriptunit, '(a)') '  shift_index = np.hstack(['
+        write (scriptunit, '(a)') '    np.linspace(0.0, midpoint, 128, ' &
+          //'endpoint=False),'
+        write (scriptunit, '(a)') '    np.linspace(midpoint, 1.0, 129, ' &
+          //'endpoint=True)'
+        write (scriptunit, '(a)') '  ])'
+        write (scriptunit, '(a)') '  for ri, si in zip(reg_index, shift_index):'
+        write (scriptunit, '(a)') '    r, g, b, a = cmap(ri)'
+        write (scriptunit, '(a)') "    cdict['red'].append((si, r, r))"
+        write (scriptunit, '(a)') "    cdict['green'].append((si, g, g))"
+        write (scriptunit, '(a)') "    cdict['blue'].append((si, b, b))"
+        write (scriptunit, '(a)') "    cdict['alpha'].append((si, a, a))"
+        write (scriptunit, '(a)') '  newcmap = matplotlib.colors' &
+          //'.LinearSegmentedColormap(name, cdict)'
+        write (scriptunit, '(a)') '  plt.register_cmap(cmap=newcmap)'
+        write (scriptunit, '(a)') '  return newcmap'
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "outfile = '"//trim(seedname)// &
+          "-kslice-shc"//".pdf'"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') &
+          "val = np.loadtxt('"//trim(seedname)// &
+          "-kslice-shc.dat', usecols=(0,))"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') &
+                "val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
+                        &if abs(elem)>10 else elem/10.0 for elem in val])"
+        write (scriptunit, '(a)') "#val_log = val"
+        write (scriptunit, '(a)') "valmax=max(val_log)"
+        write (scriptunit, '(a)') "valmin=min(val_log)"
+        write (scriptunit, '(a)') "#cmnew=shiftedColorMap(matplotlib.cm.bwr," &
+          //"0,1-valmax/(valmax+abs(valmin)),1)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "if square: "
+        write (scriptunit, '(a)') "  Z=val_log.reshape(dimy,dimx)"
+        write (scriptunit, '(a)') "  mn=int(np.floor(Z.min()))"
+        write (scriptunit, '(a)') "  mx=int(np.ceil(Z.max()))"
+        write (scriptunit, '(a)') "  ticks=range(mn,mx+1)"
+        write (scriptunit, '(a)') "  #pl.contourf(x_coord,y_coord,Z," &
+          //"ticks,origin='lower')"
+        write (scriptunit, '(a)') "  pl.imshow(Z,origin='lower'," &
+          //"extent=(min(x_coord),max(x_coord),min(y_coord)," &
+          //"max(y_coord)))#,cmap=cmnew)"
+        write (scriptunit, '(a)') "else: "
+        write (scriptunit, '(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
+        write (scriptunit, '(a)') "  valint = interpolate.griddata((points_x," &
+          //"points_y), val_log, (grid_x,grid_y), method='nearest')"
+        write (scriptunit, '(a)') "  mn=int(np.floor(valint.min()))"
+        write (scriptunit, '(a)') "  mx=int(np.ceil(valint.max()))"
+        write (scriptunit, '(a)') "  ticks=range(mn,mx+1)"
+        write (scriptunit, '(a)') "  #pl.contourf(xint,yint,valint,ticks)"
+        write (scriptunit, '(a)') "  pl.imshow(valint,origin='lower'," &
+          //"extent=(min(xint),max(xint),min(yint),max(yint)))#," &
+          //"cmap=cmnew)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "ticklabels=[]"
+        write (scriptunit, '(a)') "for n in ticks:"
+        write (scriptunit, '(a)') " if n<0: "
+        write (scriptunit, '(a)') &
+          "  ticklabels.append('-$10^{%d}$' % abs(n))"
+        write (scriptunit, '(a)') " elif n==0:"
+        write (scriptunit, '(a)') "  ticklabels.append(' $%d$' %  n)"
+        write (scriptunit, '(a)') " else:"
+        write (scriptunit, '(a)') "  ticklabels.append(' $10^{%d}$' % n)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "cbar=pl.colorbar()"
+        write (scriptunit, '(a)') "#cbar.set_ticks(ticks)"
+        write (scriptunit, '(a)') "#cbar.set_ticklabels(ticklabels)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "ax = pl.gca()"
+        write (scriptunit, '(a)') "ax.xaxis.set_visible(False)"
+        write (scriptunit, '(a)') "ax.yaxis.set_visible(False)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "pl.savefig(outfile,bbox_inches='tight')"
+        write (scriptunit, '(a)') "pl.show()"
       end if
 
       write (stdout, *) ' '
@@ -833,16 +833,16 @@ contains
         '* Orbital magnetization k-space integrand in eV.Ang^2'
       if (nfermi /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=morb')
-    elseif(plot_shc) then
+    elseif (plot_shc) then
       if (berry_curv_unit == 'ang2') then
-        write (stdout, '(/,3x,a)') '* Berry curvature-like term '&
-                //'of spin Hall conductivity in Ang^2'
+        write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
+          //'of spin Hall conductivity in Ang^2'
       elseif (berry_curv_unit == 'bohr2') then
-        write (stdout, '(/,3x,a)') '* Berry curvature-like term '&
-                //'of spin Hall conductivity in Bohr^2'
+        write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
+          //'of spin Hall conductivity in Bohr^2'
       endif
-      if(nfermi/=1) call io_error(&
-              'Must specify one Fermi level when kslice_task=shc')
+      if (nfermi /= 1) call io_error( &
+        'Must specify one Fermi level when kslice_task=shc')
     endif
 
   end subroutine kslice_print_info
@@ -990,11 +990,11 @@ contains
     write (scriptunit, '(a)') "  bandint=[]"
     write (scriptunit, '(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
     write (scriptunit, '(a)') "  for i in range(numbands):"
-    write (scriptunit, '(a)') "    bandint.append(interpolate.griddata"&
-            //"((points_x,points_y), bbands[:,i], (grid_x,grid_y), "&
-            //"method='nearest'))"
-    write (scriptunit, '(a)') "    pl.contour(grid_x,grid_y,"&
-            //"bandint[i],[ef],colors='black')"
+    write (scriptunit, '(a)') "    bandint.append(interpolate.griddata" &
+      //"((points_x,points_y), bbands[:,i], (grid_x,grid_y), " &
+      //"method='nearest'))"
+    write (scriptunit, '(a)') "    pl.contour(grid_x,grid_y," &
+      //"bandint[i],[ef],colors='black')"
 
   end subroutine script_fermi_lines
 
