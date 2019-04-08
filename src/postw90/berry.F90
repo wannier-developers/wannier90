@@ -1743,19 +1743,19 @@ contains
     ! Contribution from a k-point to the spin Hall conductivity on a list
     ! of Fermi energies or a list of frequencies or a list of energy bands
     !   sigma_{alpha,beta}^{gamma}(k), alpha, beta, gamma = 1, 2, 3
-    !                                   (x, y, z, respectively)
+    !                                                      (x, y, z, respectively)
     ! i.e. the Berry curvature-like term of QZYZ18 Eq.(3) & (4).
-    ! The unit is angstrom^2.
+    ! The unit is angstrom^2, similar to that of Berry curvature of AHC.
     !
     !  Note the berry_get_js_k() has not been multiplied by hbar/2 (as
     !  required by spin operator) and not been divided by hbar (as required
     !  by the velocity operator). The second velocity operator has not been
-    !  divided by hbar as well. But these two hbar are canceled by
-    !  the preceding hbar^2 of QZYZ18 Eq.(3).
+    !  divided by hbar as well. But these two hbar required by velocity
+    !  operators are canceled by the preceding hbar^2 of QZYZ18 Eq.(3).
     !
     !    shc_k_fermi: return a list for different Fermi energies
-    !    shc_k_freq: return a list for different frequency
-    !    shc_k_band: return a list for each energy band
+    !    shc_k_freq:  return a list for different frequencies
+    !    shc_k_band:  return a list for each energy band
     !
     !   Junfeng Qiao (18/8/2018)                                         !
     !====================================================================!
@@ -1771,7 +1771,7 @@ contains
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_get_oper, only: HH_R, AA_R
-    !use w90_comms,only           : my_node_id
+    !use w90_comms, only: my_node_id
     !!!
     use w90_io, only: io_error, io_file_unit
 
@@ -1918,10 +1918,12 @@ contains
     subroutine berry_get_js_k(kpt, eig, del_alpha_eig, D_alpha_h, UU, js_k)
       !====================================================================!
       !                                                                    !
-      !! Contribution from point k to the
-      !!    < \psi_k | 1/2 * (sigma_gamma v_alpha + v_alpha sigma_gamma) | \psi_k >
-
-      !  QZYZ18 Eq.(23) without hbar/2
+      ! Contribution from point k to the
+      !   <psi_k | 1/2*(sigma_gamma*v_alpha + v_alpha*sigma_gamma) | psi_k>
+      !
+      !  QZYZ18 Eq.(23) without hbar/2 (required by spin operator) and
+      !  not divided by hbar (required by velocity operator)
+      !
       !  Junfeng Qiao (8/7/2018)
       !                                                                    !
       !====================================================================!
@@ -1966,7 +1968,7 @@ contains
       ! QZYZ18 Eq.(36)
       call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
       ! QZYZ18 Eq.(30)
-      S_k(:, :) = utility_rotate(S_w, UU, num_wann)
+      S_k = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
       ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
