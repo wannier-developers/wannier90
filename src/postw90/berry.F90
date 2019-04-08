@@ -36,9 +36,9 @@ module w90_berry
 
   private
 
-  public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist ! ,&
-!                                   berry_alpha_S,berry_alpha_beta_S,berry_beta_S
-  public :: berry_get_shc_k
+  public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist, &
+            berry_get_shc_k! ,&
+            !berry_alpha_S,berry_alpha_beta_S,berry_beta_S
 
   ! Pseudovector <--> Antisymmetric tensor
   !
