@@ -37,8 +37,7 @@ module w90_berry
   private
 
   public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist, &
-            berry_get_shc_k! ,&
-            !berry_alpha_S,berry_alpha_beta_S,berry_beta_S
+            berry_get_shc_k!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -2027,10 +2026,10 @@ contains
 
     integer, intent(in) :: loop_k, start_k, end_k, step_k
 
-    real(kind=dp) :: cur_time, rdum
+    real(kind=dp) :: cur_time, finished
     real(kind=dp), save :: prev_time
     integer :: i, j, n, last_k
-    logical, dimension(9) :: kmesh_processed = (/ (.false., i = 1, 9) /)
+    logical, dimension(9) :: kmesh_processed = (/(.false., i=1, 9)/)
 
     if (on_root) then
       ! The last loop_k in the array start:step:end
@@ -2052,11 +2051,11 @@ contains
         write (stdout, '(5x,a,3x,f10.1,f10.1)') '100%', cur_time, cur_time - prev_time
         write (stdout, '(1x,a)') ''
       else
-        rdum = 10.0_dp*real(loop_k - start_k + 1)/real(end_k - start_k + 1)
+        finished = 10.0_dp*real(loop_k - start_k + 1)/real(end_k - start_k + 1)
         do n = 1, size(kmesh_processed)
-          if ((.not. kmesh_processed(n)) .and. (rdum >= n)) then
+          if ((.not. kmesh_processed(n)) .and. (finished >= n)) then
             do i = n, size(kmesh_processed)
-              if (i <= rdum) then
+              if (i <= finished) then
                 j = i
                 kmesh_processed(i) = .true.
               end if
