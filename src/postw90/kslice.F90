@@ -57,7 +57,7 @@ contains
       get_SS_R, get_SHC_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_spin, only: spin_get_nk
-    use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_k
+    use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_constants, only: bohr
 
     integer, dimension(0:num_nodes - 1) :: counts, displs
@@ -260,7 +260,7 @@ contains
         morb(3) = sum(Morb_k(:, 3))
         my_zdata(:, iloc) = morb(:)
       else if (plot_shc) then
-        call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
         my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 

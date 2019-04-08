@@ -57,7 +57,7 @@ contains
       get_FF_R, get_SS_R, get_SHC_R
     use w90_spin, only: spin_get_nk
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, &
-      berry_get_shc_k
+      berry_get_shc_klist
     use w90_constants, only: bohr
 
     integer, dimension(0:num_nodes - 1) :: counts, displs
@@ -187,7 +187,7 @@ contains
             end if
           end do
         else if (kpath_bands_colour == 'shc') then
-          call berry_get_shc_k(kpt, shc_k_band=shc_k_band)
+          call berry_get_shc_klist(kpt, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band(:)
         end if
       end if
@@ -212,7 +212,7 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt
