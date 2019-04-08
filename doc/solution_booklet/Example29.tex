@@ -2,7 +2,7 @@
 \label{sec29:PtSHC}
 
 \begin{itemize}
-	\item Outline: {\it Calculate the Berry curvature-like term and spin Hall conductivity
+	\item Outline: {\it Calculate the Berry curvature-like term and spin Hall conductivity (SHC)
 	of fcc Pt with spin-orbit coupling. In preparation for this example it may be useful to read Ref.~\onlinecite{qiao-prb2018} and Ch. 12 of the User Guide.}
 \end{itemize}
 
@@ -15,37 +15,37 @@
 	\item {\it The band-projected Berry curvature-like term $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
 		is defined as Eq.~(12.22) of the User Guide.}
 	{\it Plot the band structure of Pt and color it 
-		by the magnitude of its band-projected Berry curvature-like term $\Omega_{n,xy}^{\text{spin}z}(\bf k)$, 
-		and plot the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bf k)$ along the 
+		by the magnitude of its band-projected Berry curvature-like term $\Omega_{n,xy}^{\text{spin}z}(\bm k)$, 
+		and plot the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the 
 		same path in the BZ. }
 
 	The calculated Fermi energy is $17.9919$ eV. It may vary among different calculations due to the difference between versions of {\tt Quantum ESPRESSO} or compilers, and these may lead to deviations from the following results. However, the difference should be small and the calculated SHC should be essentially the same. With this value we obtain the energy bands colored by the 
-	$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ and the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bf k)$ along high-symmetry points shown in \Fig{fig29.1}. 
+	$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ and the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along high-symmetry points shown in \Fig{fig29.1}. 
 	In the following two plots with different fixed smearing width are shown.
 \end{itemize}
 
 \begin{figure}[htb!]
 \centering
-\subfloat[With fixed smearing of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_1.pdf}}\qquad
-\subfloat[With fixed smearing of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_0_05.pdf}}
-\caption{Top panel: Band structure of Pt along symmetry lines W-L-$\Gamma$-X-W-$\Gamma$, colored by
+\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_1.pdf}}\qquad
+\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_0_05.pdf}}
+\caption{Top panels: Band structure of Pt along symmetry lines W-L-$\Gamma$-X-W-$\Gamma$, colored by
 the $\Omega_{n,xy}^{\text{spin}z}({\bm k})$. 
-Bottom panel: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bf k)$ along the symmetry lines.}
+Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the symmetry lines.}
 \label{fig29.1}
 \end{figure}
 \clearpage
 
 \begin{itemize}
-	\item {\it Combine the plot of the Fermi lines on the $k_y$ plane with a heatmap plot of the Berry curvature-like term of SHC.}
+	\item {\it Combine the plot of the Fermi lines on the $(k_x,k_y)$ plane with a heatmap plot of the Berry curvature-like term of spin Hall conductivity.}
 
-	The plots of the Fermi lines with a colormap of $\Omega_{xy}^{\text{spin}z}(k_x,0,k_z)$ are shown in \Fig{fig29.2}.
+	The plots of the Fermi lines with a colormap of $\Omega_{xy}^{\text{spin}z}(k_x,k_y,0)$ are shown in \Fig{fig29.2}.
 \end{itemize}
 
 \begin{figure}[htb!]
 	\centering
-	\subfloat[With fixed smearing of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_1.pdf}}\qquad
-	\subfloat[With fixed smearing of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_0_05.pdf}}
-	\caption{Calculated k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bfk)$ in the plane $k_y=0$ (note log scale). Intersections of the Fermi surface
+	\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_1.pdf}}\qquad
+	\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_0_05.pdf}}
+	\caption{Calculated k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ in the plane $k_z=0$ (note log scale). Intersections of the Fermi surface
 		with this plane are shown.}
 	\label{fig29.2}
 \end{figure}
