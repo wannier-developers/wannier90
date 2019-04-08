@@ -688,7 +688,6 @@ contains
                 'Refinement threshold: ', &
                 berry_curv_adpt_kmesh_thresh, ' bohr^2'
             endif
-            !if(nfermi==1) then
             if (wanint_kpoint_file) then
               write (stdout, '(1x,a30,i8,a,f6.2,a)') &
                 ' Points triggering refinement: ', adpt_counter_list(1), '(', &
@@ -698,7 +697,6 @@ contains
                 ' Points triggering refinement: ', adpt_counter_list(1), '(', &
                 100*real(adpt_counter_list(1), dp)/product(berry_kmesh), '%)'
             endif
-            !endif
           endif
         else
           if (.not. wanint_kpoint_file) write (stdout, '(1x,a20,3(i0,1x))') &
@@ -1094,13 +1092,13 @@ contains
         !       then multiply -2e/hbar to convert the spin
         !       current to charge current, so the overall
         !       effect is -e/hbar
-        ! (iii) multiply -hbar/(V*N_k) as in the QZYZ Equ.(2),
+        ! (iii) multiply -hbar/(V*N_k) as in the QZYZ18 Eq.(2),
         !       note 1/N_k is done by the kweight
         ! (iv)  multiply (-1/2)*1e8 to convert it to the
         !       unit hbar/e S/cm
         ! so, the overall factor is
         !    fac = 1.0e8 * e^2 / hbar / V / 2.0
-        ! and the final unit is (hbar/e) S/cm
+        ! and the final unit of spin Hall conductivity is (hbar/e) S/cm
         !
         fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)/2.0_dp
         if (shc_freq_scan) then
@@ -1746,18 +1744,18 @@ contains
     ! of Fermi energies or a list of frequencies or a list of energy bands
     !   sigma_{alpha,beta}^{gamma}(k), alpha, beta, gamma = 1, 2, 3
     !                                   (x, y, z, respectively)
-    ! i.e. the Berry curvature-like term of QZYZ Equ.(3) & (4).
+    ! i.e. the Berry curvature-like term of QZYZ18 Eq.(3) & (4).
     ! The unit is angstrom^2.
     !
-    !  Note the unit of berry_get_js_k() has not multiplied hbar/2
-    !  to recover spin current, and has not divided by hbar to recover
-    !  the velocity operator. The second velocity operator should be
+    !  Note the berry_get_js_k() has not been multiplied by hbar/2 (as
+    !  required by spin operator) and not been divided by hbar (as required
+    !  by the velocity operator). The second velocity operator has not been
     !  divided by hbar as well. But these two hbar are canceled by
-    !  the preceding hbar^2 of QZYZ Equ.(3).
+    !  the preceding hbar^2 of QZYZ18 Eq.(3).
     !
-    !    shc_k_fermi: return a list for different fermi energies
+    !    shc_k_fermi: return a list for different Fermi energies
     !    shc_k_freq: return a list for different frequency
-    !    shc_k_band: return a list for each band
+    !    shc_k_band: return a list for each energy band
     !
     !   Junfeng Qiao (18/8/2018)                                         !
     !====================================================================!
@@ -1791,7 +1789,7 @@ contains
     complex(kind=dp), allocatable :: D_h(:, :, :)
     complex(kind=dp), allocatable :: AA(:, :, :)
 
-    complex(kind=dp)              :: Js_k(num_wann, num_wann)
+    complex(kind=dp)              :: js_k(num_wann, num_wann)
 
     ! Adaptive smearing
     !
@@ -1804,9 +1802,6 @@ contains
     complex(kind=dp) :: omega_list(kubo_nfreq)
     real(kind=dp)    :: omega, rfac
     complex(kind=dp) :: prod, cdum, cfac
-
-    !write(*,'((a),1x,1I4,1x,3(f9.6,1x))') &
-    !        'node',my_node_id,kpt(1:3)
 
     allocate (HH(num_wann, num_wann))
     allocate (delHH(num_wann, num_wann, 3))
@@ -1845,7 +1840,7 @@ contains
     AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
 
     call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), &
-                        D_h(:, :, shc_alpha), UU, Js_k)
+                        D_h(:, :, shc_alpha), UU, js_k)
 
     ! adpt_smr only works with berry_kmesh, so do not use
     ! adpt_smr in kpath or kslice plots.
@@ -1874,8 +1869,8 @@ contains
 
         rfac = eig(m) - eig(n)
         !this will calculate AHC
-        !prod = -rfac*cmplx_i*AA(n, m, alpha) * rfac*cmplx_i*AA(m,n,beta)
-        prod = Js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
+        !prod = -rfac*cmplx_i*AA(n, m, shc_alpha) * rfac*cmplx_i*AA(m, n, shc_beta)
+        prod = js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
         if (kubo_adpt_smr) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)
@@ -1920,13 +1915,13 @@ contains
     !===========================================================!
     !                   PRIVATE PROCEDURES                      !
     !===========================================================!
-    subroutine berry_get_js_k(kpt, eig, del_i_eig, D_i_h, UU, js_k)
+    subroutine berry_get_js_k(kpt, eig, del_alpha_eig, D_alpha_h, UU, js_k)
       !====================================================================!
       !                                                                    !
       !! Contribution from point k to the
-      !!    < \psi_k | 1/2 * (sigma_z v_x + v_x sigma_z) | \psi_k >
+      !!    < \psi_k | 1/2 * (sigma_gamma v_alpha + v_alpha sigma_gamma) | \psi_k >
 
-      !  QZYZ Equ.(22) without hbar/2
+      !  QZYZ18 Eq.(23) without hbar/2
       !  Junfeng Qiao (8/7/2018)
       !                                                                    !
       !====================================================================!
@@ -1943,60 +1938,68 @@ contains
       ! args
       real(kind=dp), intent(in)  :: kpt(3)
       real(kind=dp), dimension(:), intent(in)  :: eig
-      real(kind=dp), dimension(:), intent(in)  :: del_i_eig
-      complex(kind=dp), dimension(:, :), intent(in)  :: D_i_h
+      real(kind=dp), dimension(:), intent(in)  :: del_alpha_eig
+      complex(kind=dp), dimension(:, :), intent(in)  :: D_alpha_h
       complex(kind=dp), dimension(:, :), intent(in)  :: UU
       complex(kind=dp), dimension(:, :), intent(out) :: js_k
 
       ! internal vars
+      complex(kind=dp)    :: B_k(num_wann, num_wann)
       complex(kind=dp)    :: K_k(num_wann, num_wann)
       complex(kind=dp)    :: L_k(num_wann, num_wann)
-      complex(kind=dp)    :: B_k(num_wann, num_wann)
+      complex(kind=dp)    :: S_w(num_wann, num_wann)
       complex(kind=dp)    :: S_k(num_wann, num_wann)
-      complex(kind=dp)    :: SR(num_wann, num_wann, 3)
-      complex(kind=dp)    :: SR_i(num_wann, num_wann)
-      complex(kind=dp)    :: SHR(num_wann, num_wann, 3)
-      complex(kind=dp)    :: SHR_i(num_wann, num_wann)
-      complex(kind=dp)    :: SH(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SR_w(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SR_alpha_k(num_wann, num_wann)
+      complex(kind=dp)    :: SHR_w(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SHR_alpha_k(num_wann, num_wann)
+      complex(kind=dp)    :: SH_w(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SH_k(num_wann, num_wann)
       complex(kind=dp)    :: eig_mat(num_wann, num_wann)
       complex(kind=dp)    :: del_eig_mat(num_wann, num_wann)
-      complex(kind=dp)    :: S_w(num_wann, num_wann)
 
       !===========
       js_k = cmplx_0
 
       !=========== S_k ===========
-      ! < u_k | sigma_gamma | u_k >, QZYZ Equ.(24)
-      !call spin_get_SS_k(kpt, shc_gamma, S_k)
+      ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
+      ! QZYZ18 Eq.(36)
       call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
+      ! QZYZ18 Eq.(30)
       S_k(:, :) = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
-      ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ Equ.(25)
-      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR)
-      SR_i = -cmplx_i*utility_rotate(SR(:, :, shc_alpha), UU, num_wann)
-      K_k = SR_i + matmul(S_k, D_i_h) !
+      ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
+      ! QZYZ18 Eq.(37)
+      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR_w)
+      ! QZYZ18 Eq.(31)
+      SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, shc_alpha), UU, num_wann)
+      K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
 
       !=========== L_k ===========
-      ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ Equ.(26)
-      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR)
-      SHR_i = -cmplx_i*utility_rotate(SHR(:, :, shc_alpha), UU, num_wann)
-      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH)
-      SH(:, :, shc_gamma) = utility_rotate(SH(:, :, shc_gamma), UU, num_wann)
-      L_k = SHR_i + matmul(SH(:, :, shc_gamma), D_i_h) !
+      ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
+      ! QZYZ18 Eq.(38)
+      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR_w)
+      ! QZYZ18 Eq.(32)
+      SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, shc_alpha), UU, num_wann)
+      ! QZYZ18 Eq.(39)
+      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
+      ! QZYZ18 Eq.(32)
+      SH_k = utility_rotate(SH_w(:, :, shc_gamma), UU, num_wann)
+      L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
 
       !=========== B_k ===========
-      ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ Equ.(21)
+      ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ18 Eq.(24)
       B_k = cmplx_0
       do i = 1, num_wann
         eig_mat(i, :) = eig(:)
-        del_eig_mat(i, :) = del_i_eig(:)
+        del_eig_mat(i, :) = del_alpha_eig(:)
       end do
       ! note * is not matmul
       B_k = del_eig_mat*S_k + eig_mat*K_k - L_k
 
-      !=========== Js_k ===========
-      ! QZYZ Equ.(22)
+      !=========== js_k ===========
+      ! QZYZ18 Eq.(23)
       ! note the S in SR_R,SHR_R,SH_R of get_SHC_R is sigma,
       ! to get spin current, we need to multiply it by hbar/2,
       ! also we need to divide it by hbar to recover the velocity
