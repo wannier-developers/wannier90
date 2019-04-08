@@ -256,7 +256,7 @@ contains
         allocate (shc_k_fermi_dummy(nfermi))
         shc_fermi = 0.0_dp
         shc_k_fermi = 0.0_dp
-        !only used for fermiscan
+        !only used for fermiscan & adpt kmesh
         shc_k_fermi_dummy = 0.0_dp
         adpt_counter_list = 0
       endif
@@ -432,22 +432,18 @@ contains
           !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
           call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1)
-          ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
-            !check whether need to tigger adpt kmesh or not
-            !since the computational burden of calculating shc_k at each
-            !fermi energy is the same as calcuating shc_k at all the
-            !fermi energies, if we find out that at a specific
-            !fermi energy shc_k(if) > thresh,
-            !then we will update shc_k at all
-            !the other fermi energies as well. This also avoids repeated
-            !calculation if shc_k(if) > thresh is satisfied at more
-            !than one fermi energies
+            !check whether needs to tigger adpt kmesh or not.
+            !Since the calculated shc_k at one Fermi energy can be reused
+            !by all the Fermi energies, if we find out that at a specific
+            !Fermi energy shc_k(if) > thresh, then we will update shc_k at
+            !all the Fermi energies as well.
+            !This also avoids repeated calculation if shc_k(if) > thresh
+            !is satisfied at more than one Fermi energy.
             ladpt_kmesh = .false.
-            !if adpt_kmesh==1, no need to do the same kpt
-            !calculation again. This happens if adpt_kmesh==1
-            !while berry_curv_adpt_kmesh_thresh is low
+            !if adpt_kmesh==1, no need to calculate on the same kpt again.
+            !This happens if adpt_kmesh==1 while adpt_kmesh_thresh is low.
             if (berry_curv_adpt_kmesh > 1) then
               do if = 1, nfermi
                 rdum = abs(shc_k_fermi(if))
@@ -460,18 +456,18 @@ contains
               enddo
             else
               ladpt_kmesh = .false.
-            endif
+            end if
             if (ladpt_kmesh) then
               do loop_adpt = 1, berry_curv_adpt_kmesh**3
-                ! Using shc_k here would corrupt values for other
-                ! kpt, hence dummy. Only if-th element is used
+                !Using shc_k here would corrupt values for other
+                !kpt, hence dummy. Only if-th element is used.
                 call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
-                                         shc_k_fermi_dummy)
+                                         shc_k_fermi=shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
               shc_fermi = shc_fermi + kweight*shc_k_fermi
-            endif
+            end if
           else ! freq_scan, no adaptive kmesh
             call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
@@ -560,22 +556,18 @@ contains
           !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
           call berry_print_progress(loop_xyz, my_node_id, PRODUCT(berry_kmesh) - 1, num_nodes)
-          ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
             call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
-            !check whether need to tigger adpt kmesh or not
-            !since the computational burden of calculating shc_k at each
-            !fermi energy is the same as calcuating shc_k at all the
-            !fermi energies, if we find out that at a specific
-            !fermi energy shc_k(if) > thresh,
-            !then we will update shc_k at all
-            !the other fermi energies as well. This also avoids repeated
-            !calculation if shc_k(if) > thresh is satisfied at more
-            !than one fermi energies
+            !check whether needs to tigger adpt kmesh or not.
+            !Since the calculated shc_k at one Fermi energy can be reused
+            !by all the Fermi energies, if we find out that at a specific
+            !Fermi energy shc_k(if) > thresh, then we will update shc_k at
+            !all the Fermi energies as well.
+            !This also avoids repeated calculation if shc_k(if) > thresh
+            !is satisfied at more than one Fermi energy.
             ladpt_kmesh = .false.
-            !if adpt_kmesh==1, no need to do the same kpt
-            !calculation again. This happens if adpt_kmesh==1
-            !while berry_curv_adpt_kmesh_thresh is low
+            !if adpt_kmesh==1, no need to calculate on the same kpt again.
+            !This happens if adpt_kmesh==1 while adpt_kmesh_thresh is low.
             if (berry_curv_adpt_kmesh > 1) then
               do if = 1, nfermi
                 rdum = abs(shc_k_fermi(if))
@@ -591,10 +583,10 @@ contains
             end if
             if (ladpt_kmesh) then
               do loop_adpt = 1, berry_curv_adpt_kmesh**3
-                ! Using shc_k here would corrupt values for other
-                ! kpt, hence dummy. Only if-th element is used
+                !Using shc_k here would corrupt values for other
+                !kpt, hence dummy. Only if-th element is used.
                 call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
-                                         shc_k_fermi_dummy)
+                                         shc_k_fermi=shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
