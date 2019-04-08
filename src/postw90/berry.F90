@@ -37,7 +37,7 @@ module w90_berry
   private
 
   public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist, &
-            berry_get_shc_k!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
+            berry_get_shc_klist!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -427,14 +427,14 @@ contains
 
         if (eval_shc) then
           ! print calculation progress, from 0%, 10%, ... to 100%
-          ! Note the 1st call to berry_get_shc_k will be much longer
+          ! Note the 1st call to berry_get_shc_klist will be much longer
           ! than later calls due to the time spent on
-          !   berry_get_shc_k -> wham_get_eig_deleig ->
+          !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
           call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1)
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
-            call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
+            call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
             !check whether need to tigger adpt kmesh or not
             !since the computational burden of calculating shc_k at each
             !fermi energy is the same as calcuating shc_k at all the
@@ -465,15 +465,15 @@ contains
               do loop_adpt = 1, berry_curv_adpt_kmesh**3
                 ! Using shc_k here would corrupt values for other
                 ! kpt, hence dummy. Only if-th element is used
-                call berry_get_shc_k(kpt(:) + adkpt(:, loop_adpt), &
-                                     shc_k_fermi_dummy)
+                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
+                                         shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             endif
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
+            call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -555,14 +555,14 @@ contains
 
         if (eval_shc) then
           ! print calculation progress, from 0%, 10%, ... to 100%
-          ! Note the 1st call to berry_get_shc_k will be much longer
+          ! Note the 1st call to berry_get_shc_klist will be much longer
           ! than later calls due to the time spent on
-          !   berry_get_shc_k -> wham_get_eig_deleig ->
+          !   berry_get_shc_klist -> wham_get_eig_deleig ->
           !   pw90common_fourier_R_to_k -> ws_translate_dist
           call berry_print_progress(loop_xyz, my_node_id, PRODUCT(berry_kmesh) - 1, num_nodes)
           ! be aware that index starts from 1
           if (.not. shc_freq_scan) then
-            call berry_get_shc_k(kpt, shc_k_fermi=shc_k_fermi)
+            call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
             !check whether need to tigger adpt kmesh or not
             !since the computational burden of calculating shc_k at each
             !fermi energy is the same as calcuating shc_k at all the
@@ -593,15 +593,15 @@ contains
               do loop_adpt = 1, berry_curv_adpt_kmesh**3
                 ! Using shc_k here would corrupt values for other
                 ! kpt, hence dummy. Only if-th element is used
-                call berry_get_shc_k(kpt(:) + adkpt(:, loop_adpt), &
-                                     shc_k_fermi_dummy)
+                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
+                                         shc_k_fermi_dummy)
                 shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
               end do
             else
               shc_fermi = shc_fermi + kweight*shc_k_fermi
             end if
           else ! freq_scan, no adaptive kmesh
-            call berry_get_shc_k(kpt, shc_k_freq=shc_k_freq)
+            call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
             shc_freq = shc_freq + kweight*shc_k_freq
           end if
         end if
@@ -1747,14 +1747,15 @@ contains
 
   end subroutine berry_get_sc_klist
 
-  subroutine berry_get_shc_k(kpt, shc_k_fermi, shc_k_freq, shc_k_band)
+  subroutine berry_get_shc_klist(kpt, shc_k_fermi, shc_k_freq, shc_k_band)
     !====================================================================!
     !                                                                    !
-    !! Contribution from point k to the Spin Hall conductivity
-    !!    sigma_{alpha,beta}^{gamma}(k), alpha,beta,gamma=1,2,3
-    !!                                                (x,y,z,respectively)
-    !! i.e. the Berry curvature-like term of QZYZ Equ.(3).
-    !! The unit is angstrom^2.
+    ! Contribution from a k-point to the spin Hall conductivity on a list
+    ! of Fermi energies or a list of frequencies or a list of energy bands
+    !   sigma_{alpha,beta}^{gamma}(k), alpha, beta, gamma = 1, 2, 3
+    !                                   (x, y, z, respectively)
+    ! i.e. the Berry curvature-like term of QZYZ Equ.(3) & (4).
+    ! The unit is angstrom^2.
     !
     !  Note the unit of berry_get_js_k() has not multiplied hbar/2
     !  to recover spin current, and has not divided by hbar to recover
@@ -2012,7 +2013,7 @@ contains
 
     end subroutine berry_get_js_k
 
-  end subroutine berry_get_shc_k
+  end subroutine berry_get_shc_klist
 
   subroutine berry_print_progress(loop_k, start_k, end_k, step_k)
     !============================================================!
