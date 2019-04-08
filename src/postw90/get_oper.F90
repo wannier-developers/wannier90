@@ -1095,7 +1095,7 @@ contains
   subroutine get_SHC_R
     !==================================================
     !
-    !! Compute need matrices for spin Hall conductivity
+    !! Compute needed matrices for spin Hall conductivity
     !! SR_R  = <0n|sigma_{x,y,z}.(r-R)_alpha|Rm>
     !! SHR_R = <0n|sigma_{x,y,z}.H.(r-R)_alpha|Rm>
     !! SH_R  = <0n|sigma_{x,y,z}.H|Rm>
