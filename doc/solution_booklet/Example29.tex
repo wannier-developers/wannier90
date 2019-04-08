@@ -3,7 +3,7 @@
 
 \begin{itemize}
 	\item Outline: {\it Calculate the Berry curvature-like term and spin Hall conductivity (SHC)
-	of fcc Pt with spin-orbit coupling. In preparation for this example it may be useful to read Ref.~\onlinecite{qiao-prb2018} and Ch. 12 of the User Guide.}
+	of fcc Pt considering spin-orbit coupling. To gain a better understanding of this example, it is suggested to read Ref.~\onlinecite{qiao-prb2018} and Ch. 12 of the User Guide.}
 \end{itemize}
 
 \begin{itemize}
@@ -13,15 +13,22 @@
 \subsection*{Berry curvature-like term plots}
 \begin{itemize}
 	\item {\it The band-projected Berry curvature-like term $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
-		is defined as Eq.~(12.22) of the User Guide.}
+		is defined as Eq.~(12.22) in the User Guide.}
 	{\it Plot the band structure of Pt and color it 
 		by the magnitude of its band-projected Berry curvature-like term $\Omega_{n,xy}^{\text{spin}z}(\bm k)$, 
 		and plot the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the 
 		same path in the BZ. }
 
-	The calculated Fermi energy is $17.9919$ eV. It may vary among different calculations due to the difference between versions of {\tt Quantum ESPRESSO} or compilers, and these may lead to deviations from the following results. However, the difference should be small and the calculated SHC should be essentially the same. With this value we obtain the energy bands colored by the 
-	$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ and the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along high-symmetry points shown in \Fig{fig29.1}. 
-	In the following two plots with different fixed smearing width are shown.
+	The calculated Fermi energy obtained from {\tt Quantum ESPRESSO} is $17.9919$ eV. 
+	It may vary among different calculations due to the differences between versions of {\tt Quantum ESPRESSO} or compilers, 
+	and these may lead to deviations from the following results. 
+	However, the difference should be acceptable and the calculated SHC should be essentially the same. 
+	With this Fermi energy we obtain the energy bands colored by the 
+	$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
+	and the k-resolved Berry curvature-like term 
+	$\Omega_{xy}^{\text{spin}z}(\bm k)$ along high-symmetry lines 
+	as shown in \Fig{fig29.1}, which contains two plots calculated with 
+	different fixed smearing width.
 \end{itemize}
 
 \begin{figure}[htb!]
@@ -38,15 +45,18 @@ Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(
 \begin{itemize}
 	\item {\it Combine the plot of the Fermi lines on the $(k_x,k_y)$ plane with a heatmap plot of the Berry curvature-like term of spin Hall conductivity.}
 
-	The plots of the Fermi lines with a colormap of $\Omega_{xy}^{\text{spin}z}(k_x,k_y,0)$ are shown in \Fig{fig29.2}.
+	The plots of the Fermi lines with a heatmap of $\Omega_{xy}^{\text{spin}z}(k_x,k_y,0)$ are shown in \Fig{fig29.2}.
 \end{itemize}
 
 \begin{figure}[htb!]
 	\centering
 	\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_1.pdf}}\qquad
 	\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_0_05.pdf}}
-	\caption{Calculated k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ in the plane $k_z=0$ (note log scale). Intersections of the Fermi surface
-		with this plane are shown.}
+	\caption{Calculated k-resolved Berry curvature-like term 
+		$\Omega_{xy}^{\text{spin}z}(\bm k)$ in the plane $k_z=0$ 
+		(note the magnitude of $\Omega_{xy}^{\text{spin}z}(\bm k)$ is in log scale). 
+		Intersections of the Fermi surface
+		with this plane are shown as black lines.}
 	\label{fig29.2}
 \end{figure}
 
@@ -54,12 +64,17 @@ Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(
 \subsection*{Spin Hall conductivity}
 
 \begin{itemize}
-	\item {\it SHC converges rather slowly with k-point sampling, and a $25 \times 25 \times 25$ does not yield a well-converged value.
-	Compare the converged SHC value with those obtained in Refs.~\onlinecite{qiao-prb2018} and \onlinecite{guo-prl2008}.}
+	\item {\it SHC converges rather slowly with k-point sampling, and a $25 \times 25 \times 25$ kmesh does not yield a well-converged value.
+	To get a converged SHC value, increase the density of kmesh and 
+	then compare the converged result with those obtained in 
+	Refs.~\onlinecite{qiao-prb2018} and \onlinecite{guo-prl2008}.}
 
-	The file {\tt Pt-shc-fermiscan.dat} contains the calculated SHC. The SHC for a $25\times25\times25$ BZ mesh are shown in the snippet below. The SHC 
-	at the Fermi energy (17.9919 eV) is 1705 $\frac{\hbar}{e}\mathrm{S/cm}$. 
-	The converged result reported in Refs.~\onlinecite{qiao-prb2018} and \onlinecite{guo-prl2008} is around 2200 $\frac{\hbar}{e}\mathrm{S/cm}$. Hence, a $25\times25\times25$ BZ mesh clearly gives a very inaccurate value ($\sim 22.5\%$ error).   
+	The file {\tt Pt-shc-fermiscan.dat} contains the calculated SHC. 
+	The SHC for a $25\times25\times25$ kmesh are shown in the snippet below. 
+	The SHC at the Fermi energy (17.9919 eV) is 1705 $(\hbar/e)\mathrm{S/cm}$. 
+	The converged results reported in Refs.~\onlinecite{qiao-prb2018} 
+	and \onlinecite{guo-prl2008} are around 2200 $(\hbar/e)\mathrm{S/cm}$. 
+	Hence, a $25\times25\times25$ kmesh clearly gives an inaccurate value ($\sim 22.5\%$ error).   
 
 \begin{tcolorbox}[title=$25\times25\times25$ kmesh,sharp corners,boxrule=0.5pt]
 {\small
@@ -75,7 +90,11 @@ Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(
 }
 \end{tcolorbox}
 
-Since these are quite demanding calculations, we only report the value of the SHC for a $100\times100\times100$ BZ mesh (see snippet below). The value for the SHC is 2207 $\frac{\hbar}{e}\mathrm{S/cm}$, which is in much closer agreement with the converged result from Refs.~\onlinecite{qiao-prb2018} and \onlinecite{guo-prl2008}.
+Since these are quite demanding calculations, we only report the 
+value of the SHC for a $100\times100\times100$ kmesh (see snippet below). 
+The value for the SHC at Fermi energy is 2207 $(\hbar/e)\mathrm{S/cm}$, which is 
+in much closer agreement with the converged result from 
+Refs.~\onlinecite{qiao-prb2018} and \onlinecite{guo-prl2008}.
 
 \begin{tcolorbox}[title=$100\times100\times100$ kmesh,sharp corners,boxrule=0.5pt]
 {\small
@@ -91,13 +110,14 @@ Since these are quite demanding calculations, we only report the value of the SH
 }
 \end{tcolorbox}
 
-\item To complete the previous discussion, we also 
-compare the Fermi energy scan plots of the two calculations in the \Fig{fig29.3}. 
+\item To complete the previous discussions, we also 
+compare the Fermi energy scan plots of the two calculations as 
+shown in the \Fig{fig29.3}. 
 \begin{figure}[htb!]
 \centering
 \includegraphics[width=.8\columnwidth]{figure/example29/pt_shc_kmesh.pdf}
 \caption{Fermi energy scan plots for calculations 
-	with $25\times25\times25$ and $100\times100\times100$ kmeshes.}
+	with $25\times25\times25$ kmesh and $100\times100\times100$ kmesh.}
 \label{fig29.3}
 \end{figure}
 
