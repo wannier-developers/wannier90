@@ -1754,19 +1754,18 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
+    use w90_utility, only: utility_rotate
     use w90_parameters, only: num_wann, kubo_eigval_max, kubo_nfreq, &
       kubo_freq_list, kubo_adpt_smr, kubo_smr_fixed_en_width, &
-      kubo_adpt_smr_max, kubo_adpt_smr_fac, kubo_smr_index, berry_kmesh, &
+      kubo_adpt_smr_max, kubo_adpt_smr_fac, berry_kmesh, &
       fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
-    use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
+    use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
-    use w90_get_oper, only: HH_R, AA_R
+    use w90_get_oper, only: AA_R
     !use w90_comms, only: my_node_id
     !!!
-    use w90_io, only: io_error, io_file_unit
 
     ! args
     real(kind=dp), intent(in)  :: kpt(3)
@@ -1787,9 +1786,9 @@ contains
     ! Adaptive smearing
     !
     real(kind=dp)    :: del_eig(num_wann, 3), joint_level_spacing, &
-                        eta_smr, Delta_k, arg, vdum(3)
+                        eta_smr, Delta_k, vdum(3)
 
-    integer          :: n, m, ispn, i, ifreq
+    integer          :: n, m, i, ifreq
     real(kind=dp)    :: eig(num_wann)
     real(kind=dp)    :: occ_fermi(num_wann, nfermi), occ_freq(num_wann)
     complex(kind=dp) :: omega_list(kubo_nfreq)
