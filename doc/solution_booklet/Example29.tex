@@ -1,66 +1,20 @@
-\section{Platinum---Berry curvature-like term and spin Hall conductivity}
+\section{Platinum---Spin Hall conductivity}
 \label{sec29:PtSHC}
 
 \begin{itemize}
-	\item Outline: {\it Calculate the Berry curvature-like term and spin Hall conductivity (SHC)
-	of fcc Pt considering spin-orbit coupling. To gain a better understanding of this example, it is suggested to read Ref.~\onlinecite{qiao-prb2018} and Ch. 12 of the User Guide.}
+	\item Outline: {\it Calculate spin Hall conductivity (SHC) and 
+			plot Berry curvature-like term  
+			of fcc Pt considering spin-orbit coupling. 
+			To gain a better understanding of this example, 
+			it is suggested to read Ref.~\onlinecite{qiao-prb2018} for a detailed 
+			description of the theory and Ch.~12.5 of the User Guide.}
 \end{itemize}
 
 \begin{itemize}
-	\item[1-6] {\it Compute the MLWFs and compute the {\tt kpath}, {\tt kslice} and spin Hall conductivity.} 
+	\item[1-6] {\it Compute the MLWFs, spin Hall conductivity and 
+		{\tt kpath}, {\tt kslice} plots.} 
 \end{itemize}
 
-\subsection*{Berry curvature-like term plots}
-\begin{itemize}
-	\item {\it The band-projected Berry curvature-like term $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
-		is defined as Eq.~(12.22) in the User Guide.}
-	{\it Plot the band structure of Pt and color it 
-		by the magnitude of its band-projected Berry curvature-like term $\Omega_{n,xy}^{\text{spin}z}(\bm k)$, 
-		and plot the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the 
-		same path in the BZ. }
-
-	The calculated Fermi energy obtained from {\tt Quantum ESPRESSO} is $17.9919$ eV. 
-	It may vary among different calculations due to the differences between versions of {\tt Quantum ESPRESSO} or compilers, 
-	and these may lead to deviations from the following results. 
-	However, the difference should be acceptable and the calculated SHC should be essentially the same. 
-	With this Fermi energy we obtain the energy bands colored by the 
-	$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
-	and the k-resolved Berry curvature-like term 
-	$\Omega_{xy}^{\text{spin}z}(\bm k)$ along high-symmetry lines 
-	as shown in \Fig{fig29.1}, which contains two plots calculated with 
-	different fixed smearing width.
-\end{itemize}
-
-\begin{figure}[htb!]
-\centering
-\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_1.pdf}}\qquad
-\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_0_05.pdf}}
-\caption{Top panels: Band structure of Pt along symmetry lines W-L-$\Gamma$-X-W-$\Gamma$, colored by
-the $\Omega_{n,xy}^{\text{spin}z}({\bm k})$. 
-Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the symmetry lines.}
-\label{fig29.1}
-\end{figure}
-\clearpage
-
-\begin{itemize}
-	\item {\it Combine the plot of the Fermi lines on the $(k_x,k_y)$ plane with a heatmap plot of the Berry curvature-like term of spin Hall conductivity.}
-
-	The plots of the Fermi lines with a heatmap of $\Omega_{xy}^{\text{spin}z}(k_x,k_y,0)$ are shown in \Fig{fig29.2}.
-\end{itemize}
-
-\begin{figure}[htb!]
-	\centering
-	\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_1.pdf}}\qquad
-	\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_0_05.pdf}}
-	\caption{Calculated k-resolved Berry curvature-like term 
-		$\Omega_{xy}^{\text{spin}z}(\bm k)$ in the plane $k_z=0$ 
-		(note the magnitude of $\Omega_{xy}^{\text{spin}z}(\bm k)$ is in log scale). 
-		Intersections of the Fermi surface
-		with this plane are shown as black lines.}
-	\label{fig29.2}
-\end{figure}
-
-\clearpage
 \subsection*{Spin Hall conductivity}
 
 \begin{itemize}
@@ -71,11 +25,7 @@ Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(
 
 	The file {\tt Pt-shc-fermiscan.dat} contains the calculated SHC. 
 	The SHC for a $25\times25\times25$ kmesh are shown in the snippet below. 
-	The SHC at the Fermi energy (17.9919 eV) is 1705 $(\hbar/e)\mathrm{S/cm}$. 
-	The converged results reported in Refs.~\onlinecite{qiao-prb2018} 
-	and \onlinecite{guo-prl2008} are around 2200 $(\hbar/e)\mathrm{S/cm}$. 
-	Hence, a $25\times25\times25$ kmesh clearly gives an inaccurate value ($\sim 22.5\%$ error).   
-
+	 
 \begin{tcolorbox}[title=$25\times25\times25$ kmesh,sharp corners,boxrule=0.5pt]
 {\small
 \begin{verbatim}
@@ -89,6 +39,16 @@ Bottom panels: k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(
 \end{verbatim}
 }
 \end{tcolorbox}
+
+The calculated Fermi energy obtained from {\tt Quantum ESPRESSO} is $17.9919$ eV. 
+It may vary among different calculations due to the differences between versions of {\tt Quantum ESPRESSO} or compilers, 
+and these may lead to deviations from the following results. 
+However, the difference should be acceptable and the calculated SHC should be essentially the same. 
+
+The SHC at the Fermi energy is 1705 $(\hbar/e)\mathrm{S/cm}$. 
+The converged results reported in Refs.~\onlinecite{qiao-prb2018} 
+and \onlinecite{guo-prl2008} are around 2200 $(\hbar/e)\mathrm{S/cm}$. 
+Hence, a $25\times25\times25$ kmesh clearly gives an inaccurate value ($\sim 22.5\%$ error).
 
 Since these are quite demanding calculations, we only report the 
 value of the SHC for a $100\times100\times100$ kmesh (see snippet below). 
@@ -113,7 +73,7 @@ Refs.~\onlinecite{qiao-prb2018} and \onlinecite{guo-prl2008}.
 \item To complete the previous discussions, we also 
 compare the Fermi energy scan plots of the two calculations as 
 shown in the \Fig{fig29.3}. 
-\begin{figure}[htb!]
+\begin{figure}[!htb]
 \centering
 \includegraphics[width=.8\columnwidth]{figure/example29/pt_shc_kmesh.pdf}
 \caption{Fermi energy scan plots for calculations 
@@ -121,16 +81,10 @@ shown in the \Fig{fig29.3}.
 \label{fig29.3}
 \end{figure}
 
-\item The {\tt seedname.wpout} will print the percentage of k-points which 
+\item The {\tt seedname.wpout} will print the percentage of $k$-points which 
 have been calculated at the moment, as well as the corresponding calculation time, as 
 shown in the following snippet. 
-This might be helpful as you can roughly 
-estimate the total computational time 
-of your calculation, or it might give credence to the code that it is actually functioning :). 
-Note this report is merely based on the ``root'' computation node. It is accurate if the {\tt postw90} is run in serial, or the load on each node is balanced if running in parallel. However, the estimation is rough if loads are not balanced among nodes. This may happen if the performance of nodes in your cluster are not identical, or adaptive k-mesh refinements are triggered so some nodes may compute much more k-points than others. 
-Besides, if you are careful enough, you may find the diff time of 10\% is much larger than later ones. This 
-is caused by some done-once-and-for-all computations carried out at the beginning, thus 
-later computations are much faster. 
+
 \begin{tcolorbox}[title=Pt.wpout,sharp corners,boxrule=0.5pt]
 {\small
 \begin{verbatim}
@@ -168,6 +122,60 @@ later computations are much faster.
 \end{verbatim}
 }
 \end{tcolorbox}
-
+This might be helpful as you can roughly 
+estimate the total computational time 
+of your calculation, or it might give credence to the code that it is actually functioning :). 
+Note this report is merely based on the ``root'' computation node. It is accurate if the {\tt postw90} is run in serial, or the load on each node is balanced if running in parallel. However, the estimation is rough if loads are not balanced among nodes. This may happen if the performance of nodes in your cluster are not identical, or adaptive kmesh refinements are triggered so some nodes may compute much more $k$-points than others. 
+Besides, if you are careful enough, you may find the diff time of 10\% is much larger than later ones. This 
+is caused by some done-once-and-for-all computations carried out at the beginning, thus 
+later computations are much faster. 
 \end{itemize}
+
+%\clearpage
+\subsection*{Berry curvature-like term plots}
+\begin{itemize}
+	\item {\it The band-projected Berry curvature-like term $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
+		is defined as Eq.~(12.22) in the User Guide.}
+	{\it Plot the band structure of Pt and color it 
+		by the magnitude of its band-projected Berry curvature-like term $\Omega_{n,xy}^{\text{spin}z}(\bm k)$, 
+		and plot the k-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the 
+		same path in the BZ. }
+	
+	With Fermi energy set as 17.9919 eV we obtain the energy bands colored by the 
+	$\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ 
+	and the $k$-resolved Berry curvature-like term 
+	$\Omega_{xy}^{\text{spin}z}(\bm k)$ along high-symmetry lines 
+	as shown in \Fig{fig29.1}, which contains two plots calculated with 
+	different fixed smearing width.
+\end{itemize}
+
+\begin{figure}[htb!]
+	\centering
+	\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_1.pdf}}\qquad
+	\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-bands+shc_0_05.pdf}}
+	\caption{Top panels: Band structure of Pt along symmetry lines W-L-$\Gamma$-X-W-$\Gamma$, colored by
+		the $\Omega_{n,xy}^{\text{spin}z}({\bm k})$. 
+		Bottom panels: $k$-resolved Berry curvature-like term $\Omega_{xy}^{\text{spin}z}(\bm k)$ along the symmetry lines.}
+	\label{fig29.1}
+\end{figure}
+%\clearpage
+
+\begin{itemize}
+	\item {\it Combine the plot of the Fermi lines on the $(k_x,k_y)$ plane with a heatmap plot of the Berry curvature-like term of spin Hall conductivity.}
+	
+	The plots of the Fermi lines with a heatmap of $\Omega_{xy}^{\text{spin}z}(k_x,k_y,0)$ are shown in \Fig{fig29.2}.
+\end{itemize}
+
+\begin{figure}[htb!]
+	\centering
+	\subfloat[With fixed smearing width of 1 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_1.pdf}}\qquad
+	\subfloat[With fixed smearing width of 0.05 eV]{\includegraphics[width=0.45\columnwidth]{figure/example29/Pt-kslice-shc_0_05.pdf}}
+	\caption{Calculated $k$-resolved Berry curvature-like term 
+		$\Omega_{xy}^{\text{spin}z}(\bm k)$ in the plane $k_z=0$ 
+		(note the magnitude of $\Omega_{xy}^{\text{spin}z}(\bm k)$ is in log scale). 
+		Intersections of the Fermi surface
+		with this plane are shown as black lines.}
+	\label{fig29.2}
+\end{figure}
+
 

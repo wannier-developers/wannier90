@@ -90,7 +90,7 @@ The currently available modules in \texttt{postw90.x} are:
   Berry curvature-like term of spin Hall conductivity, including
   anomalous Hall conductivity, orbital magnetisation, optical
   conductivity, nonlinear shift current and spin Hall conductivity
-  (see Chap.~\ref{ch:berry} and examples 18, 19, 25 and 29 of the
+  (see Chap.~\ref{ch:berry} and examples 18, 19, 25, 29 and 30 of the
   tutorial).
 \item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
     including natural and current0induced optical rotation, 
@@ -1185,12 +1185,12 @@ Output files:
 
 \end{itemize}
 
-\item[{\bf --}] \verb#shc# Spin Hall conductivity, in $\frac{\hbar}{e}$S/cm.  Output files:
+\item[{\bf --}] \verb#shc# Spin Hall conductivity (SHC), in $(\hbar/e)$S/cm.  Output files:
 
 	\begin{itemize}
 	
 	\item[$\cdot$] {\tt seedname-shc-fermiscan.dat} (data file). The
-	first column is the number of the entry in the list, the second column contains the Fermi level $\varepsilon_F$ in eV, and the
+	first column is the number of entries in the list, the second column contains the Fermi level $\varepsilon_F$ in eV, and the
 	last column contains the values of
 	$\sigma_{\alpha\beta}^{\text{spin}\gamma}(\varepsilon_F)$.  This file is written if a range of
 	Fermi energies is specified via {\tt fermi\_energy\_min} and {\tt

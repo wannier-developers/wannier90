@@ -266,19 +266,19 @@ in the independent-particle approximation reads \cite{qiao-prb2018,guo-prl2008}
 %
 The spin current operator 
 $\hat{j}_{\alpha}^{\gamma}=
-\frac{1}{2}\{\hat{s}_{\gamma},\hat{v}_{\alpha}\}$ where the spin operator $\hat{s}_{\gamma}=\frac{\hbar}{2}\hat{\sigma}_{\gamma}$. Indices $\alpha,\beta$ denote Cartesian directions, $\gamma$ denotes the direction of spin, usually $\alpha = x, \beta = y, \gamma = z$.  $\Omega_c$ is the
+\frac{1}{2}\{\hat{s}_{\gamma},\hat{v}_{\alpha}\}$ where the spin operator $\hat{s}_{\gamma}=\frac{\hbar}{2}\hat{\sigma}_{\gamma}$. Indices $\alpha,\beta$ denote Cartesian directions, $\gamma$ denotes the direction of spin, commonly $\alpha = x, \beta = y, \gamma = z$.  $\Omega_c$ is the
 cell volume, $N_k$ is the number of $k$-points used for sampling the
 Brillouin zone, and $f_{n{\bf k}}=f(\varepsilon_{n{\bf k}})$ is the
 Fermi-Dirac distribution function. $\hbar\omega$ is the optical
-frequency, and $\eta>0$ is an adjustable smearing parameter with units
+frequency, and $\eta>0$ is an adjustable smearing parameter with unit
 of energy.
 
-The velocity matrix elements in the numerator is the same as   Eq.~(\ref{eq:velocity_mat}), 
+The velocity matrix element in the numerator is the same as   Eq.~(\ref{eq:velocity_mat}), 
 so the only unknown quantity is the spin current matrix $\langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle$. 
 We can use Wannier interpolation technique to efficiently calculate this matrix, for a full derivation please refer to Ref.~\cite{qiao-prb2018}. 
 
 The Eq.~(\ref{eq:kubo_shc}) can be further separated into 
-the band-projected Berry curvature-like term
+band-projected Berry curvature-like term
 \begin{equation}
 \label{eq:kubo_shc_berry}
 \Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k}) = {\hbar}^2 \sum_{
@@ -287,32 +287,30 @@ the band-projected Berry curvature-like term
 	\langle m\bm{k}| \hat{v}_{\beta}|n\bm{k}\rangle]}
 {(\epsilon_{n\bm{k}}-\epsilon_{m\bm{k}})^2-(\hbar\omega+i\eta)^2},
 \end{equation}
-k-resolved term
+$k$-resolved term which sums over occupied bands
 \begin{equation}
 \label{eq:kubo_shc_berry_sum}
 \Omega_{\alpha\beta}^{\text{spin}\gamma}(\bm{k}) = \sum_{n}
 f_{n\bm{k}} \Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k}),
 \end{equation}
-and the SHC is the sum over occupied bands
+and the SHC is 
 \begin{equation}
 \sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega) = 
 -\frac{e^2}{\hbar}\frac{1}{\Omega_c N_k}\sum_{\bm{k}}
 \Omega_{\alpha\beta}^{\text{spin}\gamma}(\bm{k}).
 \end{equation}
 The unit of the $\Omega_{n,\alpha\beta}^{\text{spin}\gamma}(\bm{k})$ 
-is $\text{length}^{2}$, and the unit of  $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ 
-is $\frac{e^2}{\hbar}\frac{1}{\text{length}}$ 
-[note $\frac{e^2}{\hbar} \simeq$ $2.434\times10^{-4}$ S]. 
-To convert into the unit $\frac{\hbar}{e} {\text{S/length}}$ 
-(which commonly appears in the literature), 
-the $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ should be multiplied 
-by $\frac{\hbar}{-2e}$ (this is done in the code, see the header of the output file). 
+is $\text{length}^{2}$ (Angstrom$^2$ or Bohr$^2$, depending on your 
+choice of {\tt berry\_curv\_unit} in the input file), 
+and the unit of  $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ 
+is $(\hbar/e)$S/cm (the unit is written in the header of the output file). 
 The case of $\omega=0$ corresponds to 
 direct current (dc) SHC while that of $\omega\ne0$ 
-corresponds to alternating current (ac) SHC or frequency dependent SHC. 
-Note some authors may use spin Berry curvature to denote 
-Eq.~(\ref{eq:kubo_shc_berry}), however, some treat this 
-name as misleading \cite{Gradhand_2012}, so we use a somewhat awkward name 
+corresponds to alternating current (ac) SHC or frequency-dependent SHC. 
+Note in some papers Eq.~(\ref{eq:kubo_shc_berry}) is called as 
+spin Berry curvature. However, it was pointed out by 
+Ref.~\cite{Gradhand_2012} that this 
+name is misleading, so we use a somewhat awkward name 
 ``Berry curvature-like term'' to refer to Eq.~(\ref{eq:kubo_shc_berry}). 
 The k-resolved term Eq.~(\ref{eq:kubo_shc_berry_sum}) can be 
 used to draw {\tt kslice} plot, and the band-projected Berry curvature-like term 
@@ -321,7 +319,8 @@ can be used to color the {\tt kpath} plot.
 
 Same as the case of optical conductivity, the parameter
 $\eta$ contained in the Eq.~(\ref{eq:kubo_shc_berry}) can be chosen using the keyword {\tt[kubo\_]smr\_fixed\_en\_width}. Also, adaptive smearing can 
-be employed by the keyword {\tt [kubo\_]adpt\_smr\_fac}. 
+be employed by the keyword {\tt [kubo\_]adpt\_smr} 
+(see Examples 29 and 30 in the Tutorial). 
 
 
 \section{Needed matrix elements}
