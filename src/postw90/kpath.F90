@@ -104,8 +104,8 @@ contains
         if (nfermi == 0) then
           call io_error('Error: must specify Fermi energy')
         else if (nfermi /= 1) then
-          call io_error('Error: kpath plot only accept one Fermi energy, '// &
-                        'use fermi_energy instead of fermi_energy_min')
+          call io_error('Error: kpath plot only accept one Fermi energy, ' &
+                        //'use fermi_energy instead of fermi_energy_min')
         end if
       end if
     end if

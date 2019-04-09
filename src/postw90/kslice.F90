@@ -98,9 +98,17 @@ contains
       call io_error('Error: spin-colored Fermi lines not allowed in ' &
                     //'curv/morb/shc heatmap plots')
     end if
-    if (plot_shc .and. kubo_adpt_smr) then
-      call io_error( &
-        'Error: Must use fixed smearing when plotting spin Hall conductivity')
+    if (plot_shc) then
+      if (kubo_adpt_smr) then
+        call io_error('Error: Must use fixed smearing when plotting ' &
+                      //'spin Hall conductivity')
+      end if
+      if (nfermi == 0) then
+        call io_error('Error: must specify Fermi energy')
+      else if (nfermi /= 1) then
+        call io_error('Error: kpath plot only accept one Fermi energy, ' &
+                      //'use fermi_energy instead of fermi_energy_min')
+      end if
     end if
 
     if (on_root) then
