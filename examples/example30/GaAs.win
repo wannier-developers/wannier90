@@ -1,4 +1,4 @@
-shc_freq_scan = .true.
+shc_freq_scan = true
 shc_alpha = 1
 shc_beta = 2
 shc_gamma = 3
