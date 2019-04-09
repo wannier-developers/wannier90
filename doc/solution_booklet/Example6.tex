@@ -95,9 +95,9 @@ After checking that the calculations have converged as shown in Example \ref{sec
     }
     This will read data from {\tt copper.inp} and write kpoints into {\tt copper\_band.kpt}. 
 
-    {\bf WARNING}: if you already have a {\tt coppper\_band.kpt} file from a previous Wannier90 calculation, running the above command will overwrite it.
+    {\bf WARNING}: if you already have a {\tt copper\_band.kpt} file from a previous Wannier90 calculation, running the above command will overwrite it.
 
-    Now you need to calculate a non-scf or bands calculation with Quantum ESPRESSO on the k-points given in {\tt coppper\_band.kpt}. To do so, copy the {\tt copper.nscf} to {\tt copper.bands} and modify it accordingly. Run a non-scf calculation
+    Now you need to calculate a non-scf or bands calculation with Quantum ESPRESSO on the k-points given in {\tt copper\_band.kpt}. To do so, copy the {\tt copper.nscf} to {\tt copper.bands} and modify it accordingly. Run a non-scf calculation
     {\tt
     \begin{quote}
     \$ > pw.x < copper.bands > copper.pwscf

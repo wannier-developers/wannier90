@@ -1067,7 +1067,7 @@ contains
     if (kslice .and. index(kslice_task, 'fermi_lines') == 0 .and. &
         index(kslice_task, 'curv') == 0 .and. &
         index(kslice_task, 'morb') == 0 .and. &
-        index(kslice_task, 'shc') == 0) call io_error&
+        index(kslice_task, 'shc') == 0) call io_error &
       ('Error: value of kslice_task not recognised in param_read')
     if (kslice .and. index(kslice_task, 'curv') > 0 .and. &
         index(kslice_task, 'morb') > 0) call io_error &
@@ -1366,7 +1366,6 @@ contains
         index(kpath_task, 'morb') == 0 .and. &
         index(kpath_task, 'shc') == 0) call io_error &
       ('Error: value of kpath_task not recognised in param_read')
-    ! check *.win has kpath block or not, otherwise seg fault
     if (bands_num_spec_points == 0 .and. kpath) &
       call io_error('Error: a kpath plot has been requested but there is no kpoint_path block')
 
