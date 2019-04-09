@@ -17,7 +17,7 @@ module w90_kpath
   !! Calculates quantities along a specified k-path:
   !!
   !!  - Energy bands (eventually colored by the spin)
-  !!  - Energy bands (colored by the Berry curvature-like
+  !!  - Energy bands (colored by Berry curvature-like
   !!                  term of spin Hall conductivity)
   !!
   !!  - (Berry curvature)x(-1) summed over occupied bands
@@ -95,10 +95,20 @@ contains
 
     if (on_root) then
       if (plot_shc .or. (plot_bands .and. kpath_bands_colour == 'shc')) then
+        ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
+        ! see line 1837 of berry.F90
         if (kubo_adpt_smr) call io_error( &
           'Error: Must use fixed smearing when plotting spin Hall conductivity')
       end if
-    endif
+      if (plot_shc) then
+        if (nfermi == 0) then
+          call io_error('Error: must specify Fermi energy')
+        else if (nfermi /= 1) then
+          call io_error('Error: kpath plot only accept one Fermi energy, '// &
+                        'use fermi_energy instead of fermi_energy_min')
+        end if
+      end if
+    end if
 
     call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
 
@@ -188,7 +198,7 @@ contains
           end do
         else if (kpath_bands_colour == 'shc') then
           call berry_get_shc_klist(kpt, shc_k_band=shc_k_band)
-          my_color(:, loop_kpt) = shc_k_band(:)
+          my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
@@ -247,7 +257,7 @@ contains
 
     if (plot_shc) then
       allocate (shc(total_pts))
-      call comms_gatherv(my_shc(:), my_num_pts, shc(:), counts, displs)
+      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs)
     end if
 
     if (on_root) then
