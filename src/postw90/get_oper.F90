@@ -1095,7 +1095,7 @@ contains
   subroutine get_SHC_R
     !==================================================
     !
-    !! Compute needed matrices for spin Hall conductivity
+    !! Compute several matrices for spin Hall conductivity
     !! SR_R  = <0n|sigma_{x,y,z}.(r-R)_alpha|Rm>
     !! SHR_R = <0n|sigma_{x,y,z}.H.(r-R)_alpha|Rm>
     !! SH_R  = <0n|sigma_{x,y,z}.H|Rm>
@@ -1129,7 +1129,7 @@ contains
     complex(kind=dp)              :: SHM_q(num_wann, num_wann, 3)
 
     real(kind=dp)                 :: s_real, s_img
-    integer                       :: spn_in, counter, winmin_q, ii, ierr, s, is
+    integer                       :: spn_in, counter, ierr, s, is
 
     integer                       :: n, m, i, j, &
                                      ik, ik2, ik_prev, nn, inn, nnl, nnm, nnn, &
@@ -1248,13 +1248,13 @@ contains
     ! end copying from get_SS_R, Junfeng Qiao
 
     ! start copying from get_HH_R, Junfeng Qiao
+    ! Note this is different from get_HH_R, at here we need the
+    ! original Hamiltonian to construct SHR_R, SH_R.
     if (on_root) then
       allocate (H_o(num_bands, num_bands, num_kpts))
       H_o = cmplx_0
       do ik = 1, num_kpts
-        !call get_win_min(ik,winmin_q)
         do m = 1, num_bands
-          !ii=winmin_q+i-1
           H_o(m, m, ik) = eigval(m, ik)
         enddo
         ! scissors shift applied to the original Hamiltonian
@@ -1305,6 +1305,7 @@ contains
       SH_q = cmplx_0
       ik_prev = 0
 
+      ! QZYZ18 Eq.(48)
       allocate (SH_o(num_bands, num_bands, num_kpts, 3))
       SH_o = cmplx_0
       do ik = 1, num_kpts
@@ -1368,19 +1369,24 @@ contains
         SM_q = cmplx_0
         SHM_q = cmplx_0
         do is = 1, 3
+          ! QZYZ18 Eq.(50)
           SM_o(:, :, is) = matmul(spn_o(:, :, ik, is), S_o(:, :))
+          ! QZYZ18 Eq.(51)
           SHM_o(:, :, is) = matmul(SH_o(:, :, ik, is), S_o(:, :))
 
           ! Transform to projected subspace, Wannier gauge
           !
+          ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix( &
             ik, num_states(ik), &
             ik, num_states(ik), &
             spn_o(:, :, ik, is), SS_q(:, :, is))
+          ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix( &
             ik, num_states(ik), &
             nnlist(ik, nn), num_states(nnlist(ik, nn)), &
             SM_o(:, :, is), SM_q(:, :, is))
+          ! QZYZ18 Eq.(51)
           call get_gauge_overlap_matrix( &
             ik, num_states(ik), &
             nnlist(ik, nn), num_states(nnlist(ik, nn)), &
@@ -1389,8 +1395,10 @@ contains
           ! Assuming all neighbors of a given point are read in sequence!
           !
           do idir = 1, 3
+            ! QZYZ18 Eq.(50)
             SR_q(:, :, ik, is, idir) = SR_q(:, :, ik, is, idir) &
                                        + wb(nn)*bk(idir, nn, ik)*(SM_q(:, :, is) - SS_q(:, :, is))
+            ! QZYZ18 Eq.(51)
             SHR_q(:, :, ik, is, idir) = SHR_q(:, :, ik, is, idir) &
                                         + wb(nn)*bk(idir, nn, ik)*(SHM_q(:, :, is) - SH_q(:, :, ik, is))
           end do
@@ -1402,9 +1410,12 @@ contains
       close (mmn_in)
 
       do is = 1, 3
+        ! QZYZ18 Eq.(46)
         call fourier_q_to_R(SH_q(:, :, :, is), SH_R(:, :, :, is))
         do idir = 1, 3
+          ! QZYZ18 Eq.(44)
           call fourier_q_to_R(SR_q(:, :, :, is, idir), SR_R(:, :, :, is, idir))
+          ! QZYZ18 Eq.(45)
           call fourier_q_to_R(SHR_q(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
         end do
       end do
