@@ -11,7 +11,7 @@
 
 - Selective localization and constrained centres from Marianetti et al. [PRB 90, 165125 (2014)] [[#187]](https://github.com/wannier-developers/wannier90/pull/187) [[#207]](https://github.com/wannier-developers/wannier90/pull/207) [[#206]](https://github.com/wannier-developers/wannier90/pull/206) [[#205]](https://github.com/wannier-developers/wannier90/pull/205)
 
-- Implementation of the SCDM method in Wannier90 [[#167]](https://github.com/wannier-developers/wannier90/pull/167) [[#202]](https://github.com/wannier-developers/wannier90/pull/202) and added an example for the tutorial [[#194]](https://github.com/wannier-developers/wannier90/pull/194). Note that during development we have adapted the interface of the SCDM input flags; Quantum ESPRESSO v6.4 has the current implementation. [[#238]](https://github.com/wannier-developers/wannier90/pull/239)
+- Implementation of the SCDM method in Wannier90 [[#167]](https://github.com/wannier-developers/wannier90/pull/167) [[#202]](https://github.com/wannier-developers/wannier90/pull/202) and added an example for the tutorial [[#194]](https://github.com/wannier-developers/wannier90/pull/194). Note that during development we have adapted the interface of the SCDM input flags; Quantum ESPRESSO v6.4 has the current implementation. [[#238]](https://github.com/wannier-developers/wannier90/pull/238)
 
 
 - Parallelisation of the core Wannier90 routines [[#193]](https://github.com/wannier-developers/wannier90/pull/193) [[#185]](https://github.com/wannier-developers/wannier90/pull/185) [[#173]](https://github.com/wannier-developers/wannier90/pull/173) [[#151]](https://github.com/wannier-developers/wannier90/pull/151) [[#149]](https://github.com/wannier-developers/wannier90/pull/149) [[#125]](https://github.com/wannier-developers/wannier90/pull/125) [[#120]](https://github.com/wannier-developers/wannier90/pull/120) [[#76]](https://github.com/wannier-developers/wannier90/pull/76)
@@ -76,6 +76,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 
 - Improvements to the Wigner-Seitz detection routines [[#117]](https://github.com/wannier-developers/wannier90/pull/117) [[#109]](https://github.com/wannier-developers/wannier90/pull/109)
 
+- Fix berry_task check for morb, and add check for kpoint_path block in parameters
 
 
 
