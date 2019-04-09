@@ -1921,13 +1921,11 @@ contains
       !====================================================================!
 
       use w90_constants, only: dp, cmplx_0, cmplx_i
-      use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
-      use w90_parameters, only: num_wann, kubo_eigval_max, &
-        shc_alpha, shc_gamma
-      use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
-        pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
-      use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
-      use w90_get_oper, only: HH_R, AA_R, SS_R, SR_R, SHR_R, SH_R
+      use w90_utility, only: utility_rotate
+      use w90_parameters, only: num_wann, shc_alpha, shc_gamma
+      use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+        pw90common_fourier_R_to_k_vec
+      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R
 
       ! args
       real(kind=dp), intent(in)  :: kpt(3)
