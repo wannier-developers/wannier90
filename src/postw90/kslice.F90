@@ -661,8 +661,7 @@ contains
           write (stdout, '(/,3x,a)') filename
           open (scriptunit, file=filename, form='formatted')
         elseif (plot_fermi_lines) then
-          filename = trim(seedname)//'-kslice-shc'// &
-                     '+fermi_lines.py'
+          filename = trim(seedname)//'-kslice-shc'//'+fermi_lines.py'
           write (stdout, '(/,3x,a)') filename
           open (scriptunit, file=filename, form='formatted')
         endif
@@ -734,16 +733,13 @@ contains
         write (scriptunit, '(a)') '  plt.register_cmap(cmap=newcmap)'
         write (scriptunit, '(a)') '  return newcmap'
         write (scriptunit, '(a)') " "
-        write (scriptunit, '(a)') "outfile = '"//trim(seedname)// &
-          "-kslice-shc"//".pdf'"
+        write (scriptunit, '(a)') "outfile = '"//trim(seedname)//"-kslice-shc.pdf'"
         write (scriptunit, '(a)') " "
-        write (scriptunit, '(a)') &
-          "val = np.loadtxt('"//trim(seedname)// &
-          "-kslice-shc.dat', usecols=(0,))"
+        write (scriptunit, '(a)') "val = np.loadtxt('"//trim(seedname) &
+          //"-kslice-shc.dat', usecols=(0,))"
         write (scriptunit, '(a)') " "
-        write (scriptunit, '(a)') &
-                "val_log=np.array([np.log10(abs(elem))*np.sign(elem) &
-                        &if abs(elem)>10 else elem/10.0 for elem in val])"
+        write (scriptunit, '(a)') "val_log=np.array([np.log10(abs(elem))*np.sign(elem)" &
+          //"if abs(elem)>10 else elem/10.0 for elem in val])"
         write (scriptunit, '(a)') "#val_log = val"
         write (scriptunit, '(a)') "valmax=max(val_log)"
         write (scriptunit, '(a)') "valmin=min(val_log)"
@@ -769,14 +765,12 @@ contains
         write (scriptunit, '(a)') "  ticks=range(mn,mx+1)"
         write (scriptunit, '(a)') "  #pl.contourf(xint,yint,valint,ticks)"
         write (scriptunit, '(a)') "  pl.imshow(valint,origin='lower'," &
-          //"extent=(min(xint),max(xint),min(yint),max(yint)))#," &
-          //"cmap=cmnew)"
+          //"extent=(min(xint),max(xint),min(yint),max(yint)))#,cmap=cmnew)"
         write (scriptunit, '(a)') " "
         write (scriptunit, '(a)') "ticklabels=[]"
         write (scriptunit, '(a)') "for n in ticks:"
         write (scriptunit, '(a)') " if n<0: "
-        write (scriptunit, '(a)') &
-          "  ticklabels.append('-$10^{%d}$' % abs(n))"
+        write (scriptunit, '(a)') "  ticklabels.append('-$10^{%d}$' % abs(n))"
         write (scriptunit, '(a)') " elif n==0:"
         write (scriptunit, '(a)') "  ticklabels.append(' $%d$' %  n)"
         write (scriptunit, '(a)') " else:"
