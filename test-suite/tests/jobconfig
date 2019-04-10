@@ -346,6 +346,24 @@ program = POSTW90_SHCFREQDAT_OK
 inputs_args = ('GaAs.win', '')
 output = GaAs-shc-freqscan.dat
 
+# Test of kpath with SHC as color for fcc platinum
+[testpostw90_pt_kpathbandsshc/]
+program = POSTW90_SHCKPATHBANDSDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-bands.dat 
+
+# Test of kpath SHC for fcc platinum
+[testpostw90_pt_kpathshc/]
+program = POSTW90_SHCKPATHDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc.dat
+
+# Test of kslice SHC for fcc platinum
+[testpostw90_pt_ksliceshc/]
+program = POSTW90_SHCKSLICEDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-kslice-shc.dat
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*
