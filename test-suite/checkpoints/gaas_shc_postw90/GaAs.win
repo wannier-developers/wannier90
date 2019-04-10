@@ -6,7 +6,7 @@ spn_formatted = true
 
 berry = true
 berry_task = shc                
-berry_kmesh = 25 #250
+berry_kmesh = 10
 
 fermi_energy = 7.9366
 
