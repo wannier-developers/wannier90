@@ -363,6 +363,27 @@ contains
           write (gnuunit, *) 'set zrange [-1:1]'
           write (gnuunit, *) 'splot ', '"'//trim(seedname)//'-bands.dat', &
             '" with dots palette'
+        else if (kpath_bands_colour == 'shc') then
+          !
+          ! Only works with gnuplot v4.2 and higher
+          !
+          write (gnuunit, 706) xval(total_pts), ymin, ymax
+          write (gnuunit, 702, advance="no") glabel(1), 0.0_dp, &
+            (glabel(i + 1), sum(kpath_len(1:i)), i=1, num_paths - 1)
+          write (gnuunit, 703) glabel(1 + num_paths), sum(kpath_len(:))
+          write (gnuunit, *) &
+            'sgnlog10(x) = abs(x) > 10.0 ? log10(abs(x))*sgn(x) : x/10.0'
+          ! merge: Fortran ternary operator: similar to ? : in C
+          zmin = minval(color)
+          zmin = merge(sign(log10(abs(zmin)), zmin), zmin/10.0_dp, abs(zmin) > 10.0_dp)
+          zmax = maxval(color)
+          zmax = merge(sign(log10(abs(zmax)), zmax), zmax/10.0_dp, abs(zmax) > 10.0_dp)
+          write (gnuunit, *) &
+            'set palette defined (', zmin, ' "blue", 0 "green", ', zmax, ' "red")'
+          write (gnuunit, *) 'set pm3d map'
+          write (gnuunit, *) 'set zrange [', zmin, ':', zmax, ']'
+          write (gnuunit, *) 'splot ', '"'//trim(seedname)//'-bands.dat', &
+            '" u 1:2:(sgnlog10($3)) with dots palette'
         end if
         close (gnuunit)
         !
@@ -378,7 +399,11 @@ contains
           "-bands.dat')"
         write (pyunit, '(a)') "x=data[:,0]"
         write (pyunit, '(a)') "y=data[:,1]"
-        if (kpath_bands_colour == 'spin') write (pyunit, '(a)') "z=data[:,2]"
+        if (kpath_bands_colour == 'spin' &
+            .or. kpath_bands_colour == 'shc') write (pyunit, '(a)') "z=data[:,2]"
+        if (kpath_bands_colour == 'shc') write (pyunit, '(a)') &
+          "z=np.array([np.log10(abs(elem))*np.sign(elem) " &
+          //"if abs(elem)>10 else elem/10.0 for elem in z])"
         write (pyunit, '(a)') "tick_labels=[]"
         write (pyunit, '(a)') "tick_locs=[]"
         do j = 1, num_spts
@@ -397,7 +422,8 @@ contains
         end do
         if (kpath_bands_colour == 'none') then
           write (pyunit, '(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-        else if (kpath_bands_colour == 'spin') then
+        else if (kpath_bands_colour == 'spin' .or. &
+                 kpath_bands_colour == 'shc') then
           write (pyunit, '(a)') &
             "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
         end if
@@ -410,7 +436,7 @@ contains
           //"[pl.ylim()[0],pl.ylim()[1]],color='gray'," &
           //"linestyle='-',linewidth=0.5)"
         write (pyunit, '(a)') "pl.ylabel('Energy [eV]')"
-        if (kpath_bands_colour == 'spin') then
+        if (kpath_bands_colour == 'spin' .or. kpath_bands_colour == 'shc') then
           write (pyunit, '(a)') &
             "pl.axes().set_aspect(aspect=0.65*max(x)/(max(y)-min(y)))"
           write (pyunit, '(a)') "pl.colorbar(shrink=0.7)"
@@ -740,9 +766,9 @@ contains
         write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi_energy_list(1)
         if (kpath_bands_colour == 'spin' .or. kpath_bands_colour == 'shc') &
           write (pyunit, '(a)') "z=data[:,2]"
-        write (pyunit, '(a)') &
-                "z=np.array([np.log10(abs(elem))*np.sign(elem) &
-                        &if abs(elem)>10 else elem/10.0 for elem in z])"
+        if (kpath_bands_colour == 'shc') &
+          write (pyunit, '(a)') "z=np.array([np.log10(abs(elem))*np.sign(elem) " &
+          //"if abs(elem)>10 else elem/10.0 for elem in z])"
         if (kpath_bands_colour == 'none') then
           write (pyunit, '(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
         else if (kpath_bands_colour == 'spin' &
@@ -857,9 +883,14 @@ contains
           write (pyunit, '(a)') "x=data[:,0]"
           write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi_energy_list(1)
           if (kpath_bands_colour == 'spin') write (pyunit, '(a)') "z=data[:,2]"
+          if (kpath_bands_colour == 'shc') then
+            write (pyunit, '(a)') "z=data[:,2]"
+            write (pyunit, '(a)') "z=np.array([np.log10(abs(elem))*np.sign(elem) " &
+              //"if abs(elem)>10 else elem/10.0 for elem in z])"
+          end if
           if (kpath_bands_colour == 'none') then
             write (pyunit, '(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-          else if (kpath_bands_colour == 'spin') then
+          else if (kpath_bands_colour == 'spin' .or. kpath_bands_colour == 'shc') then
             write (pyunit, '(a)') &
               "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
           end if
