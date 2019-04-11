@@ -189,7 +189,7 @@ tolerance = ( (1.0e-6, 5.0e-6, 'path'),
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_kpath_dat.parse
 tolerance = ( (1.0e-6, 5.0e-6, 'path'),
-              (1.0e-3, 2.0e-3, 'shc'))
+              (1.0e-3, None, 'shc'))
 
 [POSTW90_SHCKSLICEDAT_OK]
 exe = ../../postw90.x
