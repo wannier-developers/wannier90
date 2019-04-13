@@ -66,7 +66,7 @@ contains
                          range
     real(kind=dp), allocatable, dimension(:) :: kpath_len
     logical           :: plot_bands, plot_curv, plot_morb
-    character(len=20) :: file_name
+    character(len=40) :: file_name
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: UU(:, :)
