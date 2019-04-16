@@ -73,7 +73,7 @@ contains
                          zhat(3), vdum(3), rdum, shc_k_fermi(nfermi)
     logical           :: plot_fermi_lines, plot_curv, plot_morb, &
                          fermi_lines_color, heatmap, plot_shc
-    character(len=40) :: filename, square
+    character(len=120) :: filename, square
 
     integer, allocatable :: bnddataunit(:)
     complex(kind=dp), allocatable :: HH(:, :)
