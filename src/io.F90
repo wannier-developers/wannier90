@@ -425,13 +425,13 @@ contains
     ! Returns elapsed wall clock time in seconds since its first call  !
     !                                                                  !
     !===================================================================
-    use w90_constants, only: dp
+    use w90_constants, only: dp, i64
     implicit none
 
     real(kind=dp) :: io_wallclocktime
 
-    integer :: c0, c1
-    integer :: rate
+    integer(kind=i64) :: c0, c1
+    integer(kind=i64) :: rate
     logical :: first = .true.
     save first, rate, c0
 
