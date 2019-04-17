@@ -73,6 +73,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 
 - Fix berry_task check for morb, and add check for kpoint_path block in parameters
 
+- Use 64 bit integer in io_wallclocktime [[#266]](https://github.com/wannier-developers/wannier90/pull/266)
 
 
 
