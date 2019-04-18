@@ -1130,7 +1130,7 @@ The default value is 1.0E-3.
 %The default value is {\tt 1.0 eV}.
 
 \subsection[slwf\_num]{\tt integer :: slwf\_num}
-The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. 
+The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $<$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. If {\tt slwf\_num = num\_wann} no selective minimisation is performed. In this case, \wannier\ will simply generate a set of {\tt num\_wann} MLWFs.
 
 The default is {\tt num\_wann}.
 
