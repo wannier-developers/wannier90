@@ -165,6 +165,37 @@ tolerance = ( (1.0e-6, 1.0e-6, 'nnkpts_g1'),
               (1.0e-6, 1.0e-6, 'kpoints_k1'),
               (1.0e-6, 1.0e-6, 'kpoints_k2'))
 
+[POSTW90_SHCFERMIDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_dat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'energy'),
+              (1.0e-3, 2.0e-3, 'shc'))
+
+[POSTW90_SHCFREQDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_dat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'frequency'),
+              (1.0e-3, 2.0e-3, 'shc_re'),
+              (1.0e-3, 2.0e-3, 'shc_im'))
+
+[POSTW90_SHCKPATHBANDSDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_kpath_bandsdat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'path'),
+              (1.0e-3, 2.0e-3, 'energy'),
+              (1.0e-3, 2.0e-3, 'shc'))
+
+[POSTW90_SHCKPATHDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_kpath_dat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'path'),
+              (1.0e-3, None, 'shc'))
+
+[POSTW90_SHCKSLICEDAT_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_kslice_dat.parse
+tolerance = ( (1.0e-3, 2.0e-3, 'shc'))
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones
