@@ -287,6 +287,14 @@ contains
 
     call comms_bcast(spinors, 1)
 
+    call comms_bcast(shc_freq_scan, 1)
+    call comms_bcast(shc_alpha, 1)
+    call comms_bcast(shc_beta, 1)
+    call comms_bcast(shc_gamma, 1)
+    call comms_bcast(shc_bandshift, 1)
+    call comms_bcast(shc_bandshift_firstband, 1)
+    call comms_bcast(shc_bandshift_energyshift, 1)
+
     call comms_bcast(kubo_adpt_smr, 1)
     call comms_bcast(kubo_adpt_smr_fac, 1)
     call comms_bcast(kubo_adpt_smr_max, 1)

@@ -1,5 +1,10 @@
 # CHANGELOG of Wannier90
 
+### New postw90 features, optimizations and new post-processing codes
+
+- Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + example 29,30 + test suites [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
+
+
 ## v3.0.0 (27th February 2019)
 
 ### New Wannier90 features
@@ -71,7 +76,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 
 - Improvements to the Wigner-Seitz detection routines [[#117]](https://github.com/wannier-developers/wannier90/pull/117) [[#109]](https://github.com/wannier-developers/wannier90/pull/109)
 
-- Fix berry_task check for morb, and add check for kpoint_path block in parameters
+- Fix berry_task check for morb, and add check for kpoint_path block in parameters [[#258]](https://github.com/wannier-developers/wannier90/pull/258)
 
 
 
