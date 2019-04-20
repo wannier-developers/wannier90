@@ -46,6 +46,15 @@ module w90_get_oper
   complex(kind=dp), allocatable, save :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
   !! $$\langle 0n | \sigma_{x,y,z} | Rm \rangle$$
 
+  complex(kind=dp), allocatable, save :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+
+  complex(kind=dp), allocatable, save :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+
+  complex(kind=dp), allocatable, save :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
+
 contains
 
   !======================================================!
@@ -1081,6 +1090,359 @@ contains
       ('Error: Problem reading input file '//trim(seedname)//'.spn')
 
   end subroutine get_SS_R
+
+  !==================================================
+  subroutine get_SHC_R
+    !==================================================
+    !
+    !! Compute several matrices for spin Hall conductivity
+    !! SR_R  = <0n|sigma_{x,y,z}.(r-R)_alpha|Rm>
+    !! SHR_R = <0n|sigma_{x,y,z}.H.(r-R)_alpha|Rm>
+    !! SH_R  = <0n|sigma_{x,y,z}.H|Rm>
+    !
+    !==================================================
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_parameters, only: num_kpts, nntot, num_wann, wb, bk, timing_level, &
+      num_bands, ndimwin, nnlist, have_disentangled, &
+      transl_inv, nncell, spn_formatted, eigval, &
+      scissors_shift, num_valence_bands, &
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
+    use w90_postw90_common, only: nrpts
+    use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
+      seedname
+    use w90_comms, only: on_root, comms_bcast
+
+    complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SH_q(:, :, :, :)
+
+    complex(kind=dp), allocatable :: S_o(:, :)
+    complex(kind=dp), allocatable :: spn_o(:, :, :, :), spn_temp(:, :)
+    complex(kind=dp), allocatable :: H_o(:, :, :)
+    complex(kind=dp), allocatable :: SH_o(:, :, :, :)
+    complex(kind=dp)              :: SM_o(num_bands, num_bands, 3)
+    complex(kind=dp)              :: SHM_o(num_bands, num_bands, 3)
+
+    complex(kind=dp)              :: SS_q(num_wann, num_wann, 3)
+    complex(kind=dp)              :: SM_q(num_wann, num_wann, 3)
+    complex(kind=dp)              :: SHM_q(num_wann, num_wann, 3)
+
+    real(kind=dp)                 :: s_real, s_img
+    integer                       :: spn_in, counter, ierr, s, is
+
+    integer                       :: n, m, i, j, &
+                                     ik, ik2, ik_prev, nn, inn, nnl, nnm, nnn, &
+                                     idir, ncount, nn_count, mmn_in, &
+                                     nb_tmp, nkp_tmp, nntot_tmp, file_unit, &
+                                     ir, io, ivdum(3), ivdum_old(3)
+    integer, allocatable          :: num_states(:)
+    real(kind=dp)                 :: m_real, m_imag, rdum1_real, rdum1_imag, &
+                                     rdum2_real, rdum2_imag, rdum3_real, rdum3_imag
+    logical                       :: nn_found
+    character(len=60)             :: header
+
+    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1)
+
+    if (.not. allocated(SR_R)) then
+      allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
+    else
+      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+      return
+    end if
+    if (.not. allocated(SHR_R)) then
+      allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
+    else
+      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+      return
+    end if
+    if (.not. allocated(SH_R)) then
+      allocate (SH_R(num_wann, num_wann, nrpts, 3))
+    else
+      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+      return
+    end if
+
+    ! start copying from get_SS_R, Junfeng Qiao
+    ! read spn file
+    if (on_root) then
+
+      allocate (spn_o(num_bands, num_bands, num_kpts, 3))
+
+      allocate (num_states(num_kpts))
+      do ik = 1, num_kpts
+        if (have_disentangled) then
+          num_states(ik) = ndimwin(ik)
+        else
+          num_states(ik) = num_wann
+        endif
+      enddo
+
+      ! Read from .spn file the original spin matrices <psi_nk|sigma_i|psi_mk>
+      ! (sigma_i = Pauli matrix) between ab initio eigenstates
+      !
+      spn_in = io_file_unit()
+      if (spn_formatted) then
+        open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
+              status='old', err=109)
+        write (stdout, '(/a)', advance='no') &
+          ' Reading spin matrices from '//trim(seedname)//'.spn in get_SHC_R : '
+        read (spn_in, *, err=110, end=110) header
+        write (stdout, '(a)') trim(header)
+        read (spn_in, *, err=110, end=110) nb_tmp, nkp_tmp
+      else
+        open (unit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
+              status='old', err=109)
+        write (stdout, '(/a)', advance='no') &
+          ' Reading spin matrices from '//trim(seedname)//'.spn in get_SHC_R : '
+        read (spn_in, err=110, end=110) header
+        write (stdout, '(a)') trim(header)
+        read (spn_in, err=110, end=110) nb_tmp, nkp_tmp
+      endif
+      if (nb_tmp .ne. num_bands) &
+        call io_error(trim(seedname)//'.spn has wrong number of bands')
+      if (nkp_tmp .ne. num_kpts) &
+        call io_error(trim(seedname)//'.spn has wrong number of k-points')
+      if (spn_formatted) then
+        do ik = 1, num_kpts
+          do m = 1, num_bands
+            do n = 1, m
+              read (spn_in, *, err=110, end=110) s_real, s_img
+              spn_o(n, m, ik, 1) = cmplx(s_real, s_img, dp)
+              read (spn_in, *, err=110, end=110) s_real, s_img
+              spn_o(n, m, ik, 2) = cmplx(s_real, s_img, dp)
+              read (spn_in, *, err=110, end=110) s_real, s_img
+              spn_o(n, m, ik, 3) = cmplx(s_real, s_img, dp)
+              ! Read upper-triangular part, now build the rest
+              spn_o(m, n, ik, 1) = conjg(spn_o(n, m, ik, 1))
+              spn_o(m, n, ik, 2) = conjg(spn_o(n, m, ik, 2))
+              spn_o(m, n, ik, 3) = conjg(spn_o(n, m, ik, 3))
+            end do
+          end do
+        enddo
+      else
+        allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
+        if (ierr /= 0) call io_error('Error in allocating spm_temp in get_SHC_R')
+        do ik = 1, num_kpts
+          read (spn_in) ((spn_temp(s, m), s=1, 3), m=1, (num_bands*(num_bands + 1))/2)
+          counter = 0
+          do m = 1, num_bands
+            do n = 1, m
+              counter = counter + 1
+              spn_o(n, m, ik, 1) = spn_temp(1, counter)
+              spn_o(m, n, ik, 1) = conjg(spn_temp(1, counter))
+              spn_o(n, m, ik, 2) = spn_temp(2, counter)
+              spn_o(m, n, ik, 2) = conjg(spn_temp(2, counter))
+              spn_o(n, m, ik, 3) = spn_temp(3, counter)
+              spn_o(m, n, ik, 3) = conjg(spn_temp(3, counter))
+            end do
+          end do
+        end do
+        deallocate (spn_temp, stat=ierr)
+        if (ierr /= 0) call io_error('Error in deallocating spm_temp in get_SHC_R')
+      endif
+
+      close (spn_in)
+
+    endif !on_root
+    ! end copying from get_SS_R, Junfeng Qiao
+
+    ! start copying from get_HH_R, Junfeng Qiao
+    ! Note this is different from get_HH_R, at here we need the
+    ! original Hamiltonian to construct SHR_R, SH_R.
+    if (on_root) then
+      allocate (H_o(num_bands, num_bands, num_kpts))
+      H_o = cmplx_0
+      do ik = 1, num_kpts
+        do m = 1, num_bands
+          H_o(m, m, ik) = eigval(m, ik)
+        enddo
+        ! scissors shift applied to the original Hamiltonian
+        if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
+          do m = num_valence_bands + 1, num_bands
+            H_o(m, m, ik) = H_o(m, m, ik) + scissors_shift
+          end do
+        else if (shc_bandshift) then
+          do m = shc_bandshift_firstband, num_bands
+            H_o(m, m, ik) = H_o(m, m, ik) + shc_bandshift_energyshift
+          end do
+        end if
+      enddo
+    endif !on_root
+    ! end copying from get_HH_R, Junfeng Qiao
+
+    ! start copying from get_AA_R, Junfeng Qiao
+    ! read mmn file
+    !
+    if (on_root) then
+
+      allocate (SR_q(num_wann, num_wann, num_kpts, 3, 3))
+      allocate (SHR_q(num_wann, num_wann, num_kpts, 3, 3))
+      allocate (SH_q(num_wann, num_wann, num_kpts, 3))
+      allocate (S_o(num_bands, num_bands))
+
+      mmn_in = io_file_unit()
+      open (unit=mmn_in, file=trim(seedname)//'.mmn', &
+            form='formatted', status='old', action='read', err=101)
+      write (stdout, '(/a)', advance='no') &
+        ' Reading overlaps from '//trim(seedname)//'.mmn in get_SHC_R   : '
+      ! Read the comment line (header)
+      read (mmn_in, '(a)', err=102, end=102) header
+      write (stdout, '(a)') trim(header)
+      ! Read the number of bands, k-points and nearest neighbours
+      read (mmn_in, *, err=102, end=102) nb_tmp, nkp_tmp, nntot_tmp
+      ! Checks
+      if (nb_tmp .ne. num_bands) &
+        call io_error(trim(seedname)//'.mmn has wrong number of bands')
+      if (nkp_tmp .ne. num_kpts) &
+        call io_error(trim(seedname)//'.mmn has wrong number of k-points')
+      if (nntot_tmp .ne. nntot) &
+        call io_error &
+        (trim(seedname)//'.mmn has wrong number of nearest neighbours')
+
+      SR_q = cmplx_0
+      SHR_q = cmplx_0
+      SH_q = cmplx_0
+      ik_prev = 0
+
+      ! QZYZ18 Eq.(48)
+      allocate (SH_o(num_bands, num_bands, num_kpts, 3))
+      SH_o = cmplx_0
+      do ik = 1, num_kpts
+        do is = 1, 3
+          SH_o(:, :, ik, is) = matmul(spn_o(:, :, ik, is), H_o(:, :, ik))
+          call get_gauge_overlap_matrix( &
+            ik, num_states(ik), &
+            ik, num_states(ik), &
+            SH_o(:, :, ik, is), SH_q(:, :, ik, is))
+        end do
+      end do
+
+      ! Composite loop over k-points ik (outer loop) and neighbors ik2 (inner)
+      do ncount = 1, num_kpts*nntot
+        !
+        !Read from .mmn file the original overlap matrix
+        ! S_o=<u_ik|u_ik2> between ab initio eigenstates
+        !
+        read (mmn_in, *, err=102, end=102) ik, ik2, nnl, nnm, nnn
+        do n = 1, num_bands
+          do m = 1, num_bands
+            read (mmn_in, *, err=102, end=102) m_real, m_imag
+            S_o(m, n) = cmplx(m_real, m_imag, kind=dp)
+          enddo
+        enddo
+        !debug
+        !OK
+        !if(ik.ne.ik_prev .and.ik_prev.ne.0) then
+        !   if(nn_count.ne.nntot)&
+        !        write(stdout,*) 'something wrong in get_AA_R!'
+        !endif
+        !enddebug
+        if (ik .ne. ik_prev) nn_count = 0
+        nn = 0
+        nn_found = .false.
+        do inn = 1, nntot
+          if ((ik2 .eq. nnlist(ik, inn)) .and. &
+              (nnl .eq. nncell(1, ik, inn)) .and. &
+              (nnm .eq. nncell(2, ik, inn)) .and. &
+              (nnn .eq. nncell(3, ik, inn))) then
+            if (.not. nn_found) then
+              nn_found = .true.
+              nn = inn
+            else
+              call io_error('Error reading '//trim(seedname)//'.mmn.&
+                   & More than one matching nearest neighbour found')
+            endif
+          endif
+        end do
+        if (nn .eq. 0) then
+          write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
+            ' Error reading '//trim(seedname)//'.mmn:', &
+            ncount, ik, ik2, nn, nnl, nnm, nnn
+          call io_error('Neighbour not found')
+        end if
+        nn_count = nn_count + 1 !Check: can also be place after nn=inn (?)
+
+        SM_o = cmplx_0
+        SHM_o = cmplx_0
+        SS_q = cmplx_0
+        SM_q = cmplx_0
+        SHM_q = cmplx_0
+        do is = 1, 3
+          ! QZYZ18 Eq.(50)
+          SM_o(:, :, is) = matmul(spn_o(:, :, ik, is), S_o(:, :))
+          ! QZYZ18 Eq.(51)
+          SHM_o(:, :, is) = matmul(SH_o(:, :, ik, is), S_o(:, :))
+
+          ! Transform to projected subspace, Wannier gauge
+          !
+          ! QZYZ18 Eq.(50)
+          call get_gauge_overlap_matrix( &
+            ik, num_states(ik), &
+            ik, num_states(ik), &
+            spn_o(:, :, ik, is), SS_q(:, :, is))
+          ! QZYZ18 Eq.(50)
+          call get_gauge_overlap_matrix( &
+            ik, num_states(ik), &
+            nnlist(ik, nn), num_states(nnlist(ik, nn)), &
+            SM_o(:, :, is), SM_q(:, :, is))
+          ! QZYZ18 Eq.(51)
+          call get_gauge_overlap_matrix( &
+            ik, num_states(ik), &
+            nnlist(ik, nn), num_states(nnlist(ik, nn)), &
+            SHM_o(:, :, is), SHM_q(:, :, is))
+
+          ! Assuming all neighbors of a given point are read in sequence!
+          !
+          do idir = 1, 3
+            ! QZYZ18 Eq.(50)
+            SR_q(:, :, ik, is, idir) = SR_q(:, :, ik, is, idir) &
+                                       + wb(nn)*bk(idir, nn, ik)*(SM_q(:, :, is) - SS_q(:, :, is))
+            ! QZYZ18 Eq.(51)
+            SHR_q(:, :, ik, is, idir) = SHR_q(:, :, ik, is, idir) &
+                                        + wb(nn)*bk(idir, nn, ik)*(SHM_q(:, :, is) - SH_q(:, :, ik, is))
+          end do
+        end do
+
+        ik_prev = ik
+      enddo !ncount
+
+      close (mmn_in)
+
+      do is = 1, 3
+        ! QZYZ18 Eq.(46)
+        call fourier_q_to_R(SH_q(:, :, :, is), SH_R(:, :, :, is))
+        do idir = 1, 3
+          ! QZYZ18 Eq.(44)
+          call fourier_q_to_R(SR_q(:, :, :, is, idir), SR_R(:, :, :, is, idir))
+          ! QZYZ18 Eq.(45)
+          call fourier_q_to_R(SHR_q(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
+        end do
+      end do
+      SR_R = cmplx_i*SR_R
+      SHR_R = cmplx_i*SHR_R
+
+    endif !on_root
+
+    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+
+    ! end copying from get_AA_R, Junfeng Qiao
+
+    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+    return
+
+101 call io_error &
+      ('Error: Problem opening input file '//trim(seedname)//'.mmn')
+102 call io_error &
+      ('Error: Problem reading input file '//trim(seedname)//'.mmn')
+109 call io_error &
+      ('Error: Problem opening input file '//trim(seedname)//'.spn')
+110 call io_error &
+      ('Error: Problem reading input file '//trim(seedname)//'.spn')
+
+  end subroutine get_SHC_R
 
   !=========================================================!
   !                   PRIVATE PROCEDURES                    !
