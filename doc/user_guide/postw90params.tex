@@ -80,15 +80,17 @@ The currently available modules in \texttt{postw90.x} are:
 \item \texttt{dos}: Calculation of the density of states (DOS), projected
   density of states (PDOS), net spin etc.
 \item \texttt{kpath}: Calculation of $k$-space quantities such as
-  energy bands and Berry curvature along a piecewise linear path in
-  the BZ (see examples 17 and 18 of the tutorial).
+  energy bands, Berry curvature and Berry curvature-like term 
+  of spin Hall conductivity along a piecewise linear path in
+  the BZ (see examples 17, 18 and 29 of the tutorial).
 \item \texttt{kslice}: Calculation of $k$-space quantities on a planar
-  slice of the BZ (see examples 17 and 18 of the tutorial).
+  slice of the BZ (see examples 17, 18 and 29 of the tutorial).
 \item \texttt{berry}: Calculation of properties related to the BZ
-  integral of the Berry curvature and Berry connection, including
+  integral of the Berry curvature, Berry connection and 
+  Berry curvature-like term of spin Hall conductivity, including
   anomalous Hall conductivity, orbital magnetisation, optical
-  conductivity and nonlinear shift current 
-  (see Chap.~\ref{ch:berry} and examples 18, 19 and 25 of the
+  conductivity, nonlinear shift current and spin Hall conductivity
+  (see Chap.~\ref{ch:berry} and examples 18, 19, 25, 29 and 30 of the
   tutorial).
 \item \texttt{gyrotropic}: Calculation of gyrotropic properties, 
     including natural and current0induced optical rotation, 
@@ -260,9 +262,10 @@ magnetic moment per cell\\
 
 
 
-\begin{table}[h!]
-\begin{center}
-\begin{tabular}{|c|c|p{6cm}|}
+\begin{longtable}{|c|c|p{6cm}|}
+%\begin{table}[h!]
+%\begin{center}
+%\begin{tabular}{|c|c|p{6cm}|}
   \hline
   Keyword & Type & Description \\
   &      &             \\
@@ -270,46 +273,52 @@ magnetic moment per cell\\
   \multicolumn{3}{|c|}{{\tt berry} Parameters} \\
   \hline
   {\sc berry}  & L & Calculate Berry-type quantities \\
-  {\sc berry\_task}& L  & List of properties to compute \\
+  {\sc berry\_task}& S  & List of properties to compute \\
   {\sc [berry\_]kmesh} & I & Dimensions of the uniform interpolation $k$-mesh 
   (one or three integers)\\ 
   {\sc [berry\_]kmesh\_spacing}& R & Minimum spacing between $k$ points in 
   \AA$^{-1}$\\
-  {\sc berry\_curv\_adpt\_kmesh} & I & Linear dimension of the adaptively refined $k$-mesh used to compute the anomalous Hall conductivity\\ 
+  {\sc berry\_curv\_adpt\_kmesh} & I & Linear dimension of the adaptively refined $k$-mesh used to compute the anomalous/spin Hall conductivity\\ 
   {\sc berry\_curv\_adpt\_kmesh\_thresh} & P & Threshold magnitude
   of the Berry curvature for adaptive refinement\\ 
   {\sc kubo\_freq\_min} & P & Lower limit of the frequency range for
-  optical spectra, JDOS and shift current (eV) \\
+  optical spectra, JDOS, shift current and spin Hall conductivity (eV) \\
   {\sc kubo\_freq\_max}& P & Upper limit of the frequency range for
-  optical spectra, JDOS and shift current (eV) \\
+  optical spectra, JDOS, shift current and spin Hall conductivity (eV) \\
   {\sc kubo\_freq\_step}& R &  Step for increasing
 the optical frequency in the specified range\\
   {\sc kubo\_eigval\_max}& P &  Maximum energy eigenvalue
-  included when evaluating the Kubo-Greenwood conductivity, JDOS and shift current\\
+  included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity\\
   {\sc [kubo\_]adpt\_smr} & L & Use adaptive energy smearing for the 
-  optical conductivity, JDOS and shift current \\
+  optical conductivity, JDOS, shift current and spin Hall conductivity \\
   {\sc [kubo\_]adpt\_smr\_fac} & R & Adaptive smearing prefactor \\
   {\sc[kubo\_]adpt\_smr\_max} & P & Maximum allowed value for the 
   adaptive energy smearing (eV) \\
   {\sc [kubo\_]smr\_type} & S & Analytical form used for the broadened delta function
-  when computing the optical conductivity, JDOS and shift current\\  
+  when computing the optical conductivity, JDOS, shift current and spin Hall conductivity\\  
   {\sc [kubo\_]smr\_fixed\_en\_width} & P  & Energy smearing (if non-adaptive)
-  for the optical conductivity, JDOS and shift current (eV) \\
+  for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV) \\
   {\sc sc\_eta} & R  & Energy broadening of energy differences in the sum over virtual states when computing shift current\\
   {\sc sc\_phase\_conv} & I  & Convention for phase factor of Bloch states when computing shift current\\
   {\sc sc\_w\_thr} & R  & Frequency threshold for speeding up delta function integration when computing shift current\\
+  {\sc shc\_freq\_scan} & L  & Calculate Fermi energy scan or frequency scan of spin Hall conductivity\\
+  {\sc shc\_alpha} & I  & The spin current direction of spin Hall conductivity\\
+  {\sc shc\_beta} & I  & The direction of applied electrical field of spin Hall conductivity\\
+  {\sc shc\_gamma} & I  & The spin direction of the spin current of spin Hall conductivity\\
+  {\sc shc\_bandshift} & L & Rigid bandshift of the conduction bands\\
+  {\sc shc\_bandshift\_firstband} & I & Index of the first band to shift\\
+  {\sc shc\_bandshift\_energyshift} & P & Energy shift of the conduction bands (eV)\\
   \hline
-\end{tabular}
+%\end{tabular}
 \caption[Parameter file keywords controlling the Berry module.]  {{\tt
     seedname.win} file keywords controlling the {\tt berry}
   module. Argument types are represented by, I for a integer, R for a
   real number, P for a physical value, L for a logical value and S for
   a text string.}
 \label{parameter_keywords_berry}
-\end{center}
-\end{table}
-
-
+%\end{center}
+%\end{table}
+\end{longtable}
 
 
 \begin{table}[h!]
@@ -543,7 +552,8 @@ Scissors shift applied to the conduction bands.
 \textbf{Note!} This variable is deprecated and will be removed in future
 versions of the code. This applies the scissors shift only to the Hamiltonian,
 but also other matrices might need to be updated if a scissors shift is 
-applied. If you are using BoltzWann, consider using \texttt{boltz\_bandshift} instead.
+applied. If you are using BoltzWann, consider using \texttt{boltz\_bandshift} instead. 
+If you are calculating spin Hall conductivity, consider using \texttt{shc\_bandshift} instead.
 
 The units are eV. The default value is 0~eV (i.e., no scissors shift applied).
 
@@ -626,7 +636,8 @@ The default value is \verb#false#.
 
 Unit in which the Berry curvature is specified at input (in {\tt
   berry\_curv\_adpt\_kmesh\_thresh}) or written to file (when {\tt
-  kpath\_task=curv} or {\tt kslice\_task=curv}).
+  kpath\_task=curv} or {\tt
+  kpath\_task=shc} or {\tt kslice\_task=curv} or {\tt kslice\_task=shc}).
 
 \begin{itemize}
 
@@ -867,6 +878,20 @@ The valid options for this parameter are:
 
 \end{itemize}
 
+\item[{\bf --}] \verb#shc# The band-projected Berry curvature-like term of spin Hall conductivity given by
+Eq.~(\ref{eq:kubo_shc_berry}) of Ch.~\ref{ch:berry}, in units of {\tt
+	berry\_curv\_unit}. The following files are created:
+
+\begin{itemize}
+	
+	\item[$\cdot$] {\tt seedname-shc.dat} (data file) 
+	
+	\item[$\cdot$] {\tt seedname-shc.gnu} ({\tt gnuplot} scripts)
+	
+	\item[$\cdot$] {\tt seedname-shc.py} ({\tt python} scripts)
+	
+\end{itemize}
+
 \item[{\bf --}] Any combination of the above.  The following
   combinations are of special interest
 
@@ -874,21 +899,23 @@ The valid options for this parameter are:
 
 {\tt kpath\_task = bands+morb}
 
+{\tt kpath\_task = bands+shc}
+
 They generate the following files:
 \begin{itemize}
   
    \item[$\cdot$] {\tt seedname-bands.dat} (data file) 
 
-   \item[$\cdot$] {\tt seedname-\{curv,morb\}.dat} (data file) 
+   \item[$\cdot$] {\tt seedname-\{curv,morb,shc\}.dat} (data file) 
 
-   \item[$\cdot$] {\tt seedname-bands+\{curv,morb\}\_\{x,y,z\}.py}
+   \item[$\cdot$] {\tt seedname-bands+\{curv,morb\}\_\{x,y,z\}.py} or {\tt seedname-bands+shc.py}
      ({\tt python} scripts)
 
 \end{itemize}
 
 Two-panel figures are produced, with the energy bands within $\pm
 0.65$~eV of the Fermi level in the top panel, and the Berry curvature
-(or $k$-space orbital magnetization) in the bottom panel.
+(or $k$-space orbital magnetization, or $k$-resolved Berry curvature-like term of spin Hall conductivity) in the bottom panel.
 \end{itemize}
 
 The default value is {\tt bands}.
@@ -915,6 +942,10 @@ The valid options for this parameter are:
   along the quantization axis defined by the variables {\tt
     spin\_axis\_polar} and {\tt spin\_axis\_azimuth}, for a spinor
   calculation
+\item[{\bf --}] \verb#shc# Band-projected Berry curvature-like term of spin Hall conductivity (in units of \\{\tt berry\_curv\_unit})
+ defined by the variables {\tt
+	shc\_alpha}, {\tt shc\_beta} and {\tt shc\_gamma}, for a spinor
+calculation
 \item[{\bf --}]  \verb#none# no colour coding
 \end{itemize}
 
@@ -996,6 +1027,25 @@ Output files:
       python} scripts)
     
   \end{itemize}
+
+\item[{\bf --}] \verb#shc#[+\verb#fermi_lines#] Heatmap of the Berry
+curvature-like term of the occupied states [together with the constant-energy
+contours]. The unit of Berry curvature-like term is {\tt berry\_curv\_unit}.
+
+Output files:
+
+	\begin{itemize}
+	
+	\item[$\cdot$] {\tt seedname-kslice-coord.dat} (data files)
+	
+	\item[$\cdot$] {\tt seedname-kslice-shc.dat} (data file)
+	
+	\item[$\cdot$] [{\tt seedname-kslice-bands.dat}] (data file)
+	
+	\item[$\cdot$] {\tt seedname-kslice-shc[+fermi\_lines].py} ({\tt
+		python} scripts) 
+	
+	\end{itemize}
 
 \end{itemize}
 
@@ -1108,7 +1158,7 @@ The valid options for this parameter are:
 
 \begin{itemize}
 
-\item[$\cdot$] {\tt seedname-ahc-fermiscan.dat} (data file) . The
+\item[$\cdot$] {\tt seedname-ahc-fermiscan.dat} (data file). The
   first column contains the Fermi level $\varepsilon_F$ in eV, and the
   following three column the values of
   $\sigma_{x,y,z}(\varepsilon_F)$.  This file is written if a range of
@@ -1135,6 +1185,26 @@ Output files:
 
 \end{itemize}
 
+\item[{\bf --}] \verb#shc# Spin Hall conductivity (SHC), in $(\hbar/e)$S/cm.  Output files:
+
+	\begin{itemize}
+	
+	\item[$\cdot$] {\tt seedname-shc-fermiscan.dat} (data file). The
+	first column is the number of entries in the list, the second column contains the Fermi level $\varepsilon_F$ in eV, and the
+	last column contains the values of
+	$\sigma_{\alpha\beta}^{\text{spin}\gamma}(\varepsilon_F)$.  This file is written if a range of
+	Fermi energies is specified via {\tt fermi\_energy\_min} and {\tt
+		fermi\_energy\_max}.  If a single Fermi energy is given, the file will contain SHC at this specific energy.
+	
+	\item[$\cdot$] {\tt seedname-shc-freqscan.dat} (data file). The
+	first column is the number of the entry in the list, the second column contains the frequency $\hbar\omega$ in eV, and the
+	following two columns contain the values of the real part 
+	$\Re[\sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega)]$ and imaginary part $\Im[\sigma_{\alpha\beta}^{\text{spin}\gamma}(\omega)]$ of ac SHC.  This file is written if a range of
+	frequencies is specified via {\tt kubo\_freq\_min} and {\tt
+		kubo\_freq\_max}. 
+	
+	\end{itemize}
+
 \end{itemize}
 There is no default value.
 
@@ -1150,13 +1220,13 @@ Sec.~\ref{sec:postw90-globalflags}).
 
 
 \subsection[berry\_adpt\_kmesh]{\tt integer :: berry\_curv\_adpt\_kmesh}
-If a positive integer $n$ is given and {\tt berry\_task=ahc}, an
+If a positive integer $n$ is given and {\tt berry\_task=ahc}[or {\tt berry\_task=shc}], an
 $n\times n\times n$ mesh is placed around points on the uniform mesh
 (defined by either {\tt berry\_kmesh} or {\tt berry\_kmesh\_spacing})
-where the magnitude of the $k$-space Berry curvature exceeds the
+where the magnitude of the $k$-space Berry curvature[$k$-space Berry curvature-like term of SHC] exceeds the
 threshold value specified in {\tt
   berry\_curv\_adpt\_kmesh\_thresh}. This can be used to densify the
-BZ integration mesh around spikes in the Berry curvature.
+BZ integration mesh around spikes in the Berry curvature[Berry curvature-like term of SHC].
 
 The default value is 1.
 
@@ -1164,21 +1234,19 @@ The default value is 1.
 \subsection[berry\_adpt\_kmesh\_thresh]{\tt real(kind=dp) ::
   berry\_curv\_adpt\_kmesh\_thresh}
 
-Magnitude of the Berry curvature (in units of {\tt berry\_curv\_unit})
-that triggers adaptive mesh refinement when {\tt berry\_task=ahc}.
+Magnitude of the Berry curvature[Berry curvature-like term of SHC] (in units of {\tt berry\_curv\_unit})
+that triggers adaptive mesh refinement when {\tt berry\_task=ahc}[{\tt berry\_task=shc}].
 
 The default value is 100.0.
 
 
 \subsection[optics\_energy\_min]{\tt real(kind=dp) :: kubo\_freq\_min}
-Lower limit of the frequency range for computing the optical conductivity
-and JDOS. Units are eV.
+Lower limit of the frequency range for computing the optical conductivity, JDOS and ac SHC. Units are eV.
 
 The default value 0.0.
 
 \subsection[optics\_energy\_max]{\tt real(kind=dp) :: kubo\_freq\_max}
-Upper limit of the frequency range for computing the optical conductivity
-and JDOS. Units are eV.
+Upper limit of the frequency range for computing the optical conductivity, JDOS and ac SHC. Units are eV.
 
 If an inner energy window was specified, the default value is {\tt
   dis\_froz\_max}-{\tt fermi\_energy}+0.6667.  Otherwise it is the
@@ -1196,7 +1264,7 @@ The default value is 0.01.
 \subsection[optics\_energy\_max]{\tt real(kind=dp) ::
   kubo\_eigval\_max}
 Maximum energy eigenvalue of the eigenstates to be included in the
-evaluation of the optical conductivity and JDOS.  Units are eV.
+evaluation of the optical conductivity, JDOS and ac SHC.  Units are eV.
 
 If an inner energy window was specified, the default value is the
 upper bound of the inner energy window plus 0.6667.  Otherwise it is
@@ -1227,6 +1295,52 @@ kubo\_smr\_type}
 Overrides the \verb#smr_type# global variable (see
 Sec.~\ref{sec:postw90-globalflags}).
 
+\subsection[shc\_freq\_scan]{\tt logical :: 
+shc\_freq\_scan}
+Determines whether to calculate the frequency scan (i.e. the ac SHC) or the 
+Fermi energy scan (i.e. the dc SHC) of the spin Hall conductivity.
+
+The default value is \verb#false#, which 
+means dc SHC is calculated.
+
+\subsection[shc\_alpha]{\tt integer :: shc\_alpha}
+The $\alpha$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
+
+The default value is \verb#1#.
+
+\subsection[shc\_beta]{\tt integer :: shc\_beta}
+The $\beta$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of applied electric field. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
+
+The default value is \verb#2#.
+
+\subsection[shc\_gamma]{\tt integer :: shc\_gamma}
+The $\gamma$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the spin direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
+
+The default value is \verb#3#.
+
+If all the {\tt shc\_alpha}, {\tt shc\_beta} and {\tt shc\_gamma} are set as default values, the $\sigma_{xy}^{\text{spin}z}$ is computed.
+
+\subsection[shc\_bandshift]{\tt logical :: shc\_bandshift}
+Shift all conduction bands by a given amount (defined by {\tt shc\_bandshift\_energyshift}). 
+%An exact rigid shift is applied \emph{after} interpolation.
+
+Note: this flag slightly differs from the global {\tt scissors\_shift} flag: with {\tt shc\_bandshift}, an exact rigid shift is applied \emph{after} interpolation; {\tt scissors\_shift} applies instead the shift \emph{before} interpolation. As a consequence, results may slightly differ (and this is why we provide both possibilities). Note also that with {\tt scissors\_shift} you have to provide the number of valence bands {\tt num\_valence\_bands}, while with {\tt shc\_bandshift} you should provide the first band to shift {\tt shc\_bandshift\_firstband} = {\tt num\_valence\_bands}$+1$.
+
+The default value is \verb#false#.
+
+\subsection[shc\_bandshift\_firstband]{\tt integer :: shc\_bandshift\_firstband}
+Index of the first conduction band to shift.
+
+That means that all bands with index $i\ge {\tt shc\_bandshift\_firstband}$ will be shifted by  \\{\tt shc\_bandshift\_energyshift}, if {\tt shc\_bandshift} is \verb#true#.
+
+The units are eV.
+No default value; if {\tt shc\_bandshift} is \verb#true#, this flag must be provided.
+
+\subsection[shc\_bandshift\_energyshift]{\tt real(kind=dp) :: shc\_bandshift\_energyshift}
+Energy shift of the conduction bands.
+
+The units are eV.
+No default value; if {\tt shc\_bandshift} is \verb#true#, this flag must be provided.
 
 \clearpage
 \section{Gyrotropic}
