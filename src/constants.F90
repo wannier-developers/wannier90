@@ -29,6 +29,8 @@ module w90_constants
   private
 
   !~~ GENERIC CONSTANTS ~~!
+  integer, parameter, public          :: i64 = selected_int_kind(15)
+  !! 64bit integer
 !aam_2012-04-11; fix to run on MacBook Air
   integer, parameter, public          :: dp = kind(1.0d0)
   !! double precision
