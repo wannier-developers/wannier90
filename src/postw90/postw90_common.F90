@@ -1082,8 +1082,8 @@ contains
           do ideg = 1, wdist_ndeg(j, i, ir)
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
+            !rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
+            !phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
             if (present(OO_true)) then
               OO_true(i, j, 1) = OO_true(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_true(i, j, 2) = OO_true(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1169,8 +1169,8 @@ contains
 
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
+            !rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
+            !phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
             if (present(OO_da)) then
               OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
