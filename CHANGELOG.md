@@ -1,5 +1,9 @@
 # CHANGELOG of Wannier90
 
+### Various improvements and bugfixes
+
+- Fix `pw90common_fourier_R_to_k` subroutines bugs when `use_ws_distance = .true.` [[#273]](https://github.com/wannier-developers/wannier90/pull/273)[[#271]](https://github.com/wannier-developers/wannier90/issues/271)
+
 ### New postw90 features, optimizations and new post-processing codes
 
 - Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + example 29,30 + test suites [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
