@@ -37,7 +37,7 @@ module w90_ws_distance
   !! all listed. First index: xyz, second index: number of degenerate shifts,
   !! third and fourth indices: i,j; fifth index: index on the R vector.
   real(DP), public, save, allocatable :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-  !! Cartesian version if irdist_ws, in angstrom
+  !! Cartesian version of irdist_ws, in angstrom
   integer, public, save, allocatable :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
   !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
   !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
