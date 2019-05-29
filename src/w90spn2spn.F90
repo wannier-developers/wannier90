@@ -127,17 +127,17 @@ contains
         do n = 1, m
           counter = counter + 1
           spn_o(n, m, ik, 1) = spn_temp(1, counter)
-          spn_o(m, n, ik, 1) = conjg(spn_temp(1, counter))
           spn_o(n, m, ik, 2) = spn_temp(2, counter)
+          spn_o(n, m, ik, 3) = spn_temp(3, counter)
           ! Although each diagonal element of spn_o should be a real number,
           ! actually it has a very small imaginary part.
           ! We skip the conjugation on the diagonal elements so that
-          ! the file after formatted <=> unformatted conversions is exactly
+          ! the file after formatted <==> unformatted conversions is exactly
           ! the same as the original file, otherwise the diagonal elements
-          ! are the conjugations of that of the original file.
+          ! are the conjugations of those of the original file.
           if (m == n) cycle
+          spn_o(m, n, ik, 1) = conjg(spn_temp(1, counter))
           spn_o(m, n, ik, 2) = conjg(spn_temp(2, counter))
-          spn_o(n, m, ik, 3) = spn_temp(3, counter)
           spn_o(m, n, ik, 3) = conjg(spn_temp(3, counter))
         end do
       end do
@@ -202,9 +202,9 @@ contains
           ! Although each diagonal element of spn_o should be a real number,
           ! actually it has a very small imaginary part.
           ! We skip the conjugation on the diagonal elements so that
-          ! the file after formatted <=> unformatted conversions is exactly
+          ! the file after formatted <==> unformatted conversions is exactly
           ! the same as the original file, otherwise the diagonal elements
-          ! are the conjugations of that of the original file.
+          ! are the conjugations of those of the original file.
           if (m == n) cycle
           ! Read upper-triangular part, now build the rest
           spn_o(m, n, ik, 1) = conjg(spn_o(n, m, ik, 1))
