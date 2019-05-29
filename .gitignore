@@ -3,6 +3,7 @@ postw90.x
 .DS_Store
 make.inc
 w90chk2chk.x
+w90spn2spn.x
 libwannier.a
 libwannier.so
 libwannier.dylib
