@@ -4,6 +4,7 @@
 
 - Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + example 29,30 + test suites [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
 
+- Utility w90spn2spn.x for conversion between formatted and unformatted spn files [[#274]](https://github.com/wannier-developers/wannier90/pull/274)
 
 ## v3.0.0 (27th February 2019)
 
