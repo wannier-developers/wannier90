@@ -1,3 +1,16 @@
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.2.3
+  hooks:
+  - id: trailing-whitespace
+    files: (?x)^(
+        config/make[.]inc[.\w]*|
+        examples/example\d\d[-]?\w*/.+win
+      )$
+  - id: end-of-file-fixer
+    files: (?x)^(
+        config/make[.]inc[.\w]*|
+        examples/example\d\d[-]?\w*/.+win
+      )$
 - repo: git://github.com/pseewald/fprettify
   sha: v0.3.3
   hooks:
@@ -8,4 +21,3 @@
       )$
     verbose: true
     entry: ./test-suite/tools/fprettify-wrapper.py
-
