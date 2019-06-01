@@ -1,54 +1,54 @@
-num_bands       = 9 
-num_wann        = 3 
-conv_tol        = 1.0d-10 
-conv_window     = 10 
+num_bands       = 9
+num_wann        = 3
+conv_tol        = 1.0d-10
+conv_window     = 10
 
-dis_win_max     = 0.0 
-dis_froz_max    = -2.740 
-dis_conv_tol    = 1.0d-10 
-dis_conv_window = 10 
-dis_mix_ratio   = 0.5 
+dis_win_max     = 0.0
+dis_froz_max    = -2.740
+dis_conv_tol    = 1.0d-10
+dis_conv_window = 10
+dis_mix_ratio   = 0.5
 
-guiding_centres = .true. 
-num_print_cycles = 10 
+guiding_centres = .true.
+num_print_cycles = 10
 gamma_only = .false.
 translate_home_cell=.true.
 
-begin unit_cell_cart 
-ang 
- 9.75  0.00  0.00 
- 0.00 10.00  0.00 
- 0.00  0.00 10.00 
-end unit_cell_cart 
+begin unit_cell_cart
+ang
+ 9.75  0.00  0.00
+ 0.00 10.00  0.00
+ 0.00  0.00 10.00
+end unit_cell_cart
 
-begin atoms_frac 
+begin atoms_frac
  Na   0.166666667  0.5  0.5
  Na   0.500000000  0.5  0.5
  Na   0.833333333  0.5  0.5
-end atoms_frac 
+end atoms_frac
 
-begin projections 
-Na:sp-1 
-end projections 
+begin projections
+Na:sp-1
+end projections
 
-mp_grid : 4 1 1 
+mp_grid : 4 1 1
 
-begin kpoints 
-  0.00000000  0.00000000  0.00000000 
-  0.25000000  0.00000000  0.00000000 
-  0.50000000  0.00000000  0.00000000 
-  0.75000000  0.00000000  0.00000000 
-end kpoints 
+begin kpoints
+  0.00000000  0.00000000  0.00000000
+  0.25000000  0.00000000  0.00000000
+  0.50000000  0.00000000  0.00000000
+  0.75000000  0.00000000  0.00000000
+end kpoints
 
-transport = .true. 
-transport_mode = bulk 
-tran_read_ht=.false. 
-one_dim_axis = x 
-fermi_energy = -2.740 
-tran_win_min = -5.0 
-tran_win_max = 5.0 
-tran_energy_step = 0.01 
-translation_centre_frac = 0.5 0.5 0.5 
+transport = .true.
+transport_mode = bulk
+tran_read_ht=.false.
+one_dim_axis = x
+fermi_energy = -2.740
+tran_win_min = -5.0
+tran_win_max = 5.0
+tran_energy_step = 0.01
+translation_centre_frac = 0.5 0.5 0.5
 tran_num_bb = 3
 
 dist_cutoff_mode = one_dim
