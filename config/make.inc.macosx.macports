@@ -21,7 +21,7 @@ CC = cc
 ## two lines.
 ## To get openmpi with MacPorts, use for instance
 ##  sudo port install openmpi-default
-## Note that with MacPorts, the 
+## Note that with MacPorts, the
 ## 'mpirun' executable needed to run the code
 ## is called 'mpirun-openmpirun-mp'
 ## (You could also use mpich instead of openmpi.)
@@ -42,7 +42,7 @@ SHAREDLIBFLAGS=-dynamiclib
 ## libraries provided by Apple are compiled with the
 ## C interface instead of the Fortran interface.
 ## Instead, remove the -ff2c flags (both from FCOPTS
-## and from LDOPTS) if you have downloaded and 
+## and from LDOPTS) if you have downloaded and
 ## compiled the BLAS and LAPACK libraries from netlib.org.
 ##
 ## IF YOU DON'T DO THE CORRECT THING, THE CODE COMPILES BUT

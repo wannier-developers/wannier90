@@ -3,7 +3,6 @@
 #======
 
 F90    = f90
-FCOPTS = -fast  
-LDOPTS = -fast 
+FCOPTS = -fast
+LDOPTS = -fast
 LIBS   = -lcxml
-
