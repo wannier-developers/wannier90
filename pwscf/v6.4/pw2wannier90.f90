@@ -3407,6 +3407,7 @@ SUBROUTINE compute_amn_with_scdm
    f_gamma = 0.0_DP
    ik = gamma_idx
    locibnd = 0
+   CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
    DO ibnd=1,nbtot
       IF(excluded_band(ibnd)) CYCLE
       locibnd = locibnd + 1
@@ -3421,7 +3422,6 @@ SUBROUTINE compute_amn_with_scdm
       ELSE
          call errore('compute_amn','scdm_entanglement value not recognized.',1)
       END IF
-      CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
       npw = ngk(ik)
       ! vv: Compute unk's on a real grid (the fft grid)
       psic(:) = (0.D0,0.D0)
@@ -3475,9 +3475,9 @@ SUBROUTINE compute_amn_with_scdm
       DO jpt = 0,dffts%nr2-1 
          DO ipt = 0,dffts%nr1-1
             lpt = lpt + 1
-            rpos(lpt,1) = REAL(ipt)/dffts%nr1 
-            rpos(lpt,2) = REAL(jpt)/dffts%nr2 
-            rpos(lpt,3) = REAL(kpt)/dffts%nr3 
+            rpos(lpt,1) = DBLE(ipt)/DBLE(dffts%nr1)
+            rpos(lpt,2) = DBLE(jpt)/DBLE(dffts%nr2)
+            rpos(lpt,3) = DBLE(kpt)/DBLE(dffts%nr3)
          ENDDO
       ENDDO
    ENDDO
@@ -3507,6 +3507,7 @@ SUBROUTINE compute_amn_with_scdm
       rwork2(:) = 0.0_DP
       locibnd = 0
       ! vv: Generate the occupation numbers matrix according to scdm_entanglement
+      CALL davcio (evc, 2*nwordwfc, iunwfc, ikevc, -1 )
       DO ibnd=1,nbtot
          IF (excluded_band(ibnd)) CYCLE
          locibnd = locibnd + 1
@@ -3520,7 +3521,6 @@ SUBROUTINE compute_amn_with_scdm
          ELSE
             call errore('compute_amn','scdm_entanglement value not recognized.',1)
          END IF
-         CALL davcio (evc, 2*nwordwfc, iunwfc, ikevc, -1 )
          npw = ngk(ik)
          psic(:) = (0.D0,0.D0)
          psic(dffts%nl (igk_k (1:npw,ik) ) ) = evc (1:npw,ibnd)
