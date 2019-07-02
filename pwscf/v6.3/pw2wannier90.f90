@@ -3272,13 +3272,14 @@ SUBROUTINE compute_amn_with_scdm
    USE io_files,        ONLY : nwordwfc, iunwfc
    USE wannier
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
-   USE gvect,           ONLY : g, ngm
+   USE gvect,           ONLY : g, ngm, mill
    USE fft_base,        ONLY : dffts !vv: unk for the SCDM-k algorithm
    USE scatter_mod,     ONLY : gather_grid
    USE fft_interfaces,  ONLY : invfft !vv: inverse fft transform for computing the unk's on a grid
    USE noncollin_module,ONLY : noncolin, npol
-   USE mp,              ONLY : mp_bcast, mp_barrier
+   USE mp,              ONLY : mp_bcast, mp_barrier, mp_sum
    USE mp_world,        ONLY : world_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE cell_base,       ONLY : at
    USE ions_base,       ONLY : ntyp => nsp, tau
    USE uspp_param,      ONLY : upf
@@ -3288,12 +3289,15 @@ SUBROUTINE compute_amn_with_scdm
    INTEGER, EXTERNAL :: find_free_unit
    COMPLEX(DP), ALLOCATABLE :: phase(:), nowfc1(:,:), nowfc(:,:), psi_gamma(:,:), &  
        qr_tau(:), cwork(:), cwork2(:), Umat(:,:), VTmat(:,:), Amat(:,:) ! vv: complex arrays for the SVD factorization
+   COMPLEX(DP), ALLOCATABLE :: phase_g(:,:) ! jml
    REAL(DP), ALLOCATABLE :: focc(:), rwork(:), rwork2(:), singval(:), rpos(:,:), cpos(:,:) ! vv: Real array for the QR factorization and SVD
    INTEGER, ALLOCATABLE :: piv(:) ! vv: Pivot array in the QR factorization 
    COMPLEX(DP) :: tmp_cwork(2)  
-   REAL(DP):: ddot, sumk, norm_psi, f_gamma
+   COMPLEX(DP) :: nowfc_tmp ! jml
+   REAL(DP):: ddot, sumk, norm_psi, f_gamma, tpi_r_dot_g
    INTEGER :: ik, npw, ibnd, iw, ikevc, nrtot, ipt, info, lcwork, locibnd, &
-              jpt,kpt,lpt, ib, istart, gamma_idx, minmn, minmn2, maxmn2, numbands, nbtot
+              jpt,kpt,lpt, ib, istart, gamma_idx, minmn, minmn2, maxmn2, numbands, nbtot, &
+              ig, ig_local ! jml
    CHARACTER (len=9)  :: cdate,ctime
    CHARACTER (len=60) :: header
    LOGICAL            :: any_uspp, found_gamma
@@ -3497,6 +3501,9 @@ SUBROUTINE compute_amn_with_scdm
 !      end if
 
       ! vv: SCDM method for generating the Amn matrix
+      ! jml: calculate of psi_nk at pivot points using slow FT
+      !      This is faster than using invfft because the number of pivot
+      !      points is much smaller than the number of FFT grid points.
       phase(:) = (0.0_DP,0.0_DP)
       nowfc1(:,:) = (0.0_DP,0.0_DP)
       nowfc(:,:) = (0.0_DP,0.0_DP)
@@ -3505,6 +3512,25 @@ SUBROUTINE compute_amn_with_scdm
       Amat(:,:) = (0.0_DP,0.0_DP)
       singval(:) = 0.0_DP
       rwork2(:) = 0.0_DP
+
+      ! jml: calculate phase factors before the loop over bands
+      npw = ngk(ik)
+      ALLOCATE(phase_g(npw, n_wannier))
+      DO iw = 1, n_wannier
+        phase(iw) = cmplx(COS(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + & 
+                   &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))), &    !*ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)),& 
+                   &SIN(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + &
+                   &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))),kind=DP) !ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)))
+
+        DO ig_local = 1, npw
+          ig = igk_k(ig_local,ik)
+          tpi_r_dot_g = 2.0_DP * pi * ( cpos(iw,1) * REAL(mill(1,ig), DP) & 
+                                    & + cpos(iw,2) * REAL(mill(2,ig), DP) &
+                                    & + cpos(iw,3) * REAL(mill(3,ig), DP) )
+          phase_g(ig_local, iw) = cmplx(COS(tpi_r_dot_g), SIN(tpi_r_dot_g), kind=DP)
+        END DO
+      END DO
+
       locibnd = 0
       CALL davcio (evc, 2*nwordwfc, iunwfc, ikevc, -1 )
       ! vv: Generate the occupation numbers matrix according to scdm_entanglement
@@ -3521,34 +3547,31 @@ SUBROUTINE compute_amn_with_scdm
          ELSE
             call errore('compute_amn','scdm_entanglement value not recognized.',1)
          END IF
-         npw = ngk(ik)
-         psic(:) = (0.D0,0.D0)
-         psic(dffts%nl (igk_k (1:npw,ik) ) ) = evc (1:npw,ibnd)
-         CALL invfft ('Wave', psic, dffts)
 #if defined(__MPI)
-         CALL gather_grid(dffts,psic,psic_all)
-         norm_psi = sqrt(real(sum(psic_all(1:nrtot)*conjg(psic_all(1:nrtot))),kind=DP))
-         psic_all(1:nrtot) = psic_all(1:nrtot)/ norm_psi 
-         DO iw = 1,n_wannier
-            phase(iw) = cmplx(COS(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + & 
-                  &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))), &    !*ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)),& 
-                  &SIN(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + &
-                  &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))),kind=DP) !ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)))
-            nowfc(iw,locibnd) = phase(iw)*psic_all(piv(iw))*focc(locibnd)
+         norm_psi = REAL(SUM( evc(1:npw, ibnd) * CONJG(evc(1:npw, ibnd)) ))
+         CALL mp_sum(norm_psi, intra_pool_comm)
+         norm_psi = SQRT(norm_psi)
+
+         ! jml: nowfc = sum_G (psi(G) * exp(i*G*r)) * focc  * phase(iw) / norm_psi
+         DO iw = 1, n_wannier
+            nowfc_tmp = SUM( evc(1:npw, ibnd) * phase_g(1:npw, iw) )
+            nowfc(iw,locibnd) = nowfc_tmp * phase(iw) * focc(locibnd) / norm_psi
          ENDDO
 #else
-         norm_psi = sqrt(real(sum(psic(1:nrtot)*conjg(psic(1:nrtot))),kind=DP))
-         psic(1:nrtot) = psic(1:nrtot)/ norm_psi 
-         DO iw = 1,n_wannier
-            phase(iw) = cmplx(COS(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + & 
-                  &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))), &    !*ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)),& 
-                  &SIN(2.0_DP*pi*(cpos(iw,1)*kpt_latt(1,ik) + &
-                  &cpos(iw,2)*kpt_latt(2,ik) + cpos(iw,3)*kpt_latt(3,ik))),kind=DP) !ddot(3,cpos(iw,:),1,kpt_latt(:,ik),1)))
-            nowfc(iw,locibnd) = phase(iw)*psic(piv(iw))*focc(locibnd)
+         norm_psi = REAL(SUM( evc(1:npw, ibnd) * CONJG(evc(1:npw, ibnd)) ))
+         norm_psi = SQRT(norm_psi)
 
+         ! jml: nowfc = sum_G (psi(G) * exp(i*G*r)) * focc  * phase(iw) / norm_psi
+         DO iw = 1,n_wannier
+            nowfc_tmp = SUM( evc(1:npw, ibnd) * phase_g(1:npw, iw) )
+            nowfc(iw,locibnd) = nowfc_tmp * phase(iw) * focc(locibnd) / norm_psi
          ENDDO
 #endif
       ENDDO
+#if defined(__MPI)
+      CALL mp_sum(nowfc, intra_pool_comm) ! jml
+#endif
+      DEALLOCATE(phase_g) ! jml
 
       CALL ZGESVD('S','S',numbands,n_wannier,TRANSPOSE(CONJG(nowfc)),numbands,&
            &singval,Umat,numbands,VTmat,n_wannier,tmp_cwork,-1,rwork2,info)
