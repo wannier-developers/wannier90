@@ -3285,7 +3285,7 @@ SUBROUTINE compute_amn_with_scdm
    USE noncollin_module,ONLY : noncolin, npol
    USE mp,              ONLY : mp_bcast, mp_barrier, mp_sum
    USE mp_world,        ONLY : world_comm
-   USE mp_pools,        ONLY : intra_pool_comm
+   USE mp_global,       ONLY : intra_pool_comm
    USE cell_base,       ONLY : at
    USE ions_base,       ONLY : ntyp => nsp, tau
    USE uspp_param,      ONLY : upf
