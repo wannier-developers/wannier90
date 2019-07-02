@@ -233,9 +233,6 @@ PROGRAM pw2wannier90
   !
   IF (noncolin.and.gamma_only) CALL errore('pw2wannier90',&
        'Non-collinear and gamma_only not implemented',1)
-! jml
-!  IF (noncolin.and.scdm_proj) CALL errore('pw2wannier90',&
-!       'Non-collinear and SCDM not implemented',1)
   IF (gamma_only.and.scdm_proj) CALL errore('pw2wannier90',&
        'Gamma_only and SCDM not implemented',1)
   IF (scdm_proj) then
@@ -3480,9 +3477,9 @@ SUBROUTINE compute_amn_with_scdm
       DO jpt = 0,dffts%nr2-1 
          DO ipt = 0,dffts%nr1-1
             lpt = lpt + 1
-            rpos(lpt,1) = DBLE(ipt)/DBLE(dffts%nr1)
-            rpos(lpt,2) = DBLE(jpt)/DBLE(dffts%nr2)
-            rpos(lpt,3) = DBLE(kpt)/DBLE(dffts%nr3)
+            rpos(lpt,1) = REAL(ipt, DP) / REAL(dffts%nr1, DP)
+            rpos(lpt,2) = REAL(jpt, DP) / REAL(dffts%nr2, DP)
+            rpos(lpt,3) = REAL(kpt, DP) / REAL(dffts%nr3, DP)
          ENDDO
       ENDDO
    ENDDO
