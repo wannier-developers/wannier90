@@ -3547,7 +3547,7 @@ SUBROUTINE compute_amn_with_scdm
          ELSE
             call errore('compute_amn','scdm_entanglement value not recognized.',1)
          END IF
-#if defined(__MPI)
+
          norm_psi = REAL(SUM( evc(1:npw, ibnd) * CONJG(evc(1:npw, ibnd)) ))
          CALL mp_sum(norm_psi, intra_pool_comm)
          norm_psi = SQRT(norm_psi)
@@ -3557,20 +3557,9 @@ SUBROUTINE compute_amn_with_scdm
             nowfc_tmp = SUM( evc(1:npw, ibnd) * phase_g(1:npw, iw) )
             nowfc(iw,locibnd) = nowfc_tmp * phase(iw) * focc(locibnd) / norm_psi
          ENDDO
-#else
-         norm_psi = REAL(SUM( evc(1:npw, ibnd) * CONJG(evc(1:npw, ibnd)) ))
-         norm_psi = SQRT(norm_psi)
 
-         ! jml: nowfc = sum_G (psi(G) * exp(i*G*r)) * focc  * phase(iw) / norm_psi
-         DO iw = 1,n_wannier
-            nowfc_tmp = SUM( evc(1:npw, ibnd) * phase_g(1:npw, iw) )
-            nowfc(iw,locibnd) = nowfc_tmp * phase(iw) * focc(locibnd) / norm_psi
-         ENDDO
-#endif
       ENDDO
-#if defined(__MPI)
       CALL mp_sum(nowfc, intra_pool_comm) ! jml
-#endif
       DEALLOCATE(phase_g) ! jml
 
       CALL ZGESVD('S','S',numbands,n_wannier,TRANSPOSE(CONJG(nowfc)),numbands,&
