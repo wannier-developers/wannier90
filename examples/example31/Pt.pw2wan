@@ -9,8 +9,8 @@
    write_unk = .false.
 
    ! SCDM keywords
-   scdm_proj         = true
-   scdm_entanglement = erfc
-   scdm_mu           = 35
-   scdm_sigma        =  5
+   scdm_proj         = .true.
+   scdm_entanglement = 'erfc'
+   scdm_mu           = 35.
+   scdm_sigma        =  5.
 /
