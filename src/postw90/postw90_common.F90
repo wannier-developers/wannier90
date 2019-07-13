@@ -724,13 +724,11 @@ contains
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            !phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
             if (alpha == 0) then
               OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             elseif (alpha == 1 .or. alpha == 2 .or. alpha == 3) then
               OO(i, j) = OO(i, j) + cmplx_i*crdist_ws(alpha, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir)
-              !OO(i,j)=OO(i,j)+cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(i,j,ir)
             else
               stop 'wrong value of alpha in pw90common_fourier_R_to_k'
             endif
@@ -1082,8 +1080,6 @@ contains
           do ideg = 1, wdist_ndeg(i, j, ir)
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            !rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
-            !phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
             if (present(OO_true)) then
               OO_true(i, j, 1) = OO_true(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_true(i, j, 2) = OO_true(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1169,8 +1165,6 @@ contains
 
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            !rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
-            !phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
             if (present(OO_da)) then
               OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1295,8 +1289,6 @@ contains
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir) + &
                                                    wannier_centres_frac(:, j) - wannier_centres_frac(:, i), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-!              rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-!              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
             if (present(OO_da)) then
               ! if we are at the origin and at the same band, then the
               ! matrix element is zero in this convention
