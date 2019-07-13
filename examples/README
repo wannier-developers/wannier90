@@ -70,3 +70,5 @@ example28: Diamond - plotting of MLWFs using Gaussian cube format and VESTA
 example29: Platinum - Berry curvature-like term and spin Hall conductivity
 
 example30: Gallium Arsenide - ac spin Hall conductivity
+
+example31: Platinum - Selected columns of density matrix algorithm for spinor wavefunctions

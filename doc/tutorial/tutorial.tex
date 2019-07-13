@@ -3518,6 +3518,70 @@ or by\smallskip {\tt
 \end{quote} }
 \end{itemize}
 
+
+\sectiontitle{31: Platinum -- Selected columns of density matrix algorithm for spinor wavefunctions}
+
+Note: This example requires a recent version of the {\tt pw2wannier90.x} post-processing code of {\tt Quantum ESPRESSO} (v6.3 or above).
+
+\begin{itemize}
+\item Outline: {\it For bulk crystalline platinum with spin-orbit coupling, generate the $A_{mn}$ matrices via the selected columns of density matrix (SCDM) algorithm and the corresponding spinor-MLWFs. To better understand the input files and the results of these calculations, it is crucial that the Reader has familiarized with the concepts and methods explained in Ref.~\cite{LinLin-ArXiv2017}. More info on the keywords related to the SCDM method may be found in the user\_guide.} 
+
+This example focuses on the use of the SCDM method for spin-noncollinear systems. For the overview of the use of SCDM method to spinless systems, please refer to example27.
+\item Directory: {\tt examples/example31/} 
+
+The input files for this examples are similar to the ones in example 29, except that a coarser k-point grid is used and that the keywords related to {\tt postw90.x} are removed.
+\item Input Files: 
+\begin{itemize}
+\item {\tt Pt.scf}  {\it The \pwscf\ input file for the ground state calculation} 
+\item {\tt Pt.nscf}  {\it The \pwscf\ input file to obtain Bloch states on a uniform grid}
+\item {\tt Pt.pw2wan}  {\it The input file for {\tt pw2wannier90} with keywords related to the SCDM method}
+\item {\tt Pt.win}  {\it The {\tt wannier90} input file}
+\end{itemize}
+\end{itemize}
+
+
+We will compute 18 localized WFs. Since the band structure of platinum is metallic, the low-lying bands are entangled with other high-energy bands, and the columns of the density matrix are not exponentially localized by construction.
+Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the function $f(\varepsilon_{n,\mathbf{k}})$ defined as a complementary error function. Refer to example 27 for the definition of the modified density matrix and the functional form of $f(\varepsilon_{n,\mathbf{k}})$.
+
+\begin{enumerate}
+    \item Run \pwscf\ to obtain the ground state of platinum\\
+    {\tt pw.x < Pt.scf > scf.out}
+    
+    \item Run \pwscf\ to obtain the Bloch states on a uniform $7\times 7\times 7$ $k$-point
+    grid\\ 
+    {\tt pw.x < Pt.nscf > nscf.out}
+
+    \item Inspect the {\tt Pt.win} input file and make sure that the {\tt auto\_projections} flag is set to {\tt .true.}. Also, make sure that no projection block is present.
+    
+    \item Run \wannier\ to generate a list of the required overlaps (written
+    into the {\tt Pt.nnkp} file)\\
+    {\tt wannier90.x -pp Pt}
+
+    \item Inspect the {\tt Pt.nnkp} file and make sure you find the {\tt auto\_projections} block and that no projections have been written in the {\tt projections} block.
+
+    \item Inspect the {\tt Pt.pw2wan} input file. You will find four SCDM-related keywords: {\tt scdm\_proj}, {\tt scdm\_entanglement}, {\tt scdm\_mu} and {\tt scdm\_sigma}.
+    In particular, the keyword {\tt scdm\_proj} will instruct {\tt pw2wannier90.x}  to use the SCDM method when generating the $A_{mn}$ matrix.
+    The remaining three keywords defines the formula and parameters to define the function $f(\varepsilon_{n\mathbf{k}})$ (see Ref.~\cite{LinLin-ArXiv2017} and example 27).
+
+    \item Run {\tt pw2wannier90} to compute the overlap between Bloch
+    states and the projections via the SCDM method (written in the
+    {\tt Pt.mmn} and {\tt Pt.amn} respectively).\\  
+    {\tt pw2wannier90.x < Pt.pw2wan > pw2wan.out}
+
+    \item Inspect the {\tt pw2wan.out} output file.
+    Compared to the spinless case, you will find the following two additional lines.
+    \begin{verbatim}
+     Number of pivot points with spin up  :     9
+     Number of pivot points with spin down:     9
+    \end{verbatim}
+    These lines give information on the pivots obtained by the QR decomposition with column pivoting (QRCP) in the SCDM algorithm.     Each pivot determines a point in the real-space grid and a spin state. The basis of the spin state is determined by the basis used in the electronic structure code. In \pwscf, the basis states are spin up and down states along the Cartesian $z$-axis.
+    
+    \item Run \wannier\ to compute the MLWFs\\
+    {\tt wannier90.x Pt}\\
+
+\end{enumerate}
+
+
 %\cleardoublepage
 
 \bibliographystyle{apsrev4-1}
