@@ -95,6 +95,7 @@ In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3
 * Takashi Koretsune (Tohoku University and JST PRESTO, JP): Symmetry-adapted Wannier functions, non-collinear spin with ultrasoft in pw2wannier90
 * Julen Ibañez-Azpiroz (Universidad del Pais Vasco, ES): shift-current calculation
 * Hyungjun Lee (EPFL, CH): Spinor-valued WFs, parallelisation of the core Wannier90 routines
+* Jae-Mo Lihm (Seoul National University, KR): SCDM-k implementation for non-collinear spin in pw2wannier90
 * Daniel Marchand (EPFL, CH): AiiDA-Wannier90 interface
 * Antimo Marrazzo (EPFL, CH): GW bands interpolation, AiiDA-Wannier90 interface
 * Yuriy Mokrousov (FZ  Jülich, DE): Parallelization of the core routines
