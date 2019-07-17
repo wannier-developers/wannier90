@@ -688,7 +688,7 @@ contains
       end if
     endif
 
-    if (write_xyz) call wann_write_xyz()
+    if (write_xyz .and. on_root) call wann_write_xyz()
 
     if (write_hr_diag) then
       call hamiltonian_setup()
@@ -725,7 +725,7 @@ contains
     if (have_disentangled .and. write_proj) call wann_calc_projection()
 
     ! aam: write data required for vdW utility
-    if (write_vdw_data) call wann_write_vdw_data()
+    if (write_vdw_data .and. on_root) call wann_write_vdw_data()
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
@@ -3008,7 +3008,7 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (write_xyz) call wann_write_xyz()
+    if (write_xyz .and. on_root) call wann_write_xyz()
 
     if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide)
 

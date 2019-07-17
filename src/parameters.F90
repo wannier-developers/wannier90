@@ -6042,27 +6042,7 @@ contains
       io_stopwatch
     use w90_comms, only: comms_bcast, on_root
 
-    integer :: ierr,max_sites
-    call comms_bcast(num_species, 1)
-    if (.not. on_root) then
-      allocate (atoms_species_num(num_species), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating atoms_species_num in param_dist')
-    endif
-    call comms_bcast(atoms_species_num(1), num_species)
-
-    if (.not. on_root) then
-      allocate (atoms_symbol(num_species), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating atoms_symbol in param_dist')
-    endif
-    call comms_bcast(atoms_symbol(1), len(atoms_symbol)*num_species)
-
-    max_sites = maxval(atoms_species_num)
-    call comms_bcast(max_sites, 1)
-    if (.not. on_root) then
-      allocate (atoms_pos_cart(3, max_sites, num_species), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_dist')
-    endif
-    call comms_bcast(atoms_pos_cart(1,1,1), 3*max_sites*num_species)
+    integer :: ierr
 
     call comms_bcast(effective_model, 1)
     call comms_bcast(eig_found, 1)
