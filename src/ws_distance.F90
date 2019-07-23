@@ -120,7 +120,7 @@ contains
       do jw = 1, num_wann
         do iw = 1, num_wann
           call utility_frac_to_cart(REAL(irvec(:, ir), kind=dp), irvec_cart, real_lattice)
-          ! function IW translated in the Wigner-Size around function JW
+          ! function JW translated in the Wigner-Seitz around function IW
           ! and also find its degeneracy, and the integer shifts needed
           ! to identify it
           ! Note: the routine outputs R_out, but we don't really need it
