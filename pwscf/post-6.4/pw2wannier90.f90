@@ -96,7 +96,8 @@ PROGRAM pw2wannier90
   !------------------------------------------------------------------------
   !
   USE io_global,  ONLY : stdout, ionode, ionode_id
-  USE mp_global,  ONLY : mp_startup, npool, nproc_pool, nproc_pool_file
+  USE mp_global,  ONLY : mp_startup
+  USE mp_pools,   ONLY : npool
   USE mp,         ONLY : mp_bcast
   USE mp_world,   ONLY : world_comm
   USE cell_base,  ONLY : at, bg
@@ -104,7 +105,7 @@ PROGRAM pw2wannier90
   USE klist,      ONLY : nkstot
   USE io_files,   ONLY : prefix, tmp_dir
   USE noncollin_module, ONLY : noncolin
-  USE control_flags,    ONLY : gamma_only, twfcollect
+  USE control_flags,    ONLY : gamma_only
   USE environment,ONLY : environment_start, environment_end
   USE wannier
   !
@@ -495,7 +496,7 @@ SUBROUTINE setup_nnkp
   USE ions_base, ONLY : nat, tau, ityp, atm
   USE klist,     ONLY : xk
   USE mp,        ONLY : mp_bcast, mp_sum
-  USE mp_global, ONLY : intra_pool_comm
+  USE mp_pools,  ONLY : intra_pool_comm
   USE mp_world,  ONLY : world_comm
   USE wvfct,     ONLY : nbnd,npwx
   USE control_flags,    ONLY : gamma_only
@@ -776,7 +777,7 @@ SUBROUTINE read_nnkp
   USE gvect,     ONLY : g, gg
   USE klist,     ONLY : nkstot, xk
   USE mp,        ONLY : mp_bcast, mp_sum
-  USE mp_global, ONLY : intra_pool_comm
+  USE mp_pools,  ONLY : intra_pool_comm
   USE mp_world,  ONLY : world_comm
   USE wvfct,     ONLY : npwx, nbnd
   USE noncollin_module, ONLY : noncolin
@@ -976,7 +977,6 @@ SUBROUTINE read_nnkp
      ENDDO
   ENDIF
 
-
   ! automatic projections
   IF (ionode) THEN
      CALL scan_file_to('auto_projections',found)
@@ -1165,7 +1165,7 @@ SUBROUTINE pw2wan_set_symm (nsym, sr, tvec)
    !
    ! Uses nkqs and index_sym from module pw2wan, computes rir
    !
-   USE symm_base,       ONLY : s, ftau, allfrac
+   USE symm_base,       ONLY : s, ft, allfrac
    USE fft_base,        ONLY : dffts
    USE cell_base,       ONLY : at, bg
    USE wannier,         ONLY : rir, read_sym
@@ -1177,8 +1177,8 @@ SUBROUTINE pw2wan_set_symm (nsym, sr, tvec)
    INTEGER  , intent(in) :: nsym
    REAL(DP) , intent(in) :: sr(3,3,nsym), tvec(3,nsym)
    REAL(DP) :: st(3,3), v(3)
-   INTEGER, allocatable :: s_in(:,:,:), ftau_in(:,:)
-   !REAL(DP), allocatable:: ftau_in(:,:)
+   INTEGER, allocatable :: s_in(:,:,:)
+   REAL(DP), allocatable:: ft_in(:,:)
    INTEGER :: nxxs, nr1,nr2,nr3, nr1x,nr2x,nr3x
    INTEGER :: ikq, isym, i,j,k, ri,rj,rk, ir
    LOGICAL :: ispresent(nsym)
@@ -1192,7 +1192,7 @@ SUBROUTINE pw2wan_set_symm (nsym, sr, tvec)
    nxxs = nr1x*nr2x*nr3x
    !
    !  sr -> s
-   ALLOCATE(s_in(3,3,nsym), ftau_in(3,nsym))
+   ALLOCATE(s_in(3,3,nsym), ft_in(3,nsym))
    IF(read_sym ) THEN
       IF(allfrac) THEN
          call errore("pw2wan_set_symm", "use_all_frac = .true. + read_sym = .true. not supported", 1)
@@ -1202,17 +1202,17 @@ SUBROUTINE pw2wan_set_symm (nsym, sr, tvec)
          st = transpose( matmul(transpose(bg), transpose(sr(:,:,isym))) )
          s_in(:,:,isym) = nint( matmul(transpose(at), st) )
          v = matmul(transpose(bg), tvec(:,isym))
-         ftau_in(1,isym) = nint(v(1)*nr1)
-         ftau_in(2,isym) = nint(v(2)*nr2)
-         ftau_in(3,isym) = nint(v(3)*nr3)
+         ft_in(1,isym) = v(1)
+         ft_in(2,isym) = v(2)
+         ft_in(3,isym) = v(3)
       END DO
-      IF( any(s(:,:,1:nsym) /= s_in(:,:,1:nsym)) .or. any(ftau_in(:,1:nsym) /= ftau(:,1:nsym)) ) THEN
+      IF( any(s(:,:,1:nsym) /= s_in(:,:,1:nsym)) .or. any(ft_in(:,1:nsym) /= ft(:,1:nsym)) ) THEN
          write(stdout,*) " Input symmetry is different from crystal symmetry"
          write(stdout,*)
       END IF
    ELSE
       s_in = s(:,:,1:nsym)
-      ftau_in = ftau(:,1:nsym)
+      ft_in = ft(:,1:nsym)
    END IF
    !
    IF(.not. allocated(rir)) ALLOCATE(rir(nxxs,nsym))
@@ -1243,7 +1243,7 @@ SUBROUTINE pw2wan_set_symm (nsym, sr, tvec)
             ENDDO
          ENDDO
    ENDDO
-   DEALLOCATE(s_in, ftau_in)
+   DEALLOCATE(s_in, ft_in)
 END SUBROUTINE pw2wan_set_symm
 
 !-----------------------------------------------------------------------
@@ -1257,7 +1257,7 @@ SUBROUTINE compute_dmn
    USE kinds,           ONLY: DP
    USE wvfct,           ONLY : nbnd, npwx
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic, psic_nc
+   USE wavefunctions, ONLY : evc, psic, psic_nc
    USE fft_base,        ONLY : dffts, dfftp
    USE fft_interfaces,  ONLY : fwfft, invfft
    USE klist,           ONLY : nkstot, xk, igk_k, ngk
@@ -1270,9 +1270,9 @@ SUBROUTINE compute_dmn
    USE uspp_param,      ONLY : upf, nh, lmaxq, nhm
    USE becmod,          ONLY : bec_type, becp, calbec, &
                                allocate_bec_type, deallocate_bec_type
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE mp,              ONLY : mp_sum, mp_bcast
-   USE mp_world,        ONLY : world_comm, nproc
+   USE mp_world,        ONLY : world_comm
    USE noncollin_module,ONLY : noncolin, npol
    USE gvecw,           ONLY : gcutw
    USE wannier
@@ -1672,7 +1672,6 @@ SUBROUTINE compute_dmn
    !
    !
    IF(any_uspp) THEN
-      CALL init_us_1
       CALL allocate_bec_type ( nkb, nbnd, becp )
       IF (gamma_only) THEN
          call errore("compute_dmn", "gamma-only mode not implemented", 1)
@@ -1939,7 +1938,7 @@ SUBROUTINE compute_mmn
    USE kinds,           ONLY: DP
    USE wvfct,           ONLY : nbnd, npwx
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic, psic_nc
+   USE wavefunctions, ONLY : evc, psic, psic_nc
    USE fft_base,        ONLY : dffts, dfftp
    USE fft_interfaces,  ONLY : fwfft, invfft
    USE klist,           ONLY : nkstot, xk, igk_k, ngk
@@ -1952,7 +1951,7 @@ SUBROUTINE compute_mmn
    USE uspp_param,      ONLY : upf, nh, lmaxq, nhm
    USE becmod,          ONLY : bec_type, becp, calbec, &
                                allocate_bec_type, deallocate_bec_type
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE mp,              ONLY : mp_sum
    USE noncollin_module,ONLY : noncolin, npol
    USE spin_orb,             ONLY : lspinorb
@@ -2017,7 +2016,6 @@ SUBROUTINE compute_mmn
    !
    !
    IF(any_uspp) THEN
-      CALL init_us_1
       CALL allocate_bec_type ( nkb, nbnd, becp )
       IF (gamma_only) THEN
          ALLOCATE ( rbecp2(nkb,nbnd))
@@ -2334,7 +2332,7 @@ SUBROUTINE compute_spin
    USE kinds,           ONLY: DP
    USE wvfct,           ONLY : nbnd, npwx
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic, psic_nc
+   USE wavefunctions, ONLY : evc, psic, psic_nc
    USE fft_base,        ONLY : dffts, dfftp
    USE fft_interfaces,  ONLY : fwfft, invfft
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
@@ -2347,7 +2345,7 @@ SUBROUTINE compute_spin
    USE uspp_param,      ONLY : upf, nh, lmaxq
    USE becmod,          ONLY : bec_type, becp, calbec, &
                                allocate_bec_type, deallocate_bec_type
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE mp,              ONLY : mp_sum
    USE noncollin_module,ONLY : noncolin, npol
    USE gvecw,           ONLY : gcutw
@@ -2391,7 +2389,6 @@ SUBROUTINE compute_spin
    any_uspp = any(upf(1:ntyp)%tvanp)
 
    if (any_uspp) then
-      CALL init_us_1
       CALL allocate_bec_type ( nkb, nbnd, becp )
       ALLOCATE(be_n(nhm,2))
       ALLOCATE(be_m(nhm,2))
@@ -2576,7 +2573,7 @@ SUBROUTINE compute_orb
    USE kinds,           ONLY: DP
    USE wvfct,           ONLY : nbnd, npwx, current_k
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic, psic_nc
+   USE wavefunctions, ONLY : evc, psic, psic_nc
    USE fft_base,        ONLY : dffts, dfftp
    USE fft_interfaces,  ONLY : fwfft, invfft
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
@@ -2589,7 +2586,7 @@ SUBROUTINE compute_orb
    USE uspp_param,      ONLY : upf, nh, lmaxq
    USE becmod,          ONLY : bec_type, becp, calbec, &
                                allocate_bec_type, deallocate_bec_type
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE mp,              ONLY : mp_sum
    USE noncollin_module,ONLY : noncolin, npol
    USE gvecw,           ONLY : gcutw
@@ -2998,7 +2995,7 @@ SUBROUTINE compute_amn
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
    USE wvfct,           ONLY : nbnd, npwx
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc
+   USE wavefunctions, ONLY : evc
    USE io_files,        ONLY : nwordwfc, iunwfc
    USE gvect,           ONLY : g, ngm, gstart
    USE uspp,            ONLY : nkb, vkb
@@ -3007,7 +3004,7 @@ SUBROUTINE compute_amn
    USE wannier
    USE ions_base,       ONLY : nat, ntyp => nsp, ityp, tau
    USE uspp_param,      ONLY : upf
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE mp,              ONLY : mp_sum
    USE noncollin_module,ONLY : noncolin, npol
    USE gvecw,           ONLY : gcutw
@@ -3062,7 +3059,6 @@ SUBROUTINE compute_amn
    !
    IF (any_uspp) THEN
       CALL allocate_bec_type ( nkb, n_wannier, becp)
-      CALL init_us_1
    ENDIF
    !
 
@@ -3271,7 +3267,7 @@ SUBROUTINE compute_amn_with_scdm
    USE wvfct,           ONLY : nbnd, et
    USE gvecw,           ONLY : gcutw
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic
+   USE wavefunctions, ONLY : evc, psic
    USE io_files,        ONLY : nwordwfc, iunwfc
    USE wannier
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
@@ -3282,7 +3278,7 @@ SUBROUTINE compute_amn_with_scdm
    USE noncollin_module,ONLY : noncolin, npol
    USE mp,              ONLY : mp_bcast, mp_barrier, mp_sum
    USE mp_world,        ONLY : world_comm
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE cell_base,       ONLY : at
    USE ions_base,       ONLY : ntyp => nsp, tau
    USE uspp_param,      ONLY : upf
@@ -3479,7 +3475,7 @@ SUBROUTINE compute_amn_with_scdm
             lpt = lpt + 1
             rpos(lpt,1) = REAL(ipt, DP) / REAL(dffts%nr1, DP)
             rpos(lpt,2) = REAL(jpt, DP) / REAL(dffts%nr2, DP)
-            rpos(lpt,3) = REAL(kpt, DP) / REAL(dffts%nr3 ,DP)
+            rpos(lpt,3) = REAL(kpt, DP) / REAL(dffts%nr3, DP)
          ENDDO
       ENDDO
    ENDDO
@@ -3628,7 +3624,7 @@ SUBROUTINE compute_amn_with_scdm_spinor
    USE wvfct,           ONLY : nbnd, et, npwx
    USE gvecw,           ONLY : gcutw
    USE control_flags,   ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic_nc
+   USE wavefunctions,   ONLY : evc, psic_nc
    USE io_files,        ONLY : nwordwfc, iunwfc
    USE wannier
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
@@ -3639,7 +3635,7 @@ SUBROUTINE compute_amn_with_scdm_spinor
    USE noncollin_module,ONLY : noncolin, npol
    USE mp,              ONLY : mp_bcast, mp_barrier, mp_sum
    USE mp_world,        ONLY : world_comm
-   USE mp_global,       ONLY : intra_pool_comm
+   USE mp_pools,        ONLY : intra_pool_comm
    USE cell_base,       ONLY : at
    USE ions_base,       ONLY : ntyp => nsp, tau
    USE uspp_param,      ONLY : upf
@@ -4077,7 +4073,7 @@ SUBROUTINE generate_guiding_functions(ik)
    USE klist,      ONLY : xk, ngk, igk_k
    USE cell_base, ONLY : bg
    USE mp, ONLY : mp_sum
-   USE mp_global, ONLY : intra_pool_comm
+   USE mp_pools,  ONLY : intra_pool_comm
 
    IMPLICIT NONE
 
@@ -4190,7 +4186,7 @@ SUBROUTINE write_plot
    USE wvfct, ONLY : nbnd, npwx
    USE gvecw, ONLY : gcutw
    USE control_flags, ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc, psic, psic_nc
+   USE wavefunctions, ONLY : evc, psic, psic_nc
    USE io_files, ONLY : nwordwfc, iunwfc
    USE wannier
    USE klist,           ONLY : nkstot, xk, ngk, igk_k
@@ -4450,14 +4446,14 @@ END SUBROUTINE write_plot
 
 SUBROUTINE write_parity
 
-   USE mp_global,            ONLY : intra_pool_comm
+   USE mp_pools,             ONLY : intra_pool_comm
    USE mp_world,             ONLY : mpime, nproc
    USE mp,                   ONLY : mp_sum
    USE io_global,            ONLY : stdout, ionode
    USE wvfct,                ONLY : nbnd
    USE gvecw,                ONLY : gcutw
    USE control_flags,        ONLY : gamma_only
-   USE wavefunctions_module, ONLY : evc
+   USE wavefunctions, ONLY : evc
    USE io_files,             ONLY : nwordwfc, iunwfc
    USE wannier
    USE klist,                ONLY : nkstot, xk, igk_k, ngk
@@ -4538,7 +4534,7 @@ SUBROUTINE write_parity
        ! 0-th Order
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! 1
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! 1
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
@@ -4546,21 +4542,21 @@ SUBROUTINE write_parity
        ! 1st Order
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! x
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! x
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! y
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! y
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! z
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! z
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
@@ -4568,63 +4564,63 @@ SUBROUTINE write_parity
        ! 2nd Order
        IF ( (abs(g_abc(1,igv) - 2.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! x^2
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! x^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! xy
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! xy
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) + 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! xy
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! xy
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! xz
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! xz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 1.d0 <= eps6) ) THEN ! xz
+            (abs(g_abc(3,igv) + 1.d0) <= eps6) ) THEN ! xz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 2.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! y^2
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! y^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! yz
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! yz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 1.d0 <= eps6) ) THEN ! yz
+            (abs(g_abc(3,igv) + 1.d0) <= eps6) ) THEN ! yz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 2.d0 <= eps6) ) THEN ! z^2
+            (abs(g_abc(3,igv) - 2.d0) <= eps6) ) THEN ! z^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
@@ -4632,133 +4628,133 @@ SUBROUTINE write_parity
        ! 3rd Order
        IF ( (abs(g_abc(1,igv) - 3.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! x^3
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! x^3
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 2.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! x^2y
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! x^2y
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 2.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) + 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! x^2y
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! x^2y
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 2.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! x^2z
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! x^2z
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 2.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 1.d0 <= eps6) ) THEN ! x^2z
+            (abs(g_abc(3,igv) + 1.d0) <= eps6) ) THEN ! x^2z
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 2.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! xy^2
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! xy^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) + 2.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! xy^2
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! xy^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! xyz
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! xyz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 1.d0 <= eps6) ) THEN ! xyz
+            (abs(g_abc(3,igv) + 1.d0) <= eps6) ) THEN ! xyz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) + 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! xyz
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! xyz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) + 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 1.d0 <= eps6) ) THEN ! xyz
+            (abs(g_abc(3,igv) + 1.d0) <= eps6) ) THEN ! xyz
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 2.d0 <= eps6) ) THEN ! xz^2
+            (abs(g_abc(3,igv) - 2.d0) <= eps6) ) THEN ! xz^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 1.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 2.d0 <= eps6) ) THEN ! xz^2
+            (abs(g_abc(3,igv) + 2.d0) <= eps6) ) THEN ! xz^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 3.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 0.d0 <= eps6) ) THEN ! y^3
+            (abs(g_abc(3,igv) - 0.d0) <= eps6) ) THEN ! y^3
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 2.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 1.d0 <= eps6) ) THEN ! y^2z
+            (abs(g_abc(3,igv) - 1.d0) <= eps6) ) THEN ! y^2z
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 2.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 1.d0 <= eps6) ) THEN ! y^2z
+            (abs(g_abc(3,igv) + 1.d0) <= eps6) ) THEN ! y^2z
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 2.d0 <= eps6) ) THEN ! yz^2
+            (abs(g_abc(3,igv) - 2.d0) <= eps6) ) THEN ! yz^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and.&
             (abs(g_abc(2,igv) - 1.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) + 2.d0 <= eps6) ) THEN ! yz^2
+            (abs(g_abc(3,igv) + 2.d0) <= eps6) ) THEN ! yz^2
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
        ENDIF
        IF ( (abs(g_abc(1,igv) - 0.d0) <= eps6) .and. &
             (abs(g_abc(2,igv) - 0.d0) <= eps6) .and. &
-            (abs(g_abc(3,igv)) - 3.d0 <= eps6) ) THEN ! z^3
+            (abs(g_abc(3,igv) - 3.d0) <= eps6) ) THEN ! z^3
            num_G(mpime+1) = num_G(mpime+1) + 1
            ig_idx(num_G(mpime+1))=igv
            CYCLE
@@ -4864,7 +4860,7 @@ SUBROUTINE wan2sic
   USE kinds, ONLY : DP
   USE io_files, ONLY : iunwfc, nwordwfc, nwordwann
   USE gvect, ONLY : g, ngm
-  USE wavefunctions_module, ONLY : evc, psic
+  USE wavefunctions, ONLY : evc, psic
   USE wvfct, ONLY : nbnd, npwx
   USE gvecw, ONLY : gcutw
   USE klist, ONLY : nkstot, xk, wk, ngk
@@ -5349,5 +5345,3 @@ SUBROUTINE radialpart(ng, q, alfa, rvalue, lmax, radial)
   DEALLOCATE (bes, func_r, r, rij, aux )
   RETURN
 END SUBROUTINE radialpart
-
-
