@@ -2219,7 +2219,6 @@ contains
     ! Projections
     auto_projections = .false.
     call param_get_keyword('auto_projections', found, l_value=auto_projections)
-    if (auto_projections .and. spinors) call io_error('Error: Cannot automatically generate spinor projections.')
     num_proj = 0
     call param_get_block_length('projections', found, i_temp)
     ! check to see that there are no unrecognised keywords
