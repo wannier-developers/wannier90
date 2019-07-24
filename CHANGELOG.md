@@ -1,8 +1,14 @@
 # CHANGELOG of Wannier90
 
+
+### Various improvements and bugfixes
+
+- Fix `pw90common_fourier_R_to_k` subroutines bugs when `use_ws_distance = .true.` [[#273]](https://github.com/wannier-developers/wannier90/pull/273)[[#271]](https://github.com/wannier-developers/wannier90/issues/271)
+
 ### New Wannier90 features
 
 - Implementation of the SCDM method in Wannier90 for spinor wavefunctions and added example31 for the tutorial [[#277]](https://github.com/wannier-developers/wannier90/pull/277)
+
 
 ### New postw90 features, optimizations and new post-processing codes
 
