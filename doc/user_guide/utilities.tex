@@ -209,3 +209,73 @@ Within the work directory type:
 NB: Binary files are supported, though not reccommended.
 \label{sec:w90aaa}
 
+\section{$\tt{w90spn2spn.x}$\label{sec:w90spn2spn}}
+The interface between ab-initio code and \wannier\ 
+(e.g. \texttt{pw2wannier90.x}) can produce a
+\verb|.spn| file that is used by \postw\ to 
+calculate some spin related quantities.
+
+The \verb|.spn| file can be 
+written in a machine-dependent or a machine-independent format 
+depending on the input parameter \texttt{spn\_formatted} 
+(the default is \texttt{false} which means the \verb|.spn| file 
+is machine-dependent) of the 
+\texttt{pw2wannier90.x}. If a \verb|.spn| file has been generated 
+on a machine with machine-dependent format, 
+and then one wants to continue the calculation 
+with \postw\ on a different machine 
+(or with \postw\ compiled with a different compiler), 
+the file has to be converted first in a machine-independent 
+``formatted'' format on the first machine. 
+
+To this aim, use the \verb|w90spn2spn.x| executable. Note that this
+executable is not compiled by default: you can obtain it by executing 
+\begin{verbatim}
+make w90spn2spn
+\end{verbatim}
+in the main \wannier\ directory.
+
+A typical use is the following:
+\begin{enumerate}
+	\item Calculate the \verb|.spn| file, e.g. by \texttt{pw2wannier90.x}
+	\item At the end of the calculation you will find a \verb|seedname.spn|
+	file. If the file is ``unformatted'', run (in the folder with this file) the command
+	\begin{verbatim}
+	w90spn2spn.x -export seedname
+	\end{verbatim}
+	or equivalently
+	\begin{verbatim}
+	w90spn2spn.x -u2f seedname
+	\end{verbatim}
+	(replacing \verb|seedname| with the seedname of your calculation).
+	
+	This command reads the \verb|seedname.spn| file and creates a
+	formatted file  \verb|seedname.spn.fmt| that is safe to be transferred
+	between different machines.
+	\item Copy the \verb|seedname.spn.fmt| file on the machine on
+	which you want to run \postw.
+	\item On this second machine (after having compiled
+	\verb|w90spn2spn.x|) run
+	\begin{verbatim}
+	w90spn2spn.x -import seedname
+	\end{verbatim}
+	or equivalently
+	\begin{verbatim}
+	w90spn2spn.x -f2u seedname
+	\end{verbatim}
+	
+	This command reads the \verb|seedname.spn.fmt| file and creates an
+	unformatted file \verb|seedname.spn| ready to be used by \postw.
+	
+	\item Run the \postw\ code.
+	
+\end{enumerate}
+
+Note if \texttt{spn\_formatted} is set to \texttt{true} in both 
+\texttt{pw2wannier90.x} and \postw\ input files, then the \verb|.spn| file will 
+be written and read as ``formatted'', so \texttt{w90spn2spn.x} is not needed. 
+However, if an ``unformatted'' \verb|seedname.spn| has been created and 
+you do not want to rerun \texttt{pw2wannier90.x}, then 
+\texttt{w90spn2spn.x} can be useful. 
+Also, once a ``formatted'' \verb|seedname.spn| has been generated, the step 4 can be skipped if 
+\texttt{spn\_formatted} is set to \texttt{true} in \postw\ input file \verb|seedname.win|.

@@ -8,7 +8,7 @@ TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else 
 
 default: wannier post
 
-all: wannier lib post w90chk2chk w90pov w90vdw
+all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
@@ -17,6 +17,9 @@ serialobjs: objdir
 
 w90chk2chk: objdir serialobjs
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
+
+w90spn2spn: objdir serialobjs
+	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90spn2spn)
 
 wannier: objdir serialobjs
 	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
@@ -58,7 +61,7 @@ clean:
 	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 veryclean: clean
-	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a w90chk2chk.x
+	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a w90chk2chk.x w90spn2spn.x
 	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
 	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
 	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
@@ -202,4 +205,4 @@ objdirp:
 		then mkdir src/objp ; \
 	fi ) ;
 
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests
+.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests w90spn2spn
