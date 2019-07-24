@@ -8,14 +8,10 @@
 !                                                            !
 ! Please cite                                                !
 !                                                            !
-! [ref] A. A. Mostofi, J. R. Yates, G. Pizzi, Y.-S. Lee,     !
-!       I. Souza, D. Vanderbilt and N. Marzari,              !
-!       "An updated version of Wannier90: a tool             !
-!       for obtaining maximally-localised Wannier            !
-!       functions",                                          !
-!       Computer Physics Communications 185, 2309 (2014),    !
-!       http://dx.doi.org/10.1016/j.cpc.2014.05.003          !
-
+!  [ref] "Wannier90 as a community code:                     !
+!        new features and applications",                     !
+!        G. Pizzi et al., arXiv:1907:09788 (2019)            !
+!        https://arxiv.org/abs/1907.09788                    !
 !                                                            !
 ! in any publications arising from the use of this code.     !
 !                                                            !
