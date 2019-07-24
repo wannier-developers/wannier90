@@ -9,3 +9,4 @@ libwannier.so
 libwannier.dylib
 *~
 *.x.dSYM
+.vscode
