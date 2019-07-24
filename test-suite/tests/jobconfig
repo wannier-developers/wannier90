@@ -195,6 +195,12 @@ program = POSTW90_GENINTERPDAT_OK
 inputs_args = ('silicon.win', '')
 output = silicon_geninterp.dat
 
+# Test of the electrical conductivity in BoltzWann
+[testpostw90_boltzwann/]
+program = POSTW90_BOLTZWANN_ELCOND_OK
+inputs_args = ('silicon.win', '')
+output = silicon_elcond.dat
+
 # Test of AHC for bcc iron 
 [testpostw90_fe_ahc/]
 program = POSTW90_WPOUT_OK
