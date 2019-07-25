@@ -196,6 +196,17 @@ exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_kslice_dat.parse
 tolerance = ( (1.0e-2, None, 'shc'))
 
+[POSTW90_BOLTZWANN_ELCOND_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_boltzwann.parse_elcond
+# Abs tolerances are "big" (10) because the absolute values are also big
+tolerance = ( (10., 1.0e-4, 'elcond_xx'),
+              (10., 1.0e-4, 'elcond_xy'),
+              (10., 1.0e-4, 'elcond_yy'),
+              (10., 1.0e-4, 'elcond_xz'),
+              (10., 1.0e-4, 'elcond_yz'),
+              (10., 1.0e-4, 'elcond_zz'))
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

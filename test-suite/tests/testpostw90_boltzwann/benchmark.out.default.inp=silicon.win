@@ -1,0 +1,4 @@
+# Written by the BoltzWann module of the Wannier90 code.
+# [Electrical conductivity in SI units, i.e. in 1/Ohm/m]
+# Mu(eV) Temp(K) ElCond_xx ElCond_xy ElCond_yy ElCond_xz ElCond_yz ElCond_zz
+   5.000000000       300.0000000       6504317.803      -207173.9111       6669730.422       200281.9835       209188.4251       6478066.135    
