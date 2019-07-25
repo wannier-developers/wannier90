@@ -3760,6 +3760,9 @@ contains
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
+    !! Also, note that this routine writes the u_matrix and the m_matrix - in parallel
+    !! mode these are however stored in distributed form in, e.g., u_matrix_loc only, so
+    !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
     !=================================================!
 
     use w90_io, only: io_file_unit, io_date, seedname

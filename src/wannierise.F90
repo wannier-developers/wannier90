@@ -602,7 +602,17 @@ contains
         !omega_tilde = wann_spread%om_d + wann_spread%om_nu
       end if
 
-      if (ldump .and. on_root) call param_write_chkpt('postdis')
+      if (ldump) then
+        ! Before calling param_write_chkpt, I need to gather on the root node
+        ! the u_matrix from the u_matrix_loc. No need to broadcast it since
+        ! it's printed by the root node only
+        call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
+                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs)
+        ! I also transfer the M matrix
+        call comms_gatherv(m_matrix_loc, num_wann*num_wann*nntot*counts(my_node_id), &
+                           m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
+        if (on_root) call param_write_chkpt('postdis')
+      endif
 
       if (conv_window .gt. 1) call internal_test_convergence()
 
