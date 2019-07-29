@@ -345,6 +345,7 @@ contains
 
         ! For gnuplot, using 'grid data' format
         if (.not. heatmap) then
+        if(.not.allocated(bnddataunit))allocate(bnddataunit(num_wann))
           do n = 1, num_wann
             n1 = n/100
             n2 = (n - n1*100)/10
