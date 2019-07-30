@@ -4,12 +4,12 @@
 F90 = gfortran
 
 # Keep these committed - we test for the time being only the serial version
-#COMMS  = mpi 
+#COMMS  = mpi
 #MPIF90 = mpgfortran #mpif90
 
 # Options for debugging  When we move to 4.9 add -fsanitize=leak
-FCOPTS = -fprofile-arcs -ftest-coverage  -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
-LDOPTS =  -fprofile-arcs -ftest-coverage -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
+FCOPTS = -fprofile-arcs -ftest-coverage  -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
+LDOPTS =  -fprofile-arcs -ftest-coverage -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
 
 #=======================
 # System LAPACK and BLAS
@@ -18,4 +18,3 @@ LDOPTS =  -fprofile-arcs -ftest-coverage -fstrict-aliasing  -fno-omit-frame-poin
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas
-
