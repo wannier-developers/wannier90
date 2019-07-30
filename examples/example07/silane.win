@@ -1,4 +1,4 @@
-num_wann        =  4 
+num_wann        =  4
 num_iter        = 20
 
 begin atoms_cart
@@ -20,7 +20,7 @@ bohr
  0.0  0.0 12.0
 end unit_cell_cart
 
-mp_grid    : 1 1 1 
+mp_grid    : 1 1 1
 gamma_only : true
 
 begin kpoints
