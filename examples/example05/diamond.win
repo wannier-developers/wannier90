@@ -1,4 +1,4 @@
-num_wann        =  4 
+num_wann        =  4
 num_iter        = 20
 
 wannier_plot=.true.
