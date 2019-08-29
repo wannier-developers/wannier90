@@ -1,64 +1,63 @@
-num_bands       = 39 
-num_wann        =  13 
-conv_tol        = 1.0d-10 
-conv_window     = 10 
+num_bands       = 39
+num_wann        =  13
+conv_tol        = 1.0d-10
+conv_window     = 10
 
-dis_win_max     = 0.0 
-dis_froz_max    = -2.7545 
-dis_conv_tol    = 1.0d-10 
-dis_conv_window = 10 
-dis_mix_ratio   = 0.5 
+dis_win_max     = 0.0
+dis_froz_max    = -2.7545
+dis_conv_tol    = 1.0d-10
+dis_conv_window = 10
+dis_mix_ratio   = 0.5
 
-guiding_centres = .true. 
-num_print_cycles = 10 
+guiding_centres = .true.
+num_print_cycles = 10
 gamma_only = .true.
 translate_home_cell=.true.
 
-begin unit_cell_cart 
-ang 
- 42.25  0.00  0.00 
-  0.00 10.00  0.00 
-  0.00  0.00 10.00 
-end unit_cell_cart 
+begin unit_cell_cart
+ang
+ 42.25  0.00  0.00
+  0.00 10.00  0.00
+  0.00  0.00 10.00
+end unit_cell_cart
 
-begin atoms_frac 
- Na   0.0385  0.5  0.5 
- Na   0.1154  0.5  0.5 
- Na   0.1923  0.5  0.5 
- Na   0.2692  0.5  0.5 
- Na   0.3462  0.5  0.5 
- Na   0.4231  0.5  0.5 
- Na   0.4500  0.5  0.5 
- Na   0.5769  0.5  0.5 
- Na   0.6538  0.5  0.5 
- Na   0.7308  0.5  0.5 
- Na   0.8077  0.5  0.5 
- Na   0.8846  0.5  0.5 
- Na   0.9615  0.5  0.5 
-end atoms_frac 
+begin atoms_frac
+ Na   0.0385  0.5  0.5
+ Na   0.1154  0.5  0.5
+ Na   0.1923  0.5  0.5
+ Na   0.2692  0.5  0.5
+ Na   0.3462  0.5  0.5
+ Na   0.4231  0.5  0.5
+ Na   0.4500  0.5  0.5
+ Na   0.5769  0.5  0.5
+ Na   0.6538  0.5  0.5
+ Na   0.7308  0.5  0.5
+ Na   0.8077  0.5  0.5
+ Na   0.8846  0.5  0.5
+ Na   0.9615  0.5  0.5
+end atoms_frac
 
-begin projections 
-Na:sp-1 
-end projections 
+begin projections
+Na:sp-1
+end projections
 
-mp_grid : 1 1 1 
+mp_grid : 1 1 1
 
-begin kpoints 
- 0.00 0.00 0.00 
-end kpoints 
+begin kpoints
+ 0.00 0.00 0.00
+end kpoints
 
-transport = .true. 
-transport_mode = lcr 
-tran_read_ht=.false. 
-one_dim_axis = x 
-fermi_energy = -2.7545 
-tran_win_min = -5.0 
-tran_win_max = 5.0 
-tran_energy_step = 0.01 
-translation_centre_frac = 0.5 0.5 0.5 
+transport = .true.
+transport_mode = lcr
+tran_read_ht=.false.
+one_dim_axis = x
+fermi_energy = -2.7545
+tran_win_min = -5.0
+tran_win_max = 5.0
+tran_energy_step = 0.01
+translation_centre_frac = 0.5 0.5 0.5
 tran_num_ll = 3
 tran_num_cell_ll = 3
 
 dist_cutoff = 9.76
 dist_cutoff_mode = one_dim
-

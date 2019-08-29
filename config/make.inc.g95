@@ -2,7 +2,7 @@
 # g95
 #===================
 F90 = g95
-FCOPTS = -O2 
+FCOPTS = -O2
 LDOPTS = -O2
 
 
@@ -18,6 +18,3 @@ LDOPTS = -O2
 #=======================
 #LIBDIR = /usr/local/lib
 #LIBS = -L$(LIBDIR)  -llapack -lblas
-
-
-

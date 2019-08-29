@@ -18,7 +18,3 @@ LDOPTS = -fast -xO3    -xlic_lib=sunperf
 
 # Leave blank if asking for sun performance libraries
 LIBS   =
-
-
-
-

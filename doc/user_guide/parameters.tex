@@ -117,6 +117,7 @@ Keyword & Type & Description \\
 %{\sc calc\_only\_a }   & L & Only recalculate the projections \\
 {\sc exclude\_bands }   & I & List of bands to exclude from the calculation \\
 {\sc select\_projections }   & I & List of projections to use in Wannierisation \\
+{\sc auto\_projections } & L & To automatically generate initial projections \\
 {\sc restart }   & S & Restart from checkpoint file \\
 {\sc iprint }   & I & Output verbosity level \\
 {\sc length\_unit }   & S & System of units to output lengths \\
@@ -221,11 +222,6 @@ of $\Omega$, instead of doing a parabolic line search \\
 {\sc use\_bloch\_phases }**   & L & To use phases for initial projections \\
 {\sc site\_symmetry}***   & L & To construct symmetry-adapted Wannier functions  \\
 {\sc  symmetrize\_eps}***   & R &  The convergence tolerance used in the symmetry-adapted mode \\
-{\sc scdm\_proj} & L & Whether to use the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}  \\
-{\sc scdm\_entanglement} & I & The entanglement method to use in SCDM-k \\
-{\sc scdm\_mu} & P & The value of the parameter $\mu$ in SCDM-k \\
-{\sc scdm\_sigma} & P & The value of the parameter $\sigma$ in SCDM-k \\
-%% AAM: rename all of these slwf_*
 {\sc slwf\_num} & I & The number of objective WFs for selective localization \\
 {\sc slwf\_constrain} & L & Whether to constrain the centres of the objective WFs \\
 {\sc slwf\_lambda} & R & Value of the Lagrange multiplier for constraining the objective WFs \\
@@ -304,6 +300,7 @@ Hamiltonian, and position operator in WF basis} \\
   final WF are translated \\
   \new{\sc use\_ws\_distance } & L & \new{Improve interpolation using minimum distance between WFs, see Chap.~\ref{chap:interpolation}} \\
   \new{\sc ws\_distance\_tol } & R & \new{Absolute tolerance for the distance to equivalent positions.} \\
+  \new{\sc ws\_search\_size } & I & \new{Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell}\\
   \new{\sc write\_u\_matrices } & L & \new{Write $\mathbf{U}^{(\mathbf{k})}$ and $\mathbf{U}^{\mathrm{dis}(\mathbf{k})}$ matrices to files} \\
 %{\sc slice\_plot }   & L & Plot the Wannier Functions along a slice \\
 %{\sc slice\_coord }   & P & Coordinates of the slice \\
@@ -581,7 +578,7 @@ attempting to determine an automatic solution to the B1 condition
 Eq.~\ref{eq:B1}. Larger values than the default may be required in special
 cases e.g. for very long thin unit cells.
 
-The default value is 12.
+The default value is 36.
 
 \subsection[skip\_B1\_tests]{\tt logical :: skip\_B1\_tests}
 
@@ -622,8 +619,8 @@ The default value is 0.000001 Ang.
 \section{Projection}
 
  The projections block defines a set of localised functions used to
- generate an initial guess for the unitary transformations. The projection block can be specified
-in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centres of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
+ generate an initial guess for the unitary transformations. %The projection block can be specified
+%in conjunction with {\tt scdm\_proj=true} (see below). This is only used to read the centres of the projections, which in some cases could help the optimisation if {\tt guiding\_centres=true} is added to the input file.
 This data will be written in the {\tt seedname.nnkp} file to be used
 by a first-principles code.
 
@@ -675,8 +672,8 @@ The default value is \verb#false#.
 
 \subsection[iprint]{\tt integer :: iprint}
 
-This indicates the level of verbosity of the output from 0,
-the bare minimum, to 3, which corresponds to full debugging output.
+This indicates the level of verbosity of the output from 0 (``low''),
+the bare minimum, to 3 (``high''), which corresponds to full debugging output.
 
 The default value is 1.
 
@@ -741,6 +738,17 @@ In the case that \verb#num_proj# is greater than \verb#num_wann#,
 For example, to select the projections given by the indices 2, 6, 7, 8 and 12:
 
  \verb#select_projections : 2, 6-8, 12#
+
+\subsection[auto\_projections]{\tt logical :: auto\_projections}
+
+If {\tt .true.} and no projections block is defined, then \wannier\ writes an additional block in the {\tt .nnkp} file during the pre-processing step, to instruct the interface code to automatically generate the $A_{mn}^{(\mathbf{k})}$. 
+
+For additional information on the behavior and on the added block, see Sec.~\ref{sec:auto-projections-block}.
+
+\textbf{Note:} the interface code (e.g. \texttt{pw2wannier90.x}) must have at least one implementation of a
+method to automatically generate initial projections in order for this option to be usable. 
+
+The default value of this parameter is $\verb#false#$.
 
 \subsection[restart]{\tt character(len=20) :: restart}
 
@@ -1030,6 +1038,9 @@ The default value of this parameter is \verb#false#.
 Use guiding centres during the minimisation, in order to avoid
 local minima.
 
+\wannier\ uses a logarithm definition of the spread functional. As we are taking the log of a complex argument there is a possibility that the algorithm might make inconsistent choices for the branch cut. This manifests itself as complex WF with a large spread. By using guiding centres the code will attempt to make a consistent choice of branch cut. Experience shows that with \verb#guiding_centres# set to true this problem is avoided and doing so
+does not cause any problems. For this reason we recommend setting \verb#guiding_centres# to true where possible (it is only not possible if an explicit projection block is not defined).
+
 The default value is \verb#false#.
 
 \subsection[num\_guide\_cycles]{\tt integer :: num\_guide\_cycles}
@@ -1090,35 +1101,36 @@ Used when \verb#site_symmetry = .true#.
 
 The default value is 1.0E-3.
 
-\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
-If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code).
-
-The default value is {\tt false}.
-
-\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
-Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
-Only three integer values are allowed:
-
-\noindent {\tt isolated}: $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
-
-\noindent {\tt erfc}: The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
-
-\noindent {\tt gaussian}: The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
-
-The default value is {\tt isolated}.
-
-\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
-The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead.
-
-The default value is {\tt 0 eV}.
-
-\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
-The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV.
-
-The default value is {\tt 1.0 eV}.
+% VV: Removed from Wannier90 and moved to pw2wannier90.f90
+%\subsection[scdm\_proj]{\tt logical :: scdm\_proj}
+%If {\tt scdm\_proj=true} then the $A_{mn}^{(\mathbf{k})}$ matrices are generated with the SCDM-k method of Ref.~\cite{LinLin-ArXiv2017}. In this case, one also needs to specify the {\tt scdm\_entanglement} keyword. One then needs to run {\tt wannier90.x -pp seedname} to generate the {\tt seedname.nnkp} file, to be used by a first-principle code (at the moment only interface available is with the QuantumEspresso code).
+%
+%The default value is {\tt false}.
+%
+%\subsection[scdm\_entanglement]{\tt integer :: scdm\_entanglement}
+%Select the functional form for the occupation number matrix $f(\epsilon_{n\mathbf{k}})$ for the SCDM-k method.
+%Only three integer values are allowed:
+%
+%\noindent {\tt isolated}: $f(\epsilon_{n\mathbf{k}})$ is the identity matrix $I_{n\mathbf{k}}$
+%
+%\noindent {\tt erfc}: The occupation number matrix is given by: $$f(\epsilon_{n\mathbf{k}})=\frac{1}{2}\mathtt{ERFC}\left(\frac{\epsilon_{n\mathbf{k}} - \mu}{\sigma}\right) $$
+%
+%\noindent {\tt gaussian}: The occupation number matrix is given by $$f(\epsilon_{n\mathbf{k}})=\mathtt{EXP}\left(-\frac{(\epsilon_{n\mathbf{k}}-\mu)^2}{\sigma^2}\right)$$
+%
+%The default value is {\tt isolated}.
+%
+%\subsection[scdm\_mu]{\tt real(kind=dp) :: scdm\_mu}
+%The value of the $\mu$ parameter in the formulas above. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the characteristic energy for the occupation numbers matrix, in units of eV. If {\tt scdm\_entanglement=erfc}, it gives the mean value of the complementary error function. If {\tt scdm\_entanglement=gaussian}, it gives the mean value of the gaussian instead.
+%
+%The default value is {\tt 0 eV}.
+%
+%\subsection[scdm\_sigma]{\tt real(kind=dp) :: scdm\_sigma}
+%The value of the $\sigma$ parameter in the formulas for the occupation numbers matrix. It is strictly required only when {\tt scdm\_entanglement=erfc} or {\tt gaussian}. It defines the spread of the occupation numbers matrix around $\mu$, and as such it must be a positive real number. It must be given in units of eV.
+%
+%The default value is {\tt 1.0 eV}.
 
 \subsection[slwf\_num]{\tt integer :: slwf\_num}
-The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. 
+The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $<$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. If {\tt slwf\_num = num\_wann} no selective minimisation is performed. In this case, \wannier\ will simply generate a set of {\tt num\_wann} MLWFs.
 
 The default is {\tt num\_wann}.
 
@@ -1141,10 +1153,10 @@ Optionally, the {\tt slwf\_centres} block may be used to define alternative targ
 
 The block below shows an example of how to set the constraints:
 
-\noindent \verb#begin centre_constraints# \\
+\noindent \verb#begin slwf_centres# \\
 \verb#   2  0.0   0.0  0.0# \\
 \verb#   4  0.25  0.0  0.0# \\
-\verb#end centre_constraints#
+\verb#end slwf_centres#
 
 \begin{itemize}
 \item The first line sets the constraint for the centre of objective WF number 2 (as defined by the order of WFs in the {\tt projections} block) to (0.0,0.0,0.0) in fractional co-ordinates.
@@ -1686,13 +1698,26 @@ For a longer explanation, see Chapter~\ref{chap:interpolation}.
 
 If {\tt false} the code puts all the WF in the home cell, only possible choice until wannier90 v2.0.1.
 
-The default value is {\tt false}. Introduced in v2.1.
+The default value is {\tt true} (default changed since v.3.0). Introduced in v2.1.
 
 \subsection[ws\_distance\_tol]{\tt real(kind=dp) :: ws\_distance\_tol}
 
 Tolerance when determining whether two values $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as defined in chapter~\ref{chap:interpolation}) for the shortest distance between two Wannier functions are equivalent. If the difference in distance (in Angstrom) is less than \texttt{ws\_distance\_tol}, they are taken to be equivalent.
 
 The default value is $10^{-5}$.
+
+\subsection[ws\_search\_size]{\tt :: ws\_search\_size}
+Maximum absolute value for the integers $n,m,l$ that identify the super-lattice vectors $\tilde{\mathbf{R}}_{nml}$ (see chapter~\ref{chap:interpolation})
+when searching for points inside the Wigner-Seitz cell. 
+If \verb#ws_search_size# is provided as a single integer,
+then the number of repetitions of the Born-von Karman cell is the same 
+along all three linear dimensions; otherwise, if three integers are
+provided, the number of repetitions along the $i-$th linear dimension is \verb#ws_search_size(i)#. 
+The variable is used both in \verb#hamiltonian.F90# and in \verb#ws_distance.F90#. In the latter case, its value is incremented by one in order to account for WFs whose centre wanders away from the original reference unit cell.\\
+The default value is generally sufficient, but might need to be increased in case of elongated cells.
+
+The default value is 2.
+
 
 \subsection[write\_u\_matrices]{\tt logical :: write\_u\_matrices}
 

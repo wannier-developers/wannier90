@@ -1,0 +1,15 @@
+This folder contains two version of pw2wannier90.f90:
+a standard version and a legacy version.
+The reason is the following: in Wannier90 v3.0 some flags
+controlling the automatic generation of the initial 
+projections were moved from the Wannier90 input to the
+pw2wannier90 input. 
+The legacy version is compatible with v6.3 of QE and
+previous versions of Wannier90 containing the SCDM method 
+(between 2.1 and 3.0). If using this version of pw2wannier90
+you must specify the SCDM flags into the Wannier90 input.
+The standard version is compatible with changes in v3.0 of 
+Wannier90 and QE v6.3. If using this version of pw2wannier90
+you must specify the SCDM flags into the pw2wannier90 input
+and you also need to add auto_projections = .true. in the
+Wannier90 input file.

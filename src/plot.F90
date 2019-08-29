@@ -353,7 +353,7 @@ contains
           if (use_ws_distance) then
             do j = 1, num_wann
             do i = 1, num_wann
-              do ideg = 1, wdist_ndeg(j, i, irpt)
+              do ideg = 1, wdist_ndeg(i, j, irpt)
                 rdotk = twopi*dot_product(plot_kpoint(:, loop_kpt), &
                                           real(irdist_ws(:, ideg, i, j, irpt), dp))
                 fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(wdist_ndeg(i, j, irpt), dp)

@@ -68,7 +68,7 @@ contains
         write (stdout, '(5x,a)') &
           'WARNING: - IBZ implementation is currently limited to simple cases:'
         write (stdout, '(5x,a)') &
-          '               Check results agains a full BZ calculation!'
+          '               Check results against a full BZ calculation!'
       end if
       !
       ! Loop over k-points on the irreducible wedge of the Brillouin zone,

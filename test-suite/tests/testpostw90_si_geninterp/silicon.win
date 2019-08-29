@@ -1,7 +1,8 @@
 num_bands         =   12       
 num_wann          =   8
 
-use_ws_distance = false ! "Old" interpolation method
+use_ws_distance = .false. ! "Old" interpolation method
+search_shells=12 
 
 geninterp         = true
 geninterp_alsofirstder = true
