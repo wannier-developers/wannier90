@@ -649,8 +649,8 @@ contains
       rnr0n2 = 0.0_dp
       do iw = 1, slwf_num
         rnr0n2(iw) = (wannier_centres(1, iw) - ccentres_cart(iw, 1))**2 &
-                     + (wannier_centres(2, iw) - ccentres_cart(iw, 3))**2 &
-                     + (wannier_centres(2, iw) - ccentres_cart(iw, 3))**2
+                     + (wannier_centres(2, iw) - ccentres_cart(iw, 2))**2 &
+                     + (wannier_centres(3, iw) - ccentres_cart(iw, 3))**2
       end do
     end if
 
