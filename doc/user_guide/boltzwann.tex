@@ -47,7 +47,7 @@ and $\Sigma_{ij}(\varepsilon)$ is the Transport Distribution Function (TDF) tens
   \Sigma_{ij}(\varepsilon) = \frac 1 V \sum_{n,\bvec k} v_i(n,\bvec k) v_j(n,\bvec k) \tau(n,\bvec k) \delta(\varepsilon - E_{n,k}).
 \end{equation*}
 
-In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (including spin, even if the spin index is not explicitly written here). $E_{n,\bvec k}$ is the energy of the $n-$th band at $\bvec k$, $v_i(n,\bvec k)$ is the $i-$th component of the band velocity at $(n,\bvec k)$, $\delta$ is the Dirac's delta function, $V$ is the cell volume, and finally $\tau$ is the relaxation time. In the \emph{relaxation-time approximation} adopted here, $\tau$ is assumed as a constant, i.e., it is independent of $n$ and $\bvec k$ and its value (in fs) is read from the input variable \verb#boltz_relax_time#.
+In the above formula, the sum is over all bands $n$ and all states $\bvec k$ (including spin, even if the spin index is not explicitly written here). $E_{n,\bvec k}$ is the energy of the $n-$th band at $\bvec k$, $v_i(n,\bvec k)$ is the $i-$th component of the band velocity at $(n,\bvec k)$, $\delta$ is the Dirac's delta function, $V = N_k \Omega_c$ is the total volume of the system ($N_k$ and $\Omega_c$ being the number of $k$-points used to sample the Brillouin zone and the unit cell volume, respectively), and finally $\tau$ is the relaxation time. In the \emph{relaxation-time approximation} adopted here, $\tau$ is assumed as a constant, i.e., it is independent of $n$ and $\bvec k$ and its value (in fs) is read from the input variable \verb#boltz_relax_time#.
 
 \section{Files}
 \subsection{{\tt seedname\_boltzdos.dat}}

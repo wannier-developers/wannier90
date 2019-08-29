@@ -145,6 +145,9 @@ module w90_parameters
   logical, public, save :: use_ws_distance
   real(kind=dp), public, save :: ws_distance_tol
   !! absolute tolerance for the distance to equivalent positions
+  integer, public, save :: ws_search_size(3)
+  !! maximum extension in each direction of the supercell of the BvK cell
+  !! to search for points inside the Wigner-Seitz cell
   logical, public, save :: fermi_surface_plot
   integer, public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
@@ -209,6 +212,15 @@ module w90_parameters
   logical, public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical, public, save :: transl_inv
+
+  ! spin Hall conductivity
+  logical, public, save :: shc_freq_scan
+  integer, public, save :: shc_alpha
+  integer, public, save :: shc_beta
+  integer, public, save :: shc_gamma
+  logical, public, save :: shc_bandshift
+  integer, public, save :: shc_bandshift_firstband
+  real(kind=dp), public, save :: shc_bandshift_energyshift
 
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
@@ -396,6 +408,9 @@ module w90_parameters
   integer, public, save :: num_select_projections
   integer, allocatable, public, save :: select_projections(:)
   integer, allocatable, public, save :: proj2wann_map(:)
+  ! a u t o m a t i c   p r o j e c t i o n s
+  ! vv: Writes a new block in .nnkp
+  logical, public, save :: auto_projections
 
   !parameters dervied from input
   integer, public, save :: num_kpts
@@ -489,12 +504,6 @@ module w90_parameters
   ! For Hamiltonian matrix in WF representation
   logical, public, save              :: automatic_translation
   integer, public, save              :: one_dim_dir
-
-  ! vv: SCDM method
-  logical, public, save              :: scdm_proj
-  integer, public, save              :: scdm_entanglement
-  real(kind=dp), public, save              :: scdm_mu
-  real(kind=dp), public, save              :: scdm_sigma
 
   ! Private data
   integer                            :: num_lines
@@ -1057,11 +1066,18 @@ contains
     call param_get_keyword('kslice_task', found, c_value=kslice_task)
     if (kslice .and. index(kslice_task, 'fermi_lines') == 0 .and. &
         index(kslice_task, 'curv') == 0 .and. &
-        index(kslice_task, 'morb') == 0) call io_error &
+        index(kslice_task, 'morb') == 0 .and. &
+        index(kslice_task, 'shc') == 0) call io_error &
       ('Error: value of kslice_task not recognised in param_read')
     if (kslice .and. index(kslice_task, 'curv') > 0 .and. &
         index(kslice_task, 'morb') > 0) call io_error &
       ("Error: kslice_task cannot include both 'curv' and 'morb'")
+    if (kslice .and. index(kslice_task, 'shc') > 0 .and. &
+        index(kslice_task, 'morb') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'shc' and 'morb'")
+    if (kslice .and. index(kslice_task, 'shc') > 0 .and. &
+        index(kslice_task, 'curv') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'shc' and 'curv'")
 
     kslice_2dkmesh(1:2) = 50
     call param_get_vector_length('kslice_2dkmesh', found, length=i)
@@ -1153,7 +1169,8 @@ contains
     if (berry .and. .not. found) call io_error &
       ('Error: berry=T and berry_task is not set')
     if (berry .and. index(berry_task, 'ahc') == 0 .and. index(berry_task, 'morb') == 0 &
-        .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0) call io_error &
+        .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0 &
+        .and. index(berry_task, 'shc') == 0) call io_error &
       ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
@@ -1277,6 +1294,42 @@ contains
     call param_get_keyword('scissors_shift', found, &
                            r_value=scissors_shift)
 
+    shc_freq_scan = .false.
+    call param_get_keyword('shc_freq_scan', found, l_value=shc_freq_scan)
+
+    shc_alpha = 1
+    call param_get_keyword('shc_alpha', found, i_value=shc_alpha)
+    if (found .and. (shc_alpha < 1 .or. shc_alpha > 3)) call io_error &
+      ('Error:  shc_alpha must be 1, 2 or 3')
+
+    shc_beta = 2
+    call param_get_keyword('shc_beta', found, i_value=shc_beta)
+    if (found .and. (shc_beta < 1 .or. shc_beta > 3)) call io_error &
+      ('Error:  shc_beta must be 1, 2 or 3')
+
+    shc_gamma = 3
+    call param_get_keyword('shc_gamma', found, i_value=shc_gamma)
+    if (found .and. (shc_gamma < 1 .or. shc_gamma > 3)) call io_error &
+      ('Error:  shc_gamma must be 1, 2 or 3')
+
+    shc_bandshift = .false.
+    call param_get_keyword('shc_bandshift', found, l_value=shc_bandshift)
+    shc_bandshift = shc_bandshift .and. berry .and. .not. (index(berry_task, 'shc') == 0)
+    if ((abs(scissors_shift) > 1.0e-7_dp) .and. shc_bandshift) &
+      call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously')
+
+    shc_bandshift_firstband = 0
+    call param_get_keyword('shc_bandshift_firstband', found, i_value=shc_bandshift_firstband)
+    if (shc_bandshift .and. (.not. found)) &
+      call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided')
+    if ((shc_bandshift_firstband < 1) .and. found) &
+      call io_error('Error: shc_bandshift_firstband must >= 1')
+
+    shc_bandshift_energyshift = 0._dp
+    call param_get_keyword('shc_bandshift_energyshift', found, r_value=shc_bandshift_energyshift)
+    if (shc_bandshift .and. (.not. found)) &
+      call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
+
     spin_moment = .false.
     call param_get_keyword('spin_moment', found, &
                            l_value=spin_moment)
@@ -1310,8 +1363,11 @@ contains
     call param_get_keyword('kpath_task', found, c_value=kpath_task)
     if (kpath .and. index(kpath_task, 'bands') == 0 .and. &
         index(kpath_task, 'curv') == 0 .and. &
-        index(kpath_task, 'morb') == 0) call io_error &
+        index(kpath_task, 'morb') == 0 .and. &
+        index(kpath_task, 'shc') == 0) call io_error &
       ('Error: value of kpath_task not recognised in param_read')
+    if (bands_num_spec_points == 0 .and. kpath) &
+      call io_error('Error: a kpath plot has been requested but there is no kpoint_path block')
 
     kpath_num_points = 100
     call param_get_keyword('kpath_num_points', found, &
@@ -1323,8 +1379,12 @@ contains
     call param_get_keyword('kpath_bands_colour', found, &
                            c_value=kpath_bands_colour)
     if (kpath .and. index(kpath_bands_colour, 'none') == 0 .and. &
-        index(kpath_bands_colour, 'spin') == 0) call io_error &
+        index(kpath_bands_colour, 'spin') == 0 .and. &
+        index(kpath_bands_colour, 'shc') == 0) call io_error &
       ('Error: value of kpath_bands_colour not recognised in param_read')
+    if (kpath .and. index(kpath_task, 'shc') > 0 .and. &
+        index(kpath_task, 'spin') > 0) call io_error &
+      ("Error: kpath_task cannot include both 'shc' and 'spin'")
 
     ! set to a negative default value
     num_valence_bands = -99
@@ -1446,11 +1506,30 @@ contains
 
 301 continue
 
-    use_ws_distance = .false.
+    use_ws_distance = .true.
     call param_get_keyword('use_ws_distance', found, l_value=use_ws_distance)
 
     ws_distance_tol = 1.e-5_dp
     call param_get_keyword('ws_distance_tol', found, r_value=ws_distance_tol)
+
+    ws_search_size = 2
+
+    call param_get_vector_length('ws_search_size', found, length=i)
+    if (found) then
+      if (i .eq. 1) then
+        call param_get_keyword_vector('ws_search_size', found, 1, &
+                                      i_value=ws_search_size)
+        ws_search_size(2) = ws_search_size(1)
+        ws_search_size(3) = ws_search_size(1)
+      elseif (i .eq. 3) then
+        call param_get_keyword_vector('ws_search_size', found, 3, &
+                                      i_value=ws_search_size)
+      else
+        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers')
+      end if
+      if (any(ws_search_size <= 0)) &
+        call io_error('Error: ws_search_size elements must be greater than zero')
+    end if
 
     !%%%%%%%%%%%%%%%%
     ! Transport
@@ -1940,7 +2019,7 @@ contains
     if (disentanglement .and. use_bloch_phases) &
       call io_error('Error: Cannot use bloch phases for disentanglement')
 
-    search_shells = 12
+    search_shells = 36
     call param_get_keyword('search_shells', found, i_value=search_shells)
     if (search_shells < 0) call io_error('Error: search_shells must be positive')
 
@@ -1976,43 +2055,6 @@ contains
     ! By default: .false. (perform the tests)
     skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=skip_B1_tests)
-
-    !vv: SCDM flags
-    scdm_proj = .false.
-    scdm_mu = 0._dp
-    scdm_sigma = 1._dp
-    scdm_entanglement = 0
-    call param_get_keyword('scdm_proj', found, l_value=scdm_proj)
-    if (found .and. scdm_proj) then
-      if (spinors) &
-        call io_error('Error: SCDM method is not compatible with spinors yet.')
-      if (guiding_centres) &
-        call io_error('Error: guiding_centres is not compatible with the SCDM method yet.')
-      if (slwf_constrain) &
-        call io_error('Error: constrained centres are not compatible with the SCDM method yet.')
-    end if
-
-    call param_get_keyword('scdm_entanglement', found, c_value=ctmp)
-    if (found) then
-      if (scdm_proj) then
-        if (ctmp == 'isolated') then
-          scdm_entanglement = 0
-        elseif (ctmp == 'erfc') then
-          scdm_entanglement = 1
-        elseif (ctmp == 'gaussian') then
-          scdm_entanglement = 2
-        else
-          call io_error('Error: Can not recognize the choice for scdm_entanglement. ' &
-                        //'Valid options are: isolated, erfc and gaussian')
-        endif
-      else
-        call io_error('Error: scdm_proj must be set to true to compute the Amn matrices with the SCDM method.')
-      endif
-    endif
-    call param_get_keyword('scdm_mu', found, r_value=scdm_mu)
-    call param_get_keyword('scdm_sigma', found, r_value=scdm_sigma)
-    if (found .and. (scdm_sigma <= 0._dp)) &
-      call io_error('Error: The parameter sigma in the SCDM method must be positive.')
 
     call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
@@ -2175,15 +2217,18 @@ contains
     endif
 
     ! Projections
+    auto_projections = .false.
+    call param_get_keyword('auto_projections', found, l_value=auto_projections)
     num_proj = 0
     call param_get_block_length('projections', found, i_temp)
-    if (guiding_centres .and. .not. found .and. .not. (gamma_only .and. use_bloch_phases)) &
-      call io_error('param_read: Guiding centres requested, but no projection block found')
     ! check to see that there are no unrecognised keywords
     if (found) then
+      if (auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block')
       lhasproj = .true.
       call param_get_projections(num_proj, lcount=.true.)
     else
+      if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) &
+        call io_error('param_read: Guiding centres requested, but no projection block found')
       lhasproj = .false.
       num_proj = num_wann
     end if
@@ -3111,6 +3156,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
       endif
+      if (index(kpath_task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
+      endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the bands    :', trim(kpath_bands_colour), '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
@@ -3145,6 +3195,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
       endif
+      if (index(kslice_task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
+      endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the lines    :', &
         trim(kslice_fermi_lines_colour), '|'
       write (stdout, '(1x,a78)') '|  2D slice parameters (in reduced coordinates):                             |'
@@ -3174,10 +3229,15 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
       endif
-      if (index(berry_task, 'kubo') > 0) then
+      if (index(berry_task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       F', '|'
+      endif
+      if (index(berry_task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       F', '|'
       endif
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for optical responses     :', kubo_freq_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency for optical responses     :', kubo_freq_max, '|'
@@ -3359,47 +3419,27 @@ contains
     write (stdout, *) '            |        Generalized Wannier Functions code         |'
     write (stdout, *) '            |            http://www.wannier.org                 |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  Wannier90 v2.x Authors:                          |'
-    write (stdout, *) '            |    Arash A. Mostofi  (Imperial College London)    |'
+    write (stdout, *) '            |                                                   |'
+    write (stdout, *) '            |  Wannier90 Developer Group:                       |'
     write (stdout, *) '            |    Giovanni Pizzi    (EPFL)                       |'
-    write (stdout, *) '            |    Ivo Souza         (Universidad del Pais Vasco) |'
-    write (stdout, *) '            |    Jonathan R. Yates (University of Oxford)       |'
-    write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  Wannier90 Contributors:                          |'
-    write (stdout, *) '            |    Young-Su Lee       (KIST, S. Korea)            |'
-    write (stdout, *) '            |    Matthew Shelley    (Imperial College London)   |'
-    write (stdout, *) '            |    Nicolas Poilvert   (Penn State University)     |'
-    write (stdout, *) '            |    Raffaello Bianco   (Paris 6 and CNRS)          |'
-    write (stdout, *) '            |    Gabriele Sclauzero (ETH Zurich)                |'
-    write (stdout, *) '            |    David Strubbe (MIT, USA)                       |'
-    write (stdout, *) '            |    Rei Sakuma (Lund University, Sweden)           |'
-    write (stdout, *) '            |    Yusuke Nomura (U. Tokyo, Japan)                |'
-    write (stdout, *) '            |    Takashi Koretsune (Riken, Japan)               |'
-    write (stdout, *) '            |    Yoshiro Nohara (ASMS Co. Ltd., Japan)          |'
-    write (stdout, *) '            |    Ryotaro Arita (Riken, Japan)                   |'
-    write (stdout, *) '            |    Lorenzo Paulatto (UPMC Paris)                  |'
-    write (stdout, *) '            |    Florian Thole (ETH Zurich)                     |'
-    write (stdout, *) '            |    Pablo Garcia Fernandez (Unican, Spain)         |'
-    write (stdout, *) '            |    Dominik Gresch (ETH Zurich)                    |'
-    write (stdout, *) '            |    Samuel Ponce (University of Oxford)            |'
-    write (stdout, *) '            |    Marco Gibertini (EPFL)                         |'
-    write (stdout, *) '            |    Christian Stieger (ETHZ, CH)                   |'
-    write (stdout, *) '            |    Stepan Tsirkin (Universidad del Pais Vasco)    |'
-    write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  Wannier77 Authors:                               |'
+    write (stdout, *) '            |    Valerio Vitale    (Cambridge)                  |'
+    write (stdout, *) '            |    David Vanderbilt  (Rutgers University)         |'
     write (stdout, *) '            |    Nicola Marzari    (EPFL)                       |'
     write (stdout, *) '            |    Ivo Souza         (Universidad del Pais Vasco) |'
-    write (stdout, *) '            |    David Vanderbilt  (Rutgers University)         |'
+    write (stdout, *) '            |    Arash A. Mostofi  (Imperial College London)    |'
+    write (stdout, *) '            |    Jonathan R. Yates (University of Oxford)       |'
+    write (stdout, *) '            |                                                   |'
+    write (stdout, *) '            |  For the full list of Wannier90 3.x authors,      |'
+    write (stdout, *) '            |  please check the code documentation and the      |'
+    write (stdout, *) '            |  README on the GitHub page of the code            |'
+    write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  Please cite                                      |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  [ref] "An updated version of Wannier90:          |'
-    write (stdout, *) '            |        A Tool for Obtaining Maximally Localised   |'
-    write (stdout, *) '            |        Wannier Functions", A. A. Mostofi,         |'
-    write (stdout, *) '            |        J. R. Yates, G. Pizzi, Y. S. Lee,          |'
-    write (stdout, *) '            |        I. Souza, D. Vanderbilt and N. Marzari,    |'
-    write (stdout, *) '            |        Comput. Phys. Commun. 185, 2309 (2014)     |'
-    write (stdout, *) '            |        http://dx.doi.org/10.1016/j.cpc.2014.05.003|'
+    write (stdout, *) '            |  [ref] "Wannier90 as a community code:            |'
+    write (stdout, *) '            |        new features and applications",            |'
+    write (stdout, *) '            |        G. Pizzi et al., arXiv:1907:09788 (2019)   |'
+    write (stdout, *) '            |        https://arxiv.org/abs/1907.09788           |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  in any publications arising from the use of      |'
     write (stdout, *) '            |  this code. For the method please cite            |'
@@ -3415,13 +3455,11 @@ contains
     write (stdout, *) '            |         Phys. Rev. B 65 035109 (2001)             |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            | Copyright (c) 1996-2017                           |'
-    write (stdout, *) '            |        Arash A. Mostofi, Jonathan R. Yates,       |'
-    write (stdout, *) '            |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |'
-    write (stdout, *) '            |        David Vanderbilt and Nicola Marzari        |'
+    write (stdout, *) '            | Copyright (c) 1996-2019                           |'
+    write (stdout, *) '            |        The Wannier90 Developer Group and          |'
+    write (stdout, *) '            |        individual contributors                    |'
     write (stdout, *) '            |                                                   |'
-!    write(stdout,*)  '            |        Release: 2.1.0   13th January 2017         |'
-    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  13th January 2017       |'
+    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  27th February 2019      |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
@@ -3722,6 +3760,9 @@ contains
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
+    !! Also, note that this routine writes the u_matrix and the m_matrix - in parallel
+    !! mode these are however stored in distributed form in, e.g., u_matrix_loc only, so
+    !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
     !=================================================!
 
     use w90_io, only: io_file_unit, io_date, seedname
@@ -6112,7 +6153,8 @@ contains
     call comms_bcast(dist_cutoff_hc, 1)
     call comms_bcast(one_dim_axis, len(one_dim_axis))
     call comms_bcast(use_ws_distance, 1)
-!    call comms_bcast(ws_distance_tol,1)
+    call comms_bcast(ws_distance_tol, 1)
+    call comms_bcast(ws_search_size(1), 3)
     call comms_bcast(fermi_surface_plot, 1)
     call comms_bcast(fermi_surface_num_points, 1)
     call comms_bcast(fermi_surface_plot_format, len(fermi_surface_plot_format))
@@ -6155,6 +6197,14 @@ contains
     call comms_bcast(spin_kmesh_spacing, 1)
     call comms_bcast(spin_kmesh(1), 3)
     call comms_bcast(wanint_kpoint_file, 1)
+! Junfeng Qiao
+    call comms_bcast(shc_freq_scan, 1)
+    call comms_bcast(shc_alpha, 1)
+    call comms_bcast(shc_beta, 1)
+    call comms_bcast(shc_gamma, 1)
+    call comms_bcast(shc_bandshift, 1)
+    call comms_bcast(shc_bandshift_firstband, 1)
+    call comms_bcast(shc_bandshift_energyshift, 1)
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)
@@ -6264,12 +6314,6 @@ contains
     call comms_bcast(lsitesymmetry, 1)
     call comms_bcast(frozen_states, 1)
 
-    !vv: SCDM keywords
-    call comms_bcast(scdm_proj, 1)
-    call comms_bcast(scdm_mu, 1)
-    call comms_bcast(scdm_sigma, 1)
-    call comms_bcast(scdm_entanglement, 1)
-
     !vv: Constrained centres
     call comms_bcast(slwf_num, 1)
     call comms_bcast(slwf_constrain, 1)
@@ -6285,6 +6329,9 @@ contains
       call comms_bcast(ccentres_frac(1, 1), 3*num_wann)
       call comms_bcast(ccentres_cart(1, 1), 3*num_wann)
     end if
+
+    ! vv: automatic projections
+    call comms_bcast(auto_projections, 1)
 
     call comms_bcast(num_proj, 1)
     call comms_bcast(lhasproj, 1)
