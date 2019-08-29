@@ -833,11 +833,11 @@ contains
     slwf_constrain = .false.
     call param_get_keyword('slwf_constrain', found, l_value=slwf_constrain)
     if (found .and. slwf_constrain) then
-       allocate (ccentres_frac(num_wann, 3), stat=ierr)
-       if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
-       allocate (ccentres_cart(num_wann, 3), stat=ierr)
-       if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
-       selective_loc = .true.
+      allocate (ccentres_frac(num_wann, 3), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
+      allocate (ccentres_cart(num_wann, 3), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
+      selective_loc = .true.
     end if
 
     slwf_lambda = 1.0_dp
