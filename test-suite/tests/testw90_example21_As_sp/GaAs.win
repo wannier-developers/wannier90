@@ -1,5 +1,7 @@
 num_bands         =   4 
 num_wann          =   4
+use_ws_distance = .false.
+search_shells=12
 
 !===========  additional input for symmetry-adapted mode
 site_symmetry = .true.

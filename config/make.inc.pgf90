@@ -1,5 +1,5 @@
 #=====
-#pgf90 
+#pgf90
 #=====
 
 F90 = pgf90
@@ -9,11 +9,9 @@ F90 = pgf90
 #MPIF90 = mppgf90 # mpif90
 
 FCOPTS = -fast
-LDOPTS = 
+LDOPTS =
 
 # Debug options
-#FCOPTS  = -g -Mbounds -Mchkptr -Minform=warn -Mstandard 
+#FCOPTS  = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
 #LDOPTS = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
-LIBS   = -llapack -lblas 
-
-
+LIBS   = -llapack -lblas
