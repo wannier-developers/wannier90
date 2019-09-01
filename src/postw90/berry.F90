@@ -1231,6 +1231,7 @@ contains
     real(kind=dp)                 :: eig(num_wann)
     integer                       :: i, j, ife, nfermi_loc
     real(kind=dp)                 :: s
+    logical                       :: todo(nfermi)
 
     ! Temporary space for matrix products
     complex(kind=dp), allocatable, dimension(:, :, :) :: tmp
@@ -1239,6 +1240,12 @@ contains
       nfermi_loc = 1
     else
       nfermi_loc = nfermi
+    endif
+
+    if (present(ladpt)) then
+      todo = ladpt
+    else
+      todo = .true.
     endif
 
     allocate (HH(num_wann, num_wann))
@@ -1267,7 +1274,7 @@ contains
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
       !
       do ife = 1, nfermi_loc
-        if ((.not. present(ladpt)) .or. (present(ladpt) .and. ladpt(ife))) then
+        if (todo(ife)) then
           do i = 1, 3
             !
             ! J0 term (Omega_bar term of WYSV06)
