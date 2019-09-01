@@ -1,6 +1,8 @@
 num_bands         =     4 
 num_wann          =     4
 num_iter          =   100
+use_ws_distance = .false.
+search_shells=12
 
 exclude_bands     = 1-5,10-18
 

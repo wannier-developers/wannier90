@@ -24,6 +24,7 @@ module w90_berry
   !! *  LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
   !! *  IATS18 = arXiv:1804.04030 (2018) (nonlinear shift current)
+  !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -35,8 +36,8 @@ module w90_berry
 
   private
 
-  public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist ! ,&
-!                                   berry_alpha_S,berry_alpha_beta_S,berry_beta_S
+  public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist, &
+            berry_get_shc_klist!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -78,6 +79,7 @@ contains
     !!  (ii) Complex optical conductivity (Kubo-Greenwood) & JDOS
     !! (iii) Orbital magnetization
     !!  (iv) Nonlinear shift current
+    !!   (v) Spin Hall conductivity
     !                                                            !
     !============================================================!
 
@@ -94,9 +96,13 @@ contains
       wanint_kpoint_file, cell_volume, transl_inv, &
       berry_task, berry_curv_unit, spin_decomp, &
       kubo_nfreq, kubo_freq_list, nfermi, &
-      fermi_energy_list
+      fermi_energy_list, shc_freq_scan, &
+      kubo_adpt_smr, kubo_adpt_smr_fac, &
+      kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
+      scissors_shift, num_valence_bands, &
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_SS_R
+      get_SS_R, get_SHC_R
 
     real(kind=dp), allocatable    :: adkpt(:, :)
 
@@ -135,13 +141,20 @@ contains
     real(kind=dp), allocatable :: jdos_k_spn(:, :)
     real(kind=dp), allocatable :: jdos_spn(:, :)
 
+    ! Spin Hall conductivity
+    real(kind=dp), allocatable    :: shc_fermi(:), shc_k_fermi(:)
+    complex(kind=dp), allocatable :: shc_freq(:), shc_k_freq(:)
+    ! for fermi energy scan, adaptive kmesh
+    real(kind=dp), allocatable    :: shc_k_fermi_dummy(:)
+
     real(kind=dp)     :: kweight, kweight_adpt, kpt(3), kpt_ad(3), &
                          db1, db2, db3, fac, freq, rdum, vdum(3)
     integer           :: n, i, j, k, jk, ikpt, if, ispn, ierr, loop_x, loop_y, loop_z, &
                          loop_xyz, loop_adpt, adpt_counter_list(nfermi), ifreq, &
                          file_unit
     character(len=24) :: file_name
-    logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc
+    logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc
+    logical           :: ladpt_kmesh
 
     if (nfermi == 0) call io_error( &
       'Must specify one or more Fermi levels when berry=true')
@@ -158,10 +171,12 @@ contains
     eval_morb = .false.
     eval_kubo = .false.
     eval_sc = .false.
+    eval_shc = .false.
     if (index(berry_task, 'ahc') > 0) eval_ahc = .true.
     if (index(berry_task, 'morb') > 0) eval_morb = .true.
     if (index(berry_task, 'kubo') > 0) eval_kubo = .true.
     if (index(berry_task, 'sc') > 0) eval_sc = .true.
+    if (index(berry_task, 'shc') > 0) eval_shc = .true.
 
     ! Wannier matrix elements, allocations and initializations
     !
@@ -184,7 +199,7 @@ contains
 
     ! List here berry_tasks that assume nfermi=1
     !
-    not_scannable = eval_kubo
+    not_scannable = eval_kubo .or. (eval_shc .and. shc_freq_scan)
     if (not_scannable .and. nfermi .ne. 1) call io_error( &
       'The berry_task(s) you chose require that you specify a single ' &
       //'Fermi energy: scanning the Fermi energy is not implemented')
@@ -224,6 +239,29 @@ contains
       sc_list = 0.0_dp
     endif
 
+    if (eval_shc) then
+      call get_HH_R
+      call get_AA_R
+      call get_SS_R
+      call get_SHC_R
+
+      if (shc_freq_scan) then
+        allocate (shc_freq(kubo_nfreq))
+        allocate (shc_k_freq(kubo_nfreq))
+        shc_freq = 0.0_dp
+        shc_k_freq = 0.0_dp
+      else
+        allocate (shc_fermi(nfermi))
+        allocate (shc_k_fermi(nfermi))
+        allocate (shc_k_fermi_dummy(nfermi))
+        shc_fermi = 0.0_dp
+        shc_k_fermi = 0.0_dp
+        !only used for fermiscan & adpt kmesh
+        shc_k_fermi_dummy = 0.0_dp
+        adpt_counter_list = 0
+      endif
+    endif
+
     if (on_root) then
 
       write (stdout, '(/,/,1x,a)') &
@@ -250,6 +288,15 @@ contains
 
       if (eval_sc) write (stdout, '(/,3x,a)') &
         '* Shift current'
+
+      if (eval_shc) then
+        write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
+        if (shc_freq_scan) then
+          write (stdout, '(/,3x,a)') '  Frequency scan'
+        else
+          write (stdout, '(/,3x,a)') '  Fermi energy scan'
+        endif
+      endif
 
       if (transl_inv) then
         if (eval_morb) &
@@ -378,6 +425,55 @@ contains
         !
         ! ***END COPY OF CODE BLOCK 1***
 
+        if (eval_shc) then
+          ! print calculation progress, from 0%, 10%, ... to 100%
+          ! Note the 1st call to berry_get_shc_klist will be much longer
+          ! than later calls due to the time spent on
+          !   berry_get_shc_klist -> wham_get_eig_deleig ->
+          !   pw90common_fourier_R_to_k -> ws_translate_dist
+          call berry_print_progress(loop_xyz, 1, num_int_kpts_on_node(my_node_id), 1)
+          if (.not. shc_freq_scan) then
+            call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+            !check whether needs to tigger adpt kmesh or not.
+            !Since the calculated shc_k at one Fermi energy can be reused
+            !by all the Fermi energies, if we find out that at a specific
+            !Fermi energy shc_k(if) > thresh, then we will update shc_k at
+            !all the Fermi energies as well.
+            !This also avoids repeated calculation if shc_k(if) > thresh
+            !is satisfied at more than one Fermi energy.
+            ladpt_kmesh = .false.
+            !if adpt_kmesh==1, no need to calculate on the same kpt again.
+            !This happens if adpt_kmesh==1 while adpt_kmesh_thresh is low.
+            if (berry_curv_adpt_kmesh > 1) then
+              do if = 1, nfermi
+                rdum = abs(shc_k_fermi(if))
+                if (berry_curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (rdum > berry_curv_adpt_kmesh_thresh) then
+                  adpt_counter_list(1) = adpt_counter_list(1) + 1
+                  ladpt_kmesh = .true.
+                  exit
+                endif
+              enddo
+            else
+              ladpt_kmesh = .false.
+            end if
+            if (ladpt_kmesh) then
+              do loop_adpt = 1, berry_curv_adpt_kmesh**3
+                !Using shc_k here would corrupt values for other
+                !kpt, hence dummy. Only if-th element is used.
+                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
+                                         shc_k_fermi=shc_k_fermi_dummy)
+                shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
+              end do
+            else
+              shc_fermi = shc_fermi + kweight*shc_k_fermi
+            end if
+          else ! freq_scan, no adaptive kmesh
+            call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
+            shc_freq = shc_freq + kweight*shc_k_freq
+          end if
+        end if
+
       end do !loop_xyz
 
     else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
@@ -453,6 +549,55 @@ contains
         !
         ! ***END CODE BLOCK 1***
 
+        if (eval_shc) then
+          ! print calculation progress, from 0%, 10%, ... to 100%
+          ! Note the 1st call to berry_get_shc_klist will be much longer
+          ! than later calls due to the time spent on
+          !   berry_get_shc_klist -> wham_get_eig_deleig ->
+          !   pw90common_fourier_R_to_k -> ws_translate_dist
+          call berry_print_progress(loop_xyz, my_node_id, PRODUCT(berry_kmesh) - 1, num_nodes)
+          if (.not. shc_freq_scan) then
+            call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+            !check whether needs to tigger adpt kmesh or not.
+            !Since the calculated shc_k at one Fermi energy can be reused
+            !by all the Fermi energies, if we find out that at a specific
+            !Fermi energy shc_k(if) > thresh, then we will update shc_k at
+            !all the Fermi energies as well.
+            !This also avoids repeated calculation if shc_k(if) > thresh
+            !is satisfied at more than one Fermi energy.
+            ladpt_kmesh = .false.
+            !if adpt_kmesh==1, no need to calculate on the same kpt again.
+            !This happens if adpt_kmesh==1 while adpt_kmesh_thresh is low.
+            if (berry_curv_adpt_kmesh > 1) then
+              do if = 1, nfermi
+                rdum = abs(shc_k_fermi(if))
+                if (berry_curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (rdum > berry_curv_adpt_kmesh_thresh) then
+                  adpt_counter_list(1) = adpt_counter_list(1) + 1
+                  ladpt_kmesh = .true.
+                  exit
+                endif
+              enddo
+            else
+              ladpt_kmesh = .false.
+            end if
+            if (ladpt_kmesh) then
+              do loop_adpt = 1, berry_curv_adpt_kmesh**3
+                !Using shc_k here would corrupt values for other
+                !kpt, hence dummy. Only if-th element is used.
+                call berry_get_shc_klist(kpt(:) + adkpt(:, loop_adpt), &
+                                         shc_k_fermi=shc_k_fermi_dummy)
+                shc_fermi = shc_fermi + kweight_adpt*shc_k_fermi_dummy
+              end do
+            else
+              shc_fermi = shc_fermi + kweight*shc_k_fermi
+            end if
+          else ! freq_scan, no adaptive kmesh
+            call berry_get_shc_klist(kpt, shc_k_freq=shc_k_freq)
+            shc_freq = shc_freq + kweight*shc_k_freq
+          end if
+        end if
+
       end do !loop_xyz
 
     end if !wanint_kpoint_file
@@ -483,6 +628,15 @@ contains
 
     if (eval_sc) then
       call comms_reduce(sc_list(1, 1, 1), 3*6*kubo_nfreq, 'SUM')
+    end if
+
+    if (eval_shc) then
+      if (shc_freq_scan) then
+        call comms_reduce(shc_freq(1), kubo_nfreq, 'SUM')
+      else
+        call comms_reduce(shc_fermi(1), nfermi, 'SUM')
+        call comms_reduce(adpt_counter_list(1), nfermi, 'SUM')
+      end if
     end if
 
     if (on_root) then
@@ -516,6 +670,56 @@ contains
               adpt_counter_list(1), '(', &
               100*real(adpt_counter_list(1), dp)/product(berry_kmesh), '%)'
           endif
+        endif
+      elseif (eval_shc) then
+        if (berry_curv_adpt_kmesh .ne. 1) then
+          if (.not. wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &
+            'Regular interpolation grid: ', berry_kmesh
+          if (.not. shc_freq_scan) then
+            write (stdout, '(1x,a28,3(i0,1x))') &
+              'Adaptive refinement grid: ', &
+              berry_curv_adpt_kmesh, berry_curv_adpt_kmesh, berry_curv_adpt_kmesh
+            if (berry_curv_unit == 'ang2') then
+              write (stdout, '(1x,a28,f12.2,a)') &
+                'Refinement threshold: ', &
+                berry_curv_adpt_kmesh_thresh, ' Ang^2'
+            elseif (berry_curv_unit == 'bohr2') then
+              write (stdout, '(1x,a28,f12.2,a)') &
+                'Refinement threshold: ', &
+                berry_curv_adpt_kmesh_thresh, ' bohr^2'
+            endif
+            if (wanint_kpoint_file) then
+              write (stdout, '(1x,a30,i8,a,f6.2,a)') &
+                ' Points triggering refinement: ', adpt_counter_list(1), '(', &
+                100*real(adpt_counter_list(1), dp)/sum(num_int_kpts_on_node), '%)'
+            else
+              write (stdout, '(1x,a30,i8,a,f6.2,a)') &
+                ' Points triggering refinement: ', adpt_counter_list(1), '(', &
+                100*real(adpt_counter_list(1), dp)/product(berry_kmesh), '%)'
+            endif
+          endif
+        else
+          if (.not. wanint_kpoint_file) write (stdout, '(1x,a20,3(i0,1x))') &
+            'Interpolation grid: ', berry_kmesh(1:3)
+        endif
+        write (stdout, '(a)') ''
+        if (kubo_adpt_smr) then
+          write (stdout, '(1x,a)') 'Using adaptive smearing'
+          write (stdout, '(7x,a,f8.3)') 'adaptive smearing prefactor ', kubo_adpt_smr_fac
+          write (stdout, '(7x,a,f8.3,a)') 'adaptive smearing max width ', kubo_adpt_smr_max, ' eV'
+        else
+          write (stdout, '(1x,a)') 'Using fixed smearing'
+          write (stdout, '(7x,a,f8.3,a)') 'fixed smearing width ', &
+            kubo_smr_fixed_en_width, ' eV'
+        endif
+        write (stdout, '(a)') ''
+        if (abs(scissors_shift) > 1.0e-7_dp) then
+          write (stdout, '(1X,A,I0,A,G18.10,A)') "Using scissors_shift to shift energy bands with index > ", &
+            num_valence_bands, " by ", scissors_shift, " eV."
+        endif
+        if (shc_bandshift) then
+          write (stdout, '(1X,A,I0,A,G18.10,A)') "Using shc_bandshift to shift energy bands with index >= ", &
+            shc_bandshift_firstband, " by ", shc_bandshift_energyshift, " eV."
         endif
       else
         if (.not. wanint_kpoint_file) write (stdout, '(1x,a20,3(i0,1x))') &
@@ -867,6 +1071,67 @@ contains
             close (file_unit)
           enddo
         enddo
+
+      endif
+
+      ! -----------------------!
+      ! Spin Hall conductivity !
+      ! -----------------------!
+      !
+      if (eval_shc) then
+        !
+        ! Convert to the unit: (hbar/e) S/cm
+        ! at this point, we need to
+        ! (i)   multiply -e^2/hbar/(V*N_k) as in the QZYZ18 Eq.(5),
+        !       note 1/N_k has already been applied by the kweight
+        ! (ii)  convert charge current to spin current:
+        !       divide the result by -e and multiply hbar/2 to
+        !       recover the spin current, so the overall
+        !       effect is -hbar/2/e
+        ! (iii) multiply 1e8 to convert it to the unit S/cm
+        ! So, the overall factor is
+        !   fac = 1.0e8 * e^2 / hbar / V / 2.0
+        ! and the final unit of spin Hall conductivity is (hbar/e)S/cm
+        !
+        fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)/2.0_dp
+        if (shc_freq_scan) then
+          shc_freq = shc_freq*fac
+        else
+          shc_fermi = shc_fermi*fac
+        endif
+        !
+        write (stdout, '(/,1x,a)') &
+          '----------------------------------------------------------'
+        write (stdout, '(1x,a)') &
+          'Output data files related to Spin Hall conductivity:'
+        write (stdout, '(1x,a)') &
+          '----------------------------------------------------------'
+        !
+        if (.not. shc_freq_scan) then
+          file_name = trim(seedname)//'-shc-fermiscan'//'.dat'
+        else
+          file_name = trim(seedname)//'-shc-freqscan'//'.dat'
+        endif
+        file_name = trim(file_name)
+        file_unit = io_file_unit()
+        write (stdout, '(/,3x,a)') '* '//file_name
+        open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+        if (.not. shc_freq_scan) then
+          write (file_unit, '(a,3x,a,3x,a)') &
+            '#No.', 'Fermi energy(eV)', 'SHC((hbar/e)*S/cm)'
+          do n = 1, nfermi
+            write (file_unit, '(I4,1x,F12.6,1x,E17.8)') &
+              n, fermi_energy_list(n), shc_fermi(n)
+          enddo
+        else
+          write (file_unit, '(a,3x,a,3x,a,3x,a)') '#No.', 'Frequency(eV)', &
+            'Re(sigma)((hbar/e)*S/cm)', 'Im(sigma)((hbar/e)*S/cm)'
+          do n = 1, kubo_nfreq
+            write (file_unit, '(I4,1x,F12.6,1x,1x,2(E17.8,1x))') n, &
+              real(kubo_freq_list(n), dp), real(shc_freq(n), dp), aimag(shc_freq(n))
+          enddo
+        endif
+        close (file_unit)
 
       endif
 
@@ -1435,7 +1700,7 @@ contains
           do bc = 1, 6
             b = alpha_S(bc)
             c = beta_S(bc)
-            I_nm(a, bc) = imag(r_mn(b)*gen_r_nm(c) + r_mn(c)*gen_r_nm(b))
+            I_nm(a, bc) = aimag(r_mn(b)*gen_r_nm(c) + r_mn(c)*gen_r_nm(b))
           enddo ! bc
         enddo ! a
 
@@ -1464,5 +1729,334 @@ contains
     enddo ! bands
 
   end subroutine berry_get_sc_klist
+
+  subroutine berry_get_shc_klist(kpt, shc_k_fermi, shc_k_freq, shc_k_band)
+    !====================================================================!
+    !                                                                    !
+    ! Contribution from a k-point to the spin Hall conductivity on a list
+    ! of Fermi energies or a list of frequencies or a list of energy bands
+    !   sigma_{alpha,beta}^{gamma}(k), alpha, beta, gamma = 1, 2, 3
+    !                                                      (x, y, z, respectively)
+    ! i.e. the Berry curvature-like term of QZYZ18 Eq.(3) & (4).
+    ! The unit is angstrom^2, similar to that of Berry curvature of AHC.
+    !
+    !  Note the berry_get_js_k() has not been multiplied by hbar/2 (as
+    !  required by spin operator) and not been divided by hbar (as required
+    !  by the velocity operator). The second velocity operator has not been
+    !  divided by hbar as well. But these two hbar required by velocity
+    !  operators are canceled by the preceding hbar^2 of QZYZ18 Eq.(3).
+    !
+    !    shc_k_fermi: return a list for different Fermi energies
+    !    shc_k_freq:  return a list for different frequencies
+    !    shc_k_band:  return a list for each energy band
+    !
+    !   Junfeng Qiao (18/8/2018)                                         !
+    !====================================================================!
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_utility, only: utility_rotate
+    use w90_parameters, only: num_wann, kubo_eigval_max, kubo_nfreq, &
+      kubo_freq_list, kubo_adpt_smr, kubo_smr_fixed_en_width, &
+      kubo_adpt_smr_max, kubo_adpt_smr_fac, berry_kmesh, &
+      fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma, &
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
+    use w90_postw90_common, only: pw90common_get_occ, &
+      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
+    use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
+    use w90_get_oper, only: AA_R
+    !use w90_comms, only: my_node_id
+    !!!
+
+    ! args
+    real(kind=dp), intent(in)  :: kpt(3)
+    real(kind=dp), optional, intent(out) :: shc_k_fermi(nfermi)
+    complex(kind=dp), optional, intent(out) :: shc_k_freq(kubo_nfreq)
+    real(kind=dp), optional, intent(out) :: shc_k_band(num_wann)
+
+    ! internal vars
+    logical                       :: lfreq, lfermi, lband
+    complex(kind=dp), allocatable :: HH(:, :)
+    complex(kind=dp), allocatable :: delHH(:, :, :)
+    complex(kind=dp), allocatable :: UU(:, :)
+    complex(kind=dp), allocatable :: D_h(:, :, :)
+    complex(kind=dp), allocatable :: AA(:, :, :)
+
+    complex(kind=dp)              :: js_k(num_wann, num_wann)
+
+    ! Adaptive smearing
+    !
+    real(kind=dp)    :: del_eig(num_wann, 3), joint_level_spacing, &
+                        eta_smr, Delta_k, vdum(3)
+
+    integer          :: n, m, i, ifreq
+    real(kind=dp)    :: eig(num_wann)
+    real(kind=dp)    :: occ_fermi(num_wann, nfermi), occ_freq(num_wann)
+    complex(kind=dp) :: omega_list(kubo_nfreq)
+    real(kind=dp)    :: omega, rfac
+    complex(kind=dp) :: prod, cdum, cfac
+
+    allocate (HH(num_wann, num_wann))
+    allocate (delHH(num_wann, num_wann, 3))
+    allocate (UU(num_wann, num_wann))
+    allocate (D_h(num_wann, num_wann, 3))
+    allocate (AA(num_wann, num_wann, 3))
+
+    lfreq = .false.
+    lfermi = .false.
+    lband = .false.
+    if (present(shc_k_freq)) then
+      shc_k_freq = 0.0_dp
+      lfreq = .true.
+    endif
+    if (present(shc_k_fermi)) then
+      shc_k_fermi = 0.0_dp
+      lfermi = .true.
+    endif
+    if (present(shc_k_band)) then
+      shc_k_band = 0.0_dp
+      lband = .true.
+    endif
+
+    call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+    call wham_get_D_h(delHH, UU, eig, D_h)
+
+    ! Here I apply a scissor operator to the conduction bands, if required in the input
+    if (shc_bandshift) then
+      eig(shc_bandshift_firstband:) = eig(shc_bandshift_firstband:) + shc_bandshift_energyshift
+    end if
+
+    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    do i = 1, 3
+      AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
+    enddo
+    AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
+
+    call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), &
+                        D_h(:, :, shc_alpha), UU, js_k)
+
+    ! adpt_smr only works with berry_kmesh, so do not use
+    ! adpt_smr in kpath or kslice plots.
+    if (kubo_adpt_smr) then
+      Delta_k = pw90common_kmesh_spacing(berry_kmesh)
+    endif
+    if (lfreq) then
+      call pw90common_get_occ(eig, occ_freq, fermi_energy_list(1))
+    elseif (lfermi) then
+      ! get occ for different fermi_energy
+      do i = 1, nfermi
+        call pw90common_get_occ(eig, occ_fermi(:, i), fermi_energy_list(i))
+      end do
+    end if
+
+    do n = 1, num_wann
+      ! get Omega_{n,alpha beta}^{gamma}
+      if (lfreq) then
+        omega_list = cmplx_0
+      else if (lfermi .or. lband) then
+        omega = 0.0_dp
+      end if
+      do m = 1, num_wann
+        if (m == n) cycle
+        if (eig(m) > kubo_eigval_max .or. eig(n) > kubo_eigval_max) cycle
+
+        rfac = eig(m) - eig(n)
+        !this will calculate AHC
+        !prod = -rfac*cmplx_i*AA(n, m, shc_alpha) * rfac*cmplx_i*AA(m, n, shc_beta)
+        prod = js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
+        if (kubo_adpt_smr) then
+          ! Eq.(35) YWVS07
+          vdum(:) = del_eig(m, :) - del_eig(n, :)
+          joint_level_spacing = sqrt(dot_product(vdum(:), vdum(:)))*Delta_k
+          eta_smr = min(joint_level_spacing*kubo_adpt_smr_fac, &
+                        kubo_adpt_smr_max)
+        else
+          eta_smr = kubo_smr_fixed_en_width
+        endif
+        if (lfreq) then
+          do ifreq = 1, kubo_nfreq
+            cdum = real(kubo_freq_list(ifreq), dp) + cmplx_i*eta_smr
+            cfac = -2.0_dp/(rfac**2 - cdum**2)
+            omega_list(ifreq) = omega_list(ifreq) + cfac*aimag(prod)
+          end do
+        else if (lfermi .or. lband) then
+          rfac = -2.0_dp/(rfac**2 + eta_smr**2)
+          omega = omega + rfac*aimag(prod)
+        end if
+      enddo
+
+      if (lfermi) then
+        do i = 1, nfermi
+          shc_k_fermi(i) = shc_k_fermi(i) + occ_fermi(n, i)*omega
+        end do
+      else if (lfreq) then
+        shc_k_freq = shc_k_freq + occ_freq(n)*omega_list
+      else if (lband) then
+        shc_k_band(n) = omega
+      end if
+    enddo
+
+    !if (lfermi) then
+    !  write (*, '(3(f9.6,1x),f16.8,1x,1E16.8)') &
+    !    kpt(1), kpt(2), kpt(3), fermi_energy_list(1), shc_k_fermi(1)
+    !end if
+
+    return
+
+  contains
+
+    !===========================================================!
+    !                   PRIVATE PROCEDURES                      !
+    !===========================================================!
+    subroutine berry_get_js_k(kpt, eig, del_alpha_eig, D_alpha_h, UU, js_k)
+      !====================================================================!
+      !                                                                    !
+      ! Contribution from point k to the
+      !   <psi_k | 1/2*(sigma_gamma*v_alpha + v_alpha*sigma_gamma) | psi_k>
+      !
+      !  QZYZ18 Eq.(23) without hbar/2 (required by spin operator) and
+      !  not divided by hbar (required by velocity operator)
+      !
+      !  Junfeng Qiao (8/7/2018)
+      !                                                                    !
+      !====================================================================!
+
+      use w90_constants, only: dp, cmplx_0, cmplx_i
+      use w90_utility, only: utility_rotate
+      use w90_parameters, only: num_wann, shc_alpha, shc_gamma
+      use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+        pw90common_fourier_R_to_k_vec
+      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R
+
+      ! args
+      real(kind=dp), intent(in)  :: kpt(3)
+      real(kind=dp), dimension(:), intent(in)  :: eig
+      real(kind=dp), dimension(:), intent(in)  :: del_alpha_eig
+      complex(kind=dp), dimension(:, :), intent(in)  :: D_alpha_h
+      complex(kind=dp), dimension(:, :), intent(in)  :: UU
+      complex(kind=dp), dimension(:, :), intent(out) :: js_k
+
+      ! internal vars
+      complex(kind=dp)    :: B_k(num_wann, num_wann)
+      complex(kind=dp)    :: K_k(num_wann, num_wann)
+      complex(kind=dp)    :: L_k(num_wann, num_wann)
+      complex(kind=dp)    :: S_w(num_wann, num_wann)
+      complex(kind=dp)    :: S_k(num_wann, num_wann)
+      complex(kind=dp)    :: SR_w(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SR_alpha_k(num_wann, num_wann)
+      complex(kind=dp)    :: SHR_w(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SHR_alpha_k(num_wann, num_wann)
+      complex(kind=dp)    :: SH_w(num_wann, num_wann, 3)
+      complex(kind=dp)    :: SH_k(num_wann, num_wann)
+      complex(kind=dp)    :: eig_mat(num_wann, num_wann)
+      complex(kind=dp)    :: del_eig_mat(num_wann, num_wann)
+
+      !===========
+      js_k = cmplx_0
+
+      !=========== S_k ===========
+      ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
+      ! QZYZ18 Eq.(36)
+      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
+      ! QZYZ18 Eq.(30)
+      S_k = utility_rotate(S_w, UU, num_wann)
+
+      !=========== K_k ===========
+      ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
+      ! QZYZ18 Eq.(37)
+      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR_w)
+      ! QZYZ18 Eq.(31)
+      SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, shc_alpha), UU, num_wann)
+      K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
+
+      !=========== L_k ===========
+      ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
+      ! QZYZ18 Eq.(38)
+      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR_w)
+      ! QZYZ18 Eq.(32)
+      SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, shc_alpha), UU, num_wann)
+      ! QZYZ18 Eq.(39)
+      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
+      ! QZYZ18 Eq.(32)
+      SH_k = utility_rotate(SH_w(:, :, shc_gamma), UU, num_wann)
+      L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
+
+      !=========== B_k ===========
+      ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ18 Eq.(24)
+      B_k = cmplx_0
+      do i = 1, num_wann
+        eig_mat(i, :) = eig(:)
+        del_eig_mat(i, :) = del_alpha_eig(:)
+      end do
+      ! note * is not matmul
+      B_k = del_eig_mat*S_k + eig_mat*K_k - L_k
+
+      !=========== js_k ===========
+      ! QZYZ18 Eq.(23)
+      ! note the S in SR_R,SHR_R,SH_R of get_SHC_R is sigma,
+      ! to get spin current, we need to multiply it by hbar/2,
+      ! also we need to divide it by hbar to recover the velocity
+      ! operator, these are done outside of this subroutine
+      js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
+
+    end subroutine berry_get_js_k
+
+  end subroutine berry_get_shc_klist
+
+  subroutine berry_print_progress(loop_k, start_k, end_k, step_k)
+    !============================================================!
+    ! print k-points calculation progress, seperated into 11 points,
+    ! from 0%, 10%, ... to 100%
+    ! start_k, end_k are inclusive
+    ! loop_k should in the array start_k to end_k with step step_k
+    !============================================================!
+    use w90_comms, only: on_root
+    use w90_io, only: stdout, io_wallclocktime
+
+    integer, intent(in) :: loop_k, start_k, end_k, step_k
+
+    real(kind=dp) :: cur_time, finished
+    real(kind=dp), save :: prev_time
+    integer :: i, j, n, last_k
+    logical, dimension(9) :: kmesh_processed = (/(.false., i=1, 9)/)
+
+    if (on_root) then
+      ! The last loop_k in the array start:step:end
+      ! e.g. 4 of 0:4:7 = [0, 4], 11 of 3:4:11 = [3, 7, 11]
+      last_k = (CEILING((end_k - start_k + 1)/real(step_k)) - 1)*step_k + start_k
+
+      if (loop_k == start_k) then
+        write (stdout, '(1x,a)') ''
+        write (stdout, '(1x,a)') 'Calculation started'
+        write (stdout, '(1x,a)') '-------------------------------'
+        write (stdout, '(1x,a)') '  k-points       wall      diff'
+        write (stdout, '(1x,a)') ' calculated      time      time'
+        write (stdout, '(1x,a)') ' ----------      ----      ----'
+        cur_time = io_wallclocktime()
+        prev_time = cur_time
+        write (stdout, '(5x,a,3x,f10.1,f10.1)') '  0%', cur_time, cur_time - prev_time
+      else if (loop_k == last_k) then
+        cur_time = io_wallclocktime()
+        write (stdout, '(5x,a,3x,f10.1,f10.1)') '100%', cur_time, cur_time - prev_time
+        write (stdout, '(1x,a)') ''
+      else
+        finished = 10.0_dp*real(loop_k - start_k + 1)/real(end_k - start_k + 1)
+        do n = 1, size(kmesh_processed)
+          if ((.not. kmesh_processed(n)) .and. (finished >= n)) then
+            do i = n, size(kmesh_processed)
+              if (i <= finished) then
+                j = i
+                kmesh_processed(i) = .true.
+              end if
+            end do
+            cur_time = io_wallclocktime()
+            write (stdout, '(5x,i2,a,3x,f10.1,f10.1)') j, '0%', cur_time, cur_time - prev_time
+            prev_time = cur_time
+            exit
+          end if
+        end do
+      end if
+    end if ! on_root
+
+  end subroutine berry_print_progress
 
 end module w90_berry

@@ -21,6 +21,8 @@ module w90_kslice
   !!
   !!  - The k-integrand of the orbital magnetization formula
   !!
+  !!  - The k-integrand of the spin Hall conductivity formula
+  !!
   !! The slice is defined in reduced coordinates by three input variables:
   !!
   !!    kslice_corner(1:3) is the lower left corner
@@ -50,12 +52,12 @@ contains
     use w90_parameters, only: num_wann, kslice, kslice_task, kslice_2dkmesh, &
       kslice_corner, kslice_b1, kslice_b2, &
       kslice_fermi_lines_colour, recip_lattice, &
-      nfermi, fermi_energy_list, berry_curv_unit
+      nfermi, fermi_energy_list, berry_curv_unit, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_SS_R
+      get_SS_R, get_SHC_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_spin, only: spin_get_nk
-    use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist
+    use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_constants, only: bohr
 
     integer, dimension(0:num_nodes - 1) :: counts, displs
@@ -68,10 +70,10 @@ contains
                          imf_k_list(3, 3, nfermi), img_k_list(3, 3, nfermi), &
                          imh_k_list(3, 3, nfermi), Morb_k(3, 3), curv(3), morb(3), &
                          spn_k(num_wann), del_eig(num_wann, 3), Delta_k, Delta_E, &
-                         zhat(3), vdum(3), rdum
+                         zhat(3), vdum(3), rdum, shc_k_fermi(nfermi)
     logical           :: plot_fermi_lines, plot_curv, plot_morb, &
-                         fermi_lines_color, heatmap
-    character(len=40) :: filename, square
+                         fermi_lines_color, heatmap, plot_shc
+    character(len=120) :: filename, square
 
     integer, allocatable :: bnddataunit(:)
     complex(kind=dp), allocatable :: HH(:, :)
@@ -89,16 +91,29 @@ contains
     plot_fermi_lines = index(kslice_task, 'fermi_lines') > 0
     plot_curv = index(kslice_task, 'curv') > 0
     plot_morb = index(kslice_task, 'morb') > 0
+    plot_shc = index(kslice_task, 'shc') > 0
     fermi_lines_color = kslice_fermi_lines_colour /= 'none'
-    heatmap = plot_curv .or. plot_morb
+    heatmap = plot_curv .or. plot_morb .or. plot_shc
     if (plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
       call io_error('Error: spin-colored Fermi lines not allowed in ' &
-                    //'curv/morb heatmap plots')
+                    //'curv/morb/shc heatmap plots')
+    end if
+    if (plot_shc) then
+      if (kubo_adpt_smr) then
+        call io_error('Error: Must use fixed smearing when plotting ' &
+                      //'spin Hall conductivity')
+      end if
+      if (nfermi == 0) then
+        call io_error('Error: must specify Fermi energy')
+      else if (nfermi /= 1) then
+        call io_error('Error: kpath plot only accept one Fermi energy, ' &
+                      //'use fermi_energy instead of fermi_energy_min')
+      end if
     end if
 
     if (on_root) then
       call kslice_print_info(plot_fermi_lines, fermi_lines_color, &
-                             plot_curv, plot_morb)
+                             plot_curv, plot_morb, plot_shc)
     end if
 
     call get_HH_R
@@ -107,6 +122,13 @@ contains
       call get_BB_R
       call get_CC_R
     endif
+
+    if (plot_shc) then
+      call get_AA_R
+      call get_SS_R
+      call get_SHC_R
+    end if
+
     if (fermi_lines_color) call get_SS_R
 
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
@@ -245,6 +267,9 @@ contains
         morb(2) = sum(Morb_k(:, 2))
         morb(3) = sum(Morb_k(:, 3))
         my_zdata(:, iloc) = morb(:)
+      else if (plot_shc) then
+        call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+        my_zdata(1, iloc) = shc_k_fermi(1)
       end if
 
     end do !iloc
@@ -343,18 +368,27 @@ contains
       end if
 
       if (allocated(my_zdata)) then
-        if (plot_curv .or. plot_morb) then
+        if (plot_curv .or. plot_morb .or. plot_shc) then
           dataunit = io_file_unit()
           if (plot_morb) then ! ugly. But to keep the logic the same as other places
             filename = trim(seedname)//'-kslice-morb.dat'
           elseif (plot_curv) then
             filename = trim(seedname)//'-kslice-curv.dat'
+          elseif (plot_shc) then
+            filename = trim(seedname)//'-kslice-shc.dat'
           endif
           write (stdout, '(/,3x,a)') filename
           open (dataunit, file=filename, form='formatted')
-          do loop_kpt = 1, nkpts
-            write (dataunit, '(4E16.8)') zdata(:, loop_kpt)
-          end do
+          if (plot_shc) then
+            if (berry_curv_unit == 'bohr2') zdata = zdata/bohr**2
+            do loop_kpt = 1, nkpts
+              write (dataunit, '(1E16.8)') zdata(1, loop_kpt)
+            end do
+          else
+            do loop_kpt = 1, nkpts
+              write (dataunit, '(4E16.8)') zdata(:, loop_kpt)
+            end do
+          end if
           write (dataunit, *) ' '
           close (dataunit)
         end if
@@ -506,9 +540,9 @@ contains
         close (scriptunit)
       endif ! plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap
 
-      if (heatmap) then
+      if (heatmap .and. (.not. plot_shc)) then
         !
-        ! python script for curvature/Morb heatmaps [+ black Fermi lines]
+        ! python script for curvature/Morb/SHC heatmaps [+ black Fermi lines]
         !
         do i = 1, 3
 
@@ -620,6 +654,140 @@ contains
 
       endif !heatmap
 
+      if (heatmap .and. plot_shc) then
+        scriptunit = io_file_unit()
+        if (.not. plot_fermi_lines) then
+          filename = trim(seedname)//'-kslice-shc'//'.py'
+          write (stdout, '(/,3x,a)') filename
+          open (scriptunit, file=filename, form='formatted')
+        elseif (plot_fermi_lines) then
+          filename = trim(seedname)//'-kslice-shc'//'+fermi_lines.py'
+          write (stdout, '(/,3x,a)') filename
+          open (scriptunit, file=filename, form='formatted')
+        endif
+        write (scriptunit, '(a)') "# uncomment these two lines if you are " &
+          //"running in non-GUI environment"
+        write (scriptunit, '(a)') "#import matplotlib"
+        write (scriptunit, '(a)') "#matplotlib.use('Agg')"
+        write (scriptunit, '(a)') "import matplotlib.pyplot as plt"
+        call script_common(scriptunit, areab1b2, square)
+        if (plot_fermi_lines) call script_fermi_lines(scriptunit)
+
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "def shiftedColorMap(cmap, start=0, " &
+          //"midpoint=0.5, stop=1.0, name='shiftedcmap'):"
+        write (scriptunit, '(a)') "  '''"
+        write (scriptunit, '(a)') '  Function to offset the "center" ' &
+          //'of a colormap. Useful for'
+        write (scriptunit, '(a)') '  data with a negative min and ' &
+          //'positive max and you want the'
+        write (scriptunit, '(a)') "  middle of the colormap's dynamic " &
+          //"range to be at zero."
+        write (scriptunit, '(a)') '  '
+        write (scriptunit, '(a)') '  Input'
+        write (scriptunit, '(a)') '  -----'
+        write (scriptunit, '(a)') '  cmap : The matplotlib colormap to ' &
+          //'be altered'
+        write (scriptunit, '(a)') "  start : Offset from lowest point in " &
+          //"the colormap's range."
+        write (scriptunit, '(a)') '    Defaults to 0.0 (no lower offset). ' &
+          //'Should be between'
+        write (scriptunit, '(a)') '    0.0 and `midpoint`.'
+        write (scriptunit, '(a)') '  midpoint : The new center of the ' &
+          //'colormap. Defaults to '
+        write (scriptunit, '(a)') '    0.5 (no shift). Should be between ' &
+          //'0.0 and 1.0. In'
+        write (scriptunit, '(a)') '    general, this should be  1 - ' &
+          //'vmax / (vmax + abs(vmin))'
+        write (scriptunit, '(a)') '    For example if your data range from ' &
+          //'-15.0 to +5.0 and'
+        write (scriptunit, '(a)') '    you want the center of the colormap ' &
+          //'at 0.0, `midpoint`'
+        write (scriptunit, '(a)') '    should be set to  1 - 5/(5 + 15)) ' &
+          //'or 0.75'
+        write (scriptunit, '(a)') "  stop : Offset from highest point in " &
+          //"the colormap's range."
+        write (scriptunit, '(a)') '    Defaults to 1.0 (no upper offset). ' &
+          //'Should be between'
+        write (scriptunit, '(a)') '    `midpoint` and 1.0.'
+        write (scriptunit, '(a)') "  '''"
+        write (scriptunit, '(a)') "  cdict = {'red': [],'green': []," &
+          //"'blue': [],'alpha': []}"
+        write (scriptunit, '(a)') '  # regular index to compute the colors'
+        write (scriptunit, '(a)') '  reg_index = np.linspace(start, stop, 257)'
+        write (scriptunit, '(a)') '  # shifted index to match the data'
+        write (scriptunit, '(a)') '  shift_index = np.hstack(['
+        write (scriptunit, '(a)') '    np.linspace(0.0, midpoint, 128, ' &
+          //'endpoint=False),'
+        write (scriptunit, '(a)') '    np.linspace(midpoint, 1.0, 129, ' &
+          //'endpoint=True)'
+        write (scriptunit, '(a)') '  ])'
+        write (scriptunit, '(a)') '  for ri, si in zip(reg_index, shift_index):'
+        write (scriptunit, '(a)') '    r, g, b, a = cmap(ri)'
+        write (scriptunit, '(a)') "    cdict['red'].append((si, r, r))"
+        write (scriptunit, '(a)') "    cdict['green'].append((si, g, g))"
+        write (scriptunit, '(a)') "    cdict['blue'].append((si, b, b))"
+        write (scriptunit, '(a)') "    cdict['alpha'].append((si, a, a))"
+        write (scriptunit, '(a)') '  newcmap = matplotlib.colors' &
+          //'.LinearSegmentedColormap(name, cdict)'
+        write (scriptunit, '(a)') '  plt.register_cmap(cmap=newcmap)'
+        write (scriptunit, '(a)') '  return newcmap'
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "outfile = '"//trim(seedname)//"-kslice-shc.pdf'"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "val = np.loadtxt('"//trim(seedname) &
+          //"-kslice-shc.dat', usecols=(0,))"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "val_log=np.array([np.log10(abs(elem))*np.sign(elem)" &
+          //"if abs(elem)>10 else elem/10.0 for elem in val])"
+        write (scriptunit, '(a)') "#val_log = val"
+        write (scriptunit, '(a)') "valmax=max(val_log)"
+        write (scriptunit, '(a)') "valmin=min(val_log)"
+        write (scriptunit, '(a)') "#cmnew=shiftedColorMap(matplotlib.cm.bwr," &
+          //"0,1-valmax/(valmax+abs(valmin)),1)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "if square: "
+        write (scriptunit, '(a)') "  Z=val_log.reshape(dimy,dimx)"
+        write (scriptunit, '(a)') "  mn=int(np.floor(Z.min()))"
+        write (scriptunit, '(a)') "  mx=int(np.ceil(Z.max()))"
+        write (scriptunit, '(a)') "  ticks=range(mn,mx+1)"
+        write (scriptunit, '(a)') "  #pl.contourf(x_coord,y_coord,Z," &
+          //"ticks,origin='lower')"
+        write (scriptunit, '(a)') "  pl.imshow(Z,origin='lower'," &
+          //"extent=(min(x_coord),max(x_coord),min(y_coord)," &
+          //"max(y_coord)))#,cmap=cmnew)"
+        write (scriptunit, '(a)') "else: "
+        write (scriptunit, '(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
+        write (scriptunit, '(a)') "  valint = interpolate.griddata((points_x," &
+          //"points_y), val_log, (grid_x,grid_y), method='nearest')"
+        write (scriptunit, '(a)') "  mn=int(np.floor(valint.min()))"
+        write (scriptunit, '(a)') "  mx=int(np.ceil(valint.max()))"
+        write (scriptunit, '(a)') "  ticks=range(mn,mx+1)"
+        write (scriptunit, '(a)') "  #pl.contourf(xint,yint,valint,ticks)"
+        write (scriptunit, '(a)') "  pl.imshow(valint,origin='lower'," &
+          //"extent=(min(xint),max(xint),min(yint),max(yint)))#,cmap=cmnew)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "ticklabels=[]"
+        write (scriptunit, '(a)') "for n in ticks:"
+        write (scriptunit, '(a)') " if n<0: "
+        write (scriptunit, '(a)') "  ticklabels.append('-$10^{%d}$' % abs(n))"
+        write (scriptunit, '(a)') " elif n==0:"
+        write (scriptunit, '(a)') "  ticklabels.append(' $%d$' %  n)"
+        write (scriptunit, '(a)') " else:"
+        write (scriptunit, '(a)') "  ticklabels.append(' $10^{%d}$' % n)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "cbar=pl.colorbar()"
+        write (scriptunit, '(a)') "#cbar.set_ticks(ticks)"
+        write (scriptunit, '(a)') "#cbar.set_ticklabels(ticklabels)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "ax = pl.gca()"
+        write (scriptunit, '(a)') "ax.xaxis.set_visible(False)"
+        write (scriptunit, '(a)') "ax.yaxis.set_visible(False)"
+        write (scriptunit, '(a)') " "
+        write (scriptunit, '(a)') "pl.savefig(outfile,bbox_inches='tight')"
+        write (scriptunit, '(a)') "pl.show()"
+      end if
+
       write (stdout, *) ' '
 
     end if ! on_root
@@ -630,11 +798,11 @@ contains
   !                   PRIVATE PROCEDURES
   !===========================================================!
 
-  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb)
+  subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc)
     use w90_io, only: stdout, io_error
     use w90_parameters, only: nfermi, fermi_energy_list, berry_curv_unit
 
-    logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb
+    logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
 
     write (stdout, '(/,/,1x,a)') &
       'Properties calculated in module  k s l i c e'
@@ -653,6 +821,7 @@ contains
       write (stdout, '(/,7x,a,f10.4,1x,a)') &
         '(Fermi level: ', fermi_energy_list(1), 'eV)'
     endif
+
     if (plot_curv) then
       if (berry_curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
@@ -666,6 +835,16 @@ contains
         '* Orbital magnetization k-space integrand in eV.Ang^2'
       if (nfermi /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=morb')
+    elseif (plot_shc) then
+      if (berry_curv_unit == 'ang2') then
+        write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
+          //'of spin Hall conductivity in Ang^2'
+      elseif (berry_curv_unit == 'bohr2') then
+        write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
+          //'of spin Hall conductivity in Bohr^2'
+      endif
+      if (nfermi /= 1) call io_error( &
+        'Must specify one Fermi level when kslice_task=shc')
     endif
 
   end subroutine kslice_print_info
@@ -750,12 +929,14 @@ contains
     write (scriptunit, '(a)') "import pylab as pl"
     write (scriptunit, '(a)') "import numpy as np"
     write (scriptunit, '(a)') "import matplotlib.mlab as ml"
+    write (scriptunit, '(a)') "from scipy import interpolate"
     write (scriptunit, '(a)') "from collections import OrderedDict"
     write (scriptunit, '(a)') " "
     write (scriptunit, '(a)') "points = np.loadtxt('"//trim(seedname)// &
       "-kslice-coord.dat')"
-    write (scriptunit, '(a)') "points_x=points[:,0]"
-    write (scriptunit, '(a)') "points_y=points[:,1]"
+    write (scriptunit, '(a)') "# Avoid numerical noise"
+    write (scriptunit, '(a)') "points_x=np.around(points[:,0],decimals=10)"
+    write (scriptunit, '(a)') "points_y=np.around(points[:,1],decimals=10)"
     write (scriptunit, '(a)') "num_pt=len(points)"
     write (scriptunit, '(a)') " "
     write (scriptunit, '(a,f12.6)') "area=", areab1b2
@@ -809,10 +990,12 @@ contains
     write (scriptunit, '(a)') "  bbands=bands.reshape((num_pt," &
       //"numbands))"
     write (scriptunit, '(a)') "  bandint=[]"
+    write (scriptunit, '(a)') "  grid_x, grid_y = np.meshgrid(xint,yint)"
     write (scriptunit, '(a)') "  for i in range(numbands):"
-    write (scriptunit, '(a)') "    bandint.append(ml.griddata" &
-      //"(points_x,points_y, bbands[:,i], xint, yint))"
-    write (scriptunit, '(a)') "    pl.contour(xint,yint," &
+    write (scriptunit, '(a)') "    bandint.append(interpolate.griddata" &
+      //"((points_x,points_y), bbands[:,i], (grid_x,grid_y), " &
+      //"method='nearest'))"
+    write (scriptunit, '(a)') "    pl.contour(grid_x,grid_y," &
       //"bandint[i],[ef],colors='black')"
 
   end subroutine script_fermi_lines

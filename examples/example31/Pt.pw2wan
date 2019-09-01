@@ -1,0 +1,16 @@
+&inputpp 
+   outdir = './tempdir/'
+   prefix = 'Pt'
+   seedname = 'Pt'
+   write_mmn = .true.
+   write_amn = .true.
+
+   write_spn = .false.
+   write_unk = .false.
+
+   ! SCDM keywords
+   scdm_proj         = .true.
+   scdm_entanglement = 'erfc'
+   scdm_mu           = 35.
+   scdm_sigma        =  5.
+/

@@ -1,5 +1,7 @@
 num_wann        =  4 
 num_iter        = 20
+use_ws_distance = .false.
+search_shells=12
 
 begin atoms_frac
 C   -0.12500  -0.1250    -0.125000

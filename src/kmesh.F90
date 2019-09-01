@@ -720,17 +720,13 @@ contains
       write (nnkpout, '(a/)') 'end projections'
     endif
 
-    ! vv: SCDM block
-    write (nnkpout, '(a)') 'begin scdm_info'
-    if (scdm_proj) then
-      write (nnkpout, '(i6)') 1
-      write (nnkpout, '(i6)') num_wann
-      write (nnkpout, '(i6)') scdm_entanglement
-      write (nnkpout, '(2x,2f10.5)') scdm_mu, scdm_sigma
-    else
+    ! Info for automatic generation of projections
+    if (auto_projections) then
+      write (nnkpout, '(a)') 'begin auto_projections'
+      write (nnkpout, '(i6)') num_proj
       write (nnkpout, '(i6)') 0
-    endif
-    write (nnkpout, '(a/)') 'end scdm_info'
+      write (nnkpout, '(a/)') 'end auto_projections'
+    end if
 
     ! Nearest neighbour k-points
     write (nnkpout, '(a)') 'begin nnkpts'
@@ -1080,8 +1076,11 @@ contains
         elseif (shell == search_shells) then
           if (on_root) write (stdout, *) ' '
           if (on_root) write (stdout, '(1x,a,i3,a)') 'Unable to satisfy B1 with any of the first ', search_shells, ' shells'
-          if (on_root) write (stdout, '(1x,a)') 'Your cell might be very long, or you may have an irregular MP grid'
-          if (on_root) write (stdout, '(1x,a)') 'Try increasing the parameter search_shells in the win file (default=12)'
+          if (on_root) write (stdout, '(1x,a)') 'Check that you have specified your unit cell to a high precision'
+          if (on_root) write (stdout, '(1x,a)') 'Low precision might cause a loss of symmetry.'
+          if (on_root) write (stdout, '(1x,a)') ' '
+          if (on_root) write (stdout, '(1x,a)') 'If your cell is very long, or you have an irregular MP grid'
+          if (on_root) write (stdout, '(1x,a)') 'Try increasing the parameter search_shells in the win file (default=30)'
           if (on_root) write (stdout, *) ' '
           call io_error('kmesh_get_automatic')
         end if
