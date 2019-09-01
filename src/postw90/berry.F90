@@ -1169,7 +1169,7 @@ contains
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), intent(out), dimension(:, :, :) :: imf_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
-    logical, intent(inout), optional, dimension(:) :: ladpt
+    logical, intent(in), optional, dimension(:) :: ladpt
 
     if (present(occ)) then
       call berry_get_imfgh_klist(kpt, imf_k_list, occ=occ)
@@ -1216,7 +1216,7 @@ contains
     real(kind=dp), intent(out), dimension(:, :, :), optional &
       :: imf_k_list, img_k_list, imh_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
-    logical, intent(inout), optional, dimension(:) :: ladpt
+    logical, intent(in), optional, dimension(:) :: ladpt
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: UU(:, :)
@@ -1267,7 +1267,7 @@ contains
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
       !
       do ife = 1, nfermi_loc
-        if ((.not.present(ladpt)).or.(present(ladpt).and.ladpt(ife))) then
+        if ((.not. present(ladpt)) .or. (present(ladpt) .and. ladpt(ife))) then
           do i = 1, 3
             !
             ! J0 term (Omega_bar term of WYSV06)
