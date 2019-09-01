@@ -155,6 +155,7 @@ contains
     character(len=24) :: file_name
     logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc
     logical           :: ladpt_kmesh
+    logical           :: ladpt(nfermi)
 
     if (nfermi == 0) call io_error( &
       'Must specify one or more Fermi levels when berry=true')
@@ -371,6 +372,7 @@ contains
         !
         if (eval_ahc) then
           call berry_get_imf_klist(kpt, imf_k_list)
+          ladpt = .false.
           do if = 1, nfermi
             vdum(1) = sum(imf_k_list(:, 1, if))
             vdum(2) = sum(imf_k_list(:, 2, if))
@@ -379,18 +381,25 @@ contains
             rdum = sqrt(dot_product(vdum, vdum))
             if (rdum > berry_curv_adpt_kmesh_thresh) then
               adpt_counter_list(if) = adpt_counter_list(if) + 1
-              do loop_adpt = 1, berry_curv_adpt_kmesh**3
-                ! Using imf_k_list here would corrupt values for other
-                ! frequencies, hence dummy. Only if-th element is used
-                call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), &
-                                         imf_k_list_dummy)
-                imf_list(:, :, if) = imf_list(:, :, if) &
-                                     + imf_k_list_dummy(:, :, if)*kweight_adpt
-              end do
+              ladpt(if) = .true.
             else
               imf_list(:, :, if) = imf_list(:, :, if) + imf_k_list(:, :, if)*kweight
             endif
           enddo
+          if (any(ladpt)) then
+            do loop_adpt = 1, berry_curv_adpt_kmesh**3
+              ! Using imf_k_list here would corrupt values for other
+              ! frequencies, hence dummy. Only if-th element is used
+              call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), &
+                                       imf_k_list_dummy, ladpt=ladpt)
+              do if = 1, nfermi
+                if (ladpt(if)) then
+                  imf_list(:, :, if) = imf_list(:, :, if) &
+                                       + imf_k_list_dummy(:, :, if)*kweight_adpt
+                endif
+              enddo
+            end do
+          endif
         end if
 
         if (eval_morb) then
@@ -495,6 +504,7 @@ contains
         !
         if (eval_ahc) then
           call berry_get_imf_klist(kpt, imf_k_list)
+          ladpt = .false.
           do if = 1, nfermi
             vdum(1) = sum(imf_k_list(:, 1, if))
             vdum(2) = sum(imf_k_list(:, 2, if))
@@ -503,18 +513,25 @@ contains
             rdum = sqrt(dot_product(vdum, vdum))
             if (rdum > berry_curv_adpt_kmesh_thresh) then
               adpt_counter_list(if) = adpt_counter_list(if) + 1
-              do loop_adpt = 1, berry_curv_adpt_kmesh**3
-                ! Using imf_k_list here would corrupt values for other
-                ! frequencies, hence dummy. Only if-th element is used
-                call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), &
-                                         imf_k_list_dummy)
-                imf_list(:, :, if) = imf_list(:, :, if) &
-                                     + imf_k_list_dummy(:, :, if)*kweight_adpt
-              end do
+              ladpt(if) = .true.
             else
               imf_list(:, :, if) = imf_list(:, :, if) + imf_k_list(:, :, if)*kweight
             endif
           enddo
+          if (any(ladpt)) then
+            do loop_adpt = 1, berry_curv_adpt_kmesh**3
+              ! Using imf_k_list here would corrupt values for other
+              ! frequencies, hence dummy. Only if-th element is used
+              call berry_get_imf_klist(kpt(:) + adkpt(:, loop_adpt), &
+                                       imf_k_list_dummy, ladpt=ladpt)
+              do if = 1, nfermi
+                if (ladpt(if)) then
+                  imf_list(:, :, if) = imf_list(:, :, if) &
+                                       + imf_k_list_dummy(:, :, if)*kweight_adpt
+                endif
+              enddo
+            end do
+          endif
         end if
 
         if (eval_morb) then
@@ -1139,7 +1156,7 @@ contains
 
   end subroutine berry_main
 
-  subroutine berry_get_imf_klist(kpt, imf_k_list, occ)
+  subroutine berry_get_imf_klist(kpt, imf_k_list, occ, ladpt)
     !============================================================!
     !                                                            !
     !! Calculates the Berry curvature traced over the occupied
@@ -1152,16 +1169,21 @@ contains
     real(kind=dp), intent(in)                    :: kpt(3)
     real(kind=dp), intent(out), dimension(:, :, :) :: imf_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
+    logical, intent(inout), optional, dimension(:) :: ladpt
 
     if (present(occ)) then
       call berry_get_imfgh_klist(kpt, imf_k_list, occ=occ)
     else
-      call berry_get_imfgh_klist(kpt, imf_k_list)
+      if (present(ladpt)) then
+        call berry_get_imfgh_klist(kpt, imf_k_list, ladpt=ladpt)
+      else
+        call berry_get_imfgh_klist(kpt, imf_k_list)
+      endif
     endif
 
   end subroutine berry_get_imf_klist
 
-  subroutine berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list, occ)
+  subroutine berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list, occ, ladpt)
     !=========================================================!
     !
     !! Calculates the three quantities needed for the orbital
@@ -1194,6 +1216,7 @@ contains
     real(kind=dp), intent(out), dimension(:, :, :), optional &
       :: imf_k_list, img_k_list, imh_k_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
+    logical, intent(inout), optional, dimension(:) :: ladpt
 
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: UU(:, :)
@@ -1244,23 +1267,25 @@ contains
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
       !
       do ife = 1, nfermi_loc
-        do i = 1, 3
-          !
-          ! J0 term (Omega_bar term of WYSV06)
-          imf_k_list(1, i, ife) = &
-            utility_re_tr_prod(f_list(:, :, ife), OOmega(:, :, i))
-          !
-          ! J1 term (DA term of WYSV06)
-          imf_k_list(2, i, ife) = -2.0_dp* &
-                                  ( &
-                                  utility_im_tr_prod(AA(:, :, alpha_A(i)), JJp_list(:, :, ife, beta_A(i))) &
-                                  + utility_im_tr_prod(JJm_list(:, :, ife, alpha_A(i)), AA(:, :, beta_A(i))) &
-                                  )
-          !
-          ! J2 term (DD of WYSV06)
-          imf_k_list(3, i, ife) = -2.0_dp* &
-                                  utility_im_tr_prod(JJm_list(:, :, ife, alpha_A(i)), JJp_list(:, :, ife, beta_A(i)))
-        end do
+        if ((.not.present(ladpt)).or.(present(ladpt).and.ladpt(ife))) then
+          do i = 1, 3
+            !
+            ! J0 term (Omega_bar term of WYSV06)
+            imf_k_list(1, i, ife) = &
+              utility_re_tr_prod(f_list(:, :, ife), OOmega(:, :, i))
+            !
+            ! J1 term (DA term of WYSV06)
+            imf_k_list(2, i, ife) = -2.0_dp* &
+                                    ( &
+                                    utility_im_tr_prod(AA(:, :, alpha_A(i)), JJp_list(:, :, ife, beta_A(i))) &
+                                    + utility_im_tr_prod(JJm_list(:, :, ife, alpha_A(i)), AA(:, :, beta_A(i))) &
+                                    )
+            !
+            ! J2 term (DD of WYSV06)
+            imf_k_list(3, i, ife) = -2.0_dp* &
+                                    utility_im_tr_prod(JJm_list(:, :, ife, alpha_A(i)), JJp_list(:, :, ife, beta_A(i)))
+          end do
+        endif
       end do
     end if
 
