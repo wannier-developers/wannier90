@@ -22,7 +22,7 @@ module w90_ws_distance
   !! This module computes the optimal Wigner-Seitz cell around each Wannier
   !! function to use for interpolation.
   use w90_constants, only: dp
-  use w90_parameters, only: use_ws_distance, ws_distance_tol
+  use w90_parameters, only: use_ws_distance, ws_distance_tol, ws_search_size
 
   implicit none
 
@@ -37,7 +37,7 @@ module w90_ws_distance
   !! all listed. First index: xyz, second index: number of degenerate shifts,
   !! third and fourth indices: i,j; fifth index: index on the R vector.
   real(DP), public, save, allocatable :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-  !! Cartesian version if irdist_ws, in angstrom
+  !! Cartesian version of irdist_ws, in angstrom
   integer, public, save, allocatable :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
   !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
   !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
@@ -56,9 +56,7 @@ contains
 ! of the use_ws_distance variable in the user guide.
 !
 ! Some comments:
-! 1. we are using a 3x3x3 supercell to search for 'neighbors'. We should
-! probably make this more robust.
-! 2. This computation is done independently on all processors (when run in
+! 1. This computation is done independently on all processors (when run in
 !    parallel). I think this shouldn't do a problem as the math is fairly simple
 !    and uses data already broadcasted (integer values, and the
 !    wannier_centres), but if there is the risk of having different
@@ -122,7 +120,7 @@ contains
       do jw = 1, num_wann
         do iw = 1, num_wann
           call utility_frac_to_cart(REAL(irvec(:, ir), kind=dp), irvec_cart, real_lattice)
-          ! function IW translated in the Wigner-Size around function JW
+          ! function JW translated in the Wigner-Seitz around function IW
           ! and also find its degeneracy, and the integer shifts needed
           ! to identify it
           ! Note: the routine outputs R_out, but we don't really need it
@@ -163,10 +161,6 @@ contains
 
     real(DP) :: R(3), R_f(3), R_in_f(3), R_bz(3), mod2_R_bz
     integer :: i, j, k
-    integer, parameter :: far = 3
-    !! How far shold we look? It depends on how far the WFs have been wandering
-    !! from their unit-cell, or if the cell is very slanted. 2 is almost always
-    !! enough, 3 is enough in every case I have ever met
 
     ! init
     ndeg = 0
@@ -180,10 +174,13 @@ contains
 
     ! In this first loop, I just look for the shortest vector that I obtain
     ! by trying to displace the second Wannier function by all
-    ! 'large-supercell' vectors (in a far x far x far large-supercell grid).
-    do i = -far, far
-      do j = -far, far
-        do k = -far, far
+    ! 'large-supercell' vectors
+    ! The size of the supercell, controlled by ws_search_size,
+    ! is incremented by one unit in order to account for WFs whose centre
+    ! wanders away from the original reference unit cell
+    do i = -ws_search_size(1) - 1, ws_search_size(1) + 1
+      do j = -ws_search_size(2) - 1, ws_search_size(2) + 1
+        do k = -ws_search_size(3) - 1, ws_search_size(3) + 1
 
           R_f = R_in_f + REAL((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
                               kind=DP)
@@ -208,9 +205,12 @@ contains
       enddo
     enddo
 
-    ! Now, second loop to find the list list of R_out that differ from R_in
+    ! Now, second loop to find the list of R_out that differ from R_in
     ! by a large-supercell lattice vector and are equally distant from R0
     ! (i.e. that are on the edges of the WS cell centered on R0)
+    ! As above, the size of the supercell, controlled by ws_search_size,
+    ! is incremented by one unit in order to account for WFs whose centre
+    ! wanders away from the original reference unit cell
 
     ! I start from the last R_bz found
     mod2_R_bz = SUM((R_bz - R0)**2)
@@ -225,9 +225,9 @@ contains
     ! take R_bz to cryst(frac) coord for translating
     call utility_cart_to_frac(R_bz, R_in_f, recip_lattice)
 
-    do i = -far, far
-      do j = -far, far
-        do k = -far, far
+    do i = -ws_search_size(1) - 1, ws_search_size(1) + 1
+      do j = -ws_search_size(2) - 1, ws_search_size(2) + 1
+        do k = -ws_search_size(3) - 1, ws_search_size(3) + 1
 
           R_f = R_in_f + REAL((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
                               kind=DP)

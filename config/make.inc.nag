@@ -1,25 +1,23 @@
 #=======================
-# NAG 
-#======================= 
+# NAG
+#=======================
 
-F90 = nagfor 
-FCOPTS = -DNAG  
+F90 = nagfor
+FCOPTS = -DNAG
 
 #=======================
 # ATLAS Blas and LAPACK
 #=======================
 LIBDIR = /usr/local/lib
 LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
-                                                                                                                                            
+
 #=======================
 # NETLIB LAPACK and BLAS
 #=======================
-                                                                                                                                            
+
 #LIBDIR = /usr/local/lib
 #LIBS = -L$(LIBDIR)  -llapack -lblas
 
 
 # ACML for blas and lapack
 LIBS = -lacml
-
-

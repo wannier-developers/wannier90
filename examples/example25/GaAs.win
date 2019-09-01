@@ -1,8 +1,8 @@
 # BERRY
 ###############
 berry = true
-berry_task=sc   
-berry_kmesh = 100 100 100 
+berry_task=sc
+berry_kmesh = 100 100 100
 fermi_energy=7.84
 
 kubo_freq_min= 0.0
@@ -11,14 +11,14 @@ kubo_freq_step= 0.03
 kubo_adpt_smr=true
 
 sc_eta=0.040
-sc_phase_conv=2   
+sc_phase_conv=2
 ###############
 
 
 # W90
 ###############
 num_bands         =   12
-num_wann          =   8 
+num_wann          =   8
 
 num_iter          = 1000
 num_print_cycles  = 40
@@ -36,7 +36,7 @@ bands_plot : true
 bands_num_points : 151
 bands_plot_format : gnuplot
 
-exclude_bands :  1-5 
+exclude_bands :  1-5
 
 begin unit_cell_cart
 bohr
@@ -69,7 +69,7 @@ Ga 0.00  0.00  0.00
 As 0.25  0.25  0.25
 end atoms_frac
 
-mp_grid : 10 10 10 
+mp_grid : 10 10 10
 
 
 begin kpoints

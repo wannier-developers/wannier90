@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 
-$numargs = $#ARGV+1; 
+$numargs = $#ARGV+1;
 
 if (($numargs<3)||($numargs>4)) {
     print  "usage: n1 n2 n3 [wan]\n";
@@ -10,7 +10,7 @@ if (($numargs<3)||($numargs>4)) {
     print  "       n3  - divisions along 3rd recip vector\n";
     print  "       wan - omit the kpoint weight (optional)\n";
     exit;
-} 
+}
 
 if ($ARGV[0]<=0) {
     print "n1 must be >0\n";
@@ -33,7 +33,7 @@ if ($numargs==3) {
     for ($x=0; $x<$ARGV[0]; $x++) {
 	for ($y=0; $y<$ARGV[1]; $y++) {
 	    for ($z=0; $z<$ARGV[2]; $z++) {
-		printf ("%12.8f%12.8f%12.8f%14.6e \n", $x/$ARGV[0],$y/$ARGV[1],$z/$ARGV[2],1/$totpts);
+		printf ("%12.8f%12.8f%12.8f%14.6e\n", $x/$ARGV[0],$y/$ARGV[1],$z/$ARGV[2],1/$totpts);
 	    }
 	}
     }
@@ -44,7 +44,7 @@ if ($numargs==4) {
     for ($x=0; $x<$ARGV[0]; $x++) {
 	for ($y=0; $y<$ARGV[1]; $y++) {
 	    for ($z=0; $z<$ARGV[2]; $z++) {
-		printf ("%12.8f%12.8f%12.8f \n", $x/$ARGV[0],$y/$ARGV[1],$z/$ARGV[2]);
+		printf ("%12.8f%12.8f%12.8f\n", $x/$ARGV[0],$y/$ARGV[1],$z/$ARGV[2]);
 	    }
 	}
     }

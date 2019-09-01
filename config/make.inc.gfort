@@ -4,14 +4,14 @@
 F90 = gfortran
 
 #Add next two lines for parallel postw90. Choose the correct name of the mpi f90 wrapper
-#COMMS  = mpi 
+#COMMS  = mpi
 #MPIF90 = mpgfortran #mpif90
 
-FCOPTS = -O3 
+FCOPTS = -O3
 LDOPTS =
 
 #Next two lines are good for debugging
-#FCOPTS = -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
+#FCOPTS = -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
 #LDOPTS = -fstrict-aliasing  -fno-omit-frame-pointer -fno-realloc-lhs -fcheck=bounds,do,recursion,pointer -ffree-form -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
 
 
@@ -25,7 +25,7 @@ LDOPTS =
 #=======================
 # NETLIB LAPACK and BLAS
 #=======================
-#LIBDIR = /rscratch/jry20/LIB/gfortran 
+#LIBDIR = /rscratch/jry20/LIB/gfortran
 #LIBS = -L$(LIBDIR)  -llapack -lblas
 
 #=======================
@@ -35,8 +35,3 @@ LDOPTS =
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas
-
-
-
-
-

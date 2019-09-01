@@ -9,7 +9,9 @@ End Projections
  dis_conv_tol = 1d-10 
  dis_conv_window = 9 
  dis_num_iter = 200 
-
+ use_ws_distance = .false.
+search_shells=12
+ 
  num_wann = 3 
  num_bands = 6
  exclude_bands : 1-20,27-40

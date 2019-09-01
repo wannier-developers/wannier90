@@ -1,15 +1,15 @@
 #=======================
-# IBM Power series AIX 
+# IBM Power series AIX
 # PowerPc AIX / Linux
 #=======================
 #
 
-F90= xlf95_r 
+F90= xlf95_r
 FCOPTS = -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto  -O3
-LDOPTS = -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto 
-LIBDIR = 
-LIBS   = -L$(LIBDIR) -llapack -lessl 
- 
+LDOPTS = -qfree=f90 -qsuffix=f=f90 -qsuffix=cpp=F90 -qarch=auto
+LIBDIR =
+LIBS   = -L$(LIBDIR) -llapack -lessl
+
 # Notes: This will compile with the default addressing (either 64 or 32)
 #        To explicitly specify the adressing use -q64 or -q32
 #
@@ -17,6 +17,3 @@ LIBS   = -L$(LIBDIR) -llapack -lessl
 #        http://www.netlib.org/lapack/
 #        and (optionally) the essl wrappers
 #        http://www.netlib.org/lapack/essl/
-
-
-
