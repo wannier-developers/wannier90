@@ -75,7 +75,6 @@ contains
                          fermi_lines_color, heatmap, plot_shc
     character(len=120) :: filename, square
 
-    integer, allocatable :: bnddataunit(:)
     complex(kind=dp), allocatable :: HH(:, :)
     complex(kind=dp), allocatable :: delHH(:, :, :)
     complex(kind=dp), allocatable :: UU(:, :)
@@ -349,7 +348,6 @@ contains
             n1 = n/100
             n2 = (n - n1*100)/10
             n3 = n - n1*100 - n2*10
-            bnddataunit(n) = io_file_unit()
             filename = trim(seedname)//'-bnd_' &
                        //achar(48 + n1)//achar(48 + n2)//achar(48 + n3)//'.dat'
 
