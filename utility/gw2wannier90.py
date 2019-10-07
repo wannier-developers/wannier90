@@ -34,7 +34,7 @@ if len(argv) < 2:
     print("You need to provide the seedname")
     print("Usage: gw2wannier90.py seedname options")
     print("Options can be mmn, amn, spn, unk, uhu")
-    print("Be careful with unformatted files, they are compiler-dependdent")
+    print("Be careful with unformatted files, they are compiler-dependent")
     print(
         "A safer choice is to use (bigger) formatted files, in this case type:"
     )
@@ -134,7 +134,7 @@ providedGW = [
 ]
 #print providedGW
 f_raw.write('------------------------------\n')
-f_raw.write('List of provided GW corrections (bands indeces)\n')
+f_raw.write('List of provided GW corrections (bands indexes)\n')
 f_raw.write(str(providedGW))
 f_raw.write('------------------------------\n')
 NBND = len(providedGW)

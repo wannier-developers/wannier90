@@ -11,7 +11,7 @@
 #
 # https://github.com/wannier-developers/wannier90
 #
-# Python3 script to find the indeces of a coarse mesh into a finer mesh
+# Python3 script to find the indexes of a coarse mesh into a finer mesh
 # provided they are commensurate.
 #
 # Written by Antimo Marrazzo (EPFL)
@@ -57,7 +57,7 @@ def prepare_mesh(coarse_grid, nscf_output_file):
     return (k_fine_list, k_coarse_list)
 
 
-def indeces_list(fine_mesh, coarse_mesh):
+def indexes_list(fine_mesh, coarse_mesh):
     import numpy as np
     opt = np.array([0, 1, -1])
     k_list = []
@@ -83,7 +83,7 @@ print('Path of the QE NSCF output file', nscf_output_file)
 
 (k_fine_list, k_coarse_list) = prepare_mesh(coarse_grid, nscf_output_file)
 
-ind_list = indeces_list(np.array(k_fine_list), np.array(k_coarse_list))
-print('List of k-indeces to pass to Yambo', ind_list)
+ind_list = indexes_list(np.array(k_fine_list), np.array(k_coarse_list))
+print('List of k-indexes to pass to Yambo', ind_list)
 for i in ind_list:
     print(str(i) + '|' + str(i) + '|' + 'first band' + '|' + 'last band' + '|')
