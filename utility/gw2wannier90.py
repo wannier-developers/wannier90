@@ -297,6 +297,7 @@ if calcSPN:
         f_spn_out.write(header)
         nbnd,NK=np.array(f_spn_in.readline().split(),dtype=np.int32)
 	f_spn_out.write("  ".join(str(x) for x in (NBND,NKPT) ) )
+	f_spn_out.write("\n")
     else:
 	f_spn_in = FortranFile(seedname+".spn", 'r')
 	f_spn_out = FortranFile(seednameGW+".spn", 'w')
@@ -313,24 +314,24 @@ if calcSPN:
     indmQP,indnQP=np.tril_indices(NBND)
 
     if SPNformatted:
-	SPN=np.loadtxt(f_spn_in).reshape(-1)
+	SPN=np.loadtxt(f_spn_in).view(complex).reshape(-1)
 	start=0
 	length=(3*nbnd*(nbnd+1))/2
 
     for ik in xrange(NK):
+	A=np.zeros((3,nbnd,nbnd),dtype=np.complex)
 	if SPNformatted:
-	    A=SPN[start:start+length]
+	    A[:,indn,indm]=SPN[start:start+length].reshape(3,nbnd*(nbnd+1)/2,order='F')
 	    start+=length
 	else:
-	    A=np.zeros((3,nbnd,nbnd),dtype=np.complex)
-	A[:,indn,indm]=f_spn_in.read_record(dtype=np.complex).reshape(3,nbnd*(nbnd+1)/2,order='F')
+	    A[:,indn,indm]=f_spn_in.read_record(dtype=np.complex).reshape(3,nbnd*(nbnd+1)/2,order='F')
 	A[:,indm,indn]=A[:,indn,indm].conj()
 	check=np.einsum('ijj->',np.abs(A.imag))
 	if check> 1e-10:
 	    raise RuntimeError ( "REAL DIAG CHECK FAILED for spn: {0}".format(check) )
 	A=A[:,:,BANDSORT[ik]][:,BANDSORT[ik],:][:,indnQP,indmQP].reshape((3*NBND*(NBND+1)/2),order='F')
-	if formatted:
-	    f_spn_out.write("".join("{0:26:16e} {1:26:16e}\n".format(x.real,x.imag) for x in A))
+	if SPNformatted:
+	    f_spn_out.write("".join("{0:26.16e} {1:26.16e}\n".format(x.real,x.imag) for x in A))
 	else:
 	    f_spn_out.write_record(A)
 
