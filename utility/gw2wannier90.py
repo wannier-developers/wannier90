@@ -59,7 +59,7 @@ UIUformatted = "uiu_formatted" in targets
 UHUformatted = "uhu_formatted" in targets
 UNKformatted = "unk_formatted" in targets
 
-if set(targets).intersection(set(["spn", "uhu", "mmn", "amn", "unk"])):
+if set(targets).intersection(set(["spn", "uhu", "mmn", "amn", "unk", "uiu"])):
     calcAMN = "amn" in targets
     calcMMN = "mmn" in targets
     calcUHU = "uhu" in targets
@@ -75,6 +75,7 @@ else:
     calcUNK = True
 
 if calcUHU: calcMMN = True
+if calcUIU: calcMMN = True
 
 #Here we open a file to dump all the intermediate steps (mainly for debugging)
 f_raw = open(seedname + '.gw2wannier90.raw', 'w')
@@ -337,6 +338,7 @@ if calcSPN:
             f_spn_out = FortranFile(seednameGW + ".spn", 'w')
             header = f_spn_in.read_record(dtype='c')
             f_spn_out.write_record(header)
+            header = header.astype(str)
             nbnd, NK = f_spn_in.read_record(dtype=np.int32)
             f_spn_out.write_record(np.array([NBND, NKPT], dtype=np.int32))
 
@@ -349,18 +351,18 @@ if calcSPN:
         if SPNformatted:
             SPN = np.loadtxt(f_spn_in).view(complex).reshape(-1)
             start = 0
-            length = (3 * nbnd * (nbnd + 1)) / 2
+            length = (3 * nbnd * (nbnd + 1)) // 2
 
         for ik in range(NK):
             A = np.zeros((3, nbnd, nbnd), dtype=np.complex)
             if SPNformatted:
-                A[:, indn, indm] = SPN[start:start + length].reshape(
-                    3, nbnd * (nbnd + 1) / 2, order='F')
+                A[:, indn, indm] = SPN[start:(start + length)].reshape(
+                    3, nbnd * (nbnd + 1) // 2, order='F')
                 start += length
             else:
                 A[:, indn, indm] = f_spn_in.read_record(
                     dtype=np.complex).reshape(3,
-                                              nbnd * (nbnd + 1) / 2,
+                                              nbnd * (nbnd + 1) // 2,
                                               order='F')
             A[:, indm, indn] = A[:, indn, indm].conj()
             check = np.einsum('ijj->', np.abs(A.imag))
@@ -369,7 +371,7 @@ if calcSPN:
                     "REAL DIAG CHECK FAILED for spn: {0}".format(check))
             A = A[:, :,
                   BANDSORT[ik]][:, BANDSORT[ik], :][:, indnQP, indmQP].reshape(
-                      (3 * NBND * (NBND + 1) / 2), order='F')
+                      (3 * NBND * (NBND + 1) // 2), order='F')
             if SPNformatted:
                 f_spn_out.write("".join(
                     "{0:26.16e} {1:26.16e}\n".format(x.real, x.imag)
