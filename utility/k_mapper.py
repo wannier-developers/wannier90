@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # This file is distributed as part of the Wannier90 code and
 # under the terms of the GNU General Public License. See the
@@ -11,7 +11,7 @@
 #
 # https://github.com/wannier-developers/wannier90
 #
-# Python2 script to find the indeces of a coarse mesh into a finer mesh
+# Python3 script to find the indeces of a coarse mesh into a finer mesh
 # provided they are commensurate.
 #
 # Written by Antimo Marrazzo (EPFL)
@@ -31,7 +31,7 @@ def prepare_mesh(coarse_grid,nscf_output_file):
         if "number of k points=" in line:
             numk_line=line.strip('\n').split()
             num_kpoints=int(numk_line[4])
-            print 'Number of kpoints provided to Yambo through a NSCF calculation', num_kpoints
+            print('Number of kpoints provided to Yambo through a NSCF calculation', num_kpoints)
         if  read_kpts==True:
             kline=line.strip('\n').split()
             if 'wk' in kline:
@@ -68,18 +68,18 @@ def indeces_list(fine_mesh,coarse_mesh):
             count=count+1
     return k_list
 
-print '####################'
-print '####Mesh mapper#####'
-print '####################'
+print('####################')
+print('####Mesh mapper#####')
+print('####################')
 coarse_grid = sys.argv[1:4]
 coarse_grid = [int(i) for i in coarse_grid]
-print 'Input coarse mesh:', coarse_grid
+print('Input coarse mesh:', coarse_grid)
 nscf_output_file = sys.argv[4]
-print 'Path of the QE NSCF output file', nscf_output_file
+print('Path of the QE NSCF output file', nscf_output_file)
 
 (k_fine_list,k_coarse_list)=prepare_mesh(coarse_grid,nscf_output_file)
 
 ind_list=indeces_list(np.array(k_fine_list),np.array(k_coarse_list))
-print 'List of k-indeces to pass to Yambo', ind_list
+print('List of k-indeces to pass to Yambo', ind_list)
 for i in ind_list:
-    print str(i)+'|'+str(i)+'|'+'first band'+'|'+'last band'+'|'
+    print(str(i)+'|'+str(i)+'|'+'first band'+'|'+'last band'+'|')
