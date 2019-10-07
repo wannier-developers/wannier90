@@ -19,6 +19,7 @@
 #
 import sys
 import numpy as np
+import os
 
 
 def prepare_mesh(coarse_grid, nscf_output_file):
@@ -47,8 +48,10 @@ def prepare_mesh(coarse_grid, nscf_output_file):
         if "cryst. coord." in line and 'site' not in line:
             read_kpts = True
     coarse_text = [str(i) + ' ' for i in coarse_grid]
-    k_coarse_mesh = subprocess.check_output(
-        ['./kmesh.pl', coarse_text[0], coarse_text[1], coarse_text[2], 'wan'])
+    k_coarse_mesh = subprocess.check_output([
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'kmesh.pl'),
+        coarse_text[0], coarse_text[1], coarse_text[2], 'wan'
+    ])
     k_coarse_mesh = k_coarse_mesh.split('\n')
     k_coarse_list = []
     for i in range(coarse_grid[0] * coarse_grid[1] * coarse_grid[2]):
