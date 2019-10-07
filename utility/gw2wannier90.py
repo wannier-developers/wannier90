@@ -18,7 +18,8 @@
 # Originally written by Stepan Tsirkin
 # Extended, developed and documented by Antimo Marrazzo
 #
-# Last update February 19th, 2017 by Antimo Marrazzo (antimo.marrazzo@epfl.ch)
+# Updated on February 19th, 2017 by Antimo Marrazzo (antimo.marrazzo@epfl.ch)
+# Updated on October 7th, 2019 by Junfeng Qiao (qiaojunfeng@outlook.com)
 #
 import numpy as np
 import os, shutil
@@ -38,10 +39,13 @@ if len(argv) < 2:
     print(
         "A safer choice is to use (bigger) formatted files, in this case type:"
     )
-    print("spn_formatted, uiu_formatted, uhu_formatted")
+    print("spn_formatted, uiu_formatted, uhu_formatted, unk_formatted")
     print(
         "If no options is specified, all the matrices and files are considered"
     )
+    print("In default, the output format is determined by the input format")
+    print("To generate formatted files with unformatted input, use option: "
+    + "write_formatted")
     exit()
 print('------------------------------\n')
 print('##############################\n')
@@ -52,12 +56,13 @@ seedname = argv[1]  # for instance "silicon"
 seednameGW = seedname + ".gw"  #for instance "silicon.gw"
 targets = [s.lower() for s in argv[2:]]  #options read from command line
 
-#In case of formatted spn,uIu and uHu (mmn,amn,eig are formatted by default)
+#In case of formatted spn, uIu, uHu and UNK (mmn, amn, eig are formatted by default)
 #NB: Formatted output is strongly reccommended! Fortran binaries are compilers dependent.
 SPNformatted = "spn_formatted" in targets
 UIUformatted = "uiu_formatted" in targets
 UHUformatted = "uhu_formatted" in targets
 UNKformatted = "unk_formatted" in targets
+write_formatted = "write_formatted" in targets
 
 if set(targets).intersection(set(["spn", "uhu", "mmn", "amn", "unk", "uiu"])):
     calcAMN = "amn" in targets
@@ -109,20 +114,20 @@ while True:
 exbands = np.array(f.readline().split(), dtype=int)
 if len(exbands) > 1 or exbands[0] != 0:
     #raise RuntimeError("exclude bands is not supported yet") # actually it is OK, see below
-    print('Exclude bands option is used: be careful to be consistent')
-    'with the choice of bands for the GW QP corrections.'
+    print('Exclude bands option is used: be careful to be consistent ' +
+    'with the choice of bands for the GW QP corrections.')
 
 corrections = np.loadtxt(seedname + ".gw.unsorted.eig")
 corrections = {(int(l[1]) - 1, int(l[0]) - 1): l[2] for l in corrections}
 print("G0W0 QP corrections read from ", seedname + ".gw.unsorted.eig")
-#print corrections
+#print(corrections)
 eigenDFT = np.loadtxt(seedname + ".eig")
 nk = int(eigenDFT[:, 1].max())
 assert nk == NKPT
 
 nbndDFT = int(eigenDFT[:, 0].max())
 eigenDFT = eigenDFT[:, 2].reshape(NKPT, nbndDFT, order='C')
-#print eigenDFT
+#print(eigenDFT)
 f_raw.write('------------------------------\n')
 f_raw.write('Writing DFT eigenvalues \n')
 for line in eigenDFT:
@@ -133,7 +138,7 @@ providedGW = [
     ib for ib in range(nbndDFT)
     if all((ik, ib) in list(corrections.keys()) for ik in range(NKPT))
 ]
-#print providedGW
+#print(providedGW)
 f_raw.write('------------------------------\n')
 f_raw.write('List of provided GW corrections (bands indexes)\n')
 f_raw.write(str(providedGW))
@@ -277,11 +282,18 @@ def reorder_uXu(ext, formatted=False):
             f_uXu_out.write("  ".join(str(x) for x in [NBND, NK, nnb]) + "\n")
         else:
             f_uXu_in = FortranFile(seedname + "." + ext, 'r')
-            f_uXu_out = FortranFile(seednameGW + "." + ext, 'w')
             header = f_uXu_in.read_record(dtype='c')
-            f_uXu_out.write_record(header)
             nbnd, NK, nnb = np.array(f_uXu_in.read_record(dtype=np.int32))
-            f_uXu_out.write_record(np.array([NBND, NK, nnb], dtype=np.int32))
+            if write_formatted:
+                f_uXu_out = open(seednameGW + "." + ext, 'w')
+                f_uXu_out.write("".join(header.astype(str)))
+                f_uXu_out.write('\n')
+                f_uXu_out.write(np.array([NBND, NK, nnb], dtype=np.int32))
+                f_uXu_out.write('\n')
+            else:
+                f_uXu_out = FortranFile(seednameGW + "." + ext, 'w')
+                f_uXu_out.write_record(header)
+                f_uXu_out.write_record(np.array([NBND, NK, nnb], dtype=np.int32))
 
         assert nbnd == nbndDFT
         print(nbnd, NK, nnb)
@@ -305,7 +317,7 @@ def reorder_uXu(ext, formatted=False):
                          np.einsum('ln,lm,l->nm', MMN[ik][ib2].conj(),
                                    MMN[ik][ib1], eigenDE[ik])).reshape(
                                        -1, order='F')
-                    if formatted:
+                    if (formatted or write_formatted):
                         f_uXu_out.write("".join(
                             "{0:26.16e}  {1:26.16f}\n".format(x.real, x.imag)
                             for x in A))
@@ -335,14 +347,21 @@ if calcSPN:
             f_spn_out.write("\n")
         else:
             f_spn_in = FortranFile(seedname + ".spn", 'r')
-            f_spn_out = FortranFile(seednameGW + ".spn", 'w')
             header = f_spn_in.read_record(dtype='c')
-            f_spn_out.write_record(header)
-            header = header.astype(str)
             nbnd, NK = f_spn_in.read_record(dtype=np.int32)
-            f_spn_out.write_record(np.array([NBND, NKPT], dtype=np.int32))
+            if write_formatted:
+                f_spn_out = open(seednameGW + ".spn", 'w')
+                f_spn_out.write("".join(header.astype(str)))
+                f_spn_out.write('\n')
+                f_spn_out.write("  ".join(str(x) for x in (NBND, NKPT)))
+                f_spn_out.write("\n")
+            else:
+                f_spn_out = FortranFile(seednameGW + ".spn", 'w')
+                f_spn_out.write_record(header)
+                f_spn_out.write_record(np.array([NBND, NKPT], dtype=np.int32))
+            header = "".join(header.astype(str))
 
-        print("".join(header))
+        print(header)
         assert nbnd == nbndDFT
 
         indm, indn = np.tril_indices(nbnd)
@@ -372,7 +391,7 @@ if calcSPN:
             A = A[:, :,
                   BANDSORT[ik]][:, BANDSORT[ik], :][:, indnQP, indmQP].reshape(
                       (3 * NBND * (NBND + 1) // 2), order='F')
-            if SPNformatted:
+            if (SPNformatted or write_formatted):
                 f_spn_out.write("".join(
                     "{0:26.16e} {1:26.16e}\n".format(x.real, x.imag)
                     for x in A))
@@ -415,18 +434,27 @@ if calcUNK:
                         order='C')[BANDSORT[ik - 1], :].reshape(-1,
                                                                 order='C')))
             else:
-                f_unk_out = FortranFile(os.path.join(unkgwdir, f_unk_name),
-                                        "w")
                 f_unk_in = FortranFile(f_unk_name, "r")
                 nr1, nr2, nr3, ik, nbnd = f_unk_in.read_record(dtype=np.int32)
-                f_unk_out.write_record(
-                    np.array([nr1, nr2, nr3, ik, NBND], dtype=np.int32))
                 unk = np.array([
                     f_unk_in.read_record(dtype=np.complex)
                     for ib in range(nbnd)
                 ])[BANDSORT[ik - 1], :]
-                for i in range(NBND):
-                    f_unk_out.write_record(unk[ib])
+                if write_formatted:
+                    f_unk_out = open(os.path.join(unkgwdir, f_unk_name), "w")
+                    f_unk_out.write(" ".join(
+                        str(x) for x in (nr1, nr2, nr3, ik, NBND)) + "\n")
+                    NR = nr1 * nr2 * nr3
+                    for i in range(NBND):
+                        for j in range(NR):
+                            f_unk_out.write("{0:21.10e}{1:21.10e}".format(unk[ib, j].real, unk[ib, j].imag) + '\n')
+                else:
+                    f_unk_out = FortranFile(os.path.join(unkgwdir, f_unk_name),
+                                            "w")
+                    f_unk_out.write_record(
+                        np.array([nr1, nr2, nr3, ik, NBND], dtype=np.int32))
+                    for i in range(NBND):
+                        f_unk_out.write_record(unk[ib])
             f_unk_in.close()
             f_unk_out.close()
             shutil.move('./' + unkgwdir + '/' + f_unk_name, './')
