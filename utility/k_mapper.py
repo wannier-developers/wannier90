@@ -51,7 +51,8 @@ def prepare_mesh(coarse_grid, nscf_output_file):
     k_coarse_mesh = subprocess.check_output([
         os.path.join(os.path.dirname(os.path.realpath(__file__)), 'kmesh.pl'),
         coarse_text[0], coarse_text[1], coarse_text[2], 'wan'
-    ])
+    ],
+                                            universal_newlines=True)
     k_coarse_mesh = k_coarse_mesh.split('\n')
     k_coarse_list = []
     for i in range(coarse_grid[0] * coarse_grid[1] * coarse_grid[2]):
