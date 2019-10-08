@@ -46,7 +46,7 @@ if len(argv) < 2:
     print("A safer choice is to use (bigger) formatted files, with options:")
     print("  spn_formatted, uiu_formatted, uhu_formatted, unk_formatted")
     print("")
-    print("In default, the output format is determined by the input format.")
+    print("In default, the output format is the same as the input format.")
     print("To generate formatted files with unformatted input, use option:")
     print("  write_formatted")
     print("")
@@ -443,10 +443,11 @@ if calcUNK:
                 f_unk_out.write(" ".join(
                     str(x) for x in (nr1, nr2, nr3, ik, NBND)) + "\n")
                 f_unk_out.write("\n".join(
-                    np.array([l.rstrip() for l in f_unk_in], dtype=str).reshape(
-                        (nbnd, NR),
-                        order='C')[BANDSORT[ik - 1], :].reshape(-1,
-                                                                order='C')))
+                    np.array([l.rstrip() for l in f_unk_in],
+                             dtype=str).reshape(
+                                 (nbnd, NR),
+                                 order='C')[BANDSORT[ik - 1], :].reshape(
+                                     -1, order='C')))
             else:
                 f_unk_in = FortranFile(os.path.join(unkdftdir, f_unk_name),
                                        "r")
