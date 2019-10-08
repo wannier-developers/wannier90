@@ -32,25 +32,29 @@ argv = sys.argv
 
 if len(argv) < 2:
     print("### gw2wannier90 interface ###")
-    print("You need to provide the seedname")
+    print("")
     print("Usage: gw2wannier90.py seedname options")
-    print("Options can be mmn, amn, spn, unk, uhu")
-    print("Be careful with unformatted files, they are compiler-dependent")
-    print(
-        "A safer choice is to use (bigger) formatted files, in this case type:"
-    )
-    print("spn_formatted, uiu_formatted, uhu_formatted, unk_formatted")
-    print(
-        "If no options is specified, all the matrices and files are considered"
-    )
-    print("In default, the output format is determined by the input format")
-    print("To generate formatted files with unformatted input, use option: "
-    + "write_formatted")
+    print("")
+    print("Options can be:")
+    print("  mmn, amn, spn, unk, uhu, uiu,")
+    print("  spn_formatted, unk_formatted, uhu_formatted, uiu_formatted,")
+    print("  write_formatted")
+    print("")
+    print("If no options are specified, all the files are considered.")
+    print("")
+    print("Be careful with unformatted files, they are compiler-dependent.")
+    print("A safer choice is to use (bigger) formatted files, with options:")
+    print("  spn_formatted, uiu_formatted, uhu_formatted, unk_formatted")
+    print("")
+    print("In default, the output format is determined by the input format.")
+    print("To generate formatted files with unformatted input, use option:")
+    print("  write_formatted")
+    print("")
     exit()
-print('------------------------------\n')
-print('##############################\n')
-print('### gw2wannier90 interface ###\n')
-print('##############################\n')
+print('------------------------------')
+print('##############################')
+print('### gw2wannier90 interface ###')
+print('##############################')
 
 seedname = argv[1]  # for instance "silicon"
 seednameGW = seedname + ".gw"  #for instance "silicon.gw"
@@ -115,7 +119,7 @@ exbands = np.array(f.readline().split(), dtype=int)
 if len(exbands) > 1 or exbands[0] != 0:
     #raise RuntimeError("exclude bands is not supported yet") # actually it is OK, see below
     print('Exclude bands option is used: be careful to be consistent ' +
-    'with the choice of bands for the GW QP corrections.')
+          'with the choice of bands for the GW QP corrections.')
 
 corrections = np.loadtxt(seedname + ".gw.unsorted.eig")
 corrections = {(int(l[1]) - 1, int(l[0]) - 1): l[2] for l in corrections}
@@ -129,10 +133,10 @@ nbndDFT = int(eigenDFT[:, 0].max())
 eigenDFT = eigenDFT[:, 2].reshape(NKPT, nbndDFT, order='C')
 #print(eigenDFT)
 f_raw.write('------------------------------\n')
-f_raw.write('Writing DFT eigenvalues \n')
+f_raw.write('Writing DFT eigenvalues\n')
 for line in eigenDFT:
     f_raw.write(str(line) + '\n')
-f_raw.write('------------------------------ \n')
+f_raw.write('------------------------------\n')
 
 providedGW = [
     ib for ib in range(nbndDFT)
@@ -141,7 +145,7 @@ providedGW = [
 #print(providedGW)
 f_raw.write('------------------------------\n')
 f_raw.write('List of provided GW corrections (bands indexes)\n')
-f_raw.write(str(providedGW))
+f_raw.write(str(providedGW) + '\n')
 f_raw.write('------------------------------\n')
 NBND = len(providedGW)
 print("Adding GW QP corrections to KS eigenvalues")
@@ -152,7 +156,7 @@ eigenDFTGW = np.array(
      for ik in range(NKPT)])
 
 f_raw.write('------------------------------\n')
-f_raw.write('Writing GW eigenvalues unsorted (KS + QP correction) \n')
+f_raw.write('Writing GW eigenvalues unsorted (KS + QP correction)\n')
 for line in eigenDFTGW:
     f_raw.write(str(line) + '\n')
 f_raw.write('------------------------------\n')
@@ -178,7 +182,7 @@ f_raw.write('------------------------------\n')
 
 print("GW eigenvalues sorted")
 #print eigenDFT
-print('------------------------------\n')
+print('------------------------------')
 print("writing " + seednameGW + ".eig")
 feig_out = open(seednameGW + ".eig", "w")
 for ik in range(NKPT):
@@ -187,14 +191,15 @@ for ik in range(NKPT):
             ib + 1, ik + 1, eigenDFTGW[ik, ib]))
 feig_out.close()
 print(seednameGW + ".eig", ' written.')
-('------------------------------\n')
+print('------------------------------\n')
 
 if calcAMN:
     try:
-        print("----------\n AMN module  \n---------\n")
+        print("----------\n AMN module  \n----------")
         f_amn_out = open(seednameGW + ".amn", "w")
         f_amn_in = open(seedname + ".amn", "r")
         s = f_amn_in.readline().strip()
+        print(s)
         f_amn_out.write(
             "{0}, sorted by GW quasi-particle energies on {1} \n".format(
                 s,
@@ -217,18 +222,19 @@ if calcAMN:
                                amn[ib, ipr].imag))
         f_amn_in.close()
         f_amn_out.close()
-        print("----------\n AMN  - OK \n---------\n")
+        print("----------\n AMN  - OK \n----------\n")
     except IOError as err:
         print("WARNING: {0}.amn not written : ".format(seednameGW), err)
 
 if calcMMN:
     try:
-        print("----------\n MMN module  \n---------\n")
+        print("----------\n MMN module  \n----------")
 
         f_mmn_out = open(os.path.join(seednameGW + ".mmn"), "w")
         f_mmn_in = open(os.path.join(seedname + ".mmn"), "r")
 
         s = f_mmn_in.readline().strip()
+        print(s)
         f_mmn_out.write(
             "{0}, sorted by GW quasi-particle energies on {1} \n".format(
                 s,
@@ -260,7 +266,7 @@ if calcMMN:
                     for m in range(NBND):
                         f_mmn_out.write("  {0:16.12f}  {1:16.12f}\n".format(
                             MMN[ik][ib][m, n].real, MMN[ik][ib][m, n].imag))
-        print("----------\n MMN OK  \n---------\n")
+        print("----------\n MMN OK  \n----------\n")
     except IOError as err:
         print("WARNING: {0}.mmn not written : ".format(seednameGW), err)
         if calcUHU:
@@ -271,7 +277,7 @@ if calcMMN:
 
 def reorder_uXu(ext, formatted=False):
     try:
-        print("----------\n  {0}  \n----------".format(ext))
+        print("----------\n {0} module  \n----------".format(ext))
 
         if formatted:
             f_uXu_in = open(seedname + "." + ext, 'r')
@@ -288,15 +294,19 @@ def reorder_uXu(ext, formatted=False):
                 f_uXu_out = open(seednameGW + "." + ext, 'w')
                 f_uXu_out.write("".join(header.astype(str)))
                 f_uXu_out.write('\n')
-                f_uXu_out.write(np.array([NBND, NK, nnb], dtype=np.int32))
+                f_uXu_out.write("  ".join(str(x) for x in [NBND, NK, nnb]))
                 f_uXu_out.write('\n')
             else:
                 f_uXu_out = FortranFile(seednameGW + "." + ext, 'w')
                 f_uXu_out.write_record(header)
-                f_uXu_out.write_record(np.array([NBND, NK, nnb], dtype=np.int32))
+                f_uXu_out.write_record(
+                    np.array([NBND, NK, nnb], dtype=np.int32))
+            header = "".join(header.astype(str))
+
+        print(header.strip())
+        print(nbnd, NK, nnb)
 
         assert nbnd == nbndDFT
-        print(nbnd, NK, nnb)
 
         if formatted:
             uXu = np.loadtxt(f_uXu_in).reshape(-1)
@@ -319,7 +329,7 @@ def reorder_uXu(ext, formatted=False):
                                        -1, order='F')
                     if (formatted or write_formatted):
                         f_uXu_out.write("".join(
-                            "{0:26.16e}  {1:26.16f}\n".format(x.real, x.imag)
+                            "{0:26.16e}  {1:26.16e}\n".format(x.real, x.imag)
                             for x in A))
                     else:
                         f_uXu_out.write_record(A)
@@ -335,7 +345,7 @@ if calcUIU: reorder_uXu("uIu", UIUformatted)
 
 if calcSPN:
     try:
-        print("----------\n SPN  \n---------\n")
+        print("----------\n SPN module  \n----------")
 
         if SPNformatted:
             f_spn_in = open(seedname + ".spn", 'r')
@@ -361,7 +371,7 @@ if calcSPN:
                 f_spn_out.write_record(np.array([NBND, NKPT], dtype=np.int32))
             header = "".join(header.astype(str))
 
-        print(header)
+        print(header.strip())
         assert nbnd == nbndDFT
 
         indm, indn = np.tril_indices(nbnd)
@@ -400,15 +410,17 @@ if calcSPN:
 
         f_spn_in.close()
         f_spn_out.close()
-        print("----------\n SPN OK  \n---------\n")
+        print("----------\n SPN OK  \n----------\n")
     except IOError as err:
         print("WARNING: {0}.spn not written : ".format(seednameGW), err)
 
 if calcUNK:
+    print("----------\n UNK module  \n----------")
+
     unkgwdir = "UNK_GW"
     unkdftdir = "UNK_DFT"
     files_list = []
-    for f_unk_name in glob.glob("UNK*"):
+    for f_unk_name in glob.glob("UNK*.*"):
         files_list.append(f_unk_name)
 
     try:
@@ -419,6 +431,7 @@ if calcUNK:
 
     for f_unk_name in files_list:
         try:
+            NC = os.path.splitext(f_unk_name)[1] == '.NC'
             shutil.move('./' + f_unk_name, './' + unkdftdir + '/')
             if UNKformatted:
                 f_unk_out = open(os.path.join(unkgwdir, f_unk_name), "w")
@@ -426,28 +439,39 @@ if calcUNK:
                 nr1, nr2, nr3, ik, nbnd = np.array(f_unk_in.readline().split(),
                                                    dtype=int)
                 NR = nr1 * nr2 * nr3
+                if NC: NR *= 2
                 f_unk_out.write(" ".join(
                     str(x) for x in (nr1, nr2, nr3, ik, NBND)) + "\n")
                 f_unk_out.write("\n".join(
-                    np.array([l.strip() for l in f_unk_in], dtype=str).reshape(
+                    np.array([l.rstrip() for l in f_unk_in], dtype=str).reshape(
                         (nbnd, NR),
                         order='C')[BANDSORT[ik - 1], :].reshape(-1,
                                                                 order='C')))
             else:
-                f_unk_in = FortranFile(f_unk_name, "r")
+                f_unk_in = FortranFile(os.path.join(unkdftdir, f_unk_name),
+                                       "r")
                 nr1, nr2, nr3, ik, nbnd = f_unk_in.read_record(dtype=np.int32)
-                unk = np.array([
-                    f_unk_in.read_record(dtype=np.complex)
-                    for ib in range(nbnd)
-                ])[BANDSORT[ik - 1], :]
+                NR = nr1 * nr2 * nr3
+                unk = np.zeros((nbnd, NR), dtype=np.complex)
+                if NC: unk2 = np.zeros((nbnd, NR), dtype=np.complex)
+                for ib in range(nbnd):
+                    unk[ib, :] = f_unk_in.read_record(dtype=np.complex)
+                    if NC: unk2[ib, :] = f_unk_in.read_record(dtype=np.complex)
+                unk = unk[BANDSORT[ik - 1], :]
+                if NC: unk2 = unk2[BANDSORT[ik - 1], :]
                 if write_formatted:
                     f_unk_out = open(os.path.join(unkgwdir, f_unk_name), "w")
                     f_unk_out.write(" ".join(
-                        str(x) for x in (nr1, nr2, nr3, ik, NBND)) + "\n")
-                    NR = nr1 * nr2 * nr3
+                        str(x) for x in (nr1, nr2, nr3, ik, NBND)))
                     for i in range(NBND):
                         for j in range(NR):
-                            f_unk_out.write("{0:21.10e}{1:21.10e}".format(unk[ib, j].real, unk[ib, j].imag) + '\n')
+                            f_unk_out.write("\n{0:21.10e} {1:21.10e}".format(
+                                unk[ib, j].real, unk[ib, j].imag))
+                        if NC:
+                            for j in range(NR):
+                                f_unk_out.write(
+                                    "\n{0:21.10e} {1:21.10e}".format(
+                                        unk2[ib, j].real, unk2[ib, j].imag))
                 else:
                     f_unk_out = FortranFile(os.path.join(unkgwdir, f_unk_name),
                                             "w")
@@ -455,6 +479,7 @@ if calcUNK:
                         np.array([nr1, nr2, nr3, ik, NBND], dtype=np.int32))
                     for i in range(NBND):
                         f_unk_out.write_record(unk[ib])
+                        if NC: f_unk_out.write_record(unk2[ib])
             f_unk_in.close()
             f_unk_out.close()
             shutil.move('./' + unkgwdir + '/' + f_unk_name, './')
@@ -464,7 +489,8 @@ if calcUNK:
             else:
                 raise err
     os.rmdir(unkgwdir)
-    print(
-        'UNK files are being reordered, old files coming from DFT are available in UNK_DFT'
-    )
+    print('UNK files have been reordered, ' +
+          'old files coming from DFT are available in UNK_DFT folder.')
+    print("----------\n UNK OK  \n----------\n")
+
 f_raw.close()
