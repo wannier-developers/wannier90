@@ -242,6 +242,7 @@ contains
     call comms_bcast(timing_level, 1)
     call comms_bcast(iprint, 1)
     call comms_bcast(ws_distance_tol, 1)
+    call comms_bcast(ws_search_size(1), 3)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9)
@@ -285,6 +286,14 @@ contains
     call comms_bcast(gyrotropic_smr_index, 1)
 
     call comms_bcast(spinors, 1)
+
+    call comms_bcast(shc_freq_scan, 1)
+    call comms_bcast(shc_alpha, 1)
+    call comms_bcast(shc_beta, 1)
+    call comms_bcast(shc_gamma, 1)
+    call comms_bcast(shc_bandshift, 1)
+    call comms_bcast(shc_bandshift_firstband, 1)
+    call comms_bcast(shc_bandshift_energyshift, 1)
 
     call comms_bcast(kubo_adpt_smr, 1)
     call comms_bcast(kubo_adpt_smr_fac, 1)
@@ -713,15 +722,13 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
-            !phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir)*wdist_ndeg(i,j,ir),dp)
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
             if (alpha == 0) then
               OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             elseif (alpha == 1 .or. alpha == 2 .or. alpha == 3) then
               OO(i, j) = OO(i, j) + cmplx_i*crdist_ws(alpha, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir)
-              !OO(i,j)=OO(i,j)+cmplx_i*crvec(alpha,ir)*phase_fac*OO_R(i,j,ir)
             else
               stop 'wrong value of alpha in pw90common_fourier_R_to_k'
             endif
@@ -762,7 +769,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -790,16 +797,19 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_dx)) OO_dx(i, j) = OO_dx(i, j) + &
-                                              cmplx_i*crvec(1, ir)*phase_fac*OO_R(i, j, ir)
+                                              cmplx_i*crdist_ws(1, ideg, i, j, ir)* &
+                                              phase_fac*OO_R(i, j, ir)
             if (present(OO_dy)) OO_dy(i, j) = OO_dy(i, j) + &
-                                              cmplx_i*crvec(2, ir)*phase_fac*OO_R(i, j, ir)
+                                              cmplx_i*crdist_ws(2, ideg, i, j, ir)* &
+                                              phase_fac*OO_R(i, j, ir)
             if (present(OO_dz)) OO_dz(i, j) = OO_dz(i, j) + &
-                                              cmplx_i*crvec(3, ir)*phase_fac*OO_R(i, j, ir)
+                                              cmplx_i*crdist_ws(3, ideg, i, j, ir)* &
+                                              phase_fac*OO_R(i, j, ir)
           enddo
         enddo
         enddo
@@ -836,7 +846,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -862,21 +872,22 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
 
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_da)) then
               do a = 1, 3
-                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i*crvec(a, ir)*phase_fac*OO_R(i, j, ir)
+                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i*crdist_ws(a, ideg, i, j, ir)* &
+                                 phase_fac*OO_R(i, j, ir)
               enddo
             endif
             if (present(OO_dadb)) then
               do a = 1, 3
                 do b = 1, 3
-                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) - &
-                                        crvec(a, ir)*crvec(b, ir)*phase_fac*OO_R(i, j, ir)
+                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) - crdist_ws(a, ideg, i, j, ir)* &
+                                        crdist_ws(b, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir)
                 enddo
               enddo
             end if
@@ -926,7 +937,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, &
       use_ws_distance, wannier_centres, recip_lattice
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
@@ -975,7 +986,7 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
 
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir) + &
                                                    wannier_centres_frac(:, j) - wannier_centres_frac(:, i), dp))
@@ -983,17 +994,19 @@ contains
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_da)) then
               do a = 1, 3
-                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i*(crvec(a, ir) + local_wannier_centres(a, j) - &
-                                                           local_wannier_centres(a, i))*phase_fac*OO_R(i, j, ir)
+                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i* &
+                                 (crdist_ws(a, ideg, i, j, ir) + local_wannier_centres(a, j) - &
+                                  local_wannier_centres(a, i))*phase_fac*OO_R(i, j, ir)
               enddo
             endif
             if (present(OO_dadb)) then
               do a = 1, 3
                 do b = 1, 3
                   OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) - &
-                                        (crvec(a, ir) + local_wannier_centres(a, j) - local_wannier_centres(a, i))* &
-                                        (crvec(b, ir) + local_wannier_centres(b, j) - local_wannier_centres(b, i))* &
-                                        phase_fac*OO_R(i, j, ir)
+                                        (crdist_ws(a, ideg, i, j, ir) + local_wannier_centres(a, j) - &
+                                         local_wannier_centres(a, i))* &
+                                        (crdist_ws(b, ideg, i, j, ir) + local_wannier_centres(b, j) - &
+                                         local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir)
                 enddo
               enddo
             end if
@@ -1011,9 +1024,9 @@ contains
             if (present(OO)) OO(i, j) = OO(i, j) + phase_fac*OO_R(i, j, ir)
             if (present(OO_da)) then
               do a = 1, 3
-                OO_da(i, j, a) = &
-                  OO_da(i, j, a) + cmplx_i* &
-                  (crvec(a, ir) + local_wannier_centres(a, j) - local_wannier_centres(a, i))*phase_fac*OO_R(i, j, ir)
+                OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i* &
+                                 (crvec(a, ir) + local_wannier_centres(a, j) - &
+                                  local_wannier_centres(a, i))*phase_fac*OO_R(i, j, ir)
               enddo
             endif
             if (present(OO_dadb)) then
@@ -1047,7 +1060,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -1070,11 +1083,9 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
             if (present(OO_true)) then
               OO_true(i, j, 1) = OO_true(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_true(i, j, 2) = OO_true(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1082,14 +1093,14 @@ contains
             endif
             if (present(OO_pseudo)) then
               OO_pseudo(i, j, 1) = OO_pseudo(i, j, 1) &
-                                   + cmplx_i*crvec(2, ir)*phase_fac*OO_R(i, j, ir, 3) &
-                                   - cmplx_i*crvec(3, ir)*phase_fac*OO_R(i, j, ir, 2)
+                                   + cmplx_i*crdist_ws(2, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 3) &
+                                   - cmplx_i*crdist_ws(3, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 2)
               OO_pseudo(i, j, 2) = OO_pseudo(i, j, 2) &
-                                   + cmplx_i*crvec(3, ir)*phase_fac*OO_R(i, j, ir, 1) &
-                                   - cmplx_i*crvec(1, ir)*phase_fac*OO_R(i, j, ir, 3)
+                                   + cmplx_i*crdist_ws(3, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 1) &
+                                   - cmplx_i*crdist_ws(1, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 3)
               OO_pseudo(i, j, 3) = OO_pseudo(i, j, 3) &
-                                   + cmplx_i*crvec(1, ir)*phase_fac*OO_R(i, j, ir, 2) &
-                                   - cmplx_i*crvec(2, ir)*phase_fac*OO_R(i, j, ir, 1)
+                                   + cmplx_i*crdist_ws(1, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 2) &
+                                   - cmplx_i*crdist_ws(2, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, 1)
             endif
           enddo
         enddo
@@ -1133,7 +1144,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
 
@@ -1156,12 +1167,10 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
 
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            rdotk = twopi*dot_product(kpt(:), irvec(:, ir))
-            phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir), dp)
             if (present(OO_da)) then
               OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
               OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
@@ -1170,7 +1179,8 @@ contains
             if (present(OO_dadb)) then
               do a = 1, 3
                 do b = 1, 3
-                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i*crvec(b, ir)*phase_fac*OO_R(i, j, ir, a)
+                  OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + &
+                                        cmplx_i*crdist_ws(b, ideg, i, j, ir)*phase_fac*OO_R(i, j, ir, a)
                 enddo
               enddo
             endif
@@ -1218,7 +1228,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance, &
       wannier_centres, recip_lattice
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
@@ -1281,13 +1291,11 @@ contains
       if (use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
-          do ideg = 1, wdist_ndeg(j, i, ir)
+          do ideg = 1, wdist_ndeg(i, j, ir)
 
             rdotk = twopi*dot_product(kpt(:), real(irdist_ws(:, ideg, i, j, ir) + &
                                                    wannier_centres_frac(:, j) - wannier_centres_frac(:, i), dp))
             phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-!              rdotk=twopi*dot_product(kpt(:),irvec(:,ir))
-!              phase_fac=cmplx(cos(rdotk),sin(rdotk),dp)/real(ndegen(ir),dp)
             if (present(OO_da)) then
               ! if we are at the origin and at the same band, then the
               ! matrix element is zero in this convention
@@ -1306,8 +1314,9 @@ contains
               else
                 do a = 1, 3
                   do b = 1, 3
-                    OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i*(crvec(b, ir) + local_wannier_centres(b, j) - &
-                                                                         local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir, a)
+                    OO_dadb(i, j, a, b) = OO_dadb(i, j, a, b) + cmplx_i* &
+                                          (crdist_ws(b, ideg, i, j, ir) + local_wannier_centres(b, j) - &
+                                           local_wannier_centres(b, i))*phase_fac*OO_R(i, j, ir, a)
                   enddo
                 enddo
               endif
