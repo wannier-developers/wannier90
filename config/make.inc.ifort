@@ -5,8 +5,8 @@
 F90 = ifort
 COMMS=mpi
 MPIF90=mpiifort
-FCOPTS=-O2 
-LDOPTS=-O2 
+FCOPTS=-O2
+LDOPTS=-O2
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path
@@ -20,4 +20,3 @@ LIBS   =  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
 #=======================
 #LIBDIR = /usr/local/lib
 #LIBS = -L$(LIBDIR)  -llapack -lf77blas -lcblas -latlas
-

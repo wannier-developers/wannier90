@@ -96,7 +96,7 @@ contains
       num_proj, lselproj, proj2wann_map, &
       devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
       m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only, & ![ysl]
-      m_matrix_local, m_matrix_orig_local
+      m_matrix_local, m_matrix_orig_local, lhasproj
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv
@@ -107,7 +107,7 @@ contains
     integer :: mmn_in, amn_in, num_mmn, num_amn
     integer :: nnl, nnm, nnn, ncount
     integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
-    real(kind=dp) :: m_real, m_imag, a_real, a_imag
+    real(kind=dp) :: m_real, m_imag, a_real, a_imag, mu_tmp, sigma_tmp
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
     logical :: nn_found

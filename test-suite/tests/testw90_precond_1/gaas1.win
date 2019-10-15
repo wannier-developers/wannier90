@@ -4,7 +4,8 @@
  num_wann    =  4 
  num_iter    = 40
  precond = true
-
+ use_ws_distance = .false.
+search_shells=12
 
 ! SYSTEM
 

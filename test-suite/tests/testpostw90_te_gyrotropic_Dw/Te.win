@@ -1,5 +1,5 @@
 gyrotropic=true
-gyrotropic_task=-C-dos-D0-Dw-K-NOA
+gyrotropic_task=-Dw
 fermi_energy_step=2
 fermi_energy_min=2
 fermi_energy_max=10
@@ -14,7 +14,8 @@ gyrotropic_box_b2=0.0 0.2 0.0
 gyrotropic_box_b3=0.0 0.0 0.2
 gyrotropic_box_center=0.33333 0.33333 0.5
 gyrotropic_kmesh=5 5 5
-
+use_ws_distance = .false.
+search_shells=12
 
 num_iter=1000
 
