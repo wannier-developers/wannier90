@@ -226,11 +226,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   !! the library mode to actually run the Wannier code.
   !! 
   !! NOTE! The library mode currently works ONLY in serial.
-  !!       When called from an external code, wannier90 needs to be compiled 
-  !!       in sequential and wannier_run called with 1 MPI process.
+  !! When called from an external code, wannier90 needs to be compiled 
+  !! in sequential and wannier_run called with 1 MPI process.
   !!
-  !!       For more information, check a (minimal) example of how it can be used
-  !!       in the folder test-suite/library-mode-test/test_library.F90
+  !! For more information, check a (minimal) example of how it can be used
+  !! in the folder test-suite/library-mode-test/test_library.F90
 
   use w90_constants
   use w90_parameters
