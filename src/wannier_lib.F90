@@ -224,9 +224,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   !! This routine should be called after wannier_setup from a code calling
   !! the library mode to actually run the Wannier code.
-  !! 
+  !!
   !! NOTE! The library mode currently works ONLY in serial.
-  !! When called from an external code, wannier90 needs to be compiled 
+  !! When called from an external code, wannier90 needs to be compiled
   !! in sequential and wannier_run called with 1 MPI process.
   !!
   !! For more information, check a (minimal) example of how it can be used
