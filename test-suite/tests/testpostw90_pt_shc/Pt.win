@@ -29,7 +29,7 @@ kslice_b2 = 0.3535533905932738  1.0606601717798214  0.00
 
 berry = true
 berry_task = eval_shc
-berry_kmesh =  10
+berry_kmesh =  15
 berry_curv_unit = ang2
 #berry_curv_adpt_kmesh = 5  
 #berry_curv_adpt_kmesh_thresh = 100.0
