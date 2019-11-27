@@ -9,7 +9,7 @@ include ../../make.inc
 # rewrite to our variable names
 
 F90=$(MPIF90)
-FCOPTS=$(F90FLAGS) 
+FCOPTS=$(F90FLAGS)
 
 # here we use sed to re-write the library paths. This is only relevant
 # if we are using the Q-E internal lapack and blas. Q-E refers to them
@@ -17,6 +17,3 @@ FCOPTS=$(F90FLAGS)
 
 LIBS  = `echo $(LAPACK_LIBS) | sed -e "s/..\/flib/..\/..\/flib/g"`  \
   `echo  $(BLAS_LIBS) | sed -e "s/..\/flib/..\/..\/flib/g"` $(MASS_LIBS)
-
-
-

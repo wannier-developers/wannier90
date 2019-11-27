@@ -31,15 +31,13 @@ SHAREDLIBFLAGS=-dynamiclib
 ## then compile with the -ff2c option to gfortran to use
 ## C-style conventions for functions returning complex values -
 ## otherwise, we get sigsev... however, -ff2c is not compatible
-## with openmpi from brew!!! (at least on March 2017). 
+## with openmpi from brew!!! (at least on March 2017).
 ## This is because -ff2c implies -fsecond-underscore
 ## (see https://gcc.gnu.org/onlinedocs/gfortran/Code-Gen-Options.html)
-## 
+##
 ## Therefore, you need first to install blas/lapack libraries from
 ##  brew install homebrew/science/openblas
 ## and then use the following options
-FCOPTS=-O2 
-LDOPTS=-O2 
+FCOPTS=-O2
+LDOPTS=-O2
 LIBS   = -L/usr/local/opt/openblas/lib -lblas -llapack
-
-

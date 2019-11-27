@@ -1,9 +1,20 @@
 # CHANGELOG of Wannier90
 
+
+### Various improvements and bugfixes
+
+- Fix `pw90common_fourier_R_to_k` subroutines bugs when `use_ws_distance = .true.` [[#273]](https://github.com/wannier-developers/wannier90/pull/273)[[#271]](https://github.com/wannier-developers/wannier90/issues/271)
+
+### New Wannier90 features
+
+- Implementation of the SCDM method in Wannier90 for spinor wavefunctions and added example31 for the tutorial [[#277]](https://github.com/wannier-developers/wannier90/pull/277)
+
+
 ### New postw90 features, optimizations and new post-processing codes
 
 - Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + example 29,30 + test suites [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
 
+- Utility w90spn2spn.x for conversion between formatted and unformatted spn files [[#274]](https://github.com/wannier-developers/wannier90/pull/274)
 
 ## v3.0.0 (27th February 2019)
 
@@ -78,6 +89,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 
 - Fix berry_task check for morb, and add check for kpoint_path block in parameters [[#258]](https://github.com/wannier-developers/wannier90/pull/258)
 
+- Use 64 bit integer in io_wallclocktime [[#266]](https://github.com/wannier-developers/wannier90/pull/266)
 
 
 

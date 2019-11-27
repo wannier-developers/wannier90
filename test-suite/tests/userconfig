@@ -169,32 +169,43 @@ tolerance = ( (1.0e-6, 1.0e-6, 'nnkpts_g1'),
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_dat.parse
 tolerance = ( (1.0e-6, 5.0e-6, 'energy'),
-              (1.0e-3, 2.0e-3, 'shc'))
+              (1.0e-2, 1.0e-2, 'shc'))
 
 [POSTW90_SHCFREQDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_dat.parse
 tolerance = ( (1.0e-6, 5.0e-6, 'frequency'),
-              (1.0e-3, 2.0e-3, 'shc_re'),
-              (1.0e-3, 2.0e-3, 'shc_im'))
+              (1.0e-2, 1.0e-2, 'shc_re'),
+              (1.0e-2, 1.0e-2, 'shc_im'))
 
 [POSTW90_SHCKPATHBANDSDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_kpath_bandsdat.parse
 tolerance = ( (1.0e-6, 5.0e-6, 'path'),
               (1.0e-3, 2.0e-3, 'energy'),
-              (1.0e-3, 2.0e-3, 'shc'))
+              (1.0e-2, None, 'shc'))
 
 [POSTW90_SHCKPATHDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_kpath_dat.parse
 tolerance = ( (1.0e-6, 5.0e-6, 'path'),
-              (1.0e-3, None, 'shc'))
+              (1.0e-2, None, 'shc'))
 
 [POSTW90_SHCKSLICEDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_kslice_dat.parse
-tolerance = ( (1.0e-3, 2.0e-3, 'shc'))
+tolerance = ( (1.0e-2, None, 'shc'))
+
+[POSTW90_BOLTZWANN_ELCOND_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_boltzwann.parse_elcond
+# Abs tolerances are "big" (10) because the absolute values are also big
+tolerance = ( (10., 1.0e-4, 'elcond_xx'),
+              (10., 1.0e-4, 'elcond_xy'),
+              (10., 1.0e-4, 'elcond_yy'),
+              (10., 1.0e-4, 'elcond_xz'),
+              (10., 1.0e-4, 'elcond_yz'),
+              (10., 1.0e-4, 'elcond_zz'))
 
 [user]
 # This is the string (or list of strings) that identifies sets of tests
