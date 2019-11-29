@@ -3631,11 +3631,11 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 	{\tt xmgrace }
 		
 	To Import the {\tt p\_vs\_e.dat} file, click on {\tt Data} from the top bar and then {\tt Import -> ASCII...}.
-	At this point a new window {\tt Grace: Read sets} should pop up . Select {\tt p\_vs\_e.dat} in the {\tt Files} section, click {\tt Ok} at the bottom and close the window. You should now be able to see a quite noisy function that is bounded between 1 and 0. You can modify the appearence of the plot by clicking on {\tt Plot} in the top bar and then {\tt Set appearance...}. In the {\tt Main} section of the pop-up window change the symbol type from {\tt None} to {\tt Circle} and symbol size from 100 to 25. Also change symbol color from black to blue. Change the line type from straight to none. Move to the {\tt Symbols} section and change the filling pattern from none to full (indentified by a full black square) and then close the window. For the fitting, go to {\tt Data -> Transformations -> Non-linear curve fitting}. In this window, select the source from the {\tt Set} box and in the {\tt Formula} box insert the following \\
+	At this point a new window {\tt Grace: Read sets} should pop up. Select {\tt p\_vs\_e.dat} in the {\tt Files} section, click {\tt Ok} at the bottom and close the window. You should now be able to see a quite noisy function that is bounded between 1 and 0. You can modify the appearence of the plot by clicking on {\tt Plot} in the top bar and then {\tt Set appearance...}. For the fitting, go to {\tt Data -> Transformations -> Non-linear curve fitting}. In this window, select the source from the {\tt Set} box and in the {\tt Formula} box insert the following \\
 	
 	{\tt y = 0.5 * erfc( ( x - A0 ) / A1 )}  \\
 
-Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 7 for {\tt A1}. Click {\tt Apply}. A new window should pop up with the stats of the fitting. In particular you should find a {\tt Correlation coefficient} of 0.96 and a value of $39.9756$ for {\tt A0} and $6.6529$ for {\tt A1}. These are the value of $\mu_{fit}$ and $\sigma_{fit}$ we are going to use for the SCDM method. In particular, $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit} = 20.0169$ eV and $\sigma_{SCDM} = \sigma_{fit} = 6.6529$ eV. You should now see the fitting function, as well as the projectabilities, in the graph (see Fig. \ref{fig:W_fit}-(a)).\\
+Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 7 for {\tt A1}. Click {\tt Apply}. A new window should pop up with the stats of the fitting. In particular you should find a {\tt Correlation coefficient} of 0.96 and a value of $39.9756$ for {\tt A0} and $6.6529$ for {\tt A1}. These are the value of $\mu_{fit}$ and $\sigma_{fit}$ we are going to use for the SCDM method. In particular, $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit} = 20.0169$ eV and $\sigma_{SCDM} = \sigma_{fit} = 6.6529$ eV.The motivation for this specific choice of $\mu_{fit}$ and $\sigma_{fit}$ may be found in Ref.~\cite{Vitale2019Automated}, where the authors also show validation of this approach on a dataset of 200 materials.  You should now see the fitting function, as well as the projectabilities, in the graph (see Fig. \ref{fig:W_fit}-(a)).\\
 
         \item Open {\tt W.pw2wan} and append the following lines
 	{\tt 
@@ -3657,6 +3657,8 @@ Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 
 	
 	\item Run \wannier\ to obtain the interpolated bandstructure (see Fig. \ref{fig:W_fit}-(b)).\\
 	{\tt wannier90.x W}
+
+Please cite Ref.~\cite{Vitale2019Automated} in any publication employing the procedure outlined in this example to obtain $\mu$ and $\sigma$.
 \end{enumerate}
 
 \begin{figure}
