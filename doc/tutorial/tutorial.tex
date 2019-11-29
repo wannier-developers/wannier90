@@ -3635,7 +3635,7 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 	
 	{\tt y = 0.5 * erfc( ( x - A0 ) / A1 )}  \\
 
-Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 7 for {\tt A1}. Click {\tt Apply}. A new window should pop up with the stats of the fitting. In particular you should find a {\tt Correlation coefficient} of 0.96 and a value of $39.9756$ for {\tt A0} and $6.6529$ for {\tt A1}. These are the value of $\mu_{fit}$ and $\sigma_{fit}$ we are going to use for the SCDM method. In particular, $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit} = 20.0169$ eV and $\sigma_{SCDM} = \sigma_{fit} = 6.6529$ eV.The motivation for this specific choice of $\mu_{fit}$ and $\sigma_{fit}$ may be found in Ref.~\cite{Vitale2019Automated}, where the authors also show validation of this approach on a dataset of 200 materials.  You should now see the fitting function, as well as the projectabilities, in the graph (see Fig. \ref{fig:W_fit}-(a)).\\
+Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 7 for {\tt A1}. Click {\tt Apply}. A new window should pop up with the stats of the fitting. In particular you should find a {\tt Correlation coefficient} of 0.96 and a value of $39.9756$ for {\tt A0} and $6.6529$ for {\tt A1}. These are the value of $\mu_{fit}$ and $\sigma_{fit}$ we are going to use for the SCDM method. In particular, $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit} = 20.0169$ eV and $\sigma_{SCDM} = \sigma_{fit} = 6.6529$ eV.The motivation for this specific choice of $\mu_{fit}$ and $\sigma_{fit}$ may be found in Ref.~\cite{Vitale2019automated}, where the authors also show validation of this approach on a dataset of 200 materials.  You should now see the fitting function, as well as the projectabilities, in the graph (see Fig. \ref{fig:W_fit}-(a)).\\
 
         \item Open {\tt W.pw2wan} and append the following lines
 	{\tt 
@@ -3658,7 +3658,7 @@ Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 
 	\item Run \wannier\ to obtain the interpolated bandstructure (see Fig. \ref{fig:W_fit}-(b)).\\
 	{\tt wannier90.x W}
 
-Please cite Ref.~\cite{Vitale2019Automated} in any publication employing the procedure outlined in this example to obtain $\mu$ and $\sigma$.
+Please cite Ref.~\cite{Vitale2019automated} in any publication employing the procedure outlined in this example to obtain $\mu$ and $\sigma$.
 \end{enumerate}
 
 \begin{figure}
