@@ -4,20 +4,13 @@
 # for this specific system with 21 bands.
 
 # Remove temporary files if exist
-if [ -f "e.dat" ]; then
-	rm e.dat;
-fi
-
-if [ -f "p.dat" ]; then
-        rm p.dat;
-fi
-
-if [ -f "p_vs_e.dat" ]; then
-        rm p_vs_e.dat;
-fi
+rm -f e.dat
+rm -f p.dat
+rm -f tmp.dat
+rm -f p_vs_e.dat
 
 # Check proj.out exists
-[[ -f "proj.out" ]] || { echo "proj.out not found!"; echo "Aborting!"; exit; }
+[[ -f "proj.out" ]] || { echo "proj.out not found!"; echo "Aborting!"; exit 1; }
 
 # Start loop over bands
 for i in {1..21}; do
