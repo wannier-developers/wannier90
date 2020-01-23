@@ -2,21 +2,23 @@ ifndef ROOTDIR
 ROOTDIR=.
 endif
 
-PREFIX ?= /usr
-
 REALMAKEFILE=../Makefile.2
 
 TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else echo tar; fi )
 
 default: wannier post
 
+PREFIX ?= /usr
+
 install:
+	install -d $(DESTDIR)$(PREFIX)/bin/
 	for x in wannier90.x postw90.x w90chk2chk.x w90spn2spn.x ; do \
-		if [ -f "$$x" ]; then install -Dm755 "$$x" "$(PREFIX)/bin/$$x"; fi; \
+		if [ -f "$$x" ]; then install -Dm755 "$$x" "$(DESTDIR)$(PREFIX)/bin/$$x"; fi; \
 	done
-	if [ -f "utility/w90pov/w90pov" ]; then install -Dm755 "utility/w90pov/w90pov" "$(PREFIX)/bin/w90pov"; fi;
-	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -Dm755 "utility/w90vdw/w90vdw.x" "$(PREFIX)/bin/w90vdw.x"; fi;
-	if [ -f "libwannier.a" ]; then install -Dm644 "libwannier.a" "$(PREFIX)/lib/libwannier.a"; fi;
+	if [ -f "utility/w90pov/w90pov" ]; then install -Dm755 "utility/w90pov/w90pov" "$(DESTDIR)$(PREFIX)/bin/w90pov"; fi;
+	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -Dm755 "utility/w90vdw/w90vdw.x" "$(DESTDIR)$(PREFIX)/bin/w90vdw.x"; fi;
+	install -d $(DESTDIR)$(PREFIX)/lib/
+	if [ -f "libwannier.a" ]; then install -Dm644 "libwannier.a" "$(DESTDIR)$(PREFIX)/lib/libwannier.a"; fi;
 
 all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
 
