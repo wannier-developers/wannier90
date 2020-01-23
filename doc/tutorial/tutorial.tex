@@ -6,6 +6,7 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
+\usepackage{subfig}
 \usepackage[T1]{fontenc} % important for having searchable underscores
 \usepackage{bm}% bold math
 \usepackage[sort&compress,numbers]{natbib}
@@ -3581,6 +3582,93 @@ Thus, we use a modified density matrix \cite{LinLin-ArXiv2017}, with the functio
 
 \end{enumerate}
 
+\sectiontitle{32: Tungsten --- SCDM parameters from projectability}
+
+\begin{itemize}
+        \item{Outline: {\it Compute the Wannier interpolated band structure of tungsten (W)
+                            using the SCDM method to calculate the initial guess (see Example 27 for more details). The free parameters
+                            in the SCDM method, i.e., $\mu$ and $\sigma$, are obtained by fitting 
+                            a complementary error
+                            function to the projectabilities. The number of MLWFs is given by the number
+                            of pseudo-atomic orbitals (PAOs) in the pseudopotential, $21$ in this case. All the steps shown in this example have been automated in the AiiDA\cite{Pizzi_AiiDA} workflow that can be downloaded from the MaterialsCloud website\cite{MaterialsCloudArchiveEntry}}.}
+        \item{Directory: {\tt examples/example31/}}
+        \item{Input files}
+        \begin{itemize}
+                \item{ {\tt W.scf} {\it The \pwscf\ input file for ground state
+                                calculation}}
+                \item{ {\tt W.nscf}  {\it The \pwscf\ input file to obtain Bloch
+                                states on a uniform grid}}
+                \item{ {\tt W.pw2wan}  {\it The input file for {\tt pw2wannier90}}}
+                \item{ {\tt W.proj}  {\it The input file for {\tt projwfc}}}
+                \item{ {\tt generate\_weights.sh} {\it The bash script to extract the projectabilities from the output of {\tt projwfc} }}
+                \item{ {\tt W.win}  {\it The {\tt wannier90} input file}}
+        \end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+	\item Run \pwscf\ to obtain the ground state of tungsten\\
+	{\tt pw.x -in W.scf > scf.out}
+	
+	\item Run \pwscf\ to obtain the Bloch states on a $10\times10\times10$ uniform $k$-point
+	grid\\ 
+	{\tt pw.x -in W.nscf > nscf.out}
+	
+	\item Run \wannier\ to generate a list of the required overlaps (written
+	into the {\tt W.nnkp} file)\\
+	{\tt wannier90.x -pp W}
+	
+        \item Run {\tt projwfc} to compute the projectabilities of the Bloch states
+              onto the Bloch sums obtained from the PAOs in the pseudopotential \\
+        {\tt projwfc.x -in W.proj > proj.out}
+
+        \item Run {\tt generate\_weights} to extract the projectabilitites from {\tt proj.out}
+              in a format suitable to be read by Xmgrace or gnuplot \\
+	{\tt ./generate\_weights.sh}
+
+        \item Plot the projectabilities and fit the data with the complementary error function
+              $$f(\epsilon;\mu,\sigma) = \frac{1}{2}\mathrm{erfc}(-\frac{\mu - \epsilon}{\sigma}).$$
+		We are going Xmgrace to plot the projectabilities and perform the fitting. Open Xmgrace \\
+	{\tt xmgrace }
+		
+	To Import the {\tt p\_vs\_e.dat} file, click on {\tt Data} from the top bar and then {\tt Import -> ASCII...}.
+	At this point a new window {\tt Grace: Read sets} should pop up. Select {\tt p\_vs\_e.dat} in the {\tt Files} section, click {\tt Ok} at the bottom and close the window. You should now be able to see a quite noisy function that is bounded between 1 and 0. You can modify the appearence of the plot by clicking on {\tt Plot} in the top bar and then {\tt Set appearance...}. In the {\tt Main} section of the pop-up window change the symbol type from {\tt None} to {\tt Circle}. Change the line type from straight to none, since the lines added by default by Xmgrace are not meaningful. For the fitting, go to {\tt Data -> Transformations -> Non-linear curve fitting}. In this window, select the source from the {\tt Set} box and in the {\tt Formula} box insert the following \\
+	
+	{\tt y = 0.5 * erfc( ( x - A0 ) / A1 )}  \\
+
+Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 7 for {\tt A1}. Click {\tt Apply}. A new window should pop up with the stats of the fitting. In particular you should find a {\tt Correlation coefficient} of 0.96 and a value of $39.9756$ for {\tt A0} and $6.6529$ for {\tt A1}. These are the value of $\mu_{fit}$ and $\sigma_{fit}$ we are going to use for the SCDM method. In particular, $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit} = 20.0169$ eV and $\sigma_{SCDM} = \sigma_{fit} = 6.6529$ eV. The motivation for this specific choice of $\mu_{fit}$ and $\sigma_{fit}$ may be found in Ref.~\cite{Vitale2019automated}, where the authors also show validation of this approach on a dataset of 200 materials. You should now see the fitting function, as well as the projectabilities, in the graph (see Fig. \ref{fig:W_fit}-(a)).\\
+
+        \item Open {\tt W.pw2wan} and append the following lines
+	{\tt 
+	
+	scdm\_entanglement = erfc
+
+  	scdm\_mu =  20.0169
+
+  	scdm\_proj = .true.
+
+  	scdm\_sigma =   6.6529
+
+ 	/}
+
+	\item Run {\tt pw2wannier90} to compute the overlaps between Bloch
+	states and the projections for the starting guess (written in the
+	{\tt W.mmn} and {\tt  W.amn} files)\\
+	{\tt pw2wannier90.x -in W.pw2wan > pw2wan.out}
+	
+	\item Run \wannier\ to obtain the interpolated bandstructure (see Fig. \ref{fig:W_fit}-(b)).\\
+	{\tt wannier90.x W}
+
+Please cite Ref.~\cite{Vitale2019automated} in any publication employing the procedure outlined in this example to obtain $\mu$ and $\sigma$.
+\end{enumerate}
+
+\begin{figure}
+\centering
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./W_fit.png}}
+\subfloat[]{\includegraphics[width=0.45\columnwidth]{./W_bs.pdf}}
+\caption{ a) Each blue dot represents the projectability as defined in Eq. (22) of Ref. \cite{Vitale2019automated}  of the state
+$\vert n\mathbf{k} \rangle$ as a function of the corresponding energy $\epsilon_{n\mathbf{k}}$ for tungsten. The yellow line shows the fitted complementary error function. The vertical red line represents the value of $\sigma_{fit}$ while the vertical green line represents the optimal value of $\mu_{SCDM}$, i.e. $\mu_{SCDM} = \mu_{fit} - 3\sigma_{fit}$. b) Band structure of tungsten on the $\Gamma$-H-N-$\Gamma$ path from DFT calculations (solid black) and Wannier interpolation using the SCDM method to construct the initial guess (red dots).}
+\label{fig:W_fit}
+\end{figure}
 
 %\cleardoublepage
 
