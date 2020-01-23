@@ -1,0 +1,31 @@
+&CONTROL
+  calculation = 'scf'
+  max_seconds = 1710
+  outdir = './out/'
+  prefix = 'W'
+  pseudo_dir = '../../pseudo/'
+  restart_mode = 'from_scratch'
+/
+&SYSTEM
+  degauss =   2.0000000000d-02
+  ecutrho =   2.4000000000d+02
+  ecutwfc =   3.0000000000d+01
+  ibrav = 0
+  nat = 1
+  ntyp = 1
+  occupations = 'smearing'
+  smearing = 'marzari-vanderbilt'
+/
+&ELECTRONS
+  conv_thr =   1.0000000000d-10
+/
+ATOMIC_SPECIES
+W      183.85 W_pbe_v1.2.uspp.F.UPF
+ATOMIC_POSITIONS angstrom
+W            0.0000000000       0.0000000000       0.0000000000 
+K_POINTS automatic
+14 14 14 0 0 0
+CELL_PARAMETERS angstrom
+     -1.5915572711       1.5915572711       1.5915572711
+      1.5915572711      -1.5915572711       1.5915572711
+      1.5915572711       1.5915572711      -1.5915572711
