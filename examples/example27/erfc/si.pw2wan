@@ -7,7 +7,7 @@
   write_unk  = .true.
   ! SCDM keywords
   scdm_proj         = true
-  scdm_entanglement = erfc
+  scdm_entanglement = 'erfc'
   scdm_mu           = 10
   scdm_sigma        =  4
 /

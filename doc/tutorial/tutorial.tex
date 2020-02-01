@@ -24,6 +24,8 @@
 %\let\oldundercore=\_
 %\def\_{\oldunderscore}
 
+\usepackage{textcomp}
+
 % set fancy headings
 
 \pagestyle{fancy}
@@ -2906,7 +2908,7 @@ The {\tt input\_files} folder contains:}
 \begin{itemize}
   \item[1]{Valence bands: In this case we will compute 4 localized WFs corresponding to the 4 valence bands of Silicon. These 4 bands constitute a manifold that is separated in energy from other bands. In this case the columns of the density matrix are already localized in real space and no extra parameter is required.}
   \begin{enumerate}
-    \item Copy the input files {\tt si.scf, si\_4bands.nscf} and {\tt si.pw2wan} from the {\tt input\_files directory} into the {\tt isolated} folder
+    \item Copy the input files {\tt si.scf} and {\tt si\_4bands.nscf} from the {\tt input\_files} directory into the {\tt isolated} folder
     \item Run \pwscf\ to obtain the ground state charge of bulk Silicon. \\
     {\tt pw.x < si.scf > scf.out}
 
@@ -2933,7 +2935,7 @@ The {\tt input\_files} folder contains:}
   \item[2]{Valence bands + conduction bands: In this case we will compute 8 localized WFs corresponding to the 4 valence bands and 4 low-lying conduction bands. Here, we don't have a separate manifold, since the conduction bands are entangled with other high-energy bands and the columns of the density matrix are not exponentially localized by construction. A modified density matrix is required in this case\cite{LinLin-ArXiv2017}, and it is defined as: $$P(\mathbf{r},\mathbf{r}') = \sum_{n,\mathbf{k}} \psi_{n\mathbf{k}}(\mathbf{r})f(\varepsilon_{n,\mathbf{k}})\psi_{n\mathbf{k}}^\ast(\mathbf{r}'),$$
   where $\psi_{n\mathbf{k}}$ and $\varepsilon_{n,\mathbf{k}}$ are the energy eigestates and eigenvalues from the first-principle calculation respectively. The function $f(\varepsilon_{n,\mathbf{k}})$ contains two free parameters $\mu$ and $\sigma$ and is defined as a complementary error function: $$f(\varepsilon_{n,\mathbf{k}}) = \frac{1}{2}\mathrm{erfc}\left(\frac{\varepsilon_{n,\mathbf{k}} - \mu}{\sigma}\right).$$ }
   \begin{enumerate}
-    \item Copy the input files {\tt si.scf, si\_12bands.nscf} and {\tt si.pw2wan} from the {\tt input\_files} folder into the {\tt erfc} folder
+    \item Copy the input files {\tt si.scf} and {\tt si\_12bands.nscf} from the {\tt input\_files} folder into the {\tt erfc} folder
     \item Run \pwscf\ to obtain the ground state charge of bulk Silicon. \\
     {\tt pw.x < si.scf > scf.out}
 
@@ -2958,7 +2960,7 @@ The {\tt input\_files} folder contains:}
   \end{enumerate}
   \item[3]{Conduction bands only: In this case we will compute 4 localized WFs corresponding to the 4 low-lying conduction bands only. As for the previous point, we need to define a modified density matrix\cite{LinLin-ArXiv2017}. Since we are only interested in a subset of the conduction states, within a bounded energy region, a good choice for $f(\varepsilon_{n,\mathbf{k}})$ is: $$f(\varepsilon_{n,\mathbf{k}}) = \exp\left(-\frac{(\varepsilon_{n,\mathbf{k}} - \mu)^2}{\sigma^2}\right).$$}
     \begin{enumerate}
-    \item Copy the input files {\tt si.scf, si\_12bands.nscf} and {\tt si.pw2wan} from the {\tt input\_files directory} into the {\tt gaussian} folder
+    \item Copy the input files {\tt si.scf} and {\tt si\_12bands.nscf} from the {\tt input\_files} directory into the {\tt gaussian} folder
     \item Run \pwscf\ to obtain the ground state charge of bulk Silicon. \\
     {\tt pw.x < si.scf > scf.out}
 
@@ -3640,7 +3642,7 @@ Select 2 as number of parameters, give 40 as initial condition for {\tt A0} and 
         \item Open {\tt W.pw2wan} and append the following lines
 	{\tt 
 	
-	scdm\_entanglement = erfc
+	scdm\_entanglement = \textquotesingle erfc\textquotesingle
 
   	scdm\_mu =  20.0169
 
