@@ -7,5 +7,5 @@
   write_unk  = .true.
   ! SCDM keywords
   scdm_proj         = true
-  scdm_entanglement = isolated
+  scdm_entanglement = 'isolated'
 /
