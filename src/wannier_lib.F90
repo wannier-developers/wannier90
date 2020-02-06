@@ -10,8 +10,9 @@
 !                                                            !
 !  [ref] "Wannier90 as a community code:                     !
 !        new features and applications",                     !
-!        G. Pizzi et al., arXiv:1907:09788 (2019)            !
-!        https://arxiv.org/abs/1907.09788                    !
+!        G. Pizzi et al.,  J. Phys. Cond. Matt. 32,          !
+!        165902 (2020).                                      !
+!        http://doi.org/10.1088/1361-648X/ab51ff             !
 !                                                            !
 ! in any publications arising from the use of this code.     !
 !                                                            !
