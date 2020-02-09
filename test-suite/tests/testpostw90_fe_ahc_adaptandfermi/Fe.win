@@ -17,13 +17,18 @@ begin projections
 Fe: sp3d2;dxy;dxz;dyz
 end projections
 
-fermi_energy = 12.6279 
+fermi_energy_min = 11.6279
+fermi_energy_max = 13.6279
+fermi_energy_step = 0.2
 
 uHu_formatted = .true.
 
 berry = true
 berry_task = ahc!+morb
 berry_kmesh = 10 10 10 
+
+berry_curv_adpt_kmesh = 5 5 5
+berry_curv_adpt_kmesh_thresh = 10
 
 !kpath = true
 !kpath_task = bands+morb
