@@ -198,15 +198,39 @@ for more information.
 \label{sec:k_mapper}
 The \wannier\ code requires the definition of a full Monkhorst--Pack
 grid of $\mathbf{k}$-vectors, which can be obtained by means of the \verb|kmesh.pl| utility.
-In order to perform a GW calculation with the Yambo code, you need to perform a nscf calculation on a grid in the irreducible BZ. Moreover, you may need a finer grid to converge the GW calculation than what you need to interpolate the band structure. The \verb|k_mapper.py| tools helps in finding the $\mathbf{k}$-vectors indeces of a full grid needed for interpolation into the reduced grid needed for the GW calculation with Yambo. \newline \newline
-Within the \verb|/utility| folder type:\newline 
-\verb|./k_mapper.py nx ny nz "path_of_the_QE_nscf_output_file_given_to_Yambo"|
+In order to perform a GW calculation with the Yambo code, you need to perform a nscf calculation on a grid in the irreducible BZ. Moreover, you may need a finer grid to converge the GW calculation than what you need to interpolate the band structure. The \verb|k_mapper.py| tools helps in finding the $\mathbf{k}$-vectors indexes of a full grid needed for interpolation into the reduced grid needed for the GW calculation with Yambo. \newline \newline
+Usage:\newline 
+
+\verb|path/k_mapper.py nx ny nz QE_nscf_output|\newline
+
+where \verb|path| is the path of \verb|utility| folder, 
+\verb|QE_nscf_output| is the path of the QE nscf output file given to Yambo. 
 \section{$\tt{gw2wannier90.py}$}
 This utility allows to sort in energy the input data of \verb|wannier90| (e.g. overlap matrices and energy eigenvalues). \verb|gw2wannier90.py| allows to use \verb|wannier90| at the $G_0W_0$ level, where quasi-particle corrections can change the energy ordering of eigenvalues (Some \verb|wannier90| modules require states to be ordered in energy).\newline \newline
-Within the work directory type:
-\verb|./gw2wannier90.py seedname options|
+Usage:
+
+\verb|path/gw2wannier90.py seedname options|
 \newline \newline
-NB: Binary files are supported, though not reccommended.
+where \verb|path| is the path of \verb|utility| folder.\newline\newline
+
+Available options are:
+\begin{verbatim}
+mmn, amn, spn, unk, uhu, uiu,
+spn_formatted, unk_formatted, uhu_formatted, uiu_formatted,
+write_formatted
+\end{verbatim}
+
+If no options are specified, all the files (\verb|mmn, amn, spn, UNK, uHu, uIu|) are considered.
+
+Binary (unformatted Fortran) files are supported, though not reccommended, 
+since they are compiler-dependent.
+A safer choice is to use (bigger) formatted files, with options:
+
+\verb|spn_formatted, uiu_formatted, uhu_formatted, unk_formatted|
+
+In default, the output format is the same as the input format.
+To generate formatted files with unformatted input, use option:
+\verb|write_formatted|
 \label{sec:w90aaa}
 
 \section{$\tt{w90spn2spn.x}$\label{sec:w90spn2spn}}
