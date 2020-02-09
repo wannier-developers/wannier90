@@ -207,6 +207,12 @@ program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
 output = Fe.wpout 
 
+# Test of AHC for bcc iron with adaptive mesh refinement and Fermi scan
+[testpostw90_fe_ahc_adaptandfermi/]
+program = POSTW90_FERMISCAN_OK
+inputs_args = ('Fe.win', '')
+output = Fe-ahc-fermiscan.dat 
+
 # Test of Orbital Magnetisation for bcc iron
 [testpostw90_fe_morb/]
 program = POSTW90_WPOUT_OK
