@@ -35,9 +35,9 @@ this code:
   L. Paulatto, S. Poncé, T. Ponweiser, J. Qiao, F. Thöle, S.S. Tsirkin, 
   M. Wierzbowska, N. Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates, 
   Wannier90 as a community code: new features and applications, 
-  `arXiv:1907.09788`_ (2019)
+  `J. Phys. Cond. Matt. 32, 165902`_ (2020)
 
-.. _arXiv:1907.09788: https://arxiv.org/abs/1907.09788
+.. _J. Phys. Cond. Matt. 32, 165902: https://doi.org/10.1088/1361-648X/ab51ff
 
 If you are using versions 2.x of the code, cite instead:
                                                          
@@ -46,7 +46,7 @@ If you are using versions 2.x of the code, cite instead:
   obtaining maximally-localised Wannier functions*, 
   `Comput. Phys. Commun. 185, 2309 (2014)`_ 
 
-.. _Comput. Phys. Commun. 185, 2309 (2014): http://dx.doi.org/10.1016/j.cpc.2014.05.003
+.. _Comput. Phys. Commun. 185, 2309 (2014): http://doi.org/10.1016/j.cpc.2014.05.003
 
 For the method please cite:
 

@@ -48,14 +48,15 @@ contains
 
     ! Print the header only if there is something to plot
     if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
-        wannier_plot .or. write_u_matrices) then
+        wannier_plot .or. write_u_matrices .or. write_tb) then
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
       write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
       write (stdout, *)
     end if
 
-    if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr) then
+    if (bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. &
+        write_tb) then
       ! Check if the kmesh includes the gamma point
       have_gamma = .false.
       do nkp = 1, num_kpts

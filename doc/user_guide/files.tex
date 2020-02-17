@@ -693,6 +693,73 @@ in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
 and $n$, and the real and imaginary parts of the position matrix element
 in the WF basis.
 
+\section{{\tt seedname\_tb.dat}}
+
+OUTPUT. Written if {\tt write\_tb=.TRUE.}. This file is essentially a 
+combination of {\tt seedname\_hr.dat} 
+and {\tt seedname\_r.dat}, plus lattice vectors. 
+The first line gives the date and
+time at which the file was created. 
+The second to fourth lines are the lattice vectors in Angstrom unit. 
+
+\begin{verbatim}
+ written on 27Jan2020 at 18:08:42 
+  -1.8050234585004898        0.0000000000000000        1.8050234585004898     
+   0.0000000000000000        1.8050234585004898        1.8050234585004898     
+  -1.8050234585004898        1.8050234585004898        0.0000000000000000 
+\end{verbatim}
+
+The next part is the same as {\tt seedname\_hr.dat}. 
+The fifth line states the number of Wannier functions {\tt num\_wann}. 
+The sixth line gives the number of Wigner-Seitz grid-points {\tt nrpts}. 
+The next block of {\tt nrpts} integers gives the degeneracy of 
+each Wigner-Seitz grid point, with 15 entries per line.
+Then, the next {\tt num\_wann}$^2 \times$ {\tt nrpts} lines
+each contain, respectively, the components of the vector $\mathbf{R}$
+in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
+and $n$, and the real and imaginary parts of the Hamiltonian matrix element
+$H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
+
+\begin{verbatim}    
+           7
+          93
+    4    6    2    2    2    1    2    2    1    1    2    6    2    2    2
+    6    2    2    4    1    1    1    4    1    1    1    1    2    1    1
+    1    2    2    1    1    2    4    2    1    2    1    1    1    1    2
+    1    1    1    2    1    1    1    1    2    1    2    4    2    1    1
+    2    2    1    1    1    2    1    1    1    1    4    1    1    1    4
+    2    2    6    2    2    2    6    2    1    1    2    2    1    2    2
+    2    6    4
+
+   -3    1    1
+    1    1    0.42351556E-02 -0.95722060E-07
+    2    1    0.69481480E-07 -0.20318638E-06
+    3    1    0.10966508E-06 -0.13983284E-06
+    .
+    .
+    .
+\end{verbatim}
+
+Finally, the last part is the same as {\tt seedname\_r.dat}. 
+The {\tt num\_wann}$^2 \times$ {\tt nrpts} lines
+each contain, respectively, the components of the vector $\mathbf{R}$
+in terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$
+and $n$, and the real and imaginary parts of the position matrix element
+in the WF basis (the float numbers in columns 3 and 4 are the 
+real and imaginary parts for $\langle m\mathbf{0}|\mathbf{r}_x|n\mathbf{R}\rangle$,
+columns 5 and 6 for $\langle m\mathbf{0}|\mathbf{r}_y|n\mathbf{R}\rangle$, 
+and columns 7 and 8 for $\langle m\mathbf{0}|\mathbf{r}_z|n\mathbf{R}\rangle$), e.g.
+
+\begin{verbatim}
+   -3    1    1
+    1    1    0.32277552E-09  0.21174901E-08 -0.85436987E-09  0.26851510E-08  ...
+    2    1   -0.18881883E-08  0.21786973E-08  0.31123076E-03  0.39228431E-08  ...
+    3    1    0.31123242E-03 -0.35322230E-09  0.70867281E-09  0.10433480E-09  ...
+    .
+    .
+    .
+\end{verbatim}
+
 \section{{\tt seedname.bvec}}
 OUTPUT.
 Written if $\verb#write_bvec#=\verb#true#$. This file contains 
