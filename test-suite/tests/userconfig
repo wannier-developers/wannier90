@@ -103,6 +103,13 @@ tolerance = ( (1.0e-3, 2.0e-3, 'ahc_x'),
                (1.0e-2, 2.0e-2, 'spin_p'),
                (1.0e-2, 2.0e-2, 'spin_a'))
 
+[POSTW90_FERMISCAN_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_fermiscan_dat.parse
+tolerance = (  (1.0e-6, 5.0e-6, 'fermienergy'),
+               (1.0e-4, 2.0e-4, 'ahc_x'),
+               (1.0e-4, 2.0e-4, 'ahc_y'),
+               (1.0e-4, 2.0e-4, 'ahc_z'))
 
 [POSTW90_JDOS_OK]
 exe = ../../postw90.x
