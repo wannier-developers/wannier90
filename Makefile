@@ -83,14 +83,14 @@ thedoc:
 	$(MAKE) -C $(ROOTDIR)/doc/user_guide 
 	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
 
-# For now hardcoded to 3.0.0, and using HEAD
+# For now hardcoded to 3.1.0, and using HEAD
 # Better to get the version from the io.F90 file and use
-# the tag (e.g. v3.0.0) instead of HEAD
+# the tag (e.g. v3.1.0) instead of HEAD
 dist: 
-	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-3.0.0/ -o wannier90-3.0.0.tar.gz
+	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-3.1.0/ -o wannier90-3.1.0.tar.gz
 
 dist-legacy:
-	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90-3.0/,' -f wannier90-3.0.tar.gz \
+	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90-3.1/,' -f wannier90-3.1.tar.gz \
 		./src/*.?90 \
 		./src/postw90/*.?90 \
 		./autodoc/README.txt \

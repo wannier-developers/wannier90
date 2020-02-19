@@ -3460,7 +3460,7 @@ contains
     write (stdout, *) '            |        The Wannier90 Developer Group and          |'
     write (stdout, *) '            |        individual contributors                    |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  27th February 2019      |'
+    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  20th February 2020      |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
