@@ -1564,8 +1564,8 @@ contains
 
     complex(kind=dp), allocatable :: ceamp(:, :, :)
     complex(kind=dp), allocatable :: camp(:, :, :)
-    ! complex(kind=dp), allocatable :: czmat_in(:,:,:)
-    ! complex(kind=dp), allocatable :: czmat_out(:,:,:)
+    complex(kind=dp), allocatable :: czmat_in(:, :, :)
+    complex(kind=dp), allocatable :: czmat_out(:, :, :)
     ! the z-matrices are now stored in local arrays
     complex(kind=dp), allocatable :: czmat_in_loc(:, :, :)
     complex(kind=dp), allocatable :: czmat_out_loc(:, :, :)
@@ -1638,6 +1638,10 @@ contains
 
     allocate (wkomegai1(num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating wkomegai1 in dis_extract')
+    allocate (czmat_in(num_bands, num_bands, num_kpts), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating czmat_in in dis_extract')
+    allocate (czmat_out(num_bands, num_bands, num_kpts), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating czmat_out in dis_extract')
 
     allocate (history(dis_conv_window), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating history in dis_extract')
@@ -1712,7 +1716,16 @@ contains
           if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix(nkp, nkp_loc, czmat_in_loc(:, :, nkp_loc))
         enddo
 
-        if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_in_loc, lwindow) !RS:
+        if (lsitesymmetry) then
+          call comms_gatherv(czmat_in_loc, num_bands*num_bands*counts(my_node_id), &
+                             czmat_in, num_bands*num_bands*counts, num_bands*num_bands*displs)
+          call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts)
+          call sitesym_symmetrize_zmatrix(czmat_in, lwindow) !RS:
+          do nkp_loc = 1, counts(my_node_id)
+            nkp = nkp_loc + displs(my_node_id)
+            czmat_in_loc(:, :, nkp_loc) = czmat_in(:, :, nkp)
+          end do
+        end if
 
       else
         ! [iter.ne.1]
@@ -1747,12 +1760,17 @@ contains
       ! every k (before updating any k), so that for iter>1 overlaps are with
       ! non-frozen neighboring states from the previous iteration
 
-      wkomegai1_loc = real(num_wann, dp)*wbtot
+      wkomegai1 = real(num_wann, dp)*wbtot
       if (lsitesymmetry) then                                                                        !RS:
         do nkp = 1, nkptirr                                                                            !RS:
-          wkomegai1_loc(ir2ik(nkp)) = wkomegai1_loc(ir2ik(nkp))*nsymmetry/count(kptsym(:, nkp) .eq. ir2ik(nkp)) !RS:
+          wkomegai1(ir2ik(nkp)) = wkomegai1(ir2ik(nkp))*nsymmetry/count(kptsym(:, nkp) .eq. ir2ik(nkp)) !RS:
         enddo                                                                                       !RS:
       endif                                                                                          !RS:
+      do nkp_loc = 1, counts(my_node_id)
+        nkp = nkp_loc + displs(my_node_id)
+        wkomegai1_loc(nkp_loc) = wkomegai1(nkp)
+      end do
+
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         if (ndimfroz(nkp) .gt. 0) then
@@ -1778,10 +1796,10 @@ contains
 
       if (timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 1)
 
-      ! send chunks of wkomegai1 to root node
-      call comms_gatherv(wkomegai1_loc, counts(my_node_id), wkomegai1, counts, displs)
-      ! send back the whole wkomegai1 array to other nodes
-      call comms_bcast(wkomegai1(1), num_kpts)
+      !! ! send chunks of wkomegai1 to root node
+      !! call comms_gatherv(wkomegai1_loc, counts(my_node_id), wkomegai1, counts, displs)
+      !! ! send back the whole wkomegai1 array to other nodes
+      !! call comms_bcast(wkomegai1(1), num_kpts)
 
       ! Refine optimal subspace at k points w/ non-frozen states
       do nkp_loc = 1, counts(my_node_id)
@@ -1791,10 +1809,10 @@ contains
         end if                                                                      !RS:
         if (lsitesymmetry) then                                                     !RS:
 
-          call sitesym_dis_extract_symmetry(nkp, ndimwin(nkp), czmat_in_loc, lambda, u_matrix_opt) !RS:
+          call sitesym_dis_extract_symmetry(nkp, ndimwin(nkp), czmat_in_loc(:, :, nkp_loc), lambda, u_matrix_opt_loc(:, :, nkp_loc)) !RS:
 
           do j = 1, num_wann                                                          !RS:
-            wkomegai1_loc(nkp_loc) = wkomegai1(nkp_loc) - real(lambda(j, j), kind=dp)               !RS:
+            wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)               !RS:
           enddo                                                                    !RS:
         else                                                                        !RS:
           if (num_wann .gt. ndimfroz(nkp)) then
@@ -1875,18 +1893,17 @@ contains
       enddo
       ! [Loop over k points (nkp)]
 
-      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands, u_matrix_opt, lwindow) !RS:
-
-      ! send chunks of wkomegai1 to root node
-      call comms_gatherv(wkomegai1_loc, counts(my_node_id), wkomegai1, counts, displs)
-      ! send back the whole wkomegai1 array to other nodes
-      call comms_bcast(wkomegai1(1), num_kpts)
+      !! ! send chunks of wkomegai1 to root node
+      !! call comms_gatherv(wkomegai1_loc, counts(my_node_id), wkomegai1, counts, displs)
+      !! ! send back the whole wkomegai1 array to other nodes
+      !! call comms_bcast(wkomegai1(1), num_kpts)
 
       call comms_allreduce(womegai1, 1, 'SUM')
 
       call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*counts(my_node_id), &
                          u_matrix_opt, num_bands*num_wann*counts, num_bands*num_wann*displs)
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
+      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands, u_matrix_opt, lwindow) !RS:
 
       if (index(devel_flag, 'compspace') > 0) then
         if (iter .eq. dis_num_iter) then
@@ -1981,7 +1998,16 @@ contains
         if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix(nkp, nkp_loc, czmat_out_loc(:, :, nkp_loc))
       enddo
 
-      if (lsitesymmetry) call sitesym_symmetrize_zmatrix(czmat_out_loc, lwindow) !RS:
+      if (lsitesymmetry) then
+        call comms_gatherv(czmat_out_loc, num_bands*num_bands*counts(my_node_id), &
+                           czmat_out, num_bands*num_bands*counts, num_bands*num_bands*displs)
+        call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts)
+        call sitesym_symmetrize_zmatrix(czmat_out, lwindow) !RS:
+        do nkp_loc = 1, counts(my_node_id)
+          nkp = nkp_loc + displs(my_node_id)
+          czmat_out_loc(:, :, nkp_loc) = czmat_out(:, :, nkp)
+        end do
+      end if
 
       call internal_test_convergence()
 
@@ -1996,6 +2022,10 @@ contains
     enddo
     ! [BIG ITERATION LOOP (iter)]
 
+    deallocate (czmat_out, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating czmat_out in dis_extract')
+    deallocate (czmat_in, stat=ierr)
+    if (ierr /= 0) call io_error('Error deallocating czmat_in in dis_extract')
     deallocate (czmat_out_loc, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating czmat_out_loc in dis_extract')
     deallocate (czmat_in_loc, stat=ierr)
