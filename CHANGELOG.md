@@ -1,20 +1,34 @@
 # CHANGELOG of Wannier90
 
+## v3.1.0 (20th February 2020)
 
-### Various improvements and bugfixes
+### New features
 
-- Fix `pw90common_fourier_R_to_k` subroutines bugs when `use_ws_distance = .true.` [[#273]](https://github.com/wannier-developers/wannier90/pull/273)[[#271]](https://github.com/wannier-developers/wannier90/issues/271)
-
-### New Wannier90 features
+- Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + examples 29 and 30 and tests [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
 
 - Implementation of the SCDM method in Wannier90 for spinor wavefunctions and added example31 for the tutorial [[#277]](https://github.com/wannier-developers/wannier90/pull/277)
 
+- Utility `w90spn2spn.x` for conversion between formatted and unformatted `.spn` files [[#274]](https://github.com/wannier-developers/wannier90/pull/274)
 
-### New postw90 features, optimizations and new post-processing codes
+### Various improvements and bugfixes
 
-- Calculation of spin Hall conductivity according to the formalism given in Junfeng Qiao, Jiaqi Zhou, Zhe Yuan and Weisheng Zhao, PRB 98, 214402 (2018) + example 29,30 + test suites [[#264]](https://github.com/wannier-developers/wannier90/pull/264)
+- Add `install` target for `make`, now `make install` works [[#307]](https://github.com/wannier-developers/wannier90/pull/307)
 
-- Utility w90spn2spn.x for conversion between formatted and unformatted spn files [[#274]](https://github.com/wannier-developers/wannier90/pull/274)
+- Added new documentation and fixed typos [[#308]](https://github.com/wannier-developers/wannier90/pull/308) [[#256]](https://github.com/wannier-developers/wannier90/pull/256) [[#306]](https://github.com/wannier-developers/wannier90/pull/306) [[#300]](https://github.com/wannier-developers/wannier90/pull/300)
+
+- small restructuring of the routines for the AHC calculation with multiple Fermi energies and adaptive refinement [[#289]](https://github.com/wannier-developers/wannier90/pull/289)
+
+- Fix in restart mode (now gathering matrices before dumping `.chk` file) [[#283]](https://github.com/wannier-developers/wannier90/pull/283)
+
+- Fix `pw90common_fourier_R_to_k` subroutines bugs when `use_ws_distance = .true.` [[#273]](https://github.com/wannier-developers/wannier90/pull/273)[[#271]](https://github.com/wannier-developers/wannier90/issues/271)
+
+- Fixes and speed improvements in `pw2wannier90.f90` [[#295]](https://github.com/wannier-developers/wannier90/pull/295) [[#255]](https://github.com/wannier-developers/wannier90/pull/255)
+
+- Bug fixes of `gw2wannier90.py` and `k_mapper.py` [[#294]](https://github.com/wannier-developers/wannier90/pull/294)
+
+- Various bugfixes in input reading and output generation [[#309]](https://github.com/wannier-developers/wannier90/pull/309) [[#290]](https://github.com/wannier-developers/wannier90/pull/290) [[#270]](https://github.com/wannier-developers/wannier90/pull/270) [[#266]](https://github.com/wannier-developers/wannier90/pull/266) [[#258]](https://github.com/wannier-developers/wannier90/pull/258)
+
+- Adding tests for BoltzWann (at least for the electrical conductivity) [[#282]](https://github.com/wannier-developers/wannier90/pull/282)
 
 ## v3.0.0 (27th February 2019)
 
