@@ -378,7 +378,7 @@ output = Pt-kslice-shc.dat
 
 # Test of symmetry adapted WFs with disentnanglement
 [testw90_disentanglement_sawfs]
-program = WANNIER90_DISENTANGLEMENT_SAWFS
+program = WANNIER90_WOUT_OK
 input_args = ('hs.win', '')
 output = hs.wout
 
