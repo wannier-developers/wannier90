@@ -378,9 +378,9 @@ output = Pt-kslice-shc.dat
 
 # Test of symmetry adapted WFs with disentnanglement
 [testw90_disentanglement_sawfs]
-program = WANNIER90_DISENTANGLEMENT_SAWFS
-input_args = ('hs.win', '')
-output = hs.wout
+program = WANNIER90_WOUT_OK
+inputs_args = ('H3S.win', '')
+output = H3S.wout
 
 [categories]
 wannier_only = testw90_*
