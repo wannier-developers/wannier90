@@ -376,6 +376,12 @@ program = POSTW90_SHCKSLICEDAT_OK
 inputs_args = ('Pt.win', '')
 output = Pt-kslice-shc.dat
 
+# Test of symmetry adapted WFs with disentnanglement
+[testw90_disentanglement_sawfs]
+program = WANNIER90_DISENTANGLEMENT_SAWFS
+input_args = ('hs.win', '')
+output = hs.wout
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*
