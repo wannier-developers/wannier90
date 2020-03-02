@@ -6314,6 +6314,7 @@ contains
     call comms_bcast(lfixstep, 1)
     call comms_bcast(lsitesymmetry, 1)
     call comms_bcast(frozen_states, 1)
+    call comms_bcast(symmetrize_eps, 1)
 
     !vv: Constrained centres
     call comms_bcast(slwf_num, 1)
