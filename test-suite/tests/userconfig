@@ -214,6 +214,11 @@ tolerance = ( (10., 1.0e-4, 'elcond_xx'),
               (10., 1.0e-4, 'elcond_yz'),
               (10., 1.0e-4, 'elcond_zz'))
 
+[WANNIER90_DISENTANGLEMENT_SAWFS]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_wout.parse
+tolerance = ( (1.0e-6, 1.0e-6, 'omegaI'))
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones
