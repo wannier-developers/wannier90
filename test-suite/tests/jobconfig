@@ -195,11 +195,23 @@ program = POSTW90_GENINTERPDAT_OK
 inputs_args = ('silicon.win', '')
 output = silicon_geninterp.dat
 
+# Test of the electrical conductivity in BoltzWann
+[testpostw90_boltzwann/]
+program = POSTW90_BOLTZWANN_ELCOND_OK
+inputs_args = ('silicon.win', '')
+output = silicon_elcond.dat
+
 # Test of AHC for bcc iron 
 [testpostw90_fe_ahc/]
 program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
 output = Fe.wpout 
+
+# Test of AHC for bcc iron with adaptive mesh refinement and Fermi scan
+[testpostw90_fe_ahc_adaptandfermi/]
+program = POSTW90_FERMISCAN_OK
+inputs_args = ('Fe.win', '')
+output = Fe-ahc-fermiscan.dat 
 
 # Test of Orbital Magnetisation for bcc iron
 [testpostw90_fe_morb/]
@@ -333,6 +345,42 @@ output = gaas-sc_xyz.dat
 program = WANNIER90_SLWFC_WOUT_OK
 inputs_args = ('gaas.win', '')
 output = gaas.wout
+
+# Test of SHC for fcc platinum
+[testpostw90_pt_shc/]
+program = POSTW90_SHCFERMIDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc-fermiscan.dat 
+
+# Test of ac SHC for GaAs
+[testpostw90_gaas_shc/]
+program = POSTW90_SHCFREQDAT_OK
+inputs_args = ('GaAs.win', '')
+output = GaAs-shc-freqscan.dat
+
+# Test of kpath with SHC as color for fcc platinum
+[testpostw90_pt_kpathbandsshc/]
+program = POSTW90_SHCKPATHBANDSDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-bands.dat 
+
+# Test of kpath SHC for fcc platinum
+[testpostw90_pt_kpathshc/]
+program = POSTW90_SHCKPATHDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc.dat
+
+# Test of kslice SHC for fcc platinum
+[testpostw90_pt_ksliceshc/]
+program = POSTW90_SHCKSLICEDAT_OK
+inputs_args = ('Pt.win', '')
+output = Pt-kslice-shc.dat
+
+# Test of symmetry adapted WFs with disentnanglement
+[testw90_disentanglement_sawfs]
+program = WANNIER90_DISENTANGLEMENT_SAWFS
+inputs_args = ('H3S.win', '')
+output = H3S.wout
 
 [categories]
 wannier_only = testw90_*

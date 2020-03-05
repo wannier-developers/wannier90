@@ -8,13 +8,11 @@
 !                                                            !
 ! Please cite                                                !
 !                                                            !
-! [ref] A. A. Mostofi, J. R. Yates, G. Pizzi, Y.-S. Lee,     !
-!       I. Souza, D. Vanderbilt and N. Marzari,              !
-!       "An updated version of Wannier90: a tool             !
-!       for obtaining maximally-localised Wannier            !
-!       functions",                                          !
-!       Computer Physics Communications 185, 2309 (2014),    !
-!       http://dx.doi.org/10.1016/j.cpc.2014.05.003          !
+!  [ref] "Wannier90 as a community code:                     !
+!        new features and applications",                     !
+!        G. Pizzi et al.,  J. Phys. Cond. Matt. 32,          !
+!        165902 (2020).                                      !
+!        http://doi.org/10.1088/1361-648X/ab51ff             !
 !                                                            !
 ! in any publications arising from the use of this code.     !
 !                                                            !
@@ -227,8 +225,10 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   !! This routine should be called after wannier_setup from a code calling
   !! the library mode to actually run the Wannier code.
-  !! NOTE! The library mode currently works ONLY in serial (when called from
-  !! a parallel code, make sure to run it only on 1 MPI process)
+  !!
+  !! NOTE! The library mode currently works ONLY in serial.
+  !! When called from an external code, wannier90 needs to be compiled
+  !! in sequential and wannier_run called with 1 MPI process.
   !!
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90

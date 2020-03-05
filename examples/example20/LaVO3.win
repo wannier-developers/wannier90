@@ -1,22 +1,22 @@
- conv_tol = 1d-12 
- conv_window = 5 
- num_iter = 400 
- iprint = 2 
+ conv_tol = 1d-12
+ conv_window = 5
+ num_iter = 400
+ iprint = 2
 
 Begin Projections
- V:l=2,mr=2,3,5 
+ V:l=2,mr=2,3,5
 End Projections
 
- dis_conv_tol = 1d-12 
- dis_conv_window = 9 
- dis_num_iter = 200 
+ dis_conv_tol = 1d-12
+ dis_conv_window = 9
+ dis_num_iter = 200
 
- num_wann = 3 
+ num_wann = 3
  num_bands = 6
  exclude_bands : 1-20,27-40
- 
- dis_win_min = 15.0 
- dis_win_max = 18.5 
+
+ dis_win_min = 15.0
+ dis_win_max = 18.5
  dis_spheres_first_wann = 1
  dis_spheres_num = 1
 
@@ -29,7 +29,7 @@ Begin Unit_Cell_Cart
 Ang
    3.7201157722     0.0000000000     0.0000000000
    0.0000000000     3.7201157722     0.0000000000
-   0.0000000000     0.0000000000     4.0549261917 
+   0.0000000000     0.0000000000     4.0549261917
 End Unit_Cell_Cart
 
 Begin Atoms_Cart
@@ -41,7 +41,7 @@ O       1.8600578861   0.0000000000   2.0274630959
 O       1.8600578861   1.8600578861   0.0000000000
 End Atoms_Cart
 
-mp_grid = 6 6 6 
+mp_grid = 6 6 6
 
 Begin Kpoints
     0.0000000000000000    0.0000000000000000    0.0000000000000000
@@ -263,9 +263,9 @@ Begin Kpoints
 End Kpoints
 
 
- write_hr = true 
- bands_plot= true 
- bands_num_points = 30 
+ write_hr = true
+ bands_plot= true
+ bands_num_points = 30
  begin kpoint_path
 G       0.00000  0.00000  0.00000  M       0.50000  0.50000  0.00000
 M       0.50000  0.50000  0.00000  X       0.50000  0.00000  0.00000
@@ -275,4 +275,3 @@ Z       0.00000  0.00000  0.50000  A       0.50000  0.50000  0.50000
 A       0.50000  0.50000  0.50000  R       0.50000  0.00000  0.50000
 R       0.50000  0.00000  0.50000  X       0.50000  0.00000  0.00000
 end kpoint_path
-
