@@ -470,14 +470,14 @@ contains
     !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only: num_bands, num_wann, num_kpts
+    use w90_parameters, only: num_bands, num_wann
 
     implicit none
 
     integer, intent(in) :: ik, n
-    complex(kind=dp), intent(in) :: zmat(num_bands, num_bands, num_kpts)
+    complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
     complex(kind=dp), intent(out) :: lambda(num_wann, num_wann)
-    complex(kind=dp), intent(inout) :: umat(num_bands, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: umat(num_bands, num_wann)
 
     complex(kind=dp) :: umatnew(num_bands, num_wann)
     complex(kind=dp) :: ZU(num_bands, num_wann)
@@ -491,30 +491,30 @@ contains
     do iter = 1, niter
       !  Z*U
       call zgemm('N', 'N', n, num_wann, n, cmplx_1, &
-                 zmat(:, :, ik), num_bands, umat(:, :, ik), num_bands, &
+                 zmat, num_bands, umat, num_bands, &
                  cmplx_0, ZU, num_bands)
       ! lambda = U^{+}*Z*U
       call zgemm('C', 'N', num_wann, num_wann, n, cmplx_1, &
-                 umat(:, :, ik), num_bands, ZU, num_bands, &
+                 umat, num_bands, ZU, num_bands, &
                  cmplx_0, lambda, num_wann)
 
-      deltaU(:, :) = ZU(:, :) - matmul(umat(:, :, ik), lambda)
+      deltaU(:, :) = ZU(:, :) - matmul(umat, lambda)
       if (sum(abs(deltaU(:n, :))) .lt. 1e-10) return
       ! band-by-band minimization
       do i = 1, num_wann
         ! diagonalize 2x2 matrix
-        HP(1) = real(dot_product(umat(1:n, i, ik), ZU(1:n, i)), kind=dp)
+        HP(1) = real(dot_product(umat(1:n, i), ZU(1:n, i)), kind=dp)
         HP(2) = dot_product(ZU(1:n, i), deltaU(1:n, i)) ! (1,2) matrix element
-        carr(1:n) = matmul(zmat(1:n, 1:n, ik), deltaU(1:n, i))
+        carr(1:n) = matmul(zmat(1:n, 1:n), deltaU(1:n, i))
         HP(3) = real(dot_product(deltaU(1:n, i), carr(1:n)), kind=dp) ! (2,2)
 
-        SP(1) = real(dot_product(umat(1:n, i, ik), umat(1:n, i, ik)), kind=dp)
-        SP(2) = dot_product(umat(1:n, i, ik), deltaU(1:n, i))
+        SP(1) = real(dot_product(umat(1:n, i), umat(1:n, i)), kind=dp)
+        SP(2) = dot_product(umat(1:n, i), deltaU(1:n, i))
         SP(3) = real(dot_product(deltaU(1:n, i), deltaU(1:n, i)), kind=dp)
 
         sp3 = real(SP(3), kind=dp)
         if (abs(sp3) .lt. 1e-10) then
-          umatnew(:, i) = umat(:, i, ik)
+          umatnew(:, i) = umat(:, i)
           cycle
         endif
         call ZHPGVX(1, 'V', 'A', 'U', 2, HP, SP, 0.0_dp, 0.0_dp, 0, 0, &
@@ -533,10 +533,10 @@ contains
           endif
         endif
         ! choose the larger eigenstate
-        umatnew(:, i) = V(1, 2)*umat(:, i, ik) + V(2, 2)*deltaU(:, i)
+        umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
       call symmetrize_ukirr(ik2ir(ik), num_bands, umatnew, n)
-      umat(:, :, ik) = umatnew(:, :)
+      umat(:, :) = umatnew(:, :)
     enddo ! iter
 
     return

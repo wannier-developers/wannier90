@@ -213,6 +213,15 @@ module w90_parameters
 !  logical,           public, save :: sigma_abc_onlyorb
   logical, public, save :: transl_inv
 
+  ! spin Hall conductivity
+  logical, public, save :: shc_freq_scan
+  integer, public, save :: shc_alpha
+  integer, public, save :: shc_beta
+  integer, public, save :: shc_gamma
+  logical, public, save :: shc_bandshift
+  integer, public, save :: shc_bandshift_firstband
+  real(kind=dp), public, save :: shc_bandshift_energyshift
+
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
   integer, public, save :: gyrotropic_kmesh(3)
@@ -1057,11 +1066,18 @@ contains
     call param_get_keyword('kslice_task', found, c_value=kslice_task)
     if (kslice .and. index(kslice_task, 'fermi_lines') == 0 .and. &
         index(kslice_task, 'curv') == 0 .and. &
-        index(kslice_task, 'morb') == 0) call io_error &
+        index(kslice_task, 'morb') == 0 .and. &
+        index(kslice_task, 'shc') == 0) call io_error &
       ('Error: value of kslice_task not recognised in param_read')
     if (kslice .and. index(kslice_task, 'curv') > 0 .and. &
         index(kslice_task, 'morb') > 0) call io_error &
       ("Error: kslice_task cannot include both 'curv' and 'morb'")
+    if (kslice .and. index(kslice_task, 'shc') > 0 .and. &
+        index(kslice_task, 'morb') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'shc' and 'morb'")
+    if (kslice .and. index(kslice_task, 'shc') > 0 .and. &
+        index(kslice_task, 'curv') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'shc' and 'curv'")
 
     kslice_2dkmesh(1:2) = 50
     call param_get_vector_length('kslice_2dkmesh', found, length=i)
@@ -1153,7 +1169,8 @@ contains
     if (berry .and. .not. found) call io_error &
       ('Error: berry=T and berry_task is not set')
     if (berry .and. index(berry_task, 'ahc') == 0 .and. index(berry_task, 'morb') == 0 &
-        .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0) call io_error &
+        .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0 &
+        .and. index(berry_task, 'shc') == 0) call io_error &
       ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
@@ -1277,6 +1294,42 @@ contains
     call param_get_keyword('scissors_shift', found, &
                            r_value=scissors_shift)
 
+    shc_freq_scan = .false.
+    call param_get_keyword('shc_freq_scan', found, l_value=shc_freq_scan)
+
+    shc_alpha = 1
+    call param_get_keyword('shc_alpha', found, i_value=shc_alpha)
+    if (found .and. (shc_alpha < 1 .or. shc_alpha > 3)) call io_error &
+      ('Error:  shc_alpha must be 1, 2 or 3')
+
+    shc_beta = 2
+    call param_get_keyword('shc_beta', found, i_value=shc_beta)
+    if (found .and. (shc_beta < 1 .or. shc_beta > 3)) call io_error &
+      ('Error:  shc_beta must be 1, 2 or 3')
+
+    shc_gamma = 3
+    call param_get_keyword('shc_gamma', found, i_value=shc_gamma)
+    if (found .and. (shc_gamma < 1 .or. shc_gamma > 3)) call io_error &
+      ('Error:  shc_gamma must be 1, 2 or 3')
+
+    shc_bandshift = .false.
+    call param_get_keyword('shc_bandshift', found, l_value=shc_bandshift)
+    shc_bandshift = shc_bandshift .and. berry .and. .not. (index(berry_task, 'shc') == 0)
+    if ((abs(scissors_shift) > 1.0e-7_dp) .and. shc_bandshift) &
+      call io_error('Error: shc_bandshift and scissors_shift cannot be used simultaneously')
+
+    shc_bandshift_firstband = 0
+    call param_get_keyword('shc_bandshift_firstband', found, i_value=shc_bandshift_firstband)
+    if (shc_bandshift .and. (.not. found)) &
+      call io_error('Error: shc_bandshift required but no shc_bandshift_firstband provided')
+    if ((shc_bandshift_firstband < 1) .and. found) &
+      call io_error('Error: shc_bandshift_firstband must >= 1')
+
+    shc_bandshift_energyshift = 0._dp
+    call param_get_keyword('shc_bandshift_energyshift', found, r_value=shc_bandshift_energyshift)
+    if (shc_bandshift .and. (.not. found)) &
+      call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
+
     spin_moment = .false.
     call param_get_keyword('spin_moment', found, &
                            l_value=spin_moment)
@@ -1310,8 +1363,11 @@ contains
     call param_get_keyword('kpath_task', found, c_value=kpath_task)
     if (kpath .and. index(kpath_task, 'bands') == 0 .and. &
         index(kpath_task, 'curv') == 0 .and. &
-        index(kpath_task, 'morb') == 0) call io_error &
+        index(kpath_task, 'morb') == 0 .and. &
+        index(kpath_task, 'shc') == 0) call io_error &
       ('Error: value of kpath_task not recognised in param_read')
+    if (bands_num_spec_points == 0 .and. kpath) &
+      call io_error('Error: a kpath plot has been requested but there is no kpoint_path block')
 
     kpath_num_points = 100
     call param_get_keyword('kpath_num_points', found, &
@@ -1323,8 +1379,12 @@ contains
     call param_get_keyword('kpath_bands_colour', found, &
                            c_value=kpath_bands_colour)
     if (kpath .and. index(kpath_bands_colour, 'none') == 0 .and. &
-        index(kpath_bands_colour, 'spin') == 0) call io_error &
+        index(kpath_bands_colour, 'spin') == 0 .and. &
+        index(kpath_bands_colour, 'shc') == 0) call io_error &
       ('Error: value of kpath_bands_colour not recognised in param_read')
+    if (kpath .and. index(kpath_task, 'shc') > 0 .and. &
+        index(kpath_task, 'spin') > 0) call io_error &
+      ("Error: kpath_task cannot include both 'shc' and 'spin'")
 
     ! set to a negative default value
     num_valence_bands = -99
@@ -2159,7 +2219,6 @@ contains
     ! Projections
     auto_projections = .false.
     call param_get_keyword('auto_projections', found, l_value=auto_projections)
-    if (auto_projections .and. spinors) call io_error('Error: Cannot automatically generate spinor projections.')
     num_proj = 0
     call param_get_block_length('projections', found, i_temp)
     ! check to see that there are no unrecognised keywords
@@ -3097,6 +3156,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
       endif
+      if (index(kpath_task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
+      endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the bands    :', trim(kpath_bands_colour), '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
@@ -3131,6 +3195,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
       endif
+      if (index(kslice_task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
+      endif
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the lines    :', &
         trim(kslice_fermi_lines_colour), '|'
       write (stdout, '(1x,a78)') '|  2D slice parameters (in reduced coordinates):                             |'
@@ -3160,10 +3229,15 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
       endif
-      if (index(berry_task, 'kubo') > 0) then
+      if (index(berry_task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       F', '|'
+      endif
+      if (index(berry_task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       F', '|'
       endif
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for optical responses     :', kubo_freq_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency for optical responses     :', kubo_freq_max, '|'
@@ -3362,13 +3436,11 @@ contains
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  Please cite                                      |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |  [ref] "An updated version of Wannier90:          |'
-    write (stdout, *) '            |        A Tool for Obtaining Maximally Localised   |'
-    write (stdout, *) '            |        Wannier Functions", A. A. Mostofi,         |'
-    write (stdout, *) '            |        J. R. Yates, G. Pizzi, Y. S. Lee,          |'
-    write (stdout, *) '            |        I. Souza, D. Vanderbilt and N. Marzari,    |'
-    write (stdout, *) '            |        Comput. Phys. Commun. 185, 2309 (2014)     |'
-    write (stdout, *) '            |        http://dx.doi.org/10.1016/j.cpc.2014.05.003|'
+    write (stdout, *) '            |  [ref] "Wannier90 as a community code:            |'
+    write (stdout, *) '            |        new features and applications",            |'
+    write (stdout, *) '            |        G. Pizzi et al., J. Phys. Cond. Matt. 32,  |'
+    write (stdout, *) '            |        165902 (2020).                             |'
+    write (stdout, *) '            |        http://doi.org/10.1088/1361-648X/ab51ff    |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  in any publications arising from the use of      |'
     write (stdout, *) '            |  this code. For the method please cite            |'
@@ -3384,11 +3456,11 @@ contains
     write (stdout, *) '            |         Phys. Rev. B 65 035109 (2001)             |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            | Copyright (c) 1996-2019                           |'
+    write (stdout, *) '            | Copyright (c) 1996-2020                           |'
     write (stdout, *) '            |        The Wannier90 Developer Group and          |'
     write (stdout, *) '            |        individual contributors                    |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |      Release: ', adjustl(w90_version), '  27th February 2019      |'
+    write (stdout, *) '            |      Release: ', adjustl(w90_version), '   5th March    2020      |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
@@ -3689,6 +3761,9 @@ contains
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
     !! accordingly also the w90chk2chk.x utility!
+    !! Also, note that this routine writes the u_matrix and the m_matrix - in parallel
+    !! mode these are however stored in distributed form in, e.g., u_matrix_loc only, so
+    !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
     !=================================================!
 
     use w90_io, only: io_file_unit, io_date, seedname
@@ -6123,6 +6198,14 @@ contains
     call comms_bcast(spin_kmesh_spacing, 1)
     call comms_bcast(spin_kmesh(1), 3)
     call comms_bcast(wanint_kpoint_file, 1)
+! Junfeng Qiao
+    call comms_bcast(shc_freq_scan, 1)
+    call comms_bcast(shc_alpha, 1)
+    call comms_bcast(shc_beta, 1)
+    call comms_bcast(shc_gamma, 1)
+    call comms_bcast(shc_bandshift, 1)
+    call comms_bcast(shc_bandshift_firstband, 1)
+    call comms_bcast(shc_bandshift_energyshift, 1)
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)
@@ -6231,6 +6314,7 @@ contains
     call comms_bcast(lfixstep, 1)
     call comms_bcast(lsitesymmetry, 1)
     call comms_bcast(frozen_states, 1)
+    call comms_bcast(symmetrize_eps, 1)
 
     !vv: Constrained centres
     call comms_bcast(slwf_num, 1)

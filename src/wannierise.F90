@@ -602,7 +602,17 @@ contains
         !omega_tilde = wann_spread%om_d + wann_spread%om_nu
       end if
 
-      if (ldump .and. on_root) call param_write_chkpt('postdis')
+      if (ldump) then
+        ! Before calling param_write_chkpt, I need to gather on the root node
+        ! the u_matrix from the u_matrix_loc. No need to broadcast it since
+        ! it's printed by the root node only
+        call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
+                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs)
+        ! I also transfer the M matrix
+        call comms_gatherv(m_matrix_loc, num_wann*num_wann*nntot*counts(my_node_id), &
+                           m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
+        if (on_root) call param_write_chkpt('postdis')
+      endif
 
       if (conv_window .gt. 1) call internal_test_convergence()
 
@@ -639,8 +649,8 @@ contains
       rnr0n2 = 0.0_dp
       do iw = 1, slwf_num
         rnr0n2(iw) = (wannier_centres(1, iw) - ccentres_cart(iw, 1))**2 &
-                     + (wannier_centres(2, iw) - ccentres_cart(iw, 3))**2 &
-                     + (wannier_centres(2, iw) - ccentres_cart(iw, 3))**2
+                     + (wannier_centres(2, iw) - ccentres_cart(iw, 2))**2 &
+                     + (wannier_centres(3, iw) - ccentres_cart(iw, 3))**2
       end do
     end if
 
@@ -688,7 +698,7 @@ contains
       end if
     endif
 
-    if (write_xyz) call wann_write_xyz()
+    if (write_xyz .and. on_root) call wann_write_xyz()
 
     if (write_hr_diag) then
       call hamiltonian_setup()
@@ -725,7 +735,7 @@ contains
     if (have_disentangled .and. write_proj) call wann_calc_projection()
 
     ! aam: write data required for vdW utility
-    if (write_vdw_data) call wann_write_vdw_data()
+    if (write_vdw_data .and. on_root) call wann_write_vdw_data()
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
@@ -3008,7 +3018,7 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (write_xyz) call wann_write_xyz()
+    if (write_xyz .and. on_root) call wann_write_xyz()
 
     if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide)
 

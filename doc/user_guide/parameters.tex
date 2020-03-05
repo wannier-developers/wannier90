@@ -1,4 +1,4 @@
-se%!TEX root=./user_guide.tex
+%!TEX root=./user_guide.tex
 \chapter{Parameters}\label{chap:parameters}
 
 \section{Usage}
@@ -1130,7 +1130,7 @@ The default value is 1.0E-3.
 %The default value is {\tt 1.0 eV}.
 
 \subsection[slwf\_num]{\tt integer :: slwf\_num}
-The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $\le$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. 
+The number of objective Wannier functions for selective localisation in the selectively localised Wannier function (SLWF) method of Ref.~\cite{Marianetti}. These functions are obtained by minimising the spread functional only with respect to the degrees of freedom of a subset of {\tt slwf\_num} $<$ {\tt num\_wann} functions. At convergence, the objective WFs will have a minimum cumulative spread, whereas the remaining {\tt num\_wann} $-$ {\tt slwf\_num} functions are left unoptimised. The initial guesses for the objective WFs are given by the first {\tt slwf\_num} orbitals in the {\tt projections} block. If {\tt slwf\_num = num\_wann} no selective minimisation is performed. In this case, \wannier\ will simply generate a set of {\tt num\_wann} MLWFs.
 
 The default is {\tt num\_wann}.
 
@@ -1153,10 +1153,10 @@ Optionally, the {\tt slwf\_centres} block may be used to define alternative targ
 
 The block below shows an example of how to set the constraints:
 
-\noindent \verb#begin centre_constraints# \\
+\noindent \verb#begin slwf_centres# \\
 \verb#   2  0.0   0.0  0.0# \\
 \verb#   4  0.25  0.0  0.0# \\
-\verb#end centre_constraints#
+\verb#end slwf_centres#
 
 \begin{itemize}
 \item The first line sets the constraint for the centre of objective WF number 2 (as defined by the order of WFs in the {\tt projections} block) to (0.0,0.0,0.0) in fractional co-ordinates.

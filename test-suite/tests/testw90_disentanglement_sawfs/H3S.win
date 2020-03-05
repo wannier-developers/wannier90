@@ -1,0 +1,61 @@
+num_bands       = 20
+num_wann        = 12
+num_iter        = 10
+num_print_cycles = 10
+
+dis_win_max     =  95
+dis_win_min     = -100
+dis_num_iter    =  10
+dis_mix_ratio   = 0.2
+
+
+!===========  additional input for symmetry-adapted mode
+ site_symmetry = .true.
+ symmetrize_eps=  1d-8
+!===========
+
+
+! SYSTEM
+
+begin unit_cell_cart
+Bohr
+   2.80517625   2.80517625  2.80517625 
+  -2.80517625   2.80517625  2.80517625 
+  -2.80517625  -2.80517625  2.80517625 
+end unit_cell_cart
+
+begin atoms_frac
+ S     0.00000   0.00000   0.00000
+ H     0.50000  -0.50000   0.00000
+ H     0.00000   0.50000  -0.50000
+ H     0.50000   0.00000   0.50000
+end atoms_frac
+
+begin projections
+S:l=0; l=1; l=2
+H:l=0
+end projections
+
+
+begin kpoint_path
+G 0.00  0.00  0.00    H 0.50 -0.50 -0.50
+H 0.50 -0.50 -0.50    N 0.50  0.00  0.00
+N 0.50  0.00  0.00    G 0.00  0.00  0.00
+G 0.00  0.00  0.00    P 0.25 -0.25  0.25
+P 0.25 -0.25  0.25    N 0.50  0.00  0.00
+end kpoint_path
+
+! KPOINTS
+
+mp_grid : 2 2 2
+
+begin kpoints
+  0.00000000  0.00000000  0.00000000
+  0.00000000  0.00000000  0.50000000
+  0.00000000  0.50000000  0.00000000
+  0.00000000  0.50000000  0.50000000
+  0.50000000  0.00000000  0.00000000
+  0.50000000  0.00000000  0.50000000
+  0.50000000  0.50000000  0.00000000
+  0.50000000  0.50000000  0.50000000
+end kpoints

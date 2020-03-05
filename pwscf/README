@@ -13,6 +13,19 @@ of the post-processing routine that is compatible with this
 release of Wannier90 and a particular release of quantum-espresso.
 
 ====
+v6.x
+====
+Please replace the file to the exact version specified in the folder
+name.
+
+Later versions already include the changes as we try to contribute these
+immediately to the Quantum ESPRESSO repository.
+
+For instance, the file in folder v6.4 should be used to replace the file
+in version 6.4 of Quantum ESPRESSO, but the changes are already included
+in v6.5 and following.
+
+====
 v6.0
 ====
 
