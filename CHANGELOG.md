@@ -1,6 +1,6 @@
 # CHANGELOG of Wannier90
 
-## v3.1.0 (20th February 2020)
+## v3.1.0 (5th March 2020)
 
 ### New features
 
@@ -29,6 +29,8 @@
 - Various bugfixes in input reading and output generation [[#309]](https://github.com/wannier-developers/wannier90/pull/309) [[#290]](https://github.com/wannier-developers/wannier90/pull/290) [[#270]](https://github.com/wannier-developers/wannier90/pull/270) [[#266]](https://github.com/wannier-developers/wannier90/pull/266) [[#258]](https://github.com/wannier-developers/wannier90/pull/258)
 
 - Adding tests for BoltzWann (at least for the electrical conductivity) [[#282]](https://github.com/wannier-developers/wannier90/pull/282)
+
+- Bug fixed in the disentanglement step with SAWFs, especially when running in parallel [[#315]](https://github.com/wannier-developers/wannier90/pull/315)
 
 ## v3.0.0 (27th February 2019)
 
