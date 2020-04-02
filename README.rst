@@ -175,4 +175,3 @@ Wannier90 is based on the [Wannier Fortran 77 code](http://www.wannier.org/histo
 * Nicola Marzari (EPFL, CH)
 * Ivo Souza (Universidad del Pais Vasco, ES)
 * David Vanderbilt (Rutgers University, US)
-
