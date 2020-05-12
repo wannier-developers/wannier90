@@ -1444,7 +1444,6 @@ contains
 
   end subroutine get_SHC_R
 
-
 !!   Subroutine to save the real-space matrices, to be read by wannier-berri code  (Stepan Tsirkin)
   subroutine get_oper_save_main
 
@@ -1470,7 +1469,7 @@ contains
       file_unit = io_file_unit()
       open (file_unit, file=trim(seedname)//"_R.info", form='formatted', status='unknown')
 
-      write (file_unit,'(2I8,L8,A)') num_wann, nrpts, spinors, "    # num_wann , nrpts, spinors"
+      write (file_unit, '(2I8,L8,A)') num_wann, nrpts, spinors, "    # num_wann , nrpts, spinors"
 
       do i = 1, 3
         write (file_unit, '(3F20.12)') real_lattice(i, 1:3)
@@ -1533,9 +1532,6 @@ contains
     endif ! spinors
 
   end subroutine get_oper_save_main
-
-
-
 
   !=========================================================!
   !                   PRIVATE PROCEDURES                    !
@@ -1651,7 +1647,6 @@ contains
                         S, eigval(wm_a:wm_a + ns_a - 1, ik_a), H)
   end subroutine get_gauge_overlap_matrix
 
-
   !!   Subroutine to save the real-space matrices, to be read by wannier-berri code  (Stepan Tsirkin)
   !==========================================================
   subroutine save_matrix(file_suffix, mat0d, mat1d, mat2d)
@@ -1697,6 +1692,5 @@ contains
     endif ! on_root
 
   end subroutine save_matrix
-
 
 end module w90_get_oper

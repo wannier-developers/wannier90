@@ -168,10 +168,9 @@ module w90_parameters
   integer, public, save :: kslice_2dkmesh(2)
   character(len=20), public, save :: kslice_fermi_lines_colour
 
-  ! to save the ??_R atrices 
+  ! to save the ??_R atrices
   character(len=20), public, save :: get_oper_save_task
   logical, public, save :: get_oper_save
-
 
   ! module  d o s
   logical, public, save    :: dos
@@ -1178,12 +1177,11 @@ contains
         .and. index(berry_task, 'shc') == 0) call io_error &
       ('Error: value of berry_task not recognised in param_read')
 
-   ! Stepan 
+    ! Stepan
     get_oper_save = .false.
     call param_get_keyword('get_oper_save', found, l_value=get_oper_save)
     get_oper_save_task = ''
     call param_get_keyword('get_oper_save_task', found, c_value=get_oper_save_task)
-
 
     ! Stepan
     gyrotropic = .false.

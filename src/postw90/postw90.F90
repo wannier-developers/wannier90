@@ -31,7 +31,7 @@ program postw90
   use w90_spin
   use w90_kpath
   use w90_kslice
-  use w90_get_oper, only:  get_oper_save_main
+  use w90_get_oper, only: get_oper_save_main
 
   use w90_boltzwann
   use w90_geninterp
@@ -186,11 +186,9 @@ program postw90
   !
   ! Now perform one or more of the following tasks
 
+  !!   save the real-space matrices, to be read by wannier-berri code  (Stepan Tsirkin)
 
- !!   save the real-space matrices, to be read by wannier-berri code  (Stepan Tsirkin)
-
-  if (get_oper_save)  call get_oper_save_main
-
+  if (get_oper_save) call get_oper_save_main
 
   ! ---------------------------------------------------------------
   ! Density of states calculated using a uniform interpolation mesh

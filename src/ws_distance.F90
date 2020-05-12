@@ -320,7 +320,7 @@ contains
   end subroutine ws_write_vec
   !====================================================!
 
-! Stepan Tsirkin 
+! Stepan Tsirkin
   subroutine ws_write_vec_wberri(nrpts, irvec, file_unit)
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_HH_R file (read by wannier-berri)
@@ -365,8 +365,6 @@ contains
     !====================================================!
   end subroutine ws_write_vec_wberri
   !====================================================!
-
-
 
   !====================================================!
   subroutine clean_ws_translate()
