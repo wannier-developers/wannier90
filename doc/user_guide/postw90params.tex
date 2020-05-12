@@ -154,6 +154,8 @@ magnetic moment per cell\\
 {\sc spn\_formatted}  & L & 
   Read a formatted {\tt seedname.spn} file\\
   {\sc berry\_curv\_unit} & S & Unit of Berry curvature\\ 
+  {\sc get\_oper\_save} & L & save the {\tt HH\_R, AA\_R, SS\_R}, etc arrays to files to be read by {\tt  wannier-berri} code\\
+  {\sc get\_oper\_save\_task} & S & files to be saved \\
  \hline
 \end{tabular}
 \caption[Parameter file keywords controlling \postw.]  {{\tt
@@ -705,6 +707,69 @@ beyond which the delta functions are taken as zero.
 
 The default value is 5.0. 
 
+\subsection{\tt logical :: get\_oper\_save}
+
+If {\tt get\_oper\_save=true}, the real-space matrix elements {\tt HH\_R, AA\_R, SS\_R},  
+and others evaluated in the {\tt get\_oper} module, are saved to files, that can be read by the {\tt wannier-berri} code\cite{wannier-berri}
+
+First, the file {\tt seedname\_R.info} is written (formatted), which contains 
+\begin{itemize}
+\item the number of wannier functions, number of real-space $\RR$-vectors, and wether the wavefunctions are spinors.
+\item real-space unit cell vectors
+\item real-space $\RR$-vectors and their degeneracies
+\item if {\tt use\_ws\_distance=true}, also the information needed for the minimal-distance replica selection is written
+\end{itemize}
+Then, the {\tt seedname\_HH\_R} file is written (unformatted), 
+containing the Hamiltonian matrix elements $\langle 0n | H | \RR m \rangle$.
+If the parameter {\tt get\_oper\_save\_task} is set, additional files are written (see below)
+
+The default value is {\tt false}.
+
+\subsection{\tt character(len=20) :: get\_oper\_save\_task}
+
+Should be a combination of symbol, listed below. If a symbol is present in the string,
+ the corresponding unformatted file is written, containing the corresponding matric elements\\
+
+\begin{tabular}{r|c|c}
+{\tt 'a'} & {\tt seedname\_AA\_R} &  $\memnR{\rr }$. \\
+{\tt 'b'} & {\tt seedname\_BB\_R} &  $\memnR{H \cdot(\rr-\RR )}$.\\
+{\tt 'c'} & {\tt seedname\_CC\_R} &  $\memnR{r_\alpha\cdot H \cdot (r_\beta-R_\beta ) }$.\\
+{\tt 'f'} & {\tt seedname\_FF\_R} &  $\memnR{r_\alpha \cdot (r_\beta-R_\beta ) }$.\\
+{\tt 's'} & {\tt seedname\_SS\_R} &  $\memnR{\mathbf{\sigma}} $.\\\hline
+\multirow{3}{*}{{\tt 'h'}} & {\tt seedname\_SR\_R}  & $\memnR{ \sigma_\alpha \cdot(r_\beta-R_\beta)}$\\
+                           & {\tt seedname\_SHR\_R} & $\memnR{ \sigma_\alpha \cdot H \cdot(r_\beta-R_\beta)}$\\
+                           & {\tt seedname\_SH\_R}  & $\memnR{ \sigma_\alpha \cdot H }$\\
+\end{tabular}
+
+The default value is an empty string (no additional files written)
+
+
+%  complex(kind=dp), allocatable, save :: HH_R(:, :, :) !  <0n|r|Rm>
+%  !! $$\langle 0n | H | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: AA_R(:, :, :, :) ! <0n|r|Rm>
+%  !! $$\langle 0n |  \hat{r} | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: BB_R(:, :, :, :) ! <0|H(r-R)|R>
+%  !! $$\langle 0n | H(\hat{r}-R) | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
+%  !! $$\langle 0n | \hat{r}_{\alpha}.H.(\hat{r}- R)_{\beta} | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
+%  !! $$\langle 0n | \hat{r}_{\alpha}.(\hat{r}-R)_{\beta} | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
+%  !! $$\langle 0n | \sigma_{x,y,z} | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+%  !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: SHR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+%  !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
+%
+%  complex(kind=dp), allocatable, save :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
+%  !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
 
 
 

@@ -28,7 +28,7 @@ module w90_ws_distance
 
   private
   !
-  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
+  public :: ws_translate_dist, clean_ws_translate, ws_write_vec, ws_write_vec_wberri
   !
   integer, public, save, allocatable :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
   !! The integer number of unit cells to shift Wannier function j to put its centre
@@ -319,6 +319,55 @@ contains
     !====================================================!
   end subroutine ws_write_vec
   !====================================================!
+
+! Stepan Tsirkin 
+  subroutine ws_write_vec_wberri(nrpts, irvec, file_unit)
+    !! Write to file the lattice vectors of the superlattice
+    !! to be added to R vector in seedname_HH_R file (read by wannier-berri)
+    !! in order to have the second Wannier function inside the WS cell
+    !! of the first one.
+    use w90_parameters, only: num_wann
+
+    implicit none
+
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: irvec(3, nrpts)
+    integer, intent(in) :: file_unit
+    integer:: irpt, iw, jw, ideg, s
+    integer:: numij(nrpts)
+
+    if (use_ws_distance) then
+      call ws_translate_dist(nrpts, irvec)
+      write (file_unit, '(A)') 'use_ws_distance=True'
+      do irpt = 1, nrpts
+        s = 0
+        do iw = 1, num_wann
+          do jw = 1, num_wann
+            if ((wdist_ndeg(iw, jw, irpt) == 1) .and. all(irdist_ws(:, 1, iw, jw, irpt) .eq. irvec(:, irpt))) cycle
+            s = s + 1
+          end do
+        end do
+        write (file_unit, '(2I8)') irpt, s
+      enddo
+
+      do irpt = 1, nrpts
+        do iw = 1, num_wann
+          do jw = 1, num_wann
+            if ((wdist_ndeg(iw, jw, irpt) == 1) .and. all(irdist_ws(:, 1, iw, jw, irpt) .eq. irvec(:, irpt))) cycle
+            write (file_unit, '(10000I4)') iw, jw, (irdist_ws(:, ideg, iw, jw, irpt), ideg=1, wdist_ndeg(iw, jw, irpt))
+          end do
+        end do
+      end do
+    else
+      write (file_unit, *) 'use_ws_distance=False'
+    endif
+    return
+    !====================================================!
+  end subroutine ws_write_vec_wberri
+  !====================================================!
+
+
+
   !====================================================!
   subroutine clean_ws_translate()
     !====================================================!

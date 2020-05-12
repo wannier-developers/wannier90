@@ -1,6 +1,6 @@
 TEXFILES=$(wildcard *.tex)
 
-user_guide.pdf: $(TEXFILES)
+user_guide.pdf: $(TEXFILES) ../wannier90.bib
 	pdflatex user_guide 
 	bibtex user_guide
 	pdflatex user_guide

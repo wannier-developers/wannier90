@@ -168,6 +168,11 @@ module w90_parameters
   integer, public, save :: kslice_2dkmesh(2)
   character(len=20), public, save :: kslice_fermi_lines_colour
 
+  ! to save the ??_R atrices 
+  character(len=20), public, save :: get_oper_save_task
+  logical, public, save :: get_oper_save
+
+
   ! module  d o s
   logical, public, save    :: dos
 ! No need to save 'dos_plot', only used here (introduced 'dos_task')
@@ -1172,6 +1177,13 @@ contains
         .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0 &
         .and. index(berry_task, 'shc') == 0) call io_error &
       ('Error: value of berry_task not recognised in param_read')
+
+   ! Stepan 
+    get_oper_save = .false.
+    call param_get_keyword('get_oper_save', found, l_value=get_oper_save)
+    get_oper_save_task = ''
+    call param_get_keyword('get_oper_save_task', found, c_value=get_oper_save_task)
+
 
     ! Stepan
     gyrotropic = .false.
@@ -6169,6 +6181,8 @@ contains
     call comms_bcast(berry_curv_adpt_kmesh_thresh, 1)
     call comms_bcast(berry_curv_unit, len(berry_curv_unit))
 !  Stepan Tsirkin
+    call comms_bcast(get_oper_save, 1)
+    call comms_bcast(get_oper_save_task, len(get_oper_save_task))
     call comms_bcast(gyrotropic, 1)
     call comms_bcast(gyrotropic_task, len(gyrotropic_task))
     call comms_bcast(gyrotropic_kmesh_spacing, 1)

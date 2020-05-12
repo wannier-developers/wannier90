@@ -1,4 +1,4 @@
-tutorial.pdf: tutorial.tex
+tutorial.pdf: tutorial.tex ../wannier90.bib
 	pdflatex tutorial.tex 
 	bibtex tutorial
 	pdflatex tutorial.tex
