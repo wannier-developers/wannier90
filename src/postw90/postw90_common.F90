@@ -284,6 +284,8 @@ contains
     call comms_bcast(gyrotropic_smr_max_arg, 1)
     call comms_bcast(gyrotropic_smr_fixed_en_width, 1)
     call comms_bcast(gyrotropic_smr_index, 1)
+    call comms_bcast(get_oper_save, 1)
+    call comms_bcast(get_oper_save_task, len(get_oper_save_task))
 
     call comms_bcast(spinors, 1)
 
