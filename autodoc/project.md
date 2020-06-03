@@ -3,7 +3,7 @@ output_dir:       ./build
 media_dir:        ./media
 favicon:          ./media/favicon16x16.png
 project:          Wannier90
-author:           Arash Mostofi, Jonathan Yates, Young-Su Lee, Giovanni Pizzi, Nicola Marzari, Ivo Souza and David Vanderbilt
+author:           The Wannier90 Developer Group
 project_github:   https://github.com/wannier-developers/wannier90
 project_website:  http://wannier.org
 title:            Wannier90 developer documentation

@@ -1,0 +1,73 @@
+%%% INFO %%%
+%
+\newcommand{\version}{v3.1.0}
+\newcommand{\sbtitle}{\Wannier~\version: Solution booklet}
+\newcommand{\authorname}{Valerio Vitale}
+%\newcommand{\date}{\today} % Date of the first submission
+
+\newcommand{\numexamples}{$24$}
+
+% ABBREVIATIONS
+\newcommand{\eg}{e.g.}
+\newcommand{\ie}{i.e.}
+\newcommand{\vs}{vs}
+\newcommand{\etal}{\textit{et al.}}
+\newcommand{\cf}{cf.}
+
+%%% QUANTUM PROGRAMS %%%
+%
+\newcommand{\Wannier}{\myfont{wannier90}}
+\newcommand{\QE}{\myfont{quantum espresso}}
+\newcommand{\abinit}{\myfont{ABINIT}}
+\newcommand{\GPAW}{\myfont{GPAW}}
+\newcommand{\VASP}{\myfont{VASP}}
+\newcommand{\OpenMX}{\myfont{OpenMX}}
+\newcommand{\Wien}{\myfont{Wien2K}}
+\newcommand{\fleur}{\myfont{fleur}}
+\newcommand{\MLWF}{\mbox{MLWF}}
+\newcommand{\MLWFs}{\mbox{MLWFs}}
+
+%%% VISUALISATION PROGRAMS %%%
+%
+\newcommand{\xcrysden}{\myfont{XCrySDen}}
+\newcommand{\VMD}{\myfont{VMD}}
+\newcommand{\vesta}{\myfont{vesta}}
+
+%%% CITATIONS AND FONTS
+%
+\newcommand{\myfont}[1]{\mbox{\textsc{#1}}}
+\newcommand{\onlinecite}[1]{\hspace{-1 ex} \nocite{#1}\citenum{#1}} 
+
+%%% MATHEMATICS AND UNITS
+%
+\newcommand{\bfk}{\ifmmode  \mathbf{k}  \else $ \mathbf{k} $~\fi}
+\newcommand{\fulld}{\ifmmode \mathrm{d} \else $ \mathbf{d} $~\fi}
+\newcommand{\diffk}{\ifmmode \fulld\bfk \else $ \fulld\bfk $~\fi}
+\newcommand{\unk}{\ifmmode u_{n\bfk} \else $ u_{n\bfk} $~\fi}
+\newcommand{\tinysub}[1]{\ifmmode _{\mbox{\scriptsize{#1}}} \else $ _{\mbox{\scriptsize{#1}}} $~\fi}
+\newcommand{\tinysup}[1]{\ifmmode ^{\mbox{\scriptsize{#1}}} \else $ ^{\mbox{\scriptsize{#1}}} $~\fi}
+% DISTANCES
+\newcommand{\angstrom}{~\AA}
+\newcommand{\bohr}{~$a_0$}
+% ENERGY & ENERGY/TIME
+\newcommand{\hartree}{~$E_h$}
+\newcommand{\Hartree}{~Ha}
+\newcommand{\Ry}{~Ry}
+\newcommand{\eV}{eV}
+% TEMPERATURE
+\newcommand{\Kelvin}{~K}
+% PRESSURE
+\newcommand{\atm}{~atm}
+\newcommand{\latm}{\atm~}
+% VOLUME
+\newcommand{\angcube}{\angstrom$^3$}
+% DENSITY
+\newcommand{\gcm}{~g~cm$^{-3}$}
+% SURFACES
+\newcommand{\angsqd}{\AA$^2$}
+
+%%% TABLES and FIGURES
+%
+\newcommand{\Fig}[1]{Fig.~\ref{#1}}
+\newcommand{\Tab}[1]{Tab.~\ref{#1}}
+\newcommand{\App}[1]{Appendix~\ref{#1}}

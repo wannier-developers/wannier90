@@ -5,7 +5,8 @@
  num_iter    = 40
  precond = true
  optimisation = 2
-
+ use_ws_distance = .false.
+search_shells=12
 
 ! SYSTEM
 

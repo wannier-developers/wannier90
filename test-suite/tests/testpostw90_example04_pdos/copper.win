@@ -1,7 +1,9 @@
  num_bands       = 12
  num_wann        =  7 
  num_iter        = 200 
-
+ use_ws_distance = .false.
+search_shells=12
+ 
 dis_win_max       = 38.0
 dis_froz_max      = 13.0
 dis_num_iter      =  60

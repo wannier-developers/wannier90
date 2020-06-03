@@ -1,0 +1,11 @@
+&inputpp
+  outdir     =  './'
+  prefix     =  'si'
+  seedname   =  'si'
+  write_amn  = .true.
+  write_mmn  = .true.
+  write_unk  = .true.
+  ! SCDM keywords
+  scdm_proj         = true
+  scdm_entanglement = 'isolated'
+/
