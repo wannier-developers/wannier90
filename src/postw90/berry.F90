@@ -2166,8 +2166,7 @@ contains
                                    pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
     use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list,wham_get_D_h, &
                                    wham_get_eig_UU_HH_AA_sc,wham_get_eig_deleig,wham_get_D_h_P_value,&
-                                   wham_get_eig_deleig_TB_conv,wham_get_eig_UU_HH_AA_sc_TB_conv,&
-                                   wham_get_d_D_h_P_value 
+                                   wham_get_eig_deleig_TB_conv,wham_get_eig_UU_HH_AA_sc_TB_conv
     use w90_get_oper, only       : AA_R
     use w90_utility, only        : utility_rotate,utility_zdotu
     ! Arguments
