@@ -212,6 +212,9 @@ module w90_parameters
   logical, public, save :: wanint_kpoint_file
 !  logical,           public, save :: sigma_abc_onlyorb
   logical, public, save :: transl_inv
+  real(kind=dp),     public, save :: tbh_kpoint(3)
+  integer,           public, save :: num_tbh_bands
+  integer,allocatable,public,save :: tbh_bands(:)
 
   ! spin Hall conductivity
   logical, public, save :: shc_freq_scan
@@ -1170,7 +1173,7 @@ contains
       ('Error: berry=T and berry_task is not set')
     if (berry .and. index(berry_task, 'ahc') == 0 .and. index(berry_task, 'morb') == 0 &
         .and. index(berry_task, 'kubo') == 0 .and. index(berry_task, 'sc') == 0 &
-        .and. index(berry_task, 'shc') == 0) call io_error &
+        .and. index(berry_task, 'shc') == 0 .and. index(berry_task,'tbh')==0 ) call io_error &
       ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
@@ -2013,6 +2016,23 @@ contains
 
     sc_w_thr = 5.0d0
     call param_get_keyword('sc_w_thr', found, r_value=sc_w_thr)
+
+    tbh_kpoint(:)=0.0_dp
+    call param_get_keyword_vector('tbh_kpoint',found,3,r_value=tbh_kpoint)
+
+    num_tbh_bands=0
+    call param_get_keyword('num_tbh_bands',found,i_value=num_tbh_bands)
+    if (found) then
+       if(num_tbh_bands<1) call io_error('Error: problem reading num_tbh_bands')
+       allocate(tbh_bands(num_tbh_bands),stat=ierr)
+       if (ierr/=0) call io_error('Error allocating num_tbh_bands in param_read')
+       call param_get_range_vector('tbh_bands',found,num_tbh_bands,.false.,tbh_bands)
+       if (any(tbh_bands<1)  ) &
+            call io_error('Error: tbh_bands must contain positive numbers')
+    end if
+
+
+
 
     use_bloch_phases = .false.
     call param_get_keyword('use_bloch_phases', found, l_value=use_bloch_phases)
@@ -3229,6 +3249,11 @@ contains
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
       endif
+      if(index(berry_task,'tbh')>0) then
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :','       T','|'
+       else
+          write(stdout,'(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :','       F','|'
+      endif
       if (index(berry_task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
       else
@@ -3249,6 +3274,13 @@ contains
         write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
           trim(param_get_convention_type(sc_phase_conv)), '|'
       end if
+       if (index(berry_task,'tbh')>0) then
+        write(stdout,'(1x,a46,10x,f8.3,1x,f8.3,1xf8.3,1x,13x,a1)')  '|  Chosen k-point tbh_kpoint                 :',&
+                                         tbh_kpoint(1),tbh_kpoint(2),tbh_kpoint(3),'|'
+        write(stdout,'(1x,a46,10x,i4,13x,a1)')  '|  num_tbh_bands                             :',num_tbh_bands,'|'
+        write(stdout,'(1x,a46,10x,*(i4))')  '|  tbh_bands                                 :',&
+                                                    (tbh_bands(i),i=1,num_tbh_bands)
+       end if
       if (kubo_adpt_smr .eqv. adpt_smr .and. kubo_adpt_smr_fac == adpt_smr_fac .and. kubo_adpt_smr_max == adpt_smr_max &
           .and. kubo_smr_fixed_en_width == smr_fixed_en_width .and. smr_index == kubo_smr_index) then
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
