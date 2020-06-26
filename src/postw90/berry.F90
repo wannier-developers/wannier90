@@ -24,6 +24,7 @@ module w90_berry
   !! *  LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
   !! *  IATS18 = PRB 97, 245143 (2018)  (nonlinear shift current)
+  !! *  IAdJS19= arxiv1910.06172 (2019) (quasi-degenerate k.p perturbation)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -1182,7 +1183,7 @@ contains
                'Output data files related to k.p:                         '
           write(stdout,'(1x,a)')&
                '----------------------------------------------------------'
-             ! JULEN need to think how to output files, continue here 
+             ! zeroth order in k
              file_name= trim(seedname)//'-0-tbh.dat'
              file_name=trim(file_name)
              file_unit=io_file_unit()
@@ -1191,6 +1192,7 @@ contains
              write(file_unit,'(2E18.8E3)') tbh(:,:,1,1,1) 
              close(file_unit)
 
+             ! first order in k
              file_name= trim(seedname)//'-1-tbh.dat'
              write(stdout,'(/,3x,a)') '* '//file_name
              open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
@@ -1199,6 +1201,7 @@ contains
              end do 
              close(file_unit)
 
+             ! second order in k
              file_name= trim(seedname)//'-2-tbh.dat'
              write(stdout,'(/,3x,a)') '* '//file_name
              open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
@@ -2153,7 +2156,9 @@ contains
 
   subroutine berry_get_tbh(tbh)
   !====================================================================!
-  !                                                                    !
+  !  Extracts k.p expansion coefficients using quasi-degenerate 
+  !  (Lowdin) perturbation theory, adapted to the Wannier formalism,
+  !  see Appendix in IAdJS19 for details  
   !====================================================================!
 
     ! Arguments
@@ -2182,7 +2187,8 @@ contains
     real(kind=dp), allocatable    :: eig_da(:,:)
     complex(kind=dp), allocatable :: D_h(:,:,:)
     complex(kind=dp), allocatable :: d_D_h(:,:,:,:)
-    complex(kind=dp), allocatable :: comm_HDa(:,:,:),comm_Hdb_Da(:,:,:,:),comm_HaDb(:,:,:,:),comm_HDaDb(:,:,:,:)
+    complex(kind=dp), allocatable :: comm_HDa(:,:,:),comm_Hdb_Da(:,:,:,:),&
+                                     comm_HaDb(:,:,:,:),comm_HDaDb(:,:,:,:)
 
     real(kind=dp)                 :: DeltaE_n, DeltaE_m
     integer                       :: i,if,a,b,c,bc,n,m,r,ifreq,istart,iend
@@ -2202,18 +2208,14 @@ contains
     allocate(comm_Hdb_Da(num_wann,num_wann,3,3))
     allocate(comm_HaDb(num_wann,num_wann,3,3))
     allocate(comm_HDaDb(num_wann,num_wann,3,3))
-   
-
 
     ! Gather W-gauge matrix objects !
 
     ! get Hamiltonian and its first and second derivatives
-    ! Note that below we calculate the UU matrix--> we have to use the same UU from here on for 
-    ! maintaining the gauge-covariance of the whole matrix element
     call wham_get_eig_UU_HH_AA_sc(tbh_kpoint,eig,UU,HH,HH_da,HH_dadb)
     ! get eigenvalues and their k-derivatives
     call wham_get_eig_deleig(tbh_kpoint,eig,eig_da,HH,HH_da,UU)
-!    ! get D_h (Eq. (24) WYSV06)
+    ! get D_h (Eq. (24) WYSV06)
     call wham_get_D_h_P_value(HH_da,UU,eig,D_h)
 
     ! rotate quantities from W to H gauge 
@@ -2228,7 +2230,7 @@ contains
     enddo
 
     ! compute and store commutators needed for later
-    ! we loop over all bands, we take care of TB bands later
+    ! we loop over all bands, we take care of k.p bands later
     ! first store full [H,Da] commutator
     do n=1,num_wann
      do m=1,num_wann     
@@ -2258,7 +2260,7 @@ contains
      enddo
     enddo   
 
-    ! loop on initial and final bands
+    ! loop on initial and final bands in k.p set (subset A in IAdJS19)
     do n=1,num_tbh_bands
       do m=1,num_tbh_bands
 
@@ -2274,10 +2276,10 @@ contains
           ! add contribution independent of other states
           tbh(n,m,3,a,b) = 0.5*(HH_dadb_bar(tbh_bands(n),tbh_bands(m),a,b) ) 
 
-          ! add contribution dependent on other states
+          ! add contribution dependent on other states (subset B in IAdJS19)
           do r = 1,num_wann
 
-           ! cycle for bands in the TB set
+           ! cycle for bands in the k.p set (subset A)
            break_loop = .false. 
            do i = 1,num_tbh_bands
             if (r==tbh_bands(i)) break_loop = .true.
@@ -2295,7 +2297,5 @@ contains
     enddo ! bands
 
   end subroutine berry_get_tbh   
-
-
 
 end module w90_berry
