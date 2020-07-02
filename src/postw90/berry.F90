@@ -37,7 +37,7 @@ module w90_berry
   private
 
   public :: berry_main, berry_get_imf_klist, berry_get_imfgh_klist, berry_get_sc_klist, &
-            berry_get_shc_klist, berry_get_tbh!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
+            berry_get_shc_klist, berry_get_kdotp!, berry_alpha_S, berry_alpha_beta_S, berry_beta_S
 
   ! Pseudovector <--> Antisymmetric tensor
   !
@@ -101,7 +101,7 @@ contains
       kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
       scissors_shift, num_valence_bands, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift, &
-      tbh_kpoint,num_tbh_bands,tbh_bands 
+      kdotp_kpoint,num_kdotp_bands,kdotp_bands 
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -121,8 +121,8 @@ contains
     ! shift current
     real(kind=dp), allocatable :: sc_k_list(:, :, :)
     real(kind=dp), allocatable :: sc_list(:, :, :)
-    ! tbh          
-    complex(kind=dp), allocatable :: tbh(:,:,:,:,:)
+    ! kdotp          
+    complex(kind=dp), allocatable :: kdotp(:,:,:,:,:)
     ! Complex optical conductivity, dividided into Hermitean and
     ! anti-Hermitean parts
     !
@@ -157,7 +157,7 @@ contains
                          file_unit
     character(len=120) :: file_name
     logical           :: eval_ahc, eval_morb, eval_kubo, not_scannable, eval_sc, eval_shc,&
-                         eval_tbh
+                         eval_kdotp
     logical           :: ladpt_kmesh
     logical           :: ladpt(nfermi)
 
@@ -177,13 +177,13 @@ contains
     eval_kubo = .false.
     eval_sc = .false.
     eval_shc = .false.
-    eval_tbh=.false.
+    eval_kdotp=.false.
     if (index(berry_task, 'ahc') > 0) eval_ahc = .true.
     if (index(berry_task, 'morb') > 0) eval_morb = .true.
     if (index(berry_task, 'kubo') > 0) eval_kubo = .true.
     if (index(berry_task, 'sc') > 0) eval_sc = .true.
     if (index(berry_task, 'shc') > 0) eval_shc = .true.
-    if(index(berry_task,'tbh')>0) eval_tbh=.true.
+    if(index(berry_task,'kdotp')>0) eval_kdotp=.true.
 
     ! Wannier matrix elements, allocations and initializations
     !
@@ -269,10 +269,10 @@ contains
       endif
     endif
 
-    if(eval_tbh) then
+    if(eval_kdotp) then
        call get_HH_R 
-       allocate(tbh(num_tbh_bands,num_tbh_bands,3,3,3))
-       tbh=cmplx_0
+       allocate(kdotp(num_kdotp_bands,num_kdotp_bands,3,3,3))
+       kdotp=cmplx_0
     endif
 
     if (on_root) then
@@ -311,7 +311,7 @@ contains
         endif
       endif
 
-      if(eval_tbh) write(stdout,'(/,3x,a)')&
+      if(eval_kdotp) write(stdout,'(/,3x,a)')&
             '* k.p expansion coefficients'
 
 
@@ -331,8 +331,8 @@ contains
 
     end if !on_root
 
-    if(eval_tbh) then
-      call berry_get_tbh(tbh)
+    if(eval_kdotp) then
+      call berry_get_kdotp(kdotp)
     end if
 
     ! Set up adaptive refinement mesh
@@ -1172,7 +1172,7 @@ contains
 
       endif
 
-       if(eval_tbh) then
+       if(eval_kdotp) then
        ! -----------------------------!
        ! k.p expansion coefficients
        ! -----------------------------!
@@ -1184,30 +1184,30 @@ contains
           write(stdout,'(1x,a)')&
                '----------------------------------------------------------'
              ! zeroth order in k
-             file_name= trim(seedname)//'-0-tbh.dat'
+             file_name= trim(seedname)//'-0-kdotp.dat'
              file_name=trim(file_name)
              file_unit=io_file_unit()
              write(stdout,'(/,3x,a)') '* '//file_name
              open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
-             write(file_unit,'(2E18.8E3)') tbh(:,:,1,1,1) 
+             write(file_unit,'(2E18.8E3)') kdotp(:,:,1,1,1) 
              close(file_unit)
 
              ! first order in k
-             file_name= trim(seedname)//'-1-tbh.dat'
+             file_name= trim(seedname)//'-1-kdotp.dat'
              write(stdout,'(/,3x,a)') '* '//file_name
              open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
              do i=1,3
-              write(file_unit,'(2E18.8E3)') tbh(:,:,2,i,1) 
+              write(file_unit,'(2E18.8E3)') kdotp(:,:,2,i,1) 
              end do 
              close(file_unit)
 
              ! second order in k
-             file_name= trim(seedname)//'-2-tbh.dat'
+             file_name= trim(seedname)//'-2-kdotp.dat'
              write(stdout,'(/,3x,a)') '* '//file_name
              open(file_unit,FILE=file_name,STATUS='UNKNOWN',FORM='FORMATTED')   
              do i=1,3
               do j=1,3
-               write(file_unit,'(2E18.8E3)') tbh(:,:,3,i,j) 
+               write(file_unit,'(2E18.8E3)') kdotp(:,:,3,i,j) 
               end do 
              end do 
              close(file_unit)
@@ -2154,7 +2154,7 @@ contains
 
   end subroutine berry_print_progress
 
-  subroutine berry_get_tbh(tbh)
+  subroutine berry_get_kdotp(kdotp)
   !====================================================================!
   !  Extracts k.p expansion coefficients using quasi-degenerate 
   !  (Lowdin) perturbation theory, adapted to the Wannier formalism,
@@ -2164,19 +2164,13 @@ contains
     ! Arguments
     !
     use w90_constants, only      : dp,cmplx_0,cmplx_i
-    use w90_utility, only        : utility_re_tr,utility_im_tr,utility_w0gauss,utility_w0gauss_vec
-    use w90_parameters, only     : num_wann,tbh_kpoint,num_tbh_bands,tbh_bands,sc_eta
-    use w90_postw90_common, only : pw90common_fourier_R_to_k_vec_dadb, &
-                                   pw90common_fourier_R_to_k_new_second_d,pw90common_get_occ, &
-                                   pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
-    use w90_wan_ham, only        : wham_get_eig_UU_HH_JJlist,wham_get_occ_mat_list,wham_get_D_h, &
-                                   wham_get_eig_UU_HH_AA_sc,wham_get_eig_deleig,wham_get_D_h_P_value,&
-                                   wham_get_eig_deleig_TB_conv,wham_get_eig_UU_HH_AA_sc_TB_conv
-    use w90_get_oper, only       : AA_R
-    use w90_utility, only        : utility_rotate,utility_zdotu
+    use w90_parameters, only     : num_wann,kdotp_kpoint,num_kdotp_bands,kdotp_bands
+    use w90_wan_ham, only        : wham_get_D_h,wham_get_eig_UU_HH_AA_sc,wham_get_eig_deleig, &
+                                   wham_get_D_h_P_value
+    use w90_utility, only        : utility_rotate
     ! Arguments
     !
-    complex(kind=dp), intent(out), dimension(:,:,:,:,:)     :: tbh      
+    complex(kind=dp), intent(out), dimension(:,:,:,:,:)     :: kdotp      
 
     
     complex(kind=dp), allocatable :: UU(:,:)
@@ -2186,9 +2180,6 @@ contains
     real(kind=dp), allocatable    :: eig(:)
     real(kind=dp), allocatable    :: eig_da(:,:)
     complex(kind=dp), allocatable :: D_h(:,:,:)
-    complex(kind=dp), allocatable :: d_D_h(:,:,:,:)
-    complex(kind=dp), allocatable :: comm_HDa(:,:,:),comm_Hdb_Da(:,:,:,:),&
-                                     comm_HaDb(:,:,:,:),comm_HDaDb(:,:,:,:)
 
     real(kind=dp)                 :: DeltaE_n, DeltaE_m
     integer                       :: i,if,a,b,c,bc,n,m,r,ifreq,istart,iend
@@ -2203,18 +2194,13 @@ contains
     allocate(eig(num_wann))
     allocate(eig_da(num_wann,3))
     allocate(D_h(num_wann,num_wann,3))
-    allocate(d_D_h(num_wann,num_wann,3,3))
-    allocate(comm_HDa(num_wann,num_wann,3))
-    allocate(comm_Hdb_Da(num_wann,num_wann,3,3))
-    allocate(comm_HaDb(num_wann,num_wann,3,3))
-    allocate(comm_HDaDb(num_wann,num_wann,3,3))
 
     ! Gather W-gauge matrix objects !
 
     ! get Hamiltonian and its first and second derivatives
-    call wham_get_eig_UU_HH_AA_sc(tbh_kpoint,eig,UU,HH,HH_da,HH_dadb)
+    call wham_get_eig_UU_HH_AA_sc(kdotp_kpoint,eig,UU,HH,HH_da,HH_dadb)
     ! get eigenvalues and their k-derivatives
-    call wham_get_eig_deleig(tbh_kpoint,eig,eig_da,HH,HH_da,UU)
+    call wham_get_eig_deleig(kdotp_kpoint,eig,eig_da,HH,HH_da,UU)
     ! get D_h (Eq. (24) WYSV06)
     call wham_get_D_h_P_value(HH_da,UU,eig,D_h)
 
@@ -2229,65 +2215,34 @@ contains
       enddo
     enddo
 
-    ! compute and store commutators needed for later
-    ! we loop over all bands, we take care of k.p bands later
-    ! first store full [H,Da] commutator
-    do n=1,num_wann
-     do m=1,num_wann     
-
-      do a=1,3
-       comm_HDa(n,m,a)   =   utility_zdotu(HH_bar(n,:),D_h(:,m,a)) &         
-                            -utility_zdotu(D_h(n,:,a),HH_bar(:,m))
-      enddo
-     enddo
-    enddo
-
-    ! store double spatial index commutators 
-    ! (one of them needs the commutator computed above)
-    ! loop 
-    do n=1,num_wann
-     do m=1,num_wann     
-      do a=1,3
-       do b=1,3
-        comm_HaDb(n,m,a,b)  =   utility_zdotu(HH_da_bar(n,:,a),D_h(:,m,b)) &         
-                               -utility_zdotu(D_h(n,:,b),HH_da_bar(:,m,a))
-        comm_HDaDb(n,m,a,b) =   utility_zdotu(comm_HDa(n,:,a),D_h(:,m,b)) &         
-                               -utility_zdotu(D_h(n,:,b),comm_HDa(:,m,a))
-        comm_Hdb_Da(n,m,a,b) =  utility_zdotu(HH_bar(n,:),d_D_h(:,m,a,b)) &         
-                               -utility_zdotu(d_D_h(n,:,a,b),HH_bar(:,m))
-       enddo
-      enddo
-     enddo
-    enddo   
-
     ! loop on initial and final bands in k.p set (subset A in IAdJS19)
-    do n=1,num_tbh_bands
-      do m=1,num_tbh_bands
+    do n=1,num_kdotp_bands
+      do m=1,num_kdotp_bands
 
         ! zeroth order term
-        if(n==m) tbh(n,m,1,1,1) = eig(tbh_bands(n))
+        if(n==m) kdotp(n,m,1,1,1) = eig(kdotp_bands(n))
         ! first order term
         do a = 1,3 
-         tbh(n,m,2,a,1) = HH_da_bar(tbh_bands(n),tbh_bands(m),a) 
+         kdotp(n,m,2,a,1) = HH_da_bar(kdotp_bands(n),kdotp_bands(m),a) 
         end do
         ! second order term
         do a = 1,3 
          do b = 1,3 
           ! add contribution independent of other states
-          tbh(n,m,3,a,b) = 0.5*(HH_dadb_bar(tbh_bands(n),tbh_bands(m),a,b) ) 
+          kdotp(n,m,3,a,b) = 0.5*(HH_dadb_bar(kdotp_bands(n),kdotp_bands(m),a,b) ) 
 
           ! add contribution dependent on other states (subset B in IAdJS19)
           do r = 1,num_wann
 
            ! cycle for bands in the k.p set (subset A)
            break_loop = .false. 
-           do i = 1,num_tbh_bands
-            if (r==tbh_bands(i)) break_loop = .true.
+           do i = 1,num_kdotp_bands
+            if (r==kdotp_bands(i)) break_loop = .true.
            end do
            if (break_loop) cycle
 
-            tbh(n,m,3,a,b) = tbh(n,m,3,a,b) + 0.5*HH_da_bar(tbh_bands(n),r,a)*HH_da_bar(r,tbh_bands(m),b) &
-                                                 *((eig(tbh_bands(n))-eig(r))**(-1) + (eig(tbh_bands(m))-eig(r))**(-1))
+            kdotp(n,m,3,a,b) = kdotp(n,m,3,a,b) + 0.5*HH_da_bar(kdotp_bands(n),r,a)*HH_da_bar(r,kdotp_bands(m),b) &
+                                                 *((eig(kdotp_bands(n))-eig(r))**(-1) + (eig(kdotp_bands(m))-eig(r))**(-1))
 
           end do                    
          end do
@@ -2296,6 +2251,6 @@ contains
       enddo ! bands
     enddo ! bands
 
-  end subroutine berry_get_tbh   
+  end subroutine berry_get_kdotp   
 
 end module w90_berry
