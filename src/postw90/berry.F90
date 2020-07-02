@@ -24,7 +24,8 @@ module w90_berry
   !! *  LVTS12 = PRB 85, 014435 (2012)  (orbital magnetization and AHC)
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
   !! *  IATS18 = PRB 97, 245143 (2018)  (nonlinear shift current)
-  !! *  IAdJS19= arxiv1910.06172 (2019) (quasi-degenerate k.p perturbation)
+  !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
+  !! *  IAdJS19 = arXiv:1910.06172 (2019) (quasi-degenerate k.p)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
