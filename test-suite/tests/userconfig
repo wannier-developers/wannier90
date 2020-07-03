@@ -156,8 +156,8 @@ tolerance = (  (1.0e-6, 5.0e-6, 'energy'),
 [POSTW90_KDOTP_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_kdotp_dat.parse
-tolerance = (  (1.0e-4, 1.0e+2, 'Real part'),
-               (1.0e-4, 1.0e+2, 'Imag part'))
+tolerance = (  (1.0e-4, 1.0e+2, 'real_part'),
+               (1.0e-4, 1.0e+2, 'imag_part'))
 
 
 
