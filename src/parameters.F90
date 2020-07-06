@@ -213,7 +213,7 @@ module w90_parameters
 !  logical,           public, save :: sigma_abc_onlyorb
    logical, public, save :: transl_inv
    real(kind=dp), public, save :: kdotp_kpoint(3)
-   integer, public, save :: num_kdotp_bands
+   integer, public, save :: kdotp_num_bands
    integer, allocatable, public, save :: kdotp_bands(:)
 
    ! spin Hall conductivity
@@ -2020,13 +2020,13 @@ contains
       kdotp_kpoint(:) = 0.0_dp
       call param_get_keyword_vector('kdotp_kpoint', found, 3, r_value=kdotp_kpoint)
 
-      num_kdotp_bands = 0
-      call param_get_keyword('num_kdotp_bands', found, i_value=num_kdotp_bands)
+      kdotp_num_bands = 0
+      call param_get_keyword('kdotp_num_bands', found, i_value=kdotp_num_bands)
       if (found) then
-         if (num_kdotp_bands < 1) call io_error('Error: problem reading num_kdotp_bands')
-         allocate (kdotp_bands(num_kdotp_bands), stat=ierr)
-         if (ierr /= 0) call io_error('Error allocating num_kdotp_bands in param_read')
-         call param_get_range_vector('kdotp_bands', found, num_kdotp_bands, .false., kdotp_bands)
+         if (kdotp_num_bands < 1) call io_error('Error: problem reading kdotp_num_bands')
+         allocate (kdotp_bands(kdotp_num_bands), stat=ierr)
+         if (ierr /= 0) call io_error('Error allocating kdotp_num_bands in param_read')
+         call param_get_range_vector('kdotp_bands', found, kdotp_num_bands, .false., kdotp_bands)
          if (any(kdotp_bands < 1)) &
             call io_error('Error: kdotp_bands must contain positive numbers')
       end if
@@ -3274,9 +3274,9 @@ contains
          if (index(berry_task, 'kdotp') > 0) then
             write (stdout, '(1x,a46,10x,f8.3,1x,f8.3,1xf8.3,1x,13x,a1)') '|  Chosen k-point kdotp_kpoint                 :', &
                kdotp_kpoint(1), kdotp_kpoint(2), kdotp_kpoint(3), '|'
-            write (stdout, '(1x,a46,10x,i4,13x,a1)') '|  num_kdotp_bands                             :', num_kdotp_bands, '|'
+            write (stdout, '(1x,a46,10x,i4,13x,a1)') '|  kdotp_num_bands                             :', kdotp_num_bands, '|'
             write (stdout, '(1x,a46,10x,*(i4))') '|  kdotp_bands                                 :', &
-               (kdotp_bands(i), i=1, num_kdotp_bands)
+               (kdotp_bands(i), i=1, kdotp_num_bands)
          end if
          if (kubo_adpt_smr .eqv. adpt_smr .and. kubo_adpt_smr_fac == adpt_smr_fac .and. kubo_adpt_smr_max == adpt_smr_max &
              .and. kubo_smr_fixed_en_width == smr_fixed_en_width .and. smr_index == kubo_smr_index) then

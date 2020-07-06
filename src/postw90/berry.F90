@@ -102,7 +102,7 @@ contains
                                 kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
                                 scissors_shift, num_valence_bands, &
                                 shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift, &
-                                kdotp_kpoint, num_kdotp_bands, kdotp_bands
+                                kdotp_kpoint, kdotp_num_bands, kdotp_bands
       use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
                               get_SS_R, get_SHC_R
 
@@ -272,7 +272,7 @@ contains
 
       if (eval_kdotp) then
          call get_HH_R
-         allocate (kdotp(num_kdotp_bands, num_kdotp_bands, 3, 3, 3))
+         allocate (kdotp(kdotp_num_bands, kdotp_num_bands, 3, 3, 3))
          kdotp = cmplx_0
       endif
 
@@ -2163,7 +2163,7 @@ contains
       ! Arguments
       !
       use w90_constants, only: dp, cmplx_0, cmplx_i
-      use w90_parameters, only: num_wann, kdotp_kpoint, num_kdotp_bands, kdotp_bands
+      use w90_parameters, only: num_wann, kdotp_kpoint, kdotp_num_bands, kdotp_bands
       use w90_wan_ham, only: wham_get_D_h, wham_get_eig_UU_HH_AA_sc, wham_get_eig_deleig, &
                              wham_get_D_h_P_value
       use w90_utility, only: utility_rotate
@@ -2214,8 +2214,8 @@ contains
       enddo
 
       ! loop on initial and final bands in k.p set (subset A in IAdJS19)
-      do n = 1, num_kdotp_bands
-         do m = 1, num_kdotp_bands
+      do n = 1, kdotp_num_bands
+         do m = 1, kdotp_num_bands
 
             ! zeroth order term
             if (n == m) kdotp(n, m, 1, 1, 1) = eig(kdotp_bands(n))
@@ -2234,7 +2234,7 @@ contains
 
                      ! cycle for bands in the k.p set (subset A)
                      break_loop = .false.
-                     do i = 1, num_kdotp_bands
+                     do i = 1, kdotp_num_bands
                         if (r == kdotp_bands(i)) break_loop = .true.
                      end do
                      if (break_loop) cycle
