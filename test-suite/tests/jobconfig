@@ -386,7 +386,7 @@ output = H3S.wout
 [testpostw90_gaas_kdotp_2/]
 program = POSTW90_KDOTP_OK
 inputs_args = ('gaas.win', '')
-output = gaas-2-kdotp.dat
+output = gaas-kdotp_2.dat
 
 [categories]
 wannier_only = testw90_*

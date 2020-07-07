@@ -1184,7 +1184,7 @@ contains
             write (stdout, '(1x,a)') &
                '----------------------------------------------------------'
             ! zeroth order in k
-            file_name = trim(seedname)//'-0-kdotp.dat'
+            file_name = trim(seedname)//'-kdotp_0.dat'
             file_name = trim(file_name)
             file_unit = io_file_unit()
             write (stdout, '(/,3x,a)') '* '//file_name
@@ -1193,7 +1193,7 @@ contains
             close (file_unit)
 
             ! first order in k
-            file_name = trim(seedname)//'-1-kdotp.dat'
+            file_name = trim(seedname)//'-kdotp_1.dat'
             write (stdout, '(/,3x,a)') '* '//file_name
             open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
             do i = 1, 3
@@ -1202,7 +1202,7 @@ contains
             close (file_unit)
 
             ! second order in k
-            file_name = trim(seedname)//'-2-kdotp.dat'
+            file_name = trim(seedname)//'-kdotp_2.dat'
             write (stdout, '(/,3x,a)') '* '//file_name
             open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
             do i = 1, 3
