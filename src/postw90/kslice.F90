@@ -48,7 +48,7 @@ contains
     use w90_io, only: io_error, io_file_unit, seedname, &
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_parameters, only: num_wann, kslice, kslice_task, kslice_2dkmesh, &
       kslice_corner, kslice_b1, kslice_b2, &
       kslice_fermi_lines_colour, recip_lattice, &
@@ -230,7 +230,7 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
           Delta_k = max(b1mod/kslice_2dkmesh(1), b2mod/kslice_2dkmesh(2))
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+          call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
           call utility_diagonalize(HH, num_wann, eig, UU)
         endif
 

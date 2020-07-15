@@ -146,7 +146,8 @@ contains
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_parameters, only: num_wann, spin_axis_polar, &
       spin_axis_azimuth
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+      pw90common_fourier_R_to_k_vec
     use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
@@ -170,12 +171,10 @@ contains
     allocate (SS(num_wann, num_wann, 3))
     allocate (SS_n(num_wann, num_wann))
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
     call utility_diagonalize(HH, num_wann, eig, UU)
 
-    do is = 1, 3
-      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0)
-    enddo
+    call pw90common_fourier_R_to_k_vec(kpt, SS_R, OO_true=SS)
 
     ! Unit vector along the magnetization direction
     !
@@ -203,7 +202,8 @@ contains
     use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_parameters, only: num_wann
-    use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+      pw90common_fourier_R_to_k_vec, pw90common_get_occ
     use w90_get_oper, only: HH_R, SS_R
     ! Arguments
     !
@@ -227,13 +227,13 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
     call utility_diagonalize(HH, num_wann, eig, UU)
     call pw90common_get_occ(eig, occ, ef)
 
     spn_k(1:3) = 0.0_dp
+    call pw90common_fourier_R_to_k_vec(kpt, SS_R, OO_true=SS)
     do is = 1, 3
-      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0)
       spn_nk(:, is) = aimag(cmplx_i*utility_rotate_diag(SS(:, :, is), UU, num_wann))
       do i = 1, num_wann
         spn_k(is) = spn_k(is) + occ(i)*spn_nk(i, is)
@@ -254,7 +254,8 @@ contains
     use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_parameters, only: num_wann
-    use w90_postw90_common, only: pw90common_fourier_R_to_k
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+      pw90common_fourier_R_to_k_vec
     use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
@@ -277,11 +278,11 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
     call utility_diagonalize(HH, num_wann, eig, UU)
 
+    call pw90common_fourier_R_to_k_vec(kpt, SS_R, OO_true=SS)
     do i = 1, 3
-      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, i), SS(:, :, i), 0)
       S(:, i) = real(utility_rotate_diag(SS(:, :, i), UU, num_wann), dp)
     enddo
 
