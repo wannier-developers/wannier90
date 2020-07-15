@@ -39,7 +39,7 @@ def parse(fname):
             retdict['dos'].append(float(pieces[1]))
         else:
             raise ValueError("Wrong line length ({}, instead of 2); line content: {}".format(
-                len(pieces)), l)
+                len(pieces), l))
 
 
     retdict = dict(retdict)
