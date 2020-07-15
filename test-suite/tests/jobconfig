@@ -274,6 +274,12 @@ program = POSTW90_WPOUT_OK
 inputs_args = ('Fe.win', '')
 output = Fe.wpout
 
+# Test of spin density of states for bcc iron
+[testpostw90_fe_dos_spin/]
+program = POSTW90_DOS_OK
+inputs_args = ('Fe.win', '')
+output = Fe-dos.dat
+
 # testpostw90_te_gyrotropic
 [testpostw90_te_gyrotropic/]
 program = POSTW90_GYRO_OK
