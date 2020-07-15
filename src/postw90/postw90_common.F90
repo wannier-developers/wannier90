@@ -1390,48 +1390,66 @@ contains
     !! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3
     !==========================================================================!
 
-    use w90_constants, only: dp
+    use w90_constants, only: eps8, dp
     use w90_io, only: stdout, io_error, io_stopwatch
-    use w90_parameters, only: mp_grid, real_metric, iprint, timing_level
+    use w90_parameters, only: iprint, mp_grid, real_metric, timing_level, &
+      ws_search_size, ws_distance_tol
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
     ! nrpts             number of Wigner-Seitz grid points
 
+    implicit none
+
     logical, intent(in) :: count_pts
 
     integer       :: ndiff(3)
-    real(kind=dp) :: dist(125), tot, dist_min
+    real(kind=dp) :: tot, dist_min
+    real(kind=dp), allocatable :: dist(:)
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
+    integer       :: ierr, dist_dim
 
     if (timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 1)
+
+    dist_dim = 1
+    do i = 1, 3
+      dist_dim = dist_dim*((ws_search_size(i) + 1)*2 + 1)
+    end do
+    allocate (dist(dist_dim), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating dist in wigner_seitz')
 
     ! The Wannier functions live in a periodic supercell of the real space unit
     ! cell. This supercell is mp_grid(i) unit cells long along each primitive
     ! translation vector a_i of the unit cell
     !
-    ! We loop over grid points r on a cell that is approx. 8 times
-    ! larger than this "primitive supercell."
+    ! We loop over grid points r on a unit cell that is (2*ws_search_size+1)**3 times
+    ! larger than this primitive supercell.
     !
     ! One of these points is in the W-S supercell if it is closer to R=0 than any
     ! of the other points R (where R are the translation vectors of the
-    ! supercell). In practice it is sufficient to inspect only 125 R-points.
+    ! supercell).
 
     ! In the end, nrpts contains the total number of grid points that have been
     ! found in the Wigner-Seitz cell
 
     nrpts = 0
-    do n1 = -mp_grid(1), mp_grid(1)
-      do n2 = -mp_grid(2), mp_grid(2)
-        do n3 = -mp_grid(3), mp_grid(3)
-          ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=0,
-          ! or icnt=63
+    ! Loop over the lattice vectors of the primitive cell
+    ! that live in a supercell which is (2*ws_search_size+1)**2
+    ! larger than the Born-von Karman supercell.
+    ! We need to find which among these live in the Wigner-Seitz cell
+    do n1 = -ws_search_size(1)*mp_grid(1), ws_search_size(1)*mp_grid(1)
+      do n2 = -ws_search_size(2)*mp_grid(2), ws_search_size(2)*mp_grid(2)
+        do n3 = -ws_search_size(3)*mp_grid(3), ws_search_size(3)*mp_grid(3)
+          ! Loop over the lattice vectors R of the Born-von Karman supercell
+          ! that contains all the points of the previous loop.
+          ! There are (2*(ws_search_size+1)+1)**3 points R. R=0 corresponds to
+          ! i1=i2=i3=0, or icnt=((2*(ws_search_size+1)+1)**3 + 1)/2
           icnt = 0
-          do i1 = -2, 2
-            do i2 = -2, 2
-              do i3 = -2, 2
+          do i1 = -ws_search_size(1) - 1, ws_search_size(1) + 1
+            do i2 = -ws_search_size(2) - 1, ws_search_size(2) + 1
+              do i3 = -ws_search_size(3) - 1, ws_search_size(3) + 1
                 icnt = icnt + 1
                 ! Calculate distance squared |r-R|^2
                 ndiff(1) = n1 - i1*mp_grid(1)
@@ -1448,12 +1466,12 @@ contains
             enddo
           enddo
           dist_min = minval(dist)
-          if (abs(dist(63) - dist_min) .lt. 1.e-7_dp) then
+          if (abs(dist((dist_dim + 1)/2) - dist_min) .lt. ws_distance_tol**2) then
             nrpts = nrpts + 1
             if (.not. count_pts) then
               ndegen(nrpts) = 0
-              do i = 1, 125
-                if (abs(dist(i) - dist_min) .lt. 1.e-7_dp) &
+              do i = 1, dist_dim
+                if (abs(dist(i) - dist_min) .lt. ws_distance_tol**2) &
                   ndegen(nrpts) = ndegen(nrpts) + 1
               end do
               irvec(1, nrpts) = n1
@@ -1473,11 +1491,20 @@ contains
       !n1
     enddo
     !
+    deallocate (dist, stat=ierr)
+    if (ierr /= 0) call io_error('Error in deallocating dist wigner_seitz')
+
     if (count_pts) then
       if (timing_level > 1 .and. on_root) &
         call io_stopwatch('postw90_common: wigner_seitz', 2)
       return
     end if
+
+    ! Check the "sum rule"
+    tot = 0.0_dp
+    do i = 1, nrpts
+      tot = tot + 1.0_dp/real(ndegen(i), dp)
+    enddo
 
     if (iprint >= 3 .and. on_root) then
       write (stdout, '(1x,i4,a,/)') nrpts, &
@@ -1486,18 +1513,13 @@ contains
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1, ir), &
           irvec(2, ir), irvec(3, ir), '  degeneracy: ', ndegen(ir)
       enddo
+      write (stdout, '(1x,a,f12.3)') ' tot = ', tot
+      write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     endif
-    ! Check the "sum rule"
-    tot = 0.0_dp
-    do ir = 1, nrpts
-      !
-      ! Corrects weights in Fourier sums for R-vectors on the boundary of the
-      ! W-S supercell
-      !
-      tot = tot + 1.0_dp/real(ndegen(ir), dp)
-    enddo
-    if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > 1.e-8_dp) &
+    if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > eps8) then
       call io_error('ERROR in wigner_seitz: error in finding Wigner-Seitz points')
+
+    endif
 
     if (timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 2)

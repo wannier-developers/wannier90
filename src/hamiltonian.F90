@@ -598,7 +598,10 @@ contains
     !
     deallocate (dist, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating dist hamiltonian_wigner_seitz')
-    if (count_pts) return
+    if (count_pts) then
+      if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
+      return
+    end if
 
     ! Check the "sum rule"
     tot = 0.0_dp

@@ -7,7 +7,7 @@ The {\tt gyrotropic} module of {\tt postw90} is called by setting {\tt
 {\tt gyrotropic\_task}. The module computes the quantities, studied in 
  \cite{tsirkin-arxiv17}, where more details may be found.
 
-\section{{\tt berry\_task=-d0}: the Berry curvature dipole  }
+\section{{\tt gyrotropic\_task=-d0}: the Berry curvature dipole  }
 
 The traceless dimensionless tensor
 \begin{equation}
@@ -19,7 +19,7 @@ D_{ab}=\int\dk\sum_n
 \end{equation}
 
 
-\section{{\tt berry\_task=-dw}: the finite-frequency generalization of the Berry curvature dipole  }
+\section{{\tt gyrotropic\_task=-dw}: the finite-frequency generalization of the Berry curvature dipole  }
 
 \begin{equation}
 \label{eq:D-tilde}
@@ -43,7 +43,7 @@ Contrary to the Berry
   generally nonzero. As a result, $\wt D(\ww)$ 
 can have a nonzero trace at finite frequencies, $\tilde{D}_\|\neq-2\tilde{D}_\perp$ in Te.
 
-\section{{\tt berry\_task=-C}: the ohmic  conductivity }
+\section{{\tt gyrotropic\_task=-C}: the ohmic  conductivity }
 
 In the constant relaxation-time
 approximation  the ohmic conductivity is expressed as
@@ -59,7 +59,7 @@ a positive quantity with
 units of surface current density (A/cm).
 
 
-\section{{\tt berry\_task=-K}: the kinetic magnetoelectric effect (kME) }
+\section{{\tt gyrotropic\_task=-K}: the kinetic magnetoelectric effect (kME) }
 
 A microscopic theory of the intrinsic kME effect in bulk crystals was
 recently developed~\cite{yoda-sr15,zhong-prl16}.  
@@ -88,11 +88,11 @@ m^{\rm spin}_{\kk n}&=&-\frac{1}{2}g_s\mu_{\rm B} \me{\psi_{\kk
 %
 where $g_s\approx 2$ and we chose $e>0$. 
 
-\section{{\tt berry\_task=-dos}: the density of states }
+\section{{\tt gyrotropic\_task=-dos}: the density of states }
 
 The density of states is calculated with the same width and type of smearing, as the other properties of the {\tt gyrotropic} module
 
-\section{{\tt berry\_task=-noa}: the interband contributionto the natural optical activity }
+\section{{\tt gyrotropic\_task=-noa}: the interband contributionto the natural optical activity }
 
 Natural optical rotatory power is given by \cite{ivchenko-spss75}
 %
@@ -154,7 +154,7 @@ matrix. Both operations can be carried out efficiently in a
 Wannier-function basis following Ref.~\cite{yates-prb07}.
 
 
-\section{{\tt berry\_task=-spin}: compute also the spin component of NOA and KME }
+\section{{\tt gyrotropic\_task=-spin}: compute also the spin component of NOA and KME }
 
 Unless this task is specified, only the orbital contributions are calcuated in NOA and KME, thus contributions from \eqs{m-spin}{B-ac-spin} are omitted.
 
