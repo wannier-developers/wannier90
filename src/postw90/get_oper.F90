@@ -31,6 +31,9 @@ module w90_get_oper
   complex(kind=dp), allocatable, save :: HH_R(:, :, :) !  <0n|r|Rm>
   !! $$\langle 0n | H | Rm \rangle$$
 
+  complex(kind=dp), allocatable, save :: HH_R_ws_opt(:, :, :) !  <0n|r|Rm>
+  !! $$\langle 0n | H | Rm \rangle$$
+
   complex(kind=dp), allocatable, save :: AA_R(:, :, :, :) ! <0n|r|Rm>
   !! $$\langle 0n |  \hat{r} | Rm \rangle$$
 
@@ -70,6 +73,7 @@ contains
     !
     !======================================================
 
+    use w90_comms, only: on_root, comms_bcast
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, stdout, io_stopwatch, &
       io_file_unit, seedname
@@ -77,12 +81,13 @@ contains
       eigval, u_matrix, have_disentangled, &
       timing_level, scissors_shift, &
       num_valence_bands, effective_model, &
-      real_lattice
-    use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
-    use w90_comms, only: on_root, comms_bcast
+      real_lattice, use_ws_distance
+    use w90_ws_distance, only: wdist_ndeg
+    use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, &
+      crvec, nrpts_pw90, irvec_pw90, ir_ind_ws_to_pw90
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
-                                     ir, io, idum, ivdum(3), ivdum_old(3)
+                                     ir, jr, io, idum, ideg, ivdum(3), ivdum_old(3)
     integer, allocatable          :: num_states(:)
     real(kind=dp)                 :: rdum_real, rdum_imag
     complex(kind=dp), allocatable :: HH_q(:, :, :)
@@ -235,6 +240,32 @@ contains
       sciss_R = sciss_R*scissors_shift
       HH_R = HH_R + sciss_R
     endif
+
+    ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+
+    allocate (HH_R_ws_opt(num_wann, num_wann, nrpts_pw90))
+    HH_R_ws_opt = cmplx_0
+
+    if (use_ws_distance) then
+
+      do ir = 1, nrpts
+        do j = 1, num_wann
+          do i = 1, num_wann
+            do ideg = 1, wdist_ndeg(i, j, ir)
+              jr = ir_ind_ws_to_pw90(ideg, i, j, ir)
+              HH_R_ws_opt(i, j, jr) = HH_R_ws_opt(i, j, jr) &
+                                      + HH_R(i, j, ir)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+            enddo
+          enddo
+        enddo
+      enddo
+
+    else ! .not. use_ws_distance
+      ! Note that nrpts_pw90 == nrpts if use_ws_distance == .false.
+      do ir = 1, nrpts
+        HH_R_ws_opt(:, :, ir) = HH_R(:, :, ir)/real(ndegen(ir), dp)
+      enddo
+    endif ! use_ws_distance
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
     return

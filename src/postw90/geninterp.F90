@@ -26,10 +26,10 @@ module w90_geninterp
   use w90_parameters, only: geninterp_alsofirstder, num_wann, recip_lattice, real_lattice, &
     timing_level, geninterp_single_file
   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, io_stopwatch
-  use w90_get_oper, only: get_HH_R, HH_R
+  use w90_get_oper, only: get_HH_R, HH_R_ws_opt
   use w90_comms
   use w90_utility, only: utility_diagonalize
-  use w90_postw90_common, only: pw90common_fourier_R_to_k_new
+  use w90_postw90_common, only: pw90common_fourier_R_to_k_new_ws_opt
   use w90_wan_ham, only: wham_get_eig_deleig
   use w90_io, only: io_date
   implicit none
@@ -233,7 +233,7 @@ contains
       if (geninterp_alsofirstder) then
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU)
       else
-        call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
+        call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU)
       end if
     end do

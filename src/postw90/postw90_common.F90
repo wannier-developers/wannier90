@@ -37,6 +37,8 @@ module w90_postw90_common
   public :: pw90common_kmesh_spacing
   public :: pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv, &
             pw90common_fourier_R_to_k_vec_dadb, pw90common_fourier_R_to_k_vec_dadb_TB_conv
+  public :: nrpts_pw90, irvec_pw90, crvec_pw90, ir_ind_ws_to_pw90
+  public :: pw90common_fourier_R_to_k_new_ws_opt
 
 ! AAM PROBABLY REMOVE THIS
   ! This 'save' statement could probably be ommited, since this module
@@ -64,6 +66,11 @@ module w90_postw90_common
   integer, allocatable       :: ndegen(:)
   integer                    :: nrpts
   integer                    :: rpt_origin
+
+  integer, allocatable       :: ir_ind_ws_to_pw90(:, :, :, :)
+  integer, allocatable       :: irvec_pw90(:, :)
+  real(kind=dp), allocatable :: crvec_pw90(:, :)
+  integer                    :: nrpts_pw90
 
   integer                       :: max_int_kpts_on_node, num_int_kpts
   integer, allocatable          :: num_int_kpts_on_node(:)
@@ -139,9 +146,12 @@ contains
         ! Note that 'real_lattice' stores the lattice vectors as *rows*
         crvec(:, ir) = matmul(transpose(real_lattice), real(irvec(:, ir), dp))
       end do
-    endif
 
-    if (use_ws_distance .and. (.not. effective_model)) CALL ws_translate_dist(nrpts, irvec)
+      if (use_ws_distance) call ws_translate_dist(nrpts, irvec)
+
+      call wigner_seitz_opt_setup
+
+    endif
 
     return
 
@@ -833,6 +843,63 @@ contains
   end subroutine pw90common_fourier_R_to_k_new
 
   !=========================================================!
+  subroutine pw90common_fourier_R_to_k_new_ws_opt(kpt, OO_R, OO, OO_dx, OO_dy, OO_dz)
+    !=======================================================!
+    !                                                       !
+    !! For OO:
+    !! $$O_{ij}(k) = \sum_R e^{+ik.R}.O_{ij}(R)$$
+    !! For $$OO_{dx,dy,dz}$$:
+    !! $$\sum_R [i.R_{dx,dy,dz}.e^{+ik.R}.O_{ij}(R)]$$
+    !! where R_{x,y,z} are the Cartesian components of R
+    !                                                       !
+    !=======================================================!
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_io, only: io_stopwatch
+    use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, use_ws_distance
+    use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg
+
+    implicit none
+
+    ! Arguments
+    !
+    real(kind=dp)                                              :: kpt(3)
+    complex(kind=dp), dimension(:, :, :), intent(in)           :: OO_R
+    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO
+    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dx
+    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dy
+    complex(kind=dp), optional, dimension(:, :), intent(out)   :: OO_dz
+
+    integer          :: ir, i, j, ideg
+    real(kind=dp)    :: rdotk
+    complex(kind=dp) :: phase_fac
+
+    if (timing_level > 2 .and. on_root) call io_stopwatch('fourier: R_to_k_new_opt', 1)
+
+    if (present(OO)) OO = cmplx_0
+    if (present(OO_dx)) OO_dx = cmplx_0
+    if (present(OO_dy)) OO_dy = cmplx_0
+    if (present(OO_dz)) OO_dz = cmplx_0
+    do ir = 1, nrpts_pw90
+      rdotk = twopi*dot_product(kpt(:), real(irvec_pw90(:, ir), dp))
+      phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)
+      if (present(OO)) OO(:, :) = OO(:, :) + phase_fac*OO_R(:, :, ir)
+      if (present(OO_dx)) then
+        OO_dx(:, :) = OO_dx(:, :) + cmplx_i*crvec_pw90(1, ir)*phase_fac*OO_R(:, :, ir)
+      endif
+      if (present(OO_dy)) then
+        OO_dy(:, :) = OO_dy(:, :) + cmplx_i*crvec_pw90(2, ir)*phase_fac*OO_R(:, :, ir)
+      endif
+      if (present(OO_dz)) then
+        OO_dz(:, :) = OO_dz(:, :) + cmplx_i*crvec_pw90(3, ir)*phase_fac*OO_R(:, :, ir)
+      endif
+    enddo
+
+    if (timing_level > 2 .and. on_root) call io_stopwatch('fourier: R_to_k_new_opt', 2)
+
+  end subroutine pw90common_fourier_R_to_k_new_ws_opt
+
+  !=========================================================!
   subroutine pw90common_fourier_R_to_k_new_second_d(kpt, OO_R, OO, OO_da, OO_dadb)
     !=======================================================!
     !                                                       !
@@ -1522,5 +1589,115 @@ contains
 
     return
   end subroutine wigner_seitz
+
+  !=========================================================!
+  subroutine wigner_seitz_opt_setup()
+    !==========================================================================
+    !
+    !! If use_ws_distance = true, get list of all R vectors that appear in
+    !! irdist_ws and write them to irvec_pw90. Set the index map ir_ind_ws_to_pw90
+    !!
+    !! If use_ws_distance = false, copy irvec to irvec_pw90.
+    !
+    !==========================================================================
+
+    use w90_constants, only: dp
+    use w90_io, only: io_error
+    use w90_parameters, only: real_lattice, use_ws_distance, num_wann
+    use w90_ws_distance, only: wdist_ndeg, irdist_ws
+
+    implicit none
+
+    logical :: found
+    integer :: i, j, ideg, ir, jr, ierr, nrpts_found, max_ndeg, ivdum(3)
+    integer, allocatable :: irvec_found(:, :), irvec_temp(:, :)
+
+    if (use_ws_distance) then
+
+      max_ndeg = maxval(wdist_ndeg)
+      allocate (ir_ind_ws_to_pw90(max_ndeg, num_wann, num_wann, nrpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error in allocating ir_ind_ws_to_pw90 in wigner_seitz_opt_setup')
+      ir_ind_ws_to_pw90 = -1
+
+      ! find the set of R vectors from irdist_ws, removing duplicates
+      nrpts_found = 0
+      do ir = 1, nrpts
+        do j = 1, num_wann
+          do i = 1, num_wann
+            do ideg = 1, wdist_ndeg(i, j, ir)
+              ivdum = irdist_ws(:, ideg, i, j, ir)
+
+              if (nrpts_found == 0) then
+                nrpts_found = 1
+                allocate (irvec_found(3, 1), stat=ierr)
+                if (ierr /= 0) call io_error('Error in allocating irvec_found in wigner_seitz_opt_setup')
+                irvec_found(:, 1) = ivdum
+
+                ir_ind_ws_to_pw90(ideg, i, j, ir) = 1
+
+              else
+                ! find if ivdum is already found
+                found = .false.
+                do jr = 1, nrpts_found
+                  if (all(ivdum == irvec_found(:, jr))) then
+                    ir_ind_ws_to_pw90(ideg, i, j, ir) = jr
+                    found = .true.
+                    exit
+                  endif
+                enddo
+
+                ! if not found, add ivdum to irvec_found
+                if (.not. found) then
+
+                  ! copy irvec_found to irvec_temp
+                  allocate (irvec_temp(3, nrpts_found), stat=ierr)
+                  if (ierr /= 0) call io_error('Error in allocating irvec_temp in wigner_seitz_opt_setup')
+                  irvec_temp = irvec_found
+                  deallocate (irvec_found, stat=ierr)
+                  if (ierr /= 0) call io_error('Error in deallocating irvec_found in wigner_seitz_opt_setup')
+
+                  allocate (irvec_found(3, nrpts_found + 1), stat=ierr)
+                  if (ierr /= 0) call io_error('Error in allocating irvec_found in wigner_seitz_opt_setup')
+                  irvec_found(:, 1:nrpts_found) = irvec_temp
+                  irvec_found(:, nrpts_found + 1) = ivdum
+                  deallocate (irvec_temp, stat=ierr)
+                  if (ierr /= 0) call io_error('Error in deallocating irvec_temp in wigner_seitz_opt_setup')
+
+                  nrpts_found = nrpts_found + 1
+
+                  ir_ind_ws_to_pw90(ideg, i, j, ir) = nrpts_found
+
+                endif ! found
+              endif ! nrpts_found == 0
+
+            enddo
+          enddo
+        enddo
+      enddo
+
+      nrpts_pw90 = nrpts_found
+
+      allocate (irvec_pw90(3, nrpts_pw90), stat=ierr)
+      if (ierr /= 0) call io_error('Error in allocating irvec_pw90 in wigner_seitz_opt_setup')
+      allocate (crvec_pw90(3, nrpts_pw90), stat=ierr)
+      if (ierr /= 0) call io_error('Error in allocating crvec_pw90 in wigner_seitz_opt_setup')
+
+      irvec_pw90 = irvec_found
+      do ir = 1, nrpts_pw90
+        crvec_pw90(:, ir) = matmul(transpose(real_lattice), real(irvec_pw90(:, ir), dp))
+      enddo
+
+    else ! .not. use_ws_distance
+      allocate (irvec_pw90(3, nrpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error in allocating irvec_pw90 in wigner_seitz_opt_setup')
+      allocate (crvec_pw90(3, nrpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error in allocating crvec_pw90 in wigner_seitz_opt_setup')
+
+      irvec_pw90 = irvec
+      crvec_pw90 = crvec
+      nrpts_pw90 = nrpts
+    endif ! use_ws_distance
+
+  end subroutine wigner_seitz_opt_setup
 
 end module w90_postw90_common
