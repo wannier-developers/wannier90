@@ -20,8 +20,8 @@ module w90_get_oper
 !! (e.g., quantum-espresso)
 !===========================================================
 
-! Wigner-Seitz optimized: HH_R, SS_R, SR_R, SHR_R, SH_R
-! Not optimized: AA_R, BB_R, CC_R, FF_R
+! Wigner-Seitz optimized: HH_R, SS_R, SR_R, SHR_R, SH_R, FF_R, CC_R
+! Not optimized: AA_R, BB_R
 
   use w90_constants, only: dp
 
@@ -105,6 +105,7 @@ contains
       return
     end if
 
+    allocate (HH_R(num_wann, num_wann, nrpts_pw90))
     allocate (HH_R_temp(num_wann, num_wann, nrpts))
 
     ! Real-space Hamiltonian H(R) is read from file
@@ -249,7 +250,6 @@ contains
     endif
 
     ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
-    allocate (HH_R(num_wann, num_wann, nrpts_pw90))
     call operator_wigner_setup(HH_R_temp, HH_R)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
@@ -670,7 +670,7 @@ contains
       num_bands, ndimwin, wb, bk, &
       have_disentangled, timing_level, &
       scissors_shift, uHu_formatted
-    use w90_postw90_common, only: nrpts, v_matrix
+    use w90_postw90_common, only: nrpts, v_matrix, nrpts_pw90
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
     use w90_comms, only: on_root, comms_bcast
@@ -680,6 +680,7 @@ contains
 
     integer, allocatable          :: num_states(:)
     complex(kind=dp), allocatable :: CC_q(:, :, :, :, :)
+    complex(kind=dp), allocatable :: CC_R_temp(:, :, :, :, :)
     complex(kind=dp), allocatable :: Ho_qb1_q_qb2(:, :)
     complex(kind=dp), allocatable :: H_qb1_q_qb2(:, :)
     real(kind=dp)                 :: c_real, c_img
@@ -687,12 +688,12 @@ contains
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1)
 
-    if (.not. allocated(CC_R)) then
-      allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
-    else
+    if (allocated(CC_R)) then
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
       return
     end if
+
+    allocate (CC_R(num_wann, num_wann, nrpts_pw90, 3, 3))
 
     if (on_root) then
 
@@ -702,6 +703,7 @@ contains
       allocate (Ho_qb1_q_qb2(num_bands, num_bands))
       allocate (H_qb1_q_qb2(num_wann, num_wann))
       allocate (CC_q(num_wann, num_wann, num_kpts, 3, 3))
+      allocate (CC_R_temp(num_wann, num_wann, nrpts, 3, 3))
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
@@ -797,13 +799,20 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(CC_q(:, :, :, a, b), CC_R(:, :, :, a, b))
+          call fourier_q_to_R(CC_q(:, :, :, a, b), CC_R_temp(:, :, :, a, b))
+        enddo
+      enddo
+
+      ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+      do b = 1, 3
+        do a = 1, 3
+          call operator_wigner_setup(CC_R_temp(:, :, :, a, b), CC_R(:, :, :, a, b))
         enddo
       enddo
 
     endif !on_root
 
-    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3*3)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
     return
@@ -828,7 +837,7 @@ contains
     use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, &
       num_bands, ndimwin, wb, bk, &
       have_disentangled, timing_level
-    use w90_postw90_common, only: nrpts, v_matrix
+    use w90_postw90_common, only: nrpts, v_matrix, nrpts_pw90
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
     use w90_comms, only: on_root, comms_bcast
@@ -838,24 +847,26 @@ contains
 
     integer, allocatable          :: num_states(:)
     complex(kind=dp), allocatable :: FF_q(:, :, :, :, :)
+    complex(kind=dp), allocatable :: FF_R_temp(:, :, :, :, :)
     complex(kind=dp), allocatable :: Lo_qb1_q_qb2(:, :)
     complex(kind=dp), allocatable :: L_qb1_q_qb2(:, :)
     character(len=60)             :: header
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 1)
 
-    if (.not. allocated(FF_R)) then
-      allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
-    else
+    if (allocated(FF_R)) then
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
       return
     end if
+
+    allocate (FF_R(num_wann, num_wann, nrpts_pw90, 3, 3))
 
     if (on_root) then
 
       allocate (Lo_qb1_q_qb2(num_bands, num_bands))
       allocate (L_qb1_q_qb2(num_wann, num_wann))
       allocate (FF_q(num_wann, num_wann, num_kpts, 3, 3))
+      allocate (FF_R_temp(num_wann, num_wann, nrpts, 3, 3))
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
@@ -945,13 +956,20 @@ contains
 
       do b = 1, 3
         do a = 1, 3
-          call fourier_q_to_R(FF_q(:, :, :, a, b), FF_R(:, :, :, a, b))
+          call fourier_q_to_R(FF_q(:, :, :, a, b), FF_R_temp(:, :, :, a, b))
+        enddo
+      enddo
+
+      ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+      do b = 1, 3
+        do a = 1, 3
+          call operator_wigner_setup(FF_R_temp(:, :, :, a, b), FF_R(:, :, :, a, b))
         enddo
       enddo
 
     endif !on_root
 
-    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3*3)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
     return
@@ -1443,6 +1461,7 @@ contains
       SR_R_temp = cmplx_i*SR_R_temp
       SHR_R_temp = cmplx_i*SHR_R_temp
 
+      ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
       do is = 1, 3
         call operator_wigner_setup(SH_R_temp(:, :, :, is), SH_R(:, :, :, is))
         do idir = 1, 3
