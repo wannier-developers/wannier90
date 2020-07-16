@@ -48,8 +48,7 @@ contains
     use w90_io, only: io_error, io_file_unit, seedname, &
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
-      pw90common_fourier_R_to_k_new_ws_opt
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_parameters, only: num_wann, kpath_task, &
       bands_num_spec_points, bands_label, &
       kpath_bands_colour, nfermi, fermi_energy_list, &
@@ -176,7 +175,7 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
+        call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU)
         !
         ! Color-code energy bands with the spin projection along the

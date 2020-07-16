@@ -47,7 +47,7 @@ contains
       seedname, stdout
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
-      pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_new_ws_opt
+      pw90common_fourier_R_to_k_new
     use w90_parameters, only: num_wann, dos_energy_min, dos_energy_max, &
       dos_energy_step, timing_level, &
       wanint_kpoint_file, dos_kmesh, &
@@ -165,7 +165,7 @@ contains
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
+          call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
           call utility_diagonalize(HH, num_wann, eig, UU)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
                          smr_index=dos_smr_index, &
@@ -199,7 +199,7 @@ contains
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
+          call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
           call utility_diagonalize(HH, num_wann, eig, UU)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
                          smr_index=dos_smr_index, &

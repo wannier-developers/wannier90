@@ -1205,8 +1205,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod
     use w90_parameters, only: num_wann, nfermi
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k_new, &
-      pw90common_fourier_R_to_k_new_ws_opt, pw90common_fourier_R_to_k_vec_ws_opt
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k_new
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list
     use w90_get_oper, only: AA_R, BB_R, CC_R
     use w90_utility, only: utility_zgemm_new
@@ -1269,7 +1268,7 @@ contains
       call wham_get_occ_mat_list(UU, f_list, g_list, eig=eig)
     endif
 
-    call pw90common_fourier_R_to_k_vec_ws_opt(kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
+    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
 
     if (present(imf_k_list)) then
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
@@ -1311,10 +1310,10 @@ contains
       ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
       ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
 
-      call pw90common_fourier_R_to_k_vec_ws_opt(kpt, BB_R, OO_true=BB)
+      call pw90common_fourier_R_to_k_vec(kpt, BB_R, OO_true=BB)
       do j = 1, 3
         do i = 1, j
-          call pw90common_fourier_R_to_k_new_ws_opt(kpt, CC_R(:, :, :, i, j), OO=CC(:, :, i, j))
+          call pw90common_fourier_R_to_k_new(kpt, CC_R(:, :, :, i, j), OO=CC(:, :, i, j))
           CC(:, :, j, i) = conjg(transpose(CC(:, :, i, j)))
         end do
       end do
@@ -1401,8 +1400,7 @@ contains
       kubo_adpt_smr_max, kubo_adpt_smr_fac, &
       kubo_smr_index, berry_kmesh, spin_decomp
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
-      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, &
-      pw90common_fourier_R_to_k_new_ws_opt, pw90common_fourier_R_to_k_vec_ws_opt
+      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_get_oper, only: HH_R, AA_R
     use w90_spin, only: spin_get_nk
@@ -1446,16 +1444,16 @@ contains
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
       Delta_k = pw90common_kmesh_spacing(berry_kmesh)
     else
-      call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH, &
-                                                OO_dx=delHH(:, :, 1), &
-                                                OO_dy=delHH(:, :, 2), &
-                                                OO_dz=delHH(:, :, 3))
+      call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
+                                         OO_dx=delHH(:, :, 1), &
+                                         OO_dy=delHH(:, :, 2), &
+                                         OO_dz=delHH(:, :, 3))
       call utility_diagonalize(HH, num_wann, eig, UU)
     endif
     call pw90common_get_occ(eig, occ, fermi_energy_list(1))
     call wham_get_D_h(delHH, UU, eig, D_h)
 
-    call pw90common_fourier_R_to_k_vec_ws_opt(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1795,8 +1793,7 @@ contains
       fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
     use w90_postw90_common, only: pw90common_get_occ, &
-      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, &
-      pw90common_fourier_R_to_k_vec_ws_opt
+      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_get_oper, only: AA_R
     !use w90_comms, only: my_node_id
@@ -1860,7 +1857,7 @@ contains
       eig(shc_bandshift_firstband:) = eig(shc_bandshift_firstband:) + shc_bandshift_energyshift
     end if
 
-    call pw90common_fourier_R_to_k_vec_ws_opt(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1959,7 +1956,7 @@ contains
       use w90_utility, only: utility_rotate
       use w90_parameters, only: num_wann, shc_alpha, shc_gamma
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
-        pw90common_fourier_R_to_k_vec_ws_opt, pw90common_fourier_R_to_k_new_ws_opt
+        pw90common_fourier_R_to_k_vec
       use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R
 
       ! args
@@ -1991,14 +1988,14 @@ contains
       !=========== S_k ===========
       ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
       ! QZYZ18 Eq.(36)
-      call pw90common_fourier_R_to_k_new_ws_opt(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
+      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
       ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
       ! QZYZ18 Eq.(37)
-      call pw90common_fourier_R_to_k_vec_ws_opt(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR_w)
+      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR_w)
       ! QZYZ18 Eq.(31)
       SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, shc_alpha), UU, num_wann)
       K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
@@ -2006,11 +2003,11 @@ contains
       !=========== L_k ===========
       ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
       ! QZYZ18 Eq.(38)
-      call pw90common_fourier_R_to_k_vec_ws_opt(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR_w)
+      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR_w)
       ! QZYZ18 Eq.(32)
       SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, shc_alpha), UU, num_wann)
       ! QZYZ18 Eq.(39)
-      call pw90common_fourier_R_to_k_vec_ws_opt(kpt, SH_R, OO_true=SH_w)
+      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
       ! QZYZ18 Eq.(32)
       SH_k = utility_rotate(SH_w(:, :, shc_gamma), UU, num_wann)
       L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
