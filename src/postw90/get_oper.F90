@@ -20,9 +20,6 @@ module w90_get_oper
 !! (e.g., quantum-espresso)
 !===========================================================
 
-! Wigner-Seitz optimized: HH_R, SS_R, SR_R, SHR_R, SH_R, FF_R, CC_R, BB_R
-! Not optimized: AA_R
-
   use w90_constants, only: dp
 
   implicit none
@@ -274,12 +271,14 @@ contains
     use w90_parameters, only: num_kpts, nntot, num_wann, wb, bk, timing_level, &
       num_bands, ndimwin, nnlist, have_disentangled, &
       transl_inv, nncell, effective_model
-    use w90_postw90_common, only: nrpts
+    use w90_postw90_common, only: nrpts, nrpts_pw90, irvec, &
+      wannier_centres_from_AA_R
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
     use w90_comms, only: on_root, comms_bcast
 
     complex(kind=dp), allocatable :: AA_q(:, :, :, :)
+    complex(kind=dp), allocatable :: AA_R_temp(:, :, :, :)
     complex(kind=dp), allocatable :: AA_q_diag(:, :)
     complex(kind=dp), allocatable :: S_o(:, :)
     complex(kind=dp), allocatable :: S(:, :)
@@ -296,19 +295,20 @@ contains
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 1)
 
-    if (.not. allocated(AA_R)) then
-      allocate (AA_R(num_wann, num_wann, nrpts, 3))
-    else
+    if (allocated(AA_R)) then
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
       return
     end if
+
+    allocate (AA_R(num_wann, num_wann, nrpts_pw90, 3))
+    allocate (AA_R_temp(num_wann, num_wann, nrpts, 3))
 
     ! Real-space position matrix elements read from file
     !
     if (effective_model) then
       if (.not. allocated(HH_R)) call io_error( &
         'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first')
-      AA_R = cmplx_0
+      AA_R_temp = cmplx_0
       if (on_root) then
         write (stdout, '(/a)') ' Reading position matrix elements from file ' &
           //trim(seedname)//'_AA_R.dat'
@@ -333,13 +333,13 @@ contains
                 ivdum(3) /= ivdum_old(3)) ir = ir + 1
           endif
           ivdum_old = ivdum
-          AA_R(j, i, ir, 1) = AA_R(j, i, ir, 1) + cmplx(rdum1_real, rdum1_imag, kind=dp)
-          AA_R(j, i, ir, 2) = AA_R(j, i, ir, 2) + cmplx(rdum2_real, rdum2_imag, kind=dp)
-          AA_R(j, i, ir, 3) = AA_R(j, i, ir, 3) + cmplx(rdum3_real, rdum3_imag, kind=dp)
+          AA_R_temp(j, i, ir, 1) = AA_R_temp(j, i, ir, 1) + cmplx(rdum1_real, rdum1_imag, kind=dp)
+          AA_R_temp(j, i, ir, 2) = AA_R_temp(j, i, ir, 2) + cmplx(rdum2_real, rdum2_imag, kind=dp)
+          AA_R_temp(j, i, ir, 3) = AA_R_temp(j, i, ir, 3) + cmplx(rdum3_real, rdum3_imag, kind=dp)
           n = n + 1
         enddo
         close (file_unit)
-        ! AA_R may not contain the same number of R-vectors as HH_R
+        ! AA_R_temp may not contain the same number of R-vectors as HH_R
         ! (e.g., if a diagonal representation of the position matrix
         ! elements is used, but it cannot be larger
         if (ir > nrpts) then
@@ -347,7 +347,7 @@ contains
           call io_error('Error in get_AA_R: inconsistent nrpts values')
         endif
       endif
-      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+      call comms_bcast(AA_R_temp(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
       return
     endif
@@ -491,13 +491,32 @@ contains
 
       close (mmn_in)
 
-      call fourier_q_to_R(AA_q(:, :, :, 1), AA_R(:, :, :, 1))
-      call fourier_q_to_R(AA_q(:, :, :, 2), AA_R(:, :, :, 2))
-      call fourier_q_to_R(AA_q(:, :, :, 3), AA_R(:, :, :, 3))
+      call fourier_q_to_R(AA_q(:, :, :, 1), AA_R_temp(:, :, :, 1))
+      call fourier_q_to_R(AA_q(:, :, :, 2), AA_R_temp(:, :, :, 2))
+      call fourier_q_to_R(AA_q(:, :, :, 3), AA_R_temp(:, :, :, 3))
 
     endif !on_root
 
-    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    ! save the wannier centers (diagonals of AA_R_temp) to wannier_centres_from_AA_R
+    ! used in pw90common_fourier_R_to_k_new_second_d_TB_conv
+    allocate (wannier_centres_from_AA_R(3, num_wann))
+    wannier_centres_from_AA_R(:, :) = 0.d0
+    do j = 1, num_wann
+      do ir = 1, nrpts
+        if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0)) then
+          wannier_centres_from_AA_R(1, j) = real(AA_R_temp(j, j, ir, 1))
+          wannier_centres_from_AA_R(2, j) = real(AA_R_temp(j, j, ir, 2))
+          wannier_centres_from_AA_R(3, j) = real(AA_R_temp(j, j, ir, 3))
+        endif
+      enddo
+    enddo
+
+    ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+    do idir = 1, 3
+      call operator_wigner_setup(AA_R_temp(:, :, :, idir), AA_R(:, :, :, idir))
+    enddo
+
+    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
     return

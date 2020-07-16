@@ -1269,7 +1269,7 @@ contains
       call wham_get_occ_mat_list(UU, f_list, g_list, eig=eig)
     endif
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
+    call pw90common_fourier_R_to_k_vec_ws_opt(kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
 
     if (present(imf_k_list)) then
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
@@ -1402,7 +1402,7 @@ contains
       kubo_smr_index, berry_kmesh, spin_decomp
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, &
-      pw90common_fourier_R_to_k_new_ws_opt
+      pw90common_fourier_R_to_k_new_ws_opt, pw90common_fourier_R_to_k_vec_ws_opt
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_get_oper, only: HH_R, AA_R
     use w90_spin, only: spin_get_nk
@@ -1455,7 +1455,7 @@ contains
     call pw90common_get_occ(eig, occ, fermi_energy_list(1))
     call wham_get_D_h(delHH, UU, eig, D_h)
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec_ws_opt(kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1795,7 +1795,8 @@ contains
       fermi_energy_list, nfermi, shc_alpha, shc_beta, shc_gamma, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
     use w90_postw90_common, only: pw90common_get_occ, &
-      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
+      pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, &
+      pw90common_fourier_R_to_k_vec_ws_opt
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_get_oper, only: AA_R
     !use w90_comms, only: my_node_id
@@ -1859,7 +1860,7 @@ contains
       eig(shc_bandshift_firstband:) = eig(shc_bandshift_firstband:) + shc_bandshift_energyshift
     end if
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec_ws_opt(kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo

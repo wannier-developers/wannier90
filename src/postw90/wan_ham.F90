@@ -495,7 +495,7 @@ contains
     !========================================================!
 
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R, get_HH_R, AA_R, get_AA_R
+    use w90_get_oper, only: HH_R, get_HH_R, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_utility, only: utility_diagonalize
 
@@ -503,15 +503,17 @@ contains
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
-    complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
-    complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    complex(kind=dp), dimension(:, :, :), intent(out)    :: HH_da
+    complex(kind=dp), dimension(:, :, :, :), intent(out) :: HH_dadb
 
     integer                       :: i
 
     call get_HH_R
+    ! wannier_centres_from_AA_R is set inside get_AA_R, and used in
+    ! pw90common_fourier_R_to_k_new_second_d_TB_conv
     call get_AA_R
 
-    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU)
