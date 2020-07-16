@@ -20,8 +20,8 @@ module w90_get_oper
 !! (e.g., quantum-espresso)
 !===========================================================
 
-! Wigner-Seitz optimized: HH_R, SS_R, SR_R, SHR_R, SH_R, FF_R, CC_R
-! Not optimized: AA_R, BB_R
+! Wigner-Seitz optimized: HH_R, SS_R, SR_R, SHR_R, SH_R, FF_R, CC_R, BB_R
+! Not optimized: AA_R
 
   use w90_constants, only: dp
 
@@ -524,7 +524,7 @@ contains
     use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, num_bands, &
       ndimwin, eigval, wb, bk, have_disentangled, &
       timing_level, nncell, scissors_shift
-    use w90_postw90_common, only: nrpts, v_matrix
+    use w90_postw90_common, only: nrpts, v_matrix, nrpts_pw90
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
     use w90_comms, only: on_root, comms_bcast
@@ -536,6 +536,7 @@ contains
 
     complex(kind=dp), allocatable :: S_o(:, :)
     complex(kind=dp), allocatable :: BB_q(:, :, :, :)
+    complex(kind=dp), allocatable :: BB_R_temp(:, :, :, :)
     complex(kind=dp), allocatable :: H_q_qb(:, :)
     integer, allocatable          :: num_states(:)
     real(kind=dp)                 :: m_real, m_imag
@@ -543,12 +544,13 @@ contains
     character(len=60)             :: header
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 1)
-    if (.not. allocated(BB_R)) then
-      allocate (BB_R(num_wann, num_wann, nrpts, 3))
-    else
+
+    if (allocated(BB_R)) then
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
       return
     end if
+
+    allocate (BB_R(num_wann, num_wann, nrpts_pw90, 3))
 
     if (on_root) then
 
@@ -556,6 +558,7 @@ contains
         call io_error('Error: scissors correction not yet implemented for BB_R')
 
       allocate (BB_q(num_wann, num_wann, num_kpts, 3))
+      allocate (BB_R_temp(num_wann, num_wann, nrpts, 3))
       allocate (S_o(num_bands, num_bands))
       allocate (H_q_qb(num_wann, num_wann))
 
@@ -638,13 +641,18 @@ contains
 
       close (mmn_in)
 
-      call fourier_q_to_R(BB_q(:, :, :, 1), BB_R(:, :, :, 1))
-      call fourier_q_to_R(BB_q(:, :, :, 2), BB_R(:, :, :, 2))
-      call fourier_q_to_R(BB_q(:, :, :, 3), BB_R(:, :, :, 3))
+      call fourier_q_to_R(BB_q(:, :, :, 1), BB_R_temp(:, :, :, 1))
+      call fourier_q_to_R(BB_q(:, :, :, 2), BB_R_temp(:, :, :, 2))
+      call fourier_q_to_R(BB_q(:, :, :, 3), BB_R_temp(:, :, :, 3))
+
+      ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+      do idir = 1, 3
+        call operator_wigner_setup(BB_R_temp(:, :, :, idir), BB_R(:, :, :, idir))
+      enddo
 
     endif !on_root
 
-    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
     return

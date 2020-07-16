@@ -1206,7 +1206,7 @@ contains
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod
     use w90_parameters, only: num_wann, nfermi
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k_new, &
-      pw90common_fourier_R_to_k_new_ws_opt
+      pw90common_fourier_R_to_k_new_ws_opt, pw90common_fourier_R_to_k_vec_ws_opt
     use w90_wan_ham, only: wham_get_eig_UU_HH_JJlist, wham_get_occ_mat_list
     use w90_get_oper, only: AA_R, BB_R, CC_R
     use w90_utility, only: utility_zgemm_new
@@ -1311,7 +1311,7 @@ contains
       ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
       ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
 
-      call pw90common_fourier_R_to_k_vec(kpt, BB_R, OO_true=BB)
+      call pw90common_fourier_R_to_k_vec_ws_opt(kpt, BB_R, OO_true=BB)
       do j = 1, 3
         do i = 1, j
           call pw90common_fourier_R_to_k_new_ws_opt(kpt, CC_R(:, :, :, i, j), OO=CC(:, :, i, j))
