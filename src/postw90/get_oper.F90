@@ -156,7 +156,7 @@ contains
           call io_error('Error in get_HH_R: inconsistent nrpts values')
         endif
         do ir = 1, nrpts
-          crvec(:, ir) = matmul(transpose(real_lattice), irvec(:, ir))
+          crvec(:, ir) = matmul(transpose(real_lattice), real(irvec(:, ir), dp))
         end do
         ndegen(:) = 1 ! This is assumed when reading HH_R from file
         !

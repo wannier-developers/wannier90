@@ -137,7 +137,7 @@ contains
       !
       do ir = 1, nrpts
         ! Note that 'real_lattice' stores the lattice vectors as *rows*
-        crvec(:, ir) = matmul(transpose(real_lattice), irvec(:, ir))
+        crvec(:, ir) = matmul(transpose(real_lattice), real(irvec(:, ir), dp))
       end do
     endif
 
