@@ -1957,7 +1957,7 @@ contains
       use w90_utility, only: utility_rotate
       use w90_parameters, only: num_wann, shc_alpha, shc_gamma
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
-        pw90common_fourier_R_to_k_vec
+        pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k_new_ws_opt
       use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R
 
       ! args
@@ -1989,7 +1989,7 @@ contains
       !=========== S_k ===========
       ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
       ! QZYZ18 Eq.(36)
-      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
+      call pw90common_fourier_R_to_k_new_ws_opt(kpt, SS_R(:, :, :, shc_gamma), OO=S_w)
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 

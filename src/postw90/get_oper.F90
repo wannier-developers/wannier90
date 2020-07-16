@@ -20,6 +20,8 @@ module w90_get_oper
 !! (e.g., quantum-espresso)
 !===========================================================
 
+! Wigner-Seitz optimized: HH_R, SS_R
+
   use w90_constants, only: dp
 
   implicit none
@@ -969,17 +971,18 @@ contains
     !
     !================================================================
 
+    use w90_comms, only: on_root, comms_bcast
     use w90_constants, only: dp, pi, cmplx_0
-    use w90_parameters, only: num_wann, ndimwin, num_kpts, num_bands, &
-      timing_level, have_disentangled, spn_formatted
-    use w90_postw90_common, only: nrpts, v_matrix
     use w90_io, only: io_error, io_stopwatch, stdout, seedname, &
       io_file_unit
-    use w90_comms, only: on_root, comms_bcast
+    use w90_parameters, only: num_wann, ndimwin, num_kpts, num_bands, &
+      timing_level, have_disentangled, spn_formatted
+    use w90_postw90_common, only: nrpts, v_matrix, nrpts_pw90
 
     implicit none
 
-    complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), spn_temp(:, :)
+    complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), &
+                                     spn_temp(:, :), SS_R_temp(:, :, :, :)
     real(kind=dp)                 :: s_real, s_img
     integer, allocatable          :: num_states(:)
     integer                       :: i, j, ii, jj, m, n, spn_in, ik, is, &
@@ -988,16 +991,18 @@ contains
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 1)
 
-    if (.not. allocated(SS_R)) then
-      allocate (SS_R(num_wann, num_wann, nrpts, 3))
-    else
-      return ! been here before
+    if (allocated(SS_R)) then
+      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2)
+      return
     end if
+
+    allocate (SS_R(num_wann, num_wann, nrpts_pw90, 3))
 
     if (on_root) then
 
       allocate (spn_o(num_bands, num_bands, num_kpts, 3))
       allocate (SS_q(num_wann, num_wann, num_kpts, 3))
+      allocate (SS_R_temp(num_wann, num_wann, nrpts, 3))
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
@@ -1086,13 +1091,18 @@ contains
         enddo !is
       enddo !ik
 
-      call fourier_q_to_R(SS_q(:, :, :, 1), SS_R(:, :, :, 1))
-      call fourier_q_to_R(SS_q(:, :, :, 2), SS_R(:, :, :, 2))
-      call fourier_q_to_R(SS_q(:, :, :, 3), SS_R(:, :, :, 3))
+      call fourier_q_to_R(SS_q(:, :, :, 1), SS_R_temp(:, :, :, 1))
+      call fourier_q_to_R(SS_q(:, :, :, 2), SS_R_temp(:, :, :, 2))
+      call fourier_q_to_R(SS_q(:, :, :, 3), SS_R_temp(:, :, :, 3))
+
+      ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+      do is = 1, 3
+        call operator_wigner_setup(SS_R_temp(:, :, :, is), SS_R(:, :, :, is))
+      enddo
 
     endif !on_root
 
-    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2)
     return

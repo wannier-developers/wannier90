@@ -38,7 +38,7 @@ module w90_postw90_common
   public :: pw90common_fourier_R_to_k_new_second_d, pw90common_fourier_R_to_k_new_second_d_TB_conv, &
             pw90common_fourier_R_to_k_vec_dadb, pw90common_fourier_R_to_k_vec_dadb_TB_conv
   public :: nrpts_pw90, irvec_pw90, crvec_pw90, ir_ind_ws_to_pw90
-  public :: pw90common_fourier_R_to_k_new_ws_opt
+  public :: pw90common_fourier_R_to_k_new_ws_opt, pw90common_fourier_R_to_k_vec_ws_opt
 
 ! AAM PROBABLY REMOVE THIS
   ! This 'save' statement could probably be ommited, since this module
@@ -1138,6 +1138,61 @@ contains
     enddo
 
   end subroutine pw90common_fourier_R_to_k_vec
+
+  !=========================================================!
+  subroutine pw90common_fourier_R_to_k_vec_ws_opt(kpt, OO_R, OO_true, OO_pseudo)
+    !====================================================================!
+    !                                                                    !
+    !! For OO_true (true vector):
+    !! $${\vec O}_{ij}(k) = \sum_R e^{+ik.R} {\vec O}_{ij}(R)$$
+    !                                                                    !
+    !====================================================================!
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_parameters, only: num_kpts, kpt_latt, num_wann
+
+    implicit none
+
+    ! Arguments
+    !
+    real(kind=dp)                                     :: kpt(3)
+    complex(kind=dp), dimension(:, :, :, :), intent(in)  :: OO_R
+    complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_true
+    complex(kind=dp), optional, dimension(:, :, :), intent(out)   :: OO_pseudo
+
+    integer          :: ir, i, j
+    real(kind=dp)    :: rdotk
+    complex(kind=dp) :: phase_fac
+
+    if (present(OO_true)) OO_true = cmplx_0
+    if (present(OO_pseudo)) OO_pseudo = cmplx_0
+
+    do ir = 1, nrpts_pw90
+
+      rdotk = twopi*dot_product(kpt(:), real(irvec_pw90(:, ir), dp))
+      phase_fac = cmplx(cos(rdotk), sin(rdotk), dp)
+
+      if (present(OO_true)) then
+        OO_true(:, :, 1) = OO_true(:, :, 1) + phase_fac*OO_R(:, :, ir, 1)
+        OO_true(:, :, 2) = OO_true(:, :, 2) + phase_fac*OO_R(:, :, ir, 2)
+        OO_true(:, :, 3) = OO_true(:, :, 3) + phase_fac*OO_R(:, :, ir, 3)
+      endif
+
+      if (present(OO_pseudo)) then
+        OO_pseudo(:, :, 1) = OO_pseudo(:, :, 1) &
+                             + cmplx_i*crvec_pw90(2, ir)*phase_fac*OO_R(:, :, ir, 3) &
+                             - cmplx_i*crvec_pw90(3, ir)*phase_fac*OO_R(:, :, ir, 2)
+        OO_pseudo(:, :, 2) = OO_pseudo(:, :, 2) &
+                             + cmplx_i*crvec_pw90(3, ir)*phase_fac*OO_R(:, :, ir, 1) &
+                             - cmplx_i*crvec_pw90(1, ir)*phase_fac*OO_R(:, :, ir, 3)
+        OO_pseudo(:, :, 3) = OO_pseudo(:, :, 3) &
+                             + cmplx_i*crvec_pw90(1, ir)*phase_fac*OO_R(:, :, ir, 2) &
+                             - cmplx_i*crvec_pw90(2, ir)*phase_fac*OO_R(:, :, ir, 1)
+      endif
+
+    enddo
+
+  end subroutine pw90common_fourier_R_to_k_vec_ws_opt
 
   !=========================================================!
   subroutine pw90common_fourier_R_to_k_vec_dadb(kpt, OO_R, OO_da, OO_dadb)
