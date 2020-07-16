@@ -81,10 +81,9 @@ contains
       eigval, u_matrix, have_disentangled, &
       timing_level, scissors_shift, &
       num_valence_bands, effective_model, &
-      real_lattice, use_ws_distance
-    use w90_ws_distance, only: wdist_ndeg
+      real_lattice
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, &
-      crvec, nrpts_pw90, irvec_pw90, ir_ind_ws_to_pw90
+      crvec, nrpts_pw90
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, jr, io, idum, ideg, ivdum(3), ivdum_old(3)
@@ -242,30 +241,8 @@ contains
     endif
 
     ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
-
     allocate (HH_R_ws_opt(num_wann, num_wann, nrpts_pw90))
-    HH_R_ws_opt = cmplx_0
-
-    if (use_ws_distance) then
-
-      do ir = 1, nrpts
-        do j = 1, num_wann
-          do i = 1, num_wann
-            do ideg = 1, wdist_ndeg(i, j, ir)
-              jr = ir_ind_ws_to_pw90(ideg, i, j, ir)
-              HH_R_ws_opt(i, j, jr) = HH_R_ws_opt(i, j, jr) &
-                                      + HH_R(i, j, ir)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
-            enddo
-          enddo
-        enddo
-      enddo
-
-    else ! .not. use_ws_distance
-      ! Note that nrpts_pw90 == nrpts if use_ws_distance == .false.
-      do ir = 1, nrpts
-        HH_R_ws_opt(:, :, ir) = HH_R(:, :, ir)/real(ndegen(ir), dp)
-      enddo
-    endif ! use_ws_distance
+    call operator_wigner_setup(HH_R, HH_R_ws_opt)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
     return
@@ -1588,5 +1565,56 @@ contains
                         v_matrix(1:ns_b, 1:num_wann, ik_b), 'N', &
                         S, eigval(wm_a:wm_a + ns_a - 1, ik_a), H)
   end subroutine get_gauge_overlap_matrix
+
+  !============================================================================
+  subroutine operator_wigner_setup(op_R, op_R_opt_ws)
+    !==========================================================================
+    !
+    ! Also, divide real-space matrix elements with the degeneracy factor.
+    ! For use_ws_distance = true, reorder the real-space grid index
+    ! using ir_ind_ws_to_pw90.
+    !
+    ! After this routine, irvec_pw90, crvec_pw90, and nrpts_pw90 can be
+    ! used in the fourier_R_to_k routines, irrespective of use_ws_distance.
+    !
+    !==========================================================================
+
+    use w90_constants, only: dp, cmplx_0
+    use w90_ws_distance, only: wdist_ndeg
+    use w90_parameters, only: num_wann, use_ws_distance
+    use w90_postw90_common, only: nrpts, ndegen, nrpts_pw90, irvec_pw90, &
+      ir_ind_ws_to_pw90
+
+    complex(kind=dp), intent(in) :: op_R(num_wann, num_wann, nrpts)
+    !! operator in real-space grid, before applying ndegen
+    complex(kind=dp), intent(inout) :: op_R_opt_ws(num_wann, num_wann, nrpts_pw90)
+    !! operator in real-space grid, after applying ndegen
+
+    integer :: ir, jr, i, j, ideg
+
+    op_R_opt_ws = cmplx_0
+
+    if (use_ws_distance) then
+
+      do ir = 1, nrpts
+        do j = 1, num_wann
+          do i = 1, num_wann
+            do ideg = 1, wdist_ndeg(i, j, ir)
+              jr = ir_ind_ws_to_pw90(ideg, i, j, ir)
+              op_R_opt_ws(i, j, jr) = op_R_opt_ws(i, j, jr) &
+                                      + op_R(i, j, ir)/real(ndegen(ir)*wdist_ndeg(i, j, ir), dp)
+            enddo
+          enddo
+        enddo
+      enddo
+
+    else ! .not. use_ws_distance
+      ! Note that nrpts_pw90 == nrpts if use_ws_distance == .false.
+      do ir = 1, nrpts
+        op_R_opt_ws(:, :, ir) = op_R(:, :, ir)/real(ndegen(ir), dp)
+      enddo
+    endif ! use_ws_distance
+
+  end subroutine operator_wigner_setup
 
 end module w90_get_oper
