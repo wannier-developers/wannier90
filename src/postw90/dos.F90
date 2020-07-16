@@ -55,7 +55,7 @@ contains
       dos_adpt_smr_max, spin_decomp, &
       dos_smr_fixed_en_width, &
       dos_project, num_dos_project
-    use w90_get_oper, only: get_HH_R, get_SS_R, HH_R, HH_R_ws_opt
+    use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize
 
@@ -165,8 +165,7 @@ contains
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
-          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
+          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
           call utility_diagonalize(HH, num_wann, eig, UU)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
                          smr_index=dos_smr_index, &
@@ -200,8 +199,7 @@ contains
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
-          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
+          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
           call utility_diagonalize(HH, num_wann, eig, UU)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
                          smr_index=dos_smr_index, &

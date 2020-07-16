@@ -31,9 +31,6 @@ module w90_get_oper
   complex(kind=dp), allocatable, save :: HH_R(:, :, :) !  <0n|r|Rm>
   !! $$\langle 0n | H | Rm \rangle$$
 
-  complex(kind=dp), allocatable, save :: HH_R_ws_opt(:, :, :) !  <0n|r|Rm>
-  !! $$\langle 0n | H | Rm \rangle$$
-
   complex(kind=dp), allocatable, save :: AA_R(:, :, :, :) ! <0n|r|Rm>
   !! $$\langle 0n |  \hat{r} | Rm \rangle$$
 
@@ -83,13 +80,14 @@ contains
       num_valence_bands, effective_model, &
       real_lattice
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, &
-      crvec, nrpts_pw90
+      crvec, nrpts_pw90, irvec_pw90, crvec_pw90
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, jr, io, idum, ideg, ivdum(3), ivdum_old(3)
     integer, allocatable          :: num_states(:)
     real(kind=dp)                 :: rdum_real, rdum_imag
     complex(kind=dp), allocatable :: HH_q(:, :, :)
+    complex(kind=dp), allocatable :: HH_R_temp(:, :, :)
     logical                       :: new_ir
 
     !ivo
@@ -99,17 +97,17 @@ contains
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 1)
 
-    if (.not. allocated(HH_R)) then
-      allocate (HH_R(num_wann, num_wann, nrpts))
-    else
+    if (allocated(HH_R)) then
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
       return
     end if
 
+    allocate (HH_R_temp(num_wann, num_wann, nrpts))
+
     ! Real-space Hamiltonian H(R) is read from file
     !
     if (effective_model) then
-      HH_R = cmplx_0
+      HH_R_temp = cmplx_0
       if (on_root) then
         write (stdout, '(/a)') ' Reading real-space Hamiltonian from file ' &
           //trim(seedname)//'_HH_R.dat'
@@ -147,7 +145,7 @@ contains
           ! of a simple equality. (This has to do with the way the
           ! Berlijn effective Hamiltonian algorithm is
           ! implemented.)
-          HH_R(j, i, ir) = HH_R(j, i, ir) + cmplx(rdum_real, rdum_imag, kind=dp)
+          HH_R_temp(j, i, ir) = HH_R_temp(j, i, ir) + cmplx(rdum_real, rdum_imag, kind=dp)
           if (new_ir) then
             irvec(:, ir) = ivdum(:)
             if (ivdum(1) == 0 .and. ivdum(2) == 0 .and. ivdum(3) == 0) rpt_origin = ir
@@ -163,11 +161,18 @@ contains
           crvec(:, ir) = matmul(transpose(real_lattice), real(irvec(:, ir), dp))
         end do
         ndegen(:) = 1 ! This is assumed when reading HH_R from file
+
+        ! setup pw90 R-vectors.
+        ! For effective_model == false, this setup is done in pw90common_wanint_setup.
+        nrpts_pw90 = nrpts
+        irvec_pw90 = irvec
+        crvec_pw90 = crvec
+
         !
         ! TODO: Implement scissors in this case? Need to choose a
         ! uniform k-mesh (the scissors correction is applied in
         ! k-space) and then proceed as below, Fourier transforming
-        ! back to real space and adding to HH_R, Hopefully the
+        ! back to real space and adding to HH_R_temp, Hopefully the
         ! result converges (rapidly) with the k-mesh density, but
         ! one should check
         !
@@ -176,7 +181,7 @@ contains
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T')
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts)
+      call comms_bcast(HH_R_temp(1, 1, 1), num_wann*num_wann*nrpts)
       call comms_bcast(ndegen(1), nrpts)
       call comms_bcast(irvec(1, 1), 3*nrpts)
       call comms_bcast(crvec(1, 1), 3*nrpts)
@@ -212,7 +217,7 @@ contains
         enddo
       enddo
     enddo
-    call fourier_q_to_R(HH_q, HH_R)
+    call fourier_q_to_R(HH_q, HH_R_temp)
 
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
@@ -237,12 +242,12 @@ contains
         sciss_R(n, n, rpt_origin) = sciss_R(n, n, rpt_origin) + 1.0_dp
       end do
       sciss_R = sciss_R*scissors_shift
-      HH_R = HH_R + sciss_R
+      HH_R_temp = HH_R_temp + sciss_R
     endif
 
     ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
-    allocate (HH_R_ws_opt(num_wann, num_wann, nrpts_pw90))
-    call operator_wigner_setup(HH_R, HH_R_ws_opt)
+    allocate (HH_R(num_wann, num_wann, nrpts_pw90))
+    call operator_wigner_setup(HH_R_temp, HH_R)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
     return

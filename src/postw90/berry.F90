@@ -1403,7 +1403,7 @@ contains
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing, &
       pw90common_fourier_R_to_k_new_ws_opt
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
-    use w90_get_oper, only: HH_R, AA_R, HH_R_ws_opt
+    use w90_get_oper, only: HH_R, AA_R
     use w90_spin, only: spin_get_nk
 
     ! Arguments
@@ -1445,11 +1445,7 @@ contains
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
       Delta_k = pw90common_kmesh_spacing(berry_kmesh)
     else
-      ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
-      !                                    OO_dx=delHH(:, :, 1), &
-      !                                    OO_dy=delHH(:, :, 2), &
-      !                                    OO_dz=delHH(:, :, 3))
-      call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH, &
+      call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH, &
                                                 OO_dx=delHH(:, :, 1), &
                                                 OO_dy=delHH(:, :, 2), &
                                                 OO_dz=delHH(:, :, 3))

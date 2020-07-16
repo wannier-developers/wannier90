@@ -386,9 +386,8 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R, get_HH_R, HH_R_ws_opt
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
-      pw90common_fourier_R_to_k_new_ws_opt
+    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_ws_opt
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)         :: kpt
@@ -410,11 +409,7 @@ contains
     ! Further calls should return very fast.
     call get_HH_R
 
-    ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
-    !                                    OO_dx=delHH(:, :, 1), &
-    !                                    OO_dy=delHH(:, :, 2), &
-    !                                    OO_dz=delHH(:, :, 3))
-    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH, &
+    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH, &
                                               OO_dx=delHH(:, :, 1), &
                                               OO_dy=delHH(:, :, 2), &
                                               OO_dz=delHH(:, :, 3))
@@ -458,9 +453,8 @@ contains
     !========================================================!
 
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R, get_HH_R, HH_R_ws_opt
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
-      pw90common_fourier_R_to_k_new_ws_opt
+    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_ws_opt
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
@@ -477,11 +471,7 @@ contains
     call get_HH_R
 
     allocate (delHH(num_wann, num_wann, 3))
-    ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
-    !                                    OO_dx=delHH(:, :, 1), &
-    !                                    OO_dy=delHH(:, :, 2), &
-    !                                    OO_dz=delHH(:, :, 3))
-    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH, &
+    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH, &
                                               OO_dx=delHH(:, :, 1), &
                                               OO_dy=delHH(:, :, 2), &
                                               OO_dz=delHH(:, :, 3))
@@ -506,8 +496,7 @@ contains
 
     use w90_parameters, only: num_wann
     use w90_get_oper, only: HH_R, get_HH_R, AA_R, get_AA_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
-      pw90common_fourier_R_to_k_new_second_d_TB_conv
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt

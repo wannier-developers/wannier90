@@ -148,7 +148,7 @@ contains
       spin_axis_azimuth
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k_new_ws_opt
-    use w90_get_oper, only: HH_R, SS_R, HH_R_ws_opt
+    use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
     !
@@ -171,8 +171,7 @@ contains
     allocate (SS(num_wann, num_wann, 3))
     allocate (SS_n(num_wann, num_wann))
 
-    ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
-    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
+    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
     call utility_diagonalize(HH, num_wann, eig, UU)
 
     call pw90common_fourier_R_to_k_vec(kpt, SS_R, OO_true=SS)
@@ -206,7 +205,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_get_occ, &
       pw90common_fourier_R_to_k_new_ws_opt
-    use w90_get_oper, only: HH_R, SS_R, HH_R_ws_opt
+    use w90_get_oper, only: HH_R, SS_R
     ! Arguments
     !
     real(kind=dp), intent(in)  :: kpt(3)
@@ -229,8 +228,7 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
-    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
+    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
     call utility_diagonalize(HH, num_wann, eig, UU)
     call pw90common_get_occ(eig, occ, ef)
 
@@ -259,7 +257,7 @@ contains
     use w90_parameters, only: num_wann
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k_new_ws_opt
-    use w90_get_oper, only: HH_R, SS_R, HH_R_ws_opt
+    use w90_get_oper, only: HH_R, SS_R
 
     ! Arguments
     !
@@ -281,8 +279,7 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
-    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
+    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R, OO=HH)
     call utility_diagonalize(HH, num_wann, eig, UU)
 
     call pw90common_fourier_R_to_k_vec(kpt, SS_R, OO_true=SS)
