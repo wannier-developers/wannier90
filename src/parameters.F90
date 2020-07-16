@@ -6381,8 +6381,10 @@ contains
 
     if (nfermi > 0) call comms_bcast(fermi_energy_list(1), nfermi)
     if (kubo_nfreq > 0) call comms_bcast(kubo_freq_list(1), kubo_nfreq)
-    call comms_bcast(gyrotropic_freq_list(1), gyrotropic_nfreq)
-    call comms_bcast(gyrotropic_band_list(1), gyrotropic_num_bands)
+    if (gyrotropic_nfreq > 0) &
+      call comms_bcast(gyrotropic_freq_list(1), gyrotropic_nfreq)
+    if (gyrotropic_num_bands > 0) &
+      call comms_bcast(gyrotropic_band_list(1), gyrotropic_num_bands)
     if (num_dos_project > 0) call comms_bcast(dos_project(1), num_dos_project)
     if (.not. effective_model) then
       if (eig_found) then
