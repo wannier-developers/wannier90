@@ -48,13 +48,14 @@ contains
     use w90_io, only: io_error, io_file_unit, seedname, &
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+      pw90common_fourier_R_to_k_new_ws_opt
     use w90_parameters, only: num_wann, kslice, kslice_task, kslice_2dkmesh, &
       kslice_corner, kslice_b1, kslice_b2, &
       kslice_fermi_lines_colour, recip_lattice, &
       nfermi, fermi_energy_list, berry_curv_unit, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_SS_R, get_SHC_R
+      get_SS_R, get_SHC_R, HH_R_ws_opt
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_spin, only: spin_get_nk
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
@@ -230,7 +231,8 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
           Delta_k = max(b1mod/kslice_2dkmesh(1), b2mod/kslice_2dkmesh(2))
         else
-          call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
+          ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
+          call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
           call utility_diagonalize(HH, num_wann, eig, UU)
         endif
 

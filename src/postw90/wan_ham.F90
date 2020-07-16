@@ -433,7 +433,6 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R, get_HH_R
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)         :: kpt
@@ -459,8 +458,9 @@ contains
     !========================================================!
 
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R, get_HH_R
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
+    use w90_get_oper, only: HH_R, get_HH_R, HH_R_ws_opt
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+      pw90common_fourier_R_to_k_new_ws_opt
     use w90_utility, only: utility_diagonalize
 
     real(kind=dp), dimension(3), intent(in)           :: kpt
@@ -477,10 +477,14 @@ contains
     call get_HH_R
 
     allocate (delHH(num_wann, num_wann, 3))
-    call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
-                                       OO_dx=delHH(:, :, 1), &
-                                       OO_dy=delHH(:, :, 2), &
-                                       OO_dz=delHH(:, :, 3))
+    ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
+    !                                    OO_dx=delHH(:, :, 1), &
+    !                                    OO_dy=delHH(:, :, 2), &
+    !                                    OO_dz=delHH(:, :, 3))
+    call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH, &
+                                              OO_dx=delHH(:, :, 1), &
+                                              OO_dy=delHH(:, :, 2), &
+                                              OO_dz=delHH(:, :, 3))
     call utility_diagonalize(HH, num_wann, eig, UU)
     do i = 1, 3
       if (present(occ)) then

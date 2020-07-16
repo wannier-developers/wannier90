@@ -48,13 +48,14 @@ contains
     use w90_io, only: io_error, io_file_unit, seedname, &
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize
-    use w90_postw90_common, only: pw90common_fourier_R_to_k_new
+    use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
+      pw90common_fourier_R_to_k_new_ws_opt
     use w90_parameters, only: num_wann, kpath_task, &
       bands_num_spec_points, bands_label, &
       kpath_bands_colour, nfermi, fermi_energy_list, &
       berry_curv_unit, shc_alpha, shc_beta, shc_gamma, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_FF_R, get_SS_R, get_SHC_R
+      get_FF_R, get_SS_R, get_SHC_R, HH_R_ws_opt
     use w90_spin, only: spin_get_nk
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, &
       berry_get_shc_klist
@@ -175,7 +176,8 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
+        ! call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH)
+        call pw90common_fourier_R_to_k_new_ws_opt(kpt, HH_R_ws_opt, OO=HH)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU)
         !
         ! Color-code energy bands with the spin projection along the
