@@ -20,7 +20,8 @@ module w90_get_oper
 !! (e.g., quantum-espresso)
 !===========================================================
 
-! Wigner-Seitz optimized: HH_R, SS_R
+! Wigner-Seitz optimized: HH_R, SS_R, SR_R, SHR_R, SH_R
+! Not optimized: AA_R, BB_R, CC_R, FF_R
 
   use w90_constants, only: dp
 
@@ -1131,7 +1132,7 @@ contains
       transl_inv, nncell, spn_formatted, eigval, &
       scissors_shift, num_valence_bands, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
-    use w90_postw90_common, only: nrpts
+    use w90_postw90_common, only: nrpts, nrpts_pw90
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
     use w90_comms, only: on_root, comms_bcast
@@ -1139,6 +1140,10 @@ contains
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SH_q(:, :, :, :)
+
+    complex(kind=dp), allocatable :: SR_R_temp(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SHR_R_temp(:, :, :, :, :)
+    complex(kind=dp), allocatable :: SH_R_temp(:, :, :, :)
 
     complex(kind=dp), allocatable :: S_o(:, :)
     complex(kind=dp), allocatable :: spn_o(:, :, :, :), spn_temp(:, :)
@@ -1167,24 +1172,14 @@ contains
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1)
 
-    if (.not. allocated(SR_R)) then
-      allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
-    else
+    if (allocated(SR_R)) then
       if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
       return
     end if
-    if (.not. allocated(SHR_R)) then
-      allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
-    else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
-      return
-    end if
-    if (.not. allocated(SH_R)) then
-      allocate (SH_R(num_wann, num_wann, nrpts, 3))
-    else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
-      return
-    end if
+
+    allocate (SR_R(num_wann, num_wann, nrpts_pw90, 3, 3))
+    allocate (SHR_R(num_wann, num_wann, nrpts_pw90, 3, 3))
+    allocate (SH_R(num_wann, num_wann, nrpts_pw90, 3))
 
     ! start copying from get_SS_R, Junfeng Qiao
     ! read spn file
@@ -1302,6 +1297,9 @@ contains
       allocate (SR_q(num_wann, num_wann, num_kpts, 3, 3))
       allocate (SHR_q(num_wann, num_wann, num_kpts, 3, 3))
       allocate (SH_q(num_wann, num_wann, num_kpts, 3))
+      allocate (SR_R_temp(num_wann, num_wann, nrpts_pw90, 3, 3))
+      allocate (SHR_R_temp(num_wann, num_wann, nrpts_pw90, 3, 3))
+      allocate (SH_R_temp(num_wann, num_wann, nrpts_pw90, 3))
       allocate (S_o(num_bands, num_bands))
 
       mmn_in = io_file_unit()
@@ -1434,22 +1432,30 @@ contains
 
       do is = 1, 3
         ! QZYZ18 Eq.(46)
-        call fourier_q_to_R(SH_q(:, :, :, is), SH_R(:, :, :, is))
+        call fourier_q_to_R(SH_q(:, :, :, is), SH_R_temp(:, :, :, is))
         do idir = 1, 3
           ! QZYZ18 Eq.(44)
-          call fourier_q_to_R(SR_q(:, :, :, is, idir), SR_R(:, :, :, is, idir))
+          call fourier_q_to_R(SR_q(:, :, :, is, idir), SR_R_temp(:, :, :, is, idir))
           ! QZYZ18 Eq.(45)
-          call fourier_q_to_R(SHR_q(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
+          call fourier_q_to_R(SHR_q(:, :, :, is, idir), SHR_R_temp(:, :, :, is, idir))
         end do
       end do
-      SR_R = cmplx_i*SR_R
-      SHR_R = cmplx_i*SHR_R
+      SR_R_temp = cmplx_i*SR_R_temp
+      SHR_R_temp = cmplx_i*SHR_R_temp
+
+      do is = 1, 3
+        call operator_wigner_setup(SH_R_temp(:, :, :, is), SH_R(:, :, :, is))
+        do idir = 1, 3
+          call operator_wigner_setup(SR_R_temp(:, :, :, is, idir), SR_R(:, :, :, is, idir))
+          call operator_wigner_setup(SHR_R_temp(:, :, :, is, idir), SHR_R(:, :, :, is, idir))
+        enddo
+      enddo
 
     endif !on_root
 
-    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
-    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
-    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3)
+    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3*3)
+    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3*3)
 
     ! end copying from get_AA_R, Junfeng Qiao
 
