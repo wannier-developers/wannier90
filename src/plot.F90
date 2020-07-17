@@ -1702,7 +1702,6 @@ contains
     character(len=9)  :: cdate, ctime
     !
     file_unit = io_file_unit()
-    open (file_unit, file=trim(seedname)//'.bvec', form='formatted', status='unknown', err=101)
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
     !
@@ -1711,7 +1710,7 @@ contains
     write (file_unit, *) num_kpts, nntot
     do nkp = 1, num_kpts
       do nn = 1, nntot
-        write (file_unit, '(4F12.6)') bk(:, nn, nkp), wb(nn)
+        write (file_unit, '(4F14.8)') bk(:, nn, nkp), wb(nn)
       enddo
     enddo
     close (file_unit)
