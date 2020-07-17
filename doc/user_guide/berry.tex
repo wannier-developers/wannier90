@@ -335,10 +335,10 @@ Please cite the following paper~\cite{qiao-prb2018} when publishing SHC results 
 
 The shift-current contribution to the second-order response
 is characterized by a frequency-dependent third-rank tensor~\cite{sipe-prb00}
-\begin{equation}
+\begin{equation}\label{eq:shiftcurrent}
 \begin{split}
 \sigma^{abc}(0;\omega,-\omega)=&-\frac{i\pi e^3}{4\hbar^2 \Omega_c N_k}
-\sum_{\bm{k}} \sum_{n,m}f_{nm}
+\sum_{\bm{k}} \sum_{n,m}(f_{n\bm{k}}-f_{m\bm{k}})
 \times
 \left(r^b_{ mn}(\bm{k})r^{c;a}_{nm}(\bm{k}) + r^c_{mn}(\bm{k})r^{b;a}_{ nm}(\bm{k})\right)\\
 &\times \left[\delta(\omega_{mn\bm{k}}-\omega)+\delta(\omega_{nm\bm{k}}-\omega)\right],
@@ -346,7 +346,7 @@ is characterized by a frequency-dependent third-rank tensor~\cite{sipe-prb00}
 \end{equation}
 where $a,b,c$ are spatial indexes
 and $\omega_{mn\bm{k}}=(\epsilon_{n\bm{k}}-\epsilon_{m\bm{k}})/\hbar$.
-The above expression involves 
+The expression in Eq.~\ref{eq:shiftcurrent} involves 
 the dipole matrix element 
 \begin{equation}
 \label{eq:r}
@@ -364,8 +364,19 @@ The first-principles evaluation of the
 above expression is technically challenging
 due to the presence of an extra $k$-space derivative.
 The implementation in {\tt wannier90} follows the scheme proposed in Ref.~\cite{ibanez-azpiroz_ab_2018}, 
-please cite this reference when publishing shift-current results using this method.
+following the spirit of the Wannier-interpolation 
+method for calculating the AHC~\cite{wang-prb06} by reformulating $k\cdot p$
+perturbation theory within the subspace of wannierized bands.
+This strategy inherits the practical advantages of the sum-over-states
+approach, but without introducing the truncation errors usually associated with this procedure~\cite{sipe-prb00}.
 
+As in the case of the optical conductivity, a broadened delta function can be 
+applied in Eq.~\ref{eq:shiftcurrent} by means of the parameter
+$\eta$ (see Eq.~\ref{eq:lorentzian}) using the keyword 
+{\tt[kubo\_]smr\_fixed\_en\_width}, and adaptive smearing can 
+be employed using the keyword {\tt [kubo\_]adpt\_smr}. 
+
+Please cite Ref.~\cite{ibanez-azpiroz_ab_2018} when publishing shift-current results using this method.
 
 \section{{\tt berry\_task=kdotp}: $k\cdot p$ coefficients}
 \label{sec:kdotp}
@@ -437,13 +448,11 @@ terms in Eq. \ref{eq:Hbar} as $H^{\prime}$.
 Collecting terms in \eq{pert-exp} up to second order in $k$
 we get
 \beq\label{eq:Htilde}
-\begin{split}
-& \tilde{H}_{mm'}(\bm{k}) = 
-\overline{H}_{mm'} + \sum_{a} \left(\overline{H}_{a}\right)_{mm'}k_{a}\\
-& + \dfrac{1}{2}\sum_{a,b}\left[
+ \tilde{H}_{mm'}(\bm{k}) = 
+\overline{H}_{mm'} + \sum_{a} \left(\overline{H}_{a}\right)_{mm'}k_{a}
+ + \dfrac{1}{2}\sum_{a,b}\left[
 \left(\overline{H}_{ab}\right)_{mm'} + \left({T}_{ab}\right)_{mm'}
 \right]k_{a}k_{b}+ \mathcal{O}(k^{3}),
-\end{split}
 \eeq
 where  $m,m'\in A$ and we have defined the virtual-transition matrix
 \beq\label{eq:Tab}
@@ -462,7 +471,11 @@ are Hermitean already before summing.)
 
 
 The implementation in {\tt wannier90} follows the scheme proposed in Ref.~\cite{ibanez-azpiroz-ArXiv2019}, 
-please cite this reference when publishing $k\cdot p$ results using this method.
+and outputs $\overline{H}_{mm'}$ in {\tt   seedname-kdotp\_0.dat}, 
+$\left(\overline{H}_{a}\right)_{mm'}$ in {\tt   seedname-kdotp\_1.dat}, and
+$\left[\left(\overline{H}_{ab}\right)_{mm'} + \left({T}_{ab}\right)_{mm'}\right]/2$ in {\tt   seedname-kdotp\_2.dat}.
+
+Please cite Ref.~\cite{ibanez-azpiroz-ArXiv2019} when publishing $k\cdot p$ results using this method.
 
 \section{Needed matrix elements}
 
