@@ -1494,11 +1494,11 @@ contains
         endif
         ! Number of grid points in each direction, lattice vector
         write (file_unit, '(i4,3f13.5)') ilength(1), real_lattice(1, 1)/(real(ngx, dp)*bohr), &
-          real_lattice(1, 2)/(real(ngy, dp)*bohr), real_lattice(1, 3)/(real(ngz, dp)*bohr)
-        write (file_unit, '(i4,3f13.5)') ilength(2), real_lattice(2, 1)/(real(ngx, dp)*bohr), &
-          real_lattice(2, 2)/(real(ngy, dp)*bohr), real_lattice(2, 3)/(real(ngz, dp)*bohr)
-        write (file_unit, '(i4,3f13.5)') ilength(3), real_lattice(3, 1)/(real(ngx, dp)*bohr), &
-          real_lattice(3, 2)/(real(ngy, dp)*bohr), real_lattice(3, 3)/(real(ngz, dp)*bohr)
+          real_lattice(1, 2)/(real(ngx, dp)*bohr), real_lattice(1, 3)/(real(ngx, dp)*bohr)
+        write (file_unit, '(i4,3f13.5)') ilength(2), real_lattice(2, 1)/(real(ngy, dp)*bohr), &
+          real_lattice(2, 2)/(real(ngy, dp)*bohr), real_lattice(2, 3)/(real(ngy, dp)*bohr)
+        write (file_unit, '(i4,3f13.5)') ilength(3), real_lattice(3, 1)/(real(ngz, dp)*bohr), &
+          real_lattice(3, 2)/(real(ngz, dp)*bohr), real_lattice(3, 3)/(real(ngz, dp)*bohr)
 
         ! Atomic number, valence charge, position of atom
 !         do isp=1,num_species
