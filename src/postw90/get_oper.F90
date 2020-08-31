@@ -55,6 +55,17 @@ module w90_get_oper
   complex(kind=dp), allocatable, save :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
 
+
+
+  !temporary
+  ! <0n|sigma_a. (r-R)_b|Rm>
+  !
+  complex(kind=dp), allocatable, save :: SAA_R(:,:,:,:,:)
+
+  ! <0n|sigma_a. H(r-R)_b|Rm>
+  !
+  complex(kind=dp), allocatable, save :: SBB_R(:,:,:,:,:)
+
 contains
 
   !======================================================!
@@ -431,7 +442,7 @@ contains
           ik, num_states(ik), &
           nnlist(ik, nn), num_states(nnlist(ik, nn)), &
           S_o, S)
-
+        
         ! Berry connection matrix
         ! Assuming all neighbors of a given point are read in sequence!
         !
@@ -474,10 +485,15 @@ contains
       enddo !ncount
 
       close (mmn_in)
-
+      !do ik=1,num_kpts
+      !  write(*,*) ik, real(AA_q(1,:,ik,3),dp)
+      !enddo
       call fourier_q_to_R(AA_q(:, :, :, 1), AA_R(:, :, :, 1))
       call fourier_q_to_R(AA_q(:, :, :, 2), AA_R(:, :, :, 2))
       call fourier_q_to_R(AA_q(:, :, :, 3), AA_R(:, :, :, 3))
+      !do ir=1,nrpts
+      !  write(*,*) ir, real(AA_R(1,:,ir,1),dp)
+      !enddo
 
     endif !on_root
 
@@ -1443,6 +1459,335 @@ contains
       ('Error: Problem reading input file '//trim(seedname)//'.spn')
 
   end subroutine get_SHC_R
+
+
+
+  !============================================================!
+  subroutine get_SBB_R
+  !============================================================!
+  !                                                            !
+  ! SBB_ab(R) = <0|s_a.H.(r-R)_b|R> is the Fourier transform of !
+  ! SBB_ab(k) = <u|s_a.H|del_b u> (a,b=x,y,z)                  !
+  !                                                            !
+  !============================================================!
+
+    use w90_constants, only     : dp,cmplx_0,cmplx_i
+    use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
+                                  num_bands,ndimwin,wb,bk,&
+                                  have_disentangled,timing_level,&
+                                  scissors_shift
+    use w90_postw90_common, only : nrpts,v_matrix
+    use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
+                                  seedname
+    use w90_comms, only         : on_root,comms_bcast
+
+    integer          :: i,j,ii,jj,m,n,a,b,nn1,nn2,ik,nb_tmp,nkp_tmp,&
+                        nntot_tmp,sHu_in,qb1,qb2,winmin_q,winmin_qb2
+    integer :: ipol
+    integer, allocatable          :: num_states(:)
+    complex(kind=dp), allocatable :: SBB_q(:,:,:,:,:)
+    complex(kind=dp), allocatable :: Ho_q_qb2(:,:,:)
+    complex(kind=dp), allocatable :: H_q_qb2(:,:)
+    real(kind=dp)                 :: c_real,c_img
+    character(len=60)             :: header
+    
+    if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',1)
+
+    if(.not.allocated(BB_R)) then
+       allocate(SBB_R(num_wann,num_wann,nrpts,3,3))
+    else
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',2)
+       return
+    end if
+
+    if(on_root) then
+
+       if(abs(scissors_shift)>1.0e-7_dp)&
+            call io_error('Error: scissors correction not yet implemented for SBB_R')
+
+       allocate(Ho_q_qb2(num_bands,num_bands,3))
+       allocate(H_q_qb2(num_wann,num_wann))
+       allocate(SBB_q(num_wann,num_wann,num_kpts,3,3))
+
+       allocate(num_states(num_kpts))
+       do ik=1,num_kpts
+          if(have_disentangled) then 
+             num_states(ik)=ndimwin(ik)
+          else
+             num_states(ik)=num_wann
+          endif
+       enddo
+       
+       sHu_in=io_file_unit()
+          open(unit=sHu_in, file=trim(seedname)//".sHu",form='unformatted',&
+               status='old',action='read',err=111)
+          write(stdout,'(/a)',advance='no')&
+               ' Reading sHu overlaps from '//trim(seedname)//'.sHu in get_SBB_R: '
+          read(sHu_in,err=112,end=112) header
+          write(stdout,'(a)') trim(header)
+          read(sHu_in,err=112,end=112) nb_tmp,nkp_tmp,nntot_tmp
+       if (nb_tmp.ne.num_bands) &
+            call io_error&
+            (trim(seedname)//'.sHu has not the right number of bands')
+       if (nkp_tmp.ne.num_kpts) &
+            call io_error&
+            (trim(seedname)//'.sHu has not the right number of k-points')
+       if (nntot_tmp.ne.nntot) &
+            call io_error&
+         (trim(seedname)//'.sHu has not the right number of nearest neighbours')
+
+       SBB_q=cmplx_0
+       do ik=1,num_kpts
+
+          call get_win_min(ik,winmin_q)
+          do nn2=1,nntot
+             qb2=nnlist(ik,nn2)
+             call get_win_min(qb2,winmin_qb2)
+!             do nn1=1,nntot
+!                qb1=nnlist(ik,nn1)
+             do ipol=1,3
+                !
+                ! Read from .uHu file the matrices <u_q|H_q|u_{q+b2}> 
+                ! between the original ab initio eigenstates
+                !
+                   read(sHu_in,err=112,end=112)&
+                        ((Ho_q_qb2(n,m,ipol),n=1,num_bands),m=1,num_bands)
+                ! pw2wannier90 is coded a bit strangely, so here we take the transpose
+                Ho_q_qb2(:,:,ipol)=transpose(Ho_q_qb2(:,:,ipol))
+                ! old code here
+                !do m=1,num_bands
+                !   do n=1,num_bands
+                !      read(uHu_in,err=106,end=106) Ho_qb1_q_qb2(m,n)
+                !   end do
+                !end do
+                !
+                ! Transform to projected subspace, Wannier gauge
+                !
+             enddo
+
+             H_q_qb2(:,:)=cmplx_0
+             do ipol=1,3
+                do m=1,num_wann
+                   do n=1,num_wann
+                      do i=1,num_states(ik)
+                         ii=winmin_q+i-1
+                         do j=1,num_states(qb2)
+                            jj=winmin_qb2+j-1
+                            H_q_qb2(n,m)=H_q_qb2(n,m)&
+                                 +conjg(v_matrix(i,n,ik))&
+                                 *Ho_q_qb2(ii,jj,ipol)&
+                                 *v_matrix(j,m,qb2)
+                         enddo
+                      enddo
+                   enddo
+                enddo
+                do b=1,3
+                   SBB_q(:,:,ik,ipol,b)=SBB_q(:,:,ik,ipol,b)+&
+                       cmplx_i*wb(nn2)*bk(b,nn2,ik)*H_q_qb2(:,:)
+                enddo
+!             enddo !nn1
+              enddo !ipol
+          enddo !nn2
+       enddo !ik
+
+       close(sHu_in)
+       do b=1,3
+          do a=1,3
+             call fourier_q_to_R(SBB_q(:,:,:,a,b),SBB_R(:,:,:,a,b))
+          enddo
+       enddo
+
+    endif !on_root
+    
+    call comms_bcast(SBB_R(1,1,1,1,1),num_wann*num_wann*nrpts*3*3)
+
+   if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_SBB_R',2)
+   return
+
+111 call io_error&
+         ('Error: Problem opening input file '//trim(seedname)//'.sHu')
+112 call io_error&
+         ('Error: Problem reading input file '//trim(seedname)//'.sHu')
+
+  end subroutine get_SBB_R
+
+  !============================================================!
+  subroutine get_SAA_R
+  !============================================================!
+  !                                                            !
+  ! SAA_ab(R) = <0|s_a.(r-R)_b|R> is the Fourier transform of  !
+  ! SAA_ab(k) = <u|s_a|del_b u> (a,b=x,y,z)                    !
+  !                                                            !
+  !============================================================!
+
+    use w90_constants, only     : dp,cmplx_0,cmplx_i
+    use w90_parameters, only    : num_kpts,nntot,nnlist,num_wann,&
+                                  num_bands,ndimwin,wb,bk,&
+                                  have_disentangled,timing_level,&
+                                  scissors_shift
+    use w90_postw90_common, only : nrpts,v_matrix
+    use w90_io, only            : stdout,io_error,io_stopwatch,io_file_unit,&
+                                  seedname
+    use w90_comms, only         : on_root,comms_bcast,my_node_id
+
+    integer          :: i,j,ii,jj,m,n,a,b,nn1,nn2,ik,nb_tmp,nkp_tmp,&
+                        nntot_tmp,sIu_in,qb1,qb2,winmin_q,winmin_qb2
+    integer :: ipol
+    integer, allocatable          :: num_states(:)
+    complex(kind=dp), allocatable :: SAA_q(:,:,:,:,:)
+    complex(kind=dp), allocatable :: Ho_q_qb2(:,:,:)
+    complex(kind=dp), allocatable :: H_q_qb2(:,:)
+    real(kind=dp)                 :: c_real,c_img
+    character(len=60)             :: header
+    
+    if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',1)
+
+    if(.not.allocated(BB_R)) then
+       allocate(SAA_R(num_wann,num_wann,nrpts,3,3))
+    else
+       if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_CC_R',2)
+       return
+    end if
+    
+    if(on_root) then
+
+       if(abs(scissors_shift)>1.0e-7_dp)&
+            call io_error('Error: scissors correction not yet implemented for SAA_R')
+
+       allocate(Ho_q_qb2(num_bands,num_bands,3))
+       allocate(H_q_qb2(num_wann,num_wann))
+       allocate(SAA_q(num_wann,num_wann,num_kpts,3,3))
+
+       allocate(num_states(num_kpts))
+       do ik=1,num_kpts
+          if(have_disentangled) then 
+             num_states(ik)=ndimwin(ik)
+          else
+             num_states(ik)=num_wann
+          endif
+       enddo
+       
+       sIu_in=io_file_unit()
+          open(unit=sIu_in, file=trim(seedname)//".sIu",form='unformatted',&
+               status='old',action='read',err=113)
+          write(stdout,'(/a)',advance='no')&
+               ' Reading sIu overlaps from '//trim(seedname)//'.sIu in get_SAA_R: '
+          read(sIu_in,err=114,end=114) header
+          write(stdout,'(a)') trim(header)
+          read(sIu_in,err=114,end=114) nb_tmp,nkp_tmp,nntot_tmp
+       if (nb_tmp.ne.num_bands) &
+            call io_error&
+            (trim(seedname)//'.sIu has not the right number of bands')
+       if (nkp_tmp.ne.num_kpts) &
+            call io_error&
+            (trim(seedname)//'.sIu has not the right number of k-points')
+       if (nntot_tmp.ne.nntot) &
+            call io_error&
+         (trim(seedname)//'.sIu has not the right number of nearest neighbours')
+
+       SAA_q=cmplx_0
+       do ik=1,num_kpts
+
+          call get_win_min(ik,winmin_q)
+          do nn2=1,nntot
+             qb2=nnlist(ik,nn2)
+             call get_win_min(qb2,winmin_qb2)
+!             do nn1=1,nntot
+!                qb1=nnlist(ik,nn1)
+             do ipol=1,3
+                !
+                ! Read from .uHu file the matrices <u_q|H_q|u_{q+b2}> 
+                ! between the original ab initio eigenstates
+                !
+                   read(sIu_in,err=114,end=114)&
+                        ((Ho_q_qb2(n,m,ipol),n=1,num_bands),m=1,num_bands)
+                ! pw2wannier90 is coded a bit strangely, so here we take the transpose
+                Ho_q_qb2(:,:,ipol)=transpose(Ho_q_qb2(:,:,ipol))
+                ! old code here
+                !do m=1,num_bands
+                !   do n=1,num_bands
+                !      read(uHu_in,err=106,end=106) Ho_qb1_q_qb2(m,n)
+                !   end do
+                !end do
+                !
+                ! Transform to projected subspace, Wannier gauge
+                !
+             enddo
+
+             H_q_qb2(:,:)=cmplx_0
+             do ipol=1,3
+                if(ik==2 .and. nn2==3) write(*,*) "before 1,1",ipol, Ho_q_qb2(18,17,ipol)
+                do m=1,num_wann
+                   do n=1,num_wann
+                      do i=1,num_states(ik)
+                         ii=winmin_q+i-1
+                         do j=1,num_states(qb2)
+                            jj=winmin_qb2+j-1
+                            H_q_qb2(n,m)=H_q_qb2(n,m)&
+                                 +conjg(v_matrix(i,n,ik))&
+                                 *Ho_q_qb2(ii,jj,ipol)&
+                                 *v_matrix(j,m,qb2)
+                         enddo
+                      enddo
+                   enddo
+                enddo
+                if(ik==2 .and. nn2==3) write(*,*) v_matrix(24,18,qb2), ik,nn2,qb2
+                if(ik==2 .and. nn2==3) write(*,*) "after 1,1", ipol,H_q_qb2(18,17)
+                do b=1,3
+                   SAA_q(:,:,ik,ipol,b)=SAA_q(:,:,ik,ipol,b)+&
+                        cmplx_i*wb(nn2)*bk(b,nn2,ik)*H_q_qb2(:,:)
+                enddo
+!             enddo !nn1
+              enddo !ipol
+          enddo !nn2
+       enddo !ik
+
+       close(sIu_in)
+      
+       
+!       open(unit=sIu_in, file=trim(seedname)//".sIu.dbg",form='formatted')
+!       do ik=1,num_kpts
+!          do m=1,num_wann
+!             do n=1,num_wann
+!                WRITE(sIu_in,'(2ES20.10)') SAA_q(n,m,ik,1,3)
+!             enddo
+!          enddo
+!       enddo
+!       close(sIu_in)
+    !do ik=1,num_kpts
+    !  write(*,*) ik,SAA_q(18,17,ik,2,1)
+    !enddo
+       do b=1,3
+          do a=1,3
+             call fourier_q_to_R(SAA_q(:,:,:,a,b),SAA_R(:,:,:,a,b))
+          enddo
+       enddo
+    !do ik=1,nrpts
+    !  write(*,*) ik,"SAA_R=",real(SAA_R(1,:,ik,1,3),dp)
+    !enddo
+    endif !on_root
+    
+    call comms_bcast(SAA_R(1,1,1,1,1),num_wann*num_wann*nrpts*3*3)
+
+   if (timing_level>1.and.on_root) call io_stopwatch('get_oper: get_SAA_R',2)
+   return
+
+113 call io_error&
+         ('Error: Problem opening input file '//trim(seedname)//'.sIu')
+114 call io_error&
+         ('Error: Problem reading input file '//trim(seedname)//'.sIu')
+
+end subroutine get_SAA_R
+
+
+
+
+
+
+
+
+
+
 
   !=========================================================!
   !                   PRIVATE PROCEDURES                    !
