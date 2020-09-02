@@ -827,7 +827,7 @@ contains
       if (slwf_num .gt. num_wann .or. slwf_num .lt. 1) then
         call io_error('Error: slwf_num must be an integer between 1 and num_wann')
       end if
-      if (slwf_num .lt. num_wann) selective_loc = .true.
+      if (slwf_num .lt. num_wann + 1) selective_loc = .true.
     end if
 
     slwf_constrain = .false.
