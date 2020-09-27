@@ -302,6 +302,7 @@ contains
 
     allocate (AA_R(num_wann, num_wann, nrpts_pw90, 3))
     allocate (AA_R_temp(num_wann, num_wann, nrpts, 3))
+    allocate (wannier_centres_from_AA_R(3, num_wann))
 
     ! Real-space position matrix elements read from file
     !
@@ -495,28 +496,28 @@ contains
       call fourier_q_to_R(AA_q(:, :, :, 2), AA_R_temp(:, :, :, 2))
       call fourier_q_to_R(AA_q(:, :, :, 3), AA_R_temp(:, :, :, 3))
 
+      ! save the wannier centers (diagonals of AA_R_temp) to wannier_centres_from_AA_R
+      ! used in pw90common_fourier_R_to_k_new_second_d_TB_conv
+      wannier_centres_from_AA_R(:, :) = 0.d0
+      do j = 1, num_wann
+        do ir = 1, nrpts
+          if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0)) then
+            wannier_centres_from_AA_R(1, j) = real(AA_R_temp(j, j, ir, 1))
+            wannier_centres_from_AA_R(2, j) = real(AA_R_temp(j, j, ir, 2))
+            wannier_centres_from_AA_R(3, j) = real(AA_R_temp(j, j, ir, 3))
+          endif
+        enddo
+      enddo
+
+      ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
+      do idir = 1, 3
+        call operator_wigner_setup(AA_R_temp(:, :, :, idir), AA_R(:, :, :, idir))
+      enddo
+
     endif !on_root
 
-    ! save the wannier centers (diagonals of AA_R_temp) to wannier_centres_from_AA_R
-    ! used in pw90common_fourier_R_to_k_new_second_d_TB_conv
-    allocate (wannier_centres_from_AA_R(3, num_wann))
-    wannier_centres_from_AA_R(:, :) = 0.d0
-    do j = 1, num_wann
-      do ir = 1, nrpts
-        if ((irvec(1, ir) .eq. 0) .and. (irvec(2, ir) .eq. 0) .and. (irvec(3, ir) .eq. 0)) then
-          wannier_centres_from_AA_R(1, j) = real(AA_R_temp(j, j, ir, 1))
-          wannier_centres_from_AA_R(2, j) = real(AA_R_temp(j, j, ir, 2))
-          wannier_centres_from_AA_R(3, j) = real(AA_R_temp(j, j, ir, 3))
-        endif
-      enddo
-    enddo
-
-    ! Apply degeneracy factor and reorder according to the wigner-seitz vectors
-    do idir = 1, 3
-      call operator_wigner_setup(AA_R_temp(:, :, :, idir), AA_R(:, :, :, idir))
-    enddo
-
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts_pw90*3)
+    call comms_bcast(wannier_centres_from_AA_R(1, 1), 3*num_wann)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
     return
