@@ -98,7 +98,8 @@ contains
       conv_window, conv_noise_amp, conv_noise_num, wannier_centres, write_xyz, &
       wannier_spreads, omega_total, omega_tilde, optimisation, write_vdw_data, &
       write_hr_diag, kpt_latt, bk, ccentres_cart, slwf_num, selective_loc, &
-      slwf_constrain, slwf_lambda
+      slwf_constrain, slwf_lambda, &
+      neigh, nnh, bk, bka ! extra for wann_phases
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -332,7 +333,8 @@ contains
 
     irguide = 0
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
-      call wann_phases(csheet, sheet, rguide, irguide)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
       irguide = 1
     endif
 
@@ -426,7 +428,8 @@ contains
 
       if (guiding_centres .and. (iter .gt. num_no_guide_iter) &
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
-        call wann_phases(csheet, sheet, rguide, irguide)
+        call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
         irguide = 1
       endif
 
@@ -715,7 +718,8 @@ contains
       endif
     endif
 
-    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide)
+    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
+                                          num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
@@ -1494,15 +1498,15 @@ contains
   end subroutine wann_main
 
   !==================================================================!
-  subroutine wann_phases(csheet, sheet, rguide, irguide, m_w)
+  subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, gamma_only, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
     !                                                                  !
     !===================================================================
     use w90_constants, only: eps6
-    use w90_parameters, only: num_wann, nntot, neigh, &
-      nnh, bk, bka, num_kpts, timing_level, m_matrix, gamma_only
+    use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
 
@@ -1516,6 +1520,19 @@ contains
     !! Guiding centres
     integer, intent(in)    :: irguide
     !! Zero if first call to this routine
+
+    ! These were in the parameter module
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: nntot
+    integer, intent(in) :: neigh(:, :)
+    integer, intent(in) :: nnh
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: bka(:, :)
+    integer, intent(in) :: num_kpts
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    logical, intent(in) :: gamma_only
+    ! end of vars from parameter module
+
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     !! Used in the Gamma point routines as an optimisation
 
@@ -2717,7 +2734,8 @@ contains
       num_guide_cycles, num_no_guide_iter, timing_level, &
       write_proj, have_disentangled, conv_tol, conv_window, &
       wannier_centres, write_xyz, wannier_spreads, omega_total, &
-      omega_tilde, write_vdw_data
+      omega_tilde, write_vdw_data, &
+      neigh, nnh, bk, bka ! extra for wann_phases
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
 
     implicit none
@@ -2852,7 +2870,8 @@ contains
 !~       irguide=1
 !~    endif
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
-      call wann_phases(csheet, sheet, rguide, irguide)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
       irguide = 1
     endif
 
@@ -2930,7 +2949,8 @@ contains
 
       if (guiding_centres .and. (iter .gt. num_no_guide_iter) &
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
-        call wann_phases(csheet, sheet, rguide, irguide, m_w)
+        call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, .true., m_w)
         irguide = 1
       endif
 
@@ -3020,7 +3040,8 @@ contains
 
     if (write_xyz .and. on_root) call wann_write_xyz()
 
-    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide)
+    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
+                                          num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
