@@ -99,7 +99,8 @@ contains
       wannier_spreads, omega_total, omega_tilde, optimisation, write_vdw_data, &
       write_hr_diag, kpt_latt, bk, ccentres_cart, slwf_num, selective_loc, &
       slwf_constrain, slwf_lambda, &
-      neigh, nnh, bk, bka ! extra for wann_phases
+      neigh, nnh, bk, bka, & ! extra for wann_phases
+      num_bands, u_matrix_opt, eigval, lwindow ! extra for wann_calc_projection
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -736,7 +737,9 @@ contains
     if (write_r2mn .and. on_root) call wann_write_r2mn()
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (have_disentangled .and. write_proj) call wann_calc_projection()
+    if (have_disentangled .and. write_proj) &
+      call wann_calc_projection(num_bands, num_wann, num_kpts, &
+                                u_matrix_opt, eigval, lwindow)
 
     ! aam: write data required for vdW utility
     if (write_vdw_data .and. on_root) call wann_write_vdw_data()
@@ -2253,7 +2256,8 @@ contains
   end subroutine wann_spread_copy
 
   !==================================================================!
-  subroutine wann_calc_projection()
+  subroutine wann_calc_projection(num_bands, num_wann, num_kpts, &
+                                  u_matrix_opt, eigval, lwindow)
     !==================================================================!
     !                                                                  !
     ! Calculates and writes the projection of each Wannier function    !
@@ -2261,11 +2265,19 @@ contains
     !                                                                  !
     !==================================================================!
 
-    use w90_parameters, only: num_bands, num_wann, num_kpts, &
-      u_matrix_opt, eigval, lwindow, timing_level
+    use w90_parameters, only: timing_level
     use w90_io, only: stdout, io_stopwatch
 
     implicit none
+
+    ! These were in the parameter module
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    logical, intent(in) :: lwindow(:, :)
+    ! end of vars from parameter module
 
     integer :: nw, nb, nkp, counter
     real(kind=dp) :: summ
@@ -2735,7 +2747,8 @@ contains
       write_proj, have_disentangled, conv_tol, conv_window, &
       wannier_centres, write_xyz, wannier_spreads, omega_total, &
       omega_tilde, write_vdw_data, &
-      neigh, nnh, bk, bka ! extra for wann_phases
+      neigh, nnh, bk, bka, & ! extra for wann_phases
+      num_bands, u_matrix_opt, eigval, lwindow ! extra for wann_calc_projection
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
 
     implicit none
@@ -3056,7 +3069,9 @@ contains
     if (write_r2mn) call wann_write_r2mn()
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (have_disentangled .and. write_proj) call wann_calc_projection()
+    if (have_disentangled .and. write_proj) &
+      call wann_calc_projection(num_bands, num_wann, num_kpts, &
+                                u_matrix_opt, eigval, lwindow)
 
     ! aam: write data required for vdW utility
     if (write_vdw_data) call wann_write_vdw_data()
