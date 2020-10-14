@@ -441,9 +441,13 @@ contains
       ! calculate gradient of omega
 
       if (lsitesymmetry .or. precond) then
-        call wann_domega(csheet, sheet, rave, cdodq)
+        call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
+                         m_matrix, num_kpts, selective_loc, slwf_constrain, &
+                         slwf_num, ccentres_cart, lsitesymmetry, cdodq)
       else
-        call wann_domega(csheet, sheet, rave)!,cdodq)  fills only cdodq_loc
+        call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
+                         m_matrix, num_kpts, selective_loc, slwf_constrain, &
+                         slwf_num, ccentres_cart, lsitesymmetry)!,cdodq)  fills only cdodq_loc
       endif
 
       if (lprint .and. iprint > 2 .and. on_root) &
@@ -2028,7 +2032,9 @@ contains
   end subroutine wann_omega
 
   !==================================================================!
-  subroutine wann_domega(csheet, sheet, rave, cdodq)
+  subroutine wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
+                         m_matrix, num_kpts, selective_loc, slwf_constrain, &
+                         slwf_num, ccentres_cart, lsitesymmetry, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2037,12 +2043,8 @@ contains
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Implerial College London
     !===================================================================
-    use w90_parameters, only: num_wann, wb, bk, nntot, m_matrix, num_kpts, &
-      timing_level, selective_loc, &
-      slwf_constrain, slwf_num, &
-      ccentres_cart
+    use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch, io_error
-    use w90_parameters, only: lsitesymmetry !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
 
     implicit none
@@ -2053,6 +2055,20 @@ contains
     ! as we work on the local cdodq, returning the full cdodq array is now
     ! made optional
     complex(kind=dp), intent(out), optional :: cdodq(:, :, :)
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    integer, intent(in) :: num_kpts
+    logical, intent(in) :: selective_loc
+    logical, intent(in) :: slwf_constrain
+    integer, intent(in) :: slwf_num
+    real(kind=dp), intent(in) :: ccentres_cart(:, :)
+    logical, intent(in) :: lsitesymmetry
+    ! end parameters
 
     !local
     complex(kind=dp), allocatable  :: cr(:, :)
