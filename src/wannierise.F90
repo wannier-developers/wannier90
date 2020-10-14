@@ -2772,7 +2772,8 @@ contains
       wannier_centres, write_xyz, wannier_spreads, omega_total, &
       omega_tilde, write_vdw_data, &
       neigh, nnh, bk, bka, & ! extra for wann_phases
-      num_bands, u_matrix_opt, eigval, lwindow ! extra for wann_calc_projection
+      num_bands, u_matrix_opt, eigval, lwindow, & ! extra for wann_calc_projection
+      wbtot ! extra from wann_omega
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
 
     implicit none
@@ -2921,7 +2922,8 @@ contains
     end do
 
     ! calculate initial centers and spread
-    call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread)
+    call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, &
+                          num_wann, nntot, wbtot, wb, bk, omega_invariant)
 
     ! public variables
     omega_total = wann_spread%om_tot
@@ -2996,7 +2998,9 @@ contains
       call wann_spread_copy(wann_spread, old_spread)
 
       ! calculate the new centers and spread
-      call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread)
+      call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
+                            wann_spread, num_wann, nntot, wbtot, wb, bk, &
+                            omega_invariant)
 
       ! print the new centers and spreads
       if (lprint) then
@@ -3445,14 +3449,15 @@ contains
   end subroutine wann_main_gamma
 
   !==================================================================!
-  subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread)
+  subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
+                              wann_spread, num_wann, nntot, wbtot, wb, bk, &
+                              omega_invariant)
     !==================================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
     !                                                                  !
     !===================================================================
-    use w90_parameters, only: num_wann, nntot, wbtot, wb, bk, &
-      omega_invariant, timing_level
+    use w90_parameters, only: timing_level
     use w90_io, only: io_error, io_stopwatch
 
     implicit none
@@ -3464,6 +3469,15 @@ contains
     real(kind=dp), intent(out) :: r2ave(:)
     real(kind=dp), intent(out) :: rave2(:)
     type(localisation_vars), intent(out)  :: wann_spread
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wbtot
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: omega_invariant
+    ! end parameters
 
     !local variables
     real(kind=dp) :: summ, brn
