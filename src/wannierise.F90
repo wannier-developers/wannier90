@@ -739,7 +739,7 @@ contains
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity()
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
@@ -2570,15 +2570,18 @@ contains
   end subroutine wann_write_vdw_data
 
   !========================================!
-  subroutine wann_check_unitarity()
+  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix)
     !========================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error, stdout
-    use w90_parameters, only: num_kpts, num_wann, &
-      u_matrix, timing_level
+    use w90_parameters, only: timing_level
 
     implicit none
+
+    ! from parameters
+    integer, intent(in) :: num_kpts, num_wann
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
 
     integer :: nkp, i, j, m
     complex(kind=dp) :: ctmp1, ctmp2
@@ -3103,7 +3106,7 @@ contains
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity()
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
