@@ -100,7 +100,8 @@ contains
       write_hr_diag, kpt_latt, bk, ccentres_cart, slwf_num, selective_loc, &
       slwf_constrain, slwf_lambda, &
       neigh, nnh, bk, bka, & ! extra for wann_phases
-      num_bands, u_matrix_opt, eigval, lwindow ! extra for wann_calc_projection
+      num_bands, u_matrix_opt, eigval, lwindow, & !extra for wann_calc_projection
+      wb ! extra for wann_omega calls
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -346,7 +347,10 @@ contains
     end if
 
     ! calculate initial centers and spread
-    call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread)
+    call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
+                    num_wann, m_matrix, nntot, wb, bk, num_kpts, &
+                    omega_invariant, selective_loc, slwf_constrain, &
+                    slwf_num, ccentres_cart)
 
     ! public variables
     if (.not. selective_loc) then
@@ -478,7 +482,10 @@ contains
         call internal_new_u_and_m()
 
         ! calculate spread at trial step
-        call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread)
+        call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
+                        num_wann, m_matrix, nntot, wb, bk, num_kpts, &
+                        omega_invariant, selective_loc, slwf_constrain, &
+                        slwf_num, ccentres_cart)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step()
@@ -528,7 +535,10 @@ contains
         call wann_spread_copy(wann_spread, old_spread)
 
         ! calculate the new centers and spread
-        call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread)
+        call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
+                        num_wann, m_matrix, nntot, wb, bk, num_kpts, &
+                        omega_invariant, selective_loc, slwf_constrain, &
+                        slwf_num, ccentres_cart)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -1730,7 +1740,10 @@ contains
   end subroutine wann_phases
 
   !==================================================================!
-  subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread)
+  subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
+                        num_wann, m_matrix, nntot, wb, bk, num_kpts, &
+                        omega_invariant, selective_loc, slwf_constrain, &
+                        slwf_num, ccentres_cart)
     !==================================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
@@ -1739,10 +1752,7 @@ contains
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Implerial College London
     !===================================================================
-    use w90_parameters, only: num_wann, m_matrix, nntot, wb, bk, num_kpts, &
-      omega_invariant, timing_level, &
-      selective_loc, slwf_constrain, slwf_num, &
-      ccentres_cart
+    use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
 
     implicit none
@@ -1753,6 +1763,20 @@ contains
     real(kind=dp), intent(out) :: r2ave(:)
     real(kind=dp), intent(out) :: rave2(:)
     type(localisation_vars), intent(out)  :: wann_spread
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    integer, intent(in) :: num_kpts
+    real(kind=dp), intent(in) :: omega_invariant
+    logical, intent(in) :: selective_loc
+    logical, intent(in) :: slwf_constrain
+    integer, intent(in) :: slwf_num
+    real(kind=dp), intent(in) :: ccentres_cart(:, :)
+    ! end of parameters
 
     !local variables
     real(kind=dp) :: summ, mnn2
