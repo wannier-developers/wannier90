@@ -744,7 +744,8 @@ contains
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
 !    if (iprint>2) call wann_svd_omega_i()
-    if (iprint > 2 .and. on_root) call wann_svd_omega_i()
+    if (iprint > 2 .and. on_root) call wann_svd_omega_i(num_wann, num_kpts, &
+                                                        nntot, wb, m_matrix)
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
@@ -2678,16 +2679,19 @@ contains
   end subroutine wann_write_r2mn
 
   !========================================!
-  subroutine wann_svd_omega_i()
+  subroutine wann_svd_omega_i(num_wann, num_kpts, nntot, wb, m_matrix)
     !========================================!
 
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error, stdout
-    use w90_parameters, only: num_wann, num_kpts, nntot, wb, &
-      m_matrix, lenconfac, length_unit, &
-      timing_level
+    use w90_parameters, only: lenconfac, length_unit, timing_level
 
     implicit none
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann, num_kpts, nntot
+    real(kind=dp), intent(in) :: wb(:)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
 
     complex(kind=dp), allocatable  :: cv1(:, :), cv2(:, :)
     complex(kind=dp), allocatable  :: cw1(:), cw2(:)
@@ -3110,7 +3114,8 @@ contains
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
-    if (iprint > 2) call wann_svd_omega_i()
+    if (iprint > 2) call wann_svd_omega_i(num_wann, num_kpts, nntot, wb, &
+                                          m_matrix)
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
