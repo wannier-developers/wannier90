@@ -165,14 +165,14 @@ contains
   end subroutine sitesym_symmetrize_u_matrix
 
   !==================================================================!
-  subroutine sitesym_symmetrize_gradient(imode, grad)
+  subroutine sitesym_symmetrize_gradient(imode, grad, num_wann, num_kpts)
     !==================================================================!
-    use w90_parameters, only: num_wann, num_kpts
+    !use w90_parameters, only: num_wann, num_kpts
     use w90_utility, only: utility_zgemm
 
     implicit none
 
-    integer, intent(in) :: imode
+    integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
     integer :: ik, ir, isym, irk, ngk
 

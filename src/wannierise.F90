@@ -455,7 +455,8 @@ contains
 
       ! calculate search direction (cdq)
       call internal_search_direction()
-      if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq) !RS:
+      if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
+                                                          num_kpts) !RS:
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -2253,7 +2254,7 @@ contains
                          cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs)
       call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts)
       if (lsitesymmetry) then
-        call sitesym_symmetrize_gradient(1, cdodq) !RS:
+        call sitesym_symmetrize_gradient(1, cdodq, num_wann, num_kpts) !RS:
         cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) + 1:displs(my_node_id) + counts(my_node_id))
       endif
     end if
