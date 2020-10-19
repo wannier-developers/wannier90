@@ -103,7 +103,8 @@ contains
       num_bands, u_matrix_opt, eigval, lwindow, & !extra for wann_calc_projection
       wb, & ! extra for wann_omega calls
       translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
-      atoms_pos_cart, num_species, atoms_species_num ! extra for write_xyz
+      atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
+      num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -765,7 +766,14 @@ contains
                                 u_matrix_opt, eigval, lwindow)
 
     ! aam: write data required for vdW utility
-    if (write_vdw_data .and. on_root) call wann_write_vdw_data()
+    if (write_vdw_data .and. on_root) then
+      call wann_write_vdw_data(translate_home_cell, num_wann, &
+                               wannier_centres, real_lattice, recip_lattice, &
+                               atoms_symbol, atoms_pos_cart, num_species, &
+                               atoms_species_num, wannier_spreads, u_matrix, &
+                               u_matrix_opt, num_kpts, have_disentangled, &
+                               num_valence_bands, num_elec_per_state)
+    endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
@@ -2439,7 +2447,12 @@ contains
   end subroutine wann_write_xyz
 
   !=================================================================!
-  subroutine wann_write_vdw_data()
+  subroutine wann_write_vdw_data(translate_home_cell, num_wann, &
+                                 wannier_centres, real_lattice, recip_lattice, &
+                                 atoms_symbol, atoms_pos_cart, num_species, &
+                                 atoms_species_num, wannier_spreads, u_matrix, &
+                                 u_matrix_opt, num_kpts, have_disentangled, &
+                                 num_valence_bands, num_elec_per_state)
     !=================================================================!
     !                                                                 !
     ! Write a file with Wannier centres, spreads and occupations for  !
@@ -2449,17 +2462,31 @@ contains
     !=================================================================!
 
     use w90_io, only: seedname, io_file_unit, io_date, stdout, io_error
-    use w90_parameters, only: translate_home_cell, num_wann, wannier_centres, &
-      lenconfac, real_lattice, recip_lattice, iprint, &
-      atoms_symbol, atoms_pos_cart, num_species, &
-      atoms_species_num, wannier_spreads, u_matrix, &
-      u_matrix_opt, num_kpts, have_disentangled, &
-      num_valence_bands, num_elec_per_state, write_vdw_data
+    !use w90_parameters, only: lenconfac, iprint, write_vdw_data
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0, eps6
 !~    use w90_disentangle, only : ndimfroz
 
     implicit none
+
+    ! from w90_parameters
+    logical, intent(in) :: translate_home_cell
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    character(len=2), intent(in) :: atoms_symbol(:)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    integer, intent(in) :: num_species
+    integer, intent(in) :: atoms_species_num(:)
+    real(kind=dp), intent(in) :: wannier_spreads(:)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    integer, intent(in) :: num_kpts
+    logical, intent(in) :: have_disentangled
+    integer, intent(in) :: num_valence_bands
+    integer, intent(in) :: num_elec_per_state
+    ! end parameters
 
     integer          :: iw, vdw_unit, r, s, k, m, ierr, ndim
     real(kind=dp)    :: wc(3, num_wann)
@@ -2819,7 +2846,8 @@ contains
       num_bands, u_matrix_opt, eigval, lwindow, & ! extra for wann_calc_projection
       wbtot, & ! extra from wann_omega
       translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
-      atoms_pos_cart, num_species, atoms_species_num ! extra for write_xyz
+      atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
+      num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
 
     implicit none
@@ -3154,7 +3182,14 @@ contains
                                 u_matrix_opt, eigval, lwindow)
 
     ! aam: write data required for vdW utility
-    if (write_vdw_data) call wann_write_vdw_data()
+    if (write_vdw_data) then
+      call wann_write_vdw_data(translate_home_cell, num_wann, &
+                               wannier_centres, real_lattice, recip_lattice, &
+                               atoms_symbol, atoms_pos_cart, num_species, &
+                               atoms_species_num, wannier_spreads, u_matrix, &
+                               u_matrix_opt, num_kpts, have_disentangled, &
+                               num_valence_bands, num_elec_per_state)
+    endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (cz, stat=ierr)
