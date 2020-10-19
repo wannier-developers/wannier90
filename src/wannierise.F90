@@ -93,7 +93,7 @@ contains
       nntot, wbtot, u_matrix, m_matrix, num_kpts, iprint, num_print_cycles, &
       num_dump_cycles, omega_invariant, param_write_chkpt, length_unit, &
       lenconfac, proj_site, real_lattice, write_r2mn, guiding_centres, &
-      num_guide_cycles, num_no_guide_iter, timing_level, trial_step, precond, spinors, &
+      num_guide_cycles, num_no_guide_iter, timing_level, trial_step, precond, &
       fixed_step, lfixstep, write_proj, have_disentangled, conv_tol, num_proj, &
       conv_window, conv_noise_amp, conv_noise_num, wannier_centres, write_xyz, &
       wannier_spreads, omega_total, omega_tilde, optimisation, write_vdw_data, &
@@ -152,7 +152,7 @@ contains
     real(kind=dp) :: doda0
     real(kind=dp) :: falphamin, alphamin
     real(kind=dp) :: gcfac, gcnorm1, gcnorm0
-    integer       :: i, n, iter, ind, ierr, iw, ncg, info, nkp, nkp_loc, nn
+    integer       :: i, n, iter, ind, ierr, iw, ncg, info, nkp, nkp_loc !, nn
     logical       :: lprint, ldump, lquad
     real(kind=dp), allocatable :: history(:)
     real(kind=dp)              :: save_spread
@@ -161,8 +161,8 @@ contains
     complex(kind=dp) :: fac, rdotk
     real(kind=dp) :: alpha_precond
     integer :: irpt, loop_kpt
-    logical :: cconverged
-    real(kind=dp) :: glpar, cvalue_new
+    !logical :: cconverged
+    !real(kind=dp) :: glpar, cvalue_new
     real(kind=dp), allocatable :: rnr0n2(:)
 
     if (timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 1)
@@ -351,9 +351,8 @@ contains
 
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                    num_wann, m_matrix, nntot, wb, bk, num_kpts, &
-                    omega_invariant, selective_loc, slwf_constrain, &
-                    slwf_num, ccentres_cart)
+                    num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
+                    selective_loc, slwf_constrain, slwf_num, ccentres_cart)
 
     ! public variables
     if (.not. selective_loc) then
@@ -445,11 +444,11 @@ contains
 
       if (lsitesymmetry .or. precond) then
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
-                         m_matrix, num_kpts, selective_loc, slwf_constrain, &
+                         num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
-                         m_matrix, num_kpts, selective_loc, slwf_constrain, &
+                         num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry)!,cdodq)  fills only cdodq_loc
       endif
 
@@ -491,9 +490,8 @@ contains
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
-                        num_wann, m_matrix, nntot, wb, bk, num_kpts, &
-                        omega_invariant, selective_loc, slwf_constrain, &
-                        slwf_num, ccentres_cart)
+                        num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
+                        selective_loc, slwf_constrain, slwf_num, ccentres_cart)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step()
@@ -544,9 +542,8 @@ contains
 
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                        num_wann, m_matrix, nntot, wb, bk, num_kpts, &
-                        omega_invariant, selective_loc, slwf_constrain, &
-                        slwf_num, ccentres_cart)
+                        num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
+                        selective_loc, slwf_constrain, slwf_num, ccentres_cart)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -767,11 +764,9 @@ contains
 
     ! aam: write data required for vdW utility
     if (write_vdw_data .and. on_root) then
-      call wann_write_vdw_data(translate_home_cell, num_wann, &
-                               wannier_centres, real_lattice, recip_lattice, &
-                               atoms_symbol, atoms_pos_cart, num_species, &
-                               atoms_species_num, wannier_spreads, u_matrix, &
-                               u_matrix_opt, num_kpts, have_disentangled, &
+      call wann_write_vdw_data(num_wann, wannier_centres, real_lattice, &
+                               recip_lattice, wannier_spreads, u_matrix, &
+                               u_matrix_opt, have_disentangled, &
                                num_valence_bands, num_elec_per_state)
     endif
 
@@ -1762,7 +1757,7 @@ contains
 
   !==================================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                        num_wann, m_matrix, nntot, wb, bk, num_kpts, &
+                        num_wann, nntot, wb, bk, num_kpts, &
                         omega_invariant, selective_loc, slwf_constrain, &
                         slwf_num, ccentres_cart)
     !==================================================================!
@@ -1787,7 +1782,6 @@ contains
 
     ! from w90_parameters
     integer, intent(in) :: num_wann
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     integer, intent(in) :: nntot
     real(kind=dp), intent(in) :: wb(:)
     real(kind=dp), intent(in) :: bk(:, :, :)
@@ -2050,7 +2044,7 @@ contains
 
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
-                         m_matrix, num_kpts, selective_loc, slwf_constrain, &
+                         num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, cdodq)
     !==================================================================!
     !                                                                  !
@@ -2075,7 +2069,6 @@ contains
 
     ! from w90_parameters
     integer, intent(in) :: num_wann
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     integer, intent(in) :: nntot
     real(kind=dp), intent(in) :: wb(:)
     real(kind=dp), intent(in) :: bk(:, :, :)
@@ -2447,11 +2440,9 @@ contains
   end subroutine wann_write_xyz
 
   !=================================================================!
-  subroutine wann_write_vdw_data(translate_home_cell, num_wann, &
-                                 wannier_centres, real_lattice, recip_lattice, &
-                                 atoms_symbol, atoms_pos_cart, num_species, &
-                                 atoms_species_num, wannier_spreads, u_matrix, &
-                                 u_matrix_opt, num_kpts, have_disentangled, &
+  subroutine wann_write_vdw_data(num_wann, wannier_centres, real_lattice, &
+                                 recip_lattice, wannier_spreads, u_matrix, &
+                                 u_matrix_opt, have_disentangled, &
                                  num_valence_bands, num_elec_per_state)
     !=================================================================!
     !                                                                 !
@@ -2470,19 +2461,19 @@ contains
     implicit none
 
     ! from w90_parameters
-    logical, intent(in) :: translate_home_cell
+    !logical, intent(in) :: translate_home_cell
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: wannier_centres(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    character(len=2), intent(in) :: atoms_symbol(:)
-    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-    integer, intent(in) :: num_species
-    integer, intent(in) :: atoms_species_num(:)
+    !character(len=2), intent(in) :: atoms_symbol(:)
+    !real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    !integer, intent(in) :: num_species
+    !integer, intent(in) :: atoms_species_num(:)
     real(kind=dp), intent(in) :: wannier_spreads(:)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    integer, intent(in) :: num_kpts
+    !integer, intent(in) :: num_kpts
     logical, intent(in) :: have_disentangled
     integer, intent(in) :: num_valence_bands
     integer, intent(in) :: num_elec_per_state
@@ -3183,11 +3174,9 @@ contains
 
     ! aam: write data required for vdW utility
     if (write_vdw_data) then
-      call wann_write_vdw_data(translate_home_cell, num_wann, &
-                               wannier_centres, real_lattice, recip_lattice, &
-                               atoms_symbol, atoms_pos_cart, num_species, &
-                               atoms_species_num, wannier_spreads, u_matrix, &
-                               u_matrix_opt, num_kpts, have_disentangled, &
+      call wann_write_vdw_data(num_wann, wannier_centres, real_lattice, &
+                               recip_lattice, wannier_spreads, u_matrix, &
+                               u_matrix_opt, have_disentangled, &
                                num_valence_bands, num_elec_per_state)
     endif
 
