@@ -101,7 +101,9 @@ contains
       slwf_constrain, slwf_lambda, &
       neigh, nnh, bk, bka, & ! extra for wann_phases
       num_bands, u_matrix_opt, eigval, lwindow, & !extra for wann_calc_projection
-      wb ! extra for wann_omega calls
+      wb, & ! extra for wann_omega calls
+      translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
+      atoms_pos_cart, num_species, atoms_species_num ! extra for write_xyz
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -717,7 +719,12 @@ contains
       end if
     endif
 
-    if (write_xyz .and. on_root) call wann_write_xyz()
+    if (write_xyz .and. on_root) then
+      call wann_write_xyz(translate_home_cell, num_wann, wannier_centres, &
+                          real_lattice, recip_lattice, num_atoms, &
+                          atoms_symbol, atoms_pos_cart, num_species, &
+                          atoms_species_num)
+    endif
 
     if (write_hr_diag) then
       call hamiltonian_setup()
@@ -2358,7 +2365,10 @@ contains
   end subroutine wann_calc_projection
 
   !=====================================!
-  subroutine wann_write_xyz()
+  subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, &
+                            real_lattice, recip_lattice, num_atoms, &
+                            atoms_symbol, atoms_pos_cart, num_species, &
+                            atoms_species_num)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
@@ -2366,13 +2376,23 @@ contains
     !=====================================!
 
     use w90_io, only: seedname, io_file_unit, io_date, stdout
-    use w90_parameters, only: translate_home_cell, num_wann, wannier_centres, &
-      lenconfac, real_lattice, recip_lattice, iprint, &
-      num_atoms, atoms_symbol, atoms_pos_cart, &
-      num_species, atoms_species_num
+    use w90_parameters, only: lenconfac, iprint
     use w90_utility, only: utility_translate_home
 
     implicit none
+
+    ! from w90_parameters
+    logical, intent(in) :: translate_home_cell
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    integer, intent(in) :: num_atoms
+    character(len=2), intent(in) :: atoms_symbol(:)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    integer, intent(in) :: num_species
+    integer, intent(in) :: atoms_species_num(:)
+    ! end parameters
 
     integer          :: iw, ind, xyz_unit, nsp, nat
     character(len=9) :: cdate, ctime
@@ -2797,7 +2817,9 @@ contains
       omega_tilde, write_vdw_data, &
       neigh, nnh, bk, bka, & ! extra for wann_phases
       num_bands, u_matrix_opt, eigval, lwindow, & ! extra for wann_calc_projection
-      wbtot ! extra from wann_omega
+      wbtot, & ! extra from wann_omega
+      translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
+      atoms_pos_cart, num_species, atoms_species_num ! extra for write_xyz
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
 
     implicit none
@@ -3103,7 +3125,12 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (write_xyz .and. on_root) call wann_write_xyz()
+    if (write_xyz .and. on_root) then
+      call wann_write_xyz(translate_home_cell, num_wann, wannier_centres, &
+                          real_lattice, recip_lattice, num_atoms, &
+                          atoms_symbol, atoms_pos_cart, num_species, &
+                          atoms_species_num)
+    endif
 
     if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
                                           num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
