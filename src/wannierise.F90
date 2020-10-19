@@ -755,7 +755,8 @@ contains
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
 !    if (write_r2mn) call wann_write_r2mn()
-    if (write_r2mn .and. on_root) call wann_write_r2mn()
+    if (write_r2mn .and. on_root) call wann_write_r2mn(num_kpts, num_wann, &
+                                                       nntot, wb, m_matrix)
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) &
@@ -2669,7 +2670,7 @@ contains
   end subroutine wann_check_unitarity
 
   !========================================!
-  subroutine wann_write_r2mn()
+  subroutine wann_write_r2mn(num_kpts, num_wann, nntot, wb, m_matrix)
     !========================================!
     !                                        !
     ! Write seedname.r2mn file               !
@@ -2678,10 +2679,13 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: seedname, io_file_unit, io_error
-    use w90_parameters, only: num_kpts, num_wann, nntot, wb, &
-      m_matrix
 
     implicit none
+
+    ! from parameters
+    integer, intent(in) :: num_kpts, num_wann, nntot
+    real(kind=dp), intent(in) :: wb(:)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
 
     integer :: r2mnunit, nw1, nw2, nkp, nn
     real(kind=dp) :: r2ave_mn, delta
@@ -3165,7 +3169,8 @@ contains
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
-    if (write_r2mn) call wann_write_r2mn()
+    if (write_r2mn) call wann_write_r2mn(num_kpts, num_wann, nntot, wb, &
+                                         m_matrix)
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) &
