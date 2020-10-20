@@ -132,7 +132,7 @@ contains
     complex(kind=dp), allocatable :: cdodq_precond_loc(:, :, :)
     real(kind=dp), allocatable :: sheet(:, :, :)
     real(kind=dp), allocatable :: rave(:, :), r2ave(:), rave2(:)
-    real(kind=dp), dimension(3) :: rvec_cart
+    !real(kind=dp), dimension(3) :: rvec_cart
 
     !local arrays not passed into subroutines
     complex(kind=dp), allocatable  :: cwschur1(:), cwschur2(:)
@@ -158,8 +158,8 @@ contains
     real(kind=dp)              :: save_spread
     logical                    :: lconverged, lrandom, lfirst
     integer                    :: conv_count, noise_count, page_unit
-    complex(kind=dp) :: fac, rdotk
-    real(kind=dp) :: alpha_precond
+    complex(kind=dp) :: rdotk !, fac
+    !real(kind=dp) :: alpha_precond
     integer :: irpt, loop_kpt
     !logical :: cconverged
     !real(kind=dp) :: glpar, cvalue_new
@@ -456,7 +456,11 @@ contains
         write (stdout, *) ' LINE --> Iteration                     :', iter
 
       ! calculate search direction (cdq)
-      call internal_search_direction()
+      call internal_search_direction(cdodq, cdodq_r, cdodq_precond, &
+                                     cdodq_precond_loc, cdqkeep_loc, k_to_r, &
+                                     wann_spread, iter, lprint, lrandom, &
+                                     noise_count, ncg, gcfac, gcnorm0, &
+                                     gcnorm1, doda0)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
                                                           num_kpts) !RS:
 
@@ -1024,7 +1028,11 @@ contains
     end subroutine internal_random_noise
 
     !===============================================!
-    subroutine internal_search_direction()
+    subroutine internal_search_direction(cdodq, cdodq_r, cdodq_precond, &
+                                         cdodq_precond_loc, cdqkeep_loc, &
+                                         k_to_r, wann_spread, iter, lprint, &
+                                         lrandom, noise_count, ncg, gcfac, &
+                                         gcnorm0, gcnorm1, doda0)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1033,10 +1041,36 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
+      use w90_io, only: io_stopwatch, stdout
+      use w90_parameters, only: timing_level, precond, optimisation, num_wann, &
+        num_kpts, kpt_latt, real_lattice, num_cg_steps, wbtot, &
+        conv_noise_num, iprint
+      use w90_hamiltonian, only: nrpts, irvec, ndegen
+      use w90_comms, only: comms_allreduce
 
       implicit none
 
-      complex(kind=dp) :: zdotc
+      complex(kind=dp), intent(in) :: cdodq(:, :, :)
+      complex(kind=dp), intent(inout) :: cdodq_r(:, :, :)
+      complex(kind=dp), intent(inout) :: cdodq_precond(:, :, :)
+      complex(kind=dp), intent(inout) :: cdodq_precond_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
+      complex(kind=dp), intent(in) :: k_to_r(:, :)
+      type(localisation_vars), intent(in) :: wann_spread
+      integer, intent(in) :: iter
+      logical, intent(in) :: lprint
+      logical, intent(inout) :: lrandom
+      integer, intent(in) :: noise_count
+      integer, intent(inout) :: ncg
+      real(kind=dp), intent(out) :: gcfac
+      real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
+      real(kind=dp), intent(out) :: doda0
+      ! local
+      complex(kind=dp), external :: zdotc
+      complex(kind=dp) :: fac, rdotk
+      real(kind=dp), dimension(3) :: rvec_cart
+      real(kind=dp) :: alpha_precond
+      integer :: irpt, loop_kpt
 
       if (timing_level > 1 .and. on_root) call io_stopwatch('wann: main: search_direction', 1)
 
