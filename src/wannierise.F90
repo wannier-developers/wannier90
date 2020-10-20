@@ -966,10 +966,13 @@ contains
       !! to help escape from local minima
       !                                               !
       !===============================================!
+      use w90_io, only: io_error
+      use w90_parameters, only: num_wann, conv_noise_amp
+      ! cdq_loc from local module also
 
       implicit none
 
-      integer :: ikp, iw, jw
+      integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
       complex(kind=dp), allocatable :: cnoise(:, :)
 
