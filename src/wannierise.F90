@@ -633,7 +633,11 @@ contains
         if (on_root) call param_write_chkpt('postdis')
       endif
 
-      if (conv_window .gt. 1) call internal_test_convergence()
+      if (conv_window .gt. 1) then
+        call internal_test_convergence(old_spread, wann_spread, history, &
+                                       save_spread, iter, conv_count, &
+                                       noise_count, lconverged, lrandom, lfirst)
+      endif
 
       if (lconverged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
@@ -873,15 +877,30 @@ contains
   contains
 
     !===============================================!
-    subroutine internal_test_convergence()
+    subroutine internal_test_convergence(old_spread, wann_spread, history, &
+                                         save_spread, iter, conv_count, &
+                                         noise_count, lconverged, lrandom, &
+                                         lfirst)
       !===============================================!
       !                                               !
       !! Determine whether minimisation of non-gauge
       !! invariant spread is converged
       !                                               !
       !===============================================!
+      use w90_io, only: io_error
+      use w90_parameters, only: conv_window, conv_tol, conv_noise_amp, &
+        conv_noise_num
 
       implicit none
+
+      type(localisation_vars), intent(in) :: old_spread
+      type(localisation_vars), intent(in) :: wann_spread
+      real(kind=dp), intent(inout) :: history(:)
+      real(kind=dp), intent(out) :: save_spread
+      integer, intent(in) :: iter
+      integer, intent(inout) :: conv_count
+      integer, intent(inout) :: noise_count
+      logical, intent(inout) :: lconverged, lrandom, lfirst
 
       real(kind=dp) :: delta_omega
       integer :: j, ierr
