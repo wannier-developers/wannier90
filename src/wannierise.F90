@@ -152,7 +152,7 @@ contains
     real(kind=dp) :: doda0
     real(kind=dp) :: falphamin, alphamin
     real(kind=dp) :: gcfac, gcnorm1, gcnorm0
-    integer       :: i, n, iter, ind, ierr, iw, ncg, info, nkp, nkp_loc !, nn
+    integer       :: i, n, iter, ind, ierr, iw, ncg, nkp, nkp_loc !, nn
     logical       :: lprint, ldump, lquad
     real(kind=dp), allocatable :: history(:)
     real(kind=dp)              :: save_spread
@@ -490,7 +490,8 @@ contains
         endif
 
         ! update U and M
-        call internal_new_u_and_m()
+        call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
+                                  cwschur1, cwschur2, cwschur3, cwschur4, cz)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
@@ -541,7 +542,8 @@ contains
         endif
 
         ! update U and M
-        call internal_new_u_and_m()
+        call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
+                                  cwschur1, cwschur2, cwschur3, cwschur4, cz)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -1302,7 +1304,8 @@ contains
     end subroutine internal_optimal_step
 
     !===============================================!
-    subroutine internal_new_u_and_m()
+    subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
+                                    cwschur1, cwschur2, cwschur3, cwschur4, cz)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
@@ -1310,10 +1313,24 @@ contains
       !===============================================!
       use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
         ir2ik, ik2ir !YN: RS:
+      use w90_io, only: io_stopwatch, io_error, stdout
+      use w90_comms, only: comms_bcast, comms_gatherv
+      use w90_utility, only: utility_zgemm
+      use w90_parameters, only: timing_level, lsitesymmetry, num_wann, &
+        num_kpts, nntot, nnlist
 
       implicit none
-
-      integer :: nkp, nn, nkp2, nsdim, nkp_loc
+      complex(kind=dp), intent(inout) :: cdq(:, :, :)
+      complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
+      complex(kind=dp), intent(inout) :: cwork(:)
+      real(kind=dp), intent(inout) :: evals(:)
+      real(kind=dp), intent(inout) :: rwork(:)
+      complex(kind=dp), intent(inout) :: cwschur1(:), cwschur2(:)
+      complex(kind=dp), intent(inout) :: cwschur3(:), cwschur4(:)
+      complex(kind=dp), intent(inout) :: cz(:, :)
+      !cdq_loc from wannierise module
+      ! local vars
+      integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
 
       if (timing_level > 1 .and. on_root) call io_stopwatch('wann: main: u_and_m', 1)
@@ -1379,7 +1396,7 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(cdq) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(cdq, num_wann, num_kpts) !RS: calculate cdq(Rk) from k
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
       endif
 
