@@ -237,16 +237,18 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !==================================================================!
-  subroutine sitesym_symmetrize_rotation(urot)
+  subroutine sitesym_symmetrize_rotation(urot, num_wann, num_kpts)
     !==================================================================!
-    use w90_parameters, only: num_wann, num_kpts, u_matrix
+    !use w90_parameters, only: num_wann, num_kpts, u_matrix
     use w90_utility, only: utility_zgemm
 
     implicit none
 
-    integer :: ik, ir, isym, irk
+    integer, intent(in) :: num_wann, num_kpts
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
-
+    !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    ! local
+    integer :: ik, ir, isym, irk
     complex(kind=dp) :: cmat1(num_wann, num_wann)
     complex(kind=dp) :: cmat2(num_wann, num_wann)
 
