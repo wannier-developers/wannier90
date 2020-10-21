@@ -498,7 +498,8 @@ contains
                         selective_loc, slwf_constrain, slwf_num, ccentres_cart)
 
         ! Calculate optimal step (alphamin)
-        call internal_optimal_step()
+        call internal_optimal_step(wann_spread, trial_spread, doda0, &
+                                   alphamin, falphamin, lquad, lprint)
 
       endif
 
@@ -1239,16 +1240,26 @@ contains
     end subroutine internal_search_direction
 
     !===============================================!
-    subroutine internal_optimal_step()
+    subroutine internal_optimal_step(wann_spread, trial_spread, doda0, &
+                                     alphamin, falphamin, lquad, lprint)
       !===============================================!
       !                                               !
       !! Calculate the optimal step length based on a
       !! parabolic line search
       !                                               !
       !===============================================!
+      use w90_io, only: io_stopwatch, stdout
+      use w90_parameters, only: timing_level, iprint, trial_step
 
       implicit none
 
+      type(localisation_vars), intent(in) :: wann_spread
+      type(localisation_vars), intent(in) :: trial_spread
+      real(kind=dp), intent(in) :: doda0
+      real(kind=dp), intent(out) :: alphamin, falphamin
+      logical, intent(out) :: lquad
+      logical, intent(in) :: lprint
+      ! local
       real(kind=dp) :: fac, shift, eqa, eqb
 
       if (timing_level > 1 .and. on_root) call io_stopwatch('wann: main: optimal_step', 1)
