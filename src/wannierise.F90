@@ -3146,7 +3146,7 @@ contains
         irguide = 1
       endif
 
-      call internal_new_u_and_m_gamma()
+      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot)
 
       call wann_spread_copy(wann_spread, old_spread)
 
@@ -3192,7 +3192,10 @@ contains
         call param_write_chkpt('postdis')
       endif
 
-      if (conv_window .gt. 1) call internal_test_convergence_gamma()
+      if (conv_window .gt. 1) then
+        call internal_test_convergence_gamma(wann_spread, old_spread, &
+                                             history, iter, lconverged)
+      endif
 
       if (lconverged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
@@ -3315,13 +3318,18 @@ contains
   contains
 
     !===============================================!
-    subroutine internal_new_u_and_m_gamma()
+    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot)
       !===============================================!
 
       use w90_constants, only: pi, eps10
+      use w90_io, only: io_stopwatch
+      use w90_parameters, only: timing_level, num_wann
 
       implicit none
-
+      real(kind=dp), intent(inout) :: m_w(:, :, :)
+      real(kind=dp), intent(inout)  :: ur_rot(:, :)
+      integer, intent(in) :: tnntot
+      ! local
       real(kind=dp) :: theta, twotheta
       real(kind=dp) :: a11, a12, a21, a22
       real(kind=dp) :: cc, ss, rtmp1, rtmp2
@@ -3387,15 +3395,23 @@ contains
     end subroutine internal_new_u_and_m_gamma
 
     !===============================================!
-    subroutine internal_test_convergence_gamma()
+    subroutine internal_test_convergence_gamma(wann_spread, old_spread, &
+                                               history, iter, lconverged)
       !===============================================!
       !                                               !
       ! Determine whether minimisation of non-gauge-  !
       ! invariant spread is converged                 !
       !                                               !
       !===============================================!
+      use w90_io, only: io_error
+      use w90_parameters, only: conv_window, conv_tol
 
       implicit none
+      type(localisation_vars), intent(in) :: wann_spread
+      type(localisation_vars), intent(in) :: old_spread
+      real(kind=dp), intent(inout) :: history(:)
+      integer, intent(in) :: iter
+      logical, intent(out) :: lconverged
 
       real(kind=dp) :: delta_omega
       integer :: j, ierr
