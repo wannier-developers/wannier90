@@ -648,7 +648,9 @@ contains
       if (conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, &
                                        save_spread, iter, conv_count, &
-                                       noise_count, lconverged, lrandom, lfirst)
+                                       noise_count, lconverged, lrandom, &
+                                       lfirst, conv_window, conv_tol, &
+                                       conv_noise_amp, conv_noise_num)
       endif
 
       if (lconverged) then
@@ -892,7 +894,8 @@ contains
     subroutine internal_test_convergence(old_spread, wann_spread, history, &
                                          save_spread, iter, conv_count, &
                                          noise_count, lconverged, lrandom, &
-                                         lfirst)
+                                         lfirst, conv_window, conv_tol, &
+                                         conv_noise_amp, conv_noise_num)
       !===============================================!
       !                                               !
       !! Determine whether minimisation of non-gauge
@@ -900,8 +903,6 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_parameters, only: conv_window, conv_tol, conv_noise_amp, &
-        conv_noise_num
 
       implicit none
 
@@ -913,7 +914,11 @@ contains
       integer, intent(inout) :: conv_count
       integer, intent(inout) :: noise_count
       logical, intent(inout) :: lconverged, lrandom, lfirst
-
+      integer, intent(in) :: conv_window
+      real(kind=dp), intent(in) :: conv_tol
+      real(kind=dp), intent(in) :: conv_noise_amp
+      integer, intent(in) :: conv_noise_num
+      ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
       real(kind=dp), allocatable :: temp_hist(:)
