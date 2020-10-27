@@ -491,7 +491,9 @@ contains
 
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
-                                  cwschur1, cwschur2, cwschur3, cwschur4, cz)
+                                  cwschur1, cwschur2, cwschur3, cwschur4, cz, &
+                                  num_wann, num_kpts, nntot, nnlist, &
+                                  lsitesymmetry)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
@@ -543,7 +545,9 @@ contains
 
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
-                                  cwschur1, cwschur2, cwschur3, cwschur4, cz)
+                                  cwschur1, cwschur2, cwschur3, cwschur4, cz, &
+                                  num_wann, num_kpts, nntot, nnlist, &
+                                  lsitesymmetry)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -1305,7 +1309,9 @@ contains
 
     !===============================================!
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
-                                    cwschur1, cwschur2, cwschur3, cwschur4, cz)
+                                    cwschur1, cwschur2, cwschur3, cwschur4, &
+                                    cz, num_wann, num_kpts, nntot, nnlist, &
+                                    lsitesymmetry)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
@@ -1316,8 +1322,7 @@ contains
       use w90_io, only: io_stopwatch, io_error, stdout
       use w90_comms, only: comms_bcast, comms_gatherv
       use w90_utility, only: utility_zgemm
-      use w90_parameters, only: timing_level, lsitesymmetry, num_wann, &
-        num_kpts, nntot, nnlist
+      use w90_parameters, only: timing_level
 
       implicit none
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
@@ -1328,6 +1333,9 @@ contains
       complex(kind=dp), intent(inout) :: cwschur1(:), cwschur2(:)
       complex(kind=dp), intent(inout) :: cwschur3(:), cwschur4(:)
       complex(kind=dp), intent(inout) :: cz(:, :)
+      integer, intent(in) :: num_wann, num_kpts, nntot
+      integer, intent(in) :: nnlist(:, :)
+      logical, intent(in) :: lsitesymmetry
       !cdq_loc from wannierise module
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
