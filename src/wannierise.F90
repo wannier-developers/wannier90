@@ -3146,7 +3146,7 @@ contains
         irguide = 1
       endif
 
-      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot)
+      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann)
 
       call wann_spread_copy(wann_spread, old_spread)
 
@@ -3319,17 +3319,18 @@ contains
   contains
 
     !===============================================!
-    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot)
+    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann)
       !===============================================!
 
       use w90_constants, only: pi, eps10
       use w90_io, only: io_stopwatch
-      use w90_parameters, only: timing_level, num_wann
+      use w90_parameters, only: timing_level
 
       implicit none
       real(kind=dp), intent(inout) :: m_w(:, :, :)
       real(kind=dp), intent(inout)  :: ur_rot(:, :)
       integer, intent(in) :: tnntot
+      integer, intent(in) :: num_wann
       ! local
       real(kind=dp) :: theta, twotheta
       real(kind=dp) :: a11, a12, a21, a22
