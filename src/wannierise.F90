@@ -3194,7 +3194,8 @@ contains
 
       if (conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, &
-                                             history, iter, lconverged)
+                                             history, iter, lconverged, &
+                                             conv_window, conv_tol)
       endif
 
       if (lconverged) then
@@ -3396,7 +3397,8 @@ contains
 
     !===============================================!
     subroutine internal_test_convergence_gamma(wann_spread, old_spread, &
-                                               history, iter, lconverged)
+                                               history, iter, lconverged, &
+                                               conv_window, conv_tol)
       !===============================================!
       !                                               !
       ! Determine whether minimisation of non-gauge-  !
@@ -3404,7 +3406,6 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_parameters, only: conv_window, conv_tol
 
       implicit none
       type(localisation_vars), intent(in) :: wann_spread
@@ -3412,7 +3413,9 @@ contains
       real(kind=dp), intent(inout) :: history(:)
       integer, intent(in) :: iter
       logical, intent(out) :: lconverged
-
+      integer, intent(in) :: conv_window
+      real(kind=dp), intent(in) :: conv_tol
+      ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
       real(kind=dp), allocatable :: temp_hist(:)
