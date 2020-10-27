@@ -971,7 +971,7 @@ contains
     end subroutine internal_test_convergence
 
     !===============================================!
-    subroutine internal_random_noise()
+    subroutine internal_random_noise(conv_noise_amp, num_wann)
       !===============================================!
       !                                               !
       !! Add some random noise to the search direction
@@ -979,11 +979,12 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_parameters, only: num_wann, conv_noise_amp
       ! cdq_loc from local module also
 
       implicit none
-
+      real(kind=dp), intent(in) :: conv_noise_amp
+      integer, intent(in) :: num_wann
+      ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
       complex(kind=dp), allocatable :: cnoise(:, :)
@@ -1193,7 +1194,7 @@ contains
       if (lrandom) then
         if (on_root) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', conv_noise_num, ' ]'
-        call internal_random_noise()
+        call internal_random_noise(conv_noise_amp, num_wann)
       endif
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
@@ -1210,7 +1211,7 @@ contains
           if (lprint .and. iprint > 2 .and. on_root) &
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
-          if (lrandom) call internal_random_noise()
+          if (lrandom) call internal_random_noise(conv_noise_amp, num_wann)
           ncg = 0
           gcfac = 0.0_dp
           ! re-calculate gradient along search direction
