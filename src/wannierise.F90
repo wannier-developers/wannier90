@@ -52,9 +52,27 @@ module w90_wannierise_data
   !! we only need to do this on entering wann_main (_gamma)
   real(kind=dp) :: lambda_loc
 
-#ifdef MPI
-  include 'mpif.h'
-#endif
+!#ifdef MPI
+!  include 'mpif.h'
+!#endif
+
+end module w90_wannierise_data
+
+module w90_wannierise
+  !! Main routines for the minimisation of the spread
+
+  use w90_constants, only: dp
+  !use w90_comms, only: on_root, my_node_id, num_nodes, &
+  !  comms_bcast, comms_array_split, &
+  !  comms_gatherv, comms_allreduce, &
+  !  comms_scatterv
+
+  implicit none
+
+  private
+
+  public :: wann_main
+  public :: wann_main_gamma  ![ysl]
 
   type localisation_vars
     !! Contributions to the spread
@@ -76,24 +94,6 @@ module w90_wannierise_data
 !~     real(kind=dp) :: om_2
 !~     real(kind=dp) :: om_3
   end type localisation_vars
-
-end module w90_wannierise_data
-
-module w90_wannierise
-  !! Main routines for the minimisation of the spread
-
-  use w90_constants, only: dp
-  !use w90_comms, only: on_root, my_node_id, num_nodes, &
-  !  comms_bcast, comms_array_split, &
-  !  comms_gatherv, comms_allreduce, &
-  !  comms_scatterv
-
-  implicit none
-
-  private
-
-  public :: wann_main
-  public :: wann_main_gamma  ![ysl]
 
 contains
 
@@ -134,7 +134,7 @@ contains
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
       rpt_origin, irvec, nrpts, ndegen
 
-    use w90_wannierise_data, only: localisation_vars, first_pass, rnkb, ln_tmp, &
+    use w90_wannierise_data, only: first_pass, rnkb, ln_tmp, &
       counts, displs, rnkb_loc, ln_tmp_loc, u_matrix_loc, m_matrix_loc, &
       cdq_loc, cdodq_loc, lambda_loc, cdq_loc
 
@@ -932,7 +932,6 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_wannierise_data, only: localisation_vars
 
       implicit none
 
@@ -1096,7 +1095,7 @@ contains
       use w90_parameters, only: timing_level, iprint
       !use w90_hamiltonian, only: nrpts, irvec, ndegen
       use w90_comms, only: on_root, my_node_id, comms_allreduce
-      use w90_wannierise_data, only: localisation_vars, counts, displs, cdq_loc, cdodq_loc
+      use w90_wannierise_data, only: counts, displs, cdq_loc, cdodq_loc
 
       implicit none
 
@@ -1311,7 +1310,6 @@ contains
       use w90_io, only: io_stopwatch, stdout
       use w90_parameters, only: timing_level, iprint
       use w90_comms, only: on_root
-      use w90_wannierise_data, only: localisation_vars
 
       implicit none
 
@@ -1925,7 +1923,7 @@ contains
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
     use w90_comms, only: on_root, my_node_id, comms_allreduce
-    use w90_wannierise_data, only: localisation_vars, counts, displs, &
+    use w90_wannierise_data, only: counts, displs, &
       ln_tmp_loc, m_matrix_loc, first_pass, lambda_loc
 
     implicit none
@@ -2446,7 +2444,6 @@ contains
     !==================================================================!
     !                                                                  !
     !==================================================================!
-    use w90_wannierise_data, only: localisation_vars
 
     implicit none
 
@@ -3010,8 +3007,7 @@ contains
       num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
-    use w90_wannierise_data, only: localisation_vars, counts, displs, rnkb, &
-      ln_tmp, first_pass
+    use w90_wannierise_data, only: counts, displs, rnkb, ln_tmp, first_pass
 
     implicit none
 
@@ -3491,7 +3487,6 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_wannierise_data, only: localisation_vars
 
       implicit none
       type(localisation_vars), intent(in) :: wann_spread
@@ -3729,7 +3724,7 @@ contains
     !===================================================================
     use w90_parameters, only: timing_level
     use w90_io, only: io_error, io_stopwatch
-    use w90_wannierise_data, only: localisation_vars, ln_tmp, first_pass
+    use w90_wannierise_data, only: ln_tmp, first_pass
 
     implicit none
 
