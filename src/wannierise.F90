@@ -12,21 +12,21 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90_wannierise
+module w90_wannierise_data
   !! Main routines for the minimisation of the spread
 
-  use w90_constants
-  use w90_comms, only: on_root, my_node_id, num_nodes, &
-    comms_bcast, comms_array_split, &
-    comms_gatherv, comms_allreduce, &
-    comms_scatterv
+  use w90_constants, only: dp
+  !use w90_comms, only: on_root, my_node_id, num_nodes, &
+  !  comms_bcast, comms_array_split, &
+  !  comms_gatherv, comms_allreduce, &
+  !  comms_scatterv
 
   implicit none
 
-  private
+  public
 
-  public :: wann_main
-  public :: wann_main_gamma  ![ysl]
+  !public :: wann_main
+  !public :: wann_main_gamma  ![ysl]
 
   ! Data to avoid large allocation within iteration loop
   real(kind=dp), allocatable  :: rnkb(:, :, :)
@@ -77,6 +77,24 @@ module w90_wannierise
 !~     real(kind=dp) :: om_3
   end type localisation_vars
 
+end module w90_wannierise_data
+
+module w90_wannierise
+  !! Main routines for the minimisation of the spread
+
+  use w90_constants, only: dp
+  !use w90_comms, only: on_root, my_node_id, num_nodes, &
+  !  comms_bcast, comms_array_split, &
+  !  comms_gatherv, comms_allreduce, &
+  !  comms_scatterv
+
+  implicit none
+
+  private
+
+  public :: wann_main
+  public :: wann_main_gamma  ![ysl]
+
 contains
 
   !==================================================================!
@@ -86,7 +104,8 @@ contains
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !                                                                  !
     !===================================================================
-    use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8
+    use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, &
+      cmplx_i
     use w90_io, only: stdout, io_error, io_wallclocktime, io_stopwatch &
       , io_file_unit
     use w90_parameters, only: num_wann, num_cg_steps, num_iter, nnlist, &
@@ -108,10 +127,16 @@ contains
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
+    use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, &
+      comms_bcast, comms_scatterv, comms_array_split
 
     !ivo
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
       rpt_origin, irvec, nrpts, ndegen
+
+    use w90_wannierise_data, only: localisation_vars, first_pass, rnkb, ln_tmp, &
+      counts, displs, rnkb_loc, ln_tmp_loc, u_matrix_loc, m_matrix_loc, &
+      cdq_loc, cdodq_loc, lambda_loc, cdq_loc
 
     implicit none
 
@@ -907,6 +932,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
+      use w90_wannierise_data, only: localisation_vars
 
       implicit none
 
@@ -1067,6 +1093,7 @@ contains
       use w90_parameters, only: timing_level, iprint
       !use w90_hamiltonian, only: nrpts, irvec, ndegen
       use w90_comms, only: comms_allreduce
+      use w90_wannierise_data, only: localisation_vars
 
       implicit none
 
@@ -1280,6 +1307,7 @@ contains
       !===============================================!
       use w90_io, only: io_stopwatch, stdout
       use w90_parameters, only: timing_level, iprint
+      use w90_wannierise_data, only: localisation_vars
 
       implicit none
 
@@ -1652,10 +1680,12 @@ contains
     !! consistent choice of branch cut for the spread definition
     !                                                                  !
     !===================================================================
-    use w90_constants, only: eps6
+    use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
+    use w90_comms, only: on_root, my_node_id, comms_allreduce
+    use w90_wannierise_data, only: counts, displs, m_matrix_loc, rnkb
 
     implicit none
 
@@ -1888,6 +1918,9 @@ contains
     !===================================================================
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
+    use w90_comms, only: on_root, my_node_id, comms_allreduce
+    use w90_wannierise_data, only: localisation_vars, counts, displs, &
+      ln_tmp_loc, m_matrix_loc, first_pass, lambda_loc
 
     implicit none
 
@@ -2172,9 +2205,14 @@ contains
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Implerial College London
     !===================================================================
+    use w90_constants, only: cmplx_0
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
+    use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, &
+      comms_allreduce
+    use w90_wannierise_data, only: counts, displs, ln_tmp_loc, m_matrix_loc, &
+      rnkb_loc, cdodq_loc, lambda_loc
 
     implicit none
 
@@ -2402,6 +2440,7 @@ contains
     !==================================================================!
     !                                                                  !
     !==================================================================!
+    use w90_wannierise_data, only: localisation_vars
 
     implicit none
 
@@ -2435,6 +2474,7 @@ contains
 
     use w90_parameters, only: timing_level
     use w90_io, only: stdout, io_stopwatch
+    use w90_comms, only: on_root
 
     implicit none
 
@@ -2733,6 +2773,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error, stdout
     use w90_parameters, only: timing_level
+    use w90_comms, only: on_root
 
     implicit none
 
@@ -2844,6 +2885,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error, stdout
     use w90_parameters, only: lenconfac, length_unit, timing_level
+    use w90_comms, only: on_root
 
     implicit none
 
@@ -2961,6 +3003,9 @@ contains
       atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
       num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
+    use w90_comms, only: on_root
+    use w90_wannierise_data, only: localisation_vars, counts, displs, rnkb, &
+      ln_tmp, first_pass
 
     implicit none
 
@@ -3440,6 +3485,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
+      use w90_wannierise_data, only: localisation_vars
 
       implicit none
       type(localisation_vars), intent(in) :: wann_spread
@@ -3677,6 +3723,7 @@ contains
     !===================================================================
     use w90_parameters, only: timing_level
     use w90_io, only: io_error, io_stopwatch
+    use w90_wannierise_data, only: localisation_vars, ln_tmp, first_pass
 
     implicit none
 
