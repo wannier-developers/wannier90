@@ -502,7 +502,8 @@ contains
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, &
-                                   alphamin, falphamin, lquad, lprint)
+                                   alphamin, falphamin, lquad, lprint, &
+                                   trial_step)
 
       endif
 
@@ -1247,7 +1248,8 @@ contains
 
     !===============================================!
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, &
-                                     alphamin, falphamin, lquad, lprint)
+                                     alphamin, falphamin, lquad, lprint, &
+                                     trial_step)
       !===============================================!
       !                                               !
       !! Calculate the optimal step length based on a
@@ -1255,7 +1257,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_stopwatch, stdout
-      use w90_parameters, only: timing_level, iprint, trial_step
+      use w90_parameters, only: timing_level, iprint
 
       implicit none
 
@@ -1265,6 +1267,7 @@ contains
       real(kind=dp), intent(out) :: alphamin, falphamin
       logical, intent(out) :: lquad
       logical, intent(in) :: lprint
+      real(kind=dp), intent(in) :: trial_step
       ! local
       real(kind=dp) :: fac, shift, eqa, eqb
 
