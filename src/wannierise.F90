@@ -460,7 +460,11 @@ contains
                                      cdodq_precond_loc, cdqkeep_loc, k_to_r, &
                                      wann_spread, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, &
-                                     gcnorm1, doda0)
+                                     gcnorm1, doda0, precond, optimisation, &
+                                     num_wann, num_kpts, kpt_latt, &
+                                     real_lattice, num_cg_steps, wbtot, &
+                                     conv_noise_amp, conv_noise_num, nrpts, &
+                                     irvec, ndegen)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
                                                           num_kpts) !RS:
 
@@ -1046,7 +1050,11 @@ contains
                                          cdodq_precond_loc, cdqkeep_loc, &
                                          k_to_r, wann_spread, iter, lprint, &
                                          lrandom, noise_count, ncg, gcfac, &
-                                         gcnorm0, gcnorm1, doda0)
+                                         gcnorm0, gcnorm1, doda0, precond, &
+                                         optimisation, num_wann, num_kpts, &
+                                         kpt_latt, real_lattice, num_cg_steps, &
+                                         wbtot, conv_noise_amp, conv_noise_num, &
+                                         nrpts, irvec, ndegen)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1056,10 +1064,8 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_stopwatch, stdout
-      use w90_parameters, only: timing_level, precond, optimisation, num_wann, &
-        num_kpts, kpt_latt, real_lattice, num_cg_steps, wbtot, &
-        conv_noise_num, iprint
-      use w90_hamiltonian, only: nrpts, irvec, ndegen
+      use w90_parameters, only: timing_level, iprint
+      !use w90_hamiltonian, only: nrpts, irvec, ndegen
       use w90_comms, only: comms_allreduce
 
       implicit none
@@ -1079,6 +1085,16 @@ contains
       real(kind=dp), intent(out) :: gcfac
       real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
       real(kind=dp), intent(out) :: doda0
+      logical, intent(in) :: precond
+      integer, intent(in) :: optimisation, num_wann, num_kpts
+      real(kind=dp), intent(in) :: kpt_latt(:, :)
+      real(kind=dp), intent(in) :: real_lattice(3, 3)
+      integer, intent(in) :: num_cg_steps
+      real(kind=dp), intent(in) :: wbtot, conv_noise_amp
+      integer, intent(in) :: conv_noise_num
+      integer, intent(in) :: nrpts
+      integer, intent(in) :: irvec(:, :)
+      integer, intent(in) :: ndegen(:)
       ! local
       complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
