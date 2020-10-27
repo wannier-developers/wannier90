@@ -1013,8 +1013,10 @@ contains
       !! to help escape from local minima
       !                                               !
       !===============================================!
+      use w90_constants, only: cmplx_0
       use w90_io, only: io_error
-      ! cdq_loc from local module also
+      use w90_comms, only: my_node_id
+      use w90_wannierise_data, only: counts, cdq_loc
 
       implicit none
       real(kind=dp), intent(in) :: conv_noise_amp
@@ -1089,11 +1091,12 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
+      use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch, stdout
       use w90_parameters, only: timing_level, iprint
       !use w90_hamiltonian, only: nrpts, irvec, ndegen
-      use w90_comms, only: comms_allreduce
-      use w90_wannierise_data, only: localisation_vars
+      use w90_comms, only: on_root, my_node_id, comms_allreduce
+      use w90_wannierise_data, only: localisation_vars, counts, displs, cdq_loc, cdodq_loc
 
       implicit none
 
@@ -1307,6 +1310,7 @@ contains
       !===============================================!
       use w90_io, only: io_stopwatch, stdout
       use w90_parameters, only: timing_level, iprint
+      use w90_comms, only: on_root
       use w90_wannierise_data, only: localisation_vars
 
       implicit none
@@ -1370,12 +1374,15 @@ contains
       !! Update U and M matrices after a trial step
       !                                               !
       !===============================================!
+      use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
         ir2ik, ik2ir !YN: RS:
       use w90_io, only: io_stopwatch, io_error, stdout
-      use w90_comms, only: comms_bcast, comms_gatherv
+      use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv
       use w90_utility, only: utility_zgemm
       use w90_parameters, only: timing_level
+      use w90_wannierise_data, only: counts, displs, cdq_loc, u_matrix_loc, &
+        m_matrix_loc
 
       implicit none
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
@@ -1389,7 +1396,6 @@ contains
       integer, intent(in) :: num_wann, num_kpts, nntot
       integer, intent(in) :: nnlist(:, :)
       logical, intent(in) :: lsitesymmetry
-      !cdq_loc from wannierise module
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
