@@ -692,7 +692,8 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb()
+  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
+             m_matrix, num_kpts, kpt_latt, nntot)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -704,15 +705,26 @@ contains
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, &
       seedname, io_date
-    use w90_parameters, only: real_lattice, num_wann, timing_level, &
-      m_matrix, wb, bk, num_kpts, kpt_latt, nntot
+
+    use w90_parameters, only: timing_level   
     use w90_constants, only: twopi, cmplx_i
 
     integer            :: i, j, irpt, ik, nn, idir, file_unit
-    character(len=33) :: header
-    character(len=9)  :: cdate, ctime
+    character(len=33)  :: header
+    character(len=9)   :: cdate, ctime
     complex(kind=dp)   :: fac, pos_r(3)
     real(kind=dp)      :: rdotk
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    ! end parameters
 
     if (tb_written) return
 
@@ -781,7 +793,6 @@ contains
         end do
       end do
     end do
-
     close (file_unit)
 
     tb_written = .true.
