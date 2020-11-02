@@ -364,7 +364,8 @@ contains
     irguide = 0
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
+                       counts, displs, m_matrix_loc, rnkb)
       irguide = 1
     endif
 
@@ -461,7 +462,8 @@ contains
       if (guiding_centres .and. (iter .gt. num_no_guide_iter) &
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                         neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
+                         counts, displs, m_matrix_loc, rnkb)
         irguide = 1
       endif
 
@@ -789,8 +791,11 @@ contains
       endif
     endif
 
-    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
-                                          num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
+    if (guiding_centres) then
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
+                       counts, displs, m_matrix_loc, rnkb)
+    endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
@@ -1691,7 +1696,8 @@ contains
 
   !==================================================================!
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                         neigh, nnh, bk, bka, num_kpts, m_matrix, gamma_only, m_w)
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, gamma_only, &
+                         counts, displs, m_matrix_loc, rnkb, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1702,7 +1708,6 @@ contains
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
     use w90_comms, only: on_root, my_node_id, comms_allreduce
-    use w90_wannierise_data, only: counts, displs, m_matrix_loc, rnkb
 
     implicit none
 
@@ -1726,6 +1731,10 @@ contains
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     logical, intent(in) :: gamma_only
     ! end of vars from parameter module
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), intent(out) :: rnkb(:, :, :)
 
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     !! Used in the Gamma point routines as an optimisation
@@ -3020,7 +3029,8 @@ contains
       num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
-    use w90_wannierise_data, only: counts, displs, rnkb, ln_tmp, first_pass
+    use w90_wannierise_data, only: counts, displs, rnkb, ln_tmp, first_pass, &
+      m_matrix_loc, rnkb
 
     implicit none
 
@@ -3155,7 +3165,8 @@ contains
 !~    endif
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
+                       counts, displs, m_matrix_loc, rnkb)
       irguide = 1
     endif
 
@@ -3236,7 +3247,8 @@ contains
       if (guiding_centres .and. (iter .gt. num_no_guide_iter) &
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                         neigh, nnh, bk, bka, num_kpts, m_matrix, .true., m_w)
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
+                         counts, displs, m_matrix_loc, rnkb, m_w)
         irguide = 1
       endif
 
@@ -3337,8 +3349,11 @@ contains
                           atoms_species_num)
     endif
 
-    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
-                                          num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
+    if (guiding_centres) then
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
+                       counts, displs, m_matrix_loc, rnkb)
+    endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
