@@ -523,7 +523,8 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
                                   cwschur1, cwschur2, cwschur3, cwschur4, cz, &
                                   num_wann, num_kpts, nntot, nnlist, &
-                                  lsitesymmetry)
+                                  lsitesymmetry, counts, displs, cdq_loc, &
+                                  u_matrix_loc, m_matrix_loc)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
@@ -578,7 +579,8 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
                                   cwschur1, cwschur2, cwschur3, cwschur4, cz, &
                                   num_wann, num_kpts, nntot, nnlist, &
-                                  lsitesymmetry)
+                                  lsitesymmetry, counts, displs, cdq_loc, &
+                                  u_matrix_loc, m_matrix_loc)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -1373,7 +1375,8 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
                                     cwschur1, cwschur2, cwschur3, cwschur4, &
                                     cz, num_wann, num_kpts, nntot, nnlist, &
-                                    lsitesymmetry)
+                                    lsitesymmetry, counts, displs, cdq_loc, &
+                                    u_matrix_loc, m_matrix_loc)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
@@ -1386,8 +1389,6 @@ contains
       use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv
       use w90_utility, only: utility_zgemm
       use w90_parameters, only: timing_level
-      use w90_wannierise_data, only: counts, displs, cdq_loc, u_matrix_loc, &
-        m_matrix_loc
 
       implicit none
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
@@ -1401,6 +1402,11 @@ contains
       integer, intent(in) :: num_wann, num_kpts, nntot
       integer, intent(in) :: nnlist(:, :)
       logical, intent(in) :: lsitesymmetry
+      integer, intent(in) :: counts(0:)
+      integer, intent(in) :: displs(0:)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
