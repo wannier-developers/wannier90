@@ -489,7 +489,8 @@ contains
                                      num_wann, num_kpts, kpt_latt, &
                                      real_lattice, num_cg_steps, wbtot, &
                                      conv_noise_amp, conv_noise_num, nrpts, &
-                                     irvec, ndegen)
+                                     irvec, ndegen, cdq_loc, cdodq_loc, &
+                                     counts, displs)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
                                                           num_kpts) !RS:
 
@@ -1005,7 +1006,7 @@ contains
     end subroutine internal_test_convergence
 
     !===============================================!
-    subroutine internal_random_noise(conv_noise_amp, num_wann)
+    subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
       !===============================================!
       !                                               !
       !! Add some random noise to the search direction
@@ -1015,11 +1016,12 @@ contains
       use w90_constants, only: cmplx_0
       use w90_io, only: io_error
       use w90_comms, only: my_node_id
-      use w90_wannierise_data, only: counts, cdq_loc
 
       implicit none
       real(kind=dp), intent(in) :: conv_noise_amp
       integer, intent(in) :: num_wann
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      integer, intent(in) :: counts(0:)
       ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
@@ -1081,7 +1083,8 @@ contains
                                          optimisation, num_wann, num_kpts, &
                                          kpt_latt, real_lattice, num_cg_steps, &
                                          wbtot, conv_noise_amp, conv_noise_num, &
-                                         nrpts, irvec, ndegen)
+                                         nrpts, irvec, ndegen, cdq_loc, &
+                                         cdodq_loc, counts, displs)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1095,7 +1098,6 @@ contains
       use w90_parameters, only: timing_level, iprint
       !use w90_hamiltonian, only: nrpts, irvec, ndegen
       use w90_comms, only: on_root, my_node_id, comms_allreduce
-      use w90_wannierise_data, only: counts, displs, cdq_loc, cdodq_loc
 
       implicit none
 
@@ -1124,6 +1126,10 @@ contains
       integer, intent(in) :: nrpts
       integer, intent(in) :: irvec(:, :)
       integer, intent(in) :: ndegen(:)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      complex(kind=dp), intent(in) :: cdodq_loc(:, :, :)
+      integer, intent(in) :: counts(0:)
+      integer, intent(in) :: displs(0:)
       ! local
       complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
@@ -1244,7 +1250,7 @@ contains
       if (lrandom) then
         if (on_root) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', conv_noise_num, ' ]'
-        call internal_random_noise(conv_noise_amp, num_wann)
+        call internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
       endif
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
@@ -1261,7 +1267,8 @@ contains
           if (lprint .and. iprint > 2 .and. on_root) &
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
-          if (lrandom) call internal_random_noise(conv_noise_amp, num_wann)
+          if (lrandom) call internal_random_noise(conv_noise_amp, num_wann, &
+                                                  counts, cdq_loc)
           ncg = 0
           gcfac = 0.0_dp
           ! re-calculate gradient along search direction
