@@ -3169,7 +3169,8 @@ contains
 
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                          num_wann, nntot, wbtot, wb, bk, omega_invariant)
+                          num_wann, nntot, wbtot, wb, bk, omega_invariant, &
+                          ln_tmp, first_pass)
 
     ! public variables
     omega_total = wann_spread%om_tot
@@ -3246,7 +3247,7 @@ contains
       ! calculate the new centers and spread
       call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
                             wann_spread, num_wann, nntot, wbtot, wb, bk, &
-                            omega_invariant)
+                            omega_invariant, ln_tmp, first_pass)
 
       ! print the new centers and spreads
       if (lprint) then
@@ -3729,7 +3730,7 @@ contains
   !==================================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
                               wann_spread, num_wann, nntot, wbtot, wb, bk, &
-                              omega_invariant)
+                              omega_invariant, ln_tmp, first_pass)
     !==================================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
@@ -3737,7 +3738,6 @@ contains
     !===================================================================
     use w90_parameters, only: timing_level
     use w90_io, only: io_error, io_stopwatch
-    use w90_wannierise_data, only: ln_tmp, first_pass
 
     implicit none
 
@@ -3757,6 +3757,8 @@ contains
     real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: omega_invariant
     ! end parameters
+    real(kind=dp), intent(out) :: ln_tmp(:, :, :)
+    logical, intent(inout) :: first_pass
 
     !local variables
     real(kind=dp) :: summ, brn
