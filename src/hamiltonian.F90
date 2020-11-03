@@ -626,11 +626,15 @@ contains
   end subroutine hamiltonian_wigner_seitz
 
   !============================================!
-  subroutine hamiltonian_write_rmn()
+  subroutine hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
+             num_kpts, kpt_latt, nntot)
     !! Write out the matrix elements of r
     !============================================!
-    use w90_parameters, only: m_matrix, wb, bk, num_wann, num_kpts, kpt_latt, &
-      nntot, write_bvec
+!lp   use w90_parameters, only: m_matrix, wb, bk, num_wann, num_kpts, kpt_latt, &
+!lp      nntot, write_bvec
+!lp   "write_bvec" does not appear to be used here, so removed but not included in
+!lp   argument list
+
     use w90_constants, only: twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, seedname, io_date
 
@@ -642,6 +646,17 @@ contains
     complex(kind=dp)     :: position(3)
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+!   real(kind=dp), intent(in) :: real_lattice(3, 3)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    ! end parameters
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', err=101)

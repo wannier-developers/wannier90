@@ -79,7 +79,8 @@ contains
       !
       if (write_hr) call hamiltonian_write_hr()
       !
-      if (write_rmn) call hamiltonian_write_rmn()
+      if (write_rmn) call hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
+          num_kpts, kpt_latt, nntot)
       !
       if (write_tb) call hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
           m_matrix, num_kpts, kpt_latt, nntot)
