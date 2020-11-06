@@ -109,7 +109,10 @@ contains
 
     use w90_io, only: stdout, io_stopwatch
     use w90_parameters, only: transport_mode, tran_read_ht, timing_level, write_hr, &
-      write_xyz
+      write_xyz, &
+!lp introduced for hamiltonian_write_hr
+      num_wann
+!lp 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
 
     implicit none
@@ -130,7 +133,7 @@ contains
       if (.not. tran_read_ht) then
         call hamiltonian_setup()
         call hamiltonian_get_hr()
-        if (write_hr) call hamiltonian_write_hr()
+        if (write_hr) call hamiltonian_write_hr(num_wann)
         call tran_reduce_hr()
         call tran_cut_hr_one_dim()
         call tran_get_ht()
@@ -144,7 +147,7 @@ contains
       if (.not. tran_read_ht) then
         call hamiltonian_setup()
         call hamiltonian_get_hr()
-        if (write_hr) call hamiltonian_write_hr()
+        if (write_hr) call hamiltonian_write_hr(num_wann)
         call tran_reduce_hr()
         call tran_cut_hr_one_dim()
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'

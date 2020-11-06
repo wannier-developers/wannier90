@@ -72,8 +72,9 @@ contains
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
     use w90_parameters, only: num_wann, num_kpts, bands_plot, transport, &
-      bands_plot_mode, transport_mode
-
+      bands_plot_mode, transport_mode, mp_grid, real_metric, ws_search_size, &
+      ws_distance_tol
+!lp   added: mp_grid, real_metric, ws_search_size, ws_distance_tol
     implicit none
 
     integer :: ierr
@@ -89,7 +90,8 @@ contains
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(count_pts=.true.)
+    call hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+         count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup')
@@ -109,7 +111,8 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(count_pts=.false.)
+    call hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+         count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
@@ -173,10 +176,22 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
+!lp   use w90_parameters, only: num_bands, num_kpts, num_wann, u_matrix, &
+!lp     eigval, kpt_latt, u_matrix_opt, lwindow, ndimwin, &
+!lp     have_disentangled, timing_level
+!lp   use w90_parameters, only: lsitesymmetry !YN:
+
     use w90_parameters, only: num_bands, num_kpts, num_wann, u_matrix, &
       eigval, kpt_latt, u_matrix_opt, lwindow, ndimwin, &
-      have_disentangled, timing_level
+      have_disentangled, timing_level, &
+!lp introduced additional parameters for internal_translate_centres
+      lenconfac, atoms_species_num, num_species, automatic_translation, &
+      translation_centre_frac, atoms_pos_cart, num_atoms, wannier_centres, &
+      recip_lattice, real_lattice
+!lp param 
+
     use w90_parameters, only: lsitesymmetry !YN:
+
 
     implicit none
 
@@ -308,7 +323,9 @@ contains
 
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
-      call internal_translate_centres()
+      call internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
+           automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
+           wannier_centres, recip_lattice, real_lattice)
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -357,13 +374,16 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres()
+    subroutine internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
+               automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
+               wannier_centres, recip_lattice, real_lattice)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
-      use w90_parameters, only: num_wann, real_lattice, recip_lattice, wannier_centres, &
-        num_atoms, atoms_pos_cart, translation_centre_frac, &
-        automatic_translation, num_species, atoms_species_num, lenconfac
+!lp     use w90_parameters, only: num_wann, real_lattice, recip_lattice, wannier_centres, &
+!lp       num_atoms, atoms_pos_cart, translation_centre_frac, &
+!lp       automatic_translation, num_species, atoms_species_num, lenconfac
+
       use w90_io, only: stdout, io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
 
@@ -374,6 +394,22 @@ contains
       real(kind=dp), allocatable :: r_home(:, :), r_frac(:, :)
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: num_species
+    integer, intent(in) :: num_atoms
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(out) :: translation_centre_frac(3) 
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+!lp would it be better left without intent(out)?
+!   complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    logical, intent(in) :: automatic_translation
+    ! end parameters
 
 !~      if (.not.allocated(wannier_centres_translated)) then
 !~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
@@ -441,18 +477,24 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr()
+  subroutine hamiltonian_write_hr(num_wann)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, &
       seedname, io_date
-    use w90_parameters, only: num_wann, timing_level
+!lp use w90_parameters, only: num_wann, timing_level
+    use w90_parameters, only: timing_level
 
     integer            :: i, j, irpt, file_unit
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
+
+
+    ! from w90_parameters
+    integer, intent(in) :: num_wann
+    ! end parameters
 
     if (hr_written) return
 
@@ -493,7 +535,8 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(count_pts)
+  subroutine hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, &
+             ws_distance_tol, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -502,8 +545,10 @@ contains
 
     use w90_constants, only: eps7, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
-    use w90_parameters, only: iprint, mp_grid, real_metric, timing_level, &
-      ws_search_size, ws_distance_tol
+!lp    use w90_parameters, only: iprint, mp_grid, real_metric, timing_level, &
+!lp      ws_search_size, ws_distance_tol
+    use w90_parameters, only: iprint, timing_level    
+
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -518,6 +563,13 @@ contains
     real(kind=dp) :: tot, dist_min
     real(kind=dp), allocatable :: dist(:)
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
+
+    ! from w90_parameters
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: ws_search_size(3)
+    real(kind=dp), intent(in) :: real_metric(3, 3)
+    real(kind=dp), intent(in) :: ws_distance_tol
+    ! end parameters
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
 

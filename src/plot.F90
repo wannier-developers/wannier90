@@ -32,7 +32,8 @@ contains
       kpt_latt, fermi_surface_plot, &
       wannier_plot, timing_level, write_bvec, &
          write_hr, write_rmn, write_tb, write_u_matrices, &
-!lp      parameters added for hamiltonian_write_tb
+!lp      parameters added for hamiltonian_write_tb & hamiltonian_write_hr
+!lp      (num_wann)
          real_lattice, num_wann, wb, bk, m_matrix, nntot
 !lp      end parameters
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
@@ -77,7 +78,7 @@ contains
       !
       if (fermi_surface_plot) call plot_fermi_surface
       !
-      if (write_hr) call hamiltonian_write_hr()
+      if (write_hr) call hamiltonian_write_hr(num_wann)
       !
       if (write_rmn) call hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
           num_kpts, kpt_latt, nntot)
