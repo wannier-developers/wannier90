@@ -3045,13 +3045,19 @@ contains
       num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
-    use w90_wannierise_data, only: counts, displs, rnkb, ln_tmp, first_pass, &
-      m_matrix_loc, rnkb
 
     implicit none
 
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
+
+    ! data from the wannierise module
+    integer :: counts(0:0)
+    integer :: displs(0:0)
+    real(kind=dp), allocatable  :: rnkb(:, :, :)
+    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
+    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
+    logical :: first_pass
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
@@ -3132,8 +3138,8 @@ contains
     cz = cmplx_0
 
     ! Set up the MPI arrays for a serial run.
-    allocate (counts(0:0), displs(0:0), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
+    !allocate (counts(0:0), displs(0:0), stat=ierr)
+    !if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
     counts(0) = 1; displs(0) = 0
 
     ! store original U before rotating
