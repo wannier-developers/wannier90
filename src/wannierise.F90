@@ -12,52 +12,6 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90_wannierise_data
-  !! Main routines for the minimisation of the spread
-
-  use w90_constants, only: dp
-  !use w90_comms, only: on_root, my_node_id, num_nodes, &
-  !  comms_bcast, comms_array_split, &
-  !  comms_gatherv, comms_allreduce, &
-  !  comms_scatterv
-
-  implicit none
-
-  public
-
-  !public :: wann_main
-  !public :: wann_main_gamma  ![ysl]
-
-  ! Data to avoid large allocation within iteration loop
-  real(kind=dp), allocatable  :: rnkb(:, :, :)
-  real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
-  real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-
-  real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
-
-  ! for MPI
-  complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
-  complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
-  complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
-  complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
-  complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
-  ! from process to process
-  ! in the main loop
-  complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
-  integer, allocatable  :: counts(:)
-  integer, allocatable  :: displs(:)
-
-  logical :: first_pass
-  !! Used to trigger the calculation of the invarient spread
-  !! we only need to do this on entering wann_main (_gamma)
-  real(kind=dp) :: lambda_loc
-
-!#ifdef MPI
-!  include 'mpif.h'
-!#endif
-
-end module w90_wannierise_data
-
 module w90_wannierise
   !! Main routines for the minimisation of the spread
 
