@@ -378,7 +378,9 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
                     num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
-                    selective_loc, slwf_constrain, slwf_num, ccentres_cart)
+                    selective_loc, slwf_constrain, slwf_num, ccentres_cart, &
+                    counts, displs, ln_tmp_loc, m_matrix_loc, lambda_loc, &
+                    first_pass)
 
     ! public variables
     if (.not. selective_loc) then
@@ -531,7 +533,9 @@ contains
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
                         num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
-                        selective_loc, slwf_constrain, slwf_num, ccentres_cart)
+                        selective_loc, slwf_constrain, slwf_num, &
+                        ccentres_cart, counts, displs, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, &
@@ -589,7 +593,9 @@ contains
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
                         num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
-                        selective_loc, slwf_constrain, slwf_num, ccentres_cart)
+                        selective_loc, slwf_constrain, slwf_num, &
+                        ccentres_cart, counts, displs, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -1933,7 +1939,8 @@ contains
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
                         num_wann, nntot, wb, bk, num_kpts, &
                         omega_invariant, selective_loc, slwf_constrain, &
-                        slwf_num, ccentres_cart)
+                        slwf_num, ccentres_cart, counts, displs, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass)
     !==================================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
@@ -1945,8 +1952,6 @@ contains
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
     use w90_comms, only: on_root, my_node_id, comms_allreduce
-    use w90_wannierise_data, only: counts, displs, &
-      ln_tmp_loc, m_matrix_loc, first_pass, lambda_loc
 
     implicit none
 
@@ -1969,7 +1974,11 @@ contains
     integer, intent(in) :: slwf_num
     real(kind=dp), intent(in) :: ccentres_cart(:, :)
     ! end of parameters
-
+    integer, intent(in) :: counts(0:), displs(0:)
+    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), intent(in) :: lambda_loc
+    logical, intent(inout) :: first_pass
     !local variables
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
