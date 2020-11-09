@@ -134,15 +134,37 @@ contains
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
       rpt_origin, irvec, nrpts, ndegen
 
-    use w90_wannierise_data, only: first_pass, rnkb, ln_tmp, &
-      counts, displs, rnkb_loc, ln_tmp_loc, u_matrix_loc, m_matrix_loc, &
-      cdq_loc, cdodq_loc, lambda_loc, cdq_loc
-
     implicit none
 
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
     type(localisation_vars) :: trial_spread
+
+    ! data from wannierise module
+    ! Data to avoid large allocation within iteration loop
+    real(kind=dp), allocatable  :: rnkb(:, :, :)
+    real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
+    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
+
+    real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
+
+    ! for MPI
+    complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
+    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
+    !complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
+    !complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
+    complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
+    ! from process to process
+    ! in the main loop
+    complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
+    integer, allocatable  :: counts(:)
+    integer, allocatable  :: displs(:)
+
+    logical :: first_pass
+    !! Used to trigger the calculation of the invarient spread
+    !! we only need to do this on entering wann_main (_gamma)
+    real(kind=dp) :: lambda_loc
+    ! end of wannierise module data
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
