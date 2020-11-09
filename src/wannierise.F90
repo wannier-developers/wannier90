@@ -474,11 +474,15 @@ contains
       if (lsitesymmetry .or. precond) then
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
-                         slwf_num, ccentres_cart, lsitesymmetry, cdodq)
+                         slwf_num, ccentres_cart, lsitesymmetry, &
+                         counts, displs, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
-                         slwf_num, ccentres_cart, lsitesymmetry)!,cdodq)  fills only cdodq_loc
+                         slwf_num, ccentres_cart, lsitesymmetry, &
+                         counts, displs, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc) !,cdodq)  fills only cdodq_loc
       endif
 
       if (lprint .and. iprint > 2 .and. on_root) &
@@ -2231,7 +2235,9 @@ contains
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
-                         slwf_num, ccentres_cart, lsitesymmetry, cdodq)
+                         slwf_num, ccentres_cart, lsitesymmetry, &
+                         counts, displs, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2246,8 +2252,6 @@ contains
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
     use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, &
       comms_allreduce
-    use w90_wannierise_data, only: counts, displs, ln_tmp_loc, m_matrix_loc, &
-      rnkb_loc, cdodq_loc, lambda_loc
 
     implicit none
 
@@ -2270,13 +2274,16 @@ contains
     real(kind=dp), intent(in) :: ccentres_cart(:, :)
     logical, intent(in) :: lsitesymmetry
     ! end parameters
-
-    !local
+    integer, intent(in) :: counts(0:), displs(0:)
+    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)
+    complex(kind=dp), intent(inout) :: cdodq_loc(:, :, :)
+    real(kind=dp), intent(in) :: lambda_loc
+    ! local
     complex(kind=dp), allocatable  :: cr(:, :)
     complex(kind=dp), allocatable  :: crt(:, :)
     real(kind=dp), allocatable :: r0kb(:, :, :)
-
-    ! local
     integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc
     complex(kind=dp) :: mnn
 
