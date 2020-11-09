@@ -15,11 +15,11 @@
 module w90_wannierise
   !! Main routines for the minimisation of the spread
 
-  use w90_constants
-  use w90_comms, only: on_root, my_node_id, num_nodes, &
-    comms_bcast, comms_array_split, &
-    comms_gatherv, comms_allreduce, &
-    comms_scatterv
+  use w90_constants, only: dp
+  !use w90_comms, only: on_root, my_node_id, num_nodes, &
+  !  comms_bcast, comms_array_split, &
+  !  comms_gatherv, comms_allreduce, &
+  !  comms_scatterv
 
   implicit none
 
@@ -27,34 +27,6 @@ module w90_wannierise
 
   public :: wann_main
   public :: wann_main_gamma  ![ysl]
-
-  ! Data to avoid large allocation within iteration loop
-  real(kind=dp), allocatable  :: rnkb(:, :, :)
-  real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
-  real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-
-  real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
-
-  ! for MPI
-  complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
-  complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
-  complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
-  complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
-  complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
-  ! from process to process
-  ! in the main loop
-  complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
-  integer, allocatable  :: counts(:)
-  integer, allocatable  :: displs(:)
-
-  logical :: first_pass
-  !! Used to trigger the calculation of the invarient spread
-  !! we only need to do this on entering wann_main (_gamma)
-  real(kind=dp) :: lambda_loc
-
-#ifdef MPI
-  include 'mpif.h'
-#endif
 
   type localisation_vars
     !! Contributions to the spread
@@ -86,7 +58,8 @@ contains
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !                                                                  !
     !===================================================================
-    use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8
+    use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, &
+      cmplx_i
     use w90_io, only: stdout, io_error, io_wallclocktime, io_stopwatch &
       , io_file_unit
     use w90_parameters, only: num_wann, num_cg_steps, num_iter, nnlist, &
@@ -108,6 +81,8 @@ contains
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
+    use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, &
+      comms_bcast, comms_scatterv, comms_array_split
 
     !ivo
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
@@ -118,6 +93,32 @@ contains
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
     type(localisation_vars) :: trial_spread
+
+    ! data from wannierise module
+    ! Data to avoid large allocation within iteration loop
+    real(kind=dp), allocatable  :: rnkb(:, :, :)
+    real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
+    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
+
+    real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
+
+    ! for MPI
+    complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
+    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
+    !complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
+    !complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
+    complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
+    ! from process to process
+    ! in the main loop
+    complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
+    integer, allocatable  :: counts(:)
+    integer, allocatable  :: displs(:)
+
+    logical :: first_pass
+    !! Used to trigger the calculation of the invarient spread
+    !! we only need to do this on entering wann_main (_gamma)
+    real(kind=dp) :: lambda_loc
+    ! end of wannierise module data
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
@@ -339,7 +340,8 @@ contains
     irguide = 0
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
+                       counts, displs, m_matrix_loc, rnkb)
       irguide = 1
     endif
 
@@ -352,7 +354,9 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
                     num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
-                    selective_loc, slwf_constrain, slwf_num, ccentres_cart)
+                    selective_loc, slwf_constrain, slwf_num, ccentres_cart, &
+                    counts, displs, ln_tmp_loc, m_matrix_loc, lambda_loc, &
+                    first_pass)
 
     ! public variables
     if (.not. selective_loc) then
@@ -436,7 +440,8 @@ contains
       if (guiding_centres .and. (iter .gt. num_no_guide_iter) &
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                         neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
+                         counts, displs, m_matrix_loc, rnkb)
         irguide = 1
       endif
 
@@ -445,11 +450,15 @@ contains
       if (lsitesymmetry .or. precond) then
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
-                         slwf_num, ccentres_cart, lsitesymmetry, cdodq)
+                         slwf_num, ccentres_cart, lsitesymmetry, &
+                         counts, displs, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
-                         slwf_num, ccentres_cart, lsitesymmetry)!,cdodq)  fills only cdodq_loc
+                         slwf_num, ccentres_cart, lsitesymmetry, &
+                         counts, displs, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc) !,cdodq)  fills only cdodq_loc
       endif
 
       if (lprint .and. iprint > 2 .and. on_root) &
@@ -460,7 +469,12 @@ contains
                                      cdodq_precond_loc, cdqkeep_loc, k_to_r, &
                                      wann_spread, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, &
-                                     gcnorm1, doda0)
+                                     gcnorm1, doda0, precond, optimisation, &
+                                     num_wann, num_kpts, kpt_latt, &
+                                     real_lattice, num_cg_steps, wbtot, &
+                                     conv_noise_amp, conv_noise_num, nrpts, &
+                                     irvec, ndegen, cdq_loc, cdodq_loc, &
+                                     counts, displs)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
                                                           num_kpts) !RS:
 
@@ -491,16 +505,22 @@ contains
 
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
-                                  cwschur1, cwschur2, cwschur3, cwschur4, cz)
+                                  cwschur1, cwschur2, cwschur3, cwschur4, cz, &
+                                  num_wann, num_kpts, nntot, nnlist, &
+                                  lsitesymmetry, counts, displs, cdq_loc, &
+                                  u_matrix_loc, m_matrix_loc)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
                         num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
-                        selective_loc, slwf_constrain, slwf_num, ccentres_cart)
+                        selective_loc, slwf_constrain, slwf_num, &
+                        ccentres_cart, counts, displs, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, &
-                                   alphamin, falphamin, lquad, lprint)
+                                   alphamin, falphamin, lquad, lprint, &
+                                   trial_step)
 
       endif
 
@@ -543,14 +563,19 @@ contains
 
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
-                                  cwschur1, cwschur2, cwschur3, cwschur4, cz)
+                                  cwschur1, cwschur2, cwschur3, cwschur4, cz, &
+                                  num_wann, num_kpts, nntot, nnlist, &
+                                  lsitesymmetry, counts, displs, cdq_loc, &
+                                  u_matrix_loc, m_matrix_loc)
 
         call wann_spread_copy(wann_spread, old_spread)
 
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
                         num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
-                        selective_loc, slwf_constrain, slwf_num, ccentres_cart)
+                        selective_loc, slwf_constrain, slwf_num, &
+                        ccentres_cart, counts, displs, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -643,7 +668,9 @@ contains
       if (conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, &
                                        save_spread, iter, conv_count, &
-                                       noise_count, lconverged, lrandom, lfirst)
+                                       noise_count, lconverged, lrandom, &
+                                       lfirst, conv_window, conv_tol, &
+                                       conv_noise_amp, conv_noise_num)
       endif
 
       if (lconverged) then
@@ -750,8 +777,11 @@ contains
       endif
     endif
 
-    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
-                                          num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .false.)
+    if (guiding_centres) then
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
+                       counts, displs, m_matrix_loc, rnkb)
+    endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
@@ -887,7 +917,8 @@ contains
     subroutine internal_test_convergence(old_spread, wann_spread, history, &
                                          save_spread, iter, conv_count, &
                                          noise_count, lconverged, lrandom, &
-                                         lfirst)
+                                         lfirst, conv_window, conv_tol, &
+                                         conv_noise_amp, conv_noise_num)
       !===============================================!
       !                                               !
       !! Determine whether minimisation of non-gauge
@@ -895,8 +926,6 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_parameters, only: conv_window, conv_tol, conv_noise_amp, &
-        conv_noise_num
 
       implicit none
 
@@ -908,7 +937,11 @@ contains
       integer, intent(inout) :: conv_count
       integer, intent(inout) :: noise_count
       logical, intent(inout) :: lconverged, lrandom, lfirst
-
+      integer, intent(in) :: conv_window
+      real(kind=dp), intent(in) :: conv_tol
+      real(kind=dp), intent(in) :: conv_noise_amp
+      integer, intent(in) :: conv_noise_num
+      ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
       real(kind=dp), allocatable :: temp_hist(:)
@@ -966,19 +999,23 @@ contains
     end subroutine internal_test_convergence
 
     !===============================================!
-    subroutine internal_random_noise()
+    subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
       !===============================================!
       !                                               !
       !! Add some random noise to the search direction
       !! to help escape from local minima
       !                                               !
       !===============================================!
+      use w90_constants, only: cmplx_0
       use w90_io, only: io_error
-      use w90_parameters, only: num_wann, conv_noise_amp
-      ! cdq_loc from local module also
+      use w90_comms, only: my_node_id
 
       implicit none
-
+      real(kind=dp), intent(in) :: conv_noise_amp
+      integer, intent(in) :: num_wann
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      integer, intent(in) :: counts(0:)
+      ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
       complex(kind=dp), allocatable :: cnoise(:, :)
@@ -1035,7 +1072,12 @@ contains
                                          cdodq_precond_loc, cdqkeep_loc, &
                                          k_to_r, wann_spread, iter, lprint, &
                                          lrandom, noise_count, ncg, gcfac, &
-                                         gcnorm0, gcnorm1, doda0)
+                                         gcnorm0, gcnorm1, doda0, precond, &
+                                         optimisation, num_wann, num_kpts, &
+                                         kpt_latt, real_lattice, num_cg_steps, &
+                                         wbtot, conv_noise_amp, conv_noise_num, &
+                                         nrpts, irvec, ndegen, cdq_loc, &
+                                         cdodq_loc, counts, displs)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1044,12 +1086,11 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !                                               !
       !===============================================!
+      use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch, stdout
-      use w90_parameters, only: timing_level, precond, optimisation, num_wann, &
-        num_kpts, kpt_latt, real_lattice, num_cg_steps, wbtot, &
-        conv_noise_num, iprint
-      use w90_hamiltonian, only: nrpts, irvec, ndegen
-      use w90_comms, only: comms_allreduce
+      use w90_parameters, only: timing_level, iprint
+      !use w90_hamiltonian, only: nrpts, irvec, ndegen
+      use w90_comms, only: on_root, my_node_id, comms_allreduce
 
       implicit none
 
@@ -1068,6 +1109,20 @@ contains
       real(kind=dp), intent(out) :: gcfac
       real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
       real(kind=dp), intent(out) :: doda0
+      logical, intent(in) :: precond
+      integer, intent(in) :: optimisation, num_wann, num_kpts
+      real(kind=dp), intent(in) :: kpt_latt(:, :)
+      real(kind=dp), intent(in) :: real_lattice(3, 3)
+      integer, intent(in) :: num_cg_steps
+      real(kind=dp), intent(in) :: wbtot, conv_noise_amp
+      integer, intent(in) :: conv_noise_num
+      integer, intent(in) :: nrpts
+      integer, intent(in) :: irvec(:, :)
+      integer, intent(in) :: ndegen(:)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      complex(kind=dp), intent(in) :: cdodq_loc(:, :, :)
+      integer, intent(in) :: counts(0:)
+      integer, intent(in) :: displs(0:)
       ! local
       complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
@@ -1188,7 +1243,7 @@ contains
       if (lrandom) then
         if (on_root) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', conv_noise_num, ' ]'
-        call internal_random_noise()
+        call internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
       endif
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
@@ -1205,7 +1260,8 @@ contains
           if (lprint .and. iprint > 2 .and. on_root) &
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
-          if (lrandom) call internal_random_noise()
+          if (lrandom) call internal_random_noise(conv_noise_amp, num_wann, &
+                                                  counts, cdq_loc)
           ncg = 0
           gcfac = 0.0_dp
           ! re-calculate gradient along search direction
@@ -1243,7 +1299,8 @@ contains
 
     !===============================================!
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, &
-                                     alphamin, falphamin, lquad, lprint)
+                                     alphamin, falphamin, lquad, lprint, &
+                                     trial_step)
       !===============================================!
       !                                               !
       !! Calculate the optimal step length based on a
@@ -1251,7 +1308,8 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_stopwatch, stdout
-      use w90_parameters, only: timing_level, iprint, trial_step
+      use w90_parameters, only: timing_level, iprint
+      use w90_comms, only: on_root
 
       implicit none
 
@@ -1261,6 +1319,7 @@ contains
       real(kind=dp), intent(out) :: alphamin, falphamin
       logical, intent(out) :: lquad
       logical, intent(in) :: lprint
+      real(kind=dp), intent(in) :: trial_step
       ! local
       real(kind=dp) :: fac, shift, eqa, eqb
 
@@ -1305,19 +1364,22 @@ contains
 
     !===============================================!
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, &
-                                    cwschur1, cwschur2, cwschur3, cwschur4, cz)
+                                    cwschur1, cwschur2, cwschur3, cwschur4, &
+                                    cz, num_wann, num_kpts, nntot, nnlist, &
+                                    lsitesymmetry, counts, displs, cdq_loc, &
+                                    u_matrix_loc, m_matrix_loc)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
       !                                               !
       !===============================================!
+      use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
         ir2ik, ik2ir !YN: RS:
       use w90_io, only: io_stopwatch, io_error, stdout
-      use w90_comms, only: comms_bcast, comms_gatherv
+      use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv
       use w90_utility, only: utility_zgemm
-      use w90_parameters, only: timing_level, lsitesymmetry, num_wann, &
-        num_kpts, nntot, nnlist
+      use w90_parameters, only: timing_level
 
       implicit none
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
@@ -1328,7 +1390,14 @@ contains
       complex(kind=dp), intent(inout) :: cwschur1(:), cwschur2(:)
       complex(kind=dp), intent(inout) :: cwschur3(:), cwschur4(:)
       complex(kind=dp), intent(inout) :: cz(:, :)
-      !cdq_loc from wannierise module
+      integer, intent(in) :: num_wann, num_kpts, nntot
+      integer, intent(in) :: nnlist(:, :)
+      logical, intent(in) :: lsitesymmetry
+      integer, intent(in) :: counts(0:)
+      integer, intent(in) :: displs(0:)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
@@ -1613,16 +1682,18 @@ contains
 
   !==================================================================!
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                         neigh, nnh, bk, bka, num_kpts, m_matrix, gamma_only, m_w)
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, gamma_only, &
+                         counts, displs, m_matrix_loc, rnkb, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
     !                                                                  !
     !===================================================================
-    use w90_constants, only: eps6
+    use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
+    use w90_comms, only: on_root, my_node_id, comms_allreduce
 
     implicit none
 
@@ -1646,6 +1717,10 @@ contains
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     logical, intent(in) :: gamma_only
     ! end of vars from parameter module
+    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: displs(0:)
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), intent(out) :: rnkb(:, :, :)
 
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     !! Used in the Gamma point routines as an optimisation
@@ -1844,7 +1919,8 @@ contains
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, &
                         num_wann, nntot, wb, bk, num_kpts, &
                         omega_invariant, selective_loc, slwf_constrain, &
-                        slwf_num, ccentres_cart)
+                        slwf_num, ccentres_cart, counts, displs, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass)
     !==================================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
@@ -1855,6 +1931,7 @@ contains
     !===================================================================
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch
+    use w90_comms, only: on_root, my_node_id, comms_allreduce
 
     implicit none
 
@@ -1877,7 +1954,11 @@ contains
     integer, intent(in) :: slwf_num
     real(kind=dp), intent(in) :: ccentres_cart(:, :)
     ! end of parameters
-
+    integer, intent(in) :: counts(0:), displs(0:)
+    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), intent(in) :: lambda_loc
+    logical, intent(inout) :: first_pass
     !local variables
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
@@ -2130,7 +2211,9 @@ contains
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
-                         slwf_num, ccentres_cart, lsitesymmetry, cdodq)
+                         slwf_num, ccentres_cart, lsitesymmetry, &
+                         counts, displs, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2139,9 +2222,12 @@ contains
     ! Jun 2018, based on previous work by Charles T. Johnson and       !
     ! Radu Miron at Implerial College London
     !===================================================================
+    use w90_constants, only: cmplx_0
     use w90_parameters, only: timing_level
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
+    use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, &
+      comms_allreduce
 
     implicit none
 
@@ -2164,13 +2250,16 @@ contains
     real(kind=dp), intent(in) :: ccentres_cart(:, :)
     logical, intent(in) :: lsitesymmetry
     ! end parameters
-
-    !local
+    integer, intent(in) :: counts(0:), displs(0:)
+    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)
+    complex(kind=dp), intent(inout) :: cdodq_loc(:, :, :)
+    real(kind=dp), intent(in) :: lambda_loc
+    ! local
     complex(kind=dp), allocatable  :: cr(:, :)
     complex(kind=dp), allocatable  :: crt(:, :)
     real(kind=dp), allocatable :: r0kb(:, :, :)
-
-    ! local
     integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc
     complex(kind=dp) :: mnn
 
@@ -2402,6 +2491,7 @@ contains
 
     use w90_parameters, only: timing_level
     use w90_io, only: stdout, io_stopwatch
+    use w90_comms, only: on_root
 
     implicit none
 
@@ -2700,6 +2790,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error, stdout
     use w90_parameters, only: timing_level
+    use w90_comms, only: on_root
 
     implicit none
 
@@ -2811,6 +2902,7 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error, stdout
     use w90_parameters, only: lenconfac, length_unit, timing_level
+    use w90_comms, only: on_root
 
     implicit none
 
@@ -2928,11 +3020,20 @@ contains
       atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
       num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
+    use w90_comms, only: on_root
 
     implicit none
 
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
+
+    ! data from the wannierise module
+    integer :: counts(0:0)
+    integer :: displs(0:0)
+    real(kind=dp), allocatable  :: rnkb(:, :, :)
+    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
+    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
+    logical :: first_pass
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
@@ -3013,8 +3114,8 @@ contains
     cz = cmplx_0
 
     ! Set up the MPI arrays for a serial run.
-    allocate (counts(0:0), displs(0:0), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
+    !allocate (counts(0:0), displs(0:0), stat=ierr)
+    !if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
     counts(0) = 1; displs(0) = 0
 
     ! store original U before rotating
@@ -3062,7 +3163,8 @@ contains
 !~    endif
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
+                       counts, displs, m_matrix_loc, rnkb)
       irguide = 1
     endif
 
@@ -3076,7 +3178,8 @@ contains
 
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                          num_wann, nntot, wbtot, wb, bk, omega_invariant)
+                          num_wann, nntot, wbtot, wb, bk, omega_invariant, &
+                          ln_tmp, first_pass)
 
     ! public variables
     omega_total = wann_spread%om_tot
@@ -3142,18 +3245,19 @@ contains
       if (guiding_centres .and. (iter .gt. num_no_guide_iter) &
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
-                         neigh, nnh, bk, bka, num_kpts, m_matrix, .true., m_w)
+                         neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
+                         counts, displs, m_matrix_loc, rnkb, m_w)
         irguide = 1
       endif
 
-      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot)
+      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann)
 
       call wann_spread_copy(wann_spread, old_spread)
 
       ! calculate the new centers and spread
       call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
                             wann_spread, num_wann, nntot, wbtot, wb, bk, &
-                            omega_invariant)
+                            omega_invariant, ln_tmp, first_pass)
 
       ! print the new centers and spreads
       if (lprint) then
@@ -3194,7 +3298,8 @@ contains
 
       if (conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, &
-                                             history, iter, lconverged)
+                                             history, iter, lconverged, &
+                                             conv_window, conv_tol)
       endif
 
       if (lconverged) then
@@ -3242,8 +3347,11 @@ contains
                           atoms_species_num)
     endif
 
-    if (guiding_centres) call wann_phases(csheet, sheet, rguide, irguide, &
-                                          num_wann, nntot, neigh, nnh, bk, bka, num_kpts, m_matrix, .true.)
+    if (guiding_centres) then
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
+                       neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
+                       counts, displs, m_matrix_loc, rnkb)
+    endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
@@ -3318,17 +3426,18 @@ contains
   contains
 
     !===============================================!
-    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot)
+    subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann)
       !===============================================!
 
       use w90_constants, only: pi, eps10
       use w90_io, only: io_stopwatch
-      use w90_parameters, only: timing_level, num_wann
+      use w90_parameters, only: timing_level
 
       implicit none
       real(kind=dp), intent(inout) :: m_w(:, :, :)
       real(kind=dp), intent(inout)  :: ur_rot(:, :)
       integer, intent(in) :: tnntot
+      integer, intent(in) :: num_wann
       ! local
       real(kind=dp) :: theta, twotheta
       real(kind=dp) :: a11, a12, a21, a22
@@ -3396,7 +3505,8 @@ contains
 
     !===============================================!
     subroutine internal_test_convergence_gamma(wann_spread, old_spread, &
-                                               history, iter, lconverged)
+                                               history, iter, lconverged, &
+                                               conv_window, conv_tol)
       !===============================================!
       !                                               !
       ! Determine whether minimisation of non-gauge-  !
@@ -3404,7 +3514,6 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_parameters, only: conv_window, conv_tol
 
       implicit none
       type(localisation_vars), intent(in) :: wann_spread
@@ -3412,7 +3521,9 @@ contains
       real(kind=dp), intent(inout) :: history(:)
       integer, intent(in) :: iter
       logical, intent(out) :: lconverged
-
+      integer, intent(in) :: conv_window
+      real(kind=dp), intent(in) :: conv_tol
+      ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
       real(kind=dp), allocatable :: temp_hist(:)
@@ -3632,7 +3743,7 @@ contains
   !==================================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
                               wann_spread, num_wann, nntot, wbtot, wb, bk, &
-                              omega_invariant)
+                              omega_invariant, ln_tmp, first_pass)
     !==================================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
@@ -3659,6 +3770,8 @@ contains
     real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: omega_invariant
     ! end parameters
+    real(kind=dp), intent(out) :: ln_tmp(:, :, :)
+    logical, intent(inout) :: first_pass
 
     !local variables
     real(kind=dp) :: summ, brn
