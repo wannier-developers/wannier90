@@ -1,6 +1,7 @@
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v2.2.3
   hooks:
+  - id: check-yaml
   - id: trailing-whitespace
     files: (?x)^(
         config/make[.]inc[.\w]*|
