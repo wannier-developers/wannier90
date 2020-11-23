@@ -111,7 +111,12 @@ contains
     use w90_parameters, only: transport_mode, tran_read_ht, timing_level, write_hr, &
       write_xyz, &
 !lp introduced for hamiltonian_write_hr
-      num_wann
+      num_wann, & 
+!lp introduced for hamiltonian_get_hr
+     real_lattice, recip_lattice, wannier_centres, num_atoms, atoms_pos_cart, &
+     translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
+     lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
+     eigval, u_matrix, lsitesymmetry
 !lp 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
 
@@ -132,7 +137,12 @@ contains
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran_read_ht) then
         call hamiltonian_setup()
-        call hamiltonian_get_hr()
+        call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
+                               num_atoms, atoms_pos_cart, translation_centre_frac, &
+                               automatic_translation, num_species, atoms_species_num, &
+                               lenconfac, have_disentangled, ndimwin, lwindow, &
+                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
+                               lsitesymmetry)
         if (write_hr) call hamiltonian_write_hr(num_wann)
         call tran_reduce_hr()
         call tran_cut_hr_one_dim()
@@ -146,7 +156,12 @@ contains
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran_read_ht) then
         call hamiltonian_setup()
-        call hamiltonian_get_hr()
+        call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
+                               num_atoms, atoms_pos_cart, translation_centre_frac, &
+                               automatic_translation, num_species, atoms_species_num, &
+                               lenconfac, have_disentangled, ndimwin, lwindow, &
+                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
+                               lsitesymmetry)
         if (write_hr) call hamiltonian_write_hr(num_wann)
         call tran_reduce_hr()
         call tran_cut_hr_one_dim()

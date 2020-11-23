@@ -34,7 +34,12 @@ contains
          write_hr, write_rmn, write_tb, write_u_matrices, &
 !lp      parameters added for hamiltonian_write_tb & hamiltonian_write_hr
 !lp      (num_wann)
-         real_lattice, num_wann, wb, bk, m_matrix, nntot
+         real_lattice, num_wann, wb, bk, m_matrix, nntot, &
+!lp      for hamiltonian_get_hr
+         recip_lattice, wannier_centres, num_atoms, atoms_pos_cart, &
+         translation_centre_frac, automatic_translation, num_species, &
+         atoms_species_num, lenconfac, have_disentangled, ndimwin, lwindow, &
+         u_matrix_opt, eigval, u_matrix, lsitesymmetry
 !lp      end parameters
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
       hamiltonian_setup, hamiltonian_write_rmn, &
@@ -72,7 +77,12 @@ contains
       !
       call hamiltonian_setup()
       !
-      call hamiltonian_get_hr()
+      call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
+                             num_atoms, atoms_pos_cart, translation_centre_frac, &
+                             automatic_translation, num_species, atoms_species_num, &
+                             lenconfac, have_disentangled, ndimwin, lwindow, &
+                             u_matrix_opt, kpt_latt, eigval, u_matrix, &
+                             lsitesymmetry)
       !
       if (bands_plot) call plot_interpolate_bands
       !

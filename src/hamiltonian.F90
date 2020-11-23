@@ -167,7 +167,12 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr()
+  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
+                               num_atoms, atoms_pos_cart, translation_centre_frac, &
+                               automatic_translation, num_species, atoms_species_num, &
+                               lenconfac, have_disentangled, ndimwin, lwindow, &
+                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
+                               lsitesymmetry)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -176,21 +181,18 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-!lp   use w90_parameters, only: num_bands, num_kpts, num_wann, u_matrix, &
-!lp     eigval, kpt_latt, u_matrix_opt, lwindow, ndimwin, &
-!lp     have_disentangled, timing_level
-!lp   use w90_parameters, only: lsitesymmetry !YN:
 
-    use w90_parameters, only: num_bands, num_kpts, num_wann, u_matrix, &
-      eigval, kpt_latt, u_matrix_opt, lwindow, ndimwin, &
-      have_disentangled, timing_level, &
+!lp use w90_parameters, only: num_bands, num_kpts, num_wann, u_matrix, &
+!lp   eigval, kpt_latt, u_matrix_opt, lwindow, ndimwin, &
+!lp   have_disentangled, timing_level, &
 !lp introduced additional parameters for internal_translate_centres
-      lenconfac, atoms_species_num, num_species, automatic_translation, &
-      translation_centre_frac, atoms_pos_cart, num_atoms, wannier_centres, &
-      recip_lattice, real_lattice
-!lp param 
+!lp   lenconfac, atoms_species_num, num_species, automatic_translation, &
+!lp   translation_centre_frac, atoms_pos_cart, num_atoms, wannier_centres, &
+!lp   recip_lattice, real_lattice
+!lp end introduce parameters 
+!lp use w90_parameters, only: lsitesymmetry !YN:
 
-    use w90_parameters, only: lsitesymmetry !YN:
+    use w90_parameters, only: num_bands, num_kpts, num_wann, timing_level
 
 
     implicit none
@@ -203,6 +205,27 @@ contains
     real(kind=dp)        :: irvec_tmp(3)
     integer              :: loop_kpt, i, j, m, irpt, ideg, ierr, counter
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
+
+!lp from w90_parameters
+    integer, intent(in) :: num_atoms
+    integer, intent(in) :: num_species
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: ndimwin(:)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    real(kind=dp), intent(out) :: translation_centre_frac(3)
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    logical, intent(in) :: automatic_translation
+    logical, intent(in) :: have_disentangled     
+    logical, intent(in) :: lwindow(:, :)
+    logical, intent(in) :: lsitesymmetry  !YN:
+!lp end parameters
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
