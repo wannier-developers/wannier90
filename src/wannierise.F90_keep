@@ -12,6 +12,52 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
+module w90_wannierise_data
+  !! Main routines for the minimisation of the spread
+
+  use w90_constants, only: dp
+  !use w90_comms, only: on_root, my_node_id, num_nodes, &
+  !  comms_bcast, comms_array_split, &
+  !  comms_gatherv, comms_allreduce, &
+  !  comms_scatterv
+
+  implicit none
+
+  public
+
+  !public :: wann_main
+  !public :: wann_main_gamma  ![ysl]
+
+  ! Data to avoid large allocation within iteration loop
+  real(kind=dp), allocatable  :: rnkb(:, :, :)
+  real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
+  real(kind=dp), allocatable  :: ln_tmp(:, :, :)
+
+  real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
+
+  ! for MPI
+  complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
+  complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
+  complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
+  complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
+  complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
+  ! from process to process
+  ! in the main loop
+  complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
+  integer, allocatable  :: counts(:)
+  integer, allocatable  :: displs(:)
+
+  logical :: first_pass
+  !! Used to trigger the calculation of the invarient spread
+  !! we only need to do this on entering wann_main (_gamma)
+  real(kind=dp) :: lambda_loc
+
+!#ifdef MPI
+!  include 'mpif.h'
+!#endif
+
+end module w90_wannierise_data
+
 module w90_wannierise
   !! Main routines for the minimisation of the spread
 
@@ -78,7 +124,7 @@ contains
       translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
       atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
       num_valence_bands, num_elec_per_state, & ! extra for write_vdw
-      translation_centre_frac, automatic_translation, ndimwin  !hamiltonian_get_hr
+      translation_centre_frac, automatic_translation, ndimwin                  ! extra for hamiltonian_get_hr
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -89,37 +135,15 @@ contains
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
       rpt_origin, irvec, nrpts, ndegen
 
+    use w90_wannierise_data, only: first_pass, rnkb, ln_tmp, &
+      counts, displs, rnkb_loc, ln_tmp_loc, u_matrix_loc, m_matrix_loc, &
+      cdq_loc, cdodq_loc, lambda_loc, cdq_loc
+
     implicit none
 
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
     type(localisation_vars) :: trial_spread
-
-    ! data from wannierise module
-    ! Data to avoid large allocation within iteration loop
-    real(kind=dp), allocatable  :: rnkb(:, :, :)
-    real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
-    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-
-    real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
-
-    ! for MPI
-    complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
-    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
-    !complex(kind=dp), allocatable  :: m_matrix_1b(:, :, :)
-    !complex(kind=dp), allocatable  :: m_matrix_1b_loc(:, :, :)
-    complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent
-    ! from process to process
-    ! in the main loop
-    complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
-    integer, allocatable  :: counts(:)
-    integer, allocatable  :: displs(:)
-
-    logical :: first_pass
-    !! Used to trigger the calculation of the invarient spread
-    !! we only need to do this on entering wann_main (_gamma)
-    real(kind=dp) :: lambda_loc
-    ! end of wannierise module data
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
@@ -453,13 +477,13 @@ contains
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
-                         rnkb_loc, cdodq_loc, lambda_loc, cdodq)
+                         rnkb_loc, lambda_loc, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
-                         rnkb_loc, cdodq_loc, lambda_loc) !,cdodq)  fills only cdodq_loc
+                         rnkb_loc, lambda_loc )!,cdodq)  fills only cdodq_loc
       endif
 
       if (lprint .and. iprint > 2 .and. on_root) &
@@ -766,14 +790,11 @@ contains
     if (write_hr_diag) then
       call hamiltonian_setup()
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
-                              num_atoms, atoms_pos_cart, &
-                              translation_centre_frac, &
-                              automatic_translation, num_species, &
-                              atoms_species_num, &
+                              num_atoms, atoms_pos_cart, translation_centre_frac, &
+                              automatic_translation, num_species, atoms_species_num, &
                               lenconfac, have_disentangled, ndimwin, lwindow, &
                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
                               lsitesymmetry)
-
       if (on_root) then
         write (stdout, *)
         write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
@@ -2222,7 +2243,7 @@ contains
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
-                         rnkb_loc, cdodq_loc, lambda_loc, cdodq)
+                         rnkb_loc, lambda_loc, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2237,6 +2258,11 @@ contains
     use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
     use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, &
       comms_allreduce
+!lp  use w90_wannierise_data, only: counts, displs, ln_tmp_loc, m_matrix_loc, &
+!lp    rnkb_loc, cdodq_loc, lambda_loc
+    use w90_wannierise_data, only:  &
+        cdodq_loc
+
 
     implicit none
 
@@ -2259,16 +2285,20 @@ contains
     real(kind=dp), intent(in) :: ccentres_cart(:, :)
     logical, intent(in) :: lsitesymmetry
     ! end parameters
+    ! param test
     integer, intent(in) :: counts(0:), displs(0:)
     real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)
-    complex(kind=dp), intent(inout) :: cdodq_loc(:, :, :)
     real(kind=dp), intent(in) :: lambda_loc
-    ! local
+!   complex(kind=dp), intent(inout) :: cdodq_loc(:, :, :)
+    ! end param test
+    !local
     complex(kind=dp), allocatable  :: cr(:, :)
     complex(kind=dp), allocatable  :: crt(:, :)
     real(kind=dp), allocatable :: r0kb(:, :, :)
+
+    ! local
     integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc
     complex(kind=dp) :: mnn
 
@@ -3030,19 +3060,13 @@ contains
       num_valence_bands, num_elec_per_state ! extra for write_vdw
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
+    use w90_wannierise_data, only: counts, displs, rnkb, ln_tmp, first_pass, &
+      m_matrix_loc, rnkb
 
     implicit none
 
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
-
-    ! data from the wannierise module
-    integer :: counts(0:0)
-    integer :: displs(0:0)
-    real(kind=dp), allocatable  :: rnkb(:, :, :)
-    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
-    logical :: first_pass
 
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
@@ -3123,8 +3147,8 @@ contains
     cz = cmplx_0
 
     ! Set up the MPI arrays for a serial run.
-    !allocate (counts(0:0), displs(0:0), stat=ierr)
-    !if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
+    allocate (counts(0:0), displs(0:0), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating counts and displs in wann_main_gamma')
     counts(0) = 1; displs(0) = 0
 
     ! store original U before rotating
