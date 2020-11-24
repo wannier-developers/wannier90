@@ -2254,7 +2254,7 @@ contains
     real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)
-    complex(kind=dp), intent(inout) :: cdodq_loc(:, :, :)
+    complex(kind=dp), intent(out) :: cdodq_loc(:, :, :)
     real(kind=dp), intent(in) :: lambda_loc
     ! local
     complex(kind=dp), allocatable  :: cr(:, :)
