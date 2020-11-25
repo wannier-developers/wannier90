@@ -1,0 +1,34 @@
+ &control
+    calculation='scf'
+    restart_mode='from_scratch',
+    pseudo_dir = '../../pseudo/',
+    outdir='./'
+    prefix='gh'
+ /
+ &system
+                       ibrav = 0,
+                   celldm(1) = 1.8897261249935,
+                         nat = 4
+                        ntyp = 1,
+    ecutwfc =40.0
+    occupations='smearing', smearing='cold', degauss=0.02
+ /
+ &electrons
+    startingwfc='random'
+    diagonalization='cg'
+    conv_thr = 1.0e-8
+ /
+CELL_PARAMETERS cubic
+    2.1304215583   -1.2299994602    0.0000000000
+    0.0000000000    2.4599989204    0.0000000000
+    0.0000000000    0.0000000000    6.8000000000
+ATOMIC_SPECIES
+C  12   C.pz-vbc.UPF 
+ATOMIC_POSITIONS crystal
+     C    0.0000000000    0.0000000000    0.2500000000
+     C    0.0000000000    0.0000000000    0.7500000000
+     C    0.3333333333    0.6666666667    0.2500000000
+     C   -0.3333333333   -0.6666666667    0.7500000000
+K_POINTS (automatic)
+10 10 10 0 0 0
+

@@ -116,7 +116,10 @@ contains
      real_lattice, recip_lattice, wannier_centres, num_atoms, atoms_pos_cart, &
      translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
      lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
-     eigval, u_matrix, lsitesymmetry
+     eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, &
+!lp  introduced for hamiltonian_setup
+     ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
+     bands_plot, iprint
 !lp 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
 
@@ -136,14 +139,17 @@ contains
     if (index(transport_mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran_read_ht) then
-        call hamiltonian_setup()
+        call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+                              mp_grid, transport_mode, bands_plot_mode, transport, &
+                              bands_plot, num_kpts, num_wann, timing_level, iprint)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                                num_atoms, atoms_pos_cart, translation_centre_frac, &
                                automatic_translation, num_species, atoms_species_num, &
                                lenconfac, have_disentangled, ndimwin, lwindow, &
                                u_matrix_opt, kpt_latt, eigval, u_matrix, &
-                               lsitesymmetry)
-        if (write_hr) call hamiltonian_write_hr(num_wann)
+                               lsitesymmetry, num_bands, num_kpts, num_wann, &
+                               timing_level)
+        if (write_hr) call hamiltonian_write_hr(num_wann, timing_level)
         call tran_reduce_hr()
         call tran_cut_hr_one_dim()
         call tran_get_ht()
@@ -155,14 +161,17 @@ contains
     if (index(transport_mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran_read_ht) then
-        call hamiltonian_setup()
+        call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+                              mp_grid, transport_mode, bands_plot_mode, transport, &
+                              bands_plot, num_kpts, num_wann, timing_level, iprint)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                                num_atoms, atoms_pos_cart, translation_centre_frac, &
                                automatic_translation, num_species, atoms_species_num, &
                                lenconfac, have_disentangled, ndimwin, lwindow, &
                                u_matrix_opt, kpt_latt, eigval, u_matrix, &
-                               lsitesymmetry)
-        if (write_hr) call hamiltonian_write_hr(num_wann)
+                               lsitesymmetry, num_bands, num_kpts, num_wann, &
+                               timing_level)
+        if (write_hr) call hamiltonian_write_hr(num_wann, timing_level)
         call tran_reduce_hr()
         call tran_cut_hr_one_dim()
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'

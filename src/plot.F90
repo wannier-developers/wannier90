@@ -39,7 +39,10 @@ contains
          recip_lattice, wannier_centres, num_atoms, atoms_pos_cart, &
          translation_centre_frac, automatic_translation, num_species, &
          atoms_species_num, lenconfac, have_disentangled, ndimwin, lwindow, &
-         u_matrix_opt, eigval, u_matrix, lsitesymmetry
+         u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
+!lp      for hamiltonian_setup
+         ws_distance_tol, ws_search_size, real_metric, mp_grid, transport_mode, &
+         bands_plot_mode, transport, iprint
 !lp      end parameters
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
       hamiltonian_setup, hamiltonian_write_rmn, &
@@ -75,26 +78,29 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup()
+      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+                            mp_grid, transport_mode, bands_plot_mode, transport, &
+                            bands_plot, num_kpts, num_wann, timing_level, iprint)
       !
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                              num_atoms, atoms_pos_cart, translation_centre_frac, &
                              automatic_translation, num_species, atoms_species_num, &
                              lenconfac, have_disentangled, ndimwin, lwindow, &
                              u_matrix_opt, kpt_latt, eigval, u_matrix, &
-                             lsitesymmetry)
+                             lsitesymmetry, num_bands, num_kpts, num_wann, &
+                             timing_level)
       !
       if (bands_plot) call plot_interpolate_bands
       !
       if (fermi_surface_plot) call plot_fermi_surface
       !
-      if (write_hr) call hamiltonian_write_hr(num_wann)
+      if (write_hr) call hamiltonian_write_hr(num_wann, timing_level)
       !
       if (write_rmn) call hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
           num_kpts, kpt_latt, nntot)
       !
       if (write_tb) call hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
-          m_matrix, num_kpts, kpt_latt, nntot)
+          m_matrix, num_kpts, kpt_latt, nntot, timing_level)
       !
       if (write_hr .or. write_rmn .or. write_tb) then
         if (.not. done_ws_distance) call ws_translate_dist(nrpts, irvec)

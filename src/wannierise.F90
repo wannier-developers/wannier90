@@ -78,7 +78,9 @@ contains
       translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
       atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
       num_valence_bands, num_elec_per_state, & ! extra for write_vdw
-      translation_centre_frac, automatic_translation, ndimwin  !hamiltonian_get_hr
+      translation_centre_frac, automatic_translation, ndimwin, &  !extra for hamiltonian_get_hr
+      ws_distance_tol, ws_search_size, real_metric, mp_grid, transport_mode, & !extra for hamiltonian_setup
+      bands_plot_mode, transport, bands_plot   !extra for hamiltonian_setup
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -211,7 +213,9 @@ contains
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main')
 
     if (precond) then
-      call hamiltonian_setup()
+      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+                            mp_grid, transport_mode, bands_plot_mode, transport, &
+                            bands_plot, num_kpts, num_wann, timing_level, iprint)
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main')
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
@@ -764,15 +768,16 @@ contains
     endif
 
     if (write_hr_diag) then
-      call hamiltonian_setup()
+      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+                            mp_grid, transport_mode, bands_plot_mode, transport, &
+                            bands_plot, num_kpts, num_wann, timing_level, iprint)
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
-                              num_atoms, atoms_pos_cart, &
-                              translation_centre_frac, &
-                              automatic_translation, num_species, &
-                              atoms_species_num, &
+                              num_atoms, atoms_pos_cart, translation_centre_frac, &
+                              automatic_translation, num_species, atoms_species_num, &
                               lenconfac, have_disentangled, ndimwin, lwindow, &
                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
-                              lsitesymmetry)
+                              lsitesymmetry, num_bands, num_kpts, num_wann, &
+                              timing_level)
 
       if (on_root) then
         write (stdout, *)

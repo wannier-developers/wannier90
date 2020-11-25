@@ -1,0 +1,58 @@
+[1mdiff --git a/src/wannierise.F90 b/src/wannierise.F90[m
+[1mindex b9722de..bb7a241 100644[m
+[1m--- a/src/wannierise.F90[m
+[1m+++ b/src/wannierise.F90[m
+[36m@@ -474,11 +474,15 @@[m [mcontains[m
+      if (lsitesymmetry .or. precond) then[m
+        call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &[m
+                         num_kpts, selective_loc, slwf_constrain, &[m
+                         slwf_num, ccentres_cart, lsitesymmetry, [32m&[m
+[32m                         counts, displs, ln_tmp_loc, m_matrix_loc, &[m
+[32m                         rnkb_loc, cdodq_loc, lambda_loc,[m cdodq)
+      else[m
+        call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &[m
+                         num_kpts, selective_loc, slwf_constrain, &[m
+                         slwf_num, ccentres_cart, [31mlsitesymmetry)!,cdodq)[m[32mlsitesymmetry, &[m
+[32m                         counts, displs, ln_tmp_loc, m_matrix_loc, &[m
+[32m                         rnkb_loc, cdodq_loc, lambda_loc) !,cdodq)[m  fills only cdodq_loc
+      endif[m
+
+      if (lprint .and. iprint > 2 .and. on_root) &[m
+[36m@@ -2231,7 +2235,9 @@[m [mcontains[m
+  !==================================================================![m
+  subroutine wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &[m
+                         num_kpts, selective_loc, slwf_constrain, &[m
+                         slwf_num, ccentres_cart, lsitesymmetry, [32m&[m
+[32m                         counts, displs, ln_tmp_loc, m_matrix_loc, &[m
+[32m                         rnkb_loc, cdodq_loc, lambda_loc,[m cdodq)
+    !==================================================================![m
+    !                                                                  ![m
+    !   Calculate the Gradient of the Wannier Function spread          ![m
+[36m@@ -2246,8 +2252,6 @@[m [mcontains[m
+    use w90_sitesym, only: sitesym_symmetrize_gradient !RS:[m
+    use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, &[m
+      comms_allreduce[m
+[31m    use w90_wannierise_data, only: counts, displs, ln_tmp_loc, m_matrix_loc, &[m
+[31m      rnkb_loc, cdodq_loc, lambda_loc[m
+
+    implicit none[m
+
+[36m@@ -2270,13 +2274,16 @@[m [mcontains[m
+    real(kind=dp), intent(in) :: ccentres_cart(:, :)[m
+    logical, intent(in) :: lsitesymmetry[m
+    ! end parameters[m
+    [31m!local[m[32minteger, intent(in) :: counts(0:), displs(0:)[m
+[32m    real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)[m
+[32m    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)[m
+[32m    real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)[m
+[32m    complex(kind=dp), intent(inout) :: cdodq_loc(:, :, :)[m
+[32m    real(kind=dp), intent(in) :: lambda_loc[m
+[32m    ! local[m
+    complex(kind=dp), allocatable  :: cr(:, :)[m
+    complex(kind=dp), allocatable  :: crt(:, :)[m
+    real(kind=dp), allocatable :: r0kb(:, :, :)[m
+
+[31m    ! local[m
+    integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc[m
+    complex(kind=dp) :: mnn[m
+

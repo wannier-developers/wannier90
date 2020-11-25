@@ -1,0 +1,168 @@
+
+     Program PW2WANNIER v.6.5 starts on 24Nov2020 at 15:35:45 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on    24 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =      24
+
+  Reading nscf_save data
+
+     Reading xml data from directory:
+
+     ./cnt.save/
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PZ
+                           (   1   1   0   0   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min         541     541    161                14352    14352    2327
+     Max         543     543    162                14353    14353    2329
+     Sum       13015   13015   3871               344461   344461   55859
+
+     Reading collected, re-writing distributed wavefunctions
+
+  Spin CASE ( default = unpolarized )
+
+  Wannier mode is: standalone     
+
+  -----------------
+  *** Reading nnkp 
+  -----------------
+
+  Checking info from wannier.nnkp file
+
+  - Real lattice is ok
+  - Reciprocal lattice is ok
+  - K-points are ok
+  - Number of wannier functions is ok ( 50)
+  - All guiding functions are given 
+
+ Projections:
+   -0.113550   -0.082643    0.204104  0  1  1    1.000000
+   -0.113550    0.082643    0.204104  0  1  1    1.000000
+    0.043120    0.133669    0.204104  0  1  1    1.000000
+    0.140860    0.000000    0.204104  0  1  1    1.000000
+    0.043120   -0.133669    0.204104  0  1  1    1.000000
+   -0.140140    0.000000    0.051028  0  1  1    1.000000
+   -0.043120    0.133669    0.051028  0  1  1    1.000000
+    0.113550    0.082643    0.051028  0  1  1    1.000000
+    0.113550   -0.082643    0.051028  0  1  1    1.000000
+   -0.043120   -0.133669    0.051028  0  1  1    1.000000
+   -0.126490   -0.040967    0.127206  0  1  1    1.000000
+   -0.126490    0.040967    0.127206  0  1  1    1.000000
+   -0.078340    0.107801    0.127206  0  1  1    1.000000
+    0.000000    0.133669    0.127206  0  1  1    1.000000
+    0.078340    0.107801    0.127206  0  1  1    1.000000
+    0.126490    0.040967    0.127206  0  1  1    1.000000
+    0.126490   -0.040967    0.127206  0  1  1    1.000000
+    0.078340   -0.107801    0.127206  0  1  1    1.000000
+    0.000000   -0.133669    0.127206  0  1  1    1.000000
+   -0.078340   -0.107801    0.127206  0  1  1    1.000000
+   -0.126490   -0.040967    0.280286  0  1  1    1.000000
+   -0.126490    0.040967    0.280286  0  1  1    1.000000
+   -0.078340    0.107801    0.280286  0  1  1    1.000000
+    0.000000    0.133669    0.280286  0  1  1    1.000000
+    0.078340    0.107801    0.280286  0  1  1    1.000000
+    0.126490    0.040967    0.280286  0  1  1    1.000000
+    0.126490   -0.040967    0.280286  0  1  1    1.000000
+    0.078340   -0.107801    0.280286  0  1  1    1.000000
+    0.000000   -0.133669    0.280286  0  1  1    1.000000
+   -0.078340   -0.107801    0.280286  0  1  1    1.000000
+    0.113800    0.082683    0.000000  1  1  1    1.000000
+    0.043470    0.133778    0.153080  1  1  1    1.000000
+   -0.043470    0.133778    0.000000  1  1  1    1.000000
+   -0.113800    0.082683    0.153080  1  1  1    1.000000
+   -0.140660    0.000000    0.000000  1  1  1    1.000000
+   -0.113800   -0.082683    0.153080  1  1  1    1.000000
+   -0.043470   -0.133778    0.000000  1  1  1    1.000000
+    0.043470   -0.133778    0.153080  1  1  1    1.000000
+    0.113800   -0.082683    0.000000  1  1  1    1.000000
+    0.140660    0.000000    0.153080  1  1  1    1.000000
+    0.113800   -0.082683    0.102052  1  1  1    1.000000
+    0.140660    0.000000    0.255132  1  1  1    1.000000
+    0.113800    0.082683    0.102052  1  1  1    1.000000
+    0.043470    0.133778    0.255132  1  1  1    1.000000
+   -0.043470    0.133778    0.102052  1  1  1    1.000000
+   -0.113800    0.082683    0.255132  1  1  1    1.000000
+   -0.140660    0.000000    0.102052  1  1  1    1.000000
+   -0.113800   -0.082683    0.255132  1  1  1    1.000000
+   -0.043470   -0.133778    0.102052  1  1  1    1.000000
+    0.043470   -0.133778    0.255132  1  1  1    1.000000
+
+  Reading data about k-point neighbours 
+
+  All neighbours are found 
+
+  Opening pp-files 
+
+
+  --------------------------
+  *** Compute  A projections
+  --------------------------
+
+  AMN: iknum =       10
+       1       2       3       4       5       6       7       8       9      10
+
+
+  AMN calculated
+
+  ---------------
+  *** Compute  M 
+  ---------------
+
+  MMN: iknum =       10
+       1       2       3       4       5       6       7       8       9      10
+
+
+  MMN calculated
+
+  -----------------------------------
+  *** Orbital terms are not computed 
+  -----------------------------------
+
+  ----------------
+  *** Write bands 
+  ----------------
+
+
+  -----------------------------
+  *** Plot info is not printed 
+  -----------------------------
+
+  -----------------------------
+  *** Parity info is not printed 
+  -----------------------------
+
+  ------------
+  *** Stop pp 
+  ------------
+
+
+     init_pw2wan  :      0.54s CPU      1.57s WALL (       1 calls)
+     compute_amn  :     48.60s CPU     48.67s WALL (       1 calls)
+     compute_mmn  :      8.78s CPU      8.99s WALL (       1 calls)
+
+     PW2WANNIER   :     57.92s CPU     59.37s WALL
+
+
+   This run was terminated on:  15:36:44  24Nov2020            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=
+
