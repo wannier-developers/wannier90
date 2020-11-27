@@ -110,9 +110,10 @@ contains
 
     if (wannier_plot) call plot_wannier
 
-    if (write_bvec) call plot_bvec
+    if (write_bvec) call plot_bvec(wb, bk, num_kpts, nntot)
 
-    if (write_u_matrices) call plot_u_matrices
+    if (write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, & 
+                                 have_disentangled, num_wann, num_kpts, num_bands)
 
     if (timing_level > 0) call io_stopwatch('plot: main', 2)
 
@@ -956,8 +957,9 @@ contains
       atoms_symbol, atoms_pos_cart, num_atoms, real_lattice, have_disentangled, &
       ndimwin, lwindow, u_matrix_opt, num_wannier_plot, wannier_plot_list, &
       wannier_plot_mode, wvfn_formatted, timing_level, wannier_plot_format, &
-      spinors, wannier_plot_spinor_mode, wannier_plot_spinor_phase
-
+      spinors, wannier_plot_spinor_mode, wannier_plot_spinor_phase, &
+      atoms_pos_frac, wannier_plot_scale, wannier_centres, wannier_plot_radius, &  ! introduced for internal_cube_format
+      iprint, recip_lattice  ! introduced for internal_cube_format
     implicit none
 
     real(kind=dp) :: scalfac, tmax, tmaxx, x_0ang, y_0ang, z_0ang
@@ -1262,7 +1264,9 @@ contains
     if (wannier_plot_format .eq. 'xcrysden') then
       call internal_xsf_format()
     elseif (wannier_plot_format .eq. 'cube') then
-      call internal_cube_format()
+      call internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
+                               atoms_symbol, wannier_centres, wannier_plot_radius, &
+                               iprint, recip_lattice)
     else
       call io_error('wannier_plot_format not recognised in wannier_plot')
     endif
@@ -1274,7 +1278,9 @@ contains
   contains
 
     !============================================!
-    subroutine internal_cube_format()
+    subroutine internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
+                                   atoms_symbol, wannier_centres, wannier_plot_radius, &
+                                   iprint, recip_lattice)
       !============================================!
       !                                            !
       !! Write WFs in Gaussian cube format.
@@ -1282,13 +1288,25 @@ contains
       !============================================!
 
       use w90_constants, only: bohr
-      use w90_parameters, only: recip_lattice, iprint, &
-        wannier_plot_radius, wannier_centres, atoms_symbol, &
-        wannier_plot_scale, atoms_pos_frac, num_atoms
+!     use w90_parameters, only: recip_lattice, iprint, &
+!       wannier_plot_radius, wannier_centres, atoms_symbol, &
+!       wannier_plot_scale, atoms_pos_frac, num_atoms
+
       use w90_utility, only: utility_translate_home, &
         utility_cart_to_frac, utility_frac_to_cart
 
       implicit none
+
+!lp   from w90_parameters
+      integer, intent(in) :: num_atoms
+      integer, intent(in) :: iprint
+      real(kind=dp), intent(in) :: atoms_pos_frac(:, :, :)
+      real(kind=dp), intent(in) :: wannier_plot_scale
+      real(kind=dp), intent(in) :: wannier_centres(:, :)
+      real(kind=dp), intent(in) :: wannier_plot_radius
+      real(kind=dp), intent(in) :: recip_lattice(3, 3)
+      character(len=2), intent(in) :: atoms_symbol(:)
+!lp   end w90_parameters
 
       real(kind=dp), allocatable :: wann_cube(:, :, :)
       real(kind=dp) :: rstart(3), rend(3), rlength(3), orig(3), dgrid(3)
@@ -1655,23 +1673,36 @@ contains
   end subroutine plot_wannier
 
   !============================================!
-  subroutine plot_u_matrices
+  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, &
+                  have_disentangled, num_wann, num_kpts, num_bands)
     !============================================!
     !                                            !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
     !                                            !
     !============================================!
 
-    use w90_parameters, only: num_bands, num_kpts, num_wann, have_disentangled, &
-      kpt_latt, u_matrix, u_matrix_opt
+!   use w90_parameters, only: num_bands, num_kpts, num_wann, have_disentangled, &
+!     kpt_latt, u_matrix, u_matrix_opt
+
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_time, io_stopwatch, io_date
+    use w90_constants, only: dp  !lp
 
     implicit none
     integer             :: matunit
     integer             :: i, j, nkp
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
+
+!lp from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_bands
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    logical, intent(in) :: have_disentangled
+!lp end w90_parameters
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -1705,7 +1736,7 @@ contains
   end subroutine plot_u_matrices
 
   !============================================!
-  subroutine plot_bvec()
+  subroutine plot_bvec(wb, bk, num_kpts, nntot)
     !!
     !! June 2018: RM and SP
     !! Write to file the matrix elements of bvector and their weights
@@ -1713,14 +1744,25 @@ contains
     !! You need "write_bvec = .true." in your wannier input
     !!
     !============================================!
-    use w90_parameters, only: wb, bk, num_kpts, nntot
+!   use w90_parameters, only: wb, bk, num_kpts, nntot
+!   use w90_io, only: io_error, io_file_unit, seedname, io_date
+!   use w90_parameters, only: nntot
     use w90_io, only: io_error, io_file_unit, seedname, io_date
+    use w90_constants, only: dp  !lp
+
     !
     implicit none
     !
     integer            :: nkp, nn, file_unit
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
+    !
+!lp from w90_parameters
+    integer, intent(in) :: nntot 
+    integer, intent(in) :: num_kpts
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+!lp end w90_parameters
     !
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'.bvec', form='formatted', status='unknown', err=101)
