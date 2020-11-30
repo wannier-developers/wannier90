@@ -18,52 +18,35 @@ module w90_disentangle
 
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, stdout, io_stopwatch
-  use w90_parameters, only: num_bands, num_wann, a_matrix, u_matrix_opt, &
-    u_matrix, m_matrix_orig, lwindow, dis_conv_window, devel_flag, &
-    nntot, timing_level, omega_invariant, u_matrix, lsitesymmetry, &
-    lenconfac, iprint, wbtot, dis_num_iter, dis_mix_ratio, dis_win_min, &
-    dis_win_max, dis_froz_min, dis_froz_max, dis_spheres_num, &
-    dis_spheres_first_wann, num_kpts, nnlist, ndimwin, wb, gamma_only, &
-    eigval, length_unit, dis_spheres, m_matrix, dis_conv_tol, frozen_states, &
-    optimisation, recip_lattice, kpt_latt, &
-    m_matrix_orig_local, m_matrix_local
 
-  use w90_comms, only: on_root, my_node_id, num_nodes, &
-    comms_bcast, comms_array_split, &
-    comms_gatherv, comms_allreduce
+!  use w90_comms, only: on_root, my_node_id, num_nodes, &
+!    comms_bcast, comms_array_split, &
+!    comms_gatherv, comms_allreduce
+!
+!  use w90_sitesym, only: sitesym_slim_d_matrix_band, &
+!    sitesym_replace_d_matrix_band, sitesym_symmetrize_u_matrix, &
+!    sitesym_symmetrize_zmatrix, sitesym_dis_extract_symmetry !RS:
+
+  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce
 
   use w90_sitesym, only: sitesym_slim_d_matrix_band, &
     sitesym_replace_d_matrix_band, sitesym_symmetrize_u_matrix, &
-    sitesym_symmetrize_zmatrix, sitesym_dis_extract_symmetry !RS:
+    sitesym_symmetrize_zmatrix, sitesym_dis_extract_symmetry 
 
   implicit none
-
-  private
-
-  real(kind=dp), allocatable :: eigval_opt(:, :)
-  !! At input it contains a large set of eigenvalues. At
-  !! it is slimmed down to contain only those inside the energy window.
-
-  logical                :: linner
-  !! Is there a frozen window
-  logical, allocatable   :: lfrozen(:, :)
-  !! true if the i-th band inside outer window is frozen
-  integer, allocatable   :: nfirstwin(:)
-  !! index of lowest band inside outer window at nkp-th
-  integer, allocatable   :: ndimfroz(:)
-  !! number of frozen bands at nkp-th k point
-  integer, allocatable   :: indxfroz(:, :)
-  !! number of bands inside outer window at nkp-th k point
-  integer, allocatable   :: indxnfroz(:, :)
-  !!   outer-window band index for the i-th non-frozen state
-  !! (equals 1 if it is the bottom of outer window)
-
   public :: dis_main
 
 contains
 
   !==================================================================!
-  subroutine dis_main()
+  subroutine dis_main(num_kpts, nntot, num_wann, num_bands, dis_spheres_num,&
+        dis_num_iter, dis_spheres_first_wann, dis_conv_window, timing_level,&
+        num_nodes, my_node_id, optimisation, iprint, nnlist, ndimwin, dis_win_min,&
+        dis_win_max, dis_froz_min, dis_froz_max, dis_mix_ratio, dis_conv_tol,&
+        wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt,&
+        dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only,&
+        on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix,&
+        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -72,13 +55,56 @@ contains
     !==================================================================!
     use w90_io, only: io_file_unit
 
+    ! passed variables
+    integer, intent(in) :: num_kpts, nntot, num_wann, num_bands
+    integer, intent(in) :: dis_spheres_num, dis_num_iter, dis_spheres_first_wann, dis_conv_window
+    integer, intent(in) :: timing_level, num_nodes, my_node_id, optimisation, iprint
+    integer, intent(in) :: nnlist(num_kpts, nntot)
+    integer, intent(inout) :: ndimwin(num_kpts)
+
+    real(kind=dp), intent(in) :: dis_win_min, dis_win_max, dis_froz_min, dis_froz_max, dis_mix_ratio, dis_conv_tol
+    real(kind=dp), intent(in) :: wbtot, lenconfac
+    real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(in) :: eigval(num_bands, num_kpts)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: kpt_latt(3, num_kpts)
+    real(kind=dp), intent(in) :: dis_spheres(4, dis_spheres_num)
+    real(kind=dp), intent(in) :: wb(nntot)
+
+    character(len=50), intent(in) :: devel_flag
+    character(len=20), intent(in) :: length_unit
+
+    logical, intent(in) :: lsitesymmetry, gamma_only, on_root, frozen_states
+    logical, intent(inout) :: lwindow(num_bands, num_kpts)
+
+    complex(kind=dp), intent(inout) :: u_matrix(num_wann, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(num_bands, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: a_matrix(num_bands, num_wann, num_kpts)
+    ! JJ what is happening with these variables?
+    complex(kind=dp), intent(inout), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout), allocatable :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), intent(inout), allocatable :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
+
     ! internal variables
-    integer                       :: nkp, nkp2, nn, j, ierr, page_unit
-    integer                       :: nkp_global
+    integer :: nkp, nkp2, nn, j, ierr, page_unit, nkp_global
+    logical :: linner                         !! Is there a frozen window
+    logical :: lfrozen(num_bands, num_kpts)   !! true if the i-th band inside outer window is frozen
+    integer :: nfirstwin(num_kpts)            !! index of lowest band inside outer window at nkp-th
+    integer :: ndimfroz(num_kpts)             !! number of frozen bands at nkp-th k point
+    integer :: indxfroz(num_bands,num_kpts)   !! number of bands inside outer window at nkp-th k point
+    integer :: indxnfroz(num_bands,num_kpts)  !!   outer-window band index for the i-th non-frozen state
+                                              !! (equals 1 if it is the bottom of outer window)
+    real(kind=dp), allocatable :: eigval_opt(:, :)
+    !! At input it contains a large set of eigenvalues. At
+    !! it is slimmed down to contain only those inside the energy window.
+
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
+
     ! Needed to split an array on different nodes
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
+
 
     if (timing_level > 0) call io_stopwatch('dis: main', 1)
 
@@ -88,22 +114,29 @@ contains
       '*------------------------------- DISENTANGLE --------------------------------*'
 
     ! Allocate arrays
+    ! JJ, don't do this
     allocate (eigval_opt(num_bands, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating eigval_opt in dis_main')
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows()
+    call dis_windows(iprint, timing_level, num_kpts,  num_wann,&
+        num_bands, dis_spheres_num, dis_spheres_first_wann, on_root,&
+        frozen_states, linner, lfrozen, ndimwin, ndimfroz, indxfroz,&
+        indxnfroz, nfirstwin, dis_win_min, dis_win_max, dis_froz_min,&
+        dis_froz_max, kpt_latt, recip_lattice, dis_spheres, eigval_opt)
 
     ! Construct the unitarized projection
-    call dis_project()
+    call dis_project(timing_level, num_kpts, num_wann, num_bands,&
+        on_root, ndimwin, nfirstwin, a_matrix, u_matrix_opt)
 
     ! If there is an inner window, need to modify projection procedure
     ! (Sec. III.G SMV)
     if (linner) then
       if (lsitesymmetry) call io_error('in symmetry-adapted mode, frozen window not implemented yet') !YN: RS:
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
-      call dis_proj_froz()
+      call dis_proj_froz(timing_level, on_root, num_kpts, ndimwin, u_matrix_opt, iprint, devel_flag, num_bands, num_wann,lfrozen,&
+ndimfroz,indxfroz)
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
     endif
@@ -121,16 +154,26 @@ contains
       end do
     end do
 
-    if (lsitesymmetry) call sitesym_slim_d_matrix_band(lwindow)                         !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
+    if (lsitesymmetry) call sitesym_slim_d_matrix_band(lwindow) !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
     if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_bands, u_matrix_opt, lwindow) !RS:
+
     ! Extract the optimally-connected num_wann-dimensional subspaces
-![ysl-b]
+
     if (.not. gamma_only) then
-      call dis_extract()
+      call dis_extract(iprint, timing_level, my_node_id, num_nodes,&
+        num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
+        dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz,& 
+        on_root, lsitesymmetry, lwindow, length_unit, devel_flag,&
+        dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb,&
+        omega_invariant, eigval_opt, u_matrix_opt,m_matrix_orig_local)
     else
-      call dis_extract_gamma()
+      call dis_extract_gamma(iprint, timing_level, my_node_id, num_nodes,&
+        num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
+        dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz,& 
+        on_root, length_unit, devel_flag, dis_mix_ratio,dis_conv_tol,&
+        wbtot, lenconfac, wb, omega_invariant, eigval_opt, u_matrix_opt,&
+        m_matrix_orig)
     end if
-![ysl-e]
 
     ! Allocate workspace
     allocate (cwb(num_wann, num_bands), stat=ierr)
@@ -228,8 +271,9 @@ contains
 
     endif
 
-    deallocate (a_matrix, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating a_matrix in dis_main')
+    ! JJ not required for arguments
+    !deallocate (a_matrix, stat=ierr)
+    !if (ierr /= 0) call io_error('Error deallocating a_matrix in dis_main')
 
     ! Deallocate workspace
     deallocate (cww, stat=ierr)
@@ -263,7 +307,7 @@ contains
 !~![ysl-e]
 
     ! Deallocate module arrays
-    call internal_dealloc()
+    ! call internal_dealloc() !JJ no longer necessary
 
     if (timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2)
 
@@ -581,41 +625,14 @@ contains
     end subroutine internal_find_u_gamma
 ![ysl-e]
 
-    !==================================!
-    subroutine internal_dealloc()
-      !==================================!
-      !! Deallocate module data
-      !                                  !
-      !==================================!
-
-      implicit none
-
-      integer :: ierr
-
-      ! Module arrays allocated in dis_windows
-      deallocate (lfrozen, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating lfrozen in dis_main')
-      deallocate (indxnfroz, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating indxnfroz in dis_main')
-      deallocate (indxfroz, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating indxfroz in dis_main')
-      deallocate (ndimfroz, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating ndimfroz in dis_main')
-      deallocate (nfirstwin, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating nfirstwin in dis_main')
-
-      ! Module arrays allocated in dis_main
-      deallocate (eigval_opt, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating eigval_opt in dis_main')
-
-      return
-
-    end subroutine internal_dealloc
-
   end subroutine dis_main
 
   !==================================================================!
-  subroutine dis_windows()
+  subroutine dis_windows(iprint, timing_level, num_kpts,  num_wann,&
+        num_bands, dis_spheres_num, dis_spheres_first_wann, on_root,&
+        frozen_states, linner, lfrozen, ndimwin, ndimfroz, indxfroz,&
+        indxnfroz, nfirstwin, dis_win_min, dis_win_max, dis_froz_min,&
+        dis_froz_max, kpt_latt, recip_lattice, dis_spheres, eigval_opt)
     !==================================================================!
     !                                                                  !
     !! This subroutine selects the states that are inside the outer
@@ -636,11 +653,30 @@ contains
 
     implicit none
 
+    ! passed variables
+    integer, intent(in) :: iprint, timing_level
+    integer, intent(in) :: num_kpts, num_wann, num_bands
+    integer, intent(in) :: dis_spheres_num, dis_spheres_first_wann
+
+    logical, intent(in) :: on_root, frozen_states
+    logical, intent(inout) :: linner
+    logical, intent(inout) :: lfrozen(num_bands, num_kpts)
+
+    integer, intent(inout) :: ndimwin(num_kpts)
+    integer, intent(inout) :: ndimfroz(num_kpts)
+    integer, intent(inout) :: indxfroz(num_bands,num_kpts)
+    integer, intent(inout) :: indxnfroz(num_bands,num_kpts)
+    integer, intent(inout) :: nfirstwin(num_kpts)
+
+    real(kind=dp), intent(in) :: dis_win_min, dis_win_max, dis_froz_min, dis_froz_max
+    real(kind=dp), intent(in) :: kpt_latt(3, num_kpts), recip_lattice(3, 3), dis_spheres(4, dis_spheres_num)
+    real(kind=dp), intent(inout) :: eigval_opt(num_bands,num_kpts)
+
     ! internal variables
-    integer :: i, j, nkp, ierr
+    integer :: i, j, nkp
     integer :: imin, imax, kifroz_min, kifroz_max
     !~~ GS-start
-    real(kind=dp) :: dk(3), kdr2
+    real(kind=dp) :: dk(3)
     logical :: dis_ok
     !~~ GS-end
 
@@ -662,16 +698,14 @@ contains
     if (timing_level > 1 .and. on_root) call io_stopwatch('dis: windows', 1)
 
     ! Allocate module arrays
-    allocate (nfirstwin(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating nfirstwin in dis_windows')
-    allocate (ndimfroz(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ndimfroz in dis_windows')
-    allocate (indxfroz(num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating indxfroz in dis_windows')
-    allocate (indxnfroz(num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating indxnfroz in dis_windows')
-    allocate (lfrozen(num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating lfrozen in dis_windows')
+    !allocate (nfirstwin(num_kpts), stat=ierr)
+    !if (ierr /= 0) call io_error('Error in allocating nfirstwin in dis_windows')
+    !allocate (ndimfroz(num_kpts), stat=ierr)
+    !if (ierr /= 0) call io_error('Error in allocating ndimfroz in dis_windows')
+    !allocate (indxfroz(num_bands, num_kpts), stat=ierr)
+    !if (ierr /= 0) call io_error('Error in allocating indxfroz in dis_windows')
+    !allocate (indxnfroz(num_bands, num_kpts), stat=ierr)
+    !if (ierr /= 0) call io_error('Error in allocating indxnfroz in dis_windows')
 
     linner = .false.
 
@@ -892,16 +926,13 @@ contains
 
     if (on_root) write (stdout, '(3x,a,i4)') 'Number of target bands to extract: ', num_wann
     if (iprint > 1) then
-      if (on_root) write (stdout, '(1x,a)') &
-        '+----------------------------------------------------------------------------+'
-      if (on_root) write (stdout, '(1x,a)') &
-        '|                                  Windows                                   |'
-      if (on_root) write (stdout, '(1x,a)') &
-        '|                                  -------                                   |'
-      if (on_root) write (stdout, '(1x,a)') &
-        '|               K-point      Ndimwin     Ndimfroz    Nfirstwin               |'
-      if (on_root) write (stdout, '(1x,a)') &
+      if (on_root) write (stdout, '(4(1x,a,/),(1x,a))') &
+        '+----------------------------------------------------------------------------+',&
+        '|                                  Windows                                   |',&
+        '|                                  -------                                   |',&
+        '|               K-point      Ndimwin     Ndimfroz    Nfirstwin               |',&
         '|               ----------------------------------------------               |'
+
       do nkp = 1, num_kpts
         if (on_root) write (stdout, 403) nkp, ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
       enddo
@@ -917,7 +948,8 @@ contains
   end subroutine dis_windows
 
   !==================================================================!
-  subroutine dis_project()
+  subroutine dis_project(timing_level, num_kpts, num_wann, num_bands,&
+        on_root, ndimwin, nfirstwin, a_matrix, u_matrix_opt)
     !==================================================================!
     !                                                                  !
     !! Construct projections for the start of the disentanglement routine
@@ -967,6 +999,13 @@ contains
     use w90_constants, only: eps5
 
     implicit none
+
+    ! passed variables
+    integer, intent(in) :: timing_level, num_kpts, num_wann, num_bands
+    logical, intent(in) :: on_root
+    integer, intent(in) :: ndimwin(num_kpts), nfirstwin(num_kpts)
+    complex(kind=dp), intent(inout) :: a_matrix(num_bands, num_wann, num_kpts)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(num_bands, num_wann, num_kpts)
 
     ! internal variables
     integer :: i, j, l, m, nkp, info, ierr
@@ -1130,7 +1169,8 @@ contains
   end subroutine dis_project
 
   !==================================================================!
-  subroutine dis_proj_froz()
+  subroutine dis_proj_froz(timing_level, on_root, num_kpts, ndimwin, u_matrix_opt, iprint, devel_flag, num_bands, num_wann,&
+lfrozen,ndimfroz,indxfroz)
     !==================================================================!
     !                                                                  !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
@@ -1145,6 +1185,18 @@ contains
     use w90_constants, only: eps8
 
     implicit none
+
+    ! passed variables
+    integer :: timing_level, num_kpts, iprint, num_bands, num_wann!, dis_spheres_num, dis_spheres_first_wann,iprint
+    logical :: on_root
+    !complex(kind=dp), allocatable :: a_matrix(:, :, :)
+    integer, intent(in) :: ndimwin(num_kpts)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(num_bands, num_wann, num_kpts)
+    character(len=50) :: devel_flag
+    logical, intent(in) :: lfrozen(num_bands, num_kpts)
+    integer :: ndimfroz(num_kpts)             !! number of frozen bands at nkp-th k point
+    integer :: indxfroz(num_bands,num_kpts)   !! number of bands inside outer window at nkp-th k point
+
 
     ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
     ! MODIFIED: u_matrix_opt (At input it contains the gaussians projected onto
@@ -1504,7 +1556,12 @@ contains
   end subroutine dis_proj_froz
 
   !==================================================================!
-  subroutine dis_extract()
+  subroutine dis_extract(iprint, timing_level, my_node_id, num_nodes,&
+        num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
+        dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz,& 
+        on_root, lsitesymmetry, lwindow, length_unit, devel_flag,&
+        dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb,&
+        omega_invariant, eigval_opt, u_matrix_opt,m_matrix_orig_local)
     !==================================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -1516,6 +1573,29 @@ contains
     use w90_sitesym, only: ir2ik, ik2ir, nkptirr, nsymmetry, kptsym !YN: RS:
 
     implicit none
+
+    ! passed variables
+    integer, intent(in) :: iprint, timing_level, my_node_id, num_nodes
+    integer, intent(in) :: num_kpts, nntot, num_wann, num_bands
+    integer, intent(in) :: dis_num_iter, dis_conv_window
+    integer, intent(in) :: ndimwin(num_kpts)
+    integer, intent(in) :: nnlist(num_kpts, nntot)
+    integer, intent(in) :: ndimfroz(num_kpts)
+    integer, intent(in) :: indxnfroz(num_bands,num_kpts)
+
+    logical, intent(in) :: on_root, lsitesymmetry
+    logical, intent(inout) :: lwindow(num_bands, num_kpts)
+
+    character(len=20) :: length_unit
+    character(len=50) :: devel_flag
+
+    real(kind=dp), intent(in) :: dis_mix_ratio, dis_conv_tol, wbtot, lenconfac
+    real(kind=dp), intent(in) :: wb(nntot)
+    real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(inout) :: eigval_opt(num_bands,num_kpts)
+
+    complex(kind=dp), intent(inout) :: u_matrix_opt(num_bands, num_wann, num_kpts)
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima
@@ -1713,7 +1793,7 @@ contains
         ! Initialize Z matrix at k points w/ non-frozen states
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
-          if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix(nkp, nkp_loc, czmat_in_loc(:, :, nkp_loc))
+          if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix(nkp, nkp_loc, czmat_in_loc(:, :, nkp_loc),num_bands)
         enddo
 
         if (lsitesymmetry) then
@@ -1995,7 +2075,7 @@ contains
       ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
-        if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix(nkp, nkp_loc, czmat_out_loc(:, :, nkp_loc))
+        if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix(nkp, nkp_loc, czmat_out_loc(:, :, nkp_loc),num_bands)
       enddo
 
       if (lsitesymmetry) then
@@ -2306,7 +2386,7 @@ contains
     end subroutine internal_test_convergence
 
     !==================================================================!
-    subroutine internal_zmatrix(nkp, nkp_loc, cmtrx)
+    subroutine internal_zmatrix(nkp, nkp_loc, cmtrx, num_bands)
       !==================================================================!
       !! Compute the Z-matrix
       !                                                                  !
@@ -2315,6 +2395,9 @@ contains
       !==================================================================!
 
       implicit none
+
+      !passed variables
+      integer :: num_bands
 
       integer, intent(in) :: nkp
       integer, intent(in) :: nkp_loc
@@ -2420,7 +2503,16 @@ contains
 
 ![ysl-b]
   !==================================================================!
-  subroutine dis_extract_gamma()
+  !subroutine dis_extract_gamma(iprint,on_root,num_kpts,my_node_id,u_matrix_opt,ndimwin,dis_num_iter, dis_mix_ratio,wbtot,nntot,&
+  !      nnlist,dis_conv_window,devel_flag,wb,timing_level,lenconfac,dis_conv_tol,&
+  !      length_unit, num_wann, num_nodes, num_bands, m_matrix_orig, eigval_opt, omega_invariant, ndimfroz,indxnfroz)
+  subroutine dis_extract_gamma(iprint, timing_level, my_node_id, num_nodes,&
+        num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
+        dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz,& 
+        on_root, length_unit, devel_flag, dis_mix_ratio,dis_conv_tol,&
+        wbtot, lenconfac, wb, omega_invariant, eigval_opt, u_matrix_opt,&
+        m_matrix_orig)
+
     !==================================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -2431,6 +2523,28 @@ contains
     use w90_io, only: io_time
 
     implicit none
+
+    ! passed variables
+    integer, intent(in) :: iprint, timing_level, my_node_id, num_nodes
+    integer, intent(in) :: num_kpts, nntot, num_wann, num_bands
+    integer, intent(in) :: dis_num_iter, dis_conv_window
+    integer, intent(in) :: ndimwin(num_kpts)
+    integer, intent(in) :: nnlist(num_kpts, nntot)
+    integer, intent(in) :: ndimfroz(num_kpts)
+    integer, intent(in) :: indxnfroz(num_bands,num_kpts)
+
+    logical, intent(in) :: on_root
+
+    character(len=20) :: length_unit
+    character(len=50) :: devel_flag
+
+    real(kind=dp), intent(in) :: dis_mix_ratio, dis_conv_tol, wbtot, lenconfac
+    real(kind=dp), intent(in) :: wb(nntot)
+    real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(inout) :: eigval_opt(num_bands,num_kpts)
+
+    complex(kind=dp), intent(inout) :: u_matrix_opt(num_bands, num_wann, num_kpts)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :) ! non-gamma uses _local variant ?
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optimal
@@ -2600,7 +2714,7 @@ contains
       if (iter .eq. 1) then
         ! Initialize Z matrix at k points w/ non-frozen states
         do nkp = 1, num_kpts
-          if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix_gamma(nkp, rzmat_in(:, :, nkp))
+          if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix_gamma(nkp, rzmat_in(:, :, nkp), m_matrix_orig,ndimfroz,indxnfroz)
         enddo
       else
         ! [iter.ne.1]
@@ -2797,7 +2911,7 @@ contains
 
       ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
       do nkp = 1, num_kpts
-        if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix_gamma(nkp, rzmat_out(:, :, nkp))
+        if (num_wann .gt. ndimfroz(nkp)) call internal_zmatrix_gamma(nkp, rzmat_out(:, :, nkp), m_matrix_orig,ndimfroz,indxnfroz)
       enddo
 
       call internal_test_convergence()
@@ -3083,7 +3197,7 @@ contains
     end subroutine internal_test_convergence
 
     !==================================================================!
-    subroutine internal_zmatrix_gamma(nkp, rmtrx)
+    subroutine internal_zmatrix_gamma(nkp, rmtrx, m_matrix_orig,ndimfroz,indxnfroz)
       !==================================================================!
       !! Compute Z-matrix (Gamma point routine)
       !                                                                  !
@@ -3093,9 +3207,15 @@ contains
 
       implicit none
 
+      ! passed variables
+      integer :: ndimfroz(num_kpts)             !! number of frozen bands at nkp-th k point
+      !integer :: indxfroz(num_bands,num_kpts)   !! number of bands inside outer window at nkp-th k point
+      integer :: indxnfroz(num_bands,num_kpts)  !!   outer-window band index for the i-th non-frozen state
+
       integer, intent(in) :: nkp
       !! Which k-point
       real(kind=dp), intent(out) :: rmtrx(num_bands, num_bands)
+      complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
       !!(M,N)-TH ENTRY IN THE (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
       !! HERMITIAN MATRIX AT THE NKP-TH K-POINT
 
