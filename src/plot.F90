@@ -1494,11 +1494,11 @@ contains
         endif
         ! Number of grid points in each direction, lattice vector
         write (file_unit, '(i4,3f13.5)') ilength(1), real_lattice(1, 1)/(real(ngx, dp)*bohr), &
-          real_lattice(1, 2)/(real(ngy, dp)*bohr), real_lattice(1, 3)/(real(ngz, dp)*bohr)
-        write (file_unit, '(i4,3f13.5)') ilength(2), real_lattice(2, 1)/(real(ngx, dp)*bohr), &
-          real_lattice(2, 2)/(real(ngy, dp)*bohr), real_lattice(2, 3)/(real(ngz, dp)*bohr)
-        write (file_unit, '(i4,3f13.5)') ilength(3), real_lattice(3, 1)/(real(ngx, dp)*bohr), &
-          real_lattice(3, 2)/(real(ngy, dp)*bohr), real_lattice(3, 3)/(real(ngz, dp)*bohr)
+          real_lattice(1, 2)/(real(ngx, dp)*bohr), real_lattice(1, 3)/(real(ngx, dp)*bohr)
+        write (file_unit, '(i4,3f13.5)') ilength(2), real_lattice(2, 1)/(real(ngy, dp)*bohr), &
+          real_lattice(2, 2)/(real(ngy, dp)*bohr), real_lattice(2, 3)/(real(ngy, dp)*bohr)
+        write (file_unit, '(i4,3f13.5)') ilength(3), real_lattice(3, 1)/(real(ngz, dp)*bohr), &
+          real_lattice(3, 2)/(real(ngz, dp)*bohr), real_lattice(3, 3)/(real(ngz, dp)*bohr)
 
         ! Atomic number, valence charge, position of atom
 !         do isp=1,num_species
@@ -1702,7 +1702,6 @@ contains
     character(len=9)  :: cdate, ctime
     !
     file_unit = io_file_unit()
-    open (file_unit, file=trim(seedname)//'.bvec', form='formatted', status='unknown', err=101)
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
     !
@@ -1711,7 +1710,7 @@ contains
     write (file_unit, *) num_kpts, nntot
     do nkp = 1, num_kpts
       do nn = 1, nntot
-        write (file_unit, '(4F12.6)') bk(:, nn, nkp), wb(nn)
+        write (file_unit, '(4F14.8)') bk(:, nn, nkp), wb(nn)
       enddo
     enddo
     close (file_unit)
