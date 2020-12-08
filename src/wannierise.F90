@@ -69,7 +69,7 @@ contains
                        translate_home_cell, recip_lattice, num_atoms, &
                        atoms_symbol, atoms_pos_cart, num_species, &
                        atoms_species_num, num_valence_bands, &
-                       num_elec_per_state, lsitesymmetry)
+                       num_elec_per_state, lsitesymmetry, stdout)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -77,8 +77,7 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, &
       cmplx_i
-    use w90_io, only: stdout, io_error, io_wallclocktime, io_stopwatch &
-      , io_file_unit
+    use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use w90_parameters, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
@@ -144,6 +143,7 @@ contains
     integer, intent(in) :: atoms_species_num(:)
     integer, intent(in) :: num_valence_bands, num_elec_per_state
     logical, intent(in) :: lsitesymmetry
+    integer, intent(in) :: stdout
     ! local
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
@@ -396,7 +396,7 @@ contains
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                        neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
-                       counts, displs, m_matrix_loc, rnkb, timing_level)
+                       counts, displs, m_matrix_loc, rnkb, timing_level, stdout)
       irguide = 1
     endif
 
@@ -411,7 +411,7 @@ contains
                     num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
                     selective_loc, slwf_constrain, slwf_num, ccentres_cart, &
                     counts, displs, ln_tmp_loc, m_matrix_loc, lambda_loc, &
-                    first_pass, timing_level)
+                    first_pass, timing_level, stdout)
 
     ! public variables
     if (.not. selective_loc) then
@@ -496,7 +496,8 @@ contains
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                          neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
-                         counts, displs, m_matrix_loc, rnkb, timing_level)
+                         counts, displs, m_matrix_loc, rnkb, timing_level, &
+                         stdout)
         irguide = 1
       endif
 
@@ -507,13 +508,15 @@ contains
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
-                         rnkb_loc, cdodq_loc, lambda_loc, timing_level, cdodq)
+                         rnkb_loc, cdodq_loc, lambda_loc, timing_level, &
+                         stdout, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
-                         rnkb_loc, cdodq_loc, lambda_loc, timing_level) !,cdodq)  fills only cdodq_loc
+                         rnkb_loc, cdodq_loc, lambda_loc, timing_level, &
+                         stdout) !,cdodq)  fills only cdodq_loc
       endif
 
       if (lprint .and. iprint > 2 .and. on_root) &
@@ -529,7 +532,8 @@ contains
                                      real_lattice, num_cg_steps, wbtot, &
                                      conv_noise_amp, conv_noise_num, nrpts, &
                                      irvec, ndegen, cdq_loc, cdodq_loc, &
-                                     counts, displs, iprint, timing_level)
+                                     counts, displs, iprint, timing_level, &
+                                     stdout)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
                                                           num_kpts) !RS:
 
@@ -563,19 +567,20 @@ contains
                                   cwschur1, cwschur2, cwschur3, cwschur4, cz, &
                                   num_wann, num_kpts, nntot, nnlist, &
                                   lsitesymmetry, counts, displs, cdq_loc, &
-                                  u_matrix_loc, m_matrix_loc, timing_level)
+                                  u_matrix_loc, m_matrix_loc, timing_level, &
+                                  stdout)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
                         num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
                         selective_loc, slwf_constrain, slwf_num, &
                         ccentres_cart, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, timing_level)
+                        m_matrix_loc, lambda_loc, first_pass, timing_level, stdout)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, &
                                    alphamin, falphamin, lquad, lprint, &
-                                   trial_step, iprint, timing_level)
+                                   trial_step, iprint, timing_level, stdout)
 
       endif
 
@@ -621,7 +626,8 @@ contains
                                   cwschur1, cwschur2, cwschur3, cwschur4, cz, &
                                   num_wann, num_kpts, nntot, nnlist, &
                                   lsitesymmetry, counts, displs, cdq_loc, &
-                                  u_matrix_loc, m_matrix_loc, timing_level)
+                                  u_matrix_loc, m_matrix_loc, timing_level, &
+                                  stdout)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -630,7 +636,7 @@ contains
                         num_wann, nntot, wb, bk, num_kpts, omega_invariant, &
                         selective_loc, slwf_constrain, slwf_num, &
                         ccentres_cart, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, timing_level)
+                        m_matrix_loc, lambda_loc, first_pass, timing_level, stdout)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -725,7 +731,7 @@ contains
                                        save_spread, iter, conv_count, &
                                        noise_count, lconverged, lrandom, &
                                        lfirst, conv_window, conv_tol, &
-                                       conv_noise_amp, conv_noise_num)
+                                       conv_noise_amp, conv_noise_num, stdout)
       endif
 
       if (lconverged) then
@@ -814,7 +820,7 @@ contains
       call wann_write_xyz(translate_home_cell, num_wann, wannier_centres, &
                           real_lattice, recip_lattice, num_atoms, &
                           atoms_symbol, atoms_pos_cart, num_species, &
-                          atoms_species_num, lenconfac, iprint)
+                          atoms_species_num, lenconfac, iprint, stdout)
     endif
 
     if (write_hr_diag) then
@@ -835,38 +841,39 @@ contains
     if (guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                        neigh, nnh, bk, bka, num_kpts, m_matrix, .false., &
-                       counts, displs, m_matrix_loc, rnkb, timing_level)
+                       counts, displs, m_matrix_loc, rnkb, timing_level, stdout)
     endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level)
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, stdout)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
 !    if (iprint>2) call wann_svd_omega_i()
     if (iprint > 2 .and. on_root) then
       call wann_svd_omega_i(num_wann, num_kpts, nntot, wb, m_matrix, &
-                            lenconfac, length_unit, timing_level)
+                            lenconfac, length_unit, timing_level, stdout)
     endif
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
 !    if (write_r2mn) call wann_write_r2mn()
     if (write_r2mn .and. on_root) call wann_write_r2mn(num_kpts, num_wann, &
-                                                       nntot, wb, m_matrix)
+                                                       nntot, wb, m_matrix, &
+                                                       stdout)
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) &
-      call wann_calc_projection(num_bands, num_wann, num_kpts, &
-                                u_matrix_opt, eigval, lwindow, timing_level)
+      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, &
+                                eigval, lwindow, timing_level, stdout)
 
     ! aam: write data required for vdW utility
     if (write_vdw_data .and. on_root) then
       call wann_write_vdw_data(num_wann, wannier_centres, real_lattice, &
                                recip_lattice, wannier_spreads, u_matrix, &
                                u_matrix_opt, have_disentangled, &
-                               num_valence_bands, num_elec_per_state)
+                               num_valence_bands, num_elec_per_state, stdout)
     endif
 
     ! deallocate sub vars not passed into other subs
@@ -975,7 +982,7 @@ contains
                                          save_spread, iter, conv_count, &
                                          noise_count, lconverged, lrandom, &
                                          lfirst, conv_window, conv_tol, &
-                                         conv_noise_amp, conv_noise_num)
+                                         conv_noise_amp, conv_noise_num, stdout)
       !===============================================!
       !                                               !
       !! Determine whether minimisation of non-gauge
@@ -998,6 +1005,7 @@ contains
       real(kind=dp), intent(in) :: conv_tol
       real(kind=dp), intent(in) :: conv_noise_amp
       integer, intent(in) :: conv_noise_num
+      integer, intent(in) ::stdout
       ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
@@ -1056,7 +1064,8 @@ contains
     end subroutine internal_test_convergence
 
     !===============================================!
-    subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
+    subroutine internal_random_noise(conv_noise_amp, num_wann, counts, &
+                                     cdq_loc, stdout)
       !===============================================!
       !                                               !
       !! Add some random noise to the search direction
@@ -1072,6 +1081,7 @@ contains
       integer, intent(in) :: num_wann
       complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
       integer, intent(in) :: counts(0:)
+      integer, intent(in) :: stdout
       ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
@@ -1135,7 +1145,7 @@ contains
                                          wbtot, conv_noise_amp, conv_noise_num, &
                                          nrpts, irvec, ndegen, cdq_loc, &
                                          cdodq_loc, counts, displs, iprint, &
-                                         timing_level)
+                                         timing_level, stdout)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1145,7 +1155,7 @@ contains
       !                                               !
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
-      use w90_io, only: io_stopwatch, stdout
+      use w90_io, only: io_stopwatch
       !use w90_hamiltonian, only: nrpts, irvec, ndegen
       use w90_comms, only: on_root, my_node_id, comms_allreduce
 
@@ -1181,6 +1191,7 @@ contains
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
       integer, intent(in) :: iprint, timing_level
+      integer, intent(in) :: stdout
       ! local
       complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
@@ -1301,7 +1312,8 @@ contains
       if (lrandom) then
         if (on_root) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', conv_noise_num, ' ]'
-        call internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
+        call internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc, &
+                                   stdout)
       endif
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
@@ -1319,7 +1331,7 @@ contains
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
           if (lrandom) call internal_random_noise(conv_noise_amp, num_wann, &
-                                                  counts, cdq_loc)
+                                                  counts, cdq_loc, stdout)
           ncg = 0
           gcfac = 0.0_dp
           ! re-calculate gradient along search direction
@@ -1358,14 +1370,14 @@ contains
     !===============================================!
     subroutine internal_optimal_step(wann_spread, trial_spread, doda0, &
                                      alphamin, falphamin, lquad, lprint, &
-                                     trial_step, iprint, timing_level)
+                                     trial_step, iprint, timing_level, stdout)
       !===============================================!
       !                                               !
       !! Calculate the optimal step length based on a
       !! parabolic line search
       !                                               !
       !===============================================!
-      use w90_io, only: io_stopwatch, stdout
+      use w90_io, only: io_stopwatch
       use w90_comms, only: on_root
 
       implicit none
@@ -1378,6 +1390,7 @@ contains
       logical, intent(in) :: lprint
       real(kind=dp), intent(in) :: trial_step
       integer, intent(in) :: iprint, timing_level
+      integer, intent(in) :: stdout
       ! local
       real(kind=dp) :: fac, shift, eqa, eqb
 
@@ -1425,7 +1438,8 @@ contains
                                     cwschur1, cwschur2, cwschur3, cwschur4, &
                                     cz, num_wann, num_kpts, nntot, nnlist, &
                                     lsitesymmetry, counts, displs, cdq_loc, &
-                                    u_matrix_loc, m_matrix_loc, timing_level)
+                                    u_matrix_loc, m_matrix_loc, timing_level, &
+                                    stdout)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
@@ -1434,7 +1448,7 @@ contains
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
         ir2ik, ik2ir !YN: RS:
-      use w90_io, only: io_stopwatch, io_error, stdout
+      use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv
       use w90_utility, only: utility_zgemm
 
@@ -1456,6 +1470,7 @@ contains
       complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       integer, intent(in) :: timing_level
+      integer, intent(in) :: stdout
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
@@ -1741,7 +1756,8 @@ contains
   !==================================================================!
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                          neigh, nnh, bk, bka, num_kpts, m_matrix, gamma_only, &
-                         counts, displs, m_matrix_loc, rnkb, timing_level, m_w)
+                         counts, displs, m_matrix_loc, rnkb, timing_level, &
+                         stdout, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1779,6 +1795,7 @@ contains
     complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(out) :: rnkb(:, :, :)
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     !! Used in the Gamma point routines as an optimisation
@@ -1978,7 +1995,8 @@ contains
                         num_wann, nntot, wb, bk, num_kpts, &
                         omega_invariant, selective_loc, slwf_constrain, &
                         slwf_num, ccentres_cart, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, timing_level)
+                        m_matrix_loc, lambda_loc, first_pass, timing_level, &
+                        stdout)
     !==================================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
@@ -2017,6 +2035,7 @@ contains
     complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(in) :: lambda_loc
     logical, intent(inout) :: first_pass
+    integer, intent(in) :: stdout
     !local variables
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
@@ -2271,7 +2290,8 @@ contains
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
-                         rnkb_loc, cdodq_loc, lambda_loc, timing_level, cdodq)
+                         rnkb_loc, cdodq_loc, lambda_loc, timing_level, &
+                         stdout, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2314,6 +2334,7 @@ contains
     real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)
     complex(kind=dp), intent(out) :: cdodq_loc(:, :, :)
     real(kind=dp), intent(in) :: lambda_loc
+    integer, intent(in) :: stdout
     ! local
     complex(kind=dp), allocatable  :: cr(:, :)
     complex(kind=dp), allocatable  :: crt(:, :)
@@ -2539,7 +2560,8 @@ contains
 
   !==================================================================!
   subroutine wann_calc_projection(num_bands, num_wann, num_kpts, &
-                                  u_matrix_opt, eigval, lwindow, timing_level)
+                                  u_matrix_opt, eigval, lwindow, &
+                                  timing_level, stdout)
     !==================================================================!
     !                                                                  !
     ! Calculates and writes the projection of each Wannier function    !
@@ -2547,7 +2569,7 @@ contains
     !                                                                  !
     !==================================================================!
 
-    use w90_io, only: stdout, io_stopwatch
+    use w90_io, only: io_stopwatch
     use w90_comms, only: on_root
 
     implicit none
@@ -2560,6 +2582,7 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)
     logical, intent(in) :: lwindow(:, :)
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     ! end of vars from parameter module
 
     integer :: nw, nb, nkp, counter
@@ -2602,14 +2625,14 @@ contains
   subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, &
                             real_lattice, recip_lattice, num_atoms, &
                             atoms_symbol, atoms_pos_cart, num_species, &
-                            atoms_species_num, lenconfac, iprint)
+                            atoms_species_num, lenconfac, iprint, stdout)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
     !                                     !
     !=====================================!
 
-    use w90_io, only: seedname, io_file_unit, io_date, stdout
+    use w90_io, only: seedname, io_file_unit, io_date
     use w90_utility, only: utility_translate_home
 
     implicit none
@@ -2627,6 +2650,7 @@ contains
     integer, intent(in) :: atoms_species_num(:)
     real(kind=dp), intent(in) :: lenconfac
     integer, intent(in) :: iprint
+    integer, intent(in) :: stdout
     ! end parameters
 
     integer          :: iw, ind, xyz_unit, nsp, nat
@@ -2677,7 +2701,8 @@ contains
   subroutine wann_write_vdw_data(num_wann, wannier_centres, real_lattice, &
                                  recip_lattice, wannier_spreads, u_matrix, &
                                  u_matrix_opt, have_disentangled, &
-                                 num_valence_bands, num_elec_per_state)
+                                 num_valence_bands, num_elec_per_state, &
+                                 stdout)
     !=================================================================!
     !                                                                 !
     ! Write a file with Wannier centres, spreads and occupations for  !
@@ -2686,7 +2711,7 @@ contains
     ! Based on code written by Lampros Andrinopoulos.                 !
     !=================================================================!
 
-    use w90_io, only: seedname, io_file_unit, io_date, stdout, io_error
+    use w90_io, only: seedname, io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0, eps6
 !~    use w90_disentangle, only : ndimfroz
@@ -2711,6 +2736,7 @@ contains
     integer, intent(in) :: num_valence_bands
     integer, intent(in) :: num_elec_per_state
     ! end parameters
+    integer, intent(in) :: stdout
 
     integer          :: iw, vdw_unit, r, s, k, m, ierr, ndim
     real(kind=dp)    :: wc(3, num_wann)
@@ -2842,11 +2868,12 @@ contains
   end subroutine wann_write_vdw_data
 
   !========================================!
-  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level)
+  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, &
+                                  stdout)
     !========================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
-    use w90_io, only: io_stopwatch, io_error, stdout
+    use w90_io, only: io_stopwatch, io_error
     use w90_comms, only: on_root
 
     implicit none
@@ -2855,6 +2882,7 @@ contains
     integer, intent(in) :: num_kpts, num_wann
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
 
     integer :: nkp, i, j, m
     complex(kind=dp) :: ctmp1, ctmp2
@@ -2903,7 +2931,7 @@ contains
   end subroutine wann_check_unitarity
 
   !========================================!
-  subroutine wann_write_r2mn(num_kpts, num_wann, nntot, wb, m_matrix)
+  subroutine wann_write_r2mn(num_kpts, num_wann, nntot, wb, m_matrix, stdout)
     !========================================!
     !                                        !
     ! Write seedname.r2mn file               !
@@ -2919,6 +2947,7 @@ contains
     integer, intent(in) :: num_kpts, num_wann, nntot
     real(kind=dp), intent(in) :: wb(:)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: stdout
 
     integer :: r2mnunit, nw1, nw2, nkp, nn
     real(kind=dp) :: r2ave_mn, delta
@@ -2955,11 +2984,11 @@ contains
 
   !========================================!
   subroutine wann_svd_omega_i(num_wann, num_kpts, nntot, wb, m_matrix, &
-                              lenconfac, length_unit, timing_level)
+                              lenconfac, length_unit, timing_level, stdout)
     !========================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_stopwatch, io_error, stdout
+    use w90_io, only: io_stopwatch, io_error
     use w90_comms, only: on_root
 
     implicit none
@@ -2971,6 +3000,7 @@ contains
     real(kind=dp), intent(in) :: lenconfac
     character(len=*), intent(in) :: length_unit
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
 
     complex(kind=dp), allocatable  :: cv1(:, :), cv2(:, :)
     complex(kind=dp), allocatable  :: cw1(:), cw2(:)
@@ -3069,7 +3099,7 @@ contains
                              lwindow, wbtot, translate_home_cell, &
                              recip_lattice, num_atoms, atoms_symbol, &
                              atoms_pos_cart, num_species, atoms_species_num, &
-                             num_valence_bands, num_elec_per_state)
+                             num_valence_bands, num_elec_per_state, stdout)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3077,7 +3107,7 @@ contains
     !                      Gamma version                               !
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
-    use w90_io, only: stdout, io_error, io_time, io_stopwatch
+    use w90_io, only: io_error, io_time, io_stopwatch
     use w90_parameters, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
@@ -3123,6 +3153,7 @@ contains
     integer, intent(in) ::  num_species
     integer, intent(in) :: atoms_species_num(:)
     integer, intent(in) :: num_valence_bands, num_elec_per_state
+    integer, intent(in) :: stdout
     ! local
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
@@ -3264,7 +3295,7 @@ contains
     if (guiding_centres .and. (num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                        neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
-                       counts, displs, m_matrix_loc, rnkb, timing_level)
+                       counts, displs, m_matrix_loc, rnkb, timing_level, stdout)
       irguide = 1
     endif
 
@@ -3279,7 +3310,7 @@ contains
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, &
                           num_wann, nntot, wbtot, wb, bk, omega_invariant, &
-                          ln_tmp, first_pass, timing_level)
+                          ln_tmp, first_pass, timing_level, stdout)
 
     ! public variables
     omega_total = wann_spread%om_tot
@@ -3346,18 +3377,21 @@ contains
           .and. (mod(iter, num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                          neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
-                         counts, displs, m_matrix_loc, rnkb, timing_level, m_w)
+                         counts, displs, m_matrix_loc, rnkb, timing_level, &
+                         stdout, m_w)
         irguide = 1
       endif
 
-      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, timing_level)
+      call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, &
+                                      timing_level, stdout)
 
       call wann_spread_copy(wann_spread, old_spread)
 
       ! calculate the new centers and spread
       call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
                             wann_spread, num_wann, nntot, wbtot, wb, bk, &
-                            omega_invariant, ln_tmp, first_pass, timing_level)
+                            omega_invariant, ln_tmp, first_pass, &
+                            timing_level, stdout)
 
       ! print the new centers and spreads
       if (lprint) then
@@ -3399,7 +3433,7 @@ contains
       if (conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, &
                                              history, iter, lconverged, &
-                                             conv_window, conv_tol)
+                                             conv_window, conv_tol, stdout)
       endif
 
       if (lconverged) then
@@ -3444,42 +3478,42 @@ contains
       call wann_write_xyz(translate_home_cell, num_wann, wannier_centres, &
                           real_lattice, recip_lattice, num_atoms, &
                           atoms_symbol, atoms_pos_cart, num_species, &
-                          atoms_species_num, lenconfac, iprint)
+                          atoms_species_num, lenconfac, iprint, stdout)
     endif
 
     if (guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, nntot, &
                        neigh, nnh, bk, bka, num_kpts, m_matrix, .true., &
-                       counts, displs, m_matrix_loc, rnkb, timing_level)
+                       counts, displs, m_matrix_loc, rnkb, timing_level, stdout)
     endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level)
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, stdout)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
     if (iprint > 2) then
       call wann_svd_omega_i(num_wann, num_kpts, nntot, wb, m_matrix, &
-                            lenconfac, length_unit, timing_level)
+                            lenconfac, length_unit, timing_level, stdout)
     endif
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
     if (write_r2mn) call wann_write_r2mn(num_kpts, num_wann, nntot, wb, &
-                                         m_matrix)
+                                         m_matrix, stdout)
 
     ! calculate and write projection of WFs on original bands in outer window
     if (have_disentangled .and. write_proj) &
-      call wann_calc_projection(num_bands, num_wann, num_kpts, &
-                                u_matrix_opt, eigval, lwindow, timing_level)
+      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, &
+                                eigval, lwindow, timing_level, stdout)
 
     ! aam: write data required for vdW utility
     if (write_vdw_data) then
       call wann_write_vdw_data(num_wann, wannier_centres, real_lattice, &
                                recip_lattice, wannier_spreads, u_matrix, &
                                u_matrix_opt, have_disentangled, &
-                               num_valence_bands, num_elec_per_state)
+                               num_valence_bands, num_elec_per_state, stdout)
     endif
 
     ! deallocate sub vars not passed into other subs
@@ -3529,7 +3563,7 @@ contains
 
     !===============================================!
     subroutine internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, &
-                                          timing_level)
+                                          timing_level, stdout)
       !===============================================!
 
       use w90_constants, only: pi, eps10
@@ -3541,6 +3575,7 @@ contains
       integer, intent(in) :: tnntot
       integer, intent(in) :: num_wann
       integer, intent(in) :: timing_level
+      integer, intent(in) :: stdout
       ! local
       real(kind=dp) :: theta, twotheta
       real(kind=dp) :: a11, a12, a21, a22
@@ -3609,7 +3644,7 @@ contains
     !===============================================!
     subroutine internal_test_convergence_gamma(wann_spread, old_spread, &
                                                history, iter, lconverged, &
-                                               conv_window, conv_tol)
+                                               conv_window, conv_tol, stdout)
       !===============================================!
       !                                               !
       ! Determine whether minimisation of non-gauge-  !
@@ -3626,6 +3661,7 @@ contains
       logical, intent(out) :: lconverged
       integer, intent(in) :: conv_window
       real(kind=dp), intent(in) :: conv_tol
+      integer, intent(in) :: stdout
       ! local
       real(kind=dp) :: delta_omega
       integer :: j, ierr
@@ -3846,7 +3882,8 @@ contains
   !==================================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, &
                               wann_spread, num_wann, nntot, wbtot, wb, bk, &
-                              omega_invariant, ln_tmp, first_pass, timing_level)
+                              omega_invariant, ln_tmp, first_pass, &
+                              timing_level, stdout)
     !==================================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
@@ -3875,6 +3912,7 @@ contains
     ! end parameters
     real(kind=dp), intent(out) :: ln_tmp(:, :, :)
     logical, intent(inout) :: first_pass
+    integer, intent(in) :: stdout
 
     !local variables
     real(kind=dp) :: summ, brn

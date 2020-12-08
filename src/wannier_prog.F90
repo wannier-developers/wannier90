@@ -238,7 +238,7 @@ program wannier
                    translate_home_cell, recip_lattice, num_atoms, &
                    atoms_symbol, atoms_pos_cart, num_species, &
                    atoms_species_num, num_valence_bands, &
-                   num_elec_per_state, lsitesymmetry)
+                   num_elec_per_state, lsitesymmetry, stdout)
   else
     call wann_main_gamma(num_wann, num_iter, wb, nntot, u_matrix, m_matrix, &
                          num_kpts, iprint, num_print_cycles, &
@@ -253,7 +253,7 @@ program wannier
                          lwindow, wbtot, translate_home_cell, &
                          recip_lattice, num_atoms, atoms_symbol, &
                          atoms_pos_cart, num_species, atoms_species_num, &
-                         num_valence_bands, num_elec_per_state)
+                         num_valence_bands, num_elec_per_state, stdout)
   end if
 
   time1 = io_time()

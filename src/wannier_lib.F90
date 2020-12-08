@@ -390,7 +390,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
                          lwindow, wbtot, translate_home_cell, &
                          recip_lattice, num_atoms, atoms_symbol, &
                          atoms_pos_cart, num_species, atoms_species_num, &
-                         num_valence_bands, num_elec_per_state)
+                         num_valence_bands, num_elec_per_state, stdout)
   else
     call wann_main(num_wann, num_cg_steps, num_iter, nnlist, nntot, &
                    wbtot, u_matrix, m_matrix, num_kpts, iprint, &
@@ -409,7 +409,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
                    translate_home_cell, recip_lattice, num_atoms, &
                    atoms_symbol, atoms_pos_cart, num_species, &
                    atoms_species_num, num_valence_bands, &
-                   num_elec_per_state, lsitesymmetry)
+                   num_elec_per_state, lsitesymmetry, stdout)
   endif
 
   call param_write_chkpt('postwann')
