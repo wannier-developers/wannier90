@@ -209,7 +209,17 @@ program wannier
   have_disentangled = .false.
 
   if (disentanglement) then
-    call dis_main()
+    !call dis_main()
+    call dis_main(num_kpts, nntot, num_wann, num_bands, dis_spheres_num,&
+        dis_num_iter, dis_spheres_first_wann, dis_conv_window, timing_level,&
+        num_nodes, my_node_id, optimisation, iprint, nnlist, ndimwin, dis_win_min,&
+        dis_win_max, dis_froz_min, dis_froz_max, dis_mix_ratio, dis_conv_tol,&
+        wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt,&
+        dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only,&
+        on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix,&
+        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix)
+
+
     have_disentangled = .true.
     time2 = io_time()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, ' (sec)'
