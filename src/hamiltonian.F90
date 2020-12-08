@@ -76,7 +76,7 @@ contains
 
     implicit none
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: ws_search_size(3)        !internal wigner_seitz
     integer, intent(in) :: mp_grid(3)               !internal wigner_seitz
     integer, intent(in) :: num_kpts
@@ -89,7 +89,7 @@ contains
     character(len=20), intent(in) :: bands_plot_mode
     logical, intent(in) :: transport
     logical, intent(in) :: bands_plot
-!lp end w90_parameters
+!   end w90_parameters
 
     integer :: ierr
 
@@ -199,12 +199,12 @@ contains
 
     implicit none
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in)  :: num_bands
     integer, intent(in)  :: num_kpts 
     integer, intent(in)  :: num_wann
     integer, intent(in)  :: timing_level
-!lp end parameters
+!   end parameters
 
     integer, allocatable :: shift_vec(:, :)
     complex(kind=dp)     :: fac
@@ -215,7 +215,7 @@ contains
     integer              :: loop_kpt, i, j, m, irpt, ideg, ierr, counter
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: num_atoms
     integer, intent(in) :: num_species
     integer, intent(in) :: atoms_species_num(:)
@@ -234,7 +234,7 @@ contains
     logical, intent(in) :: have_disentangled     
     logical, intent(in) :: lwindow(:, :)
     logical, intent(in) :: lsitesymmetry  !YN:
-!lp end w90_parameters
+!   end w90_parameters
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
@@ -423,7 +423,7 @@ contains
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
 
-!lp   from w90_parameters
+!     from w90_parameters
       integer, intent(in) :: num_wann
       integer, intent(in) :: atoms_species_num(:)
       integer, intent(in) :: num_species
@@ -431,12 +431,12 @@ contains
       real(kind=dp), intent(in) :: real_lattice(3, 3)
       real(kind=dp), intent(in) :: lenconfac
       real(kind=dp), intent(out) :: translation_centre_frac(3) 
-!lp   would it be better left without intent(out)?
+!     would it be better left without intent(out)?
       real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
       real(kind=dp), intent(in) :: wannier_centres(:, :)
       real(kind=dp), intent(in) :: recip_lattice(3, 3)
       logical, intent(in) :: automatic_translation
-!lp   end w90_parameters
+!     end w90_parameters
 
 !~      if (.not.allocated(wannier_centres_translated)) then
 !~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
@@ -517,10 +517,10 @@ contains
     character(len=9)  :: cdate, ctime
 
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
-!lp end w90_parameters
+!   end w90_parameters
 
     if (hr_written) return
 
@@ -587,14 +587,14 @@ contains
     real(kind=dp), allocatable :: dist(:)
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: ws_search_size(3)
     integer, intent(in) :: timing_level
     integer, intent(in) :: iprint
     real(kind=dp), intent(in) :: real_metric(3, 3)
     real(kind=dp), intent(in) :: ws_distance_tol
-!lp end w90_parameters
+!   end w90_parameters
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
 
@@ -723,7 +723,7 @@ contains
 !lp w90_parameter "write_bvec" does not appear to be used here, so not included in
 !lp argument list
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: nntot
@@ -731,7 +731,7 @@ contains
     real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-!lp end w90_parameters
+!   end w90_parameters
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', err=101)
@@ -804,7 +804,7 @@ contains
     complex(kind=dp)   :: fac, pos_r(3)
     real(kind=dp)      :: rdotk
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: nntot
@@ -814,7 +814,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-!lp end w90_parameters
+!   end w90_parameters
 
     if (tb_written) return
 

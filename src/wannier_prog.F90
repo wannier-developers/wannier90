@@ -246,7 +246,23 @@ program wannier
     ! I call the routine always; the if statements to decide if/what
     ! to plot are inside the function
     time2 = io_time()
-    call plot_main()
+    !
+    call plot_main(num_kpts, bands_plot, dos_plot, kpt_latt, fermi_surface_plot, wannier_plot, &
+                  timing_level, write_bvec, write_hr, write_rmn, write_tb, write_u_matrices, &
+                  real_lattice, num_wann, wb, bk, m_matrix, nntot, recip_lattice, wannier_centres, &
+                  num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation, &
+                  num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin, lwindow, &
+                  u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, ws_distance_tol, &
+                  ws_search_size, real_metric, mp_grid, transport_mode, bands_plot_mode, transport, &
+                  iprint, wannier_plot_radius, wannier_plot_scale, atoms_pos_frac, &
+                  wannier_plot_spinor_phase, wannier_plot_spinor_mode, spinors, wannier_plot_format, &
+                  wvfn_formatted, wannier_plot_mode, wannier_plot_list, num_wannier_plot, &
+                  atoms_symbol, spin, wannier_plot_supercell, fermi_energy_list, nfermi, &
+                  fermi_surface_num_points, one_dim_dir, bands_plot_dim, hr_cutoff, dist_cutoff, &
+                  dist_cutoff_mode, use_ws_distance, bands_plot_project, num_bands_project, &
+                  bands_plot_format, bands_label, bands_spec_points, bands_num_spec_points, &
+                  recip_metric, bands_num_points)
+    !
     time1 = io_time()
     ! Now time is always printed, even if no plotting is done/required, but
     ! it shouldn't be a problem.
