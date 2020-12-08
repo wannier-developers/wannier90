@@ -3001,7 +3001,20 @@ contains
   end subroutine wann_svd_omega_i
 
   !==================================================================!
-  subroutine wann_main_gamma
+  subroutine wann_main_gamma(num_wann, num_iter, wb, nntot, u_matrix, m_matrix, &
+                             num_kpts, iprint, num_print_cycles, &
+                             num_dump_cycles, omega_invariant, length_unit, &
+                             lenconfac, proj_site, real_lattice, write_r2mn, &
+                             guiding_centres, num_guide_cycles, &
+                             num_no_guide_iter, timing_level, write_proj, &
+                             have_disentangled, conv_tol, conv_window, &
+                             wannier_centres, write_xyz, wannier_spreads, &
+                             omega_total, omega_tilde, write_vdw_data, neigh, &
+                             nnh, bk, bka, num_bands, u_matrix_opt, eigval, &
+                             lwindow, wbtot, translate_home_cell, &
+                             recip_lattice, num_atoms, atoms_symbol, &
+                             atoms_pos_cart, num_species, atoms_species_num, &
+                             num_valence_bands, num_elec_per_state)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3010,26 +3023,52 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: stdout, io_error, io_time, io_stopwatch
-    use w90_parameters, only: num_wann, num_iter, wb, &
-      nntot, u_matrix, m_matrix, num_kpts, iprint, &
-      num_print_cycles, num_dump_cycles, omega_invariant, &
-      param_write_chkpt, length_unit, lenconfac, &
-      proj_site, real_lattice, write_r2mn, guiding_centres, &
-      num_guide_cycles, num_no_guide_iter, timing_level, &
-      write_proj, have_disentangled, conv_tol, conv_window, &
-      wannier_centres, write_xyz, wannier_spreads, omega_total, &
-      omega_tilde, write_vdw_data, &
-      neigh, nnh, bk, bka, & ! extra for wann_phases
-      num_bands, u_matrix_opt, eigval, lwindow, & ! extra for wann_calc_projection
-      wbtot, & ! extra from wann_omega
-      translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
-      atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
-      num_valence_bands, num_elec_per_state ! extra for write_vdw
+    use w90_parameters, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
 
     implicit none
 
+    !subroutine args from parameters module
+    integer, intent(in) :: num_wann, num_iter
+    real(kind=dp), intent(in) :: wb(:)
+    integer, intent(in) :: nntot
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: num_kpts, iprint, num_print_cycles, num_dump_cycles
+    real(kind=dp) :: omega_invariant
+    character(len=*), intent(in) :: length_unit
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(in) :: proj_site(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    logical, intent(in) :: write_r2mn
+    logical, intent(inout) :: guiding_centres
+    integer, intent(in) :: num_guide_cycles, num_no_guide_iter, timing_level
+    logical, intent(in) :: write_proj, have_disentangled
+    real(kind=dp), intent(in) :: conv_tol
+    integer, intent(in) :: conv_window
+    real(kind=dp), intent(inout) :: wannier_centres(:, :)
+    logical, intent(in) :: write_xyz
+    real(kind=dp), intent(inout) :: wannier_spreads(:)
+    real(kind=dp), intent(inout) :: omega_total, omega_tilde
+    logical, intent(in) :: write_vdw_data
+    integer, intent(in) :: neigh(:, :)
+    integer, intent(in) :: nnh
+    real(kind=dp), intent(in) :: bk(:, :, :), bka(:, :)
+    integer, intent(in) :: num_bands
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    logical, intent(in) :: lwindow(:, :)
+    real(kind=dp), intent(in) :: wbtot
+    logical, intent(in) :: translate_home_cell
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    integer, intent(in) :: num_atoms
+    character(len=2), intent(in) :: atoms_symbol(:)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    integer, intent(in) ::  num_species
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: num_valence_bands, num_elec_per_state
+    ! local
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
 
