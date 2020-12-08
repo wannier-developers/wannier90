@@ -392,7 +392,24 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
                          atoms_pos_cart, num_species, atoms_species_num, &
                          num_valence_bands, num_elec_per_state)
   else
-    call wann_main()
+    call wann_main(num_wann, num_cg_steps, num_iter, nnlist, nntot, &
+                   wbtot, u_matrix, m_matrix, num_kpts, iprint, &
+                   num_print_cycles, num_dump_cycles, omega_invariant, &
+                   length_unit, lenconfac, proj_site, real_lattice, &
+                   write_r2mn, guiding_centres, num_guide_cycles, &
+                   num_no_guide_iter, timing_level, trial_step, precond, &
+                   fixed_step, lfixstep, write_proj, have_disentangled, &
+                   conv_tol, num_proj, conv_window, conv_noise_amp, &
+                   conv_noise_num, wannier_centres, write_xyz, &
+                   wannier_spreads, omega_total, omega_tilde, &
+                   optimisation, write_vdw_data, write_hr_diag, kpt_latt, &
+                   bk, ccentres_cart, slwf_num, selective_loc, &
+                   slwf_constrain, slwf_lambda, neigh, nnh, bka, &
+                   num_bands, u_matrix_opt, eigval, lwindow, wb, &
+                   translate_home_cell, recip_lattice, num_atoms, &
+                   atoms_symbol, atoms_pos_cart, num_species, &
+                   atoms_species_num, num_valence_bands, &
+                   num_elec_per_state, lsitesymmetry)
   endif
 
   call param_write_chkpt('postwann')

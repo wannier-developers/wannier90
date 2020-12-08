@@ -52,7 +52,24 @@ module w90_wannierise
 contains
 
   !==================================================================!
-  subroutine wann_main
+  subroutine wann_main(num_wann, num_cg_steps, num_iter, nnlist, nntot, &
+                       wbtot, u_matrix, m_matrix, num_kpts, iprint, &
+                       num_print_cycles, num_dump_cycles, omega_invariant, &
+                       length_unit, lenconfac, proj_site, real_lattice, &
+                       write_r2mn, guiding_centres, num_guide_cycles, &
+                       num_no_guide_iter, timing_level, trial_step, precond, &
+                       fixed_step, lfixstep, write_proj, have_disentangled, &
+                       conv_tol, num_proj, conv_window, conv_noise_amp, &
+                       conv_noise_num, wannier_centres, write_xyz, &
+                       wannier_spreads, omega_total, omega_tilde, &
+                       optimisation, write_vdw_data, write_hr_diag, kpt_latt, &
+                       bk, ccentres_cart, slwf_num, selective_loc, &
+                       slwf_constrain, slwf_lambda, neigh, nnh, bka, &
+                       num_bands, u_matrix_opt, eigval, lwindow, wb, &
+                       translate_home_cell, recip_lattice, num_atoms, &
+                       atoms_symbol, atoms_pos_cart, num_species, &
+                       atoms_species_num, num_valence_bands, &
+                       num_elec_per_state, lsitesymmetry)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -62,24 +79,8 @@ contains
       cmplx_i
     use w90_io, only: stdout, io_error, io_wallclocktime, io_stopwatch &
       , io_file_unit
-    use w90_parameters, only: num_wann, num_cg_steps, num_iter, nnlist, &
-      nntot, wbtot, u_matrix, m_matrix, num_kpts, iprint, num_print_cycles, &
-      num_dump_cycles, omega_invariant, param_write_chkpt, length_unit, &
-      lenconfac, proj_site, real_lattice, write_r2mn, guiding_centres, &
-      num_guide_cycles, num_no_guide_iter, timing_level, trial_step, precond, &
-      fixed_step, lfixstep, write_proj, have_disentangled, conv_tol, num_proj, &
-      conv_window, conv_noise_amp, conv_noise_num, wannier_centres, write_xyz, &
-      wannier_spreads, omega_total, omega_tilde, optimisation, write_vdw_data, &
-      write_hr_diag, kpt_latt, bk, ccentres_cart, slwf_num, selective_loc, &
-      slwf_constrain, slwf_lambda, &
-      neigh, nnh, bk, bka, & ! extra for wann_phases
-      num_bands, u_matrix_opt, eigval, lwindow, & !extra for wann_calc_projection
-      wb, & ! extra for wann_omega calls
-      translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
-      atoms_pos_cart, num_species, atoms_species_num, & ! extra for write_xyz
-      num_valence_bands, num_elec_per_state ! extra for write_vdw
+    use w90_parameters, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_parameters, only: lsitesymmetry                !RS:
     use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, &
       comms_bcast, comms_scatterv, comms_array_split
@@ -90,6 +91,60 @@ contains
 
     implicit none
 
+    !subroutine args from parameters module
+    integer, intent(in) :: num_wann, num_cg_steps, num_iter
+    integer, intent(in) :: nnlist(:, :)
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wbtot
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: num_kpts, iprint, num_print_cycles, num_dump_cycles
+    real(kind=dp) :: omega_invariant
+    character(len=*), intent(in) :: length_unit
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(in) :: proj_site(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    logical, intent(in) :: write_r2mn
+    logical, intent(inout) :: guiding_centres
+    integer, intent(in) :: num_guide_cycles, num_no_guide_iter, timing_level
+    real(kind=dp), intent(in) :: trial_step
+    logical, intent(in) :: precond
+    real(kind=dp), intent(in) :: fixed_step
+    logical, intent(in) :: lfixstep
+    logical, intent(in) :: write_proj, have_disentangled
+    real(kind=dp), intent(in) :: conv_tol
+    integer, intent(in) :: num_proj, conv_window
+    real(kind=dp), intent(in) :: conv_noise_amp
+    integer, intent(in) :: conv_noise_num
+    real(kind=dp), intent(inout) :: wannier_centres(:, :)
+    logical, intent(in) :: write_xyz
+    real(kind=dp), intent(inout) :: wannier_spreads(:)
+    real(kind=dp), intent(inout) :: omega_total, omega_tilde
+    integer, intent(in) :: optimisation
+    logical, intent(in) :: write_vdw_data, write_hr_diag
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: bk(:, :, :), bka(:, :)
+    real(kind=dp), intent(in) :: ccentres_cart(:, :)
+    integer, intent(in) :: slwf_num
+    logical, intent(in) :: selective_loc, slwf_constrain
+    real(kind=dp), intent(in) :: slwf_lambda
+    integer, intent(in) :: neigh(:, :)
+    integer, intent(in) :: nnh
+    integer, intent(in) :: num_bands
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    logical, intent(in) :: lwindow(:, :)
+    real(kind=dp), intent(in) :: wb(:)
+    logical, intent(in) :: translate_home_cell
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    integer, intent(in) :: num_atoms
+    character(len=2), intent(in) :: atoms_symbol(:)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    integer, intent(in) :: num_species
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: num_valence_bands, num_elec_per_state
+    logical, intent(in) :: lsitesymmetry
+    ! local
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
     type(localisation_vars) :: trial_spread
