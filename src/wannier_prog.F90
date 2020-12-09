@@ -248,7 +248,11 @@ program wannier
                    translate_home_cell, recip_lattice, num_atoms, &
                    atoms_symbol, atoms_pos_cart, num_species, &
                    atoms_species_num, num_valence_bands, &
-                   num_elec_per_state, lsitesymmetry, stdout)
+                   num_elec_per_state, lsitesymmetry, stdout,&
+                   ws_distance_tol, ws_search_size, real_metric, mp_grid,&
+                   transport_mode, bands_plot_mode, transport, bands_plot,&
+                   translation_centre_frac, automatic_translation, ndimwin)
+
   else
     call wann_main_gamma(num_wann, num_iter, wb, nntot, u_matrix, m_matrix, &
                          num_kpts, iprint, num_print_cycles, &

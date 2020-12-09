@@ -69,7 +69,10 @@ contains
                        translate_home_cell, recip_lattice, num_atoms, &
                        atoms_symbol, atoms_pos_cart, num_species, &
                        atoms_species_num, num_valence_bands, &
-                       num_elec_per_state, lsitesymmetry, stdout)
+                       num_elec_per_state, lsitesymmetry, stdout,&
+                       ws_distance_tol, ws_search_size, real_metric, mp_grid,&
+                       transport_mode, bands_plot_mode, transport, bands_plot,&
+                       translation_centre_frac, automatic_translation, ndimwin)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -144,6 +147,20 @@ contains
     integer, intent(in) :: num_valence_bands, num_elec_per_state
     logical, intent(in) :: lsitesymmetry
     integer, intent(in) :: stdout
+
+    ! JJ, extra args
+    integer, intent(in) :: ws_search_size(3)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: ndimwin(:)
+    character(len=20), intent(in) :: transport_mode
+    character(len=20), intent(in) :: bands_plot_mode
+    logical, intent(in) :: transport
+    logical, intent(in) :: bands_plot
+    logical, intent(in) :: automatic_translation
+    real(kind=dp), intent(in) :: ws_distance_tol
+    real(kind=dp), intent(in) :: real_metric(3, 3)
+    real(kind=dp), intent(inout) :: translation_centre_frac(3)
+
     ! local
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread

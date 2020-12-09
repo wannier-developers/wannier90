@@ -418,7 +418,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
                    translate_home_cell, recip_lattice, num_atoms, &
                    atoms_symbol, atoms_pos_cart, num_species, &
                    atoms_species_num, num_valence_bands, &
-                   num_elec_per_state, lsitesymmetry, stdout)
+                   num_elec_per_state, lsitesymmetry, stdout,&
+                   ws_distance_tol, ws_search_size, real_metric, mp_grid,&
+                   transport_mode, bands_plot_mode, transport, bands_plot,&
+                   translation_centre_frac, automatic_translation, ndimwin)
+
   endif
 
   call param_write_chkpt('postwann')
