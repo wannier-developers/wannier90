@@ -119,7 +119,8 @@ contains
      eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, &
 !lp  introduced for hamiltonian_setup
      ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
-     bands_plot, iprint
+     bands_plot, iprint, &
+     dist_cutoff_hc, dist_cutoff, dist_cutoff_mode   ! tran_lcr_2c2_build_ham
 !lp 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
 
@@ -180,7 +181,7 @@ contains
         call tran_lcr_2c2_sort(signatures, num_G, pl_warning)
         if (write_xyz) call tran_write_xyz()
         call tran_parity_enforce(signatures)
-        call tran_lcr_2c2_build_ham(pl_warning)
+        call tran_lcr_2c2_build_ham(pl_warning, dist_cutoff_hc, dist_cutoff, dist_cutoff_mode)
       endif
       call tran_lcr()
     end if
@@ -2943,7 +2944,7 @@ contains
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning)
+  subroutine tran_lcr_2c2_build_ham(pl_warning, dist_cutoff_hc, dist_cutoff, dist_cutoff_mode)
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !
@@ -2955,14 +2956,23 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
+!   use w90_parameters, only: tran_num_cell_ll, num_wann, tran_num_ll, kpt_cart, nfermi, fermi_energy_list, &
+!     tran_write_ht, tran_num_rr, tran_num_lc, tran_num_cr, tran_num_cc, &
+!     tran_num_bandc, timing_level, dist_cutoff_mode, dist_cutoff, &
+!     dist_cutoff_hc
     use w90_parameters, only: tran_num_cell_ll, num_wann, tran_num_ll, kpt_cart, nfermi, fermi_energy_list, &
       tran_write_ht, tran_num_rr, tran_num_lc, tran_num_cr, tran_num_cc, &
-      tran_num_bandc, timing_level, dist_cutoff_mode, dist_cutoff, &
-      dist_cutoff_hc
+      tran_num_bandc, timing_level
+
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
+!   from w90_parameters
+    real(kind=dp), intent(in) :: dist_cutoff_hc
+    real(kind=dp), intent(inout) :: dist_cutoff
+    character(len=20), intent(in) :: dist_cutoff_mode
+!   end w90_parameters
     logical, intent(in)                     :: pl_warning
 
     integer                                :: i, j, k, num_wann_cell_ll, file_unit, ierr, band_size
