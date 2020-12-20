@@ -66,7 +66,6 @@ module w90_transport
   !!  (1999)
 
   use w90_constants, only: dp
-
   implicit none
 
   private
@@ -103,36 +102,89 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main()
+  subroutine tran_main(transport_mode, tran_read_ht, timing_level, write_hr, write_xyz, num_wann, &
+                      real_lattice, recip_lattice, wannier_centres, num_atoms, bands_plot, iprint, &
+                      translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
+                      lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
+                      eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, atoms_pos_cart, &
+                      ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
+                      dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc, tran_num_cc, &
+                      tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, nfermi, &
+                      kpt_cart, tran_num_ll, tran_num_cell_ll, tran_easy_fix, atoms_symbol, &
+                      wannier_spreads, tran_group_threshold, one_dim_dir, tran_use_same_lead, &
+                      tran_energy_step, tran_win_min, tran_win_max, tran_num_bb, length_unit, hr_cutoff)
+   
     !! Main transport subroutine
     !==================================================================!
 
     use w90_io, only: stdout, io_stopwatch
-    use w90_parameters, only: transport_mode, tran_read_ht, timing_level, write_hr, &
-      write_xyz, &
-!lp introduced for hamiltonian_write_hr
-      num_wann, & 
-!lp introduced for hamiltonian_get_hr
-     real_lattice, recip_lattice, wannier_centres, num_atoms, atoms_pos_cart, &
-     translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
-     lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
-     eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, &
-!lp  introduced for hamiltonian_setup
-     ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
-     bands_plot, iprint, &
-     dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc, tran_num_cc, &   ! tran_lcr_2c2_build_ham
-     tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, nfermi, &  ! tran_lcr_2c2_build_ham
-     kpt_cart, tran_num_ll, tran_num_cell_ll, & ! tran_lcr_2c2_build_ham
-     tran_easy_fix, &  ! from tran_parity_enforce
-     atoms_symbol, atoms_pos_cart, &  !from tran_write_xyz
-     wannier_spreads, tran_group_threshold, one_dim_dir, & !from tran_lcr_2c2_sort
-     tran_use_same_lead, tran_energy_step, tran_win_min, tran_win_max, & !from tran_lcr
-     tran_num_bb, & !from tran_bulk
-     length_unit, hr_cutoff !from tran_cut_hr_one_dim
-!lp 
+
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: one_dim_dir
+    real(kind=dp), intent(in) :: hr_cutoff
+    logical, intent(in) :: tran_read_ht
+    logical, intent(in) :: write_hr
+    logical, intent(in) :: write_xyz
+    character(len=20), intent(in) :: transport_mode
+    character(len=20), intent(in) :: length_unit
+    integer, intent(in) :: num_atoms
+    integer, intent(in) :: num_species
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: ndimwin(:)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    real(kind=dp), intent(out) :: translation_centre_frac(3)
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    logical, intent(in) :: automatic_translation
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: lwindow(:, :)
+    logical, intent(in) :: lsitesymmetry  !YN:
+    integer, intent(in) :: ws_search_size(3)        
+    integer, intent(in) :: mp_grid(3)               
+    integer, intent(in) :: iprint                   
+    real(kind=dp), intent(in) :: ws_distance_tol                          
+    real(kind=dp), intent(in) :: wannier_spreads(:)
+    real(kind=dp), intent(in) :: real_metric(3, 3)                          
+    character(len=20), intent(in) :: bands_plot_mode
+    logical, intent(in) :: transport
+    logical, intent(in) :: bands_plot
+    integer, intent(in) :: nfermi
+    integer, intent(inout):: tran_num_bandc
+    integer, intent(inout) :: tran_num_cc
+    integer, intent(inout) :: tran_num_cr
+    integer, intent(inout) :: tran_num_lc
+    integer, intent(inout) :: tran_num_rr
+    integer, intent(inout) :: tran_num_bb
+    integer, intent(in) :: tran_num_ll
+    integer, intent(in) :: tran_num_cell_ll
+    real(kind=dp), intent(inout) :: dist_cutoff_hc
+    real(kind=dp), intent(inout) :: dist_cutoff
+    real(kind=dp), intent(in) :: fermi_energy_list(:)
+    real(kind=dp), intent(in) ::kpt_cart(:, :)
+    real(kind=dp), intent(in) :: tran_group_threshold
+    real(kind=dp), intent(in) :: tran_energy_step
+    real(kind=dp), intent(in) :: tran_win_min
+    real(kind=dp), intent(in) :: tran_win_max
+    logical, intent(in) :: tran_write_ht
+    logical, intent(in) :: tran_easy_fix
+    logical, intent(in) :: tran_use_same_lead
+    character(len=20), intent(in) :: dist_cutoff_mode
+    character(len=2), intent(in) :: atoms_symbol(:)
+!   end w90_parameters
 
     real(kind=dp), allocatable, dimension(:, :)     :: signatures
     integer                                      :: num_G
@@ -229,9 +281,6 @@ contains
     !
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
-!   use w90_parameters, only: one_dim_dir, real_lattice, num_wann, &
-!     mp_grid, timing_level
-
     use w90_hamiltonian, only: irvec, nrpts, ham_r
 
     implicit none
@@ -326,15 +375,10 @@ contains
     !
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch, stdout
-
-!   use w90_parameters, only: num_wann, mp_grid, timing_level, real_lattice, &
-!     hr_cutoff, dist_cutoff, dist_cutoff_mode, &
-!     one_dim_dir, length_unit, transport_mode, &
-!     tran_num_cell_ll, tran_num_ll, dist_cutoff_hc
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
+
 !   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
@@ -492,12 +536,9 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error, io_stopwatch, seedname, io_date, &
       io_file_unit
-!   use w90_parameters, only: num_wann, tran_num_bb, tran_write_ht, &
-!     nfermi, fermi_energy_list, timing_level
-
-    !
+     
     implicit none
-    !
+     
 !   from w90_parameters
     integer, intent(in) :: timing_level
     integer, intent(in) :: nfermi
@@ -582,11 +623,6 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, seedname, io_date, &
       io_file_unit, stdout
-
-!   use w90_parameters, only: tran_num_bb, tran_read_ht, &
-!     tran_win_min, tran_win_max, tran_energy_step, &
-!     timing_level
-
 
     implicit none
 
@@ -765,11 +801,6 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
     use w90_io, only: io_error, io_stopwatch, seedname, io_date, &
       stdout, io_file_unit
-
-!   use w90_parameters, only: tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc, &
-!     tran_num_cr, tran_num_bandc, &
-!     tran_win_min, tran_win_max, tran_energy_step, &
-!     tran_use_same_lead, timing_level, tran_read_ht
 
     implicit none
 
@@ -1589,10 +1620,6 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, &
       io_stopwatch
-
-!   use w90_parameters, only: num_wann, have_disentangled, num_bands, u_matrix, u_matrix_opt, &
-!     real_lattice, iprint, timing_level
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
@@ -1861,12 +1888,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, stdout, io_stopwatch
-
-!   use w90_parameters, only: one_dim_dir, tran_num_ll, num_wann, tran_num_cell_ll, &
-!     real_lattice, tran_group_threshold, iprint, timing_level, lenconfac, &
-!     wannier_spreads, write_xyz, dist_cutoff, &
-!     transport_mode, num_atoms, atoms_species_num, num_species, atoms_symbol, atoms_pos_cart  !from tran_write_xyz
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
@@ -2394,9 +2415,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, stdout, io_stopwatch
-!   use w90_parameters, only: iprint, timing_level, & 
-!       tran_group_threshold   ! from group
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
@@ -2581,8 +2599,6 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_error
 
-!   use w90_parameters, only: tran_group_threshold
-
     implicit none
 
 !   from w90_parameters
@@ -2709,11 +2725,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: stdout, io_stopwatch, io_error
-
-!   use w90_parameters, only: tran_num_ll, num_wann, tran_num_cell_ll, iprint, timing_level, &
-!     tran_group_threshold, write_xyz, &
-!     transport_mode, num_atoms, atoms_species_num, num_species, atoms_symbol, atoms_pos_cart !from tran_write_xyz
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
@@ -3018,10 +3029,6 @@ contains
     !=====================================!
 
     use w90_io, only: seedname, io_file_unit, io_date, stdout
-!   use w90_parameters, only: num_wann, &
-!     atoms_pos_cart, atoms_symbol, num_species, &
-!     atoms_species_num, num_atoms, transport_mode
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
@@ -3035,6 +3042,7 @@ contains
     character(len=20), intent(in) :: transport_mode
     character(len=2), intent(in) :: atoms_symbol(:)
 !   end w90_parameters
+
     integer          :: iw, ind, xyz_unit, nat, nsp
     character(len=9) :: cdate, ctime
     real(kind=dp)    :: wc(3, num_wann)
@@ -3081,8 +3089,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: stdout, io_stopwatch
-!   use w90_parameters, only: tran_num_cell_ll, num_wann, tran_num_ll, &
-!     timing_level, iprint, tran_easy_fix
 
     implicit none
 
@@ -3179,11 +3185,6 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
-!   use w90_parameters, only: tran_num_cell_ll, num_wann, tran_num_ll, kpt_cart, nfermi, fermi_energy_list, &
-!     tran_write_ht, tran_num_rr, tran_num_lc, tran_num_cr, tran_num_cc, &
-!     tran_num_bandc, timing_level, dist_cutoff_mode, dist_cutoff, &
-!     dist_cutoff_hc
-
     use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none

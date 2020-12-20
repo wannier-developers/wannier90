@@ -307,7 +307,17 @@ program wannier
   if (on_root) then
     time2 = io_time()
     if (transport) then
-      call tran_main()
+      call tran_main(transport_mode, tran_read_ht, timing_level, write_hr, write_xyz, num_wann, &
+                    real_lattice, recip_lattice, wannier_centres, num_atoms, bands_plot, iprint, &
+                    translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
+                    lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
+                    eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, atoms_pos_cart, &
+                    ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
+                    dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc, tran_num_cc, &
+                    tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, nfermi, &
+                    kpt_cart, tran_num_ll, tran_num_cell_ll, tran_easy_fix, atoms_symbol, &
+                    wannier_spreads, tran_group_threshold, one_dim_dir, tran_use_same_lead, &
+                    tran_energy_step, tran_win_min, tran_win_max, tran_num_bb, length_unit, hr_cutoff)
       time1 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
       if (tran_read_ht) goto 4004
