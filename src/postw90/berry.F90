@@ -100,9 +100,10 @@ contains
       kubo_adpt_smr, kubo_adpt_smr_fac, &
       kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
       scissors_shift, num_valence_bands, &
-      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
+      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift, &
+      shc_ryoo
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_SS_R, get_SHC_R
+      get_SS_R, get_SHC_R, get_SAA_R, get_SBB_R
 
     real(kind=dp), allocatable    :: adkpt(:, :)
 
@@ -244,7 +245,12 @@ contains
       call get_HH_R
       call get_AA_R
       call get_SS_R
-      call get_SHC_R
+      if(.not.shc_ryoo) then !if Qiao
+        call get_SHC_R
+      else
+        call get_SAA_R
+        call get_SBB_R
+      endif
 
       if (shc_freq_scan) then
         allocate (shc_freq(kubo_nfreq))
@@ -261,6 +267,7 @@ contains
         shc_k_fermi_dummy = 0.0_dp
         adpt_counter_list = 0
       endif
+
     endif
 
     if (on_root) then
@@ -485,7 +492,7 @@ contains
 
       end do !loop_xyz
 
-    else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
+    else! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
       kweight = db1*db2*db3
       kweight_adpt = kweight/berry_curv_adpt_kmesh**3
@@ -1863,7 +1870,7 @@ contains
     enddo
     AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
 
-    call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), &
+    call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), delHH(:,:,shc_alpha),&
                         D_h(:, :, shc_alpha), UU, js_k)
 
     ! adpt_smr only works with berry_kmesh, so do not use
@@ -1879,7 +1886,7 @@ contains
         call pw90common_get_occ(eig, occ_fermi(:, i), fermi_energy_list(i))
       end do
     end if
-
+    
     do n = 1, num_wann
       ! get Omega_{n,alpha beta}^{gamma}
       if (lfreq) then
@@ -1895,6 +1902,8 @@ contains
         !this will calculate AHC
         !prod = -rfac*cmplx_i*AA(n, m, shc_alpha) * rfac*cmplx_i*AA(m, n, shc_beta)
         prod = js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
+        !prod = cmplx_i*rfac
+        !prod = js_k(n,m)*cmplx_i*rfac
         if (kubo_adpt_smr) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)
@@ -1939,7 +1948,7 @@ contains
     !===========================================================!
     !                   PRIVATE PROCEDURES                      !
     !===========================================================!
-    subroutine berry_get_js_k(kpt, eig, del_alpha_eig, D_alpha_h, UU, js_k)
+    subroutine berry_get_js_k(kpt, eig, del_alpha_eig, delHH_alpha, D_alpha_h, UU, js_k)
       !====================================================================!
       !                                                                    !
       ! Contribution from point k to the
@@ -1954,15 +1963,16 @@ contains
 
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
-      use w90_parameters, only: num_wann, shc_alpha, shc_gamma
+      use w90_parameters, only: num_wann, shc_alpha, shc_gamma, shc_ryoo
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
         pw90common_fourier_R_to_k_vec
-      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R
+      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R            ,HH_R,SAA_R,SBB_R
 
       ! args
       real(kind=dp), intent(in)  :: kpt(3)
       real(kind=dp), dimension(:), intent(in)  :: eig
       real(kind=dp), dimension(:), intent(in)  :: del_alpha_eig
+      complex(kind=dp), dimension(:, :),intent(in)  :: delHH_alpha
       complex(kind=dp), dimension(:, :), intent(in)  :: D_alpha_h
       complex(kind=dp), dimension(:, :), intent(in)  :: UU
       complex(kind=dp), dimension(:, :), intent(out) :: js_k
@@ -1982,6 +1992,13 @@ contains
       complex(kind=dp)    :: eig_mat(num_wann, num_wann)
       complex(kind=dp)    :: del_eig_mat(num_wann, num_wann)
 
+      !ryoo
+      complex(kind=dp)    :: SAA(num_wann, num_wann, 3,3)
+      complex(kind=dp)    :: SBB(num_wann, num_wann, 3,3)
+      complex(kind=dp)    :: VV0(num_wann, num_wann)
+      complex(kind=dp)    :: spinvel0(num_wann, num_wann)
+      integer :: i,j
+
       !===========
       js_k = cmplx_0
 
@@ -1992,6 +2009,7 @@ contains
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
+    if(.not.shc_ryoo) then !if Qiao
       !=========== K_k ===========
       ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
       ! QZYZ18 Eq.(37)
@@ -2029,6 +2047,44 @@ contains
       ! also we need to divide it by hbar to recover the velocity
       ! operator, these are done outside of this subroutine
       js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
+
+    else !if Ryoo (PRB RPS19 Eq.(21))
+      do j=shc_alpha,shc_alpha
+         do i=shc_gamma,shc_gamma !RPS19 Eqs.(37)-(40)
+            call pw90common_fourier_R_to_k_new(kpt,SAA_R(:,:,:,i,j),OO=SAA(:,:,i,j))
+            call pw90common_fourier_R_to_k_new(kpt,SBB_R(:,:,:,i,j),OO=SBB(:,:,i,j))
+          end do
+      end do
+
+      call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+                                       OO_dx=delHH(:,:,1),&
+                                       OO_dy=delHH(:,:,2),&
+                                       OO_dz=delHH(:,:,3))
+
+    VV0(:,:)=utility_rotate(delHH_alpha(:,:),UU,num_wann)
+    !if(.true.) write(*,*) "kpt",kpt,"SA_K",real(SAA(1,:,1,3),dp)
+      do i=1,3
+         do j=1,3
+           SAA(:,:,i,j)=utility_rotate(SAA(:,:,i,j),UU,num_wann)
+           SBB(:,:,i,j)=utility_rotate(SBB(:,:,i,j),UU,num_wann)
+        enddo
+      enddo
+
+      spinVel0(:,:) = matmul(VV0(:,:), S_k(:,:)) + &
+           matmul(S_k(:,:), VV0(:,:))
+      
+      do n=1,num_wann
+        do m=1,num_wann !RPS19 Eq.(21) and Eq.(26)
+          js_k(n,m) = spinVel0(n,m) &
+            - cmplx_i*(eig(m)*SAA(n,m,shc_gamma,shc_alpha) - SBB(n,m,shc_gamma,shc_alpha))
+          js_k(n,m) = js_k(n,m) &
+            + cmplx_i*(eig(n)*conjg(SAA(m,n,shc_gamma,shc_alpha)) - conjg(SBB(m,n,shc_gamma,shc_alpha)))
+        enddo
+      enddo
+      js_k=js_k/2.0_dp
+      !js_k=1.0_dp
+    endif
+      !-------------------------------------------------------------------
 
     end subroutine berry_get_js_k
 
