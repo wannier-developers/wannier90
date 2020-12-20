@@ -299,6 +299,12 @@ contains
 
       if (eval_shc) then
         write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
+        if (shc_ryoo) then
+          write (stdout, '(/,3x,a)') '  Ryoo''s SHC (Phys.Rev.B 99.235113)'
+        else
+          write (stdout, '(/,3x,a)') '  Qiao''s SHC (Phys.Rev.B 98.214402)'
+          write (stdout, '(/,3x,a)') '  shc_ryoo=.true. to calculate Ryoo''s SHC (Phys.Rev.B 99.235113)'
+        endif
         if (shc_freq_scan) then
           write (stdout, '(/,3x,a)') '  Frequency scan'
         else
