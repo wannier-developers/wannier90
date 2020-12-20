@@ -1716,7 +1716,6 @@ contains
 
              H_q_qb2(:,:)=cmplx_0
              do ipol=1,3
-                if(ik==2 .and. nn2==3) write(*,*) "before 1,1",ipol, Ho_q_qb2(18,17,ipol)
                 do m=1,num_wann
                    do n=1,num_wann
                       do i=1,num_states(ik)
@@ -1731,8 +1730,6 @@ contains
                       enddo
                    enddo
                 enddo
-                if(ik==2 .and. nn2==3) write(*,*) v_matrix(24,18,qb2), ik,nn2,qb2
-                if(ik==2 .and. nn2==3) write(*,*) "after 1,1", ipol,H_q_qb2(18,17)
                 do b=1,3
                    SAA_q(:,:,ik,ipol,b)=SAA_q(:,:,ik,ipol,b)+&
                         cmplx_i*wb(nn2)*bk(b,nn2,ik)*H_q_qb2(:,:)
@@ -1754,17 +1751,11 @@ contains
 !          enddo
 !       enddo
 !       close(sIu_in)
-    !do ik=1,num_kpts
-    !  write(*,*) ik,SAA_q(18,17,ik,2,1)
-    !enddo
        do b=1,3
           do a=1,3
              call fourier_q_to_R(SAA_q(:,:,:,a,b),SAA_R(:,:,:,a,b))
           enddo
        enddo
-    !do ik=1,nrpts
-    !  write(*,*) ik,"SAA_R=",real(SAA_R(1,:,ik,1,3),dp)
-    !enddo
     endif !on_root
     
     call comms_bcast(SAA_R(1,1,1,1,1),num_wann*num_wann*nrpts*3*3)
