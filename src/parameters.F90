@@ -221,6 +221,7 @@ module w90_parameters
   logical, public, save :: shc_bandshift
   integer, public, save :: shc_bandshift_firstband
   real(kind=dp), public, save :: shc_bandshift_energyshift
+  logical, public, save :: shc_ryoo
 
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
@@ -255,7 +256,6 @@ module w90_parameters
   integer, public, save :: kubo_nfreq
   complex(kind=dp), allocatable, public, save :: kubo_freq_list(:)
   real(kind=dp), public, save :: kubo_eigval_max
-
 ! Module  s p i n
   real(kind=dp), public, save :: spin_kmesh_spacing
   integer, public, save :: spin_kmesh(3)
@@ -1329,6 +1329,9 @@ contains
     call param_get_keyword('shc_bandshift_energyshift', found, r_value=shc_bandshift_energyshift)
     if (shc_bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
+
+    shc_ryoo=.false.
+    call param_get_keyword('shc_ryoo',found,l_value=shc_ryoo)
 
     spin_moment = .false.
     call param_get_keyword('spin_moment', found, &
@@ -6206,6 +6209,7 @@ contains
     call comms_bcast(shc_bandshift, 1)
     call comms_bcast(shc_bandshift_firstband, 1)
     call comms_bcast(shc_bandshift_energyshift, 1)
+    call comms_bcast(shc_ryoo, 1)
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)
