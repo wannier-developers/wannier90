@@ -25,6 +25,7 @@ module w90_berry
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
   !! *  IATS18 = arXiv:1804.04030 (2018) (nonlinear shift current)
   !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
+  !! *  RPS19  = PRB 99, 235113 (2019)  (spin Hall conductivity - SHC)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
