@@ -65,16 +65,31 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup()
+  subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+                              mp_grid, transport_mode, bands_plot_mode, transport, &
+                              bands_plot, num_kpts, num_wann, timing_level, iprint)
     !! Allocate arrays and setup data
     !============================================!
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
-    use w90_parameters, only: num_wann, num_kpts, bands_plot, transport, &
-      bands_plot_mode, transport_mode
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: ws_search_size(3)        !internal wigner_seitz
+    integer, intent(in) :: mp_grid(3)               !internal wigner_seitz
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: timing_level             !internal wigner_seitz
+    integer, intent(in) :: iprint                   !internal wigner_seitz
+    real(kind=dp), intent(in) :: ws_distance_tol    !internal wigner_seitz
+    real(kind=dp), intent(in) :: real_metric(3, 3)  !internal wigner_seitz
+    character(len=20), intent(in) :: transport_mode
+    character(len=20), intent(in) :: bands_plot_mode
+    logical, intent(in) :: transport
+    logical, intent(in) :: bands_plot
+!   end w90_parameters
 
     integer :: ierr
 
@@ -89,7 +104,8 @@ contains
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(count_pts=.true.)
+    call hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+         timing_level, iprint, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup')
@@ -109,7 +125,8 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(count_pts=.false.)
+    call hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+         timing_level, iprint, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
@@ -164,7 +181,13 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr()
+  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
+                               num_atoms, atoms_pos_cart, translation_centre_frac, &
+                               automatic_translation, num_species, atoms_species_num, &
+                               lenconfac, have_disentangled, ndimwin, lwindow, &
+                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
+                               lsitesymmetry, num_bands, num_kpts, num_wann, &
+                               timing_level)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -173,12 +196,15 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_parameters, only: num_bands, num_kpts, num_wann, u_matrix, &
-      eigval, kpt_latt, u_matrix_opt, lwindow, ndimwin, &
-      have_disentangled, timing_level
-    use w90_parameters, only: lsitesymmetry !YN:
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in)  :: num_bands
+    integer, intent(in)  :: num_kpts 
+    integer, intent(in)  :: num_wann
+    integer, intent(in)  :: timing_level
+!   end parameters
 
     integer, allocatable :: shift_vec(:, :)
     complex(kind=dp)     :: fac
@@ -188,6 +214,27 @@ contains
     real(kind=dp)        :: irvec_tmp(3)
     integer              :: loop_kpt, i, j, m, irpt, ideg, ierr, counter
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
+
+!   from w90_parameters
+    integer, intent(in) :: num_atoms
+    integer, intent(in) :: num_species
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: ndimwin(:)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    real(kind=dp), intent(out) :: translation_centre_frac(3)
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: eigval(:, :)
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    logical, intent(in) :: automatic_translation
+    logical, intent(in) :: have_disentangled     
+    logical, intent(in) :: lwindow(:, :)
+    logical, intent(in) :: lsitesymmetry  !YN:
+!   end w90_parameters
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
@@ -308,7 +355,9 @@ contains
 
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
-      call internal_translate_centres()
+      call internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
+           automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
+           wannier_centres, recip_lattice, real_lattice)
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -357,13 +406,12 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres()
+    subroutine internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
+               automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
+               wannier_centres, recip_lattice, real_lattice)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
-      use w90_parameters, only: num_wann, real_lattice, recip_lattice, wannier_centres, &
-        num_atoms, atoms_pos_cart, translation_centre_frac, &
-        automatic_translation, num_species, atoms_species_num, lenconfac
       use w90_io, only: stdout, io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
 
@@ -374,6 +422,21 @@ contains
       real(kind=dp), allocatable :: r_home(:, :), r_frac(:, :)
       real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
       real(kind=dp) :: r_frac_min(3)
+
+!     from w90_parameters
+      integer, intent(in) :: num_wann
+      integer, intent(in) :: atoms_species_num(:)
+      integer, intent(in) :: num_species
+      integer, intent(in) :: num_atoms
+      real(kind=dp), intent(in) :: real_lattice(3, 3)
+      real(kind=dp), intent(in) :: lenconfac
+      real(kind=dp), intent(out) :: translation_centre_frac(3) 
+!     would it be better left without intent(out)?
+      real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+      real(kind=dp), intent(in) :: wannier_centres(:, :)
+      real(kind=dp), intent(in) :: recip_lattice(3, 3)
+      logical, intent(in) :: automatic_translation
+!     end w90_parameters
 
 !~      if (.not.allocated(wannier_centres_translated)) then
 !~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
@@ -441,18 +504,23 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr()
+  subroutine hamiltonian_write_hr(num_wann, timing_level)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, &
       seedname, io_date
-    use w90_parameters, only: num_wann, timing_level
 
     integer            :: i, j, irpt, file_unit
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
+
+
+!   from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: timing_level
+!   end w90_parameters
 
     if (hr_written) return
 
@@ -493,7 +561,8 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(count_pts)
+  subroutine hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, &
+             ws_distance_tol, timing_level, iprint, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -502,8 +571,7 @@ contains
 
     use w90_constants, only: eps7, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
-    use w90_parameters, only: iprint, mp_grid, real_metric, timing_level, &
-      ws_search_size, ws_distance_tol
+
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -518,6 +586,15 @@ contains
     real(kind=dp) :: tot, dist_min
     real(kind=dp), allocatable :: dist(:)
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
+
+!   from w90_parameters
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: ws_search_size(3)
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: iprint
+    real(kind=dp), intent(in) :: real_metric(3, 3)
+    real(kind=dp), intent(in) :: ws_distance_tol
+!   end w90_parameters
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
 
@@ -626,11 +703,11 @@ contains
   end subroutine hamiltonian_wigner_seitz
 
   !============================================!
-  subroutine hamiltonian_write_rmn()
+  subroutine hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
+             num_kpts, kpt_latt, nntot)
     !! Write out the matrix elements of r
     !============================================!
-    use w90_parameters, only: m_matrix, wb, bk, num_wann, num_kpts, kpt_latt, &
-      nntot, write_bvec
+
     use w90_constants, only: twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, seedname, io_date
 
@@ -642,6 +719,19 @@ contains
     complex(kind=dp)     :: position(3)
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
+
+!lp w90_parameter "write_bvec" does not appear to be used here, so not included in
+!lp argument list
+
+!   from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: nntot
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+!   end w90_parameters
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', err=101)
@@ -692,7 +782,8 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb()
+  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
+             m_matrix, num_kpts, kpt_latt, nntot, timing_level)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -704,15 +795,26 @@ contains
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, &
       seedname, io_date
-    use w90_parameters, only: real_lattice, num_wann, timing_level, &
-      m_matrix, wb, bk, num_kpts, kpt_latt, nntot
+
     use w90_constants, only: twopi, cmplx_i
 
     integer            :: i, j, irpt, ik, nn, idir, file_unit
-    character(len=33) :: header
-    character(len=9)  :: cdate, ctime
+    character(len=33)  :: header
+    character(len=9)   :: cdate, ctime
     complex(kind=dp)   :: fac, pos_r(3)
     real(kind=dp)      :: rdotk
+
+!   from w90_parameters
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: nntot
+    integer, intent(in) :: timing_level
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+!   end w90_parameters
 
     if (tb_written) return
 
@@ -781,7 +883,6 @@ contains
         end do
       end do
     end do
-
     close (file_unit)
 
     tb_written = .true.

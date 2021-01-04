@@ -248,7 +248,11 @@ program wannier
                    translate_home_cell, recip_lattice, num_atoms, &
                    atoms_symbol, atoms_pos_cart, num_species, &
                    atoms_species_num, num_valence_bands, &
-                   num_elec_per_state, lsitesymmetry, stdout)
+                   num_elec_per_state, lsitesymmetry, stdout,&
+                   ws_distance_tol, ws_search_size, real_metric, mp_grid,&
+                   transport_mode, bands_plot_mode, transport, bands_plot,&
+                   translation_centre_frac, automatic_translation, ndimwin)
+
   else
     call wann_main_gamma(num_wann, num_iter, wb, nntot, u_matrix, m_matrix, &
                          num_kpts, iprint, num_print_cycles, &
@@ -276,7 +280,23 @@ program wannier
     ! I call the routine always; the if statements to decide if/what
     ! to plot are inside the function
     time2 = io_time()
-    call plot_main()
+    !
+    call plot_main(num_kpts, bands_plot, dos_plot, kpt_latt, fermi_surface_plot, wannier_plot, &
+                  timing_level, write_bvec, write_hr, write_rmn, write_tb, write_u_matrices, &
+                  real_lattice, num_wann, wb, bk, m_matrix, nntot, recip_lattice, wannier_centres, &
+                  num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation, &
+                  num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin, lwindow, &
+                  u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, ws_distance_tol, &
+                  ws_search_size, real_metric, mp_grid, transport_mode, bands_plot_mode, transport, &
+                  iprint, wannier_plot_radius, wannier_plot_scale, atoms_pos_frac, &
+                  wannier_plot_spinor_phase, wannier_plot_spinor_mode, spinors, wannier_plot_format, &
+                  wvfn_formatted, wannier_plot_mode, wannier_plot_list, num_wannier_plot, &
+                  atoms_symbol, spin, wannier_plot_supercell, fermi_energy_list, nfermi, &
+                  fermi_surface_num_points, one_dim_dir, bands_plot_dim, hr_cutoff, dist_cutoff, &
+                  dist_cutoff_mode, use_ws_distance, bands_plot_project, num_bands_project, &
+                  bands_plot_format, bands_label, bands_spec_points, bands_num_spec_points, &
+                  recip_metric, bands_num_points)
+    !
     time1 = io_time()
     ! Now time is always printed, even if no plotting is done/required, but
     ! it shouldn't be a problem.
@@ -287,7 +307,17 @@ program wannier
   if (on_root) then
     time2 = io_time()
     if (transport) then
-      call tran_main()
+      call tran_main(transport_mode, tran_read_ht, timing_level, write_hr, write_xyz, num_wann, &
+                    real_lattice, recip_lattice, wannier_centres, num_atoms, bands_plot, iprint, &
+                    translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
+                    lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
+                    eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, atoms_pos_cart, &
+                    ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
+                    dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc, tran_num_cc, &
+                    tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, nfermi, &
+                    kpt_cart, tran_num_ll, tran_num_cell_ll, tran_easy_fix, atoms_symbol, &
+                    wannier_spreads, tran_group_threshold, one_dim_dir, tran_use_same_lead, &
+                    tran_energy_step, tran_win_min, tran_win_max, tran_num_bb, length_unit, hr_cutoff)
       time1 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
       if (tran_read_ht) goto 4004
