@@ -498,7 +498,7 @@ contains
 
       end do !loop_xyz
 
-    else! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
+    else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
       kweight = db1*db2*db3
       kweight_adpt = kweight/berry_curv_adpt_kmesh**3

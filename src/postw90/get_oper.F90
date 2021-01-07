@@ -485,15 +485,10 @@ contains
       enddo !ncount
 
       close (mmn_in)
-      !do ik=1,num_kpts
-      !  write(*,*) ik, real(AA_q(1,:,ik,3),dp)
-      !enddo
+
       call fourier_q_to_R(AA_q(:, :, :, 1), AA_R(:, :, :, 1))
       call fourier_q_to_R(AA_q(:, :, :, 2), AA_R(:, :, :, 2))
       call fourier_q_to_R(AA_q(:, :, :, 3), AA_R(:, :, :, 3))
-      !do ir=1,nrpts
-      !  write(*,*) ir, real(AA_R(1,:,ir,1),dp)
-      !enddo
 
     endif !on_root
 
@@ -1543,8 +1538,6 @@ contains
           do nn2=1,nntot
              qb2=nnlist(ik,nn2)
              call get_win_min(qb2,winmin_qb2)
-!             do nn1=1,nntot
-!                qb1=nnlist(ik,nn1)
              do ipol=1,3
                 !
                 ! Read from .uHu file the matrices <u_q|H_q|u_{q+b2}> 
@@ -1554,15 +1547,6 @@ contains
                         ((Ho_q_qb2(n,m,ipol),n=1,num_bands),m=1,num_bands)
                 ! pw2wannier90 is coded a bit strangely, so here we take the transpose
                 Ho_q_qb2(:,:,ipol)=transpose(Ho_q_qb2(:,:,ipol))
-                ! old code here
-                !do m=1,num_bands
-                !   do n=1,num_bands
-                !      read(uHu_in,err=106,end=106) Ho_qb1_q_qb2(m,n)
-                !   end do
-                !end do
-                !
-                ! Transform to projected subspace, Wannier gauge
-                !
              enddo
 
              H_q_qb2(:,:)=cmplx_0
@@ -1585,7 +1569,6 @@ contains
                    SBB_q(:,:,ik,ipol,b)=SBB_q(:,:,ik,ipol,b)+&
                        cmplx_i*wb(nn2)*bk(b,nn2,ik)*H_q_qb2(:,:)
                 enddo
-!             enddo !nn1
               enddo !ipol
           enddo !nn2
        enddo !ik
@@ -1692,8 +1675,6 @@ contains
           do nn2=1,nntot
              qb2=nnlist(ik,nn2)
              call get_win_min(qb2,winmin_qb2)
-!             do nn1=1,nntot
-!                qb1=nnlist(ik,nn1)
              do ipol=1,3
                 !
                 ! Read from .uHu file the matrices <u_q|H_q|u_{q+b2}> 
@@ -1703,15 +1684,6 @@ contains
                         ((Ho_q_qb2(n,m,ipol),n=1,num_bands),m=1,num_bands)
                 ! pw2wannier90 is coded a bit strangely, so here we take the transpose
                 Ho_q_qb2(:,:,ipol)=transpose(Ho_q_qb2(:,:,ipol))
-                ! old code here
-                !do m=1,num_bands
-                !   do n=1,num_bands
-                !      read(uHu_in,err=106,end=106) Ho_qb1_q_qb2(m,n)
-                !   end do
-                !end do
-                !
-                ! Transform to projected subspace, Wannier gauge
-                !
              enddo
 
              H_q_qb2(:,:)=cmplx_0
@@ -1741,16 +1713,6 @@ contains
 
        close(sIu_in)
       
-       
-!       open(unit=sIu_in, file=trim(seedname)//".sIu.dbg",form='formatted')
-!       do ik=1,num_kpts
-!          do m=1,num_wann
-!             do n=1,num_wann
-!                WRITE(sIu_in,'(2ES20.10)') SAA_q(n,m,ik,1,3)
-!             enddo
-!          enddo
-!       enddo
-!       close(sIu_in)
        do b=1,3
           do a=1,3
              call fourier_q_to_R(SAA_q(:,:,:,a,b),SAA_R(:,:,:,a,b))
