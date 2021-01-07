@@ -102,7 +102,7 @@ contains
       kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
       scissors_shift, num_valence_bands, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift, &
-      shc_ryoo
+      shc_method
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R, get_SAA_R, get_SBB_R
 
@@ -246,7 +246,7 @@ contains
       call get_HH_R
       call get_AA_R
       call get_SS_R
-      if(.not.shc_ryoo) then !if Qiao
+      if(index(shc_method, 'qiao') > 0) then
         call get_SHC_R
       else
         call get_SAA_R
@@ -300,11 +300,10 @@ contains
 
       if (eval_shc) then
         write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
-        if (shc_ryoo) then
-          write (stdout, '(/,3x,a)') '  Ryoo''s SHC (Phys.Rev.B 99.235113)'
-        else
+        if (index(shc_method, 'qiao') > 0) then
           write (stdout, '(/,3x,a)') '  Qiao''s SHC (Phys.Rev.B 98.214402)'
-          write (stdout, '(/,3x,a)') '  shc_ryoo=.true. to calculate Ryoo''s SHC (Phys.Rev.B 99.235113)'
+        else
+          write (stdout, '(/,3x,a)') '  Ryoo''s SHC (Phys.Rev.B 99.235113)'
         endif
         if (shc_freq_scan) then
           write (stdout, '(/,3x,a)') '  Frequency scan'
@@ -1970,7 +1969,7 @@ contains
 
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
-      use w90_parameters, only: num_wann, shc_alpha, shc_gamma, shc_ryoo
+      use w90_parameters, only: num_wann, shc_alpha, shc_gamma, shc_method
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
         pw90common_fourier_R_to_k_vec
       use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R            ,HH_R,SAA_R,SBB_R
@@ -2016,7 +2015,7 @@ contains
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
-    if(.not.shc_ryoo) then !if Qiao
+    if(index(shc_method,'qiao') > 0) then !if Qiao
       !=========== K_k ===========
       ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
       ! QZYZ18 Eq.(37)

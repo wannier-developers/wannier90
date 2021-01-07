@@ -221,7 +221,7 @@ module w90_parameters
   logical, public, save :: shc_bandshift
   integer, public, save :: shc_bandshift_firstband
   real(kind=dp), public, save :: shc_bandshift_energyshift
-  logical, public, save :: shc_ryoo
+  character(len=120), public, save :: shc_method
 
   logical, public, save :: gyrotropic
   character(len=120), public, save :: gyrotropic_task
@@ -1330,8 +1330,13 @@ contains
     if (shc_bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
 
-    shc_ryoo=.false.
-    call param_get_keyword('shc_ryoo',found,l_value=shc_ryoo)
+    shc_method= ' '
+    call param_get_keyword('shc_method', found, c_value=shc_method)
+    if (index(berry_task, 'shc') > 0 .and. .not. found) call io_error &
+      ('Error: berry_task=shc and shc_method is not set')
+    if (index(berry_task, 'shc') > 0 .and. index(shc_method, 'qiao') == 0 &
+      .and. index(shc_method, 'ryoo') == 0) call io_error &
+      ('Error: value of shc_method not recognised in param_read')
 
     spin_moment = .false.
     call param_get_keyword('spin_moment', found, &
@@ -6209,7 +6214,7 @@ contains
     call comms_bcast(shc_bandshift, 1)
     call comms_bcast(shc_bandshift_firstband, 1)
     call comms_bcast(shc_bandshift_energyshift, 1)
-    call comms_bcast(shc_ryoo, 1)
+    call comms_bcast(shc_method, len(shc_method))
 
     call comms_bcast(devel_flag, len(devel_flag))
     call comms_bcast(spin_moment, 1)
