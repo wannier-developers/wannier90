@@ -231,6 +231,12 @@ program = POSTW90_MORBDAT_OK
 inputs_args = ('Fe.win', '')
 output = Fe-morb.dat
 
+# Test of KPATH Berry Curvature plus Orbital Magnetisation for bcc iron with use_ws_distance = true
+[testpostw90_fe_kpathmorbcurv_ws/]
+program = POSTW90_MORBDAT_OK
+inputs_args = ('Fe.win', '')
+output = Fe-morb.dat
+
 # Test of KPATH Berry Curvature  for bcc iron
 [testpostw90_fe_kpathcurv/]
 program = POSTW90_CURVDAT_OK
