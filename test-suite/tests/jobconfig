@@ -346,6 +346,12 @@ program = POSTW90_SC_OK
 inputs_args = ('gaas.win', '')
 output = gaas-sc_xyz.dat
 
+# Test of shift current for GaAs with use_ws_distance = true
+[testpostw90_gaas_sc_xyz_ws/]
+program = POSTW90_SC_OK
+inputs_args = ('gaas.win', '')
+output = gaas-sc_xyz.dat
+
 # Test of selective localization and constrained centres
 [testw90_example26]
 program = WANNIER90_SLWFC_WOUT_OK
