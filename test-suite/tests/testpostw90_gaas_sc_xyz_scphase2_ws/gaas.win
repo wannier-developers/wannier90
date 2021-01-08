@@ -1,16 +1,16 @@
 berry = true
 berry_task=sc   
-berry_kmesh = 15 15 15
+berry_kmesh = 11 11 11
 fermi_energy=7.7414
 use_ws_distance = true
 search_shells=12
 
 kubo_freq_min= 0.0
 kubo_freq_max= 10.0
-kubo_freq_step= 0.03
+kubo_freq_step= 0.05
 kubo_adpt_smr=true
 
-sc_eta=0.040
+sc_eta=0.10
 sc_phase_conv=2
 
 
