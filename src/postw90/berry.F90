@@ -498,7 +498,7 @@ contains
 
       end do !loop_xyz
 
-    else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
+    else! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
       kweight = db1*db2*db3
       kweight_adpt = kweight/berry_curv_adpt_kmesh**3
@@ -1907,6 +1907,8 @@ contains
         !this will calculate AHC
         !prod = -rfac*cmplx_i*AA(n, m, shc_alpha) * rfac*cmplx_i*AA(m, n, shc_beta)
         prod = js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
+        !prod = cmplx_i*rfac
+        !prod = js_k(n,m)*cmplx_i*rfac
         if (kubo_adpt_smr) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)

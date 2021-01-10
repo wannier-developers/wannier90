@@ -483,10 +483,15 @@ contains
       enddo !ncount
 
       close (mmn_in)
-
+      !do ik=1,num_kpts
+      !  write(*,*) ik, real(AA_q(1,:,ik,3),dp)
+      !enddo
       call fourier_q_to_R(AA_q(:, :, :, 1), AA_R(:, :, :, 1))
       call fourier_q_to_R(AA_q(:, :, :, 2), AA_R(:, :, :, 2))
       call fourier_q_to_R(AA_q(:, :, :, 3), AA_R(:, :, :, 3))
+      !do ir=1,nrpts
+      !  write(*,*) ir, real(AA_R(1,:,ir,1),dp)
+      !enddo
 
     endif !on_root
 
