@@ -250,9 +250,10 @@ definition of ${\bf M}^{\rm orb}({\bf k})$ used here differs by a
 factor of $-1/2$ from the one in Eq.~(97) and Fig.~2 of that work.
 
 \section{{\tt berry\_task=shc}: spin Hall conductivity}
+\label{sec:shc}
 
 The Kubo-Greenwood formula for the intrinsic spin Hall conductivity (SHC) of a crystal
-in the independent-particle approximation reads \cite{qiao-prb2018,guo-prl2008}
+in the independent-particle approximation reads \cite{qiao-prb2018,ryoo-prb2019,guo-prl2008}
 %
 \begin{equation}
 \label{eq:kubo_shc}
@@ -275,7 +276,11 @@ of energy.
 
 The velocity matrix element in the numerator is the same as   Eq.~(\ref{eq:velocity_mat}), 
 so the only unknown quantity is the spin current matrix $\langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle$. 
-We can use Wannier interpolation technique to efficiently calculate this matrix, for a full derivation please refer to Ref.~\cite{qiao-prb2018}. 
+We can use Wannier interpolation technique to efficiently calculate this matrix, and there are two derivation according to the degree of approximation. The method by Qiao is, using $1=\sum_{ l\in {\rm Wannier\,bands}}|l\bm{k}\rangle \langle l\bm{k}|$, calculate the matrix as
+\begin{equation}
+    \langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle = \frac{1}{2}\sum_{l}\{ \langle n\bm{k}| \hat{s}_{\gamma}|l\bm{k}\rangle, \langle l\bm{k}| \hat{v}_{\alpha}|m\bm{k}\rangle\}
+\end{equation}
+while the other method by Ryoo substitutes $1=\sum_{ l\in {\it ab-initio\,}{\rm Bloch\,bands}}|l\bm{k}\rangle \langle l\bm{k}|$ for the identity matrix. Qiao's method does not require further matrix elements evaluated by {\tt pw2wannier90}, but it assumes a stronger approximation since usually the number of Wannier bands is less than the number of Bloch bands. You can choose which method to evaluate this value with {\tt shc\_method} in the input file. For a full derivation please refer to Ref.~\cite{qiao-prb2018} or Ref.~\cite{ryoo-prb2019}.
 
 The Eq.~(\ref{eq:kubo_shc}) can be further separated into 
 band-projected Berry curvature-like term
@@ -322,11 +327,17 @@ $\eta$ contained in the Eq.~(\ref{eq:kubo_shc_berry}) can be chosen using the ke
 be employed by the keyword {\tt [kubo\_]adpt\_smr} 
 (see Examples 29 and 30 in the Tutorial). 
 
-Please cite the following paper~\cite{qiao-prb2018} when publishing SHC results obtained using this method:
+Please cite the following paper~\cite{qiao-prb2018} or ~\cite{ryoo-prb2019} when publishing SHC results obtained using this method:
 \begin{quote}
 	Junfeng Qiao, Jiaqi Zhou, Zhe Yuan, and Weisheng Zhao, \\
 	\emph{Calculation of intrinsic spin Hall conductivity by Wannier interpolation},\\
 	Phys. Rev. B. 98, 214402 (2018), DOI:10.1103/PhysRevB.98.214402.
+\end{quote}
+or
+\begin{quote}
+	Ji Hoon Ryoo, Cheol-hwan Park, and Ivo Souza, \\
+	\emph{Computation of intrinsic spin Hall conductivities from first principles using maximally localized Wannier functions},\\
+	Phys. Rev. B. 99, 235113 (2019), DOI:10.1103/PhysRevB.99.235113.
 \end{quote}
 
 \section{Needed matrix elements}
@@ -386,8 +397,26 @@ $${\tt
 	%\end{quote}
 }
 $$
- 
-
+If one uses Ryoo's method to calculate spin Hall conductivity, the further matrix elements are needed:
+%
+$$\langle u_{n{\bf k}}\vert
+\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}_1}\rangle, \langle u_{n{\bf k}}\vert
+\sigma_\gamma \vert u_{m{\bf k}+{\bf b}_1}\rangle,
+\gamma = x, y, z
+$$
+%
+and these are evaluated by adding to the input file {\tt
+seedname.pw2wan} the lines
+%
+$${\tt
+	write\_sHu = .true.
+}
+$$
+$$
+{\tt
+	write\_sIu = .true.
+}
+$$
 
 %A note on the implementation: the optical conductivity and orbital
 %magnetization are implemented in the {\tt berry} module in the manner

@@ -302,6 +302,7 @@ the optical frequency in the specified range\\
   {\sc sc\_phase\_conv} & I  & Convention for phase factor of Bloch states when computing shift current\\
   {\sc sc\_w\_thr} & R  & Frequency threshold for speeding up delta function integration when computing shift current\\
   {\sc shc\_freq\_scan} & L  & Calculate Fermi energy scan or frequency scan of spin Hall conductivity\\
+  {\sc shc\_method} & S  & How to obtain the spin current matrix elements for SHC\\
   {\sc shc\_alpha} & I  & The spin current direction of spin Hall conductivity\\
   {\sc shc\_beta} & I  & The direction of applied electrical field of spin Hall conductivity\\
   {\sc shc\_gamma} & I  & The spin direction of the spin current of spin Hall conductivity\\
@@ -1302,6 +1303,9 @@ Fermi energy scan (i.e. the dc SHC) of the spin Hall conductivity.
 
 The default value is \verb#false#, which 
 means dc SHC is calculated.
+
+\subsection[shc\_method]{\tt character(len=120) :: shc\_method}
+If it is {\tt qiao/ryoo}, the ac or dc SHC is calculated using Junfeng Qiao's/Jihoon Ryoo's method. To calculate the Kubo formula, the spin current matrix elements are required, and the two methods differ in the degree of approximation. For details, see the section \ref{sec:shc}.
 
 \subsection[shc\_alpha]{\tt integer :: shc\_alpha}
 The $\alpha$ index of spin Hall conductivity $\sigma_{\alpha\beta}^{\text{spin}\gamma}$, i.e. the direction of spin current. Possible values are {\tt 1}, {\tt 2} and {\tt 3}, representing the {\tt x}, {\tt y} and {\tt z} directions respectively. 
