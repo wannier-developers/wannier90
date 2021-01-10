@@ -25,7 +25,6 @@ module w90_berry
   !! *  CTVR06 = PRB 74, 024408 (2006)  (  "          "       )
   !! *  IATS18 = arXiv:1804.04030 (2018) (nonlinear shift current)
   !! *  QZYZ18 = PRB 98, 214402 (2018)  (spin Hall conductivity - SHC)
-  !! *  RPS19  = PRB 99, 235113 (2019)  (spin Hall conductivity - SHC)
   ! ---------------------------------------------------------------
   !
   ! * Undocumented, works for limited purposes only:
@@ -86,7 +85,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, elem_charge_SI, hbar_SI, &
       eV_au, bohr, pi, eV_seconds
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, comms_array_split
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_stopwatch
     use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
@@ -102,9 +101,10 @@ contains
       kubo_adpt_smr_max, kubo_smr_fixed_en_width, &
       scissors_shift, num_valence_bands, &
       shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift, &
-      shc_method
+      tetrahedron_method, tetrahedron_cutoff, shc_ryoo
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R, get_SAA_R, get_SBB_R
+    use w90_utility, only: utility_tet_Fermiknife
 
     real(kind=dp), allocatable    :: adkpt(:, :)
 
@@ -146,6 +146,17 @@ contains
     ! Spin Hall conductivity
     real(kind=dp), allocatable    :: shc_fermi(:), shc_k_fermi(:)
     complex(kind=dp), allocatable :: shc_freq(:), shc_k_freq(:)
+    ! Tetrahedron method
+    real(kind=dp), allocatable :: imjv(:,:,:,:,:)
+    real(kind=dp), allocatable :: eig(:,:,:,:)
+    real(kind=dp), allocatable :: imjv_tet(:,:,:)
+    real(kind=dp), allocatable :: eig_tet(:,:)
+    integer, allocatable :: counts(:)
+    integer, allocatable :: displs(:)
+    real(kind=dp)     :: kptc(3,8),kptv(4,3),kptc_aux(3,8),kptv_aux(4,3),xtet,&
+                         Ftet(4),E1tet(4),E2tet(4),ttet(3,3),omega,eps_0
+    complex(kind=dp)  :: shc_k_tet
+    integer           :: itet,m,l,tet_array(6,4),jfreq
     ! for fermi energy scan, adaptive kmesh
     real(kind=dp), allocatable    :: shc_k_fermi_dummy(:)
 
@@ -246,7 +257,7 @@ contains
       call get_HH_R
       call get_AA_R
       call get_SS_R
-      if (index(shc_method, 'qiao') > 0) then
+      if(.not.shc_ryoo) then !if Qiao
         call get_SHC_R
       else
         call get_SAA_R
@@ -269,6 +280,25 @@ contains
         adpt_counter_list = 0
       endif
 
+      if(tetrahedron_method) then
+        allocate(imjv(num_wann,num_wann,berry_kmesh(1)+1,berry_kmesh(2)+1,2))
+        allocate(eig(num_wann,berry_kmesh(1)+1,berry_kmesh(2)+1,2))
+        allocate(imjv_tet(num_wann,num_wann,8))
+        allocate(eig_tet(num_wann,8))
+        allocate(counts(0:num_nodes-1))
+        allocate(displs(0:num_nodes-1))
+        call comms_array_split(berry_kmesh(3),counts,displs)
+                                    !       z                     ! In line 256
+        omega=0.0_dp                !         7----------8        ! tetrahedron #1: 1-5-6-8
+        tet_array(1,:)=(/1,5,6,8/)  !        /|         /| layer 2! tetrahedron #2: 1-7-5-8
+        tet_array(2,:)=(/1,7,5,8/)  !       5----------6 |        ! tetrahedron #3: 1-3-7-8
+        tet_array(3,:)=(/1,3,7,8/)  !       | | y      | |        ! tetrahedron #4: 1-4-3-8
+        tet_array(4,:)=(/1,4,3,8/)  !       | 3--------|-4        ! tetrahedron #5: 1-2-4-8
+        tet_array(5,:)=(/1,2,4,8/)  !       |/         |/  layer 1! tetrahedron #6: 1-6-2-8
+        tet_array(6,:)=(/1,6,2,8/)  !       1----------2 x        !
+                                    ! 1-8 : main diagonal         ! eight vertices 1-8 that form six tetrahedra in a mesh
+                                    !=============================!
+      endif
     endif
 
     if (on_root) then
@@ -300,11 +330,6 @@ contains
 
       if (eval_shc) then
         write (stdout, '(/,3x,a)') '* Spin Hall Conductivity'
-        if (index(shc_method, 'qiao') > 0) then
-          write (stdout, '(/,3x,a)') '  Qiao''s SHC (Phys.Rev.B 98.214402)'
-        else
-          write (stdout, '(/,3x,a)') '  Ryoo''s SHC (Phys.Rev.B 99.235113)'
-        endif
         if (shc_freq_scan) then
           write (stdout, '(/,3x,a)') '  Frequency scan'
         else
@@ -498,7 +523,7 @@ contains
 
       end do !loop_xyz
 
-    else ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
+    else if (.not. tetrahedron_method) then! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
       kweight = db1*db2*db3
       kweight_adpt = kweight/berry_curv_adpt_kmesh**3
@@ -629,6 +654,116 @@ contains
         end if
 
       end do !loop_xyz
+    else if (eval_shc .and. tetrahedron_method) then
+    !!eventually extended to kubo
+      do loop_z=displs(my_node_id),displs(my_node_id)+counts(my_node_id)-1
+      write(*,*) "node", my_node_id, "loop_z", loop_z
+      write(stdout,*) "node", my_node_id, "loop_z", loop_z
+      flush(stdout)
+        ! getting values, loop_x, loop_y, for 2 layers
+        ! summation start
+        ! ifreq, n, m
+        ! 6 tetrahedra
+        ! summation end
+        ! getting values of imjv and eig
+        do loop_x=0,berry_kmesh(1)
+          do loop_y=0,berry_kmesh(2)
+            kpt(1)=loop_x*db1; kpt(2)=loop_y*db2; kpt(3)=loop_z*db3
+            if(loop_x==berry_kmesh(1)) kpt(1)=0.0_dp
+            if(loop_y==berry_kmesh(2)) kpt(2)=0.0_dp
+            !lower layer
+            if(loop_z==displs(my_node_id)) then
+              call berry_get_shc_tetrahedron(kpt,&
+              imjv(:,:,loop_x+1,loop_y+1,1),eig(:,loop_x+1,loop_y+1,1))
+            else
+              imjv(:,:,loop_x+1,loop_y+1,1) =imjv(:,:,loop_x+1,loop_y+1,2)
+              eig(:,loop_x+1,loop_y+1,1)       =eig(:,loop_x+1,loop_y+1,2)
+            endif
+            !upper layer
+            kpt(3)=(loop_z+1)*db3
+            if(loop_z==berry_kmesh(3)-1) kpt(3)=0.0_dp
+            call berry_get_shc_tetrahedron(kpt,&
+            imjv(:,:,loop_x+1,loop_y+1,2),eig(:,loop_x+1,loop_y+1,2))
+          enddo
+        enddo
+        !summation
+        do loop_x=0,berry_kmesh(1)-1
+          do loop_y=0,berry_kmesh(2)-1
+          ! setting 8 vertices
+            do i=0,1 !4*l+2*k+i+1 = 1,2,3,...,8, eight vertices of a mesh
+              do k=0,1
+                do l=0,1
+                  kptc(1,4*l+2*k+i+1)=(loop_x+1.0_dp*i)*db1
+                  kptc(2,4*l+2*k+i+1)=(loop_y+1.0_dp*k)*db2
+                  kptc(3,4*l+2*k+i+1)=(loop_y+1.0_dp*l)*db2
+                  imjv_tet(:,:,4*l+2*k+i+1)=imjv(:,:,loop_x+i+1,loop_y+k+1,l+1)
+                  eig_tet(:,4*l+2*k+i+1)=eig(:,loop_x+i+1,loop_y+k+1,l+1)
+                enddo
+              enddo
+            enddo
+            kptc_aux(:,:)=kptc(:,:)
+            if(loop_x == berry_kmesh(1)-1) then
+               kptc(1,2)=0.0_dp;  kptc(1,4)=0.0_dp; kptc(1,6)=0.0_dp;  kptc(1,8)=0.0_dp
+            endif
+            if(loop_y == berry_kmesh(2)-1) then
+               kptc(2,3)=0.0_dp;  kptc(2,4)=0.0_dp; kptc(2,7)=0.0_dp;  kptc(2,8)=0.0_dp
+            endif
+            if(loop_z == berry_kmesh(3)-1) then
+               kptc(3,5)=0.0_dp;  kptc(3,7)=0.0_dp; kptc(3,6)=0.0_dp;  kptc(3,8)=0.0_dp
+            endif
+          ! 6 tetrahedra
+            do n=1,num_wann
+              do m=1,num_wann
+                if(n==m) cycle
+                do itet=1,6
+                  do i=1,4 ! four vertices
+                     kptv(i,:)=kptc(:,tet_array(itet,i))
+                     kptv_aux(i,:)=kptc_aux(:,tet_array(itet,i))
+                     Ftet(i)=imjv_tet(n,m,tet_array(itet,i))
+                     E1tet(i)=eig_tet(n,tet_array(itet,i))
+                     E2tet(i)=eig_tet(m,tet_array(itet,i))
+                  enddo
+                  do i=1,3 ! xyz
+                     do k=1,3 ! three vectors
+                        ttet(i,k) = kptv_aux(k+1,i) - kptv_aux(1,i)
+                     enddo
+                  enddo
+                  if(.not.shc_freq_scan) then
+                    do ifreq=1,nfermi
+                      shc_k_tet=&
+                       utility_tet_Fermiknife(Ftet,E1tet,E2tet,ttet,&
+                            0.0_dp,fermi_energy_list(ifreq),3,tetrahedron_cutoff)
+                    enddo
+                      shc_fermi(ifreq) = shc_fermi(ifreq) + real(shc_k_tet,dp)
+                  else
+                    do ifreq=1,kubo_nfreq
+                      omega=real(kubo_freq_list(ifreq),dp)
+                      if(omega==0.0) then
+                        shc_k_tet=&
+                         utility_tet_Fermiknife(Ftet,E1tet,E2tet,ttet,&
+                              0.0_dp,fermi_energy_list(1),3,tetrahedron_cutoff)
+                      else
+                        shc_k_tet=&
+                             (utility_tet_Fermiknife(Ftet,E1tet,E2tet,ttet,&
+                              -omega,fermi_energy_list(1),1,tetrahedron_cutoff)&
+                             -utility_tet_Fermiknife(Ftet,E1tet,E2tet,ttet,&
+                              omega,fermi_energy_list(1),1,tetrahedron_cutoff))&
+                              /(2.0_dp*omega)+(cmplx_i*pi*&
+                              (utility_tet_Fermiknife(Ftet,E1tet,E2tet,ttet,&
+                              -omega,fermi_energy_list(1),2,tetrahedron_cutoff)&
+                              +utility_tet_Fermiknife(Ftet,E1tet,E2tet,ttet,&
+                               omega,fermi_energy_list(1),2,tetrahedron_cutoff)))&
+                             /(2.0_dp*omega)
+                      endif
+                        shc_freq(ifreq) = shc_freq(ifreq) + shc_k_tet
+                    enddo ! ifreq
+                  endif
+                enddo !itet
+              enddo ! m
+            enddo ! n
+          enddo ! loop_y for summation
+        enddo ! loop_x for summation
+      enddo ! loop_z
 
     end if !wanint_kpoint_file
 
@@ -733,7 +868,10 @@ contains
             'Interpolation grid: ', berry_kmesh(1:3)
         endif
         write (stdout, '(a)') ''
-        if (kubo_adpt_smr) then
+        if (tetrahedron_method) then
+          write (stdout, '(1x,a)') 'Using tetrahedron method'
+          write (stdout, '(7x,a,f8.3)') 'tetrahedron cutoff', tetrahedron_cutoff
+        else if (kubo_adpt_smr) then
           write (stdout, '(1x,a)') 'Using adaptive smearing'
           write (stdout, '(7x,a,f8.3)') 'adaptive smearing prefactor ', kubo_adpt_smr_fac
           write (stdout, '(7x,a,f8.3,a)') 'adaptive smearing max width ', kubo_adpt_smr_max, ' eV'
@@ -1876,7 +2014,7 @@ contains
     enddo
     AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
 
-    call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), delHH(:, :, shc_alpha), &
+    call berry_get_js_k(kpt, eig, del_eig(:, shc_alpha), delHH(:,:,shc_alpha),&
                         D_h(:, :, shc_alpha), UU, js_k)
 
     ! adpt_smr only works with berry_kmesh, so do not use
@@ -1892,6 +2030,7 @@ contains
         call pw90common_get_occ(eig, occ_fermi(:, i), fermi_energy_list(i))
       end do
     end if
+    
     do n = 1, num_wann
       ! get Omega_{n,alpha beta}^{gamma}
       if (lfreq) then
@@ -1907,6 +2046,8 @@ contains
         !this will calculate AHC
         !prod = -rfac*cmplx_i*AA(n, m, shc_alpha) * rfac*cmplx_i*AA(m, n, shc_beta)
         prod = js_k(n, m)*cmplx_i*rfac*AA(m, n, shc_beta)
+        !prod = cmplx_i*rfac
+        !prod = js_k(n,m)*cmplx_i*rfac
         if (kubo_adpt_smr) then
           ! Eq.(35) YWVS07
           vdum(:) = del_eig(m, :) - del_eig(n, :)
@@ -1966,16 +2107,16 @@ contains
 
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
-      use w90_parameters, only: num_wann, shc_alpha, shc_gamma, shc_method
+      use w90_parameters, only: num_wann, shc_alpha, shc_gamma, shc_ryoo
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
         pw90common_fourier_R_to_k_vec
-      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R, HH_R, SAA_R, SBB_R
+      use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R            ,HH_R,SAA_R,SBB_R
 
       ! args
       real(kind=dp), intent(in)  :: kpt(3)
       real(kind=dp), dimension(:), intent(in)  :: eig
       real(kind=dp), dimension(:), intent(in)  :: del_alpha_eig
-      complex(kind=dp), dimension(:, :), intent(in)  :: delHH_alpha
+      complex(kind=dp), dimension(:, :),intent(in)  :: delHH_alpha
       complex(kind=dp), dimension(:, :), intent(in)  :: D_alpha_h
       complex(kind=dp), dimension(:, :), intent(in)  :: UU
       complex(kind=dp), dimension(:, :), intent(out) :: js_k
@@ -1996,11 +2137,11 @@ contains
       complex(kind=dp)    :: del_eig_mat(num_wann, num_wann)
 
       !ryoo
-      complex(kind=dp)    :: SAA(num_wann, num_wann, 3, 3)
-      complex(kind=dp)    :: SBB(num_wann, num_wann, 3, 3)
+      complex(kind=dp)    :: SAA(num_wann, num_wann, 3,3)
+      complex(kind=dp)    :: SBB(num_wann, num_wann, 3,3)
       complex(kind=dp)    :: VV0(num_wann, num_wann)
       complex(kind=dp)    :: spinvel0(num_wann, num_wann)
-      integer :: i, j
+      integer :: i,j
 
       !===========
       js_k = cmplx_0
@@ -2012,86 +2153,211 @@ contains
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
-      if (index(shc_method, 'qiao') > 0) then !if Qiao
-        !=========== K_k ===========
-        ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
-        ! QZYZ18 Eq.(37)
-        call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR_w)
-        ! QZYZ18 Eq.(31)
-        SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, shc_alpha), UU, num_wann)
-        K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
+    if(.not.shc_ryoo) then !if Qiao
+      !=========== K_k ===========
+      ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
+      ! QZYZ18 Eq.(37)
+      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, shc_gamma, :), OO_true=SR_w)
+      ! QZYZ18 Eq.(31)
+      SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, shc_alpha), UU, num_wann)
+      K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
 
-        !=========== L_k ===========
-        ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
-        ! QZYZ18 Eq.(38)
-        call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR_w)
-        ! QZYZ18 Eq.(32)
-        SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, shc_alpha), UU, num_wann)
-        ! QZYZ18 Eq.(39)
-        call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
-        ! QZYZ18 Eq.(32)
-        SH_k = utility_rotate(SH_w(:, :, shc_gamma), UU, num_wann)
-        L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
+      !=========== L_k ===========
+      ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
+      ! QZYZ18 Eq.(38)
+      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, shc_gamma, :), OO_true=SHR_w)
+      ! QZYZ18 Eq.(32)
+      SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, shc_alpha), UU, num_wann)
+      ! QZYZ18 Eq.(39)
+      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
+      ! QZYZ18 Eq.(32)
+      SH_k = utility_rotate(SH_w(:, :, shc_gamma), UU, num_wann)
+      L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)
 
-        !=========== B_k ===========
-        ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ18 Eq.(24)
-        B_k = cmplx_0
-        do i = 1, num_wann
-          eig_mat(i, :) = eig(:)
-          del_eig_mat(i, :) = del_alpha_eig(:)
-        end do
-        ! note * is not matmul
-        B_k = del_eig_mat*S_k + eig_mat*K_k - L_k
+      !=========== B_k ===========
+      ! < \psi_nk | sigma_gamma v_alpha | \psi_mk >, QZYZ18 Eq.(24)
+      B_k = cmplx_0
+      do i = 1, num_wann
+        eig_mat(i, :) = eig(:)
+        del_eig_mat(i, :) = del_alpha_eig(:)
+      end do
+      ! note * is not matmul
+      B_k = del_eig_mat*S_k + eig_mat*K_k - L_k
 
-        !=========== js_k ===========
-        ! QZYZ18 Eq.(23)
-        ! note the S in SR_R,SHR_R,SH_R of get_SHC_R is sigma,
-        ! to get spin current, we need to multiply it by hbar/2,
-        ! also we need to divide it by hbar to recover the velocity
-        ! operator, these are done outside of this subroutine
-        js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
+      !=========== js_k ===========
+      ! QZYZ18 Eq.(23)
+      ! note the S in SR_R,SHR_R,SH_R of get_SHC_R is sigma,
+      ! to get spin current, we need to multiply it by hbar/2,
+      ! also we need to divide it by hbar to recover the velocity
+      ! operator, these are done outside of this subroutine
+      js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
 
-      else !if Ryoo (PRB RPS19 Eq.(21))
-        do j = shc_alpha, shc_alpha
-          do i = shc_gamma, shc_gamma !RPS19 Eqs.(37)-(40)
-            call pw90common_fourier_R_to_k_new(kpt, SAA_R(:, :, :, i, j), OO=SAA(:, :, i, j))
-            call pw90common_fourier_R_to_k_new(kpt, SBB_R(:, :, :, i, j), OO=SBB(:, :, i, j))
+    else !if Ryoo (PRB RPS19 Eq.(21))
+      do j=shc_alpha,shc_alpha
+         do i=shc_gamma,shc_gamma !RPS19 Eqs.(37)-(40)
+            call pw90common_fourier_R_to_k_new(kpt,SAA_R(:,:,:,i,j),OO=SAA(:,:,i,j))
+            call pw90common_fourier_R_to_k_new(kpt,SBB_R(:,:,:,i,j),OO=SBB(:,:,i,j))
           end do
-        end do
+      end do
 
-        call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
-                                           OO_dx=delHH(:, :, 1), &
-                                           OO_dy=delHH(:, :, 2), &
-                                           OO_dz=delHH(:, :, 3))
+      call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+                                       OO_dx=delHH(:,:,1),&
+                                       OO_dy=delHH(:,:,2),&
+                                       OO_dz=delHH(:,:,3))
 
-        VV0(:, :) = utility_rotate(delHH_alpha(:, :), UU, num_wann)
-        !if(.true.) write(*,*) "kpt",kpt,"SA_K",real(SAA(1,:,1,3),dp)
-        do i = 1, 3
-          do j = 1, 3
-            SAA(:, :, i, j) = utility_rotate(SAA(:, :, i, j), UU, num_wann)
-            SBB(:, :, i, j) = utility_rotate(SBB(:, :, i, j), UU, num_wann)
-          enddo
+    VV0(:,:)=utility_rotate(delHH_alpha(:,:),UU,num_wann)
+    !if(.true.) write(*,*) "kpt",kpt,"SA_K",real(SAA(1,:,1,3),dp)
+      do i=1,3
+         do j=1,3
+           SAA(:,:,i,j)=utility_rotate(SAA(:,:,i,j),UU,num_wann)
+           SBB(:,:,i,j)=utility_rotate(SBB(:,:,i,j),UU,num_wann)
         enddo
+      enddo
 
-        spinVel0(:, :) = matmul(VV0(:, :), S_k(:, :)) + &
-                         matmul(S_k(:, :), VV0(:, :))
-
-        do n = 1, num_wann
-          do m = 1, num_wann !RPS19 Eq.(21) and Eq.(26)
-            js_k(n, m) = spinVel0(n, m) &
-                         - cmplx_i*(eig(m)*SAA(n, m, shc_gamma, shc_alpha) - SBB(n, m, shc_gamma, shc_alpha))
-            js_k(n, m) = js_k(n, m) &
-                         + cmplx_i*(eig(n)*conjg(SAA(m, n, shc_gamma, shc_alpha)) - conjg(SBB(m, n, shc_gamma, shc_alpha)))
-          enddo
+      spinVel0(:,:) = matmul(VV0(:,:), S_k(:,:)) + &
+           matmul(S_k(:,:), VV0(:,:))
+      
+      do n=1,num_wann
+        do m=1,num_wann !RPS19 Eq.(21) and Eq.(26)
+          js_k(n,m) = spinVel0(n,m) &
+            - cmplx_i*(eig(m)*SAA(n,m,shc_gamma,shc_alpha) - SBB(n,m,shc_gamma,shc_alpha))
+          js_k(n,m) = js_k(n,m) &
+            + cmplx_i*(eig(n)*conjg(SAA(m,n,shc_gamma,shc_alpha)) - conjg(SBB(m,n,shc_gamma,shc_alpha)))
         enddo
-        js_k = js_k/2.0_dp
-        !js_k=1.0_dp
-      endif
+      enddo
+      js_k=js_k/2.0_dp
+      !js_k=1.0_dp
+    endif
       !-------------------------------------------------------------------
 
     end subroutine berry_get_js_k
 
   end subroutine berry_get_shc_klist
+
+  subroutine berry_get_shc_tetrahedron(kpt,imjv,eig_out) !input_ialpha=5, input_j=2 for j^{z}_{x} v_{y}
+  !====================================================================!
+  ! returns the values used for calculating the SHC Kubo formula       !
+  ! imjv = m [j^{z}_{x,nmk} * v_{y,nmk}]                               !
+  ! eig_out = energy eigenvalue                                        !
+  !====================================================================!
+    use w90_constants, only      : dp,cmplx_0,cmplx_i,pi
+    use w90_utility, only        : utility_diagonalize,utility_rotate
+    use w90_parameters, only     : num_wann, shc_ryoo, shc_alpha, shc_beta, shc_gamma
+    use w90_postw90_common, only : pw90common_fourier_R_to_k_new,pw90common_fourier_R_to_k_vec,rpt_origin
+    use w90_wan_ham, only        : wham_get_eig_deleig
+    use w90_get_oper, only       : HH_R,AA_R,SS_R,SR_R,SHR_R,SAA_R,SBB_R
+    
+    real(kind=dp),                                  intent(in)  :: kpt(3)
+    real(kind=dp), dimension(:,:),                  intent(out) :: imjv
+    real(kind=dp), dimension(:),                    intent(out) :: eig_out
+
+    complex(kind=dp), allocatable :: HH(:,:)
+    complex(kind=dp), allocatable :: delHH(:,:,:)
+    complex(kind=dp), allocatable :: UU(:,:)
+    complex(kind=dp), allocatable :: VV0(:,:,:)
+    complex(kind=dp), allocatable :: VV(:,:,:)
+    complex(kind=dp), allocatable :: AA(:,:,:)
+    complex(kind=dp), allocatable :: SS(:,:,:)
+    complex(kind=dp), allocatable :: spinVel0(:,:,:,:), spinVel(:,:,:,:)
+
+    complex(kind=dp), allocatable :: SAA(:,:,:,:)
+    complex(kind=dp), allocatable :: SBB(:,:,:,:)
+
+    integer          :: i,j,n,m,ifreq
+    real(kind=dp)    :: eig(num_wann),occ(num_wann)
+
+    allocate(HH(num_wann,num_wann))
+    allocate(delHH(num_wann,num_wann,3))
+    allocate(UU(num_wann,num_wann))
+    allocate(VV(num_wann,num_wann,3))
+    allocate(VV0(num_wann,num_wann,3))
+    allocate(AA(num_wann,num_wann,3))
+    allocate(SS(num_wann,num_wann,3))
+    allocate(spinVel0(num_wann,num_wann,3,3))
+    allocate(spinVel(num_wann,num_wann,3,3))
+    allocate(SAA(num_wann,num_wann,3,3))
+    allocate(SBB(num_wann,num_wann,3,3))
+
+    call pw90common_fourier_R_to_k_new(kpt,HH_R,OO=HH,&
+                            OO_dx=delHH(:,:,1),&
+                            OO_dy=delHH(:,:,2),&
+                            OO_dz=delHH(:,:,3))
+    call utility_diagonalize(HH,num_wann,eig,UU)
+
+    call pw90common_fourier_R_to_k_vec(kpt,AA_R,OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(kpt,SS_R,OO_true=SS)
+
+    do j=shc_alpha,shc_alpha
+       do i=shc_gamma,shc_gamma
+          if(shc_ryoo) then
+            call pw90common_fourier_R_to_k_new(kpt,SAA_R(:,:,:,i,j),OO=SAA(:,:,i,j))
+            call pw90common_fourier_R_to_k_new(kpt,SBB_R(:,:,:,i,j),OO=SBB(:,:,i,j))
+          else
+            call pw90common_fourier_R_to_k_new(kpt,SR_R(:,:,:,i,j),OO=SAA(:,:,i,j))
+            call pw90common_fourier_R_to_k_new(kpt,SHR_R(:,:,:,i,j),OO=SBB(:,:,i,j))
+          endif
+        enddo
+    enddo
+
+    do i=1,3
+       AA(:,:,i)=utility_rotate(AA(:,:,i),UU,num_wann)
+       SS(:,:,i)=utility_rotate(SS(:,:,i),UU,num_wann)
+       VV0(:,:,i)=utility_rotate(delHH(:,:,i),UU,num_wann)
+       do j=1,3
+         SAA(:,:,i,j)=utility_rotate(SAA(:,:,i,j),UU,num_wann)
+         SBB(:,:,i,j)=utility_rotate(SBB(:,:,i,j),UU,num_wann)
+      enddo
+    enddo
+
+    !velocity
+    do i=shc_beta,shc_beta
+       do m=1,num_wann
+          do n=1,num_wann
+             VV(n,m,i) = VV0(n,m,i) - cmplx_i*AA(n,m,i)*(eig(m)-eig(n))
+          enddo
+       enddo
+    enddo
+
+    !spin velocity
+    spinVel0 = 0.D0
+    spinVel = 0.D0
+
+    i = shc_alpha
+    j = shc_gamma
+    spinVel0(:,:,j,i) = matmul(VV0(:,:,i), SS(:,:,j)) + &
+      matmul(SS(:,:,j), VV0(:,:,i))
+    do m=1,num_wann
+      do n=1,num_wann
+        spinVel(n,m,j,i) = spinVel0(n,m,j,i) &
+                     - cmplx_i*(eig(m)*SAA(n,m,j,i) - SBB(n,m,j,i))
+        spinVel(n,m,j,i) = spinVel(n,m,j,i) &
+                     + cmplx_i*(eig(n)*conjg(SAA(m,n,j,i)) - conjg(SBB(m,n,j,i)))
+      enddo
+    enddo
+
+    spinVel = spinVel/2.0_dp
+
+    !output
+    do n=1, num_wann
+       do m=1, num_wann
+          imjv(n,m) = aimag(spinVel(n,m,j,i)*VV(m,n,shc_beta))
+       enddo
+    enddo
+    eig_out=eig
+
+    deallocate(HH)
+    deallocate(delHH)
+    deallocate(UU)
+    deallocate(VV)
+    deallocate(VV0)
+    deallocate(AA)
+    deallocate(SS)
+    deallocate(spinVel0)
+    deallocate(spinVel)
+    deallocate(SAA)
+    deallocate(SBB)
+
+  end subroutine berry_get_shc_tetrahedron
 
   subroutine berry_print_progress(loop_k, start_k, end_k, step_k)
     !============================================================!

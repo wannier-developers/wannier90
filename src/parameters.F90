@@ -1330,12 +1330,12 @@ contains
     if (shc_bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
 
-    shc_method= ' '
+    shc_method = ' '
     call param_get_keyword('shc_method', found, c_value=shc_method)
     if (index(berry_task, 'shc') > 0 .and. .not. found) call io_error &
       ('Error: berry_task=shc and shc_method is not set')
     if (index(berry_task, 'shc') > 0 .and. index(shc_method, 'qiao') == 0 &
-      .and. index(shc_method, 'ryoo') == 0) call io_error &
+        .and. index(shc_method, 'ryoo') == 0) call io_error &
       ('Error: value of shc_method not recognised in param_read')
 
     spin_moment = .false.
