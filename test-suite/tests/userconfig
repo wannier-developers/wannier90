@@ -203,6 +203,13 @@ exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_kslice_dat.parse
 tolerance = ( (1.0e-1, None, 'shc'))
 
+[POSTW90_SHCRYOO_OK]
+exe = ../../postw90.x
+extract_fn = tools parsers.parse_shc_dat.parse
+tolerance = ( (1.0e-6, 5.0e-6, 'frequency'),
+              (1.0e-1, 1.0e-1, 'shc_re'),
+              (1.0e-1, 1.0e-1, 'shc_im'))
+
 [POSTW90_BOLTZWANN_ELCOND_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_boltzwann.parse_elcond

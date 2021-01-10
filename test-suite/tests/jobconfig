@@ -376,6 +376,12 @@ program = POSTW90_SHCKSLICEDAT_OK
 inputs_args = ('Pt.win', '')
 output = Pt-kslice-shc.dat
 
+# Test of Ryoo's methods of SHC for fcc platinum
+[testpostw90_pt_shc_ryoo/]
+program = POSTW90_SHCRYOO_OK
+inputs_args = ('Pt.win', '')
+output = Pt-shc-freqscan.dat
+
 # Test of symmetry adapted WFs with disentnanglement
 [testw90_disentanglement_sawfs]
 program = WANNIER90_DISENTANGLEMENT_SAWFS
