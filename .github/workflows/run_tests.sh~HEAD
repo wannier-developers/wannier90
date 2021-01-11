@@ -2,8 +2,24 @@
 
 set -e
 
-## Set here, if needed, the location of the executables
-TESTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+TESTDIR=$(pwd)/test-suite/
+echo $TESTDIR
+cd "$TESTDIR"
+
+echo "****************************************"
+echo "* RUNNING SERIAL TEST FOR LIBRARY MODE *"
+echo "****************************************"
+cd library-mode-test
+# Create the binary for testing
+make
+# remove the output file from old runs, if there
+rm -f results.dat
+# Run it - if it crashes it should give a non-zero error
+./test_library_serial.x
+# Check the output values
+./compare_results.py
+
+## Going back to the test dir
 cd "$TESTDIR"
 
 echo "****************************************"
@@ -26,7 +42,7 @@ cd "$TESTDIR"
 echo "************************"
 echo "* RUNNING SERIAL TESTS *"
 echo "************************"
-./run_tests --category=default 
+./run_tests --category=default
 
 if [ "$W90BINARYPARALLEL" == "true" ]
 then
