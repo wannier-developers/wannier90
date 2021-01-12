@@ -280,7 +280,7 @@ We can use Wannier interpolation technique to efficiently calculate this matrix,
 \begin{equation}
     \langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle = \frac{1}{2}\sum_{l}\{ \langle n\bm{k}| \hat{s}_{\gamma}|l\bm{k}\rangle, \langle l\bm{k}| \hat{v}_{\alpha}|m\bm{k}\rangle\}
 \end{equation}
-while the other method by Ryoo substitutes $1=\sum_{ l\in {\it ab-initio\,}{\rm Bloch\,bands}}|l\bm{k}\rangle \langle l\bm{k}|$ for the identity matrix. Qiao's method does not require further matrix elements evaluated by {\tt pw2wannier90}, but it assumes a stronger approximation since usually the number of Wannier bands is less than the number of Bloch bands. You can choose which method to evaluate this value with {\tt shc\_method} in the input file. For a full derivation please refer to Ref.~\cite{qiao-prb2018} or Ref.~\cite{ryoo-prb2019}.
+while the other method by Ryoo substitutes (... to be explained) Qiao's method does not require further matrix elements evaluated by {\tt pw2wannier90}, but it assumes a stronger approximation since usually the number of Wannier bands is less than the number of Bloch bands. You can choose which method to evaluate this value with {\tt shc\_method} in the input file. For a full derivation please refer to Ref.~\cite{qiao-prb2018} or Ref.~\cite{ryoo-prb2019}.
 
 The Eq.~(\ref{eq:kubo_shc}) can be further separated into 
 band-projected Berry curvature-like term
