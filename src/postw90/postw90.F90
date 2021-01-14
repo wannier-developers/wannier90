@@ -121,7 +121,10 @@ program postw90
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
       !
-      call kmesh_get
+      call kmesh_get(recip_lattice, kpt_cart, timing_level, nncell, neigh, &
+                    nnlist, nntot, shell_list, devel_flag, iprint, lenconfac, &
+                    kmesh_tol, num_kpts, search_shells, gamma_only, nnh, wbtot, &
+                    skip_B1_tests, bk, bka, wb, num_shells, length_unit)
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &
         'Time to get kmesh        ', time2 - time1, ' (sec)'

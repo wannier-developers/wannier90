@@ -128,7 +128,10 @@ program wannier
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. explicit_nnkpts) call kmesh_get
+    if (.not. explicit_nnkpts) call kmesh_get(recip_lattice, kpt_cart, timing_level, nncell, neigh, &
+                                             nnlist, nntot, shell_list, devel_flag, iprint, lenconfac, &
+                                             kmesh_tol, num_kpts, search_shells, gamma_only, nnh, wbtot, &
+                                             skip_B1_tests, bk, bka, wb, num_shells, length_unit)
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to get kmesh        ', time2 - time1, ' (sec)'
@@ -190,8 +193,12 @@ program wannier
   endif
 
   if (postproc_setup) then
-    if (on_root) call kmesh_write()
-    call kmesh_dealloc()
+    if (on_root) call kmesh_write(recip_lattice, timing_level, nncell, nnlist, nntot, num_kpts, &
+                                 input_proj_l, num_proj, input_proj_site, spinors, kpt_latt, real_lattice, &
+                                 calc_only_A, input_proj_zona, input_proj_x, input_proj_z, input_proj_radial, &
+                                 input_proj_m, exclude_bands, num_exclude_bands, auto_projections, &
+                                 input_proj_s_qaxis, input_proj_s)
+    call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
     call param_dealloc()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
@@ -327,7 +334,7 @@ program wannier
   call tran_dealloc()
   call hamiltonian_dealloc()
   call overlap_dealloc()
-  call kmesh_dealloc()
+  call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
   call param_dealloc()
   if (lsitesymmetry) call sitesym_dealloc() !YN:
 
