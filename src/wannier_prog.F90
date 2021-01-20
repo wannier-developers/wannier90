@@ -207,8 +207,12 @@ program wannier
   endif
 
   if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
-  call overlap_allocate()
-  call overlap_read()
+  call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
+                       m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
+  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
+                   cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
+                   devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
+                   num_wann, num_bands, disentanglement)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
@@ -333,7 +337,8 @@ program wannier
 
   call tran_dealloc()
   call hamiltonian_dealloc()
-  call overlap_dealloc()
+  call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
+                      a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
   call param_dealloc()
   if (lsitesymmetry) call sitesym_dealloc() !YN:

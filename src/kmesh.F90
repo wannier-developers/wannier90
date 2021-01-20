@@ -78,7 +78,6 @@ contains
     !=====================================================
     use w90_io, only: stdout, io_error, io_stopwatch
     use w90_utility, only: utility_compar
-!   use w90_parameters, only: nncell
     implicit none
 
 !   from parameters.F90
@@ -91,7 +90,6 @@ contains
     integer, intent(inout) :: nnh
     integer, intent(inout) :: num_shells
     real(kind=dp), intent(in) :: kmesh_tol
-!   integer, intent(inout) :: nncell(:, :, :)
     integer, allocatable :: nncell(:, :, :)
     integer, allocatable :: neigh(:, :)
     integer, allocatable :: nnlist(:, :)
@@ -688,7 +686,6 @@ contains
     ! m and n.                                                         !
     !===================================================================
     use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
-!   use w90_parameters, only: nncell
 
     implicit none
 
@@ -847,11 +844,9 @@ contains
     !   paths that will not allocate on all nodes
     !========================================
     use w90_io, only: io_error
-!   use w90_parameters, only: nncell
     implicit none
 
 !   from parameters.F90
-!   integer, intent(inout) :: nncell(:, :, :)
     integer, allocatable :: nncell(:, :, :)
     integer, allocatable :: neigh(:, :)
     integer, allocatable :: nnlist(:, :)
