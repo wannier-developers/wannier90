@@ -50,11 +50,17 @@ module w90_sitesym
 contains
 
   !==================================================================!
-  subroutine sitesym_slim_d_matrix_band(lwindow_in)
+  subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, lwindow_in)
+! subroutine sitesym_slim_d_matrix_band(lwindow_in)
     !==================================================================!
-    use w90_parameters, only: num_bands, num_kpts
+!   use w90_parameters, only: num_bands, num_kpts
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+!   end w90_parameters
 
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     integer :: ik, i, j, nb, ir
@@ -85,11 +91,15 @@ contains
   end subroutine sitesym_slim_d_matrix_band
 
   !==================================================================!
-  subroutine sitesym_replace_d_matrix_band()
+  subroutine sitesym_replace_d_matrix_band(num_wann)
     !==================================================================!
-    use w90_parameters, only: num_wann
+!   use w90_parameters, only: num_wann
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_wann
+!   end w90_parameters
 
     !write(stdout,"(a)") '-- sitesym_replace_d_matrix_band --'
     !write(stdout,"(a)") 'd_matrix_band is replaced by d_matrix_wann'
@@ -101,7 +111,8 @@ contains
   end subroutine sitesym_replace_d_matrix_band
 
   !==========================================================================!
-  subroutine sitesym_symmetrize_u_matrix(ndim, umat, lwindow_in)
+  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
+                                        ndim, umat, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -113,9 +124,17 @@ contains
     !    ndim=num_wann,  d=d_matrix_band                                       !
     !                                                                          !
     !==========================================================================!
-    use w90_parameters, only: num_wann, num_bands, num_kpts
+!    use w90_parameters, only: num_wann, num_bands, num_kpts
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+!   end w90_parameters
+
+    real(kind=dp), intent(in) :: symmetrize_eps
 
     integer, intent(in) :: ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann, num_kpts)
@@ -141,9 +160,9 @@ contains
         n = ndim
       endif
       if (present(lwindow_in)) then
-        call symmetrize_ukirr(ir, ndim, umat(:, :, ik), n)
+        call symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat(:, :, ik), n)
       else
-        call symmetrize_ukirr(ir, ndim, umat(:, :, ik))
+        call symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat(:, :, ik))
       endif
       do isym = 2, nsymmetry
         irk = kptsym(isym, ir)
@@ -278,15 +297,20 @@ contains
   end subroutine sitesym_symmetrize_rotation
 
   !==================================================================!
-  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in)
+  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts)
     !==================================================================!
     !                                                                  !
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only: num_bands, num_kpts
+!   use w90_parameters, only: num_bands, num_kpts
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts 
+!   end w90_parameters
 
     complex(kind=dp), intent(inout) :: czmat(num_bands, num_bands, num_kpts)
     logical, intent(in) :: lwindow_in(num_bands, num_kpts)
@@ -332,7 +356,7 @@ contains
   end subroutine sitesym_symmetrize_zmatrix
 
   !==================================================================!
-  subroutine symmetrize_ukirr(ir, ndim, umat, n)
+  subroutine symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat, n)
     !==================================================================!
     !                                                                  !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
@@ -340,9 +364,16 @@ contains
     !  and orthonormalize it                                           !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only: num_wann, num_bands, symmetrize_eps
+!   use w90_parameters, only: num_wann, num_bands, symmetrize_eps
+!   use w90_parameters, only: num_wann, num_bands
 
     implicit none
+
+!   from w90_parameters
+    real(kind=dp), intent(in) :: symmetrize_eps 
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+!   end w90_parameters
 
     integer, intent(in) :: ir, ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
@@ -462,7 +493,8 @@ contains
   end subroutine orthogonalize_u
 
   !==================================================================!
-  subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda, umat)
+  subroutine sitesym_dis_extract_symmetry(symmetrize_eps, ik, n, zmat, lambda, umat, &
+                                         num_bands, num_wann)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !
@@ -472,9 +504,16 @@ contains
     !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
     !                                                                  !
     !==================================================================!
-    use w90_parameters, only: num_bands, num_wann
+!   use w90_parameters, only: num_bands, num_wann
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann  
+!   end w90_parameters
+
+    real(kind=dp), intent(in) :: symmetrize_eps
 
     integer, intent(in) :: ik, n
     complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
@@ -537,7 +576,7 @@ contains
         ! choose the larger eigenstate
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
-      call symmetrize_ukirr(ik2ir(ik), num_bands, umatnew, n)
+      call symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ik2ir(ik), num_bands, umatnew, n)
       umat(:, :) = umatnew(:, :)
     enddo ! iter
 
@@ -545,13 +584,19 @@ contains
   end subroutine sitesym_dis_extract_symmetry
 
   !==================================================================!
-  subroutine sitesym_read()
+  subroutine sitesym_read(num_bands, num_wann, num_kpts)
     !==================================================================!
-    use w90_parameters, only: num_bands, num_wann, num_kpts
+!   use w90_parameters, only: num_bands, num_wann, num_kpts
     use w90_io, only: io_file_unit, io_error, seedname
 
     implicit none
 
+!   from w90_parameters
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann 
+    integer, intent(in) :: num_kpts
+!   end w90_parameters
+ 
     integer :: iu, ibnum, iknum, ierr
 
     iu = io_file_unit()

@@ -43,38 +43,6 @@ contains
     use w90_constants, only: eps6, dp
     use w90_io, only: stdout, io_stopwatch
 
-!   use w90_parameters, only: num_kpts, bands_plot, dos_plot, &
-!        kpt_latt, fermi_surface_plot, &
-!        wannier_plot, timing_level, write_bvec, &
-!        write_hr, write_rmn, write_tb, write_u_matrices, &
-!lp      parameters added for hamiltonian_write_tb & hamiltonian_write_hr
-!lp      (num_wann)
-!        real_lattice, num_wann, wb, bk, m_matrix, nntot, &
-!lp      for hamiltonian_get_hr
-!        recip_lattice, wannier_centres, num_atoms, atoms_pos_cart, &
-!        translation_centre_frac, automatic_translation, num_species, &
-!        atoms_species_num, lenconfac, have_disentangled, ndimwin, lwindow, &
-!        u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
-!lp      for hamiltonian_setup
-!        ws_distance_tol, ws_search_size, real_metric, mp_grid, transport_mode, &
-!        bands_plot_mode, transport, iprint, &
-!lp      for plot_wannier
-!        wannier_plot_radius, wannier_plot_scale, atoms_pos_frac,
-!        wannier_plot_spinor_phase, &
-!        wannier_plot_spinor_mode, spinors, wannier_plot_format, wvfn_formatted,
-!        wannier_plot_mode, wannier_plot_list, num_wannier_plot, atoms_symbol,
-!        spin, &
-!        wannier_plot_supercell, &
-!lp      for plot_fermi_surface
-!        fermi_energy_list, nfermi, fermi_surface_num_points, &
-!lp      for plot_interpolate_bands
-!        one_dim_dir, bands_plot_dim, hr_cutoff, dist_cutoff, dist_cutoff_mode, &
-!        use_ws_distance, bands_plot_project, num_bands_project,
-!        bands_plot_format, &
-!        bands_label, bands_spec_points, bands_num_spec_points, recip_metric, &
-!        bands_num_points
-!lp      end parameters
-
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
       hamiltonian_setup, hamiltonian_write_rmn, &
       hamiltonian_write_tb, nrpts, irvec
@@ -83,7 +51,7 @@ contains
 
     implicit none
 
-!lp from w90_parameters
+!   from w90_parameters
     integer, intent(in) :: bands_num_spec_points
     integer, intent(in) :: iprint
     integer, intent(in) :: mp_grid(3)                           
@@ -108,7 +76,6 @@ contains
     integer, intent(in) :: bands_plot_project(:)                
     integer, intent(in) :: num_bands_project
     integer, intent(in) :: bands_num_points
-
     real(kind=dp), intent(in) :: real_metric(3, 3)
     real(kind=dp), intent(in) :: bk(:, :, :)                    
     real(kind=dp), intent(in) :: wb(:)                          
@@ -129,11 +96,9 @@ contains
     real(kind=dp), intent(in) :: eigval(:, :)                   
     real(kind=dp), intent(in) ::bands_spec_points(:, :)         
     real(kind=dp), intent(inout) :: translation_centre_frac(3)
-
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)        
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)       
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)           
-
     logical, intent(in) :: bands_plot
     logical, intent(in) :: dos_plot
     logical, intent(in) :: fermi_surface_plot
@@ -152,7 +117,6 @@ contains
     logical, intent(in) :: spinors
     logical, intent(in) :: wvfn_formatted
     logical, intent(in) :: use_ws_distance
-
     character(len=20), intent(in) :: transport_mode
     character(len=20), intent(in) :: bands_plot_mode
     character(len=20), intent(in) :: wannier_plot_spinor_mode
@@ -162,7 +126,7 @@ contains
     character(len=2), intent(in) :: atoms_symbol(:)
     character(len=20), intent(in) :: bands_plot_format
     character(len=20), intent(in) ::bands_label(:)              
-!lp end w90_parameters
+!   end w90_parameters
     
     integer :: nkp
     logical :: have_gamma
@@ -268,7 +232,7 @@ contains
 
     implicit none
 
-!lp from w90 parameters
+!   from w90 parameters
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: one_dim_dir
     integer, intent(in) :: bands_plot_dim
@@ -288,7 +252,7 @@ contains
     character(len=20), intent(in) :: bands_plot_mode
     character(len=20), intent(in) :: bands_plot_format
     character(len=20), intent(in) ::bands_label(:)       !a
-!lp end w90 parameters
+!   end w90 parameters
 
     complex(kind=dp), allocatable  :: ham_r_cut(:, :, :)
     complex(kind=dp), allocatable  :: ham_pack(:)
@@ -626,7 +590,7 @@ contains
 
       implicit none
        
-!lp   from w90_parameters
+!     from w90_parameters
       integer, intent(in) :: one_dim_dir
       integer, intent(in) :: bands_plot_dim
       integer, intent(in) :: mp_grid(3)
@@ -635,7 +599,7 @@ contains
       real(kind=dp), intent(in) :: dist_cutoff
       real(kind=dp), intent(in) :: hr_cutoff
       character(len=20), intent(in) :: dist_cutoff_mode
-!lp   end w90_parameters
+!     end w90_parameters
 
       integer :: nrpts_tmp
       integer :: one_dim_vec, two_dim_vec(2)
@@ -800,12 +764,12 @@ contains
 
       implicit none
 
-!lp   from w90_parameters
+!     from w90_parameters
       integer, intent(in) :: num_bands_project
       integer, intent(in) :: bands_num_spec_points
       integer, intent(in) :: num_wann
       character(len=20), intent(in) :: bands_label(:)
-!lp   end w90_parameters
+!     end w90_parameters
       !
       bndunit = io_file_unit()
       open (bndunit, file=trim(seedname)//'_band.dat', form='formatted')
