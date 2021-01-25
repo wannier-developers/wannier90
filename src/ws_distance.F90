@@ -63,7 +63,8 @@ contains
 !    degeneracies or similar things on different MPI processors, we should
 !    probably think to do the math on node 0, and then broadcast results.
 
-  subroutine ws_translate_dist(nrpts, irvec, force_recompute)
+  subroutine ws_translate_dist(num_wann, wannier_centres, real_lattice, recip_lattice, &
+                              iprint, mp_grid, nrpts, irvec, force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
     !! minimizes the distance between two given Wannier functions, i and j,
@@ -73,13 +74,23 @@ contains
     !! is on the edge of the WS of w_i,0. The results are stored in global
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
 
-    use w90_parameters, only: num_wann, wannier_centres, real_lattice, &
-      recip_lattice, iprint
+!   use w90_parameters, only: num_wann, wannier_centres, real_lattice, &
+!     recip_lattice, iprint, mp_grid
+
     !translation_centre_frac, automatic_translation,lenconfac
     use w90_io, only: stdout, io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: iprint
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+!   end w90_parameters
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
@@ -131,7 +142,8 @@ contains
           ! later for interpolation etc.
           CALL R_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
-                       wdist_ndeg(iw, jw, ir), R_out, shifts)
+                       wdist_ndeg(iw, jw, ir), R_out, shifts, mp_grid, recip_lattice, &
+                       real_lattice)
           do ideg = 1, wdist_ndeg(iw, jw, ir)
             irdist_ws(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
             tmp_frac = REAL(irdist_ws(:, ideg, iw, jw, ir), kind=dp)
@@ -143,16 +155,24 @@ contains
     enddo
   end subroutine ws_translate_dist
 
-  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts)
+  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, recip_lattice, real_lattice)
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
     !! Return their coordinates and the degeneracy, as well as the integer
     !! shifts needed to get the vector (these are always multiples of
     !! the mp_grid, i.e. they are supercell displacements in the large supercell)
-    use w90_parameters, only: real_lattice, recip_lattice, mp_grid
+!   use w90_parameters, only: real_lattice, recip_lattice, mp_grid
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
     use w90_io, only: stdout, io_error
+
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: mp_grid(3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+!   end w90_parameters
+
     real(DP), intent(in) :: R_in(3)
     real(DP), intent(in) :: R0(3)
     integer, intent(out) :: ndeg
@@ -256,7 +276,7 @@ contains
   !====================================================!
 
   !====================================================!
-  subroutine ws_write_vec(nrpts, irvec)
+  subroutine ws_write_vec(nrpts, irvec, num_wann)
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
     !! in order to have the second Wannier function inside the WS cell
@@ -264,9 +284,13 @@ contains
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, &
       seedname, io_date
-    use w90_parameters, only: num_wann
+!   use w90_parameters, only: num_wann
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: num_wann
+!   end w90_parameters
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)

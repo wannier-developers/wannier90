@@ -171,7 +171,8 @@ contains
                                     use_ws_distance, bands_plot_project, num_bands_project, &
                                     bands_plot_mode, bands_plot_format, bands_label, &
                                     bands_spec_points, timing_level, bands_num_spec_points, &
-                                    recip_metric, bands_num_points, num_wann)
+                                    recip_metric, bands_num_points, num_wann, iprint, recip_lattice, &
+                                    wannier_centres)
       !
       if (fermi_surface_plot) call plot_fermi_surface(fermi_energy_list, nfermi, &
                                  recip_lattice, timing_level, fermi_surface_num_points, num_wann)
@@ -185,8 +186,9 @@ contains
           m_matrix, num_kpts, kpt_latt, nntot, timing_level)
       !
       if (write_hr .or. write_rmn .or. write_tb) then
-        if (.not. done_ws_distance) call ws_translate_dist(nrpts, irvec)
-        call ws_write_vec(nrpts, irvec)
+        if (.not. done_ws_distance) call ws_translate_dist(num_wann, wannier_centres, real_lattice, &
+                                               recip_lattice, iprint, mp_grid, nrpts, irvec)
+        call ws_write_vec(nrpts, irvec, num_wann)
       end if
     end if
 
@@ -216,7 +218,8 @@ contains
                                    hr_cutoff, dist_cutoff, dist_cutoff_mode, use_ws_distance, &
                                    bands_plot_project, num_bands_project, bands_plot_mode, &
                                    bands_plot_format, bands_label, bands_spec_points, timing_level, &
-                                   bands_num_spec_points, recip_metric, bands_num_points, num_wann)
+                                   bands_num_spec_points, recip_metric, bands_num_points, num_wann, &
+                                   iprint, recip_lattice, wannier_centres)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -229,6 +232,7 @@ contains
     use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, &
       ws_translate_dist
+!   use w90_parameters, only: iprint
 
     implicit none
 
@@ -242,16 +246,19 @@ contains
     integer, intent(in) :: bands_num_spec_points
     integer, intent(in) :: bands_num_points
     integer, intent(in) :: num_wann
+    integer, intent(in) :: iprint   
     real(kind=dp), intent(in) :: recip_metric(3, 3)
     real(kind=dp), intent(in) :: dist_cutoff
     real(kind=dp), intent(in) :: hr_cutoff
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) ::bands_spec_points(:, :)  !a
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) ::bands_spec_points(:, :)  
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
     logical, intent(in) :: use_ws_distance
     character(len=20), intent(in) :: dist_cutoff_mode
     character(len=20), intent(in) :: bands_plot_mode
     character(len=20), intent(in) :: bands_plot_format
-    character(len=20), intent(in) ::bands_label(:)       !a
+    character(len=20), intent(in) ::bands_label(:)       
 !   end w90 parameters
 
     complex(kind=dp), allocatable  :: ham_r_cut(:, :, :)
@@ -446,9 +453,11 @@ contains
     !
     if (use_ws_distance) then
       if (index(bands_plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(nrpts, irvec, force_recompute=.true.)
+        call ws_translate_dist(num_wann, wannier_centres, real_lattice, recip_lattice, iprint, &
+                              mp_grid, nrpts, irvec, force_recompute=.true.)
       elseif (index(bands_plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(nrpts_cut, irvec_cut, force_recompute=.true.)
+        call ws_translate_dist(num_wann, wannier_centres, real_lattice, recip_lattice, iprint, &
+                              mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
       endif
