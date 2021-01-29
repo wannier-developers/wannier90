@@ -2054,12 +2054,9 @@ contains
         js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
 
       else !if Ryoo (PRB RPS19 Eq.(21))
-        do j = shc_alpha, shc_alpha
-          do i = shc_gamma, shc_gamma !RPS19 Eqs.(37)-(40)
-            call pw90common_fourier_R_to_k_new(kpt, SAA_R(:, :, :, i, j), OO=SAA(:, :, i, j))
-            call pw90common_fourier_R_to_k_new(kpt, SBB_R(:, :, :, i, j), OO=SBB(:, :, i, j))
-          end do
-        end do
+        !RPS19 Eqs.(37)-(40)
+        call pw90common_fourier_R_to_k_new(kpt, SAA_R(:, :, :, shc_gamma, shc_alpha), OO=SAA(:, :, shc_gamma, shc_alpha))
+        call pw90common_fourier_R_to_k_new(kpt, SBB_R(:, :, :, shc_gamma, shc_alpha), OO=SBB(:, :, shc_gamma, shc_alpha))
 
         call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
                                            OO_dx=delHH(:, :, 1), &
@@ -2067,13 +2064,8 @@ contains
                                            OO_dz=delHH(:, :, 3))
 
         VV0(:, :) = utility_rotate(delHH_alpha(:, :), UU, num_wann)
-        !if(.true.) write(*,*) "kpt",kpt,"SA_K",real(SAA(1,:,1,3),dp)
-        do i = 1, 3
-          do j = 1, 3
-            SAA(:, :, i, j) = utility_rotate(SAA(:, :, i, j), UU, num_wann)
-            SBB(:, :, i, j) = utility_rotate(SBB(:, :, i, j), UU, num_wann)
-          enddo
-        enddo
+        SAA(:, :, i, j) = utility_rotate(SAA(:, :, shc_gamma, shc_alpha), UU, num_wann)
+        SBB(:, :, i, j) = utility_rotate(SBB(:, :, shc_gamma, shc_alpha), UU, num_wann)
 
         spinVel0(:, :) = matmul(VV0(:, :), S_k(:, :)) + &
                          matmul(S_k(:, :), VV0(:, :))
@@ -2087,7 +2079,6 @@ contains
           enddo
         enddo
         js_k = js_k/2.0_dp
-        !js_k=1.0_dp
       endif
       !-------------------------------------------------------------------
 
