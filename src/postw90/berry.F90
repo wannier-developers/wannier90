@@ -2064,8 +2064,8 @@ contains
                                            OO_dz=delHH(:, :, 3))
 
         VV0(:, :) = utility_rotate(delHH_alpha(:, :), UU, num_wann)
-        SAA(:, :, i, j) = utility_rotate(SAA(:, :, shc_gamma, shc_alpha), UU, num_wann)
-        SBB(:, :, i, j) = utility_rotate(SBB(:, :, shc_gamma, shc_alpha), UU, num_wann)
+        SAA(:, :, shc_gamma, shc_alpha) = utility_rotate(SAA(:, :, shc_gamma, shc_alpha), UU, num_wann)
+        SBB(:, :, shc_gamma, shc_alpha) = utility_rotate(SBB(:, :, shc_gamma, shc_alpha), UU, num_wann)
 
         spinVel0(:, :) = matmul(VV0(:, :), S_k(:, :)) + &
                          matmul(S_k(:, :), VV0(:, :))
