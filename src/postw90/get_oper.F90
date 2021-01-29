@@ -46,6 +46,7 @@ module w90_get_oper
   complex(kind=dp), allocatable, save :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
   !! $$\langle 0n | \sigma_{x,y,z} | Rm \rangle$$
 
+  !spin Hall using Qiao's method
   complex(kind=dp), allocatable, save :: SR_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
@@ -55,14 +56,12 @@ module w90_get_oper
   complex(kind=dp), allocatable, save :: SH_R(:, :, :, :) ! <0n|sigma_x,y,z.H|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H  | Rm \rangle$$
 
-  !temporary
-  ! <0n|sigma_a. (r-R)_b|Rm>
-  !
-  complex(kind=dp), allocatable, save :: SAA_R(:, :, :, :, :)
+  !spin Hall using Ryoo's method
+  complex(kind=dp), allocatable, save :: SAA_R(:, :, :, :, :) ! <0n|sigma_x,y,z.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
-  ! <0n|sigma_a. H(r-R)_b|Rm>
-  !
-  complex(kind=dp), allocatable, save :: SBB_R(:, :, :, :, :)
+  complex(kind=dp), allocatable, save :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
+  !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
 contains
 
@@ -1487,12 +1486,12 @@ contains
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SBB_R', 1)
 
     if (.not. allocated(BB_R)) then
       allocate (SBB_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
+      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SBB_R', 2)
       return
     end if
 
@@ -1624,12 +1623,12 @@ contains
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SAA_R', 1)
 
     if (.not. allocated(BB_R)) then
       allocate (SAA_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
+      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SAA_R', 2)
       return
     end if
 
