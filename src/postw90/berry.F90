@@ -2053,7 +2053,7 @@ contains
         ! operator, these are done outside of this subroutine
         js_k = 1.0_dp/2.0_dp*(B_k + conjg(transpose(B_k)))
 
-      else !if Ryoo (PRB RPS19 Eq.(21))
+      else !if Ryoo  (PRB RPS19 Eq.(21))
         !RPS19 Eqs.(37)-(40)
         call pw90common_fourier_R_to_k_new(kpt, SAA_R(:, :, :, shc_gamma, shc_alpha), OO=SAA(:, :, shc_gamma, shc_alpha))
         call pw90common_fourier_R_to_k_new(kpt, SBB_R(:, :, :, shc_gamma, shc_alpha), OO=SBB(:, :, shc_gamma, shc_alpha))
