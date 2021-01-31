@@ -276,18 +276,27 @@ of energy.
 
 The velocity matrix element in the numerator is the same as   Eq.~(\ref{eq:velocity_mat}), 
 so the only unknown quantity is the spin current matrix $\langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle$. 
-We can use Wannier interpolation technique to efficiently calculate this matrix, and there are two derivation according to the degree of approximation. The method by Qiao is, using $1\approx\sum_{ l\in {\rm Wannier\,bands}}|l\bm{k}\rangle \langle l\bm{k}|$, calculate the matrix as
+We can use Wannier interpolation technique to efficiently calculate this matrix, and there are two derivation according to the degree of approximation.
+
+%The method by Qiao is, using $1\approx\sum_{ l\in ab\,initio{\rm \,bands}}|l\bm{k}\rangle \langle l\bm{k}|$, calculate the matrix as
+%\begin{equation}
+%    \langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle = \frac{1}{2}\sum_{l}\{ \langle n\bm{k}| \hat{s}_{\gamma}|l\bm{k}\rangle, \langle l\bm{k}| \hat{v}_{\alpha}|m\bm{k}\rangle\}
+%\end{equation}
+%while the other method by Ryoo is, without that identity matrix,
+The spin current matrix is written as follows:
 \begin{equation}
-    \langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle = \frac{1}{2}\sum_{l}\{ \langle n\bm{k}| \hat{s}_{\gamma}|l\bm{k}\rangle, \langle l\bm{k}| \hat{v}_{\alpha}|m\bm{k}\rangle\}
-\end{equation}
-while the other method by Ryoo is, without that identity matrix,
-\begin{equation}
+\label{eq:spincurrent}
     \langle n\bm{k}| \hat{j}_{\alpha}^{\gamma}|m\bm{k}\rangle = \frac{1}{2}\langle n\bm{k}| \{\hat{s}_{\gamma}, \hat{v}_{\alpha} \} |m\bm{k}\rangle
 \end{equation}
 \begin{equation}
+\label{eq:sc_calc}
     \hbar \langle n\bm{k}| \hat{s}_{\gamma}\hat{v}_{\alpha} |m\bm{k}\rangle = \sum_{l} [ \langle n\bm{k}| \hat{s}_{\gamma}|l\bm{k}\rangle \langle l\bm{k}| \partial_{\alpha}\hat{H}_{\bm{k}}|m\bm{k}\rangle + \langle n\bm{k}| \hat{s}_{\gamma}\partial_{\alpha}|l\bm{k}\rangle \langle l\bm{k}| \hat{H}_{\bm{k}}|m\bm{k}\rangle ] - \langle n\bm{k}| \hat{s}_{\gamma} \hat{H}_{\bm{k}}  \partial_{\alpha} |m\bm{k}\rangle
 \end{equation}
-Qiao's method does not require further matrix elements evaluated by {\tt pw2wannier90}, but it assumes an approximation since usually the number of Wannier bands is less than the number of Bloch bands. You can choose which method to evaluate this value with {\tt shc\_method} in the input file. For a full derivation please refer to Ref.~\cite{qiao-prb2018} or Ref.~\cite{ryoo-prb2019}.
+where $n$, $m$, and $k$ run over the Wannier bands. Qiao's spin current implies that Eq.~(\ref{eq:spincurrent}) and Eq.~(\ref{eq:sc_calc}) are evaluated in the gauge in which the Hamiltonian matrix is diagonal, while they are evaluated using the original Wannier gauge in Ryoo's scheme. An another difference is the way in which two {\it ab-initio} matrix elements are evaluated,
+\begin{equation}
+  \langle u_{n{\bf k}}\vert\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}}\rangle, \langle u_{n{\bf k}}\vert\sigma_\gamma \vert u_{m{\bf k}+{\bf b}}\rangle, \gamma = x, y, z
+\end{equation}
+These are evaluated by {\tt pw2wannier90} using Ryoo's method. In contrast, Qiao's method does not require {\tt pw2wannier90}, but it assumes an approximation $1\approx\sum_{ l\in ab-initio{\rm \,bands}}|u_{l\bm{k}}\rangle \langle u_{l\bm{k}}|$. You can choose which method to evaluate this value with {\tt shc\_method} in the input file. For a full derivation please refer to Ref.~\cite{qiao-prb2018} or Ref.~\cite{ryoo-prb2019}.
 
 The Eq.~(\ref{eq:kubo_shc}) can be further separated into 
 band-projected Berry curvature-like term
@@ -407,8 +416,8 @@ $$
 If one uses Ryoo's method to calculate spin Hall conductivity, the further matrix elements are needed:
 %
 $$\langle u_{n{\bf k}}\vert
-\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}_1}\rangle, \langle u_{n{\bf k}}\vert
-\sigma_\gamma \vert u_{m{\bf k}+{\bf b}_1}\rangle,
+\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}}\rangle, \langle u_{n{\bf k}}\vert
+\sigma_\gamma \vert u_{m{\bf k}+{\bf b}}\rangle,
 \gamma = x, y, z
 $$
 %
