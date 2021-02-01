@@ -103,7 +103,7 @@ contains
   subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
                          cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
                          devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
-                         num_wann, num_bands, disentanglement, symmetrize_eps)
+                         num_wann, num_bands, disentanglement, symmetrize_eps, sym)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -111,9 +111,11 @@ contains
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv
+    use w90_sitesym, only: sitesym_data
 
     implicit none
     
+    type(sitesym_data) :: sym
     real(kind=dp), intent(in) :: symmetrize_eps
 
 !   from w90_parameters
@@ -336,7 +338,7 @@ contains
     if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
         call overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
-                            timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, symmetrize_eps)
+                            timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, symmetrize_eps, sym)
       else
         call overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)
       endif
@@ -666,7 +668,7 @@ contains
   !==================================================================!
   subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
                             timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, &
-                            symmetrize_eps)
+                            symmetrize_eps, sym)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -678,7 +680,7 @@ contains
     use w90_constants
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
-    use w90_sitesym, only: sitesym_symmetrize_u_matrix !RS:
+    use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data !RS:
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv, comms_gatherv
 
@@ -698,6 +700,8 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
     logical, intent(in) :: lsitesymmetry
 !   end w90_parameters
+    type(sitesym_data) :: sym
+
 
     ! internal variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2
@@ -779,7 +783,7 @@ contains
     ! NKP
 
     if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
-                                                       num_wann, u_matrix) !RS: update U(Rk)
+                                                       num_wann, u_matrix, sym) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated

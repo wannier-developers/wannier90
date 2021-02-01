@@ -73,6 +73,8 @@ program wannier
   integer :: len_seedname
   character(len=50) :: prog
 
+  type(sitesym_data) :: sym; !JJ
+
   call comms_setup
 
   library = .false.
@@ -163,7 +165,7 @@ program wannier
   else                      ! restart a previous calculation
     if (on_root) call param_read_chkpt()
     call param_chkpt_dist
-    if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts)   ! update this to read on root and bcast - JRY
+    if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
 
     select case (restart)
     case ('default')    ! continue from where last checkpoint was written
@@ -206,13 +208,13 @@ program wannier
     stop
   endif
 
-  if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts)   ! update this to read on root and bcast - JRY
+  if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
                        m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
   call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
                    cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
                    devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
-                   num_wann, num_bands, disentanglement, symmetrize_eps)
+                   num_wann, num_bands, disentanglement, symmetrize_eps, sym)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
@@ -228,7 +230,7 @@ program wannier
         wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt,&
         dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only,&
         on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix,&
-        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, symmetrize_eps)
+        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, symmetrize_eps, sym)
 
 
     have_disentangled = .true.
@@ -262,7 +264,7 @@ program wannier
                    num_elec_per_state, lsitesymmetry, stdout,&
                    ws_distance_tol, ws_search_size, real_metric, mp_grid,&
                    transport_mode, bands_plot_mode, transport, bands_plot,&
-                   translation_centre_frac, automatic_translation, ndimwin)
+                   translation_centre_frac, automatic_translation, ndimwin, sym)
 
   else
     call wann_main_gamma(num_wann, num_iter, wb, nntot, u_matrix, m_matrix, &
@@ -341,7 +343,7 @@ program wannier
                       a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
   call param_dealloc()
-  if (lsitesymmetry) call sitesym_dealloc() !YN:
+  if (lsitesymmetry) call sitesym_dealloc(sym) !YN:
 
 4004 continue
 
