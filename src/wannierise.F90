@@ -72,7 +72,9 @@ contains
                        num_elec_per_state, lsitesymmetry, stdout,&
                        ws_distance_tol, ws_search_size, real_metric, mp_grid,&
                        transport_mode, bands_plot_mode, transport, bands_plot,&
-                       translation_centre_frac, automatic_translation, ndimwin, sym)
+                       translation_centre_frac, automatic_translation, ndimwin, sym, &
+                       ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
+                       wannier_centres_translated)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -88,10 +90,22 @@ contains
       comms_bcast, comms_scatterv, comms_array_split
 
     !ivo
-    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
-      rpt_origin, irvec, nrpts, ndegen
+    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
+!   use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
+!     rpt_origin, irvec, nrpts, ndegen
+
 
     implicit none
+
+!   from w90_hamiltonian
+    integer, intent(inout) :: rpt_origin
+    integer, intent(inout) :: nrpts
+    integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(inout), allocatable :: shift_vec(:, :)
+    integer, intent(inout), allocatable :: irvec(:, :)
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+!   end w90_hamiltonian
 
     type(sitesym_data) :: sym
     !subroutine args from parameters module
@@ -285,7 +299,8 @@ contains
     if (precond) then
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                             mp_grid, transport_mode, bands_plot_mode, transport, &
-                            bands_plot, num_kpts, num_wann, timing_level, iprint)
+                            bands_plot, num_kpts, num_wann, timing_level, iprint, &
+                            ham_r, irvec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main')
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
@@ -846,14 +861,15 @@ contains
     if (write_hr_diag) then
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                             mp_grid, transport_mode, bands_plot_mode, transport, &
-                            bands_plot, num_kpts, num_wann, timing_level, iprint)
+                            bands_plot, num_kpts, num_wann, timing_level, iprint, &
+                            ham_r, irvec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                               num_atoms, atoms_pos_cart, translation_centre_frac, &
                               automatic_translation, num_species, atoms_species_num, &
                               lenconfac, have_disentangled, ndimwin, lwindow, &
                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
                               lsitesymmetry, num_bands, num_kpts, num_wann, &
-                              timing_level)
+                              timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
 
       if (on_root) then
         write (stdout, *)

@@ -23,25 +23,25 @@ module w90_hamiltonian
 
   private
   !
-  complex(kind=dp), public, save, allocatable :: ham_r(:, :, :)
+! complex(kind=dp), public, save, allocatable :: ham_r(:, :, :)
   !! Hamiltonian matrix in WF representation
   !
-  integer, public, save, allocatable :: irvec(:, :)
+! integer, public, save, allocatable :: irvec(:, :)
   !!  The irpt-th Wigner-Seitz grid point has components
   !! irvec(1:3,irpt) in the basis of the lattice vectors
   !
-  integer, public, save, allocatable :: shift_vec(:, :)
+! integer, public, save, allocatable :: shift_vec(:, :) ? not needed allocation here
   !
-  integer, public, save, allocatable :: ndegen(:)
+! integer, public, save, allocatable :: ndegen(:)
   !! Weight of the irpt-th point is 1/ndegen(irpt)
   !
-  integer, public, save              :: nrpts
+! integer, public, save              :: nrpts
   !! number of Wigner-Seitz grid points
   !
-  integer, public, save              :: rpt_origin
+! integer, public, save              :: rpt_origin
   !! index of R=0
   !
-  real(kind=dp), public, save, allocatable :: wannier_centres_translated(:, :)
+! real(kind=dp), public, save, allocatable :: wannier_centres_translated(:, :)
   !! translated Wannier centres
 
   public :: hamiltonian_get_hr
@@ -67,7 +67,8 @@ contains
   !============================================!
   subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                               mp_grid, transport_mode, bands_plot_mode, transport, &
-                              bands_plot, num_kpts, num_wann, timing_level, iprint)
+                              bands_plot, num_kpts, num_wann, timing_level, iprint, &
+                              ham_r, irvec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -75,6 +76,13 @@ contains
     use w90_io, only: io_error
 
     implicit none
+
+    integer, intent(inout) :: rpt_origin
+    integer, intent(inout) :: nrpts
+    integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(inout), allocatable :: irvec(:, :)
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 
 !   from w90_parameters
     integer, intent(in) :: ws_search_size(3)        !internal wigner_seitz
@@ -104,7 +112,7 @@ contains
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_metric, ws_search_size, ws_distance_tol, &
          timing_level, iprint, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
@@ -125,7 +133,7 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_metric, ws_search_size, ws_distance_tol, &
          timing_level, iprint, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
@@ -138,13 +146,18 @@ contains
   end subroutine hamiltonian_setup
 
   !============================================!
-  subroutine hamiltonian_dealloc()
+  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated)
     !! Deallocate module data
     !============================================!
 
     use w90_io, only: io_error
 
     implicit none
+
+    integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(inout), allocatable :: irvec(:, :)
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 
     integer :: ierr
 
@@ -187,7 +200,7 @@ contains
                                lenconfac, have_disentangled, ndimwin, lwindow, &
                                u_matrix_opt, kpt_latt, eigval, u_matrix, &
                                lsitesymmetry, num_bands, num_kpts, num_wann, &
-                               timing_level)
+                               timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -199,6 +212,12 @@ contains
 
     implicit none
 
+    integer, intent(inout) :: nrpts
+    integer, intent(inout) :: irvec(:, :)
+    real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(inout) :: ham_r(:, :, :)
+   
+
 !   from w90_parameters
     integer, intent(in)  :: num_bands
     integer, intent(in)  :: num_kpts 
@@ -206,7 +225,8 @@ contains
     integer, intent(in)  :: timing_level
 !   end parameters
 
-    integer, allocatable :: shift_vec(:, :)
+    integer, intent(inout), allocatable :: shift_vec(:, :)
+
     complex(kind=dp)     :: fac
     real(kind=dp)        :: rdotk
     real(kind=dp)        :: eigval_opt(num_bands, num_kpts)
@@ -357,7 +377,7 @@ contains
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
       call internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
            automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
-           wannier_centres, recip_lattice, real_lattice)
+           wannier_centres, recip_lattice, real_lattice, shift_vec, wannier_centres_translated)
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -408,7 +428,7 @@ contains
     !====================================================!
     subroutine internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
                automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
-               wannier_centres, recip_lattice, real_lattice)
+               wannier_centres, recip_lattice, real_lattice, shift_vec, wannier_centres_translated)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
@@ -416,6 +436,9 @@ contains
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
 
       implicit none
+
+      integer, intent(inout) :: shift_vec(:, :)
+      real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
 
       ! <<<local variables>>>
       integer :: iw, ierr, nat, nsp, ind
@@ -504,7 +527,7 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr(num_wann, timing_level)
+  subroutine hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
@@ -516,6 +539,10 @@ contains
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
 
+    integer, intent(inout) :: nrpts
+    integer, intent(in) :: ndegen(:)
+    integer, intent(inout) :: irvec(:, :)
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
@@ -561,7 +588,7 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(mp_grid, real_metric, ws_search_size, &
+  subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_metric, ws_search_size, &
              ws_distance_tol, timing_level, iprint, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
@@ -579,6 +606,12 @@ contains
     ! nrpts             number of Wigner-Seitz grid points
 
     implicit none
+
+    integer, intent(inout) :: nrpts
+    integer, intent(inout) :: ndegen(:)
+    integer, intent(inout) :: irvec(:, :)
+
+    integer, intent(inout) :: rpt_origin
 
     logical, intent(in) :: count_pts
     !! Only count points and return
@@ -704,7 +737,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
-             num_kpts, kpt_latt, nntot)
+             num_kpts, kpt_latt, nntot, irvec, nrpts)
     !! Write out the matrix elements of r
     !============================================!
 
@@ -712,6 +745,9 @@ contains
     use w90_io, only: io_error, io_file_unit, seedname, io_date
 
     implicit none
+
+    integer, intent(inout) :: nrpts
+    integer, intent(inout) :: irvec(:, :)
 
     complex(kind=dp)     :: fac
     real(kind=dp)        :: rdotk
@@ -783,7 +819,8 @@ contains
 
   !============================================!
   subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
-             m_matrix, num_kpts, kpt_latt, nntot, timing_level)
+             m_matrix, num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, &
+             nrpts)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -803,6 +840,11 @@ contains
     character(len=9)   :: cdate, ctime
     complex(kind=dp)   :: fac, pos_r(3)
     real(kind=dp)      :: rdotk
+
+    integer, intent(inout) :: nrpts
+    integer, intent(in) :: ndegen(:)
+    integer, intent(inout) :: irvec(:, :)
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
