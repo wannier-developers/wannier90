@@ -61,6 +61,8 @@ contains
     integer, intent(inout), allocatable :: irvec(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+
+
 !   end w90_hamiltonian
 
 !   from w90_parameters
