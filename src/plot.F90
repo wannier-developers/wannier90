@@ -22,22 +22,24 @@ module w90_plot
 contains
 
   !============================================!
-  subroutine plot_main(num_kpts, bands_plot, dos_plot, kpt_latt, fermi_surface_plot, wannier_plot, &
-                      timing_level, write_bvec, write_hr, write_rmn, write_tb, write_u_matrices, &
-                      real_lattice, num_wann, wb, bk, m_matrix, nntot, recip_lattice, wannier_centres, &
-                      num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation, &
-                      num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin, lwindow, &
-                      u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, ws_distance_tol, &
-                      ws_search_size, real_metric, mp_grid, transport_mode, bands_plot_mode, transport, &
-                      iprint, wannier_plot_radius, wannier_plot_scale, atoms_pos_frac, &
-                      wannier_plot_spinor_phase, wannier_plot_spinor_mode, spinors, wannier_plot_format, &
-                      wvfn_formatted, wannier_plot_mode, wannier_plot_list, num_wannier_plot, &
-                      atoms_symbol, spin, wannier_plot_supercell, fermi_energy_list, nfermi, &
-                      fermi_surface_num_points, one_dim_dir, bands_plot_dim, hr_cutoff, dist_cutoff, &
-                      dist_cutoff_mode, use_ws_distance, bands_plot_project, num_bands_project, &
-                      bands_plot_format, bands_label, bands_spec_points, bands_num_spec_points, &
-                      recip_metric, bands_num_points, ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
-                      wannier_centres_translated)
+  subroutine plot_main(num_kpts, bands_plot, dos_plot, kpt_latt,&
+        fermi_surface_plot, wannier_plot, timing_level, write_bvec,&
+        write_hr, write_rmn, write_tb, write_u_matrices, real_lattice,&
+        num_wann, wb, bk, m_matrix, nntot, recip_lattice, wannier_centres,&
+        num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation,&
+        num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin,&
+        lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands,&
+        ws_distance_tol, ws_search_size, real_metric, mp_grid, transport_mode,&
+        bands_plot_mode, transport, iprint, wannier_plot_radius,&
+        wannier_plot_scale, atoms_pos_frac, wannier_plot_spinor_phase,&
+        wannier_plot_spinor_mode, spinors, wannier_plot_format, wvfn_formatted,&
+        wannier_plot_mode, wannier_plot_list, num_wannier_plot, atoms_symbol,&
+        spin, wannier_plot_supercell, fermi_energy_list, nfermi,&
+        fermi_surface_num_points, one_dim_dir, bands_plot_dim, hr_cutoff,&
+        dist_cutoff, dist_cutoff_mode, use_ws_distance, bands_plot_project,&
+        num_bands_project, bands_plot_format, bands_label, bands_spec_points,&
+        bands_num_spec_points, recip_metric, bands_num_points, ham_r, irvec,&
+        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
     !! Main plotting routine
     !============================================!
 
@@ -231,13 +233,13 @@ contains
   !-----------------------------------!
 
   !============================================!
-  subroutine plot_interpolate_bands(mp_grid, real_lattice, one_dim_dir, bands_plot_dim, &
-                                   hr_cutoff, dist_cutoff, dist_cutoff_mode, use_ws_distance, &
-                                   bands_plot_project, num_bands_project, bands_plot_mode, &
-                                   bands_plot_format, bands_label, bands_spec_points, timing_level, &
-                                   bands_num_spec_points, recip_metric, bands_num_points, num_wann, &
-                                   iprint, recip_lattice, wannier_centres, ws_search_size, ws_distance_tol, &
-                                   ham_r, irvec, ndegen, nrpts, wannier_centres_translated)
+  subroutine plot_interpolate_bands(mp_grid, real_lattice, one_dim_dir,&
+        bands_plot_dim, hr_cutoff, dist_cutoff, dist_cutoff_mode, use_ws_distance,&
+        bands_plot_project, num_bands_project, bands_plot_mode, bands_plot_format,&
+        bands_label, bands_spec_points, timing_level, bands_num_spec_points,&
+        recip_metric, bands_num_points, num_wann, iprint, recip_lattice,&
+        wannier_centres, ws_search_size, ws_distance_tol, ham_r, irvec,&
+        ndegen, nrpts, wannier_centres_translated)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -601,8 +603,9 @@ contains
   contains
 
     !============================================!
-    subroutine plot_cut_hr(dist_cutoff_mode, dist_cutoff, hr_cutoff, bands_plot_dim, &
-                           one_dim_dir, real_lattice, mp_grid, num_wann, wannier_centres_translated)
+    subroutine plot_cut_hr(dist_cutoff_mode, dist_cutoff, hr_cutoff,&
+        bands_plot_dim, one_dim_dir, real_lattice, mp_grid, num_wann,&
+        wannier_centres_translated)
       !============================================!
       !
       !!  In real-space picture, ham_r(j,i,k) is an interaction between
@@ -791,9 +794,9 @@ contains
     end subroutine plot_cut_hr
 
     !============================================!
-    subroutine plot_interpolate_gnuplot(num_bands_project, bands_label, &
-                                        bands_num_spec_points, num_wann)
-      !============================================!
+    subroutine plot_interpolate_gnuplot(num_bands_project, bands_label,&
+        bands_num_spec_points, num_wann)
+    !============================================!
       !                                            !
       !! Plots the interpolated band structure in gnuplot format
       !============================================!
@@ -975,9 +978,9 @@ contains
   end subroutine plot_interpolate_bands
 
   !===========================================================!
-  subroutine plot_fermi_surface(fermi_energy_list, nfermi, recip_lattice, &
-                 timing_level, fermi_surface_num_points, num_wann, ham_r, irvec, &
-                 ndegen, nrpts)
+  subroutine plot_fermi_surface(fermi_energy_list, nfermi, recip_lattice,&
+        timing_level, fermi_surface_num_points, num_wann, ham_r, irvec, ndegen,&
+        nrpts)
     !===========================================================!
     !                                                           !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -1128,13 +1131,14 @@ contains
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, iprint, wannier_plot_radius, &
-             wannier_centres, wannier_plot_scale, atoms_pos_frac, wannier_plot_spinor_phase, &
-             wannier_plot_spinor_mode, spinors, wannier_plot_format, timing_level, &
-             wvfn_formatted, wannier_plot_mode, wannier_plot_list, num_wannier_plot, &
-             u_matrix_opt, lwindow, ndimwin, have_disentangled, real_lattice, num_atoms, &
-             atoms_pos_cart, atoms_symbol, atoms_species_num, num_species, kpt_latt, &
-             spin, u_matrix, num_kpts, num_bands, num_wann, ngs)
+  subroutine plot_wannier(recip_lattice, iprint, wannier_plot_radius,&
+        wannier_centres, wannier_plot_scale, atoms_pos_frac,&
+        wannier_plot_spinor_phase, wannier_plot_spinor_mode, spinors,&
+        wannier_plot_format, timing_level, wvfn_formatted, wannier_plot_mode,&
+        wannier_plot_list, num_wannier_plot, u_matrix_opt, lwindow, ndimwin,&
+        have_disentangled, real_lattice, num_atoms, atoms_pos_cart, atoms_symbol,&
+        atoms_species_num, num_species, kpt_latt, spin, u_matrix, num_kpts,&
+        num_bands, num_wann, ngs)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1500,9 +1504,8 @@ contains
   contains
 
     !============================================!
-    subroutine internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale, &
-                                   atoms_symbol, wannier_centres, wannier_plot_radius, &
-                                   iprint, recip_lattice)
+    subroutine internal_cube_format(num_atoms, atoms_pos_frac, wannier_plot_scale,&
+        atoms_symbol, wannier_centres, wannier_plot_radius, iprint, recip_lattice)
       !============================================!
       !                                            !
       !! Write WFs in Gaussian cube format.
@@ -1891,8 +1894,8 @@ contains
   end subroutine plot_wannier
 
   !============================================!
-  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, &
-                  have_disentangled, num_wann, num_kpts, num_bands)
+  subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, have_disentangled,&
+        num_wann, num_kpts, num_bands)
     !============================================!
     !                                            !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format

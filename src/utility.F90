@@ -165,8 +165,7 @@ contains
   end function utility_zdotu
 
   !=============================================================!
-  subroutine utility_zgemmm(a, transa, b, transb, c, transc, &
-                            prod1, eigval, prod2)
+  subroutine utility_zgemmm(a, transa, b, transb, c, transc, prod1, eigval, prod2)
     !===============================================================!
     ! Returns the complex matrix-matrix-matrix product              !
     ! --> prod1 = op(a).op(b).op(c),                                !

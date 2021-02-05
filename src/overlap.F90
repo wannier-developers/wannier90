@@ -35,8 +35,9 @@ module w90_overlap
 contains
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
-                             m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
+  subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt,&
+        a_matrix, m_matrix_orig_local, m_matrix_orig, timing_level, nntot,&
+        num_kpts, num_wann, num_bands, disentanglement)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -100,10 +101,11 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
-                         cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
-                         devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
-                         num_wann, num_bands, disentanglement, symmetrize_eps, sym)
+  subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local,&
+        gamma_only, use_bloch_phases, cp_pp, u_matrix_opt, m_matrix_orig,&
+        timing_level, a_matrix, m_matrix, u_matrix, devel_flag, proj2wann_map,&
+        lselproj, num_proj, nnlist, nncell, nntot, num_kpts, num_wann, num_bands,&
+        disentanglement, symmetrize_eps, sym)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -592,8 +594,8 @@ contains
   end subroutine overlap_rotate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                            a_matrix, m_matrix_orig, m_matrix, u_matrix)
+  subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt,&
+        a_matrix, m_matrix_orig, m_matrix, u_matrix)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
@@ -666,9 +668,9 @@ contains
   end subroutine overlap_dealloc
 
   !==================================================================!
-  subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
-                            timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, &
-                            symmetrize_eps, sym)
+  subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix,&
+        timing_level, num_kpts, num_wann, num_bands, lsitesymmetry,&
+        symmetrize_eps, sym)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008

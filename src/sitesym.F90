@@ -120,8 +120,8 @@ contains
   end subroutine sitesym_replace_d_matrix_band
 
   !==========================================================================!
-  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
-                                        ndim, umat, sym, lwindow_in)
+  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts,&
+        symmetrize_eps, ndim, umat, sym, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -309,7 +309,8 @@ contains
   end subroutine sitesym_symmetrize_rotation
 
   !==================================================================!
-  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts, sym)
+  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts,&
+        sym)
     !==================================================================!
     !                                                                  !
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
@@ -369,7 +370,8 @@ contains
   end subroutine sitesym_symmetrize_zmatrix
 
   !==================================================================!
-  subroutine symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat, sym, n)
+  subroutine symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat,&
+        sym, n)
     !==================================================================!
     !                                                                  !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
@@ -508,8 +510,8 @@ contains
   end subroutine orthogonalize_u
 
   !==================================================================!
-  subroutine sitesym_dis_extract_symmetry(symmetrize_eps, ik, n, zmat, lambda, umat, &
-                                         num_bands, num_wann, sym)
+  subroutine sitesym_dis_extract_symmetry(symmetrize_eps, ik, n, zmat, lambda,&
+        umat, num_bands, num_wann, sym)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !

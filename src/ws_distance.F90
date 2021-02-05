@@ -63,8 +63,9 @@ contains
 !    degeneracies or similar things on different MPI processors, we should
 !    probably think to do the math on node 0, and then broadcast results.
 
-  subroutine ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, real_lattice, recip_lattice, &
-                              iprint, mp_grid, nrpts, irvec, force_recompute)
+  subroutine ws_translate_dist(ws_distance_tol, ws_search_size, num_wann,&
+        wannier_centres, real_lattice, recip_lattice, iprint, mp_grid, nrpts,&
+        irvec, force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
     !! minimizes the distance between two given Wannier functions, i and j,
@@ -157,8 +158,8 @@ contains
     enddo
   end subroutine ws_translate_dist
 
-  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, recip_lattice, real_lattice, &
-                    ws_search_size, ws_distance_tol)
+  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, recip_lattice,&
+         real_lattice, ws_search_size, ws_distance_tol)
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
     !! Return their coordinates and the degeneracy, as well as the integer

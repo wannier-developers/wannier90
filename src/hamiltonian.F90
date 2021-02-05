@@ -65,10 +65,10 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
-                              mp_grid, transport_mode, bands_plot_mode, transport, &
-                              bands_plot, num_kpts, num_wann, timing_level, iprint, &
-                              ham_r, irvec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
+  subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric,&
+        mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, num_kpts,&
+        num_wann, timing_level, iprint, ham_r, irvec, ndegen, nrpts, rpt_origin,&
+        wannier_centres_translated)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -194,13 +194,12 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
-                               num_atoms, atoms_pos_cart, translation_centre_frac, &
-                               automatic_translation, num_species, atoms_species_num, &
-                               lenconfac, have_disentangled, ndimwin, lwindow, &
-                               u_matrix_opt, kpt_latt, eigval, u_matrix, &
-                               lsitesymmetry, num_bands, num_kpts, num_wann, &
-                               timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
+  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres,&
+        num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation,&
+        num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin,&
+        lwindow, u_matrix_opt, kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands,&
+        num_kpts, num_wann, timing_level, ham_r, irvec, shift_vec, nrpts,&
+        wannier_centres_translated)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -426,9 +425,10 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
-               automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
-               wannier_centres, recip_lattice, real_lattice, shift_vec, wannier_centres_translated)
+    subroutine internal_translate_centres(num_wann, lenconfac, atoms_species_num,&
+        num_species, automatic_translation, translation_centre_frac,&
+        atoms_pos_cart, num_atoms, wannier_centres, recip_lattice, real_lattice,&
+        shift_vec, wannier_centres_translated)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
@@ -588,8 +588,9 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_metric, ws_search_size, &
-             ws_distance_tol, timing_level, iprint, count_pts)
+  subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid,&
+        real_metric, ws_search_size, ws_distance_tol, timing_level, iprint,&
+        count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -736,8 +737,8 @@ contains
   end subroutine hamiltonian_wigner_seitz
 
   !============================================!
-  subroutine hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
-             num_kpts, kpt_latt, nntot, irvec, nrpts)
+  subroutine hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, num_kpts, kpt_latt,&
+        nntot, irvec, nrpts)
     !! Write out the matrix elements of r
     !============================================!
 
@@ -818,9 +819,8 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
-             m_matrix, num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, &
-             nrpts)
+  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, m_matrix,&
+        num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based

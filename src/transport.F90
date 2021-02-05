@@ -102,18 +102,20 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(transport_mode, tran_read_ht, timing_level, write_hr, write_xyz, num_wann, &
-                      real_lattice, recip_lattice, wannier_centres, num_atoms, bands_plot, iprint, &
-                      translation_centre_frac, automatic_translation, num_species, atoms_species_num, &
-                      lenconfac, have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, &
-                      eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, atoms_pos_cart, &
-                      ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, transport, &
-                      dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc, tran_num_cc, &
-                      tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, nfermi, &
-                      kpt_cart, tran_num_ll, tran_num_cell_ll, tran_easy_fix, atoms_symbol, &
-                      wannier_spreads, tran_group_threshold, one_dim_dir, tran_use_same_lead, &
-                      tran_energy_step, tran_win_min, tran_win_max, tran_num_bb, length_unit, hr_cutoff, &
-                      ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
+  subroutine tran_main(transport_mode, tran_read_ht, timing_level, write_hr,&
+        write_xyz, num_wann, real_lattice, recip_lattice, wannier_centres,&
+        num_atoms, bands_plot, iprint, translation_centre_frac,&
+        automatic_translation, num_species, atoms_species_num, lenconfac,&
+        have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, eigval,&
+        u_matrix, lsitesymmetry, num_bands, num_kpts, atoms_pos_cart,&
+        ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode,&
+        transport, dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc,&
+        tran_num_cc, tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht,&
+        fermi_energy_list, nfermi, kpt_cart, tran_num_ll, tran_num_cell_ll,&
+        tran_easy_fix, atoms_symbol, wannier_spreads, tran_group_threshold,&
+        one_dim_dir, tran_use_same_lead, tran_energy_step, tran_win_min,&
+        tran_win_max, tran_num_bb, length_unit, hr_cutoff, ham_r, irvec,&
+        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
    
     !! Main transport subroutine
     !==================================================================!
@@ -312,8 +314,8 @@ contains
   end subroutine tran_main
 
   !==================================================================!
-  subroutine tran_reduce_hr(timing_level, mp_grid, one_dim_dir, real_lattice, num_wann, ham_r, &
-                           irvec, nrpts, one_dim_vec, nrpts_one_dim)
+  subroutine tran_reduce_hr(timing_level, mp_grid, one_dim_dir, real_lattice,&
+        num_wann, ham_r, irvec, nrpts, one_dim_vec, nrpts_one_dim)
     !==================================================================!
     !
     ! reduce ham_r from 3-d to 1-d
@@ -416,11 +418,10 @@ contains
   end subroutine tran_reduce_hr
 
   !==================================================================!
-  subroutine tran_cut_hr_one_dim(tran_num_cell_ll, tran_num_ll, dist_cutoff_hc, & 
-                         transport_mode, length_unit, one_dim_dir, dist_cutoff, &
-                         dist_cutoff_mode, hr_cutoff, real_lattice, timing_level, &
-                         mp_grid, num_wann, wannier_centres_translated, one_dim_vec, &
-                         nrpts_one_dim, num_pl)
+  subroutine tran_cut_hr_one_dim(tran_num_cell_ll, tran_num_ll, dist_cutoff_hc,& 
+        transport_mode, length_unit, one_dim_dir, dist_cutoff, dist_cutoff_mode,&
+        hr_cutoff, real_lattice, timing_level, mp_grid, num_wann,&
+        wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl)
     !==================================================================!
     !
     use w90_constants, only: dp
@@ -582,8 +583,8 @@ contains
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(nfermi, fermi_energy_list, timing_level, &
-                        num_wann, tran_num_bb, tran_write_ht, num_pl)
+  subroutine tran_get_ht(nfermi, fermi_energy_list, timing_level, num_wann,&
+        tran_num_bb, tran_write_ht, num_pl)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
@@ -673,8 +674,8 @@ contains
   end subroutine tran_get_ht
 
   !==================================================================!
-  subroutine tran_bulk(timing_level, tran_win_min, tran_win_max, tran_energy_step, &
-                      tran_read_ht, tran_num_bb)
+  subroutine tran_bulk(timing_level, tran_win_min, tran_win_max, tran_energy_step,&
+        tran_read_ht, tran_num_bb)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -850,9 +851,9 @@ contains
   end subroutine tran_bulk
 
   !==================================================================!
-  subroutine tran_lcr(tran_read_ht, timing_level, tran_use_same_lead, tran_energy_step, &
-                     tran_win_min, tran_win_max, tran_num_bandc, tran_num_cr, &
-                     tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc)
+  subroutine tran_lcr(tran_read_ht, timing_level, tran_use_same_lead,&
+        tran_energy_step, tran_win_min, tran_win_max, tran_num_bandc, tran_num_cr,&
+        tran_num_ll, tran_num_rr, tran_num_cc, tran_num_lc)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
@@ -1665,9 +1666,9 @@ contains
   end subroutine tran_read_htXY
 
 !========================================
-  subroutine tran_find_integral_signatures(signatures, num_G, iprint, timing_level, real_lattice, &
-                                  u_matrix_opt, u_matrix, num_bands, have_disentangled, num_wann, &
-                                  wannier_centres_translated)
+  subroutine tran_find_integral_signatures(signatures, num_G, iprint,&
+        timing_level, real_lattice, u_matrix_opt, u_matrix, num_bands,&
+        have_disentangled, num_wann, wannier_centres_translated)
     !=========================================================================!
     ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate      !
     ! Fourier components of each wannier function. Linear combinations of     !
@@ -1928,14 +1929,14 @@ contains
   end subroutine tran_find_integral_signatures
 
   !========================================!
-  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, atoms_pos_cart, atoms_symbol, &
-                              transport_mode, num_atoms, atoms_species_num, num_species, dist_cutoff, &
-                              write_xyz, wannier_spreads, lenconfac, iprint, timing_level, &
-                              tran_group_threshold, real_lattice, tran_num_ll, num_wann, &
-                              tran_num_cell_ll, one_dim_dir, dist_cutoff_hc, length_unit, &
-                              dist_cutoff_mode, hr_cutoff, mp_grid, ham_r, irvec, nrpts, &
-                              wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, coord, &
-                              tran_sorted_idx)
+  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, atoms_pos_cart,&
+        atoms_symbol, transport_mode, num_atoms, atoms_species_num, num_species,&
+        dist_cutoff, write_xyz, wannier_spreads, lenconfac, iprint, timing_level,&
+        tran_group_threshold, real_lattice, tran_num_ll, num_wann,&
+        tran_num_cell_ll, one_dim_dir, dist_cutoff_hc, length_unit,&
+        dist_cutoff_mode, hr_cutoff, mp_grid, ham_r, irvec, nrpts,&
+        wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, coord,&
+        tran_sorted_idx)
     !=======================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
@@ -2485,9 +2486,9 @@ contains
   end subroutine tran_lcr_2c2_sort
 
   !========================================!
-  subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info, &
-                       tran_group_threshold, iprint, timing_level, wannier_centres_translated, &
-                       coord)
+  subroutine master_sort_and_group(Array, Array_groups, Array_size, subgroup_info,&
+        tran_group_threshold, iprint, timing_level, wannier_centres_translated,&
+        coord)
     !=============================================================!
     ! General sorting and grouping subroutine which takes Array,  !
     ! an ordered in conduction direction array of wannier function!
@@ -2792,11 +2793,10 @@ contains
   end subroutine group
 
   !=========================================================
-  subroutine check_and_sort_similar_centres(signatures, num_G, atoms_pos_cart, atoms_symbol, &
-                             num_species, atoms_species_num, num_atoms, transport_mode, write_xyz, &
-                             tran_group_threshold, timing_level, iprint, tran_num_cell_ll, &
-                             num_wann, tran_num_ll, wannier_centres_translated, coord, &
-                             tran_sorted_idx)
+  subroutine check_and_sort_similar_centres(signatures, num_G, atoms_pos_cart,&
+        atoms_symbol, num_species, atoms_species_num, num_atoms, transport_mode,&
+        write_xyz, tran_group_threshold, timing_level, iprint, tran_num_cell_ll,&
+        num_wann, tran_num_ll, wannier_centres_translated, coord, tran_sorted_idx)
     !=======================================================!
     ! Here, we consider the possiblity of wannier functions !
     ! with similar centres, such as a set of d-orbitals     !
@@ -3111,9 +3111,9 @@ contains
   end subroutine check_and_sort_similar_centres
 
   !=====================================!
-  subroutine tran_write_xyz(transport_mode, num_atoms, atoms_species_num, num_species, &
-                        atoms_symbol, atoms_pos_cart, num_wann, wannier_centres_translated, &
-                        tran_sorted_idx)
+  subroutine tran_write_xyz(transport_mode, num_atoms, atoms_species_num,&
+        num_species, atoms_symbol, atoms_pos_cart, num_wann,&
+        wannier_centres_translated, tran_sorted_idx)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
@@ -3174,8 +3174,8 @@ contains
   end subroutine tran_write_xyz
 
   !==============================================================!
-  subroutine tran_parity_enforce(signatures, tran_easy_fix, iprint, timing_level, tran_num_ll, &
-                                num_wann, tran_num_cell_ll, tran_sorted_idx)
+  subroutine tran_parity_enforce(signatures, tran_easy_fix, iprint, timing_level,&
+        tran_num_ll, num_wann, tran_num_cell_ll, tran_sorted_idx)
     !==============================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
     ! signatures) is used to determine its relavite parity         !
@@ -3266,13 +3266,13 @@ contains
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning, dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, &
-                                   timing_level, tran_num_bandc, tran_num_cc, tran_num_rr, &
-                                   tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, &
-                                   nfermi, kpt_cart, tran_num_ll, num_wann, tran_num_cell_ll, &
-                                   transport_mode, length_unit, one_dim_dir, hr_cutoff, real_lattice, &
-                                   mp_grid, ham_r, irvec, nrpts, wannier_centres_translated, one_dim_vec, &
-                                   nrpts_one_dim, num_pl, coord, tran_sorted_idx)
+  subroutine tran_lcr_2c2_build_ham(pl_warning, dist_cutoff_hc, dist_cutoff,&
+        dist_cutoff_mode, timing_level, tran_num_bandc, tran_num_cc, tran_num_rr,&
+        tran_num_lc, tran_num_cr, tran_write_ht, fermi_energy_list, nfermi,&
+        kpt_cart, tran_num_ll, num_wann, tran_num_cell_ll, transport_mode,&
+        length_unit, one_dim_dir, hr_cutoff, real_lattice, mp_grid, ham_r,&
+        irvec, nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim,&
+        num_pl, coord, tran_sorted_idx)
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
     ! Greens function caclulations of the quantum  !

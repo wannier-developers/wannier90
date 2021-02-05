@@ -38,7 +38,8 @@ contains
         wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt,&
         dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only,&
         on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix,&
-        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, symmetrize_eps, sym)
+        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix,&
+        symmetrize_eps, sym)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -310,7 +311,7 @@ ndimfroz,indxfroz)
   end subroutine dis_main
 
   subroutine internal_check_orthonorm(timing_level,num_wann, num_kpts,&
-         num_bands, ndimwin, on_root, u_matrix_opt)
+        num_bands, ndimwin, on_root, u_matrix_opt)
     !================================================================!
     !                                                                !
     !! This subroutine checks that the states in the columns of the
@@ -377,7 +378,7 @@ ndimfroz,indxfroz)
     !================================================================!
   end subroutine internal_check_orthonorm
 
-  subroutine internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, on_root, &
+  subroutine internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, on_root,&
         my_node_id, nntot, nnlist, nfirstwin, m_matrix_orig_local, num_nodes)
     !================================================================!
     !                                                                !
@@ -442,9 +443,9 @@ ndimfroz,indxfroz)
     !================================================================!
   end subroutine internal_slim_m
 
-  subroutine internal_find_u(on_root, lsitesymmetry, timing_level,&
-         num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt,&
-         a_matrix, symmetrize_eps, sym)
+  subroutine internal_find_u(on_root, lsitesymmetry, timing_level, num_kpts,&
+         num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, a_matrix,&
+         symmetrize_eps, sym)
     !================================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
@@ -560,8 +561,8 @@ ndimfroz,indxfroz)
   end subroutine internal_find_u
 
 ![ysl-b]
-  subroutine internal_find_u_gamma(timing_level, num_kpts, num_wann,&
-         num_bands, ndimwin, u_matrix, u_matrix_opt, a_matrix)
+  subroutine internal_find_u_gamma(timing_level, num_kpts, num_wann, num_bands,&
+        ndimwin, u_matrix, u_matrix_opt, a_matrix)
     !================================================================!
     !                                                                !
     !! Make initial u_matrix real
@@ -658,11 +659,11 @@ ndimfroz,indxfroz)
   end subroutine internal_find_u_gamma
 ![ysl-e]
 
-  subroutine dis_windows(iprint, timing_level, num_kpts,  num_wann,&
-        num_bands, dis_spheres_num, dis_spheres_first_wann, on_root,&
-        frozen_states, linner, lfrozen, ndimwin, ndimfroz, indxfroz,&
-        indxnfroz, nfirstwin, dis_win_min, dis_win_max, dis_froz_min,&
-        dis_froz_max, kpt_latt, recip_lattice, dis_spheres, eigval_opt)
+  subroutine dis_windows(iprint, timing_level, num_kpts, num_wann, num_bands,&
+        dis_spheres_num, dis_spheres_first_wann, on_root, frozen_states,&
+        linner, lfrozen, ndimwin, ndimfroz, indxfroz, indxnfroz, nfirstwin,&
+        dis_win_min, dis_win_max, dis_froz_min, dis_froz_max, kpt_latt,&
+        recip_lattice, dis_spheres, eigval_opt)
     !==================================================================!
     !                                                                  !
     !! This subroutine selects the states that are inside the outer
@@ -977,8 +978,8 @@ ndimfroz,indxfroz)
     !================================================================!
   end subroutine dis_windows
 
-  subroutine dis_project(timing_level, num_kpts, num_wann, num_bands,&
-        on_root, ndimwin, nfirstwin, a_matrix, u_matrix_opt)
+  subroutine dis_project(timing_level, num_kpts, num_wann, num_bands, on_root,&
+        ndimwin, nfirstwin, a_matrix, u_matrix_opt)
     !==================================================================!
     !                                                                  !
     !! Construct projections for the start of the disentanglement routine
@@ -1199,9 +1200,8 @@ ndimfroz,indxfroz)
     !==================================================================!
   end subroutine dis_project
 
-  subroutine dis_proj_froz(timing_level, on_root, num_kpts, ndimwin,&
-        u_matrix_opt, iprint, devel_flag, num_bands, num_wann, lfrozen,&
-        ndimfroz,indxfroz)
+  subroutine dis_proj_froz(timing_level, on_root, num_kpts, ndimwin, u_matrix_opt,&
+        iprint, devel_flag, num_bands, num_wann, lfrozen, ndimfroz, indxfroz)
     !==================================================================!
     !                                                                  !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
@@ -1584,12 +1584,11 @@ ndimfroz,indxfroz)
     !==================================================================!
   end subroutine dis_proj_froz
 
-  subroutine dis_extract(iprint, timing_level, my_node_id, num_nodes,&
-        num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
-        dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz,& 
-        on_root, lsitesymmetry, lwindow, length_unit, devel_flag,&
-        dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb,&
-        omega_invariant, eigval_opt, u_matrix_opt,m_matrix_orig_local, &
+  subroutine dis_extract(iprint, timing_level, my_node_id, num_nodes, num_kpts,&
+        nntot, num_wann, num_bands, dis_num_iter, dis_conv_window, ndimwin,&
+        nnlist, ndimfroz, indxnfroz, on_root, lsitesymmetry, lwindow, length_unit,&
+        devel_flag, dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb,&
+        omega_invariant, eigval_opt, u_matrix_opt,m_matrix_orig_local,&
         symmetrize_eps, sym)
     !==================================================================!
     !                                                                  !
@@ -2436,9 +2435,9 @@ ndimfroz,indxfroz)
     !==================================================================!
   end subroutine internal_test_convergence
 
-  subroutine internal_zmatrix(on_root, num_bands, timing_level, nntot,&
-       num_wann, num_kpts, ndimwin, nnlist, indxnfroz, ndimfroz, nkp,&
-       nkp_loc, wb, u_matrix_opt, m_matrix_orig_local, cbw, cmtrx)
+  subroutine internal_zmatrix(on_root, num_bands, timing_level, nntot, num_wann,&
+        num_kpts, ndimwin, nnlist, indxnfroz, ndimfroz, nkp, nkp_loc, wb,&
+        u_matrix_opt, m_matrix_orig_local, cbw, cmtrx)
     !==================================================================!
     !! Compute the Z-matrix
     !                                                                  !
@@ -2503,11 +2502,10 @@ ndimfroz,indxfroz)
 
 ![ysl-b]
   subroutine dis_extract_gamma(iprint, timing_level, my_node_id, num_nodes,&
-        num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
-        dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz,& 
-        on_root, length_unit, devel_flag, dis_mix_ratio,dis_conv_tol,&
-        wbtot, lenconfac, wb, omega_invariant, eigval_opt, u_matrix_opt,&
-        m_matrix_orig)
+        num_kpts, nntot, num_wann, num_bands, dis_num_iter, dis_conv_window,&
+        ndimwin, nnlist, ndimfroz, indxnfroz, on_root, length_unit, devel_flag,&
+        dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb, omega_invariant,&
+        eigval_opt, u_matrix_opt, m_matrix_orig)
     !==================================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -3167,9 +3165,9 @@ ndimfroz,indxfroz)
   !==================================================================!
   end subroutine dis_extract_gamma
 
-  subroutine internal_zmatrix_gamma(timing_level, nntot, num_wann,&
-        num_bands, num_kpts, ndimwin, nnlist, nkp, rmtrx, m_matrix_orig,&
-        u_matrix_opt, ndimfroz, indxnfroz, wb, cbw)
+  subroutine internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands,&
+        num_kpts, ndimwin, nnlist, nkp, rmtrx, m_matrix_orig, u_matrix_opt,&
+        ndimfroz, indxnfroz, wb, cbw)
     !==================================================================!
     !! Compute Z-matrix (Gamma point routine)
     !                                                                  !
