@@ -22,13 +22,6 @@ module w90_kmesh
   !!  Vanderbilt  PRB 56 12847 (1997)
 
   use w90_constants, only: dp
-! use w90_parameters, only: max_shells, num_nnmax, timing_level, kpt_cart, recip_lattice, &
-!           kmesh_tol, lenconfac, iprint, devel_flag, shell_list, nntot, nnlist, neigh, nncell, &
-!           wb, bka, bk, skip_B1_tests, wbtot, nnh, gamma_only, search_shells, num_kpts, &
-!           calc_only_A, real_lattice, kpt_latt, spinors, input_proj_site, num_proj, input_proj_l &
-!           input_proj_m, input_proj_radial, input_proj_z, input_proj_x, input_proj_zona, &
-!           input_proj_s, input_proj_s_qaxis, auto_projections, num_exclude_bands, exclude_bands, &
-!           length_unit, num_shells
   use w90_comms, only: on_root
 
   implicit none

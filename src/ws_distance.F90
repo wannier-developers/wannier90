@@ -22,7 +22,6 @@ module w90_ws_distance
   !! This module computes the optimal Wigner-Seitz cell around each Wannier
   !! function to use for interpolation.
   use w90_constants, only: dp
-! use w90_parameters, only: use_ws_distance, ws_distance_tol, ws_search_size
 
   implicit none
 
@@ -75,10 +74,6 @@ contains
     !! is on the edge of the WS of w_i,0. The results are stored in global
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
 
-!   use w90_parameters, only: num_wann, wannier_centres, real_lattice, &
-!     recip_lattice, iprint, mp_grid
-
-    !translation_centre_frac, automatic_translation,lenconfac
     use w90_io, only: stdout, io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
 
@@ -165,7 +160,6 @@ contains
     !! Return their coordinates and the degeneracy, as well as the integer
     !! shifts needed to get the vector (these are always multiples of
     !! the mp_grid, i.e. they are supercell displacements in the large supercell)
-!   use w90_parameters, only: real_lattice, recip_lattice, mp_grid
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
     use w90_io, only: stdout, io_error
 
@@ -290,7 +284,6 @@ contains
 
     use w90_io, only: io_error, io_stopwatch, io_file_unit, &
       seedname, io_date
-!   use w90_parameters, only: num_wann
 
     implicit none
 

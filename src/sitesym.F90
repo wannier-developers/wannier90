@@ -60,7 +60,6 @@ contains
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sym, lwindow_in)
 ! subroutine sitesym_slim_d_matrix_band(lwindow_in)
     !==================================================================!
-!   use w90_parameters, only: num_bands, num_kpts
 
     implicit none
 
@@ -101,7 +100,6 @@ contains
   !==================================================================!
   subroutine sitesym_replace_d_matrix_band(num_wann, sym)
     !==================================================================!
-!   use w90_parameters, only: num_wann
 
     implicit none
 
@@ -133,7 +131,6 @@ contains
     !    ndim=num_wann,  d=sym%d_matrix_band                                       !
     !                                                                          !
     !==========================================================================!
-!    use w90_parameters, only: num_wann, num_bands, num_kpts
 
     implicit none
 
@@ -196,7 +193,6 @@ contains
   !==================================================================!
   subroutine sitesym_symmetrize_gradient(imode, grad, num_wann, num_kpts, sym)
     !==================================================================!
-    !use w90_parameters, only: num_wann, num_kpts
     use w90_utility, only: utility_zgemm
 
     implicit none
@@ -269,7 +265,6 @@ contains
   !==================================================================!
   subroutine sitesym_symmetrize_rotation(urot, num_wann, num_kpts, sym)
     !==================================================================!
-    !use w90_parameters, only: num_wann, num_kpts, u_matrix
     use w90_utility, only: utility_zgemm
 
     implicit none
@@ -316,7 +311,6 @@ contains
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
     !                                                                  !
     !==================================================================!
-!   use w90_parameters, only: num_bands, num_kpts
 
     implicit none
 
@@ -379,8 +373,6 @@ contains
     !  and orthonormalize it                                           !
     !                                                                  !
     !==================================================================!
-!   use w90_parameters, only: num_wann, num_bands, symmetrize_eps
-!   use w90_parameters, only: num_wann, num_bands
 
     implicit none
 
@@ -521,7 +513,6 @@ contains
     !   lambda_{JI}=U^{*}_{mu J} Z_{mu mu'} U_{mu' I}                  !
     !                                                                  !
     !==================================================================!
-!   use w90_parameters, only: num_bands, num_wann
 
     implicit none
 
@@ -604,7 +595,6 @@ contains
   !==================================================================!
   subroutine sitesym_read(num_bands, num_wann, num_kpts, sym)
     !==================================================================!
-!   use w90_parameters, only: num_bands, num_wann, num_kpts
     use w90_io, only: io_file_unit, io_error, seedname
 
     implicit none

@@ -16,10 +16,6 @@ module w90_wannierise
   !! Main routines for the minimisation of the spread
 
   use w90_constants, only: dp
-  !use w90_comms, only: on_root, my_node_id, num_nodes, &
-  !  comms_bcast, comms_array_split, &
-  !  comms_gatherv, comms_allreduce, &
-  !  comms_scatterv
 
   implicit none
 
@@ -85,9 +81,6 @@ contains
 
     !ivo
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
-!   use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_r, &
-!     rpt_origin, irvec, nrpts, ndegen
-
 
     implicit none
 
@@ -1189,7 +1182,6 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      !use w90_hamiltonian, only: nrpts, irvec, ndegen
       use w90_comms, only: on_root, my_node_id, comms_allreduce
 
       implicit none
@@ -1476,8 +1468,6 @@ contains
       !                                               !
       !===============================================!
       use w90_constants, only: cmplx_i
-      !use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
-      !  ir2ik, ik2ir !YN: RS:
       use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv

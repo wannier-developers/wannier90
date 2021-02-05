@@ -249,10 +249,8 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_time, io_stopwatch
-!   use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, &
       ws_translate_dist
-!   use w90_parameters, only: iprint
 
     implicit none
 

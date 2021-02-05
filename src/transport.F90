@@ -322,8 +322,6 @@ contains
     !
     use w90_constants, only: dp, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
-!   use w90_hamiltonian, only: irvec, nrpts, ham_r
-!   use w90_hamiltonian, only: nrpts
 
     implicit none
 
@@ -426,7 +424,6 @@ contains
     !
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch, stdout
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
@@ -1679,7 +1676,6 @@ contains
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, &
       io_stopwatch
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
@@ -1951,7 +1947,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, stdout, io_stopwatch
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
    
@@ -2499,7 +2494,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_error, stdout, io_stopwatch
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
@@ -2812,7 +2806,6 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: stdout, io_stopwatch, io_error
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
@@ -3122,7 +3115,6 @@ contains
     !=====================================!
 
     use w90_io, only: seedname, io_file_unit, io_date, stdout
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
@@ -3284,7 +3276,6 @@ contains
 
     use w90_constants, only: dp, eps5
     use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
-!   use w90_hamiltonian, only: wannier_centres_translated
 
     implicit none
 
