@@ -45,13 +45,9 @@ module w90_sitesym
     integer :: nkptirr = 9999
     integer :: nsymmetry = 9999
     integer, allocatable :: kptsym(:, :), ir2ik(:), ik2ir(:)
+    real(kind=dp) :: symmetrize_eps = 1.d-3
     complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
     complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
-    !integer, public, save :: nkptirr = 9999
-    !integer, public, save :: nsymmetry = 9999
-    !integer, allocatable, public, save :: kptsym(:, :), ir2ik(:), ik2ir(:)
-    !complex(kind=dp), allocatable, public, save :: d_matrix_band(:, :, :, :)
-    !complex(kind=dp), allocatable, public, save :: d_matrix_wann(:, :, :, :)
   end type sitesym_data
 
 contains
@@ -119,7 +115,7 @@ contains
 
   !==========================================================================!
   subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts,&
-        symmetrize_eps, ndim, umat, sym, lwindow_in)
+        ndim, umat, sym, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -141,7 +137,6 @@ contains
 !   end w90_parameters
     type(sitesym_data) :: sym
 
-    real(kind=dp), intent(in) :: symmetrize_eps
 
     integer, intent(in) :: ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann, num_kpts)
@@ -167,9 +162,9 @@ contains
         n = ndim
       endif
       if (present(lwindow_in)) then
-        call symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat(:, :, ik), sym, n)
+        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym, n)
       else
-        call symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat(:, :, ik), sym)
+        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym)
       endif
       do isym = 2, sym%nsymmetry
         irk = sym%kptsym(isym, ir)
@@ -364,7 +359,7 @@ contains
   end subroutine sitesym_symmetrize_zmatrix
 
   !==================================================================!
-  subroutine symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, ir, ndim, umat,&
+  subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat,&
         sym, n)
     !==================================================================!
     !                                                                  !
@@ -377,7 +372,6 @@ contains
     implicit none
 
 !   from w90_parameters
-    real(kind=dp), intent(in) :: symmetrize_eps 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
 !   end w90_parameters
@@ -437,12 +431,12 @@ contains
                       matmul(conjg(transpose(umat(:ntmp, :))), cmat(:ntmp, :))
       enddo ! isym
       diff = sum(abs(cmat2))
-      if (diff .lt. symmetrize_eps) exit
+      if (diff .lt. sym%symmetrize_eps) exit
       if (iter .eq. niter) then
         write (stdout, "(a)") 'Error in symmetrize_u: not converged'
         write (stdout, "(a)") 'Either eps is too small or specified irreps is not'
         write (stdout, "(a)") '  compatible with the bands'
-        write (stdout, "(a,2e20.10)") 'diff,eps=', diff, symmetrize_eps
+        write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sym%symmetrize_eps
         call io_error('symmetrize_ukirr: not converged')
       endif
       usum = usum/ngk
@@ -502,7 +496,7 @@ contains
   end subroutine orthogonalize_u
 
   !==================================================================!
-  subroutine sitesym_dis_extract_symmetry(symmetrize_eps, ik, n, zmat, lambda,&
+  subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda,&
         umat, num_bands, num_wann, sym)
     !==================================================================!
     !                                                                  !
@@ -522,7 +516,6 @@ contains
 !   end w90_parameters
     type(sitesym_data) :: sym
 
-    real(kind=dp), intent(in) :: symmetrize_eps
 
     integer, intent(in) :: ik, n
     complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
@@ -585,7 +578,7 @@ contains
         ! choose the larger eigenstate
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
-      call symmetrize_ukirr(num_wann, num_bands, symmetrize_eps, sym%ik2ir(ik), num_bands, umatnew, sym, n)
+      call symmetrize_ukirr(num_wann, num_bands, sym%ik2ir(ik), num_bands, umatnew, sym, n)
       umat(:, :) = umatnew(:, :)
     enddo ! iter
 

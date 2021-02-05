@@ -87,7 +87,7 @@ program wannier
   integer :: len_seedname
   character(len=50) :: prog
 
-  type(sitesym_data) :: sym; !JJ
+  type(sitesym_data) :: sym !JJ
 
   call comms_setup
 
@@ -180,6 +180,7 @@ program wannier
     if (on_root) call param_read_chkpt()
     call param_chkpt_dist
     if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
+    if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
     select case (restart)
     case ('default')    ! continue from where last checkpoint was written
@@ -223,12 +224,14 @@ program wannier
   endif
 
   if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
+  if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
+
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
                        m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
   call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
                    cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
                    devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
-                   num_wann, num_bands, disentanglement, symmetrize_eps, sym)
+                   num_wann, num_bands, disentanglement, sym)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
@@ -244,7 +247,7 @@ program wannier
         wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt,&
         dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only,&
         on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix,&
-        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, symmetrize_eps, sym)
+        m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, sym)
 
 
     have_disentangled = .true.

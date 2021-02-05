@@ -39,7 +39,7 @@ contains
         dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only,&
         on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix,&
         m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix,&
-        symmetrize_eps, sym)
+        sym)
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -65,7 +65,6 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(3, num_kpts)
     real(kind=dp), intent(in) :: dis_spheres(4, dis_spheres_num)
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
-    real(kind=dp), intent(in) :: symmetrize_eps
 
     character(len=50), intent(in) :: devel_flag
     character(len=20), intent(in) :: length_unit
@@ -152,7 +151,7 @@ ndimfroz,indxfroz)
       end do
     end do
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts,&
                                                        num_bands, u_matrix_opt, sym, lwindow) !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
 
     ! Extract the optimally-connected num_wann-dimensional subspaces
@@ -164,7 +163,7 @@ ndimfroz,indxfroz)
         on_root, lsitesymmetry, lwindow, length_unit, devel_flag,&
         dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb,&
         omega_invariant, eigval_opt, u_matrix_opt,m_matrix_orig_local, &
-        symmetrize_eps, sym)
+        sym)
     else
       call dis_extract_gamma(iprint, timing_level, my_node_id, num_nodes,&
         num_kpts, nntot, num_wann, num_bands, dis_num_iter,&
@@ -202,7 +201,7 @@ ndimfroz,indxfroz)
     if (.not. gamma_only) then
       call internal_find_u(on_root, lsitesymmetry, timing_level,&
              num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt,&
-             a_matrix, symmetrize_eps, sym)
+             a_matrix, sym)
     else
       call internal_find_u_gamma(timing_level, num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, a_matrix)
     end if
@@ -450,7 +449,7 @@ ndimfroz,indxfroz)
 
   subroutine internal_find_u(on_root, lsitesymmetry, timing_level, num_kpts,&
          num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, a_matrix,&
-         symmetrize_eps, sym)
+         sym)
     !================================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
@@ -482,8 +481,6 @@ ndimfroz,indxfroz)
     complex(kind=dp), intent(in) :: a_matrix(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:,:,:) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
-
-    real(kind=dp), intent(in) :: symmetrize_eps
 
     logical, intent(in) :: on_root, lsitesymmetry
 
@@ -561,8 +558,7 @@ ndimfroz,indxfroz)
       if (ierr /= 0) call io_error('Error deallocating svals in dis_main')
     endif
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
-                                        num_wann, u_matrix, sym)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_wann, u_matrix, sym)
 
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2)
 
@@ -1613,7 +1609,7 @@ ndimfroz,indxfroz)
         nnlist, ndimfroz, indxnfroz, on_root, lsitesymmetry, lwindow, length_unit,&
         devel_flag, dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb,&
         omega_invariant, eigval_opt, u_matrix_opt,m_matrix_orig_local,&
-        symmetrize_eps, sym)
+        sym)
     !==================================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -1635,7 +1631,6 @@ ndimfroz,indxfroz)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:,:) ! (num_bands,num_kpts)
 
-    real(kind=dp), intent(in) :: symmetrize_eps
     real(kind=dp), intent(in) :: dis_mix_ratio, dis_conv_tol, wbtot, lenconfac
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
     real(kind=dp), intent(inout) :: omega_invariant
@@ -1949,7 +1944,7 @@ ndimfroz,indxfroz)
         end if                                                                      !RS:
         if (lsitesymmetry) then                                                     !RS:
 
-          call sitesym_dis_extract_symmetry(symmetrize_eps, nkp, ndimwin(nkp), czmat_in_loc(:, :, nkp_loc), &
+          call sitesym_dis_extract_symmetry(nkp, ndimwin(nkp), czmat_in_loc(:, :, nkp_loc), &
                                            lambda, u_matrix_opt_loc(:, :, nkp_loc), num_bands, num_wann, sym) !RS:
 
           do j = 1, num_wann                                                          !RS:
@@ -2044,7 +2039,7 @@ ndimfroz,indxfroz)
       call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*counts(my_node_id), &
                          u_matrix_opt, num_bands*num_wann*counts, num_bands*num_wann*displs)
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
-      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
+      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts,&
                                                          num_bands, u_matrix_opt, sym, lwindow) !RS:
 
       if (index(devel_flag, 'compspace') > 0) then
