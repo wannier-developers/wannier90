@@ -77,28 +77,31 @@ contains
 
     implicit none
 
+    ! passed variables
     integer, intent(inout) :: rpt_origin
     integer, intent(inout) :: nrpts
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: irvec(:, :)
-    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
-    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-
-!   from w90_parameters
-    integer, intent(in) :: ws_search_size(3)        !internal wigner_seitz
-    integer, intent(in) :: mp_grid(3)               !internal wigner_seitz
+    integer, intent(in) :: ws_search_size(3)
+    integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: timing_level             !internal wigner_seitz
-    integer, intent(in) :: iprint                   !internal wigner_seitz
-    real(kind=dp), intent(in) :: ws_distance_tol    !internal wigner_seitz
-    real(kind=dp), intent(in) :: real_metric(3, 3)  !internal wigner_seitz
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: iprint 
+
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    real(kind=dp), intent(in) :: ws_distance_tol
+    real(kind=dp), intent(in) :: real_metric(3, 3)
+
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+
     character(len=20), intent(in) :: transport_mode
     character(len=20), intent(in) :: bands_plot_mode
+
     logical, intent(in) :: transport
     logical, intent(in) :: bands_plot
-!   end w90_parameters
 
+    ! local variables
     integer :: ierr
 
     if (ham_have_setup) return
@@ -154,11 +157,15 @@ contains
 
     implicit none
 
+    ! passed variables
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: irvec(:, :)
+
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 
+    ! local variables
     integer :: ierr
 
     if (allocated(ham_r)) then
@@ -211,34 +218,20 @@ contains
 
     implicit none
 
+    ! passed variables
+    integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: irvec(:, :)
-    real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
-    complex(kind=dp), intent(inout) :: ham_r(:, :, :)
-   
-
-!   from w90_parameters
-    integer, intent(in)  :: num_bands
-    integer, intent(in)  :: num_kpts 
-    integer, intent(in)  :: num_wann
-    integer, intent(in)  :: timing_level
-!   end parameters
-
-    integer, intent(inout), allocatable :: shift_vec(:, :)
-
-    complex(kind=dp)     :: fac
-    real(kind=dp)        :: rdotk
-    real(kind=dp)        :: eigval_opt(num_bands, num_kpts)
-    real(kind=dp)        :: eigval2(num_wann, num_kpts)
-    real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt, i, j, m, irpt, ideg, ierr, counter
-    complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
-
-!   from w90_parameters
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts 
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: timing_level
     integer, intent(in) :: num_atoms
     integer, intent(in) :: num_species
     integer, intent(in) :: atoms_species_num(:)
     integer, intent(in) :: ndimwin(:)
+
+    real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres(:, :)
@@ -247,13 +240,25 @@ contains
     real(kind=dp), intent(in) :: lenconfac
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: eigval(:, :)
+
+    complex(kind=dp), intent(inout) :: ham_r(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+
     logical, intent(in) :: automatic_translation
     logical, intent(in) :: have_disentangled     
     logical, intent(in) :: lwindow(:, :)
     logical, intent(in) :: lsitesymmetry  !YN:
-!   end w90_parameters
+
+    ! local variables
+    complex(kind=dp)     :: fac
+    real(kind=dp)        :: rdotk
+    real(kind=dp)        :: eigval_opt(num_bands, num_kpts)
+    real(kind=dp)        :: eigval2(num_wann, num_kpts)
+    real(kind=dp)        :: irvec_tmp(3)
+    integer              :: loop_kpt, i, j, m, irpt, ideg, ierr, counter
+    complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
+
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
@@ -437,29 +442,29 @@ contains
 
       implicit none
 
+      ! passed variables
       integer, intent(inout) :: shift_vec(:, :)
-      real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
-
-      ! <<<local variables>>>
-      integer :: iw, ierr, nat, nsp, ind
-      real(kind=dp), allocatable :: r_home(:, :), r_frac(:, :)
-      real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
-      real(kind=dp) :: r_frac_min(3)
-
-!     from w90_parameters
       integer, intent(in) :: num_wann
       integer, intent(in) :: atoms_species_num(:)
       integer, intent(in) :: num_species
       integer, intent(in) :: num_atoms
+
+      real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
       real(kind=dp), intent(in) :: real_lattice(3, 3)
       real(kind=dp), intent(in) :: lenconfac
       real(kind=dp), intent(out) :: translation_centre_frac(3) 
-!     would it be better left without intent(out)?
       real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
       real(kind=dp), intent(in) :: wannier_centres(:, :)
       real(kind=dp), intent(in) :: recip_lattice(3, 3)
+
       logical, intent(in) :: automatic_translation
-!     end w90_parameters
+
+      ! local variables
+      integer :: iw, ierr, nat, nsp, ind
+
+      real(kind=dp), allocatable :: r_home(:, :), r_frac(:, :)
+      real(kind=dp) :: c_pos_cart(3), c_pos_frac(3)
+      real(kind=dp) :: r_frac_min(3)
 
 !~      if (.not.allocated(wannier_centres_translated)) then
 !~         allocate(wannier_centres_translated(3,num_wann),stat=ierr)
@@ -600,7 +605,6 @@ contains
     use w90_constants, only: eps7, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
 
-
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
@@ -608,27 +612,26 @@ contains
 
     implicit none
 
+    ! passed variables
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
-
     integer, intent(inout) :: rpt_origin
-
-    logical, intent(in) :: count_pts
-    !! Only count points and return
-    integer       :: ndiff(3)
-    real(kind=dp) :: tot, dist_min
-    real(kind=dp), allocatable :: dist(:)
-    integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
-
-!   from w90_parameters
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: ws_search_size(3)
     integer, intent(in) :: timing_level
     integer, intent(in) :: iprint
+
+    logical, intent(in) :: count_pts
+
     real(kind=dp), intent(in) :: real_metric(3, 3)
     real(kind=dp), intent(in) :: ws_distance_tol
-!   end w90_parameters
+
+    ! local variables
+    integer       :: ndiff(3)
+    real(kind=dp) :: tot, dist_min
+    real(kind=dp), allocatable :: dist(:)
+    integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
 
@@ -747,20 +750,9 @@ contains
 
     implicit none
 
+    ! passed variables
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: irvec(:, :)
-
-    complex(kind=dp)     :: fac
-    real(kind=dp)        :: rdotk
-    integer              :: loop_rpt, m, n, nkp, ind, nn, file_unit
-    complex(kind=dp)     :: position(3)
-    character(len=33) :: header
-    character(len=9)  :: cdate, ctime
-
-!lp w90_parameter "write_bvec" does not appear to be used here, so not included in
-!lp argument list
-
-!   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: nntot
@@ -768,7 +760,14 @@ contains
     real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-!   end w90_parameters
+
+    ! local variables
+    complex(kind=dp) :: fac
+    real(kind=dp) :: rdotk
+    complex(kind=dp) :: position(3)
+    character(len=33) :: header
+    character(len=9)  :: cdate, ctime
+    integer :: loop_rpt, m, n, nkp, ind, nn, file_unit
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', err=101)

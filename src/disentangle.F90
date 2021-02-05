@@ -48,7 +48,6 @@ contains
     !==================================================================!
     use w90_io, only: io_file_unit
 
-    real(kind=dp), intent(in) :: symmetrize_eps
 
     ! passed variables
     integer, intent(in) :: timing_level, iprint, num_nodes, my_node_id, optimisation
@@ -66,6 +65,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(3, num_kpts)
     real(kind=dp), intent(in) :: dis_spheres(4, dis_spheres_num)
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
+    real(kind=dp), intent(in) :: symmetrize_eps
 
     character(len=50), intent(in) :: devel_flag
     character(len=20), intent(in) :: length_unit
@@ -74,7 +74,6 @@ contains
     logical, intent(inout) :: lwindow(:,:) !(num_bands, num_kpts)
 
     complex(kind=dp), intent(inout) :: a_matrix(:,:,:) ! (num_bands, num_wann, num_kpts)
-    ! JJ are these used anywhere else? or should they be local?
     complex(kind=dp), intent(inout), allocatable :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig(:, :, :, :)
@@ -333,11 +332,14 @@ ndimfroz,indxfroz)
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
-    logical, intent(in) :: on_root
+
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
+
+    logical, intent(in) :: on_root
 
     ! local variables
     integer          :: nkp, l, m, j
+
     complex(kind=dp) :: ctmp
 
     if (timing_level > 1) call io_stopwatch('dis: main: check_orthonorm', 1)
@@ -394,18 +396,21 @@ ndimfroz,indxfroz)
     integer, intent(in) :: timing_level, num_nodes, my_node_id
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
-    logical, intent(in) :: on_root
     integer, intent(in) :: nntot, nnlist(:,:) ! (num_kpts, nntot)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts) index of lowest band inside outer window at nkp-th
+
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:,:,:,:)
 
+    logical, intent(in) :: on_root
+
     ! local variables
-    integer                       :: nkp, nkp2, nn, i, j, m, n, ierr
-    integer                       :: nkp_global
-    complex(kind=dp), allocatable :: cmtmp(:, :)
+    integer :: nkp, nkp2, nn, i, j, m, n, ierr
+    integer :: nkp_global
     ! Needed to split an array on different nodes
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
+
+    complex(kind=dp), allocatable :: cmtmp(:, :)
 
     if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 1)
 
@@ -473,19 +478,24 @@ ndimfroz,indxfroz)
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
-    logical, intent(in) :: on_root, lsitesymmetry
+
     complex(kind=dp), intent(in) :: a_matrix(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:,:,:) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
+
     real(kind=dp), intent(in) :: symmetrize_eps
+
+    logical, intent(in) :: on_root, lsitesymmetry
+
     type(sitesym_data) :: sym
 
     ! local variables
-    integer                       :: nkp, info, ierr
+    integer :: nkp, info, ierr
     complex(kind=dp), allocatable :: caa(:, :, :)
     ! For ZGESVD
     real(kind=dp), allocatable :: svals(:)
     real(kind=dp), allocatable :: rwork(:)
+
     complex(kind=dp), allocatable :: cv(:, :)
     complex(kind=dp), allocatable :: cz(:, :)
     complex(kind=dp), allocatable :: cwork(:)
@@ -574,12 +584,14 @@ ndimfroz,indxfroz)
     ! passed variables
     integer, intent(in) :: timing_level, num_kpts, num_wann, num_bands
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
+
     complex(kind=dp), intent(in) :: a_matrix(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:,:,:) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
 
     ! local variables
-    integer                       :: info, ierr
+    integer :: info, ierr
+
     real(kind=dp), allocatable :: u_opt_r(:, :)
     real(kind=dp), allocatable :: a_matrix_r(:, :)
     real(kind=dp), allocatable :: raa(:, :)
@@ -1033,17 +1045,21 @@ ndimfroz,indxfroz)
     ! passed variables
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    logical, intent(in) :: on_root
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts)
+
     complex(kind=dp), intent(inout) :: a_matrix(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
 
+    logical, intent(in) :: on_root
+
     ! internal variables
     integer :: i, j, l, m, nkp, info, ierr
+
     real(kind=dp), allocatable :: svals(:)
     real(kind=dp), allocatable :: rwork(:)
-    complex(kind=dp)              :: ctmp2
+
+    complex(kind=dp) :: ctmp2
     complex(kind=dp), allocatable :: cwork(:)
     complex(kind=dp), allocatable :: cz(:, :)
     complex(kind=dp), allocatable :: cvdag(:, :)
@@ -1220,12 +1236,15 @@ ndimfroz,indxfroz)
     ! passed variables
     integer, intent(in) :: timing_level, iprint
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    logical, intent(in) :: on_root, lfrozen(:,:) ! (num_bands, num_kpts)
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxfroz(:,:) ! (num_bands,num_kpts)
-    character(len=50), intent(in) :: devel_flag
+
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
+
+    logical, intent(in) :: on_root, lfrozen(:,:) ! (num_bands, num_kpts)
+
+    character(len=50), intent(in) :: devel_flag
 
     ! INPUT: num_wann,ndimwin,ndimfroz,indxfroz,lfrozen
     ! MODIFIED: u_matrix_opt (At input it contains the gaussians projected onto
@@ -1240,8 +1259,10 @@ ndimfroz,indxfroz)
     ! *********************************************************
     integer, allocatable :: iwork(:)
     integer, allocatable :: ifail(:)
+
     real(kind=dp), allocatable :: w(:)
     real(kind=dp), allocatable :: rwork(:)
+
     complex(kind=dp), allocatable :: cap(:)
     complex(kind=dp), allocatable :: cwork(:)
     complex(kind=dp), allocatable :: cz(:, :)
@@ -1265,13 +1286,16 @@ ndimfroz,indxfroz)
     integer :: goods, il, iu, nkp, l, j, n, m, info, ierr
     integer :: counter, loop_f, loop_v, vmap(num_bands)
     integer :: nzero
-    logical :: take
-    character(len=4) :: rep
+
     complex(kind=dp) :: ctmp
     complex(kind=dp), allocatable :: cp_s(:, :)
     complex(kind=dp), allocatable :: cq_froz(:, :)
     complex(kind=dp), allocatable :: cpq(:, :)
     complex(kind=dp), allocatable :: cqpq(:, :)
+
+    logical :: take
+
+    character(len=4) :: rep
 
     if (timing_level > 1) call io_stopwatch('dis: proj_froz', 1)
 
@@ -1602,9 +1626,6 @@ ndimfroz,indxfroz)
 
     implicit none
 
-    type(sitesym_data) :: sym
-    real(kind=dp), intent(in) :: symmetrize_eps
-
     ! passed variables
     integer, intent(in) :: timing_level, iprint, num_nodes, my_node_id
     integer, intent(in) :: num_bands, num_kpts, num_wann
@@ -1614,12 +1635,7 @@ ndimfroz,indxfroz)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:,:) ! (num_bands,num_kpts)
 
-    logical, intent(in) :: on_root, lsitesymmetry
-    logical, intent(inout) :: lwindow(:,:) ! (num_bands, num_kpts)
-
-    character(len=20), intent(in) :: length_unit
-    character(len=50), intent(in) :: devel_flag
-
+    real(kind=dp), intent(in) :: symmetrize_eps
     real(kind=dp), intent(in) :: dis_mix_ratio, dis_conv_tol, wbtot, lenconfac
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
     real(kind=dp), intent(inout) :: omega_invariant
@@ -1628,6 +1644,14 @@ ndimfroz,indxfroz)
     !JJ alloc needed? intent on m_matrix_orig_local?
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:,:,:,:)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
+
+    logical, intent(in) :: on_root, lsitesymmetry
+    logical, intent(inout) :: lwindow(:,:) ! (num_bands, num_kpts)
+
+    character(len=20), intent(in) :: length_unit
+    character(len=50), intent(in) :: devel_flag
+
+    type(sitesym_data) :: sym
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima
@@ -1694,7 +1718,7 @@ ndimfroz,indxfroz)
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :), cbw(:, :)
 
     real(kind=dp), allocatable :: history(:)
-    logical                       :: dis_converged
+    logical :: dis_converged
     complex(kind=dp) :: lambda(num_wann, num_wann) !RS:
 
     ! Needed to split an array on different nodes
@@ -2457,12 +2481,13 @@ ndimfroz,indxfroz)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts) 
     integer, intent(in) :: nkp
     integer, intent(in) :: nkp_loc
+
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
+
     complex(kind=dp), intent(in) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:,:,:,:)
     complex(kind=dp), intent(in) :: cbw(:,:)
 
-    !! Which kpoint
     complex(kind=dp), intent(out) :: cmtrx(:,:) ! (num_bands, num_bands)
     !! (M,N)-TH ENTRY IN THE (NDIMWIN(NKP)-NDIMFROZ(NKP)) x (NDIMWIN(NKP)-NDIMFRO
     !! HERMITIAN MATRIX AT THE NKP-TH K-POINT
@@ -2526,11 +2551,6 @@ ndimfroz,indxfroz)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:,:) !(num_bands,num_kpts)
 
-    logical, intent(in) :: on_root
-
-    character(len=20), intent(in) :: length_unit
-    character(len=50), intent(in) :: devel_flag
-
     real(kind=dp), intent(in) :: dis_mix_ratio, dis_conv_tol, wbtot, lenconfac
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
     real(kind=dp), intent(inout) :: omega_invariant
@@ -2538,6 +2558,11 @@ ndimfroz,indxfroz)
 
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), allocatable :: m_matrix_orig(:,:,:,:) ! non-gamma uses _local variant ?
+
+    logical, intent(in) :: on_root
+
+    character(len=20), intent(in) :: length_unit
+    character(len=50), intent(in) :: devel_flag
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optimal
@@ -3185,8 +3210,10 @@ ndimfroz,indxfroz)
     integer, intent(in) :: nntot, nnlist(:,:) ! (num_kpts, nntot)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:,:) !(num_bands,num_kpts)
+
     real(kind=dp), intent(in) :: wb(:) ! (nntot)
     real(kind=dp), intent(out) :: rmtrx(:,:) !(num_bands, num_bands)
+
     complex(kind=dp), intent(in) :: cbw(:, :)
     complex(kind=dp), intent(in) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) !(num_bands, num_wann, num_kpts)
