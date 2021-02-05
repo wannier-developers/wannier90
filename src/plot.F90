@@ -36,7 +36,8 @@ contains
                       fermi_surface_num_points, one_dim_dir, bands_plot_dim, hr_cutoff, dist_cutoff, &
                       dist_cutoff_mode, use_ws_distance, bands_plot_project, num_bands_project, &
                       bands_plot_format, bands_label, bands_spec_points, bands_num_spec_points, &
-                      recip_metric, bands_num_points)
+                      recip_metric, bands_num_points, ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
+                      wannier_centres_translated)
     !! Main plotting routine
     !============================================!
 
@@ -45,11 +46,24 @@ contains
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
       hamiltonian_setup, hamiltonian_write_rmn, &
-      hamiltonian_write_tb, nrpts, irvec
+      hamiltonian_write_tb
+!     hamiltonian_write_tb, nrpts, irvec
     use w90_ws_distance, only: done_ws_distance, ws_translate_dist, &
       ws_write_vec
 
     implicit none
+
+!   from w90_hamiltonian
+    integer, intent(inout) :: rpt_origin
+    integer, intent(inout) :: nrpts
+    integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(inout), allocatable :: shift_vec(:, :)
+    integer, intent(inout), allocatable :: irvec(:, :)
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+
+
+!   end w90_hamiltonian
 
 !   from w90_parameters
     integer, intent(in) :: bands_num_spec_points
@@ -156,7 +170,8 @@ contains
       !
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                             mp_grid, transport_mode, bands_plot_mode, transport, &
-                            bands_plot, num_kpts, num_wann, timing_level, iprint)
+                            bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
+                            nrpts, rpt_origin, wannier_centres_translated)
       !
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                              num_atoms, atoms_pos_cart, translation_centre_frac, &
@@ -164,7 +179,7 @@ contains
                              lenconfac, have_disentangled, ndimwin, lwindow, &
                              u_matrix_opt, kpt_latt, eigval, u_matrix, &
                              lsitesymmetry, num_bands, num_kpts, num_wann, &
-                             timing_level)
+                             timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
       !
       if (bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, one_dim_dir, &
                                     bands_plot_dim, hr_cutoff, dist_cutoff, dist_cutoff_mode, &
@@ -172,23 +187,25 @@ contains
                                     bands_plot_mode, bands_plot_format, bands_label, &
                                     bands_spec_points, timing_level, bands_num_spec_points, &
                                     recip_metric, bands_num_points, num_wann, iprint, recip_lattice, &
-                                    wannier_centres)
+                                    wannier_centres, ws_search_size, ws_distance_tol, ham_r, irvec, ndegen, &
+                                    nrpts, wannier_centres_translated)
       !
       if (fermi_surface_plot) call plot_fermi_surface(fermi_energy_list, nfermi, &
-                                 recip_lattice, timing_level, fermi_surface_num_points, num_wann)
+                                 recip_lattice, timing_level, fermi_surface_num_points, num_wann, &
+                                 ham_r, irvec, ndegen, nrpts)
       !
-      if (write_hr) call hamiltonian_write_hr(num_wann, timing_level)
+      if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts)
       !
       if (write_rmn) call hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
-          num_kpts, kpt_latt, nntot)
+          num_kpts, kpt_latt, nntot, irvec, nrpts)
       !
       if (write_tb) call hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
-          m_matrix, num_kpts, kpt_latt, nntot, timing_level)
+          m_matrix, num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts)
       !
       if (write_hr .or. write_rmn .or. write_tb) then
-        if (.not. done_ws_distance) call ws_translate_dist(num_wann, wannier_centres, real_lattice, &
-                                               recip_lattice, iprint, mp_grid, nrpts, irvec)
-        call ws_write_vec(nrpts, irvec, num_wann)
+        if (.not. done_ws_distance) call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, &
+                                    wannier_centres, real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+        call ws_write_vec(nrpts, irvec, num_wann, use_ws_distance)
       end if
     end if
 
@@ -219,7 +236,8 @@ contains
                                    bands_plot_project, num_bands_project, bands_plot_mode, &
                                    bands_plot_format, bands_label, bands_spec_points, timing_level, &
                                    bands_num_spec_points, recip_metric, bands_num_points, num_wann, &
-                                   iprint, recip_lattice, wannier_centres)
+                                   iprint, recip_lattice, wannier_centres, ws_search_size, ws_distance_tol, &
+                                   ham_r, irvec, ndegen, nrpts, wannier_centres_translated)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -229,12 +247,20 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_time, io_stopwatch
-    use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
+!   use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, &
       ws_translate_dist
 !   use w90_parameters, only: iprint
 
     implicit none
+
+!   from w90_hamiltonian
+    integer, intent(inout) :: nrpts
+    integer, intent(in) :: ndegen(:)
+    integer, intent(in) :: irvec(:, :)
+    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
+!   end w90_hamiltonian
 
 !   from w90 parameters
     integer, intent(in) :: mp_grid(3)
@@ -247,6 +273,7 @@ contains
     integer, intent(in) :: bands_num_points
     integer, intent(in) :: num_wann
     integer, intent(in) :: iprint   
+    integer, intent(in) :: ws_search_size(3)
     real(kind=dp), intent(in) :: recip_metric(3, 3)
     real(kind=dp), intent(in) :: dist_cutoff
     real(kind=dp), intent(in) :: hr_cutoff
@@ -254,6 +281,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) ::bands_spec_points(:, :)  
     real(kind=dp), intent(in) :: wannier_centres(:, :)
+    real(kind=dp), intent(in) :: ws_distance_tol
     logical, intent(in) :: use_ws_distance
     character(len=20), intent(in) :: dist_cutoff_mode
     character(len=20), intent(in) :: bands_plot_mode
@@ -447,17 +475,17 @@ contains
     !
     if (index(bands_plot_mode, 'cut') .ne. 0) call plot_cut_hr(dist_cutoff_mode, dist_cutoff, &
                                                 hr_cutoff, bands_plot_dim, one_dim_dir, &
-                                                real_lattice, mp_grid, num_wann)
+                                                real_lattice, mp_grid, num_wann, wannier_centres_translated)
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
     if (use_ws_distance) then
       if (index(bands_plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(num_wann, wannier_centres, real_lattice, recip_lattice, iprint, &
-                              mp_grid, nrpts, irvec, force_recompute=.true.)
+        call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, real_lattice, &
+                               recip_lattice, iprint, mp_grid, nrpts, irvec, force_recompute=.true.)
       elseif (index(bands_plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(num_wann, wannier_centres, real_lattice, recip_lattice, iprint, &
-                              mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
+        call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, real_lattice, &
+                               recip_lattice, iprint, mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
       endif
@@ -574,7 +602,7 @@ contains
 
     !============================================!
     subroutine plot_cut_hr(dist_cutoff_mode, dist_cutoff, hr_cutoff, bands_plot_dim, &
-                           one_dim_dir, real_lattice, mp_grid, num_wann)
+                           one_dim_dir, real_lattice, mp_grid, num_wann, wannier_centres_translated)
       !============================================!
       !
       !!  In real-space picture, ham_r(j,i,k) is an interaction between
@@ -595,9 +623,11 @@ contains
 
       use w90_constants, only: dp, cmplx_0, eps8
       use w90_io, only: io_error, stdout
-      use w90_hamiltonian, only: wannier_centres_translated
+!     use w90_hamiltonian, only: wannier_centres_translated
 
       implicit none
+
+      real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
        
 !     from w90_parameters
       integer, intent(in) :: one_dim_dir
@@ -946,7 +976,8 @@ contains
 
   !===========================================================!
   subroutine plot_fermi_surface(fermi_energy_list, nfermi, recip_lattice, &
-                 timing_level, fermi_surface_num_points, num_wann)
+                 timing_level, fermi_surface_num_points, num_wann, ham_r, irvec, &
+                 ndegen, nrpts)
     !===========================================================!
     !                                                           !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -956,9 +987,17 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_date, io_time, io_stopwatch
-    use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
+!   use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
+!   use w90_hamiltonian, only: nrpts
 
     implicit none
+
+!   from w90_hamiltonian
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: ndegen(:) 
+    integer, intent(in) :: irvec(:, :)
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
+!   end w90_hamiltonian
 
 !   from w90_parameters
     integer, intent(in) :: nfermi
