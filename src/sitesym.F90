@@ -54,7 +54,6 @@ contains
 
   !==================================================================!
   subroutine sitesym_slim_d_matrix_band(num_bands, num_kpts, sym, lwindow_in)
-! subroutine sitesym_slim_d_matrix_band(lwindow_in)
     !==================================================================!
 
     implicit none

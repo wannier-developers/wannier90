@@ -75,7 +75,7 @@ contains
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use w90_parameters, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_sitesym, only: sitesym_symmetrize_gradient,sitesym_data  !RS:
+    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, &
       comms_bcast, comms_scatterv, comms_array_split
 
@@ -83,6 +83,8 @@ contains
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
 
     implicit none
+
+    ! passed variables
 
 !   from w90_hamiltonian
     integer, intent(inout) :: rpt_origin
@@ -92,89 +94,88 @@ contains
     integer, intent(inout), allocatable :: irvec(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-
 !   end w90_hamiltonian
 
     type(sitesym_data) :: sym
-    !subroutine args from parameters module
-    integer, intent(in) :: num_wann, num_cg_steps, num_iter
-    integer, intent(in) :: nnlist(:, :)
-    integer, intent(in) :: nntot
-    real(kind=dp), intent(in) :: wbtot
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-    integer, intent(in) :: num_kpts, iprint, num_print_cycles, num_dump_cycles
-    real(kind=dp) :: omega_invariant
-    character(len=*), intent(in) :: length_unit
-    real(kind=dp), intent(in) :: lenconfac
-    real(kind=dp), intent(in) :: proj_site(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    logical, intent(in) :: write_r2mn
-    logical, intent(inout) :: guiding_centres
-    integer, intent(in) :: num_guide_cycles, num_no_guide_iter, timing_level
-    real(kind=dp), intent(in) :: trial_step
-    logical, intent(in) :: precond
-    real(kind=dp), intent(in) :: fixed_step
-    logical, intent(in) :: lfixstep
-    logical, intent(in) :: write_proj, have_disentangled
-    real(kind=dp), intent(in) :: conv_tol
-    integer, intent(in) :: num_proj, conv_window
-    real(kind=dp), intent(in) :: conv_noise_amp
-    integer, intent(in) :: conv_noise_num
-    real(kind=dp), intent(inout) :: wannier_centres(:, :)
-    logical, intent(in) :: write_xyz
-    real(kind=dp), intent(inout) :: wannier_spreads(:)
-    real(kind=dp), intent(inout) :: omega_total, omega_tilde
-    integer, intent(in) :: optimisation
-    logical, intent(in) :: write_vdw_data, write_hr_diag
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    real(kind=dp), intent(in) :: bk(:, :, :), bka(:, :)
-    real(kind=dp), intent(in) :: ccentres_cart(:, :)
-    integer, intent(in) :: slwf_num
-    logical, intent(in) :: selective_loc, slwf_constrain
-    real(kind=dp), intent(in) :: slwf_lambda
-    integer, intent(in) :: neigh(:, :)
-    integer, intent(in) :: nnh
-    integer, intent(in) :: num_bands
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    real(kind=dp), intent(in) :: eigval(:, :)
-    logical, intent(in) :: lwindow(:, :)
-    real(kind=dp), intent(in) :: wb(:)
-    logical, intent(in) :: translate_home_cell
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    integer, intent(in) :: num_atoms
-    character(len=2), intent(in) :: atoms_symbol(:)
-    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-    integer, intent(in) :: num_species
-    integer, intent(in) :: atoms_species_num(:)
-    integer, intent(in) :: num_valence_bands, num_elec_per_state
-    logical, intent(in) :: lsitesymmetry
-    integer, intent(in) :: stdout
 
-    ! JJ, extra args
-    integer, intent(in) :: ws_search_size(3)
+    integer, intent(in) :: atoms_species_num(:)
+    integer, intent(in) :: conv_noise_num
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: ndimwin(:)
-    character(len=20), intent(in) :: transport_mode
-    character(len=20), intent(in) :: bands_plot_mode
-    logical, intent(in) :: transport
-    logical, intent(in) :: bands_plot
-    logical, intent(in) :: automatic_translation
-    real(kind=dp), intent(in) :: ws_distance_tol
-    real(kind=dp), intent(in) :: real_metric(3, 3)
-    real(kind=dp), intent(inout) :: translation_centre_frac(3)
+    integer, intent(in) :: neigh(:, :)
+    integer, intent(in) :: nnh
+    integer, intent(in) :: nnlist(:, :)
+    integer, intent(in) :: nntot
+    integer, intent(in) :: num_atoms
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_guide_cycles, num_no_guide_iter, timing_level
+    integer, intent(in) :: num_kpts, iprint, num_print_cycles, num_dump_cycles
+    integer, intent(in) :: num_proj, conv_window
+    integer, intent(in) :: num_species
+    integer, intent(in) :: num_valence_bands, num_elec_per_state
+    integer, intent(in) :: num_wann, num_cg_steps, num_iter
+    integer, intent(in) :: optimisation
+    integer, intent(in) :: slwf_num
+    integer, intent(in) :: stdout
+    integer, intent(in) :: ws_search_size(3)
 
-    ! local
+    logical, intent(in) :: automatic_translation
+    logical, intent(in) :: bands_plot
+    logical, intent(in) :: lfixstep
+    logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: lwindow(:, :)
+    logical, intent(inout) :: guiding_centres
+    logical, intent(in) :: precond
+    logical, intent(in) :: selective_loc, slwf_constrain
+    logical, intent(in) :: translate_home_cell
+    logical, intent(in) :: transport
+    logical, intent(in) :: write_proj, have_disentangled
+    logical, intent(in) :: write_r2mn
+    logical, intent(in) :: write_vdw_data, write_hr_diag
+    logical, intent(in) :: write_xyz
+
+    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+    real(kind=dp), intent(in) :: bk(:, :, :), bka(:, :)
+    real(kind=dp), intent(in) :: ccentres_cart(:, :)
+    real(kind=dp), intent(in) :: conv_noise_amp
+    real(kind=dp), intent(in) :: conv_tol
+    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: fixed_step
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: lenconfac
+    real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(inout) :: omega_total, omega_tilde
+    real(kind=dp), intent(inout) :: translation_centre_frac(3)
+    real(kind=dp), intent(inout) :: wannier_centres(:, :)
+    real(kind=dp), intent(inout) :: wannier_spreads(:)
+    real(kind=dp), intent(in) :: proj_site(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: real_metric(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: slwf_lambda
+    real(kind=dp), intent(in) :: trial_step
+    real(kind=dp), intent(in) :: wb(:)
+    real(kind=dp), intent(in) :: wbtot
+    real(kind=dp), intent(in) :: ws_distance_tol
+
+    character(len=20), intent(in) :: bands_plot_mode
+    character(len=20), intent(in) :: transport_mode
+    character(len=2), intent(in) :: atoms_symbol(:)
+    character(len=*), intent(in) :: length_unit
+
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+
+    ! local variables
     type(localisation_vars) :: old_spread
     type(localisation_vars) :: wann_spread
     type(localisation_vars) :: trial_spread
 
-    ! data from wannierise module
     ! Data to avoid large allocation within iteration loop
     real(kind=dp), allocatable  :: rnkb(:, :, :)
     real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
     real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-
     real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
 
     ! for MPI
