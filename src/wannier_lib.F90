@@ -377,9 +377,10 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
     write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle      ', time1 - time2, ' (sec)'
   else
     if (gamma_only) then
-      call overlap_project_gamma()
+      call overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)  !lp note this not called by wannier_prog.F90 
     else
-      call overlap_project()
+      call overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
+                          timing_level, num_kpts, num_wann, num_bands, lsitesymmetry) !lp note this not called by wannier_prog.F90 
     endif
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to project overlaps ', time1 - time2, ' (sec)'

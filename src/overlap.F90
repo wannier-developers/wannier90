@@ -17,7 +17,6 @@ module w90_overlap
   !! and performs simple operations on them.
 
   use w90_constants, only: dp, cmplx_0, cmplx_1
-  use w90_parameters, only: disentanglement
   use w90_io, only: stdout
   use w90_comms, only: on_root, comms_bcast
 
@@ -36,16 +35,30 @@ module w90_overlap
 contains
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_allocate()
+  subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
+                             m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
 
-    use w90_parameters, only: num_bands, num_wann, num_kpts, nntot, timing_level, &
-      u_matrix, m_matrix_orig, m_matrix_orig_local, a_matrix, &
-      u_matrix_opt, m_matrix, m_matrix_local
     use w90_io, only: io_error, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, comms_array_split
+
+!   from w90_parameters
+    integer, intent(in) :: nntot
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), allocatable :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), allocatable :: a_matrix(:, :, :)
+    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+    logical,intent(in) :: disentanglement
+!   end w90_parameters
 
     integer :: ierr
     ! Needed to split an array on different nodes
@@ -87,21 +100,50 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read()
+  subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
+                         cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
+                         devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
+                         num_wann, num_bands, disentanglement, symmetrize_eps, sym)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
 
-    use w90_parameters, only: num_bands, num_wann, num_kpts, nntot, nncell, nnlist, &
-      num_proj, lselproj, proj2wann_map, &
-      devel_flag, u_matrix, m_matrix, a_matrix, timing_level, &
-      m_matrix_orig, u_matrix_opt, cp_pp, use_bloch_phases, gamma_only, & ![ysl]
-      m_matrix_local, m_matrix_orig_local, lhasproj
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv
+    use w90_sitesym, only: sitesym_data
 
     implicit none
+    
+    type(sitesym_data) :: sym
+    real(kind=dp), intent(in) :: symmetrize_eps
+
+!   from w90_parameters
+    integer, intent(in) :: nntot
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: num_proj
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: nnlist(:, :)
+    integer, intent(in) :: proj2wann_map(:)
+    integer, intent(in) :: nncell(:, :, :) 
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :,:)
+    character(len=50), intent(in) :: devel_flag
+    logical, intent(in) :: lsitesymmetry
+    logical, intent(in) :: gamma_only
+    logical, intent(in) :: use_bloch_phases
+    logical, intent(in) :: cp_pp
+    logical, intent(in) :: lselproj
+    logical,intent(in) :: disentanglement
+!   logical, public, save :: lhasproj !not used here
+!   end w90_parameters
 
     integer :: nkp, nkp2, inn, nn, n, m, i, j
     integer :: mmn_in, amn_in, num_mmn, num_amn
@@ -270,7 +312,7 @@ contains
 
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
-    if (cp_pp) call overlap_rotate()
+    if (cp_pp) call overlap_rotate(nntot, timing_level, m_matrix_orig, a_matrix, num_bands)
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~      if (gamma_only) call overlap_check_m_symmetry()
@@ -295,9 +337,10 @@ contains
 !~[aam]
     if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
-        call overlap_project()
+        call overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
+                            timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, symmetrize_eps, sym)
       else
-        call overlap_project_gamma()
+        call overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)
       endif
     endif
 !~[aam]
@@ -468,15 +511,22 @@ contains
 !~![ysl-e]
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_rotate
+  subroutine overlap_rotate(nntot, timing_level, m_matrix_orig, a_matrix, num_bands)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Only used when interfaced to the CP code
     !! Not sure why this is done here and not in CP
 
-    use w90_parameters, only: num_bands, a_matrix, m_matrix_orig, nntot, timing_level
     use w90_io, only: io_file_unit, io_error, io_stopwatch
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: nntot
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: timing_level
+    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
+!   end w90_parameters
 
     integer       :: lam_unit, info, inn, i, j
     real(kind=DP) :: lambda(num_bands, num_bands)
@@ -542,16 +592,24 @@ contains
   end subroutine overlap_rotate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_dealloc()
+  subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
+                            a_matrix, m_matrix_orig, m_matrix, u_matrix)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
-    use w90_parameters, only: u_matrix, m_matrix, m_matrix_orig, &
-      a_matrix, u_matrix_opt, &
-      m_matrix_local, m_matrix_orig_local
     use w90_io, only: io_error
 
     implicit none
+
+!   from w90_parameters
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), allocatable :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
+    complex(kind=dp), allocatable :: a_matrix(:, :, :)
+    complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :,:)
+!   end w90_parameters
 
     integer :: ierr
 
@@ -608,7 +666,9 @@ contains
   end subroutine overlap_dealloc
 
   !==================================================================!
-  subroutine overlap_project()
+  subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
+                            timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, &
+                            symmetrize_eps, sym)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -619,16 +679,29 @@ contains
     !==================================================================!
     use w90_constants
     use w90_io, only: io_error, io_stopwatch
-    use w90_parameters, only: num_bands, num_wann, num_kpts, timing_level, &
-      u_matrix, m_matrix, nntot, nnlist, &
-      m_matrix_local
     use w90_utility, only: utility_zgemm
-    use w90_parameters, only: lsitesymmetry !RS:
-    use w90_sitesym, only: sitesym_symmetrize_u_matrix !RS:
+    use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data !RS:
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv, comms_gatherv
 
     implicit none
+
+    real(kind=dp), intent(in) :: symmetrize_eps
+
+!   from w90_parameters
+    integer, intent(in) :: nntot
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: nnlist(:, :) 
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
+    logical, intent(in) :: lsitesymmetry
+!   end w90_parameters
+    type(sitesym_data) :: sym
+
 
     ! internal variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2
@@ -709,7 +782,8 @@ contains
     enddo
     ! NKP
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, u_matrix) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
+                                                       num_wann, u_matrix, sym) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
@@ -743,7 +817,7 @@ contains
 
 ![ysl-b]
   !==================================================================!
-  subroutine overlap_project_gamma()
+  subroutine overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -754,11 +828,17 @@ contains
     !==================================================================!
     use w90_constants
     use w90_io, only: io_error, io_stopwatch
-    use w90_parameters, only: num_wann, timing_level, &
-      u_matrix, m_matrix, nntot!,num_kpts,nnlist
     use w90_utility, only: utility_zgemm
 
     implicit none
+
+!   from w90_parameters
+    integer, intent(in) :: nntot
+    integer, intent(in) :: timing_level
+    integer, intent(in) :: num_wann
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+!   end w90_parameters
 
     ! internal variables
     integer :: i, j, m, info, ierr, nn

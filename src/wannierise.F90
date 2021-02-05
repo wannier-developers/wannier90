@@ -72,7 +72,7 @@ contains
                        num_elec_per_state, lsitesymmetry, stdout,&
                        ws_distance_tol, ws_search_size, real_metric, mp_grid,&
                        transport_mode, bands_plot_mode, transport, bands_plot,&
-                       translation_centre_frac, automatic_translation, ndimwin)
+                       translation_centre_frac, automatic_translation, ndimwin, sym)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -83,7 +83,7 @@ contains
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use w90_parameters, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_sitesym, only: sitesym_symmetrize_gradient  !RS:
+    use w90_sitesym, only: sitesym_symmetrize_gradient,sitesym_data  !RS:
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, &
       comms_bcast, comms_scatterv, comms_array_split
 
@@ -93,6 +93,7 @@ contains
 
     implicit none
 
+    type(sitesym_data) :: sym
     !subroutine args from parameters module
     integer, intent(in) :: num_wann, num_cg_steps, num_iter
     integer, intent(in) :: nnlist(:, :)
@@ -528,14 +529,14 @@ contains
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, timing_level, &
-                         stdout, cdodq)
+                         stdout, sym, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, wb, bk, nntot, &
                          num_kpts, selective_loc, slwf_constrain, &
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, timing_level, &
-                         stdout) !,cdodq)  fills only cdodq_loc
+                         stdout, sym) !,cdodq)  fills only cdodq_loc
       endif
 
       if (lprint .and. iprint > 2 .and. on_root) &
@@ -554,7 +555,7 @@ contains
                                      counts, displs, iprint, timing_level, &
                                      stdout)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
-                                                          num_kpts) !RS:
+                                                          num_kpts, sym) !RS:
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -587,7 +588,7 @@ contains
                                   num_wann, num_kpts, nntot, nnlist, &
                                   lsitesymmetry, counts, displs, cdq_loc, &
                                   u_matrix_loc, m_matrix_loc, timing_level, &
-                                  stdout)
+                                  stdout, sym)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, &
@@ -646,7 +647,7 @@ contains
                                   num_wann, num_kpts, nntot, nnlist, &
                                   lsitesymmetry, counts, displs, cdq_loc, &
                                   u_matrix_loc, m_matrix_loc, timing_level, &
-                                  stdout)
+                                  stdout,sym)
 
         call wann_spread_copy(wann_spread, old_spread)
 
@@ -1467,20 +1468,23 @@ contains
                                     cz, num_wann, num_kpts, nntot, nnlist, &
                                     lsitesymmetry, counts, displs, cdq_loc, &
                                     u_matrix_loc, m_matrix_loc, timing_level, &
-                                    stdout)
+                                    stdout, sym)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
       !                                               !
       !===============================================!
       use w90_constants, only: cmplx_i
-      use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
-        ir2ik, ik2ir !YN: RS:
+      !use w90_sitesym, only: sitesym_symmetrize_rotation, & !RS:
+      !  ir2ik, ik2ir !YN: RS:
+      use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data
       use w90_io, only: io_stopwatch, io_error
       use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv
       use w90_utility, only: utility_zgemm
 
       implicit none
+
+      type(sitesym_data) :: sym
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -1508,7 +1512,7 @@ contains
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         if (lsitesymmetry) then                !YN: RS:
-          if (ir2ik(ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
+          if (sym%ir2ik(sym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
         end if                                 !YN: RS:
         ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
         tmp_cdq(:, :) = cmplx_i*cdq_loc(:, :, nkp_loc)
@@ -1566,7 +1570,7 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(cdq, num_wann, num_kpts) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(cdq, num_wann, num_kpts, sym) !RS: calculate cdq(Rk) from k
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
       endif
 
@@ -2319,7 +2323,7 @@ contains
                          slwf_num, ccentres_cart, lsitesymmetry, &
                          counts, displs, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, timing_level, &
-                         stdout, cdodq)
+                         stdout, sym, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2330,7 +2334,7 @@ contains
     !===================================================================
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
+    use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
     use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, &
       comms_allreduce
 
@@ -2343,6 +2347,7 @@ contains
     ! made optional
     complex(kind=dp), intent(out), optional :: cdodq(:, :, :)
 
+    type(sitesym_data) :: sym
     ! from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: nntot
@@ -2544,7 +2549,7 @@ contains
                          cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs)
       call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts)
       if (lsitesymmetry) then
-        call sitesym_symmetrize_gradient(1, cdodq, num_wann, num_kpts) !RS:
+        call sitesym_symmetrize_gradient(1, cdodq, num_wann, num_kpts, sym) !RS:
         cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) + 1:displs(my_node_id) + counts(my_node_id))
       endif
     end if
