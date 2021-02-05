@@ -152,9 +152,8 @@ ndimfroz,indxfroz)
       end do
     end do
 
-    if (lsitesymmetry) call sitesym_slim_d_matrix_band(num_bands, num_kpts, sym, lwindow) !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
     if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
-                                                       num_bands, u_matrix_opt, sym, lwindow) !RS:
+                                                       num_bands, u_matrix_opt, sym, lwindow) !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
 
     ! Extract the optimally-connected num_wann-dimensional subspaces
 
@@ -203,7 +202,7 @@ ndimfroz,indxfroz)
     if (.not. gamma_only) then
       call internal_find_u(on_root, lsitesymmetry, timing_level,&
              num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt,&
-             a_matrix, sym)
+             a_matrix, symmetrize_eps, sym)
     else
       call internal_find_u_gamma(timing_level, num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, a_matrix)
     end if
@@ -445,7 +444,7 @@ ndimfroz,indxfroz)
 
   subroutine internal_find_u(on_root, lsitesymmetry, timing_level,&
          num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt,&
-         a_matrix, sym)
+         a_matrix, symmetrize_eps, sym)
     !================================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
@@ -477,6 +476,7 @@ ndimfroz,indxfroz)
     complex(kind=dp), intent(in) :: a_matrix(:,:,:) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:,:,:) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:,:,:) ! (num_bands, num_wann, num_kpts)
+    real(kind=dp), intent(in) :: symmetrize_eps
     type(sitesym_data) :: sym
 
     ! local variables
@@ -509,7 +509,7 @@ ndimfroz,indxfroz)
 
       do nkp = 1, num_kpts
         if (lsitesymmetry) then                 !YN: RS:
-          if (ir2ik(ik2ir(nkp)) .ne. nkp) cycle  !YN: RS:
+          if (sym%ir2ik(sym%ik2ir(nkp)) .ne. nkp) cycle  !YN: RS:
         endif                                   !YN: RS:
         call zgemm('C', 'N', num_wann, num_wann, ndimwin(nkp), cmplx_1, &
                    u_matrix_opt(:, :, nkp), num_bands, a_matrix(:, :, nkp), num_bands, &
@@ -550,7 +550,8 @@ ndimfroz,indxfroz)
       if (ierr /= 0) call io_error('Error deallocating svals in dis_main')
     endif
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, u_matrix, sym) !RS:
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, symmetrize_eps, &
+                                        num_wann, u_matrix, sym)
 
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2)
 
@@ -1598,7 +1599,6 @@ ndimfroz,indxfroz)
     !==================================================================!
 
     use w90_io, only: io_wallclocktime
-    !use w90_sitesym, only: ir2ik, ik2ir, nkptirr, nsymmetry, kptsym !YN: RS:
     use w90_sitesym, only: sitesym_data
 
     implicit none
