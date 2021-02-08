@@ -64,7 +64,8 @@ contains
         ws_search_size, real_metric, mp_grid, transport_mode,&
         bands_plot_mode, transport, bands_plot, translation_centre_frac,&
         automatic_translation, ndimwin, sym, ham_r, irvec, shift_vec,&
-        ndegen, nrpts, rpt_origin, wannier_centres_translated)
+        ndegen, nrpts, rpt_origin, wannier_centres_translated, &
+        hmlg, ham_k)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -80,9 +81,15 @@ contains
       comms_bcast, comms_scatterv, comms_array_split
 
     !ivo
-    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
+    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical
 
     implicit none
+
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+!   logical, intent(inout) :: ham_have_setup
+!   logical, intent(inout) :: have_translated
+!   logical, intent(inout) :: use_translation
+    type(ham_logical) :: hmlg
 
     ! passed variables
 
@@ -289,7 +296,8 @@ contains
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric,&
                 mp_grid, transport_mode, bands_plot_mode, transport, bands_plot,&
                 num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen,&
-                nrpts, rpt_origin, wannier_centres_translated)
+                nrpts, rpt_origin, wannier_centres_translated, &
+                hmlg, ham_k)
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main')
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
@@ -836,14 +844,15 @@ contains
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric,&
                 mp_grid, transport_mode, bands_plot_mode, transport, bands_plot,&
                 num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen,&
-                 nrpts, rpt_origin, wannier_centres_translated)
+                nrpts, rpt_origin, wannier_centres_translated, &
+                hmlg, ham_k)
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres,&
                 num_atoms, atoms_pos_cart, translation_centre_frac,&
                 automatic_translation, num_species, atoms_species_num, lenconfac,&
                 have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt,&
                 eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann,&
                 timing_level, ham_r, irvec, shift_vec, nrpts,&
-                 wannier_centres_translated)
+                wannier_centres_translated, hmlg, ham_k)
 
       if (on_root) then
         write (stdout, *)

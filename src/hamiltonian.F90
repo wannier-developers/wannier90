@@ -21,7 +21,7 @@ module w90_hamiltonian
 
   implicit none
 
-  private
+! private
   !
 ! complex(kind=dp), public, save, allocatable :: ham_r(:, :, :)
   !! Hamiltonian matrix in WF representation
@@ -51,16 +51,26 @@ module w90_hamiltonian
   public :: hamiltonian_write_rmn
   public :: hamiltonian_write_tb
 
-  ! Module variables
-  logical, save :: ham_have_setup = .false.
-  logical, save :: have_translated = .false.
-  logical, save :: use_translation = .false.
-  logical, save :: have_ham_r = .false.
-  logical, save :: have_ham_k = .false.
-  logical, save :: hr_written = .false.
-  logical, save :: tb_written = .false.
+  type ham_logical
+    logical :: ham_have_setup = .false.
+    logical :: have_translated = .false.
+    logical :: use_translation = .false.
+    logical :: have_ham_r = .false.
+    logical :: have_ham_k = .false.
+    logical :: hr_written = .false.
+    logical :: tb_written = .false.
+  end type ham_logical
 
-  complex(kind=dp), save, allocatable :: ham_k(:, :, :)
+  ! Module variables
+! logical, save :: ham_have_setup = .false.
+! logical, save :: have_translated = .false.
+! logical, save :: use_translation = .false.
+! logical, save :: have_ham_r = .false.
+! logical, save :: have_ham_k = .false.
+! logical, save :: hr_written = .false.
+! logical, save :: tb_written = .false.
+
+! complex(kind=dp), save, allocatable :: ham_k(:, :, :)
 
 contains
 
@@ -68,7 +78,7 @@ contains
   subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric,&
         mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, num_kpts,&
         num_wann, timing_level, iprint, ham_r, irvec, ndegen, nrpts, rpt_origin,&
-        wannier_centres_translated)
+        wannier_centres_translated, hmlg, ham_k)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -76,6 +86,11 @@ contains
     use w90_io, only: io_error
 
     implicit none
+
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+!   logical, intent(inout) :: ham_have_setup
+!   logical, intent(inout) :: use_translation
+    type(ham_logical) :: hmlg
 
     ! passed variables
     integer, intent(inout) :: rpt_origin
@@ -104,14 +119,14 @@ contains
     ! local variables
     integer :: ierr
 
-    if (ham_have_setup) return
+    if (hmlg%ham_have_setup) return
 
     !
     ! Determine whether to use translation
     !
-    if (bands_plot .and. (index(bands_plot_mode, 'cut') .ne. 0)) use_translation = .true.
-    if (transport .and. (index(transport_mode, 'bulk') .ne. 0)) use_translation = .true.
-    if (transport .and. (index(transport_mode, 'lcr') .ne. 0)) use_translation = .true.
+    if (bands_plot .and. (index(bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
+    if (transport .and. (index(transport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
+    if (transport .and. (index(transport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !
@@ -143,19 +158,26 @@ contains
     if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
     wannier_centres_translated = 0.0_dp
 
-    ham_have_setup = .true.
+    hmlg%ham_have_setup = .true.
 
     return
   end subroutine hamiltonian_setup
 
   !============================================!
-  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated)
+  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
+                                 hmlg, ham_k)
     !! Deallocate module data
     !============================================!
 
     use w90_io, only: io_error
 
     implicit none
+
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+!   logical, intent(inout) :: ham_have_setup
+!   logical, intent(inout) :: have_translated 
+!   logical, intent(inout) :: use_translation 
+    type(ham_logical) :: hmlg
 
     ! passed variables
     integer, intent(inout), allocatable :: ndegen(:)
@@ -189,13 +211,13 @@ contains
       if (ierr /= 0) call io_error('Error in deallocating wannier_centres_translated in param_dealloc')
     end if
 
-    ham_have_setup = .false.
-    have_translated = .false.
-    use_translation = .false.
-    have_ham_r = .false.
-    have_ham_k = .false.
-    hr_written = .false.
-    tb_written = .false.
+    hmlg%ham_have_setup = .false.
+    hmlg%have_translated = .false.
+    hmlg%use_translation = .false.
+    hmlg%have_ham_r = .false.
+    hmlg%have_ham_k = .false.
+    hmlg%hr_written = .false.
+    hmlg%tb_written = .false.
 
     return
   end subroutine hamiltonian_dealloc
@@ -206,7 +228,7 @@ contains
         num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin,&
         lwindow, u_matrix_opt, kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands,&
         num_kpts, num_wann, timing_level, ham_r, irvec, shift_vec, nrpts,&
-        wannier_centres_translated)
+        wannier_centres_translated, hmlg, ham_k)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -217,6 +239,11 @@ contains
     use w90_io, only: io_error, io_stopwatch
 
     implicit none
+
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+!   logical, intent(inout) :: have_translated
+!   logical, intent(inout) :: use_translation
+    type(ham_logical) :: hmlg
 
     ! passed variables
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -262,15 +289,15 @@ contains
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
-    if (have_ham_r) then
-      if (have_translated .eqv. use_translation) then
+    if (hmlg%have_ham_r) then
+      if (hmlg%have_translated .eqv. hmlg%use_translation) then
         goto 200
       else
         goto 100
       endif
     end if
 
-    if (have_ham_k) go to 100
+    if (hmlg%have_ham_k) go to 100
 
 !~    if (.not. allocated(ham_k)) then
 !~       allocate(ham_k(num_wann,num_wann,num_kpts),stat=ierr)
@@ -350,7 +377,7 @@ contains
       enddo
     endif                                                  !YN:
 
-    have_ham_k = .true.
+    hmlg%have_ham_k = .true.
 
 100 continue
 
@@ -363,7 +390,7 @@ contains
 
     ham_r = cmplx_0
 
-    if (.not. use_translation) then
+    if (.not. hmlg%use_translation) then
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -373,7 +400,7 @@ contains
         enddo
       enddo
 
-      have_translated = .false.
+      hmlg%have_translated = .false.
 
     else
 
@@ -398,7 +425,7 @@ contains
         enddo
       enddo
 
-      have_translated = .true.
+      hmlg%have_translated = .true.
 
     end if
 
@@ -412,7 +439,7 @@ contains
 !         call ws_translate_dist(nrpts, irvec)
 !     endif
 
-    have_ham_r = .true.
+    hmlg%have_ham_r = .true.
 
 200 continue
 
@@ -532,7 +559,7 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts)
+  subroutine hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
@@ -548,13 +575,14 @@ contains
     integer, intent(in) :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
+    type(ham_logical) :: hmlg
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
 !   end w90_parameters
 
-    if (hr_written) return
+    if (hmlg%hr_written) return
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1)
 
@@ -582,7 +610,7 @@ contains
 
     close (file_unit)
 
-    hr_written = .true.
+    hmlg%hr_written = .true.
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2)
 
@@ -821,8 +849,9 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, m_matrix,&
-        num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts)
+  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, m_matrix, &
+        num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts, &
+        hmlg)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -847,6 +876,7 @@ contains
     integer, intent(in) :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
+    type(ham_logical) :: hmlg
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
@@ -860,7 +890,7 @@ contains
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
 !   end w90_parameters
 
-    if (tb_written) return
+    if (hmlg%tb_written) return
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1)
 
@@ -929,7 +959,7 @@ contains
     end do
     close (file_unit)
 
-    tb_written = .true.
+    hmlg%tb_written = .true.
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2)
 

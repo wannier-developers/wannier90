@@ -115,14 +115,16 @@ contains
         tran_easy_fix, atoms_symbol, wannier_spreads, tran_group_threshold,&
         one_dim_dir, tran_use_same_lead, tran_energy_step, tran_win_min,&
         tran_win_max, tran_num_bb, length_unit, hr_cutoff, ham_r, irvec,&
-        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
+        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, &
+        hmlg, ham_k)
    
     !! Main transport subroutine
     !==================================================================!
 
     use w90_io, only: stdout, io_stopwatch
 
-    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup
+    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
+                               ham_logical
 
     implicit none
 
@@ -138,7 +140,11 @@ contains
     integer, allocatable :: tran_sorted_idx(:)
     !! index of sorted WF centres to unsorted
 
-
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+!   logical, intent(inout) :: ham_have_setup
+!   logical, intent(inout) :: have_translated
+!   logical, intent(inout) :: use_translation
+    type(ham_logical) :: hmlg
 
 !   from w90_hamiltonian
     integer, intent(inout) :: rpt_origin
@@ -231,15 +237,17 @@ contains
         call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                               mp_grid, transport_mode, bands_plot_mode, transport, &
                               bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
-                              nrpts, rpt_origin, wannier_centres_translated)
+                              nrpts, rpt_origin, wannier_centres_translated, hmlg, & 
+                              ham_k)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                                num_atoms, atoms_pos_cart, translation_centre_frac, &
                                automatic_translation, num_species, atoms_species_num, &
                                lenconfac, have_disentangled, ndimwin, lwindow, &
                                u_matrix_opt, kpt_latt, eigval, u_matrix, &
                                lsitesymmetry, num_bands, num_kpts, num_wann, &
-                               timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
-        if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts)
+                               timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
+                               hmlg, ham_k)
+        if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
         call tran_reduce_hr(timing_level, mp_grid, one_dim_dir, real_lattice, num_wann, ham_r, &
                            irvec, nrpts, one_dim_vec, nrpts_one_dim)
         call tran_cut_hr_one_dim(tran_num_cell_ll, tran_num_ll, dist_cutoff_hc, & 
@@ -263,15 +271,17 @@ contains
         call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                               mp_grid, transport_mode, bands_plot_mode, transport, &
                               bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
-                              nrpts, rpt_origin, wannier_centres_translated)
+                              nrpts, rpt_origin, wannier_centres_translated, hmlg, &
+                              ham_k)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                                num_atoms, atoms_pos_cart, translation_centre_frac, &
                                automatic_translation, num_species, atoms_species_num, &
                                lenconfac, have_disentangled, ndimwin, lwindow, &
                                u_matrix_opt, kpt_latt, eigval, u_matrix, &
                                lsitesymmetry, num_bands, num_kpts, num_wann, &
-                               timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
-        if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts)
+                               timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
+                               hmlg, ham_k)
+        if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
         call tran_reduce_hr(timing_level, mp_grid, one_dim_dir, real_lattice, num_wann, ham_r, &
                            irvec, nrpts, one_dim_vec, nrpts_one_dim)
         call tran_cut_hr_one_dim(tran_num_cell_ll, tran_num_ll, dist_cutoff_hc, & 

@@ -67,27 +67,48 @@ program wannier
 
   implicit none
 
-  integer, save :: rpt_origin
+! integer, save :: rpt_origin
   !! index of R=0
-  integer, save :: nrpts
+! integer, save :: nrpts
   !! number of Wigner-Seitz grid points
-  integer, save, allocatable :: irvec(:, :)
+! integer, save, allocatable :: irvec(:, :)
   !!  The irpt-th Wigner-Seitz grid point has components
   !! irvec(1:3,irpt) in the basis of the lattice vectors
-  integer, save, allocatable :: shift_vec(:, :)
-  integer, save, allocatable :: ndegen(:)
+! integer, save, allocatable :: shift_vec(:, :)
+! integer, save, allocatable :: ndegen(:)
   !! Weight of the irpt-th point is 1/ndegen(irpt)
-  real(kind=dp), save, allocatable :: wannier_centres_translated(:, :)
-  complex(kind=dp), save, allocatable :: ham_r(:, :, :)
+! real(kind=dp), save, allocatable :: wannier_centres_translated(:, :)
+! complex(kind=dp), save, allocatable :: ham_r(:, :, :)
   !! Hamiltonian matrix in WF representation
+
+  integer :: rpt_origin
+  !! index of R=0
+  integer :: nrpts
+  !! number of Wigner-Seitz grid points
+  integer, allocatable :: irvec(:, :)
+  !!  The irpt-th Wigner-Seitz grid point has components
+  !! irvec(1:3,irpt) in the basis of the lattice vectors
+  integer, allocatable :: shift_vec(:, :)
+  integer, allocatable :: ndegen(:)
+  !! Weight of the irpt-th point is 1/ndegen(irpt)
+  real(kind=dp), allocatable :: wannier_centres_translated(:, :)
+  complex(kind=dp), allocatable :: ham_r(:, :, :)
+  !! Hamiltonian matrix in WF representation
+
+  complex(kind=dp), allocatable :: ham_k(:, :, :)
 
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
   logical :: wout_found, dryrun
   integer :: len_seedname
   character(len=50) :: prog
-
+  
   type(sitesym_data) :: sym !JJ
+
+! logical :: ham_have_setup = .false.
+! logical :: have_translated = .false.
+! logical :: use_translation = .false.
+  type(ham_logical) :: hmlg
 
   call comms_setup
 
@@ -283,7 +304,8 @@ program wannier
                    transport_mode, bands_plot_mode, transport, bands_plot,&
                    translation_centre_frac, automatic_translation, ndimwin, sym, &
                    ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
-                   wannier_centres_translated)
+                   wannier_centres_translated, &
+                   hmlg, ham_k)
 
   else
     call wann_main_gamma(num_wann, num_iter, wb, nntot, u_matrix, m_matrix, &
@@ -328,7 +350,7 @@ program wannier
                   dist_cutoff_mode, use_ws_distance, bands_plot_project, num_bands_project, &
                   bands_plot_format, bands_label, bands_spec_points, bands_num_spec_points, &
                   recip_metric, bands_num_points, ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
-                  wannier_centres_translated)
+                  wannier_centres_translated, hmlg, ham_k)
     !
     time1 = io_time()
     ! Now time is always printed, even if no plotting is done/required, but
@@ -351,7 +373,8 @@ program wannier
                     kpt_cart, tran_num_ll, tran_num_cell_ll, tran_easy_fix, atoms_symbol, &
                     wannier_spreads, tran_group_threshold, one_dim_dir, tran_use_same_lead, &
                     tran_energy_step, tran_win_min, tran_win_max, tran_num_bb, length_unit, hr_cutoff, &
-                    ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
+                    ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, &
+                    hmlg, ham_k)
       time1 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
       if (tran_read_ht) goto 4004
@@ -359,7 +382,8 @@ program wannier
   endif
 
   call tran_dealloc()
-  call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated)
+  call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
+                          hmlg, ham_k)
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                       a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)

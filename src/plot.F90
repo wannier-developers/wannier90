@@ -39,7 +39,8 @@ contains
         dist_cutoff, dist_cutoff_mode, use_ws_distance, bands_plot_project,&
         num_bands_project, bands_plot_format, bands_label, bands_spec_points,&
         bands_num_spec_points, recip_metric, bands_num_points, ham_r, irvec,&
-        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated)
+        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, &
+        hmlg, ham_k)
     !! Main plotting routine
     !============================================!
 
@@ -48,12 +49,18 @@ contains
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
       hamiltonian_setup, hamiltonian_write_rmn, &
-      hamiltonian_write_tb
+      hamiltonian_write_tb, ham_logical
 !     hamiltonian_write_tb, nrpts, irvec
     use w90_ws_distance, only: done_ws_distance, ws_translate_dist, &
       ws_write_vec
 
     implicit none
+
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+!   logical, intent(inout) :: ham_have_setup
+!    logical, intent(inout) :: have_translated
+!   logical, intent(inout) :: use_translation
+    type(ham_logical) :: hmlg
 
 !   from w90_hamiltonian
     integer, intent(inout) :: rpt_origin
@@ -173,7 +180,8 @@ contains
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
                             mp_grid, transport_mode, bands_plot_mode, transport, &
                             bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
-                            nrpts, rpt_origin, wannier_centres_translated)
+                            nrpts, rpt_origin, wannier_centres_translated, hmlg, & 
+                            ham_k)
       !
       call hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
                              num_atoms, atoms_pos_cart, translation_centre_frac, &
@@ -181,7 +189,8 @@ contains
                              lenconfac, have_disentangled, ndimwin, lwindow, &
                              u_matrix_opt, kpt_latt, eigval, u_matrix, &
                              lsitesymmetry, num_bands, num_kpts, num_wann, &
-                             timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated)
+                             timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
+                             hmlg, ham_k)
       !
       if (bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, one_dim_dir, &
                                     bands_plot_dim, hr_cutoff, dist_cutoff, dist_cutoff_mode, &
@@ -196,13 +205,13 @@ contains
                                  recip_lattice, timing_level, fermi_surface_num_points, num_wann, &
                                  ham_r, irvec, ndegen, nrpts)
       !
-      if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts)
+      if (write_hr) call hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
       !
       if (write_rmn) call hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, &
           num_kpts, kpt_latt, nntot, irvec, nrpts)
       !
       if (write_tb) call hamiltonian_write_tb(real_lattice, num_wann, wb, bk, &
-          m_matrix, num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts)
+          m_matrix, num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
       !
       if (write_hr .or. write_rmn .or. write_tb) then
         if (.not. done_ws_distance) call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, &
