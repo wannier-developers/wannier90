@@ -431,7 +431,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc,&
   time2 = io_time()
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
 
-  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
+  if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr .or. write_bvec) then
     call plot_main()
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
