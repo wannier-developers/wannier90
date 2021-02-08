@@ -62,7 +62,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(inout) :: sym
 
     logical, optional, intent(in) :: lwindow_in(num_bands, num_kpts)
     integer :: ik, i, j, nb, ir
@@ -101,7 +101,7 @@ contains
 !   from w90_parameters
     integer, intent(in) :: num_wann
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(inout) :: sym
 
     !write(stdout,"(a)") '-- sitesym_replace_sym%d_matrix_band --'
     !write(stdout,"(a)") 'sym%d_matrix_band is replaced by sym%d_matrix_wann'
@@ -134,7 +134,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
 
     integer, intent(in) :: ndim
@@ -191,7 +191,7 @@ contains
 
     implicit none
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
     integer, intent(in) :: imode, num_wann, num_kpts
     complex(kind=dp), intent(inout) :: grad(num_wann, num_wann, num_kpts)
     integer :: ik, ir, isym, irk, ngk
@@ -263,7 +263,7 @@ contains
 
     implicit none
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
     integer, intent(in) :: num_wann, num_kpts
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
     !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
@@ -312,7 +312,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts 
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
     complex(kind=dp), intent(inout) :: czmat(num_bands, num_bands, num_kpts)
     logical, intent(in) :: lwindow_in(num_bands, num_kpts)
@@ -374,7 +374,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
     integer, intent(in) :: ir, ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann)
@@ -455,7 +455,7 @@ contains
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
     complex(kind=dp), allocatable :: smat(:, :), evecl(:, :), evecr(:, :)
     complex(kind=dp), allocatable :: WORK(:)
@@ -513,7 +513,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann  
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
 
     integer, intent(in) :: ik, n
@@ -596,7 +596,7 @@ contains
     integer, intent(in) :: num_wann 
     integer, intent(in) :: num_kpts
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(inout) :: sym
  
     integer :: iu, ibnum, iknum, ierr
 
@@ -635,7 +635,7 @@ contains
 
     implicit none
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(inout) :: sym
     integer :: ierr
 
     deallocate (sym%ik2ir, stat=ierr)

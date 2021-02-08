@@ -117,7 +117,7 @@ contains
 
     implicit none
     
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
 !   from w90_parameters
     integer, intent(in) :: nntot
@@ -699,7 +699,7 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
     logical, intent(in) :: lsitesymmetry
 !   end w90_parameters
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
 
     ! internal variables

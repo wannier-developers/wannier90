@@ -53,7 +53,7 @@ contains
     integer, intent(in) :: timing_level, iprint, num_nodes, my_node_id, optimisation
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: nntot, nnlist(:,:) ! (num_kpts, nntot)
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(inout) :: sym
     integer, intent(in) :: dis_spheres_num, dis_num_iter, dis_spheres_first_wann, dis_conv_window
     integer, intent(inout) :: ndimwin(:) ! (num_kpts)
 
@@ -484,7 +484,7 @@ ndimfroz,indxfroz)
 
     logical, intent(in) :: on_root, lsitesymmetry
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(inout) :: sym
 
     ! local variables
     integer :: nkp, info, ierr
@@ -1646,7 +1646,7 @@ ndimfroz,indxfroz)
     character(len=20), intent(in) :: length_unit
     character(len=50), intent(in) :: devel_flag
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima

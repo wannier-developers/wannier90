@@ -96,7 +96,7 @@ contains
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 !   end w90_hamiltonian
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
 
     integer, intent(in) :: atoms_species_num(:)
     integer, intent(in) :: conv_noise_num
@@ -1459,7 +1459,7 @@ contains
 
       implicit none
 
-      type(sitesym_data) :: sym
+      type(sitesym_data), intent(in) :: sym
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
@@ -2317,7 +2317,7 @@ contains
     ! made optional
     complex(kind=dp), intent(out), optional :: cdodq(:, :, :)
 
-    type(sitesym_data) :: sym
+    type(sitesym_data), intent(in) :: sym
     ! from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: nntot
