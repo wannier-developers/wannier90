@@ -23,6 +23,7 @@ module w90_kmesh
 
   use w90_constants, only: dp
   use w90_comms, only: on_root
+  use w90_parameters, only: max_shells, num_nnmax ! JJ these are parameters used for dimensioning
 
   implicit none
 
@@ -43,11 +44,6 @@ module w90_kmesh
   public :: kmesh_get
   public :: kmesh_write
   public :: kmesh_dealloc
-
-! from parameters.F90
-  integer, parameter :: max_shells = 6
-  integer, parameter :: num_nnmax = 12
-! end parameters.F90
 
   integer, parameter :: nsupcell = 5
   !! Size of supercell (of recip cell) in which to search for k-point shells
