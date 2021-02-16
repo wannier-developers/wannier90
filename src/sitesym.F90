@@ -40,7 +40,7 @@ module w90_sitesym
   public  :: sitesym_read
   public  :: sitesym_dealloc
 
-  type sitesym_data 
+  type sitesym_data
     ! Variables and parameters needed by other modules
     integer :: nkptirr = 9999
     integer :: nsymmetry = 9999
@@ -113,8 +113,8 @@ contains
   end subroutine sitesym_replace_d_matrix_band
 
   !==========================================================================!
-  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts,&
-        ndim, umat, sym, lwindow_in)
+  subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
+                                         ndim, umat, sym, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -135,7 +135,6 @@ contains
     integer, intent(in) :: num_kpts
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
-
 
     integer, intent(in) :: ndim
     complex(kind=dp), intent(inout) :: umat(ndim, num_wann, num_kpts)
@@ -298,8 +297,8 @@ contains
   end subroutine sitesym_symmetrize_rotation
 
   !==================================================================!
-  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts,&
-        sym)
+  subroutine sitesym_symmetrize_zmatrix(czmat, lwindow_in, num_bands, num_kpts, &
+                                        sym)
     !==================================================================!
     !                                                                  !
     !    Z(k) <- \sum_{R} d^{+}(R,k) Z(Rk) d(R,k)                      !
@@ -310,7 +309,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
-    integer, intent(in) :: num_kpts 
+    integer, intent(in) :: num_kpts
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
 
@@ -358,8 +357,8 @@ contains
   end subroutine sitesym_symmetrize_zmatrix
 
   !==================================================================!
-  subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat,&
-        sym, n)
+  subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
+                              sym, n)
     !==================================================================!
     !                                                                  !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
@@ -495,8 +494,8 @@ contains
   end subroutine orthogonalize_u
 
   !==================================================================!
-  subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda,&
-        umat, num_bands, num_wann, sym)
+  subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda, &
+                                          umat, num_bands, num_wann, sym)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !
@@ -511,10 +510,9 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
-    integer, intent(in) :: num_wann  
+    integer, intent(in) :: num_wann
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
-
 
     integer, intent(in) :: ik, n
     complex(kind=dp), intent(in) :: zmat(num_bands, num_bands)
@@ -593,11 +591,11 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
-    integer, intent(in) :: num_wann 
+    integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
 !   end w90_parameters
     type(sitesym_data), intent(inout) :: sym
- 
+
     integer :: iu, ibnum, iknum, ierr
 
     iu = io_file_unit()

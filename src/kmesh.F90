@@ -60,10 +60,10 @@ module w90_kmesh
 
 contains
   !=======================================================
-  subroutine kmesh_get(recip_lattice, kpt_cart, timing_level, nncell, neigh,&
-        nnlist, nntot, shell_list, devel_flag, iprint,lenconfac, kmesh_tol,&
-        num_kpts, search_shells, gamma_only, nnh, wbtot, skip_B1_tests, bk, bka,&
-        wb, num_shells, length_unit)
+  subroutine kmesh_get(recip_lattice, kpt_cart, timing_level, nncell, neigh, &
+                       nnlist, nntot, shell_list, devel_flag, iprint, lenconfac, kmesh_tol, &
+                       num_kpts, search_shells, gamma_only, nnh, wbtot, skip_B1_tests, bk, bka, &
+                       wb, num_shells, length_unit)
     !=====================================================
     !
     !! Main routine to calculate the b-vectors
@@ -79,7 +79,7 @@ contains
     integer, intent(in) :: iprint
     integer, intent(inout) :: shell_list(:)
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: search_shells 
+    integer, intent(in) :: search_shells
     integer, intent(inout) :: nnh
     integer, intent(inout) :: num_shells
     real(kind=dp), intent(in) :: kmesh_tol
@@ -91,7 +91,7 @@ contains
     real(kind=dp), intent(in) :: lenconfac
     real(kind=dp), intent(out) :: wbtot
     real(kind=dp), allocatable :: bk(:, :, :)
-    real(kind=dp), allocatable :: bka(:, :) 
+    real(kind=dp), allocatable :: bka(:, :)
     real(kind=dp), allocatable :: wb(:)
     character(len=50), intent(in) :: devel_flag
     character(len=20), intent(in) :: length_unit
@@ -208,17 +208,17 @@ contains
     ! Get the shell weights to satisfy the B1 condition
     if (index(devel_flag, 'kmesh_degen') > 0) then
       call kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, timing_level, &
-                                shell_list, iprint, lenconfac, kmesh_tol, num_kpts, search_shells, &
-                                skip_B1_tests, num_shells, length_unit)
+                                 shell_list, iprint, lenconfac, kmesh_tol, num_kpts, search_shells, &
+                                 skip_B1_tests, num_shells, length_unit)
     else
       if (num_shells == 0) then
         call kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, timing_level, &
-                                  shell_list, iprint, lenconfac, kmesh_tol, num_kpts, search_shells, &
-                                  num_shells, length_unit)
+                                   shell_list, iprint, lenconfac, kmesh_tol, num_kpts, search_shells, &
+                                   num_shells, length_unit)
       elseif (num_shells > 0) then
         call kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, timing_level, &
-                              shell_list, iprint, lenconfac, kmesh_tol, num_kpts, search_shells, &
-                              skip_B1_tests, num_shells, length_unit)
+                               shell_list, iprint, lenconfac, kmesh_tol, num_kpts, search_shells, &
+                               skip_B1_tests, num_shells, length_unit)
       end if
 
       if (on_root) then
@@ -272,7 +272,7 @@ contains
     counter = 0
     do shell = 1, search_shells
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvec_tmp(:, 1:multi(shell)), recip_lattice, &
-                             kpt_cart, timing_level, kmesh_tol, num_kpts)
+                              kpt_cart, timing_level, kmesh_tol, num_kpts)
       do loop = 1, multi(shell)
         counter = counter + 1
         if (on_root) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
@@ -645,11 +645,11 @@ contains
   end subroutine kmesh_get
 
   !==================================================================!
-  subroutine kmesh_write(recip_lattice, timing_level, nncell, nnlist, nntot,&
-        num_kpts, input_proj_l, num_proj, input_proj_site, spinors, kpt_latt,&
-        real_lattice, calc_only_A, input_proj_zona, input_proj_x, input_proj_z,&
-        input_proj_radial, input_proj_m, exclude_bands, num_exclude_bands,&
-        auto_projections, input_proj_s_qaxis, input_proj_s)
+  subroutine kmesh_write(recip_lattice, timing_level, nncell, nnlist, nntot, &
+                         num_kpts, input_proj_l, num_proj, input_proj_site, spinors, kpt_latt, &
+                         real_lattice, calc_only_A, input_proj_zona, input_proj_x, input_proj_z, &
+                         input_proj_radial, input_proj_m, exclude_bands, num_exclude_bands, &
+                         auto_projections, input_proj_s_qaxis, input_proj_s)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -685,7 +685,7 @@ contains
 !   from parameters.F90
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
-    integer, intent(inout) :: nntot 
+    integer, intent(inout) :: nntot
     integer, intent(inout) :: num_proj
     integer, intent(inout) :: nncell(:, :, :)
     integer, intent(inout) :: nnlist(:, :)
@@ -703,7 +703,7 @@ contains
     real(kind=dp), intent(in) :: input_proj_x(:, :)
     real(kind=dp), intent(in) :: input_proj_z(:, :)
     real(kind=dp), intent(in) :: input_proj_s_qaxis(:, :)
-    logical, intent(in) :: spinors 
+    logical, intent(in) :: spinors
     logical, intent(in) :: calc_only_A
     logical, intent(in) :: auto_projections
 !   end parameters.F90
@@ -846,7 +846,7 @@ contains
     real(kind=dp), allocatable :: bk(:, :, :)
     real(kind=dp), allocatable :: bka(:, :)
     real(kind=dp), allocatable :: wb(:)
-    
+
 !   end parameters.F90
 
     integer :: ierr
@@ -940,8 +940,8 @@ contains
   end subroutine kmesh_supercell_sort
 
   !=============================================================
-  subroutine kmesh_get_bvectors(multi, kpt, shell_dist, bvector, recip_lattice,&
-        kpt_cart, timing_level, kmesh_tol, num_kpts)
+  subroutine kmesh_get_bvectors(multi, kpt, shell_dist, bvector, recip_lattice, &
+                                kpt_cart, timing_level, kmesh_tol, num_kpts)
     !=============================================================
     !
     !! Returns the b-vectors for a given shell and kpoint.
@@ -957,7 +957,6 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) ::kpt_cart(:, :)
 !   end parameters.F90
-
 
     integer, intent(in) :: multi   ! the number of kpoints in the shell
     integer, intent(in) :: kpt     ! which kpt is our 'origin'
@@ -997,9 +996,9 @@ contains
   end subroutine kmesh_get_bvectors
 
   !==========================================================================
-  subroutine kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart,&
-        timing_level, shell_list, iprint, lenconfac, kmesh_tol, num_kpts,&
-        search_shells, num_shells, length_unit)
+  subroutine kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, &
+                                   timing_level, shell_list, iprint, lenconfac, kmesh_tol, num_kpts, &
+                                   search_shells, num_shells, length_unit)
     !==========================================================================
     !
     !! Find the correct set of shells to satisfy B1
@@ -1058,7 +1057,7 @@ contains
 
       ! get the b vectors for the new shell
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvector(:, 1:multi(shell), cur_shell), &
-                               recip_lattice, kpt_cart, timing_level, kmesh_tol, num_kpts)
+                              recip_lattice, kpt_cart, timing_level, kmesh_tol, num_kpts)
 
       if (iprint >= 3 .and. on_root) then
         write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', multi(shell), '|'
@@ -1240,9 +1239,9 @@ contains
   end subroutine kmesh_shell_automatic
 
   !================================================================
-  subroutine kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart,&
-        timing_level, shell_list, iprint, lenconfac, kmesh_tol, num_kpts,&
-        search_shells, skip_B1_tests, num_shells, length_unit)
+  subroutine kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, &
+                               timing_level, shell_list, iprint, lenconfac, kmesh_tol, num_kpts, &
+                               search_shells, skip_B1_tests, num_shells, length_unit)
     !================================================================
     !
     !!  Find the B1 weights for a set of shells specified by the user
@@ -1381,9 +1380,9 @@ contains
   end subroutine kmesh_shell_fixed
 
   !=================================================================
-  subroutine kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart,&
-        timing_level, shell_list, iprint, lenconfac, kmesh_tol, num_kpts,&
-        search_shells, skip_B1_tests, num_shells, length_unit)
+  subroutine kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, &
+                                   timing_level, shell_list, iprint, lenconfac, kmesh_tol, num_kpts, &
+                                   search_shells, skip_B1_tests, num_shells, length_unit)
     !=================================================================
     !
     !!  Find the B1 weights for a set of b-vectors given in a file.

@@ -49,12 +49,12 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc,&
-        recip_lattice_loc, kpt_latt_loc, num_bands_tot, num_atoms_loc,&
-        atom_symbols_loc, atoms_cart_loc, gamma_only_loc, spinors_loc, nntot_loc,&
-        nnlist_loc, nncell_loc, num_bands_loc, num_wann_loc, proj_site_loc,&
-        proj_l_loc, proj_m_loc, proj_radial_loc, proj_z_loc, proj_x_loc,&
-        proj_zona_loc, exclude_bands_loc, proj_s_loc, proj_s_qaxis_loc)
+subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, &
+                         recip_lattice_loc, kpt_latt_loc, num_bands_tot, num_atoms_loc, &
+                         atom_symbols_loc, atoms_cart_loc, gamma_only_loc, spinors_loc, nntot_loc, &
+                         nnlist_loc, nncell_loc, num_bands_loc, num_wann_loc, proj_site_loc, &
+                         proj_l_loc, proj_m_loc, proj_radial_loc, proj_z_loc, proj_x_loc, &
+                         proj_zona_loc, exclude_bands_loc, proj_s_loc, proj_s_qaxis_loc)
 
   !! This routine should be called first from a code calling the library
   !! mode to setup all the variables.
@@ -216,12 +216,12 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc
 
 end subroutine wannier_setup
 
-subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc,&
-        recip_lattice_loc, kpt_latt_loc, num_bands_loc,&
-        num_wann_loc, nntot_loc, num_atoms_loc, atom_symbols_loc,&
-        atoms_cart_loc, gamma_only_loc, M_matrix_loc, A_matrix_loc,&
-        eigenvalues_loc, U_matrix_loc, U_matrix_opt_loc, lwindow_loc,&
-        wann_centres_loc, wann_spreads_loc, spread_loc)
+subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, &
+                       recip_lattice_loc, kpt_latt_loc, num_bands_loc, &
+                       num_wann_loc, nntot_loc, num_atoms_loc, atom_symbols_loc, &
+                       atoms_cart_loc, gamma_only_loc, M_matrix_loc, A_matrix_loc, &
+                       eigenvalues_loc, U_matrix_loc, U_matrix_opt_loc, lwindow_loc, &
+                       wann_centres_loc, wann_spreads_loc, spread_loc)
 
   !! This routine should be called after wannier_setup from a code calling
   !! the library mode to actually run the Wannier code.
@@ -377,10 +377,10 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc,&
     write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle      ', time1 - time2, ' (sec)'
   else
     if (gamma_only) then
-      call overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)  !lp note this not called by wannier_prog.F90 
+      call overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)  !lp note this not called by wannier_prog.F90
     else
       call overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
-                          timing_level, num_kpts, num_wann, num_bands, lsitesymmetry) !lp note this not called by wannier_prog.F90 
+                           timing_level, num_kpts, num_wann, num_bands, lsitesymmetry) !lp note this not called by wannier_prog.F90
     endif
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to project overlaps ', time1 - time2, ' (sec)'
@@ -419,9 +419,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc,&
                    translate_home_cell, recip_lattice, num_atoms, &
                    atoms_symbol, atoms_pos_cart, num_species, &
                    atoms_species_num, num_valence_bands, &
-                   num_elec_per_state, lsitesymmetry, stdout,&
-                   ws_distance_tol, ws_search_size, real_metric, mp_grid,&
-                   transport_mode, bands_plot_mode, transport, bands_plot,&
+                   num_elec_per_state, lsitesymmetry, stdout, &
+                   ws_distance_tol, ws_search_size, real_metric, mp_grid, &
+                   transport_mode, bands_plot_mode, transport, bands_plot, &
                    translation_centre_frac, automatic_translation, ndimwin)
 
   endif

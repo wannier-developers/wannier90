@@ -35,9 +35,9 @@ module w90_overlap
 contains
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt,&
-        a_matrix, m_matrix_orig_local, m_matrix_orig, timing_level, nntot,&
-        num_kpts, num_wann, num_bands, disentanglement)
+  subroutine overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, &
+                              a_matrix, m_matrix_orig_local, m_matrix_orig, timing_level, nntot, &
+                              num_kpts, num_wann, num_bands, disentanglement)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -58,7 +58,7 @@ contains
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
-    logical,intent(in) :: disentanglement
+    logical, intent(in) :: disentanglement
 !   end w90_parameters
 
     integer :: ierr
@@ -101,11 +101,11 @@ contains
   end subroutine overlap_allocate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local,&
-        gamma_only, use_bloch_phases, cp_pp, u_matrix_opt, m_matrix_orig,&
-        timing_level, a_matrix, m_matrix, u_matrix, devel_flag, proj2wann_map,&
-        lselproj, num_proj, nnlist, nncell, nntot, num_kpts, num_wann, num_bands,&
-        disentanglement, sym)
+  subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, &
+                          gamma_only, use_bloch_phases, cp_pp, u_matrix_opt, m_matrix_orig, &
+                          timing_level, a_matrix, m_matrix, u_matrix, devel_flag, proj2wann_map, &
+                          lselproj, num_proj, nnlist, nncell, nntot, num_kpts, num_wann, num_bands, &
+                          disentanglement, sym)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
@@ -116,7 +116,7 @@ contains
     use w90_sitesym, only: sitesym_data
 
     implicit none
-    
+
     type(sitesym_data), intent(in) :: sym
 
 !   from w90_parameters
@@ -128,21 +128,21 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: nnlist(:, :)
     integer, intent(in) :: proj2wann_map(:)
-    integer, intent(in) :: nncell(:, :, :) 
+    integer, intent(in) :: nncell(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :,:)
+    complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
     character(len=50), intent(in) :: devel_flag
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: gamma_only
     logical, intent(in) :: use_bloch_phases
     logical, intent(in) :: cp_pp
     logical, intent(in) :: lselproj
-    logical,intent(in) :: disentanglement
+    logical, intent(in) :: disentanglement
 !   logical, public, save :: lhasproj !not used here
 !   end w90_parameters
 
@@ -339,7 +339,7 @@ contains
     if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
         call overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
-                            timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, sym)
+                             timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, sym)
       else
         call overlap_project_gamma(nntot, m_matrix, u_matrix, timing_level, num_wann)
       endif
@@ -593,8 +593,8 @@ contains
   end subroutine overlap_rotate
 
   !%%%%%%%%%%%%%%%%%%%%%
-  subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt,&
-        a_matrix, m_matrix_orig, m_matrix, u_matrix)
+  subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
+                             a_matrix, m_matrix_orig, m_matrix, u_matrix)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
@@ -609,7 +609,7 @@ contains
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :,:)
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
 !   end w90_parameters
 
     integer :: ierr
@@ -667,9 +667,9 @@ contains
   end subroutine overlap_dealloc
 
   !==================================================================!
-  subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix,&
-        timing_level, num_kpts, num_wann, num_bands, lsitesymmetry,&
-        sym)
+  subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
+                             timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, &
+                             sym)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -693,14 +693,13 @@ contains
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: nnlist(:, :) 
+    integer, intent(in) :: nnlist(:, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
     logical, intent(in) :: lsitesymmetry
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
-
 
     ! internal variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2
@@ -781,8 +780,8 @@ contains
     enddo
     ! NKP
 
-    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts,&
-                                                       num_wann, u_matrix, sym) !RS: update U(Rk)
+    if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
+                                                        num_wann, u_matrix, sym) !RS: update U(Rk)
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
