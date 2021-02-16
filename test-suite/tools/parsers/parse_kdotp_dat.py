@@ -1,5 +1,5 @@
 """
-Parser function parse() to parse the <seedname>-kdotp_2.dat output file of postw90.x.
+Parser function parse() to parse the <seedname>-kdotp_0.dat output file of postw90.x.
 
 """
 import inspect
