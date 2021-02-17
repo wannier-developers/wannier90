@@ -144,7 +144,7 @@ contains
 !   logical, intent(inout) :: ham_have_setup
 !   logical, intent(inout) :: have_translated
 !   logical, intent(inout) :: use_translation
-    type(ham_logical) :: hmlg
+    type(ham_logical), intent(inout) :: hmlg
 
 !   from w90_hamiltonian
     integer, intent(inout) :: rpt_origin

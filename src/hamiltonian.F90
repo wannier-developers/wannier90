@@ -101,7 +101,7 @@ contains
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
 
-    type(ham_logical) :: hmlg
+    type(ham_logical), intent(inout) :: hmlg
 
     ! local variables
     integer :: ierr
@@ -164,7 +164,7 @@ contains
 !   logical, intent(inout) :: ham_have_setup
 !   logical, intent(inout) :: have_translated
 !   logical, intent(inout) :: use_translation
-    type(ham_logical) :: hmlg
+    type(ham_logical), intent(inout) :: hmlg
 
     ! passed variables
     integer, intent(inout), allocatable :: ndegen(:)
@@ -230,7 +230,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
 !   logical, intent(inout) :: have_translated
 !   logical, intent(inout) :: use_translation
-    type(ham_logical) :: hmlg
+    type(ham_logical), intent(inout) :: hmlg
 
     ! passed variables
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -561,7 +561,7 @@ contains
     integer, intent(in) :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-    type(ham_logical) :: hmlg
+    type(ham_logical), intent(inout) :: hmlg
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
@@ -862,7 +862,7 @@ contains
     integer, intent(in) :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-    type(ham_logical) :: hmlg
+    type(ham_logical), intent(inout) :: hmlg
 
 !   from w90_parameters
     integer, intent(in) :: num_wann
