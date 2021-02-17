@@ -2,8 +2,8 @@
 
 set -e
 
-## Set here, if needed, the location of the executables
-TESTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+TESTDIR=$(pwd)/test-suite/
+echo $TESTDIR
 cd "$TESTDIR"
 
 echo "****************************************"
@@ -26,7 +26,7 @@ cd "$TESTDIR"
 echo "************************"
 echo "* RUNNING SERIAL TESTS *"
 echo "************************"
-./run_tests --category=default 
+./run_tests --category=default
 
 if [ "$W90BINARYPARALLEL" == "true" ]
 then
