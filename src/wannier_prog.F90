@@ -260,14 +260,13 @@ program wannier
   have_disentangled = .false.
 
   if (disentanglement) then
-    !call dis_main()
-    call dis_main(num_kpts, nntot, num_wann, num_bands, dis_spheres_num, &
-                  dis_num_iter, dis_spheres_first_wann, dis_conv_window, timing_level, &
-                  num_nodes, my_node_id, optimisation, iprint, nnlist, ndimwin, dis_win_min, &
-                  dis_win_max, dis_froz_min, dis_froz_max, dis_mix_ratio, dis_conv_tol, &
-                  wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt, &
-                  dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only, &
-                  on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix, &
+    call dis_main(num_kpts, kmesh_info%nntot, num_wann, num_bands, dis_data%spheres_num, &
+                  dis_data%num_iter, dis_data%spheres_first_wann, dis_data%conv_window, timing_level, &
+       num_nodes, my_node_id, param_input%optimisation, param_input%iprint, kmesh_info%nnlist, dis_data%ndimwin, dis_data%win_min, &
+                  dis_data%win_max, dis_data%froz_min, dis_data%froz_max, dis_data%mix_ratio, dis_data%conv_tol, &
+                  kmesh_info%wbtot, param_input%lenconfac, param_input%omega_invariant, eigval, recip_lattice, k_points%kpt_latt, &
+          dis_data%spheres, kmesh_info%wb, param_input%devel_flag, param_input%length_unit, lsitesymmetry, param_input%gamma_only, &
+                  on_root, dis_data%frozen_states, dis_data%lwindow, u_matrix, u_matrix_opt, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, sym)
 
     have_disentangled = .true.
