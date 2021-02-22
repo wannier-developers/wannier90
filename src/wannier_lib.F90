@@ -358,7 +358,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   call comms_array_split(num_kpts, counts, displs)
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
-                        m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
+                        m_matrix_orig, param_input%timing_level, kmesh_info%nntot, num_kpts, num_wann, gyrotropic%num_bands, &
+                        w90_calcs%disentanglement)
 
   if (disentanglement) then
     m_matrix_orig = m_matrix_loc
@@ -526,7 +527,7 @@ call tran_main(transport_mode, tran_read_ht, param_input%timing_level, param_wan
                            hmlg, ham_k)
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                        a_matrix, m_matrix_orig, m_matrix, u_matrix)
-  call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
+  call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
   call param_dealloc()
 
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'

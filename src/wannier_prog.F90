@@ -248,11 +248,13 @@ program wannier
   if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
-                        m_matrix_orig, timing_level, nntot, num_kpts, num_wann, num_bands, disentanglement)
-  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, gamma_only, use_bloch_phases, &
-                    cp_pp, u_matrix_opt, m_matrix_orig, timing_level, a_matrix, m_matrix, u_matrix, &
-                    devel_flag, proj2wann_map, lselproj, num_proj, nnlist, nncell, nntot, num_kpts, &
-                    num_wann, num_bands, disentanglement, sym)
+                        m_matrix_orig, param_input%timing_level, kmesh_info%nntot, num_kpts, num_wann, gyrotropic%num_bands, &
+                        w90_calcs%disentanglement)
+  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input%gamma_only, w90_calcs%use_bloch_phases, &
+                    w90_calcs%cp_pp, u_matrix_opt, m_matrix_orig, param_input%timing_level, a_matrix, m_matrix, u_matrix, &
+                    param_input%devel_flag, select_proj%proj2wann_map, select_proj%lselproj, num_proj, kmesh_info%nnlist, &
+                    kmesh_info%nncell, kmesh_info%nntot, num_kpts, &
+                    num_wann, gyrotropic%num_bands, w90_calcs%disentanglement, sym)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
@@ -385,7 +387,7 @@ call tran_main(transport_mode, tran_read_ht, param_input%timing_level, param_wan
                            hmlg, ham_k)
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                        a_matrix, m_matrix_orig, m_matrix, u_matrix)
-  call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
+  call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
   call param_dealloc()
   if (lsitesymmetry) call sitesym_dealloc(sym) !YN:
 
