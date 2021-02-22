@@ -72,14 +72,12 @@ contains
       eV_au, bohr, elec_mass_SI, twopi, eps0_SI
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_utility, only: utility_det3
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, &
+    use w90_io, only: io_error, stdout, io_file_unit, &
       io_stopwatch
-    use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
-      weight
-    use w90_parameters, only: timing_level, iprint, num_wann, gyrotropic_kmesh, &
-      cell_volume, transl_inv, gyrotropic_task, &
-      gyrotropic_nfreq, gyrotropic_freq_list, nfermi, &
-      fermi_energy_list, gyrotropic_box, gyrotropic_box_corner, spinors
+    !use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
+    !  weight
+    use w90_postw90_common, only: cell_volume
+    use w90_parameters, only: param_input, gyrotropic, berry, fermi
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R
 
@@ -97,22 +95,20 @@ contains
     character(len=120) :: comment_tmp
 
     real(kind=dp)     :: kweight, kpt(3), &
-                         db1, db2, db3, fac, freq
-    integer           :: n, i, j, k, ikpt, if, ierr, loop_x, loop_y, loop_z, &
-                         loop_xyz, ifreq, &
-                         file_unit
+                         db1, db2, db3, fac
+    integer           :: loop_x, loop_y, loop_z, loop_xyz
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
-    if (nfermi == 0) call io_error( &
+    if (fermi%n == 0) call io_error( &
       'Must specify one or more Fermi levels when gyrotropic=true')
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1)
 
     ! Mesh spacing in reduced coordinates
     !
-    db1 = 1.0_dp/real(gyrotropic_kmesh(1), dp)
-    db2 = 1.0_dp/real(gyrotropic_kmesh(2), dp)
-    db3 = 1.0_dp/real(gyrotropic_kmesh(3), dp)
+    db1 = 1.0_dp/real(gyrotropic%kmesh(1), dp)
+    db2 = 1.0_dp/real(gyrotropic%kmesh(2), dp)
+    db3 = 1.0_dp/real(gyrotropic%kmesh(3), dp)
 
     eval_K = .false.
     eval_C = .false.
@@ -122,26 +118,26 @@ contains
     eval_NOA = .false.
     eval_DOS = .false.
 
-    if (index(gyrotropic_task, '-k') > 0) eval_K = .true.
-    if (index(gyrotropic_task, '-c') > 0) eval_C = .true.
-    if (index(gyrotropic_task, '-d0') > 0) eval_D = .true.
-    if (index(gyrotropic_task, '-dw') > 0) eval_Dw = .true.
-    if (index(gyrotropic_task, '-spin') > 0) eval_spn = .true.
-    if (index(gyrotropic_task, '-noa') > 0) eval_NOA = .true.
-    if (index(gyrotropic_task, '-dos') > 0) eval_DOS = .true.
-    if (index(gyrotropic_task, 'all') > 0) then
+    if (index(gyrotropic%task, '-k') > 0) eval_K = .true.
+    if (index(gyrotropic%task, '-c') > 0) eval_C = .true.
+    if (index(gyrotropic%task, '-d0') > 0) eval_D = .true.
+    if (index(gyrotropic%task, '-dw') > 0) eval_Dw = .true.
+    if (index(gyrotropic%task, '-spin') > 0) eval_spn = .true.
+    if (index(gyrotropic%task, '-noa') > 0) eval_NOA = .true.
+    if (index(gyrotropic%task, '-dos') > 0) eval_DOS = .true.
+    if (index(gyrotropic%task, 'all') > 0) then
       eval_K = .true.
       eval_C = .true.
       eval_D = .true.
       eval_Dw = .true.
-      if (spinors) eval_spn = .true.
+      if (param_input%spinors) eval_spn = .true.
       eval_NOA = .true.
       eval_DOS = .true.
     endif
 
     if (.not. (eval_K .or. eval_noa)) eval_spn = .false.
 
-    if ((.not. spinors) .and. eval_spn) call io_error( &
+    if ((.not. param_input%spinors) .and. eval_spn) call io_error( &
       "spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
 
     ! Wannier matrix elements, allocations and initializations
@@ -158,39 +154,39 @@ contains
     if (eval_K) then
       call get_BB_R
       call get_CC_R
-      allocate (gyro_K_orb(3, 3, nfermi))
+      allocate (gyro_K_orb(3, 3, fermi%n))
       gyro_K_orb = 0.0_dp
       if (eval_spn) then
-        allocate (gyro_K_spn(3, 3, nfermi))
+        allocate (gyro_K_spn(3, 3, fermi%n))
         gyro_K_spn = 0.0_dp
       endif
     endif
 
     if (eval_D) then
-      allocate (gyro_D(3, 3, nfermi))
+      allocate (gyro_D(3, 3, fermi%n))
       gyro_D = 0.0_dp
     endif
 
     if (eval_DOS) then
-      allocate (gyro_DOS(nfermi))
+      allocate (gyro_DOS(fermi%n))
       gyro_DOS = 0.0_dp
     endif
 
     if (eval_C) then
-      allocate (gyro_C(3, 3, nfermi))
+      allocate (gyro_C(3, 3, fermi%n))
       gyro_C = 0.0_dp
     endif
 
     if (eval_Dw) then
-      allocate (gyro_Dw(3, 3, nfermi, gyrotropic_nfreq))
+      allocate (gyro_Dw(3, 3, fermi%n, gyrotropic%nfreq))
       gyro_Dw = 0.0_dp
     endif
 
     if (eval_NOA) then
-      allocate (gyro_NOA_orb(3, 3, nfermi, gyrotropic_nfreq))
+      allocate (gyro_NOA_orb(3, 3, fermi%n, gyrotropic%nfreq))
       gyro_NOA_orb = 0.0_dp
       if (eval_spn) then
-        allocate (gyro_NOA_spn(3, 3, nfermi, gyrotropic_nfreq))
+        allocate (gyro_NOA_spn(3, 3, fermi%n, gyrotropic%nfreq))
         gyro_NOA_spn = 0.0_dp
       endif
     endif
@@ -226,7 +222,7 @@ contains
         endif
       endif
 
-      if (transl_inv) then
+      if (berry%transl_inv) then
         if (eval_K) &
           call io_error('transl_inv=T disabled for K-tensor')
         write (stdout, '(/,1x,a)') &
@@ -235,12 +231,12 @@ contains
           'band-diagonal Wannier matrix elements of r, etc.'
       endif
 
-      if (timing_level > 1) then
+      if (param_input%timing_level > 1) then
         call io_stopwatch('gyrotropic: prelims', 2)
         call io_stopwatch('gyrotropic: k-interpolation', 1)
       endif
 
-      write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic_kmesh(1:3)
+      write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic%kmesh(1:3)
 
       flush(stdout)
 
@@ -248,18 +244,18 @@ contains
 
     ! Do not read 'kpoint.dat'. Loop over a regular grid in the full BZ
 
-    kweight = db1*db2*db3*utility_det3(gyrotropic_box)
+    kweight = db1*db2*db3*utility_det3(gyrotropic%box)
 
-    do loop_xyz = my_node_id, PRODUCT(gyrotropic_kmesh) - 1, num_nodes
-      loop_x = loop_xyz/(gyrotropic_kmesh(2)*gyrotropic_kmesh(3))
-      loop_y = (loop_xyz - loop_x*(gyrotropic_kmesh(2) &
-                                   *gyrotropic_kmesh(3)))/gyrotropic_kmesh(3)
-      loop_z = loop_xyz - loop_x*(gyrotropic_kmesh(2)*gyrotropic_kmesh(3)) &
-               - loop_y*gyrotropic_kmesh(3)
+    do loop_xyz = my_node_id, PRODUCT(gyrotropic%kmesh) - 1, num_nodes
+      loop_x = loop_xyz/(gyrotropic%kmesh(2)*gyrotropic%kmesh(3))
+      loop_y = (loop_xyz - loop_x*(gyrotropic%kmesh(2) &
+                                   *gyrotropic%kmesh(3)))/gyrotropic%kmesh(3)
+      loop_z = loop_xyz - loop_x*(gyrotropic%kmesh(2)*gyrotropic%kmesh(3)) &
+               - loop_y*gyrotropic%kmesh(3)
       kpt(1) = loop_x*db1
       kpt(2) = loop_y*db2
       kpt(3) = loop_z*db3
-      kpt(:) = gyrotropic_box_corner(:) + matmul(kpt, gyrotropic_box)
+      kpt(:) = gyrotropic%box_corner(:) + matmul(kpt, gyrotropic%box)
 
       call gyrotropic_get_k_list(kpt, kweight, &
                                  gyro_K_spn, gyro_K_orb, gyro_D, gyro_Dw, gyro_C, &
@@ -271,30 +267,30 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*nfermi, 'SUM')
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*nfermi, 'SUM')
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM')
+      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM')
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*nfermi, 'SUM')
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM')
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*nfermi, 'SUM')
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM')
 
     if (eval_Dw) &
-      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*nfermi*gyrotropic_nfreq, 'SUM')
+      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), nfermi, 'SUM')
+      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM')
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*nfermi*gyrotropic_nfreq, 'SUM')
-      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*nfermi*gyrotropic_nfreq, 'SUM')
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
+      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
     endif
 
     if (on_root) then
 
-      if (timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
       flush(stdout)
@@ -475,18 +471,14 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
-    use w90_parameters, only: num_wann, fermi_energy_list, &
-      gyrotropic_smr_index, nfermi, gyrotropic_nfreq, &
-      gyrotropic_degen_thresh, gyrotropic_smr_max_arg, &
-      gyrotropic_band_list, gyrotropic_num_bands, &
-      gyrotropic_smr_fixed_en_width
+    use w90_parameters, only: num_wann, fermi, gyrotropic
     use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
 
-    use w90_get_oper, only: HH_R, SS_R, AA_R
+    use w90_get_oper, only: AA_R
     use w90_spin, only: spin_get_S
-    use w90_io, only: stdout
+    !use w90_io, only: stdout
 
     ! Arguments
     !
@@ -510,7 +502,7 @@ contains
 
     real(kind=dp), allocatable :: curv_w_nk(:, :, :)
 
-    integer          :: i, j, n, n1, m1, m, ifermi
+    integer          :: i, j, n, n1, ifermi
     real(kind=dp)    :: delta, occ(num_wann), &
                         eig(num_wann), del_eig(num_wann, 3), &
                         S(num_wann, 3), eta_smr, arg, &
@@ -537,33 +529,33 @@ contains
       AA = AA + cmplx_i*D_h ! Eq.(25) WYSV06
     endif
 
-    if (eval_Dw) allocate (curv_w_nk(num_wann, gyrotropic_nfreq, 3))
+    if (eval_Dw) allocate (curv_w_nk(num_wann, gyrotropic%nfreq, 3))
 
-    eta_smr = gyrotropic_smr_fixed_en_width
+    eta_smr = gyrotropic%smr_fixed_en_width
 
     got_spin = .false.
 
-    do n1 = 1, gyrotropic_num_bands
-      n = gyrotropic_band_list(n1)
+    do n1 = 1, gyrotropic%num_bands
+      n = gyrotropic%band_list(n1)
       !
       ! ***ADJUSTABLE PARAMETER***
       ! avoid degeneracies
       !---------------------------------------------------
       if (n > 1) then
-        if (eig(n) - eig(n - 1) <= gyrotropic_degen_thresh) cycle
+        if (eig(n) - eig(n - 1) <= gyrotropic%degen_thresh) cycle
       endif
       if (n < num_wann) then
-        if (eig(n + 1) - eig(n) <= gyrotropic_degen_thresh) cycle
+        if (eig(n + 1) - eig(n) <= gyrotropic%degen_thresh) cycle
       endif
       !---------------------------------------------------
       got_orb_n = .false.
-      do ifermi = 1, nfermi
-        arg = (eig(n) - fermi_energy_list(ifermi))/eta_smr
+      do ifermi = 1, fermi%n
+        arg = (eig(n) - fermi%energy_list(ifermi))/eta_smr
         !
         ! To save time: far from the Fermi surface, negligible contribution
         !
         !-------------------------
-        if (abs(arg) > gyrotropic_smr_max_arg) cycle
+        if (abs(arg) > gyrotropic%smr_max_arg) cycle
         !-------------------------
         !
         ! Spin is computed for all bands simultaneously
@@ -598,7 +590,7 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, gyrotropic_smr_index)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
+        delta = utility_w0gauss(arg, gyrotropic%smr_index)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
         !
         ! Loop over Cartesian tensor components
         !
@@ -645,8 +637,7 @@ contains
     !======================================================================!
 
     use w90_constants, only: dp
-    use w90_parameters, only: num_wann, gyrotropic_nfreq, gyrotropic_freq_list, &
-      gyrotropic_band_list, gyrotropic_num_bands
+    use w90_parameters, only: gyrotropic
     ! Arguments
     !
     real(kind=dp), intent(in)                    :: eig(:)
@@ -657,16 +648,16 @@ contains
     integer          :: i, n, m, n1, m1
     real(kind=dp)    :: wmn
 
-    allocate (multWre(gyrotropic_nfreq))
+    allocate (multWre(gyrotropic%nfreq))
     curv_w_k(:, :, :) = 0_dp
 
-    do n1 = 1, gyrotropic_num_bands
-      n = gyrotropic_band_list(n1)
-      do m1 = 1, gyrotropic_num_bands
-        m = gyrotropic_band_list(m1)
+    do n1 = 1, gyrotropic%num_bands
+      n = gyrotropic%band_list(n1)
+      do m1 = 1, gyrotropic%num_bands
+        m = gyrotropic%band_list(m1)
         if (n == m) cycle
         wmn = eig(m) - eig(n)
-        multWre(:) = real(wmn**2/(wmn**2 - gyrotropic_freq_list(:)**2))
+        multWre(:) = real(wmn**2/(wmn**2 - gyrotropic%freq_list(:)**2))
         do i = 1, 3
           curv_w_k(n, :, i) = curv_w_k(n, :, i) - &
                               2_dp*aimag(AA(n, m, alpha_A(i))*AA(m, n, beta_A(i)))*multWre
@@ -698,11 +689,9 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi, cmplx_1
     use w90_utility, only: utility_rotate
-    use w90_parameters, only: num_wann, gyrotropic_nfreq, gyrotropic_freq_list, &
-      fermi_energy_list, nfermi, gyrotropic_eigval_max, &
-      gyrotropic_num_bands, gyrotropic_band_list, iprint
+    use w90_parameters, only: num_wann, gyrotropic, fermi, param_input
 
-    use w90_comms, only: on_root
+    !use w90_comms, only: on_root
     use w90_io, only: stdout, io_time, io_error
 
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
@@ -724,14 +713,14 @@ contains
     complex(kind=dp), allocatable :: SS(:, :, :)
     complex(kind=dp), allocatable :: S_h(:, :, :)
 
-    complex(kind=dp)              :: multW1(gyrotropic_nfreq)
-    real(kind=dp) :: multWe(gyrotropic_nfreq), multWm(gyrotropic_nfreq)
+    complex(kind=dp)              :: multW1(gyrotropic%nfreq)
+    real(kind=dp) :: multWe(gyrotropic%nfreq), multWm(gyrotropic%nfreq)
 
     integer ::  num_occ, num_unocc, occ_list(num_wann), unocc_list(num_wann)
 
-    real(kind=dp)    ::  wmn
+    !real(kind=dp)    ::  wmn
 
-    integer          :: i, j, n, l, n1, l1, a, b, c, ab, ifermi
+    integer          :: j, n, l, n1, l1, a, b, c, ab, ifermi
     real(kind=dp)    :: wln
 
     if (present(gyro_NOA_spn)) then
@@ -743,32 +732,32 @@ contains
       enddo
     endif
 
-    do ifermi = 1, nfermi
+    do ifermi = 1, fermi%n
 
       num_occ = 0
       num_unocc = 0
-      do n1 = 1, gyrotropic_num_bands
-        n = gyrotropic_band_list(n1)
-        if (eig(n) < fermi_energy_list(ifermi)) then
+      do n1 = 1, gyrotropic%num_bands
+        n = gyrotropic%band_list(n1)
+        if (eig(n) < fermi%energy_list(ifermi)) then
           num_occ = num_occ + 1
           occ_list(num_occ) = n
-        elseif (eig(n) < gyrotropic_eigval_max) then
+        elseif (eig(n) < gyrotropic%eigval_max) then
           num_unocc = num_unocc + 1
           unocc_list(num_unocc) = n
         endif
       enddo
 
       if (num_occ == 0) then
-        if (iprint .ge. 2) &
+        if (param_input%iprint .ge. 2) &
           write (stdout, *) "WARNING no occupied bands included in the calculation for kpt=", &
-          kpt, ", EF[", ifermi, "]=", fermi_energy_list(ifermi), "eV"
+          kpt, ", EF[", ifermi, "]=", fermi%energy_list(ifermi), "eV"
         cycle
       endif
 
       if (num_unocc == 0) then
-        if (iprint .ge. 2) &
+        if (param_input%iprint .ge. 2) &
           write (stdout, *) "WARNING no unoccupied bands included in the calculation for kpt=", &
-          kpt, ", EF[", ifermi, "]=", fermi_energy_list(ifermi), "eV"
+          kpt, ", EF[", ifermi, "]=", fermi%energy_list(ifermi), "eV"
         cycle
       endif
 
@@ -786,7 +775,7 @@ contains
           l = unocc_list(l1)
 
           wln = eig(l) - eig(n)
-          multW1(:) = cmplx_1/(wln*wln - gyrotropic_freq_list(:)**2)
+          multW1(:) = cmplx_1/(wln*wln - gyrotropic%freq_list(:)**2)
           multWm(:) = real(multW1)*kweight
           multWe(:) = real(-multW1(:)*(2*wln**2*multW1(:) + cmplx_1))*kweight
           do ab = 1, 3
@@ -825,7 +814,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_i, cmplx_0
-    use w90_parameters, only: gyrotropic_num_bands, gyrotropic_band_list
+    use w90_parameters, only: gyrotropic
 
     ! Arguments
     !
@@ -846,8 +835,8 @@ contains
           do l1 = 1, num_unocc
             l = unocc_list(l1)
             Bnl(n1, l1, a, c) = -cmplx_i*(del_eig(n, a) + del_eig(l, a))*AA(n, l, c)
-            do m1 = 1, gyrotropic_num_bands
-              m = gyrotropic_band_list(m1)
+            do m1 = 1, gyrotropic%num_bands
+              m = gyrotropic%band_list(m1)
               Bnl(n1, l1, a, c) = Bnl(n1, l1, a, c) + &
                                   (eig(n) - eig(m))*AA(n, m, a)*AA(m, l, c) - &
                                   (eig(l) - eig(m))*AA(n, m, c)*AA(m, l, a)
@@ -898,8 +887,7 @@ contains
   end subroutine gyrotropic_get_NOA_Bnl_spin
 
   subroutine gyrotropic_outprint_tensor(f_out_name, arrEf, arrEF1D, arrEfW, units, comment, symmetrize)
-    use w90_parameters, only: gyrotropic_nfreq, gyrotropic_freq_list, &
-      nfermi, fermi_energy_list
+    use w90_parameters, only: gyrotropic
     use w90_io, only: io_file_unit, seedname, stdout
 
     character(len=30), intent(in) :: f_out_name
@@ -931,8 +919,8 @@ contains
     if (present(arrEf)) then
       call gyrotropic_outprint_tensor_w(file_unit, 0.0_dp, arr33N=arrEf, symmetrize=lsym)
     elseif (present(arrEfW)) then
-      do i = 1, gyrotropic_nfreq
-        call gyrotropic_outprint_tensor_w(file_unit, real(gyrotropic_freq_list(i)), arr33N=arrEfW(:, :, :, i), symmetrize=lsym)
+      do i = 1, gyrotropic%nfreq
+        call gyrotropic_outprint_tensor_w(file_unit, real(gyrotropic%freq_list(i)), arr33N=arrEfW(:, :, :, i), symmetrize=lsym)
       enddo
     elseif (present(arrEf1D)) then
       call gyrotropic_outprint_tensor_w(file_unit, 0.0_dp, arrN=arrEf1D)
@@ -943,7 +931,7 @@ contains
   end subroutine gyrotropic_outprint_tensor
 
   subroutine gyrotropic_outprint_tensor_w(file_unit, omega, arr33N, arrN, symmetrize)
-    use w90_parameters, only: nfermi, fermi_energy_list
+    use w90_parameters, only: fermi
 
     integer, intent(in) :: file_unit
     real(kind=dp), intent(in) :: omega
@@ -954,9 +942,9 @@ contains
     ! symmetrize not present - write as is
     logical, optional, intent(in) :: symmetrize
 
-    real(kind=dp) ::  xx(nfermi), yy(nfermi), zz(nfermi), &
-                     xy(nfermi), xz(nfermi), yz(nfermi), &
-                     x(nfermi), y(nfermi), z(nfermi)
+    real(kind=dp) ::  xx(fermi%n), yy(fermi%n), zz(fermi%n), &
+                     xy(fermi%n), xz(fermi%n), yz(fermi%n), &
+                     x(fermi%n), y(fermi%n), z(fermi%n)
     integer       ::  i
     logical lsym
 
@@ -999,15 +987,15 @@ contains
         write (file_unit, '(11a15)') '# EFERMI(eV)', "omega(eV)", 'xx', 'yy', 'zz', 'xy', 'xz', 'yz', 'zy', 'xz', 'yx'
       endif
 
-      do i = 1, nfermi
-        write (file_unit, '(11E15.6)') fermi_energy_list(i), omega, xx(i), yy(i), zz(i), xy(i), xz(i), yz(i), x(i), y(i), z(i)
+      do i = 1, fermi%n
+        write (file_unit, '(11E15.6)') fermi%energy_list(i), omega, xx(i), yy(i), zz(i), xy(i), xz(i), yz(i), x(i), y(i), z(i)
       enddo
     endif
 
     if (present(arrN)) then
       write (file_unit, '(2a15)') '# EFERMI(eV) '
-      do i = 1, nfermi
-        write (file_unit, '(11E15.6)') fermi_energy_list(i), arrN(i)
+      do i = 1, fermi%n
+        write (file_unit, '(11E15.6)') fermi%energy_list(i), arrN(i)
       enddo
 
     endif

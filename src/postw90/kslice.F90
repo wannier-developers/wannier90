@@ -49,10 +49,8 @@ contains
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, kslice, kslice_task, kslice_2dkmesh, &
-      kslice_corner, kslice_b1, kslice_b2, &
-      kslice_fermi_lines_colour, recip_lattice, &
-      nfermi, fermi_energy_list, berry_curv_unit, kubo_adpt_smr
+    use w90_parameters, only: num_wann, kslice, recip_lattice, &
+      fermi, berry !_curv_unit, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -64,13 +62,13 @@ contains
 
     integer           :: iloc, itot, i1, i2, n, n1, n2, n3, i, nkpts, my_nkpts
     integer           :: scriptunit, dataunit, loop_kpt
-    real(kind=dp)     :: avec_2d(3, 3), avec_3d(3, 3), bvec(3, 3), yvec(3), zvec(3), &
+    real(kind=dp)     :: avec_2d(3, 3), bvec(3, 3), yvec(3), zvec(3), &
                          b1mod, b2mod, ymod, cosb1b2, kcorner_cart(3), &
                          areab1b2, cosyb2, kpt(3), kpt_x, kpt_y, k1, k2, &
-                         imf_k_list(3, 3, nfermi), img_k_list(3, 3, nfermi), &
-                         imh_k_list(3, 3, nfermi), Morb_k(3, 3), curv(3), morb(3), &
+                         imf_k_list(3, 3, fermi%n), img_k_list(3, 3, fermi%n), &
+                         imh_k_list(3, 3, fermi%n), Morb_k(3, 3), curv(3), morb(3), &
                          spn_k(num_wann), del_eig(num_wann, 3), Delta_k, Delta_E, &
-                         zhat(3), vdum(3), rdum, shc_k_fermi(nfermi)
+                         zhat(3), vdum(3), rdum, shc_k_fermi(fermi%n)
     logical           :: plot_fermi_lines, plot_curv, plot_morb, &
                          fermi_lines_color, heatmap, plot_shc
     character(len=120) :: filename, square
@@ -87,24 +85,24 @@ contains
                                      zdata(:, :), my_zdata(:, :)
     logical, allocatable          :: spnmask(:, :), my_spnmask(:, :)
 
-    plot_fermi_lines = index(kslice_task, 'fermi_lines') > 0
-    plot_curv = index(kslice_task, 'curv') > 0
-    plot_morb = index(kslice_task, 'morb') > 0
-    plot_shc = index(kslice_task, 'shc') > 0
-    fermi_lines_color = kslice_fermi_lines_colour /= 'none'
+    plot_fermi_lines = index(kslice%task, 'fermi_lines') > 0
+    plot_curv = index(kslice%task, 'curv') > 0
+    plot_morb = index(kslice%task, 'morb') > 0
+    plot_shc = index(kslice%task, 'shc') > 0
+    fermi_lines_color = kslice%fermi_lines_colour /= 'none'
     heatmap = plot_curv .or. plot_morb .or. plot_shc
     if (plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
       call io_error('Error: spin-colored Fermi lines not allowed in ' &
                     //'curv/morb/shc heatmap plots')
     end if
     if (plot_shc) then
-      if (kubo_adpt_smr) then
+      if (berry%kubo_adpt_smr) then
         call io_error('Error: Must use fixed smearing when plotting ' &
                       //'spin Hall conductivity')
       end if
-      if (nfermi == 0) then
+      if (fermi%n == 0) then
         call io_error('Error: must specify Fermi energy')
-      else if (nfermi /= 1) then
+      else if (fermi%n /= 1) then
         call io_error('Error: kpath plot only accept one Fermi energy, ' &
                       //'use fermi_energy instead of fermi_energy_min')
       end if
@@ -132,8 +130,8 @@ contains
 
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
     !
-    bvec(1, :) = matmul(kslice_b1(:), recip_lattice(:, :))
-    bvec(2, :) = matmul(kslice_b2(:), recip_lattice(:, :))
+    bvec(1, :) = matmul(kslice%b1(:), recip_lattice(:, :))
+    bvec(2, :) = matmul(kslice%b2(:), recip_lattice(:, :))
     ! z_vec (orthogonal to the slice)
     zvec(1) = bvec(1, 2)*bvec(2, 3) - bvec(1, 3)*bvec(2, 2)
     zvec(2) = bvec(1, 3)*bvec(2, 1) - bvec(1, 1)*bvec(2, 3)
@@ -169,7 +167,7 @@ contains
       square = 'False'
     end if
 
-    nkpts = (kslice_2dkmesh(1) + 1)*(kslice_2dkmesh(2) + 1)
+    nkpts = (kslice%kmesh2d(1) + 1)*(kslice%kmesh2d(2) + 1)
 
     ! Partition set of k-points into junks
     call comms_array_split(nkpts, counts, displs); 
@@ -197,17 +195,17 @@ contains
     !
     do iloc = 1, my_nkpts
       itot = iloc - 1 + displs(my_node_id)
-      i2 = itot/(kslice_2dkmesh(1) + 1) ! slow
-      i1 = itot - i2*(kslice_2dkmesh(1) + 1) !fast
+      i2 = itot/(kslice%kmesh2d(1) + 1) ! slow
+      i1 = itot - i2*(kslice%kmesh2d(1) + 1) !fast
       ! k1 and k2 are the coefficients of the k-point in the basis
       ! (kslice_b1,kslice_b2)
-      k1 = i1/real(kslice_2dkmesh(1), dp)
-      k2 = i2/real(kslice_2dkmesh(2), dp)
-      kpt = kslice_corner + k1*kslice_b1 + k2*kslice_b2
+      k1 = i1/real(kslice%kmesh2d(1), dp)
+      k2 = i2/real(kslice%kmesh2d(2), dp)
+      kpt = kslice%corner + k1*kslice%b1 + k2*kslice%b2
       ! Add to (k1,k2) the projection of kslice_corner on the
       ! (kslice_b1,kslice_b2) plane, expressed as a linear
       ! combination of kslice_b1 and kslice_b2
-      kcorner_cart(:) = matmul(kslice_corner(:), recip_lattice(:, :))
+      kcorner_cart(:) = matmul(kslice%corner(:), recip_lattice(:, :))
       k1 = k1 + dot_product(kcorner_cart, avec_2d(1, :))/twopi
       k2 = k2 + dot_product(kcorner_cart, avec_2d(2, :))/twopi
       ! Convert to (kpt_x,kpt_y), the 2D Cartesian coordinates
@@ -228,7 +226,7 @@ contains
             endif
           enddo
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-          Delta_k = max(b1mod/kslice_2dkmesh(1), b2mod/kslice_2dkmesh(2))
+          Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
           call utility_diagonalize(HH, num_wann, eig, UU)
@@ -244,7 +242,7 @@ contains
             vdum(:) = del_eig(n, :) - dot_product(del_eig(n, :), zhat)*zhat(:)
             Delta_E = sqrt(dot_product(vdum, vdum))*Delta_k
 !                   Delta_E=Delta_E*sqrt(2.0_dp) ! optimize this factor
-            my_spnmask(n, iloc) = abs(eig(n) - fermi_energy_list(1)) < Delta_E
+            my_spnmask(n, iloc) = abs(eig(n) - fermi%energy_list(1)) < Delta_E
           end do
         end if
       end if
@@ -254,13 +252,13 @@ contains
         curv(1) = sum(imf_k_list(:, 1, 1))
         curv(2) = sum(imf_k_list(:, 2, 1))
         curv(3) = sum(imf_k_list(:, 3, 1))
-        if (berry_curv_unit == 'bohr2') curv = curv/bohr**2
+        if (berry%curv_unit == 'bohr2') curv = curv/bohr**2
         ! Print _minus_ the Berry curvature
         my_zdata(:, iloc) = -curv(:)
       else if (plot_morb) then
         call berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
-                 - 2.0_dp*fermi_energy_list(1)*imf_k_list(:, :, 1)
+                 - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
         morb(1) = sum(Morb_k(:, 1))
         morb(2) = sum(Morb_k(:, 2))
@@ -353,7 +351,7 @@ contains
 
             call write_coords_file(filename, '(3E16.8)', coords, &
                                    reshape(bandsdata(n, :), [1, 1, nkpts]), &
-                                   blocklen=kslice_2dkmesh(1) + 1)
+                                   blocklen=kslice%kmesh2d(1) + 1)
           enddo
         endif
       end if
@@ -378,7 +376,7 @@ contains
           write (stdout, '(/,3x,a)') filename
           open (dataunit, file=filename, form='formatted')
           if (plot_shc) then
-            if (berry_curv_unit == 'bohr2') zdata = zdata/bohr**2
+            if (berry%curv_unit == 'bohr2') zdata = zdata/bohr**2
             do loop_kpt = 1, nkpts
               write (dataunit, '(1E16.8)') zdata(1, loop_kpt)
             end do
@@ -404,7 +402,7 @@ contains
         write (scriptunit, '(a)') "set contour"
         write (scriptunit, '(a)') "set view map"
         write (scriptunit, '(a,f9.5)') "set cntrparam levels discrete ", &
-          fermi_energy_list(1)
+          fermi%energy_list(1)
         write (scriptunit, '(a)') "set cntrparam bspline"
         do n = 1, num_wann
           n1 = n/100
@@ -798,7 +796,7 @@ contains
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc)
     use w90_io, only: stdout, io_error
-    use w90_parameters, only: nfermi, fermi_energy_list, berry_curv_unit
+    use w90_parameters, only: fermi, berry !_curv_unit
 
     logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
 
@@ -808,7 +806,7 @@ contains
       '--------------------------------------------'
 
     if (plot_fermi_lines) then
-      if (nfermi /= 1) call io_error( &
+      if (fermi%n /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=fermi_lines')
       select case (fermi_lines_color)
       case (.false.)
@@ -817,31 +815,31 @@ contains
         write (stdout, '(/,3x,a)') '* Fermi lines coloured by spin'
       end select
       write (stdout, '(/,7x,a,f10.4,1x,a)') &
-        '(Fermi level: ', fermi_energy_list(1), 'eV)'
+        '(Fermi level: ', fermi%energy_list(1), 'eV)'
     endif
 
     if (plot_curv) then
-      if (berry_curv_unit == 'ang2') then
+      if (berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
-      elseif (berry_curv_unit == 'bohr2') then
+      elseif (berry%curv_unit == 'bohr2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
       endif
-      if (nfermi /= 1) call io_error( &
+      if (fermi%n /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=curv')
     elseif (plot_morb) then
       write (stdout, '(/,3x,a)') &
         '* Orbital magnetization k-space integrand in eV.Ang^2'
-      if (nfermi /= 1) call io_error( &
+      if (fermi%n /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=morb')
     elseif (plot_shc) then
-      if (berry_curv_unit == 'ang2') then
+      if (berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
           //'of spin Hall conductivity in Ang^2'
-      elseif (berry_curv_unit == 'bohr2') then
+      elseif (berry%curv_unit == 'bohr2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
           //'of spin Hall conductivity in Bohr^2'
       endif
-      if (nfermi /= 1) call io_error( &
+      if (fermi%n /= 1) call io_error( &
         'Must specify one Fermi level when kslice_task=shc')
     endif
 
@@ -966,13 +964,13 @@ contains
   subroutine script_fermi_lines(scriptunit)
 
     use w90_io, only: seedname
-    use w90_parameters, only: fermi_energy_list
+    use w90_parameters, only: fermi
 
     integer, intent(in) :: scriptunit
 
     write (scriptunit, '(a)') &
       "# Energy level for isocontours (typically the Fermi level)"
-    write (scriptunit, '(a,f12.6)') "ef=", fermi_energy_list(1)
+    write (scriptunit, '(a,f12.6)') "ef=", fermi%energy_list(1)
     write (scriptunit, '(a)') " "
     write (scriptunit, '(a)') &
       "bands=np.loadtxt('"//trim(seedname)//"-kslice-bands.dat')"

@@ -16,12 +16,13 @@ program postw90
   !! The postw90 program
   use w90_constants, only: dp, eps6
   use w90_parameters
+  use w90_param_methods
   use w90_io
 
   use w90_kmesh
   use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, comms_barrier
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_param_dist, pw90common_wanint_data_dist
+    pw90common_wanint_param_dist, pw90common_wanint_data_dist, cell_volume
 
   ! These modules deal with the interpolation of specific physical properties
   !
@@ -48,7 +49,7 @@ program postw90
   !
   call comms_setup
 
-  library = .false.
+  driver%library = .false.
   ispostw90 = .true.
 
   if (on_root) then
@@ -101,17 +102,20 @@ program postw90
   !
   if (on_root) then
     call param_read
+    cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
+                  real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
+                  real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
     call param_postw90_write
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. effective_model) then
+    if (.not. pw90_common%effective_model) then
       ! Check if the q-mesh includes the gamma point
       !
       have_gamma = .false.
       do nkp = 1, num_kpts
-        if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
+        if (all(abs(k_points%kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
       end do
       if (.not. have_gamma) write (stdout, '(1x,a)') &
         'Ab-initio does not include Gamma. Interpolation may be incorrect!!!'
@@ -121,10 +125,7 @@ program postw90
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
       !
-      call kmesh_get(recip_lattice, kpt_cart, timing_level, nncell, neigh, &
-                     nnlist, nntot, shell_list, devel_flag, iprint, lenconfac, &
-                     kmesh_tol, num_kpts, search_shells, gamma_only, nnh, wbtot, &
-                     skip_B1_tests, bk, bka, wb, num_shells, length_unit)
+      call kmesh_get
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &
         'Time to get kmesh        ', time2 - time1, ' (sec)'
@@ -153,7 +154,7 @@ program postw90
   !
   call pw90common_wanint_param_dist
 
-  if (.not. effective_model) then
+  if (.not. pw90_common%effective_model) then
     !
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
@@ -174,7 +175,7 @@ program postw90
   !
   ! Should this be done on root node only?
   !
-  if (wanint_kpoint_file) call pw90common_wanint_get_kpoint_file
+  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file
 
   ! Setup a number of common variables for all interpolation tasks
   !
@@ -192,7 +193,7 @@ program postw90
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
   !
-  if (dos .and. index(dos_task, 'dos_plot') > 0) call dos_main
+  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main
 
 ! find_fermi_level commented for the moment in dos.F90
 !  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
@@ -201,19 +202,19 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   !
-  if (kpath) call k_path
+  if (pw90_calcs%kpath) call k_path
 
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
   ! ---------------------------------------------------------------------------
   !
-  if (kslice) call k_slice
+  if (pw90_calcs%kslice) call k_slice
 
   ! --------------------
   ! Spin magnetic moment
   ! --------------------
   !
-  if (spin_moment) call spin_get_moment
+  if (pw90_common%spin_moment) call spin_get_moment
 
   ! -------------------------------------------------------------------
   ! dc Anomalous Hall conductivity and eventually (if 'mcd' string also
@@ -233,7 +234,7 @@ program postw90
   ! Orbital magnetization
   ! -----------------------------------------------------------------
   !
-  if (berry) call berry_main
+  if (pw90_calcs%berry) call berry_main
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
@@ -242,13 +243,13 @@ program postw90
     time1 = io_time()
   endif
 
-  if (geninterp) call geninterp_main
+  if (pw90_calcs%geninterp) call geninterp_main
 
-  if (boltzwann) call boltzwann_main
+  if (pw90_calcs%boltzwann) call boltzwann_main
 
-  if (gyrotropic) call gyrotropic_main
+  if (pw90_calcs%gyrotropic) call gyrotropic_main
 
-  if (on_root .and. boltzwann) then
+  if (on_root .and. pw90_calcs%boltzwann) then
     time2 = io_time()
     write (stdout, '(/1x,a,f11.3,a)') &
       'Time for BoltzWann (Boltzmann transport) ', time2 - time1, ' (sec)'
@@ -260,7 +261,7 @@ program postw90
   if (on_root) then
     write (stdout, '(/,1x,a25,f11.3,a)') &
       'Total Execution Time     ', io_time(), ' (sec)'
-    if (timing_level > 0) call io_print_timings()
+    if (param_input%timing_level > 0) call io_print_timings()
     write (stdout, *)
     write (stdout, '(/,1x,a)') 'All done: postw90 exiting'
     close (stdout)

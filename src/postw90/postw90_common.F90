@@ -16,7 +16,7 @@ module w90_postw90_common
 
 !==============================================================================
 !! This contains the common variables and procedures needed to set up a Wannier
-!! interpolation calculation for any physical property
+!! interpolatation calculation for any physical property
 !==============================================================================
 
   ! Should we remove this 'use w90_comms' and invoke in individual routines
@@ -69,6 +69,7 @@ module w90_postw90_common
   integer, allocatable          :: num_int_kpts_on_node(:)
   real(kind=dp), allocatable    :: int_kpts(:, :), weight(:)
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
+  real(kind=dp), public :: cell_volume
 
 contains
 
@@ -81,15 +82,15 @@ contains
   subroutine pw90common_wanint_setup
     !! Setup data ready for interpolation
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, io_file_unit, stdout, seedname
+    use w90_io, only: io_error, io_file_unit, seedname
     use w90_utility, only: utility_cart_to_frac
-    use w90_parameters, only: real_lattice, effective_model, num_wann
+    use w90_parameters, only: real_lattice, pw90_common, num_wann
 
-    integer        :: ierr, i, j, k, ikpt, ir, file_unit, num_wann_loc
+    integer        :: ierr, ir, file_unit, num_wann_loc
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
     !
-    if (effective_model) then
+    if (pw90_common%effective_model) then
       if (on_root) then
         ! nrpts is read from file, together with num_wann
         file_unit = io_file_unit()
@@ -125,7 +126,7 @@ contains
     rpt_origin = 0
 
     ! If effective_model, this is done in get_HH_R
-    if (.not. effective_model) then
+    if (.not. pw90_common%effective_model) then
       !
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
@@ -230,116 +231,116 @@ contains
 
     integer :: ierr
 
-    call comms_bcast(effective_model, 1)
+    call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1)
 
-    if (.not. effective_model) then
+    if (.not. pw90_common%effective_model) then
       call comms_bcast(mp_grid(1), 3)
       call comms_bcast(num_kpts, 1)
       call comms_bcast(num_bands, 1)
     endif
     call comms_bcast(num_wann, 1)
-    call comms_bcast(timing_level, 1)
-    call comms_bcast(iprint, 1)
-    call comms_bcast(ws_distance_tol, 1)
-    call comms_bcast(ws_search_size(1), 3)
+    call comms_bcast(param_input%timing_level, 1)
+    call comms_bcast(param_input%iprint, 1)
+    call comms_bcast(param_input%ws_distance_tol, 1)
+    call comms_bcast(param_input%ws_search_size(1), 3)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9)
     call comms_bcast(recip_lattice(1, 1), 9)
-    call comms_bcast(real_metric(1, 1), 9)
-    call comms_bcast(recip_metric(1, 1), 9)
+    !call comms_bcast(real_metric(1, 1), 9)
+    !call comms_bcast(recip_metric(1, 1), 9)
     call comms_bcast(cell_volume, 1)
-    call comms_bcast(dos_energy_step, 1)
-    call comms_bcast(dos_adpt_smr, 1)
-    call comms_bcast(dos_smr_index, 1)
-    call comms_bcast(dos_kmesh_spacing, 1)
-    call comms_bcast(dos_kmesh(1), 3)
-    call comms_bcast(dos_adpt_smr_max, 1)
-    call comms_bcast(dos_smr_fixed_en_width, 1)
-    call comms_bcast(dos_adpt_smr_fac, 1)
-    call comms_bcast(num_dos_project, 1)
+    call comms_bcast(dos_data%energy_step, 1)
+    call comms_bcast(dos_data%adpt_smr, 1)
+    call comms_bcast(dos_data%smr_index, 1)
+    call comms_bcast(dos_data%kmesh_spacing, 1)
+    call comms_bcast(dos_data%kmesh(1), 3)
+    call comms_bcast(dos_data%adpt_smr_max, 1)
+    call comms_bcast(dos_data%smr_fixed_en_width, 1)
+    call comms_bcast(dos_data%adpt_smr_fac, 1)
+    call comms_bcast(dos_data%num_project, 1)
 
-    call comms_bcast(berry, 1)
-    call comms_bcast(berry_task, len(berry_task))
-    call comms_bcast(berry_kmesh_spacing, 1)
-    call comms_bcast(berry_kmesh(1), 3)
-    call comms_bcast(berry_curv_adpt_kmesh, 1)
-    call comms_bcast(berry_curv_adpt_kmesh_thresh, 1)
-    call comms_bcast(berry_curv_unit, len(berry_curv_unit))
+    call comms_bcast(pw90_calcs%berry, 1)
+    call comms_bcast(berry%task, len(berry%task))
+    call comms_bcast(berry%kmesh_spacing, 1)
+    call comms_bcast(berry%kmesh(1), 3)
+    call comms_bcast(berry%curv_adpt_kmesh, 1)
+    call comms_bcast(berry%curv_adpt_kmesh_thresh, 1)
+    call comms_bcast(berry%curv_unit, len(berry%curv_unit))
 
 ! Tsirkin
-    call comms_bcast(gyrotropic, 1)
-    call comms_bcast(gyrotropic_task, len(gyrotropic_task))
-    call comms_bcast(gyrotropic_kmesh_spacing, 1)
-    call comms_bcast(gyrotropic_kmesh(1), 3)
-    call comms_bcast(gyrotropic_smr_fixed_en_width, 1)
-    call comms_bcast(gyrotropic_smr_index, 1)
-    call comms_bcast(gyrotropic_eigval_max, 1)
-    call comms_bcast(gyrotropic_nfreq, 1)
-    call comms_bcast(gyrotropic_degen_thresh, 1)
-    call comms_bcast(gyrotropic_num_bands, 1)
-    call comms_bcast(gyrotropic_box(1, 1), 9)
-    call comms_bcast(gyrotropic_box_corner(1), 3)
-    call comms_bcast(gyrotropic_smr_max_arg, 1)
-    call comms_bcast(gyrotropic_smr_fixed_en_width, 1)
-    call comms_bcast(gyrotropic_smr_index, 1)
+    call comms_bcast(pw90_calcs%gyrotropic, 1)
+    call comms_bcast(gyrotropic%task, len(gyrotropic%task))
+    call comms_bcast(gyrotropic%kmesh_spacing, 1)
+    call comms_bcast(gyrotropic%kmesh(1), 3)
+    call comms_bcast(gyrotropic%smr_fixed_en_width, 1)
+    call comms_bcast(gyrotropic%smr_index, 1)
+    call comms_bcast(gyrotropic%eigval_max, 1)
+    call comms_bcast(gyrotropic%nfreq, 1)
+    call comms_bcast(gyrotropic%degen_thresh, 1)
+    call comms_bcast(gyrotropic%num_bands, 1)
+    call comms_bcast(gyrotropic%box(1, 1), 9)
+    call comms_bcast(gyrotropic%box_corner(1), 3)
+    call comms_bcast(gyrotropic%smr_max_arg, 1)
+    call comms_bcast(gyrotropic%smr_fixed_en_width, 1)
+    call comms_bcast(gyrotropic%smr_index, 1)
 
-    call comms_bcast(spinors, 1)
+    call comms_bcast(param_input%spinors, 1)
 
-    call comms_bcast(shc_freq_scan, 1)
-    call comms_bcast(shc_alpha, 1)
-    call comms_bcast(shc_beta, 1)
-    call comms_bcast(shc_gamma, 1)
-    call comms_bcast(shc_bandshift, 1)
-    call comms_bcast(shc_bandshift_firstband, 1)
-    call comms_bcast(shc_bandshift_energyshift, 1)
+    call comms_bcast(spin_hall%freq_scan, 1)
+    call comms_bcast(spin_hall%alpha, 1)
+    call comms_bcast(spin_hall%beta, 1)
+    call comms_bcast(spin_hall%gamma, 1)
+    call comms_bcast(spin_hall%bandshift, 1)
+    call comms_bcast(spin_hall%bandshift_firstband, 1)
+    call comms_bcast(spin_hall%bandshift_energyshift, 1)
 
-    call comms_bcast(kubo_adpt_smr, 1)
-    call comms_bcast(kubo_adpt_smr_fac, 1)
-    call comms_bcast(kubo_adpt_smr_max, 1)
-    call comms_bcast(kubo_smr_fixed_en_width, 1)
-    call comms_bcast(kubo_smr_index, 1)
-    call comms_bcast(kubo_eigval_max, 1)
-    call comms_bcast(kubo_nfreq, 1)
-    call comms_bcast(nfermi, 1)
-    call comms_bcast(dos_energy_min, 1)
-    call comms_bcast(dos_energy_max, 1)
-    call comms_bcast(spin_kmesh_spacing, 1)
-    call comms_bcast(spin_kmesh(1), 3)
-    call comms_bcast(wanint_kpoint_file, 1)
-    call comms_bcast(dis_win_min, 1)
-    call comms_bcast(dis_win_max, 1)
-    call comms_bcast(sc_eta, 1)
-    call comms_bcast(sc_w_thr, 1)
-    call comms_bcast(sc_phase_conv, 1)
+    call comms_bcast(berry%kubo_adpt_smr, 1)
+    call comms_bcast(berry%kubo_adpt_smr_fac, 1)
+    call comms_bcast(berry%kubo_adpt_smr_max, 1)
+    call comms_bcast(berry%kubo_smr_fixed_en_width, 1)
+    call comms_bcast(berry%kubo_smr_index, 1)
+    call comms_bcast(berry%kubo_eigval_max, 1)
+    call comms_bcast(berry%kubo_nfreq, 1)
+    call comms_bcast(fermi%n, 1)
+    call comms_bcast(dos_data%energy_min, 1)
+    call comms_bcast(dos_data%energy_max, 1)
+    call comms_bcast(pw90_spin%spin_kmesh_spacing, 1)
+    call comms_bcast(pw90_spin%spin_kmesh(1), 3)
+    call comms_bcast(berry%wanint_kpoint_file, 1)
+    call comms_bcast(dis_data%win_min, 1)
+    call comms_bcast(dis_data%win_max, 1)
+    call comms_bcast(berry%sc_eta, 1)
+    call comms_bcast(berry%sc_w_thr, 1)
+    call comms_bcast(berry%sc_phase_conv, 1)
 ! ----------------------------------------------
 !
 ! New input variables in development
 !
-    call comms_bcast(devel_flag, len(devel_flag))
-    call comms_bcast(spin_moment, 1)
-    call comms_bcast(spin_axis_polar, 1)
-    call comms_bcast(spin_axis_azimuth, 1)
-    call comms_bcast(spin_decomp, 1)
-    call comms_bcast(use_degen_pert, 1)
-    call comms_bcast(degen_thr, 1)
-    call comms_bcast(num_valence_bands, 1)
-    call comms_bcast(dos, 1)
-    call comms_bcast(dos_task, len(dos_task))
-    call comms_bcast(kpath, 1)
-    call comms_bcast(kpath_task, len(kpath_task))
-    call comms_bcast(kpath_bands_colour, len(kpath_bands_colour))
-    call comms_bcast(kslice, 1)
-    call comms_bcast(kslice_task, len(kslice_task))
-    call comms_bcast(kslice_corner(1), 3)
-    call comms_bcast(kslice_b1(1), 3)
-    call comms_bcast(kslice_b2(1), 3)
-    call comms_bcast(kslice_2dkmesh(1), 2)
-    call comms_bcast(kslice_fermi_lines_colour, len(kslice_fermi_lines_colour))
-    call comms_bcast(transl_inv, 1)
-    call comms_bcast(num_elec_per_state, 1)
-    call comms_bcast(scissors_shift, 1)
+    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag))
+    call comms_bcast(pw90_common%spin_moment, 1)
+    call comms_bcast(pw90_spin%spin_axis_polar, 1)
+    call comms_bcast(pw90_spin%spin_axis_azimuth, 1)
+    call comms_bcast(pw90_common%spin_decomp, 1)
+    call comms_bcast(pw90_ham%use_degen_pert, 1)
+    call comms_bcast(pw90_ham%degen_thr, 1)
+    call comms_bcast(param_input%num_valence_bands, 1)
+    call comms_bcast(pw90_calcs%dos, 1)
+    call comms_bcast(dos_data%task, len(dos_data%task))
+    call comms_bcast(pw90_calcs%kpath, 1)
+    call comms_bcast(kpath%task, len(kpath%task))
+    call comms_bcast(kpath%bands_colour, len(kpath%bands_colour))
+    call comms_bcast(pw90_calcs%kslice, 1)
+    call comms_bcast(kslice%task, len(kslice%task))
+    call comms_bcast(kslice%corner(1), 3)
+    call comms_bcast(kslice%b1(1), 3)
+    call comms_bcast(kslice%b2(1), 3)
+    call comms_bcast(kslice%kmesh2d(1), 2)
+    call comms_bcast(kslice%fermi_lines_colour, len(kslice%fermi_lines_colour))
+    call comms_bcast(berry%transl_inv, 1)
+    call comms_bcast(param_input%num_elec_per_state, 1)
+    call comms_bcast(pw90_common%scissors_shift, 1)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -350,83 +351,83 @@ contains
 !    if(allocated(bands_label)) &
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points)
 ! ----------------------------------------------
-    call comms_bcast(geninterp, 1)
-    call comms_bcast(geninterp_alsofirstder, 1)
-    call comms_bcast(geninterp_single_file, 1)
+    call comms_bcast(pw90_calcs%geninterp, 1)
+    call comms_bcast(geninterp%alsofirstder, 1)
+    call comms_bcast(geninterp%single_file, 1)
     ! [gp-begin, Apr 12, 2012]
     ! BoltzWann variables
-    call comms_bcast(boltzwann, 1)
-    call comms_bcast(boltz_calc_also_dos, 1)
-    call comms_bcast(boltz_2d_dir_num, 1)
-    call comms_bcast(boltz_dos_energy_step, 1)
-    call comms_bcast(boltz_dos_energy_min, 1)
-    call comms_bcast(boltz_dos_energy_max, 1)
-    call comms_bcast(boltz_dos_adpt_smr, 1)
-    call comms_bcast(boltz_dos_smr_fixed_en_width, 1)
-    call comms_bcast(boltz_dos_adpt_smr_fac, 1)
-    call comms_bcast(boltz_dos_adpt_smr_max, 1)
-    call comms_bcast(boltz_mu_min, 1)
-    call comms_bcast(boltz_mu_max, 1)
-    call comms_bcast(boltz_mu_step, 1)
-    call comms_bcast(boltz_temp_min, 1)
-    call comms_bcast(boltz_temp_max, 1)
-    call comms_bcast(boltz_temp_step, 1)
-    call comms_bcast(boltz_kmesh_spacing, 1)
-    call comms_bcast(boltz_kmesh(1), 3)
-    call comms_bcast(boltz_tdf_energy_step, 1)
-    call comms_bcast(boltz_relax_time, 1)
-    call comms_bcast(boltz_TDF_smr_fixed_en_width, 1)
-    call comms_bcast(boltz_TDF_smr_index, 1)
-    call comms_bcast(boltz_dos_smr_index, 1)
-    call comms_bcast(boltz_bandshift, 1)
-    call comms_bcast(boltz_bandshift_firstband, 1)
-    call comms_bcast(boltz_bandshift_energyshift, 1)
+    call comms_bcast(pw90_calcs%boltzwann, 1)
+    call comms_bcast(boltz%calc_also_dos, 1)
+    call comms_bcast(boltz%dir_num_2d, 1)
+    call comms_bcast(boltz%dos_energy_step, 1)
+    call comms_bcast(boltz%dos_energy_min, 1)
+    call comms_bcast(boltz%dos_energy_max, 1)
+    call comms_bcast(boltz%dos_adpt_smr, 1)
+    call comms_bcast(boltz%dos_smr_fixed_en_width, 1)
+    call comms_bcast(boltz%dos_adpt_smr_fac, 1)
+    call comms_bcast(boltz%dos_adpt_smr_max, 1)
+    call comms_bcast(boltz%mu_min, 1)
+    call comms_bcast(boltz%mu_max, 1)
+    call comms_bcast(boltz%mu_step, 1)
+    call comms_bcast(boltz%temp_min, 1)
+    call comms_bcast(boltz%temp_max, 1)
+    call comms_bcast(boltz%temp_step, 1)
+    call comms_bcast(boltz%kmesh_spacing, 1)
+    call comms_bcast(boltz%kmesh(1), 3)
+    call comms_bcast(boltz%tdf_energy_step, 1)
+    call comms_bcast(boltz%relax_time, 1)
+    call comms_bcast(boltz%TDF_smr_fixed_en_width, 1)
+    call comms_bcast(boltz%TDF_smr_index, 1)
+    call comms_bcast(boltz%dos_smr_index, 1)
+    call comms_bcast(boltz%bandshift, 1)
+    call comms_bcast(boltz%bandshift_firstband, 1)
+    call comms_bcast(boltz%bandshift_energyshift, 1)
     ! [gp-end]
-    call comms_bcast(use_ws_distance, 1)
+    call comms_bcast(param_input%use_ws_distance, 1)
 
     ! These variables are different from the ones above in that they are
     ! allocatable, and in param_read they were allocated on the root node only
     !
     if (.not. on_root) then
-      allocate (fermi_energy_list(nfermi), stat=ierr)
+      allocate (fermi%energy_list(fermi%n), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating fermi_energy_read in postw90_param_dist')
-      allocate (kubo_freq_list(kubo_nfreq), stat=ierr)
+      allocate (berry%kubo_freq_list(berry%kubo_nfreq), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating kubo_freq_list in postw90_param_dist')
 
-      allocate (gyrotropic_band_list(gyrotropic_num_bands), stat=ierr)
+      allocate (gyrotropic%band_list(gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating gyrotropic_band_list in postw90_param_dist')
 
-      allocate (gyrotropic_freq_list(gyrotropic_nfreq), stat=ierr)
+      allocate (gyrotropic%freq_list(gyrotropic%nfreq), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating gyrotropic_freq_list in postw90_param_dist')
 
-      allocate (dos_project(num_dos_project), stat=ierr)
+      allocate (dos_data%project(dos_data%num_project), stat=ierr)
       if (ierr /= 0) &
         call io_error('Error allocating dos_project in postw90_param_dist')
-      if (.not. effective_model) then
+      if (.not. pw90_common%effective_model) then
         if (eig_found) then
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating eigval in postw90_param_dist')
         end if
-        allocate (kpt_latt(3, num_kpts), stat=ierr)
+        allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error allocating kpt_latt in postw90_param_dist')
       endif
     end if
-    if (nfermi > 0) call comms_bcast(fermi_energy_list(1), nfermi)
-    call comms_bcast(gyrotropic_freq_list(1), gyrotropic_nfreq)
-    call comms_bcast(gyrotropic_band_list(1), gyrotropic_num_bands)
-    call comms_bcast(kubo_freq_list(1), kubo_nfreq)
-    call comms_bcast(dos_project(1), num_dos_project)
-    if (.not. effective_model) then
+    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n)
+    call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq)
+    call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands)
+    call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq)
+    call comms_bcast(dos_data%project(1), dos_data%num_project)
+    if (.not. pw90_common%effective_model) then
       if (eig_found) then
         call comms_bcast(eigval(1, 1), num_bands*num_kpts)
       end if
-      call comms_bcast(kpt_latt(1, 1), 3*num_kpts)
+      call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts)
     endif
 
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix
@@ -434,38 +435,38 @@ contains
     ! extra matrix elements entering the orbital magnetization, also
     ! need nnlist. In principle could only broadcast those four variables
 
-    if (.not. effective_model) then
+    if (.not. pw90_common%effective_model) then
 
-      call comms_bcast(nnh, 1)
-      call comms_bcast(nntot, 1)
+      call comms_bcast(kmesh_info%nnh, 1)
+      call comms_bcast(kmesh_info%nntot, 1)
 
       if (.not. on_root) then
-        allocate (nnlist(num_kpts, nntot), stat=ierr)
+        allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating nnlist in pw90common_wanint_param_dist')
-        allocate (neigh(num_kpts, nntot/2), stat=ierr)
+        allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating neigh in pw90common_wanint_param_dist')
-        allocate (nncell(3, num_kpts, nntot), stat=ierr)
+        allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating nncell in pw90common_wanint_param_dist')
-        allocate (wb(nntot), stat=ierr)
+        allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating wb in pw90common_wanint_param_dist')
-        allocate (bka(3, nntot/2), stat=ierr)
+        allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating bka in pw90common_wanint_param_dist')
-        allocate (bk(3, nntot, num_kpts), stat=ierr)
+        allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating bk in pw90common_wanint_param_dist')
       end if
 
-      call comms_bcast(nnlist(1, 1), num_kpts*nntot)
-      call comms_bcast(neigh(1, 1), num_kpts*nntot/2)
-      call comms_bcast(nncell(1, 1, 1), 3*num_kpts*nntot)
-      call comms_bcast(wb(1), nntot)
-      call comms_bcast(bka(1, 1), 3*nntot/2)
-      call comms_bcast(bk(1, 1, 1), 3*nntot*num_kpts)
+      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot)
+      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2)
+      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot)
+      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot)
+      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2)
+      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts)
 
     endif
 
@@ -482,10 +483,8 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_parameters, only: num_wann, num_kpts, num_bands, have_disentangled, &
-      u_matrix_opt, u_matrix, m_matrix, &
-      ndimwin, lwindow, nntot, wannier_centres, &
-      num_valence_bands, scissors_shift
+    use w90_parameters, only: num_wann, num_kpts, num_bands, u_matrix_opt, &
+      u_matrix, dis_data, wann_data, param_input, pw90_common
 
     implicit none
 
@@ -495,10 +494,10 @@ contains
       ! wannier_centres is allocated in param_read, so only on root node
       ! It is then read in param_read_chpkt
       ! Therefore, now we need to allocate it on all nodes, and then broadcast it
-      allocate (wannier_centres(3, num_wann), stat=ierr)
+      allocate (wann_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in pw90common_wanint_data_dist')
     end if
-    call comms_bcast(wannier_centres(1, 1), 3*num_wann)
+    call comms_bcast(wann_data%centres(1, 1), 3*num_wann)
 
     ! -------------------
     ! Ivo: added 8april11
@@ -514,13 +513,13 @@ contains
       call io_error('Error allocating v_matrix in pw90common_wanint_data_dist')
     ! u_matrix and u_matrix_opt are stored on root only
     if (on_root) then
-      if (.not. have_disentangled) then
+      if (.not. param_input%have_disentangled) then
         v_matrix = u_matrix
       else
         v_matrix = cmplx_0
         do loop_kpt = 1, num_kpts
           do j = 1, num_wann
-            do m = 1, ndimwin(loop_kpt)
+            do m = 1, dis_data%ndimwin(loop_kpt)
               do i = 1, num_wann
                 v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
                                            + u_matrix_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
@@ -530,13 +529,13 @@ contains
         enddo
       endif
       if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
-      if (.not. (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp)) then
+      if (.not. (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp)) then
         if (allocated(u_matrix)) deallocate (u_matrix)
       endif
     endif
     call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts)
 
-    if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
+    if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) &
@@ -552,9 +551,9 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(have_disentangled, 1)
+    call comms_bcast(param_input%have_disentangled, 1)
 
-    if (have_disentangled) then
+    if (param_input%have_disentangled) then
       if (.not. on_root) then
 
         ! Do we really need these 'if not allocated'? Didn't use them for
@@ -566,14 +565,14 @@ contains
 !              call io_error('Error allocating u_matrix_opt in pw90common_wanint_data_dist')
 !          endif
 
-        if (.not. allocated(lwindow)) then
-          allocate (lwindow(num_bands, num_kpts), stat=ierr)
+        if (.not. allocated(dis_data%lwindow)) then
+          allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating lwindow in pw90common_wanint_data_dist')
         endif
 
-        if (.not. allocated(ndimwin)) then
-          allocate (ndimwin(num_kpts), stat=ierr)
+        if (.not. allocated(dis_data%ndimwin)) then
+          allocate (dis_data%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating ndimwin in pw90common_wanint_data_dist')
         endif
@@ -581,8 +580,8 @@ contains
       end if
 
 !       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
-      call comms_bcast(lwindow(1, 1), num_bands*num_kpts)
-      call comms_bcast(ndimwin(1), num_kpts)
+      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts)
+      call comms_bcast(dis_data%ndimwin(1), num_kpts)
     end if
 
   end subroutine pw90common_wanint_data_dist
@@ -697,9 +696,7 @@ contains
     !=========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance, &
-      mp_grid, iprint, recip_lattice, real_lattice, wannier_centres, & !lp
-      ws_search_size, ws_distance_tol
+    use w90_parameters, only: num_wann, param_input
     use w90_ws_distance, only: irdist_ws, crdist_ws, &
       wdist_ndeg, ws_translate_dist
 
@@ -716,13 +713,12 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
 
     OO(:, :) = cmplx_0
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -771,9 +767,7 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, use_ws_distance, &
-      mp_grid, iprint, recip_lattice, real_lattice, wannier_centres, & !lp
-      ws_search_size, ws_distance_tol  !lp
+    use w90_parameters, only: num_wann, param_input
     use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
@@ -791,8 +785,7 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_dx)) OO_dx = cmplx_0
@@ -800,7 +793,7 @@ contains
     if (present(OO_dz)) OO_dz = cmplx_0
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -851,9 +844,7 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, use_ws_distance, &
-      mp_grid, iprint, recip_lattice, real_lattice, wannier_centres, & !lp
-      ws_search_size, ws_distance_tol  !lp
+    use w90_parameters, only: num_wann, param_input
     use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
@@ -870,15 +861,14 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -944,9 +934,7 @@ contains
     !=======================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: timing_level, num_kpts, kpt_latt, num_wann, &
-      use_ws_distance, wannier_centres, recip_lattice, &
-      mp_grid, iprint, real_lattice, ws_search_size, ws_distance_tol !lp
+    use w90_parameters, only: num_wann, param_input, recip_lattice
     use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_cart_to_frac
 
@@ -969,8 +957,7 @@ contains
 
     r_sum = 0.d0
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
 
     ! calculate wannier centres in cartesian
     local_wannier_centres(:, :) = 0.d0
@@ -994,7 +981,7 @@ contains
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -1070,9 +1057,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance, &
-      mp_grid, iprint, recip_lattice, real_lattice, wannier_centres, &  !lp
-      ws_search_size, ws_distance_tol !lp
+    use w90_parameters, only: num_wann, param_input
     use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
@@ -1088,13 +1073,12 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -1157,9 +1141,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance, &
-      mp_grid, iprint, recip_lattice, real_lattice, wannier_centres, & !lp
-      ws_search_size, ws_distance_tol !lp
+    use w90_parameters, only: num_wann, param_input
     use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
 
     implicit none
@@ -1175,13 +1157,12 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -1243,9 +1224,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_kpts, kpt_latt, num_wann, use_ws_distance, &
-      wannier_centres, recip_lattice, &
-      mp_grid, iprint, real_lattice, ws_search_size, ws_distance_tol  !lp
+    use w90_parameters, only: num_wann, param_input, recip_lattice
     use w90_ws_distance, only: irdist_ws, crdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_cart_to_frac
 
@@ -1266,8 +1245,7 @@ contains
 
     r_sum = 0.d0
 
-    if (use_ws_distance) CALL ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, &
-                                                real_lattice, recip_lattice, iprint, mp_grid, nrpts, irvec)
+    if (param_input%use_ws_distance) CALL ws_translate_dist(nrpts, irvec)
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
 
@@ -1307,7 +1285,7 @@ contains
 
     do ir = 1, nrpts
 ! [lp] Shift the WF to have the minimum distance IJ, see also ws_distance.F90
-      if (use_ws_distance) then
+      if (param_input%use_ws_distance) then
         do j = 1, num_wann
         do i = 1, num_wann
           do ideg = 1, wdist_ndeg(i, j, ir)
@@ -1409,66 +1387,51 @@ contains
     !! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3
     !==========================================================================!
 
-    use w90_constants, only: eps8, dp
+    use w90_constants, only: dp
     use w90_io, only: stdout, io_error, io_stopwatch
-    use w90_parameters, only: iprint, mp_grid, real_metric, timing_level, &
-      ws_search_size, ws_distance_tol
+    use w90_parameters, only: mp_grid, real_lattice, param_input
+    use w90_utility, only: utility_metric
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
     ! nrpts             number of Wigner-Seitz grid points
 
-    implicit none
-
     logical, intent(in) :: count_pts
 
     integer       :: ndiff(3)
-    real(kind=dp) :: tot, dist_min
-    real(kind=dp), allocatable :: dist(:)
+    real(kind=dp) :: dist(125), tot, dist_min
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
-    integer       :: ierr, dist_dim
+    real(kind=dp) :: real_metric(3, 3)
 
-    if (timing_level > 1 .and. on_root) &
+    if (param_input%timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 1)
 
-    dist_dim = 1
-    do i = 1, 3
-      dist_dim = dist_dim*((ws_search_size(i) + 1)*2 + 1)
-    end do
-    allocate (dist(dist_dim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating dist in wigner_seitz')
-
+    call utility_metric(real_lattice, real_metric)
     ! The Wannier functions live in a periodic supercell of the real space unit
     ! cell. This supercell is mp_grid(i) unit cells long along each primitive
     ! translation vector a_i of the unit cell
     !
-    ! We loop over grid points r on a unit cell that is (2*ws_search_size+1)**3 times
-    ! larger than this primitive supercell.
+    ! We loop over grid points r on a cell that is approx. 8 times
+    ! larger than this "primitive supercell."
     !
     ! One of these points is in the W-S supercell if it is closer to R=0 than any
     ! of the other points R (where R are the translation vectors of the
-    ! supercell).
+    ! supercell). In practice it is sufficient to inspect only 125 R-points.
 
     ! In the end, nrpts contains the total number of grid points that have been
     ! found in the Wigner-Seitz cell
 
     nrpts = 0
-    ! Loop over the lattice vectors of the primitive cell
-    ! that live in a supercell which is (2*ws_search_size+1)**2
-    ! larger than the Born-von Karman supercell.
-    ! We need to find which among these live in the Wigner-Seitz cell
-    do n1 = -ws_search_size(1)*mp_grid(1), ws_search_size(1)*mp_grid(1)
-      do n2 = -ws_search_size(2)*mp_grid(2), ws_search_size(2)*mp_grid(2)
-        do n3 = -ws_search_size(3)*mp_grid(3), ws_search_size(3)*mp_grid(3)
-          ! Loop over the lattice vectors R of the Born-von Karman supercell
-          ! that contains all the points of the previous loop.
-          ! There are (2*(ws_search_size+1)+1)**3 points R. R=0 corresponds to
-          ! i1=i2=i3=0, or icnt=((2*(ws_search_size+1)+1)**3 + 1)/2
+    do n1 = -mp_grid(1), mp_grid(1)
+      do n2 = -mp_grid(2), mp_grid(2)
+        do n3 = -mp_grid(3), mp_grid(3)
+          ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=0,
+          ! or icnt=63
           icnt = 0
-          do i1 = -ws_search_size(1) - 1, ws_search_size(1) + 1
-            do i2 = -ws_search_size(2) - 1, ws_search_size(2) + 1
-              do i3 = -ws_search_size(3) - 1, ws_search_size(3) + 1
+          do i1 = -2, 2
+            do i2 = -2, 2
+              do i3 = -2, 2
                 icnt = icnt + 1
                 ! Calculate distance squared |r-R|^2
                 ndiff(1) = n1 - i1*mp_grid(1)
@@ -1485,12 +1448,12 @@ contains
             enddo
           enddo
           dist_min = minval(dist)
-          if (abs(dist((dist_dim + 1)/2) - dist_min) .lt. ws_distance_tol**2) then
+          if (abs(dist(63) - dist_min) .lt. 1.e-7_dp) then
             nrpts = nrpts + 1
             if (.not. count_pts) then
               ndegen(nrpts) = 0
-              do i = 1, dist_dim
-                if (abs(dist(i) - dist_min) .lt. ws_distance_tol**2) &
+              do i = 1, 125
+                if (abs(dist(i) - dist_min) .lt. 1.e-7_dp) &
                   ndegen(nrpts) = ndegen(nrpts) + 1
               end do
               irvec(1, nrpts) = n1
@@ -1510,37 +1473,33 @@ contains
       !n1
     enddo
     !
-    deallocate (dist, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating dist wigner_seitz')
-
     if (count_pts) then
-      if (timing_level > 1 .and. on_root) &
+      if (param_input%timing_level > 1 .and. on_root) &
         call io_stopwatch('postw90_common: wigner_seitz', 2)
       return
     end if
 
-    ! Check the "sum rule"
-    tot = 0.0_dp
-    do i = 1, nrpts
-      tot = tot + 1.0_dp/real(ndegen(i), dp)
-    enddo
-
-    if (iprint >= 3 .and. on_root) then
+    if (param_input%iprint >= 3 .and. on_root) then
       write (stdout, '(1x,i4,a,/)') nrpts, &
         ' lattice points in Wigner-Seitz supercell:'
       do ir = 1, nrpts
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1, ir), &
           irvec(2, ir), irvec(3, ir), '  degeneracy: ', ndegen(ir)
       enddo
-      write (stdout, '(1x,a,f12.3)') ' tot = ', tot
-      write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     endif
-    if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > eps8) then
+    ! Check the "sum rule"
+    tot = 0.0_dp
+    do ir = 1, nrpts
+      !
+      ! Corrects weights in Fourier sums for R-vectors on the boundary of the
+      ! W-S supercell
+      !
+      tot = tot + 1.0_dp/real(ndegen(ir), dp)
+    enddo
+    if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > 1.e-8_dp) &
       call io_error('ERROR in wigner_seitz: error in finding Wigner-Seitz points')
 
-    endif
-
-    if (timing_level > 1 .and. on_root) &
+    if (param_input%timing_level > 1 .and. on_root) &
       call io_stopwatch('postw90_common: wigner_seitz', 2)
 
     return

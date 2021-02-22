@@ -40,15 +40,15 @@ contains
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce
     use w90_io, only: io_error, stdout
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
-    use w90_parameters, only: spin_kmesh, wanint_kpoint_file, &
-      nfermi, fermi_energy_list
+    use w90_parameters, only: pw90_spin, berry, & !wanint_kpoint_file
+      fermi
     use w90_get_oper, only: get_HH_R, get_SS_R
 
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
                      spn_mom(3), magnitude, theta, phi, conv
 
-    if (nfermi > 1) call io_error('Routine spin_get_moment requires nfermi=1')
+    if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1')
 
     call get_HH_R
     call get_SS_R
@@ -61,7 +61,7 @@ contains
     end if
 
     spn_all = 0.0_dp
-    if (wanint_kpoint_file) then
+    if (berry%wanint_kpoint_file) then
 
       if (on_root) then
         write (stdout, '(/,1x,a)') 'Sampling the irreducible BZ only'
@@ -77,7 +77,7 @@ contains
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
         kweight = weight(loop_tot)
-        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k)
+        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -85,16 +85,16 @@ contains
 
       if (on_root) &
         write (stdout, '(/,1x,a)') 'Sampling the full BZ (not using symmetry)'
-      kweight = 1.0_dp/real(PRODUCT(spin_kmesh), kind=dp)
-      do loop_tot = my_node_id, PRODUCT(spin_kmesh) - 1, num_nodes
-        loop_x = loop_tot/(spin_kmesh(2)*spin_kmesh(3))
-        loop_y = (loop_tot - loop_x*(spin_kmesh(2)*spin_kmesh(3)))/spin_kmesh(3)
-        loop_z = loop_tot - loop_x*(spin_kmesh(2)*spin_kmesh(3)) &
-                 - loop_y*spin_kmesh(3)
-        kpt(1) = (real(loop_x, dp)/real(spin_kmesh(1), dp))
-        kpt(2) = (real(loop_y, dp)/real(spin_kmesh(2), dp))
-        kpt(3) = (real(loop_z, dp)/real(spin_kmesh(3), dp))
-        call spin_get_moment_k(kpt, fermi_energy_list(1), spn_k)
+      kweight = 1.0_dp/real(PRODUCT(pw90_spin%spin_kmesh), kind=dp)
+      do loop_tot = my_node_id, PRODUCT(pw90_spin%spin_kmesh) - 1, num_nodes
+        loop_x = loop_tot/(pw90_spin%spin_kmesh(2)*pw90_spin%spin_kmesh(3))
+        loop_y = (loop_tot - loop_x*(pw90_spin%spin_kmesh(2)*pw90_spin%spin_kmesh(3)))/pw90_spin%spin_kmesh(3)
+        loop_z = loop_tot - loop_x*(pw90_spin%spin_kmesh(2)*pw90_spin%spin_kmesh(3)) &
+                 - loop_y*pw90_spin%spin_kmesh(3)
+        kpt(1) = (real(loop_x, dp)/real(pw90_spin%spin_kmesh(1), dp))
+        kpt(2) = (real(loop_y, dp)/real(pw90_spin%spin_kmesh(2), dp))
+        kpt(3) = (real(loop_z, dp)/real(pw90_spin%spin_kmesh(3), dp))
+        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -144,8 +144,7 @@ contains
     use w90_constants, only: dp, pi, cmplx_0, cmplx_i
     use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
-    use w90_parameters, only: num_wann, spin_axis_polar, &
-      spin_axis_azimuth
+    use w90_parameters, only: num_wann, pw90_spin
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_get_oper, only: HH_R, SS_R
 
@@ -180,9 +179,9 @@ contains
     ! Unit vector along the magnetization direction
     !
     conv = 180.0_dp/pi
-    alpha(1) = sin(spin_axis_polar/conv)*cos(spin_axis_azimuth/conv)
-    alpha(2) = sin(spin_axis_polar/conv)*sin(spin_axis_azimuth/conv)
-    alpha(3) = cos(spin_axis_polar/conv)
+    alpha(1) = sin(pw90_spin%spin_axis_polar/conv)*cos(pw90_spin%spin_axis_azimuth/conv)
+    alpha(2) = sin(pw90_spin%spin_axis_polar/conv)*sin(pw90_spin%spin_axis_azimuth/conv)
+    alpha(3) = cos(pw90_spin%spin_axis_polar/conv)
 
     ! Vector of spin matrices projected along the quantization axis
     !

@@ -124,7 +124,7 @@ contains
     !        to worry about avoiding small energy denominators
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_wann, sc_eta
+    use w90_parameters, only: num_wann, berry !sc_eta
     use w90_utility, only: utility_rotate
 
     ! Arguments
@@ -147,7 +147,7 @@ contains
         do n = 1, num_wann
           if (n == m) cycle
           deltaE = eig(m) - eig(n)
-          D_h(n, m, i) = delHH_bar_i(n, m)*(deltaE/(deltaE**(2) + sc_eta**(2)))
+          D_h(n, m, i) = delHH_bar_i(n, m)*(deltaE/(deltaE**(2) + berry%sc_eta**(2)))
         end do
       end do
     enddo
@@ -170,7 +170,7 @@ contains
     !===============================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_wann, nfermi, fermi_energy_list
+    use w90_parameters, only: num_wann, fermi
     use w90_utility, only: utility_rotate_new
 
     complex(kind=dp), dimension(:, :), intent(inout) :: delHH
@@ -186,12 +186,12 @@ contains
     if (present(occ)) then
       nfermi_loc = 1
     else
-      nfermi_loc = nfermi
+      nfermi_loc = fermi%n
     endif
 
     call utility_rotate_new(delHH, UU, num_wann)
     do ife = 1, nfermi_loc
-      fe = fermi_energy_list(ife)
+      fe = fermi%energy_list(ife)
       do m = 1, num_wann
         do n = 1, num_wann
           if (present(occ)) then
@@ -230,7 +230,7 @@ contains
     !================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1
-    use w90_parameters, only: num_wann, nfermi, fermi_energy_list
+    use w90_parameters, only: num_wann, fermi
     use w90_postw90_common, only: pw90common_get_occ
     use w90_io, only: io_error
 
@@ -248,7 +248,7 @@ contains
     if (present(occ)) then
       nfermi_loc = 1
     else
-      nfermi_loc = nfermi
+      nfermi_loc = fermi%n
     endif
     allocate (occ_list(num_wann, nfermi_loc))
 
@@ -264,7 +264,7 @@ contains
       occ_list(:, 1) = occ(:)
     else
       do if = 1, nfermi_loc
-        call pw90common_get_occ(eig, occ_list(:, if), fermi_energy_list(if))
+        call pw90common_get_occ(eig, occ_list(:, if), fermi%energy_list(if))
       enddo
     endif
 
@@ -294,7 +294,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate, &
       utility_rotate_diag
-    use w90_parameters, only: num_wann, use_degen_pert, degen_thr
+    use w90_parameters, only: num_wann, pw90_ham
 
     ! Arguments
     !
@@ -312,7 +312,7 @@ contains
     allocate (delHH_bar_a(num_wann, num_wann))
     allocate (U_deg(num_wann, num_wann))
 
-    if (use_degen_pert) then
+    if (pw90_ham%use_degen_pert) then
 
       delHH_bar_a = utility_rotate(delHH_a, UU, num_wann)
 
@@ -329,9 +329,9 @@ contains
           !
           ! i-th is the highest band, and it is non-degenerate
           !
-          diff = degen_thr + 1.0_dp
+          diff = pw90_ham%degen_thr + 1.0_dp
         end if
-        if (diff < degen_thr) then
+        if (diff < pw90_ham%degen_thr) then
           !
           ! Bands i and i+1 are degenerate
           !
@@ -343,7 +343,7 @@ contains
           do
             if (degen_max + 1 > num_wann) exit
             diff = eig(degen_max + 1) - eig(degen_max)
-            if (diff < degen_thr) then
+            if (diff < pw90_ham%degen_thr) then
               degen_max = degen_max + 1
             else
               exit
@@ -428,7 +428,7 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: HH_R, get_HH_R
+    use w90_get_oper, only: get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize
 
@@ -509,7 +509,7 @@ contains
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
 
-    integer                       :: i
+    !integer                       :: i
 
     call get_HH_R
     call get_AA_R
@@ -540,7 +540,7 @@ contains
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
 
-    integer                       :: i
+    !integer                       :: i
 
     call get_HH_R
 

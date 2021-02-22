@@ -73,11 +73,8 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, stdout, io_stopwatch, &
       io_file_unit, seedname
-    use w90_parameters, only: num_wann, ndimwin, num_kpts, num_bands, &
-      eigval, u_matrix, have_disentangled, &
-      timing_level, scissors_shift, &
-      num_valence_bands, effective_model, &
-      real_lattice
+    use w90_parameters, only: num_wann, dis_data, num_kpts, &
+      eigval, u_matrix, pw90_common, param_input, real_lattice
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
     use w90_comms, only: on_root, comms_bcast
 
@@ -91,20 +88,20 @@ contains
     !ivo
     complex(kind=dp), allocatable :: sciss_q(:, :, :)
     complex(kind=dp), allocatable :: sciss_R(:, :, :)
-    real(kind=dp)                 :: sciss_shift
+    !real(kind=dp)                 :: sciss_shift
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 1)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, nrpts))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
       return
     end if
 
     ! Real-space Hamiltonian H(R) is read from file
     !
-    if (effective_model) then
+    if (pw90_common%effective_model) then
       HH_R = cmplx_0
       if (on_root) then
         write (stdout, '(/a)') ' Reading real-space Hamiltonian from file ' &
@@ -167,7 +164,7 @@ contains
         ! result converges (rapidly) with the k-mesh density, but
         ! one should check
         !
-        if (abs(scissors_shift) > 1.0e-7_dp) &
+        if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
           call io_error( &
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T')
@@ -176,7 +173,7 @@ contains
       call comms_bcast(ndegen(1), nrpts)
       call comms_bcast(irvec(1, 1), 3*nrpts)
       call comms_bcast(crvec(1, 1), 3*nrpts)
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
       return
     endif
 
@@ -190,8 +187,8 @@ contains
 
     HH_q = cmplx_0
     do ik = 1, num_kpts
-      if (have_disentangled) then
-        num_states(ik) = ndimwin(ik)
+      if (param_input%have_disentangled) then
+        num_states(ik) = dis_data%ndimwin(ik)
       else
         num_states(ik) = num_wann
       endif
@@ -213,14 +210,14 @@ contains
     ! Scissors correction for an insulator: shift conduction bands upwards by
     ! scissors_shift eV
     !
-    if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
+    if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
       allocate (sciss_R(num_wann, num_wann, nrpts))
       allocate (sciss_q(num_wann, num_wann, num_kpts))
       sciss_q = cmplx_0
       do ik = 1, num_kpts
         do j = 1, num_wann
           do i = 1, j
-            do m = 1, num_valence_bands
+            do m = 1, param_input%num_valence_bands
               sciss_q(i, j, ik) = sciss_q(i, j, ik) - &
                                   conjg(u_matrix(m, i, ik))*u_matrix(m, j, ik)
             enddo
@@ -232,11 +229,11 @@ contains
       do n = 1, num_wann
         sciss_R(n, n, rpt_origin) = sciss_R(n, n, rpt_origin) + 1.0_dp
       end do
-      sciss_R = sciss_R*scissors_shift
+      sciss_R = sciss_R*pw90_common%scissors_shift
       HH_R = HH_R + sciss_R
     endif
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
     return
 
 101 call io_error('Error in get_HH_R: problem opening file '// &
@@ -255,9 +252,8 @@ contains
     !==================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, nntot, num_wann, wb, bk, timing_level, &
-      num_bands, ndimwin, nnlist, have_disentangled, &
-      transl_inv, nncell, effective_model
+    use w90_parameters, only: num_kpts, kmesh_info, num_wann, param_input, &
+      num_bands, dis_data, berry, pw90_common
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
@@ -278,18 +274,18 @@ contains
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 1)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
       return
     end if
 
     ! Real-space position matrix elements read from file
     !
-    if (effective_model) then
+    if (pw90_common%effective_model) then
       if (.not. allocated(HH_R)) call io_error( &
         'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first')
       AA_R = cmplx_0
@@ -332,7 +328,7 @@ contains
         endif
       endif
       call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
       return
     endif
 
@@ -351,8 +347,8 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+        if (param_input%have_disentangled) then
+          num_states(ik) = dis_data%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -373,7 +369,7 @@ contains
         call io_error(trim(seedname)//'.mmn has wrong number of bands')
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.mmn has wrong number of k-points')
-      if (nntot_tmp .ne. nntot) &
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
         (trim(seedname)//'.mmn has wrong number of nearest neighbours')
 
@@ -381,7 +377,7 @@ contains
       ik_prev = 0
 
       ! Composite loop over k-points ik (outer loop) and neighbors ik2 (inner)
-      do ncount = 1, num_kpts*nntot
+      do ncount = 1, num_kpts*kmesh_info%nntot
         !
         !Read from .mmn file the original overlap matrix
         ! S_o=<u_ik|u_ik2> between ab initio eigenstates
@@ -403,11 +399,11 @@ contains
         if (ik .ne. ik_prev) nn_count = 0
         nn = 0
         nn_found = .false.
-        do inn = 1, nntot
-          if ((ik2 .eq. nnlist(ik, inn)) .and. &
-              (nnl .eq. nncell(1, ik, inn)) .and. &
-              (nnm .eq. nncell(2, ik, inn)) .and. &
-              (nnn .eq. nncell(3, ik, inn))) then
+        do inn = 1, kmesh_info%nntot
+          if ((ik2 .eq. kmesh_info%nnlist(ik, inn)) .and. &
+              (nnl .eq. kmesh_info%nncell(1, ik, inn)) .and. &
+              (nnm .eq. kmesh_info%nncell(2, ik, inn)) .and. &
+              (nnn .eq. kmesh_info%nncell(3, ik, inn))) then
             if (.not. nn_found) then
               nn_found = .true.
               nn = inn
@@ -429,30 +425,30 @@ contains
         !
         call get_gauge_overlap_matrix( &
           ik, num_states(ik), &
-          nnlist(ik, nn), num_states(nnlist(ik, nn)), &
+          kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
           S_o, S)
 
         ! Berry connection matrix
         ! Assuming all neighbors of a given point are read in sequence!
         !
-        if (transl_inv .and. ik .ne. ik_prev) AA_q_diag(:, :) = cmplx_0
+        if (berry%transl_inv .and. ik .ne. ik_prev) AA_q_diag(:, :) = cmplx_0
         do idir = 1, 3
           AA_q(:, :, ik, idir) = AA_q(:, :, ik, idir) &
-                                 + cmplx_i*wb(nn)*bk(idir, nn, ik)*S(:, :)
-          if (transl_inv) then
+                                 + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*S(:, :)
+          if (berry%transl_inv) then
             !
             ! Rewrite band-diagonal elements a la Eq.(31) of MV97
             !
             do i = 1, num_wann
               AA_q_diag(i, idir) = AA_q_diag(i, idir) &
-                                   - wb(nn)*bk(idir, nn, ik)*aimag(log(S(i, i)))
+                                   - kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*aimag(log(S(i, i)))
             enddo
           endif
         end do
         ! Assuming all neighbors of a given point are read in sequence!
-        if (nn_count == nntot) then !looped over all neighbors
+        if (nn_count == kmesh_info%nntot) then !looped over all neighbors
           do idir = 1, 3
-            if (transl_inv) then
+            if (berry%transl_inv) then
               do n = 1, num_wann
                 AA_q(n, n, ik, idir) = AA_q_diag(n, idir)
               enddo
@@ -483,7 +479,7 @@ contains
 
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
     return
 
 101 call io_error &
@@ -505,15 +501,14 @@ contains
     !=====================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, num_bands, &
-      ndimwin, eigval, wb, bk, have_disentangled, &
-      timing_level, nncell, scissors_shift
-    use w90_postw90_common, only: nrpts, v_matrix
+    use w90_parameters, only: num_kpts, kmesh_info, num_wann, num_bands, &
+      dis_data, param_input, pw90_common
+    use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
     use w90_comms, only: on_root, comms_bcast
 
-    integer          :: idir, n, m, nn, i, ii, j, jj, &
+    integer          :: idir, n, m, nn, &
                         ik, ik2, inn, nnl, nnm, nnn, &
                         winmin_q, winmin_qb, ncount, &
                         nb_tmp, nkp_tmp, nntot_tmp, mmn_in
@@ -526,17 +521,17 @@ contains
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 1)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
       return
     end if
 
     if (on_root) then
 
-      if (abs(scissors_shift) > 1.0e-7_dp) &
+      if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
         call io_error('Error: scissors correction not yet implemented for BB_R')
 
       allocate (BB_q(num_wann, num_wann, num_kpts, 3))
@@ -545,8 +540,8 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+        if (param_input%have_disentangled) then
+          num_states(ik) = dis_data%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -567,13 +562,13 @@ contains
         call io_error(trim(seedname)//'.mmn has wrong number of bands')
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.mmn has wrong number of k-points')
-      if (nntot_tmp .ne. nntot) &
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
         (trim(seedname)//'.mmn has wrong number of nearest neighbours')
 
       BB_q = cmplx_0
 
-      do ncount = 1, num_kpts*nntot
+      do ncount = 1, num_kpts*kmesh_info%nntot
         !
         !Read from .mmn file the original overlap matrix
         ! S_o=<u_ik|u_ik2> between ab initio eigenstates
@@ -587,11 +582,11 @@ contains
         enddo
         nn = 0
         nn_found = .false.
-        do inn = 1, nntot
-          if ((ik2 .eq. nnlist(ik, inn)) .and. &
-              (nnl .eq. nncell(1, ik, inn)) .and. &
-              (nnm .eq. nncell(2, ik, inn)) .and. &
-              (nnn .eq. nncell(3, ik, inn))) then
+        do inn = 1, kmesh_info%nntot
+          if ((ik2 .eq. kmesh_info%nnlist(ik, inn)) .and. &
+              (nnl .eq. kmesh_info%nncell(1, ik, inn)) .and. &
+              (nnm .eq. kmesh_info%nncell(2, ik, inn)) .and. &
+              (nnn .eq. kmesh_info%nncell(3, ik, inn))) then
             if (.not. nn_found) then
               nn_found = .true.
               nn = inn
@@ -609,14 +604,14 @@ contains
         end if
 
         call get_win_min(ik, winmin_q)
-        call get_win_min(nnlist(ik, nn), winmin_qb)
+        call get_win_min(kmesh_info%nnlist(ik, nn), winmin_qb)
         call get_gauge_overlap_matrix( &
           ik, num_states(ik), &
-          nnlist(ik, nn), num_states(nnlist(ik, nn)), &
+          kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
           S_o, H=H_q_qb)
         do idir = 1, 3
           BB_q(:, :, ik, idir) = BB_q(:, :, ik, idir) &
-                                 + cmplx_i*wb(nn)*bk(idir, nn, ik)*H_q_qb(:, :)
+                                 + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*H_q_qb(:, :)
         enddo
       enddo !ncount
 
@@ -630,7 +625,7 @@ contains
 
     call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
     return
 
 103 call io_error &
@@ -650,16 +645,14 @@ contains
     !=============================================================
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, &
-      num_bands, ndimwin, wb, bk, &
-      have_disentangled, timing_level, &
-      scissors_shift, uHu_formatted
-    use w90_postw90_common, only: nrpts, v_matrix
+    use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
+      num_bands, dis_data, param_input, pw90_common, postw90_oper
+    use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
     use w90_comms, only: on_root, comms_bcast
 
-    integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
+    integer          :: m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, uHu_in, qb1, qb2, winmin_qb1, winmin_qb2
 
     integer, allocatable          :: num_states(:)
@@ -669,18 +662,18 @@ contains
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
       return
     end if
 
     if (on_root) then
 
-      if (abs(scissors_shift) > 1.0e-7_dp) &
+      if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
         call io_error('Error: scissors correction not yet implemented for CC_R')
 
       allocate (Ho_qb1_q_qb2(num_bands, num_bands))
@@ -689,15 +682,15 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+        if (param_input%have_disentangled) then
+          num_states(ik) = dis_data%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
       enddo
 
       uHu_in = io_file_unit()
-      if (uHu_formatted) then
+      if (postw90_oper%uHu_formatted) then
         open (unit=uHu_in, file=trim(seedname)//".uHu", form='formatted', &
               status='old', action='read', err=105)
         write (stdout, '(/a)', advance='no') &
@@ -720,23 +713,23 @@ contains
       if (nkp_tmp .ne. num_kpts) &
         call io_error &
         (trim(seedname)//'.uHu has not the right number of k-points')
-      if (nntot_tmp .ne. nntot) &
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
         (trim(seedname)//'.uHu has not the right number of nearest neighbours')
 
       CC_q = cmplx_0
       do ik = 1, num_kpts
-        do nn2 = 1, nntot
-          qb2 = nnlist(ik, nn2)
+        do nn2 = 1, kmesh_info%nntot
+          qb2 = kmesh_info%nnlist(ik, nn2)
           call get_win_min(qb2, winmin_qb2)
-          do nn1 = 1, nntot
-            qb1 = nnlist(ik, nn1)
+          do nn1 = 1, kmesh_info%nntot
+            qb1 = kmesh_info%nnlist(ik, nn1)
             call get_win_min(qb1, winmin_qb1)
             !
             ! Read from .uHu file the matrices <u_{q+b1}|H_q|u_{q+b2}>
             ! between the original ab initio eigenstates
             !
-            if (uHu_formatted) then
+            if (postw90_oper%uHu_formatted) then
               do m = 1, num_bands
                 do n = 1, num_bands
                   read (uHu_in, *, err=106, end=106) c_real, c_img
@@ -764,8 +757,8 @@ contains
               Ho_qb1_q_qb2, H_qb1_q_qb2)
             do b = 1, 3
               do a = 1, b
-                CC_q(:, :, ik, a, b) = CC_q(:, :, ik, a, b) + wb(nn1)*bk(a, nn1, ik) &
-                                       *wb(nn2)*bk(b, nn2, ik)*H_qb1_q_qb2(:, :)
+                CC_q(:, :, ik, a, b) = CC_q(:, :, ik, a, b) + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
+                                       *kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_qb1_q_qb2(:, :)
               enddo
             enddo
           enddo !nn1
@@ -789,7 +782,7 @@ contains
 
     call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
     return
 
 105 call io_error &
@@ -809,9 +802,8 @@ contains
     !===========================================================
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_kpts, nntot, nnlist, num_wann, &
-      num_bands, ndimwin, wb, bk, &
-      have_disentangled, timing_level
+    use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
+      num_bands, dis_data, param_input
     use w90_postw90_common, only: nrpts, v_matrix
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
@@ -826,12 +818,12 @@ contains
     complex(kind=dp), allocatable :: L_qb1_q_qb2(:, :)
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 1)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
       return
     end if
 
@@ -843,8 +835,8 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+        if (param_input%have_disentangled) then
+          num_states(ik) = dis_data%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -864,17 +856,17 @@ contains
       if (nkp_tmp .ne. num_kpts) &
         call io_error &
         (trim(seedname)//'.uIu has not the right number of k-points')
-      if (nntot_tmp .ne. nntot) &
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
         (trim(seedname)//'.uIu has not the right number of nearest neighbours')
 
       FF_q = cmplx_0
       do ik = 1, num_kpts
-        do nn2 = 1, nntot
-          qb2 = nnlist(ik, nn2)
+        do nn2 = 1, kmesh_info%nntot
+          qb2 = kmesh_info%nnlist(ik, nn2)
           call get_win_min(qb2, winmin_qb2)
-          do nn1 = 1, nntot
-            qb1 = nnlist(ik, nn1)
+          do nn1 = 1, kmesh_info%nntot
+            qb1 = kmesh_info%nnlist(ik, nn1)
             call get_win_min(qb1, winmin_qb1)
             !
             ! Read from .uIu file the matrices <u_{q+b1}|u_{q+b2}>
@@ -912,8 +904,8 @@ contains
             enddo
             do b = 1, 3
               do a = 1, b
-                FF_q(:, :, ik, a, b) = FF_q(:, :, ik, a, b) + wb(nn1)*bk(a, nn1, ik) &
-                                       *wb(nn2)*bk(b, nn2, ik)*L_qb1_q_qb2(:, :)
+                FF_q(:, :, ik, a, b) = FF_q(:, :, ik, a, b) + kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
+                                       *kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*L_qb1_q_qb2(:, :)
               enddo
             enddo
           enddo !nn1
@@ -937,7 +929,7 @@ contains
 
     call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
     return
 
 107 call io_error &
@@ -957,9 +949,9 @@ contains
     !================================================================
 
     use w90_constants, only: dp, pi, cmplx_0
-    use w90_parameters, only: num_wann, ndimwin, num_kpts, num_bands, &
-      timing_level, have_disentangled, spn_formatted
-    use w90_postw90_common, only: nrpts, v_matrix
+    use w90_parameters, only: num_wann, dis_data, num_kpts, num_bands, &
+      param_input, postw90_oper
+    use w90_postw90_common, only: nrpts
     use w90_io, only: io_error, io_stopwatch, stdout, seedname, &
       io_file_unit
     use w90_comms, only: on_root, comms_bcast
@@ -969,11 +961,11 @@ contains
     complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), spn_temp(:, :)
     real(kind=dp)                 :: s_real, s_img
     integer, allocatable          :: num_states(:)
-    integer                       :: i, j, ii, jj, m, n, spn_in, ik, is, &
-                                     winmin, nb_tmp, nkp_tmp, ierr, s, counter
+    integer                       :: m, n, spn_in, ik, is, &
+                                     nb_tmp, nkp_tmp, ierr, s, counter
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 1)
 
     if (.not. allocated(SS_R)) then
       allocate (SS_R(num_wann, num_wann, nrpts, 3))
@@ -988,8 +980,8 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+        if (param_input%have_disentangled) then
+          num_states(ik) = dis_data%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -999,7 +991,7 @@ contains
       ! (sigma_i = Pauli matrix) between ab initio eigenstates
       !
       spn_in = io_file_unit()
-      if (spn_formatted) then
+      if (postw90_oper%spn_formatted) then
         open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
@@ -1020,7 +1012,7 @@ contains
         call io_error(trim(seedname)//'.spn has wrong number of bands')
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.spn has wrong number of k-points')
-      if (spn_formatted) then
+      if (postw90_oper%spn_formatted) then
         do ik = 1, num_kpts
           do m = 1, num_bands
             do n = 1, m
@@ -1081,7 +1073,7 @@ contains
 
     call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2)
     return
 
 109 call io_error &
@@ -1103,11 +1095,8 @@ contains
     !==================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_parameters, only: num_kpts, nntot, num_wann, wb, bk, timing_level, &
-      num_bands, ndimwin, nnlist, have_disentangled, &
-      transl_inv, nncell, spn_formatted, eigval, &
-      scissors_shift, num_valence_bands, &
-      shc_bandshift, shc_bandshift_firstband, shc_bandshift_energyshift
+    use w90_parameters, only: num_kpts, num_wann, kmesh_info, num_bands, &
+      dis_data, postw90_oper, eigval, pw90_common, param_input, spin_hall
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
@@ -1131,35 +1120,33 @@ contains
     real(kind=dp)                 :: s_real, s_img
     integer                       :: spn_in, counter, ierr, s, is
 
-    integer                       :: n, m, i, j, &
+    integer                       :: n, m, &
                                      ik, ik2, ik_prev, nn, inn, nnl, nnm, nnn, &
                                      idir, ncount, nn_count, mmn_in, &
-                                     nb_tmp, nkp_tmp, nntot_tmp, file_unit, &
-                                     ir, io, ivdum(3), ivdum_old(3)
+                                     nb_tmp, nkp_tmp, nntot_tmp
     integer, allocatable          :: num_states(:)
-    real(kind=dp)                 :: m_real, m_imag, rdum1_real, rdum1_imag, &
-                                     rdum2_real, rdum2_imag, rdum3_real, rdum3_imag
+    real(kind=dp)                 :: m_real, m_imag
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
-      if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
       return
     end if
 
@@ -1171,8 +1158,8 @@ contains
 
       allocate (num_states(num_kpts))
       do ik = 1, num_kpts
-        if (have_disentangled) then
-          num_states(ik) = ndimwin(ik)
+        if (param_input%have_disentangled) then
+          num_states(ik) = dis_data%ndimwin(ik)
         else
           num_states(ik) = num_wann
         endif
@@ -1182,7 +1169,7 @@ contains
       ! (sigma_i = Pauli matrix) between ab initio eigenstates
       !
       spn_in = io_file_unit()
-      if (spn_formatted) then
+      if (postw90_oper%spn_formatted) then
         open (unit=spn_in, file=trim(seedname)//'.spn', form='formatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
@@ -1203,7 +1190,7 @@ contains
         call io_error(trim(seedname)//'.spn has wrong number of bands')
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.spn has wrong number of k-points')
-      if (spn_formatted) then
+      if (postw90_oper%spn_formatted) then
         do ik = 1, num_kpts
           do m = 1, num_bands
             do n = 1, m
@@ -1258,13 +1245,13 @@ contains
           H_o(m, m, ik) = eigval(m, ik)
         enddo
         ! scissors shift applied to the original Hamiltonian
-        if (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp) then
-          do m = num_valence_bands + 1, num_bands
-            H_o(m, m, ik) = H_o(m, m, ik) + scissors_shift
+        if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
+          do m = param_input%num_valence_bands + 1, num_bands
+            H_o(m, m, ik) = H_o(m, m, ik) + pw90_common%scissors_shift
           end do
-        else if (shc_bandshift) then
-          do m = shc_bandshift_firstband, num_bands
-            H_o(m, m, ik) = H_o(m, m, ik) + shc_bandshift_energyshift
+        else if (spin_hall%bandshift) then
+          do m = spin_hall%bandshift_firstband, num_bands
+            H_o(m, m, ik) = H_o(m, m, ik) + spin_hall%bandshift_energyshift
           end do
         end if
       enddo
@@ -1296,7 +1283,7 @@ contains
         call io_error(trim(seedname)//'.mmn has wrong number of bands')
       if (nkp_tmp .ne. num_kpts) &
         call io_error(trim(seedname)//'.mmn has wrong number of k-points')
-      if (nntot_tmp .ne. nntot) &
+      if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
         (trim(seedname)//'.mmn has wrong number of nearest neighbours')
 
@@ -1319,7 +1306,7 @@ contains
       end do
 
       ! Composite loop over k-points ik (outer loop) and neighbors ik2 (inner)
-      do ncount = 1, num_kpts*nntot
+      do ncount = 1, num_kpts*kmesh_info%nntot
         !
         !Read from .mmn file the original overlap matrix
         ! S_o=<u_ik|u_ik2> between ab initio eigenstates
@@ -1341,11 +1328,11 @@ contains
         if (ik .ne. ik_prev) nn_count = 0
         nn = 0
         nn_found = .false.
-        do inn = 1, nntot
-          if ((ik2 .eq. nnlist(ik, inn)) .and. &
-              (nnl .eq. nncell(1, ik, inn)) .and. &
-              (nnm .eq. nncell(2, ik, inn)) .and. &
-              (nnn .eq. nncell(3, ik, inn))) then
+        do inn = 1, kmesh_info%nntot
+          if ((ik2 .eq. kmesh_info%nnlist(ik, inn)) .and. &
+              (nnl .eq. kmesh_info%nncell(1, ik, inn)) .and. &
+              (nnm .eq. kmesh_info%nncell(2, ik, inn)) .and. &
+              (nnn .eq. kmesh_info%nncell(3, ik, inn))) then
             if (.not. nn_found) then
               nn_found = .true.
               nn = inn
@@ -1384,12 +1371,12 @@ contains
           ! QZYZ18 Eq.(50)
           call get_gauge_overlap_matrix( &
             ik, num_states(ik), &
-            nnlist(ik, nn), num_states(nnlist(ik, nn)), &
+            kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
             SM_o(:, :, is), SM_q(:, :, is))
           ! QZYZ18 Eq.(51)
           call get_gauge_overlap_matrix( &
             ik, num_states(ik), &
-            nnlist(ik, nn), num_states(nnlist(ik, nn)), &
+            kmesh_info%nnlist(ik, nn), num_states(kmesh_info%nnlist(ik, nn)), &
             SHM_o(:, :, is), SHM_q(:, :, is))
 
           ! Assuming all neighbors of a given point are read in sequence!
@@ -1397,10 +1384,12 @@ contains
           do idir = 1, 3
             ! QZYZ18 Eq.(50)
             SR_q(:, :, ik, is, idir) = SR_q(:, :, ik, is, idir) &
-                                       + wb(nn)*bk(idir, nn, ik)*(SM_q(:, :, is) - SS_q(:, :, is))
+                                       + kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
+                                       *(SM_q(:, :, is) - SS_q(:, :, is))
             ! QZYZ18 Eq.(51)
             SHR_q(:, :, ik, is, idir) = SHR_q(:, :, ik, is, idir) &
-                                        + wb(nn)*bk(idir, nn, ik)*(SHM_q(:, :, is) - SH_q(:, :, ik, is))
+                                        + kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
+                                        *(SHM_q(:, :, is) - SH_q(:, :, ik, is))
           end do
         end do
 
@@ -1430,7 +1419,7 @@ contains
 
     ! end copying from get_AA_R, Junfeng Qiao
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2)
     return
 
 101 call io_error &
@@ -1460,7 +1449,7 @@ contains
     !==========================================================
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_parameters, only: num_kpts, kpt_latt
+    use w90_parameters, only: num_kpts, k_points
     use w90_postw90_common, only: nrpts, irvec
 
     implicit none
@@ -1479,7 +1468,7 @@ contains
     op_R = cmplx_0
     do ir = 1, nrpts
       do ik = 1, num_kpts
-        rdotq = twopi*dot_product(kpt_latt(:, ik), irvec(:, ir))
+        rdotq = twopi*dot_product(k_points%kpt_latt(:, ik), irvec(:, ir))
         phase_fac = exp(-cmplx_i*rdotq)
         op_R(:, :, ir) = op_R(:, :, ir) + phase_fac*op_q(:, :, ik)
       enddo
@@ -1498,7 +1487,7 @@ contains
     !===============================================
 
     use w90_constants, only: dp
-    use w90_parameters, only: num_bands, lwindow, have_disentangled
+    use w90_parameters, only: num_bands, dis_data, param_input
 
     implicit none
 
@@ -1511,13 +1500,13 @@ contains
 
     integer :: j
 
-    if (.not. have_disentangled) then
+    if (.not. param_input%have_disentangled) then
       win_min = 1
       return
     endif
 
     do j = 1, num_bands
-      if (lwindow(j, ik)) then
+      if (dis_data%lwindow(j, ik)) then
         win_min = j
         exit
       end if

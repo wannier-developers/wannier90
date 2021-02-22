@@ -23,8 +23,8 @@ module w90_geninterp
   !! June, 2012
 
   use w90_constants
-  use w90_parameters, only: geninterp_alsofirstder, num_wann, recip_lattice, real_lattice, &
-    timing_level, geninterp_single_file
+  use w90_parameters, only: geninterp, num_wann, recip_lattice, real_lattice, &
+    param_input
   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, io_stopwatch
   use w90_get_oper, only: get_HH_R, HH_R
   use w90_comms
@@ -54,7 +54,7 @@ contains
     ! I rewrite the comment line on the output
     write (outdat_unit, '(A)') "# Input file comment: "//trim(commentline)
 
-    if (geninterp_alsofirstder) then
+    if (geninterp%alsofirstder) then
       write (outdat_unit, '(A)') "#  Kpt_idx  K_x (1/ang)       K_y (1/ang)        K_z (1/ang)       Energy (eV)"// &
         "      EnergyDer_x       EnergyDer_y       EnergyDer_z"
     else
@@ -70,7 +70,7 @@ contains
     !! But at least if works independently of the number of processors.
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
-    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, k, enidx
+    integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
     integer, dimension(:), allocatable              :: kpointidx, localkpointidx
@@ -89,7 +89,7 @@ contains
     integer, dimension(0:num_nodes - 1)               :: counts
     integer, dimension(0:num_nodes - 1)               :: displs
 
-    if (on_root .and. (timing_level > 0)) call io_stopwatch('geninterp_main', 1)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1)
 
     if (on_root) then
       write (stdout, *)
@@ -127,7 +127,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating HH in calcTDF')
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in calcTDF')
-    if (geninterp_alsofirstder) then
+    if (geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF')
     end if
@@ -140,7 +140,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.')
       allocate (kpoints(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.')
-      if (geninterp_single_file) then
+      if (geninterp%single_file) then
         allocate (globaleig(num_wann, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.')
         allocate (globaldeleig(num_wann, 3, num_kpts), stat=ierr)
@@ -153,7 +153,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.')
       allocate (kpoints(1, 1), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.')
-      if (geninterp_single_file) then
+      if (geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.')
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
@@ -196,7 +196,7 @@ contains
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
     call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs)
-    if (.not. geninterp_single_file) then
+    if (.not. geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.')
@@ -204,7 +204,7 @@ contains
     end if
 
     ! I open the output file(s)
-    if (geninterp_single_file) then
+    if (geninterp%single_file) then
       if (on_root) then
         outdat_filename = trim(seedname)//'_geninterp.dat'
         outdat_unit = io_file_unit()
@@ -230,7 +230,7 @@ contains
     do i = 1, counts(my_node_id)
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
-      if (geninterp_alsofirstder) then
+      if (geninterp%alsofirstder) then
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
@@ -238,12 +238,12 @@ contains
       end if
     end do
 
-    if (geninterp_single_file) then
+    if (geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
                          num_wann*counts, num_wann*displs)
 
-      if (geninterp_alsofirstder) then
+      if (geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
                            3*num_wann*counts, 3*num_wann*displs)
       end if
@@ -259,7 +259,7 @@ contains
           end do
 
           ! I print each line
-          if (geninterp_alsofirstder) then
+          if (geninterp%alsofirstder) then
             do enidx = 1, num_wann
               write (outdat_unit, '(I10,7G18.10)') kpointidx(i), frac, &
                 globaleig(enidx, i), globaldeleig(enidx, :, i)
@@ -283,7 +283,7 @@ contains
         end do
 
         ! I print each line
-        if (geninterp_alsofirstder) then
+        if (geninterp%alsofirstder) then
           do enidx = 1, num_wann
             write (outdat_unit, '(I10,7G18.10)') localkpointidx(i), frac, &
               localeig(enidx, i), localdeleig(enidx, :, i)
@@ -316,7 +316,7 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (timing_level > 0)) call io_stopwatch('geninterp_main', 2)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2)
 
     return
 

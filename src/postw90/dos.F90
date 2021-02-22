@@ -48,13 +48,8 @@ contains
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, dos_energy_min, dos_energy_max, &
-      dos_energy_step, timing_level, &
-      wanint_kpoint_file, dos_kmesh, &
-      dos_smr_index, dos_adpt_smr, dos_adpt_smr_fac, &
-      dos_adpt_smr_max, spin_decomp, &
-      dos_smr_fixed_en_width, &
-      dos_project, num_dos_project
+    use w90_parameters, only: num_wann, dos_data, param_input, &
+      pw90_common, berry !wanint_kpoint_file
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize
@@ -77,15 +72,15 @@ contains
     real(kind=dp) :: del_eig(num_wann, 3)
     real(kind=dp) :: eig(num_wann), levelspacing_k(num_wann)
 
-    num_freq = nint((dos_energy_max - dos_energy_min)/dos_energy_step) + 1
+    num_freq = nint((dos_data%energy_max - dos_data%energy_min)/dos_data%energy_step) + 1
     if (num_freq == 1) num_freq = 2
-    d_omega = (dos_energy_max - dos_energy_min)/(num_freq - 1)
+    d_omega = (dos_data%energy_max - dos_data%energy_min)/(num_freq - 1)
 
     allocate (dos_energyarray(num_freq), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating dos_energyarray in ' &
                                  //'dos subroutine')
     do ifreq = 1, num_freq
-      dos_energyarray(ifreq) = dos_energy_min + real(ifreq - 1, dp)*d_omega
+      dos_energyarray(ifreq) = dos_data%energy_min + real(ifreq - 1, dp)*d_omega
     end do
 
     allocate (HH(num_wann, num_wann), stat=ierr)
@@ -96,7 +91,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating UU in dos')
 
     call get_HH_R
-    if (spin_decomp) then
+    if (pw90_common%spin_decomp) then
       ndim = 3
       call get_SS_R
     else
@@ -108,7 +103,7 @@ contains
 
     if (on_root) then
 
-      if (timing_level > 1) call io_stopwatch('dos', 1)
+      if (param_input%timing_level > 1) call io_stopwatch('dos', 1)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -119,32 +114,32 @@ contains
       write (stdout, '(1x,a)') &
         '--------------------------------------'
 
-      if (num_dos_project == num_wann) then
+      if (dos_data%num_project == num_wann) then
         write (stdout, '(/,3x,a)') '* Total density of states (_dos)'
       else
         write (stdout, '(/,3x,a)') &
           '* Density of states projected onto selected WFs (_dos)'
         write (stdout, '(3x,a)') 'Selected WFs |Rn> are:'
-        do i = 1, num_dos_project
-          write (stdout, '(5x,a,2x,i3)') 'n =', dos_project(i)
+        do i = 1, dos_data%num_project
+          write (stdout, '(5x,a,2x,i3)') 'n =', dos_data%project(i)
         enddo
       endif
 
       write (stdout, '(/,5x,a,f9.4,a,f9.4,a)') &
-        'Energy range: [', dos_energy_min, ',', dos_energy_max, '] eV'
+        'Energy range: [', dos_data%energy_min, ',', dos_data%energy_max, '] eV'
 
       write (stdout, '(/,5x,a,(f6.3,1x))') &
         'Adaptive smearing width prefactor: ', &
-        dos_adpt_smr_fac
+        dos_data%adpt_smr_fac
 
       write (stdout, '(/,/,1x,a20,3(i0,1x))') 'Interpolation grid: ', &
-        dos_kmesh(1:3)
+        dos_data%kmesh(1:3)
 
     end if
 
     dos_all = 0.0_dp
 
-    if (wanint_kpoint_file) then
+    if (berry%wanint_kpoint_file) then
       !
       ! Unlike for optical properties, this should always work for the DOS
       !
@@ -155,21 +150,21 @@ contains
       !
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
-        if (dos_adpt_smr) then
+        if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-          call dos_get_levelspacing(del_eig, dos_kmesh, levelspacing_k)
+          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         adpt_smr_fac=dos_adpt_smr_fac, &
-                         adpt_smr_max=dos_adpt_smr_max, &
+                         smr_index=dos_data%smr_index, &
+                         adpt_smr_fac=dos_data%adpt_smr_fac, &
+                         adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
           call utility_diagonalize(HH, num_wann, eig, UU)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         smr_fixed_en_width=dos_smr_fixed_en_width, &
+                         smr_index=dos_data%smr_index, &
+                         smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
         end if
         dos_all = dos_all + dos_k*weight(loop_tot)
@@ -179,31 +174,31 @@ contains
 
       if (on_root) write (stdout, '(/,1x,a)') 'Sampling the full BZ'
 
-      kweight = 1.0_dp/real(PRODUCT(dos_kmesh), kind=dp)
-      do loop_tot = my_node_id, PRODUCT(dos_kmesh) - 1, num_nodes
-        loop_x = loop_tot/(dos_kmesh(2)*dos_kmesh(3))
-        loop_y = (loop_tot - loop_x*(dos_kmesh(2) &
-                                     *dos_kmesh(3)))/dos_kmesh(3)
-        loop_z = loop_tot - loop_x*(dos_kmesh(2)*dos_kmesh(3)) &
-                 - loop_y*dos_kmesh(3)
-        kpt(1) = real(loop_x, dp)/real(dos_kmesh(1), dp)
-        kpt(2) = real(loop_y, dp)/real(dos_kmesh(2), dp)
-        kpt(3) = real(loop_z, dp)/real(dos_kmesh(3), dp)
-        if (dos_adpt_smr) then
+      kweight = 1.0_dp/real(PRODUCT(dos_data%kmesh), kind=dp)
+      do loop_tot = my_node_id, PRODUCT(dos_data%kmesh) - 1, num_nodes
+        loop_x = loop_tot/(dos_data%kmesh(2)*dos_data%kmesh(3))
+        loop_y = (loop_tot - loop_x*(dos_data%kmesh(2) &
+                                     *dos_data%kmesh(3)))/dos_data%kmesh(3)
+        loop_z = loop_tot - loop_x*(dos_data%kmesh(2)*dos_data%kmesh(3)) &
+                 - loop_y*dos_data%kmesh(3)
+        kpt(1) = real(loop_x, dp)/real(dos_data%kmesh(1), dp)
+        kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
+        kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
+        if (dos_data%adpt_smr) then
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
-          call dos_get_levelspacing(del_eig, dos_kmesh, levelspacing_k)
+          call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         adpt_smr_fac=dos_adpt_smr_fac, &
-                         adpt_smr_max=dos_adpt_smr_max, &
+                         smr_index=dos_data%smr_index, &
+                         adpt_smr_fac=dos_data%adpt_smr_fac, &
+                         adpt_smr_max=dos_data%adpt_smr_max, &
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
           call utility_diagonalize(HH, num_wann, eig, UU)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
-                         smr_index=dos_smr_index, &
-                         smr_fixed_en_width=dos_smr_fixed_en_width, &
+                         smr_index=dos_data%smr_index, &
+                         smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
         end if
         dos_all = dos_all + dos_k*kweight
@@ -226,7 +221,7 @@ contains
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (timing_level > 1) call io_stopwatch('dos', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('dos', 2)
     end if
 
     deallocate (HH, stat=ierr)
@@ -471,8 +466,8 @@ contains
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: num_wann, spin_decomp, num_elec_per_state, &
-      num_dos_project, dos_project
+    use w90_parameters, only: num_wann, pw90_common, param_input, &
+      dos_data !(num_dos_project, dos_project)
     use w90_spin, only: spin_get_nk
 
     ! Arguments
@@ -494,7 +489,7 @@ contains
 
     ! Misc/Dummy
     !
-    integer          :: i, j, loop_f, min_f, max_f, num_s_steps
+    integer          :: i, j, loop_f, min_f, max_f
     real(kind=dp)    :: rdum, spn_nk(num_wann), alpha_sq, beta_sq
     real(kind=dp)    :: binwidth, r_num_elec_per_state
     logical          :: DoSmearing
@@ -521,17 +516,17 @@ contains
                       //'without smr_fixed_en_width parameter')
     end if
 
-    r_num_elec_per_state = real(num_elec_per_state, kind=dp)
+    r_num_elec_per_state = real(param_input%num_elec_per_state, kind=dp)
 
     ! Get spin projections for every band
     !
-    if (spin_decomp) call spin_get_nk(kpt, spn_nk)
+    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
     dos_k = 0.0_dp
     do i = 1, num_wann
-      if (spin_decomp) then
+      if (pw90_common%spin_decomp) then
         ! Contribution to spin-up DOS of Bloch spinor with component
         ! (alpha,beta) with respect to the chosen quantization axis
         alpha_sq = (1.0_dp + spn_nk(i))/2.0_dp ! |alpha|^2
@@ -578,7 +573,7 @@ contains
         !
         ! Contribution to total DOS
         !
-        if (num_dos_project == num_wann) then
+        if (dos_data%num_project == num_wann) then
           !
           ! Total DOS (default): do not loop over j, to save time
           !
@@ -586,7 +581,7 @@ contains
           ! [GP] I don't put num_elec_per_state here below: if we are
           ! calculating the spin decomposition, we should be doing a
           ! calcultation with spin-orbit, and thus num_elec_per_state=1!
-          if (spin_decomp) then
+          if (pw90_common%spin_decomp) then
             ! Spin-up contribution
             dos_k(loop_f, 2) = dos_k(loop_f, 2) + rdum*alpha_sq
             ! Spin-down contribution
@@ -597,16 +592,16 @@ contains
           ! Partial DOS, projected onto the WFs with indices
           ! n=dos_project(1:num_dos_project)
           !
-          do j = 1, num_dos_project
+          do j = 1, dos_data%num_project
             dos_k(loop_f, 1) = dos_k(loop_f, 1) + rdum*r_num_elec_per_state &
-                               *abs(UU(dos_project(j), i))**2
-            if (spin_decomp) then
+                               *abs(UU(dos_data%project(j), i))**2
+            if (pw90_common%spin_decomp) then
               ! Spin-up contribution
               dos_k(loop_f, 2) = dos_k(loop_f, 2) &
-                                 + rdum*alpha_sq*abs(UU(dos_project(j), i))**2
+                                 + rdum*alpha_sq*abs(UU(dos_data%project(j), i))**2
               ! Spin-down contribution
               dos_k(loop_f, 3) = dos_k(loop_f, 3) &
-                                 + rdum*beta_sq*abs(UU(dos_project(j), i))**2
+                                 + rdum*beta_sq*abs(UU(dos_data%project(j), i))**2
             end if
           enddo
         endif

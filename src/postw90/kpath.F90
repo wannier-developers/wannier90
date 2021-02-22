@@ -49,10 +49,7 @@ contains
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, kpath_task, &
-      bands_num_spec_points, bands_label, &
-      kpath_bands_colour, nfermi, fermi_energy_list, &
-      berry_curv_unit, shc_alpha, shc_beta, shc_gamma, kubo_adpt_smr
+    use w90_parameters, only: num_wann, kpath, spec_points, fermi, berry, spin_hall
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_FF_R, get_SS_R, get_SHC_R
     use w90_spin, only: spin_get_nk
@@ -62,14 +59,14 @@ contains
 
     integer, dimension(0:num_nodes - 1) :: counts, displs
 
-    integer           :: i, j, n, num_paths, num_spts, loop_path, loop_kpt, &
-                         total_pts, counter, loop_i, dataunit, gnuunit, pyunit, &
+    integer           :: i, j, n, num_paths, num_spts, loop_kpt, &
+                         total_pts, loop_i, dataunit, gnuunit, pyunit, &
                          my_num_pts
     real(kind=dp)     :: ymin, ymax, kpt(3), spn_k(num_wann), &
-                         imf_k_list(3, 3, nfermi), img_k_list(3, 3, nfermi), &
-                         imh_k_list(3, 3, nfermi), Morb_k(3, 3), &
+                         imf_k_list(3, 3, fermi%n), img_k_list(3, 3, fermi%n), &
+                         imh_k_list(3, 3, fermi%n), Morb_k(3, 3), &
                          range, zmin, zmax
-    real(kind=dp)     :: shc_k_band(num_wann), shc_k_fermi(nfermi)
+    real(kind=dp)     :: shc_k_band(num_wann), shc_k_fermi(fermi%n)
     real(kind=dp), allocatable, dimension(:) :: kpath_len
     logical           :: plot_bands, plot_curv, plot_morb, plot_shc
     character(len=120) :: file_name
@@ -88,22 +85,22 @@ contains
     ! However, we still have to read and distribute the data if we
     ! are in parallel. So calls to get_oper are done on all nodes at the moment
     !
-    plot_bands = index(kpath_task, 'bands') > 0
-    plot_curv = index(kpath_task, 'curv') > 0
-    plot_morb = index(kpath_task, 'morb') > 0
-    plot_shc = index(kpath_task, 'shc') > 0
+    plot_bands = index(kpath%task, 'bands') > 0
+    plot_curv = index(kpath%task, 'curv') > 0
+    plot_morb = index(kpath%task, 'morb') > 0
+    plot_shc = index(kpath%task, 'shc') > 0
 
     if (on_root) then
-      if (plot_shc .or. (plot_bands .and. kpath_bands_colour == 'shc')) then
+      if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
-        if (kubo_adpt_smr) call io_error( &
+        if (berry%kubo_adpt_smr) call io_error( &
           'Error: Must use fixed smearing when plotting spin Hall conductivity')
       end if
       if (plot_shc) then
-        if (nfermi == 0) then
+        if (fermi%n == 0) then
           call io_error('Error: must specify Fermi energy')
-        else if (nfermi /= 1) then
+        else if (fermi%n /= 1) then
           call io_error('Error: kpath plot only accept one Fermi energy, ' &
                         //'use fermi_energy instead of fermi_energy_min')
         end if
@@ -120,13 +117,13 @@ contains
       call get_CC_R
     endif
 
-    if (plot_shc .or. (plot_bands .and. kpath_bands_colour == 'shc')) then
+    if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
       call get_AA_R
       call get_SS_R
       call get_SHC_R
     endif
 
-    if (plot_bands .and. kpath_bands_colour == 'spin') call get_SS_R
+    if (plot_bands .and. kpath%bands_colour == 'spin') call get_SS_R
 
     if (on_root) then
       ! Determine the number of k-points (total_pts) as well as
@@ -160,7 +157,7 @@ contains
       allocate (HH(num_wann, num_wann))
       allocate (UU(num_wann, num_wann))
       allocate (my_eig(num_wann, my_num_pts))
-      if (kpath_bands_colour /= 'none') allocate (my_color(num_wann, my_num_pts))
+      if (kpath%bands_colour /= 'none') allocate (my_color(num_wann, my_num_pts))
     end if
 
     ! Value of the vertical coordinate in the actual plots
@@ -181,7 +178,7 @@ contains
         ! Color-code energy bands with the spin projection along the
         ! chosen spin quantization axis
         !
-        if (kpath_bands_colour == 'spin') then
+        if (kpath%bands_colour == 'spin') then
           call spin_get_nk(kpt, spn_k)
           my_color(:, loop_kpt) = spn_k(:)
           !
@@ -196,7 +193,7 @@ contains
               my_color(n, loop_kpt) = -1.0_dp + eps8
             end if
           end do
-        else if (kpath_bands_colour == 'shc') then
+        else if (kpath%bands_colour == 'shc') then
           call berry_get_shc_klist(kpt, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
@@ -205,7 +202,7 @@ contains
       if (plot_morb) then
         call berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
-                 - 2.0_dp*fermi_energy_list(1)*imf_k_list(:, :, 1)
+                 - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
         my_morb(loop_kpt, 1) = sum(Morb_k(:, 1))
         my_morb(loop_kpt, 2) = sum(Morb_k(:, 2))
@@ -232,7 +229,7 @@ contains
       allocate (eig(num_wann, total_pts))
       call comms_gatherv(my_eig, num_wann*my_num_pts, &
                          eig, num_wann*counts, num_wann*displs)
-      if (kpath_bands_colour /= 'none') then
+      if (kpath%bands_colour /= 'none') then
         allocate (color(num_wann, total_pts))
         call comms_gatherv(my_color, num_wann*my_num_pts, &
                            color, num_wann*counts, num_wann*displs)
@@ -279,26 +276,26 @@ contains
         end do
         close (dataunit)
       end if
-      if (plot_curv .and. berry_curv_unit == 'bohr2') curv = curv/bohr**2
+      if (plot_curv .and. berry%curv_unit == 'bohr2') curv = curv/bohr**2
 
-      if (plot_bands .and. kpath_bands_colour == 'shc') then
-        if (berry_curv_unit == 'bohr2') color = color/bohr**2
+      if (plot_bands .and. kpath%bands_colour == 'shc') then
+        if (berry%curv_unit == 'bohr2') color = color/bohr**2
       end if
       if (plot_shc) then
-        if (berry_curv_unit == 'bohr2') shc = shc/bohr**2
+        if (berry%curv_unit == 'bohr2') shc = shc/bohr**2
       end if
 
       ! Axis labels
       !
-      glabel(1) = ' '//bands_label(1)//' '
+      glabel(1) = ' '//spec_points%bands_label(1)//' '
       do i = 2, num_paths
-        if (bands_label(2*(i - 1)) /= bands_label(2*(i - 1) + 1)) then
-          glabel(i) = bands_label(2*(i - 1))//'/'//bands_label(2*(i - 1) + 1)
+        if (spec_points%bands_label(2*(i - 1)) /= spec_points%bands_label(2*(i - 1) + 1)) then
+          glabel(i) = spec_points%bands_label(2*(i - 1))//'/'//spec_points%bands_label(2*(i - 1) + 1)
         else
-          glabel(i) = ' '//bands_label(2*(i - 1))//' '
+          glabel(i) = ' '//spec_points%bands_label(2*(i - 1))//' '
         end if
       end do
-      glabel(num_spts) = ' '//bands_label(bands_num_spec_points)//' '
+      glabel(num_spts) = ' '//spec_points%bands_label(spec_points%bands_num_spec_points)//' '
 
       ! Now write the plotting files
 
@@ -316,7 +313,7 @@ contains
         open (dataunit, file=file_name, form='formatted')
         do i = 1, num_wann
           do loop_kpt = 1, total_pts
-            if (kpath_bands_colour == 'none') then
+            if (kpath%bands_colour == 'none') then
               write (dataunit, '(2E16.8)') xval(loop_kpt), eig(i, loop_kpt)
             else
               write (dataunit, '(3E16.8)') xval(loop_kpt), &
@@ -343,13 +340,13 @@ contains
           write (gnuunit, 705) sum(kpath_len(1:i)), ymin, &
             sum(kpath_len(1:i)), ymax
         end do
-        if (kpath_bands_colour == 'none') then
+        if (kpath%bands_colour == 'none') then
           write (gnuunit, 701) xval(total_pts), ymin, ymax
           write (gnuunit, 702, advance="no") glabel(1), 0.0_dp, &
             (glabel(i + 1), sum(kpath_len(1:i)), i=1, num_paths - 1)
           write (gnuunit, 703) glabel(1 + num_paths), sum(kpath_len(:))
           write (gnuunit, *) 'plot ', '"'//trim(seedname)//'-bands.dat', '"'
-        else if (kpath_bands_colour == 'spin') then
+        else if (kpath%bands_colour == 'spin') then
           !
           ! Only works with gnuplot v4.2 and higher
           !
@@ -363,7 +360,7 @@ contains
           write (gnuunit, *) 'set zrange [-1:1]'
           write (gnuunit, *) 'splot ', '"'//trim(seedname)//'-bands.dat', &
             '" with dots palette'
-        else if (kpath_bands_colour == 'shc') then
+        else if (kpath%bands_colour == 'shc') then
           !
           ! Only works with gnuplot v4.2 and higher
           !
@@ -399,9 +396,9 @@ contains
           "-bands.dat')"
         write (pyunit, '(a)') "x=data[:,0]"
         write (pyunit, '(a)') "y=data[:,1]"
-        if (kpath_bands_colour == 'spin' &
-            .or. kpath_bands_colour == 'shc') write (pyunit, '(a)') "z=data[:,2]"
-        if (kpath_bands_colour == 'shc') write (pyunit, '(a)') &
+        if (kpath%bands_colour == 'spin' &
+            .or. kpath%bands_colour == 'shc') write (pyunit, '(a)') "z=data[:,2]"
+        if (kpath%bands_colour == 'shc') write (pyunit, '(a)') &
           "z=np.array([np.log10(abs(elem))*np.sign(elem) " &
           //"if abs(elem)>10 else elem/10.0 for elem in z])"
         write (pyunit, '(a)') "tick_labels=[]"
@@ -420,10 +417,10 @@ contains
               sum(kpath_len(1:j - 1)), ")"
           end if
         end do
-        if (kpath_bands_colour == 'none') then
+        if (kpath%bands_colour == 'none') then
           write (pyunit, '(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-        else if (kpath_bands_colour == 'spin' .or. &
-                 kpath_bands_colour == 'shc') then
+        else if (kpath%bands_colour == 'spin' .or. &
+                 kpath%bands_colour == 'shc') then
           write (pyunit, '(a)') &
             "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
         end if
@@ -436,7 +433,7 @@ contains
           //"[pl.ylim()[0],pl.ylim()[1]],color='gray'," &
           //"linestyle='-',linewidth=0.5)"
         write (pyunit, '(a)') "pl.ylabel('Energy [eV]')"
-        if (kpath_bands_colour == 'spin' .or. kpath_bands_colour == 'shc') then
+        if (kpath%bands_colour == 'spin' .or. kpath%bands_colour == 'shc') then
           write (pyunit, '(a)') &
             "pl.axes().set_aspect(aspect=0.65*max(x)/(max(y)-min(y)))"
           write (pyunit, '(a)') "pl.colorbar(shrink=0.7)"
@@ -526,10 +523,10 @@ contains
           write (pyunit, '(a)') "   pl.plot([tick_locs[n],tick_locs[n]]," &
             //"[pl.ylim()[0],pl.ylim()[1]],color='gray'," &
             //"linestyle='-',linewidth=0.5)"
-          if (berry_curv_unit == 'ang2') then
+          if (berry%curv_unit == 'ang2') then
             write (pyunit, '(a)') "pl.ylabel('$-\Omega_"//achar(119 + i) &
               //"(\mathbf{k})$  [ $\AA^2$ ]')"
-          else if (berry_curv_unit == 'bohr2') then
+          else if (berry%curv_unit == 'bohr2') then
             write (pyunit, '(a)') "pl.ylabel('$-\Omega_"//achar(119 + i) &
               //"(\mathbf{k})$  [ bohr$^2$ ]')"
           end if
@@ -705,15 +702,15 @@ contains
         write (pyunit, '(a)') "   pl.plot([tick_locs[n],tick_locs[n]]," &
           //"[pl.ylim()[0],pl.ylim()[1]],color='gray'," &
           //"linestyle='-',linewidth=0.5)"
-        if (berry_curv_unit == 'ang2') then
+        if (berry%curv_unit == 'ang2') then
           write (pyunit, '(a)') "pl.ylabel('$\Omega_{" &
-            //achar(119 + shc_alpha)//achar(119 + shc_beta) &
-            //"}^{spin"//achar(119 + shc_gamma) &
+            //achar(119 + spin_hall%alpha)//achar(119 + spin_hall%beta) &
+            //"}^{spin"//achar(119 + spin_hall%gamma) &
             //"}(\mathbf{k})$  [ $\AA^2$ ]')"
-        else if (berry_curv_unit == 'bohr2') then
+        else if (berry%curv_unit == 'bohr2') then
           write (pyunit, '(a)') "pl.ylabel('$\Omega_{" &
-            //achar(119 + shc_alpha)//achar(119 + shc_beta) &
-            //"}^{spin"//achar(119 + shc_gamma) &
+            //achar(119 + spin_hall%alpha)//achar(119 + spin_hall%beta) &
+            //"}^{spin"//achar(119 + spin_hall%gamma) &
             //"}(\mathbf{k})$  [ bohr$^2$ ]')"
         end if
         write (pyunit, '(a)') "outfile = '"//trim(seedname)// &
@@ -763,16 +760,16 @@ contains
         write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
           "-bands.dat')"
         write (pyunit, '(a)') "x=data[:,0]"
-        write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi_energy_list(1)
-        if (kpath_bands_colour == 'spin' .or. kpath_bands_colour == 'shc') &
+        write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi%energy_list(1)
+        if (kpath%bands_colour == 'spin' .or. kpath%bands_colour == 'shc') &
           write (pyunit, '(a)') "z=data[:,2]"
-        if (kpath_bands_colour == 'shc') &
+        if (kpath%bands_colour == 'shc') &
           write (pyunit, '(a)') "z=np.array([np.log10(abs(elem))*np.sign(elem) " &
           //"if abs(elem)>10 else elem/10.0 for elem in z])"
-        if (kpath_bands_colour == 'none') then
+        if (kpath%bands_colour == 'none') then
           write (pyunit, '(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-        else if (kpath_bands_colour == 'spin' &
-                 .or. kpath_bands_colour == 'shc') then
+        else if (kpath%bands_colour == 'spin' &
+                 .or. kpath%bands_colour == 'shc') then
           write (pyunit, '(a)') &
             "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
         end if
@@ -822,15 +819,15 @@ contains
         write (pyunit, '(a)') "   pl.plot([tick_locs[n],tick_locs[n]]," &
           //"[pl.ylim()[0],pl.ylim()[1]],color='gray'," &
           //"linestyle='-',linewidth=0.5)"
-        if (berry_curv_unit == 'ang2') then
+        if (berry%curv_unit == 'ang2') then
           write (pyunit, '(a)') "pl.ylabel('$log_{10}|\Omega_{" &
-            //achar(119 + shc_alpha)//achar(119 + shc_beta) &
-            //"}^{spin"//achar(119 + shc_gamma) &
+            //achar(119 + spin_hall%alpha)//achar(119 + spin_hall%beta) &
+            //"}^{spin"//achar(119 + spin_hall%gamma) &
             //"}(\mathbf{k})|$  [ $\AA^2$ ]')"
-        else if (berry_curv_unit == 'bohr2') then
+        else if (berry%curv_unit == 'bohr2') then
           write (pyunit, '(a)') "pl.ylabel('$\Omega_{" &
-            //achar(119 + shc_alpha)//achar(119 + shc_beta) &
-            //"}^{spin"//achar(119 + shc_gamma) &
+            //achar(119 + spin_hall%alpha)//achar(119 + spin_hall%beta) &
+            //"}^{spin"//achar(119 + spin_hall%gamma) &
             //"}(\mathbf{k})$  [ bohr$^2$ ]')"
         end if
         write (pyunit, '(a)') "outfile = '"//trim(seedname)// &
@@ -881,16 +878,16 @@ contains
           write (pyunit, '(a)') "data = np.loadtxt('"//trim(seedname)// &
             "-bands.dat')"
           write (pyunit, '(a)') "x=data[:,0]"
-          write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi_energy_list(1)
-          if (kpath_bands_colour == 'spin') write (pyunit, '(a)') "z=data[:,2]"
-          if (kpath_bands_colour == 'shc') then
+          write (pyunit, '(a,F12.6)') "y=data[:,1]-", fermi%energy_list(1)
+          if (kpath%bands_colour == 'spin') write (pyunit, '(a)') "z=data[:,2]"
+          if (kpath%bands_colour == 'shc') then
             write (pyunit, '(a)') "z=data[:,2]"
             write (pyunit, '(a)') "z=np.array([np.log10(abs(elem))*np.sign(elem) " &
               //"if abs(elem)>10 else elem/10.0 for elem in z])"
           end if
-          if (kpath_bands_colour == 'none') then
+          if (kpath%bands_colour == 'none') then
             write (pyunit, '(a)') "pl.scatter(x,y,color='k',marker='+',s=0.1)"
-          else if (kpath_bands_colour == 'spin' .or. kpath_bands_colour == 'shc') then
+          else if (kpath%bands_colour == 'spin' .or. kpath%bands_colour == 'shc') then
             write (pyunit, '(a)') &
               "pl.scatter(x,y,c=z,marker='+',s=1,cmap=pl.cm.jet)"
           end if
@@ -929,10 +926,10 @@ contains
             //"[pl.ylim()[0],pl.ylim()[1]],color='gray'," &
             //"linestyle='-',linewidth=0.5)"
           if (plot_curv) then
-            if (berry_curv_unit == 'ang2') then
+            if (berry%curv_unit == 'ang2') then
               write (pyunit, '(a)') "pl.ylabel('$-\Omega_"//achar(119 + i) &
                 //"(\mathbf{k})$  [ $\AA^2$ ]')"
-            else if (berry_curv_unit == 'bohr2') then
+            else if (berry%curv_unit == 'bohr2') then
               write (pyunit, '(a)') "pl.ylabel('$-\Omega_"//achar(119 + i) &
                 //"(\mathbf{k})$  [ bohr$^2$ ]')"
             end if
@@ -971,7 +968,7 @@ contains
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
 
     use w90_comms, only: on_root
-    use w90_parameters, only: kpath_bands_colour, berry_curv_unit, nfermi
+    use w90_parameters, only: kpath, berry, fermi ! berry_curv_unit
     use w90_io, only: stdout, io_error
 
     logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
@@ -983,7 +980,7 @@ contains
         '------------------------------------------'
 
       if (plot_bands) then
-        select case (kpath_bands_colour)
+        select case (kpath%bands_colour)
         case ("none")
           write (stdout, '(/,3x,a)') '* Energy bands in eV'
         case ("spin")
@@ -993,29 +990,29 @@ contains
         end select
       end if
       if (plot_curv) then
-        if (berry_curv_unit == 'ang2') then
+        if (berry%curv_unit == 'ang2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
-        else if (berry_curv_unit == 'bohr2') then
+        else if (berry%curv_unit == 'bohr2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
-        if (nfermi /= 1) call io_error( &
+        if (fermi%n /= 1) call io_error( &
           'Must specify one Fermi level when kpath_task=curv')
       end if
       if (plot_morb) then
         write (stdout, '(/,3x,a)') &
           '* Orbital magnetization k-space integrand in eV.Ang^2'
-        if (nfermi /= 1) call io_error( &
+        if (fermi%n /= 1) call io_error( &
           'Must specify one Fermi level when kpath_task=morb')
       end if
       if (plot_shc) then
-        if (berry_curv_unit == 'ang2') then
+        if (berry%curv_unit == 'ang2') then
           write (stdout, '(/,3x,a)') '* Berry curvature-like term for' &
             //' spin Hall conductivity in Ang^2'
-        else if (berry_curv_unit == 'bohr2') then
+        else if (berry%curv_unit == 'bohr2') then
           write (stdout, '(/,3x,a)') '* Berry curvature-like term for' &
             //' spin Hall conductivity in Bohr^2'
         end if
-        if (nfermi /= 1) call io_error( &
+        if (fermi%n /= 1) call io_error( &
           'Must specify one Fermi level when kpath_task=shc')
       end if
     end if ! on_root
@@ -1030,10 +1027,8 @@ contains
     ! and their associated horizontal coordinate for the plot (xval)    !
     !===================================================================!
 
-    use w90_parameters, only: kpath_num_points, &
-      bands_num_spec_points, &
-      bands_spec_points, &
-      recip_metric
+    use w90_parameters, only: kpath, spec_points, recip_lattice
+    use w90_utility, only: utility_metric
 
     integer, intent(out)    :: num_paths, total_pts
     real(kind=dp), allocatable, dimension(:), intent(out)   :: kpath_len, xval
@@ -1043,16 +1038,18 @@ contains
 
     integer, allocatable, dimension(:) :: kpath_pts
     real(kind=dp)                      :: vec(3)
+    real(kind=dp) :: recip_metric(3, 3)
 
+    call utility_metric(recip_lattice, recip_metric)
     ! Work out how many points there are in the total path, and the
     ! positions of the special points
     !
-    num_paths = bands_num_spec_points/2 ! number of straight line segments
+    num_paths = spec_points%bands_num_spec_points/2 ! number of straight line segments
     allocate (kpath_pts(num_paths))
     allocate (kpath_len(num_paths))
     do loop_path = 1, num_paths
-      vec = bands_spec_points(:, 2*loop_path) &
-            - bands_spec_points(:, 2*loop_path - 1)
+      vec = spec_points%bands_spec_points(:, 2*loop_path) &
+            - spec_points%bands_spec_points(:, 2*loop_path - 1)
       kpath_len(loop_path) = &
         sqrt(dot_product(vec, (matmul(recip_metric, vec))))
       !
@@ -1060,9 +1057,9 @@ contains
       ! loop_path (all segments have the same density of points)
       !
       if (loop_path == 1) then
-        kpath_pts(loop_path) = kpath_num_points
+        kpath_pts(loop_path) = kpath%num_points
       else
-        kpath_pts(loop_path) = nint(real(kpath_num_points, dp) &
+        kpath_pts(loop_path) = nint(real(kpath%num_points, dp) &
                                     *kpath_len(loop_path)/kpath_len(1))
       end if
     end do
@@ -1089,9 +1086,9 @@ contains
           xval(counter) = xval(counter - 1) &
                           + kpath_len(loop_path)/real(kpath_pts(loop_path), dp)
         end if
-        plot_kpoint(:, counter) = bands_spec_points(:, 2*loop_path - 1) &
-                                  + (bands_spec_points(:, 2*loop_path) &
-                                     - bands_spec_points(:, 2*loop_path - 1) &
+        plot_kpoint(:, counter) = spec_points%bands_spec_points(:, 2*loop_path - 1) &
+                                  + (spec_points%bands_spec_points(:, 2*loop_path) &
+                                     - spec_points%bands_spec_points(:, 2*loop_path - 1) &
                                      ) &
                                   *(real(loop_i - 1, dp)/real(kpath_pts(loop_path), dp))
       end do
@@ -1100,7 +1097,7 @@ contains
     ! Last point
     !
     xval(total_pts) = sum(kpath_len)
-    plot_kpoint(:, total_pts) = bands_spec_points(:, bands_num_spec_points)
+    plot_kpoint(:, total_pts) = spec_points%bands_spec_points(:, spec_points%bands_num_spec_points)
 
   end subroutine
 
