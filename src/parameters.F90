@@ -553,6 +553,10 @@ module w90_parameters
 
   real(kind=dp), save :: real_lattice(3, 3)
 
+  !JJ putting these back for now; should find a new home really...
+  real(kind=dp), save :: real_metric(3, 3)
+  real(kind=dp), save :: recip_metric(3, 3)
+
   !parameters derived from input
   real(kind=dp), save :: recip_lattice(3, 3)
 
@@ -673,7 +677,7 @@ contains
     !                                                                  !
     !===================================================================
     use w90_constants, only: bohr, eps6, cmplx_i
-    use w90_utility, only: utility_recip_lattice
+    use w90_utility, only: utility_recip_lattice, utility_metric
     use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
     implicit none
 
@@ -2214,7 +2218,7 @@ contains
 
     if (.not. driver%library) &
       call utility_recip_lattice(real_lattice, recip_lattice, cell_volume)
-    !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
+    call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
 
     if (.not. pw90_common%effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
@@ -6274,8 +6278,8 @@ contains
     call comms_bcast(atoms%num_species, 1) ! Ivo: not used in postw90, right?
     call comms_bcast(real_lattice(1, 1), 9)
     call comms_bcast(recip_lattice(1, 1), 9)
-    !call comms_bcast(real_metric(1, 1), 9)
-    !call comms_bcast(recip_metric(1, 1), 9)
+    call comms_bcast(real_metric(1, 1), 9) !JJ added back
+    call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1)
     call comms_bcast(dos_data%energy_step, 1)
     call comms_bcast(dos_data%adpt_smr, 1)

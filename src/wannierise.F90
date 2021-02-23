@@ -74,7 +74,7 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, &
       cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
-    use w90_parameters, only: param_write_chkpt
+    use w90_param_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, &
@@ -3112,7 +3112,7 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
-    use w90_parameters, only: param_write_chkpt
+    use w90_param_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
 

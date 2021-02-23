@@ -601,7 +601,7 @@ contains
     !! Reduce integer data to root node
     implicit none
 
-    integer, intent(inout) :: array
+    integer, intent(inout) :: array(:)
     integer, intent(in)    :: size
     character(len=*), intent(in) :: op
 
@@ -626,7 +626,8 @@ contains
 
     end select
 
-    call my_icopy(size, array_red, 1, array, 1)
+    !call my_icopy(size, array_red, 1, array, 1)
+    array = array_red ! JJ workaround compilation error
 
     if (error .ne. MPI_success) then
       call io_error('Error in comms_reduce_int')
