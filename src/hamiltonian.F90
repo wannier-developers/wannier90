@@ -64,7 +64,7 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+  subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
                                mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, num_kpts, &
                                num_wann, timing_level, iprint, ham_r, irvec, ndegen, nrpts, rpt_origin, &
                                wannier_centres_translated, hmlg, ham_k)
@@ -91,7 +91,7 @@ contains
     logical, intent(in) :: bands_plot
     logical, intent(in) :: transport
 
-    real(kind=dp), intent(in) :: real_metric(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: ws_distance_tol
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
 
@@ -117,7 +117,7 @@ contains
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, ws_search_size, ws_distance_tol, &
                                   timing_level, iprint, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
@@ -138,7 +138,7 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_metric, ws_search_size, ws_distance_tol, &
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, ws_search_size, ws_distance_tol, &
                                   timing_level, iprint, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
@@ -608,7 +608,7 @@ contains
 
   !================================================================================!
   subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                      real_metric, ws_search_size, ws_distance_tol, timing_level, iprint, &
+                                      real_lattice, ws_search_size, ws_distance_tol, timing_level, iprint, &
                                       count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
@@ -638,7 +638,7 @@ contains
 
     logical, intent(in) :: count_pts
 
-    real(kind=dp), intent(in) :: real_metric(3, 3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: ws_distance_tol
 
     ! local variables
@@ -646,9 +646,11 @@ contains
     real(kind=dp) :: tot, dist_min
     real(kind=dp), allocatable :: dist(:)
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
+    real(kind=dp) :: real_metric(3, 3)
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
 
+    call utility_metric(real_lattice, real_metric)
     dist_dim = 1
     do i = 1, 3
       dist_dim = dist_dim*((ws_search_size(i) + 1)*2 + 1)

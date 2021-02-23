@@ -108,7 +108,7 @@ contains
                        automatic_translation, num_species, atoms_species_num, lenconfac, &
                        have_disentangled, ndimwin, lwindow, u_matrix_opt, kpt_latt, eigval, &
                        u_matrix, lsitesymmetry, num_bands, num_kpts, atoms_pos_cart, &
-                       ws_distance_tol, ws_search_size, real_metric, mp_grid, bands_plot_mode, &
+                       ws_distance_tol, ws_search_size, mp_grid, bands_plot_mode, &
                        transport, dist_cutoff_hc, dist_cutoff, dist_cutoff_mode, tran_num_bandc, &
                        tran_num_cc, tran_num_rr, tran_num_lc, tran_num_cr, tran_write_ht, &
                        fermi_energy_list, nfermi, kpt_cart, tran_num_ll, tran_num_cell_ll, &
@@ -192,7 +192,7 @@ contains
     integer, intent(in) :: iprint
     real(kind=dp), intent(in) :: ws_distance_tol
     real(kind=dp), intent(in) :: wannier_spreads(:)
-    real(kind=dp), intent(in) :: real_metric(3, 3)
+    !real(kind=dp), intent(in) :: real_metric(3, 3)
     character(len=20), intent(in) :: bands_plot_mode
     logical, intent(in) :: transport
     logical, intent(in) :: bands_plot
@@ -234,7 +234,7 @@ contains
     if (index(transport_mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran_read_ht) then
-        call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+        call hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
                                mp_grid, transport_mode, bands_plot_mode, transport, &
                                bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
                                nrpts, rpt_origin, wannier_centres_translated, hmlg, &
@@ -268,7 +268,7 @@ contains
     if (index(transport_mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran_read_ht) then
-        call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+        call hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
                                mp_grid, transport_mode, bands_plot_mode, transport, &
                                bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
                                nrpts, rpt_origin, wannier_centres_translated, hmlg, &

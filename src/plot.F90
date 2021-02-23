@@ -29,7 +29,7 @@ contains
                        num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation, &
                        num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin, &
                        lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                       ws_distance_tol, ws_search_size, real_metric, mp_grid, transport_mode, &
+                       ws_distance_tol, ws_search_size, mp_grid, transport_mode, &
                        bands_plot_mode, transport, iprint, wannier_plot_radius, &
                        wannier_plot_scale, atoms_pos_frac, wannier_plot_spinor_phase, &
                        wannier_plot_spinor_mode, spinors, wannier_plot_format, wvfn_formatted, &
@@ -38,7 +38,7 @@ contains
                        fermi_surface_num_points, one_dim_dir, bands_plot_dim, hr_cutoff, &
                        dist_cutoff, dist_cutoff_mode, use_ws_distance, bands_plot_project, &
                        num_bands_project, bands_plot_format, bands_label, bands_spec_points, &
-                       bands_num_spec_points, recip_metric, bands_num_points, ham_r, irvec, &
+                       bands_num_spec_points, bands_num_points, ham_r, irvec, &
                        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, &
                        hmlg, ham_k)
     !! Main plotting routine
@@ -98,7 +98,7 @@ contains
     integer, intent(in) :: bands_plot_project(:)
     integer, intent(in) :: num_bands_project
     integer, intent(in) :: bands_num_points
-    real(kind=dp), intent(in) :: real_metric(3, 3)
+    !real(kind=dp), intent(in) :: real_metric(3, 3)
     real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: wb(:)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
@@ -114,7 +114,7 @@ contains
     real(kind=dp), intent(in) :: fermi_energy_list(:)
     real(kind=dp), intent(in) :: hr_cutoff
     real(kind=dp), intent(in) :: dist_cutoff
-    real(kind=dp), intent(in) :: recip_metric(3, 3)
+    !real(kind=dp), intent(in) :: recip_metric(3, 3)
     real(kind=dp), intent(in) :: eigval(:, :)
     real(kind=dp), intent(in) ::bands_spec_points(:, :)
     real(kind=dp), intent(inout) :: translation_centre_frac(3)
@@ -176,7 +176,7 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
                              mp_grid, transport_mode, bands_plot_mode, transport, &
                              bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, hmlg, &
@@ -196,7 +196,7 @@ contains
                                                   use_ws_distance, bands_plot_project, num_bands_project, &
                                                   bands_plot_mode, bands_plot_format, bands_label, &
                                                   bands_spec_points, timing_level, bands_num_spec_points, &
-                                                  recip_metric, bands_num_points, num_wann, recip_lattice, &
+                                                  recip_lattice, bands_num_points, num_wann, &
                                                   wannier_centres, ws_search_size, ws_distance_tol, ham_r, irvec, ndegen, &
                                                   nrpts, wannier_centres_translated)
       !
@@ -246,7 +246,7 @@ contains
                                     bands_plot_dim, hr_cutoff, dist_cutoff, dist_cutoff_mode, use_ws_distance, &
                                     bands_plot_project, num_bands_project, bands_plot_mode, bands_plot_format, &
                                     bands_label, bands_spec_points, timing_level, bands_num_spec_points, &
-                                    recip_metric, bands_num_points, num_wann, recip_lattice, &
+                                    recip_lattice, bands_num_points, num_wann, &
                                     wannier_centres, ws_search_size, ws_distance_tol, ham_r, irvec, &
                                     ndegen, nrpts, wannier_centres_translated)
     !============================================!
@@ -283,7 +283,6 @@ contains
     integer, intent(in) :: num_wann
     !integer, intent(in) :: iprint
     integer, intent(in) :: ws_search_size(3)
-    real(kind=dp), intent(in) :: recip_metric(3, 3)
     real(kind=dp), intent(in) :: dist_cutoff
     real(kind=dp), intent(in) :: hr_cutoff
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -326,11 +325,13 @@ contains
     character(len=10), allocatable  :: ctemp(:)
     integer, allocatable :: idx_special_points(:)
     real(kind=dp), allocatable :: xval_special_points(:)
+    real(kind=dp) :: recip_metric(3, 3)
 
     !
     if (timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1)
     !
     time0 = io_time()
+    call utility_metric(recip_lattice, recip_metric)
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating interpolated band-structure'
     write (stdout, *)

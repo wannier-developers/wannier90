@@ -61,7 +61,7 @@ contains
                        translate_home_cell, recip_lattice, num_atoms, atoms_symbol, &
                        atoms_pos_cart, num_species, atoms_species_num, num_valence_bands, &
                        num_elec_per_state, lsitesymmetry, stdout, ws_distance_tol, &
-                       ws_search_size, real_metric, mp_grid, transport_mode, &
+                       ws_search_size, mp_grid, transport_mode, &
                        bands_plot_mode, transport, bands_plot, translation_centre_frac, &
                        automatic_translation, ndimwin, sym, ham_r, irvec, shift_vec, &
                        ndegen, nrpts, rpt_origin, wannier_centres_translated, &
@@ -157,7 +157,7 @@ contains
     real(kind=dp), intent(inout) :: wannier_spreads(:)
     real(kind=dp), intent(in) :: proj_site(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: real_metric(3, 3)
+    !real(kind=dp), intent(in) :: real_metric(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: slwf_lambda
     real(kind=dp), intent(in) :: trial_step
@@ -293,7 +293,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating rguide in wann_main')
 
     if (precond) then
-      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
                              mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, &
                              num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, &
@@ -841,7 +841,7 @@ contains
     endif
 
     if (write_hr_diag) then
-      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_metric, &
+      call hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
                              mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, &
                              num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, &
