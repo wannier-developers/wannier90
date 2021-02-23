@@ -82,7 +82,7 @@ contains
   end subroutine conv_get_seedname
 
   !=======================================!
-  subroutine conv_read_chkpt()
+  subroutine conv_read_chkpt(checkpoint)
     !=======================================!
     !! Read formatted checkpoint file
     !=======================================!
@@ -92,7 +92,7 @@ contains
     use w90_parameters
 
     implicit none
-
+    character(len=*), intent(out) :: checkpoint
     integer :: chk_unit, i, j, k, l, nkp, ierr
 
     write (stdout, '(1x,3a)') 'Reading information from file ', trim(seedname), '.chk :'
@@ -107,21 +107,21 @@ contains
     ! Consistency checks
     read (chk_unit) num_bands                           ! Number of bands
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
-    read (chk_unit) num_exclude_bands                   ! Number of excluded bands
-    if (num_exclude_bands < 0) then
+    read (chk_unit) param_input%num_exclude_bands                   ! Number of excluded bands
+    if (param_input%num_exclude_bands < 0) then
       call io_error('Invalid value for num_exclude_bands')
     endif
-    allocate (exclude_bands(num_exclude_bands), stat=ierr)
+    allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt')
-    read (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
+    read (chk_unit) (param_input%exclude_bands(i), i=1, param_input%num_exclude_bands) ! Excluded bands
     write (stdout, '(a)', advance='no') "Excluded bands: "
-    if (num_exclude_bands == 0) then
+    if (param_input%num_exclude_bands == 0) then
       write (stdout, '(a)') "none."
     else
-      do i = 1, num_exclude_bands - 1
-        write (stdout, '(I0,a)', advance='no') exclude_bands(i), ','
+      do i = 1, param_input%num_exclude_bands - 1
+        write (stdout, '(I0,a)', advance='no') param_input%exclude_bands(i), ','
       end do
-      write (stdout, '(I0,a)') exclude_bands(num_exclude_bands), '.'
+      write (stdout, '(I0,a)') param_input%exclude_bands(param_input%num_exclude_bands), '.'
     end if
     read (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)  ! Real lattice
     write (stdout, '(a)') "Real lattice: read."
@@ -131,14 +131,14 @@ contains
     write (stdout, '(a,I0)') "Num kpts:", num_kpts
     read (chk_unit) (mp_grid(i), i=1, 3)         ! M-P grid
     write (stdout, '(a)') "mp_grid: read."
-    if (.not. allocated(kpt_latt)) then
-      allocate (kpt_latt(3, num_kpts), stat=ierr)
+    if (.not. allocated(k_points%kpt_latt)) then
+      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt')
     endif
-    read (chk_unit) ((kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
+    read (chk_unit) ((k_points%kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     write (stdout, '(a)') "kpt_latt: read."
-    read (chk_unit) nntot                ! nntot
-    write (stdout, '(a,I0)') "nntot:", nntot
+    read (chk_unit) kmesh_info%nntot                ! nntot
+    write (stdout, '(a,I0)') "nntot:", kmesh_info%nntot
     read (chk_unit) num_wann                ! num_wann
     write (stdout, '(a,I0)') "num_wann:", num_wann
 
@@ -146,28 +146,28 @@ contains
     checkpoint = adjustl(trim(checkpoint))
     write (stdout, '(a,I0)') "checkpoint: "//trim(checkpoint)
 
-    read (chk_unit) have_disentangled      ! whether a disentanglement has been performed
+    read (chk_unit) param_input%have_disentangled      ! whether a disentanglement has been performed
 
-    if (have_disentangled) then
+    if (param_input%have_disentangled) then
       write (stdout, '(a)') "have_disentangled: TRUE"
 
-      read (chk_unit) omega_invariant     ! omega invariant
+      read (chk_unit) param_input%omega_invariant     ! omega invariant
       write (stdout, '(a)') "omega_invariant: read."
 
       ! lwindow
-      if (.not. allocated(lwindow)) then
-        allocate (lwindow(num_bands, num_kpts), stat=ierr)
+      if (.not. allocated(dis_data%lwindow)) then
+        allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt')
       endif
-      read (chk_unit, err=122) ((lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
+      read (chk_unit, err=122) ((dis_data%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (stdout, '(a)') "lwindow: read."
 
       ! ndimwin
-      if (.not. allocated(ndimwin)) then
-        allocate (ndimwin(num_kpts), stat=ierr)
+      if (.not. allocated(dis_data%ndimwin)) then
+        allocate (dis_data%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt')
       endif
-      read (chk_unit, err=123) (ndimwin(nkp), nkp=1, num_kpts)
+      read (chk_unit, err=123) (dis_data%ndimwin(nkp), nkp=1, num_kpts)
       write (stdout, '(a)') "ndimwin: read."
 
       ! U_matrix_opt
@@ -192,26 +192,26 @@ contains
 
     ! M_matrix
     if (.not. allocated(m_matrix)) then
-      allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
+      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating m_matrix in conv_read_chkpt')
     endif
-    read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, nntot), l=1, num_kpts)
+    read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
     write (stdout, '(a)') "M_matrix: read."
 
     ! wannier_centres
-    if (.not. allocated(wannier_centres)) then
-      allocate (wannier_centres(3, num_wann), stat=ierr)
+    if (.not. allocated(wann_data%centres)) then
+      allocate (wann_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt')
     end if
-    read (chk_unit, err=127) ((wannier_centres(i, j), i=1, 3), j=1, num_wann)
+    read (chk_unit, err=127) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)
     write (stdout, '(a)') "wannier_centres: read."
 
     ! wannier spreads
-    if (.not. allocated(wannier_spreads)) then
-      allocate (wannier_spreads(num_wann), stat=ierr)
+    if (.not. allocated(wann_data%spreads)) then
+      allocate (wann_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt')
     end if
-    read (chk_unit, err=128) (wannier_spreads(i), i=1, num_wann)
+    read (chk_unit, err=128) (wann_data%spreads(i), i=1, num_wann)
     write (stdout, '(a)') "wannier_spreads: read."
 
     close (chk_unit)
@@ -231,7 +231,7 @@ contains
 
   end subroutine conv_read_chkpt
 
-  subroutine conv_read_chkpt_fmt()
+  subroutine conv_read_chkpt_fmt(checkpoint)
     !=======================================!
     !! Read formatted checkpoint file
     !=======================================!
@@ -242,6 +242,7 @@ contains
 
     implicit none
 
+    character(len=*), intent(out) :: checkpoint
     integer :: chk_unit, i, j, k, l, nkp, ierr, idum
     character(len=30) :: cdum
     real(kind=dp) :: rreal, rimag
@@ -258,23 +259,23 @@ contains
     ! Consistency checks
     read (chk_unit, *) num_bands                           ! Number of bands
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
-    read (chk_unit, *) num_exclude_bands                   ! Number of excluded bands
-    if (num_exclude_bands < 0) then
+    read (chk_unit, *) param_input%num_exclude_bands                   ! Number of excluded bands
+    if (param_input%num_exclude_bands < 0) then
       call io_error('Invalid value for num_exclude_bands')
     endif
-    allocate (exclude_bands(num_exclude_bands), stat=ierr)
+    allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt_fmt')
-    do i = 1, num_exclude_bands
-      read (chk_unit, *) exclude_bands(i) ! Excluded bands
+    do i = 1, param_input%num_exclude_bands
+      read (chk_unit, *) param_input%exclude_bands(i) ! Excluded bands
     end do
     write (stdout, '(a)', advance='no') "Excluded bands: "
-    if (num_exclude_bands == 0) then
+    if (param_input%num_exclude_bands == 0) then
       write (stdout, '(a)') "none."
     else
-      do i = 1, num_exclude_bands - 1
-        write (stdout, '(I0,a)', advance='no') exclude_bands(i), ','
+      do i = 1, param_input%num_exclude_bands - 1
+        write (stdout, '(I0,a)', advance='no') param_input%exclude_bands(i), ','
       end do
-      write (stdout, '(I0,a)') exclude_bands(num_exclude_bands), '.'
+      write (stdout, '(I0,a)') param_input%exclude_bands(param_input%num_exclude_bands), '.'
     end if
     read (chk_unit, *) ((real_lattice(i, j), i=1, 3), j=1, 3)  ! Real lattice
     write (stdout, '(a)') "Real lattice: read."
@@ -284,16 +285,16 @@ contains
     write (stdout, '(a,I0)') "Num kpts:", num_kpts
     read (chk_unit, *) (mp_grid(i), i=1, 3)         ! M-P grid
     write (stdout, '(a)') "mp_grid: read."
-    if (.not. allocated(kpt_latt)) then
-      allocate (kpt_latt(3, num_kpts), stat=ierr)
+    if (.not. allocated(k_points%kpt_latt)) then
+      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt_fmt')
     endif
     do nkp = 1, num_kpts
-      read (chk_unit, *, err=115) (kpt_latt(i, nkp), i=1, 3)
+      read (chk_unit, *, err=115) (k_points%kpt_latt(i, nkp), i=1, 3)
     end do
     write (stdout, '(a)') "kpt_latt: read."
-    read (chk_unit, *) nntot                ! nntot
-    write (stdout, '(a,I0)') "nntot:", nntot
+    read (chk_unit, *) kmesh_info%nntot                ! nntot
+    write (stdout, '(a,I0)') "nntot:", kmesh_info%nntot
     read (chk_unit, *) num_wann                ! num_wann
     write (stdout, '(a,I0)') "num_wann:", num_wann
 
@@ -303,32 +304,32 @@ contains
 
     read (chk_unit, *) idum
     if (idum == 1) then
-      have_disentangled = .true.
+      param_input%have_disentangled = .true.
     elseif (idum == 0) then
-      have_disentangled = .false.
+      param_input%have_disentangled = .false.
     else
       write (cdum, '(I0)') idum
       call io_error('Error reading formatted chk: have_distenangled should be 0 or 1, it is instead '//cdum)
     end if
 
-    if (have_disentangled) then
+    if (param_input%have_disentangled) then
       write (stdout, '(a)') "have_disentangled: TRUE"
 
-      read (chk_unit, *) omega_invariant     ! omega invariant
+      read (chk_unit, *) param_input%omega_invariant     ! omega invariant
       write (stdout, '(a)') "omega_invariant: read."
 
       ! lwindow
-      if (.not. allocated(lwindow)) then
-        allocate (lwindow(num_bands, num_kpts), stat=ierr)
+      if (.not. allocated(dis_data%lwindow)) then
+        allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt_fmt')
       endif
       do nkp = 1, num_kpts
         do i = 1, num_bands
           read (chk_unit, *) idum
           if (idum == 1) then
-            lwindow(i, nkp) = .true.
+            dis_data%lwindow(i, nkp) = .true.
           elseif (idum == 0) then
-            lwindow(i, nkp) = .false.
+            dis_data%lwindow(i, nkp) = .false.
           else
             write (cdum, '(I0)') idum
             call io_error('Error reading formatted chk: lwindow(i,nkp) should be 0 or 1, it is instead '//cdum)
@@ -338,12 +339,12 @@ contains
       write (stdout, '(a)') "lwindow: read."
 
       ! ndimwin
-      if (.not. allocated(ndimwin)) then
-        allocate (ndimwin(num_kpts), stat=ierr)
+      if (.not. allocated(dis_data%ndimwin)) then
+        allocate (dis_data%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt_fmt')
       endif
       do nkp = 1, num_kpts
-        read (chk_unit, *, err=123) ndimwin(nkp)
+        read (chk_unit, *, err=123) dis_data%ndimwin(nkp)
       end do
       write (stdout, '(a)') "ndimwin: read."
 
@@ -383,11 +384,11 @@ contains
 
     ! M_matrix
     if (.not. allocated(m_matrix)) then
-      allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
+      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating m_matrix in conv_read_chkpt_fmt')
     endif
     do l = 1, num_kpts
-      do k = 1, nntot
+      do k = 1, kmesh_info%nntot
         do j = 1, num_wann
           do i = 1, num_wann
             read (chk_unit, *, err=124) rreal, rimag
@@ -399,22 +400,22 @@ contains
     write (stdout, '(a)') "M_matrix: read."
 
     ! wannier_centres
-    if (.not. allocated(wannier_centres)) then
-      allocate (wannier_centres(3, num_wann), stat=ierr)
+    if (.not. allocated(wann_data%centres)) then
+      allocate (wann_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt')
     end if
     do j = 1, num_wann
-      read (chk_unit, *, err=127) (wannier_centres(i, j), i=1, 3)
+      read (chk_unit, *, err=127) (wann_data%centres(i, j), i=1, 3)
     end do
     write (stdout, '(a)') "wannier_centres: read."
 
     ! wannier spreads
-    if (.not. allocated(wannier_spreads)) then
-      allocate (wannier_spreads(num_wann), stat=ierr)
+    if (.not. allocated(wann_data%spreads)) then
+      allocate (wann_data%spreads(num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt')
     end if
     do i = 1, num_wann
-      read (chk_unit, *, err=128) wannier_spreads(i)
+      read (chk_unit, *, err=128) wann_data%spreads(i)
     end do
     write (stdout, '(a)') "wannier_spreads: read."
 
@@ -436,7 +437,7 @@ contains
 
   end subroutine conv_read_chkpt_fmt
 
-  subroutine conv_write_chkpt()
+  subroutine conv_write_chkpt(checkpoint)
     !=======================================!
     !! Write formatted checkpoint file
     !=======================================!
@@ -446,6 +447,7 @@ contains
 
     implicit none
 
+    character(len=*), intent(in) :: checkpoint
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
 
@@ -456,36 +458,36 @@ contains
 
     write (chk_unit) header                                   ! Date and time from the read file
     write (chk_unit) num_bands                                ! Number of bands
-    write (chk_unit) num_exclude_bands                        ! Number of excluded bands
-    write (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
+    write (chk_unit) param_input%num_exclude_bands            ! Number of excluded bands
+    write (chk_unit) (param_input%exclude_bands(i), i=1, param_input%num_exclude_bands) ! Excluded bands
     write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
     write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit) num_kpts                                 ! Number of k-points
     write (chk_unit) (mp_grid(i), i=1, 3)                       ! M-P grid
-    write (chk_unit) ((kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
-    write (chk_unit) nntot                                    ! Number of nearest k-point neighbours
+    write (chk_unit) ((k_points%kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
+    write (chk_unit) kmesh_info%nntot                                    ! Number of nearest k-point neighbours
     write (chk_unit) num_wann                                 ! Number of wannier functions
     ! Next is correct: it always print out 20 characters
     write (chk_unit) checkpoint                               ! Position of checkpoint
-    write (chk_unit) have_disentangled      ! Whether a disentanglement has been performed
-    if (have_disentangled) then
-      write (chk_unit) omega_invariant     ! Omega invariant
+    write (chk_unit) param_input%have_disentangled      ! Whether a disentanglement has been performed
+    if (param_input%have_disentangled) then
+      write (chk_unit) param_input%omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
-      write (chk_unit) ((lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
-      write (chk_unit) (ndimwin(nkp), nkp=1, num_kpts)
+      write (chk_unit) ((dis_data%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
+      write (chk_unit) (dis_data%ndimwin(nkp), nkp=1, num_kpts)
       write (chk_unit) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
     endif
     write (chk_unit) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)               ! U_matrix
-    write (chk_unit) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, nntot), l=1, num_kpts) ! M_matrix
-    write (chk_unit) ((wannier_centres(i, j), i=1, 3), j=1, num_wann)
-    write (chk_unit) (wannier_spreads(i), i=1, num_wann)
+    write (chk_unit) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts) ! M_matrix
+    write (chk_unit) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)
+    write (chk_unit) (wann_data%spreads(i), i=1, num_wann)
     close (chk_unit)
 
     write (stdout, '(a/)') ' done'
 
   end subroutine conv_write_chkpt
 
-  subroutine conv_write_chkpt_fmt()
+  subroutine conv_write_chkpt_fmt(checkpoint)
     !=======================================!
     !! Write formatted checkpoint file
     !=======================================!
@@ -495,6 +497,7 @@ contains
 
     implicit none
 
+    character(len=*), intent(in) :: checkpoint
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
 
@@ -505,31 +508,31 @@ contains
 
     write (chk_unit, '(A33)') header                                   ! Date and time from the read file
     write (chk_unit, '(I0)') num_bands                                ! Number of bands
-    write (chk_unit, '(I0)') num_exclude_bands                        ! Number of excluded bands
-    do i = 1, num_exclude_bands
-      write (chk_unit, '(I0)') exclude_bands(i) ! Excluded bands
+    write (chk_unit, '(I0)') param_input%num_exclude_bands            ! Number of excluded bands
+    do i = 1, param_input%num_exclude_bands
+      write (chk_unit, '(I0)') param_input%exclude_bands(i) ! Excluded bands
     end do
     write (chk_unit, '(9G25.17)') ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
     write (chk_unit, '(9G25.17)') ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
     write (chk_unit, '(I0)') num_kpts                                 ! Number of k-points
     write (chk_unit, '(I0," ",I0," ",I0)') (mp_grid(i), i=1, 3)                       ! M-P grid
     do nkp = 1, num_kpts
-      write (chk_unit, '(3G25.17)') (kpt_latt(i, nkp), i=1, 3) ! K-points
+      write (chk_unit, '(3G25.17)') (k_points%kpt_latt(i, nkp), i=1, 3) ! K-points
     end do
-    write (chk_unit, '(I0)') nntot                                    ! Number of nearest k-point neighbours
+    write (chk_unit, '(I0)') kmesh_info%nntot                                    ! Number of nearest k-point neighbours
     write (chk_unit, '(I0)') num_wann                                 ! Number of wannier functions
     write (chk_unit, '(A20)') checkpoint                               ! Position of checkpoint
-    if (have_disentangled) then
+    if (param_input%have_disentangled) then
       write (chk_unit, '(I1)') 1      ! Whether a disentanglement has been performed
     else
       write (chk_unit, '(I1)') 0      ! Whether a disentanglement has been performed
     end if
-    if (have_disentangled) then
-      write (chk_unit, '(G25.17)') omega_invariant     ! Omega invariant
+    if (param_input%have_disentangled) then
+      write (chk_unit, '(G25.17)') param_input%omega_invariant     ! Omega invariant
       ! lwindow, ndimwin and U_matrix_opt
       do nkp = 1, num_kpts
         do i = 1, num_bands
-          if (lwindow(i, nkp)) then
+          if (dis_data%lwindow(i, nkp)) then
             write (chk_unit, '(I1)') 1
           else
             write (chk_unit, '(I1)') 0
@@ -537,7 +540,7 @@ contains
         end do
       end do
       do nkp = 1, num_kpts
-        write (chk_unit, '(I0)') ndimwin(nkp)
+        write (chk_unit, '(I0)') dis_data%ndimwin(nkp)
       end do
       do nkp = 1, num_kpts
         do j = 1, num_wann
@@ -555,7 +558,7 @@ contains
       end do
     end do
     do l = 1, num_kpts
-      do k = 1, nntot
+      do k = 1, kmesh_info%nntot
         do j = 1, num_wann
           do i = 1, num_wann
             write (chk_unit, '(2G25.17)') m_matrix(i, j, k, l)
@@ -564,10 +567,10 @@ contains
       end do
     end do
     do j = 1, num_wann
-      write (chk_unit, '(3G25.17)') (wannier_centres(i, j), i=1, 3)
+      write (chk_unit, '(3G25.17)') (wann_data%centres(i, j), i=1, 3)
     end do
     do i = 1, num_wann
-      write (chk_unit, '(G25.17)') wannier_spreads(i)
+      write (chk_unit, '(G25.17)') wann_data%spreads(i)
     end do
     close (chk_unit)
 
@@ -591,6 +594,7 @@ program w90chk2chk
   !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')
   logical :: file_found
   integer :: file_unit
+  character(len=20) :: checkpoint
 
   call comms_setup
 
@@ -604,11 +608,11 @@ program w90chk2chk
   call conv_get_seedname
 
   if (export_flag .eqv. .true.) then
-    call conv_read_chkpt()
-    call conv_write_chkpt_fmt()
+    call conv_read_chkpt(checkpoint)
+    call conv_write_chkpt_fmt(checkpoint)
   else
-    call conv_read_chkpt_fmt()
-    call conv_write_chkpt()
+    call conv_read_chkpt_fmt(checkpoint)
+    call conv_write_chkpt(checkpoint)
   end if
 
 !  close(unit=stdout,status='delete')
