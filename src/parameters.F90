@@ -1218,7 +1218,7 @@ contains
       ("Error: kslice_task cannot include both 'shc' and 'curv'")
 
     kslice%kmesh2d(1:2) = 50
-    call param_get_vector_length('kslice%2dkmesh', found, length=i)
+    call param_get_vector_length('kslice_2dkmesh', found, length=i)
     if (found) then
       if (i == 1) then
         call param_get_keyword_vector('kslice_2dkmesh', found, 1, &
