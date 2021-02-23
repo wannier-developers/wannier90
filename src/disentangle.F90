@@ -137,7 +137,7 @@ contains
     endif
 
     ! Debug
-    call internal_check_orthonorm(timing_level, num_wann, num_kpts, num_bands, ndimwin, on_root, u_matrix_opt)
+    call internal_check_orthonorm(timing_level, num_wann, num_kpts, ndimwin, on_root, u_matrix_opt)
 
     ! Slim down the original Mmn(k,b)
     call internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, on_root, &
@@ -152,8 +152,8 @@ contains
     end do
 
     if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
-                                                        num_bands, u_matrix_opt, sym, lwindow) !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
-
+                                                        num_bands, u_matrix_opt, sym, lwindow)
+    !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
     ! Extract the optimally-connected num_wann-dimensional subspaces
 
     if (.not. gamma_only) then
@@ -203,7 +203,7 @@ contains
                            num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, &
                            a_matrix, sym)
     else
-      call internal_find_u_gamma(timing_level, num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, a_matrix)
+      call internal_find_u_gamma(timing_level, num_wann, ndimwin, u_matrix, u_matrix_opt, a_matrix)
     end if
 ![ysl-e]
 
@@ -309,7 +309,7 @@ contains
   end subroutine dis_main
 
   subroutine internal_check_orthonorm(timing_level, num_wann, num_kpts, &
-                                      num_bands, ndimwin, on_root, u_matrix_opt)
+                                      ndimwin, on_root, u_matrix_opt)
     !================================================================!
     !                                                                !
     !! This subroutine checks that the states in the columns of the
@@ -329,7 +329,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level
-    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
@@ -567,7 +567,7 @@ contains
   end subroutine internal_find_u
 
 ![ysl-b]
-  subroutine internal_find_u_gamma(timing_level, num_kpts, num_wann, num_bands, &
+  subroutine internal_find_u_gamma(timing_level, num_wann, &
                                    ndimwin, u_matrix, u_matrix_opt, a_matrix)
     !================================================================!
     !                                                                !
@@ -578,7 +578,7 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: timing_level, num_kpts, num_wann, num_bands
+    integer, intent(in) :: timing_level, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
     complex(kind=dp), intent(in) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
@@ -1846,7 +1846,7 @@ contains
           nkp = nkp_loc + displs(my_node_id)
           if (num_wann .gt. ndimfroz(nkp)) then
             call internal_zmatrix(on_root, num_bands, timing_level, nntot, &
-                                  num_wann, num_kpts, ndimwin, nnlist, indxnfroz, ndimfroz, nkp, &
+                                  num_wann, ndimwin, nnlist, indxnfroz, ndimfroz, nkp, &
                                   nkp_loc, wb, u_matrix_opt, m_matrix_orig_local, cbw, czmat_in_loc(:, :, nkp_loc))
           endif
         enddo
@@ -2134,7 +2134,7 @@ contains
         nkp = nkp_loc + displs(my_node_id)
         if (num_wann .gt. ndimfroz(nkp)) then
           call internal_zmatrix(on_root, num_bands, timing_level, nntot, &
-                                num_wann, num_kpts, ndimwin, nnlist, indxnfroz, ndimfroz, nkp, &
+                                num_wann, ndimwin, nnlist, indxnfroz, ndimfroz, nkp, &
                                 nkp_loc, wb, u_matrix_opt, m_matrix_orig_local, cbw, czmat_out_loc(:, :, nkp_loc))
         endif
       enddo
@@ -2455,7 +2455,7 @@ contains
   end subroutine internal_test_convergence
 
   subroutine internal_zmatrix(on_root, num_bands, timing_level, nntot, num_wann, &
-                              num_kpts, ndimwin, nnlist, indxnfroz, ndimfroz, nkp, nkp_loc, wb, &
+                              ndimwin, nnlist, indxnfroz, ndimfroz, nkp, nkp_loc, wb, &
                               u_matrix_opt, m_matrix_orig_local, cbw, cmtrx)
     !==================================================================!
     !! Compute the Z-matrix
@@ -2468,7 +2468,7 @@ contains
 
     ! passed variables
     logical, intent(in) :: on_root
-    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: timing_level
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
@@ -2728,7 +2728,7 @@ contains
         ! Initialize Z matrix at k points w/ non-frozen states
         do nkp = 1, num_kpts
           if (num_wann .gt. ndimfroz(nkp)) then
-            call internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, num_kpts, &
+            call internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, &
                                         ndimwin, nnlist, nkp, rzmat_in(:, :, nkp), &
                                         m_matrix_orig, u_matrix_opt, ndimfroz, indxnfroz, wb, cbw)
           endif
@@ -2929,7 +2929,7 @@ contains
       ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
       do nkp = 1, num_kpts
         if (num_wann .gt. ndimfroz(nkp)) then
-          call internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, num_kpts, &
+          call internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, &
                                       ndimwin, nnlist, nkp, rzmat_out(:, :, nkp), m_matrix_orig, &
                                       u_matrix_opt, ndimfroz, indxnfroz, wb, cbw)
         endif
@@ -3188,7 +3188,7 @@ contains
   end subroutine dis_extract_gamma
 
   subroutine internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, &
-                                    num_kpts, ndimwin, nnlist, nkp, rmtrx, m_matrix_orig, u_matrix_opt, &
+                                    ndimwin, nnlist, nkp, rmtrx, m_matrix_orig, u_matrix_opt, &
                                     ndimfroz, indxnfroz, wb, cbw)
     !==================================================================!
     !! Compute Z-matrix (Gamma point routine)
@@ -3201,7 +3201,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level
-    integer, intent(in) :: num_bands, num_kpts, num_wann
+    integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: nkp
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)

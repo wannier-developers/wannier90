@@ -103,7 +103,7 @@ contains
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, &
                           gamma_only, use_bloch_phases, cp_pp, u_matrix_opt, m_matrix_orig, &
-                          timing_level, a_matrix, m_matrix, u_matrix, devel_flag, proj2wann_map, &
+                          timing_level, a_matrix, m_matrix, u_matrix, proj2wann_map, &
                           lselproj, num_proj, nnlist, nncell, nntot, num_kpts, num_wann, num_bands, &
                           disentanglement, sym)
     !%%%%%%%%%%%%%%%%%%%%%
@@ -136,7 +136,6 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
-    character(len=50), intent(in) :: devel_flag
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: gamma_only
     logical, intent(in) :: use_bloch_phases
@@ -146,11 +145,11 @@ contains
 !   logical, public, save :: lhasproj !not used here
 !   end w90_parameters
 
-    integer :: nkp, nkp2, inn, nn, n, m, i, j
+    integer :: nkp, nkp2, inn, nn, n, m
     integer :: mmn_in, amn_in, num_mmn, num_amn
     integer :: nnl, nnm, nnn, ncount
     integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
-    real(kind=dp) :: m_real, m_imag, a_real, a_imag, mu_tmp, sigma_tmp
+    real(kind=dp) :: m_real, m_imag, a_real, a_imag
     complex(kind=dp), allocatable :: mmn_tmp(:, :)
     character(len=50) :: dummy
     logical :: nn_found

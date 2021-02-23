@@ -270,7 +270,7 @@ contains
     real(kind=dp)        :: eigval_opt(num_bands, num_kpts)
     real(kind=dp)        :: eigval2(num_wann, num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt, i, j, m, irpt, ideg, ierr, counter
+    integer              :: loop_kpt, i, j, m, irpt, ierr, counter
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
 
     if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)

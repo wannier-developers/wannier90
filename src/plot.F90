@@ -1210,7 +1210,7 @@ contains
     integer :: i, j, nsp, nat, nbnd, counter, ierr
     integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
-    integer :: ispinor
+    !integer :: ispinor
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
     character(len=9)  :: cdate, ctime
@@ -1909,7 +1909,7 @@ contains
     !                                            !
     !============================================!
 
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, &
+    use w90_io, only: io_error, io_file_unit, seedname, &
       io_time, io_stopwatch, io_date
     use w90_constants, only: dp  !lp
 

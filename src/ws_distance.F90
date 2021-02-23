@@ -74,7 +74,7 @@ contains
     !! is on the edge of the WS of w_i,0. The results are stored in global
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
 
-    use w90_io, only: stdout, io_error
+    use w90_io, only: io_error
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
 
     implicit none
@@ -161,7 +161,7 @@ contains
     !! shifts needed to get the vector (these are always multiples of
     !! the mp_grid, i.e. they are supercell displacements in the large supercell)
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
-    use w90_io, only: stdout, io_error
+    use w90_io, only: io_error
 
     implicit none
 
