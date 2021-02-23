@@ -217,7 +217,7 @@ contains
     implicit none
 
     integer, intent(in) :: wanfun
-    integer :: ios, iion, n, i, j, ix, iy, iz
+    integer :: ios, n, i, j, ix, iy, iz
     character(len=140) :: line, str(100)
     integer, parameter  :: iu = 81
 
@@ -296,7 +296,7 @@ contains
     real(q) :: color(3, 150), dist, mid(3), rad, rdir(3)
     real(q), allocatable :: tmppos(:, :)
     character, allocatable :: tmpnam(:)*3
-    real(q) :: vec1(3), vec2(3), vec3(3)
+    real(q) :: vec1(3), vec2(3)
 
     name(1:56) = [character(len=3) :: &
                   'H ', 'He', &
@@ -732,7 +732,7 @@ contains
     implicit none
     character(len=80), parameter :: infile = 'w90pov.inp'
     character(len=20) :: str
-    integer :: i, j
+    integer :: i
     logical :: found
 
     real(q), allocatable ::  tmpcol(:)
