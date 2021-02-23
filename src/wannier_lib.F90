@@ -358,7 +358,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   call comms_array_split(num_kpts, counts, displs)
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
-                        m_matrix_orig, param_input%timing_level, kmesh_info%nntot, num_kpts, num_wann, gyrotropic%num_bands, &
+                        m_matrix_orig, param_input%timing_level, kmesh_info%nntot, num_kpts, num_wann, num_bands, &
                         w90_calcs%disentanglement)
 
   if (disentanglement) then
@@ -479,7 +479,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
                    param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
                    param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
                    dis_data%lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, &
-                   gyrotropic%num_bands, param_input%ws_distance_tol, param_input%ws_search_size, &
+                   num_bands, param_input%ws_distance_tol, param_input%ws_search_size, &
                    mp_grid, tran%mode, param_input%bands_plot_mode, &
                    w90_calcs%transport, param_input%iprint, param_plot%wannier_plot_radius, &
                    param_plot%wannier_plot_scale, atoms%pos_frac, &
@@ -510,7 +510,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
                    param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
                    param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
                    dis_data%lwindow, u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
-                   lsitesymmetry, gyrotropic%num_bands, num_kpts, atoms%pos_cart, &
+                   lsitesymmetry, num_bands, num_kpts, atoms%pos_cart, &
                    param_input%ws_distance_tol, param_input%ws_search_size, mp_grid, &
                    param_input%bands_plot_mode, w90_calcs%transport, param_input%dist_cutoff_hc, &
                    param_input%dist_cutoff, param_input%dist_cutoff_mode, tran%num_bandc, &

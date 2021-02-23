@@ -262,14 +262,14 @@ program wannier
 
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, &
                         a_matrix, m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
-                        kmesh_info%nntot, num_kpts, num_wann, gyrotropic%num_bands, &
+                        kmesh_info%nntot, num_kpts, num_wann, num_bands, &
                         w90_calcs%disentanglement)
   call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, &
                     param_input%gamma_only, w90_calcs%use_bloch_phases, w90_calcs%cp_pp, &
                     u_matrix_opt, m_matrix_orig, param_input%timing_level, a_matrix, m_matrix, &
                     u_matrix, select_proj%proj2wann_map, &
                     select_proj%lselproj, num_proj, kmesh_info%nnlist, kmesh_info%nncell, &
-                    kmesh_info%nntot, num_kpts, num_wann, gyrotropic%num_bands, &
+                    kmesh_info%nntot, num_kpts, num_wann, num_bands, &
                     w90_calcs%disentanglement, sym)
 
   time1 = io_time()
@@ -372,7 +372,7 @@ program wannier
                    param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
                    param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
                    dis_data%lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, &
-                   gyrotropic%num_bands, param_input%ws_distance_tol, param_input%ws_search_size, &
+                   num_bands, param_input%ws_distance_tol, param_input%ws_search_size, &
                    mp_grid, tran%mode, param_input%bands_plot_mode, &
                    w90_calcs%transport, param_input%iprint, param_plot%wannier_plot_radius, &
                    param_plot%wannier_plot_scale, atoms%pos_frac, &
@@ -407,7 +407,7 @@ program wannier
                      param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
                      param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
                      dis_data%lwindow, u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
-                     lsitesymmetry, gyrotropic%num_bands, num_kpts, atoms%pos_cart, &
+                     lsitesymmetry, num_bands, num_kpts, atoms%pos_cart, &
                      param_input%ws_distance_tol, param_input%ws_search_size, mp_grid, &
                      param_input%bands_plot_mode, w90_calcs%transport, param_input%dist_cutoff_hc, &
                      param_input%dist_cutoff, param_input%dist_cutoff_mode, tran%num_bandc, &
