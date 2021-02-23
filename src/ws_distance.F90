@@ -63,7 +63,7 @@ contains
 !    probably think to do the math on node 0, and then broadcast results.
 
   subroutine ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, &
-                               wannier_centres, real_lattice, recip_lattice, iprint, mp_grid, nrpts, &
+                               wannier_centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
@@ -81,7 +81,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: iprint
+    !integer, intent(in) :: iprint
     integer, intent(in) :: num_wann
     integer, intent(in) :: ws_search_size(3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)

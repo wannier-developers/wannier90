@@ -196,7 +196,7 @@ contains
                                                   use_ws_distance, bands_plot_project, num_bands_project, &
                                                   bands_plot_mode, bands_plot_format, bands_label, &
                                                   bands_spec_points, timing_level, bands_num_spec_points, &
-                                                  recip_metric, bands_num_points, num_wann, iprint, recip_lattice, &
+                                                  recip_metric, bands_num_points, num_wann, recip_lattice, &
                                                   wannier_centres, ws_search_size, ws_distance_tol, ham_r, irvec, ndegen, &
                                                   nrpts, wannier_centres_translated)
       !
@@ -215,7 +215,7 @@ contains
       if (write_hr .or. write_rmn .or. write_tb) then
         if (.not. done_ws_distance) call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, &
                                                            wannier_centres, real_lattice, recip_lattice, &
-                                                           iprint, mp_grid, nrpts, irvec)
+                                                           mp_grid, nrpts, irvec)
         call ws_write_vec(nrpts, irvec, num_wann, use_ws_distance)
       end if
     end if
@@ -246,7 +246,7 @@ contains
                                     bands_plot_dim, hr_cutoff, dist_cutoff, dist_cutoff_mode, use_ws_distance, &
                                     bands_plot_project, num_bands_project, bands_plot_mode, bands_plot_format, &
                                     bands_label, bands_spec_points, timing_level, bands_num_spec_points, &
-                                    recip_metric, bands_num_points, num_wann, iprint, recip_lattice, &
+                                    recip_metric, bands_num_points, num_wann, recip_lattice, &
                                     wannier_centres, ws_search_size, ws_distance_tol, ham_r, irvec, &
                                     ndegen, nrpts, wannier_centres_translated)
     !============================================!
@@ -281,7 +281,7 @@ contains
     integer, intent(in) :: bands_num_spec_points
     integer, intent(in) :: bands_num_points
     integer, intent(in) :: num_wann
-    integer, intent(in) :: iprint
+    !integer, intent(in) :: iprint
     integer, intent(in) :: ws_search_size(3)
     real(kind=dp), intent(in) :: recip_metric(3, 3)
     real(kind=dp), intent(in) :: dist_cutoff
@@ -491,10 +491,10 @@ contains
     if (use_ws_distance) then
       if (index(bands_plot_mode, 's-k') .ne. 0) then
         call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, real_lattice, &
-                               recip_lattice, iprint, mp_grid, nrpts, irvec, force_recompute=.true.)
+                               recip_lattice, mp_grid, nrpts, irvec, force_recompute=.true.)
       elseif (index(bands_plot_mode, 'cut') .ne. 0) then
         call ws_translate_dist(ws_distance_tol, ws_search_size, num_wann, wannier_centres, real_lattice, &
-                               recip_lattice, iprint, mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
+                               recip_lattice, mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
       endif

@@ -717,7 +717,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
 
     OO(:, :) = cmplx_0
@@ -794,7 +794,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
 
     if (present(OO)) OO = cmplx_0
@@ -875,7 +875,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
 
     if (present(OO)) OO = cmplx_0
@@ -976,7 +976,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
 
     ! calculate wannier centres in cartesian
@@ -1097,7 +1097,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
     if (present(OO_true)) OO_true = cmplx_0
     if (present(OO_pseudo)) OO_pseudo = cmplx_0
@@ -1186,7 +1186,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
@@ -1279,7 +1279,7 @@ contains
     if (param_input%use_ws_distance) then
       CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
-                             param_input%iprint, mp_grid, nrpts, irvec)
+                             mp_grid, nrpts, irvec)
     endif
     if (present(OO_da)) OO_da = cmplx_0
     if (present(OO_dadb)) OO_dadb = cmplx_0
