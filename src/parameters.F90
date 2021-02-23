@@ -3374,7 +3374,7 @@ contains
 
     if (pw90_calcs%kslice .or. param_input%iprint > 2) then
       write (stdout, '(1x,a78)') '*--------------------------------- KSLICE -----------------------------------*'
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plot Properties along a slice in k-space  :', kslice, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plot Properties along a slice in k-space  :', pw90_calcs%kslice, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi level used for slice                :', fermi%energy_list(1), '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Divisions along first kpath section       :', kpath%num_points, '|'
       if (index(kslice%task, 'fermi_lines') > 0) then
