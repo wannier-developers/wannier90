@@ -369,33 +369,28 @@ contains
   end subroutine utility_compar
 
   !===================================================================
-  subroutine utility_metric(real_lat, recip_lat, &
-                            real_metric, recip_metric)
+  subroutine utility_metric(lattice, metric)
     !==================================================================!
     !                                                                  !
-    !!  Calculate the real and reciprical space metrics
+    !!  Calculate the  metric for a lattice                            !
     !                                                                  !
     !===================================================================
     implicit none
 
-    real(kind=dp), intent(in)  :: real_lat(3, 3)
-    real(kind=dp), intent(in)  :: recip_lat(3, 3)
-    real(kind=dp), intent(out) :: real_metric(3, 3)
-    real(kind=dp), intent(out) :: recip_metric(3, 3)
+    real(kind=dp), intent(in)  :: lattice(3, 3)
+    real(kind=dp), intent(out) :: metric(3, 3)
 
     integer :: i, j, l
 
-    real_metric = 0.0_dp; recip_metric = 0.0_dp
+    metric = 0.0_dp
 
     do j = 1, 3
       do i = 1, j
         do l = 1, 3
-          real_metric(i, j) = real_metric(i, j) + real_lat(i, l)*real_lat(j, l)
-          recip_metric(i, j) = recip_metric(i, j) + recip_lat(i, l)*recip_lat(j, l)
+          metric(i, j) = metric(i, j) + lattice(i, l)*lattice(j, l)
         enddo
         if (i .lt. j) then
-          real_metric(j, i) = real_metric(i, j)
-          recip_metric(j, i) = recip_metric(i, j)
+          metric(j, i) = metric(i, j)
         endif
       enddo
     enddo
