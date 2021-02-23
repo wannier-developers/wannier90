@@ -90,8 +90,8 @@ contains
       io_stopwatch
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
       weight, cell_volume
-    use w90_parameters, only: param_input, berry, &
-      pw90_common, fermi, spin_hall
+    use w90_parameters, only: param_input, fermi
+    use pw90_parameters, only: berry, pw90_common, spin_hall
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -1385,7 +1385,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi
     use w90_utility, only: utility_diagonalize, utility_rotate, utility_w0gauss
-    use w90_parameters, only: num_wann, fermi, berry, pw90_common
+    use w90_parameters, only: num_wann, fermi
+    use pw90_parameters, only: berry, pw90_common
     use w90_postw90_common, only: pw90common_get_occ, pw90common_fourier_R_to_k_new, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1552,7 +1553,8 @@ contains
     !
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_re_tr, utility_im_tr, utility_w0gauss, utility_w0gauss_vec
-    use w90_parameters, only: num_wann, fermi, berry
+    use w90_parameters, only: num_wann, fermi
+    use pw90_parameters, only: berry
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec_dadb, &
       pw90common_fourier_R_to_k_new_second_d, pw90common_get_occ, &
       pw90common_kmesh_spacing, pw90common_fourier_R_to_k_vec_dadb_TB_conv
@@ -1771,7 +1773,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate
-    use w90_parameters, only: num_wann, berry, fermi, spin_hall
+    use w90_parameters, only: num_wann, fermi
+    use pw90_parameters, only: berry, spin_hall
     use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
@@ -1934,7 +1937,8 @@ contains
 
       use w90_constants, only: dp, cmplx_0, cmplx_i
       use w90_utility, only: utility_rotate
-      use w90_parameters, only: num_wann, spin_hall
+      use w90_parameters, only: num_wann
+      use pw90_parameters, only: spin_hall
       use w90_postw90_common, only: pw90common_fourier_R_to_k_new, &
         pw90common_fourier_R_to_k_vec
       use w90_get_oper, only: SS_R, SR_R, SHR_R, SH_R

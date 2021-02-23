@@ -74,7 +74,8 @@ contains
     use w90_io, only: io_error, stdout, io_stopwatch, &
       io_file_unit, seedname
     use w90_parameters, only: num_wann, dis_data, num_kpts, &
-      eigval, u_matrix, pw90_common, param_input, real_lattice
+      eigval, u_matrix, param_input, real_lattice
+    use pw90_parameters, only: pw90_common
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
     use w90_comms, only: on_root, comms_bcast
 
@@ -253,7 +254,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, param_input, &
-      num_bands, dis_data, berry, pw90_common
+      num_bands, dis_data
+    use pw90_parameters, only: pw90_common, berry
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
@@ -502,7 +504,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, num_bands, &
-      dis_data, param_input, pw90_common
+      dis_data, param_input
+    use pw90_parameters, only: pw90_common
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
@@ -646,7 +649,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
-      num_bands, dis_data, param_input, pw90_common, postw90_oper
+      num_bands, dis_data, param_input
+    use pw90_parameters, only: pw90_common, postw90_oper
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
@@ -950,7 +954,8 @@ contains
 
     use w90_constants, only: dp, pi, cmplx_0
     use w90_parameters, only: num_wann, dis_data, num_kpts, num_bands, &
-      param_input, postw90_oper
+      param_input
+    use pw90_parameters, only: postw90_oper
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_error, io_stopwatch, stdout, seedname, &
       io_file_unit
@@ -1096,7 +1101,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_parameters, only: num_kpts, num_wann, kmesh_info, num_bands, &
-      dis_data, postw90_oper, eigval, pw90_common, param_input, spin_hall
+      dis_data, eigval, param_input
+    use pw90_parameters, only: postw90_oper, pw90_common, spin_hall
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname

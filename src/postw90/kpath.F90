@@ -49,7 +49,8 @@ contains
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, kpath, spec_points, fermi, berry, spin_hall
+    use w90_parameters, only: num_wann, spec_points, fermi
+    use pw90_parameters, only: berry, spin_hall, kpath
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_FF_R, get_SS_R, get_SHC_R
     use w90_spin, only: spin_get_nk
@@ -968,7 +969,8 @@ contains
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
 
     use w90_comms, only: on_root
-    use w90_parameters, only: kpath, berry, fermi ! berry_curv_unit
+    use w90_parameters, only: fermi ! berry_curv_unit
+    use pw90_parameters, only: kpath, berry
     use w90_io, only: stdout, io_error
 
     logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
@@ -1027,7 +1029,8 @@ contains
     ! and their associated horizontal coordinate for the plot (xval)    !
     !===================================================================!
 
-    use w90_parameters, only: kpath, spec_points, recip_lattice
+    use w90_parameters, only: spec_points, recip_lattice
+    use pw90_parameters, only: kpath
     use w90_utility, only: utility_metric
 
     integer, intent(out)    :: num_paths, total_pts

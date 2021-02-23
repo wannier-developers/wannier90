@@ -124,7 +124,8 @@ contains
     !        to worry about avoiding small energy denominators
 
     use w90_constants, only: dp, cmplx_0
-    use w90_parameters, only: num_wann, berry !sc_eta
+    use w90_parameters, only: num_wann
+    use pw90_parameters, only: berry !sc_eta
     use w90_utility, only: utility_rotate
 
     ! Arguments
@@ -294,7 +295,8 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate, &
       utility_rotate_diag
-    use w90_parameters, only: num_wann, pw90_ham
+    use w90_parameters, only: num_wann
+    use pw90_parameters, only: pw90_ham
 
     ! Arguments
     !

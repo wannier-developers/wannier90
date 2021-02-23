@@ -65,10 +65,11 @@ program wannier
   use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id
   use w90_sitesym !YN:
 
-  use w90_param_methods, only: param_read, param_write, param_postw90_write, param_dealloc, &
-    param_write_header, param_write_chkpt, param_read_chkpt, param_lib_set_atoms, &
-    param_memory_estimate, param_get_smearing_type, param_get_convention_type, &
-    param_dist, param_chkpt_dist
+  use w90_param_methods, only: param_write_header, param_write_chkpt, &
+    param_read_chkpt, param_chkpt_dist
+  use wannier_parameters
+  use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
+    param_dist, param_memory_estimate
 
   implicit none
 
@@ -137,7 +138,7 @@ program wannier
     call io_date(cdate, ctime)
     write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
-    call param_read
+    call param_read(.false.)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -207,8 +208,8 @@ program wannier
   if (driver%restart .eq. ' ') then  ! start a fresh calculation
     if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
-    if (on_root) call param_read_chkpt()
-    call param_chkpt_dist
+    if (on_root) call param_read_chkpt(.false., driver%checkpoint)
+    call param_chkpt_dist(driver%checkpoint)
     if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
@@ -250,7 +251,7 @@ program wannier
                                   kmesh_data%auto_projections, kmesh_data%input_proj%s_qaxis, &
                                   kmesh_data%input_proj%s)
     call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
-    call param_dealloc()
+    call param_w90_dealloc()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
@@ -362,7 +363,7 @@ program wannier
     ! to plot are inside the function
     time2 = io_time()
     !
-    call plot_main(num_kpts, w90_calcs%bands_plot, dos_plot, k_points%kpt_latt, &
+    call plot_main(num_kpts, w90_calcs%bands_plot, k_points%kpt_latt, &
                    w90_calcs%fermi_surface_plot, w90_calcs%wannier_plot, &
                    param_input%timing_level, param_plot%write_bvec, w90_calcs%write_hr, &
                    param_plot%write_rmn, param_plot%write_tb, param_plot%write_u_matrices, &
@@ -430,7 +431,7 @@ program wannier
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                        a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
-  call param_dealloc()
+  call param_w90_dealloc()
   if (lsitesymmetry) call sitesym_dealloc(sym) !YN:
 
 4004 continue

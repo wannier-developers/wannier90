@@ -84,7 +84,8 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_file_unit, seedname
     use w90_utility, only: utility_cart_to_frac
-    use w90_parameters, only: real_lattice, pw90_common, num_wann
+    use w90_parameters, only: real_lattice, num_wann
+    use pw90_parameters, only: pw90_common
 
     integer        :: ierr, ir, file_unit, num_wann_loc
 
@@ -228,6 +229,7 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
     use w90_parameters
+    use pw90_parameters
 
     integer :: ierr
 
@@ -484,7 +486,8 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_parameters, only: num_wann, num_kpts, num_bands, u_matrix_opt, &
-      u_matrix, dis_data, wann_data, param_input, pw90_common
+      u_matrix, dis_data, param_input, wann_data
+    use pw90_parameters, only: pw90_common
 
     implicit none
 

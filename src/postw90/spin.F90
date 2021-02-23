@@ -40,8 +40,8 @@ contains
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce
     use w90_io, only: io_error, stdout
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
-    use w90_parameters, only: pw90_spin, berry, & !wanint_kpoint_file
-      fermi
+    use pw90_parameters, only: pw90_spin, berry !wanint_kpoint_file
+    use w90_parameters, only: fermi
     use w90_get_oper, only: get_HH_R, get_SS_R
 
     integer       :: loop_x, loop_y, loop_z, loop_tot
@@ -144,7 +144,8 @@ contains
     use w90_constants, only: dp, pi, cmplx_0, cmplx_i
     use w90_io, only: io_error
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
-    use w90_parameters, only: num_wann, pw90_spin
+    use w90_parameters, only: num_wann
+    use pw90_parameters, only: pw90_spin
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_get_oper, only: HH_R, SS_R
 

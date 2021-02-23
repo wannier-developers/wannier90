@@ -77,7 +77,8 @@ contains
     !use w90_postw90_common, only: nrpts, irvec, num_int_kpts_on_node, int_kpts, &
     !  weight
     use w90_postw90_common, only: cell_volume
-    use w90_parameters, only: param_input, gyrotropic, berry, fermi
+    use w90_parameters, only: param_input, fermi
+    use pw90_parameters, only: gyrotropic, berry
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R
 
@@ -471,7 +472,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
-    use w90_parameters, only: num_wann, fermi, gyrotropic
+    use w90_parameters, only: num_wann, fermi
+    use pw90_parameters, only: gyrotropic
     use w90_postw90_common, only: pw90common_get_occ, &
       pw90common_fourier_R_to_k_vec
     use w90_wan_ham, only: wham_get_eig_deleig, wham_get_D_h
@@ -637,7 +639,7 @@ contains
     !======================================================================!
 
     use w90_constants, only: dp
-    use w90_parameters, only: gyrotropic
+    use pw90_parameters, only: gyrotropic
     ! Arguments
     !
     real(kind=dp), intent(in)                    :: eig(:)
@@ -689,7 +691,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, pi, cmplx_1
     use w90_utility, only: utility_rotate
-    use w90_parameters, only: num_wann, gyrotropic, fermi, param_input
+    use w90_parameters, only: num_wann, fermi, param_input
+    use pw90_parameters, only: gyrotropic
 
     !use w90_comms, only: on_root
     use w90_io, only: stdout, io_time, io_error
@@ -814,7 +817,7 @@ contains
     !====================================================================!
 
     use w90_constants, only: dp, cmplx_i, cmplx_0
-    use w90_parameters, only: gyrotropic
+    use pw90_parameters, only: gyrotropic
 
     ! Arguments
     !
@@ -887,7 +890,7 @@ contains
   end subroutine gyrotropic_get_NOA_Bnl_spin
 
   subroutine gyrotropic_outprint_tensor(f_out_name, arrEf, arrEF1D, arrEfW, units, comment, symmetrize)
-    use w90_parameters, only: gyrotropic
+    use pw90_parameters, only: gyrotropic
     use w90_io, only: io_file_unit, seedname, stdout
 
     character(len=30), intent(in) :: f_out_name

@@ -49,8 +49,8 @@ contains
       io_time, io_stopwatch, stdout
     use w90_utility, only: utility_diagonalize, utility_recip_lattice
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, kslice, recip_lattice, &
-      fermi, berry !_curv_unit, kubo_adpt_smr
+    use w90_parameters, only: num_wann, fermi, recip_lattice
+    use pw90_parameters, only: kslice, berry !_curv_unit, kubo_adpt_smr
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -796,7 +796,8 @@ contains
 
   subroutine kslice_print_info(plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc)
     use w90_io, only: stdout, io_error
-    use w90_parameters, only: fermi, berry !_curv_unit
+    use w90_parameters, only: fermi
+    use pw90_parameters, only: berry !_curv_unit
 
     logical, intent(in)     :: plot_fermi_lines, fermi_lines_color, plot_curv, plot_morb, plot_shc
 

@@ -48,8 +48,8 @@ contains
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
-    use w90_parameters, only: num_wann, dos_data, param_input, &
-      pw90_common, berry !wanint_kpoint_file
+    use w90_parameters, only: num_wann, param_input
+    use pw90_parameters, only: dos_data, pw90_common, berry !wanint_kpoint_file
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize
@@ -466,8 +466,8 @@ contains
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: num_wann, pw90_common, param_input, &
-      dos_data !(num_dos_project, dos_project)
+    use w90_parameters, only: num_wann, param_input
+    use pw90_parameters, only: pw90_common, dos_data !(num_dos_project, dos_project)
     use w90_spin, only: spin_get_nk
 
     ! Arguments
@@ -730,4 +730,3 @@ contains
 !~  end function count_states
 
 end module w90_dos
-

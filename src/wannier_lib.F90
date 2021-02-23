@@ -211,7 +211,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   endif
 
   call kmesh_dealloc(nncell, neigh, nnlist, bk, bka, wb)
-  call param_dealloc()
+  call param_w90_dealloc()
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
   write (stdout, '(/a/)') ' Finished setting up k-point neighbours.'
@@ -243,6 +243,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   use w90_constants
   use w90_parameters
+  use wannier_parameters
+  use wannier_methods, only: param_read, proj
   use w90_io
   use w90_hamiltonian
   use w90_kmesh
@@ -341,7 +343,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   call param_lib_set_atoms(atom_symbols_loc, atoms_cart_loc)
 
-  call param_read()
+  call param_read(.true.)
 
   call param_write()
 
@@ -469,7 +471,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
 
   if (wannier_plot .or. bands_plot .or. fermi_surface_plot .or. write_hr) then
-    call plot_main(num_kpts, w90_calcs%bands_plot, dos_plot, k_points%kpt_latt, &
+    call plot_main(num_kpts, w90_calcs%bands_plot, k_points%kpt_latt, &
                    w90_calcs%fermi_surface_plot, w90_calcs%wannier_plot, &
                    param_input%timing_level, param_plot%write_bvec, w90_calcs%write_hr, &
                    param_plot%write_rmn, param_plot%write_tb, param_plot%write_u_matrices, &
@@ -557,7 +559,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                        a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
-  call param_dealloc()
+  call param_w90_dealloc()
 
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 

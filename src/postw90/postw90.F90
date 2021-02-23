@@ -16,7 +16,9 @@ program postw90
   !! The postw90 program
   use w90_constants, only: dp, eps6
   use w90_parameters
-  use w90_param_methods
+  use pw90_parameters
+  use w90_param_methods, only: param_read_chkpt, param_write_header
+  use pw90_param_methods
   use w90_io
 
   use w90_kmesh
@@ -44,13 +46,14 @@ program postw90
   character(len=9) :: stat, pos
   logical :: wpout_found, werr_found, dryrun
   character(len=50) :: prog
+  character(len=20) :: checkpoint
 
   ! Put some descriptive comments here
   !
   call comms_setup
 
-  driver%library = .false.
-  ispostw90 = .true.
+  !driver%library = .false.
+  !ispostw90 = .true.
 
   if (on_root) then
     time0 = io_time()
@@ -101,7 +104,7 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_read
+    call param_postw90_read
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
@@ -165,7 +168,7 @@ program postw90
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
     !
-    if (on_root) call param_read_chkpt()
+    if (on_root) call param_read_chkpt(.true., checkpoint)
     !
     ! Distribute the information in the um and chk files to the other nodes
     !

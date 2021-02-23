@@ -34,7 +34,8 @@ module w90_boltzwann
   !!    DOI: 10.1016/j.cpc.2013.09.015    (arXiv:1305.1587)
   !============================================================!
   use w90_constants
-  use w90_parameters, only: boltz, dis_data, pw90_common, param_input
+  use w90_parameters, only: dis_data, param_input
+  use pw90_parameters, only: boltz, pw90_common
   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
   use w90_utility, only: utility_inv3, utility_inv2
   use w90_postw90_common
@@ -598,7 +599,8 @@ contains
     !!       and boltz_bandshift_firstband input flags.
     !!
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_parameters, only: num_wann, boltz
+    use w90_parameters, only: num_wann
+    use pw90_parameters, only: boltz
     use w90_param_methods, only: param_get_smearing_type
     use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
@@ -967,7 +969,8 @@ contains
     !!
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
-    use w90_parameters, only: num_wann, pw90_common, param_input, boltz
+    use w90_parameters, only: num_wann, param_input
+    use pw90_parameters, only: pw90_common, boltz
     use w90_spin, only: spin_get_nk
 
     ! Arguments
