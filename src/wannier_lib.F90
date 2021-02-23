@@ -66,6 +66,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
   use w90_constants
   use w90_parameters
+  use wannier_parameters
+  use wannier_methods, only: param_read, proj
   use w90_sitesym
   use w90_io
   use w90_kmesh
@@ -145,7 +147,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   ! GP: at this point we don't know yet the number of excluded bands...
   num_bands = num_bands_tot
   library_param_read_first_pass = .true.
-  call param_read()
+  call param_read(.true.)
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   library_param_read_first_pass = .false.
@@ -244,7 +246,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_constants
   use w90_parameters
   use wannier_parameters
-  use wannier_methods, only: param_read, proj
+  use wannier_methods, only: param_read
   use w90_io
   use w90_hamiltonian
   use w90_kmesh
