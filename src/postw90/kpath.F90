@@ -1027,7 +1027,7 @@ contains
     ! and their associated horizontal coordinate for the plot (xval)    !
     !===================================================================!
 
-    use w90_parameters, only: kpath, spec_points, recip_lattice
+    use w90_parameters, only: kpath, spec_points, real_lattice, recip_lattice
     use w90_utility, only: utility_metric
 
     integer, intent(out)    :: num_paths, total_pts
@@ -1038,9 +1038,9 @@ contains
 
     integer, allocatable, dimension(:) :: kpath_pts
     real(kind=dp)                      :: vec(3)
-    real(kind=dp) :: recip_metric(3, 3)
+    real(kind=dp) :: recip_metric(3, 3), real_metric(3, 3)
 
-    call utility_metric(recip_lattice, recip_metric)
+    call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
     ! Work out how many points there are in the total path, and the
     ! positions of the special points
     !

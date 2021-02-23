@@ -369,8 +369,7 @@ contains
   end subroutine utility_compar
 
   !===================================================================
-  subroutine utility_metric(real_lat, recip_lat, &
-                            real_metric, recip_metric)
+  subroutine utility_metric(real_lat, recip_lat, real_metric, recip_metric)
     !==================================================================!
     !                                                                  !
     !!  Calculate the real and reciprical space metrics
