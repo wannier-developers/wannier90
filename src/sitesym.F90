@@ -399,7 +399,7 @@ contains
 
     ngk = count(sym%kptsym(:, ir) .eq. sym%ir2ik(ir))
     if (ngk .eq. 1) then
-      call orthogonalize_u(ndim, num_wann, umat, ntmp, sym)
+      call orthogonalize_u(ndim, num_wann, umat, ntmp)
       return
     endif
 
@@ -438,7 +438,7 @@ contains
         call io_error('symmetrize_ukirr: not converged')
       endif
       usum = usum/ngk
-      call orthogonalize_u(ndim, num_wann, usum, ntmp, sym)
+      call orthogonalize_u(ndim, num_wann, usum, ntmp)
       umat(:, :) = usum
     enddo ! iter
 
@@ -446,7 +446,7 @@ contains
   end subroutine symmetrize_ukirr
 
   !==================================================================!
-  subroutine orthogonalize_u(ndim, m, u, n, sym)
+  subroutine orthogonalize_u(ndim, m, u, n)
     !==================================================================!
 
     implicit none
@@ -454,7 +454,7 @@ contains
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
-    type(sitesym_data), intent(in) :: sym
+    !type(sitesym_data), intent(in) :: sym
 
     complex(kind=dp), allocatable :: smat(:, :), evecl(:, :), evecr(:, :)
     complex(kind=dp), allocatable :: WORK(:)
