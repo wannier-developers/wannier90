@@ -125,14 +125,13 @@ program postw90
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
       !
-      call kmesh_get(recip_lattice, k_points%kpt_cart, param_input%timing_level, &
-                     kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, &
-                     kmesh_info%nntot, kmesh_data%shell_list, param_input%devel_flag, &
-                     param_input%iprint, param_input%lenconfac, kmesh_data%tol, num_kpts, &
-                     kmesh_data%search_shells, param_input%gamma_only, kmesh_info%nnh, &
-                     kmesh_info%wbtot, kmesh_data%skip_B1_tests, kmesh_info%bk, &
-                     kmesh_info%bka, kmesh_info%wb, kmesh_data%num_shells, &
-                     param_input%length_unit)
+      call kmesh_get(recip_lattice, k_points%kpt_cart, param_input%timing_level, kmesh_info%nncell, &
+                     kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%nntot, kmesh_data%shell_list, &
+                     param_input%devel_flag, param_input%iprint, param_input%lenconfac, &
+                     kmesh_data%tol, num_kpts, kmesh_data%search_shells, param_input%gamma_only, &
+                     kmesh_info%nnh, kmesh_info%wbtot, kmesh_data%skip_B1_tests, kmesh_info%bk, &
+                     kmesh_info%bka, kmesh_info%wb, kmesh_data%num_shells, param_input%length_unit)
+
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &
         'Time to get kmesh        ', time2 - time1, ' (sec)'

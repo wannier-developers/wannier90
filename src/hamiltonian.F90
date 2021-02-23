@@ -618,6 +618,7 @@ contains
 
     use w90_constants, only: eps7, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
+    use w90_utility, only: utility_metric
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors

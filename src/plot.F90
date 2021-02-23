@@ -260,6 +260,7 @@ contains
       io_time, io_stopwatch
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, &
       ws_translate_dist
+    use w90_utility, only: utility_metric
 
     implicit none
 

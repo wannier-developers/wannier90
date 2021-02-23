@@ -608,31 +608,29 @@ contains
 #ifdef MPI
     integer :: error, ierr
 
-    integer, allocatable :: array_red(:)
-
-    allocate (array_red(size), stat=ierr)
-    if (ierr /= 0) then
-      call io_error('failure to allocate array_red in comms_reduce_int')
-    end if
+    ! note, JJ 23/2/2021
+    ! previously this routine alloc'd/used/dealloc'd a temp array
+    ! to be used as receive buffer for MPI_reduce
+    ! this temp array was then copied to argument "array"
+    ! but: "array" needs to be of scalar type for the polymorphism to work
+    ! so: need to copy array into a (fake) scalar
+    ! previously: a subroutine my_icopy was used to help to do this.
+    ! probably just reducing in place is better?
 
     select case (op)
-
     case ('SUM')
-      call MPI_reduce(array, array_red, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
+      !call MPI_reduce(array, array_red, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
+      call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
     case ('PRD')
-      call MPI_reduce(array, array_red, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
+      !call MPI_reduce(array, array_red, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
+      call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
     case default
       call io_error('Unknown operation in comms_reduce_int')
-
     end select
-
-    call my_icopy(size, array_red, 1, array, 1)
 
     if (error .ne. MPI_success) then
       call io_error('Error in comms_reduce_int')
     end if
-
-    if (allocated(array_red)) deallocate (array_red)
 #endif
 
     return
