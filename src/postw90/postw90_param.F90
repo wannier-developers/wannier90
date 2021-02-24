@@ -395,7 +395,7 @@ contains
       ("Error: kslice_task cannot include both 'shc' and 'curv'")
 
     kslice%kmesh2d(1:2) = 50
-    call param_get_vector_length('kslice%2dkmesh', found, length=i)
+    call param_get_vector_length('kslice_2dkmesh', found, length=i)
     if (found) then
       if (i == 1) then
         call param_get_keyword_vector('kslice_2dkmesh', found, 1, &
@@ -1161,7 +1161,7 @@ contains
     end if
   end subroutine get_module_kmesh
 
-  !===================================================================
+!===================================================================
   subroutine param_postw90_write
     !==================================================================!
     !                                                                  !
@@ -1171,7 +1171,7 @@ contains
 
     implicit none
 
-    integer :: i, nat, nsp
+    integer :: i, loop, nat, nsp
     real(kind=dp) :: cell_volume
 
     ! System
@@ -1237,8 +1237,8 @@ contains
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :', num_wann, '|'
     write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of electrons per state             :', &
       param_input%num_elec_per_state, '|'
-    if (param_input%iprint > 0) then
-      !write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :', pw90_common%scissors_shift, '|'
+    if (abs(pw90_common%scissors_shift) > 1.0e-7_dp .or. param_input%iprint > 0) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Scissor shift applied to conduction bands :', pw90_common%scissors_shift, '|'
       if (param_input%num_valence_bands > 0) then
         write (stdout, '(1x,a46,10x,i8,13x,a1)') '|  Number of valence bands                   :', &
           param_input%num_valence_bands, '|'
@@ -1246,6 +1246,24 @@ contains
         write (stdout, '(1x,a78)') '|  Number of valence bands                   :       not defined             |'
       endif
     endif
+    if (pw90_common%spin_decomp .or. param_input%iprint > 2) &
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Spin decomposition                        :', pw90_common%spin_decomp, '|'
+    if (pw90_common%spin_moment .or. param_input%iprint > 2) &
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Spin moment                       :', pw90_common%spin_moment, '|'
+    if (pw90_common%spin_decomp .or. pw90_common%spin_moment .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Polar angle of spin quantisation axis     :', pw90_spin%spin_axis_polar, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Azimuthal angle of spin quantisation axis :', pw90_spin%spin_axis_azimuth, '|'
+      if (postw90_oper%spn_formatted) then
+        write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Spn file-type                   :', 'formatted', '|'
+      else
+        write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Spn file-type                   :', 'unformatted', '|'
+      endif
+      if (postw90_oper%uHu_formatted) then
+        write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  uHu file-type                   :', 'formatted', '|'
+      else
+        write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  uHu file-type                   :', 'unformatted', '|'
+      endif
+    end if
 
     if (size(fermi%energy_list) == 1) then
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi energy (eV)                         :', fermi%energy_list(1), '|'
@@ -1284,6 +1302,319 @@ contains
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       F', '|'
     endif
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+
+    ! DOS
+    if (pw90_calcs%dos .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*---------------------------------- DOS -------------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Density of States                :', pw90_calcs%dos, '|'
+      if (dos_data%num_project > 1) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Wannier Projected DOS             :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Wannier Projected DOS             :', '       F', '|'
+      endif
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', dos_data%energy_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', dos_data%energy_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', dos_data%energy_step, '|'
+      if (dos_data%adpt_smr .eqv. adpt_smr .and. &
+          dos_data%adpt_smr_fac == adpt_smr_fac .and. &
+          dos_data%adpt_smr_max == adpt_smr_max .and. &
+          dos_data%smr_fixed_en_width == smr_fixed_en_width .and. &
+          smr_index == dos_data%smr_index) then
+        write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
+      else
+        if (dos_data%adpt_smr) then
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', &
+            dos_data%adpt_smr_fac, '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', &
+            dos_data%adpt_smr_max, '|'
+        else
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
+            dos_data%smr_fixed_en_width, '|'
+        endif
+        write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
+          trim(param_get_smearing_type(dos_data%smr_index)), '|'
+      endif
+      if (kmesh(1) == dos_data%kmesh(1) .and. &
+          kmesh(2) == dos_data%kmesh(2) .and. &
+          kmesh(3) == dos_data%kmesh(3)) then
+        write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
+      else
+        if (dos_data%kmesh_spacing > 0.0_dp) then
+          write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+            dos_data%kmesh(1), 'x', dos_data%kmesh(2), 'x', &
+            dos_data%kmesh(3), ' Spacing = ', dos_data%kmesh_spacing, '|'
+        else
+          write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :', &
+            dos_data%kmesh(1), 'x', dos_data%kmesh(2), 'x', &
+            dos_data%kmesh(3), '|'
+        endif
+      endif
+    endif
+    write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+
+    if (pw90_calcs%kpath .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*--------------------------------- KPATH ------------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plot Properties along a path in k-space   :', pw90_calcs%kpath, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Divisions along first kpath section       :', kpath%num_points, '|'
+      if (index(kpath%task, 'bands') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy bands                         :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy bands                         :', '       F', '|'
+      endif
+      if (index(kpath%task, 'curv') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature                      :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature                      :', '       F', '|'
+      endif
+      if (index(kpath%task, 'morb') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
+      endif
+      if (index(kpath%task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
+      endif
+      write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the bands    :', trim(kpath%bands_colour), '|'
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+      write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
+      if (spec_points%bands_num_spec_points == 0) then
+        write (stdout, '(1x,a78)') '|     None defined                                                           |'
+      else
+        do loop = 1, spec_points%bands_num_spec_points, 2
+          write (stdout, '(1x,a10,2x,a1,2x,3F7.3,5x,a3,2x,a1,2x,3F7.3,7x,a1)') '|    From:', &
+            spec_points%bands_label(loop), (spec_points%bands_spec_points(i, loop), i=1, 3), &
+            'To:', spec_points%bands_label(loop + 1), (spec_points%bands_spec_points(i, loop + 1), i=1, 3), '|'
+        end do
+      end if
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if (pw90_calcs%kslice .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*--------------------------------- KSLICE -----------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plot Properties along a slice in k-space  :', pw90_calcs%kslice, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fermi level used for slice                :', fermi%energy_list(1), '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Divisions along first kpath section       :', kpath%num_points, '|'
+      if (index(kslice%task, 'fermi_lines') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :', '       F', '|'
+      endif
+      if (index(kslice%task, 'curv') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature (sum over occ states):', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature (sum over occ states):', '       F', '|'
+      endif
+      if (index(kslice%task, 'morb') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
+      endif
+      if (index(kslice%task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
+      endif
+      write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the lines    :', &
+        trim(kslice%fermi_lines_colour), '|'
+      write (stdout, '(1x,a78)') '|  2D slice parameters (in reduced coordinates):                             |'
+      write (stdout, '(1x,a14,2x,3F8.3,37x,a1)') '|     Corner: ', (kslice%corner(i), i=1, 3), '|'
+      write (stdout, '(1x,a14,2x,3F8.3,10x,a12,2x,i4,9x,a1)') &
+        '|    Vector1: ', (kslice%b1(i), i=1, 3), ' Divisions:', kslice%kmesh2d(1), '|'
+      write (stdout, '(1x,a14,2x,3F8.3,10x,a12,2x,i4,9x,a1)') &
+        '|    Vector2: ', (kslice%b2(i), i=1, 3), ' Divisions:', kslice%kmesh2d(1), '|'
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if (pw90_calcs%berry .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*--------------------------------- BERRY ------------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Berry Phase related properties    :', pw90_calcs%berry, '|'
+      if (index(berry%task, 'kubo') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Optical Conductivity and JDOS     :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Optical Conductivity and JDOS     :', '       F', '|'
+      endif
+      if (index(berry%task, 'ahc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :', '       F', '|'
+      endif
+      if (index(berry%task, 'sc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
+      endif
+      if (index(berry%task, 'morb') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       F', '|'
+      endif
+      if (index(berry%task, 'shc') > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       T', '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       F', '|'
+      endif
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for optical responses     :', kubo_freq_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency for optical responses     :', kubo_freq_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for optical responses           :', kubo_freq_step, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue for optical responses    :', berry%kubo_eigval_max, '|'
+      if (index(berry%task, 'sc') > 0) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing factor for shift current         :', berry%sc_eta, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Frequency theshold for shift current      :', berry%sc_w_thr, '|'
+        write (stdout, '(1x,a46,1x,a27,3x,a1)') '|  Bloch sums                                :', &
+          trim(param_get_convention_type(berry%sc_phase_conv)), '|'
+      end if
+      if (berry%kubo_adpt_smr .eqv. adpt_smr .and. &
+          berry%kubo_adpt_smr_fac == adpt_smr_fac .and. &
+          berry%kubo_adpt_smr_max == adpt_smr_max &
+          .and. berry%kubo_smr_fixed_en_width == smr_fixed_en_width .and. &
+          smr_index == berry%kubo_smr_index) then
+        write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
+      else
+        if (berry%kubo_adpt_smr) then
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive width smearing                   :', '       T', '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Adaptive smearing factor                  :', berry%kubo_adpt_smr_fac, '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum allowed smearing width            :', berry%kubo_adpt_smr_max, '|'
+        else
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
+          write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
+            berry%kubo_smr_fixed_en_width, '|'
+        endif
+        write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', trim(param_get_smearing_type(berry%kubo_smr_index)), '|'
+      endif
+      if (kmesh(1) == berry%kmesh(1) .and. kmesh(2) == berry%kmesh(2) .and. kmesh(3) == berry%kmesh(3)) then
+        write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
+      else
+        if (berry%kmesh_spacing > 0.0_dp) then
+          write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+            berry%kmesh(1), 'x', berry%kmesh(2), 'x', berry%kmesh(3), ' Spacing = ', berry%kmesh_spacing, '|'
+        else
+          write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
+            , berry%kmesh(1), 'x', berry%kmesh(2), 'x', berry%kmesh(3), '|'
+        endif
+      endif
+      if (berry%curv_adpt_kmesh > 1) then
+        write (stdout, '(1x,a46,10x,i8,13x,a1)') '|  Using an adaptive refinement mesh of size :', berry%curv_adpt_kmesh, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Threshold for adaptive refinement         :', &
+          berry%curv_adpt_kmesh_thresh, '|'
+      else
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :', '    none', '|'
+      endif
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if (pw90_calcs%gyrotropic .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '| Compute Gyrotropic properties              :', pw90_calcs%gyrotropic, '|'
+      write (stdout, '(1x,a46,10x,a20,1x,a1)') '| gyrotropic_task                            :', gyrotropic%task, '|'
+      call parameters_gyro_write_task(gyrotropic%task, '-d0', 'calculate the D tensor')
+      call parameters_gyro_write_task(gyrotropic%task, '-dw', 'calculate the tildeD tensor')
+      call parameters_gyro_write_task(gyrotropic%task, '-c', 'calculate the C tensor')
+      call parameters_gyro_write_task(gyrotropic%task, '-k', 'calculate the K tensor')
+      call parameters_gyro_write_task(gyrotropic%task, '-noa', 'calculate the interbad natural optical activity')
+      call parameters_gyro_write_task(gyrotropic%task, '-dos', 'calculate the density of states')
+
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for tildeD,NOA            :', gyrotropic_freq_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency                           :', gyrotropic_freq_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for frequency                   :', gyrotropic_freq_step, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper eigenvalue                          :', gyrotropic%eigval_max, '|'
+      if (gyrotropic%smr_fixed_en_width == smr_fixed_en_width .and. smr_index == gyrotropic%smr_index) then
+        write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
+      else
+        write (stdout, '(1x,a78)') '|  Using local  smearing parameters                                          |'
+      endif
+      write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
+        gyrotropic%smr_fixed_en_width, '|'
+      write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function                         :', &
+        trim(param_get_smearing_type(gyrotropic%smr_index)), '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  degen_thresh                              :', gyrotropic%degen_thresh, '|'
+
+      if (kmesh(1) == gyrotropic%kmesh(1) .and. kmesh(2) == gyrotropic%kmesh(2) .and. kmesh(3) == gyrotropic%kmesh(3)) then
+        write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
+      elseif (gyrotropic%kmesh_spacing > 0.0_dp) then
+        write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+          gyrotropic%kmesh(1), 'x', gyrotropic%kmesh(2), 'x', gyrotropic%kmesh(3), ' Spacing = ', gyrotropic%kmesh_spacing, '|'
+      else
+        write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
+          , gyrotropic%kmesh(1), 'x', gyrotropic%kmesh(2), 'x', gyrotropic%kmesh(3), '|'
+      endif
+      write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :', '    not implemented', '|'
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if (pw90_calcs%boltzwann .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*------------------------------- BOLTZWANN ----------------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Boltzmann transport properties    :', pw90_calcs%boltzwann, '|'
+      if (boltz%dir_num_2d > 0) then
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  2d structure: non-periodic dimension  :', trim(boltz_2d_dir), '|'
+      else
+        write (stdout, '(1x,a78)') '|  3d Structure                              :                 T             |'
+      endif
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Relaxation Time (fs)                      :', boltz%relax_time, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Chemical Potential (eV)  :', boltz%mu_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Chemical Potential (eV)  :', boltz%mu_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Chemical Potential (eV)     :', boltz%mu_step, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Temperature (K)          :', boltz%temp_min, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Temperature (K)          :', boltz%temp_max, '|'
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for Temperature (K)             :', boltz%temp_step, '|'
+
+      if (kmesh(1) == boltz%kmesh(1) .and. kmesh(2) == boltz%kmesh(2) .and. kmesh(3) == boltz%kmesh(3)) then
+        write (stdout, '(1x,a78)') '|  Using global k-point set for interpolation                                |'
+      else
+        if (boltz%kmesh_spacing > 0.0_dp) then
+          write (stdout, '(1x,a15,i4,1x,a1,i4,1x,a1,i4,16x,a11,f8.3,11x,1a)') '|  Grid size = ', &
+            boltz%kmesh(1), 'x', boltz%kmesh(2), 'x', boltz%kmesh(3), ' Spacing = ', boltz%kmesh_spacing, '|'
+        else
+          write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
+            , boltz%kmesh(1), 'x', boltz%kmesh(2), 'x', boltz%kmesh(3), '|'
+        endif
+      endif
+      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', boltz%tdf_energy_step, '|'
+      write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', trim(param_get_smearing_type(boltz%tdf_smr_index)), '|'
+      if (boltz%tdf_smr_fixed_en_width > 0.0_dp) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
+          '|  TDF fixed Smearing width (eV)             :', boltz%tdf_smr_fixed_en_width, '|'
+      else
+        write (stdout, '(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
+      endif
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute DOS at same time                  :', boltz%calc_also_dos, '|'
+      if (boltz%calc_also_dos .and. param_input%iprint > 2) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', boltz%dos_energy_min, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', boltz%dos_energy_max, '|'
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', boltz%dos_energy_step, '|'
+        if (boltz%dos_adpt_smr .eqv. adpt_smr .and. boltz%dos_adpt_smr_fac == adpt_smr_fac &
+            .and. boltz%dos_adpt_smr_max == adpt_smr_max &
+            .and. boltz%dos_smr_fixed_en_width == smr_fixed_en_width .and. smr_index == boltz%dos_smr_index) then
+          write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
+        else
+          if (boltz%dos_adpt_smr) then
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Adaptive width smearing               :', '       T', '|'
+            write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
+              '|  DOS Adaptive smearing factor              :', boltz%dos_adpt_smr_fac, '|'
+            write (stdout, '(1x,a46,10x,f8.3,13x,a1)') &
+              '|  DOS Maximum allowed smearing width        :', boltz%dos_adpt_smr_max, '|'
+          else
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Fixed width smearing                  :', '       T', '|'
+            write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :', &
+              boltz%dos_smr_fixed_en_width, '|'
+          endif
+          write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', trim(param_get_smearing_type(boltz%dos_smr_index)), '|'
+        endif
+      endif
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
+
+    if (pw90_calcs%geninterp .or. param_input%iprint > 2) then
+      write (stdout, '(1x,a78)') '*------------------------Generic Band Interpolation--------------------------*'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute Properties at given k-points      :', pw90_calcs%geninterp, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Calculate band gradients                  :', geninterp%alsofirstder, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write data into a single file             :', geninterp%single_file, '|'
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+    endif
 
 101 format(20x, a3, 2x, 3F11.6)
 

@@ -620,10 +620,17 @@ contains
     select case (op)
     case ('SUM')
       !call MPI_reduce(array, array_red, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
-      call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
+      if (on_root) then
+        call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
+      else
+        call MPI_reduce(array, array, size, MPI_integer, MPI_sum, root_id, mpi_comm_world, error)
+      endif
     case ('PRD')
-      !call MPI_reduce(array, array_red, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
-      call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
+      if (on_root) then
+        call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
+      else
+        call MPI_reduce(array, array, size, MPI_integer, MPI_prod, root_id, mpi_comm_world, error)
+      endif
     case default
       call io_error('Unknown operation in comms_reduce_int')
     end select
