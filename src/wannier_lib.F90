@@ -108,13 +108,11 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   integer :: ierr
   logical :: wout_found
 
-  logical :: library !JJ
-
   time0 = io_time()
 
   call comms_setup_vars
 
-  library = .true.
+  driver%library = .true.
 !  seedname="wannier"
   seedname = trim(adjustl(seed__name))
   inquire (file=trim(seedname)//'.wout', exist=wout_found)
@@ -320,11 +318,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   type(sitesym_data) :: sym
   type(ham_logical) :: hmlg
 
-  logical :: library !JJ
-
   time0 = io_time()
 
-  library = .true.
+  driver%library = .true.
 !  seedname="wannier"
   seedname = trim(adjustl(seed__name))
   inquire (file=trim(seedname)//'.wout', exist=wout_found)
