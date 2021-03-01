@@ -90,6 +90,7 @@ contains
     use w90_constants, only: eps6
     use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_parameters
+    use wannier_parameters
 
     implicit none
     character(len=*), intent(out) :: checkpoint
@@ -239,6 +240,7 @@ contains
     use w90_constants, only: eps6
     use w90_io, only: io_error, io_file_unit, stdout, seedname
     use w90_parameters
+    use wannier_parameters
 
     implicit none
 
@@ -444,6 +446,7 @@ contains
 
     use w90_io, only: io_file_unit, io_date, seedname
     use w90_parameters
+    use wannier_parameters
 
     implicit none
 
@@ -494,6 +497,7 @@ contains
 
     use w90_io, only: io_file_unit, io_date, seedname
     use w90_parameters
+    use wannier_parameters
 
     implicit none
 
