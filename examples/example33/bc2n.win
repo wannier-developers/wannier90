@@ -5,10 +5,10 @@ num_wann          =   4
 num_iter          = 10000
 num_print_cycles  = 40
 
-dis_froz_max      =  0.95d0
-dis_froz_min      = -5.28d0
+dis_froz_max      =  0.80d0
+dis_froz_min      = -5.0d0
 dis_num_iter      =  10200
-dis_mix_ratio     = 1.d0
+dis_mix_ratio     =  0.5d0
 
 dis_conv_tol = 1E-9
 
