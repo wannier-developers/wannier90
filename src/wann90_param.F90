@@ -181,5 +181,7 @@ module wannier_parameters
   complex(kind=dp), allocatable, save :: m_matrix_orig_local(:, :, :, :)
   ! disentangle, hamiltonian, overlap and wannierise
   complex(kind=dp), allocatable, save :: m_matrix(:, :, :, :)
+  ! in disentangle and overlap
+  complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
 
 end module wannier_parameters

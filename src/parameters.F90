@@ -188,8 +188,6 @@ module w90_parameters
   ! optimally smooth states.
   ! m_matrix we store here, becuase it is needed for restart of wannierise
   complex(kind=dp), allocatable, save :: u_matrix(:, :, :)
-  !BGS is disentangle and overlap
-  complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
 
   integer, save :: mp_grid(3)
   !! Dimensions of the Monkhorst-Pack grid
