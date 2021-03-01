@@ -115,7 +115,7 @@ kmesh.o: ../kmesh.F90 constants.o io.o utility.o parameters.o
 disentangle.o: ../disentangle.F90 constants.o io.o parameters.o sitesym.o comms.o wann90_param.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../disentangle.F90
 
-wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o comms.o wann90_param.o
+wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o parameters.o sitesym.o comms.o wann90_param.o wann90_methods.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannierise.F90
 
 plot.o: ../plot.F90 constants.o io.o utility.o parameters.o hamiltonian.o ws_distance.o wann90_param.o

@@ -175,4 +175,11 @@ module wannier_parameters
   end type select_projection_type
   type(select_projection_type), save :: select_proj
 
+  ! a_matrix, m_matrix in disentangle and overlap
+  complex(kind=dp), allocatable, save :: a_matrix(:, :, :)
+  complex(kind=dp), allocatable, save :: m_matrix_orig(:, :, :, :)
+  complex(kind=dp), allocatable, save :: m_matrix_orig_local(:, :, :, :)
+  ! disentangle, hamiltonian, overlap and wannierise
+  complex(kind=dp), allocatable, save :: m_matrix(:, :, :, :)
+
 end module wannier_parameters

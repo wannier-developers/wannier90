@@ -176,14 +176,10 @@ module w90_parameters
   ! or read in from an ab-initio grid
   ! a_matrix      = projection of trial orbitals on bloch states
   ! m_matrix_orig = overlap of bloch states
-  !BGS a_matrix, m_matrix in disentangle and overlap
-  complex(kind=dp), allocatable, save :: a_matrix(:, :, :)
-  complex(kind=dp), allocatable, save :: m_matrix_orig(:, :, :, :)
-  complex(kind=dp), allocatable, save :: m_matrix_orig_local(:, :, :, :)
   !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
   real(kind=dp), allocatable, save :: eigval(:, :)
 
-  !BGS need to sort these further, u_matrix in lots of places
+  !BGS u_matrix_opt in postw90 only for generation of v_matrix
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the
   ! original bloch states
   complex(kind=dp), allocatable, save :: u_matrix_opt(:, :, :)
@@ -192,8 +188,6 @@ module w90_parameters
   ! optimally smooth states.
   ! m_matrix we store here, becuase it is needed for restart of wannierise
   complex(kind=dp), allocatable, save :: u_matrix(:, :, :)
-  ! disentangle, hamiltonain, overlap and wannierise
-  complex(kind=dp), allocatable, save :: m_matrix(:, :, :, :)
   !BGS is disentangle and overlap
   complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
 
@@ -257,7 +251,6 @@ module w90_param_methods
 
   public :: param_dealloc
   public :: param_write_header
-  public :: param_write_chkpt
   public :: param_read_chkpt
   public :: param_lib_set_atoms
   public :: param_get_smearing_type
@@ -1434,70 +1427,7 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt)
-    !=================================================!
-    !! Write checkpoint file
-    !! IMPORTANT! If you change the chkpt format, adapt
-    !! accordingly also the w90chk2chk.x utility!
-    !! Also, note that this routine writes the u_matrix and the m_matrix - in parallel
-    !! mode these are however stored in distributed form in, e.g., u_matrix_loc only, so
-    !! if you are changing the u_matrix, remember to gather it from u_matrix_loc first!
-    !=================================================!
-
-    use w90_io, only: io_file_unit, io_date, seedname
-
-    implicit none
-
-    character(len=*), intent(in) :: chkpt
-
-    integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
-    character(len=33) :: header
-    character(len=20) :: chkpt1
-
-    write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
-
-    call io_date(cdate, ctime)
-    header = 'written on '//cdate//' at '//ctime
-
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
-
-    write (chk_unit) header                                   ! Date and time
-    write (chk_unit) num_bands                                ! Number of bands
-    write (chk_unit) param_input%num_exclude_bands            ! Number of excluded bands
-    write (chk_unit) (param_input%exclude_bands(i), i=1, param_input%num_exclude_bands) ! Excluded bands
-    write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
-    write (chk_unit) ((recip_lattice(i, j), i=1, 3), j=1, 3)       ! Reciprocal lattice
-    write (chk_unit) num_kpts                                 ! Number of k-points
-    write (chk_unit) (mp_grid(i), i=1, 3)                       ! M-P grid
-    write (chk_unit) ((k_points%kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts) ! K-points
-    write (chk_unit) kmesh_info%nntot                  ! Number of nearest k-point neighbours
-    write (chk_unit) num_wann               ! Number of wannier functions
-    chkpt1 = adjustl(trim(chkpt))
-    write (chk_unit) chkpt1                 ! Position of checkpoint
-    write (chk_unit) param_input%have_disentangled      ! Whether a disentanglement has been performed
-    if (param_input%have_disentangled) then
-      write (chk_unit) param_input%omega_invariant     ! Omega invariant
-      ! lwindow, ndimwin and U_matrix_opt
-      write (chk_unit) ((dis_data%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
-      write (chk_unit) (dis_data%ndimwin(nkp), nkp=1, num_kpts)
-      write (chk_unit) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
-    endif
-    write (chk_unit) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)               ! U_matrix
-    write (chk_unit) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts) ! M_matrix
-    write (chk_unit) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)
-    write (chk_unit) (wann_data%spreads(i), i=1, num_wann)
-    close (chk_unit)
-
-    write (stdout, '(a/)') ' done'
-
-    return
-
-  end subroutine param_write_chkpt
-
-!=================================================!
-  subroutine param_read_chkpt(ispostw90, checkpoint)
+  subroutine param_read_chkpt(ispostw90, checkpoint, m_matrix)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1515,10 +1445,12 @@ contains
     implicit none
     logical, intent(in) :: ispostw90
     character(len=*), intent(out) :: checkpoint
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
     integer :: tmp_excl_bands(1:param_input%num_exclude_bands), tmp_mp_grid(1:3)
+    complex(kind=dp) :: m_tmp ! postw90 dummy for m_matrix read
 
     write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
@@ -1617,11 +1549,15 @@ contains
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
-    if (.not. allocated(m_matrix)) then
-      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating m_matrix in param_read_chkpt')
+    if (ispostw90) then
+      read (chk_unit, err=126) ((((m_tmp, i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
+    else
+      if (.not. allocated(m_matrix)) then
+        allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating m_matrix in param_read_chkpt')
+      endif
+      read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
     endif
-    read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
     ! wannier_centres
     read (chk_unit, err=127) ((wann_data%centres(i, j), i=1, 3), j=1, num_wann)

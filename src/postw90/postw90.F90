@@ -47,6 +47,8 @@ program postw90
   logical :: wpout_found, werr_found, dryrun
   character(len=50) :: prog
   character(len=20) :: checkpoint
+  ! this is a dummy that is not used in postw90, DO NOT use
+  complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
 
   ! Put some descriptive comments here
   !
@@ -168,7 +170,7 @@ program postw90
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
     !
-    if (on_root) call param_read_chkpt(.true., checkpoint)
+    if (on_root) call param_read_chkpt(.true., checkpoint, m_matrix)
     !
     ! Distribute the information in the um and chk files to the other nodes
     !

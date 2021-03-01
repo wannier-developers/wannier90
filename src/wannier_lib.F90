@@ -246,7 +246,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_constants
   use w90_parameters
   use wannier_parameters
-  use wannier_methods, only: param_read
+  use wannier_methods, only: param_read, param_write_chkpt
   use w90_io
   use w90_hamiltonian
   use w90_kmesh

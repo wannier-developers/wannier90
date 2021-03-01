@@ -65,11 +65,11 @@ program wannier
   use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id
   use w90_sitesym !YN:
 
-  use w90_param_methods, only: param_write_header, param_write_chkpt, &
-    param_read_chkpt, param_chkpt_dist
+  use w90_param_methods, only: param_write_header, param_read_chkpt, &
+    param_chkpt_dist
   use wannier_parameters
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
-    param_dist, param_memory_estimate
+    param_dist, param_memory_estimate, param_write_chkpt
 
   implicit none
 
@@ -208,7 +208,7 @@ program wannier
   if (driver%restart .eq. ' ') then  ! start a fresh calculation
     if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
-    if (on_root) call param_read_chkpt(.false., driver%checkpoint)
+    if (on_root) call param_read_chkpt(.false., driver%checkpoint, m_matrix)
     call param_chkpt_dist(driver%checkpoint)
     if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
