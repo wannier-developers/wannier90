@@ -312,7 +312,7 @@ program wannier
                    param_wannierise%trial_step, param_wannierise%precond, &
                    param_wannierise%fixed_step, param_wannierise%lfixstep, &
                    param_wannierise%write_proj, param_input%have_disentangled, &
-                   param_wannierise%conv_tol, num_proj, dis_data%conv_window, &
+                   param_wannierise%conv_tol, num_proj, param_wannierise%conv_window, &
                    param_wannierise%conv_noise_amp, param_wannierise%conv_noise_num, &
                    wann_data%centres, param_input%write_xyz, wann_data%spreads, &
                    param_wannierise%omega_total, param_wannierise%omega_tilde, &

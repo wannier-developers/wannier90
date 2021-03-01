@@ -915,15 +915,14 @@ contains
     call param_get_keyword('num_cg_steps', found, i_value=param_wannierise%num_cg_steps)
     if (param_wannierise%num_cg_steps < 0) call io_error('Error: num_cg_steps must be positive')
 
-    ! we accidentally fixed a tiny bug: conv_tol was previously ignored in wann_main
-    !param_wannierise%conv_tol = 1.0e-10_dp !JJ previously (in main version) this is not used correctly
-    param_wannierise%conv_tol = 1.0e-30_dp !JJ set to impossibly small value to reproduce old behaviour
+    param_wannierise%conv_tol = 1.0e-10_dp
     call param_get_keyword('conv_tol', found, r_value=param_wannierise%conv_tol)
     if (param_wannierise%conv_tol < 0.0_dp) call io_error('Error: conv_tol must be positive')
 
     param_wannierise%conv_noise_amp = -1.0_dp
     call param_get_keyword('conv_noise_amp', found, r_value=param_wannierise%conv_noise_amp)
 
+    ! JJ why is this -1 by default?  it implies that no checking is made for convergence
     param_wannierise%conv_window = -1
     if (param_wannierise%conv_noise_amp > 0.0_dp) param_wannierise%conv_window = 5
     call param_get_keyword('conv_window', found, i_value=param_wannierise%conv_window)
