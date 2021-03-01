@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module w90_parameters
+module w90_param_types
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
 
@@ -22,10 +22,6 @@ module w90_parameters
   implicit none
 
   public
-
-  ! GP: added a flag to check if this is the first run of param_read in library mode or not
-  logical, save :: library_param_read_first_pass !BGS wannier_lib only
-  !BGS flag this flag should eventually be removed, or put in driver_type?
 
   type w90_calculation_type
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
@@ -40,10 +36,7 @@ module w90_parameters
     !! Car-Parinello post-proc flag/transport
     logical :: use_bloch_phases !overlap only
   end type w90_calculation_type
-  type(w90_calculation_type), save :: w90_calcs
 
-  ! Are we running postw90?
-  logical, save :: ispostw90 = .false.
   type pw90_calculation_type !postw90.F90
     logical :: kpath
     logical :: kslice
@@ -54,7 +47,6 @@ module w90_parameters
     logical :: boltzwann
     !BGS spin_moment?
   end type pw90_calculation_type
-  type(pw90_calculation_type), save :: pw90_calcs
 
   type projection_type
     integer, allocatable :: l(:)
@@ -78,13 +70,11 @@ module w90_parameters
     ! Projection data in wannier_lib
     type(projection_type) :: proj
   end type param_driver_type
-  type(param_driver_type), save :: driver
 
   ! written in kmesh for use postprocessing code
   type postproc_type
     logical :: only_A ! only calc A matrix, not M
   end type postproc_type
-  type(postproc_type), save :: pp_calc
 
   !Input
   type parameter_input_type
@@ -120,9 +110,6 @@ module w90_parameters
     logical :: have_disentangled !disentangle, plot, wannierise, postw90...
     real(kind=dp) :: lenconfac !lots of write statements in wannier90
   end type parameter_input_type
-  type(parameter_input_type), save :: param_input
-  ! only in parameters and postw90_common !BGS localise somehow
-  logical, save :: eig_found
 
   type param_plot_type ! only in plot.F90
     logical :: wvfn_formatted
@@ -149,7 +136,6 @@ module w90_parameters
     logical :: write_rmn
     logical :: write_tb
   end type param_plot_type
-  type(param_plot_type), save :: param_plot
 
   type postw90_oper_type ! only in postw90/get_oper.F90
     logical :: spn_formatted
@@ -157,7 +143,6 @@ module w90_parameters
     logical :: uHu_formatted
     !! Read the uHu from fortran formatted file
   end type postw90_oper_type
-  type(postw90_oper_type), save :: postw90_oper
 
   type param_wannierise_type ! only in wannierise.F90
     integer :: num_dump_cycles
@@ -200,10 +185,6 @@ module w90_parameters
     ! Projections
     real(kind=dp), allocatable :: proj_site(:, :)
   end type param_wannierise_type
-  type(param_wannierise_type), save :: param_wannierise
-  ! RS: symmetry-adapted Wannier functions
-  logical, save :: lsitesymmetry = .false.
-  real(kind=dp), save :: symmetrize_eps = 1.d-3
 
   ! setup in wannierise, but used by plot, ws_distance etc
   type wannier_data_type
@@ -211,14 +192,12 @@ module w90_parameters
     real(kind=dp), allocatable :: centres(:, :)
     real(kind=dp), allocatable :: spreads(:)
   end type wannier_data_type
-  type(wannier_data_type), save :: wann_data
 
   type param_hamiltonian_type
     real(kind=dp) :: translation_centre_frac(3)
     ! For Hamiltonian matrix in WF representation
     logical              :: automatic_translation
   end type param_hamiltonian_type
-  type(param_hamiltonian_type), save :: param_hamil
 
   ! used in kmesh, and to allocate in parameters
   ! The maximum number of shells we need to satisfy B1 condition in kmesh
@@ -239,7 +218,6 @@ module w90_parameters
     ! vv: Writes a new block in .nnkp
     logical :: auto_projections
   end type param_kmesh_type
-  type(param_kmesh_type), save :: kmesh_data
 
   ! kmesh parameters (set in kmesh)
   type kmesh_info_type
@@ -253,15 +231,12 @@ module w90_parameters
     real(kind=dp), allocatable :: bk(:, :, :)     ! the b-vectors that go from each k-point to its neighbours
     real(kind=dp), allocatable :: bka(:, :)      ! the b-directions from 1st k-point to its neighbours
   end type kmesh_info_type
-  type(kmesh_info_type), save :: kmesh_info
 
   ! used in wannierise, hamiltonian, plot and others (postw90 also)
   type k_point_type
     real(kind=dp), allocatable :: kpt_latt(:, :) !! kpoints in lattice vecs
     real(kind=dp), allocatable :: kpt_cart(:, :) !kpoints in cartesians - kmesh and transport
   end type k_point_type
-  type(k_point_type), save :: k_points
-  integer, save :: num_kpts !BGS put in k_point_type?
 
   type postw90_common_type
     logical :: spin_moment !postw90_common and postw90
@@ -271,7 +246,6 @@ module w90_parameters
     ! Are we running postw90 starting from an effective model?
     logical :: effective_model = .false.
   end type postw90_common_type
-  type(postw90_common_type), save :: pw90_common
 
 ! Module  s p i n
   type postw90_spin_type
@@ -281,13 +255,11 @@ module w90_parameters
     real(kind=dp) :: spin_kmesh_spacing
     integer :: spin_kmesh(3)
   end type postw90_spin_type
-  type(postw90_spin_type), save :: pw90_spin
 
   type postw90_ham_type
     logical :: use_degen_pert
     real(kind=dp) :: degen_thr
   end type postw90_ham_type
-  type(postw90_ham_type), save :: pw90_ham
 
   ! postw90/boltzwann use win_min/max, so maybe should move these?
   type disentangle_type
@@ -318,13 +290,11 @@ module w90_parameters
     integer, allocatable :: ndimwin(:)
     logical, allocatable :: lwindow(:, :)
   end type disentangle_type
-  type(disentangle_type), save :: dis_data
 
   type fermi_surface_type
     integer :: num_points
     character(len=20) :: plot_format
   end type fermi_surface_type
-  type(fermi_surface_type), save :: fermi_surface_data
 
   ! module  k p a t h (used by postw90/kpath)
   type kpath_type
@@ -332,7 +302,6 @@ module w90_parameters
     integer :: num_points
     character(len=20) :: bands_colour
   end type kpath_type
-  type(kpath_type), save :: kpath
 
   ! module  k s l i c e (postw90/kslice)
   type kslice_type
@@ -343,7 +312,6 @@ module w90_parameters
     integer :: kmesh2d(2)
     character(len=20) :: fermi_lines_colour
   end type kslice_type
-  type(kslice_type), save :: kslice
 
   ! module  d o s
   ! No need to save 'dos_plot', only used here (introduced 'dos_task')
@@ -367,7 +335,6 @@ module w90_parameters
     integer    :: kmesh(3)
     !  real(kind=dp) :: gaussian_width
   end type dos_plot_type
-  type(dos_plot_type), save :: dos_data
 
   ! Module  b e r r y (mainly postw90/berry)
   type berry_type
@@ -391,7 +358,6 @@ module w90_parameters
     complex(kind=dp), allocatable :: kubo_freq_list(:)
     real(kind=dp) :: kubo_eigval_max
   end type berry_type
-  type(berry_type), save :: berry
 
   ! spin Hall conductivity (postw90 - common, get_oper, berry, kpath)
   type spin_hall_type
@@ -403,7 +369,6 @@ module w90_parameters
     integer :: bandshift_firstband
     real(kind=dp) :: bandshift_energyshift
   end type spin_hall_type
-  type(spin_hall_type), save :: spin_hall
 
   type gyrotropic_type ! postw90 - common, gyrotropic
     character(len=120) :: task
@@ -420,14 +385,12 @@ module w90_parameters
     real(kind=dp) :: smr_max_arg
     real(kind=dp) :: eigval_max
   end type gyrotropic_type
-  type(gyrotropic_type), save :: gyrotropic
 
   ! plot, transport, postw90: common, wan_ham, spin, berry, gyrotropic, kpath, kslice
   type fermi_data_type
     integer :: n
     real(kind=dp), allocatable :: energy_list(:)
   end type fermi_data_type
-  type(fermi_data_type), save :: fermi
 
   ! [gp-begin, Jun 1, 2012]
   ! GeneralInterpolator variables - postw90/geninterp
@@ -435,7 +398,6 @@ module w90_parameters
     logical :: alsofirstder
     logical :: single_file
   end type geninterp_type
-  type(geninterp_type), save :: geninterp
   ! [gp-end, Jun 1, 2012]
 
   ! [gp-begin, Apr 12, 2012]
@@ -467,7 +429,6 @@ module w90_parameters
     integer :: bandshift_firstband
     real(kind=dp) :: bandshift_energyshift
   end type boltzwann_type
-  type(boltzwann_type), save :: boltz
   ! [gp-end, Apr 12, 2012]
 
   type transport_type ! transport.F90
@@ -490,7 +451,6 @@ module w90_parameters
     integer :: num_cell_rr
     real(kind=dp) :: group_threshold
   end type transport_type
-  type(transport_type), save :: tran
 
   ! Atom sites - often used in the write_* routines
   ! hamiltonian, wannierise, plot, transport, wannier_lib
@@ -503,6 +463,74 @@ module w90_parameters
     integer :: num_atoms
     integer :: num_species
   end type atom_data_type
+
+  ! projections selection - overlap.F90
+  type select_projection_type
+    logical :: lselproj
+    !integer, save :: num_select_projections
+    !integer, allocatable, save :: select_projections(:)
+    integer, allocatable :: proj2wann_map(:)
+  end type select_projection_type
+
+  ! plot.F90 and postw90/kpath
+  type special_kpoints_type
+    integer :: bands_num_spec_points
+    character(len=20), allocatable ::bands_label(:)
+    real(kind=dp), allocatable ::bands_spec_points(:, :)
+  end type special_kpoints_type
+
+end module w90_param_types
+
+module w90_parameters
+
+  !use w90_constants, only: dp
+  !use w90_io, only: maxlen
+  use w90_param_types
+
+  implicit none
+
+  public
+
+  ! GP: added a flag to check if this is the first run of param_read in library mode or not
+  logical, save :: library_param_read_first_pass !BGS wannier_lib only
+  !BGS flag this flag should eventually be removed, or put in driver_type?
+
+  type(w90_calculation_type), save :: w90_calcs
+  ! Are we running postw90?
+  logical, save :: ispostw90 = .false.
+  type(pw90_calculation_type), save :: pw90_calcs
+  type(param_driver_type), save :: driver
+  type(postproc_type), save :: pp_calc
+  type(parameter_input_type), save :: param_input
+  ! only in parameters and postw90_common !BGS localise somehow
+  logical, save :: eig_found
+  type(param_plot_type), save :: param_plot
+  type(postw90_oper_type), save :: postw90_oper
+  type(param_wannierise_type), save :: param_wannierise
+  ! RS: symmetry-adapted Wannier functions
+  logical, save :: lsitesymmetry = .false.
+  real(kind=dp), save :: symmetrize_eps = 1.d-3
+  type(wannier_data_type), save :: wann_data
+  type(param_hamiltonian_type), save :: param_hamil
+  type(param_kmesh_type), save :: kmesh_data
+  type(kmesh_info_type), save :: kmesh_info
+  type(k_point_type), save :: k_points
+  integer, save :: num_kpts !BGS put in k_point_type?
+  type(postw90_common_type), save :: pw90_common
+  type(postw90_spin_type), save :: pw90_spin
+  type(postw90_ham_type), save :: pw90_ham
+  type(disentangle_type), save :: dis_data
+  type(fermi_surface_type), save :: fermi_surface_data
+  type(kpath_type), save :: kpath
+  type(kslice_type), save :: kslice
+  type(dos_plot_type), save :: dos_data
+  type(berry_type), save :: berry
+  type(spin_hall_type), save :: spin_hall
+  type(gyrotropic_type), save :: gyrotropic
+  type(fermi_data_type), save :: fermi
+  type(geninterp_type), save :: geninterp
+  type(boltzwann_type), save :: boltz
+  type(transport_type), save :: tran
   type(atom_data_type), save :: atoms
 
   integer, save :: num_bands
@@ -542,13 +570,6 @@ module w90_parameters
   integer, save :: num_proj
   !BGS used by stuff in driver/kmesh/wannier - keep separate or duplicate?
 
-  ! projections selection - overlap.F90
-  type select_projection_type
-    logical :: lselproj
-    !integer, save :: num_select_projections
-    !integer, allocatable, save :: select_projections(:)
-    integer, allocatable :: proj2wann_map(:)
-  end type select_projection_type
   type(select_projection_type), save :: select_proj
 
   real(kind=dp), save :: real_lattice(3, 3)
@@ -556,12 +577,6 @@ module w90_parameters
   !parameters derived from input
   real(kind=dp), save :: recip_lattice(3, 3)
 
-  ! plot.F90 and postw90/kpath
-  type special_kpoints_type
-    integer :: bands_num_spec_points
-    character(len=20), allocatable ::bands_label(:)
-    real(kind=dp), allocatable ::bands_spec_points(:, :)
-  end type special_kpoints_type
   type(special_kpoints_type), save :: spec_points
 
 end module w90_parameters
