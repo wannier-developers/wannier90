@@ -50,7 +50,7 @@ program postw90
   call comms_setup
 
   driver%library = .false.
-  ispostw90 = .true.
+  !ispostw90 = .true.
 
   if (on_root) then
     time0 = io_time()
@@ -110,7 +110,7 @@ program postw90
                     recip_lattice, spec_points, pw90_calcs, postw90_oper, &
                     pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
                     dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                    boltz, eig_found, ispostw90)
+                    boltz, eig_found, .false.)
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
@@ -182,7 +182,7 @@ program postw90
       call param_read_chkpt(driver, param_input, wann_data, kmesh_info, &
                             k_points, num_kpts, dis_data, num_bands, &
                             num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                            mp_grid, real_lattice, recip_lattice, ispostw90)
+                            mp_grid, real_lattice, recip_lattice, .true.)
     endif
     !
     ! Distribute the information in the um and chk files to the other nodes

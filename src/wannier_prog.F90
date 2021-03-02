@@ -426,7 +426,7 @@ program wannier
   if (.not. param_input%gamma_only) then
     call wann_main(num_wann, param_wannierise, kmesh_info, param_input, &
                    u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
-                   wann_data, k_points%kpt_latt, num_bands, u_matrix_opt, &
+                   wann_data, k_points, num_bands, u_matrix_opt, &
                    eigval, dis_data, recip_lattice, atoms, &
                    lsitesymmetry, stdout, mp_grid, w90_calcs, &
                    tran%mode, param_hamil, sym, ham_r, irvec, &
@@ -436,7 +436,8 @@ program wannier
     call wann_main_gamma(num_wann, param_wannierise, kmesh_info, &
                          param_input, u_matrix, m_matrix, num_kpts, &
                          real_lattice, wann_data, num_bands, u_matrix_opt, &
-                         eigval, dis_data%lwindow, recip_lattice, atoms, stdout)
+                         eigval, dis_data%lwindow, recip_lattice, atoms, &
+                         k_points, dis_data, mp_grid, stdout)
   end if
 
   time1 = io_time()

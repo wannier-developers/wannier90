@@ -491,13 +491,7 @@ module w90_parameters
 
   public
 
-  ! GP: added a flag to check if this is the first run of param_read in library mode or not
-  logical, save :: library_param_read_first_pass !BGS wannier_lib only
-  !BGS flag this flag should eventually be removed, or put in driver_type?
-
   type(w90_calculation_type), save :: w90_calcs
-  ! Are we running postw90?
-  logical, save :: ispostw90 = .false.
   type(pw90_calculation_type), save :: pw90_calcs
   type(param_driver_type), save :: driver
   type(postproc_type), save :: pp_calc

@@ -50,7 +50,7 @@ contains
   !==================================================================!
   subroutine wann_main(num_wann, param_wannierise, kmesh_info, param_input, &
                        u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
-                       wann_data, kpt_latt, num_bands, u_matrix_opt, eigval, &
+                       wann_data, k_points, num_bands, u_matrix_opt, eigval, &
                        dis_data, recip_lattice, atoms, lsitesymmetry, stdout, &
                        mp_grid, w90_calcs, transport_mode, param_hamil, sym, &
                        ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
@@ -63,9 +63,9 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, &
       cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
-    use w90_parameters, only: param_wannierise_type, kmesh_info_type, &
+    use w90_param_types, only: param_wannierise_type, kmesh_info_type, &
       parameter_input_type, wannier_data_type, disentangle_type, &
-      atom_data_type, w90_calculation_type, param_hamiltonian_type
+      atom_data_type, w90_calculation_type, param_hamiltonian_type, k_point_type
     use w90_param_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -129,7 +129,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     !real(kind=dp), intent(inout) :: wannier_centres(:, :)
     !real(kind=dp), intent(inout) :: wannier_spreads(:)
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    type(k_point_type), intent(in) :: k_points
     integer, intent(in):: num_bands
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     real(kind=dp), intent(in) :: eigval(:, :)
@@ -311,7 +311,7 @@ contains
 
         do irpt = 1, nrpts
           do loop_kpt = 1, num_kpts
-            rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
+            rdotk = twopi*dot_product(k_points%kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
             k_to_r(loop_kpt, irpt) = exp(-cmplx_i*rdotk)
           enddo
         enddo
@@ -569,7 +569,7 @@ contains
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, &
                                      doda0, param_wannierise%precond, &
                                      param_input%optimisation, num_wann, &
-                                     num_kpts, kpt_latt, real_lattice, &
+                                     num_kpts, k_points%kpt_latt, real_lattice, &
                                      param_wannierise%num_cg_steps, &
                                      kmesh_info%wbtot, &
                                      param_wannierise%conv_noise_amp, &
@@ -770,11 +770,10 @@ contains
         ! I also transfer the M matrix
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs)
-        if (on_root) call param_write_chkpt('postdis')
-        !, param_input, wann_data, kmesh_info, &
-        !k_points, num_kpts, dis_data, num_bands, &
-        !                       num_wann, u_matrix, u_matrix_opt, m_matrix, &
-        !                       mp_grid, real_lattice, recip_lattice)
+        if (on_root) call param_write_chkpt('postdis', param_input, wann_data, &
+                                            kmesh_info, k_points, num_kpts, dis_data, num_bands, num_wann, &
+                                            u_matrix, u_matrix_opt, m_matrix, mp_grid, &
+                                            real_lattice, recip_lattice)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then
@@ -886,7 +885,7 @@ contains
       call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
                               atoms%num_atoms, atoms%pos_cart, param_hamil%translation_centre_frac, &
                               param_hamil%automatic_translation, atoms%num_species, atoms%species_num, param_input%lenconfac, &
-                              param_input%have_disentangled, dis_data%ndimwin, dis_data%lwindow, u_matrix_opt, kpt_latt, &
+                              param_input%have_disentangled, dis_data%ndimwin, dis_data%lwindow, u_matrix_opt, k_points%kpt_latt, &
                               eigval, u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, &
                               param_input%timing_level, ham_r, irvec, shift_vec, nrpts, &
                               wannier_centres_translated, hmlg, ham_k)
@@ -3134,7 +3133,8 @@ contains
   subroutine wann_main_gamma(num_wann, param_wannierise, kmesh_info, &
                              param_input, u_matrix, m_matrix, num_kpts, &
                              real_lattice, wann_data, num_bands, u_matrix_opt, &
-                             eigval, lwindow, recip_lattice, atoms, stdout)
+                             eigval, lwindow, recip_lattice, atoms, k_points, &
+                             dis_data, mp_grid, stdout)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3143,8 +3143,9 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
-    use w90_parameters, only: param_wannierise_type, kmesh_info_type, &
-      parameter_input_type, wannier_data_type, atom_data_type
+    use w90_param_types, only: param_wannierise_type, kmesh_info_type, &
+      parameter_input_type, wannier_data_type, atom_data_type, k_point_type, &
+      disentangle_type
     use w90_param_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root
@@ -3199,6 +3200,9 @@ contains
     !integer, intent(in) :: atoms_species_num(:)
     !real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
     !character(len=2), intent(in) :: atoms_symbol(:)
+    type(k_point_type), intent(in) :: k_points ! needed for write_chkpt
+    type(disentangle_type), intent(in) :: dis_data ! needed for write_chkpt
+    integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
     integer, intent(in) :: stdout
 
     ! local
@@ -3476,11 +3480,10 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis') !bgs extra params needed follow
-        !, param_input, wann_data, kmesh_info, &
-        !k_points, num_kpts, dis_data, num_bands, &
-        !                       num_wann, u_matrix, u_matrix_opt, m_matrix, &
-        !                       mp_grid, real_lattice, recip_lattice)
+        call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
+                               k_points, num_kpts, dis_data, num_bands, &
+                               num_wann, u_matrix, u_matrix_opt, m_matrix, &
+                               mp_grid, real_lattice, recip_lattice)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then
