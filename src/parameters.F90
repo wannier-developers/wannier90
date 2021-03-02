@@ -586,7 +586,7 @@ module w90_param_methods
 
   use w90_constants, only: dp
   use w90_io, only: stdout, maxlen
-  use w90_parameters
+  use w90_param_types
 
   implicit none
 
@@ -677,7 +677,16 @@ module w90_param_methods
 contains
 
   !==================================================================!
-  subroutine param_read()
+  subroutine param_read(driver, w90_calcs, pp_calc, param_input, param_plot, &
+                        param_wannierise, lsitesymmetry, symmetrize_eps, &
+                        wann_data, param_hamil, kmesh_data, kmesh_info, &
+                        k_points, num_kpts, dis_data, fermi_surface_data, &
+                        fermi, tran, atoms, num_bands, num_wann, eigval, &
+                        mp_grid, num_proj, select_proj, real_lattice, &
+                        recip_lattice, spec_points, pw90_calcs, postw90_oper, &
+                        pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
+                        dos_data, berry, spin_hall, gyrotropic, geninterp, &
+                        boltz, eig_found, library_param_read_first_pass)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -691,6 +700,52 @@ contains
     use w90_utility, only: utility_recip_lattice
     use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
     implicit none
+
+    !data from parameters module
+    type(param_driver_type), intent(inout) :: driver
+    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(postproc_type), intent(inout) :: pp_calc
+    type(parameter_input_type), intent(inout) :: param_input
+    type(param_plot_type), intent(inout) :: param_plot
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    ! RS: symmetry-adapted Wannier functions
+    logical, intent(inout) :: lsitesymmetry
+    real(kind=dp), intent(inout) :: symmetrize_eps
+    type(wannier_data_type), intent(inout) :: wann_data
+    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(k_point_type), intent(inout) :: k_points
+    integer, intent(inout) :: num_kpts
+    type(disentangle_type), intent(inout) :: dis_data
+    type(fermi_surface_type), intent(inout) :: fermi_surface_data
+    type(fermi_data_type), intent(inout) :: fermi
+    type(transport_type), intent(inout) :: tran
+    type(atom_data_type), intent(inout) :: atoms
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_wann
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    integer, intent(inout) :: mp_grid(3)
+    integer, intent(inout) :: num_proj
+    type(select_projection_type), intent(inout) :: select_proj
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    type(special_kpoints_type), intent(inout) :: spec_points
+    type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    type(postw90_oper_type), intent(inout) :: postw90_oper
+    type(postw90_common_type), intent(inout) :: pw90_common
+    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(kpath_type), intent(inout) :: kpath
+    type(kslice_type), intent(inout) :: kslice
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(berry_type), intent(inout) :: berry
+    type(spin_hall_type), intent(inout) :: spin_hall
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(geninterp_type), intent(inout) :: geninterp
+    type(boltzwann_type), intent(inout) :: boltz
+    logical, intent(inout) :: eig_found
+    logical, intent(in) :: library_param_read_first_pass
 
     !local variables
     real(kind=dp)  :: real_lattice_tmp(3, 3)
@@ -1111,7 +1166,7 @@ contains
     endif
 
     spec_points%bands_num_spec_points = 0
-    call param_get_block_length('kpoint_path', found, i_temp)
+    call param_get_block_length('kpoint_path', found, i_temp, driver%library)
     if (found) then
       spec_points%bands_num_spec_points = i_temp*2
       if (allocated(spec_points%bands_label)) deallocate (spec_points%bands_label)
@@ -1120,7 +1175,7 @@ contains
       if (allocated(spec_points%bands_spec_points)) deallocate (spec_points%bands_spec_points)
       allocate (spec_points%bands_spec_points(3, spec_points%bands_num_spec_points), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating bands_spec_points in param_read')
-      call param_get_keyword_kpath
+      call param_get_keyword_kpath(spec_points)
     end if
     if (.not. found .and. w90_calcs%bands_plot) &
       call io_error('A bandstructure plot has been requested but there is no kpoint_path block')
@@ -2254,7 +2309,7 @@ contains
     endif
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call param_get_block_length('nnkpts', driver%explicit_nnkpts, rows)
+    call param_get_block_length('nnkpts', driver%explicit_nnkpts, rows, driver%library)
     if (driver%explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
@@ -2336,36 +2391,36 @@ contains
     ! [GP-end]
 
     ! To be called after having read the global flag
-    call get_module_kmesh(moduleprefix='boltz', &
+    call get_module_kmesh(recip_lattice, moduleprefix='boltz', &
                           should_be_defined=pw90_calcs%boltzwann, &
                           module_kmesh=boltz%kmesh, &
                           module_kmesh_spacing=boltz%kmesh_spacing)
 
-    call get_module_kmesh(moduleprefix='berry', &
+    call get_module_kmesh(recip_lattice, moduleprefix='berry', &
                           should_be_defined=pw90_calcs%berry, &
                           module_kmesh=berry%kmesh, &
                           module_kmesh_spacing=berry%kmesh_spacing)
 
-    call get_module_kmesh(moduleprefix='gyrotropic', &
+    call get_module_kmesh(recip_lattice, moduleprefix='gyrotropic', &
                           should_be_defined=pw90_calcs%gyrotropic, &
                           module_kmesh=gyrotropic%kmesh, &
                           module_kmesh_spacing=gyrotropic%kmesh_spacing)
 
-    call get_module_kmesh(moduleprefix='spin', &
+    call get_module_kmesh(recip_lattice, moduleprefix='spin', &
                           should_be_defined=pw90_common%spin_moment, &
                           module_kmesh=pw90_spin%spin_kmesh, &
                           module_kmesh_spacing=pw90_spin%spin_kmesh_spacing)
 
-    call get_module_kmesh(moduleprefix='dos', &
+    call get_module_kmesh(recip_lattice, moduleprefix='dos', &
                           should_be_defined=pw90_calcs%dos, &
                           module_kmesh=dos_data%kmesh, &
                           module_kmesh_spacing=dos_data%kmesh_spacing)
 
     ! Atoms
     if (.not. driver%library) atoms%num_atoms = 0
-    call param_get_block_length('atoms_frac', found, i_temp)
+    call param_get_block_length('atoms_frac', found, i_temp, driver%library)
     if (found .and. driver%library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call param_get_block_length('atoms_cart', found2, i_temp2, lunits)
+    call param_get_block_length('atoms_cart', found2, i_temp2, driver%library, lunits)
     if (found2 .and. driver%library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
     if (.not. driver%library) then
       if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
@@ -2377,7 +2432,7 @@ contains
         if (lunits) atoms%num_atoms = atoms%num_atoms - 1
       end if
       if (atoms%num_atoms > 0) then
-        call param_get_atoms(lunits)
+        call param_get_atoms(atoms, driver%library, lunits, real_lattice, recip_lattice)
       end if
     endif
 
@@ -2385,12 +2440,14 @@ contains
     kmesh_data%auto_projections = .false.
     call param_get_keyword('auto_projections', found, l_value=kmesh_data%auto_projections)
     num_proj = 0
-    call param_get_block_length('projections', found, i_temp)
+    call param_get_block_length('projections', found, i_temp, driver%library)
     ! check to see that there are no unrecognised keywords
     if (found) then
       if (kmesh_data%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block')
       lhasproj = .true.
-      call param_get_projections(num_proj, lcount=.true.)
+      call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
+                                 driver, param_wannierise, num_wann, select_proj, &
+                                 recip_lattice, lcount=.true.)
     else
       if (param_wannierise%guiding_centres .and. .not. (param_input%gamma_only .and. w90_calcs%use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found')
@@ -2437,14 +2494,17 @@ contains
       enddo
     endif
 
-    if (lhasproj) call param_get_projections(num_proj, lcount=.false.)
+    if (lhasproj) call param_get_projections(num_proj, atoms, kmesh_data, &
+                                             param_input, driver, param_wannierise, num_wann, select_proj, &
+                                             recip_lattice, lcount=.false.)
 
     ! Constrained centres
-    call param_get_block_length('slwf_centres', found, i_temp)
+    call param_get_block_length('slwf_centres', found, i_temp, driver%library)
     if (found) then
       if (param_wannierise%slwf_constrain) then
         ! Allocate array for constrained centres
-        call param_get_centre_constraints
+        call param_get_centre_constraints(num_wann, param_wannierise, &
+                                          real_lattice)
       else
         write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
       end if
@@ -2457,7 +2517,8 @@ contains
                & <projection_block> are specified.')
         else
           ! Allocate array for constrained centres
-          call param_get_centre_constraints
+          call param_get_centre_constraints(num_wann, param_wannierise, &
+                                            real_lattice)
         end if
       end if
     end if
@@ -2483,7 +2544,7 @@ contains
     if (w90_calcs%transport .and. tran%read_ht) goto 303
 
     ! For aesthetic purposes, convert some things to uppercase
-    call param_uppercase()
+    call param_uppercase(param_input, atoms, spec_points)
 
 303 continue
 
@@ -2571,7 +2632,8 @@ contains
 
   end subroutine internal_set_kmesh
 
-  subroutine get_module_kmesh(moduleprefix, should_be_defined, module_kmesh, module_kmesh_spacing)
+  subroutine get_module_kmesh(recip_lattice, moduleprefix, should_be_defined, &
+                              module_kmesh, module_kmesh_spacing)
     !! This function reads and sets the interpolation mesh variables needed by a given module
     !>
     !!  This function MUST be called after having read the global kmesh and kmesh_spacing!!
@@ -2580,6 +2642,7 @@ contains
     !!  The function takes care also of setting the default value to the global one if no local
     !!       keyword is defined
     use w90_io, only: io_error
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     character(len=*), intent(in)       :: moduleprefix
     !!The prefix that is appended before the name of the variables. In particular,
     !!if the prefix is for instance XXX, the two variables that are read from the
@@ -2730,7 +2793,7 @@ contains
   end function get_smearing_index
 
 !===================================================================
-  subroutine param_uppercase
+  subroutine param_uppercase(param_input, atoms, spec_points)
     !===================================================================
     !                                                                  !
     !! Convert a few things to uppercase to look nice in the output
@@ -2739,6 +2802,9 @@ contains
 
     implicit none
 
+    type(parameter_input_type), intent(inout) :: param_input
+    type(atom_data_type), intent(inout) :: atoms
+    type(special_kpoints_type), intent(inout) :: spec_points
     integer :: nsp, ic, loop, inner_loop
 
     ! Atom labels (eg, si --> Si)
@@ -2773,7 +2839,13 @@ contains
   end subroutine param_uppercase
 
 !===================================================================
-  subroutine param_write
+  subroutine param_write(driver, w90_calcs, param_input, param_plot, &
+                         param_wannierise, lsitesymmetry, symmetrize_eps, &
+                         wann_data, param_hamil, kmesh_data, k_points, &
+                         num_kpts, dis_data, fermi_surface_data, fermi, tran, &
+                         atoms, num_bands, num_wann, mp_grid, num_proj, &
+                         select_proj, real_lattice, recip_lattice, &
+                         spec_points, pw90_calcs)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -2781,6 +2853,35 @@ contains
     !===================================================================
 
     implicit none
+
+    !data from parameters module
+    type(param_driver_type), intent(in) :: driver
+    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(parameter_input_type), intent(in) :: param_input
+    type(param_plot_type), intent(in) :: param_plot
+    type(param_wannierise_type), intent(in) :: param_wannierise
+    ! RS: symmetry-adapted Wannier functions
+    logical, intent(in) :: lsitesymmetry
+    real(kind=dp), intent(in) :: symmetrize_eps
+    type(wannier_data_type), intent(in) :: wann_data
+    type(param_hamiltonian_type), intent(in) :: param_hamil
+    type(param_kmesh_type), intent(in) :: kmesh_data
+    type(k_point_type), intent(in) :: k_points
+    integer, intent(in) :: num_kpts
+    type(disentangle_type), intent(in) :: dis_data
+    type(fermi_surface_type), intent(in) :: fermi_surface_data
+    type(fermi_data_type), intent(in) :: fermi
+    type(transport_type), intent(in) :: tran
+    type(atom_data_type), intent(in) :: atoms
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_proj
+    type(select_projection_type), intent(in) :: select_proj
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    type(special_kpoints_type), intent(in) :: spec_points
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
 
     integer :: i, nkp, loop, nat, nsp
     real(kind=dp) :: cell_volume
@@ -3155,7 +3256,11 @@ contains
   end subroutine param_write
 
 !===================================================================
-  subroutine param_postw90_write
+  subroutine param_postw90_write(param_input, fermi, atoms, num_wann, &
+                                 real_lattice, recip_lattice, spec_points, &
+                                 pw90_calcs, postw90_oper, pw90_common, &
+                                 pw90_spin, kpath, kslice, dos_data, berry, &
+                                 gyrotropic, geninterp, boltz)
     !==================================================================!
     !                                                                  !
     !! write postw90 parameters to stdout
@@ -3163,6 +3268,26 @@ contains
     !===================================================================
 
     implicit none
+
+    !data from parameters module
+    type(parameter_input_type), intent(in) :: param_input
+    type(fermi_data_type), intent(in) :: fermi
+    type(atom_data_type), intent(in) :: atoms
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    type(special_kpoints_type), intent(in) :: spec_points
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(postw90_oper_type), intent(in) :: postw90_oper
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(postw90_spin_type), intent(in) :: pw90_spin
+    type(kpath_type), intent(in) :: kpath
+    type(kslice_type), intent(in) :: kslice
+    type(dos_plot_type), intent(in) :: dos_data
+    type(berry_type), intent(in) :: berry
+    type(gyrotropic_type), intent(in) :: gyrotropic
+    type(geninterp_type), intent(in) :: geninterp
+    type(boltzwann_type), intent(in) :: boltz
 
     integer :: i, loop, nat, nsp
     real(kind=dp) :: cell_volume
@@ -3708,7 +3833,9 @@ contains
   end subroutine param_write_header
 
 !==================================================================!
-  subroutine param_dealloc
+  subroutine param_dealloc(driver, param_input, param_plot, param_wannierise, &
+                           wann_data, kmesh_data, k_points, dis_data, fermi, &
+                           atoms, eigval, spec_points, dos_data, berry)
     !==================================================================!
     !                                                                  !
     !! release memory from allocated parameters
@@ -3717,6 +3844,22 @@ contains
     use w90_io, only: io_error
 
     implicit none
+    !data from parameters module
+    type(param_driver_type), intent(inout) :: driver
+    type(parameter_input_type), intent(inout) :: param_input
+    type(param_plot_type), intent(inout) :: param_plot
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(wannier_data_type), intent(inout) :: wann_data
+    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(k_point_type), intent(inout) :: k_points
+    type(disentangle_type), intent(inout) :: dis_data
+    type(fermi_data_type), intent(inout) :: fermi
+    type(atom_data_type), intent(inout) :: atoms
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    type(special_kpoints_type), intent(inout) :: spec_points
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(berry_type), intent(inout) :: berry
+
     integer :: ierr
 
     if (allocated(dis_data%ndimwin)) then
@@ -3971,7 +4114,10 @@ contains
 ! $  end subroutine param_read_um
 
 !=================================================!
-  subroutine param_write_chkpt(chkpt)
+  subroutine param_write_chkpt(chkpt, param_input, wann_data, kmesh_info, &
+                               k_points, num_kpts, dis_data, num_bands, &
+                               num_wann, u_matrix, u_matrix_opt, m_matrix, &
+                               mp_grid, real_lattice, recip_lattice)
     !=================================================!
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -3986,6 +4132,21 @@ contains
     implicit none
 
     character(len=*), intent(in) :: chkpt
+    !data from parameters module
+    type(parameter_input_type), intent(inout) :: param_input
+    type(wannier_data_type), intent(inout) :: wann_data
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(k_point_type), intent(inout) :: k_points
+    integer, intent(inout) :: num_kpts
+    type(disentangle_type), intent(inout) :: dis_data
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_wann
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
+    integer, intent(inout) :: mp_grid(3)
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
 
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
@@ -4034,7 +4195,10 @@ contains
   end subroutine param_write_chkpt
 
 !=================================================!
-  subroutine param_read_chkpt()
+  subroutine param_read_chkpt(driver, param_input, wann_data, kmesh_info, &
+                              k_points, num_kpts, dis_data, num_bands, &
+                              num_wann, u_matrix, u_matrix_opt, m_matrix, &
+                              mp_grid, real_lattice, recip_lattice, ispostw90)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -4050,6 +4214,24 @@ contains
     use w90_io, only: io_error, io_file_unit, stdout, seedname
 
     implicit none
+
+    !data from parameters module
+    type(param_driver_type), intent(inout) :: driver
+    type(parameter_input_type), intent(inout) :: param_input
+    type(wannier_data_type), intent(inout) :: wann_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    integer, intent(in) :: num_kpts
+    type(disentangle_type), intent(inout) :: dis_data
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: mp_grid(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    logical, intent(in) :: ispostw90 ! Are we running postw90?
 
     integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
     character(len=33) :: header
@@ -4187,7 +4369,9 @@ contains
   end subroutine param_read_chkpt
 
 !===========================================================!
-  subroutine param_chkpt_dist
+  subroutine param_chkpt_dist(driver, param_input, wann_data, num_kpts, &
+                              dis_data, num_bands, num_wann, u_matrix, &
+                              u_matrix_opt)
     !===========================================================!
     !                                                           !
     !! Distribute the chk files
@@ -4200,6 +4384,17 @@ contains
     use w90_comms, only: on_root, comms_bcast
 
     implicit none
+
+    !data from parameters module
+    type(param_driver_type), intent(inout) :: driver
+    type(parameter_input_type), intent(inout) :: param_input
+    type(wannier_data_type), intent(inout) :: wann_data
+    integer, intent(inout) :: num_kpts
+    type(disentangle_type), intent(inout) :: dis_data
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_wann
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
 
     integer :: ierr
 
@@ -4403,7 +4598,8 @@ contains
   end subroutine param_get_keyword
 
 !=========================================================================================!
-  subroutine param_get_keyword_vector(keyword, found, length, c_value, l_value, i_value, r_value)
+  subroutine param_get_keyword_vector(keyword, found, length, c_value, l_value, &
+                                      i_value, r_value)
     !=========================================================================================!
     !                                                                                         !
     !! Finds the values of the required keyword vector
@@ -4534,7 +4730,8 @@ contains
   end subroutine param_get_vector_length
 
 !==============================================================================================!
-  subroutine param_get_keyword_block(keyword, found, rows, columns, c_value, l_value, i_value, r_value)
+  subroutine param_get_keyword_block(keyword, found, rows, columns, c_value, &
+                                     l_value, i_value, r_value)
     !==============================================================================================!
     !                                                                                              !
     !!   Finds the values of the required data block
@@ -4673,7 +4870,7 @@ contains
   end subroutine param_get_keyword_block
 
 !=====================================================!
-  subroutine param_get_block_length(keyword, found, rows, lunits)
+  subroutine param_get_block_length(keyword, found, rows, library, lunits)
     !=====================================================!
     !                                                     !
     !! Finds the length of the data block
@@ -4690,6 +4887,7 @@ contains
     !! Is keyword present
     integer, intent(out) :: rows
     !! Number of rows
+    logical, intent(in) :: library
     logical, optional, intent(out) :: lunits
     !! Have we found a unit specification
 
@@ -4748,7 +4946,7 @@ contains
     found = .true.
 
     ! Ignore atoms_cart and atoms_frac blocks if running in library mode
-    if (driver%library) then
+    if (library) then
       if (trim(keyword) .eq. 'atoms_cart' .or. trim(keyword) .eq. 'atoms_frac') then
         in_data(line_s:line_e) (1:maxlen) = ' '
       endif
@@ -4781,7 +4979,7 @@ contains
   end subroutine param_get_block_length
 
 !===================================!
-  subroutine param_get_atoms(lunits)
+  subroutine param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice)
     !===================================!
     !                                   !
     !!   Fills the atom data block
@@ -4793,8 +4991,11 @@ contains
     use w90_io, only: io_error
     implicit none
 
+    type(atom_data_type), intent(inout) :: atoms
+    logical, intent(in) :: library
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
+    real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
     real(kind=dp)     :: atoms_pos_cart_tmp(3, atoms%num_atoms)
@@ -4809,7 +5010,7 @@ contains
 
     keyword = "atoms_cart"
     frac = .false.
-    call param_get_block_length("atoms_frac", found, i_temp)
+    call param_get_block_length("atoms_frac", found, i_temp, library)
     if (found) then
       keyword = "atoms_frac"
       frac = .true.
@@ -4954,7 +5155,8 @@ contains
   end subroutine param_get_atoms
 
 !=====================================================!
-  subroutine param_lib_set_atoms(atoms_label_tmp, atoms_pos_cart_tmp)
+  subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, &
+                                 recip_lattice)
     !=====================================================!
     !                                                     !
     !!   Fills the atom data block during a library call
@@ -4966,10 +5168,12 @@ contains
 
     implicit none
 
+    type(atom_data_type), intent(inout) :: atoms
     character(len=*), intent(in) :: atoms_label_tmp(atoms%num_atoms)
     !! Atom labels
     real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atoms%num_atoms)
     !! Atom positions
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
     integer           :: loop2, max_sites, ierr, ic, loop, counter
@@ -5146,7 +5350,8 @@ contains
 
   end subroutine param_get_range_vector
 
-  subroutine param_get_centre_constraints
+  subroutine param_get_centre_constraints(num_wann, param_wannierise, &
+                                          real_lattice)
     !=============================================================================!
     !                                                                             !
     !!  assigns projection centres as default centre constraints and global
@@ -5156,6 +5361,9 @@ contains
     !=============================================================================!
     use w90_io, only: io_error
     use w90_utility, only: utility_frac_to_cart
+    integer, intent(in) :: num_wann
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer           :: loop1, index1, constraint_num, loop2
     integer           :: column, start, finish, wann
     !logical           :: found
@@ -5243,7 +5451,9 @@ contains
   end subroutine param_get_centre_constraint_from_column
 
 !===================================!
-  subroutine param_get_projections(num_proj, lcount)
+  subroutine param_get_projections(num_proj, atoms, kmesh_data, param_input, &
+                                   driver, param_wannierise, num_wann, &
+                                   select_proj, recip_lattice, lcount)
     !===================================!
     !                                   !
     !!  Fills the projection data block
@@ -5258,6 +5468,15 @@ contains
     implicit none
 
     integer, intent(inout) :: num_proj
+    type(atom_data_type), intent(in) :: atoms
+    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(parameter_input_type), intent(in) :: param_input
+    ! projection data
+    type(param_driver_type), intent(inout) :: driver
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    integer, intent(in) :: num_wann
+    type(select_projection_type), intent(inout) :: select_proj
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in)    :: lcount
 
     real(kind=dp)     :: pos_frac(3)
@@ -5917,7 +6136,7 @@ contains
   end subroutine param_get_projections
 
 !===================================!
-  subroutine param_get_keyword_kpath
+  subroutine param_get_keyword_kpath(spec_points)
     !===================================!
     !                                   !
     !!  Fills the kpath data block
@@ -5927,6 +6146,7 @@ contains
 
     implicit none
 
+    type(special_kpoints_type), intent(inout) :: spec_points
     character(len=20) :: keyword
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter
     logical           :: found_e, found_s
@@ -5991,7 +6211,10 @@ contains
   end subroutine param_get_keyword_kpath
 
 !===========================================!
-  subroutine param_memory_estimate
+  subroutine param_memory_estimate(w90_calcs, param_input, param_wannierise, &
+                                   kmesh_data, kmesh_info, num_kpts, dis_data, &
+                                   atoms, num_bands, num_wann, num_proj, &
+                                   pw90_calcs, pw90_common, boltz, ispostw90)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -6001,6 +6224,23 @@ contains
     use w90_comms, only: on_root
 
     implicit none
+
+    !data from parameters module
+    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(parameter_input_type), intent(in) :: param_input
+    type(param_wannierise_type), intent(in) :: param_wannierise
+    type(param_kmesh_type), intent(in) :: kmesh_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    integer, intent(in) :: num_kpts
+    type(disentangle_type), intent(in) :: dis_data
+    type(atom_data_type), intent(in) :: atoms
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_proj
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(boltzwann_type), intent(in) :: boltz
+    logical, intent(in) :: ispostw90 ! Are we running postw90?
 
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
@@ -6252,7 +6492,15 @@ contains
   end subroutine param_memory_estimate
 
 !===========================================================!
-  subroutine param_dist
+  subroutine param_dist(driver, w90_calcs, pp_calc, param_input, param_plot, &
+                        param_wannierise, lsitesymmetry, symmetrize_eps, &
+                        wann_data, param_hamil, kmesh_data, kmesh_info, &
+                        k_points, num_kpts, dis_data, fermi_surface_data, &
+                        fermi, tran, atoms, num_bands, num_wann, eigval, &
+                        mp_grid, num_proj, real_lattice, recip_lattice, &
+                        pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
+                        pw90_ham, kpath, kslice, dos_data, berry, spin_hall, &
+                        gyrotropic, geninterp, boltz, eig_found)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -6263,6 +6511,50 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
     use w90_comms, only: comms_bcast, on_root
+
+    implicit none
+    !data from parameters module
+    type(param_driver_type), intent(inout) :: driver
+    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(postproc_type), intent(inout) :: pp_calc
+    type(parameter_input_type), intent(inout) :: param_input
+    type(param_plot_type), intent(inout) :: param_plot
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    ! RS: symmetry-adapted Wannier functions
+    logical, intent(inout) :: lsitesymmetry
+    real(kind=dp), intent(inout) :: symmetrize_eps
+    type(wannier_data_type), intent(inout) :: wann_data
+    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    type(k_point_type), intent(inout) :: k_points
+    integer, intent(inout) :: num_kpts
+    type(disentangle_type), intent(inout) :: dis_data
+    type(fermi_surface_type), intent(inout) :: fermi_surface_data
+    type(fermi_data_type), intent(inout) :: fermi
+    type(transport_type), intent(inout) :: tran
+    type(atom_data_type), intent(inout) :: atoms
+    integer, intent(inout) :: num_bands
+    integer, intent(inout) :: num_wann
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    integer, intent(inout) :: mp_grid(3)
+    integer, intent(inout) :: num_proj
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
+    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    type(postw90_oper_type), intent(inout) :: postw90_oper
+    type(postw90_common_type), intent(inout) :: pw90_common
+    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(kpath_type), intent(inout) :: kpath
+    type(kslice_type), intent(inout) :: kslice
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(berry_type), intent(inout) :: berry
+    type(spin_hall_type), intent(inout) :: spin_hall
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(geninterp_type), intent(inout) :: geninterp
+    type(boltzwann_type), intent(inout) :: boltz
+    logical, intent(inout) :: eig_found
 
     integer :: ierr
 

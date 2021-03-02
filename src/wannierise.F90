@@ -741,7 +741,11 @@ contains
         ! I also transfer the M matrix
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
-        if (on_root) call param_write_chkpt('postdis')
+        if (on_root) call param_write_chkpt('postdis') !bgs extra params needed follow
+        !, param_input, wann_data, kmesh_info, &
+        !k_points, num_kpts, dis_data, num_bands, &
+        !                       num_wann, u_matrix, u_matrix_opt, m_matrix, &
+        !                       mp_grid, real_lattice, recip_lattice)
       endif
 
       if (conv_window .gt. 1) then
@@ -3429,7 +3433,11 @@ contains
       if (ldump) then
         uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
         call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call param_write_chkpt('postdis')
+        call param_write_chkpt('postdis') !bgs extra params needed follow
+        !, param_input, wann_data, kmesh_info, &
+        !k_points, num_kpts, dis_data, num_bands, &
+        !                       num_wann, u_matrix, u_matrix_opt, m_matrix, &
+        !                       mp_grid, real_lattice, recip_lattice)
       endif
 
       if (conv_window .gt. 1) then
