@@ -433,53 +433,19 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   end if
 
   if (param_input%gamma_only) then
-    call wann_main_gamma(num_wann, param_wannierise%num_iter, kmesh_info%wb, &
-                         kmesh_info%nntot, u_matrix, m_matrix, num_kpts, param_input%iprint, &
-                         param_wannierise%num_print_cycles, param_wannierise%num_dump_cycles, &
-                         param_input%omega_invariant, param_input%length_unit, param_input%lenconfac, &
-                         param_wannierise%proj_site, real_lattice, param_wannierise%write_r2mn, &
-                         param_wannierise%guiding_centres, param_wannierise%num_guide_cycles, &
-                         param_wannierise%num_no_guide_iter, param_input%timing_level, &
-                         param_wannierise%write_proj, param_input%have_disentangled, &
-                         param_wannierise%conv_tol, param_wannierise%conv_window, wann_data%centres, &
-                         param_input%write_xyz, wann_data%spreads, param_wannierise%omega_total, &
-                         param_wannierise%omega_tilde, param_wannierise%write_vdw_data, &
-                         kmesh_info%neigh, kmesh_info%nnh, kmesh_info%bk, kmesh_info%bka, &
-                         num_bands, u_matrix_opt, eigval, dis_data%lwindow, kmesh_info%wbtot, &
-                         param_wannierise%translate_home_cell, recip_lattice, atoms%num_atoms, &
-                         atoms%symbol, atoms%pos_cart, atoms%num_species, atoms%species_num, &
-                         param_input%num_valence_bands, param_input%num_elec_per_state, stdout)
+    call wann_main_gamma(num_wann, param_wannierise, kmesh_info, &
+                         param_input, u_matrix, m_matrix, num_kpts, &
+                         real_lattice, wann_data, num_bands, u_matrix_opt, &
+                         eigval, dis_data%lwindow, recip_lattice, atoms, stdout)
   else
-    call wann_main(num_wann, param_wannierise%num_cg_steps, &
-                   param_wannierise%num_iter, kmesh_info%nnlist, kmesh_info%nntot, &
-                   kmesh_info%wbtot, u_matrix, m_matrix, num_kpts, param_input%iprint, &
-                   param_wannierise%num_print_cycles, param_wannierise%num_dump_cycles, &
-                   param_input%omega_invariant, param_input%length_unit, param_input%lenconfac, &
-                   param_wannierise%proj_site, real_lattice, param_wannierise%write_r2mn, &
-                   param_wannierise%guiding_centres, param_wannierise%num_guide_cycles, &
-                   param_wannierise%num_no_guide_iter, param_input%timing_level, &
-                   param_wannierise%trial_step, param_wannierise%precond, &
-                   param_wannierise%fixed_step, param_wannierise%lfixstep, &
-                   param_wannierise%write_proj, param_input%have_disentangled, &
-                   param_wannierise%conv_tol, num_proj, dis_data%conv_window, &
-                   param_wannierise%conv_noise_amp, param_wannierise%conv_noise_num, &
-                   wann_data%centres, param_input%write_xyz, wann_data%spreads, &
-                   param_wannierise%omega_total, param_wannierise%omega_tilde, &
-                   param_input%optimisation, param_wannierise%write_vdw_data, &
-                   param_wannierise%write_hr_diag, k_points%kpt_latt, kmesh_info%bk, &
-                   param_wannierise%ccentres_cart, param_wannierise%slwf_num, &
-                   param_wannierise%selective_loc, param_wannierise%slwf_constrain, &
-                   param_wannierise%slwf_lambda, kmesh_info%neigh, kmesh_info%nnh, &
-                   kmesh_info%bka, num_bands, u_matrix_opt, eigval, dis_data%lwindow, &
-                   kmesh_info%wb, param_wannierise%translate_home_cell, recip_lattice, &
-                   atoms%num_atoms, atoms%symbol, atoms%pos_cart, atoms%num_species, &
-                   atoms%species_num, param_input%num_valence_bands, &
-                   param_input%num_elec_per_state, lsitesymmetry, stdout, &
-                   param_input%ws_distance_tol, param_input%ws_search_size, &
-                   mp_grid, tran%mode, param_input%bands_plot_mode, w90_calcs%transport, &
-                   w90_calcs%bands_plot, param_hamil%translation_centre_frac, &
-                   param_hamil%automatic_translation, dis_data%ndimwin, sym, ham_r, irvec, &
-                   shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k)
+    call wann_main(num_wann, param_wannierise, kmesh_info, param_input, &
+                   u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
+                   wann_data, k_points%kpt_latt, num_bands, u_matrix_opt, &
+                   eigval, dis_data, recip_lattice, atoms, &
+                   lsitesymmetry, stdout, mp_grid, w90_calcs, &
+                   tran%mode, param_hamil, sym, ham_r, irvec, &
+                   shift_vec, ndegen, nrpts, rpt_origin, &
+                   wannier_centres_translated, hmlg, ham_k)
   endif
 
   call param_write_chkpt('postwann')
