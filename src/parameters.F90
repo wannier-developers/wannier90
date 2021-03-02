@@ -4133,20 +4133,20 @@ contains
 
     character(len=*), intent(in) :: chkpt
     !data from parameters module
-    type(parameter_input_type), intent(inout) :: param_input
-    type(wannier_data_type), intent(inout) :: wann_data
-    type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_point_type), intent(inout) :: k_points
-    integer, intent(inout) :: num_kpts
-    type(disentangle_type), intent(inout) :: dis_data
-    integer, intent(inout) :: num_bands
-    integer, intent(inout) :: num_wann
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
-    integer, intent(inout) :: mp_grid(3)
-    real(kind=dp), intent(inout) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: recip_lattice(3, 3)
+    type(parameter_input_type), intent(in) :: param_input
+    type(wannier_data_type), intent(in) :: wann_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(k_point_type), intent(in) :: k_points
+    integer, intent(in) :: num_kpts
+    type(disentangle_type), intent(in) :: dis_data
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    integer, intent(in) :: mp_grid(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
