@@ -12,7 +12,7 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module wannier_parameters
+module wannier_param_types
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
 
@@ -35,7 +35,6 @@ module wannier_parameters
     ! Projection data in wannier_lib
     !type(projection_type) :: proj
   end type param_driver_type
-  type(param_driver_type), save :: driver
 
   type w90_calculation_type
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
@@ -50,13 +49,11 @@ module wannier_parameters
     !! Car-Parinello post-proc flag/transport
     logical :: use_bloch_phases !overlap only
   end type w90_calculation_type
-  type(w90_calculation_type), save :: w90_calcs
 
   ! written in kmesh for use postprocessing code
   type postproc_type
     logical :: only_A ! only calc A matrix, not M
   end type postproc_type
-  type(postproc_type), save :: pp_calc
 
   type param_plot_type ! only in plot.F90
     logical :: wvfn_formatted
@@ -83,7 +80,6 @@ module wannier_parameters
     logical :: write_rmn
     logical :: write_tb
   end type param_plot_type
-  type(param_plot_type), save :: param_plot
 
   type param_wannierise_type ! only in wannierise.F90
     integer :: num_dump_cycles
@@ -126,23 +122,17 @@ module wannier_parameters
     ! Projections
     real(kind=dp), allocatable :: proj_site(:, :)
   end type param_wannierise_type
-  type(param_wannierise_type), save :: param_wannierise
-  ! RS: symmetry-adapted Wannier functions
-  logical, save :: lsitesymmetry = .false.
-  real(kind=dp), save :: symmetrize_eps = 1.d-3
 
   type param_hamiltonian_type
     real(kind=dp) :: translation_centre_frac(3)
     ! For Hamiltonian matrix in WF representation
     logical              :: automatic_translation
   end type param_hamiltonian_type
-  type(param_hamiltonian_type), save :: param_hamil
 
   type fermi_surface_type
     integer :: num_points
     character(len=20) :: plot_format
   end type fermi_surface_type
-  type(fermi_surface_type), save :: fermi_surface_data
 
   type transport_type ! transport.F90
     logical :: easy_fix
@@ -164,7 +154,6 @@ module wannier_parameters
     integer :: num_cell_rr
     real(kind=dp) :: group_threshold
   end type transport_type
-  type(transport_type), save :: tran
 
   ! projections selection - overlap.F90
   type select_projection_type
@@ -173,6 +162,31 @@ module wannier_parameters
     !integer, allocatable, save :: select_projections(:)
     integer, allocatable :: proj2wann_map(:)
   end type select_projection_type
+
+end module wannier_param_types
+
+module wannier_param_data
+
+  use w90_constants, only: dp
+  use w90_io, only: maxlen
+
+  use wannier_param_types
+
+  implicit none
+
+  public
+
+  type(param_driver_type), save :: driver
+  type(w90_calculation_type), save :: w90_calcs
+  type(postproc_type), save :: pp_calc
+  type(param_plot_type), save :: param_plot
+  type(param_wannierise_type), save :: param_wannierise
+  ! RS: symmetry-adapted Wannier functions
+  logical, save :: lsitesymmetry = .false.
+  real(kind=dp), save :: symmetrize_eps = 1.d-3
+  type(param_hamiltonian_type), save :: param_hamil
+  type(fermi_surface_type), save :: fermi_surface_data
+  type(transport_type), save :: tran
   type(select_projection_type), save :: select_proj
 
   ! a_matrix, m_matrix in disentangle and overlap
@@ -184,4 +198,4 @@ module wannier_parameters
   ! in disentangle and overlap
   complex(kind=dp), allocatable, save :: m_matrix_local(:, :, :, :)
 
-end module wannier_parameters
+end module wannier_param_data

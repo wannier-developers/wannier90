@@ -106,11 +106,24 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read
+    call param_postw90_read(driver, w90_calcs, pp_calc, param_input, param_plot, &
+                            param_wannierise, lsitesymmetry, symmetrize_eps, &
+                            wann_data, param_hamil, kmesh_data, kmesh_info, &
+                            k_points, num_kpts, dis_data, fermi_surface_data, &
+                            fermi, tran, atoms, num_bands, num_wann, eigval, &
+                            mp_grid, num_proj, select_proj, real_lattice, &
+                            recip_lattice, spec_points, pw90_calcs, postw90_oper, &
+                            pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
+                            dos_data, berry, spin_hall, gyrotropic, geninterp, &
+                            boltz, eig_found, .false.)
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
-    call param_postw90_write
+    call param_postw90_write(param_input, fermi, atoms, num_wann, &
+                             real_lattice, recip_lattice, spec_points, &
+                             pw90_calcs, postw90_oper, pw90_common, &
+                             pw90_spin, kpath, kslice, dos_data, berry, &
+                             gyrotropic, geninterp, boltz)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -170,7 +183,12 @@ program postw90
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
     !
-    if (on_root) call param_read_chkpt(.true., checkpoint, m_matrix)
+    if (on_root) then
+      call param_read_chkpt(driver, param_input, wann_data, kmesh_info, &
+                            k_points, num_kpts, dis_data, num_bands, &
+                            num_wann, u_matrix, u_matrix_opt, m_matrix, &
+                            mp_grid, real_lattice, recip_lattice, .true.)
+    endif
     !
     ! Distribute the information in the um and chk files to the other nodes
     !
