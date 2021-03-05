@@ -67,7 +67,8 @@ module w90_param_types
     character(len=20) :: restart
     character(len=20) :: checkpoint
     ! Are we running as a library
-    logical :: library = .false.
+    ! JJ actually the default is library mode, unless overridden in standalone mode ;-)
+    logical :: library = .true.
     ! Projection data in wannier_lib
     type(projection_type) :: proj
   end type param_driver_type
@@ -976,7 +977,7 @@ contains
     ! Wannierise
     !%%%%%%%%%%%
 
-    w90_calcs%wannierise = .true.
+    w90_calcs%wannierise = .true. ! set to false in order to skip wann_main
     param_wannierise%num_iter = 100
     call param_get_keyword('num_iter', found, i_value=param_wannierise%num_iter)
     if (param_wannierise%num_iter < 0) call io_error('Error: num_iter must be positive')

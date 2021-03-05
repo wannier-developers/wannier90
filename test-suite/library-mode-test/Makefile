@@ -25,7 +25,7 @@ librarytest: COMPILER = $(TEMP2)
 librarytest: test_library_serial.x
 
 test_library_serial.x: test_library.F90 $(LIBRARY)
-	$(COMPILER) $< $(POSTOPTS) $(LDOPTS) $(LIBRARY) $(LIBS) -o $@
+	$(COMPILER) $< $(POSTOPTS) $(LDOPTS) $(LIBRARY) $(LIBS) -I../../src/obj  -o $@
 
 clean:
 	rm -f test_library_serial.x *~
