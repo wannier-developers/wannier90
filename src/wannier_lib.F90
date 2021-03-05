@@ -369,7 +369,6 @@ contains
       param_input%gamma_only = gamma_only_loc
       call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, recip_lattice)
 
-      call comms_array_split(num_kpts, counts, displs)
       call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, m_matrix_orig_local, &
                             m_matrix_orig, param_input%timing_level, kmesh_info%nntot, num_kpts, num_wann, num_bands, &
                             w90_calcs%disentanglement)
@@ -393,7 +392,29 @@ contains
         call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                             m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs)
       endif
+    else ! not library mode; read a and m matrices from file
+
+      if (w90_calcs%overlap) then
+        time2 = io_time()
+        call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, &
+                              a_matrix, m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
+                              kmesh_info%nntot, num_kpts, num_wann, num_bands, &
+                              w90_calcs%disentanglement)
+
+        call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, &
+                          param_input%gamma_only, w90_calcs%use_bloch_phases, w90_calcs%cp_pp, &
+                          u_matrix_opt, m_matrix_orig, param_input%timing_level, a_matrix, m_matrix, &
+                          u_matrix, select_proj%proj2wann_map, &
+                          select_proj%lselproj, num_proj, kmesh_info%nnlist, kmesh_info%nncell, &
+                          kmesh_info%nntot, num_kpts, num_wann, num_bands, &
+                          w90_calcs%disentanglement, sym)
+
+        time1 = io_time()
+        if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
+      endif
     endif
+
+    call comms_array_split(num_kpts, counts, displs)
 
 ! JJ these lines are sadly orphaned
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
@@ -524,33 +545,34 @@ contains
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time2 - time1, ' (sec)'
     end if
 
-    !JJ original behaviour
-    ! Now we zero all of the local output data, then copy in the data
-    ! from the parameters module
-
-    u_matrix_loc = u_matrix
-    if (present(u_matrix_opt_loc) .and. present(lwindow_loc)) then
-    if (w90_calcs%disentanglement) then
-      u_matrix_opt_loc = u_matrix_opt
-      lwindow_loc = dis_data%lwindow
-    else
-      u_matrix_opt_loc = cmplx_0
-      do loop_k = 1, num_kpts
-        do loop_w = 1, num_wann
-          u_matrix_opt_loc(loop_w, loop_w, loop_k) = cmplx_1
+    if (driver%library) then
+      !JJ original behaviour
+      ! Now we zero all of the local output data, then copy in the data
+      ! from the parameters module
+      u_matrix_loc = u_matrix
+      if (present(u_matrix_opt_loc) .and. present(lwindow_loc)) then
+      if (w90_calcs%disentanglement) then
+        u_matrix_opt_loc = u_matrix_opt
+        lwindow_loc = dis_data%lwindow
+      else
+        u_matrix_opt_loc = cmplx_0
+        do loop_k = 1, num_kpts
+          do loop_w = 1, num_wann
+            u_matrix_opt_loc(loop_w, loop_w, loop_k) = cmplx_1
+          end do
         end do
-      end do
-      lwindow_loc = .true.
-    end if
-    end if
+        lwindow_loc = .true.
+      end if
+      end if
 
-    if (present(wann_centres_loc)) wann_centres_loc = wann_data%centres
-    if (present(wann_spreads_loc)) wann_spreads_loc = wann_data%spreads
-    if (present(spread_loc)) then
-      spread_loc(1) = param_wannierise%omega_total
-      spread_loc(2) = param_input%omega_invariant   !JJ maybe mv omg_inv to param_wann?
-      spread_loc(3) = param_wannierise%omega_tilde
-    endif
+      if (present(wann_centres_loc)) wann_centres_loc = wann_data%centres
+      if (present(wann_spreads_loc)) wann_spreads_loc = wann_data%spreads
+      if (present(spread_loc)) then
+        spread_loc(1) = param_wannierise%omega_total
+        spread_loc(2) = param_input%omega_invariant   !JJ maybe mv omg_inv to param_wann?
+        spread_loc(3) = param_wannierise%omega_tilde
+      endif
+    endif !library
 
     call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
                              hmlg, ham_k)
