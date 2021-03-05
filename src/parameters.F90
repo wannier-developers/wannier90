@@ -26,7 +26,6 @@ module w90_param_types
   type w90_calculation_type
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
     logical :: wannierise !JJ ease up some logic
-    logical :: overlap !JJ ease up some logic
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
     logical :: wannier_plot !plot, wannier_lib
     logical :: write_hr !plot, transport and wannier_lib
@@ -977,8 +976,6 @@ contains
     !%%%%%%%%%%%
     ! Wannierise
     !%%%%%%%%%%%
-
-    w90_calcs%overlap = .true. ! default is to read amn and mmn matrices
 
     w90_calcs%wannierise = .true. ! set to false in order to skip wann_main
     param_wannierise%num_iter = 100

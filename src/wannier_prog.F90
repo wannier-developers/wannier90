@@ -244,6 +244,8 @@ program wannier
   real(kind=dp) :: spread_loc(3)
   ! end of vars for lib calls
 
+  logical :: overlap = .true.
+
   call comms_setup
 
   driver%library = .false.
@@ -295,7 +297,7 @@ program wannier
     ! seems unnecessary?
     w90_calcs%disentanglement = .false.
     w90_calcs%wannierise = .false.
-    w90_calcs%overlap = .false.
+    overlap = .false.
   endif
 
   ! Sort out restarts
@@ -322,13 +324,13 @@ program wannier
         if (on_root) write (stdout, '(a/)') 'from wannierisation ...'
 
         w90_calcs%disentanglement = .false.
-        w90_calcs%overlap = .false.
+        overlap = .false.
 
       elseif (driver%checkpoint .eq. 'postwann') then
         if (on_root) write (stdout, '(a/)') 'from plotting ...'
         w90_calcs%disentanglement = .false.
         w90_calcs%wannierise = .false.
-        w90_calcs%overlap = .false.
+        overlap = .false.
 
       else
         if (on_root) write (stdout, '(/a/)')
@@ -340,21 +342,21 @@ program wannier
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
       w90_calcs%disentanglement = .false.
       w90_calcs%wannierise = .true.
-      w90_calcs%overlap = .false.
+      overlap = .false.
 
     case ('plot')       ! continue from plot_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
       ! fixme, the logic for choosing plot and trans in wannier_run needs fixing
       w90_calcs%disentanglement = .false.
       w90_calcs%wannierise = .false.
-      w90_calcs%overlap = .false.
+      overlap = .false.
 
     case ('transport')   ! continue from tran_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
       ! fixme, the logic for choosing plot and trans in wannier_run needs fixing
       w90_calcs%disentanglement = .false.
       w90_calcs%wannierise = .false.
-      w90_calcs%overlap = .false.
+      overlap = .false.
 
     case default        ! for completeness... (it is already trapped in param_read)
       call io_error('Value of restart not recognised in wann_prog')
@@ -363,6 +365,25 @@ program wannier
 
   if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
   if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
+
+  if (overlap) then
+    time2 = io_time()
+    call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, &
+                          a_matrix, m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
+                          kmesh_info%nntot, num_kpts, num_wann, num_bands, &
+                          w90_calcs%disentanglement)
+
+    call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, &
+                      param_input%gamma_only, w90_calcs%use_bloch_phases, w90_calcs%cp_pp, &
+                      u_matrix_opt, m_matrix_orig, param_input%timing_level, a_matrix, m_matrix, &
+                      u_matrix, select_proj%proj2wann_map, &
+                      select_proj%lselproj, num_proj, kmesh_info%nnlist, kmesh_info%nncell, &
+                      kmesh_info%nntot, num_kpts, num_wann, num_bands, &
+                      w90_calcs%disentanglement, sym)
+
+    time1 = io_time()
+    if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
+  endif
 
   ! JJ >>snip<<
 
