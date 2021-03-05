@@ -160,7 +160,7 @@ postw90_common.o: $(POSTDIR)postw90_common.F90 ws_distance.o comms.o parameters.
 wannier_lib.o: ./constants.o ./io.o ./utility.o ./parameters.o \
 	./hamiltonian.o ./kmesh.o ./overlap.o ./disentangle.o \
 	./wannierise.o ./plot.o ./transport.o ../wannier_lib.F90
-	 $(COMPILER) $(FCOPTS) -c ../wannier_lib.F90
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannier_lib.F90
 
 
 .PHONY: wannier libs post clean mpi_test serialobjs w90spn2spn
