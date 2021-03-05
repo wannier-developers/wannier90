@@ -114,19 +114,12 @@ contains
     real(kind=dp) time1, time2
     character(len=9) :: stat, pos
     logical :: wout_found
-    character(len=9) :: cdate, ctime
 
     time2 = io_time()
 
     call comms_setup_vars
 
     if (on_root) then
-
-      !io from param_read apparently goes to .werr
-      stdout = io_file_unit()
-      open (unit=stdout, file=trim(seedname)//'.werr')
-      call io_date(cdate, ctime)
-      write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
       call param_read(driver, w90_calcs, pp_calc, param_input, param_plot, &
                       param_wannierise, lsitesymmetry, symmetrize_eps, &
@@ -137,8 +130,6 @@ contains
                       postw90_oper, pw90_common, pw90_spin, pw90_ham, kpath, &
                       kslice, dos_data, berry, spin_hall, gyrotropic, geninterp, &
                       boltz, eig_found, .true.)
-
-      close (stdout, status='delete')
 
       seedname = trim(adjustl(seed__name))
       if (driver%restart .eq. ' ') then
@@ -422,7 +413,7 @@ contains
                              mp_grid, real_lattice, recip_lattice)
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, ' (sec)'
-!    else
+    else
 ! JJ, when is this intended?  What does it do??
 !    if (param_input%gamma_only) then
 !      call overlap_project_gamma(kmesh_info%nntot, m_matrix, u_matrix, param_input%timing_level, num_wann)  !lp note this not called by wannier_prog.F90
@@ -434,38 +425,36 @@ contains
 !    write (stdout, '(1x,a25,f11.3,a)') 'Time to project overlaps ', time1 - time2, ' (sec)'
     end if
 
-    if (w90_calcs%wannierise) then
-      time1 = io_time()
-      if (param_input%gamma_only) then
-        call wann_main_gamma(num_wann, param_wannierise, kmesh_info, &
-                             param_input, u_matrix, m_matrix, num_kpts, &
-                             real_lattice, wann_data, num_bands, u_matrix_opt, &
-                             eigval, dis_data%lwindow, recip_lattice, atoms, &
-                             k_points, dis_data, mp_grid, stdout)
-      else
-        call wann_main(num_wann, param_wannierise, kmesh_info, param_input, &
-                       u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
-                       wann_data, k_points, num_bands, u_matrix_opt, &
-                       eigval, dis_data, recip_lattice, atoms, &
-                       lsitesymmetry, stdout, mp_grid, w90_calcs, &
-                       tran%mode, param_hamil, sym, ham_r, irvec, &
-                       shift_vec, ndegen, nrpts, rpt_origin, &
-                       wannier_centres_translated, hmlg, ham_k)
-      endif
-      time2 = io_time()
-      write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
-
-      call param_write_chkpt('postwann', param_input, wann_data, kmesh_info, &
-                             k_points, num_kpts, dis_data, num_bands, &
-                             num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                             mp_grid, real_lattice, recip_lattice)
+    !there could be a w90_calcs%wannierise then these calls would be more consistent
+    time1 = io_time()
+    if (param_input%gamma_only) then
+      call wann_main_gamma(num_wann, param_wannierise, kmesh_info, &
+                           param_input, u_matrix, m_matrix, num_kpts, &
+                           real_lattice, wann_data, num_bands, u_matrix_opt, &
+                           eigval, dis_data%lwindow, recip_lattice, atoms, &
+                           k_points, dis_data, mp_grid, stdout)
+    else
+      call wann_main(num_wann, param_wannierise, kmesh_info, param_input, &
+                     u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
+                     wann_data, k_points, num_bands, u_matrix_opt, &
+                     eigval, dis_data, recip_lattice, atoms, &
+                     lsitesymmetry, stdout, mp_grid, w90_calcs, &
+                     tran%mode, param_hamil, sym, ham_r, irvec, &
+                     shift_vec, ndegen, nrpts, rpt_origin, &
+                     wannier_centres_translated, hmlg, ham_k)
     endif
+    time2 = io_time()
+    write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
+
+    call param_write_chkpt('postwann', param_input, wann_data, kmesh_info, &
+                           k_points, num_kpts, dis_data, num_bands, &
+                           num_wann, u_matrix, u_matrix_opt, m_matrix, &
+                           mp_grid, real_lattice, recip_lattice)
 
     ! fixme, write_u_matrices should trigger wannier_plot by some other means than this test here JJ
     ! fixme,  also write_bvec
     if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
         .or. w90_calcs%write_hr .or. param_plot%write_u_matrices .or. param_plot%write_bvec) then
-      time1 = io_time()
       call plot_main(num_kpts, w90_calcs%bands_plot, dos_plot, k_points%kpt_latt, &
                      w90_calcs%fermi_surface_plot, w90_calcs%wannier_plot, &
                      param_input%timing_level, param_plot%write_bvec, w90_calcs%write_hr, &
@@ -494,12 +483,12 @@ contains
                      param_plot%bands_num_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
                      rpt_origin, wannier_centres_translated, hmlg, ham_k)
 
-      time2 = io_time()
-      write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time2 - time1, ' (sec)'
+      time1 = io_time()
+      write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
     end if
 
+    time2 = io_time()
     if (w90_calcs%transport) then
-      time1 = io_time()
       call tran_main(tran%mode, tran%read_ht, param_input%timing_level, &
                      w90_calcs%write_hr, param_input%write_xyz, num_wann, real_lattice, &
                      recip_lattice, wann_data%centres, atoms%num_atoms, w90_calcs%bands_plot, &
@@ -520,11 +509,10 @@ contains
                      wannier_centres_translated, hmlg, ham_k)
 
       call tran_dealloc()
-      time2 = io_time()
-      write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time2 - time1, ' (sec)'
+      time1 = io_time()
+      write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
     end if
 
-    !JJ original behaviour
     ! Now we zero all of the local output data, then copy in the data
     ! from the parameters module
 
@@ -551,16 +539,15 @@ contains
       spread_loc(2) = param_input%omega_invariant   !JJ maybe mv omg_inv to param_wann?
       spread_loc(3) = param_wannierise%omega_tilde
     endif
-
-    call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
-                             hmlg, ham_k)
-    call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                         a_matrix, m_matrix_orig, m_matrix, u_matrix)
-    call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
-    call param_dealloc(driver, param_input, param_plot, param_wannierise, &
-                       wann_data, kmesh_data, k_points, dis_data, fermi, &
-                       atoms, eigval, spec_points, dos_data, berry)
-
+!  call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
+!                           hmlg, ham_k)
+!  call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
+!                       a_matrix, m_matrix_orig, m_matrix, u_matrix)
+!  call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
+!  call param_dealloc(driver, param_input, param_plot, param_wannierise, &
+!                     wann_data, kmesh_data, k_points, dis_data, fermi, &
+!                     atoms, eigval, spec_points, dos_data, berry)
+!
     write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
     if (param_input%timing_level > 0) call io_print_timings()

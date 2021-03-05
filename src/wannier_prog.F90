@@ -320,38 +320,23 @@ program wannier
         if (on_root) write (stdout, '(a/)') 'from wannierisation ...'
         w90_calcs%disentanglement = .false.
         overlap = .false.
-
       elseif (driver%checkpoint .eq. 'postwann') then
         if (on_root) write (stdout, '(a/)') 'from plotting ...'
-        w90_calcs%disentanglement = .false.
-        w90_calcs%wannierise = .false.
-        overlap = .false.
-
+!        goto 2002         ! go to plot_main
       else
         if (on_root) write (stdout, '(/a/)')
         call io_error('Value of checkpoint not recognised in wann_prog')
       endif
-
     case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
       w90_calcs%disentanglement = .false.
-      w90_calcs%wannierise = .true.
       overlap = .false.
-
     case ('plot')       ! continue from plot_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
-      ! fixme, the logic for choosing plot in wannier_run needs fixing
-      w90_calcs%disentanglement = .false.
-      w90_calcs%wannierise = .false.
-      overlap = .false.
-
+!      goto 2002
     case ('transport')   ! continue from tran_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
-      ! the logic for choosing plot in wannier_run needs fixing
-      w90_calcs%disentanglement = .false.
-      w90_calcs%wannierise = .false.
-      overlap = .false.
-
+!      goto 3003
     case default        ! for completeness... (it is already trapped in param_read)
       call io_error('Value of restart not recognised in wann_prog')
     end select
