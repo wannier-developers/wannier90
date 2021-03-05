@@ -25,6 +25,7 @@ module w90_param_types
 
   type w90_calculation_type
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
+    logical :: wannierise !JJ ease up some logic
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
     logical :: wannier_plot !plot, wannier_lib
     logical :: write_hr !plot, transport and wannier_lib
@@ -975,6 +976,7 @@ contains
     ! Wannierise
     !%%%%%%%%%%%
 
+    w90_calcs%wannierise = .true.
     param_wannierise%num_iter = 100
     call param_get_keyword('num_iter', found, i_value=param_wannierise%num_iter)
     if (param_wannierise%num_iter < 0) call io_error('Error: num_iter must be positive')
