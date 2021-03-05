@@ -182,9 +182,6 @@ dist-legacy:
 		./CHANGE.log \
 	)
 
-test-w90: w90chk2chk wannier post  
-	(cd $(ROOTDIR)/test-suite && ./run_tests --category=wannier_only )
-
 test-serial: w90chk2chk wannier post  
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
 

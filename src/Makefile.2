@@ -38,7 +38,7 @@ serialobjs: $(OBJS)
 ../../w90spn2spn.x: $(OBJS) ../w90spn2spn.F90
 	$(COMPILER) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
 
-../../wannier90.x: $(OBJS) ../wannier_prog.F90 wannier_lib.o
+../../wannier90.x: $(OBJS) ../wannier_prog.F90
 	$(COMPILER) ../wannier_prog.F90 $(POSTOPTS) $(LDOPTS) $(OBJS) $(LIBS) -o ../../wannier90.x
 
 post: POSTOPTS = $(TEMP1)
@@ -91,7 +91,7 @@ io.o: ../io.F90 constants.o
 utility.o: ../utility.F90  constants.o io.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../utility.F90
 
-parameters.o: ../parameters.F90 constants.o io.o utility.o comms.o sitesym.o
+parameters.o: ../parameters.F90 constants.o io.o utility.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../parameters.F90
 
 hamiltonian.o: ../hamiltonian.F90 ws_distance.o constants.o io.o utility.o parameters.o
@@ -118,7 +118,7 @@ ws_distance.o: ../ws_distance.F90 constants.o io.o parameters.o
 transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../transport.F90
 
-sitesym.o : ../sitesym.F90 utility.o constants.o 
+sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
 comms.o: ../comms.F90 constants.o io.o

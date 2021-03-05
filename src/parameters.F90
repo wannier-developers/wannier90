@@ -486,7 +486,6 @@ module w90_parameters
   !use w90_constants, only: dp
   !use w90_io, only: maxlen
   use w90_param_types
-  use w90_sitesym !for symmetry type defn. only for time being
 
   implicit none
 
@@ -527,9 +526,6 @@ module w90_parameters
   type(boltzwann_type), save :: boltz
   type(transport_type), save :: tran
   type(atom_data_type), save :: atoms
-
-  !JJ this needs to be in the same place for now (sorry)
-  type(sitesym_data) :: sym
 
   integer, save :: num_bands
   !! Number of bands
