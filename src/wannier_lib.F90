@@ -563,6 +563,12 @@ contains
 
     write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
+    if (param_input%timing_level > 0) call io_print_timings()
+
+    write (stdout, *)
+    write (stdout, '(1x,a)') 'All done: wannier90 exiting'
+    close (stdout)
+
   end subroutine wannier_run
 
 end module

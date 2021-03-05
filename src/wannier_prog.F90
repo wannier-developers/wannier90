@@ -198,9 +198,10 @@ program wannier
   character(len=50) :: prog
 
   type(ham_logical) :: hmlg
+  !type(sitesym_data) :: sym
 
   ! fixme
-  !JJ data that will *not be referenced*; for calling library only
+  !JJ data that will not be referenced; for calling library only
   !1/ setup
   integer :: num_atoms_loc
   integer :: num_bands_tot
@@ -292,13 +293,8 @@ program wannier
 
   ! JJ >>snip<<
 
-  if (w90_calcs%transport .and. tran%read_ht) then
-    ! skip to tran_main; replaces goto 3003
-    ! seems unnecessary?
-    w90_calcs%disentanglement = .false.
-    w90_calcs%wannierise = .false.
-    overlap = .false.
-  endif
+  ! JJ fixme
+  !if (w90_calcs%transport .and. tran%read_ht) goto 3003
 
   ! Sort out restarts
   if (driver%restart .eq. ' ') then  ! start a fresh calculation
@@ -316,13 +312,12 @@ program wannier
     if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
 
+    ! fixme, replace the gotos with task logic
     select case (driver%restart)
     case ('default')    ! continue from where last checkpoint was written
       if (on_root) write (stdout, '(/1x,a)', advance='no') 'Resuming a previous Wannier90 calculation '
-
       if (driver%checkpoint .eq. 'postdis') then
         if (on_root) write (stdout, '(a/)') 'from wannierisation ...'
-
         w90_calcs%disentanglement = .false.
         overlap = .false.
 
@@ -335,7 +330,6 @@ program wannier
       else
         if (on_root) write (stdout, '(/a/)')
         call io_error('Value of checkpoint not recognised in wann_prog')
-
       endif
 
     case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
@@ -346,14 +340,14 @@ program wannier
 
     case ('plot')       ! continue from plot_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
-      ! fixme, the logic for choosing plot and trans in wannier_run needs fixing
+      ! fixme, the logic for choosing plot in wannier_run needs fixing
       w90_calcs%disentanglement = .false.
       w90_calcs%wannierise = .false.
       overlap = .false.
 
     case ('transport')   ! continue from tran_main irrespective of value of last checkpoint
       if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
-      ! fixme, the logic for choosing plot and trans in wannier_run needs fixing
+      ! the logic for choosing plot in wannier_run needs fixing
       w90_calcs%disentanglement = .false.
       w90_calcs%wannierise = .false.
       overlap = .false.
@@ -387,20 +381,25 @@ program wannier
 
   ! JJ >>snip<<
 
-  call wannier_run(seedname, mp_grid_loc, num_kpts_loc, real_lattice_loc, recip_lattice_loc, &
-                   kpt_latt_loc, num_bands_loc, num_wann_loc, nntot_loc, num_atoms_loc, &
-                   atom_symbols_loc, atoms_cart_loc, gamma_only_loc, m_matrix_loc, a_matrix_loc, &
-                   eigenvalues_loc, u_matrix_loc, u_matrix_opt_loc=u_matrix_opt_loc, &
-                   lwindow_loc=lwindow_loc, wann_centres_loc=wann_centres_loc, &
+  call wannier_run(seedname, mp_grid_loc, num_kpts_loc, &
+                   real_lattice_loc, recip_lattice_loc, kpt_latt_loc, num_bands_loc, &
+                   num_wann_loc, nntot_loc, num_atoms_loc, atom_symbols_loc, &
+                   atoms_cart_loc, gamma_only_loc, m_matrix_loc, a_matrix_loc, eigenvalues_loc, &
+                   u_matrix_loc, u_matrix_opt_loc=u_matrix_opt_loc, lwindow_loc=lwindow_loc, wann_centres_loc=wann_centres_loc, &
                    wann_spreads_loc=wann_spreads_loc, spread_loc=spread_loc)
 
-  if (lsitesymmetry) call sitesym_dealloc(sym)
-
-  if (param_input%timing_level > 0) call io_print_timings()
-
-  write (stdout, *)
-  write (stdout, '(1x,a)') 'All done: wannier90 exiting'
-  close (stdout)
-
-  call comms_end()
+  ! JJ >>snip<<
+  !call tran_dealloc()
+  !call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
+  !                         hmlg, ham_k)
+  !call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
+  !                     a_matrix, m_matrix_orig, m_matrix, u_matrix)
+  !call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, &
+  !                   kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
+  !call param_dealloc(driver, param_input, param_plot, param_wannierise, &
+  !                   wann_data, kmesh_data, k_points, dis_data, fermi, &
+  !                   atoms, eigval, spec_points, dos_data, berry)
+  !if (lsitesymmetry) call sitesym_dealloc(sym) !YN:
+  !call comms_end !JJ need to find where defd
+  stop
 end program wannier
