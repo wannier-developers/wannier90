@@ -1,5 +1,5 @@
 OBJS  =  constants.o io.o utility.o parameters.o hamiltonian.o overlap.o \
-	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o
+	 kmesh.o disentangle.o ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier_lib.o
 
 OBJSLIB  =  wannier_lib.o
 
