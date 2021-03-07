@@ -52,7 +52,7 @@ contains
                        u_matrix, m_matrix, num_kpts, real_lattice, num_proj, &
                        wann_data, k_points, num_bands, u_matrix_opt, eigval, &
                        dis_data, recip_lattice, atoms, lsitesymmetry, stdout, &
-                       mp_grid, w90_calcs, transport_mode, param_hamil, sym, &
+                       mp_grid, w90_calcs, tran, param_hamil, sym, &
                        ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
                        wannier_centres_translated, hmlg, ham_k)
     !==================================================================!
@@ -65,7 +65,8 @@ contains
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
     use w90_param_types, only: param_wannierise_type, kmesh_info_type, &
       parameter_input_type, wannier_data_type, disentangle_type, &
-      atom_data_type, w90_calculation_type, param_hamiltonian_type, k_point_type
+      atom_data_type, w90_calculation_type, param_hamiltonian_type, k_point_type, &
+      transport_type
     use w90_param_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -79,6 +80,8 @@ contains
 
     integer, intent(in) :: num_wann
     type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(transport_type), intent(inout) :: tran
+
     !integer, intent(in) :: conv_noise_num
     !integer, intent(in) :: num_guide_cycles, num_no_guide_iter
     !integer, intent(in) :: num_print_cycles, num_dump_cycles
@@ -149,7 +152,7 @@ contains
     type(w90_calculation_type), intent(in) :: w90_calcs
     !logical, intent(in) :: bands_plot
     !logical, intent(in) :: transport
-    character(len=*), intent(in) :: transport_mode
+!   character(len=*), intent(in) :: transport_mode
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     !real(kind=dp), intent(inout) :: translation_centre_frac(3)
     !logical, intent(in) :: automatic_translation
@@ -295,7 +298,7 @@ contains
 
     if (param_wannierise%precond) then
       call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
-                             mp_grid, transport_mode, param_input%bands_plot_mode, w90_calcs%transport, w90_calcs%bands_plot, &
+                             mp_grid, tran, param_input%bands_plot_mode, w90_calcs%transport, w90_calcs%bands_plot, &
                              num_kpts, num_wann, param_input%timing_level, param_input%iprint, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, &
                              hmlg, ham_k)
@@ -878,7 +881,7 @@ contains
 
     if (param_wannierise%write_hr_diag) then
       call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
-                             mp_grid, transport_mode, param_input%bands_plot_mode, w90_calcs%transport, w90_calcs%bands_plot, &
+                             mp_grid, tran, param_input%bands_plot_mode, w90_calcs%transport, w90_calcs%bands_plot, &
                              num_kpts, num_wann, param_input%timing_level, param_input%iprint, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, &
                              hmlg, ham_k)

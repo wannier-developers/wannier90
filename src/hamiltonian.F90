@@ -18,6 +18,7 @@ module w90_hamiltonian
   !! are found in postw90 (e.g. w90_get_oper)
   use w90_constants, only: dp
   use w90_comms, only: on_root
+  use w90_param_types
 
   implicit none
 
@@ -65,7 +66,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
-                               mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, num_kpts, &
+                               mp_grid, tran, bands_plot_mode, transport, bands_plot, num_kpts, &
                                num_wann, timing_level, iprint, ham_r, irvec, ndegen, nrpts, rpt_origin, &
                                wannier_centres_translated, hmlg, ham_k)
     !! Allocate arrays and setup data
@@ -75,6 +76,8 @@ contains
     use w90_io, only: io_error
 
     implicit none
+
+    type(transport_type), intent(inout) :: tran
 
     ! passed variables
     integer, intent(in) :: iprint
@@ -96,7 +99,7 @@ contains
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
 
     character(len=20), intent(in) :: bands_plot_mode
-    character(len=20), intent(in) :: transport_mode
+!   character(len=20), intent(in) :: transport_mode
 
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
@@ -112,8 +115,8 @@ contains
     ! Determine whether to use translation
     !
     if (bands_plot .and. (index(bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
-    if (transport .and. (index(transport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
-    if (transport .and. (index(transport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
+    if (transport .and. (index(tran%mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
+    if (transport .and. (index(tran%mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !

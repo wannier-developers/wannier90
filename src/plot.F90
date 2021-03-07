@@ -29,7 +29,7 @@ contains
                        num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation, &
                        num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin, &
                        lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                       ws_distance_tol, ws_search_size, mp_grid, transport_mode, &
+                       ws_distance_tol, ws_search_size, mp_grid, tran, &
                        bands_plot_mode, transport, iprint, wannier_plot_radius, &
                        wannier_plot_scale, atoms_pos_frac, wannier_plot_spinor_phase, &
                        wannier_plot_spinor_mode, spinors, wannier_plot_format, wvfn_formatted, &
@@ -53,8 +53,10 @@ contains
 !     hamiltonian_write_tb, nrpts, irvec
     use w90_ws_distance, only: done_ws_distance, ws_translate_dist, &
       ws_write_vec
+    use w90_param_types, only: transport_type
 
     implicit none
+    type(transport_type), intent(inout) :: tran
 
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
 !   logical, intent(inout) :: ham_have_setup
@@ -139,7 +141,7 @@ contains
     logical, intent(in) :: spinors
     logical, intent(in) :: wvfn_formatted
     logical, intent(in) :: use_ws_distance
-    character(len=20), intent(in) :: transport_mode
+!   character(len=20), intent(in) :: transport_mode
     character(len=20), intent(in) :: bands_plot_mode
     character(len=20), intent(in) :: wannier_plot_spinor_mode
     character(len=20), intent(in) :: wannier_plot_format
@@ -177,7 +179,7 @@ contains
       ! Transform Hamiltonian to WF basis
       !
       call hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
-                             mp_grid, transport_mode, bands_plot_mode, transport, &
+                             mp_grid, tran, bands_plot_mode, transport, &
                              bands_plot, num_kpts, num_wann, timing_level, iprint, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, hmlg, &
                              ham_k)
