@@ -63,9 +63,10 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps2, eps5, eps8, twopi, &
       cmplx_i
     use w90_io, only: io_error, io_wallclocktime, io_stopwatch, io_file_unit
-    use w90_param_types, only: param_wannierise_type, kmesh_info_type, &
-      parameter_input_type, wannier_data_type, disentangle_type, &
-      atom_data_type, w90_calculation_type, param_hamiltonian_type, k_point_type
+    use wannier_param_types, only: param_wannierise_type, &
+      w90_calculation_type, param_hamiltonian_type
+    use w90_param_types, only: kmesh_info_type, parameter_input_type, &
+      wannier_data_type, disentangle_type, atom_data_type, k_point_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
@@ -3143,9 +3144,9 @@ contains
     !===================================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_error, io_time, io_stopwatch
-    use w90_param_types, only: param_wannierise_type, kmesh_info_type, &
-      parameter_input_type, wannier_data_type, atom_data_type, k_point_type, &
-      disentangle_type
+    use wannier_param_types, only: param_wannierise_type
+    use w90_param_types, only: kmesh_info_type, parameter_input_type, &
+      wannier_data_type, atom_data_type, k_point_type, disentangle_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: on_root

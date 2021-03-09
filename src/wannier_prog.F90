@@ -67,7 +67,7 @@ program wannier
 
   use w90_param_methods, only: param_write_header, param_read_chkpt, &
     param_chkpt_dist
-  use wannier_parameters
+  use wannier_param_types
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
     param_dist, param_memory_estimate, param_write_chkpt
 
@@ -77,14 +77,11 @@ program wannier
   type(w90_calculation_type) :: w90_calcs
   ! Are we running postw90?
   !logical :: ispostw90 = .false.
-  type(pw90_calculation_type) :: pw90_calcs
   type(param_driver_type) :: driver
   type(postproc_type) :: pp_calc
   type(parameter_input_type) :: param_input
-  ! only in parameters and postw90_common !BGS localise somehow
   logical :: eig_found
   type(param_plot_type) :: param_plot
-  type(postw90_oper_type) :: postw90_oper
   type(param_wannierise_type) :: param_wannierise
   ! RS: symmetry-adapted Wannier functions
   logical :: lsitesymmetry = .false.
@@ -94,21 +91,10 @@ program wannier
   type(param_kmesh_type) :: kmesh_data
   type(kmesh_info_type) :: kmesh_info
   type(k_point_type) :: k_points
-  integer :: num_kpts !BGS put in k_point_type?
-  type(postw90_common_type) :: pw90_common
-  type(postw90_spin_type) :: pw90_spin
-  type(postw90_ham_type) :: pw90_ham
+  integer :: num_kpts
   type(disentangle_type) :: dis_data
   type(fermi_surface_type) :: fermi_surface_data
-  type(kpath_type) :: kpath
-  type(kslice_type) :: kslice
-  type(dos_plot_type) :: dos_data
-  type(berry_type) :: berry
-  type(spin_hall_type) :: spin_hall
-  type(gyrotropic_type) :: gyrotropic
   type(fermi_data_type) :: fermi
-  type(geninterp_type) :: geninterp
-  type(boltzwann_type) :: boltz
   type(transport_type) :: tran
   type(atom_data_type) :: atoms
 
@@ -126,10 +112,8 @@ program wannier
   complex(kind=dp), allocatable :: a_matrix(:, :, :)
   complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
   complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
-  !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
   real(kind=dp), allocatable :: eigval(:, :)
 
-  !BGS need to sort these further, u_matrix in lots of places
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the
   ! original bloch states
   complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
@@ -140,14 +124,12 @@ program wannier
   complex(kind=dp), allocatable :: u_matrix(:, :, :)
   ! disentangle, hamiltonain, overlap and wannierise
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
-  !BGS is disentangle and overlap
   complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
 
   integer :: mp_grid(3)
   !! Dimensions of the Monkhorst-Pack grid
 
   integer :: num_proj
-  !BGS used by stuff in driver/kmesh/wannier - keep separate or duplicate?
 
   type(select_projection_type) :: select_proj
 
@@ -230,10 +212,7 @@ program wannier
                     k_points, num_kpts, dis_data, fermi_surface_data, &
                     fermi, tran, atoms, num_bands, num_wann, eigval, &
                     mp_grid, num_proj, select_proj, real_lattice, &
-                    recip_lattice, spec_points, pw90_calcs, postw90_oper, &
-                    pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
-                    dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                    boltz, eig_found, .false.)
+                    recip_lattice, spec_points, eig_found, .false., .false.)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -267,7 +246,7 @@ program wannier
                      wann_data, param_hamil, kmesh_data, k_points, num_kpts, &
                      dis_data, fermi_surface_data, fermi, tran, atoms, &
                      num_bands, num_wann, mp_grid, num_proj, select_proj, &
-                     real_lattice, recip_lattice, spec_points, pw90_calcs)
+                     real_lattice, recip_lattice, spec_points)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -284,9 +263,8 @@ program wannier
       'Time to get kmesh        ', time2 - time1, ' (sec)'
 
     call param_memory_estimate(w90_calcs, param_input, param_wannierise, &
-                               kmesh_data, kmesh_info, num_kpts, dis_data, &
-                               atoms, num_bands, num_wann, num_proj, &
-                               pw90_calcs, pw90_common, boltz, .false.)
+                               kmesh_data, kmesh_info, num_kpts, &
+                               atoms, num_bands, num_wann, num_proj)
   end if
 
   if (dryrun) then
@@ -306,10 +284,7 @@ program wannier
                   wann_data, param_hamil, kmesh_data, kmesh_info, &
                   k_points, num_kpts, dis_data, fermi_surface_data, &
                   fermi, tran, atoms, num_bands, num_wann, eigval, &
-                  mp_grid, num_proj, real_lattice, recip_lattice, &
-                  pw90_calcs, postw90_oper, pw90_common, &
-                  pw90_spin, pw90_ham, kpath, kslice, dos_data, berry, &
-                  spin_hall, gyrotropic, geninterp, boltz, eig_found)
+                  mp_grid, num_proj, real_lattice, recip_lattice, eig_found)
   if (param_input%gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment')
 
@@ -320,12 +295,12 @@ program wannier
     if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
   else                      ! restart a previous calculation
     if (on_root) then
-      call param_read_chkpt(driver, param_input, wann_data, kmesh_info, &
+      call param_read_chkpt(driver%checkpoint, param_input, wann_data, kmesh_info, &
                             k_points, num_kpts, dis_data, num_bands, num_wann, &
                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
                             real_lattice, recip_lattice, .false.)
     endif
-    call param_chkpt_dist(driver, param_input, wann_data, num_kpts, dis_data, &
+    call param_chkpt_dist(driver%checkpoint, param_input, wann_data, num_kpts, dis_data, &
                           num_bands, num_wann, u_matrix, u_matrix_opt)
     if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
@@ -368,9 +343,9 @@ program wannier
                                   kmesh_data%auto_projections, kmesh_data%input_proj%s_qaxis, &
                                   kmesh_data%input_proj%s)
     call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
-    call param_w90_dealloc(driver, param_input, param_plot, param_wannierise, &
-                           wann_data, kmesh_data, k_points, dis_data, fermi, &
-                           atoms, eigval, spec_points, dos_data, berry)
+    call param_w90_dealloc(param_input, param_plot, param_wannierise, &
+                           wann_data, kmesh_data, k_points, dis_data, &
+                           atoms, eigval, spec_points)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
@@ -526,9 +501,9 @@ program wannier
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                        a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, kmesh_info%bka, kmesh_info%wb)
-  call param_w90_dealloc(driver, param_input, param_plot, param_wannierise, &
-                         wann_data, kmesh_data, k_points, dis_data, fermi, &
-                         atoms, eigval, spec_points, dos_data, berry)
+  call param_w90_dealloc(param_input, param_plot, param_wannierise, &
+                         wann_data, kmesh_data, k_points, dis_data, &
+                         atoms, eigval, spec_points)
   if (lsitesymmetry) call sitesym_dealloc(sym) !YN:
 
 4004 continue

@@ -17,9 +17,9 @@ module wannier_methods
 
   use w90_constants, only: dp
   use w90_io, only: stdout, maxlen
-  use w90_parameters
+  use w90_param_types
   use w90_param_methods
-  use wannier_parameters
+  use wannier_param_types
 
   implicit none
 
@@ -27,7 +27,6 @@ module wannier_methods
 
   character(len=20), save :: energy_unit
   !! Units for energy
-  logical, save :: eig_found ! does this really need to be here? BGS
   !! Constrained centres
   real(kind=dp), allocatable, save :: ccentres_frac(:, :)
   character(len=20), save :: one_dim_axis
@@ -59,10 +58,8 @@ contains
                         k_points, num_kpts, dis_data, fermi_surface_data, &
                         fermi, tran, atoms, num_bands, num_wann, eigval, &
                         mp_grid, num_proj, select_proj, real_lattice, &
-                        recip_lattice, spec_points, pw90_calcs, postw90_oper, &
-                        pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
-                        dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                        boltz, eig_found, library_param_read_first_pass)
+                        recip_lattice, spec_points, eig_found, library, &
+                        library_param_read_first_pass)
     !subroutine param_read(library)
     !==================================================================!
     !                                                                  !
@@ -77,7 +74,6 @@ contains
     !use w90_utility, only: utility_recip_lattice
     !use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
     implicit none
-    logical, intent(in) :: library
 
     !data from parameters module
     type(param_driver_type), intent(inout) :: driver
@@ -109,20 +105,21 @@ contains
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(inout) :: spec_points
-    type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    type(postw90_oper_type), intent(inout) :: postw90_oper
-    type(postw90_common_type), intent(inout) :: pw90_common
-    type(postw90_spin_type), intent(inout) :: pw90_spin
-    type(postw90_ham_type), intent(inout) :: pw90_ham
-    type(kpath_type), intent(inout) :: kpath
-    type(kslice_type), intent(inout) :: kslice
-    type(dos_plot_type), intent(inout) :: dos_data
-    type(berry_type), intent(inout) :: berry
-    type(spin_hall_type), intent(inout) :: spin_hall
-    type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(geninterp_type), intent(inout) :: geninterp
-    type(boltzwann_type), intent(inout) :: boltz
+    !type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    !type(postw90_oper_type), intent(inout) :: postw90_oper
+    !type(postw90_common_type), intent(inout) :: pw90_common
+    !type(postw90_spin_type), intent(inout) :: pw90_spin
+    !type(postw90_ham_type), intent(inout) :: pw90_ham
+    !type(kpath_type), intent(inout) :: kpath
+    !type(kslice_type), intent(inout) :: kslice
+    !type(dos_plot_type), intent(inout) :: dos_data
+    !type(berry_type), intent(inout) :: berry
+    !type(spin_hall_type), intent(inout) :: spin_hall
+    !type(gyrotropic_type), intent(inout) :: gyrotropic
+    !type(geninterp_type), intent(inout) :: geninterp
+    !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+    logical, intent(in) :: library
     logical, intent(in) :: library_param_read_first_pass
 
     !local variables
@@ -148,73 +145,88 @@ contains
     logical                   :: global_kmesh_set
 
     call param_in_file
-    call param_w90_read_01
-    call param_w90_read_02
-    call param_read_03
+    call param_w90_read_01(lsitesymmetry, symmetrize_eps)
+    call param_w90_read_02(w90_calcs%transport, tran, driver%restart)
+    call param_read_03(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       !call param_pw90_read_04
-      call param_read_05(energy_unit)
-      call param_w90_read_06
+      call param_read_05(param_input, energy_unit)
+      call param_w90_read_06(param_plot%wvfn_formatted)
       !call param_pw90_read_07
-      call param_w90_read_08
-      call param_read_09
-      call param_w90_read_10
-      call param_read_11(.false., library)
-      call param_w90_read_12
-      call param_read_13(.false., library)
-      call param_w90_read_14(w90_calcs%cp_pp, library)
-      call param_w90_read_15
-      call param_read_16(library)
-      call param_w90_read_17
-      call param_w90_read_18a
-      call param_w90_read_18b
-      call param_w90_read_19
-      call param_w90_read_20
-      call param_read_21(w90_calcs%bands_plot, library)
-      call param_w90_read_22
-      call param_read_23(found_fermi_energy)
-      call param_w90_read_24
+      call param_w90_read_08(param_plot%spin)
+      call param_read_09(num_wann)
+      call param_w90_read_10(param_input)
+      call param_read_11(.false., library, param_input, num_bands, num_wann, &
+                         library_param_read_first_pass)
+      call param_w90_read_12(param_wannierise)
+      call param_read_13(.false., library, param_input%devel_flag, mp_grid, &
+                         num_kpts)
+      call param_w90_read_14(w90_calcs%cp_pp, pp_calc%only_A, driver, &
+                             param_input, num_kpts, library)
+      call param_w90_read_15(param_wannierise)
+      call param_read_16(library, param_input)
+      call param_w90_read_17(param_wannierise)
+      call param_w90_read_18a(param_input%write_xyz)
+      call param_w90_read_18b(param_wannierise)
+      call param_w90_read_19(param_wannierise, num_wann)
+      call param_w90_read_20(w90_calcs, param_plot, &
+                             param_input%bands_plot_mode, num_wann)
+      call param_read_21(w90_calcs%bands_plot, library, spec_points)
+      call param_w90_read_22(w90_calcs, fermi_surface_data, param_plot, &
+                             param_input%bands_plot_mode)
+      call param_read_23(found_fermi_energy, fermi)
+      call param_w90_read_24(w90_calcs%fermi_surface_plot, fermi_surface_data)
       call param_read_25(smr_index)
       !call param_pw90_read_26
-      call param_w90_read_27(w90_calcs%write_hr, w90_calcs%transport, &
-                             w90_calcs%bands_plot, one_dim_axis)
+      call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
+                             tran%read_ht)
     endif
-    call param_read_28
-    call param_w90_read_29(w90_calcs%transport)
+    call param_read_28(param_input)
+    call param_w90_read_29(w90_calcs%transport, param_input, tran)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_w90_read_30
+      call param_w90_read_30(w90_calcs%disentanglement, num_bands, num_wann)
       !call param_pw90_read_31
       call param_read_32(.false., .false., .false., &
                          w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
                          .or. w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
-                         library, driver%postproc_setup)
-      call param_w90_read_33(eig_found)
+                         eigval, library, driver%postproc_setup, num_bands, &
+                         num_kpts)
+      call param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
       !call param_pw90_read_34
-      call param_w90_read_35(w90_calcs%disentanglement)
+      call param_w90_read_35(w90_calcs%disentanglement, param_wannierise, &
+                             param_input, num_kpts)
       !call param_pw90_read_36
-      call param_w90_read_37
+      call param_w90_read_37(param_hamil)
       !call param_pw90_read_38
-      call param_w90_read_39
-      call param_read_40a(.false., library)
-      call param_read_40b(library)
-      call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh)
+      call param_w90_read_39(w90_calcs%use_bloch_phases, &
+                             w90_calcs%disentanglement)
+      call param_read_40a(library, kmesh_data, real_lattice, recip_lattice)
+      call param_read_40b(library, driver, k_points, kmesh_info, &
+                          recip_lattice, num_kpts)
+      call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
       !call param_pw90_read_40
-      call param_w90_read_41(library)
+      call param_w90_read_41(library, atoms, real_lattice, recip_lattice)
       call param_w90_read_42(w90_calcs%use_bloch_phases, lhasproj, &
                              param_wannierise%guiding_centres, &
-                             param_wannierise%proj_site, library)
-      call param_w90_read_43(ccentres_frac, library)
+                             param_wannierise%proj_site, kmesh_data, &
+                             select_proj, num_proj, param_input, atoms, &
+                             recip_lattice, num_wann, library)
+      call param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
+                             num_wann, library)
     endif
-    call param_read_44(w90_calcs%transport .and. tran%read_ht)
+    call param_read_44(w90_calcs%transport .and. tran%read_ht, &
+                       param_input, atoms, spec_points)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       param_wannierise%omega_total = -999.0_dp
       param_wannierise%omega_tilde = -999.0_dp
-      call param_w90_read_45(w90_calcs%disentanglement)
+      call param_w90_read_45(w90_calcs%disentanglement, param_input, dis_data, &
+                             param_wannierise, wann_data, num_wann, num_bands, &
+                             num_kpts)
     endif
   end subroutine param_read
 
   !==================================================================!
-  subroutine param_w90_read_01()
+  subroutine param_w90_read_01(lsitesymmetry, symmetrize_eps)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -244,6 +256,8 @@ contains
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%
+    logical, intent(inout) :: lsitesymmetry
+    real(kind=dp), intent(inout) :: symmetrize_eps
 
     ! default value is lsitesymmetry=.false.
     call param_get_keyword('site_symmetry', found, l_value=lsitesymmetry)!YN:
@@ -252,15 +266,18 @@ contains
     call param_get_keyword('symmetrize_eps', found, r_value=symmetrize_eps)!YN:
   end subroutine param_w90_read_01
 
-  subroutine param_w90_read_02
+  subroutine param_w90_read_02(transport, tran, restart)
     !%%%%%%%%%%%%%%%%
     ! Transport
     !%%%%%%%%%%%%%%%%
     implicit none
+    logical, intent(inout) :: transport
+    type(transport_type), intent(inout) :: tran
+    character(len=*), intent(inout) :: restart
     logical :: found
 
-    w90_calcs%transport = .false.
-    call param_get_keyword('transport', found, l_value=w90_calcs%transport)
+    transport = .false.
+    call param_get_keyword('transport', found, l_value=transport)
 
     tran%read_ht = .false.
     call param_get_keyword('tran_read_ht', found, l_value=tran%read_ht)
@@ -268,39 +285,42 @@ contains
     tran%easy_fix = .false.
     call param_get_keyword('tran_easy_fix', found, l_value=tran%easy_fix)
 
-    if (w90_calcs%transport .and. tran%read_ht) driver%restart = ' '
+    if (transport .and. tran%read_ht) restart = ' '
   end subroutine param_w90_read_02
 
-  subroutine param_w90_read_06
+  subroutine param_w90_read_06(wvfn_formatted)
     implicit none
+    logical, intent(out) :: wvfn_formatted
     logical :: found
 
-    param_plot%wvfn_formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword('wvfn_formatted', found, l_value=param_plot%wvfn_formatted)
+    wvfn_formatted = .false.       ! formatted or "binary" file
+    call param_get_keyword('wvfn_formatted', found, l_value=wvfn_formatted)
   end subroutine param_w90_read_06
 
-  subroutine param_w90_read_08
+  subroutine param_w90_read_08(spin)
     use w90_io, only: io_error
     implicit none
+    integer, intent(out) :: spin
     logical :: found
     character(len=6) :: spin_str
 
-    param_plot%spin = 1
+    spin = 1
     call param_get_keyword('spin', found, c_value=spin_str)
     if (found) then
       if (index(spin_str, 'up') > 0) then
-        param_plot%spin = 1
+        spin = 1
       elseif (index(spin_str, 'down') > 0) then
-        param_plot%spin = 2
+        spin = 2
       else
         call io_error('Error: unrecognised value of spin found: '//trim(spin_str))
       end if
     end if
   end subroutine param_w90_read_08
 
-  subroutine param_w90_read_12
+  subroutine param_w90_read_12(param_wannierise)
     use w90_io, only: io_error
     implicit none
+    type(param_wannierise_type), intent(inout) :: param_wannierise
     logical :: found
 
     param_wannierise%num_dump_cycles = 100     ! frequency to write backups at
@@ -312,16 +332,20 @@ contains
     if (param_wannierise%num_print_cycles < 0) call io_error('Error: num_print_cycles must be positive')
   end subroutine param_w90_read_12
 
-  subroutine param_w90_read_14(cp_pp, library)
+  subroutine param_w90_read_14(cp_pp, pp_only_A, driver, param_input, &
+                               num_kpts, library)
     use w90_io, only: seedname, post_proc_flag, io_error
     implicit none
-    logical, intent(out) :: cp_pp
+    logical, intent(out) :: cp_pp, pp_only_A
+    type(param_driver_type), intent(inout) :: driver
+    type(parameter_input_type), intent(inout) :: param_input
+    integer, intent(in) :: num_kpts
     logical, intent(in) :: library
     logical :: found, ltmp, chk_found
 
     ltmp = .false.
     call param_get_keyword('gamma_only', found, l_value=ltmp)
-    if (.not. driver%library) then
+    if (.not. library) then
       param_input%gamma_only = ltmp
       if (param_input%gamma_only .and. (num_kpts .ne. 1)) &
         call io_error('Error: gamma_only is true, but num_kpts > 1')
@@ -339,11 +363,11 @@ contains
     ! We allow this keyword to be overriden by a command line arg -pp
     if (post_proc_flag) driver%postproc_setup = .true.
 
-    w90_calcs%cp_pp = .false.         ! set to true if doing CP post-processing
-    call param_get_keyword('cp_pp', found, l_value=w90_calcs%cp_pp)
+    cp_pp = .false.         ! set to true if doing CP post-processing
+    call param_get_keyword('cp_pp', found, l_value=cp_pp)
 
-    pp_calc%only_A = .false.
-    call param_get_keyword('calc_only_A', found, l_value=pp_calc%only_A)
+    pp_only_A = .false.
+    call param_get_keyword('calc_only_A', found, l_value=pp_only_A)
 
     driver%restart = ' '
     call param_get_keyword('restart', found, c_value=driver%restart)
@@ -361,8 +385,9 @@ contains
     if (driver%postproc_setup) driver%restart = ' '
   end subroutine param_w90_read_14
 
-  subroutine param_w90_read_15
+  subroutine param_w90_read_15(param_wannierise)
     implicit none
+    type(param_wannierise_type), intent(inout) :: param_wannierise
     logical :: found
 
     param_wannierise%write_r2mn = .false.
@@ -372,28 +397,32 @@ contains
     call param_get_keyword('write_proj', found, l_value=param_wannierise%write_proj)
   end subroutine param_w90_read_15
 
-  subroutine param_w90_read_17
+  subroutine param_w90_read_17(param_wannierise)
     implicit none
+    type(param_wannierise_type), intent(inout) :: param_wannierise
     logical :: found
 
     param_wannierise%translate_home_cell = .false.
     call param_get_keyword('translate_home_cell', found, l_value=param_wannierise%translate_home_cell)
   end subroutine param_w90_read_17
 
-  subroutine param_w90_read_18b
+  subroutine param_w90_read_18b(param_wannierise)
     implicit none
+    type(param_wannierise_type), intent(inout) :: param_wannierise
     logical :: found
 
     param_wannierise%write_hr_diag = .false.
     call param_get_keyword('write_hr_diag', found, l_value=param_wannierise%write_hr_diag)
   end subroutine param_w90_read_18b
 
-  subroutine param_w90_read_19
+  subroutine param_w90_read_19(param_wannierise, num_wann)
     !%%%%%%%%%%%
     ! Wannierise
     !%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    integer, intent(in) :: num_wann
     integer :: ierr
     logical :: found
 
@@ -476,12 +505,16 @@ contains
     endif
   end subroutine param_w90_read_19
 
-  subroutine param_w90_read_20
+  subroutine param_w90_read_20(w90_calcs, param_plot, bands_plot_mode, num_wann)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
     use w90_io, only: io_error
     implicit none
+    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(param_plot_type), intent(inout) :: param_plot
+    character(len=*), intent(out) :: bands_plot_mode
+    integer, intent(in) :: num_wann
     integer :: i, loop, ierr
     logical :: found
 
@@ -573,8 +606,8 @@ contains
     param_plot%bands_plot_format = 'gnuplot'
     call param_get_keyword('bands_plot_format', found, c_value=param_plot%bands_plot_format)
 
-    param_input%bands_plot_mode = 's-k'
-    call param_get_keyword('bands_plot_mode', found, c_value=param_input%bands_plot_mode)
+    bands_plot_mode = 's-k'
+    call param_get_keyword('bands_plot_mode', found, c_value=bands_plot_mode)
 
     param_plot%bands_plot_dim = 3
     call param_get_keyword('bands_plot_dim', found, i_value=param_plot%bands_plot_dim)
@@ -592,9 +625,14 @@ contains
     endif
   end subroutine param_w90_read_20
 
-  subroutine param_w90_read_22
+  subroutine param_w90_read_22(w90_calcs, fermi_surface_data, param_plot, &
+                               bands_plot_mode)
     use w90_io, only: io_error
     implicit none
+    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(fermi_surface_type), intent(inout) :: fermi_surface_data
+    type(param_plot_type), intent(in) :: param_plot
+    character(len=*), intent(in) :: bands_plot_mode
     logical :: found
 
     ! checks
@@ -602,7 +640,7 @@ contains
       if ((index(param_plot%bands_plot_format, 'gnu') .eq. 0) .and. &
           (index(param_plot%bands_plot_format, 'xmgr') .eq. 0)) &
         call io_error('Error: bands_plot_format not recognised')
-      if ((index(param_input%bands_plot_mode, 's-k') .eq. 0) .and. (index(param_input%bands_plot_mode, 'cut') .eq. 0)) &
+      if ((index(bands_plot_mode, 's-k') .eq. 0) .and. (index(bands_plot_mode, 'cut') .eq. 0)) &
         call io_error('Error: bands_plot_mode not recognised')
       if (param_plot%bands_num_points < 0) call io_error('Error: bands_num_points must be positive')
     endif
@@ -618,12 +656,14 @@ contains
                            found, c_value=fermi_surface_data%plot_format)
   end subroutine param_w90_read_22
 
-  subroutine param_w90_read_24
+  subroutine param_w90_read_24(fermi_surface_plot, fermi_surface_data)
     use w90_io, only: io_error
     implicit none
+    logical, intent(in) :: fermi_surface_plot
+    type(fermi_surface_type), intent(in) :: fermi_surface_data
 
     ! checks
-    if (w90_calcs%fermi_surface_plot) then
+    if (fermi_surface_plot) then
       if ((index(fermi_surface_data%plot_format, 'xcrys') .eq. 0)) &
         call io_error('Error: fermi_surface_plot_format not recognised')
       if (fermi_surface_data%num_points < 0) &
@@ -631,12 +671,15 @@ contains
     endif
   end subroutine param_w90_read_24
 
-  subroutine param_w90_read_27(write_hr, transport, bands_plot, one_dim_axis)
+  subroutine param_w90_read_27(w90_calcs, param_plot, param_input, &
+                               one_dim_axis, tran_read_ht)
     use w90_io, only: io_error
     implicit none
-    logical, intent(out) :: write_hr
-    logical, intent(in) :: transport, bands_plot
+    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(param_plot_type), intent(inout) :: param_plot
+    type(parameter_input_type), intent(inout) :: param_input
     character(len=*), intent(out) :: one_dim_axis
+    logical, intent(in) :: tran_read_ht
     logical :: found
 
     hr_plot = .false.
@@ -671,7 +714,7 @@ contains
     if (index(one_dim_axis, 'x') > 0) param_input%one_dim_dir = 1
     if (index(one_dim_axis, 'y') > 0) param_input%one_dim_dir = 2
     if (index(one_dim_axis, 'z') > 0) param_input%one_dim_dir = 3
-    if (w90_calcs%transport .and. .not. tran%read_ht .and. &
+    if (w90_calcs%transport .and. .not. tran_read_ht .and. &
         (param_input%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised')
     if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)&
        & .and. ((param_plot%bands_plot_dim .ne. 3) .or. (index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0))&
@@ -679,13 +722,15 @@ contains
          call io_error('Error: one_dim_axis not recognised')
   end subroutine param_w90_read_27
 
-  subroutine param_w90_read_29(transport)
+  subroutine param_w90_read_29(transport, param_input, tran)
     !%%%%%%%%%%%%%%%%
     ! Transport
     !%%%%%%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: transport
+    type(parameter_input_type), intent(inout) :: param_input
+    type(transport_type), intent(inout) :: tran
     logical :: found
 
     tran%mode = 'bulk'
@@ -746,7 +791,7 @@ contains
     call param_get_keyword('dist_cutoff_hc', found, r_value=param_input%dist_cutoff_hc)
 
     ! checks
-    if (w90_calcs%transport) then
+    if (transport) then
       if ((index(tran%mode, 'bulk') .eq. 0) .and. (index(tran%mode, 'lcr') .eq. 0)) &
         call io_error('Error: transport_mode not recognised')
       if (tran%num_bb < 0) call io_error('Error: tran_num_bb < 0')
@@ -763,23 +808,29 @@ contains
 
   end subroutine param_w90_read_29
 
-  subroutine param_w90_read_30
+  subroutine param_w90_read_30(disentanglement, num_bands, num_wann)
     !%%%%%%%%%%%%%%%%
     ! Disentanglement
     !%%%%%%%%%%%%%%%%
     implicit none
+    logical, intent(out) :: disentanglement
+    integer, intent(in) :: num_bands, num_wann
 
-    w90_calcs%disentanglement = .false.
-    if (num_bands > num_wann) w90_calcs%disentanglement = .true.
+    disentanglement = .false.
+    if (num_bands > num_wann) disentanglement = .true.
   end subroutine param_w90_read_30
 
-  subroutine param_w90_read_35(disentanglement)
+  subroutine param_w90_read_35(disentanglement, param_wannierise, param_input, &
+                               num_kpts)
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: disentanglement
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(parameter_input_type), intent(in) :: param_input
+    integer, intent(in) :: num_kpts
     logical :: found
 
     ! aam: vdW
@@ -789,12 +840,13 @@ contains
       if ((.not. param_input%gamma_only) .or. (num_kpts .ne. 1)) &
         call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma')
     endif
-    if (param_wannierise%write_vdw_data .and. w90_calcs%disentanglement .and. param_input%num_valence_bands .le. 0) &
+    if (param_wannierise%write_vdw_data .and. disentanglement .and. param_input%num_valence_bands .le. 0) &
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined')
   end subroutine param_w90_read_35
 
-  subroutine param_w90_read_37
+  subroutine param_w90_read_37(param_hamil)
     implicit none
+    type(param_hamiltonian_type), intent(out) :: param_hamil
     real(kind=dp) :: rv_temp(3)
     logical :: found
 
@@ -807,29 +859,60 @@ contains
     endif
   end subroutine param_w90_read_37
 
-  subroutine param_w90_read_39
+  subroutine param_w90_read_39(use_bloch_phases, disentanglement)
     use w90_io, only: io_error
     implicit none
+    logical, intent(out) :: use_bloch_phases
+    logical, intent(in) :: disentanglement
     logical :: found
 
-    w90_calcs%use_bloch_phases = .false.
-    call param_get_keyword('use_bloch_phases', found, l_value=w90_calcs%use_bloch_phases)
-    if (w90_calcs%disentanglement .and. w90_calcs%use_bloch_phases) &
+    use_bloch_phases = .false.
+    call param_get_keyword('use_bloch_phases', found, l_value=use_bloch_phases)
+    if (disentanglement .and. use_bloch_phases) &
       call io_error('Error: Cannot use bloch phases for disentanglement')
   end subroutine param_w90_read_39
 
-  subroutine param_read_40b(library)
+  subroutine param_read_40b(library, driver, k_points, kmesh_info, &
+                            recip_lattice, num_kpts)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: library
-    integer :: i, k, ierr, rows
+    type(param_driver_type), intent(inout) :: driver
+    type(k_point_type), intent(inout) :: k_points
+    type(kmesh_info_type), intent(inout) :: kmesh_info
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    integer, intent(in) :: num_kpts
+    integer :: i, k, ierr, nkp, rows
     logical :: found
     integer, allocatable, dimension(:, :) :: nnkpts_block
     integer, allocatable, dimension(:) :: nnkpts_idx
 
+    !if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
+    allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
+    if (.not. library) then
+      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
+    end if
+
+    call param_get_keyword_block('kpoints', found, num_kpts, 3, r_value=k_points%kpt_cart)
+    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
+    !if (.not. library .and. .not. pw90_common%effective_model) then
+    if (.not. library) then
+      k_points%kpt_latt = k_points%kpt_cart
+      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file')
+    end if
+
+    ! Calculate the kpoints in cartesian coordinates
+    !if (.not. pw90_effective_model) then
+    do nkp = 1, num_kpts
+      k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
+    end do
+    !endif
+
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
-    call param_get_block_length('nnkpts', driver%explicit_nnkpts, rows, driver%library)
+    call param_get_block_length('nnkpts', driver%explicit_nnkpts, rows, library)
     if (driver%explicit_nnkpts) then
       kmesh_info%nntot = rows/num_kpts
       if (modulo(rows, num_kpts) /= 0) then
@@ -875,12 +958,21 @@ contains
   end subroutine param_read_40b
 
   subroutine param_w90_read_42(use_bloch_phases, lhasproj, guiding_centres, &
-                               proj_site, library)
+                               proj_site, kmesh_data, select_proj, num_proj, &
+                               param_input, atoms, recip_lattice, &
+                               num_wann, library)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
     logical, intent(out) :: lhasproj
     real(kind=dp), allocatable, dimension(:, :), intent(out) :: proj_site
+    type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(select_projection_type), intent(inout) :: select_proj
+    integer, intent(inout) :: num_proj
+    type(parameter_input_type), intent(in) :: param_input
+    type(atom_data_type), intent(in) :: atoms
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    integer, intent(in) :: num_wann
     integer :: i, j, i_temp, loop, ierr
     logical :: found
 
@@ -888,16 +980,16 @@ contains
     kmesh_data%auto_projections = .false.
     call param_get_keyword('auto_projections', found, l_value=kmesh_data%auto_projections)
     num_proj = 0
-    call param_get_block_length('projections', found, i_temp, driver%library)
+    call param_get_block_length('projections', found, i_temp, library)
     ! check to see that there are no unrecognised keywords
     if (found) then
       if (kmesh_data%auto_projections) call io_error('Error: Cannot specify both auto_projections and projections block')
       lhasproj = .true.
       call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
-                                 driver, param_wannierise, num_wann, select_proj, &
-                                 recip_lattice, lcount=.true.)
+                                 num_wann, proj_site, proj, recip_lattice, &
+                                 .true.)
     else
-      if (param_wannierise%guiding_centres .and. .not. (param_input%gamma_only .and. w90_calcs%use_bloch_phases)) &
+      if (guiding_centres .and. .not. (param_input%gamma_only .and. use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found')
       lhasproj = .false.
       num_proj = num_wann
@@ -942,12 +1034,10 @@ contains
       enddo
     endif
 
-    !!bgs!!
-    !if (lhasproj) call param_get_projections(num_proj, atoms, kmesh_data, &
-    !                                         param_input, driver, param_wannierise, num_wann, select_proj, &
-    !                                         recip_lattice, lcount=.false.)
     if (lhasproj) then
-      call param_get_projections(num_proj, .false., proj_site, proj)
+      call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
+                                 num_wann, proj_site, proj, &
+                                 recip_lattice, .false.)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
         proj_site(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj_site(:, loop)
@@ -970,21 +1060,27 @@ contains
 
   end subroutine param_w90_read_42
 
-  subroutine param_w90_read_43(ccentres_frac, library)
+  subroutine param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
+                               num_wann, library)
     use w90_io, only: io_error, stdout
     implicit none
-    logical, intent(in) :: library
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    integer, intent(in) :: num_wann
+    logical, intent(in) :: library
     integer :: i_temp
     logical :: found
 
     ! Constrained centres
-    call param_get_block_length('slwf_centres', found, i_temp, driver%library)
+    call param_get_block_length('slwf_centres', found, i_temp, library)
     if (found) then
       if (param_wannierise%slwf_constrain) then
         ! Allocate array for constrained centres
-        call param_get_centre_constraints(num_wann, param_wannierise, &
-                                          real_lattice)
+        call param_get_centre_constraints(ccentres_frac, &
+                                          param_wannierise%ccentres_cart, &
+                                          param_wannierise%proj_site, &
+                                          num_wann, real_lattice)
       else
         write (stdout, '(a)') ' slwf_constrain set to false. Ignoring <slwf_centres> block '
       end if
@@ -997,8 +1093,10 @@ contains
                & <projection_block> are specified.')
         else
           ! Allocate array for constrained centres
-          call param_get_centre_constraints(num_wann, param_wannierise, &
-                                            real_lattice)
+          call param_get_centre_constraints(ccentres_frac, &
+                                            param_wannierise%ccentres_cart, &
+                                            param_wannierise%proj_site, &
+                                            num_wann, real_lattice)
         end if
       end if
     end if
@@ -1008,6 +1106,58 @@ contains
            & Desired centres for SLWF same as projection centres.'
   end subroutine param_w90_read_43
 
+  subroutine param_w90_read_45(disentanglement, param_input, dis_data, &
+                               param_wannierise, wann_data, num_wann, &
+                               num_bands, num_kpts)
+    ! =============================== !
+    ! Some checks and initialisations !
+    ! =============================== !
+    use w90_io, only: io_error
+    implicit none
+    logical, intent(in) :: disentanglement
+    type(parameter_input_type), intent(inout) :: param_input
+    type(disentangle_type), intent(inout) :: dis_data
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(wannier_data_type), intent(inout) :: wann_data
+    integer, intent(in) :: num_wann, num_bands, num_kpts
+    integer :: ierr
+
+!    if (restart.ne.' ') disentanglement=.false.
+
+    if (disentanglement) then
+      if (allocated(dis_data%ndimwin)) deallocate (dis_data%ndimwin)
+      allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating ndimwin in param_read')
+      if (allocated(dis_data%lwindow)) deallocate (dis_data%lwindow)
+      allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating lwindow in param_read')
+    endif
+
+!    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
+!       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
+!       cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
+!       cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
+!       cosa = abs(cosa)
+!       if (any(cosa.gt.eps6)) &
+!            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
+!    endif
+
+    ! Initialise
+    param_wannierise%omega_total = -999.0_dp
+    param_wannierise%omega_tilde = -999.0_dp
+    param_input%omega_invariant = -999.0_dp
+    param_input%have_disentangled = .false.
+
+    if (allocated(wann_data%centres)) deallocate (wann_data%centres)
+    allocate (wann_data%centres(3, num_wann), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating wannier_centres in param_read')
+    wann_data%centres = 0.0_dp
+    if (allocated(wann_data%spreads)) deallocate (wann_data%spreads)
+    allocate (wann_data%spreads(num_wann), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read')
+    wann_data%spreads = 0.0_dp
+  end subroutine param_w90_read_45
+
 !===================================================================
   subroutine param_write(driver, w90_calcs, param_input, param_plot, &
                          param_wannierise, lsitesymmetry, symmetrize_eps, &
@@ -1015,7 +1165,7 @@ contains
                          num_kpts, dis_data, fermi_surface_data, fermi, tran, &
                          atoms, num_bands, num_wann, mp_grid, num_proj, &
                          select_proj, real_lattice, recip_lattice, &
-                         spec_points, pw90_calcs)
+                         spec_points)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1051,7 +1201,7 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(in) :: spec_points
-    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    !type(pw90_calculation_type), intent(in) :: pw90_calcs
 
     integer :: i, nkp, loop, nat, nsp
     real(kind=dp) :: cell_volume
@@ -1160,9 +1310,9 @@ contains
         if (select_proj%proj2wann_map(nsp) < 0) cycle
         write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
   &              '|', param_wannierise%proj_site(1, nsp), param_wannierise%proj_site(2, nsp), &
-             param_wannierise%proj_site(3, nsp), driver%proj%l(nsp), driver%proj%m(nsp), driver%proj%radial(nsp), &
-             driver%proj%z(1, nsp), driver%proj%z(2, nsp), driver%proj%z(3, nsp), driver%proj%x(1, nsp), &
-             driver%proj%x(2, nsp), driver%proj%x(3, nsp), driver%proj%zona(nsp), '|'
+             param_wannierise%proj_site(3, nsp), proj%l(nsp), proj%m(nsp), proj%radial(nsp), &
+             proj%z(1, nsp), proj%z(2, nsp), proj%z(3, nsp), proj%x(1, nsp), &
+             proj%x(2, nsp), proj%x(3, nsp), proj%zona(nsp), '|'
       end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, *) ' '
@@ -1290,8 +1440,8 @@ contains
     !
     ! Plotting
     !
-    if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. pw90_calcs%kslice &
-        .or. dos_plot .or. w90_calcs%write_hr .or. param_input%iprint > 2) then
+    if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
+        .or. w90_calcs%write_hr .or. param_input%iprint > 2) then
       !
       write (stdout, '(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
       !
@@ -1425,13 +1575,13 @@ contains
 
   end subroutine param_write
 
-  subroutine param_w90_dealloc(driver, param_input, param_plot, param_wannierise, &
-                               wann_data, kmesh_data, k_points, dis_data, fermi, &
-                               atoms, eigval, spec_points, dos_data, berry)
+  subroutine param_w90_dealloc(param_input, param_plot, param_wannierise, &
+                               wann_data, kmesh_data, k_points, dis_data, &
+                               atoms, eigval, spec_points)
     use w90_io, only: io_error
     implicit none
     !data from parameters module
-    type(param_driver_type), intent(inout) :: driver
+    !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
     type(param_plot_type), intent(inout) :: param_plot
     type(param_wannierise_type), intent(inout) :: param_wannierise
@@ -1439,18 +1589,17 @@ contains
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
     type(disentangle_type), intent(inout) :: dis_data
-    type(fermi_data_type), intent(inout) :: fermi
+    !type(fermi_data_type), intent(inout) :: fermi
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(special_kpoints_type), intent(inout) :: spec_points
-    type(dos_plot_type), intent(inout) :: dos_data
-    type(berry_type), intent(inout) :: berry
+    !type(dos_plot_type), intent(inout) :: dos_data
+    !type(berry_type), intent(inout) :: berry
 
     integer :: ierr
 
-    call param_dealloc(driver, param_input, param_plot, param_wannierise, &
-                       wann_data, kmesh_data, k_points, dis_data, fermi, &
-                       atoms, eigval, spec_points, dos_data, berry)
+    call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
+                       dis_data, atoms, eigval, spec_points)
     if (allocated(param_plot%wannier_plot_list)) then
       deallocate (param_plot%wannier_plot_list, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating wannier_plot_list in param_dealloc')
@@ -1588,9 +1737,8 @@ contains
 
 !===========================================!
   subroutine param_memory_estimate(w90_calcs, param_input, param_wannierise, &
-                                   kmesh_data, kmesh_info, num_kpts, dis_data, &
-                                   atoms, num_bands, num_wann, num_proj, &
-                                   pw90_calcs, pw90_common, boltz, ispostw90)
+                                   kmesh_data, kmesh_info, num_kpts, &
+                                   atoms, num_bands, num_wann, num_proj)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -1608,15 +1756,15 @@ contains
     type(param_kmesh_type), intent(in) :: kmesh_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     integer, intent(in) :: num_kpts
-    type(disentangle_type), intent(in) :: dis_data
+    !type(disentangle_type), intent(in) :: dis_data
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_proj
-    type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(postw90_common_type), intent(in) :: pw90_common
-    type(boltzwann_type), intent(in) :: boltz
-    logical, intent(in) :: ispostw90 ! Are we running postw90?
+    !type(pw90_calculation_type), intent(in) :: pw90_calcs
+    !type(postw90_common_type), intent(in) :: pw90_common
+    !type(boltzwann_type), intent(in) :: boltz
+    !logical, intent(in) :: ispostw90 ! Are we running postw90?
 
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
@@ -1624,8 +1772,8 @@ contains
     real(kind=dp), parameter :: size_cmplx = 16.0_dp
     real(kind=dp) :: mem_wan, mem_wan1, mem_param, mem_dis, mem_dis2, mem_dis1
     real(kind=dp) :: mem_bw
-    integer :: NumPoints1, NumPoints2, NumPoints3, ndim
-    real(kind=dp) :: TDF_exceeding_energy
+    !integer :: NumPoints1, NumPoints2, NumPoints3, ndim
+    !real(kind=dp) :: TDF_exceeding_energy
 
     mem_param = 0
     mem_dis = 0
@@ -1823,9 +1971,7 @@ contains
                         k_points, num_kpts, dis_data, fermi_surface_data, &
                         fermi, tran, atoms, num_bands, num_wann, eigval, &
                         mp_grid, num_proj, real_lattice, recip_lattice, &
-                        pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
-                        pw90_ham, kpath, kslice, dos_data, berry, spin_hall, &
-                        gyrotropic, geninterp, boltz, eig_found)
+                        eig_found)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1866,19 +2012,19 @@ contains
     integer, intent(inout) :: num_proj
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
-    type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    type(postw90_oper_type), intent(inout) :: postw90_oper
-    type(postw90_common_type), intent(inout) :: pw90_common
-    type(postw90_spin_type), intent(inout) :: pw90_spin
-    type(postw90_ham_type), intent(inout) :: pw90_ham
-    type(kpath_type), intent(inout) :: kpath
-    type(kslice_type), intent(inout) :: kslice
-    type(dos_plot_type), intent(inout) :: dos_data
-    type(berry_type), intent(inout) :: berry
-    type(spin_hall_type), intent(inout) :: spin_hall
-    type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(geninterp_type), intent(inout) :: geninterp
-    type(boltzwann_type), intent(inout) :: boltz
+    !type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    !type(postw90_oper_type), intent(inout) :: postw90_oper
+    !type(postw90_common_type), intent(inout) :: pw90_common
+    !type(postw90_spin_type), intent(inout) :: pw90_spin
+    !type(postw90_ham_type), intent(inout) :: pw90_ham
+    !type(kpath_type), intent(inout) :: kpath
+    !type(kslice_type), intent(inout) :: kslice
+    !type(dos_plot_type), intent(inout) :: dos_data
+    !type(berry_type), intent(inout) :: berry
+    !type(spin_hall_type), intent(inout) :: spin_hall
+    !type(gyrotropic_type), intent(inout) :: gyrotropic
+    !type(geninterp_type), intent(inout) :: geninterp
+    !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
 
     integer :: ierr

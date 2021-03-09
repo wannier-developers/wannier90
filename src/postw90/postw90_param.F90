@@ -214,8 +214,9 @@ module pw90_param_methods
 
   use w90_constants, only: dp
   use w90_io, only: stdout, maxlen
-  use w90_parameters, only: param_input, dis_data, num_wann, spec_points, &
-    eigval, fermi, atoms, real_lattice, recip_lattice, num_bands
+  use w90_param_types, only: parameter_input_type, wannier_data_type, &
+    param_kmesh_type, kmesh_info_type, k_point_type, disentangle_type, &
+    fermi_data_type, atom_data_type, special_kpoints_type
   use w90_param_methods !BGS Todo only:
   use pw90_parameters
 
@@ -263,17 +264,13 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(driver, w90_calcs, pp_calc, param_input, param_plot, &
-                                param_wannierise, lsitesymmetry, symmetrize_eps, &
-                                wann_data, param_hamil, kmesh_data, kmesh_info, &
-                                k_points, num_kpts, dis_data, fermi_surface_data, &
-                                fermi, tran, atoms, num_bands, num_wann, eigval, &
-                                mp_grid, num_proj, select_proj, real_lattice, &
-                                recip_lattice, spec_points, pw90_calcs, postw90_oper, &
-                                pw90_common, pw90_spin, pw90_ham, kpath, kslice, &
-                                dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                                boltz, eig_found, library_param_read_first_pass)
-    !subroutine param_postw90_read
+  subroutine param_postw90_read(param_input, kmesh_data, num_kpts, dis_data, &
+                                fermi, atoms, num_bands, num_wann, eigval, &
+                                mp_grid, real_lattice, recip_lattice, &
+                                spec_points, pw90_calcs, postw90_oper, &
+                                pw90_common, pw90_spin, pw90_ham, kpath, &
+                                kslice, dos_data, berry, spin_hall, &
+                                gyrotropic, geninterp, boltz, eig_found)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -289,32 +286,32 @@ contains
     implicit none
 
     !data from parameters module
-    type(param_driver_type), intent(inout) :: driver
-    type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(postproc_type), intent(inout) :: pp_calc
+    !type(param_driver_type), intent(inout) :: driver
+    !type(w90_calculation_type), intent(inout) :: w90_calcs
+    !type(postproc_type), intent(inout) :: pp_calc
     type(parameter_input_type), intent(inout) :: param_input
-    type(param_plot_type), intent(inout) :: param_plot
-    type(param_wannierise_type), intent(inout) :: param_wannierise
+    !type(param_plot_type), intent(inout) :: param_plot
+    !type(param_wannierise_type), intent(inout) :: param_wannierise
     ! RS: symmetry-adapted Wannier functions
-    logical, intent(inout) :: lsitesymmetry
-    real(kind=dp), intent(inout) :: symmetrize_eps
-    type(wannier_data_type), intent(inout) :: wann_data
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    !logical, intent(inout) :: lsitesymmetry
+    !real(kind=dp), intent(inout) :: symmetrize_eps
+    !type(wannier_data_type), intent(inout) :: wann_data
+    !type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
-    type(kmesh_info_type), intent(inout) :: kmesh_info
-    type(k_point_type), intent(inout) :: k_points
+    !type(kmesh_info_type), intent(inout) :: kmesh_info
+    !type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
     type(disentangle_type), intent(inout) :: dis_data
-    type(fermi_surface_type), intent(inout) :: fermi_surface_data
+    !type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(fermi_data_type), intent(inout) :: fermi
-    type(transport_type), intent(inout) :: tran
+    !type(transport_type), intent(inout) :: tran
     type(atom_data_type), intent(inout) :: atoms
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(inout) :: mp_grid(3)
-    integer, intent(inout) :: num_proj
-    type(select_projection_type), intent(inout) :: select_proj
+    !integer, intent(inout) :: num_proj
+    !type(select_projection_type), intent(inout) :: select_proj
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(inout) :: spec_points
@@ -332,7 +329,6 @@ contains
     type(geninterp_type), intent(inout) :: geninterp
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
-    logical, intent(in) :: library_param_read_first_pass
 
     !local variables
     !real(kind=dp)  :: real_lattice_tmp(3, 3)
@@ -351,73 +347,81 @@ contains
     call param_in_file
     !call param_w90_read_01
     !call param_w90_read_02
-    call param_read_03
+    call param_read_03(param_input)
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
-    call param_pw90_read_04
-    call param_read_05(energy_unit)
+    call param_pw90_read_04(pw90_common%effective_model)
+    call param_read_05(param_input, energy_unit)
     !call param_w90_read_06
-    call param_pw90_read_07
+    call param_pw90_read_07(postw90_oper)
     !call param_w90_read_08
-    call param_read_09
+    call param_read_09(num_wann)
     !call param_w90_read_10
-    call param_read_11(pw90_common%effective_model, library)
+    call param_read_11(pw90_common%effective_model, library, &
+                       param_input, num_bands, num_wann, .false.)
     !call param_w90_read_12
-    call param_read_13(pw90_common%effective_model, library)
+    call param_read_13(pw90_common%effective_model, library, &
+                       param_input%devel_flag, mp_grid, num_kpts)
     !call param_w90_read_14
     !call param_w90_read_15
-    call param_read_16(library)
+    call param_read_16(library, param_input)
     !call param_w90_read_17
     !call param_w90_read_18
     !call param_w90_read_19
     !call param_w90_read_20
-    call param_read_21(.false., library)
+    call param_read_21(.false., library, spec_points)
     !call param_w90_read_22
-    call param_read_23(found_fermi_energy)
-    call param_pw90_read_24
+    call param_read_23(found_fermi_energy, fermi)
+    call param_pw90_read_24(pw90_calcs%kslice, kslice)
     call param_read_25(smr_index)
-    call param_pw90_read_26(found_fermi_energy)
+    call param_pw90_read_26(pw90_calcs, pw90_common, berry, spin_hall, &
+                            gyrotropic, dos_data, kpath, pw90_ham, param_input, &
+                            spec_points, found_fermi_energy, num_wann)
     !call param_w90_read_27
     !endif
-    call param_read_28
+    call param_read_28(param_input)
     !call param_w90_read_29
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     !call param_w90_read_30
-    call param_pw90_read_31
+    call param_pw90_read_31(pw90_calcs)
     disentanglement = (num_bands > num_wann)
     call param_read_32(pw90_common%effective_model, pw90_calcs%boltzwann, &
                        pw90_calcs%geninterp, dos_plot, disentanglement, &
-                       eig_found, library, .false.)
-    call param_w90_read_33(eig_found) !(dis_data?)
+                       eig_found, eigval, library, .false., num_bands, num_kpts)
+    call param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
     ! Need to make sure use w90_params are read
-    call param_pw90_read_34(smr_index)
+    call param_pw90_read_34(geninterp, boltz, smr_index, eigval)
     !call param_w90_read_35
-    call param_pw90_read_36
+    call param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, &
+                            eigval)
     !call param_w90_read_37(... one_dim_axis)
-    call param_pw90_read_38
+    call param_pw90_read_38(berry)
     !call param_w90_read_39
-    call param_read_40a(pw90_common%effective_model, library)
-    call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh)
-    call param_pw90_read_40
+    call param_read_40a(library, kmesh_data, real_lattice, recip_lattice)
+    call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
+    call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
+                            pw90_spin, gyrotropic, boltz, recip_lattice)
     !call param_w90_read_41
     !call param_w90_read_42(.false.)
     !call param_w90_read_43
     !endif
-    call param_read_44(.false.)
+    call param_read_44(.false., param_input, atoms, spec_points)
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     !  call param_w90_read_45(disentanglement)
     !endif
   end subroutine param_postw90_read
 
-  subroutine param_pw90_read_04
+  subroutine param_pw90_read_04(effective_model)
     implicit none
+    logical, intent(inout) :: effective_model
     logical :: found
 
     !ivo
-    call param_get_keyword('effective_model', found, l_value=pw90_common%effective_model)
+    call param_get_keyword('effective_model', found, l_value=effective_model)
   end subroutine param_pw90_read_04
 
-  subroutine param_pw90_read_07
+  subroutine param_pw90_read_07(postw90_oper)
     implicit none
+    type(postw90_oper_type), intent(inout) :: postw90_oper
     logical :: found
 
     postw90_oper%spn_formatted = .false.       ! formatted or "binary" file
@@ -427,10 +431,97 @@ contains
     call param_get_keyword('uhu_formatted', found, l_value=postw90_oper%uHu_formatted)
   end subroutine param_pw90_read_07
 
-  subroutine param_pw90_read_24
+  subroutine param_pw90_read_24(pw90_kslice, kslice)
     use w90_io, only: io_error
     implicit none
+    logical, intent(out) :: pw90_kslice
+    type(kslice_type), intent(inout) :: kslice
     integer :: i
+    logical :: found
+
+    pw90_kslice = .false.
+    call param_get_keyword('kslice', found, l_value=pw90_kslice)
+
+    kslice%task = 'fermi_lines'
+    call param_get_keyword('kslice_task', found, c_value=kslice%task)
+    if (pw90_kslice .and. index(kslice%task, 'fermi_lines') == 0 .and. &
+        index(kslice%task, 'curv') == 0 .and. &
+        index(kslice%task, 'morb') == 0 .and. &
+        index(kslice%task, 'shc') == 0) call io_error &
+      ('Error: value of kslice_task not recognised in param_read')
+    if (pw90_kslice .and. index(kslice%task, 'curv') > 0 .and. &
+        index(kslice%task, 'morb') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'curv' and 'morb'")
+    if (pw90_kslice .and. index(kslice%task, 'shc') > 0 .and. &
+        index(kslice%task, 'morb') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'shc' and 'morb'")
+    if (pw90_kslice .and. index(kslice%task, 'shc') > 0 .and. &
+        index(kslice%task, 'curv') > 0) call io_error &
+      ("Error: kslice_task cannot include both 'shc' and 'curv'")
+
+    kslice%kmesh2d(1:2) = 50
+    call param_get_vector_length('kslice_2dkmesh', found, length=i)
+    if (found) then
+      if (i == 1) then
+        call param_get_keyword_vector('kslice_2dkmesh', found, 1, &
+                                      i_value=kslice%kmesh2d)
+        kslice%kmesh2d(2) = kslice%kmesh2d(1)
+      elseif (i == 2) then
+        call param_get_keyword_vector('kslice_2dkmesh', found, 2, &
+                                      i_value=kslice%kmesh2d)
+      else
+        call io_error('Error: kslice_2dkmesh must be provided as either' &
+                      //' one integer or a vector of two integers')
+      endif
+      if (any(kslice%kmesh2d <= 0)) &
+        call io_error('Error: kslice_2dkmesh elements must be' &
+                      //' greater than zero')
+    endif
+
+    kslice%corner = 0.0_dp
+    call param_get_keyword_vector('kslice_corner', found, 3, r_value=kslice%corner)
+
+    kslice%b1(1) = 1.0_dp
+    kslice%b1(2) = 0.0_dp
+    kslice%b1(3) = 0.0_dp
+    call param_get_keyword_vector('kslice_b1', found, 3, r_value=kslice%b1)
+
+    kslice%b2(1) = 0.0_dp
+    kslice%b2(2) = 1.0_dp
+    kslice%b2(3) = 0.0_dp
+    call param_get_keyword_vector('kslice_b2', found, 3, r_value=kslice%b2)
+
+    kslice%fermi_lines_colour = 'none'
+    call param_get_keyword('kslice_fermi_lines_colour', found, &
+                           c_value=kslice%fermi_lines_colour)
+    if (pw90_calcs%kslice .and. index(kslice%fermi_lines_colour, 'none') == 0 .and. &
+        index(kslice%fermi_lines_colour, 'spin') == 0) call io_error &
+      ('Error: value of kslice_fermi_lines_colour not recognised ' &
+       //'in param_read')
+
+!    slice_plot_format         = 'plotmv'
+!    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
+  end subroutine param_pw90_read_24
+
+  subroutine param_pw90_read_26(pw90_calcs, pw90_common, berry, spin_hall, &
+                                gyrotropic, dos_data, kpath, pw90_ham, &
+                                param_input, spec_points, found_fermi_energy, &
+                                num_wann)
+    use w90_io, only: io_error
+    implicit none
+    type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    type(postw90_common_type), intent(inout) :: pw90_common
+    type(berry_type), intent(inout) :: berry
+    type(spin_hall_type), intent(inout) :: spin_hall
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(kpath_type), intent(inout) :: kpath
+    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(parameter_input_type), intent(inout) :: param_input
+    type(special_kpoints_type), intent(in) :: spec_points
+    logical, intent(in) :: found_fermi_energy
+    integer, intent(in) :: num_wann
+    integer :: i, ierr, loop
     logical :: found
 
     pw90_calcs%dos = .false.
@@ -754,9 +845,10 @@ contains
     endif
   end subroutine param_pw90_read_26
 
-  subroutine param_pw90_read_31
+  subroutine param_pw90_read_31(pw90_calcs)
     ! These must be read here, before the check on the existence of the .eig file!
     implicit none
+    type(pw90_calculation_type), intent(inout) :: pw90_calcs
     logical :: found
 
     pw90_calcs%geninterp = .false.
@@ -765,14 +857,17 @@ contains
     call param_get_keyword('boltzwann', found, l_value=pw90_calcs%boltzwann)
   end subroutine param_pw90_read_31
 
-  subroutine param_pw90_read_34(smr_index)
+  subroutine param_pw90_read_34(geninterp, boltz, smr_index, eigval)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
     !%%%%%%%%%%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
+    type(geninterp_type), intent(out) :: geninterp
+    type(boltzwann_type), intent(inout) :: boltz
     integer, intent(in) :: smr_index
+    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     logical :: found, found2
 
     geninterp%alsofirstder = .false.
@@ -947,10 +1042,17 @@ contains
     ! [gp-end, Apr 12, 2012]
   end subroutine param_pw90_read_34
 
-  subroutine param_pw90_read_36
+  subroutine param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, &
+                                eigval)
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
     implicit none
+    type(berry_type), intent(inout) :: berry
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(disentangle_type), intent(in) :: dis_data
+    type(fermi_data_type), intent(in) :: fermi
+    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
     integer :: i, ierr
     logical :: found
 
@@ -1038,8 +1140,9 @@ contains
     call param_get_keyword('gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
   end subroutine param_pw90_read_36
 
-  subroutine param_pw90_read_38
+  subroutine param_pw90_read_38(berry)
     implicit none
+    type(berry_type), intent(inout) :: berry
     logical :: found
 
     berry%sc_eta = 0.04
@@ -1049,8 +1152,17 @@ contains
     call param_get_keyword('sc_w_thr', found, r_value=berry%sc_w_thr)
   end subroutine param_pw90_read_38
 
-  subroutine param_pw90_read_40
+  subroutine param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
+                                pw90_spin, gyrotropic, boltz, recip_lattice)
     implicit none
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(berry_type), intent(inout) :: berry
+    type(dos_plot_type), intent(inout) :: dos_data
+    type(postw90_spin_type), intent(inout) :: pw90_spin
+    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(boltzwann_type), intent(inout) :: boltz
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     ! To be called after having read the global flag
     call get_module_kmesh(recip_lattice, moduleprefix='boltz', &
@@ -1633,16 +1745,15 @@ contains
 
   end subroutine param_postw90_write
 
-  subroutine param_pw90_dealloc(driver, param_input, param_plot, param_wannierise, &
-                                wann_data, kmesh_data, k_points, dis_data, fermi, &
+  subroutine param_pw90_dealloc(param_input, wann_data, kmesh_data, k_points, dis_data, fermi, &
                                 atoms, eigval, spec_points, dos_data, berry)
     use w90_io, only: io_error
     implicit none
     !data from parameters module
-    type(param_driver_type), intent(inout) :: driver
+    !type(param_driver_type), intent(inout) :: driver
     type(parameter_input_type), intent(inout) :: param_input
-    type(param_plot_type), intent(inout) :: param_plot
-    type(param_wannierise_type), intent(inout) :: param_wannierise
+    !type(param_plot_type), intent(inout) :: param_plot
+    !type(param_wannierise_type), intent(inout) :: param_wannierise
     type(wannier_data_type), intent(inout) :: wann_data
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
@@ -1656,9 +1767,8 @@ contains
 
     integer :: ierr
 
-    call param_dealloc(driver, param_input, param_plot, param_wannierise, &
-                       wann_data, kmesh_data, k_points, dis_data, fermi, &
-                       atoms, eigval, spec_points, dos_data, berry)
+    call param_dealloc(param_input, wann_data, kmesh_data, k_points, &
+                       dis_data, atoms, eigval, spec_points)
     if (allocated(dos_data%project)) then
       deallocate (dos_data%project, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating dos_project in param_pw90_dealloc')
@@ -1674,9 +1784,11 @@ contains
   end subroutine param_pw90_dealloc
 
   ! extra postw90 memory
-  subroutine param_pw90_mem_estimate(mem_param, mem_bw)
+  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann)
     use w90_comms, only: on_root
     implicit none
+    type(disentangle_type), intent(in) :: dis_data
+    integer, intent(in) :: num_wann
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
     real(kind=dp), parameter :: size_real = 8.0_dp

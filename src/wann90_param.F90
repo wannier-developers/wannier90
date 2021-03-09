@@ -189,6 +189,8 @@ module wannier_param_data
   type(transport_type), save :: tran
   type(select_projection_type), save :: select_proj
 
+  logical, save :: eig_found
+
   ! a_matrix, m_matrix in disentangle and overlap
   complex(kind=dp), allocatable, save :: a_matrix(:, :, :)
   complex(kind=dp), allocatable, save :: m_matrix_orig(:, :, :, :)
