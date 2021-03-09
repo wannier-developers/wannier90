@@ -526,23 +526,9 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   time2 = io_time()
   if (w90_calcs%transport) then
-    call tran_main(tran%mode, tran%read_ht, param_input%timing_level, &
-                   w90_calcs%write_hr, param_input%write_xyz, num_wann, real_lattice, &
-                   recip_lattice, wann_data%centres, atoms%num_atoms, w90_calcs%bands_plot, &
-                   param_input%iprint, param_hamil%translation_centre_frac, &
-                   param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
-                   param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
-                   dis_data%lwindow, u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
-                   lsitesymmetry, num_bands, num_kpts, atoms%pos_cart, &
-                   param_input%ws_distance_tol, param_input%ws_search_size, mp_grid, &
-                   param_input%bands_plot_mode, w90_calcs%transport, param_input%dist_cutoff_hc, &
-                   param_input%dist_cutoff, param_input%dist_cutoff_mode, tran%num_bandc, &
-                   tran%num_cc, tran%num_rr, tran%num_lc, tran%num_cr, tran%write_ht, &
-                   fermi%energy_list, fermi%n, k_points%kpt_cart, tran%num_ll, tran%num_cell_ll, &
-                   tran%easy_fix, atoms%symbol, wann_data%spreads, tran%group_threshold, &
-                   param_input%one_dim_dir, tran%use_same_lead, tran%energy_step, tran%win_min, &
-                   tran%win_max, tran%num_bb, param_input%length_unit, param_input%hr_cutoff, &
-                   ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
+    call tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, wann_data, atoms, &
+                   param_hamil, dis_data, u_matrix_opt, k_points, eigval, u_matrix, lsitesymmetry, &
+                   num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
                    wannier_centres_translated, hmlg, ham_k)
 
     time1 = io_time()
