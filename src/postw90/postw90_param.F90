@@ -264,9 +264,9 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(param_input, kmesh_data, num_kpts, dis_data, &
-                                fermi, atoms, num_bands, num_wann, eigval, &
-                                mp_grid, real_lattice, recip_lattice, &
+  subroutine param_postw90_read(param_input, kmesh_data, k_points, num_kpts, &
+                                dis_data, fermi, atoms, num_bands, num_wann, &
+                                eigval, mp_grid, real_lattice, recip_lattice, &
                                 spec_points, pw90_calcs, postw90_oper, &
                                 pw90_common, pw90_spin, pw90_ham, kpath, &
                                 kslice, dos_data, berry, spin_hall, &
@@ -299,7 +299,7 @@ contains
     !type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
     !type(kmesh_info_type), intent(inout) :: kmesh_info
-    !type(k_point_type), intent(inout) :: k_points
+    type(k_point_type), intent(inout) :: k_points
     integer, intent(inout) :: num_kpts
     type(disentangle_type), intent(inout) :: dis_data
     !type(fermi_surface_type), intent(inout) :: fermi_surface_data
@@ -354,7 +354,7 @@ contains
     !call param_w90_read_06
     call param_pw90_read_07(postw90_oper)
     !call param_w90_read_08
-    call param_read_09(num_wann)
+    call param_read_num_wann(num_wann)
     !call param_w90_read_10
     call param_read_11(pw90_common%effective_model, library, &
                        param_input, num_bands, num_wann, .false.)
@@ -396,7 +396,8 @@ contains
     !call param_w90_read_37(... one_dim_axis)
     call param_pw90_read_38(berry)
     !call param_w90_read_39
-    call param_read_40a(library, kmesh_data, real_lattice, recip_lattice)
+    call param_read_40a(pw90_common%effective_model, library, kmesh_data, &
+                        k_points, num_kpts, real_lattice, recip_lattice)
     call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
                             pw90_spin, gyrotropic, boltz, recip_lattice)

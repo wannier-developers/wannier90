@@ -279,7 +279,7 @@ module w90_param_methods
   ! common read routines
   public :: param_read_03
   public :: param_read_05
-  public :: param_read_09
+  public :: param_read_num_wann
   public :: param_w90_read_10
   public :: param_read_11
   public :: param_read_13
@@ -336,7 +336,7 @@ contains
     if (param_input%length_unit .eq. 'bohr') param_input%lenconfac = 1.0_dp/bohr
   end subroutine param_read_05
 
-  subroutine param_read_09(num_wann)
+  subroutine param_read_num_wann(num_wann)
     use w90_io, only: io_error
     implicit none
     integer, intent(out) :: num_wann
@@ -346,7 +346,7 @@ contains
     call param_get_keyword('num_wann', found, i_value=num_wann)
     if (.not. found) call io_error('Error: You must specify num_wann')
     if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero')
-  end subroutine param_read_09
+  end subroutine param_read_num_wann
 
   subroutine param_w90_read_10(param_input)
     use w90_io, only: io_error
@@ -768,15 +768,18 @@ contains
     ! GS-end
   end subroutine param_w90_read_33
 
-  subroutine param_read_40a(library, kmesh_data, real_lattice, recip_lattice)
+  subroutine param_read_40a(pw90_effective_model, library, kmesh_data, &
+                            k_points, num_kpts, real_lattice, recip_lattice)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
-    logical, intent(in) :: library
+    logical, intent(in) :: pw90_effective_model, library
     type(param_kmesh_type), intent(inout) :: kmesh_data
+    type(k_point_type), intent(inout) :: k_points
+    integer, intent(in) :: num_kpts
     real(kind=dp), intent(inout) :: real_lattice(3, 3), recip_lattice(3, 3)
     real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
-    integer :: itmp, ierr
+    integer :: itmp, nkp, ierr
     logical :: found
 
     kmesh_data%search_shells = 36
@@ -826,6 +829,27 @@ contains
     if (.not. library) &
       call utility_recip_lattice(real_lattice, recip_lattice, cell_volume)
     !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
+
+    if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
+    if (.not. library) then
+      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
+    end if
+
+    call param_get_keyword_block('kpoints', found, num_kpts, 3, r_value=k_points%kpt_cart)
+    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
+    if (.not. library .and. .not. pw90_effective_model) then
+      k_points%kpt_latt = k_points%kpt_cart
+      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file')
+    end if
+
+    ! Calculate the kpoints in cartesian coordinates
+    if (.not. pw90_effective_model) then
+      do nkp = 1, num_kpts
+        k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
+      end do
+    endif
 
   end subroutine param_read_40a
 

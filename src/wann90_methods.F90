@@ -105,47 +105,20 @@ contains
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(inout) :: spec_points
-    !type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    !type(postw90_oper_type), intent(inout) :: postw90_oper
-    !type(postw90_common_type), intent(inout) :: pw90_common
-    !type(postw90_spin_type), intent(inout) :: pw90_spin
-    !type(postw90_ham_type), intent(inout) :: pw90_ham
-    !type(kpath_type), intent(inout) :: kpath
-    !type(kslice_type), intent(inout) :: kslice
-    !type(dos_plot_type), intent(inout) :: dos_data
-    !type(berry_type), intent(inout) :: berry
-    !type(spin_hall_type), intent(inout) :: spin_hall
-    !type(gyrotropic_type), intent(inout) :: gyrotropic
-    !type(geninterp_type), intent(inout) :: geninterp
-    !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
     logical, intent(in) :: library_param_read_first_pass
 
     !local variables
-    !real(kind=dp)  :: real_lattice_tmp(3, 3)
-    !integer :: nkp, i, j, n, k, itmp, i_temp, i_temp2, eig_unit, loop, ierr, iv_temp(3), rows
-    !logical :: found, found2, lunits, chk_found
-    !character(len=6) :: spin_str
-    !real(kind=dp) :: rv_temp(3)
-    !integer, allocatable, dimension(:, :) :: nnkpts_block
-    !integer, allocatable, dimension(:) :: nnkpts_idx
-    !real(kind=dp) :: cell_volume
-    ! [gp-begin, Apr 20, 2012] Smearing type
-    ! The prefactor is given with the above parameters smr_...
-    ! This is an internal variable, obtained from the input string smr_type
-    ! Only internal, always use the local variables defined by each module
-    ! that take this value as default
-    integer                          :: smr_index
-    ! [gp-end]
+    integer                   :: smr_index
 
-    logical                                  :: found_fermi_energy
+    logical                   :: found_fermi_energy
     real(kind=dp)             :: kmesh_spacing
     integer                   :: kmesh(3)
     logical                   :: global_kmesh_set
 
     call param_in_file
-    call param_w90_read_01(lsitesymmetry, symmetrize_eps)
+    call param_read_sym(lsitesymmetry, symmetrize_eps)
     call param_w90_read_02(w90_calcs%transport, tran, driver%restart)
     call param_read_03(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
@@ -154,7 +127,7 @@ contains
       call param_w90_read_06(param_plot%wvfn_formatted)
       !call param_pw90_read_07
       call param_w90_read_08(param_plot%spin)
-      call param_read_09(num_wann)
+      call param_read_num_wann(num_wann)
       call param_w90_read_10(param_input)
       call param_read_11(.false., library, param_input, num_bands, num_wann, &
                          library_param_read_first_pass)
@@ -200,9 +173,9 @@ contains
       !call param_pw90_read_38
       call param_w90_read_39(w90_calcs%use_bloch_phases, &
                              w90_calcs%disentanglement)
-      call param_read_40a(library, kmesh_data, real_lattice, recip_lattice)
-      call param_read_40b(library, driver, k_points, kmesh_info, &
-                          recip_lattice, num_kpts)
+      call param_read_40a(.false., library, kmesh_data, k_points, num_kpts, &
+                          real_lattice, recip_lattice)
+      call param_read_40b(library, driver, kmesh_info, recip_lattice, num_kpts)
       call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
       !call param_pw90_read_40
       call param_w90_read_41(library, atoms, real_lattice, recip_lattice)
@@ -226,45 +199,21 @@ contains
   end subroutine param_read
 
   !==================================================================!
-  subroutine param_w90_read_01(lsitesymmetry, symmetrize_eps)
-    !==================================================================!
-    !                                                                  !
-    !! Read parameters and calculate derived values
-    !!
-    !! Note on parallelization: this function should be called
-    !! from the root node only!
-    !!
-    !                                                                  !
-    !===================================================================
-    !use w90_constants, only: bohr, eps6, cmplx_i
-    !use w90_utility, only: utility_recip_lattice
-    !use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
-    implicit none
-
-    !local variables
-    !real(kind=dp)  :: real_lattice_tmp(3, 3)
-    !integer :: nkp, i, j, n, k, itmp, i_temp, i_temp2, eig_unit, loop, ierr, iv_temp(3), rows
-    !logical :: found, found2, lunits, chk_found
-    !real(kind=dp) :: rv_temp(3)
-    !integer, allocatable, dimension(:, :) :: nnkpts_block
-    !integer, allocatable, dimension(:) :: nnkpts_idx
-    !real(kind=dp) :: cell_volume
-    logical :: found
-
-    !call param_in_file
-
+  subroutine param_read_sym(lsitesymmetry, symmetrize_eps)
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
     !%%%%%%%%%%%%%%%%
+    implicit none
     logical, intent(inout) :: lsitesymmetry
     real(kind=dp), intent(inout) :: symmetrize_eps
+    logical :: found
 
     ! default value is lsitesymmetry=.false.
     call param_get_keyword('site_symmetry', found, l_value=lsitesymmetry)!YN:
 
     ! default value is symmetrize_eps=0.001
     call param_get_keyword('symmetrize_eps', found, r_value=symmetrize_eps)!YN:
-  end subroutine param_w90_read_01
+  end subroutine param_read_sym
 
   subroutine param_w90_read_02(transport, tran, restart)
     !%%%%%%%%%%%%%%%%
@@ -872,14 +821,13 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement')
   end subroutine param_w90_read_39
 
-  subroutine param_read_40b(library, driver, k_points, kmesh_info, &
+  subroutine param_read_40b(library, driver, kmesh_info, &
                             recip_lattice, num_kpts)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: library
     type(param_driver_type), intent(inout) :: driver
-    type(k_point_type), intent(inout) :: k_points
     type(kmesh_info_type), intent(inout) :: kmesh_info
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_kpts
@@ -887,29 +835,6 @@ contains
     logical :: found
     integer, allocatable, dimension(:, :) :: nnkpts_block
     integer, allocatable, dimension(:) :: nnkpts_idx
-
-    !if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
-    allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
-    if (.not. library) then
-      allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
-    end if
-
-    call param_get_keyword_block('kpoints', found, num_kpts, 3, r_value=k_points%kpt_cart)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
-    !if (.not. library .and. .not. pw90_common%effective_model) then
-    if (.not. library) then
-      k_points%kpt_latt = k_points%kpt_cart
-      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file')
-    end if
-
-    ! Calculate the kpoints in cartesian coordinates
-    !if (.not. pw90_effective_model) then
-    do nkp = 1, num_kpts
-      k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
-    end do
-    !endif
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call param_get_block_length('nnkpts', driver%explicit_nnkpts, rows, library)

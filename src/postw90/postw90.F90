@@ -106,8 +106,8 @@ program postw90
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
   !
   if (on_root) then
-    call param_postw90_read(param_input, kmesh_data, num_kpts, dis_data, &
-                            fermi, atoms, num_bands, num_wann, eigval, &
+    call param_postw90_read(param_input, kmesh_data, k_points, num_kpts, &
+                            dis_data, fermi, atoms, num_bands, num_wann, eigval, &
                             mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
