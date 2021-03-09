@@ -264,12 +264,12 @@ module pw90_param_methods
 
 contains
 
-  subroutine param_postw90_read(param_input, kmesh_data, k_points, num_kpts, &
-                                dis_data, fermi, atoms, num_bands, num_wann, &
-                                eigval, mp_grid, real_lattice, recip_lattice, &
-                                spec_points, pw90_calcs, postw90_oper, &
-                                pw90_common, pw90_spin, pw90_ham, kpath, &
-                                kslice, dos_data, berry, spin_hall, &
+  subroutine param_postw90_read(param_input, wann_data, kmesh_data, k_points, &
+                                num_kpts, dis_data, fermi, atoms, num_bands, &
+                                num_wann, eigval, mp_grid, real_lattice, &
+                                recip_lattice, spec_points, pw90_calcs, &
+                                postw90_oper, pw90_common, pw90_spin, pw90_ham, &
+                                kpath, kslice, dos_data, berry, spin_hall, &
                                 gyrotropic, geninterp, boltz, eig_found)
     !==================================================================!
     !                                                                  !
@@ -295,7 +295,7 @@ contains
     ! RS: symmetry-adapted Wannier functions
     !logical, intent(inout) :: lsitesymmetry
     !real(kind=dp), intent(inout) :: symmetrize_eps
-    !type(wannier_data_type), intent(inout) :: wann_data
+    type(wannier_data_type), intent(inout) :: wann_data
     !type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(param_kmesh_type), intent(inout) :: kmesh_data
     !type(kmesh_info_type), intent(inout) :: kmesh_info
@@ -409,6 +409,8 @@ contains
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     !  call param_w90_read_45(disentanglement)
     !endif
+    call param_read_45(disentanglement, dis_data, wann_data, num_wann, &
+                       num_bands, num_kpts)
   end subroutine param_postw90_read
 
   subroutine param_pw90_read_04(effective_model)

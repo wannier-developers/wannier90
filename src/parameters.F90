@@ -295,6 +295,7 @@ module w90_param_methods
   public :: param_read_40c
   public :: param_w90_read_41
   public :: param_read_44
+  public :: param_read_45
 
 contains
 
@@ -968,6 +969,51 @@ contains
     if (ierr /= 0) call io_error('Error deallocating in_data in param_read')
 
   end subroutine param_read_44
+
+  subroutine param_read_45(disentanglement, dis_data, wann_data, &
+                           num_wann, num_bands, num_kpts)
+    ! =============================== !
+    ! Some checks and initialisations !
+    ! =============================== !
+    use w90_io, only: io_error
+    implicit none
+    logical, intent(in) :: disentanglement
+    !type(parameter_input_type), intent(inout) :: param_input
+    type(disentangle_type), intent(inout) :: dis_data
+    !type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(wannier_data_type), intent(inout) :: wann_data
+    integer, intent(in) :: num_wann, num_bands, num_kpts
+    integer :: ierr
+
+!    if (restart.ne.' ') disentanglement=.false.
+
+    if (disentanglement) then
+      if (allocated(dis_data%ndimwin)) deallocate (dis_data%ndimwin)
+      allocate (dis_data%ndimwin(num_kpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating ndimwin in param_read')
+      if (allocated(dis_data%lwindow)) deallocate (dis_data%lwindow)
+      allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating lwindow in param_read')
+    endif
+
+!    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
+!       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
+!       cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
+!       cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
+!       cosa = abs(cosa)
+!       if (any(cosa.gt.eps6)) &
+!            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
+!    endif
+
+    if (allocated(wann_data%centres)) deallocate (wann_data%centres)
+    allocate (wann_data%centres(3, num_wann), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating wannier_centres in param_read')
+    wann_data%centres = 0.0_dp
+    if (allocated(wann_data%spreads)) deallocate (wann_data%spreads)
+    allocate (wann_data%spreads(num_wann), stat=ierr)
+    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read')
+    wann_data%spreads = 0.0_dp
+  end subroutine param_read_45
 
   subroutine internal_set_kmesh(spacing, reclat, mesh)
     !! This routines returns the three integers that define the interpolation k-mesh, satisfying

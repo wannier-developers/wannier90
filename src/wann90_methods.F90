@@ -175,7 +175,7 @@ contains
                              w90_calcs%disentanglement)
       call param_read_40a(.false., library, kmesh_data, k_points, num_kpts, &
                           real_lattice, recip_lattice)
-      call param_read_40b(library, driver, kmesh_info, recip_lattice, num_kpts)
+      call param_read_40b(library, driver, kmesh_info, num_kpts)
       call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
       !call param_pw90_read_40
       call param_w90_read_41(library, atoms, real_lattice, recip_lattice)
@@ -192,9 +192,13 @@ contains
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       param_wannierise%omega_total = -999.0_dp
       param_wannierise%omega_tilde = -999.0_dp
-      call param_w90_read_45(w90_calcs%disentanglement, param_input, dis_data, &
-                             param_wannierise, wann_data, num_wann, num_bands, &
-                             num_kpts)
+      ! Initialise
+      param_wannierise%omega_total = -999.0_dp
+      param_wannierise%omega_tilde = -999.0_dp
+      param_input%omega_invariant = -999.0_dp
+      param_input%have_disentangled = .false.
+      call param_read_45(w90_calcs%disentanglement, dis_data, &
+                         wann_data, num_wann, num_bands, num_kpts)
     endif
   end subroutine param_read
 
@@ -821,17 +825,15 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement')
   end subroutine param_w90_read_39
 
-  subroutine param_read_40b(library, driver, kmesh_info, &
-                            recip_lattice, num_kpts)
+  subroutine param_read_40b(library, driver, kmesh_info, num_kpts)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: library
     type(param_driver_type), intent(inout) :: driver
     type(kmesh_info_type), intent(inout) :: kmesh_info
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_kpts
-    integer :: i, k, ierr, nkp, rows
+    integer :: i, k, ierr, rows
     logical :: found
     integer, allocatable, dimension(:, :) :: nnkpts_block
     integer, allocatable, dimension(:) :: nnkpts_idx
@@ -1030,58 +1032,6 @@ contains
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
            & Desired centres for SLWF same as projection centres.'
   end subroutine param_w90_read_43
-
-  subroutine param_w90_read_45(disentanglement, param_input, dis_data, &
-                               param_wannierise, wann_data, num_wann, &
-                               num_bands, num_kpts)
-    ! =============================== !
-    ! Some checks and initialisations !
-    ! =============================== !
-    use w90_io, only: io_error
-    implicit none
-    logical, intent(in) :: disentanglement
-    type(parameter_input_type), intent(inout) :: param_input
-    type(disentangle_type), intent(inout) :: dis_data
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    type(wannier_data_type), intent(inout) :: wann_data
-    integer, intent(in) :: num_wann, num_bands, num_kpts
-    integer :: ierr
-
-!    if (restart.ne.' ') disentanglement=.false.
-
-    if (disentanglement) then
-      if (allocated(dis_data%ndimwin)) deallocate (dis_data%ndimwin)
-      allocate (dis_data%ndimwin(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ndimwin in param_read')
-      if (allocated(dis_data%lwindow)) deallocate (dis_data%lwindow)
-      allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating lwindow in param_read')
-    endif
-
-!    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
-!       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
-!       cosa(2)=dot_product(real_lattice(1,:),real_lattice(3,:))
-!       cosa(3)=dot_product(real_lattice(2,:),real_lattice(3,:))
-!       cosa = abs(cosa)
-!       if (any(cosa.gt.eps6)) &
-!            call io_error('Error: plotting in cube format requires orthogonal lattice vectors')
-!    endif
-
-    ! Initialise
-    param_wannierise%omega_total = -999.0_dp
-    param_wannierise%omega_tilde = -999.0_dp
-    param_input%omega_invariant = -999.0_dp
-    param_input%have_disentangled = .false.
-
-    if (allocated(wann_data%centres)) deallocate (wann_data%centres)
-    allocate (wann_data%centres(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wannier_centres in param_read')
-    wann_data%centres = 0.0_dp
-    if (allocated(wann_data%spreads)) deallocate (wann_data%spreads)
-    allocate (wann_data%spreads(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read')
-    wann_data%spreads = 0.0_dp
-  end subroutine param_w90_read_45
 
 !===================================================================
   subroutine param_write(driver, w90_calcs, param_input, param_plot, &
