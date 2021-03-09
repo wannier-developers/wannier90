@@ -689,6 +689,8 @@ contains
 
     if (library .and. allocated(eigval)) eig_found = .true.
 
+    return
+
 105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
 106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
 
