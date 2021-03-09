@@ -247,9 +247,10 @@ contains
       if (.not. tran%read_ht) then
         call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
                                mp_grid, tran%mode, param_input%bands_plot_mode, w90_calcs%transport, &
-                     w90_calcs%bands_plot, num_kpts, num_wann, param_input%timing_level, param_input%iprint, ham_r, irvec, ndegen, &
-                               nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                               ham_k)
+                               w90_calcs%bands_plot, num_kpts, num_wann, param_input%timing_level, &
+                               param_input%iprint, ham_r, irvec, ndegen, &
+                               nrpts, rpt_origin, wannier_centres_translated, &
+                               hmlg, ham_k)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
                                 atoms%num_atoms, atoms%pos_cart, param_hamil%translation_centre_frac, &
                                 param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
@@ -281,9 +282,10 @@ contains
       if (.not. tran%read_ht) then
         call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
                                mp_grid, tran%mode, param_input%bands_plot_mode, w90_calcs%transport, &
-                     w90_calcs%bands_plot, num_kpts, num_wann, param_input%timing_level, param_input%iprint, ham_r, irvec, ndegen, &
-                               nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                               ham_k)
+                               w90_calcs%bands_plot, num_kpts, num_wann, param_input%timing_level, &
+                               param_input%iprint, ham_r, irvec, ndegen, &
+                               nrpts, rpt_origin, wannier_centres_translated, &
+                               hmlg, ham_k)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
                                 atoms%num_atoms, atoms%pos_cart, param_hamil%translation_centre_frac, &
                                 param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
@@ -3050,7 +3052,8 @@ contains
       wf_verifier = tmp_wf_verifier(:, 1:group_verifier(1))
       do i = 1, 4*tran%num_cell_ll
         do j = 1, group_verifier(1)
-         if (param_input%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', j, '       ', wf_verifier(i, j)
+          if (param_input%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', &
+            i, '         ', j, '       ', wf_verifier(i, j)
           if (i .ne. 1) then
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) &
                 call io_error('Inconsitent number of wannier &
