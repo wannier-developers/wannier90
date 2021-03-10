@@ -451,33 +451,12 @@ program wannier
     ! to plot are inside the function
     time2 = io_time()
     !
-    call plot_main(num_kpts, w90_calcs%bands_plot, dos_plot, k_points%kpt_latt, &
-                   w90_calcs%fermi_surface_plot, w90_calcs%wannier_plot, &
-                   param_input%timing_level, param_plot%write_bvec, w90_calcs%write_hr, &
-                   param_plot%write_rmn, param_plot%write_tb, param_plot%write_u_matrices, &
-                   real_lattice, num_wann, kmesh_info%wb, kmesh_info%bk, m_matrix, &
-                   kmesh_info%nntot, recip_lattice, wann_data%centres, atoms%num_atoms, &
-                   atoms%pos_cart, param_hamil%translation_centre_frac, &
-                   param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
-                   param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
-                   dis_data%lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, &
-                   num_bands, param_input%ws_distance_tol, param_input%ws_search_size, &
-                   mp_grid, tran, param_input%bands_plot_mode, &
-                   w90_calcs%transport, param_input%iprint, param_plot%wannier_plot_radius, &
-                   param_plot%wannier_plot_scale, atoms%pos_frac, &
-                   param_plot%wannier_plot_spinor_phase, param_plot%wannier_plot_spinor_mode, &
-                   param_input%spinors, param_plot%wannier_plot_format, &
-                   param_plot%wvfn_formatted, param_plot%wannier_plot_mode, &
-                   param_plot%wannier_plot_list, param_plot%num_wannier_plot, atoms%symbol, &
-                   param_plot%spin, param_plot%wannier_plot_supercell, fermi%energy_list, fermi%n, &
-                   fermi_surface_data%num_points, param_input%one_dim_dir, &
-                   param_plot%bands_plot_dim, param_input%hr_cutoff, param_input%dist_cutoff, &
-                   param_input%dist_cutoff_mode, param_input%use_ws_distance, &
-                   param_plot%bands_plot_project, param_plot%num_bands_project, &
-                   param_plot%bands_plot_format, spec_points%bands_label, &
-                   spec_points%bands_spec_points, spec_points%bands_num_spec_points, &
-                   param_plot%bands_num_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                   rpt_origin, wannier_centres_translated, hmlg, ham_k)
+    call plot_main(num_kpts, w90_calcs, dos_plot, k_points, &param_input, param_plot, real_lattice, &
+                   num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, atoms, param_hamil, &
+                   dis_data, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, mp_grid, tran, &
+                   !                 param_plot%wannier_plot_supercell,fermi, fermi_surface_data, spec_points, ham_r, irvec, shift_vec, &
+                   fermi, fermi_surface_data, spec_points, ham_r, irvec, shift_vec, &
+                   ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k)
     !
     time1 = io_time()
     ! Now time is always printed, even if no plotting is done/required, but
