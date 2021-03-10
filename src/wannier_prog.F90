@@ -451,7 +451,8 @@ program wannier
     ! to plot are inside the function
     time2 = io_time()
     !
-    call plot_main(num_kpts, w90_calcs, dos_plot, k_points, &param_input, param_plot, real_lattice, &
+    call plot_main(num_kpts, w90_calcs, dos_plot, k_points, &
+                   param_input, param_plot, real_lattice, &
                    num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, atoms, param_hamil, &
                    dis_data, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, mp_grid, tran, &
                    !                 param_plot%wannier_plot_supercell,fermi, fermi_surface_data, spec_points, ham_r, irvec, shift_vec, &
