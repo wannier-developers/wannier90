@@ -16,11 +16,12 @@ module w90_disentangle
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 
+  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, &
+    comms_allreduce
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, stdout, io_stopwatch
-
-  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce
-
+  use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, &
+    parameter_input_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, &
     sitesym_replace_d_matrix_band, sitesym_symmetrize_u_matrix, &
     sitesym_symmetrize_zmatrix, sitesym_dis_extract_symmetry, sitesym_data
@@ -31,15 +32,13 @@ module w90_disentangle
 contains
 
   !==================================================================!
-  subroutine dis_main(num_kpts, nntot, num_wann, num_bands, dis_spheres_num, &
-                      dis_num_iter, dis_spheres_first_wann, dis_conv_window, timing_level, &
-                      num_nodes, my_node_id, optimisation, iprint, nnlist, ndimwin, dis_win_min, &
-                      dis_win_max, dis_froz_min, dis_froz_max, dis_mix_ratio, dis_conv_tol, &
-                      wbtot, lenconfac, omega_invariant, eigval, recip_lattice, kpt_latt, &
-                      dis_spheres, wb, devel_flag, length_unit, lsitesymmetry, gamma_only, &
-                      on_root, frozen_states, lwindow, u_matrix, u_matrix_opt, m_matrix, &
-                      m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, &
-                      sym)
+
+  subroutine dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, &
+                      a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
+                      m_matrix_orig_local, u_matrix, u_matrix_opt, dis_data, &
+                      kmesh_info, k_points, param_input, num_nodes, &
+                      my_node_id, on_root, lsitesymmetry, sym)
+
     !==================================================================!
     !! Main disentanglement routine
     !                                                                  !
@@ -49,26 +48,13 @@ contains
     use w90_io, only: io_file_unit
 
     ! passed variables
-    integer, intent(in) :: dis_spheres_num, dis_num_iter, dis_spheres_first_wann, dis_conv_window
-    integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    integer, intent(in) :: timing_level, iprint, num_nodes, my_node_id, optimisation
-    integer, intent(inout) :: ndimwin(:) ! (num_kpts)
+    integer, intent(in) :: num_nodes, my_node_id
 
-    logical, intent(in) :: lsitesymmetry, gamma_only, on_root, frozen_states
-    logical, intent(inout) :: lwindow(:, :) !(num_bands, num_kpts)
+    logical, intent(in) :: lsitesymmetry, on_root
 
-    real(kind=dp), intent(in) :: dis_spheres(4, dis_spheres_num)
-    real(kind=dp), intent(in) :: dis_win_min, dis_win_max, dis_froz_min, dis_froz_max, dis_mix_ratio, dis_conv_tol
     real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
-    real(kind=dp), intent(in) :: kpt_latt(3, num_kpts)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    real(kind=dp), intent(in) :: wb(:) ! (nntot)
-    real(kind=dp), intent(in) :: wbtot, lenconfac
-    real(kind=dp), intent(inout) :: omega_invariant
-
-    character(len=20), intent(in) :: length_unit
-    character(len=50), intent(in) :: devel_flag
 
     complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
@@ -78,6 +64,10 @@ contains
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig(:, :, :, :)
     complex(kind=dp), intent(inout), allocatable :: m_matrix_orig_local(:, :, :, :)
 
+    type(disentangle_type), intent(inout) :: dis_data
+    type(kmesh_info_type), intent(in)    :: kmesh_info
+    type(k_point_type), intent(in)    :: k_points
+    type(parameter_input_type), intent(inout) :: param_input ! omega_invariant alone is modified
     type(sitesym_data), intent(inout) :: sym
 
     ! internal variables
@@ -101,7 +91,7 @@ contains
 
     ! JJ check size of passed array arguments explicitly
 
-    if (timing_level > 0) call io_stopwatch('dis: main', 1)
+    if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1)
 
     call comms_array_split(num_kpts, counts, displs)
 
@@ -115,62 +105,64 @@ contains
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows(iprint, timing_level, num_kpts, num_wann, &
-                     num_bands, dis_spheres_num, dis_spheres_first_wann, on_root, &
-                     frozen_states, linner, lfrozen, ndimwin, ndimfroz, indxfroz, &
-                     indxnfroz, nfirstwin, dis_win_min, dis_win_max, dis_froz_min, &
-                     dis_froz_max, kpt_latt, recip_lattice, dis_spheres, eigval_opt)
+    call dis_windows(param_input%iprint, param_input%timing_level, num_kpts, num_wann, &
+                     num_bands, dis_data%spheres_num, dis_data%spheres_first_wann, on_root, &
+                     dis_data%frozen_states, linner, lfrozen, dis_data%ndimwin, ndimfroz, indxfroz, &
+                     indxnfroz, nfirstwin, dis_data%win_min, dis_data%win_max, dis_data%froz_min, &
+                     dis_data%froz_max, k_points%kpt_latt, recip_lattice, dis_data%spheres, eigval_opt)
 
     ! Construct the unitarized projection
-    call dis_project(timing_level, num_kpts, num_wann, num_bands, &
-                     on_root, ndimwin, nfirstwin, a_matrix, u_matrix_opt)
+    call dis_project(param_input%timing_level, num_kpts, num_wann, num_bands, &
+                     on_root, dis_data%ndimwin, nfirstwin, a_matrix, u_matrix_opt)
 
     ! If there is an inner window, need to modify projection procedure
     ! (Sec. III.G SMV)
     if (linner) then
       if (lsitesymmetry) call io_error('in symmetry-adapted mode, frozen window not implemented yet') !YN: RS:
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
-      call dis_proj_froz(timing_level, on_root, num_kpts, ndimwin, u_matrix_opt, iprint, devel_flag, num_bands, num_wann, lfrozen, &
+      call dis_proj_froz(param_input%timing_level, on_root, num_kpts, &
+                         dis_data%ndimwin, u_matrix_opt, param_input%iprint, &
+                         param_input%devel_flag, num_bands, num_wann, lfrozen, &
                          ndimfroz, indxfroz)
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
     endif
 
     ! Debug
-    call internal_check_orthonorm(timing_level, num_wann, num_kpts, ndimwin, on_root, u_matrix_opt)
+    call internal_check_orthonorm(param_input%timing_level, num_wann, num_kpts, dis_data%ndimwin, on_root, u_matrix_opt)
 
     ! Slim down the original Mmn(k,b)
-    call internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, on_root, &
-                         my_node_id, nntot, nnlist, nfirstwin, m_matrix_orig_local, &
+    call internal_slim_m(param_input%timing_level, num_kpts, num_bands, dis_data%ndimwin, on_root, &
+                         my_node_id, kmesh_info%nntot, kmesh_info%nnlist, nfirstwin, m_matrix_orig_local, &
                          num_nodes)
 
-    lwindow = .false.
+    dis_data%lwindow = .false.
     do nkp = 1, num_kpts
-      do j = nfirstwin(nkp), nfirstwin(nkp) + ndimwin(nkp) - 1
-        lwindow(j, nkp) = .true.
+      do j = nfirstwin(nkp), nfirstwin(nkp) + dis_data%ndimwin(nkp) - 1
+        dis_data%lwindow(j, nkp) = .true.
       end do
     end do
 
     if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
-                                                        num_bands, u_matrix_opt, sym, lwindow)
+                                                        num_bands, u_matrix_opt, sym, dis_data%lwindow)
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
     ! Extract the optimally-connected num_wann-dimensional subspaces
 
-    if (.not. gamma_only) then
-      call dis_extract(iprint, timing_level, my_node_id, num_nodes, &
-                       num_kpts, nntot, num_wann, num_bands, dis_num_iter, &
-                       dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz, &
-                       on_root, lsitesymmetry, lwindow, length_unit, devel_flag, &
-                       dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb, &
-                       omega_invariant, eigval_opt, u_matrix_opt, m_matrix_orig_local, &
+    if (.not. param_input%gamma_only) then
+      call dis_extract(param_input%iprint, param_input%timing_level, my_node_id, num_nodes, &
+                       num_kpts, kmesh_info%nntot, num_wann, num_bands, dis_data%num_iter, &
+                       dis_data%conv_window, dis_data%ndimwin, kmesh_info%nnlist, ndimfroz, indxnfroz, &
+                       on_root, lsitesymmetry, dis_data%lwindow, param_input%length_unit, param_input%devel_flag, &
+                       dis_data%mix_ratio, dis_data%conv_tol, kmesh_info%wbtot, param_input%lenconfac, kmesh_info%wb, &
+                       param_input%omega_invariant, eigval_opt, u_matrix_opt, m_matrix_orig_local, &
                        sym)
     else
-      call dis_extract_gamma(iprint, timing_level, my_node_id, num_nodes, &
-                             num_kpts, nntot, num_wann, num_bands, dis_num_iter, &
-                             dis_conv_window, ndimwin, nnlist, ndimfroz, indxnfroz, &
-                             on_root, length_unit, devel_flag, dis_mix_ratio, dis_conv_tol, &
-                             wbtot, lenconfac, wb, omega_invariant, eigval_opt, u_matrix_opt, &
-                             m_matrix_orig)
+      call dis_extract_gamma(param_input%iprint, param_input%timing_level, my_node_id, num_nodes, &
+                             num_kpts, kmesh_info%nntot, num_wann, num_bands, dis_data%num_iter, &
+                             dis_data%conv_window, dis_data%ndimwin, kmesh_info%nnlist, ndimfroz, indxnfroz, &
+                             on_root, param_input%length_unit, param_input%devel_flag, dis_data%mix_ratio, dis_data%conv_tol, &
+                             kmesh_info%wbtot, param_input%lenconfac, kmesh_info%wb, param_input%omega_invariant, eigval_opt, &
+                             u_matrix_opt, m_matrix_orig)
     end if
 
     ! Allocate workspace
@@ -183,12 +175,12 @@ contains
     ! the basis states of the optimal subspaces
     do nkp = 1, counts(my_node_id)
       nkp_global = nkp + displs(my_node_id)
-      do nn = 1, nntot
-        nkp2 = nnlist(nkp_global, nn)
-        call zgemm('C', 'N', num_wann, ndimwin(nkp2), ndimwin(nkp_global), cmplx_1, &
+      do nn = 1, kmesh_info%nntot
+        nkp2 = kmesh_info%nnlist(nkp_global, nn)
+        call zgemm('C', 'N', num_wann, dis_data%ndimwin(nkp2), dis_data%ndimwin(nkp_global), cmplx_1, &
                    u_matrix_opt(:, :, nkp_global), num_bands, m_matrix_orig_local(:, :, nn, nkp), num_bands, &
                    cmplx_0, cwb, num_wann)
-        call zgemm('N', 'N', num_wann, num_wann, ndimwin(nkp2), cmplx_1, &
+        call zgemm('N', 'N', num_wann, num_wann, dis_data%ndimwin(nkp2), cmplx_1, &
                    cwb, num_wann, u_matrix_opt(:, :, nkp2), num_bands, &
                    cmplx_0, cww, num_wann)
         m_matrix_orig_local(1:num_wann, 1:num_wann, nn, nkp) = cww(:, :)
@@ -198,23 +190,23 @@ contains
     ! Find the initial u_matrix
     if (lsitesymmetry) call sitesym_replace_d_matrix_band(num_wann, sym) !RS: replace d_matrix_band here
 ![ysl-b]
-    if (.not. gamma_only) then
-      call internal_find_u(on_root, lsitesymmetry, timing_level, &
-                           num_kpts, num_wann, num_bands, ndimwin, u_matrix, u_matrix_opt, &
+    if (.not. param_input%gamma_only) then
+      call internal_find_u(on_root, lsitesymmetry, param_input%timing_level, &
+                           num_kpts, num_wann, num_bands, dis_data%ndimwin, u_matrix, u_matrix_opt, &
                            a_matrix, sym)
     else
-      call internal_find_u_gamma(timing_level, num_wann, ndimwin, u_matrix, u_matrix_opt, a_matrix)
+      call internal_find_u_gamma(param_input%timing_level, num_wann, dis_data%ndimwin, u_matrix, u_matrix_opt, a_matrix)
     end if
 ![ysl-e]
 
-    if (optimisation <= 0) then
+    if (param_input%optimisation <= 0) then
       page_unit = io_file_unit()
       open (unit=page_unit, form='unformatted', status='scratch')
       ! Update the m_matrix accordingly
       do nkp = 1, counts(my_node_id)
         nkp_global = nkp + displs(my_node_id)
-        do nn = 1, nntot
-          nkp2 = nnlist(nkp_global, nn)
+        do nn = 1, kmesh_info%nntot
+          nkp2 = kmesh_info%nnlist(nkp_global, nn)
           call zgemm('C', 'N', num_wann, num_wann, num_wann, cmplx_1, &
                      u_matrix(:, :, nkp_global), num_wann, m_matrix_orig_local(:, :, nn, nkp), num_bands, &
                      cmplx_0, cwb, num_wann)
@@ -228,33 +220,33 @@ contains
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main')
       if (on_root) then
-        allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
+        allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main')
       endif
-      allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+      allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main')
       do nkp = 1, counts(my_node_id)
-        do nn = 1, nntot
+        do nn = 1, kmesh_info%nntot
           read (page_unit) m_matrix_local(:, :, nn, nkp)
         end do
       end do
-      call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
-                         m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
+      call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
+                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs)
       close (page_unit)
 
     else
 
       if (on_root) then
-        allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
+        allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main')
       endif
-      allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+      allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main')
       ! Update the m_matrix accordingly
       do nkp = 1, counts(my_node_id)
         nkp_global = nkp + displs(my_node_id)
-        do nn = 1, nntot
-          nkp2 = nnlist(nkp_global, nn)
+        do nn = 1, kmesh_info%nntot
+          nkp2 = kmesh_info%nnlist(nkp_global, nn)
           call zgemm('C', 'N', num_wann, num_wann, num_wann, cmplx_1, &
                      u_matrix(:, :, nkp_global), num_wann, m_matrix_orig_local(:, :, nn, nkp), num_bands, &
                      cmplx_0, cwb, num_wann)
@@ -264,8 +256,8 @@ contains
           m_matrix_local(:, :, nn, nkp) = cww(:, :)
         enddo
       enddo
-      call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
-                         m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
+      call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
+                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs)
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main')
 
@@ -280,8 +272,8 @@ contains
     !zero the unused elements of u_matrix_opt (just in case...)
     do nkp = 1, num_kpts
       do j = 1, num_wann
-        if (ndimwin(nkp) < num_bands) &
-          u_matrix_opt(ndimwin(nkp) + 1:, j, nkp) = cmplx_0
+        if (dis_data%ndimwin(nkp) < num_bands) &
+          u_matrix_opt(dis_data%ndimwin(nkp) + 1:, j, nkp) = cmplx_0
       enddo
     enddo
 
@@ -302,7 +294,7 @@ contains
 !~    endif
 !~![ysl-e]
 
-    if (timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2)
+    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2)
 
     return
     !================================================================!

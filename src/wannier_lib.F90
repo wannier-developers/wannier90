@@ -437,17 +437,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   if (w90_calcs%disentanglement) then
     param_input%have_disentangled = .false.
-    call dis_main(num_kpts, kmesh_info%nntot, num_wann, num_bands, &
-                  dis_data%spheres_num, dis_data%num_iter, dis_data%spheres_first_wann, &
-                  dis_data%conv_window, param_input%timing_level, num_nodes, my_node_id, &
-                  param_input%optimisation, param_input%iprint, kmesh_info%nnlist, &
-                  dis_data%ndimwin, dis_data%win_min, dis_data%win_max, dis_data%froz_min, &
-                  dis_data%froz_max, dis_data%mix_ratio, dis_data%conv_tol, kmesh_info%wbtot, &
-                  param_input%lenconfac, param_input%omega_invariant, eigval, recip_lattice, &
-                  k_points%kpt_latt, dis_data%spheres, kmesh_info%wb, param_input%devel_flag, &
-                  param_input%length_unit, lsitesymmetry, param_input%gamma_only, on_root, &
-                  dis_data%frozen_states, dis_data%lwindow, u_matrix, u_matrix_opt, m_matrix, &
-                  m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, sym)
+
+    call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, &
+                  a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
+                  m_matrix_orig_local, u_matrix, u_matrix_opt, dis_data, &
+                  kmesh_info, k_points, param_input, num_nodes, my_node_id, &
+                  on_root, lsitesymmetry, sym)
 
     param_input%have_disentangled = .true.
     call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
