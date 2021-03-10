@@ -89,8 +89,6 @@ contains
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
 
-    ! JJ check size of passed array arguments explicitly
-
     if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1)
 
     call comms_array_split(num_kpts, counts, displs)
@@ -99,17 +97,15 @@ contains
       '*------------------------------- DISENTANGLE --------------------------------*'
 
     ! Allocate arrays
-    ! JJ, can this be avoided?
     allocate (eigval_opt(num_bands, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating eigval_opt in dis_main')
     eigval_opt = eigval
 
     ! Set up energy windows
-    call dis_windows(param_input%iprint, param_input%timing_level, num_kpts, num_wann, &
-                     num_bands, dis_data%spheres_num, dis_data%spheres_first_wann, on_root, &
-                     dis_data%frozen_states, linner, lfrozen, dis_data%ndimwin, ndimfroz, indxfroz, &
-                     indxnfroz, nfirstwin, dis_data%win_min, dis_data%win_max, dis_data%froz_min, &
-                     dis_data%froz_max, k_points%kpt_latt, recip_lattice, dis_data%spheres, eigval_opt)
+    call dis_windows(param_input%iprint, param_input%timing_level, on_root, indxfroz, &
+                     indxnfroz, lfrozen, linner, ndimfroz, nfirstwin, num_bands, &
+                     num_kpts, num_wann, eigval_opt, k_points%kpt_latt, recip_lattice, &
+                     dis_data)
 
     ! Construct the unitarized projection
     call dis_project(param_input%timing_level, num_kpts, num_wann, num_bands, &
@@ -659,11 +655,10 @@ contains
   end subroutine internal_find_u_gamma
 ![ysl-e]
 
-  subroutine dis_windows(iprint, timing_level, num_kpts, num_wann, num_bands, &
-                         dis_spheres_num, dis_spheres_first_wann, on_root, frozen_states, &
-                         linner, lfrozen, ndimwin, ndimfroz, indxfroz, indxnfroz, nfirstwin, &
-                         dis_win_min, dis_win_max, dis_froz_min, dis_froz_max, kpt_latt, &
-                         recip_lattice, dis_spheres, eigval_opt)
+  subroutine dis_windows(iprint, timing_level, on_root, indxfroz, indxnfroz, &
+                         lfrozen, linner, ndimfroz, nfirstwin, num_bands, &
+                         num_kpts, num_wann, eigval_opt, kpt_latt, &
+                         recip_lattice, dis_data)
     !==================================================================!
     !                                                                  !
     !! This subroutine selects the states that are inside the outer
@@ -687,21 +682,20 @@ contains
     ! passed variables
     integer, intent(in) :: iprint, timing_level
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    integer, intent(in) :: dis_spheres_num, dis_spheres_first_wann
 
-    logical, intent(in) :: on_root, frozen_states
+    logical, intent(in) :: on_root
     logical, intent(inout) :: linner
     logical, intent(inout) :: lfrozen(:, :) ! (num_bands, num_kpts)
 
-    integer, intent(inout) :: ndimwin(:) ! (num_kpts)
     integer, intent(inout) :: ndimfroz(:) ! (num_kpts)
     integer, intent(inout) :: indxfroz(:, :) ! (num_bands,num_kpts)
     integer, intent(inout) :: indxnfroz(:, :) ! (num_bands,num_kpts)
     integer, intent(inout) :: nfirstwin(:) ! (num_kpts)
 
-    real(kind=dp), intent(in) :: dis_win_min, dis_win_max, dis_froz_min, dis_froz_max
-    real(kind=dp), intent(in) :: kpt_latt(3, num_kpts), recip_lattice(3, 3), dis_spheres(4, dis_spheres_num)
+    real(kind=dp), intent(in) :: kpt_latt(3, num_kpts), recip_lattice(3, 3)
     real(kind=dp), intent(inout) :: eigval_opt(:, :) ! (num_bands,num_kpts)
+
+    type(disentangle_type), intent(inout) :: dis_data ! ndimwin alone is modified
 
     ! internal variables
     integer :: i, j, nkp
@@ -747,11 +741,11 @@ contains
     if (on_root) write (stdout, '(1x,a)') &
       '|                              ---------------                               |'
     if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
-      '|                   Outer: ', dis_win_min, '  to ', dis_win_max, &
+      '|                   Outer: ', dis_data%win_min, '  to ', dis_data%win_max, &
       '  (eV)                   |'
-    if (frozen_states) then
+    if (dis_data%frozen_states) then
       if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
-        '|                   Inner: ', dis_froz_min, '  to ', dis_froz_max, &
+        '|                   Inner: ', dis_data%froz_min, '  to ', dis_data%froz_max, &
         '  (eV)                   |'
     else
       if (on_root) write (stdout, '(1x,a)') &
@@ -762,62 +756,62 @@ contains
 
     do nkp = 1, num_kpts
       ! Check which eigenvalues fall within the outer window
-      if ((eigval_opt(1, nkp) .gt. dis_win_max) .or. &
-          (eigval_opt(num_bands, nkp) .lt. dis_win_min)) then
+      if ((eigval_opt(1, nkp) .gt. dis_data%win_max) .or. &
+          (eigval_opt(num_bands, nkp) .lt. dis_data%win_min)) then
         if (on_root) write (stdout, *) ' ERROR AT K-POINT: ', nkp
-        if (on_root) write (stdout, *) ' ENERGY WINDOW (eV):    [', dis_win_min, ',', dis_win_max, ']'
+        if (on_root) write (stdout, *) ' ENERGY WINDOW (eV):    [', dis_data%win_min, ',', dis_data%win_max, ']'
         if (on_root) write (stdout, *) ' EIGENVALUE RANGE (eV): [', &
           eigval_opt(1, nkp), ',', eigval_opt(num_bands, nkp), ']'
-        call io_error('dis_windows: The outer energy window contains no eigenvalues')
+        call io_error('dis_data%windows: The outer energy window contains no eigenvalues')
       endif
 
       ! Note: we assume that eigvals are ordered from the bottom up
       imin = 0
       do i = 1, num_bands
         if (imin .eq. 0) then
-          if ((eigval_opt(i, nkp) .ge. dis_win_min) .and. &
-              (eigval_opt(i, nkp) .le. dis_win_max)) imin = i
+          if ((eigval_opt(i, nkp) .ge. dis_data%win_min) .and. &
+              (eigval_opt(i, nkp) .le. dis_data%win_max)) imin = i
           imax = i
         endif
-        if (eigval_opt(i, nkp) .le. dis_win_max) imax = i
+        if (eigval_opt(i, nkp) .le. dis_data%win_max) imax = i
       enddo
 
-      ndimwin(nkp) = imax - imin + 1
+      dis_data%ndimwin(nkp) = imax - imin + 1
 
       nfirstwin(nkp) = imin
 
       !~~ GS-start
       ! disentangle at the current k-point only if it is within one of the
       ! spheres centered at the k-points listed in kpt_dis
-      if (dis_spheres_num .gt. 0) then
+      if (dis_data%spheres_num .gt. 0) then
         dis_ok = .false.
         ! loop on the sphere centers
-        do i = 1, dis_spheres_num
-          dk = kpt_latt(:, nkp) - dis_spheres(1:3, i)
+        do i = 1, dis_data%spheres_num
+          dk = kpt_latt(:, nkp) - dis_data%spheres(1:3, i)
           dk = matmul(anint(dk) - dk, recip_lattice(:, :))
           ! if the current k-point is included in at least one sphere,
           ! then perform disentanglement as usual
-          if (abs(dot_product(dk, dk)) .lt. dis_spheres(4, i)**2) then
+          if (abs(dot_product(dk, dk)) .lt. dis_data%spheres(4, i)**2) then
             dis_ok = .true.
             exit
           endif
         enddo
         ! this kpoint is not included in any sphere: no disentaglement
         if (.not. dis_ok) then
-          ndimwin(nkp) = num_wann
-          nfirstwin(nkp) = dis_spheres_first_wann
+          dis_data%ndimwin(nkp) = num_wann
+          nfirstwin(nkp) = dis_data%spheres_first_wann
         endif
       endif
       !~~ GS-end
 
-      if (ndimwin(nkp) .lt. num_wann) then
+      if (dis_data%ndimwin(nkp) .lt. num_wann) then
         if (on_root) write (stdout, 483) 'Error at k-point ', nkp, &
-          ' ndimwin=', ndimwin(nkp), ' num_wann=', num_wann
+          ' ndimwin=', dis_data%ndimwin(nkp), ' num_wann=', num_wann
 483     format(1x, a17, i4, a8, i3, a9, i3)
-        call io_error('dis_windows: Energy window contains fewer states than number of target WFs')
+        call io_error('dis_data%windows: Energy window contains fewer states than number of target WFs')
       endif
 
-      do i = 1, ndimwin(nkp)
+      do i = 1, dis_data%ndimwin(nkp)
         lfrozen(i, nkp) = .false.
       enddo
 
@@ -826,16 +820,16 @@ contains
       kifroz_max = -1
 
       ! (note that the above obeys kifroz_max-kifroz_min+1=kdimfroz=0, as we w
-      if (frozen_states) then
+      if (dis_data%frozen_states) then
         do i = imin, imax
           if (kifroz_min .eq. 0) then
-            if ((eigval_opt(i, nkp) .ge. dis_froz_min) .and. &
-                (eigval_opt(i, nkp) .le. dis_froz_max)) then
+            if ((eigval_opt(i, nkp) .ge. dis_data%froz_min) .and. &
+                (eigval_opt(i, nkp) .le. dis_data%froz_max)) then
               ! Relative to bottom of outer window
               kifroz_min = i - imin + 1
               kifroz_max = i - imin + 1
             endif
-          elseif (eigval_opt(i, nkp) .le. dis_froz_max) then
+          elseif (eigval_opt(i, nkp) .le. dis_data%froz_max) then
             kifroz_max = kifroz_max + 1
             ! DEBUG
             ! if(kifroz_max.ne.i-imin+1) stop 'something wrong...'
@@ -853,7 +847,7 @@ contains
                ' TARGET BANDS')
         if (on_root) write (stdout, 402) (eigval_opt(i, nkp), i=imin, imax)
 402     format('BANDS: (eV)', 10(F10.5, 1X))
-        call io_error('dis_windows: More states in the frozen window than target WFs')
+        call io_error('dis_data%windows: More states in the frozen window than target WFs')
       endif
 
       if (ndimfroz(nkp) .gt. 0) linner = .true.
@@ -874,13 +868,13 @@ contains
           if (on_root) write (stdout, *) ' kifroz_min=', kifroz_min
           if (on_root) write (stdout, *) ' kifroz_max=', kifroz_max
           if (on_root) write (stdout, *) ' indxfroz(i,nkp)=', indxfroz(i, nkp)
-          call io_error('dis_windows: Something fishy...')
+          call io_error('dis_data%windows: Something fishy...')
         endif
       endif
 
       ! Generate index array for non-frozen states
       i = 0
-      do j = 1, ndimwin(nkp)
+      do j = 1, dis_data%ndimwin(nkp)
         !           if (lfrozen(j,nkp).eqv..false.) then
         if (.not. lfrozen(j, nkp)) then
           i = i + 1
@@ -888,20 +882,20 @@ contains
         endif
       enddo
 
-      if (i .ne. ndimwin(nkp) - ndimfroz(nkp)) then
+      if (i .ne. dis_data%ndimwin(nkp) - ndimfroz(nkp)) then
         if (on_root) write (stdout, *) ' Error at k-point: ', nkp
-        if (on_root) write (stdout, '(3(a,i5))') ' i: ', i, ' ndimwin: ', ndimwin(nkp), &
+        if (on_root) write (stdout, '(3(a,i5))') ' i: ', i, ' ndimwin: ', dis_data%ndimwin(nkp), &
           ' ndimfroz: ', ndimfroz(nkp)
-        call io_error('dis_windows: i .ne. (ndimwin-ndimfroz) at k-point')
+        call io_error('dis_data%windows: i .ne. (ndimwin-ndimfroz) at k-point')
       endif
 
       ! Slim down eigval vector at present k
-      do i = 1, ndimwin(nkp)
+      do i = 1, dis_data%ndimwin(nkp)
         j = nfirstwin(nkp) + i - 1
         eigval_opt(i, nkp) = eigval_opt(j, nkp)
       enddo
 
-      do i = ndimwin(nkp) + 1, num_bands
+      do i = dis_data%ndimwin(nkp) + 1, num_bands
         eigval_opt(i, nkp) = 0.0_dp
       enddo
 
@@ -965,7 +959,7 @@ contains
         '|               ----------------------------------------------               |'
 
       do nkp = 1, num_kpts
-        if (on_root) write (stdout, 403) nkp, ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
+        if (on_root) write (stdout, 403) nkp, dis_data%ndimwin(nkp), ndimfroz(nkp), nfirstwin(nkp)
       enddo
 403   format(1x, '|', 14x, i6, 7x, i6, 7x, i6, 6x, i6, 18x, '|')
       if (on_root) write (stdout, '(1x,a)') &
@@ -1628,7 +1622,6 @@ contains
     real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(inout) :: eigval_opt(:, :) ! (num_bands,num_kpts)
 
-    !JJ alloc needed? intent on m_matrix_orig_local?
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
 
