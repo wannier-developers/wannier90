@@ -151,12 +151,12 @@ contains
                        kmesh_info, dis_data, lsitesymmetry, sym)
 
     else
-      call dis_extract_gamma(param_input%iprint, param_input%timing_level, my_node_id, num_nodes, &
-                             num_kpts, kmesh_info%nntot, num_wann, num_bands, dis_data%num_iter, &
-                             dis_data%conv_window, dis_data%ndimwin, kmesh_info%nnlist, ndimfroz, indxnfroz, &
-                             on_root, param_input%length_unit, param_input%devel_flag, dis_data%mix_ratio, dis_data%conv_tol, &
-                             kmesh_info%wbtot, param_input%lenconfac, kmesh_info%wb, param_input%omega_invariant, eigval_opt, &
-                             u_matrix_opt, m_matrix_orig)
+      call dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, &
+                             ndimfroz, num_bands, num_kpts, num_wann, &
+                             eigval_opt, m_matrix_orig, u_matrix_opt, &
+                             param_input, kmesh_info, dis_data, lsitesymmetry, &
+                             sym)
+
     end if
 
     ! Allocate workspace
@@ -1593,28 +1593,6 @@ contains
                          m_matrix_orig_local, u_matrix_opt, param_input, &
                          kmesh_info, dis_data, lsitesymmetry, sym)
 
-!param_input
-!iprint,
-!timing_level,
-!length_unit,
-!devel_flag,
-!lenconfac,
-!omega_invariant,
-!
-!kmesh_info
-!nntot,
-!nnlist,
-!wbtot,
-!wb,
-!
-!dis_data
-!dis_num_iter,
-!dis_conv_window,
-!ndimwin,
-!lwindow,
-!dis_mix_ratio,
-!dis_conv_tol,
-!
     !==================================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -2516,13 +2494,14 @@ contains
     return
     !==================================================================!
   end subroutine internal_zmatrix
-
 ![ysl-b]
-  subroutine dis_extract_gamma(iprint, timing_level, my_node_id, num_nodes, &
-                               num_kpts, nntot, num_wann, num_bands, dis_num_iter, dis_conv_window, &
-                               ndimwin, nnlist, ndimfroz, indxnfroz, on_root, length_unit, devel_flag, &
-                               dis_mix_ratio, dis_conv_tol, wbtot, lenconfac, wb, omega_invariant, &
-                               eigval_opt, u_matrix_opt, m_matrix_orig)
+
+  subroutine dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, &
+                               ndimfroz, num_bands, num_kpts, num_wann, &
+                               eigval_opt, m_matrix_orig, u_matrix_opt, &
+                               param_input, kmesh_info, dis_data, lsitesymmetry, &
+                               sym)
+
     !==================================================================!
     !                                                                  !
     !! Extracts an num_wann-dimensional subspace at each k by
@@ -2535,26 +2514,22 @@ contains
     implicit none
 
     ! passed variables
-    integer, intent(in) :: timing_level, iprint, num_nodes, my_node_id
+    integer, intent(in) :: num_nodes, my_node_id
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    integer, intent(in) :: dis_num_iter, dis_conv_window
-    integer, intent(in) :: ndimwin(:) ! (num_kpts)
-    integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:, :) !(num_bands,num_kpts)
 
-    real(kind=dp), intent(in) :: dis_mix_ratio, dis_conv_tol, wbtot, lenconfac
-    real(kind=dp), intent(in) :: wb(:) ! (nntot)
-    real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(inout) :: eigval_opt(:, :) ! (num_bands,num_kpts)
 
-    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :) ! non-gamma uses _local variant ?
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
 
-    logical, intent(in) :: on_root
+    logical, intent(in) :: on_root, lsitesymmetry ! lsitesym not yet used
 
-    character(len=20), intent(in) :: length_unit
-    character(len=50), intent(in) :: devel_flag
+    type(disentangle_type), intent(in) :: dis_data
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(parameter_input_type), intent(inout) :: param_input !only omega_inv is modified
+    type(sitesym_data), intent(in) :: sym
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optimal
@@ -2617,7 +2592,7 @@ contains
     real(kind=dp), allocatable :: history(:)
     logical                       :: dis_converged
 
-    if (timing_level > 1) call io_stopwatch('dis: extract', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('dis: extract', 1)
 
     write (stdout, '(/1x,a)') &
       '                  Extraction of optimally-connected subspace                  '
@@ -2657,7 +2632,7 @@ contains
     allocate (rzmat_out(num_bands, num_bands, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating rzmat_out in dis_extract')
 !@@@
-    allocate (history(dis_conv_window), stat=ierr)
+    allocate (history(dis_data%conv_window), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating history in dis_extract_gamma')
 
     ! ********************************************
@@ -2695,11 +2670,11 @@ contains
     ! nitere            total number of iterations
 
     ! DEBUG
-    if (iprint > 2) then
+    if (param_input%iprint > 2) then
       write (stdout, '(a,/)') '  Original eigenvalues inside outer window:'
       do nkp = 1, num_kpts
         write (stdout, '(a,i3,3x,20(f9.5,1x))') '  K-point ', nkp, &
-          (eigval_opt(i, nkp), i=1, ndimwin(nkp))
+          (eigval_opt(i, nkp), i=1, dis_data%ndimwin(nkp))
       enddo
     endif
     ! ENDDEBUG
@@ -2719,15 +2694,15 @@ contains
     ! ------------------
     ! BIG ITERATION LOOP
     ! ------------------
-    do iter = 1, dis_num_iter
+    do iter = 1, dis_data%num_iter
 
       if (iter .eq. 1) then
         ! Initialize Z matrix at k points w/ non-frozen states
         do nkp = 1, num_kpts
           if (num_wann .gt. ndimfroz(nkp)) then
-            call internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, &
-                                        ndimwin, nnlist, nkp, rzmat_in(:, :, nkp), &
-                                        m_matrix_orig, u_matrix_opt, ndimfroz, indxnfroz, wb, cbw)
+            call internal_zmatrix_gamma(param_input%timing_level, kmesh_info%nntot, num_wann, num_bands, &
+                                        dis_data%ndimwin, kmesh_info%nnlist, nkp, rzmat_in(:, :, nkp), &
+                                        m_matrix_orig, u_matrix_opt, ndimfroz, indxnfroz, kmesh_info%wb, cbw)
           endif
         enddo
       else
@@ -2735,12 +2710,12 @@ contains
         ! Update Z matrix at k points with non-frozen states, using a mixing sch
         do nkp = 1, num_kpts
           if (num_wann .gt. ndimfroz(nkp)) then
-            ndimk = ndimwin(nkp) - ndimfroz(nkp)
+            ndimk = dis_data%ndimwin(nkp) - ndimfroz(nkp)
             do i = 1, ndimk
               do j = 1, i
                 rzmat_in(j, i, nkp) = &
-                  dis_mix_ratio*rzmat_out(j, i, nkp) &
-                  + (1.0_dp - dis_mix_ratio)*rzmat_in(j, i, nkp)
+                  dis_data%mix_ratio*rzmat_out(j, i, nkp) &
+                  + (1.0_dp - dis_data%mix_ratio)*rzmat_in(j, i, nkp)
                 ! hermiticity
                 rzmat_in(i, j, nkp) = rzmat_in(j, i, nkp)
               enddo
@@ -2756,15 +2731,15 @@ contains
       ! every k (before updating any k), so that for iter>1 overlaps are with
       ! non-frozen neighboring states from the previous iteration
 
-      wkomegai1 = real(num_wann, dp)*wbtot
+      wkomegai1 = real(num_wann, dp)*kmesh_info%wbtot
       do nkp = 1, num_kpts
         if (ndimfroz(nkp) .gt. 0) then
-          do nn = 1, nntot
-            nkp2 = nnlist(nkp, nn)
-            call zgemm('C', 'N', ndimfroz(nkp), ndimwin(nkp2), ndimwin(nkp), cmplx_1, &
+          do nn = 1, kmesh_info%nntot
+            nkp2 = kmesh_info%nnlist(nkp, nn)
+            call zgemm('C', 'N', ndimfroz(nkp), dis_data%ndimwin(nkp2), dis_data%ndimwin(nkp), cmplx_1, &
                        u_matrix_opt(:, :, nkp), num_bands, m_matrix_orig(:, :, nn, nkp), num_bands, cmplx_0, &
                        cwb, num_wann)
-            call zgemm('N', 'N', ndimfroz(nkp), num_wann, ndimwin(nkp2), cmplx_1, &
+            call zgemm('N', 'N', ndimfroz(nkp), num_wann, dis_data%ndimwin(nkp2), cmplx_1, &
                        cwb, num_wann, u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
             rsum = 0.0_dp
             do n = 1, num_wann
@@ -2772,7 +2747,7 @@ contains
                 rsum = rsum + real(cww(m, n), dp)**2 + aimag(cww(m, n))**2
               enddo
             enddo
-            wkomegai1(nkp) = wkomegai1(nkp) - wb(nn)*rsum
+            wkomegai1(nkp) = wkomegai1(nkp) - kmesh_info%wb(nn)*rsum
           enddo
         endif
       enddo
@@ -2781,12 +2756,12 @@ contains
       do nkp = 1, num_kpts
         if (num_wann .gt. ndimfroz(nkp)) then
           ! Diagonalize Z matrix
-          do j = 1, ndimwin(nkp) - ndimfroz(nkp)
+          do j = 1, dis_data%ndimwin(nkp) - ndimfroz(nkp)
             do i = 1, j
               cap_r(i + ((j - 1)*j)/2) = rzmat_in(i, j, nkp)
             enddo
           enddo
-          ndiff = ndimwin(nkp) - ndimfroz(nkp)
+          ndiff = dis_data%ndimwin(nkp) - ndimfroz(nkp)
           call DSPEVX('V', 'A', 'U', ndiff, cap_r, 0.0_dp, 0.0_dp, 0, 0, &
                       -1.0_dp, m, w, rz, num_bands, work, iwork, ifail, info)
           if (info .lt. 0) then
@@ -2805,11 +2780,11 @@ contains
           ! eigenvectors of the Z matrix into u_matrix_opt. Also, add contribution from
           ! non-frozen states to wkomegai1(nkp) (minus the corresponding eigenvalu
           m = ndimfroz(nkp)
-          do j = ndimwin(nkp) - num_wann + 1, ndimwin(nkp) - ndimfroz(nkp)
+          do j = dis_data%ndimwin(nkp) - num_wann + 1, dis_data%ndimwin(nkp) - ndimfroz(nkp)
             m = m + 1
             wkomegai1(nkp) = wkomegai1(nkp) - w(j)
-            u_matrix_opt(1:ndimwin(nkp), m, nkp) = cmplx_0
-            ndimk = ndimwin(nkp) - ndimfroz(nkp)
+            u_matrix_opt(1:dis_data%ndimwin(nkp), m, nkp) = cmplx_0
+            ndimk = dis_data%ndimwin(nkp) - ndimfroz(nkp)
             do i = 1, ndimk
               p = indxnfroz(i, nkp)
               u_matrix_opt(p, m, nkp) = cz(i, j)
@@ -2824,21 +2799,21 @@ contains
 
         ! AT THE LAST ITERATION FIND A BASIS FOR THE (NDIMWIN(NKP)-num_wann)-DIMENS
         ! COMPLEMENT SPACE
-        if (index(devel_flag, 'compspace') > 0) then
+        if (index(param_input%devel_flag, 'compspace') > 0) then
 
-          if (iter .eq. dis_num_iter) then
+          if (iter .eq. dis_data%num_iter) then
             allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
             camp = cmplx_0
             if (ierr /= 0) call io_error('Error allocating camp in dis_extract_gamma')
-            if (ndimwin(nkp) .gt. num_wann) then
-              do j = 1, ndimwin(nkp) - num_wann
+            if (dis_data%ndimwin(nkp) .gt. num_wann) then
+              do j = 1, dis_data%ndimwin(nkp) - num_wann
                 if (num_wann .gt. ndimfroz(nkp)) then
                   ! USE THE NON-LEADING EIGENVECTORS OF THE Z-MATRIX
-                  camp(1:ndimwin(nkp), j, nkp) = cz(1:ndimwin(nkp), j)
+                  camp(1:dis_data%ndimwin(nkp), j, nkp) = cz(1:dis_data%ndimwin(nkp), j)
                 else
                   ! Then num_wann=NDIMFROZ(NKP)
                   ! USE THE ORIGINAL NON-FROZEN BLOCH EIGENSTATES
-                  do i = 1, ndimwin(nkp)
+                  do i = 1, dis_data%ndimwin(nkp)
                     camp(i, j, nkp) = cmplx_0
                     if (i .eq. indxnfroz(j, nkp)) camp(i, j, nkp) = cmplx_1
                   enddo
@@ -2895,12 +2870,12 @@ contains
       womegai = 0.0_dp
       do nkp = 1, num_kpts
         wkomegai = 0.0_dp
-        do nn = 1, nntot
-          nkp2 = nnlist(nkp, nn)
-          call zgemm('C', 'N', num_wann, ndimwin(nkp2), ndimwin(nkp), cmplx_1, &
+        do nn = 1, kmesh_info%nntot
+          nkp2 = kmesh_info%nnlist(nkp, nn)
+          call zgemm('C', 'N', num_wann, dis_data%ndimwin(nkp2), dis_data%ndimwin(nkp), cmplx_1, &
                      u_matrix_opt(:, :, nkp), num_bands, m_matrix_orig(:, :, nn, nkp), num_bands, cmplx_0, &
                      cwb, num_wann)
-          call zgemm('N', 'N', num_wann, num_wann, ndimwin(nkp2), cmplx_1, &
+          call zgemm('N', 'N', num_wann, num_wann, dis_data%ndimwin(nkp2), cmplx_1, &
                      cwb, num_wann, u_matrix_opt(:, :, nkp2), num_bands, cmplx_0, cww, num_wann)
           rsum = 0.0_dp
           do n = 1, num_wann
@@ -2908,9 +2883,9 @@ contains
               rsum = rsum + real(cww(m, n), dp)**2 + aimag(cww(m, n))**2
             enddo
           enddo
-          wkomegai = wkomegai + wb(nn)*rsum
+          wkomegai = wkomegai + kmesh_info%wb(nn)*rsum
         enddo
-        wkomegai = real(num_wann, dp)*wbtot - wkomegai
+        wkomegai = real(num_wann, dp)*kmesh_info%wbtot - wkomegai
         womegai = womegai + wkomegai
       enddo
       womegai = womegai/real(num_kpts, dp)
@@ -2918,7 +2893,7 @@ contains
 
       delta_womegai = womegai1/womegai - 1.0_dp
 
-      write (stdout, 124) iter, womegai1*lenconfac**2, womegai*lenconfac**2, &
+      write (stdout, 124) iter, womegai1*param_input%lenconfac**2, womegai*param_input%lenconfac**2, &
         delta_womegai, io_time()
 
 124   format(2x, i6, 3x, f14.8, 3x, f14.8, 6x, es10.3, 2x, f8.2, 4x, '<-- DIS')
@@ -2926,18 +2901,18 @@ contains
       ! Construct the updated Z matrix, CZMAT_OUT, at k points w/ non-frozen s
       do nkp = 1, num_kpts
         if (num_wann .gt. ndimfroz(nkp)) then
-          call internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, &
-                                      ndimwin, nnlist, nkp, rzmat_out(:, :, nkp), m_matrix_orig, &
-                                      u_matrix_opt, ndimfroz, indxnfroz, wb, cbw)
+          call internal_zmatrix_gamma(param_input%timing_level, kmesh_info%nntot, num_wann, num_bands, &
+                                      dis_data%ndimwin, kmesh_info%nnlist, nkp, rzmat_out(:, :, nkp), m_matrix_orig, &
+                                      u_matrix_opt, ndimfroz, indxnfroz, kmesh_info%wb, cbw)
         endif
       enddo
 
-      call internal_test_convergence(iter, dis_conv_window, history, delta_womegai, dis_conv_tol, dis_converged)
+      call internal_test_convergence(iter, dis_data%conv_window, history, delta_womegai, dis_data%conv_tol, dis_converged)
 
       if (dis_converged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
-          '<<<      Delta <', dis_conv_tol, &
-          '  over ', dis_conv_window, ' iterations     >>>'
+          '<<<      Delta <', dis_data%conv_tol, &
+          '  over ', dis_data%conv_window, ' iterations     >>>'
         write (stdout, '(13x,a)') '<<< Disentanglement convergence criteria satisfied >>>'
         exit
       endif
@@ -2962,13 +2937,13 @@ contains
     endif
 
     if (icompflag .eq. 1) then
-      if (iprint > 2) then
+      if (param_input%iprint > 2) then
         write (stdout, ('(/4x,a)')) &
           'WARNING: Complement subspace has zero dimensions at the following k-points:'
         i = 0
         write (stdout, '(4x)', advance='no')
         do nkp = 1, num_kpts
-          if (ndimwin(nkp) .eq. num_wann) then
+          if (dis_data%ndimwin(nkp) .eq. num_wann) then
             i = i + 1
             if (i .le. 12) then
               write (stdout, '(i6)', advance='no') nkp
@@ -2986,10 +2961,10 @@ contains
     ! subsequent minimization of Omega_tilde in wannierise.f90
     ! We store it in the checkpoint file as a sanity check
     write (stdout, '(/8x,a,f14.8,a/)') 'Final Omega_I ', &
-      womegai*lenconfac**2, ' ('//trim(length_unit)//'^2)'
+      womegai*param_input%lenconfac**2, ' ('//trim(param_input%length_unit)//'^2)'
 
     ! Set public variable omega_invariant
-    omega_invariant = womegai
+    param_input%omega_invariant = womegai
 
     ! DIAGONALIZE THE HAMILTONIAN WITHIN THE OPTIMIZED SUBSPACES
     do nkp = 1, num_kpts
@@ -2997,7 +2972,7 @@ contains
       do j = 1, num_wann
         do i = 1, num_wann
           cham(i, j, nkp) = cmplx_0
-          do l = 1, ndimwin(nkp)
+          do l = 1, dis_data%ndimwin(nkp)
             cham(i, j, nkp) = cham(i, j, nkp) + conjg(u_matrix_opt(l, i, nkp)) &
                               *u_matrix_opt(l, j, nkp)*eigval_opt(l, nkp)
           enddo
@@ -3034,7 +3009,7 @@ contains
       ! CALCULATE AMPLITUDES OF THE CORRESPONDING ENERGY EIGENVECTORS IN TERMS
       ! THE ORIGINAL ("WINDOW SPACE") ENERGY EIGENVECTORS
       do j = 1, num_wann
-        do i = 1, ndimwin(nkp)
+        do i = 1, dis_data%ndimwin(nkp)
           ceamp(i, j, nkp) = cmplx_0
           do l = 1, num_wann
             ceamp(i, j, nkp) = ceamp(i, j, nkp) + cz(l, j)*u_matrix_opt(i, l, nkp)
@@ -3044,7 +3019,7 @@ contains
       ! NKP
     enddo
     ! DEBUG
-    if (iprint > 2) then
+    if (param_input%iprint > 2) then
       write (stdout, '(/,a,/)') '  Eigenvalues inside optimal subspace:'
       do nkp = 1, num_kpts
         write (stdout, '(a,i3,2x,20(f9.5,1x))') '  K-point ', &
@@ -3058,17 +3033,17 @@ contains
     ! an optimal Fourier-interpolated band structure: see Sec. III.E of SMV.
     do nkp = 1, num_kpts
       do j = 1, num_wann
-        u_matrix_opt(1:ndimwin(nkp), j, nkp) = ceamp(1:ndimwin(nkp), j, nkp)
+        u_matrix_opt(1:dis_data%ndimwin(nkp), j, nkp) = ceamp(1:dis_data%ndimwin(nkp), j, nkp)
       enddo
     enddo
 
     ! aam: 01/05/2009: added devel_flag if statement as the complementary
     !      subspace code was causing catastrophic seg-faults
-    if (index(devel_flag, 'compspace') > 0) then
+    if (index(param_input%devel_flag, 'compspace') > 0) then
 
       ! The compliment subspace code needs work: jry
       if (icompflag .eq. 1) then
-        if (iprint > 2) then
+        if (param_input%iprint > 2) then
           write (stdout, *) 'AT SOME K-POINT(S) COMPLEMENT SUBSPACE HAS ZERO DIMENSIONALITY'
           write (stdout, *) '=> DID NOT CREATE FILE COMPSPACE.DAT'
         endif
@@ -3076,22 +3051,22 @@ contains
         ! DIAGONALIZE THE HAMILTONIAN IN THE COMPLEMENT SUBSPACE, WRITE THE
         ! CORRESPONDING EIGENFUNCTIONS AND ENERGY EIGENVALUES
         do nkp = 1, num_kpts
-          do j = 1, ndimwin(nkp) - num_wann
-            do i = 1, ndimwin(nkp) - num_wann
+          do j = 1, dis_data%ndimwin(nkp) - num_wann
+            do i = 1, dis_data%ndimwin(nkp) - num_wann
               cham(i, j, nkp) = cmplx_0
-              do l = 1, ndimwin(nkp)
+              do l = 1, dis_data%ndimwin(nkp)
                 cham(i, j, nkp) = cham(i, j, nkp) + conjg(camp(l, i, nkp)) &
                                   *camp(l, j, nkp)*eigval_opt(l, nkp)
               enddo
             enddo
           enddo
 !@@@
-          do j = 1, ndimwin(nkp) - num_wann
+          do j = 1, dis_data%ndimwin(nkp) - num_wann
             do i = 1, j
               cap_r(i + ((j - 1)*j)/2) = real(cham(i, j, nkp), dp)
             enddo
           enddo
-          ndiff = ndimwin(nkp) - num_wann
+          ndiff = dis_data%ndimwin(nkp) - num_wann
 
           call DSPEVX('V', 'A', 'U', ndiff, cap_r, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
                       m, w, rz, num_bands, work, iwork, ifail, info)
@@ -3113,10 +3088,10 @@ contains
 !@@@
           ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
           ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
-          do j = 1, ndimwin(nkp) - num_wann
-            do i = 1, ndimwin(nkp)
+          do j = 1, dis_data%ndimwin(nkp) - num_wann
+            do i = 1, dis_data%ndimwin(nkp)
               camp(i, j, nkp) = cmplx_0
-              do l = 1, ndimwin(nkp) - num_wann
+              do l = 1, dis_data%ndimwin(nkp) - num_wann
 !write(stdout,*) 'i=',i,'   j=',j,'   l=',l
 !write(stdout,*) '           camp(i,j,nkp)=',camp(i,j,nkp)
 !write(stdout,*) '           cz(l,j)=',cz(l,j)
@@ -3178,7 +3153,7 @@ contains
     write (stdout, '(1x,a/)') &
       '+----------------------------------------------------------------------------+'
 
-    if (timing_level > 1) call io_stopwatch('dis: extract_gamma', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('dis: extract_gamma', 2)
 
     return
     !==================================================================!
