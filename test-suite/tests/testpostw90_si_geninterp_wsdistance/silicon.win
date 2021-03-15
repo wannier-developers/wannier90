@@ -15,17 +15,17 @@ dis_conv_tol      = 1.0e-13
 
 ! Large number of interations need to get reproducible values
 ! 300 seems a good compromise with speed.  
-num_iter          = 300 
-num_print_cycles  = 10
+#num_iter          = 300 
+#num_print_cycles  = 10
 
 Begin Atoms_Frac
 Si  -0.25   0.75  -0.25
 Si   0.00   0.00   0.00 
 End Atoms_Frac
     
-Begin Projections     
-Si : sp3 
-End Projections       
+#Begin Projections     
+#Si : sp3 
+#End Projections       
     
 begin kpoint_path
 L 0.50000  0.50000 0.5000 G 0.00000  0.00000 0.0000

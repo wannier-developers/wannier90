@@ -17,8 +17,8 @@ sc_phase_conv=1
 num_bands         =   12
 num_wann          =   8 
 
-num_iter          = 1000
-num_print_cycles  = 40
+#num_iter          = 1000
+#num_print_cycles  = 40
 
 dis_win_max       = 24.0d0
 dis_froz_max      =  14.0d0
@@ -27,9 +27,9 @@ dis_mix_ratio     = 1.d0
 
 
 
-bands_plot : true
-bands_num_points : 151
-bands_plot_format : gnuplot
+#bands_plot : true
+#bands_num_points : 151
+#bands_plot_format : gnuplot
 
 exclude_bands :  1-5 
 
@@ -51,12 +51,12 @@ X 0.00000      0.50000      0.50000 W 0.25000      0.75000      0.50000
 W 0.25000      0.75000      0.50000 G 0.00000      0.00000      0.00000
 End Kpoint_Path
 
-begin projections
-f=0.25,0.25,0.25 : s
-f=0.25,0.25,0.25 : p
-f= 0.0, 0.0, 0.0 : p
-f= 0.0, 0.0, 0.0 : s
-end projections
+#begin projections
+#f=0.25,0.25,0.25 : s
+#f=0.25,0.25,0.25 : p
+#f= 0.0, 0.0, 0.0 : p
+#f= 0.0, 0.0, 0.0 : s
+#end projections
 
 
 begin atoms_frac

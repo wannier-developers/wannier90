@@ -35,17 +35,17 @@ num_wann          =   16
 dis_num_iter      =  1000
 
 dis_conv_tol      = 1.0e-10
-conv_tol          = 1.0e-10
-conv_window       = 40
+#conv_tol          = 1.0e-10
+#conv_window       = 40
 
-num_iter          = 1000
-guiding_centres = T
+#num_iter          = 1000
+#guiding_centres = T
 
 spinors = true
-begin projections
-As:sp3
-Ga:sp3
-end projections
+#begin projections
+#As:sp3
+#Ga:sp3
+#end projections
 
 begin unit_cell_cart
 bohr

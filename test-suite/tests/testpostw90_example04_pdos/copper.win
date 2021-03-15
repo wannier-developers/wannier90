@@ -1,6 +1,6 @@
  num_bands       = 12
  num_wann        =  7 
- num_iter        = 200 
+ #num_iter        = 200 
  use_ws_distance = .false.
 search_shells=12
  
@@ -29,11 +29,11 @@ begin atoms_frac
 Cu 0.00   0.00   0.00
 end atoms_frac
  
-begin projections
-Cu:d
-f=0.25,0.25,0.25:s
-f=-0.25,-0.25,-0.25:s
-end projections
+#begin projections
+#Cu:d
+#f=0.25,0.25,0.25:s
+#f=-0.25,-0.25,-0.25:s
+#end projections
 
 
 begin kpoint_path

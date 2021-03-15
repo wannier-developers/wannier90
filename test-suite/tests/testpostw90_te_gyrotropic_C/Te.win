@@ -17,7 +17,7 @@ gyrotropic_kmesh=5 5 5
 use_ws_distance = .false.
 search_shells=12
 
-num_iter=1000
+#num_iter=1000
 
 uHu_formatted=.true.
 
@@ -27,8 +27,8 @@ dis_froz_min=0.0
 dis_froz_max=8
 
 
-bands_plot=true
-bands_num_points=200
+#bands_plot=true
+#bands_num_points=200
 begin kpoint_path
 A 0.0  0.0  0.5  G 0.0  0.0  0.0   
 G 0.0  0.0  0.0  H 0.33333 0.33333 0.5 
@@ -44,11 +44,11 @@ end kpoint_path
 
 num_bands=12
 num_wann=9
-Begin Projections
-f=  0.274036,   0.274036,  0.0000000000000000000  :px,py,pz:z= 0,0,1:x=0.5,0.866025404,0 
-f= -0.274036,   0.000000,  0.3333333333333333357  :px,py,pz:z= 0,0,1:x=-1,0,0
-f= -0.000000,  -0.274036,  0.6666666666666666643  :px,py,pz:z= 0,0,1:x=0.5,-0.866025404,0
-end projections
+#Begin Projections
+#f=  0.274036,   0.274036,  0.0000000000000000000  :px,py,pz:z= 0,0,1:x=0.5,0.866025404,0 
+#f= -0.274036,   0.000000,  0.3333333333333333357  :px,py,pz:z= 0,0,1:x=-1,0,0
+#f= -0.000000,  -0.274036,  0.6666666666666666643  :px,py,pz:z= 0,0,1:x=0.5,-0.866025404,0
+#end projections
 
 spinors = .false.
 

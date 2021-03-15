@@ -9,13 +9,13 @@ dis_froz_min      = -8.0d0
 dis_froz_max      =  30.0d0
 dis_num_iter      =  500 
 
-num_iter          = 200 
+#num_iter          = 200 
 dis_mix_ratio = 1.0
 
 spinors = true
-begin projections
-Fe: sp3d2;dxy;dxz;dyz
-end projections
+#begin projections
+#Fe: sp3d2;dxy;dxz;dyz
+#end projections
 
 fermi_energy_min = 11.6279
 fermi_energy_max = 13.6279
