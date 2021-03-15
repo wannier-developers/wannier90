@@ -110,7 +110,14 @@ contains
     logical, intent(in) :: library_param_read_first_pass
 
     !local variables
-    integer                   :: smr_index
+    !integer                   :: smr_index
+    ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
+    ! Only internal, always use the local variables defined by each module
+    ! that take this value as default
+    !logical                         :: adpt_smr
+    !real(kind=dp)                   :: adpt_smr_fac
+    !real(kind=dp)                   :: adpt_smr_max
+    !real(kind=dp)                   :: smr_fixed_en_width
 
     logical                   :: found_fermi_energy
     real(kind=dp)             :: kmesh_spacing
@@ -149,7 +156,8 @@ contains
                              param_input%bands_plot_mode)
       call param_read_23(found_fermi_energy, fermi)
       call param_w90_read_24(w90_calcs%fermi_surface_plot, fermi_surface_data)
-      call param_read_25(smr_index)
+      !call param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
+      !                   smr_fixed_en_width, adpt_smr)
       !call param_pw90_read_26
       call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
                              tran%read_ht)

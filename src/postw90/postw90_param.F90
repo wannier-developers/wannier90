@@ -331,14 +331,6 @@ contains
     logical, intent(inout) :: eig_found
 
     !local variables
-    !real(kind=dp)  :: real_lattice_tmp(3, 3)
-    !integer :: nkp, i, j, n, k, itmp, i_temp, i_temp2, eig_unit, loop, ierr, iv_temp(3), rows
-    !logical :: found, found2, lunits, chk_found
-    !character(len=6) :: spin_str
-    !real(kind=dp) :: rv_temp(3)
-    !integer, allocatable, dimension(:, :) :: nnkpts_block
-    !integer, allocatable, dimension(:) :: nnkpts_idx
-    !real(kind=dp) :: cell_volume
     logical                                  :: found_fermi_energy
     logical :: disentanglement, library
     character(len=20) :: energy_unit
@@ -372,10 +364,13 @@ contains
     !call param_w90_read_22
     call param_read_23(found_fermi_energy, fermi)
     call param_pw90_read_24(pw90_calcs%kslice, kslice)
-    call param_read_25(smr_index)
+    call param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
+                       smr_fixed_en_width, adpt_smr)
     call param_pw90_read_26(pw90_calcs, pw90_common, berry, spin_hall, &
                             gyrotropic, dos_data, kpath, pw90_ham, param_input, &
-                            spec_points, found_fermi_energy, num_wann)
+                            spec_points, found_fermi_energy, num_wann, &
+                            adpt_smr_fac, adpt_smr_max, &
+                            smr_fixed_en_width, adpt_smr)
     !call param_w90_read_27
     !endif
     call param_read_28(param_input)
@@ -389,7 +384,8 @@ contains
                        eig_found, eigval, library, .false., num_bands, num_kpts)
     call param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
     ! Need to make sure use w90_params are read
-    call param_pw90_read_34(geninterp, boltz, smr_index, eigval)
+    call param_pw90_read_34(geninterp, boltz, smr_index, eigval, adpt_smr_fac, &
+                            adpt_smr_max, smr_fixed_en_width, adpt_smr)
     !call param_w90_read_35
     call param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, &
                             eigval)
@@ -506,10 +502,52 @@ contains
 !    call param_get_keyword('slice_plot_format',found,c_value=slice_plot_format)
   end subroutine param_pw90_read_24
 
+  subroutine param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
+                           smr_fixed_en_width, adpt_smr)
+    use w90_io, only: io_error
+    implicit none
+    integer, intent(out) :: smr_index
+    real(kind=dp), intent(out) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
+    logical, intent(out) :: adpt_smr
+    logical :: found
+
+    ! [gp-begin, Apr 20, 2012]
+
+    ! By default: Gaussian
+    smr_index = 0
+    call param_get_keyword('smr_type', found, c_value=ctmp)
+    if (found) smr_index = get_smearing_index(ctmp, 'smr_type')
+
+    ! By default: adaptive smearing
+    adpt_smr = .true.
+    call param_get_keyword('adpt_smr', found, l_value=adpt_smr)
+
+    ! By default: a=sqrt(2)
+    adpt_smr_fac = sqrt(2.0_dp)
+    call param_get_keyword('adpt_smr_fac', found, r_value=adpt_smr_fac)
+    if (found .and. (adpt_smr_fac <= 0._dp)) &
+      call io_error('Error: adpt_smr_fac must be greater than zero')
+
+    ! By default: 1 eV
+    adpt_smr_max = 1.0_dp
+    call param_get_keyword('adpt_smr_max', found, r_value=adpt_smr_max)
+    if (adpt_smr_max <= 0._dp) &
+      call io_error('Error: adpt_smr_max must be greater than zero')
+
+    ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
+    ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
+    smr_fixed_en_width = 0.0_dp
+    call param_get_keyword('smr_fixed_en_width', found, r_value=smr_fixed_en_width)
+    if (found .and. (smr_fixed_en_width < 0._dp)) &
+      call io_error('Error: smr_fixed_en_width must be greater than or equal to zero')
+    ! [gp-end]
+  end subroutine param_read_25
+
   subroutine param_pw90_read_26(pw90_calcs, pw90_common, berry, spin_hall, &
                                 gyrotropic, dos_data, kpath, pw90_ham, &
                                 param_input, spec_points, found_fermi_energy, &
-                                num_wann)
+                                num_wann, adpt_smr_fac, adpt_smr_max, &
+                                smr_fixed_en_width, adpt_smr)
     use w90_io, only: io_error
     implicit none
     type(pw90_calculation_type), intent(inout) :: pw90_calcs
@@ -524,6 +562,8 @@ contains
     type(special_kpoints_type), intent(in) :: spec_points
     logical, intent(in) :: found_fermi_energy
     integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
+    logical, intent(in) :: adpt_smr
     integer :: i, ierr, loop
     logical :: found
 
@@ -860,7 +900,9 @@ contains
     call param_get_keyword('boltzwann', found, l_value=pw90_calcs%boltzwann)
   end subroutine param_pw90_read_31
 
-  subroutine param_pw90_read_34(geninterp, boltz, smr_index, eigval)
+  subroutine param_pw90_read_34(geninterp, boltz, smr_index, eigval, &
+                                adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, &
+                                adpt_smr)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
@@ -871,6 +913,8 @@ contains
     type(boltzwann_type), intent(inout) :: boltz
     integer, intent(in) :: smr_index
     real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
+    logical, intent(in) :: adpt_smr
     logical :: found, found2
 
     geninterp%alsofirstder = .false.

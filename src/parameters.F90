@@ -235,10 +235,10 @@ module w90_param_methods
   ! Adaptive vs. fixed smearing stuff [GP, Jul 12, 2012]
   ! Only internal, always use the local variables defined by each module
   ! that take this value as default
-  logical                         :: adpt_smr
-  real(kind=dp)                   :: adpt_smr_fac
-  real(kind=dp)                   :: adpt_smr_max
-  real(kind=dp)                   :: smr_fixed_en_width
+  !logical                         :: adpt_smr
+  !real(kind=dp)                   :: adpt_smr_fac
+  !real(kind=dp)                   :: adpt_smr_max
+  !real(kind=dp)                   :: smr_fixed_en_width
 
   real(kind=dp), save :: fermi_energy
 
@@ -287,7 +287,6 @@ module w90_param_methods
   public :: param_w90_read_18a
   public :: param_read_21
   public :: param_read_23
-  public :: param_read_25
   public :: param_read_28
   public :: param_read_32
   public :: param_w90_read_33 ! both
@@ -558,44 +557,6 @@ contains
     if (ierr /= 0) call io_error( &
       'Error allocating fermi_energy_list in param_read')
   end subroutine param_read_23
-
-  subroutine param_read_25(smr_index)
-    use w90_io, only: io_error
-    implicit none
-    integer, intent(out) :: smr_index
-    logical :: found
-
-    ! [gp-begin, Apr 20, 2012]
-
-    ! By default: Gaussian
-    smr_index = 0
-    call param_get_keyword('smr_type', found, c_value=ctmp)
-    if (found) smr_index = get_smearing_index(ctmp, 'smr_type')
-
-    ! By default: adaptive smearing
-    adpt_smr = .true.
-    call param_get_keyword('adpt_smr', found, l_value=adpt_smr)
-
-    ! By default: a=sqrt(2)
-    adpt_smr_fac = sqrt(2.0_dp)
-    call param_get_keyword('adpt_smr_fac', found, r_value=adpt_smr_fac)
-    if (found .and. (adpt_smr_fac <= 0._dp)) &
-      call io_error('Error: adpt_smr_fac must be greater than zero')
-
-    ! By default: 1 eV
-    adpt_smr_max = 1.0_dp
-    call param_get_keyword('adpt_smr_max', found, r_value=adpt_smr_max)
-    if (adpt_smr_max <= 0._dp) &
-      call io_error('Error: adpt_smr_max must be greater than zero')
-
-    ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
-    ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
-    smr_fixed_en_width = 0.0_dp
-    call param_get_keyword('smr_fixed_en_width', found, r_value=smr_fixed_en_width)
-    if (found .and. (smr_fixed_en_width < 0._dp)) &
-      call io_error('Error: smr_fixed_en_width must be greater than or equal to zero')
-    ! [gp-end]
-  end subroutine param_read_25
 
   subroutine param_read_28(param_input)
     use w90_io, only: io_error
