@@ -292,7 +292,7 @@ module w90_param_methods
   public :: param_w90_read_33 ! both
   public :: param_read_40a
   public :: param_read_40c
-  public :: param_w90_read_41
+  public :: param_read_atoms
   public :: param_read_44
   public :: param_read_45
 
@@ -868,7 +868,7 @@ contains
     ! [GP-end]
   end subroutine param_read_40c
 
-  subroutine param_w90_read_41(library, atoms, real_lattice, recip_lattice)
+  subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice)
     use w90_io, only: io_error, stdout
     implicit none
     logical, intent(in) :: library
@@ -896,7 +896,7 @@ contains
         call param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice)
       end if
     endif
-  end subroutine param_w90_read_41
+  end subroutine param_read_atoms
 
   subroutine param_read_44(read_transport, param_input, atoms, spec_points)
     use w90_io, only: seedname, stdout, io_error

@@ -397,7 +397,7 @@ contains
     call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
                             pw90_spin, gyrotropic, boltz, recip_lattice)
-    !call param_w90_read_41
+    call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write
     !call param_w90_read_42(.false.)
     !call param_w90_read_43
     !endif

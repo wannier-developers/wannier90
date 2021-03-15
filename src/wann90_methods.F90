@@ -186,7 +186,7 @@ contains
       call param_read_40b(library, driver, kmesh_info, num_kpts)
       call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
       !call param_pw90_read_40
-      call param_w90_read_41(library, atoms, real_lattice, recip_lattice)
+      call param_read_atoms(library, atoms, real_lattice, recip_lattice)
       call param_w90_read_42(w90_calcs%use_bloch_phases, lhasproj, &
                              param_wannierise%guiding_centres, &
                              param_wannierise%proj_site, kmesh_data, &
