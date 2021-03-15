@@ -262,7 +262,7 @@ program wannier
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
-    if (.not. driver%explicit_nnkpts) call kmesh_get(recip_lattice, k_points%kpt_cart, & 
+    if (.not. driver%explicit_nnkpts) call kmesh_get(recip_lattice, k_points%kpt_cart, &
                                                      param_input, kmesh_info, kmesh_data, num_kpts)
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
@@ -340,26 +340,6 @@ program wannier
   endif
 
   if (driver%postproc_setup) then
-<<<<<<< HEAD
-    if (on_root) then
-      call kmesh_write(recip_lattice, param_input%timing_level, kmesh_info%nncell, &
-                       kmesh_info%nnlist, kmesh_info%nntot, num_kpts, kmesh_data%input_proj%l, &
-                       num_proj, kmesh_data%input_proj_site, param_input%spinors, &
-                       k_points%kpt_latt, real_lattice, pp_calc%only_A, &
-                       kmesh_data%input_proj%zona, kmesh_data%input_proj%x, &
-                       kmesh_data%input_proj%z, kmesh_data%input_proj%radial, &
-                       kmesh_data%input_proj%m, param_input%exclude_bands, &
-                       param_input%num_exclude_bands, kmesh_data%auto_projections, &
-                       kmesh_data%input_proj%s_qaxis, kmesh_data%input_proj%s)
-    endif
-
-    call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, &
-                       kmesh_info%bka, kmesh_info%wb)
-
-    call param_dealloc(driver, param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
-                       k_points, dis_data, fermi, atoms, eigval, spec_points, dos_data, berry)
-
-=======
     if (on_root) call kmesh_write(recip_lattice, param_input, &
                                   kmesh_info, num_kpts, &
                                   kmesh_data%input_proj%l, num_proj, kmesh_data%input_proj_site, &
@@ -373,7 +353,6 @@ program wannier
     call param_dealloc(driver, param_input, param_plot, param_wannierise, &
                        wann_data, kmesh_data, k_points, dis_data, fermi, &
                        atoms, eigval, spec_points, dos_data, berry)
->>>>>>> 4204e4c... kmesh_get types in wannier_prog.F90 and postw90.F90
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
@@ -477,24 +456,12 @@ program wannier
   endif
 
   call tran_dealloc()
-<<<<<<< HEAD
   call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, hmlg, ham_k)
-  call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, a_matrix, m_matrix_orig, &
-                       m_matrix, u_matrix)
-  call kmesh_dealloc(kmesh_info%nncell, kmesh_info%neigh, kmesh_info%nnlist, kmesh_info%bk, &
-                     kmesh_info%bka, kmesh_info%wb)
+  call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, a_matrix, &
+                       m_matrix_orig, m_matrix, u_matrix)
+  call kmesh_dealloc(kmesh_info)
   call param_dealloc(driver, param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
                      k_points, dis_data, fermi, atoms, eigval, spec_points, dos_data, berry)
-=======
-  call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
-                           hmlg, ham_k)
-  call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                       a_matrix, m_matrix_orig, m_matrix, u_matrix)
-  call kmesh_dealloc(kmesh_info)
-  call param_dealloc(driver, param_input, param_plot, param_wannierise, &
-                     wann_data, kmesh_data, k_points, dis_data, fermi, &
-                     atoms, eigval, spec_points, dos_data, berry)
->>>>>>> 4204e4c... kmesh_get types in wannier_prog.F90 and postw90.F90
   if (lsitesymmetry) call sitesym_dealloc(sym) !YN:
 
 4004 continue
