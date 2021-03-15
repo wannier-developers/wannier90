@@ -347,7 +347,7 @@ contains
     call param_pw90_read_07(postw90_oper)
     !call param_w90_read_08
     call param_read_num_wann(num_wann)
-    !call param_w90_read_10
+    call param_read_exclude_bands(param_input) !for read_chkpt
     call param_read_11(pw90_common%effective_model, library, &
                        param_input, num_bands, num_wann, .false.)
     !call param_w90_read_12

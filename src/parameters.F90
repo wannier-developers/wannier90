@@ -280,7 +280,7 @@ module w90_param_methods
   public :: param_read_03
   public :: param_read_05
   public :: param_read_num_wann
-  public :: param_w90_read_10
+  public :: param_read_exclude_bands
   public :: param_read_11
   public :: param_read_13
   public :: param_read_16
@@ -348,7 +348,7 @@ contains
     if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero')
   end subroutine param_read_num_wann
 
-  subroutine param_w90_read_10(param_input)
+  subroutine param_read_exclude_bands(param_input)
     use w90_io, only: io_error
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
@@ -366,7 +366,7 @@ contains
       if (any(param_input%exclude_bands < 1)) &
         call io_error('Error: exclude_bands must contain positive numbers')
     end if
-  end subroutine param_w90_read_10
+  end subroutine param_read_exclude_bands
 
   subroutine param_read_11(pw90_effective_model, library, param_input, &
                            num_bands, num_wann, library_param_read_first_pass)

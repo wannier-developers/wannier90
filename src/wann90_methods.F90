@@ -135,7 +135,7 @@ contains
       !call param_pw90_read_07
       call param_w90_read_08(param_plot%spin)
       call param_read_num_wann(num_wann)
-      call param_w90_read_10(param_input)
+      call param_read_exclude_bands(param_input)
       call param_read_11(.false., library, param_input, num_bands, num_wann, &
                          library_param_read_first_pass)
       call param_w90_read_12(param_wannierise)
