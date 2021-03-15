@@ -332,7 +332,7 @@ contains
 
     !local variables
     logical                                  :: found_fermi_energy
-    logical :: disentanglement, library
+    logical :: disentanglement, library, ok
     character(len=20) :: energy_unit
 
     library = .false.
@@ -360,7 +360,7 @@ contains
     !call param_w90_read_18
     !call param_w90_read_19
     !call param_w90_read_20
-    call param_read_21(.false., library, spec_points)
+    call param_read_21(library, spec_points, ok)
     !call param_w90_read_22
     call param_read_23(found_fermi_energy, fermi)
     call param_pw90_read_24(pw90_calcs%kslice, kslice)

@@ -72,7 +72,7 @@ contains
     !===================================================================
     !use w90_constants, only: bohr, eps6, cmplx_i
     !use w90_utility, only: utility_recip_lattice
-    !use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
+    use w90_io, only: io_error !, io_file_unit, seedname, post_proc_flag
     implicit none
 
     !data from parameters module
@@ -123,6 +123,7 @@ contains
     real(kind=dp)             :: kmesh_spacing
     integer                   :: kmesh(3)
     logical                   :: global_kmesh_set
+    logical :: has_kpath
 
     call param_in_file
     call param_read_sym(lsitesymmetry, symmetrize_eps)
@@ -151,7 +152,9 @@ contains
       call param_w90_read_19(param_wannierise, num_wann)
       call param_w90_read_20(w90_calcs, param_plot, &
                              param_input%bands_plot_mode, num_wann)
-      call param_read_21(w90_calcs%bands_plot, library, spec_points)
+      call param_read_21(library, spec_points, has_kpath)
+      if (.not. has_kpath .and. w90_calcs%bands_plot) &
+        call io_error('A bandstructure plot has been requested but there is no kpoint_path block')
       call param_w90_read_22(w90_calcs, fermi_surface_data, param_plot, &
                              param_input%bands_plot_mode)
       call param_read_23(found_fermi_energy, fermi)

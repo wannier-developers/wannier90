@@ -467,17 +467,19 @@ contains
     call param_get_keyword('write_xyz', found, l_value=write_xyz)
   end subroutine param_w90_read_18a
 
-  subroutine param_read_21(bands_plot, library, spec_points)
+  subroutine param_read_21(library, spec_points, ok)
     use w90_io, only: io_error
     implicit none
-    logical, intent(in) :: bands_plot, library
+    logical, intent(in) :: library
     type(special_kpoints_type), intent(inout) :: spec_points
+    logical, intent(out) :: ok
     integer :: i_temp, ierr
     logical :: found
 
     spec_points%bands_num_spec_points = 0
     call param_get_block_length('kpoint_path', found, i_temp, library)
     if (found) then
+      ok = .true.
       spec_points%bands_num_spec_points = i_temp*2
       if (allocated(spec_points%bands_label)) deallocate (spec_points%bands_label)
       allocate (spec_points%bands_label(spec_points%bands_num_spec_points), stat=ierr)
@@ -486,9 +488,9 @@ contains
       allocate (spec_points%bands_spec_points(3, spec_points%bands_num_spec_points), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating bands_spec_points in param_read')
       call param_get_keyword_kpath(spec_points)
+    else
+      ok = .false.
     end if
-    if (.not. found .and. bands_plot) &
-      call io_error('A bandstructure plot has been requested but there is no kpoint_path block')
   end subroutine param_read_21
 
   subroutine param_read_23(found_fermi_energy, fermi)
