@@ -434,17 +434,12 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   if (w90_calcs%disentanglement) then
     param_input%have_disentangled = .false.
-    call dis_main(num_kpts, kmesh_info%nntot, num_wann, num_bands, &
-                  dis_data%spheres_num, dis_data%num_iter, dis_data%spheres_first_wann, &
-                  dis_data%conv_window, param_input%timing_level, num_nodes, my_node_id, &
-                  param_input%optimisation, param_input%iprint, kmesh_info%nnlist, &
-                  dis_data%ndimwin, dis_data%win_min, dis_data%win_max, dis_data%froz_min, &
-                  dis_data%froz_max, dis_data%mix_ratio, dis_data%conv_tol, kmesh_info%wbtot, &
-                  param_input%lenconfac, param_input%omega_invariant, eigval, recip_lattice, &
-                  k_points%kpt_latt, dis_data%spheres, kmesh_info%wb, param_input%devel_flag, &
-                  param_input%length_unit, lsitesymmetry, param_input%gamma_only, on_root, &
-                  dis_data%frozen_states, dis_data%lwindow, u_matrix, u_matrix_opt, m_matrix, &
-                  m_matrix_local, m_matrix_orig, m_matrix_orig_local, a_matrix, sym)
+
+    call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, &
+                  a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
+                  m_matrix_orig_local, u_matrix, u_matrix_opt, dis_data, &
+                  kmesh_info, k_points, param_input, num_nodes, my_node_id, &
+                  on_root, lsitesymmetry, sym)
 
     param_input%have_disentangled = .true.
     call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
@@ -492,33 +487,13 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
   write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time2 - time1, ' (sec)'
 
   if (w90_calcs%wannier_plot .or. w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr) then
-    call plot_main(num_kpts, w90_calcs%bands_plot, k_points%kpt_latt, &
-                   w90_calcs%fermi_surface_plot, w90_calcs%wannier_plot, &
-                   param_input%timing_level, param_plot%write_bvec, w90_calcs%write_hr, &
-                   param_plot%write_rmn, param_plot%write_tb, param_plot%write_u_matrices, &
-                   real_lattice, num_wann, kmesh_info%wb, kmesh_info%bk, m_matrix, &
-                   kmesh_info%nntot, recip_lattice, wann_data%centres, atoms%num_atoms, &
-                   atoms%pos_cart, param_hamil%translation_centre_frac, &
-                   param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
-                   param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, &
-                   dis_data%lwindow, u_matrix_opt, eigval, u_matrix, lsitesymmetry, &
-                   num_bands, param_input%ws_distance_tol, param_input%ws_search_size, &
-                   mp_grid, tran%mode, param_input%bands_plot_mode, &
-                   w90_calcs%transport, param_input%iprint, param_plot%wannier_plot_radius, &
-                   param_plot%wannier_plot_scale, atoms%pos_frac, &
-                   param_plot%wannier_plot_spinor_phase, param_plot%wannier_plot_spinor_mode, &
-                   param_input%spinors, param_plot%wannier_plot_format, &
-                   param_plot%wvfn_formatted, param_plot%wannier_plot_mode, &
-                   param_plot%wannier_plot_list, param_plot%num_wannier_plot, atoms%symbol, &
-                   param_plot%spin, param_plot%wannier_plot_supercell, fermi%energy_list, fermi%n, &
-                   fermi_surface_data%num_points, param_input%one_dim_dir, &
-                   param_plot%bands_plot_dim, param_input%hr_cutoff, param_input%dist_cutoff, &
-                   param_input%dist_cutoff_mode, param_input%use_ws_distance, &
-                   param_plot%bands_plot_project, param_plot%num_bands_project, &
-                   param_plot%bands_plot_format, spec_points%bands_label, &
-                   spec_points%bands_spec_points, spec_points%bands_num_spec_points, &
-                   param_plot%bands_num_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                   rpt_origin, wannier_centres_translated, hmlg, ham_k)
+    call plot_main(num_kpts, w90_calcs, k_points, param_input, &
+                   param_plot, real_lattice, num_wann, kmesh_info, m_matrix, &
+                   recip_lattice, wann_data, atoms, param_hamil, dis_data, &
+                   u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
+                   mp_grid, tran%mode, fermi, fermi_surface_data, spec_points, &
+                   ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
+                   wannier_centres_translated, hmlg, ham_k)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
@@ -526,9 +501,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, &
 
   time2 = io_time()
   if (w90_calcs%transport) then
-    call tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, wann_data, atoms, &
-                   param_hamil, dis_data, u_matrix_opt, k_points, eigval, u_matrix, lsitesymmetry, &
-                   num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
+    call tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, &
+                   recip_lattice, wann_data, atoms, param_hamil, dis_data, &
+                   u_matrix_opt, k_points, eigval, u_matrix, lsitesymmetry, &
+                   num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, &
+                   shift_vec, ndegen, nrpts, rpt_origin, &
                    wannier_centres_translated, hmlg, ham_k)
 
     time1 = io_time()
