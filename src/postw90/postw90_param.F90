@@ -341,6 +341,7 @@ contains
     !call param_w90_read_02
     call param_read_verbosity(param_input)
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
+    call param_read_pw90_calcs(pw90_calcs)
     call param_pw90_read_04(pw90_common%effective_model)
     call param_read_05(param_input, energy_unit)
     !call param_w90_read_06
@@ -377,7 +378,7 @@ contains
     !call param_w90_read_29
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     !call param_w90_read_30
-    call param_pw90_read_31(pw90_calcs)
+    !call param_pw90_read_31(pw90_calcs)
     disentanglement = (num_bands > num_wann)
     call param_read_32(pw90_common%effective_model, pw90_calcs%boltzwann, &
                        pw90_calcs%geninterp, dos_plot, disentanglement, &
@@ -414,6 +415,33 @@ contains
                        num_bands, num_kpts)
   end subroutine param_postw90_read
 
+  subroutine param_read_pw90_calcs(pw90_calcs)
+    implicit none
+    type(pw90_calculation_type), intent(out) :: pw90_calcs
+    logical :: found
+
+    pw90_calcs%dos = .false.
+    call param_get_keyword('dos', found, l_value=pw90_calcs%dos)
+
+    pw90_calcs%berry = .false.
+    call param_get_keyword('berry', found, l_value=pw90_calcs%berry)
+
+    pw90_calcs%kpath = .false.
+    call param_get_keyword('kpath', found, l_value=pw90_calcs%kpath)
+
+    pw90_calcs%kslice = .false.
+    call param_get_keyword('kslice', found, l_value=pw90_calcs%kslice)
+
+    pw90_calcs%gyrotropic = .false.
+    call param_get_keyword('gyrotropic', found, l_value=pw90_calcs%gyrotropic)
+
+    pw90_calcs%geninterp = .false.
+    call param_get_keyword('geninterp', found, l_value=pw90_calcs%geninterp)
+    pw90_calcs%boltzwann = .false.
+    call param_get_keyword('boltzwann', found, l_value=pw90_calcs%boltzwann)
+
+  end subroutine param_read_pw90_calcs
+
   subroutine param_pw90_read_04(effective_model)
     implicit none
     logical, intent(inout) :: effective_model
@@ -438,13 +466,10 @@ contains
   subroutine param_pw90_read_24(pw90_kslice, kslice)
     use w90_io, only: io_error
     implicit none
-    logical, intent(out) :: pw90_kslice
+    logical, intent(in) :: pw90_kslice
     type(kslice_type), intent(inout) :: kslice
     integer :: i
     logical :: found
-
-    pw90_kslice = .false.
-    call param_get_keyword('kslice', found, l_value=pw90_kslice)
 
     kslice%task = 'fermi_lines'
     call param_get_keyword('kslice_task', found, c_value=kslice%task)
@@ -555,7 +580,7 @@ contains
                                 smr_fixed_en_width, adpt_smr)
     use w90_io, only: io_error
     implicit none
-    type(pw90_calculation_type), intent(inout) :: pw90_calcs
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(inout) :: pw90_common
     type(berry_type), intent(inout) :: berry
     type(spin_hall_type), intent(inout) :: spin_hall
@@ -572,12 +597,6 @@ contains
     integer :: i, ierr, loop
     logical :: found
 
-    pw90_calcs%dos = .false.
-    call param_get_keyword('dos', found, l_value=pw90_calcs%dos)
-
-    pw90_calcs%berry = .false.
-    call param_get_keyword('berry', found, l_value=pw90_calcs%berry)
-
     berry%transl_inv = .false.
     call param_get_keyword('transl_inv', found, l_value=berry%transl_inv)
 
@@ -591,8 +610,6 @@ contains
       ('Error: value of berry_task not recognised in param_read')
 
     ! Stepan
-    pw90_calcs%gyrotropic = .false.
-    call param_get_keyword('gyrotropic', found, l_value=pw90_calcs%gyrotropic)
     gyrotropic%task = 'all'
     call param_get_keyword('gyrotropic_task', found, c_value=gyrotropic%task)
     gyrotropic%box(:, :) = 0.0
@@ -774,9 +791,6 @@ contains
     pw90_ham%degen_thr = 1.0d-4
     call param_get_keyword('degen_thr', found, r_value=pw90_ham%degen_thr)
 
-    pw90_calcs%kpath = .false.
-    call param_get_keyword('kpath', found, l_value=pw90_calcs%kpath)
-
     kpath%task = 'bands'
     call param_get_keyword('kpath_task', found, c_value=kpath%task)
     if (pw90_calcs%kpath .and. index(kpath%task, 'bands') == 0 .and. &
@@ -892,18 +906,6 @@ contains
       end do
     endif
   end subroutine param_pw90_read_26
-
-  subroutine param_pw90_read_31(pw90_calcs)
-    ! These must be read here, before the check on the existence of the .eig file!
-    implicit none
-    type(pw90_calculation_type), intent(inout) :: pw90_calcs
-    logical :: found
-
-    pw90_calcs%geninterp = .false.
-    call param_get_keyword('geninterp', found, l_value=pw90_calcs%geninterp)
-    pw90_calcs%boltzwann = .false.
-    call param_get_keyword('boltzwann', found, l_value=pw90_calcs%boltzwann)
-  end subroutine param_pw90_read_31
 
   subroutine param_pw90_read_34(geninterp, boltz, smr_index, eigval, &
                                 adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, &
