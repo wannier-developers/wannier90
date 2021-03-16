@@ -127,8 +127,9 @@ contains
 
     call param_in_file
     call param_read_sym(lsitesymmetry, symmetrize_eps)
-    call param_w90_read_02(w90_calcs%transport, tran, driver%restart)
     call param_read_verbosity(param_input)
+    call param_read_transport(w90_calcs%transport, tran, driver%restart)
+    call param_read_dist_cutoff(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       !call param_pw90_read_04
       call param_read_05(param_input, energy_unit)
@@ -162,11 +163,10 @@ contains
       !call param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
       !                   smr_fixed_en_width, adpt_smr)
       !call param_pw90_read_26
-      call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
-                             tran%read_ht)
     endif
+    call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
+                           tran%read_ht) ! BGS tran/plot related stuff...
     call param_read_28(param_input)
-    call param_w90_read_29(w90_calcs%transport, param_input, tran)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_w90_read_30(w90_calcs%disentanglement, num_bands, num_wann)
       !call param_pw90_read_31
@@ -230,13 +230,14 @@ contains
     call param_get_keyword('symmetrize_eps', found, r_value=symmetrize_eps)!YN:
   end subroutine param_read_sym
 
-  subroutine param_w90_read_02(transport, tran, restart)
+  subroutine param_read_transport(transport, tran, restart)
     !%%%%%%%%%%%%%%%%
     ! Transport
     !%%%%%%%%%%%%%%%%
+    use w90_io, only: io_error
     implicit none
     logical, intent(inout) :: transport
-    type(transport_type), intent(inout) :: tran
+    type(transport_type), intent(out) :: tran
     character(len=*), intent(inout) :: restart
     logical :: found
 
@@ -250,7 +251,96 @@ contains
     call param_get_keyword('tran_easy_fix', found, l_value=tran%easy_fix)
 
     if (transport .and. tran%read_ht) restart = ' '
-  end subroutine param_w90_read_02
+
+    tran%mode = 'bulk'
+    call param_get_keyword('transport_mode', found, c_value=tran%mode)
+
+!    if ( .not.tran_read_ht  .and. (index(transport_mode,'lcr').ne.0) ) &
+!       call io_error('Error: transport_mode.eq.lcr not compatible with tran_read_ht.eq.false')
+
+    tran%win_min = -3.0_dp
+    call param_get_keyword('tran_win_min', found, r_value=tran%win_min)
+
+    tran%win_max = 3.0_dp
+    call param_get_keyword('tran_win_max', found, r_value=tran%win_max)
+
+    tran%energy_step = 0.01_dp
+    call param_get_keyword('tran_energy_step', found, r_value=tran%energy_step)
+
+    tran%num_bb = 0
+    call param_get_keyword('tran_num_bb', found, i_value=tran%num_bb)
+
+    tran%num_ll = 0
+    call param_get_keyword('tran_num_ll', found, i_value=tran%num_ll)
+
+    tran%num_rr = 0
+    call param_get_keyword('tran_num_rr', found, i_value=tran%num_rr)
+
+    tran%num_cc = 0
+    call param_get_keyword('tran_num_cc', found, i_value=tran%num_cc)
+
+    tran%num_lc = 0
+    call param_get_keyword('tran_num_lc', found, i_value=tran%num_lc)
+
+    tran%num_cr = 0
+    call param_get_keyword('tran_num_cr', found, i_value=tran%num_cr)
+
+    tran%num_bandc = 0
+    call param_get_keyword('tran_num_bandc', found, i_value=tran%num_bandc)
+
+    tran%write_ht = .false.
+    call param_get_keyword('tran_write_ht', found, l_value=tran%write_ht)
+
+    tran%use_same_lead = .true.
+    call param_get_keyword('tran_use_same_lead', found, l_value=tran%use_same_lead)
+
+    tran%num_cell_ll = 0
+    call param_get_keyword('tran_num_cell_ll', found, i_value=tran%num_cell_ll)
+
+    tran%num_cell_rr = 0
+    call param_get_keyword('tran_num_cell_rr', found, i_value=tran%num_cell_rr)
+
+    tran%group_threshold = 0.15_dp
+    call param_get_keyword('tran_group_threshold', found, r_value=tran%group_threshold)
+
+    ! checks
+    if (transport) then
+      if ((index(tran%mode, 'bulk') .eq. 0) .and. (index(tran%mode, 'lcr') .eq. 0)) &
+        call io_error('Error: transport_mode not recognised')
+      if (tran%num_bb < 0) call io_error('Error: tran_num_bb < 0')
+      if (tran%num_ll < 0) call io_error('Error: tran_num_ll < 0')
+      if (tran%num_rr < 0) call io_error('Error: tran_num_rr < 0')
+      if (tran%num_cc < 0) call io_error('Error: tran_num_cc < 0')
+      if (tran%num_lc < 0) call io_error('Error: tran_num_lc < 0')
+      if (tran%num_cr < 0) call io_error('Error: tran_num_cr < 0')
+      if (tran%num_bandc < 0) call io_error('Error: tran_num_bandc < 0')
+      if (tran%num_cell_ll < 0) call io_error('Error: tran_num_cell_ll < 0')
+      if (tran%num_cell_rr < 0) call io_error('Error: tran_num_cell_rr < 0')
+      if (tran%group_threshold < 0.0_dp) call io_error('Error: tran_group_threshold < 0')
+    endif
+
+  end subroutine param_read_transport
+
+  subroutine param_read_dist_cutoff(param_input)
+    use w90_io, only: io_error
+    implicit none
+    type(parameter_input_type), intent(inout) :: param_input
+    logical :: found
+
+    param_input%dist_cutoff_mode = 'three_dim'
+    call param_get_keyword('dist_cutoff_mode', found, c_value=param_input%dist_cutoff_mode)
+    if ((index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0) &
+        .and. (index(param_input%dist_cutoff_mode, 'two_dim') .eq. 0) &
+        .and. (index(param_input%dist_cutoff_mode, 'one_dim') .eq. 0)) &
+      call io_error('Error: dist_cutoff_mode not recognised')
+
+    param_input%dist_cutoff = 1000.0_dp
+    call param_get_keyword('dist_cutoff', found, r_value=param_input%dist_cutoff)
+
+    param_input%dist_cutoff_hc = param_input%dist_cutoff
+    call param_get_keyword('dist_cutoff_hc', found, r_value=param_input%dist_cutoff_hc)
+
+  end subroutine param_read_dist_cutoff
 
   subroutine param_w90_read_06(wvfn_formatted)
     implicit none
@@ -661,17 +751,6 @@ contains
     param_input%hr_cutoff = 0.0_dp
     call param_get_keyword('hr_cutoff', found, r_value=param_input%hr_cutoff)
 
-    param_input%dist_cutoff_mode = 'three_dim'
-    call param_get_keyword('dist_cutoff_mode', found, c_value=param_input%dist_cutoff_mode)
-    if ((index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0) &
-        .and. (index(param_input%dist_cutoff_mode, 'two_dim') .eq. 0) &
-        .and. (index(param_input%dist_cutoff_mode, 'one_dim') .eq. 0)) &
-      call io_error('Error: dist_cutoff_mode not recognised')
-
-! aam_2012-04-13: moved later
-!    dist_cutoff                 = 1000.0_dp
-!    call param_get_keyword('dist_cutoff',found,r_value=dist_cutoff)
-
     one_dim_axis = 'none'
     call param_get_keyword('one_dim_axis', found, c_value=one_dim_axis)
     param_input%one_dim_dir = 0
@@ -684,93 +763,8 @@ contains
        & .and. ((param_plot%bands_plot_dim .ne. 3) .or. (index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0))&
        & .and. (param_input%one_dim_dir .eq. 0)) &
          call io_error('Error: one_dim_axis not recognised')
+
   end subroutine param_w90_read_27
-
-  subroutine param_w90_read_29(transport, param_input, tran)
-    !%%%%%%%%%%%%%%%%
-    ! Transport
-    !%%%%%%%%%%%%%%%%
-    use w90_io, only: io_error
-    implicit none
-    logical, intent(in) :: transport
-    type(parameter_input_type), intent(inout) :: param_input
-    type(transport_type), intent(inout) :: tran
-    logical :: found
-
-    tran%mode = 'bulk'
-    call param_get_keyword('transport_mode', found, c_value=tran%mode)
-
-!    if ( .not.tran_read_ht  .and. (index(transport_mode,'lcr').ne.0) ) &
-!       call io_error('Error: transport_mode.eq.lcr not compatible with tran_read_ht.eq.false')
-
-    tran%win_min = -3.0_dp
-    call param_get_keyword('tran_win_min', found, r_value=tran%win_min)
-
-    tran%win_max = 3.0_dp
-    call param_get_keyword('tran_win_max', found, r_value=tran%win_max)
-
-    tran%energy_step = 0.01_dp
-    call param_get_keyword('tran_energy_step', found, r_value=tran%energy_step)
-
-    tran%num_bb = 0
-    call param_get_keyword('tran_num_bb', found, i_value=tran%num_bb)
-
-    tran%num_ll = 0
-    call param_get_keyword('tran_num_ll', found, i_value=tran%num_ll)
-
-    tran%num_rr = 0
-    call param_get_keyword('tran_num_rr', found, i_value=tran%num_rr)
-
-    tran%num_cc = 0
-    call param_get_keyword('tran_num_cc', found, i_value=tran%num_cc)
-
-    tran%num_lc = 0
-    call param_get_keyword('tran_num_lc', found, i_value=tran%num_lc)
-
-    tran%num_cr = 0
-    call param_get_keyword('tran_num_cr', found, i_value=tran%num_cr)
-
-    tran%num_bandc = 0
-    call param_get_keyword('tran_num_bandc', found, i_value=tran%num_bandc)
-
-    tran%write_ht = .false.
-    call param_get_keyword('tran_write_ht', found, l_value=tran%write_ht)
-
-    tran%use_same_lead = .true.
-    call param_get_keyword('tran_use_same_lead', found, l_value=tran%use_same_lead)
-
-    tran%num_cell_ll = 0
-    call param_get_keyword('tran_num_cell_ll', found, i_value=tran%num_cell_ll)
-
-    tran%num_cell_rr = 0
-    call param_get_keyword('tran_num_cell_rr', found, i_value=tran%num_cell_rr)
-
-    tran%group_threshold = 0.15_dp
-    call param_get_keyword('tran_group_threshold', found, r_value=tran%group_threshold)
-
-    param_input%dist_cutoff = 1000.0_dp
-    call param_get_keyword('dist_cutoff', found, r_value=param_input%dist_cutoff)
-
-    param_input%dist_cutoff_hc = param_input%dist_cutoff
-    call param_get_keyword('dist_cutoff_hc', found, r_value=param_input%dist_cutoff_hc)
-
-    ! checks
-    if (transport) then
-      if ((index(tran%mode, 'bulk') .eq. 0) .and. (index(tran%mode, 'lcr') .eq. 0)) &
-        call io_error('Error: transport_mode not recognised')
-      if (tran%num_bb < 0) call io_error('Error: tran_num_bb < 0')
-      if (tran%num_ll < 0) call io_error('Error: tran_num_ll < 0')
-      if (tran%num_rr < 0) call io_error('Error: tran_num_rr < 0')
-      if (tran%num_cc < 0) call io_error('Error: tran_num_cc < 0')
-      if (tran%num_lc < 0) call io_error('Error: tran_num_lc < 0')
-      if (tran%num_cr < 0) call io_error('Error: tran_num_cr < 0')
-      if (tran%num_bandc < 0) call io_error('Error: tran_num_bandc < 0')
-      if (tran%num_cell_ll < 0) call io_error('Error: tran_num_cell_ll < 0')
-      if (tran%num_cell_rr < 0) call io_error('Error: tran_num_cell_rr < 0')
-      if (tran%group_threshold < 0.0_dp) call io_error('Error: tran_group_threshold < 0')
-    endif
-
-  end subroutine param_w90_read_29
 
   subroutine param_w90_read_30(disentanglement, num_bands, num_wann)
     !%%%%%%%%%%%%%%%%
