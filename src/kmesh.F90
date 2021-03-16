@@ -644,10 +644,8 @@ contains
 
   !==================================================================!
   subroutine kmesh_write(recip_lattice, param_input, kmesh_info, &
-                         num_kpts, input_proj_l, num_proj, input_proj_site, spinors, kpt_latt, &
-                         real_lattice, calc_only_A, input_proj_zona, input_proj_x, input_proj_z, &
-                         input_proj_radial, input_proj_m, exclude_bands, num_exclude_bands, &
-                         auto_projections, input_proj_s_qaxis, input_proj_s)
+                         num_kpts, kmesh_data, num_proj, kpt_latt, &
+                         real_lattice, calc_only_A)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -677,12 +675,13 @@ contains
     ! m and n.                                                         !
     !===================================================================
     use w90_io, only: io_file_unit, seedname, io_date, io_stopwatch
-    use w90_param_types, only: parameter_input_type, kmesh_info_type
+    use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type
 
     implicit none
 
     type(parameter_input_type), intent(in) :: param_input
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(param_kmesh_type), intent(in) :: kmesh_data
 
 !   from parameters.F90
 !   integer, intent(in) :: timing_level
@@ -691,23 +690,23 @@ contains
     integer, intent(inout) :: num_proj
 !   integer, intent(inout) :: nncell(:, :, :)
 !   integer, intent(inout) :: nnlist(:, :)
-    integer, intent(inout) :: input_proj_l(:)
-    integer, intent(in) :: input_proj_radial(:)
-    integer, intent(in) :: input_proj_m(:)
-    integer, intent(in) :: exclude_bands(:)
-    integer, intent(in) :: num_exclude_bands
-    integer, intent(in) :: input_proj_s(:)
+!   integer, intent(inout) :: input_proj_l(:)
+!   integer, intent(in) :: input_proj_radial(:)
+!   integer, intent(in) :: input_proj_m(:)
+!   integer, intent(in) :: exclude_bands(:)
+!   integer, intent(in) :: num_exclude_bands
+!   integer, intent(in) :: input_proj_s(:)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-    real(kind=dp), allocatable :: input_proj_site(:, :)
+!   real(kind=dp), allocatable :: input_proj_site(:, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: input_proj_zona(:)
-    real(kind=dp), intent(in) :: input_proj_x(:, :)
-    real(kind=dp), intent(in) :: input_proj_z(:, :)
-    real(kind=dp), intent(in) :: input_proj_s_qaxis(:, :)
-    logical, intent(in) :: spinors
+!   real(kind=dp), intent(in) :: input_proj_zona(:)
+!   real(kind=dp), intent(in) :: input_proj_x(:, :)
+!   real(kind=dp), intent(in) :: input_proj_z(:, :)
+!   real(kind=dp), intent(in) :: input_proj_s_qaxis(:, :)
+!   logical, intent(in) :: spinors
     logical, intent(in) :: calc_only_A
-    logical, intent(in) :: auto_projections
+!   logical, intent(in) :: auto_projections
 !   end parameters.F90
 
     integer           :: i, nkp, nn, nnkpout
@@ -747,23 +746,23 @@ contains
     enddo
     write (nnkpout, '(a/)') 'end kpoints'
 
-    if (spinors) then
+    if (param_input%spinors) then
       ! Projections
       write (nnkpout, '(a)') 'begin spinor_projections'
-      if (allocated(input_proj_site)) then
+      if (allocated(kmesh_data%input_proj_site)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            input_proj_site(1, i), input_proj_site(2, i), input_proj_site(3, i), &
-            input_proj_l(i), input_proj_m(i), input_proj_radial(i)
+            kmesh_data%input_proj_site(1, i), kmesh_data%input_proj_site(2, i), kmesh_data%input_proj_site(3, i), &
+            kmesh_data%input_proj%l(i), kmesh_data%input_proj%m(i), kmesh_data%input_proj%radial(i)
 !~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            input_proj_z(1, i), input_proj_z(2, i), input_proj_z(3, i), &
-            input_proj_x(1, i), input_proj_x(2, i), input_proj_x(3, i), &
-            input_proj_zona(i)
+            kmesh_data%input_proj%z(1, i), kmesh_data%input_proj%z(2, i), kmesh_data%input_proj%z(3, i), &
+            kmesh_data%input_proj%x(1, i), kmesh_data%input_proj%x(2, i), kmesh_data%input_proj%x(3, i), &
+            kmesh_data%input_proj%zona(i)
           write (nnkpout, '(2x,1i3,1x,3f11.7)') &
-            input_proj_s(i), &
-            input_proj_s_qaxis(1, i), input_proj_s_qaxis(2, i), input_proj_s_qaxis(3, i)
+            kmesh_data%input_proj%s(i), &
+            kmesh_data%input_proj%s_qaxis(1, i), kmesh_data%input_proj%s_qaxis(2, i), kmesh_data%input_proj%s_qaxis(3, i)
         enddo
       else
         ! No projections
@@ -773,17 +772,17 @@ contains
     else
       ! Projections
       write (nnkpout, '(a)') 'begin projections'
-      if (allocated(input_proj_site)) then
+      if (allocated(kmesh_data%input_proj_site)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            input_proj_site(1, i), input_proj_site(2, i), input_proj_site(3, i), &
-            input_proj_l(i), input_proj_m(i), input_proj_radial(i)
+            kmesh_data%input_proj_site(1, i), kmesh_data%input_proj_site(2, i), kmesh_data%input_proj_site(3, i), &
+            kmesh_data%input_proj%l(i), kmesh_data%input_proj%m(i), kmesh_data%input_proj%radial(i)
 !~           write(nnkpout,'(3x,3f7.3,1x,3f7.3,1x,f7.2)') &
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            input_proj_z(1, i), input_proj_z(2, i), input_proj_z(3, i), &
-            input_proj_x(1, i), input_proj_x(2, i), input_proj_x(3, i), &
-            input_proj_zona(i)
+            kmesh_data%input_proj%z(1, i), kmesh_data%input_proj%z(2, i), kmesh_data%input_proj%z(3, i), &
+            kmesh_data%input_proj%x(1, i), kmesh_data%input_proj%x(2, i), kmesh_data%input_proj%x(3, i), &
+            kmesh_data%input_proj%zona(i)
         enddo
       else
         ! No projections
@@ -793,7 +792,7 @@ contains
     endif
 
     ! Info for automatic generation of projections
-    if (auto_projections) then
+    if (kmesh_data%auto_projections) then
       write (nnkpout, '(a)') 'begin auto_projections'
       write (nnkpout, '(i6)') num_proj
       write (nnkpout, '(i6)') 0
@@ -813,10 +812,10 @@ contains
 
     !states to exclude
     write (nnkpout, '(a)') 'begin exclude_bands'
-    write (nnkpout, '(i4)') num_exclude_bands
-    if (num_exclude_bands > 0) then
-      do i = 1, num_exclude_bands
-        write (nnkpout, '(i4)') exclude_bands(i)
+    write (nnkpout, '(i4)') param_input%num_exclude_bands
+    if (param_input%num_exclude_bands > 0) then
+      do i = 1, param_input%num_exclude_bands
+        write (nnkpout, '(i4)') param_input%exclude_bands(i)
       end do
     endif
     write (nnkpout, '(a)') 'end exclude_bands'

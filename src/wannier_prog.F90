@@ -340,19 +340,11 @@ program wannier
   endif
 
   if (driver%postproc_setup) then
-    if (on_root) call kmesh_write(recip_lattice, param_input, &
-                                  kmesh_info, num_kpts, &
-                                  kmesh_data%input_proj%l, num_proj, kmesh_data%input_proj_site, &
-                                  param_input%spinors, k_points%kpt_latt, real_lattice, pp_calc%only_A, &
-                                  kmesh_data%input_proj%zona, kmesh_data%input_proj%x, kmesh_data%input_proj%z, &
-                                  kmesh_data%input_proj%radial, kmesh_data%input_proj%m, &
-                                  param_input%exclude_bands, param_input%num_exclude_bands, &
-                                  kmesh_data%auto_projections, kmesh_data%input_proj%s_qaxis, &
-                                  kmesh_data%input_proj%s)
+    if (on_root) call kmesh_write(recip_lattice, param_input, kmesh_info, num_kpts, kmesh_data, &
+                                  num_proj, k_points%kpt_latt, real_lattice, pp_calc%only_A)
     call kmesh_dealloc(kmesh_info)
-    call param_dealloc(driver, param_input, param_plot, param_wannierise, &
-                       wann_data, kmesh_data, k_points, dis_data, fermi, &
-                       atoms, eigval, spec_points, dos_data, berry)
+    call param_dealloc(driver, param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
+                       k_points, dis_data, fermi, atoms, eigval, spec_points, dos_data, berry)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
