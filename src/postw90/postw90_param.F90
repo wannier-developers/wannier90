@@ -339,7 +339,7 @@ contains
     call param_in_file
     !call param_w90_read_01
     !call param_w90_read_02
-    call param_read_03(param_input)
+    call param_read_verbosity(param_input)
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     call param_pw90_read_04(pw90_common%effective_model)
     call param_read_05(param_input, energy_unit)

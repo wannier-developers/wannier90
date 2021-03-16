@@ -128,7 +128,7 @@ contains
     call param_in_file
     call param_read_sym(lsitesymmetry, symmetrize_eps)
     call param_w90_read_02(w90_calcs%transport, tran, driver%restart)
-    call param_read_03(param_input)
+    call param_read_verbosity(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       !call param_pw90_read_04
       call param_read_05(param_input, energy_unit)
@@ -180,7 +180,7 @@ contains
       call param_w90_read_35(w90_calcs%disentanglement, param_wannierise, &
                              param_input, num_kpts)
       !call param_pw90_read_36
-      call param_w90_read_37(param_hamil)
+      call param_read_hamil(param_hamil)
       !call param_pw90_read_38
       call param_w90_read_39(w90_calcs%use_bloch_phases, &
                              w90_calcs%disentanglement)
@@ -808,7 +808,7 @@ contains
       call io_error('If writing vdw data and disentangling then num_valence_bands must be defined')
   end subroutine param_w90_read_35
 
-  subroutine param_w90_read_37(param_hamil)
+  subroutine param_read_hamil(param_hamil)
     implicit none
     type(param_hamiltonian_type), intent(out) :: param_hamil
     real(kind=dp) :: rv_temp(3)
@@ -821,7 +821,7 @@ contains
       param_hamil%translation_centre_frac = rv_temp
       param_hamil%automatic_translation = .false.
     endif
-  end subroutine param_w90_read_37
+  end subroutine param_read_hamil
 
   subroutine param_w90_read_39(use_bloch_phases, disentanglement)
     use w90_io, only: io_error

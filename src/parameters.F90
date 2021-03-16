@@ -26,34 +26,45 @@ module w90_param_types
 
   !Input
   type parameter_input_type
+    ! verbosity flags - param_read_verbosity
     integer :: iprint
     !! Controls the verbosity of the output
     integer :: timing_level
+    integer :: optimisation !wannierise and disentangle
+
+    integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
+    integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
+    logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
+
     character(len=20) :: length_unit
     !! Units for length
+
     character(len=50) :: devel_flag !kmesh, disentangle, postw90/postw90_common
-    integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
+
     integer, allocatable :: exclude_bands(:) !kmesh, wannier_lib, w90chk2chk
     integer :: num_exclude_bands
+
     logical :: gamma_only !overlap, kmesh, disentangle, wannierise, wannier_prog
     !! Use the special Gamma-point routines
-    character(len=20) :: bands_plot_mode !hamiltonian (setup only), plot
-    !BGS - maybe a band_plot_type with band_num_points etc from plot_type?
-    integer :: one_dim_dir ! transport and plot
-    real(kind=dp) :: hr_cutoff !plot and transport
+
+    real(kind=dp) :: hr_cutoff !plot and transport - BGS w90 only
+
+    ! dist_cutoff - only plot and transport - BGS w90 only
     real(kind=dp) :: dist_cutoff !plot and transport
     character(len=20) :: dist_cutoff_mode !plot and transport
     real(kind=dp) :: dist_cutoff_hc !plot and transport
+
+    integer :: one_dim_dir ! transport and plot - BGS w90 only
+
+    character(len=20) :: bands_plot_mode !hamiltonian (setup only), plot
+    !BGS - maybe a band_plot_type with band_num_points etc from plot_type?
     logical :: use_ws_distance !ws_distance, plot and postw90_common
     real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
     !! absolute tolerance for the distance to equivalent positions
     integer :: ws_search_size(3) ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
-    logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
-    integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
     logical :: write_xyz !wannierise and transport
-    integer :: optimisation !wannierise and disentangle
     real(kind=dp) :: omega_invariant !wannierise, disentangle and chk2chk
     logical :: have_disentangled !disentangle, plot, wannierise, postw90...
     real(kind=dp) :: lenconfac !lots of write statements in wannier90
@@ -277,7 +288,7 @@ module w90_param_methods
   public :: get_smearing_index
   public :: internal_set_kmesh
   ! common read routines
-  public :: param_read_03
+  public :: param_read_verbosity
   public :: param_read_05
   public :: param_read_num_wann
   public :: param_read_exclude_bands
@@ -298,7 +309,7 @@ module w90_param_methods
 
 contains
 
-  subroutine param_read_03(param_input)
+  subroutine param_read_verbosity(param_input)
     !%%%%%%%%%%%%%%%%
     !System variables
     !%%%%%%%%%%%%%%%%
@@ -315,7 +326,7 @@ contains
     param_input%optimisation = 3             ! Verbosity
     call param_get_keyword('optimisation', found, i_value=param_input%optimisation)
 
-  end subroutine param_read_03
+  end subroutine param_read_verbosity
 
   subroutine param_read_05(param_input, energy_unit)
     use w90_constants, only: bohr
