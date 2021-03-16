@@ -1727,6 +1727,8 @@ contains
         if (dis_spheres(4, nkp) < 1.0e-15_dp) &
           call io_error('Error: radius for dis_spheres must be > 0')
       enddo
+    else
+      allocate (dis_spheres(1, 1)) !JJ temporary workaround for github actions error; this code will vanish soon (when CCP9 types merged)
     endif
     ! GS-end
 
