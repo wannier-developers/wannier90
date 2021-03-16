@@ -40,11 +40,12 @@ module wannier_param_types
     logical :: disentanglement !disentangle, overlap, wannier_prog, wannier_lib
     logical :: bands_plot !hamiltonian (setup only), plot, wannier_lib
     logical :: wannier_plot !plot, wannier_lib
-    logical :: write_hr !plot, transport and wannier_lib
-    !BGS write_tb, write_u_matrices, dos_plot?
     logical :: fermi_surface_plot ! plot, wannier_lib!
     logical :: transport ! also hamiltonian, wannier_prog, wannier_lib
     !BGS gamma_only? have_disentangled
+
+    logical :: write_hr !plot, transport and wannier_lib
+    !BGS write_tb, write_u_matrices, dos_plot?
     logical :: cp_pp !BGS overlap only?
     !! Car-Parinello post-proc flag/transport
     logical :: use_bloch_phases !overlap only

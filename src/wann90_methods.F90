@@ -128,6 +128,7 @@ contains
     call param_in_file
     call param_read_sym(lsitesymmetry, symmetrize_eps)
     call param_read_verbosity(param_input)
+    call param_read_w90_calcs(w90_calcs)
     call param_read_transport(w90_calcs%transport, tran, driver%restart)
     call param_read_dist_cutoff(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
@@ -151,7 +152,7 @@ contains
       call param_read_21(library, spec_points, has_kpath)
       if (.not. has_kpath .and. w90_calcs%bands_plot) &
         call io_error('A bandstructure plot has been requested but there is no kpoint_path block')
-      call param_w90_read_22(w90_calcs, fermi_surface_data, param_plot, &
+      call param_w90_read_22(w90_calcs%bands_plot, fermi_surface_data, param_plot, &
                              param_input%bands_plot_mode)
       call param_read_23(found_fermi_energy, fermi)
       call param_w90_read_24(w90_calcs%fermi_surface_plot, fermi_surface_data)
@@ -224,19 +225,39 @@ contains
     call param_get_keyword('symmetrize_eps', found, r_value=symmetrize_eps)!YN:
   end subroutine param_read_sym
 
+  subroutine param_read_w90_calcs(w90_calcs)
+    !%%%%%%%%%%%%%%%%
+    ! Transport
+    !%%%%%%%%%%%%%%%%
+    use w90_io, only: io_error
+    implicit none
+    type(w90_calculation_type), intent(out) :: w90_calcs
+    logical :: found
+
+    w90_calcs%transport = .false.
+    call param_get_keyword('transport', found, l_value=w90_calcs%transport)
+
+    w90_calcs%wannier_plot = .false.
+    call param_get_keyword('wannier_plot', found, l_value=w90_calcs%wannier_plot)
+
+    w90_calcs%bands_plot = .false.
+    call param_get_keyword('bands_plot', found, l_value=w90_calcs%bands_plot)
+
+    w90_calcs%fermi_surface_plot = .false.
+    call param_get_keyword('fermi_surface_plot', found, l_value=w90_calcs%fermi_surface_plot)
+
+  end subroutine param_read_w90_calcs
+
   subroutine param_read_transport(transport, tran, restart)
     !%%%%%%%%%%%%%%%%
     ! Transport
     !%%%%%%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
-    logical, intent(inout) :: transport
+    logical, intent(in) :: transport
     type(transport_type), intent(out) :: tran
     character(len=*), intent(inout) :: restart
     logical :: found
-
-    transport = .false.
-    call param_get_keyword('transport', found, l_value=transport)
 
     tran%read_ht = .false.
     call param_get_keyword('tran_read_ht', found, l_value=tran%read_ht)
@@ -580,9 +601,6 @@ contains
     integer :: i, loop, ierr
     logical :: found
 
-    w90_calcs%wannier_plot = .false.
-    call param_get_keyword('wannier_plot', found, l_value=w90_calcs%wannier_plot)
-
     param_plot%wannier_plot_supercell = 2
 
     call param_get_vector_length('wannier_plot_supercell', found, length=i)
@@ -656,9 +674,6 @@ contains
     param_plot%write_u_matrices = .false.
     call param_get_keyword('write_u_matrices', found, l_value=param_plot%write_u_matrices)
 
-    w90_calcs%bands_plot = .false.
-    call param_get_keyword('bands_plot', found, l_value=w90_calcs%bands_plot)
-
     param_plot%write_bvec = .false.
     call param_get_keyword('write_bvec', found, l_value=param_plot%write_bvec)
 
@@ -687,18 +702,18 @@ contains
     endif
   end subroutine param_w90_read_20
 
-  subroutine param_w90_read_22(w90_calcs, fermi_surface_data, param_plot, &
+  subroutine param_w90_read_22(bands_plot, fermi_surface_data, param_plot, &
                                bands_plot_mode)
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(inout) :: w90_calcs
+    logical, intent(in) :: bands_plot
     type(fermi_surface_type), intent(inout) :: fermi_surface_data
     type(param_plot_type), intent(in) :: param_plot
     character(len=*), intent(in) :: bands_plot_mode
     logical :: found
 
     ! checks
-    if (w90_calcs%bands_plot) then
+    if (bands_plot) then
       if ((index(param_plot%bands_plot_format, 'gnu') .eq. 0) .and. &
           (index(param_plot%bands_plot_format, 'xmgr') .eq. 0)) &
         call io_error('Error: bands_plot_format not recognised')
@@ -706,9 +721,6 @@ contains
         call io_error('Error: bands_plot_mode not recognised')
       if (param_plot%bands_num_points < 0) call io_error('Error: bands_num_points must be positive')
     endif
-
-    w90_calcs%fermi_surface_plot = .false.
-    call param_get_keyword('fermi_surface_plot', found, l_value=w90_calcs%fermi_surface_plot)
 
     fermi_surface_data%num_points = 50
     call param_get_keyword('fermi_surface_num_points', found, i_value=fermi_surface_data%num_points)
@@ -737,7 +749,7 @@ contains
                                one_dim_axis, tran_read_ht)
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(w90_calculation_type), intent(in) :: w90_calcs
     type(param_plot_type), intent(inout) :: param_plot
     type(parameter_input_type), intent(inout) :: param_input
     character(len=*), intent(out) :: one_dim_axis
