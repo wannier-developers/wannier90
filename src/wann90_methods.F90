@@ -131,26 +131,21 @@ contains
     call param_read_transport(w90_calcs%transport, tran, driver%restart)
     call param_read_dist_cutoff(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      !call param_pw90_read_04
       call param_read_05(param_input, energy_unit)
       call param_w90_read_06(param_plot%wvfn_formatted)
-      !call param_pw90_read_07
       call param_w90_read_08(param_plot%spin)
       call param_read_num_wann(num_wann)
       call param_read_exclude_bands(param_input)
       call param_read_11(.false., library, param_input, num_bands, num_wann, &
                          library_param_read_first_pass)
-      call param_w90_read_12(param_wannierise)
+      call param_read_lattice(library, real_lattice, recip_lattice)
+      call param_read_wannierise(param_wannierise, num_wann)
       call param_read_13(.false., library, param_input%devel_flag, mp_grid, &
                          num_kpts)
       call param_w90_read_14(w90_calcs%cp_pp, pp_calc%only_A, driver, &
                              param_input, num_kpts, library)
-      call param_w90_read_15(param_wannierise)
       call param_read_16(library, param_input)
-      call param_w90_read_17(param_wannierise)
       call param_w90_read_18a(param_input%write_xyz)
-      call param_w90_read_18b(param_wannierise)
-      call param_w90_read_19(param_wannierise, num_wann)
       call param_w90_read_20(w90_calcs, param_plot, &
                              param_input%bands_plot_mode, num_wann)
       call param_read_21(library, spec_points, has_kpath)
@@ -160,9 +155,7 @@ contains
                              param_input%bands_plot_mode)
       call param_read_23(found_fermi_energy, fermi)
       call param_w90_read_24(w90_calcs%fermi_surface_plot, fermi_surface_data)
-      !call param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
-      !                   smr_fixed_en_width, adpt_smr)
-      !call param_pw90_read_26
+      call param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts)
     endif
     call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
                            tran%read_ht) ! BGS tran/plot related stuff...
@@ -176,25 +169,20 @@ contains
                          eigval, library, driver%postproc_setup, num_bands, &
                          num_kpts)
       call param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
-      !call param_pw90_read_34
-      call param_w90_read_35(w90_calcs%disentanglement, param_wannierise, &
-                             param_input, num_kpts)
-      !call param_pw90_read_36
       call param_read_hamil(param_hamil)
-      !call param_pw90_read_38
       call param_w90_read_39(w90_calcs%use_bloch_phases, &
                              w90_calcs%disentanglement)
       call param_read_40a(.false., library, kmesh_data, k_points, num_kpts, &
-                          real_lattice, recip_lattice)
+                          recip_lattice)
       call param_read_40b(library, driver, kmesh_info, num_kpts)
       call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
-      !call param_pw90_read_40
       call param_read_atoms(library, atoms, real_lattice, recip_lattice)
       call param_w90_read_42(w90_calcs%use_bloch_phases, lhasproj, &
                              param_wannierise%guiding_centres, &
                              param_wannierise%proj_site, kmesh_data, &
                              select_proj, num_proj, param_input, atoms, &
                              recip_lattice, num_wann, library)
+      ! projections needs to be allocated before reading constrained centres
       call param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
                              num_wann, library)
     endif
@@ -371,10 +359,15 @@ contains
     end if
   end subroutine param_w90_read_08
 
-  subroutine param_w90_read_12(param_wannierise)
+  subroutine param_read_wannierise(param_wannierise, num_wann)
+    !%%%%%%%%%%%
+    ! Wannierise
+    !%%%%%%%%%%%
     use w90_io, only: io_error
     implicit none
-    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(param_wannierise_type), intent(out) :: param_wannierise
+    integer, intent(in) :: num_wann
+    integer :: ierr
     logical :: found
 
     param_wannierise%num_dump_cycles = 100     ! frequency to write backups at
@@ -384,101 +377,6 @@ contains
     param_wannierise%num_print_cycles = 1          ! frequency to write at
     call param_get_keyword('num_print_cycles', found, i_value=param_wannierise%num_print_cycles)
     if (param_wannierise%num_print_cycles < 0) call io_error('Error: num_print_cycles must be positive')
-  end subroutine param_w90_read_12
-
-  subroutine param_w90_read_14(cp_pp, pp_only_A, driver, param_input, &
-                               num_kpts, library)
-    use w90_io, only: seedname, post_proc_flag, io_error
-    implicit none
-    logical, intent(out) :: cp_pp, pp_only_A
-    type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
-    integer, intent(in) :: num_kpts
-    logical, intent(in) :: library
-    logical :: found, ltmp, chk_found
-
-    ltmp = .false.
-    call param_get_keyword('gamma_only', found, l_value=ltmp)
-    if (.not. library) then
-      param_input%gamma_only = ltmp
-      if (param_input%gamma_only .and. (num_kpts .ne. 1)) &
-        call io_error('Error: gamma_only is true, but num_kpts > 1')
-    else
-      if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
-    endif
-![ysl-e]
-
-!    aam: automatic_mp_grid no longer used
-!    automatic_mp_grid = .false.
-!    call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
-
-    driver%postproc_setup = .false.            ! set to true to write .nnkp file and exit
-    call param_get_keyword('postproc_setup', found, l_value=driver%postproc_setup)
-    ! We allow this keyword to be overriden by a command line arg -pp
-    if (post_proc_flag) driver%postproc_setup = .true.
-
-    cp_pp = .false.         ! set to true if doing CP post-processing
-    call param_get_keyword('cp_pp', found, l_value=cp_pp)
-
-    pp_only_A = .false.
-    call param_get_keyword('calc_only_A', found, l_value=pp_only_A)
-
-    driver%restart = ' '
-    call param_get_keyword('restart', found, c_value=driver%restart)
-    if (found) then
-      if ((driver%restart .ne. 'default') .and. (driver%restart .ne. 'wannierise') &
-          .and. (driver%restart .ne. 'plot') .and. (driver%restart .ne. 'transport')) then
-        call io_error('Error in input file: value of restart not recognised')
-      else
-        inquire (file=trim(seedname)//'.chk', exist=chk_found)
-        if (.not. chk_found) &
-          call io_error('Error: restart requested but '//trim(seedname)//'.chk file not found')
-      endif
-    endif
-    !post processing takes priority (user is not warned of this)
-    if (driver%postproc_setup) driver%restart = ' '
-  end subroutine param_w90_read_14
-
-  subroutine param_w90_read_15(param_wannierise)
-    implicit none
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    logical :: found
-
-    param_wannierise%write_r2mn = .false.
-    call param_get_keyword('write_r2mn', found, l_value=param_wannierise%write_r2mn)
-
-    param_wannierise%write_proj = .false.
-    call param_get_keyword('write_proj', found, l_value=param_wannierise%write_proj)
-  end subroutine param_w90_read_15
-
-  subroutine param_w90_read_17(param_wannierise)
-    implicit none
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    logical :: found
-
-    param_wannierise%translate_home_cell = .false.
-    call param_get_keyword('translate_home_cell', found, l_value=param_wannierise%translate_home_cell)
-  end subroutine param_w90_read_17
-
-  subroutine param_w90_read_18b(param_wannierise)
-    implicit none
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    logical :: found
-
-    param_wannierise%write_hr_diag = .false.
-    call param_get_keyword('write_hr_diag', found, l_value=param_wannierise%write_hr_diag)
-  end subroutine param_w90_read_18b
-
-  subroutine param_w90_read_19(param_wannierise, num_wann)
-    !%%%%%%%%%%%
-    ! Wannierise
-    !%%%%%%%%%%%
-    use w90_io, only: io_error
-    implicit none
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    integer, intent(in) :: num_wann
-    integer :: ierr
-    logical :: found
 
     param_wannierise%num_iter = 100
     call param_get_keyword('num_iter', found, i_value=param_wannierise%num_iter)
@@ -557,7 +455,111 @@ contains
     if (found) then
       if (param_wannierise%slwf_lambda < 0.0_dp) call io_error('Error: slwf_lambda  must be positive.')
     endif
-  end subroutine param_w90_read_19
+
+    param_wannierise%translate_home_cell = .false.
+    call param_get_keyword('translate_home_cell', found, l_value=param_wannierise%translate_home_cell)
+  end subroutine param_read_wannierise
+
+  subroutine param_w90_read_14(cp_pp, pp_only_A, driver, param_input, &
+                               num_kpts, library)
+    use w90_io, only: seedname, post_proc_flag, io_error
+    implicit none
+    logical, intent(out) :: cp_pp, pp_only_A
+    type(param_driver_type), intent(inout) :: driver
+    type(parameter_input_type), intent(inout) :: param_input
+    integer, intent(in) :: num_kpts
+    logical, intent(in) :: library
+    logical :: found, ltmp, chk_found
+
+    ltmp = .false.
+    call param_get_keyword('gamma_only', found, l_value=ltmp)
+    if (.not. library) then
+      param_input%gamma_only = ltmp
+      if (param_input%gamma_only .and. (num_kpts .ne. 1)) &
+        call io_error('Error: gamma_only is true, but num_kpts > 1')
+    else
+      if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
+    endif
+![ysl-e]
+
+!    aam: automatic_mp_grid no longer used
+!    automatic_mp_grid = .false.
+!    call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
+
+    driver%postproc_setup = .false.            ! set to true to write .nnkp file and exit
+    call param_get_keyword('postproc_setup', found, l_value=driver%postproc_setup)
+    ! We allow this keyword to be overriden by a command line arg -pp
+    if (post_proc_flag) driver%postproc_setup = .true.
+
+    cp_pp = .false.         ! set to true if doing CP post-processing
+    call param_get_keyword('cp_pp', found, l_value=cp_pp)
+
+    pp_only_A = .false.
+    call param_get_keyword('calc_only_A', found, l_value=pp_only_A)
+
+    driver%restart = ' '
+    call param_get_keyword('restart', found, c_value=driver%restart)
+    if (found) then
+      if ((driver%restart .ne. 'default') .and. (driver%restart .ne. 'wannierise') &
+          .and. (driver%restart .ne. 'plot') .and. (driver%restart .ne. 'transport')) then
+        call io_error('Error in input file: value of restart not recognised')
+      else
+        inquire (file=trim(seedname)//'.chk', exist=chk_found)
+        if (.not. chk_found) &
+          call io_error('Error: restart requested but '//trim(seedname)//'.chk file not found')
+      endif
+    endif
+    !post processing takes priority (user is not warned of this)
+    if (driver%postproc_setup) driver%restart = ' '
+  end subroutine param_w90_read_14
+
+  subroutine param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts)
+    use w90_io, only: io_error
+    implicit none
+    type(w90_calculation_type), intent(inout) :: w90_calcs
+    type(parameter_input_type), intent(in) :: param_input
+    type(param_wannierise_type), intent(inout) :: param_wannierise
+    type(param_plot_type), intent(inout) :: param_plot
+    integer, intent(in) :: num_kpts
+    logical :: found, hr_plot
+
+    param_wannierise%write_r2mn = .false.
+    call param_get_keyword('write_r2mn', found, l_value=param_wannierise%write_r2mn)
+
+    param_wannierise%write_proj = .false.
+    call param_get_keyword('write_proj', found, l_value=param_wannierise%write_proj)
+
+    param_wannierise%write_hr_diag = .false.
+    call param_get_keyword('write_hr_diag', found, l_value=param_wannierise%write_hr_diag)
+
+    hr_plot = .false.
+    call param_get_keyword('hr_plot', found, l_value=hr_plot)
+    if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.')
+    w90_calcs%write_hr = .false.
+    call param_get_keyword('write_hr', found, l_value=w90_calcs%write_hr)
+
+    param_plot%write_rmn = .false.
+    call param_get_keyword('write_rmn', found, l_value=param_plot%write_rmn)
+
+    param_plot%write_tb = .false.
+    call param_get_keyword('write_tb', found, l_value=param_plot%write_tb)
+
+    !%%%%%%%%%%%%%%%%
+    !  Other Stuff
+    !%%%%%%%%%%%%%%%%
+
+    ! aam: vdW
+    param_wannierise%write_vdw_data = .false.
+    call param_get_keyword('write_vdw_data', found, l_value=param_wannierise%write_vdw_data)
+    if (param_wannierise%write_vdw_data) then
+      if ((.not. param_input%gamma_only) .or. (num_kpts .ne. 1)) &
+        call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma')
+    endif
+    if (param_wannierise%write_vdw_data .and. w90_calcs%disentanglement .and. &
+        param_input%num_valence_bands <= 0) &
+      call io_error('If writing vdw data and disentangling then num_valence_bands must be defined')
+
+  end subroutine param_read_outfiles
 
   subroutine param_w90_read_20(w90_calcs, param_plot, bands_plot_mode, num_wann)
     !%%%%%%%%%
@@ -736,18 +738,6 @@ contains
     logical, intent(in) :: tran_read_ht
     logical :: found
 
-    hr_plot = .false.
-    call param_get_keyword('hr_plot', found, l_value=hr_plot)
-    if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.')
-    w90_calcs%write_hr = .false.
-    call param_get_keyword('write_hr', found, l_value=w90_calcs%write_hr)
-
-    param_plot%write_rmn = .false.
-    call param_get_keyword('write_rmn', found, l_value=param_plot%write_rmn)
-
-    param_plot%write_tb = .false.
-    call param_get_keyword('write_tb', found, l_value=param_plot%write_tb)
-
     param_input%hr_cutoff = 0.0_dp
     call param_get_keyword('hr_cutoff', found, r_value=param_input%hr_cutoff)
 
@@ -777,30 +767,6 @@ contains
     disentanglement = .false.
     if (num_bands > num_wann) disentanglement = .true.
   end subroutine param_w90_read_30
-
-  subroutine param_w90_read_35(disentanglement, param_wannierise, param_input, &
-                               num_kpts)
-    !%%%%%%%%%%%%%%%%
-    !  Other Stuff
-    !%%%%%%%%%%%%%%%%
-    use w90_io, only: io_error
-    implicit none
-    logical, intent(in) :: disentanglement
-    type(param_wannierise_type), intent(inout) :: param_wannierise
-    type(parameter_input_type), intent(in) :: param_input
-    integer, intent(in) :: num_kpts
-    logical :: found
-
-    ! aam: vdW
-    param_wannierise%write_vdw_data = .false.
-    call param_get_keyword('write_vdw_data', found, l_value=param_wannierise%write_vdw_data)
-    if (param_wannierise%write_vdw_data) then
-      if ((.not. param_input%gamma_only) .or. (num_kpts .ne. 1)) &
-        call io_error('Error: write_vdw_data may only be used with a single k-point at Gamma')
-    endif
-    if (param_wannierise%write_vdw_data .and. disentanglement .and. param_input%num_valence_bands .le. 0) &
-      call io_error('If writing vdw data and disentangling then num_valence_bands must be defined')
-  end subroutine param_w90_read_35
 
   subroutine param_read_hamil(param_hamil)
     implicit none

@@ -289,9 +289,11 @@ module w90_param_methods
   public :: internal_set_kmesh
   ! common read routines
   public :: param_read_verbosity
-  public :: param_read_05
   public :: param_read_num_wann
   public :: param_read_exclude_bands
+  public :: param_read_lattice
+  public :: param_read_atoms
+  public :: param_read_05
   public :: param_read_11
   public :: param_read_13
   public :: param_read_16
@@ -303,7 +305,6 @@ module w90_param_methods
   public :: param_w90_read_33 ! both
   public :: param_read_40a
   public :: param_read_40c
-  public :: param_read_atoms
   public :: param_read_44
   public :: param_read_45
 
@@ -746,7 +747,7 @@ contains
   end subroutine param_w90_read_33
 
   subroutine param_read_40a(pw90_effective_model, library, kmesh_data, &
-                            k_points, num_kpts, real_lattice, recip_lattice)
+                            k_points, num_kpts, recip_lattice)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -754,8 +755,8 @@ contains
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(k_point_type), intent(inout) :: k_points
     integer, intent(in) :: num_kpts
-    real(kind=dp), intent(inout) :: real_lattice(3, 3), recip_lattice(3, 3)
-    real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
     integer :: itmp, nkp, ierr
     logical :: found
 
@@ -796,17 +797,6 @@ contains
     kmesh_data%skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=kmesh_data%skip_B1_tests)
 
-    call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
-    if (.not. library) then
-      real_lattice = transpose(real_lattice_tmp)
-      if (.not. found) call io_error('Error: Did not find the cell information in the input file')
-    end if
-
-    if (.not. library) &
-      call utility_recip_lattice(real_lattice, recip_lattice, cell_volume)
-    !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
-
     if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
     if (.not. library) then
@@ -829,6 +819,27 @@ contains
     endif
 
   end subroutine param_read_40a
+
+  subroutine param_read_lattice(library, real_lattice, recip_lattice)
+    use w90_io, only: io_error
+    use w90_utility, only: utility_recip_lattice
+    implicit none
+    logical, intent(in) :: library
+    real(kind=dp), intent(out) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
+    logical :: found
+
+    call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
+    if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
+    if (.not. library) then
+      real_lattice = transpose(real_lattice_tmp)
+      if (.not. found) call io_error('Error: Did not find the cell information in the input file')
+    end if
+
+    if (.not. library) &
+      call utility_recip_lattice(real_lattice, recip_lattice, cell_volume)
+    !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
+  end subroutine param_read_lattice
 
   subroutine param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, &
                             recip_lattice)

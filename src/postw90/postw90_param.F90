@@ -392,8 +392,9 @@ contains
     !call param_w90_read_37(... one_dim_axis)
     call param_pw90_read_38(berry)
     !call param_w90_read_39
+    call param_read_lattice(library, real_lattice, recip_lattice)
     call param_read_40a(pw90_common%effective_model, library, kmesh_data, &
-                        k_points, num_kpts, real_lattice, recip_lattice)
+                        k_points, num_kpts, recip_lattice)
     call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
                             pw90_spin, gyrotropic, boltz, recip_lattice)
