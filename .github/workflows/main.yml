@@ -19,6 +19,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 4
       matrix:
         w90-binary-parallel: [ 'false', 'true' ]
     name: Build and test `parallel=${{ matrix.w90-binary-parallel }}`
