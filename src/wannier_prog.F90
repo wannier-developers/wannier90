@@ -358,12 +358,9 @@ program wannier
                         m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
                         kmesh_info%nntot, num_kpts, num_wann, num_bands, w90_calcs%disentanglement)
 
-  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input%gamma_only, &
-                    w90_calcs%use_bloch_phases, w90_calcs%cp_pp, u_matrix_opt, m_matrix_orig, &
-                    param_input%timing_level, a_matrix, m_matrix, u_matrix, &
-                    select_proj%proj2wann_map, select_proj%lselproj, num_proj, kmesh_info%nnlist, &
-                    kmesh_info%nncell, kmesh_info%nntot, num_kpts, num_wann, num_bands, &
-                    w90_calcs%disentanglement, sym)
+  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input, w90_calcs, &
+                    u_matrix_opt, m_matrix_orig, a_matrix, m_matrix, u_matrix, select_proj, &
+                    num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
