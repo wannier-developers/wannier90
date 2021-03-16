@@ -168,7 +168,11 @@ contains
                          .or. w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
                          eigval, library, driver%postproc_setup, num_bands, &
                          num_kpts)
-      call param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
+      dis_data%win_min = -1.0_dp
+      dis_data%win_max = 0.0_dp
+      if (eig_found) dis_data%win_min = minval(eigval)
+      if (eig_found) dis_data%win_max = maxval(eigval)
+      call param_w90_read_33(eig_found, dis_data, num_bands, num_wann)
       call param_read_hamil(param_hamil)
       call param_w90_read_39(w90_calcs%use_bloch_phases, &
                              w90_calcs%disentanglement)
@@ -183,8 +187,10 @@ contains
                              select_proj, num_proj, param_input, atoms, &
                              recip_lattice, num_wann, library)
       ! projections needs to be allocated before reading constrained centres
-      call param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
-                             num_wann, library)
+      if (param_wannierise%slwf_constrain) then
+        call param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
+                               num_wann, library)
+      endif
     endif
     call param_read_44(w90_calcs%transport .and. tran%read_ht, &
                        param_input, atoms, spec_points)

@@ -382,7 +382,11 @@ contains
     call param_read_32(pw90_common%effective_model, pw90_calcs%boltzwann, &
                        pw90_calcs%geninterp, dos_plot, disentanglement, &
                        eig_found, eigval, library, .false., num_bands, num_kpts)
-    call param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
+    dis_data%win_min = -1.0_dp
+    dis_data%win_max = 0.0_dp
+    if (eig_found) dis_data%win_min = minval(eigval)
+    if (eig_found) dis_data%win_max = maxval(eigval)
+    call param_w90_read_33(eig_found, dis_data, num_bands, num_wann)
     ! Need to make sure use w90_params are read
     call param_pw90_read_34(geninterp, boltz, smr_index, eigval, adpt_smr_fac, &
                             adpt_smr_max, smr_fixed_en_width, adpt_smr)

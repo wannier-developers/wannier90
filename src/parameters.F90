@@ -672,21 +672,21 @@ contains
 
   end subroutine param_read_32
 
-  subroutine param_w90_read_33(eig_found, eigval, dis_data, num_bands, num_wann)
+  subroutine param_w90_read_33(eig_found, dis_data, num_bands, num_wann)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: eig_found
-    real(kind=dp), intent(in) :: eigval(:, :)
+    !real(kind=dp), intent(in) :: eigval(:, :)
     type(disentangle_type), intent(inout) :: dis_data
     integer, intent(in) :: num_bands, num_wann
     integer :: nkp, ierr
     logical :: found, found2
 
-    dis_data%win_min = -1.0_dp; dis_data%win_max = 0.0_dp
-    if (eig_found) dis_data%win_min = minval(eigval)
+    !dis_data%win_min = -1.0_dp; dis_data%win_max = 0.0_dp
+    !if (eig_found) dis_data%win_min = minval(eigval)
     call param_get_keyword('dis_win_min', found, r_value=dis_data%win_min)
 
-    if (eig_found) dis_data%win_max = maxval(eigval)
+    !if (eig_found) dis_data%win_max = maxval(eigval)
     call param_get_keyword('dis_win_max', found, r_value=dis_data%win_max)
     if (eig_found .and. (dis_data%win_max .lt. dis_data%win_min)) &
       call io_error('Error: param_read: check disentanglement windows')
