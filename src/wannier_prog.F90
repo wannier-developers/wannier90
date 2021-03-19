@@ -260,6 +260,10 @@ program wannier
   have_disentangled = .false.
 
   if (disentanglement) then
+    if (.not. allocated(dis_spheres)) then ! this is *sometimes* true for non-root mpi tasks (depending on input options)
+      allocate (dis_spheres(1, 1)) !JJ temporary workaround to avoid runtime check failure
+    endif
+
     !call dis_main()
     call dis_main(num_kpts, nntot, num_wann, num_bands, dis_spheres_num, &
                   dis_num_iter, dis_spheres_first_wann, dis_conv_window, timing_level, &
@@ -279,6 +283,10 @@ program wannier
 !~  call param_write_um
 
 1001 time2 = io_time()
+
+  ! JJ hack to workaround mpi_scatterv requirement that all arrays are valid *for all mpi procs*
+  ! m_matrix* usually alloc'd in overlaps.F90, but not always
+  if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
 
   if (.not. gamma_only) then
     call wann_main(num_wann, num_cg_steps, num_iter, nnlist, nntot, &

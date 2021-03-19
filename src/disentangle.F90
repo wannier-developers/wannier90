@@ -228,9 +228,11 @@ contains
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main')
       if (on_root) then
+        deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
         allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main')
       endif
+      deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
       allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main')
       do nkp = 1, counts(my_node_id)
@@ -245,9 +247,11 @@ contains
     else
 
       if (on_root) then
+        deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
         allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main')
       endif
+      deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
       allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main')
       ! Update the m_matrix accordingly

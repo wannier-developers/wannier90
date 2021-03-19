@@ -74,26 +74,52 @@ contains
     if (ierr /= 0) call io_error('Error in allocating u_matrix in overlap_read')
     u_matrix = cmplx_0
 
+! m_matrix
+! m_matrix_orig
+! m_matrix_local
+! m_matrix_orig_local
+! a_matrix
+! u_matrix_opt
+! a_matrix
+
     if (disentanglement) then
       if (on_root) then
         allocate (m_matrix_orig(num_bands, num_bands, nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix_orig in overlap_read')
+        allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+      else
+        allocate (m_matrix_orig(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+        allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
       endif
+
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_orig_local in overlap_read')
       allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating a_matrix in overlap_read')
       allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating u_matrix_opt in overlap_read')
+
+      allocate (m_matrix_local(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+
     else
       if (on_root) then
         allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error in allocating m_matrix in overlap_read')
         m_matrix = cmplx_0
+        allocate (m_matrix_orig(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+      else
+        allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+        allocate (m_matrix_orig(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
       endif
+
       allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating m_matrix_local in overlap_read')
       m_matrix_local = cmplx_0
+
+      allocate (m_matrix_orig_local(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+      allocate (a_matrix(1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+      allocate (u_matrix_opt(1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
+
     endif
 
     if (timing_level > 0) call io_stopwatch('overlap: allocate', 2)
