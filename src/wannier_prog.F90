@@ -327,15 +327,8 @@ program wannier
   endif
 
   if (driver%postproc_setup) then
-    if (on_root) call kmesh_write(recip_lattice, param_input, &
-                                  kmesh_info, num_kpts, &
-                                  kmesh_data%input_proj%l, num_proj, kmesh_data%input_proj_site, &
-                                  param_input%spinors, k_points%kpt_latt, real_lattice, pp_calc%only_A, &
-                                  kmesh_data%input_proj%zona, kmesh_data%input_proj%x, kmesh_data%input_proj%z, &
-                                  kmesh_data%input_proj%radial, kmesh_data%input_proj%m, &
-                                  param_input%exclude_bands, param_input%num_exclude_bands, &
-                                  kmesh_data%auto_projections, kmesh_data%input_proj%s_qaxis, &
-                                  kmesh_data%input_proj%s)
+    if (on_root) call kmesh_write(recip_lattice, param_input, kmesh_info, num_kpts, kmesh_data, &
+                                  num_proj, k_points%kpt_latt, real_lattice, pp_calc%only_A)
     call kmesh_dealloc(kmesh_info)
     call param_w90_dealloc(param_input, param_plot, param_wannierise, &
                            wann_data, kmesh_data, k_points, dis_data, &
@@ -353,12 +346,9 @@ program wannier
                         m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
                         kmesh_info%nntot, num_kpts, num_wann, num_bands, w90_calcs%disentanglement)
 
-  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input%gamma_only, &
-                    w90_calcs%use_bloch_phases, w90_calcs%cp_pp, u_matrix_opt, m_matrix_orig, &
-                    param_input%timing_level, a_matrix, m_matrix, u_matrix, &
-                    select_proj%proj2wann_map, select_proj%lselproj, num_proj, kmesh_info%nnlist, &
-                    kmesh_info%nncell, kmesh_info%nntot, num_kpts, num_wann, num_bands, &
-                    w90_calcs%disentanglement, sym)
+  call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input, w90_calcs, &
+                    u_matrix_opt, m_matrix_orig, a_matrix, m_matrix, u_matrix, select_proj, &
+                    num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
