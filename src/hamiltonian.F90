@@ -628,8 +628,8 @@ contains
 
     ! passed variables
     integer, intent(inout) :: nrpts
-    integer, intent(inout) :: ndegen(:)
-    integer, intent(inout) :: irvec(:, :)
+    integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout) :: rpt_origin
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: ws_search_size(3)

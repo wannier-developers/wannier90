@@ -550,13 +550,17 @@ contains
         write (stdout, *) ' LINE --> Iteration                     :', iter
 
       ! calculate search direction (cdq)
-      call internal_search_direction(cdodq, cdodq_r, cdodq_precond, &
-                                     cdodq_precond_loc, cdqkeep_loc, k_to_r, wann_spread, iter, lprint, &
+      if (precond) then
+        call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, k_to_r, &
+                                      wann_spread, optimisation, num_wann, num_kpts, kpt_latt, &
+                                      real_lattice, nrpts, irvec, ndegen, counts, displs, &
+                                      timing_level, stdout)
+      endif
+      call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, &
                                      lrandom, noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
-                                     precond, optimisation, num_wann, num_kpts, kpt_latt, real_lattice, &
-                                     num_cg_steps, wbtot, conv_noise_amp, conv_noise_num, nrpts, irvec, &
-                                     ndegen, cdq_loc, cdodq_loc, counts, displs, iprint, timing_level, &
-                                     stdout)
+                                     precond, num_wann, num_cg_steps, wbtot, conv_noise_amp, &
+                                     conv_noise_num, cdq_loc, cdodq_loc, counts, iprint, &
+                                     timing_level, stdout)
       if (lsitesymmetry) call sitesym_symmetrize_gradient(2, cdq, num_wann, &
                                                           num_kpts, sym) !RS:
 
@@ -1159,12 +1163,10 @@ contains
     end subroutine internal_random_noise
 
     !===============================================!
-    subroutine internal_search_direction(cdodq, cdodq_r, cdodq_precond, &
-                                         cdodq_precond_loc, cdqkeep_loc, k_to_r, wann_spread, iter, lprint, &
-                                         lrandom, noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, precond, &
-                                         optimisation, num_wann, num_kpts, kpt_latt, real_lattice, num_cg_steps, &
-                                         wbtot, conv_noise_amp, conv_noise_num, nrpts, irvec, ndegen, cdq_loc, &
-                                         cdodq_loc, counts, displs, iprint, timing_level, stdout)
+    subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, k_to_r, &
+                                        wann_spread, optimisation, num_wann, num_kpts, kpt_latt, &
+                                        real_lattice, nrpts, irvec, ndegen, counts, displs, &
+                                        timing_level, stdout)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1183,32 +1185,19 @@ contains
       complex(kind=dp), intent(inout) :: cdodq_r(:, :, :)
       complex(kind=dp), intent(inout) :: cdodq_precond(:, :, :)
       complex(kind=dp), intent(inout) :: cdodq_precond_loc(:, :, :)
-      complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
-      complex(kind=dp), intent(in) :: k_to_r(:, :)
+      !complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
+      ! k_to_r depends on optimisation flag
+      complex(kind=dp), allocatable, intent(in) :: k_to_r(:, :)
       type(localisation_vars), intent(in) :: wann_spread
-      integer, intent(in) :: iter
-      logical, intent(in) :: lprint
-      logical, intent(inout) :: lrandom
-      integer, intent(in) :: noise_count
-      integer, intent(inout) :: ncg
-      real(kind=dp), intent(out) :: gcfac
-      real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
-      real(kind=dp), intent(out) :: doda0
-      logical, intent(in) :: precond
       integer, intent(in) :: optimisation, num_wann, num_kpts
       real(kind=dp), intent(in) :: kpt_latt(:, :)
       real(kind=dp), intent(in) :: real_lattice(3, 3)
-      integer, intent(in) :: num_cg_steps
-      real(kind=dp), intent(in) :: wbtot, conv_noise_amp
-      integer, intent(in) :: conv_noise_num
       integer, intent(in) :: nrpts
       integer, intent(in) :: irvec(:, :)
       integer, intent(in) :: ndegen(:)
-      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      complex(kind=dp), intent(in) :: cdodq_loc(:, :, :)
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
-      integer, intent(in) :: iprint, timing_level
+      integer, intent(in) :: timing_level
       integer, intent(in) :: stdout
       ! local
       complex(kind=dp), external :: zdotc
@@ -1222,67 +1211,118 @@ contains
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       ! gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
 
-      if (precond) then
-        ! compute cdodq_precond
+      !if (precond) then
+      ! compute cdodq_precond
 
-        cdodq_r(:, :, :) = 0 ! intermediary gradient in R space
-        cdodq_precond(:, :, :) = 0
-        cdodq_precond_loc(:, :, :) = 0
+      cdodq_r(:, :, :) = 0 ! intermediary gradient in R space
+      cdodq_precond(:, :, :) = 0
+      cdodq_precond_loc(:, :, :) = 0
 !         cdodq_precond(:,:,:) = complx_0
 
-        ! convert to real space in cdodq_r
-        ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
-        ! Ideally, we should implement FFT-based filtering here
-        if (optimisation >= 3) then
-          call zgemm('N', 'N', num_wann*num_wann, nrpts, num_kpts, cmplx_1, &
-               & cdodq, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
-          cdodq_r = cdodq_r/real(num_kpts, dp)
-        else
-          do irpt = 1, nrpts
-            do loop_kpt = 1, num_kpts
-              rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
-              fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
-              cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt) + fac*cdodq(:, :, loop_kpt)
-            enddo
-          enddo
-        end if
-
-        ! filter cdodq_r in real space by 1/(1+R^2/alpha)
-
-        ! this alpha coefficient is more or less arbitrary, and could
-        ! be tweaked further: the point is to have something that has
-        ! the right units, and is not too small (or the filtering is
-        ! too severe) or too high (or the filtering does nothing).
-        !
-        ! the descent direction produced has a different magnitude
-        ! than the one without preconditionner, so the values of
-        ! trial_step are not consistent
-        alpha_precond = 10*wann_spread%om_tot/num_wann
+      ! convert to real space in cdodq_r
+      ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
+      ! Ideally, we should implement FFT-based filtering here
+      if (optimisation >= 3) then
+        call zgemm('N', 'N', num_wann*num_wann, nrpts, num_kpts, cmplx_1, &
+             & cdodq, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_r, num_wann*num_wann)
+        cdodq_r = cdodq_r/real(num_kpts, dp)
+      else
         do irpt = 1, nrpts
-          rvec_cart = matmul(real_lattice(:, :), real(irvec(:, irpt), dp))
-          cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt)*1/(1 + dot_product(rvec_cart, rvec_cart)/alpha_precond)
-        end do
-
-        ! go back to k space
-        if (optimisation >= 3) then
-          do irpt = 1, nrpts
-            cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt)/real(ndegen(irpt), dp)
-          end do
-          call zgemm('N', 'C', num_wann*num_wann, num_kpts, nrpts, cmplx_1, &
-               & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
-        else
-          do irpt = 1, nrpts
-            do loop_kpt = 1, num_kpts
-              rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
-              fac = exp(cmplx_i*rdotk)/real(ndegen(irpt), dp)
-              cdodq_precond(:, :, loop_kpt) = cdodq_precond(:, :, loop_kpt) + fac*cdodq_r(:, :, irpt)
-            enddo
+          do loop_kpt = 1, num_kpts
+            rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
+            fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
+            cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt) + fac*cdodq(:, :, loop_kpt)
           enddo
-        end if
-        cdodq_precond_loc(:, :, 1:counts(my_node_id)) = &
-          cdodq_precond(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
-
+        enddo
       end if
+
+      ! filter cdodq_r in real space by 1/(1+R^2/alpha)
+
+      ! this alpha coefficient is more or less arbitrary, and could
+      ! be tweaked further: the point is to have something that has
+      ! the right units, and is not too small (or the filtering is
+      ! too severe) or too high (or the filtering does nothing).
+      !
+      ! the descent direction produced has a different magnitude
+      ! than the one without preconditionner, so the values of
+      ! trial_step are not consistent
+      alpha_precond = 10*wann_spread%om_tot/num_wann
+      do irpt = 1, nrpts
+        rvec_cart = matmul(real_lattice(:, :), real(irvec(:, irpt), dp))
+        cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt)*1/(1 + dot_product(rvec_cart, rvec_cart)/alpha_precond)
+      end do
+
+      ! go back to k space
+      if (optimisation >= 3) then
+        do irpt = 1, nrpts
+          cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt)/real(ndegen(irpt), dp)
+        end do
+        call zgemm('N', 'C', num_wann*num_wann, num_kpts, nrpts, cmplx_1, &
+             & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
+      else
+        do irpt = 1, nrpts
+          do loop_kpt = 1, num_kpts
+            rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
+            fac = exp(cmplx_i*rdotk)/real(ndegen(irpt), dp)
+            cdodq_precond(:, :, loop_kpt) = cdodq_precond(:, :, loop_kpt) + fac*cdodq_r(:, :, irpt)
+          enddo
+        enddo
+      end if
+      cdodq_precond_loc(:, :, 1:counts(my_node_id)) = &
+        cdodq_precond(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
+
+      !end if
+      return
+
+    end subroutine precond_search_direction
+
+    !===============================================!
+    subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, &
+                                         lrandom, noise_count, ncg, gcfac, gcnorm0, gcnorm1, &
+                                         doda0, precond, num_wann, num_cg_steps, &
+                                         wbtot, conv_noise_amp, conv_noise_num, cdq_loc, &
+                                         cdodq_loc, counts, iprint, timing_level, stdout)
+      !===============================================!
+      !                                               !
+      !! Calculate the conjugate gradients search
+      !! direction using the Fletcher-Reeves formula:
+      !!
+      !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
+      !                                               !
+      !===============================================!
+      use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
+      use w90_io, only: io_stopwatch
+      use w90_comms, only: on_root, my_node_id, comms_allreduce
+
+      implicit none
+
+      complex(kind=dp), allocatable, intent(inout) :: cdodq_precond_loc(:, :, :)
+      complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
+      !complex(kind=dp), intent(in) :: k_to_r(:, :)
+      !type(localisation_vars), intent(in) :: wann_spread
+      integer, intent(in) :: iter
+      logical, intent(in) :: lprint
+      logical, intent(inout) :: lrandom
+      integer, intent(in) :: noise_count
+      integer, intent(inout) :: ncg
+      real(kind=dp), intent(out) :: gcfac
+      real(kind=dp), intent(inout) :: gcnorm0, gcnorm1
+      real(kind=dp), intent(out) :: doda0
+      logical, intent(in) :: precond
+      integer, intent(in) :: num_wann
+      integer, intent(in) :: num_cg_steps
+      real(kind=dp), intent(in) :: wbtot, conv_noise_amp
+      integer, intent(in) :: conv_noise_num
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
+      complex(kind=dp), intent(in) :: cdodq_loc(:, :, :)
+      integer, intent(in) :: counts(0:)
+      integer, intent(in) :: iprint, timing_level
+      integer, intent(in) :: stdout
+      ! local
+      complex(kind=dp), external :: zdotc
+
+      if ((.not. precond) .and. timing_level > 1 .and. on_root) &
+        call io_stopwatch('wann: main: search_direction', 1)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       if (precond) then
@@ -1807,7 +1847,8 @@ contains
     ! end of vars from parameter module
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    ! m_matrix_loc is passed by gamma-only but never used or allocated by it.
+    complex(kind=dp), intent(in), allocatable :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(out) :: rnkb(:, :, :)
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
