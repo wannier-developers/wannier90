@@ -63,7 +63,7 @@ class TestProgram:
         self.test_id = test_id
         self.run_cmd_template = ('tc.program tc.args tc.input > '
                                                     'tc.output 2> tc.error')
-        self.launch_parallel = 'mpirun -np tc.nprocs'
+        self.launch_parallel = 'mpirun --oversubscribe -np tc.nprocs'
         self.submit_pattern = 'testcode.run_cmd'
 
         # dummy job with default settings (e.g tolerance)
