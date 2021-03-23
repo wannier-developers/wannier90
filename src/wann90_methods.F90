@@ -132,9 +132,9 @@ contains
     call param_read_transport(w90_calcs%transport, tran, driver%restart)
     call param_read_dist_cutoff(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_read_05(param_input, energy_unit)
-      call param_w90_read_06(param_plot%wvfn_formatted)
-      call param_w90_read_08(param_plot%spin)
+      call param_read_units(param_input, energy_unit)
+      !call param_w90_read_06(param_plot%wvfn_formatted)
+      !call param_w90_read_08(param_plot%spin)
       call param_read_num_wann(num_wann)
       call param_read_exclude_bands(param_input)
       call param_read_11(.false., library, param_input, num_bands, num_wann, &
@@ -147,13 +147,9 @@ contains
                              param_input, num_kpts, library)
       call param_read_16(library, param_input)
       call param_w90_read_18a(param_input%write_xyz)
-      call param_w90_read_20(w90_calcs, param_plot, &
-                             param_input%bands_plot_mode, num_wann)
-      call param_read_21(library, spec_points, has_kpath)
-      if (.not. has_kpath .and. w90_calcs%bands_plot) &
-        call io_error('A bandstructure plot has been requested but there is no kpoint_path block')
-      call param_w90_read_22(w90_calcs%bands_plot, fermi_surface_data, param_plot, &
-                             param_input%bands_plot_mode)
+      call param_read_kpath(library, spec_points, has_kpath)
+      call param_read_plot(w90_calcs, param_plot, param_input%bands_plot_mode, num_wann, has_kpath)
+      call param_read_fermi_surface(fermi_surface_data)
       call param_read_23(found_fermi_energy, fermi)
       call param_w90_read_24(w90_calcs%fermi_surface_plot, fermi_surface_data)
       call param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts)
@@ -357,35 +353,6 @@ contains
     call param_get_keyword('dist_cutoff_hc', found, r_value=param_input%dist_cutoff_hc)
 
   end subroutine param_read_dist_cutoff
-
-  subroutine param_w90_read_06(wvfn_formatted)
-    implicit none
-    logical, intent(out) :: wvfn_formatted
-    logical :: found
-
-    wvfn_formatted = .false.       ! formatted or "binary" file
-    call param_get_keyword('wvfn_formatted', found, l_value=wvfn_formatted)
-  end subroutine param_w90_read_06
-
-  subroutine param_w90_read_08(spin)
-    use w90_io, only: io_error
-    implicit none
-    integer, intent(out) :: spin
-    logical :: found
-    character(len=6) :: spin_str
-
-    spin = 1
-    call param_get_keyword('spin', found, c_value=spin_str)
-    if (found) then
-      if (index(spin_str, 'up') > 0) then
-        spin = 1
-      elseif (index(spin_str, 'down') > 0) then
-        spin = 2
-      else
-        call io_error('Error: unrecognised value of spin found: '//trim(spin_str))
-      end if
-    end if
-  end subroutine param_w90_read_08
 
   subroutine param_read_wannierise(param_wannierise, num_wann)
     !%%%%%%%%%%%
@@ -638,18 +605,35 @@ contains
 
   end subroutine param_read_outfiles
 
-  subroutine param_w90_read_20(w90_calcs, param_plot, bands_plot_mode, num_wann)
+  subroutine param_read_plot(w90_calcs, param_plot, bands_plot_mode, num_wann, has_kpath)
     !%%%%%%%%%
     ! Plotting
     !%%%%%%%%%
     use w90_io, only: io_error
     implicit none
-    type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(param_plot_type), intent(inout) :: param_plot
+    type(w90_calculation_type), intent(in) :: w90_calcs
+    type(param_plot_type), intent(out) :: param_plot
     character(len=*), intent(out) :: bands_plot_mode
     integer, intent(in) :: num_wann
+    logical, intent(in) :: has_kpath
     integer :: i, loop, ierr
     logical :: found
+    character(len=6) :: spin_str
+
+    param_plot%wvfn_formatted = .false.       ! formatted or "binary" file
+    call param_get_keyword('wvfn_formatted', found, l_value=param_plot%wvfn_formatted)
+
+    param_plot%spin = 1
+    call param_get_keyword('spin', found, c_value=spin_str)
+    if (found) then
+      if (index(spin_str, 'up') > 0) then
+        param_plot%spin = 1
+      elseif (index(spin_str, 'down') > 0) then
+        param_plot%spin = 2
+      else
+        call io_error('Error: unrecognised value of spin found: '//trim(spin_str))
+      end if
+    end if
 
     param_plot%wannier_plot_supercell = 2
 
@@ -750,20 +734,12 @@ contains
       if (any(param_plot%bands_plot_project < 1) .or. any(param_plot%bands_plot_project > num_wann)) &
         call io_error('Error: bands_plot_project asks for a non-valid wannier function to be projected')
     endif
-  end subroutine param_w90_read_20
 
-  subroutine param_w90_read_22(bands_plot, fermi_surface_data, param_plot, &
-                               bands_plot_mode)
-    use w90_io, only: io_error
-    implicit none
-    logical, intent(in) :: bands_plot
-    type(fermi_surface_type), intent(inout) :: fermi_surface_data
-    type(param_plot_type), intent(in) :: param_plot
-    character(len=*), intent(in) :: bands_plot_mode
-    logical :: found
+    if (.not. has_kpath .and. w90_calcs%bands_plot) &
+      call io_error('A bandstructure plot has been requested but there is no kpoint_path block')
 
     ! checks
-    if (bands_plot) then
+    if (w90_calcs%bands_plot) then
       if ((index(param_plot%bands_plot_format, 'gnu') .eq. 0) .and. &
           (index(param_plot%bands_plot_format, 'xmgr') .eq. 0)) &
         call io_error('Error: bands_plot_format not recognised')
@@ -772,13 +748,24 @@ contains
       if (param_plot%bands_num_points < 0) call io_error('Error: bands_num_points must be positive')
     endif
 
+  end subroutine param_read_plot
+
+  subroutine param_read_fermi_surface(fermi_surface_data)
+    use w90_io, only: io_error
+    implicit none
+    !logical, intent(in) :: bands_plot
+    type(fermi_surface_type), intent(out) :: fermi_surface_data
+    !type(param_plot_type), intent(in) :: param_plot
+    !character(len=*), intent(in) :: bands_plot_mode
+    logical :: found
+
     fermi_surface_data%num_points = 50
     call param_get_keyword('fermi_surface_num_points', found, i_value=fermi_surface_data%num_points)
 
     fermi_surface_data%plot_format = 'xcrysden'
     call param_get_keyword('fermi_surface_plot_format', &
                            found, c_value=fermi_surface_data%plot_format)
-  end subroutine param_w90_read_22
+  end subroutine param_read_fermi_surface
 
   subroutine param_w90_read_24(fermi_surface_plot, fermi_surface_data)
     use w90_io, only: io_error
@@ -800,7 +787,7 @@ contains
     use w90_io, only: io_error
     implicit none
     type(w90_calculation_type), intent(in) :: w90_calcs
-    type(param_plot_type), intent(inout) :: param_plot
+    type(param_plot_type), intent(in) :: param_plot
     type(parameter_input_type), intent(inout) :: param_input
     character(len=*), intent(out) :: one_dim_axis
     logical, intent(in) :: tran_read_ht

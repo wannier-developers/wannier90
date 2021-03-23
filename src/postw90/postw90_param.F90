@@ -343,7 +343,7 @@ contains
     !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     call param_read_pw90_calcs(pw90_calcs)
     call param_pw90_read_04(pw90_common%effective_model)
-    call param_read_05(param_input, energy_unit)
+    call param_read_units(param_input, energy_unit)
     !call param_w90_read_06
     call param_pw90_read_07(postw90_oper)
     !call param_w90_read_08
@@ -361,7 +361,7 @@ contains
     !call param_w90_read_18
     !call param_w90_read_19
     !call param_w90_read_20
-    call param_read_21(library, spec_points, ok)
+    call param_read_kpath(library, spec_points, ok)
     !call param_w90_read_22
     call param_read_23(found_fermi_energy, fermi)
     call param_pw90_read_24(pw90_calcs%kslice, kslice)

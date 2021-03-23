@@ -293,12 +293,12 @@ module w90_param_methods
   public :: param_read_exclude_bands
   public :: param_read_lattice
   public :: param_read_atoms
-  public :: param_read_05
+  public :: param_read_units
   public :: param_read_11
   public :: param_read_13
   public :: param_read_16
   public :: param_w90_read_18a
-  public :: param_read_21
+  public :: param_read_kpath
   public :: param_read_23
   public :: param_read_28
   public :: param_read_32
@@ -329,7 +329,7 @@ contains
 
   end subroutine param_read_verbosity
 
-  subroutine param_read_05(param_input, energy_unit)
+  subroutine param_read_units(param_input, energy_unit)
     use w90_constants, only: bohr
     use w90_io, only: io_error
     implicit none
@@ -346,7 +346,7 @@ contains
     if (param_input%length_unit .ne. 'ang' .and. param_input%length_unit .ne. 'bohr') &
       call io_error('Error: value of length_unit not recognised in param_read')
     if (param_input%length_unit .eq. 'bohr') param_input%lenconfac = 1.0_dp/bohr
-  end subroutine param_read_05
+  end subroutine param_read_units
 
   subroutine param_read_num_wann(num_wann)
     use w90_io, only: io_error
@@ -479,11 +479,11 @@ contains
     call param_get_keyword('write_xyz', found, l_value=write_xyz)
   end subroutine param_w90_read_18a
 
-  subroutine param_read_21(library, spec_points, ok)
+  subroutine param_read_kpath(library, spec_points, ok)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
-    type(special_kpoints_type), intent(inout) :: spec_points
+    type(special_kpoints_type), intent(out) :: spec_points
     logical, intent(out) :: ok
     integer :: i_temp, ierr
     logical :: found
@@ -503,7 +503,7 @@ contains
     else
       ok = .false.
     end if
-  end subroutine param_read_21
+  end subroutine param_read_kpath
 
   subroutine param_read_23(found_fermi_energy, fermi)
     use w90_io, only: io_error
