@@ -65,38 +65,42 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(ws_distance_tol, ws_search_size, real_lattice, &
-                               mp_grid, transport_mode, bands_plot_mode, transport, bands_plot, num_kpts, &
-                               num_wann, timing_level, iprint, ham_r, irvec, ndegen, nrpts, rpt_origin, &
+  subroutine hamiltonian_setup(param_input, real_lattice, &
+                               mp_grid, transport_mode, w90_calcs, num_kpts, &
+                               num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
                                wannier_centres_translated, hmlg, ham_k)
     !! Allocate arrays and setup data
     !============================================!
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
+    use w90_param_types, only: parameter_input_type, w90_calculation_type
 
     implicit none
 
+    type(parameter_input_type), intent(in) :: param_input
+    type(w90_calculation_type), intent(in) :: w90_calcs
+
     ! passed variables
-    integer, intent(in) :: iprint
+!   integer, intent(in) :: iprint
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: timing_level
-    integer, intent(in) :: ws_search_size(3)
+!   integer, intent(in) :: timing_level
+!   integer, intent(in) :: ws_search_size(3)
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: rpt_origin
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
 
-    logical, intent(in) :: bands_plot
-    logical, intent(in) :: transport
+!   logical, intent(in) :: bands_plot
+!   logical, intent(in) :: transport
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: ws_distance_tol
+!   real(kind=dp), intent(in) :: ws_distance_tol
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
 
-    character(len=20), intent(in) :: bands_plot_mode
+!   character(len=20), intent(in) :: bands_plot_mode
     character(len=20), intent(in) :: transport_mode
 
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
@@ -112,14 +116,15 @@ contains
     !
     ! Determine whether to use translation
     !
-    if (bands_plot .and. (index(bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
-    if (transport .and. (index(transport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
-    if (transport .and. (index(transport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%transport .and. (index(tranport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%transport .and. (index(tranport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, ws_search_size, ws_distance_tol, &
-                                  timing_level, iprint, count_pts=.true.)
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, param_input%ws_search_size, &
+                                  param_input%ws_distance_tol, &
+                                  param_input%timing_level, param_input%iprint, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup')
@@ -139,8 +144,9 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, ws_search_size, ws_distance_tol, &
-                                  timing_level, iprint, count_pts=.false.)
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, param_input%ws_search_size, &
+                                  param_input%ws_distance_tol, &
+                                  param_input%timing_level, param_input%iprint, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
@@ -212,10 +218,10 @@ contains
 
   !============================================!
   subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
-                                num_atoms, atoms_pos_cart, translation_centre_frac, automatic_translation, &
-                                num_species, atoms_species_num, lenconfac, have_disentangled, ndimwin, &
-                                lwindow, u_matrix_opt, kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                                num_kpts, num_wann, timing_level, ham_r, irvec, shift_vec, nrpts, &
+                                atoms, param_hamil, &
+                                param_input, dis_data, &
+                                u_matrix_opt, kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
+                                num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
                                 wannier_centres_translated, hmlg, ham_k)
     !============================================!
     !                                            !
@@ -225,6 +231,8 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
+    use w90_param_types, only: atom_data_type, param_hamiltonian_type, parameter_input_type, &
+      disentangle_type
 
     implicit none
 
@@ -232,6 +240,10 @@ contains
 !   logical, intent(inout) :: have_translated
 !   logical, intent(inout) :: use_translation
     type(ham_logical), intent(inout) :: hmlg
+    type(atom_data_type), intent(in) :: atoms
+    type(param_hamiltonian_type), intent(inout) :: param_hamil
+    type(parameter_input_type), intent(in) :: param_input
+    type(disentangle_type), intent(in) :: dis_data
 
     ! passed variables
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -240,19 +252,19 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-    integer, intent(in) :: timing_level
-    integer, intent(in) :: num_atoms
-    integer, intent(in) :: num_species
-    integer, intent(in) :: atoms_species_num(:)
-    integer, intent(in) :: ndimwin(:)
+!   integer, intent(in) :: timing_level
+!   integer, intent(in) :: num_atoms
+!   integer, intent(in) :: num_species
+!   integer, intent(in) :: atoms_species_num(:)
+!   integer, intent(in) :: ndimwin(:)
 
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres(:, :)
-    real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-    real(kind=dp), intent(out) :: translation_centre_frac(3)
-    real(kind=dp), intent(in) :: lenconfac
+!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
+!   real(kind=dp), intent(out) :: translation_centre_frac(3)
+!   real(kind=dp), intent(in) :: lenconfac
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: eigval(:, :)
 
@@ -260,9 +272,9 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
 
-    logical, intent(in) :: automatic_translation
-    logical, intent(in) :: have_disentangled
-    logical, intent(in) :: lwindow(:, :)
+!   logical, intent(in) :: automatic_translation
+!   logical, intent(in) :: have_disentangled
+!   logical, intent(in) :: lwindow(:, :)
     logical, intent(in) :: lsitesymmetry  !YN:
 
     ! local variables
@@ -274,7 +286,7 @@ contains
     integer              :: loop_kpt, i, j, m, irpt, ierr, counter
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
     if (hmlg%have_ham_r) then
       if (hmlg%have_translated .eqv. hmlg%use_translation) then
@@ -295,14 +307,14 @@ contains
     eigval_opt = 0.0_dp
     eigval2 = 0.0_dp
 
-    if (have_disentangled) then
+    if (param_input%have_disentangled) then
 
       ! slim down eigval to contain states within the outer window
 
       do loop_kpt = 1, num_kpts
         counter = 0
         do j = 1, num_bands
-          if (lwindow(j, loop_kpt)) then
+          if (dis_data%lwindow(j, loop_kpt)) then
             counter = counter + 1
             eigval_opt(counter, loop_kpt) = eigval(j, loop_kpt)
           end if
@@ -317,7 +329,7 @@ contains
       if (.not. lsitesymmetry) then                                                                             !YN:
         do loop_kpt = 1, num_kpts
           do j = 1, num_wann
-            do m = 1, ndimwin(loop_kpt)
+            do m = 1, dis_data%ndimwin(loop_kpt)
               eigval2(j, loop_kpt) = eigval2(j, loop_kpt) + eigval_opt(m, loop_kpt)* &
                                      real(conjg(u_matrix_opt(m, j, loop_kpt))*u_matrix_opt(m, j, loop_kpt), dp)
             enddo
@@ -327,11 +339,11 @@ contains
         ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                                   !RS:
         ! so we have to calculate ham_k in the following way                                                  !RS:
         do loop_kpt = 1, num_kpts                                                                                !RS:
-          utmp(1:ndimwin(loop_kpt), :) = &                                                                     !RS:
-            matmul(u_matrix_opt(1:ndimwin(loop_kpt), :, loop_kpt), u_matrix(:, :, loop_kpt))                    !RS:
+          utmp(1:dis_data%ndimwin(loop_kpt), :) = &                                                                     !RS:
+            matmul(u_matrix_opt(1:dis_data%ndimwin(loop_kpt), :, loop_kpt), u_matrix(:, :, loop_kpt))                    !RS:
           do j = 1, num_wann                                                                                    !RS:
             do i = 1, j                                                                                        !RS:
-              do m = 1, ndimwin(loop_kpt)                                                                     !RS:
+              do m = 1, dis_data%ndimwin(loop_kpt)                                                                     !RS:
                 ham_k(i, j, loop_kpt) = ham_k(i, j, loop_kpt) + eigval_opt(m, loop_kpt)*conjg(utmp(m, i))*utmp(m, j) !RS:
               enddo                                                                                        !RS:
               if (i .lt. j) ham_k(j, i, loop_kpt) = conjg(ham_k(i, j, loop_kpt))                                   !RS:
@@ -350,7 +362,7 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    if (.not. lsitesymmetry .or. .not. have_disentangled) then !YN:
+    if (.not. lsitesymmetry .or. .not. param_input%have_disentangled) then !YN:
       do loop_kpt = 1, num_kpts
         do j = 1, num_wann
           do i = 1, j
@@ -393,8 +405,9 @@ contains
 
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
-      call internal_translate_centres(num_wann, lenconfac, atoms_species_num, num_species, &
-                                      automatic_translation, translation_centre_frac, atoms_pos_cart, num_atoms, &
+      call internal_translate_centres(num_wann, param_input%lenconfac, atoms%species_num, atoms%num_species, &
+                                      param_hamil%automatic_translation, param_hamil%translation_centre_frac, &
+                                      atoms%pos_cart, atoms%num_atoms, &
                                       wannier_centres, recip_lattice, real_lattice, shift_vec, wannier_centres_translated)
 
       do irpt = 1, nrpts
@@ -435,7 +448,7 @@ contains
       if (ierr /= 0) call io_error('Error in deallocating shift_vec in hamiltonian_get_hr')
     end if
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2)
 
     return
 

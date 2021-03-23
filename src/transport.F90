@@ -245,19 +245,17 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
-                               mp_grid, tran%mode, param_input%bands_plot_mode, w90_calcs%transport, &
-                               w90_calcs%bands_plot, num_kpts, num_wann, param_input%timing_level, &
-                               param_input%iprint, ham_r, irvec, ndegen, &
-                               nrpts, rpt_origin, wannier_centres_translated, &
-                               hmlg, ham_k)
+        call hamiltonian_setup(param_input, real_lattice, &
+                               mp_grid, tran%mode, w90_calcs, &
+                               num_kpts, num_wann, ham_r, irvec, ndegen, &
+                               nrpts, rpt_origin, wannier_centres_translated, hmlg, &
+                               ham_k)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
-                                atoms%num_atoms, atoms%pos_cart, param_hamil%translation_centre_frac, &
-                                param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
-                                param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, dis_data%lwindow, &
+                                atoms, param_hamil, &
+                                param_input, dis_data, &
                                 u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
                                 lsitesymmetry, num_bands, num_kpts, num_wann, &
-                                param_input%timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
+                                ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
                                 hmlg, ham_k)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
@@ -280,19 +278,17 @@ contains
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
-                               mp_grid, tran%mode, param_input%bands_plot_mode, w90_calcs%transport, &
-                               w90_calcs%bands_plot, num_kpts, num_wann, param_input%timing_level, &
-                               param_input%iprint, ham_r, irvec, ndegen, &
-                               nrpts, rpt_origin, wannier_centres_translated, &
-                               hmlg, ham_k)
+        call hamiltonian_setup(param_input, real_lattice, &
+                               mp_grid, tran%mode, w90_calcs, &
+                               num_kpts, num_wann, ham_r, irvec, ndegen, &
+                               nrpts, rpt_origin, wannier_centres_translated, hmlg, &
+                               ham_k)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
-                                atoms%num_atoms, atoms%pos_cart, param_hamil%translation_centre_frac, &
-                                param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
-                                param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, dis_data%lwindow, &
+                                atoms, param_hamil, &
+                                param_input, dis_data, &
                                 u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
                                 lsitesymmetry, num_bands, num_kpts, num_wann, &
-                                param_input%timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
+                                ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
                                 hmlg, ham_k)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
@@ -493,8 +489,8 @@ contains
     dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(param_input%one_dim_dir, one_dim_vec))/2.0_dp
 
     if (param_input%dist_cutoff .gt. dist) then
-      write (stdout, '(1x,a,1x,F10.5,1x,a)') 'param_input%dist_cutoff', &
-        param_input%dist_cutoff, trim(param_input%length_unit), 'is too large'
+      write (stdout, '(1x,a,1x,F10.5,1x,a)') 'param_input%dist_cutoff', param_input%dist_cutoff, &
+        trim(param_input%length_unit), 'is too large'
       param_input%dist_cutoff = dist
       ! aam_2012-04-13
       param_input%dist_cutoff_hc = dist
@@ -3052,8 +3048,8 @@ contains
       wf_verifier = tmp_wf_verifier(:, 1:group_verifier(1))
       do i = 1, 4*tran%num_cell_ll
         do j = 1, group_verifier(1)
-          if (param_input%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', &
-            i, '         ', j, '       ', wf_verifier(i, j)
+          if (param_input%iprint .ge. 4) write (stdout, '(a3,i4,a9,i4,a7,i4)') '   ', i, '         ', &
+            j, '       ', wf_verifier(i, j)
           if (i .ne. 1) then
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) &
                 call io_error('Inconsitent number of wannier &

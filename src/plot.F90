@@ -189,20 +189,18 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(param_input%ws_distance_tol, param_input%ws_search_size, real_lattice, &
-                             mp_grid, transport_mode, param_input%bands_plot_mode, &
-                             w90_calcs%transport, w90_calcs%bands_plot, num_kpts, num_wann, &
-                             param_input%timing_level, param_input%iprint, ham_r, irvec, ndegen, &
+      call hamiltonian_setup(param_input, real_lattice, &
+                             mp_grid, transport_mode, w90_calcs, &
+                             num_kpts, num_wann, ham_r, irvec, ndegen, &
                              nrpts, rpt_origin, wannier_centres_translated, hmlg, &
                              ham_k)
       !
       call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
-                              atoms%num_atoms, atoms%pos_cart, param_hamil%translation_centre_frac, &
-                              param_hamil%automatic_translation, atoms%num_species, atoms%species_num, &
-                              param_input%lenconfac, param_input%have_disentangled, dis_data%ndimwin, dis_data%lwindow, &
+                              atoms, param_hamil, &
+                              param_input, dis_data, &
                               u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
                               lsitesymmetry, num_bands, num_kpts, num_wann, &
-                              param_input%timing_level, ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
+                              ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
                               hmlg, ham_k)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, &
@@ -223,9 +221,9 @@ contains
                                                            num_kpts, k_points%kpt_latt, kmesh_info%nntot, irvec, nrpts)
       !
       if (param_plot%write_tb) call hamiltonian_write_tb(real_lattice, num_wann, kmesh_info%wb, kmesh_info%bk, &
-                                                         m_matrix, num_kpts, k_points%kpt_latt, &
-                                                         kmesh_info%nntot, param_input%timing_level, &
-                                                         ham_r, irvec, ndegen, nrpts, hmlg)
+                                                         m_matrix, num_kpts, k_points%kpt_latt, kmesh_info%nntot, &
+                                                         param_input%timing_level, ham_r, irvec, &
+                                                         ndegen, nrpts, hmlg)
       !
       if (w90_calcs%write_hr .or. param_plot%write_rmn .or. param_plot%write_tb) then
         if (.not. done_ws_distance) call ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, num_wann, &
