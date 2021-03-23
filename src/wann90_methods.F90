@@ -173,7 +173,8 @@ contains
       dis_data%win_max = 0.0_dp
       if (eig_found) dis_data%win_min = minval(eigval)
       if (eig_found) dis_data%win_max = maxval(eigval)
-      call param_w90_read_33(eig_found, dis_data, num_bands, num_wann)
+      call param_read_disentangle_all(eig_found, dis_data)
+      call param_read_disentangle_w90(dis_data, num_bands, num_wann)
       call param_read_hamil(param_hamil)
       call param_w90_read_39(w90_calcs%use_bloch_phases, &
                              w90_calcs%disentanglement)
@@ -486,6 +487,55 @@ contains
     param_wannierise%translate_home_cell = .false.
     call param_get_keyword('translate_home_cell', found, l_value=param_wannierise%translate_home_cell)
   end subroutine param_read_wannierise
+
+  subroutine param_read_disentangle_w90(dis_data, num_bands, num_wann)
+    use w90_io, only: io_error
+    implicit none
+    !logical, intent(in) :: eig_found
+    !real(kind=dp), intent(in) :: eigval(:, :)
+    type(disentangle_type), intent(inout) :: dis_data
+    integer, intent(in) :: num_bands, num_wann
+    integer :: nkp, ierr
+    logical :: found
+
+    dis_data%num_iter = 200
+    call param_get_keyword('dis_num_iter', found, i_value=dis_data%num_iter)
+    if (dis_data%num_iter < 0) call io_error('Error: dis_num_iter must be positive')
+
+    dis_data%mix_ratio = 0.5_dp
+    call param_get_keyword('dis_mix_ratio', found, r_value=dis_data%mix_ratio)
+    if (dis_data%mix_ratio <= 0.0_dp .or. dis_data%mix_ratio > 1.0_dp) &
+      call io_error('Error: dis_mix_ratio must be greater than 0.0 but not greater than 1.0')
+
+    dis_data%conv_tol = 1.0e-10_dp
+    call param_get_keyword('dis_conv_tol', found, r_value=dis_data%conv_tol)
+    if (dis_data%conv_tol < 0.0_dp) call io_error('Error: dis_conv_tol must be positive')
+
+    dis_data%conv_window = 3
+    call param_get_keyword('dis_conv_window', found, i_value=dis_data%conv_window)
+    if (dis_data%conv_window < 0) call io_error('Error: dis_conv_window must be positive')
+
+    ! GS-start
+    dis_data%spheres_first_wann = 1
+    call param_get_keyword('dis_spheres_first_wann', found, i_value=dis_data%spheres_first_wann)
+    if (dis_data%spheres_first_wann < 1) call io_error('Error: dis_spheres_first_wann must be greater than 0')
+    if (dis_data%spheres_first_wann > num_bands - num_wann + 1) &
+      call io_error('Error: dis_spheres_first_wann is larger than num_bands-num_wann+1')
+    dis_data%spheres_num = 0
+    call param_get_keyword('dis_spheres_num', found, i_value=dis_data%spheres_num)
+    if (dis_data%spheres_num < 0) call io_error('Error: dis_spheres_num cannot be negative')
+    if (dis_data%spheres_num > 0) then
+      allocate (dis_data%spheres(4, dis_data%spheres_num), stat=ierr)
+      if (ierr /= 0) call io_error('Error allocating dis_spheres in param_read')
+      call param_get_keyword_block('dis_spheres', found, dis_data%spheres_num, 4, r_value=dis_data%spheres)
+      if (.not. found) call io_error('Error: Did not find dis_spheres in the input file')
+      do nkp = 1, dis_data%spheres_num
+        if (dis_data%spheres(4, nkp) < 1.0e-15_dp) &
+          call io_error('Error: radius for dis_spheres must be > 0')
+      enddo
+    endif
+    ! GS-end
+  end subroutine param_read_disentangle_w90
 
   subroutine param_w90_read_14(cp_pp, pp_only_A, driver, param_input, &
                                num_kpts, library)

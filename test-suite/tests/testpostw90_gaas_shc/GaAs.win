@@ -32,9 +32,9 @@ exclude_bands = 1-10
 num_bands         =   16
 num_wann          =   16
 
-dis_num_iter      =  1000
+#dis_num_iter      =  1000
 
-dis_conv_tol      = 1.0e-10
+#dis_conv_tol      = 1.0e-10
 #conv_tol          = 1.0e-10
 #conv_window       = 40
 

@@ -387,7 +387,7 @@ contains
     dis_data%win_max = 0.0_dp
     if (eig_found) dis_data%win_min = minval(eigval)
     if (eig_found) dis_data%win_max = maxval(eigval)
-    call param_w90_read_33(eig_found, dis_data, num_bands, num_wann)
+    call param_read_disentangle_all(eig_found, dis_data)
     ! Need to make sure use w90_params are read
     call param_pw90_read_34(geninterp, boltz, smr_index, eigval, adpt_smr_fac, &
                             adpt_smr_max, smr_fixed_en_width, adpt_smr)
