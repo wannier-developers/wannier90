@@ -125,6 +125,7 @@ contains
     logical                   :: global_kmesh_set
     logical :: has_kpath
 
+    w90_calcs%disentanglement = .false.
     call param_in_file
     call param_read_sym(lsitesymmetry, symmetrize_eps)
     call param_read_verbosity(param_input)
@@ -142,15 +143,14 @@ contains
       call param_read_wannierise(param_wannierise, num_wann)
       call param_read_devel(param_input%devel_flag)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts)
-      call param_w90_read_14(w90_calcs%cp_pp, pp_calc%only_A, driver, &
-                             param_input, num_kpts, library)
-      call param_read_16(library, param_input)
-      call param_w90_read_18a(param_input%write_xyz)
+      call param_read_gamma_only(param_input%gamma_only, num_kpts, library)
+      call param_read_post_proc(w90_calcs%cp_pp, pp_calc%only_A, driver%postproc_setup)
+      call param_read_restart(driver)
+      call param_read_system(library, param_input)
       call param_read_kpath(library, spec_points, has_kpath)
       call param_read_plot(w90_calcs, param_plot, param_input%bands_plot_mode, num_wann, has_kpath)
-      call param_read_fermi_surface(fermi_surface_data)
-      call param_read_23(found_fermi_energy, fermi)
-      call param_w90_read_24(w90_calcs%fermi_surface_plot, fermi_surface_data)
+      call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot)
+      call param_read_fermi_energy(found_fermi_energy, fermi)
       call param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts)
     endif
     call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
@@ -501,42 +501,48 @@ contains
     ! GS-end
   end subroutine param_read_disentangle_w90
 
-  subroutine param_w90_read_14(cp_pp, pp_only_A, driver, param_input, &
-                               num_kpts, library)
-    use w90_io, only: seedname, post_proc_flag, io_error
+  subroutine param_read_gamma_only(gamma_only, num_kpts, library)
+    use w90_io, only: io_error
     implicit none
-    logical, intent(out) :: cp_pp, pp_only_A
-    type(param_driver_type), intent(inout) :: driver
-    type(parameter_input_type), intent(inout) :: param_input
+    logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
     logical, intent(in) :: library
-    logical :: found, ltmp, chk_found
+    logical :: found, ltmp
 
     ltmp = .false.
     call param_get_keyword('gamma_only', found, l_value=ltmp)
     if (.not. library) then
-      param_input%gamma_only = ltmp
-      if (param_input%gamma_only .and. (num_kpts .ne. 1)) &
+      gamma_only = ltmp
+      if (gamma_only .and. (num_kpts .ne. 1)) &
         call io_error('Error: gamma_only is true, but num_kpts > 1')
     else
       if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
     endif
-![ysl-e]
+  end subroutine param_read_gamma_only
 
-!    aam: automatic_mp_grid no longer used
-!    automatic_mp_grid = .false.
-!    call param_get_keyword('automatic_mp_grid',found,l_value=automatic_mp_grid)
+  subroutine param_read_post_proc(cp_pp, pp_only_A, postproc_setup)
+    use w90_io, only: post_proc_flag, io_error
+    implicit none
+    logical, intent(out) :: cp_pp, pp_only_A, postproc_setup
+    logical :: found
 
-    driver%postproc_setup = .false.            ! set to true to write .nnkp file and exit
-    call param_get_keyword('postproc_setup', found, l_value=driver%postproc_setup)
+    postproc_setup = .false.            ! set to true to write .nnkp file and exit
+    call param_get_keyword('postproc_setup', found, l_value=postproc_setup)
     ! We allow this keyword to be overriden by a command line arg -pp
-    if (post_proc_flag) driver%postproc_setup = .true.
+    if (post_proc_flag) postproc_setup = .true.
 
     cp_pp = .false.         ! set to true if doing CP post-processing
     call param_get_keyword('cp_pp', found, l_value=cp_pp)
 
     pp_only_A = .false.
     call param_get_keyword('calc_only_A', found, l_value=pp_only_A)
+  end subroutine param_read_post_proc
+
+  subroutine param_read_restart(driver)
+    use w90_io, only: seedname, io_error
+    implicit none
+    type(param_driver_type), intent(inout) :: driver
+    logical :: found, chk_found
 
     driver%restart = ' '
     call param_get_keyword('restart', found, c_value=driver%restart)
@@ -552,17 +558,20 @@ contains
     endif
     !post processing takes priority (user is not warned of this)
     if (driver%postproc_setup) driver%restart = ' '
-  end subroutine param_w90_read_14
+  end subroutine param_read_restart
 
   subroutine param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts)
     use w90_io, only: io_error
     implicit none
     type(w90_calculation_type), intent(inout) :: w90_calcs
-    type(parameter_input_type), intent(in) :: param_input
+    type(parameter_input_type), intent(inout) :: param_input ! write_xyz
     type(param_wannierise_type), intent(inout) :: param_wannierise
     type(param_plot_type), intent(inout) :: param_plot
     integer, intent(in) :: num_kpts
     logical :: found, hr_plot
+
+    param_input%write_xyz = .false.
+    call param_get_keyword('write_xyz', found, l_value=param_input%write_xyz)
 
     param_wannierise%write_r2mn = .false.
     call param_get_keyword('write_r2mn', found, l_value=param_wannierise%write_r2mn)
@@ -747,13 +756,11 @@ contains
 
   end subroutine param_read_plot
 
-  subroutine param_read_fermi_surface(fermi_surface_data)
+  subroutine param_read_fermi_surface(fermi_surface_data, fermi_surface_plot)
     use w90_io, only: io_error
     implicit none
-    !logical, intent(in) :: bands_plot
     type(fermi_surface_type), intent(out) :: fermi_surface_data
-    !type(param_plot_type), intent(in) :: param_plot
-    !character(len=*), intent(in) :: bands_plot_mode
+    logical, intent(in) :: fermi_surface_plot
     logical :: found
 
     fermi_surface_data%num_points = 50
@@ -762,22 +769,14 @@ contains
     fermi_surface_data%plot_format = 'xcrysden'
     call param_get_keyword('fermi_surface_plot_format', &
                            found, c_value=fermi_surface_data%plot_format)
-  end subroutine param_read_fermi_surface
 
-  subroutine param_w90_read_24(fermi_surface_plot, fermi_surface_data)
-    use w90_io, only: io_error
-    implicit none
-    logical, intent(in) :: fermi_surface_plot
-    type(fermi_surface_type), intent(in) :: fermi_surface_data
-
-    ! checks
     if (fermi_surface_plot) then
       if ((index(fermi_surface_data%plot_format, 'xcrys') .eq. 0)) &
         call io_error('Error: fermi_surface_plot_format not recognised')
       if (fermi_surface_data%num_points < 0) &
         call io_error('Error: fermi_surface_num_points must be positive')
     endif
-  end subroutine param_w90_read_24
+  end subroutine param_read_fermi_surface
 
   subroutine param_w90_read_27(w90_calcs, param_plot, param_input, &
                                one_dim_axis, tran_read_ht)

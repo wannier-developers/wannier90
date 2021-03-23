@@ -349,9 +349,9 @@ contains
     disentanglement = (num_bands > num_wann)
     call param_read_devel(param_input%devel_flag)
     call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts)
-    call param_read_16(library, param_input)
+    call param_read_system(library, param_input)
     call param_read_kpath(library, spec_points, ok)
-    call param_read_23(found_fermi_energy, fermi)
+    call param_read_fermi_energy(found_fermi_energy, fermi)
     call param_pw90_read_24(pw90_calcs%kslice, kslice)
     call param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
                        smr_fixed_en_width, adpt_smr)
@@ -789,14 +789,6 @@ contains
     if (pw90_calcs%kpath .and. index(kpath%task, 'shc') > 0 .and. &
         index(kpath%task, 'spin') > 0) call io_error &
       ("Error: kpath_task cannot include both 'shc' and 'spin'")
-
-    ! set to a negative default value
-    param_input%num_valence_bands = -99
-    call param_get_keyword('num_valence_bands', found, &
-                           i_value=param_input%num_valence_bands)
-    if (found .and. (param_input%num_valence_bands .le. 0)) &
-      call io_error('Error: num_valence_bands should be greater than zero')
-    ! there is a check on this parameter later
 
     dos_data%task = 'dos_plot'
     if (pw90_calcs%dos) then

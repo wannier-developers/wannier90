@@ -299,9 +299,8 @@ module w90_param_methods
   public :: param_read_kpath
   public :: param_read_disentangle_all
   public :: param_read_num_bands
-  public :: param_read_16
-  public :: param_w90_read_18a
-  public :: param_read_23
+  public :: param_read_system
+  public :: param_read_fermi_energy
   public :: param_read_28
   public :: param_read_32
   public :: param_read_40a
@@ -445,7 +444,7 @@ contains
     end if
   end subroutine param_read_mp_grid
 
-  subroutine param_read_16(library, param_input)
+  subroutine param_read_system(library, param_input)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
@@ -474,16 +473,15 @@ contains
       call io_error('Error: num_elec_per_state can be only 1 or 2')
     if (param_input%spinors .and. param_input%num_elec_per_state /= 1) &
       call io_error('Error: when spinors = T num_elec_per_state must be 1')
-  end subroutine param_read_16
 
-  subroutine param_w90_read_18a(write_xyz)
-    implicit none
-    logical, intent(out) :: write_xyz
-    logical :: found
+    ! set to a negative default value
+    param_input%num_valence_bands = -99
+    call param_get_keyword('num_valence_bands', found, i_value=param_input%num_valence_bands)
+    if (found .and. (param_input%num_valence_bands .le. 0)) &
+      call io_error('Error: num_valence_bands should be greater than zero')
+    ! there is a check on this parameter later
 
-    write_xyz = .false.
-    call param_get_keyword('write_xyz', found, l_value=write_xyz)
-  end subroutine param_w90_read_18a
+  end subroutine param_read_system
 
   subroutine param_read_kpath(library, spec_points, ok)
     use w90_io, only: io_error
@@ -511,11 +509,11 @@ contains
     end if
   end subroutine param_read_kpath
 
-  subroutine param_read_23(found_fermi_energy, fermi)
+  subroutine param_read_fermi_energy(found_fermi_energy, fermi)
     use w90_io, only: io_error
     implicit none
     logical, intent(out) :: found_fermi_energy
-    type(fermi_data_type), intent(inout) :: fermi
+    type(fermi_data_type), intent(out) :: fermi
     integer :: i, ierr
     logical :: found
 
@@ -576,7 +574,7 @@ contains
     endif
     if (ierr /= 0) call io_error( &
       'Error allocating fermi_energy_list in param_read')
-  end subroutine param_read_23
+  end subroutine param_read_fermi_energy
 
   subroutine param_read_28(param_input)
     use w90_io, only: io_error
