@@ -720,7 +720,7 @@ contains
 !                               irvec, force_recompute)
 
     if (param_input%use_ws_distance) then
-      CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+      CALL ws_translate_dist(param_input, &
                              num_wann, wann_data%centres, real_lattice, recip_lattice, &
                              mp_grid, nrpts, irvec)
     endif
@@ -796,7 +796,7 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input, &
                                                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
                                                             mp_grid, nrpts, irvec)
 
@@ -875,7 +875,7 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input, &
                                                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
                                                             mp_grid, nrpts, irvec)
 
@@ -974,7 +974,7 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input, &
                                                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
                                                             mp_grid, nrpts, irvec)
 
@@ -1093,7 +1093,7 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input, &
                                                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
                                                             mp_grid, nrpts, irvec)
 
@@ -1181,7 +1181,7 @@ contains
     real(kind=dp)    :: rdotk
     complex(kind=dp) :: phase_fac
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input, &
                                                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
                                                             mp_grid, nrpts, irvec)
 
@@ -1273,7 +1273,7 @@ contains
 
     r_sum = 0.d0
 
-    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, &
+    if (param_input%use_ws_distance) CALL ws_translate_dist(param_input, &
                                                             num_wann, wann_data%centres, real_lattice, recip_lattice, &
                                                             mp_grid, nrpts, irvec)
 

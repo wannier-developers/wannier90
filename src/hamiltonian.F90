@@ -22,29 +22,6 @@ module w90_hamiltonian
 
   implicit none
 
-! private
-  !
-! complex(kind=dp), public, save, allocatable :: ham_r(:, :, :)
-  !! Hamiltonian matrix in WF representation
-  !
-! integer, public, save, allocatable :: irvec(:, :)
-  !!  The irpt-th Wigner-Seitz grid point has components
-  !! irvec(1:3,irpt) in the basis of the lattice vectors
-  !
-! integer, public, save, allocatable :: shift_vec(:, :) ? not needed allocation here
-  !
-! integer, public, save, allocatable :: ndegen(:)
-  !! Weight of the irpt-th point is 1/ndegen(irpt)
-  !
-! integer, public, save              :: nrpts
-  !! number of Wigner-Seitz grid points
-  !
-! integer, public, save              :: rpt_origin
-  !! index of R=0
-  !
-! real(kind=dp), public, save, allocatable :: wannier_centres_translated(:, :)
-  !! translated Wannier centres
-
   public :: hamiltonian_get_hr
   public :: hamiltonian_write_hr
   public :: hamiltonian_setup
@@ -65,8 +42,7 @@ module w90_hamiltonian
 contains
 
   !============================================!
-  subroutine hamiltonian_setup(param_input, real_lattice, &
-                               mp_grid, tran, w90_calcs, num_kpts, &
+  subroutine hamiltonian_setup(param_input, real_lattice, mp_grid, tran, w90_calcs, num_kpts, &
                                num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
                                wannier_centres_translated, hmlg, ham_k)
     !! Allocate arrays and setup data
@@ -79,30 +55,20 @@ contains
     implicit none
 
     type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(in) :: param_input
+    type(parameter_input_type), intent(inout) :: param_input
     type(w90_calculation_type), intent(in) :: w90_calcs
 
     ! passed variables
-!   integer, intent(in) :: iprint
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: ws_search_size(3)
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: rpt_origin
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
 
-!   logical, intent(in) :: bands_plot
-!   logical, intent(in) :: transport
-
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-!   real(kind=dp), intent(in) :: ws_distance_tol
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
-
-!   character(len=20), intent(in) :: bands_plot_mode
-!   character(len=20), intent(in) :: transport_mode
 
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
@@ -117,15 +83,15 @@ contains
     !
     ! Determine whether to use translation
     !
-    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) &
+      hmlg%use_translation = .true.
     if (w90_calcs%transport .and. (index(tran%mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
     if (w90_calcs%transport .and. (index(tran%mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, param_input%ws_search_size, &
-                                  param_input%ws_distance_tol, &
-                                  param_input%timing_level, param_input%iprint, count_pts=.true.)
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
+                                  param_input, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup')
@@ -145,9 +111,8 @@ contains
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, param_input%ws_search_size, &
-                                  param_input%ws_distance_tol, &
-                                  param_input%timing_level, param_input%iprint, count_pts=.false.)
+    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
+                                  param_input, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
@@ -159,8 +124,7 @@ contains
   end subroutine hamiltonian_setup
 
   !============================================!
-  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
-                                 hmlg, ham_k)
+  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, hmlg, ham_k)
     !! Deallocate module data
     !============================================!
 
@@ -169,9 +133,6 @@ contains
     implicit none
 
     complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
-!   logical, intent(inout) :: ham_have_setup
-!   logical, intent(inout) :: have_translated
-!   logical, intent(inout) :: use_translation
     type(ham_logical), intent(inout) :: hmlg
 
     ! passed variables
@@ -218,12 +179,10 @@ contains
   end subroutine hamiltonian_dealloc
 
   !============================================!
-  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, &
-                                atoms, param_hamil, &
-                                param_input, dis_data, &
-                                u_matrix_opt, kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                                num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
-                                wannier_centres_translated, hmlg, ham_k)
+  subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, atoms, param_hamil, &
+                                param_input, dis_data, u_matrix_opt, kpt_latt, eigval, u_matrix, &
+                                lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, irvec, &
+                                shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -237,14 +196,13 @@ contains
 
     implicit none
 
-    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
-!   logical, intent(inout) :: have_translated
-!   logical, intent(inout) :: use_translation
     type(ham_logical), intent(inout) :: hmlg
     type(atom_data_type), intent(in) :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(parameter_input_type), intent(in) :: param_input
     type(disentangle_type), intent(in) :: dis_data
+
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
 
     ! passed variables
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -253,19 +211,11 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: num_atoms
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: atoms_species_num(:)
-!   integer, intent(in) :: ndimwin(:)
 
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres(:, :)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   real(kind=dp), intent(out) :: translation_centre_frac(3)
-!   real(kind=dp), intent(in) :: lenconfac
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: eigval(:, :)
 
@@ -273,19 +223,18 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
 
-!   logical, intent(in) :: automatic_translation
-!   logical, intent(in) :: have_disentangled
-!   logical, intent(in) :: lwindow(:, :)
     logical, intent(in) :: lsitesymmetry  !YN:
 
     ! local variables
-    complex(kind=dp)     :: fac
+    integer              :: loop_kpt, i, j, m, irpt, ierr, counter
+
     real(kind=dp)        :: rdotk
     real(kind=dp)        :: eigval_opt(num_bands, num_kpts)
     real(kind=dp)        :: eigval2(num_wann, num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-    integer              :: loop_kpt, i, j, m, irpt, ierr, counter
+
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
+    complex(kind=dp)     :: fac
 
     if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
 
@@ -327,31 +276,34 @@ contains
       ! but we choose u_matrix_opt such that the Hamiltonian is
       ! diagonal at each kpoint. (I guess we should check it here)
 
-      if (.not. lsitesymmetry) then                                                                             !YN:
+      if (.not. lsitesymmetry) then                                                                      !YN:
         do loop_kpt = 1, num_kpts
           do j = 1, num_wann
             do m = 1, dis_data%ndimwin(loop_kpt)
               eigval2(j, loop_kpt) = eigval2(j, loop_kpt) + eigval_opt(m, loop_kpt)* &
-                                     real(conjg(u_matrix_opt(m, j, loop_kpt))*u_matrix_opt(m, j, loop_kpt), dp)
+                                     real(conjg(u_matrix_opt(m, j, loop_kpt))* &
+                                          u_matrix_opt(m, j, loop_kpt), dp)
             enddo
           enddo
         enddo
-      else                                                                                                     !YN:
-        ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                                   !RS:
-        ! so we have to calculate ham_k in the following way                                                  !RS:
-        do loop_kpt = 1, num_kpts                                                                                !RS:
-          utmp(1:dis_data%ndimwin(loop_kpt), :) = &                                                                     !RS:
-            matmul(u_matrix_opt(1:dis_data%ndimwin(loop_kpt), :, loop_kpt), u_matrix(:, :, loop_kpt))                    !RS:
-          do j = 1, num_wann                                                                                    !RS:
-            do i = 1, j                                                                                        !RS:
-              do m = 1, dis_data%ndimwin(loop_kpt)                                                                     !RS:
-                ham_k(i, j, loop_kpt) = ham_k(i, j, loop_kpt) + eigval_opt(m, loop_kpt)*conjg(utmp(m, i))*utmp(m, j) !RS:
-              enddo                                                                                        !RS:
-              if (i .lt. j) ham_k(j, i, loop_kpt) = conjg(ham_k(i, j, loop_kpt))                                   !RS:
-            enddo                                                                                           !RS:
-          enddo                                                                                              !RS:
-        enddo                                                                                                 !RS:
-      endif                                                                                                    !YN:
+      else                                                                                               !YN:
+        ! u_matrix_opt are not the eigenvectors of the Hamiltonian any more                              !RS:
+        ! so we have to calculate ham_k in the following way                                             !RS:
+        do loop_kpt = 1, num_kpts                                                                        !RS:
+          utmp(1:dis_data%ndimwin(loop_kpt), :) = &                                                      !RS:
+            matmul(u_matrix_opt(1:dis_data%ndimwin(loop_kpt), :, loop_kpt), &
+                   u_matrix(:, :, loop_kpt))                                                             !RS:
+          do j = 1, num_wann                                                                             !RS:
+            do i = 1, j                                                                                  !RS:
+              do m = 1, dis_data%ndimwin(loop_kpt)                                                       !RS:
+                ham_k(i, j, loop_kpt) = ham_k(i, j, loop_kpt) + eigval_opt(m, loop_kpt)* &
+                                        conjg(utmp(m, i))*utmp(m, j)                                     !RS:
+              enddo                                                                                      !RS:
+              if (i .lt. j) ham_k(j, i, loop_kpt) = conjg(ham_k(i, j, loop_kpt))                         !RS:
+            enddo                                                                                        !RS:
+          enddo                                                                                          !RS:
+        enddo                                                                                            !RS:
+      endif                                                                                              !YN:
 
     else
       eigval2(1:num_wann, :) = eigval(1:num_wann, :)
@@ -363,7 +315,7 @@ contains
     !          H(k)=U^{dagger}(k).H_0(k).U(k)
     ! Note: we enforce hermiticity here
 
-    if (.not. lsitesymmetry .or. .not. param_input%have_disentangled) then !YN:
+    if (.not. lsitesymmetry .or. .not. param_input%have_disentangled) then                               !YN:
       do loop_kpt = 1, num_kpts
         do j = 1, num_wann
           do i = 1, j
@@ -375,7 +327,7 @@ contains
           enddo
         enddo
       enddo
-    endif                                                  !YN:
+    endif                                                                                                !YN:
 
     hmlg%have_ham_k = .true.
 
@@ -406,10 +358,9 @@ contains
 
       allocate (shift_vec(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
-      call internal_translate_centres(num_wann, param_input%lenconfac, atoms%species_num, atoms%num_species, &
-                                      param_hamil%automatic_translation, param_hamil%translation_centre_frac, &
-                                      atoms%pos_cart, atoms%num_atoms, &
-                                      wannier_centres, recip_lattice, real_lattice, shift_vec, wannier_centres_translated)
+      call internal_translate_centres(num_wann, param_input, atoms, param_hamil, wannier_centres, &
+                                      recip_lattice, real_lattice, shift_vec, &
+                                      wannier_centres_translated)
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -458,34 +409,30 @@ contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !====================================================!
-    subroutine internal_translate_centres(num_wann, lenconfac, atoms_species_num, &
-                                          num_species, automatic_translation, translation_centre_frac, &
-                                          atoms_pos_cart, num_atoms, wannier_centres, recip_lattice, real_lattice, &
+    subroutine internal_translate_centres(num_wann, param_input, atoms, param_hamil, &
+                                          wannier_centres, recip_lattice, real_lattice, &
                                           shift_vec, wannier_centres_translated)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
       use w90_io, only: stdout, io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
+      use w90_param_types, only: parameter_input_type, atom_data_type, param_hamiltonian_type
 
       implicit none
+
+      type(parameter_input_type), intent(in) :: param_input
+      type(atom_data_type), intent(in) :: atoms
+      type(param_hamiltonian_type), intent(inout) :: param_hamil
 
       ! passed variables
       integer, intent(inout) :: shift_vec(:, :)
       integer, intent(in) :: num_wann
-      integer, intent(in) :: atoms_species_num(:)
-      integer, intent(in) :: num_species
-      integer, intent(in) :: num_atoms
 
       real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
       real(kind=dp), intent(in) :: real_lattice(3, 3)
-      real(kind=dp), intent(in) :: lenconfac
-      real(kind=dp), intent(out) :: translation_centre_frac(3)
-      real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
       real(kind=dp), intent(in) :: wannier_centres(:, :)
       real(kind=dp), intent(in) :: recip_lattice(3, 3)
-
-      logical, intent(in) :: automatic_translation
 
       ! local variables
       integer :: iw, ierr, nat, nsp, ind
@@ -506,20 +453,20 @@ contains
       if (ierr /= 0) call io_error('Error in allocating r_frac in internal_translate_centres')
       r_home = 0.0_dp; r_frac = 0.0_dp
 
-      if (automatic_translation) then
+      if (param_hamil%automatic_translation) then
         ! Calculate centre of atomic positions
         c_pos_cart = 0.0_dp; c_pos_frac = 0.0_dp
-        do nsp = 1, num_species
-          do nat = 1, atoms_species_num(nsp)
-            c_pos_cart(:) = c_pos_cart(:) + atoms_pos_cart(:, nat, nsp)
+        do nsp = 1, atoms%num_species
+          do nat = 1, atoms%species_num(nsp)
+            c_pos_cart(:) = c_pos_cart(:) + atoms%pos_cart(:, nat, nsp)
           enddo
         enddo
-        c_pos_cart = c_pos_cart/num_atoms
+        c_pos_cart = c_pos_cart/atoms%num_atoms
         ! Cartesian --> fractional
-        call utility_cart_to_frac(c_pos_cart, translation_centre_frac, recip_lattice)
+        call utility_cart_to_frac(c_pos_cart, param_hamil%translation_centre_frac, recip_lattice)
       end if
       ! Wannier function centres will be in [c_pos_frac-0.5,c_pos_frac+0.5]
-      r_frac_min(:) = translation_centre_frac(:) - 0.5_dp
+      r_frac_min(:) = param_hamil%translation_centre_frac(:) - 0.5_dp
 
       ! Cartesian --> fractional
       do iw = 1, num_wann
@@ -537,9 +484,10 @@ contains
 
       if (on_root) then
         write (stdout, '(1x,a)') 'Translated centres'
-        write (stdout, '(4x,a,3f10.6)') 'translation centre in fractional coordinate:', translation_centre_frac(:)
+        write (stdout, '(4x,a,3f10.6)') 'translation centre in fractional coordinate:', &
+          param_hamil%translation_centre_frac(:)
         do iw = 1, num_wann
-          write (stdout, 888) iw, (r_home(ind, iw)*lenconfac, ind=1, 3)
+          write (stdout, 888) iw, (r_home(ind, iw)*param_input%lenconfac, ind=1, 3)
         end do
         write (stdout, '(1x,a78)') repeat('-', 78)
         write (stdout, *)
@@ -565,8 +513,7 @@ contains
     !!  Write the Hamiltonian in the WF basis
     !============================================!
 
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, &
-      seedname, io_date
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, io_date
 
     integer            :: i, j, irpt, file_unit
     character(len=33) :: header
@@ -578,10 +525,8 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
     type(ham_logical), intent(inout) :: hmlg
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
-!   end w90_parameters
 
     if (hmlg%hr_written) return
 
@@ -622,9 +567,8 @@ contains
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, &
-                                      real_lattice, ws_search_size, ws_distance_tol, timing_level, iprint, &
-                                      count_pts)
+  subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
+                                      param_input, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
     !! surface of) the Wigner-Seitz supercell centered on the origin of the B
@@ -634,6 +578,7 @@ contains
     use w90_constants, only: eps7, eps8
     use w90_io, only: io_error, io_stopwatch, stdout
     use w90_utility, only: utility_metric
+    use w90_param_types, only: parameter_input_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
     !                   irvec(1:3,irpt) in the basis of the lattice vectors
@@ -642,34 +587,33 @@ contains
 
     implicit none
 
+    type(parameter_input_type), intent(inout) :: param_input
+
     ! passed variables
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
     integer, intent(inout) :: rpt_origin
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: ws_search_size(3)
-    integer, intent(in) :: timing_level
-    integer, intent(in) :: iprint
+
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     logical, intent(in) :: count_pts
 
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: ws_distance_tol
-
     ! local variables
     integer       :: ndiff(3)
+    integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
+
     real(kind=dp) :: tot, dist_min
     real(kind=dp), allocatable :: dist(:)
-    integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ierr, dist_dim
     real(kind=dp) :: real_metric(3, 3)
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
 
     call utility_metric(real_lattice, real_metric)
     dist_dim = 1
     do i = 1, 3
-      dist_dim = dist_dim*((ws_search_size(i) + 1)*2 + 1)
+      dist_dim = dist_dim*((param_input%ws_search_size(i) + 1)*2 + 1)
     end do
     allocate (dist(dist_dim), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating dist in hamiltonian_wigner_seitz')
@@ -691,17 +635,17 @@ contains
     ! that live in a supercell which is (2*ws_search_size+1)**2
     ! larger than the Born-von Karman supercell.
     ! We need to find which among these live in the Wigner-Seitz cell
-    do n1 = -ws_search_size(1)*mp_grid(1), ws_search_size(1)*mp_grid(1)
-      do n2 = -ws_search_size(2)*mp_grid(2), ws_search_size(2)*mp_grid(2)
-        do n3 = -ws_search_size(3)*mp_grid(3), ws_search_size(3)*mp_grid(3)
+    do n1 = -param_input%ws_search_size(1)*mp_grid(1), param_input%ws_search_size(1)*mp_grid(1)
+      do n2 = -param_input%ws_search_size(2)*mp_grid(2), param_input%ws_search_size(2)*mp_grid(2)
+        do n3 = -param_input%ws_search_size(3)*mp_grid(3), param_input%ws_search_size(3)*mp_grid(3)
           ! Loop over the lattice vectors R of the Born-von Karman supercell
           ! that contains all the points of the previous loop.
           ! There are (2*(ws_search_size+1)+1)**3 points R. R=0 corresponds to
           ! i1=i2=i3=0, or icnt=((2*(ws_search_size+1)+1)**3 + 1)/2
           icnt = 0
-          do i1 = -ws_search_size(1) - 1, ws_search_size(1) + 1
-            do i2 = -ws_search_size(2) - 1, ws_search_size(2) + 1
-              do i3 = -ws_search_size(3) - 1, ws_search_size(3) + 1
+          do i1 = -param_input%ws_search_size(1) - 1, param_input%ws_search_size(1) + 1
+            do i2 = -param_input%ws_search_size(2) - 1, param_input%ws_search_size(2) + 1
+              do i3 = -param_input%ws_search_size(3) - 1, param_input%ws_search_size(3) + 1
                 icnt = icnt + 1
                 ! Calculate distance squared |r-R|^2
                 ndiff(1) = n1 - i1*mp_grid(1)
@@ -719,12 +663,13 @@ contains
           enddo
           ! AAM: On first pass, we reference unallocated variables (ndegen,irvec)
           dist_min = minval(dist)
-          if (abs(dist((dist_dim + 1)/2) - dist_min) .lt. ws_distance_tol**2) then
+          if (abs(dist((dist_dim + 1)/2) - dist_min) .lt. param_input%ws_distance_tol**2) then
             nrpts = nrpts + 1
             if (.not. count_pts) then
               ndegen(nrpts) = 0
               do i = 1, dist_dim
-                if (abs(dist(i) - dist_min) .lt. ws_distance_tol**2) ndegen(nrpts) = ndegen(nrpts) + 1
+                if (abs(dist(i) - dist_min) .lt. param_input%ws_distance_tol**2) &
+                  ndegen(nrpts) = ndegen(nrpts) + 1
               end do
               irvec(1, nrpts) = n1
               irvec(2, nrpts) = n2
@@ -745,7 +690,7 @@ contains
     deallocate (dist, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating dist hamiltonian_wigner_seitz')
     if (count_pts) then
-      if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
       return
     end if
 
@@ -755,7 +700,7 @@ contains
       tot = tot + 1.0_dp/real(ndegen(i), dp)
     enddo
 
-    if (iprint >= 3 .and. on_root) then
+    if (param_input%iprint >= 3 .and. on_root) then
       write (stdout, '(1x,i4,a,/)') nrpts, ' lattice points in Wigner-Seitz supercell:'
       do i = 1, nrpts
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', irvec(1, i), irvec(2, i), &
@@ -768,41 +713,49 @@ contains
       call io_error('ERROR in hamiltonian_wigner_seitz: error in finding Wigner-Seitz points')
     endif
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
 
     return
 
   end subroutine hamiltonian_wigner_seitz
 
   !============================================!
-  subroutine hamiltonian_write_rmn(m_matrix, wb, bk, num_wann, num_kpts, kpt_latt, &
-                                   nntot, irvec, nrpts)
+  subroutine hamiltonian_write_rmn(m_matrix, kmesh_info, num_wann, num_kpts, kpt_latt, irvec, &
+                                   nrpts)
     !! Write out the matrix elements of r
     !============================================!
 
     use w90_constants, only: twopi, cmplx_i
     use w90_io, only: io_error, io_file_unit, seedname, io_date
+    use w90_param_types, only: kmesh_info_type
 
     implicit none
+
+    type(kmesh_info_type), intent(in) :: kmesh_info
 
     ! passed variables
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: irvec(:, :)
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: nntot
-    real(kind=dp), intent(in) :: wb(:)
-    real(kind=dp), intent(in) :: bk(:, :, :)
+!   integer, intent(in) :: nntot
+
+!   real(kind=dp), intent(in) :: wb(:)
+!   real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
+
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
 
     ! local variables
-    complex(kind=dp) :: fac
+    integer :: loop_rpt, m, n, nkp, ind, nn, file_unit
+
     real(kind=dp) :: rdotk
+
+    complex(kind=dp) :: fac
     complex(kind=dp) :: position(3)
+
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
-    integer :: loop_rpt, m, n, nkp, ind, nn, file_unit
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', err=101)
@@ -821,7 +774,7 @@ contains
             rdotk = twopi*dot_product(kpt_latt(:, nkp), real(irvec(:, loop_rpt), dp))
             fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
             do ind = 1, 3
-              do nn = 1, nntot
+              do nn = 1, kmesh_info%nntot
                 if (m .eq. n) then
                   ! For loop_rpt==rpt_origin, this reduces to
                   ! Eq.(32) of Marzari and Vanderbilt PRB 56,
@@ -830,11 +783,11 @@ contains
                   ! 195118 (2006), modified according to
                   ! Eqs.(27,29) of Marzari and Vanderbilt
                   position(ind) = position(ind) - &
-                                  wb(nn)*bk(ind, nn, nkp)*aimag(log(m_matrix(n, m, nn, nkp)))*fac
+                                  kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp)*aimag(log(m_matrix(n, m, nn, nkp)))*fac
                 else
                   ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
                   position(ind) = position(ind) + &
-                                  cmplx_i*wb(nn)*bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp)*fac
+                                  cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp)*fac
                 endif
               end do
             end do
@@ -853,9 +806,8 @@ contains
   end subroutine hamiltonian_write_rmn
 
   !============================================!
-  subroutine hamiltonian_write_tb(real_lattice, num_wann, wb, bk, m_matrix, &
-                                  num_kpts, kpt_latt, nntot, timing_level, ham_r, irvec, ndegen, nrpts, &
-                                  hmlg)
+  subroutine hamiltonian_write_tb(real_lattice, num_wann, kmesh_info, m_matrix, num_kpts, kpt_latt, &
+                                  timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -865,34 +817,35 @@ contains
     !! * <0n|r|Rn>
     !============================================!
 
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, &
-      seedname, io_date
-
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, io_date
     use w90_constants, only: twopi, cmplx_i
+    use w90_param_types, only: kmesh_info_type
 
-    integer            :: i, j, irpt, ik, nn, idir, file_unit
-    character(len=33)  :: header
-    character(len=9)   :: cdate, ctime
-    complex(kind=dp)   :: fac, pos_r(3)
-    real(kind=dp)      :: rdotk
+    type(kmesh_info_type), intent(in) :: kmesh_info
 
+    integer                :: i, j, irpt, ik, nn, idir, file_unit
+    integer, intent(in)    :: num_wann
+    integer, intent(in)    :: num_kpts
+!   integer, intent(in)    :: nntot
+    integer, intent(in)    :: timing_level
     integer, intent(inout) :: nrpts
-    integer, intent(in) :: ndegen(:)
+    integer, intent(in)    :: ndegen(:)
     integer, intent(inout) :: irvec(:, :)
-    complex(kind=dp), intent(in) :: ham_r(:, :, :)
-    type(ham_logical), intent(inout) :: hmlg
 
-!   from w90_parameters
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: nntot
-    integer, intent(in) :: timing_level
-    real(kind=dp), intent(in) :: wb(:)
-    real(kind=dp), intent(in) :: bk(:, :, :)
+    real(kind=dp)             :: rdotk
+!   real(kind=dp), intent(in) :: wb(:)
+!   real(kind=dp), intent(in) :: bk(:, :, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    complex(kind=dp)             :: fac, pos_r(3)
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-!   end w90_parameters
+
+    character(len=33)  :: header
+    character(len=9)   :: cdate, ctime
+
+    type(ham_logical), intent(inout) :: hmlg
 
     if (hmlg%tb_written) return
 
@@ -939,7 +892,7 @@ contains
             rdotk = twopi*dot_product(kpt_latt(:, ik), real(irvec(:, irpt), dp))
             fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
             do idir = 1, 3
-              do nn = 1, nntot
+              do nn = 1, kmesh_info%nntot
                 if (i == j) then
                   ! For irpt==rpt_origin, this reduces to
                   ! Eq.(32) of Marzari and Vanderbilt PRB 56,
@@ -948,11 +901,11 @@ contains
                   ! 195118 (2006), modified according to
                   ! Eqs.(27,29) of Marzari and Vanderbilt
                   pos_r(idir) = pos_r(idir) - &
-                                wb(nn)*bk(idir, nn, ik)*aimag(log(m_matrix(i, i, nn, ik)))*fac
+                                kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*aimag(log(m_matrix(i, i, nn, ik)))*fac
                 else
                   ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
                   pos_r(idir) = pos_r(idir) + &
-                                cmplx_i*wb(nn)*bk(idir, nn, ik)*m_matrix(j, i, nn, ik)*fac
+                                cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*m_matrix(j, i, nn, ik)*fac
                 endif
               end do
             end do
