@@ -287,6 +287,7 @@ module w90_param_methods
   public :: param_get_projections
   public :: get_smearing_index
   public :: internal_set_kmesh
+  public :: param_uppercase
   ! common read routines
   public :: param_read_verbosity
   public :: param_read_num_wann
@@ -306,8 +307,8 @@ module w90_param_methods
   public :: param_read_kmesh_data
   public :: param_read_kpoints
   public :: param_read_global_kmesh
-  public :: param_read_44
-  public :: param_read_45
+  public :: param_clean_infile
+  public :: param_read_final_alloc
 
 contains
 
@@ -897,13 +898,9 @@ contains
     endif
   end subroutine param_read_atoms
 
-  subroutine param_read_44(read_transport, param_input, atoms, spec_points)
+  subroutine param_clean_infile
     use w90_io, only: seedname, stdout, io_error
     implicit none
-    logical, intent(in) :: read_transport
-    type(parameter_input_type), intent(inout) :: param_input
-    type(atom_data_type), intent(inout) :: atoms
-    type(special_kpoints_type), intent(inout) :: spec_points
     integer :: loop, ierr
 
     if (any(len_trim(in_data(:)) > 0)) then
@@ -918,20 +915,13 @@ contains
       call io_error('Unrecognised keyword(s) in input file, see also output file')
     end if
 
-    if (.not. read_transport) then
-
-      ! For aesthetic purposes, convert some things to uppercase
-      call param_uppercase(param_input, atoms, spec_points)
-
-    endif
-
     deallocate (in_data, stat=ierr)
     if (ierr /= 0) call io_error('Error deallocating in_data in param_read')
 
-  end subroutine param_read_44
+  end subroutine param_clean_infile
 
-  subroutine param_read_45(disentanglement, dis_data, wann_data, &
-                           num_wann, num_bands, num_kpts)
+  subroutine param_read_final_alloc(disentanglement, dis_data, wann_data, &
+                                    num_wann, num_bands, num_kpts)
     ! =============================== !
     ! Some checks and initialisations !
     ! =============================== !
@@ -973,7 +963,7 @@ contains
     allocate (wann_data%spreads(num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read')
     wann_data%spreads = 0.0_dp
-  end subroutine param_read_45
+  end subroutine param_read_final_alloc
 
   subroutine internal_set_kmesh(spacing, reclat, mesh)
     !! This routines returns the three integers that define the interpolation k-mesh, satisfying

@@ -174,20 +174,21 @@ contains
       call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice)
-      call param_w90_read_42(w90_calcs%use_bloch_phases, lhasproj, &
-                             param_wannierise%guiding_centres, &
-                             param_wannierise%proj_site, kmesh_data, &
-                             select_proj, num_proj, param_input, atoms, &
-                             recip_lattice, num_wann, library)
+      call param_read_projections(w90_calcs%use_bloch_phases, lhasproj, &
+                                  param_wannierise%guiding_centres, param_wannierise%proj_site, &
+                                  kmesh_data, select_proj, num_proj, param_input, atoms, &
+                                  recip_lattice, num_wann, library)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%slwf_constrain) then
-        call param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
-                               num_wann, library)
+        call param_read_constrained_centres(ccentres_frac, param_wannierise, real_lattice, &
+                                            num_wann, library)
       endif
     endif
-    call param_read_44(w90_calcs%transport .and. tran%read_ht, &
-                       param_input, atoms, spec_points)
+    call param_clean_infile()
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
+      ! For aesthetic purposes, convert some things to uppercase
+      call param_uppercase(param_input, atoms, spec_points)
+
       param_wannierise%omega_total = -999.0_dp
       param_wannierise%omega_tilde = -999.0_dp
       ! Initialise
@@ -195,8 +196,8 @@ contains
       param_wannierise%omega_tilde = -999.0_dp
       param_input%omega_invariant = -999.0_dp
       param_input%have_disentangled = .false.
-      call param_read_45(w90_calcs%disentanglement, dis_data, &
-                         wann_data, num_wann, num_bands, num_kpts)
+      call param_read_final_alloc(w90_calcs%disentanglement, dis_data, &
+                                  wann_data, num_wann, num_bands, num_kpts)
     endif
   end subroutine param_read
 
@@ -892,10 +893,9 @@ contains
 
   end subroutine param_read_explicit_kpts
 
-  subroutine param_w90_read_42(use_bloch_phases, lhasproj, guiding_centres, &
-                               proj_site, kmesh_data, select_proj, num_proj, &
-                               param_input, atoms, recip_lattice, &
-                               num_wann, library)
+  subroutine param_read_projections(use_bloch_phases, lhasproj, guiding_centres, &
+                                    proj_site, kmesh_data, select_proj, num_proj, &
+                                    param_input, atoms, recip_lattice, num_wann, library)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
@@ -993,10 +993,10 @@ contains
       endif
     endif
 
-  end subroutine param_w90_read_42
+  end subroutine param_read_projections
 
-  subroutine param_w90_read_43(ccentres_frac, param_wannierise, real_lattice, &
-                               num_wann, library)
+  subroutine param_read_constrained_centres(ccentres_frac, param_wannierise, real_lattice, &
+                                            num_wann, library)
     use w90_io, only: io_error, stdout
     implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
@@ -1039,7 +1039,7 @@ contains
     if (param_wannierise%slwf_constrain .and. allocated(param_wannierise%proj_site) .and. .not. found) &
          & write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
            & Desired centres for SLWF same as projection centres.'
-  end subroutine param_w90_read_43
+  end subroutine param_read_constrained_centres
 
 !===================================================================
   subroutine param_write(driver, w90_calcs, param_input, param_plot, &

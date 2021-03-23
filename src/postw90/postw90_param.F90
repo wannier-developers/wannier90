@@ -372,8 +372,7 @@ contains
     ! Need to make sure use w90_params are read
     call param_pw90_read_34(geninterp, boltz, smr_index, eigval, adpt_smr_fac, &
                             adpt_smr_max, smr_fixed_en_width, adpt_smr)
-    call param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, &
-                            eigval)
+    call param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
     call param_pw90_read_38(berry)
     call param_read_lattice(library, real_lattice, recip_lattice)
     call param_read_kmesh_data(kmesh_data)
@@ -382,9 +381,10 @@ contains
     call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
                             pw90_spin, gyrotropic, boltz, recip_lattice)
     call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write
-    call param_read_44(.false., param_input, atoms, spec_points)
-    call param_read_45(disentanglement, dis_data, wann_data, num_wann, &
-                       num_bands, num_kpts)
+    call param_clean_infile()
+    ! For aesthetic purposes, convert some things to uppercase
+    call param_uppercase(param_input, atoms, spec_points)
+    call param_read_final_alloc(disentanglement, dis_data, wann_data, num_wann, num_bands, num_kpts)
   end subroutine param_postw90_read
 
   subroutine param_read_pw90_calcs(pw90_calcs)
