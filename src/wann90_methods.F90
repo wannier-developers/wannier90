@@ -153,15 +153,14 @@ contains
       call param_read_fermi_energy(found_fermi_energy, fermi)
       call param_read_outfiles(w90_calcs, param_input, param_wannierise, param_plot, num_kpts)
     endif
-    call param_w90_read_27(w90_calcs, param_plot, param_input, one_dim_axis, &
-                           tran%read_ht) ! BGS tran/plot related stuff...
-    call param_read_28(param_input)
+    ! BGS tran/plot related stuff...
+    call param_read_one_dim(w90_calcs, param_plot, param_input, one_dim_axis, tran%read_ht)
+    call param_read_ws_data(param_input) !ws_search etc
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_read_32(.false., .false., .false., &
-                         w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
-                         .or. w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
-                         eigval, library, driver%postproc_setup, num_bands, &
-                         num_kpts)
+      call param_read_eigvals(.false., .false., .false., &
+                              w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
+                              w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
+                              eigval, library, driver%postproc_setup, num_bands, num_kpts)
       dis_data%win_min = -1.0_dp
       dis_data%win_max = 0.0_dp
       if (eig_found) dis_data%win_min = minval(eigval)
@@ -169,12 +168,11 @@ contains
       call param_read_disentangle_all(eig_found, dis_data)
       call param_read_disentangle_w90(dis_data, num_bands, num_wann)
       call param_read_hamil(param_hamil)
-      call param_w90_read_39(w90_calcs%use_bloch_phases, &
-                             w90_calcs%disentanglement)
-      call param_read_40a(.false., library, kmesh_data, k_points, num_kpts, &
-                          recip_lattice)
-      call param_read_40b(library, driver, kmesh_info, num_kpts)
-      call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
+      call param_read_bloch_phase(w90_calcs%use_bloch_phases, w90_calcs%disentanglement)
+      call param_read_kmesh_data(kmesh_data)
+      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice)
+      call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts)
+      call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
       call param_read_atoms(library, atoms, real_lattice, recip_lattice)
       call param_w90_read_42(w90_calcs%use_bloch_phases, lhasproj, &
                              param_wannierise%guiding_centres, &
@@ -348,6 +346,9 @@ contains
 
     param_input%dist_cutoff_hc = param_input%dist_cutoff
     call param_get_keyword('dist_cutoff_hc', found, r_value=param_input%dist_cutoff_hc)
+
+    param_input%hr_cutoff = 0.0_dp
+    call param_get_keyword('hr_cutoff', found, r_value=param_input%hr_cutoff)
 
   end subroutine param_read_dist_cutoff
 
@@ -778,8 +779,7 @@ contains
     endif
   end subroutine param_read_fermi_surface
 
-  subroutine param_w90_read_27(w90_calcs, param_plot, param_input, &
-                               one_dim_axis, tran_read_ht)
+  subroutine param_read_one_dim(w90_calcs, param_plot, param_input, one_dim_axis, tran_read_ht)
     use w90_io, only: io_error
     implicit none
     type(w90_calculation_type), intent(in) :: w90_calcs
@@ -789,9 +789,6 @@ contains
     logical, intent(in) :: tran_read_ht
     logical :: found
 
-    param_input%hr_cutoff = 0.0_dp
-    call param_get_keyword('hr_cutoff', found, r_value=param_input%hr_cutoff)
-
     one_dim_axis = 'none'
     call param_get_keyword('one_dim_axis', found, c_value=one_dim_axis)
     param_input%one_dim_dir = 0
@@ -800,12 +797,13 @@ contains
     if (index(one_dim_axis, 'z') > 0) param_input%one_dim_dir = 3
     if (w90_calcs%transport .and. .not. tran_read_ht .and. &
         (param_input%one_dim_dir .eq. 0)) call io_error('Error: one_dim_axis not recognised')
-    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)&
-       & .and. ((param_plot%bands_plot_dim .ne. 3) .or. (index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0))&
-       & .and. (param_input%one_dim_dir .eq. 0)) &
-         call io_error('Error: one_dim_axis not recognised')
+    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0) .and. &
+        ((param_plot%bands_plot_dim .ne. 3) .or. &
+         (index(param_input%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
+        (param_input%one_dim_dir .eq. 0)) &
+      call io_error('Error: one_dim_axis not recognised')
 
-  end subroutine param_w90_read_27
+  end subroutine param_read_one_dim
 
   subroutine param_read_hamil(param_hamil)
     implicit none
@@ -822,7 +820,7 @@ contains
     endif
   end subroutine param_read_hamil
 
-  subroutine param_w90_read_39(use_bloch_phases, disentanglement)
+  subroutine param_read_bloch_phase(use_bloch_phases, disentanglement)
     use w90_io, only: io_error
     implicit none
     logical, intent(out) :: use_bloch_phases
@@ -833,9 +831,9 @@ contains
     call param_get_keyword('use_bloch_phases', found, l_value=use_bloch_phases)
     if (disentanglement .and. use_bloch_phases) &
       call io_error('Error: Cannot use bloch phases for disentanglement')
-  end subroutine param_w90_read_39
+  end subroutine param_read_bloch_phase
 
-  subroutine param_read_40b(library, driver, kmesh_info, num_kpts)
+  subroutine param_read_explicit_kpts(library, driver, kmesh_info, num_kpts)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -892,7 +890,7 @@ contains
       if (ierr /= 0) call io_error('Error deallocating nnkpts_block in param_read')
     end if
 
-  end subroutine param_read_40b
+  end subroutine param_read_explicit_kpts
 
   subroutine param_w90_read_42(use_bloch_phases, lhasproj, guiding_centres, &
                                proj_site, kmesh_data, select_proj, num_proj, &

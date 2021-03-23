@@ -360,10 +360,10 @@ contains
                             spec_points, found_fermi_energy, num_wann, &
                             adpt_smr_fac, adpt_smr_max, &
                             smr_fixed_en_width, adpt_smr)
-    call param_read_28(param_input)
-    call param_read_32(pw90_common%effective_model, pw90_calcs%boltzwann, &
-                       pw90_calcs%geninterp, dos_plot, disentanglement, &
-                       eig_found, eigval, library, .false., num_bands, num_kpts)
+    call param_read_ws_data(param_input)
+    call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
+                            pw90_calcs%geninterp, dos_plot, disentanglement, &
+                            eig_found, eigval, library, .false., num_bands, num_kpts)
     dis_data%win_min = -1.0_dp
     dis_data%win_max = 0.0_dp
     if (eig_found) dis_data%win_min = minval(eigval)
@@ -376,9 +376,9 @@ contains
                             eigval)
     call param_pw90_read_38(berry)
     call param_read_lattice(library, real_lattice, recip_lattice)
-    call param_read_40a(pw90_common%effective_model, library, kmesh_data, &
-                        k_points, num_kpts, recip_lattice)
-    call param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
+    call param_read_kmesh_data(kmesh_data)
+    call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, recip_lattice)
+    call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
                             pw90_spin, gyrotropic, boltz, recip_lattice)
     call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write

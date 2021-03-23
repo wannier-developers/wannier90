@@ -301,10 +301,11 @@ module w90_param_methods
   public :: param_read_num_bands
   public :: param_read_system
   public :: param_read_fermi_energy
-  public :: param_read_28
-  public :: param_read_32
-  public :: param_read_40a
-  public :: param_read_40c
+  public :: param_read_ws_data
+  public :: param_read_eigvals
+  public :: param_read_kmesh_data
+  public :: param_read_kpoints
+  public :: param_read_global_kmesh
   public :: param_read_44
   public :: param_read_45
 
@@ -576,7 +577,7 @@ contains
       'Error allocating fermi_energy_list in param_read')
   end subroutine param_read_fermi_energy
 
-  subroutine param_read_28(param_input)
+  subroutine param_read_ws_data(param_input)
     use w90_io, only: io_error
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
@@ -607,12 +608,11 @@ contains
       if (any(param_input%ws_search_size <= 0)) &
         call io_error('Error: ws_search_size elements must be greater than zero')
     end if
-  end subroutine param_read_28
+  end subroutine param_read_ws_data
 
-  subroutine param_read_32(pw90_effective_model, pw90_boltzwann, &
-                           pw90_geninterp, w90_plot, disentanglement, &
-                           eig_found, eigval, library, postproc_setup, &
-                           num_bands, num_kpts)
+  subroutine param_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
+                                disentanglement, eig_found, eigval, library, postproc_setup, &
+                                num_bands, num_kpts)
     use w90_io, only: seedname, io_file_unit, io_error
     implicit none
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, &
@@ -674,7 +674,7 @@ contains
 105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
 106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
 
-  end subroutine param_read_32
+  end subroutine param_read_eigvals
 
   subroutine param_read_disentangle_all(eig_found, dis_data)
     use w90_io, only: io_error
@@ -713,18 +713,13 @@ contains
     ! ndimwin/lwindow are not read
   end subroutine param_read_disentangle_all
 
-  subroutine param_read_40a(pw90_effective_model, library, kmesh_data, &
-                            k_points, num_kpts, recip_lattice)
+  subroutine param_read_kmesh_data(kmesh_data)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
-    logical, intent(in) :: pw90_effective_model, library
-    type(param_kmesh_type), intent(inout) :: kmesh_data
-    type(k_point_type), intent(inout) :: k_points
-    integer, intent(in) :: num_kpts
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    type(param_kmesh_type), intent(out) :: kmesh_data
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
-    integer :: itmp, nkp, ierr
+    integer :: itmp, ierr
     logical :: found
 
     kmesh_data%search_shells = 36
@@ -764,6 +759,20 @@ contains
     kmesh_data%skip_B1_tests = .false.
     call param_get_keyword('skip_b1_tests', found, l_value=kmesh_data%skip_B1_tests)
 
+  end subroutine param_read_kmesh_data
+
+  subroutine param_read_kpoints(pw90_effective_model, library, k_points, num_kpts, recip_lattice)
+    use w90_io, only: io_error
+    use w90_utility, only: utility_recip_lattice
+    implicit none
+    logical, intent(in) :: pw90_effective_model, library
+    type(k_point_type), intent(out) :: k_points
+    integer, intent(in) :: num_kpts
+    real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
+    integer :: nkp, ierr
+    logical :: found
+
     if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
     if (.not. library) then
@@ -785,7 +794,7 @@ contains
       end do
     endif
 
-  end subroutine param_read_40a
+  end subroutine param_read_kpoints
 
   subroutine param_read_lattice(library, real_lattice, recip_lattice)
     use w90_io, only: io_error
@@ -808,8 +817,7 @@ contains
     !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
   end subroutine param_read_lattice
 
-  subroutine param_read_40c(global_kmesh_set, kmesh_spacing, kmesh, &
-                            recip_lattice)
+  subroutine param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     use w90_io, only: io_error
     !use w90_utility, only: utility_recip_lattice
     implicit none
@@ -857,7 +865,7 @@ contains
         call io_error('Error: kmesh elements must be greater than zero')
     end if
     ! [GP-end]
-  end subroutine param_read_40c
+  end subroutine param_read_global_kmesh
 
   subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice)
     use w90_io, only: io_error, stdout
