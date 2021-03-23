@@ -352,8 +352,8 @@ contains
     call param_read_11(pw90_common%effective_model, library, &
                        param_input, num_bands, num_wann, .false.)
     !call param_w90_read_12
-    call param_read_13(pw90_common%effective_model, library, &
-                       param_input%devel_flag, mp_grid, num_kpts)
+    call param_read_devel(param_input%devel_flag)
+    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts)
     !call param_w90_read_14
     !call param_w90_read_15
     call param_read_16(library, param_input)

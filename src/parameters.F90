@@ -294,15 +294,16 @@ module w90_param_methods
   public :: param_read_lattice
   public :: param_read_atoms
   public :: param_read_units
+  public :: param_read_devel
+  public :: param_read_mp_grid
+  public :: param_read_kpath
+  public :: param_read_disentangle_all
   public :: param_read_11
-  public :: param_read_13
   public :: param_read_16
   public :: param_w90_read_18a
-  public :: param_read_kpath
   public :: param_read_23
   public :: param_read_28
   public :: param_read_32
-  public :: param_read_disentangle_all
   public :: param_read_40a
   public :: param_read_40c
   public :: param_read_44
@@ -412,18 +413,23 @@ contains
     endif
   end subroutine param_read_11
 
-  subroutine param_read_13(pw90_effective_model, library, devel_flag, &
-                           mp_grid, num_kpts)
+  subroutine param_read_devel(devel_flag)
     use w90_io, only: io_error
     implicit none
-    logical, intent(in) :: pw90_effective_model, library
     character(len=*), intent(out) :: devel_flag
-    integer, intent(inout) :: mp_grid(3), num_kpts
-    integer :: iv_temp(3)
     logical :: found
 
     devel_flag = ' '          !
     call param_get_keyword('devel_flag', found, c_value=devel_flag)
+  end subroutine param_read_devel
+
+  subroutine param_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts)
+    use w90_io, only: io_error
+    implicit none
+    logical, intent(in) :: pw90_effective_model, library
+    integer, intent(inout) :: mp_grid(3), num_kpts
+    integer :: iv_temp(3)
+    logical :: found
 
 !    mp_grid=-99
     call param_get_keyword_vector('mp_grid', found, 3, i_value=iv_temp)
@@ -437,7 +443,7 @@ contains
       end if
       num_kpts = mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
-  end subroutine param_read_13
+  end subroutine param_read_mp_grid
 
   subroutine param_read_16(library, param_input)
     use w90_io, only: io_error

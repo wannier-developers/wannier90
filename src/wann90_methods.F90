@@ -141,8 +141,8 @@ contains
                          library_param_read_first_pass)
       call param_read_lattice(library, real_lattice, recip_lattice)
       call param_read_wannierise(param_wannierise, num_wann)
-      call param_read_13(.false., library, param_input%devel_flag, mp_grid, &
-                         num_kpts)
+      call param_read_devel(param_input%devel_flag)
+      call param_read_mp_grid(.false., library, mp_grid, num_kpts)
       call param_w90_read_14(w90_calcs%cp_pp, pp_calc%only_A, driver, &
                              param_input, num_kpts, library)
       call param_read_16(library, param_input)
