@@ -1009,7 +1009,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_error
-      use w90_param_types, only: param_wannierise_type
+      use wannier_param_types, only: param_wannierise_type
 
       implicit none
 
@@ -1174,7 +1174,8 @@ contains
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
       use w90_comms, only: on_root, my_node_id, comms_allreduce
-      use w90_param_types, only: param_wannierise_type, parameter_input_type
+      use w90_param_types, only: parameter_input_type
+      use wannier_param_types, only: param_wannierise_type
 
       implicit none
 
@@ -2045,7 +2046,8 @@ contains
     !===================================================================
     use w90_io, only: io_stopwatch
     use w90_comms, only: on_root, my_node_id, comms_allreduce
-    use w90_param_types, only: kmesh_info_type, parameter_input_type, param_wannierise_type
+    use w90_param_types, only: kmesh_info_type, parameter_input_type
+    use wannier_param_types, only: param_wannierise_type
 
     implicit none
 
@@ -2348,7 +2350,8 @@ contains
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
     use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, comms_allreduce
-    use w90_param_types, only: kmesh_info_type, param_wannierise_type
+    use w90_param_types, only: kmesh_info_type
+    use wannier_param_types, only: param_wannierise_type
 
     implicit none
 

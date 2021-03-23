@@ -74,7 +74,8 @@ contains
 
     use w90_constants, only: cmplx_0
     use w90_io, only: io_error
-    use w90_param_types, only: parameter_input_type, w90_calculation_type
+    use w90_param_types, only: parameter_input_type
+    use wannier_param_types, only: w90_calculation_type
 
     implicit none
 
@@ -117,8 +118,8 @@ contains
     ! Determine whether to use translation
     !
     if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
-    if (w90_calcs%transport .and. (index(tranport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
-    if (w90_calcs%transport .and. (index(tranport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%transport .and. (index(transport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%transport .and. (index(transport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !
@@ -231,8 +232,8 @@ contains
 
     use w90_constants, only: cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_stopwatch
-    use w90_param_types, only: atom_data_type, param_hamiltonian_type, parameter_input_type, &
-      disentangle_type
+    use w90_param_types, only: atom_data_type, parameter_input_type, disentangle_type
+    use wannier_param_types, only: param_hamiltonian_type
 
     implicit none
 
