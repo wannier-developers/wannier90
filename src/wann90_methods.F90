@@ -133,12 +133,11 @@ contains
     call param_read_dist_cutoff(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       call param_read_units(param_input, energy_unit)
-      !call param_w90_read_06(param_plot%wvfn_formatted)
-      !call param_w90_read_08(param_plot%spin)
       call param_read_num_wann(num_wann)
       call param_read_exclude_bands(param_input)
-      call param_read_11(.false., library, param_input, num_bands, num_wann, &
-                         library_param_read_first_pass)
+      call param_read_num_bands(.false., library, param_input, num_bands, num_wann, &
+                                library_param_read_first_pass)
+      w90_calcs%disentanglement = (num_bands > num_wann)
       call param_read_lattice(library, real_lattice, recip_lattice)
       call param_read_wannierise(param_wannierise, num_wann)
       call param_read_devel(param_input%devel_flag)
@@ -158,8 +157,6 @@ contains
                            tran%read_ht) ! BGS tran/plot related stuff...
     call param_read_28(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_w90_read_30(w90_calcs%disentanglement, num_bands, num_wann)
-      !call param_pw90_read_31
       call param_read_32(.false., .false., .false., &
                          w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot &
                          .or. w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
@@ -810,18 +807,6 @@ contains
          call io_error('Error: one_dim_axis not recognised')
 
   end subroutine param_w90_read_27
-
-  subroutine param_w90_read_30(disentanglement, num_bands, num_wann)
-    !%%%%%%%%%%%%%%%%
-    ! Disentanglement
-    !%%%%%%%%%%%%%%%%
-    implicit none
-    logical, intent(out) :: disentanglement
-    integer, intent(in) :: num_bands, num_wann
-
-    disentanglement = .false.
-    if (num_bands > num_wann) disentanglement = .true.
-  end subroutine param_w90_read_30
 
   subroutine param_read_hamil(param_hamil)
     implicit none

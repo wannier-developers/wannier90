@@ -337,32 +337,20 @@ contains
 
     library = .false.
     call param_in_file
-    !call param_w90_read_01
-    !call param_w90_read_02
     call param_read_verbosity(param_input)
-    !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
     call param_read_pw90_calcs(pw90_calcs)
     call param_pw90_read_04(pw90_common%effective_model)
     call param_read_units(param_input, energy_unit)
-    !call param_w90_read_06
     call param_pw90_read_07(postw90_oper)
-    !call param_w90_read_08
     call param_read_num_wann(num_wann)
     call param_read_exclude_bands(param_input) !for read_chkpt
-    call param_read_11(pw90_common%effective_model, library, &
-                       param_input, num_bands, num_wann, .false.)
-    !call param_w90_read_12
+    call param_read_num_bands(pw90_common%effective_model, library, &
+                              param_input, num_bands, num_wann, .false.)
+    disentanglement = (num_bands > num_wann)
     call param_read_devel(param_input%devel_flag)
     call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts)
-    !call param_w90_read_14
-    !call param_w90_read_15
     call param_read_16(library, param_input)
-    !call param_w90_read_17
-    !call param_w90_read_18
-    !call param_w90_read_19
-    !call param_w90_read_20
     call param_read_kpath(library, spec_points, ok)
-    !call param_w90_read_22
     call param_read_23(found_fermi_energy, fermi)
     call param_pw90_read_24(pw90_calcs%kslice, kslice)
     call param_read_25(smr_index, adpt_smr_fac, adpt_smr_max, &
@@ -372,14 +360,7 @@ contains
                             spec_points, found_fermi_energy, num_wann, &
                             adpt_smr_fac, adpt_smr_max, &
                             smr_fixed_en_width, adpt_smr)
-    !call param_w90_read_27
-    !endif
     call param_read_28(param_input)
-    !call param_w90_read_29
-    !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
-    !call param_w90_read_30
-    !call param_pw90_read_31(pw90_calcs)
-    disentanglement = (num_bands > num_wann)
     call param_read_32(pw90_common%effective_model, pw90_calcs%boltzwann, &
                        pw90_calcs%geninterp, dos_plot, disentanglement, &
                        eig_found, eigval, library, .false., num_bands, num_kpts)
@@ -391,12 +372,9 @@ contains
     ! Need to make sure use w90_params are read
     call param_pw90_read_34(geninterp, boltz, smr_index, eigval, adpt_smr_fac, &
                             adpt_smr_max, smr_fixed_en_width, adpt_smr)
-    !call param_w90_read_35
     call param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, &
                             eigval)
-    !call param_w90_read_37(... one_dim_axis)
     call param_pw90_read_38(berry)
-    !call param_w90_read_39
     call param_read_lattice(library, real_lattice, recip_lattice)
     call param_read_40a(pw90_common%effective_model, library, kmesh_data, &
                         k_points, num_kpts, recip_lattice)
@@ -404,13 +382,7 @@ contains
     call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
                             pw90_spin, gyrotropic, boltz, recip_lattice)
     call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write
-    !call param_w90_read_42(.false.)
-    !call param_w90_read_43
-    !endif
     call param_read_44(.false., param_input, atoms, spec_points)
-    !if (.not.(w90_calcs%transport .and. tran%read_ht)) then
-    !  call param_w90_read_45(disentanglement)
-    !endif
     call param_read_45(disentanglement, dis_data, wann_data, num_wann, &
                        num_bands, num_kpts)
   end subroutine param_postw90_read

@@ -298,7 +298,7 @@ module w90_param_methods
   public :: param_read_mp_grid
   public :: param_read_kpath
   public :: param_read_disentangle_all
-  public :: param_read_11
+  public :: param_read_num_bands
   public :: param_read_16
   public :: param_w90_read_18a
   public :: param_read_23
@@ -381,8 +381,8 @@ contains
     end if
   end subroutine param_read_exclude_bands
 
-  subroutine param_read_11(pw90_effective_model, library, param_input, &
-                           num_bands, num_wann, library_param_read_first_pass)
+  subroutine param_read_num_bands(pw90_effective_model, library, param_input, &
+                                  num_bands, num_wann, library_param_read_first_pass)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: pw90_effective_model, library
@@ -411,7 +411,7 @@ contains
         call io_error('Error: num_bands must be greater than or equal to num_wann')
       endif
     endif
-  end subroutine param_read_11
+  end subroutine param_read_num_bands
 
   subroutine param_read_devel(devel_flag)
     use w90_io, only: io_error
