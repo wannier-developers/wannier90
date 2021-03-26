@@ -22,32 +22,21 @@ module w90_plot
 contains
 
   !============================================!
-  subroutine plot_main(num_kpts, w90_calcs, k_points, &
-                       param_input, param_plot, &
-                       real_lattice, &
-                       num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, atoms, &
-                       param_hamil, &
-                       dis_data, &
-                       u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
-                       mp_grid, transport_mode, &
-                       fermi, &
-                       fermi_surface_data, &
-                       spec_points, &
-                       ham_r, irvec, &
-                       shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, &
-                       hmlg, ham_k)
+  subroutine plot_main(num_kpts, w90_calcs, k_points, param_input, param_plot, &
+                       real_lattice, num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, &
+                       atoms, param_hamil, dis_data, u_matrix_opt, eigval, u_matrix, &
+                       lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
+                       fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
+                       rpt_origin, wannier_centres_translated, hmlg, ham_k)
     !! Main plotting routine
     !============================================!
 
     use w90_constants, only: eps6, dp
     use w90_io, only: stdout, io_stopwatch
 
-    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, &
-      hamiltonian_setup, hamiltonian_write_rmn, &
-      hamiltonian_write_tb, ham_logical
-!     hamiltonian_write_tb, nrpts, irvec
-    use w90_ws_distance, only: done_ws_distance, ws_translate_dist, &
-      ws_write_vec
+    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
+      hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
+    use w90_ws_distance, only: done_ws_distance, ws_translate_dist, ws_write_vec
     use w90_param_types, only: k_point_type, parameter_input_type, kmesh_info_type, &
       wannier_data_type, atom_data_type, disentangle_type, fermi_data_type, &
       special_kpoints_type
@@ -56,112 +45,44 @@ contains
 
     implicit none
 
-    type(w90_calculation_type), intent(in) :: w90_calcs
-    type(k_point_type), intent(in) :: k_points
-    type(parameter_input_type), intent(in) :: param_input
-    type(param_plot_type), intent(in) :: param_plot
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(wannier_data_type), intent(in) :: wann_data
-    type(atom_data_type), intent(in) :: atoms
-    type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(disentangle_type), intent(in) :: dis_data
-    type(fermi_data_type), intent(in) :: fermi
-    type(fermi_surface_type), intent(in) :: fermi_surface_data
-    type(special_kpoints_type), intent(in) :: spec_points
+    type(w90_calculation_type), intent(in)       :: w90_calcs
+    type(k_point_type), intent(in)               :: k_points
+    type(parameter_input_type), intent(inout)    :: param_input
+    type(param_plot_type), intent(in)            :: param_plot
+    type(kmesh_info_type), intent(in)            :: kmesh_info
+    type(wannier_data_type), intent(in)          :: wann_data
+    type(atom_data_type), intent(in)             :: atoms
+    type(param_hamiltonian_type), intent(inout)  :: param_hamil
+    type(disentangle_type), intent(in)           :: dis_data
+    type(fermi_data_type), intent(in)            :: fermi
+    type(fermi_surface_type), intent(in)         :: fermi_surface_data
+    type(special_kpoints_type), intent(in)       :: spec_points
 
-    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
-!   logical, intent(inout) :: ham_have_setup
-!   logical, intent(inout) :: have_translated
-!   logical, intent(inout) :: use_translation
-    type(ham_logical), intent(inout) :: hmlg
+    type(ham_logical), intent(inout)             :: hmlg
 
-!   from w90_hamiltonian
-    integer, intent(inout) :: rpt_origin
-    integer, intent(inout) :: nrpts
+    integer, intent(inout)              :: rpt_origin
+    integer, intent(inout)              :: nrpts
+    integer, intent(in)                 :: mp_grid(3)
+    integer, intent(in)                 :: num_kpts
+    integer, intent(in)                 :: num_wann
+    integer, intent(in)                 :: num_bands
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout), allocatable :: irvec(:, :)
+
+    real(kind=dp), intent(in)                 :: real_lattice(3, 3)
+    real(kind=dp), intent(in)                 :: recip_lattice(3, 3)
+    real(kind=dp), intent(in)                 :: eigval(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+
+    complex(kind=dp), intent(in)                 :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(in)                 :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(in)                 :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
 
-!   end w90_hamiltonian
-
-!   from w90_parameters
-!   integer, intent(in) :: bands_num_spec_points
-!   integer, intent(in) :: iprint
-    integer, intent(in) :: mp_grid(3)
-!   integer, intent(in) :: ndimwin(:)
-    integer, intent(in) :: num_kpts
-!   integer, intent(in) :: timing_level
-    integer, intent(in) :: num_wann
-!   integer, intent(in) :: nntot
-!   integer, intent(in) :: num_atoms
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: atoms_species_num(:)
-    integer, intent(in) :: num_bands
-!   integer, intent(in) :: ws_search_size(3)
-!   integer, intent(in) :: wannier_plot_list(:)
-!   integer, intent(in) :: num_wannier_plot
-!   integer, intent(in) :: spin
-!   integer, intent(in) :: wannier_plot_supercell(3)
-!   integer, intent(in) :: nfermi
-!   integer, intent(in) :: fermi_surface_num_points
-!   integer, intent(in) :: one_dim_dir
-!   integer, intent(in) :: bands_plot_dim
-!   integer, intent(in) :: bands_plot_project(:)
-!   integer, intent(in) :: num_bands_project
-!   integer, intent(in) :: bands_num_points
-    !real(kind=dp), intent(in) :: real_metric(3, 3)
-!   real(kind=dp), intent(in) :: bk(:, :, :)
-!   real(kind=dp), intent(in) :: wb(:)
-!   real(kind=dp), intent(in) :: kpt_latt(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!   real(kind=dp), intent(in) :: wannier_centres(:, :)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   real(kind=dp), intent(in) :: lenconfac
-!   real(kind=dp), intent(in) :: ws_distance_tol
-!   real(kind=dp), intent(in) :: wannier_plot_radius
-!   real(kind=dp), intent(in) :: wannier_plot_scale
-!   real(kind=dp), intent(in) :: atoms_pos_frac(:, :, :)
-!   real(kind=dp), intent(in) :: fermi_energy_list(:)
-!   real(kind=dp), intent(in) :: hr_cutoff
-!   real(kind=dp), intent(in) :: dist_cutoff
-    !real(kind=dp), intent(in) :: recip_metric(3, 3)
-    real(kind=dp), intent(in) :: eigval(:, :)
-!   real(kind=dp), intent(in) ::bands_spec_points(:, :)
-!   real(kind=dp), intent(inout) :: translation_centre_frac(3)
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-!   logical, intent(in) :: bands_plot
-!    logical, intent(in) :: dos_plot
-!   logical, intent(in) :: fermi_surface_plot
-!   logical, intent(in) :: wannier_plot
-!   logical, intent(in) :: write_bvec
-!   logical, intent(in) :: write_hr
-!   logical, intent(in) :: write_rmn
-!   logical, intent(in) :: write_tb
-!   logical, intent(in) :: write_u_matrices
-!   logical, intent(in) :: automatic_translation
-!   logical, intent(in) :: have_disentangled
-!   logical, intent(in) :: lwindow(:, :)
-    logical, intent(in) :: lsitesymmetry
-!   logical, intent(in) :: transport
-!   logical, intent(in) :: wannier_plot_spinor_phase
-!   logical, intent(in) :: spinors
-!   logical, intent(in) :: wvfn_formatted
-!   logical, intent(in) :: use_ws_distance
     character(len=20), intent(in) :: transport_mode
-!   character(len=20), intent(in) :: bands_plot_mode
-!   character(len=20), intent(in) :: wannier_plot_spinor_mode
-!   character(len=20), intent(in) :: wannier_plot_format
-!   character(len=20), intent(in) :: wannier_plot_mode
-!   character(len=20), intent(in) :: dist_cutoff_mode
-!   character(len=2), intent(in) :: atoms_symbol(:)
-!   character(len=20), intent(in) :: bands_plot_format
-!   character(len=20), intent(in) ::bands_label(:)
-!   end w90_parameters
+    logical, intent(in) :: lsitesymmetry
 
     integer :: nkp
     logical :: have_gamma
@@ -189,56 +110,49 @@ contains
            & ' Interpolation may be incorrect. !!!!'
       ! Transform Hamiltonian to WF basis
       !
-      call hamiltonian_setup(param_input, real_lattice, &
-                             mp_grid, transport_mode, w90_calcs, &
-                             num_kpts, num_wann, ham_r, irvec, ndegen, &
-                             nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                             ham_k)
+      call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
+                             num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
+                             wannier_centres_translated, hmlg, ham_k)
       !
-      call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
-                              atoms, param_hamil, &
-                              param_input, dis_data, &
-                              u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
-                              lsitesymmetry, num_bands, num_kpts, num_wann, &
-                              ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
-                              hmlg, ham_k)
+      call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, param_hamil, &
+                              param_input, dis_data, u_matrix_opt, k_points%kpt_latt, eigval, &
+                              u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, &
+                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k)
       !
-      if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, &
-                                                            param_plot, &
-                                                            spec_points, &
-                                                            param_input, &
-                                                            recip_lattice, num_wann, &
-                                                            wann_data, ham_r, irvec, ndegen, &
-                                                            nrpts, wannier_centres_translated)
+      if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, param_plot, &
+                                                            spec_points, param_input, &
+                                                            recip_lattice, num_wann, wann_data, &
+                                                            ham_r, irvec, ndegen, nrpts, &
+                                                            wannier_centres_translated)
       !
-      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, &
-                                                                recip_lattice, param_input, fermi_surface_data, num_wann, &
+      if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, param_input, &
+                                                                fermi_surface_data, num_wann, &
                                                                 ham_r, irvec, ndegen, nrpts)
       !
-      if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
+      if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, &
+                                                        irvec, ndegen, nrpts, hmlg)
       !
-      if (param_plot%write_rmn) call hamiltonian_write_rmn(m_matrix, kmesh_info%wb, kmesh_info%bk, num_wann, &
-                                                           num_kpts, k_points%kpt_latt, kmesh_info%nntot, irvec, nrpts)
+      if (param_plot%write_rmn) call hamiltonian_write_rmn(m_matrix, kmesh_info, num_wann, &
+                                                           num_kpts, k_points%kpt_latt, irvec, &
+                                                           nrpts)
       !
-      if (param_plot%write_tb) call hamiltonian_write_tb(real_lattice, num_wann, kmesh_info%wb, kmesh_info%bk, &
-                                                         m_matrix, num_kpts, k_points%kpt_latt, kmesh_info%nntot, &
+      if (param_plot%write_tb) call hamiltonian_write_tb(real_lattice, num_wann, kmesh_info, &
+                                                         m_matrix, num_kpts, k_points%kpt_latt, &
                                                          param_input%timing_level, ham_r, irvec, &
                                                          ndegen, nrpts, hmlg)
       !
       if (w90_calcs%write_hr .or. param_plot%write_rmn .or. param_plot%write_tb) then
-        if (.not. done_ws_distance) call ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, num_wann, &
-                                                           wann_data%centres, real_lattice, recip_lattice, &
-                                                           mp_grid, nrpts, irvec)
+        if (.not. done_ws_distance) call ws_translate_dist(param_input, num_wann, &
+                                                           wann_data%centres, real_lattice, &
+                                                           recip_lattice, mp_grid, nrpts, irvec)
         call ws_write_vec(nrpts, irvec, num_wann, param_input%use_ws_distance)
       end if
     end if
 
-    if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, param_plot, &
-                                                  wann_data, &
-                                                  param_input, &
-                                                  u_matrix_opt, dis_data, real_lattice, atoms, &
-                                                  k_points, &
-                                                  u_matrix, num_kpts, num_bands, num_wann)
+    if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, param_plot, wann_data, &
+                                                  param_input, u_matrix_opt, dis_data, &
+                                                  real_lattice, atoms, k_points, u_matrix, &
+                                                  num_kpts, num_bands, num_wann)
 
     if (param_plot%write_bvec) call plot_bvec(kmesh_info, num_kpts)
 
@@ -254,12 +168,9 @@ contains
   !-----------------------------------!
 
   !============================================!
-  subroutine plot_interpolate_bands(mp_grid, real_lattice, &
-                                    param_plot, &
-                                    spec_points, param_input, &
-                                    recip_lattice, num_wann, &
-                                    wann_data, ham_r, irvec, &
-                                    ndegen, nrpts, wannier_centres_translated)
+  subroutine plot_interpolate_bands(mp_grid, real_lattice, param_plot, spec_points, param_input, &
+                                    recip_lattice, num_wann, wann_data, ham_r, irvec, ndegen, &
+                                    nrpts, wannier_centres_translated)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -267,10 +178,8 @@ contains
     !============================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, &
-      io_time, io_stopwatch
-    use w90_ws_distance, only: irdist_ws, wdist_ndeg, &
-      ws_translate_dist
+    use w90_io, only: io_error, stdout, io_file_unit, seedname, io_time, io_stopwatch
+    use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type, wannier_data_type, &
       special_kpoints_type
@@ -279,58 +188,20 @@ contains
     implicit none
 
     type(parameter_input_type), intent(in) :: param_input
-    type(param_plot_type), intent(in) :: param_plot
-    type(wannier_data_type), intent(in) :: wann_data
+    type(param_plot_type), intent(in)      :: param_plot
+    type(wannier_data_type), intent(in)    :: wann_data
     type(special_kpoints_type), intent(in) :: spec_points
 
-!   from w90_hamiltonian
     integer, intent(inout) :: nrpts
     integer, intent(in) :: ndegen(:)
     integer, intent(in) :: irvec(:, :)
-    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
-    complex(kind=dp), intent(in) :: ham_r(:, :, :)
-!   end w90_hamiltonian
-
-!   from w90 parameters
     integer, intent(in) :: mp_grid(3)
-!   integer, intent(in) :: one_dim_dir
-!   integer, intent(in) :: bands_plot_dim
-!   integer, intent(in) :: bands_plot_project(:)
-!   integer, intent(in) :: num_bands_project
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: bands_num_spec_points
-!   integer, intent(in) :: bands_num_points
     integer, intent(in) :: num_wann
-!   !integer, intent(in) :: iprint
-!   integer, intent(in) :: ws_search_size(3)
-!   real(kind=dp), intent(in) :: dist_cutoff
-!   real(kind=dp), intent(in) :: hr_cutoff
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!   real(kind=dp), intent(in) ::bands_spec_points(:, :)
-!   real(kind=dp), intent(in) :: wannier_centres(:, :)
-!   real(kind=dp), intent(in) :: ws_distance_tol
-!   logical, intent(in) :: use_ws_distance
-!   character(len=20), intent(in) :: dist_cutoff_mode
-!   character(len=20), intent(in) :: bands_plot_mode
-!   character(len=20), intent(in) :: bands_plot_format
-!   character(len=20), intent(in) ::bands_label(:)
-!   end w90 parameters
+    real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
+    complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
-    complex(kind=dp), allocatable  :: ham_r_cut(:, :, :)
-    complex(kind=dp), allocatable  :: ham_pack(:)
-    complex(kind=dp)              :: fac
-    complex(kind=dp), allocatable  :: ham_kprm(:, :)
-    complex(kind=dp), allocatable  :: U_int(:, :)
-    complex(kind=dp), allocatable  :: cwork(:)
-    real(kind=dp), allocatable     :: rwork(:)
-    real(kind=dp)      :: kpath_len(spec_points%bands_num_spec_points/2)
-    integer            :: kpath_pts(spec_points%bands_num_spec_points/2)
-    logical            :: kpath_print_first_point(spec_points%bands_num_spec_points/2)
-    real(kind=dp), allocatable :: xval(:)
-    real(kind=dp), allocatable :: eig_int(:, :), plot_kpoint(:, :)
-    real(kind=dp), allocatable :: bands_proj(:, :)
-    real(kind=dp)        :: rdotk, vec(3), emin, emax, time0
     integer, allocatable :: irvec_cut(:, :)
     integer              :: irvec_max(3)
     integer              :: nrpts_cut
@@ -340,12 +211,30 @@ contains
     integer              :: loop_spts, total_pts, loop_i, nkp, ideg
     integer              :: num_paths, num_spts, ierr
     integer              :: bndunit, gnuunit, loop_w, loop_p
-    character(len=20), allocatable   :: glabel(:)
+    integer              :: kpath_pts(spec_points%bands_num_spec_points/2)
+    integer, allocatable :: idx_special_points(:)
+
+    real(kind=dp)              :: kpath_len(spec_points%bands_num_spec_points/2)
+    real(kind=dp)              :: rdotk, vec(3), emin, emax, time0
+    real(kind=dp), allocatable :: rwork(:)
+    real(kind=dp), allocatable :: xval(:)
+    real(kind=dp), allocatable :: eig_int(:, :), plot_kpoint(:, :)
+    real(kind=dp), allocatable :: bands_proj(:, :)
+    real(kind=dp), allocatable :: xval_special_points(:)
+    real(kind=dp)              :: recip_metric(3, 3)
+
+    complex(kind=dp)               :: fac
+    complex(kind=dp), allocatable  :: ham_r_cut(:, :, :)
+    complex(kind=dp), allocatable  :: ham_pack(:)
+    complex(kind=dp), allocatable  :: ham_kprm(:, :)
+    complex(kind=dp), allocatable  :: U_int(:, :)
+    complex(kind=dp), allocatable  :: cwork(:)
+
+    logical            :: kpath_print_first_point(spec_points%bands_num_spec_points/2)
+
+    character(len=20), allocatable  :: glabel(:)
     character(len=10), allocatable  :: xlabel(:)
     character(len=10), allocatable  :: ctemp(:)
-    integer, allocatable :: idx_special_points(:)
-    real(kind=dp), allocatable :: xval_special_points(:)
-    real(kind=dp) :: recip_metric(3, 3)
 
     !
     if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1)
@@ -391,8 +280,10 @@ contains
     do i = 2, num_paths
       ! If either the coordinates are different or the label is different, compute again the point
       ! (it will end up at the same x coordinate)
-      if ((SUM((spec_points%bands_spec_points(:, (i - 1)*2) - spec_points%bands_spec_points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
-          (TRIM(spec_points%bands_label((i - 1)*2)) .ne. TRIM(spec_points%bands_label((i - 1)*2 + 1)))) then
+      if ((SUM((spec_points%bands_spec_points(:, (i - 1)*2) - &
+                spec_points%bands_spec_points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
+          (TRIM(spec_points%bands_label((i - 1)*2)) .ne. &
+           TRIM(spec_points%bands_label((i - 1)*2 + 1)))) then
         kpath_print_first_point(i) = .true.
       end if
     enddo
@@ -404,12 +295,14 @@ contains
     end do
 
     do loop_spts = 1, num_paths
-      vec = spec_points%bands_spec_points(:, 2*loop_spts) - spec_points%bands_spec_points(:, 2*loop_spts - 1)
+      vec = spec_points%bands_spec_points(:, 2*loop_spts) - &
+            spec_points%bands_spec_points(:, 2*loop_spts - 1)
       kpath_len(loop_spts) = sqrt(dot_product(vec, (matmul(recip_metric, vec))))
       if (loop_spts == 1) then
         kpath_pts(loop_spts) = param_plot%bands_num_points
       else
-        kpath_pts(loop_spts) = nint(real(param_plot%bands_num_points, dp)*kpath_len(loop_spts)/kpath_len(1))
+        kpath_pts(loop_spts) = nint(real(param_plot%bands_num_points, dp)*kpath_len(loop_spts)/ &
+                                    kpath_len(1))
         ! At least 1 point
         !if (kpath_pts(loop_spts) .eq. 0) kpath_pts(loop_spts) = 1
       end if
@@ -493,7 +386,8 @@ contains
     bndunit = io_file_unit()
     open (bndunit, file=trim(seedname)//'_band.labelinfo.dat', form='formatted')
     do loop_spts = 1, spec_points%bands_num_spec_points
-      if ((MOD(loop_spts, 2) .eq. 1) .and. (kpath_print_first_point((loop_spts + 1)/2) .eqv. .false.)) cycle
+      if ((MOD(loop_spts, 2) .eq. 1) .and. &
+          (kpath_print_first_point((loop_spts + 1)/2) .eqv. .false.)) cycle
       write (bndunit, '(a,3x,I10,3x,4f18.10)') &
         spec_points%bands_label(loop_spts), &
         idx_special_points(loop_spts), &
@@ -512,10 +406,10 @@ contains
     !
     if (param_input%use_ws_distance) then
       if (index(param_input%bands_plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, num_wann, wann_data%centres, real_lattice, &
+        call ws_translate_dist(param_input, num_wann, wann_data%centres, real_lattice, &
                                recip_lattice, mp_grid, nrpts, irvec, force_recompute=.true.)
       elseif (index(param_input%bands_plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(param_input%ws_distance_tol, param_input%ws_search_size, num_wann, wann_data%centres, real_lattice, &
+        call ws_translate_dist(param_input, num_wann, wann_data%centres, real_lattice, &
                                recip_lattice, mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
       else
         call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised')
@@ -594,7 +488,8 @@ contains
       do loop_w = 1, num_wann
         do loop_p = 1, num_wann
           if (any(param_plot%bands_plot_project == loop_p)) then
-            bands_proj(loop_w, loop_kpt) = bands_proj(loop_w, loop_kpt) + abs(U_int(loop_p, loop_w))**2
+            bands_proj(loop_w, loop_kpt) = bands_proj(loop_w, loop_kpt) + &
+                                           abs(U_int(loop_p, loop_w))**2
           end if
         end do
       end do
@@ -609,7 +504,8 @@ contains
     emax = maxval(eig_int) + 1.0_dp
 
     if (index(param_plot%bands_plot_format, 'gnu') > 0) call plot_interpolate_gnuplot(param_plot, &
-                                                                                      spec_points, num_wann)
+                                                                                      spec_points, &
+                                                                                      num_wann)
     if (index(param_plot%bands_plot_format, 'xmgr') > 0) call plot_interpolate_xmgrace(spec_points, &
                                                                                        num_wann)
 
@@ -625,16 +521,17 @@ contains
     if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2)
     !
     if (allocated(idx_special_points)) deallocate (idx_special_points, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating idx_special_points in plot_interpolate_bands')
+    if (ierr /= 0) call io_error('Error in deallocating idx_special_points in &
+                                 &plot_interpolate_bands')
     if (allocated(xval_special_points)) deallocate (xval_special_points, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating xval_special_points in plot_interpolate_bands')
+    if (ierr /= 0) call io_error('Error in deallocating xval_special_points in &
+                                 &plot_interpolate_bands')
 
   contains
 
     !============================================!
-    subroutine plot_cut_hr( &
-      param_plot, param_input, real_lattice, mp_grid, num_wann, &
-      wannier_centres_translated)
+    subroutine plot_cut_hr(param_plot, param_input, real_lattice, mp_grid, num_wann, &
+                           wannier_centres_translated)
       !============================================!
       !
       !!  In real-space picture, ham_r(j,i,k) is an interaction between
@@ -667,16 +564,9 @@ contains
 
       real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
 
-!     from w90_parameters
-!     integer, intent(in) :: one_dim_dir
-!     integer, intent(in) :: bands_plot_dim
       integer, intent(in) :: mp_grid(3)
       integer, intent(in) :: num_wann
       real(kind=dp), intent(in) :: real_lattice(3, 3)
-!     real(kind=dp), intent(in) :: dist_cutoff
-!     real(kind=dp), intent(in) :: hr_cutoff
-!     character(len=20), intent(in) :: dist_cutoff_mode
-!     end w90_parameters
 
       integer :: nrpts_tmp
       integer :: one_dim_vec, two_dim_vec(2)
@@ -768,9 +658,11 @@ contains
         do i = 1, num_wann
           do j = 1, num_wann
             dist_ij_vec(param_input%one_dim_dir) = &
-              wannier_centres_translated(param_input%one_dim_dir, i) - wannier_centres_translated(param_input%one_dim_dir, j)
+              wannier_centres_translated(param_input%one_dim_dir, i) - &
+              wannier_centres_translated(param_input%one_dim_dir, j)
             do irpt = 1, nrpts_cut
-              dist_vec(param_input%one_dim_dir) = dist_ij_vec(param_input%one_dim_dir) + shift_vec(param_input%one_dim_dir, irpt)
+              dist_vec(param_input%one_dim_dir) = dist_ij_vec(param_input%one_dim_dir) + &
+                                                  shift_vec(param_input%one_dim_dir, irpt)
               dist = abs(dist_vec(param_input%one_dim_dir))
               if (dist .gt. param_input%dist_cutoff) &
                 ham_r_cut(j, i, irpt) = cmplx_0
@@ -829,8 +721,7 @@ contains
     end subroutine plot_cut_hr
 
     !============================================!
-    subroutine plot_interpolate_gnuplot(param_plot, spec_points, &
-                                        num_wann)
+    subroutine plot_interpolate_gnuplot(param_plot, spec_points, num_wann)
       !============================================!
       !                                            !
       !! Plots the interpolated band structure in gnuplot format
@@ -846,12 +737,7 @@ contains
       type(param_plot_type), intent(in) :: param_plot
       type(special_kpoints_type), intent(in) :: spec_points
 
-!     from w90_parameters
-!     integer, intent(in) :: num_bands_project
-!     integer, intent(in) :: bands_num_spec_points
       integer, intent(in) :: num_wann
-!     character(len=20), intent(in) :: bands_label(:)
-!     end w90_parameters
       !
       bndunit = io_file_unit()
       open (bndunit, file=trim(seedname)//'_band.dat', form='formatted')
@@ -875,7 +761,8 @@ contains
       glabel(1) = TRIM(spec_points%bands_label(1))
       do i = 2, num_paths
         if (spec_points%bands_label(2*(i - 1)) /= spec_points%bands_label(2*(i - 1) + 1)) then
-          glabel(i) = TRIM(spec_points%bands_label(2*(i - 1)))//'|'//TRIM(spec_points%bands_label(2*(i - 1) + 1))
+          glabel(i) = TRIM(spec_points%bands_label(2*(i - 1)))//'|'// &
+                      TRIM(spec_points%bands_label(2*(i - 1) + 1))
         else
           glabel(i) = TRIM(spec_points%bands_label(2*(i - 1)))
         end if
@@ -899,7 +786,8 @@ contains
         write (gnuunit, '(a)') 'set palette defined ( 0 "blue", 3 "green", 6 "yellow", 10 "red" )'
         write (gnuunit, '(a)') 'unset ztics'
         write (gnuunit, '(a)') 'unset key'
-        write (gnuunit, '(a)') '# can make pointsize smaller (~0.5). Too small and nothing is printed'
+        write (gnuunit, '(a)') '# can make pointsize smaller (~0.5). Too small and nothing is &
+          &printed'
         write (gnuunit, '(a)') 'set pointsize 0.8'
         write (gnuunit, '(a)') 'set grid xtics'
         write (gnuunit, '(a)') 'set view 0,0'
@@ -909,13 +797,15 @@ contains
           (glabel(i + 1), sum(kpath_len(1:i)), i=1, spec_points%bands_num_spec_points/2 - 1)
         write (gnuunit, 703) glabel(1 + spec_points%bands_num_spec_points/2), sum(kpath_len(:))
 
-        write (gnuunit, '(a,a,a,a)') 'splot ', '"'//trim(seedname)//'_band.dat', '"', ' u 1:2:3 w p pt 13 palette'
+        write (gnuunit, '(a,a,a,a)') 'splot ', '"'//trim(seedname)//'_band.dat', '"', &
+          ' u 1:2:3 w p pt 13 palette'
         write (gnuunit, '(a)') '#use the next lines to make a nice figure for a paper'
         write (gnuunit, '(a)') '#set term postscript enhanced eps color lw 0.5 dl 0.5'
         write (gnuunit, '(a)') '#set pointsize 0.275'
       end if
       !
-701   format('set style data dots', /, 'set nokey', /, 'set xrange [0:', F8.5, ']', /, 'set yrange [', F9.5, ' :', F9.5, ']')
+701   format('set style data dots', /, 'set nokey', /, 'set xrange [0:', F8.5, ']', /, &
+             'set yrange [', F9.5, ' :', F9.5, ']')
 702   format('set xtics (', :20('"', A, '" ', F8.5, ','))
 703   format(A, '" ', F8.5, ')')
 705   format('set arrow from ', F8.5, ',', F10.5, ' to ', F8.5, ',', F10.5, ' nohead')
@@ -935,10 +825,7 @@ contains
 
       type(special_kpoints_type), intent(in) :: spec_points
 
-!     from w90_parameters
-!     integer, intent(in) :: bands_num_spec_points
       integer, intent(in) :: num_wann
-!     end w90_parameters
 
       character(len=9) :: cdate, ctime
 
@@ -994,7 +881,8 @@ contains
       write (gnuunit, '(a,i0)') '@    xaxis  tick spec ', 1 + spec_points%bands_num_spec_points/2
       write (gnuunit, '(a)') '@    xaxis  tick major 0, 0'
       do i = 1, spec_points%bands_num_spec_points/2
-        write (gnuunit, '(a,i0,a,a)') '@    xaxis  ticklabel ', i - 1, ',', '"'//trim(adjustl(xlabel(i)))//'"'
+        write (gnuunit, '(a,i0,a,a)') '@    xaxis  ticklabel ', i - 1, ',', '"'// &
+          trim(adjustl(xlabel(i)))//'"'
         write (gnuunit, '(a,i0,a,f10.5)') '@    xaxis  tick major ', i, ' , ', sum(kpath_len(1:i))
       end do
       write (gnuunit, '(a,i0,a)') '@    xaxis  ticklabel ', spec_points%bands_num_spec_points/2 &
@@ -1021,9 +909,8 @@ contains
   end subroutine plot_interpolate_bands
 
   !===========================================================!
-  subroutine plot_fermi_surface(fermi, recip_lattice, &
-                                param_input, fermi_surface_data, num_wann, ham_r, irvec, ndegen, &
-                                nrpts)
+  subroutine plot_fermi_surface(fermi, recip_lattice, param_input, fermi_surface_data, num_wann, &
+                                ham_r, irvec, ndegen, nrpts)
     !===========================================================!
     !                                                           !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -1031,35 +918,23 @@ contains
     !===========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, &
-      io_date, io_time, io_stopwatch
+    use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
     use w90_param_types, only: parameter_input_type, fermi_data_type
     use wannier_param_types, only: fermi_surface_type
-
-!   use w90_hamiltonian, only: irvec, nrpts, ndegen, ham_r
-!   use w90_hamiltonian, only: nrpts
 
     implicit none
 
     type(parameter_input_type), intent(in) :: param_input
-    type(fermi_data_type), intent(in) :: fermi
-    type(fermi_surface_type), intent(in) :: fermi_surface_data
+    type(fermi_data_type), intent(in)      :: fermi
+    type(fermi_surface_type), intent(in)   :: fermi_surface_data
 
-!   from w90_hamiltonian
     integer, intent(in) :: nrpts
     integer, intent(in) :: ndegen(:)
     integer, intent(in) :: irvec(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-!   end w90_hamiltonian
 
-!   from w90_parameters
-!   integer, intent(in) :: nfermi
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: fermi_surface_num_points
     integer, intent(in) :: num_wann
-!   real(kind=dp), intent(in) :: fermi_energy_list(:)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!   end w90_parameters
 
     complex(kind=dp), allocatable :: ham_pack(:)
     complex(kind=dp)   :: fac
@@ -1156,7 +1031,8 @@ contains
     write (bxsf_unit, *) 'from_wannier_code'
     write (bxsf_unit, *) ' BEGIN_BANDGRID_3D_fermi'
     write (bxsf_unit, *) num_wann
-    write (bxsf_unit, *) fermi_surface_data%num_points + 1, fermi_surface_data%num_points + 1, fermi_surface_data%num_points + 1
+    write (bxsf_unit, *) fermi_surface_data%num_points + 1, fermi_surface_data%num_points + 1, &
+      fermi_surface_data%num_points + 1
     write (bxsf_unit, *) '0.0 0.0 0.0'
     write (bxsf_unit, *) (recip_lattice(1, i), i=1, 3)
     write (bxsf_unit, *) (recip_lattice(2, i), i=1, 3)
@@ -1171,7 +1047,8 @@ contains
     write (bxsf_unit, *) ' END_BLOCK_BANDGRID_3D'
     close (bxsf_unit)
 
-    write (stdout, '(1x,a,f11.3,a)') 'Time to calculate interpolated Fermi surface ', io_time() - time0, ' (sec)'
+    write (stdout, '(1x,a,f11.3,a)') 'Time to calculate interpolated Fermi surface ', &
+      io_time() - time0, ' (sec)'
     write (stdout, *)
     !
     if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 2)
@@ -1181,12 +1058,8 @@ contains
   end subroutine plot_fermi_surface
 
   !============================================!
-  subroutine plot_wannier(recip_lattice, param_plot, &
-                          wann_data, &
-                          param_input, &
-                          u_matrix_opt, dis_data, &
-                          real_lattice, atoms, &
-                          k_points, u_matrix, num_kpts, &
+  subroutine plot_wannier(recip_lattice, param_plot, wann_data, param_input, u_matrix_opt, &
+                          dis_data, real_lattice, atoms, k_points, u_matrix, num_kpts, &
                           num_bands, num_wann)
     !============================================!
     !                                            !
@@ -1196,10 +1069,9 @@ contains
     !============================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, &
-      io_date, io_stopwatch
-    use w90_param_types, only: k_point_type, parameter_input_type, &
-      wannier_data_type, atom_data_type, disentangle_type
+    use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
+    use w90_param_types, only: k_point_type, parameter_input_type, wannier_data_type, &
+      atom_data_type, disentangle_type
     use wannier_param_types, only: param_plot_type
 !   w90_parameters: ngs => wannier_plot_supercell
 
