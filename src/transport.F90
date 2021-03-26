@@ -76,16 +76,6 @@ module w90_transport
 
   integer, parameter :: nterx = 50
   !! nterx  = # of maximum iteration to calculate transfer matrix
-! integer :: one_dim_vec
-  !! cartesian axis to which real_lattice(:,one_dim_vec) is parallel
-! integer :: nrpts_one_dim
-! integer :: num_pl
-  !! number of unit cell in a principal layer
-! integer, dimension(3) :: coord
-  !! coord : coord(1) defines the conduction direction according to 1=x,2=y,3=z,
-  !! coord(2),coord(3) define the other directions during sorting routines
-! integer, allocatable :: tran_sorted_idx(:)
-  !! index of sorted WF centres to unsorted
 
   real(kind=dp), allocatable :: hr_one_dim(:, :, :)
   real(kind=dp), allocatable :: hB0(:, :)
@@ -103,18 +93,11 @@ module w90_transport
 
 contains
   !==================================================================!
-  subroutine tran_main(tran, param_input, w90_calcs, &
-                       num_wann, real_lattice, recip_lattice, wann_data, &
-                       atoms, param_hamil, &
-                       dis_data, u_matrix_opt, k_points, eigval, &
-                       u_matrix, lsitesymmetry, num_bands, num_kpts, &
-                       mp_grid, &
-                       fermi, &
-                       !                      tran_group_threshold, &
-                       ham_r, irvec, &
-                       shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, &
-                       hmlg, ham_k)
-
+  subroutine tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, &
+                       wann_data, atoms, param_hamil, dis_data, u_matrix_opt, k_points, eigval, &
+                       u_matrix, lsitesymmetry, num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, &
+                       shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
+                       ham_k)
     !! Main transport subroutine
     !==================================================================!
 
@@ -123,116 +106,60 @@ contains
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       ham_logical
     use w90_param_types, only: transport_type, parameter_input_type, w90_calculation_type, &
-      wannier_data_type, atom_data_type, param_hamiltonian_type, &
-      disentangle_type, k_point_type, fermi_data_type
+      wannier_data_type, atom_data_type, param_hamiltonian_type, disentangle_type, k_point_type, &
+      fermi_data_type
 
     implicit none
 
-    type(transport_type), intent(inout) :: tran
-    type(parameter_input_type), intent(inout) :: param_input
-    type(w90_calculation_type), intent(in) :: w90_calcs
-    type(wannier_data_type), intent(in) :: wann_data
-    type(atom_data_type), intent(in) :: atoms
+    type(transport_type), intent(inout)         :: tran
+    type(parameter_input_type), intent(inout)   :: param_input
+    type(w90_calculation_type), intent(in)      :: w90_calcs
+    type(wannier_data_type), intent(in)         :: wann_data
+    type(atom_data_type), intent(in)            :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
-    type(disentangle_type), intent(in) :: dis_data
-    type(k_point_type), intent(in) :: k_points
-    type(fermi_data_type), intent(in) :: fermi
+    type(disentangle_type), intent(in)          :: dis_data
+    type(k_point_type), intent(in)              :: k_points
+    type(fermi_data_type), intent(in)           :: fermi
+    type(ham_logical), intent(inout)            :: hmlg
 
-    integer :: one_dim_vec
+    integer, intent(inout)              :: rpt_origin
+    integer, intent(inout)              :: nrpts
+    integer, intent(inout), allocatable :: ndegen(:)
+    integer, intent(inout), allocatable :: shift_vec(:, :)
+    integer, intent(inout), allocatable :: irvec(:, :)
+    integer, intent(in)                 :: num_wann
+    integer, intent(in)                 :: num_bands
+    integer, intent(in)                 :: num_kpts
+    integer, intent(in)                 :: mp_grid(3)
+
+    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
+    real(kind=dp), intent(in)                 :: real_lattice(3, 3)
+    real(kind=dp), intent(in)                 :: recip_lattice(3, 3)
+    real(kind=dp), intent(in)                 :: eigval(:, :)
+
+    complex(kind=dp), intent(in)                 :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in)                 :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
+    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+
+    logical, intent(in) :: lsitesymmetry  !YN:
+
+    integer              :: one_dim_vec
     !! cartesian axis to which real_lattice(:,one_dim_vec) is parallel
-    integer :: nrpts_one_dim
-    integer :: num_pl
+    integer              :: nrpts_one_dim
+    integer              :: num_pl
     !! number of unit cell in a principal layer
-    integer :: coord(3)
+    integer              :: coord(3)
     !! coord : coord(1) defines the conduction direction according to
     !1=x,2=y,3=z,
     !! coord(2),coord(3) define the other directions during sorting routines
     integer, allocatable :: tran_sorted_idx(:)
     !! index of sorted WF centres to unsorted
+    integer              :: num_G
 
-    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
-!   logical, intent(inout) :: ham_have_setup
-!   logical, intent(inout) :: have_translated
-!   logical, intent(inout) :: use_translation
-    type(ham_logical), intent(inout) :: hmlg
+    real(kind=dp), allocatable, dimension(:, :) :: signatures
 
-!   from w90_hamiltonian
-    integer, intent(inout) :: rpt_origin
-    integer, intent(inout) :: nrpts
-    integer, intent(inout), allocatable :: ndegen(:)
-    integer, intent(inout), allocatable :: shift_vec(:, :)
-    integer, intent(inout), allocatable :: irvec(:, :)
-    real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
-    complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-
-!   end w90_hamiltonian
-
-!   from w90_parameters
-    integer, intent(in) :: num_wann
-!    integer, intent(in) :: timing_level
-!   integer, intent(in) :: one_dim_dir
-!   real(kind=dp), intent(in) :: hr_cutoff
-!   logical, intent(in) :: tran_read_ht
-!   logical, intent(in) :: write_hr
-!   logical, intent(in) :: write_xyz
-!   character(len=20), intent(in) :: transport_mode
-!   character(len=20), intent(in) :: length_unit
-!   integer, intent(in) :: num_atoms
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: atoms_species_num(:)
-!   integer, intent(in) :: ndimwin(:)
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: num_kpts
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!   real(kind=dp), intent(in) :: wannier_centres(:, :)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   real(kind=dp), intent(out) :: translation_centre_frac(3)
-!   real(kind=dp), intent(in) :: lenconfac
-!   real(kind=dp), intent(in) :: kpt_latt(:, :)
-    real(kind=dp), intent(in) :: eigval(:, :)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-!   logical, intent(in) :: automatic_translation
-!   logical, intent(in) :: have_disentangled
-!   logical, intent(in) :: lwindow(:, :)
-    logical, intent(in) :: lsitesymmetry  !YN:
-!   integer, intent(in) :: ws_search_size(3)
-    integer, intent(in) :: mp_grid(3)
-!   integer, intent(in) :: iprint
-!   real(kind=dp), intent(in) :: ws_distance_tol
-!   real(kind=dp), intent(in) :: wannier_spreads(:)
-    !real(kind=dp), intent(in) :: real_metric(3, 3)
-!   character(len=20), intent(in) :: bands_plot_mode
-!   logical, intent(in) :: transport
-!   logical, intent(in) :: bands_plot
-!   integer, intent(in) :: nfermi
-!   integer, intent(inout):: tran_num_bandc
-!   integer, intent(inout) :: tran_num_cc
-!   integer, intent(inout) :: tran_num_cr
-!   integer, intent(inout) :: tran_num_lc
-!   integer, intent(inout) :: tran_num_rr
-!   integer, intent(inout) :: tran_num_bb
-!   integer, intent(in) :: tran_num_ll
-!   integer, intent(in) :: tran_num_cell_ll
-!   real(kind=dp), intent(inout) :: dist_cutoff_hc
-!   real(kind=dp), intent(inout) :: dist_cutoff
-!   real(kind=dp), intent(in) :: fermi_energy_list(:)
-!   real(kind=dp), intent(in) ::kpt_cart(:, :)
-!   real(kind=dp), intent(in) :: tran_group_threshold
-!   real(kind=dp), intent(in) :: tran_energy_step
-!   real(kind=dp), intent(in) :: tran_win_min
-!   real(kind=dp), intent(in) :: tran_win_max
-!   logical, intent(in) :: tran_write_ht
-!   logical, intent(in) :: tran_easy_fix
-!   logical, intent(in) :: tran_use_same_lead
-!   character(len=20), intent(in) :: dist_cutoff_mode
-!   character(len=2), intent(in) :: atoms_symbol(:)
-!   end w90_parameters
-
-    real(kind=dp), allocatable, dimension(:, :)     :: signatures
-    integer                                      :: num_G
-    logical                                      :: pl_warning
+    logical :: pl_warning
 
     if (param_input%timing_level > 0) call io_stopwatch('tran: main', 1)
 
@@ -244,82 +171,60 @@ contains
     if (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: bulk mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(param_input, real_lattice, &
-                               mp_grid, tran, w90_calcs, &
-                               num_kpts, num_wann, ham_r, irvec, ndegen, &
-                               nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                               ham_k)
-        call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
-                                atoms, param_hamil, &
-                                param_input, dis_data, &
-                                u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
-                                lsitesymmetry, num_bands, num_kpts, num_wann, &
-                                ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
-                                hmlg, ham_k)
-        if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
-        call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
-                            irvec, nrpts, one_dim_vec, nrpts_one_dim)
-        call tran_cut_hr_one_dim( &
-          tran, &
-          real_lattice, param_input, &
-          mp_grid, num_wann, wannier_centres_translated, one_dim_vec, &
-          nrpts_one_dim, num_pl)
-        call tran_get_ht(fermi, param_input, &
-                         num_wann, tran, num_pl)
-        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
-                                                       num_wann, &
+        call hamiltonian_setup(param_input, real_lattice, mp_grid, tran, w90_calcs, num_kpts, &
+                               num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
+                               wannier_centres_translated, hmlg, ham_k)
+        call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, &
+                                param_hamil, param_input, dis_data, u_matrix_opt, &
+                                k_points%kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
+                                num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
+                                wannier_centres_translated, hmlg, ham_k)
+        if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, &
+                                                          ham_r, irvec, ndegen, nrpts, hmlg)
+        call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+                            one_dim_vec, nrpts_one_dim)
+        call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                                 wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl)
+        call tran_get_ht(fermi, param_input, num_wann, tran, num_pl)
+        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                        wannier_centres_translated, tran_sorted_idx)
       end if
-      call tran_bulk(param_input, &
-                     tran)
+      call tran_bulk(param_input, tran)
     end if
 
     if (index(tran%mode, 'lcr') > 0) then
       write (stdout, '(/1x,a/)') 'Calculation of Quantum Conductance and DoS: lead-conductor-lead mode'
       if (.not. tran%read_ht) then
-        call hamiltonian_setup(param_input, real_lattice, &
-                               mp_grid, tran, w90_calcs, &
-                               num_kpts, num_wann, ham_r, irvec, ndegen, &
-                               nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                               ham_k)
-        call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, &
-                                atoms, param_hamil, &
-                                param_input, dis_data, &
-                                u_matrix_opt, k_points%kpt_latt, eigval, u_matrix, &
-                                lsitesymmetry, num_bands, num_kpts, num_wann, &
-                                ham_r, irvec, shift_vec, nrpts, wannier_centres_translated, &
-                                hmlg, ham_k)
-        if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
-        call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
-                            irvec, nrpts, one_dim_vec, nrpts_one_dim)
-        call tran_cut_hr_one_dim( &
-          tran, &
-          real_lattice, param_input, &
-          mp_grid, num_wann, wannier_centres_translated, one_dim_vec, &
-          nrpts_one_dim, num_pl)
+        call hamiltonian_setup(param_input, real_lattice, mp_grid, tran, w90_calcs, num_kpts, &
+                               num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
+                               wannier_centres_translated, hmlg, ham_k)
+        call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, &
+                                param_hamil, param_input, dis_data, u_matrix_opt, &
+                                k_points%kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
+                                num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
+                                wannier_centres_translated, hmlg, ham_k)
+        if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, &
+                                                          ham_r, irvec, ndegen, nrpts, hmlg)
+        call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+                            one_dim_vec, nrpts_one_dim)
+        call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                                 wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl)
         write (stdout, *) '------------------------- 2c2 Calculation Type: ------------------------------'
         write (stdout, *) ' '
         call tran_find_integral_signatures(signatures, num_G, param_input, real_lattice, &
                                            u_matrix_opt, u_matrix, num_bands, num_wann, &
                                            wannier_centres_translated)
-        call tran_lcr_2c2_sort(signatures, num_G, pl_warning, &
-                               tran, atoms, &
-                               wann_data, param_input, &
-                               real_lattice, num_wann, &
-                               mp_grid, ham_r, irvec, nrpts, &
-                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, coord, &
-                               tran_sorted_idx)
-        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
-                                                       num_wann, &
+        call tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
+                               real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
+                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
+                               coord, tran_sorted_idx)
+        if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                        wannier_centres_translated, tran_sorted_idx)
-        call tran_parity_enforce(signatures, param_input, tran, &
-                                 num_wann, tran_sorted_idx)
-        call tran_lcr_2c2_build_ham(pl_warning, &
-                                    param_input, &
-                                    fermi, k_points, &
-                                    num_wann, tran, &
-                                    real_lattice, mp_grid, ham_r, irvec, nrpts, wannier_centres_translated, &
-                                    one_dim_vec, nrpts_one_dim, num_pl, coord, tran_sorted_idx)
+        call tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx)
+        call tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
+                                    real_lattice, mp_grid, ham_r, irvec, nrpts, &
+                                    wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
+                                    num_pl, coord, tran_sorted_idx)
       endif
       call tran_lcr(tran, param_input)
     end if
@@ -329,8 +234,8 @@ contains
   end subroutine tran_main
 
   !==================================================================!
-  subroutine tran_reduce_hr(param_input, mp_grid, real_lattice, &
-                            num_wann, ham_r, irvec, nrpts, one_dim_vec, nrpts_one_dim)
+  subroutine tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+                            one_dim_vec, nrpts_one_dim)
     !==================================================================!
     !
     ! reduce ham_r from 3-d to 1-d
@@ -346,19 +251,13 @@ contains
     integer, intent(inout) :: one_dim_vec
     integer, intent(inout) :: nrpts_one_dim
 
-!   from w90_hamiltonian
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-!   end w90_hamiltonian
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: one_dim_dir
     integer, intent(in) :: mp_grid(3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-!   end w90_parameters
 
     integer :: ierr
     integer :: irvec_max, irvec_tmp(3), two_dim_vec(2)
@@ -404,7 +303,8 @@ contains
     hr_one_dim = 0.0_dp
 
     ! check imaginary part
-    write (stdout, '(1x,a,F12.6)') 'Maximum imaginary part of the real-space Hamiltonian: ', maxval(abs(aimag(ham_r)))
+    write (stdout, '(1x,a,F12.6)') 'Maximum imaginary part of the real-space Hamiltonian: ', &
+      maxval(abs(aimag(ham_r)))
 
     ! select a subset of ham_r, where irvec is 0 along the two other lattice vectors
 
@@ -434,10 +334,8 @@ contains
   end subroutine tran_reduce_hr
 
   !==================================================================!
-  subroutine tran_cut_hr_one_dim( &
-    tran, &
-    real_lattice, param_input, mp_grid, num_wann, &
-    wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl)
+  subroutine tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                                 wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl)
     !==================================================================!
     !
     use w90_constants, only: dp
@@ -453,21 +351,9 @@ contains
     integer, intent(in) :: nrpts_one_dim
     integer, intent(inout) :: num_pl
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
-!    integer, intent(in) :: timing_level
-!   integer, intent(in) :: tran_num_cell_ll
-!   integer, intent(in) :: tran_num_ll
-!   integer, intent(in) :: one_dim_dir
     integer, intent(in) :: mp_grid(3)
-!   real(kind=dp), intent(in) :: hr_cutoff
-!   real(kind=dp), intent(inout) :: dist_cutoff
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-!   real(kind=dp), intent(inout) :: dist_cutoff_hc
-!   character(len=20), intent(in) :: transport_mode
-!   character(len=20), intent(in) :: dist_cutoff_mode
-!   character(len=20), intent(in) :: length_unit
-!   end w90_parameters
 
     !
     integer :: irvec_max
@@ -484,15 +370,16 @@ contains
     !
     irvec_max = nrpts_one_dim/2
     ! maximum possible param_input%dist_cutoff
-    dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(param_input%one_dim_dir, one_dim_vec))/2.0_dp
-
+    dist = real(mp_grid(one_dim_vec), dp)*abs(real_lattice(param_input%one_dim_dir, one_dim_vec)) &
+           /2.0_dp
     if (param_input%dist_cutoff .gt. dist) then
       write (stdout, '(1x,a,1x,F10.5,1x,a)') 'param_input%dist_cutoff', param_input%dist_cutoff, &
         trim(param_input%length_unit), 'is too large'
       param_input%dist_cutoff = dist
       ! aam_2012-04-13
       param_input%dist_cutoff_hc = dist
-      write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', param_input%dist_cutoff, trim(param_input%length_unit)
+      write (stdout, '(4x,a,1x,F10.5,1x,a)') 'reset to', param_input%dist_cutoff, &
+        trim(param_input%length_unit)
     end if
 
     do n1 = -irvec_max, irvec_max
@@ -584,11 +471,14 @@ contains
     end do
     write (stdout, '(1x,8x,a62)') repeat('-', 62)
     if (index(tran%mode, 'lcr') > 0) then
-      write (stdout, '(/1x,a,I6)') 'Number of unit cells inside the principal layer:', tran%num_cell_ll
-      write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', tran%num_ll
+      write (stdout, '(/1x,a,I6)') 'Number of unit cells inside the principal layer:', &
+        tran%num_cell_ll
+      write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', &
+        tran%num_ll
     elseif (index(tran%mode, 'bulk') > 0) then
       write (stdout, '(/1x,a,I6)') 'Number of unit cells inside the principal layer:', num_pl
-      write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', num_pl*num_wann
+      write (stdout, '(1x,a,I6)') 'Number of Wannier Functions inside the principal layer:', &
+        num_pl*num_wann
     endif
     ! apply param_input%hr_cutoff to each element inside the principal layer
     do n1 = -num_pl, num_pl
@@ -606,15 +496,13 @@ contains
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi, param_input, num_wann, &
-                         tran, num_pl)
+  subroutine tran_get_ht(fermi, param_input, num_wann, tran, num_pl)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
     !
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_stopwatch, seedname, io_date, &
-      io_file_unit
+    use w90_io, only: io_error, io_stopwatch, seedname, io_date, io_file_unit
     use w90_param_types, only: transport_type, parameter_input_type, fermi_data_type
 
     implicit none
@@ -625,14 +513,7 @@ contains
 
     integer, intent(in) :: num_pl
 
-!   from w90_parameters
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: nfermi
     integer, intent(in) :: num_wann
-!   integer, intent(inout) :: tran_num_bb
-!   real(kind=dp), intent(in) :: fermi_energy_list(:)
-!   logical, intent(in) :: tran_write_ht
-!   end w90_parameters
 
     integer :: ierr, file_unit
     integer :: i, j, n1, im, jm
@@ -682,7 +563,8 @@ contains
     if (tran%write_ht) then
 
       file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htB.dat', status='unknown', form='formatted', action='write')
+      open (file_unit, file=trim(seedname)//'_htB.dat', status='unknown', form='formatted', &
+            action='write')
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
@@ -702,28 +584,17 @@ contains
   end subroutine tran_get_ht
 
   !==================================================================!
-  subroutine tran_bulk(param_input, &
-                       tran)
+  subroutine tran_bulk(param_input, tran)
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_error, io_stopwatch, seedname, io_date, &
-      io_file_unit, stdout
+    use w90_io, only: io_error, io_stopwatch, seedname, io_date, io_file_unit, stdout
     use w90_param_types, only: transport_type, parameter_input_type
 
     implicit none
 
     type(transport_type), intent(in) :: tran
     type(parameter_input_type), intent(in) :: param_input
-
-!   from w90_parameters
-!    integer, intent(in) :: timing_level
-!   integer, intent(in) :: tran_num_bb
-!   real(kind=dp), intent(in) :: tran_energy_step
-!   real(kind=dp), intent(in) :: tran_win_min
-!   real(kind=dp), intent(in) :: tran_win_max
-!   logical, intent(in) :: tran_read_ht
-!   end w90_parameters
 
     integer :: qc_unit, dos_unit
     integer :: ierr
@@ -887,29 +758,13 @@ contains
     !==================================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_error, io_stopwatch, seedname, io_date, &
-      stdout, io_file_unit
+    use w90_io, only: io_error, io_stopwatch, seedname, io_date, stdout, io_file_unit
     use w90_param_types, only: transport_type, parameter_input_type
 
     implicit none
 
     type(transport_type), intent(in) :: tran
     type(parameter_input_type), intent(in) :: param_input
-
-!   from w90_parameters
-!    integer, intent(in) :: timing_level
-!   integer, intent(in):: tran_num_bandc
-!   integer, intent(inout) :: tran_num_cc
-!   integer, intent(in) :: tran_num_cr
-!   integer, intent(inout) :: tran_num_lc
-!   integer, intent(inout) :: tran_num_rr
-!   integer, intent(in) :: tran_num_ll
-!   real(kind=dp), intent(in) :: tran_energy_step
-!   real(kind=dp), intent(in) :: tran_win_min
-!   real(kind=dp), intent(in) :: tran_win_max
-!   logical, intent(in) :: tran_read_ht
-!   logical, intent(in) :: tran_use_same_lead
-!   end w90_parameters
 
     integer :: qc_unit, dos_unit
     integer :: ierr
@@ -1044,7 +899,8 @@ contains
     !  Loop over the energies
     n_e = floor((tran%win_max - tran%win_min)/tran%energy_step) + 1
 
-    write (stdout, '(/1x,a)', advance='no') 'Calculating quantum conductance and density of states...'
+    write (stdout, '(/1x,a)', advance='no') 'Calculating quantum conductance and &
+      density of states...'
 
     do n = 1, n_e
 
@@ -1095,7 +951,8 @@ contains
 
       ! g_C^-1 = -H - Sigma_L^r - Sigma_R^r
       do j = (tran%num_cc - tran%num_cr) + 1, tran%num_cc
-        do i = max((tran%num_cc - tran%num_cr) + 1, j - (tran%num_cr - 1)), min(tran%num_cc, j + (tran%num_cr - 1))
+        do i = max((tran%num_cc - tran%num_cr) + 1, j - (tran%num_cr - 1)), &
+          min(tran%num_cc, j + (tran%num_cr - 1))
           g_C_inv(KL + KU + 1 + i - j, j) = &
             g_C_inv(KL + KU + 1 + i - j, j) - &
             sRr(i - (tran%num_cc - tran%num_cr), j - (tran%num_cc - tran%num_cr))
@@ -1113,7 +970,8 @@ contains
         g_C(i, i) = cmplx_1
       end do
 
-      call ZGBSV(tran%num_cc, KL, KU, tran%num_cc, g_C_inv, 2*KL + KU + 1, ipiv, g_C, tran%num_cc, info)
+      call ZGBSV(tran%num_cc, KL, KU, tran%num_cc, g_C_inv, 2*KL + KU + 1, ipiv, g_C, tran%num_cc, &
+                 info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
         call io_error('tran_lcr: problem in ZGBSV')
@@ -1141,7 +999,8 @@ contains
         do i = 1, tran%num_cr
           do k = 1, tran%num_cr
             s2(i + (KC - tran%num_cr), j) = s2(i + (KC - tran%num_cr), j) &
-                                            + gR(i, k)*conjg(g_C(j, k + (tran%num_cc - tran%num_cr)))
+                                            + gR(i, k)*conjg(g_C(j, k &
+                                                                 + (tran%num_cc - tran%num_cr)))
           end do
         end do
       end do
@@ -1319,8 +1178,10 @@ contains
       t11 = cmplx_0
       t12 = cmplx_0
 
-      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tau(1, 1, 1), nxx, taut(1, 1, 1), nxx, cmplx_0, t11, nxx)
-      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, taut(1, 1, 1), nxx, tau(1, 1, 1), nxx, cmplx_0, t12, nxx)
+      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tau(1, 1, 1), nxx, taut(1, 1, 1), nxx, cmplx_0, &
+                 t11, nxx)
+      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, taut(1, 1, 1), nxx, tau(1, 1, 1), nxx, cmplx_0, &
+                 t12, nxx)
 
       s1(:, :) = -t11(:, :) - t12(:, :)
       do i = 1, nxx
@@ -1341,8 +1202,10 @@ contains
       t11 = cmplx_0
       t12 = cmplx_0
 
-      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tau(1, 1, 1), nxx, tau(1, 1, 1), nxx, cmplx_0, t11, nxx)
-      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, taut(1, 1, 1), nxx, taut(1, 1, 1), nxx, cmplx_0, t12, nxx)
+      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tau(1, 1, 1), nxx, tau(1, 1, 1), nxx, cmplx_0, &
+                 t11, nxx)
+      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, taut(1, 1, 1), nxx, taut(1, 1, 1), nxx, &
+                 cmplx_0, t12, nxx)
       call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, s2, nxx, t11, nxx, cmplx_0, tau(1, 1, 2), nxx)
       call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, s2, nxx, t12, nxx, cmplx_0, taut(1, 1, 2), nxx)
 
@@ -1362,7 +1225,8 @@ contains
       t11 = cmplx_0
       s1 = cmplx_0
 
-      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tsumt, nxx, taut(1, 1, 2), nxx, cmplx_0, t11, nxx)
+      call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tsumt, nxx, taut(1, 1, 2), nxx, cmplx_0, t11, &
+                 nxx)
       call ZGEMM('N', 'N', nxx, nxx, nxx, cmplx_1, tsumt, nxx, tau(1, 1, 2), nxx, cmplx_0, s1, nxx)
       call ZCOPY(nxx2, t11, 1, s2, 1)
       call ZAXPY(nxx2, cmplx_1, tott, 1, s2, 1)
@@ -1700,9 +1564,9 @@ contains
   end subroutine tran_read_htXY
 
 !========================================
-  subroutine tran_find_integral_signatures(signatures, num_G, &
-                                           param_input, real_lattice, u_matrix_opt, u_matrix, num_bands, &
-                                           num_wann, wannier_centres_translated)
+  subroutine tran_find_integral_signatures(signatures, num_G, param_input, real_lattice, &
+                                           u_matrix_opt, u_matrix, num_bands, num_wann, &
+                                           wannier_centres_translated)
     !=========================================================================!
     ! Reads <seedname>.unkg file that contains the u_nk(G) and calculate      !
     ! Fourier components of each wannier function. Linear combinations of     !
@@ -1711,8 +1575,7 @@ contains
     ! type and 'parity' of each wannier function.                             !
     !=========================================================================!
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, &
-      io_stopwatch
+    use w90_io, only: io_error, stdout, seedname, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: parameter_input_type
 
     implicit none
@@ -1721,38 +1584,35 @@ contains
 
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
 
-!   from w90_parameters
-!   integer, intent(in) :: iprint
-!    integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-!   logical, intent(in) :: have_disentangled
-!   end w90_parameters
 
     integer, intent(out)                                    :: num_G
     real(kind=dp), allocatable, dimension(:, :), intent(out)   :: signatures
 
-    complex(kind=dp), allocatable                           :: unkg(:, :), tran_u_matrix(:, :)
+    complex(kind=dp), allocatable                          :: unkg(:, :), tran_u_matrix(:, :)
     complex(kind=dp)                                       :: phase_factor, signature_basis(32)
 
-    real(kind=dp)                                          :: i_unkg, r_unkg, wf_frac(3), det_rl, inv_t_rl(3, 3), &
-                                                              mag_signature_sq
+    real(kind=dp)                                          :: i_unkg, r_unkg, wf_frac(3), det_rl, &
+                                                              inv_t_rl(3, 3), mag_signature_sq
 
 !~     character(len=11)                                      :: unkg_file
 
     logical                                                :: have_file
 
     integer, allocatable, dimension(:, :)                     :: g_abc
-    integer                                                :: i, ibnd, file_unit, ierr, p, p_max, n, m, ig, a, b, c, ig_idx(32)
+    integer                                                :: i, ibnd, file_unit, ierr, p, p_max, &
+                                                              n, m, ig, a, b, c, ig_idx(32)
 
     if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1)
     !
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
-    if (.not. have_file) call io_error('tran_hr_parity_unkg: file '//trim(seedname)//'.unkg not found')
+    if (.not. have_file) call io_error('tran_hr_parity_unkg: file '//trim(seedname)// &
+                                       '.unkg not found')
     open (file_unit, file=trim(seedname)//'.unkg', form='formatted', action='read')
     !
     !Read unkg file
@@ -1790,9 +1650,12 @@ contains
     !
     ! Computing inverse of transpose of real_lattice
     !
-    det_rl = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(2, 3)*real_lattice(3, 2)) &
-             - real_lattice(2, 2)*(real_lattice(2, 1)*real_lattice(3, 3) - real_lattice(2, 3)*real_lattice(3, 1)) &
-             + real_lattice(3, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(2, 2)*real_lattice(3, 1))
+    det_rl = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) &
+                                 - real_lattice(2, 3)*real_lattice(3, 2)) &
+             - real_lattice(2, 2)*(real_lattice(2, 1)*real_lattice(3, 3) &
+                                   - real_lattice(2, 3)*real_lattice(3, 1)) &
+             + real_lattice(3, 3)*(real_lattice(2, 1)*real_lattice(3, 2) &
+                                   - real_lattice(2, 2)*real_lattice(3, 1))
 
     inv_t_rl(1, 1) = (real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3))
     inv_t_rl(1, 2) = (real_lattice(2, 1)*real_lattice(3, 3) - real_lattice(3, 1)*real_lattice(2, 3))
@@ -1829,7 +1692,8 @@ contains
       endif
     enddo
 
-    if (param_input%iprint .ge. 5) write (stdout, *) 'Printing integral signatures for each wannier function:'
+    if (param_input%iprint .ge. 5) write (stdout, *) 'Printing integral signatures for each &
+      wannier function:'
     !
     ! Loop over all wannier functions
     !
@@ -1921,7 +1785,8 @@ contains
       signatures(12, n) = aimag(2*signature_basis(3) + signature_basis(16) - signature_basis(15))/4                    ! x^2y
       signatures(13, n) = aimag(2*signature_basis(4) + signature_basis(18) - signature_basis(17))/4                    ! x^2z
       signatures(14, n) = aimag(2*signature_basis(2) - signature_basis(20) - signature_basis(19))/4                    ! xy^2
-      signatures(15, n) = aimag(signature_basis(23) + signature_basis(22) - signature_basis(21) - signature_basis(24))/4 ! xyz
+      signatures(15, n) = aimag(signature_basis(23) + signature_basis(22) - signature_basis(21) &
+                                - signature_basis(24))/4                                                                   ! xyz
       signatures(16, n) = aimag(2*signature_basis(2) - signature_basis(26) - signature_basis(25))/4                    ! xz^2
       signatures(17, n) = aimag(3*signature_basis(3) - signature_basis(27))/4                                        ! y^3
       signatures(18, n) = aimag(2*signature_basis(4) + signature_basis(29) - signature_basis(28))/4                    ! y^2z
@@ -1965,13 +1830,10 @@ contains
   end subroutine tran_find_integral_signatures
 
   !========================================!
-  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, &
-                               tran, atoms, &
-                               wann_data, param_input, &
-                               real_lattice, num_wann, &
-                               mp_grid, ham_r, irvec, nrpts, &
-                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, coord, &
-                               tran_sorted_idx)
+  subroutine tran_lcr_2c2_sort(signatures, num_G, pl_warning, tran, atoms, wann_data, param_input, &
+                               real_lattice, num_wann, mp_grid, ham_r, irvec, nrpts, &
+                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, &
+                               coord, tran_sorted_idx)
     !=======================================================!
     ! This is the main subroutine controling the sorting    !
     ! for the 2c2 geometry. We first sort in the conduction !
@@ -2001,58 +1863,36 @@ contains
     integer, intent(inout) :: coord(3)
     integer, intent(inout), allocatable :: tran_sorted_idx(:)
 
-!   from w90_hamiltonian
     integer, intent(inout) :: nrpts
     integer, intent(in) :: irvec(:, :)
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-!   end w90_hamiltonian
-
-!   from w90_parameters
-!   integer, intent(in) :: num_atoms
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: iprint
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: tran_num_cell_ll
-!   integer, intent(in) :: tran_num_ll
-!   integer, intent(in) :: atoms_species_num(:)
-!   integer, intent(in) :: one_dim_dir
     integer, intent(in) :: mp_grid(3)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   real(kind=dp), intent(in) :: tran_group_threshold
-!   real(kind=dp), intent(inout) :: dist_cutoff
-!   real(kind=dp), intent(inout) :: dist_cutoff_hc
-!   real(kind=dp), intent(in) :: wannier_spreads(:)
-!   real(kind=dp), intent(in) :: lenconfac
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-!   real(kind=dp), intent(in) :: hr_cutoff
-!   logical, intent(in) :: write_xyz
-!   character(len=20), intent(in) :: transport_mode
-!   character(len=20), intent(in) :: length_unit
-!   character(len=20), intent(in) :: dist_cutoff_mode
-!   character(len=2), intent(in) :: atoms_symbol(:)
-!   end w90_parameters
 
     integer, intent(in)                                :: num_G
     real(dp), intent(in), dimension(:, :)                :: signatures
     logical, intent(out)                               :: pl_warning
 
-    real(dp), dimension(2, num_wann)                    :: centres_non_sorted, centres_initial_sorted
+    real(dp), dimension(2, num_wann)                    :: centres_non_sorted, &
+                                                           centres_initial_sorted
     real(dp), dimension(2, tran%num_ll)                 :: PL1, PL2, PL3, PL4, PL
     real(dp), dimension(2, num_wann - (4*tran%num_ll))    :: central_region
-    real(dp)                                          :: reference_position, &
-                                                         cell_length, distance, PL_max_val, PL_min_val
+    real(dp)                                          :: reference_position, cell_length, &
+                                                         distance, PL_max_val, PL_min_val
 
 !~    integer                                           :: l,max_i,iterator !aam: unused variables
-    integer                                           :: i, j, k, PL_selector, &
-                                                         sort_iterator, sort_iterator2, ierr, temp_coord_2, temp_coord_3, n, &
-                                                         num_wann_cell_ll, num_wf_group1, num_wf_last_group
-    integer, allocatable, dimension(:)                  :: PL_groups, &
-                                                           PL1_groups, PL2_groups, PL3_groups, PL4_groups, central_region_groups
-    integer, allocatable, dimension(:, :)                :: PL_subgroup_info, &
-                                                            PL1_subgroup_info, PL2_subgroup_info, PL3_subgroup_info, &
-                                                            PL4_subgroup_info, central_subgroup_info, temp_subgroup
+    integer                                           :: i, j, k, PL_selector, sort_iterator, &
+                                                         sort_iterator2, ierr, temp_coord_2, &
+                                                         temp_coord_3, n, num_wann_cell_ll, &
+                                                         num_wf_group1, num_wf_last_group
+    integer, allocatable, dimension(:)            :: PL_groups, PL1_groups, PL2_groups, &
+                                                     PL3_groups, PL4_groups, central_region_groups
+    integer, allocatable, dimension(:, :)         :: PL_subgroup_info, PL1_subgroup_info, &
+                                                     PL2_subgroup_info, PL3_subgroup_info, &
+                                                     PL4_subgroup_info, central_subgroup_info, &
+                                                     temp_subgroup
 
     character(30)                                     :: fmt_1
 
@@ -2068,7 +1908,8 @@ contains
     !Check translated centres have been found
     !
     if (size(wannier_centres_translated) .eq. 0) then
-      call io_error('Translated centres not known : required perform lcr transport, try restart=plot')
+      call io_error('Translated centres not known : required perform lcr transport, &
+                    try restart=plot')
     endif
 
     !read param_input%one_dim_dir and creates an array (coord) that correspond to the
@@ -2166,7 +2007,8 @@ contains
         write (fmt_1, '(i5)') size(PL_groups)
         fmt_1 = adjustl(fmt_1)
         fmt_1 = '(a3,i1,a1,i5,a2,'//trim(fmt_1)//'i4,a1)'
-        write (stdout, fmt_1) ' PL', i, ' ', size(PL_groups), ' (', (PL_groups(j), j=1, size(PL_groups)), ')'
+        write (stdout, fmt_1) ' PL', i, ' ', size(PL_groups), ' (', (PL_groups(j), j=1, &
+                                                                     size(PL_groups)), ')'
       endif
       !
       !Returns the sorted PL and informations on this PL
@@ -2367,13 +2209,10 @@ contains
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort')
-      call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
-                          irvec, nrpts, one_dim_vec, nrpts_one_dim)
-      call tran_cut_hr_one_dim( &
-        tran, &
-        real_lattice, param_input, &
-        mp_grid, num_wann, wannier_centres_translated, one_dim_vec, &
-        nrpts_one_dim, num_pl)
+      call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
+                          one_dim_vec, nrpts_one_dim)
+      call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
+                               wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl)
       write (stdout, *) ' '
       write (stdout, *) ' Restarting sorting...'
       write (stdout, *) ' '
@@ -2415,9 +2254,9 @@ contains
         do k = 1, size(temp_subgroup, 2)
           if (temp_subgroup(j, k) .ne. 0) then
             if (sort_iterator .ge. 2) then
-              if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
-                                                             num_wann, &
-                                                             wannier_centres_translated, tran_sorted_idx)
+              if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
+                                                             wannier_centres_translated, &
+                                                             tran_sorted_idx)
               call io_error &
                 ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
             endif
@@ -2547,11 +2386,7 @@ contains
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: coord(3)
 
-!   from w90_parameters
-!   integer, intent(in) :: iprint
-!    integer, intent(in) :: timing_level
     real(kind=dp), intent(in) :: tran_group_threshold
-!   end w90_parameters
 
     integer, intent(in), dimension(:)                 :: Array_groups
     integer, intent(in)                              :: Array_size
@@ -2834,10 +2669,8 @@ contains
   end subroutine group
 
   !=========================================================
-  subroutine check_and_sort_similar_centres(signatures, num_G, &
-                                            atoms, tran, &
-                                            param_input, &
-                                            num_wann, wannier_centres_translated, coord, tran_sorted_idx)
+  subroutine check_and_sort_similar_centres(signatures, num_G, atoms, tran, param_input, num_wann, &
+                                            wannier_centres_translated, coord, tran_sorted_idx)
     !=======================================================!
     ! Here, we consider the possiblity of wannier functions !
     ! with similar centres, such as a set of d-orbitals     !
@@ -2864,21 +2697,7 @@ contains
     integer, intent(in) :: coord(3)
     integer, intent(inout) :: tran_sorted_idx(:)
 
-!   from w90_parameters
-!   integer, intent(in) :: num_atoms
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: iprint
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: tran_num_cell_ll
-!   integer, intent(in) :: tran_num_ll
-!   integer, intent(in) :: atoms_species_num(:)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   real(kind=dp), intent(in) :: tran_group_threshold
-!   logical, intent(in) :: write_xyz
-!   character(len=20), intent(in) :: transport_mode
-!   character(len=2), intent(in) :: atoms_symbol(:)
-!   end w90_parameters
 
     integer, intent(in)                                :: num_G
     real(dp), intent(in), dimension(:, :)                :: signatures
@@ -3156,9 +2975,7 @@ contains
   end subroutine check_and_sort_similar_centres
 
   !=====================================!
-  subroutine tran_write_xyz(tran, atoms, &
-                            num_wann, &
-                            wannier_centres_translated, tran_sorted_idx)
+  subroutine tran_write_xyz(tran, atoms, num_wann, wannier_centres_translated, tran_sorted_idx)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
@@ -3176,15 +2993,7 @@ contains
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     integer, intent(in) :: tran_sorted_idx(:)
 
-!   from w90_parameters
-!   integer, intent(in) :: num_atoms
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: num_species
-!   integer, intent(in) :: atoms_species_num(:)
-!   real(kind=dp), intent(in) :: atoms_pos_cart(:, :, :)
-!   character(len=20), intent(in) :: transport_mode
-!   character(len=2), intent(in) :: atoms_symbol(:)
-!   end w90_parameters
 
     integer          :: iw, ind, xyz_unit, nat, nsp
     character(len=9) :: cdate, ctime
@@ -3221,8 +3030,7 @@ contains
   end subroutine tran_write_xyz
 
   !==============================================================!
-  subroutine tran_parity_enforce(signatures, param_input, &
-                                 tran, num_wann, tran_sorted_idx)
+  subroutine tran_parity_enforce(signatures, param_input, tran, num_wann, tran_sorted_idx)
     !==============================================================!
     ! Here, the signatures of the each wannier fucntion (stored in !
     ! signatures) is used to determine its relavite parity         !
@@ -3241,14 +3049,7 @@ contains
 
     integer, intent(in) :: tran_sorted_idx(:)
 
-!   from w90_parameters
-!   integer, intent(in) :: iprint
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: tran_num_ll
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: tran_num_cell_ll
-!   logical, intent(in) :: tran_easy_fix
-!   end w90_parameters
 
     real(dp), intent(inout), dimension(:, :)               :: signatures
 
@@ -3317,12 +3118,9 @@ contains
   end subroutine tran_parity_enforce
 
   !========================================!
-  subroutine tran_lcr_2c2_build_ham(pl_warning, &
-                                    param_input, &
-                                    fermi, &
-                                    k_points, num_wann, tran, &
-                                    real_lattice, mp_grid, ham_r, &
-                                    irvec, nrpts, wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
+  subroutine tran_lcr_2c2_build_ham(pl_warning, param_input, fermi, k_points, num_wann, tran, &
+                                    real_lattice, mp_grid, ham_r, irvec, nrpts, &
+                                    wannier_centres_translated, one_dim_vec, nrpts_one_dim, &
                                     num_pl, coord, tran_sorted_idx)
     !==============================================!
     ! Builds hamiltonians blocks required for the  !
@@ -3350,37 +3148,14 @@ contains
     integer, intent(in) :: coord(3)
     integer, intent(in) :: tran_sorted_idx(:)
 
-!   from w90_hamiltonian
     integer, intent(inout) :: nrpts
     integer, intent(in) :: irvec(:, :)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-!   end w90_hamiltonian
 
-!   from w90_parameters
-!   integer, intent(in) :: timing_level
-!   integer, intent(in) :: nfermi
     integer, intent(in) :: num_wann
-!   integer, intent(in) :: one_dim_dir
-!   integer, intent(inout):: tran_num_bandc
-!   integer, intent(inout) :: tran_num_cc
-!   integer, intent(inout) :: tran_num_cr
-!   integer, intent(inout) :: tran_num_lc
-!   integer, intent(inout) :: tran_num_rr
-!   integer, intent(in) :: tran_num_ll
-!   integer, intent(in) :: tran_num_cell_ll
     integer, intent(in) :: mp_grid(3)
-!   real(kind=dp), intent(inout) :: dist_cutoff_hc
-!   real(kind=dp), intent(inout) :: dist_cutoff
-!   real(kind=dp), intent(in) :: fermi_energy_list(:)
-!   real(kind=dp), intent(in) ::kpt_cart(:, :)
-!   real(kind=dp), intent(in) :: hr_cutoff
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-!   logical, intent(in) :: tran_write_ht
-!   character(len=20), intent(in) :: dist_cutoff_mode
-!   character(len=20), intent(in) :: transport_mode
-!   character(len=20), intent(in) :: length_unit
-!   end w90_parameters
 
     logical, intent(in)                     :: pl_warning
 
