@@ -369,8 +369,8 @@ program wannier
   param_input%have_disentangled = .false.
 
   if (w90_calcs%disentanglement) then
-    if (.not. allocated(dis_spheres)) then ! this is *sometimes* true for non-root mpi tasks (depending on input options)
-      allocate (dis_spheres(1, 1)) !JJ temporary workaround to avoid runtime check failure
+    if (.not. allocated(dis_data%spheres)) then ! this is *sometimes* true for non-root mpi tasks (depending on input options)
+      allocate (dis_data%spheres(1, 1)) !JJ temporary workaround to avoid runtime check failure
     endif
 
     call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &

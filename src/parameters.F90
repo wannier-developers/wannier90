@@ -1940,7 +1940,8 @@ contains
           call io_error('Error: radius for dis_spheres must be > 0')
       enddo
     else
-      allocate (dis_spheres(1, 1)) !JJ temporary workaround for github actions error; this code will vanish soon (when CCP9 types merged)
+      allocate (dis_data%spheres(1, 1))
+      !JJ temporary workaround for github actions error; this code will vanish soon (when CCP9 types merged)
     endif
     ! GS-end
 
