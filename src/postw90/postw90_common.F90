@@ -517,7 +517,7 @@ contains
     ! u_matrix and u_matrix_opt are stored on root only
     if (on_root) then
       if (.not. param_input%have_disentangled) then
-        v_matrix = u_matrix
+        v_matrix(1:num_wann, :, :) = u_matrix(1:num_wann, :, :)
       else
         v_matrix = cmplx_0
         do loop_kpt = 1, num_kpts
