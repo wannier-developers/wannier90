@@ -373,17 +373,16 @@ contains
     if (eig_found) dis_data%win_min = minval(eigval)
     if (eig_found) dis_data%win_max = maxval(eigval)
     call param_read_disentangle_all(eig_found, dis_data)
-    ! Need to make sure use w90_params are read
-    call param_pw90_read_34(geninterp, boltz, smr_index, eigval, adpt_smr_fac, &
-                            adpt_smr_max, smr_fixed_en_width, adpt_smr)
-    call param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
-    call param_pw90_read_38(berry)
+    call param_read_geninterp(geninterp)
+    call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, &
+                              adpt_smr_max, smr_fixed_en_width, adpt_smr)
+    call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
     call param_read_lattice(library, real_lattice, recip_lattice)
     call param_read_kmesh_data(kmesh_data)
     call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, recip_lattice)
     call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
-    call param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
-                            pw90_spin, gyrotropic, boltz, recip_lattice)
+    call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
+                                pw90_spin, gyrotropic, boltz, recip_lattice)
     call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write
     call param_clean_infile()
     ! For aesthetic purposes, convert some things to uppercase
@@ -587,7 +586,7 @@ contains
   subroutine param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width)
     use w90_io, only: io_error
     implicit none
-    type(gyrotropic_type), intent(inout) :: gyrotropic
+    type(gyrotropic_type), intent(out) :: gyrotropic
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: smr_fixed_en_width
     real(kind=dp) :: smr_max_arg
@@ -649,6 +648,11 @@ contains
     if (found .and. (gyrotropic%smr_fixed_en_width < 0._dp)) call io_error &
       ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
 
+    ! By default: use the "global" smearing index
+    gyrotropic%smr_index = smr_index
+    call param_get_keyword('gyrotropic_smr_type', found, c_value=ctmp)
+    if (found) gyrotropic%smr_index = get_smearing_index(ctmp, 'gyrotropic_smr_type')
+
   end subroutine param_read_gyrotropic
 
   subroutine param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
@@ -656,7 +660,7 @@ contains
     use w90_io, only: io_error
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(berry_type), intent(inout) :: berry
+    type(berry_type), intent(out) :: berry
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
     logical :: found
@@ -734,6 +738,17 @@ contains
     if ((berry%sc_phase_conv .ne. 1) .and. ((berry%sc_phase_conv .ne. 2))) &
       call io_error('Error: sc_phase_conv must be either 1 or 2')
 
+    ! By default: use the "global" smearing index
+    berry%kubo_smr_index = smr_index
+    call param_get_keyword('kubo_smr_type', found, c_value=ctmp)
+    if (found) berry%kubo_smr_index = get_smearing_index(ctmp, 'kubo_smr_type')
+
+    berry%sc_eta = 0.04
+    call param_get_keyword('sc_eta', found, r_value=berry%sc_eta)
+
+    berry%sc_w_thr = 5.0d0
+    call param_get_keyword('sc_w_thr', found, r_value=berry%sc_w_thr)
+
   end subroutine param_read_berry
 
   subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall)
@@ -741,7 +756,7 @@ contains
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(in) :: pw90_common
-    type(spin_hall_type), intent(inout) :: spin_hall
+    type(spin_hall_type), intent(out) :: spin_hall
     logical :: found
 
     spin_hall%freq_scan = .false.
@@ -785,7 +800,7 @@ contains
   subroutine param_read_pw90ham(pw90_ham)
     use w90_io, only: io_error
     implicit none
-    type(postw90_ham_type), intent(inout) :: pw90_ham
+    type(postw90_ham_type), intent(out) :: pw90_ham
     logical :: found
 
     pw90_ham%use_degen_pert = .false.
@@ -800,7 +815,7 @@ contains
     use w90_io, only: io_error
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(kpath_type), intent(inout) :: kpath
+    type(kpath_type), intent(out) :: kpath
     type(special_kpoints_type), intent(in) :: spec_points
     logical :: found
 
@@ -833,13 +848,12 @@ contains
 
   end subroutine param_read_pw90_kpath
 
-  subroutine param_read_dos(pw90_calcs, dos_data, found_fermi_energy, &
-                            num_wann, adpt_smr_fac, adpt_smr_max, &
-                            smr_fixed_en_width, adpt_smr)
+  subroutine param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, adpt_smr_fac, &
+                            adpt_smr_max, smr_fixed_en_width, adpt_smr)
     use w90_io, only: io_error
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(dos_plot_type), intent(inout) :: dos_data
+    type(dos_plot_type), intent(out) :: dos_data
     logical, intent(in) :: found_fermi_energy
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
@@ -926,11 +940,15 @@ contains
         dos_data%project(i) = i
       end do
     endif
+
+    ! By default: use the "global" smearing index
+    dos_data%smr_index = smr_index
+    call param_get_keyword('dos_smr_type', found, c_value=ctmp)
+    if (found) dos_data%smr_index = get_smearing_index(ctmp, 'dos_smr_type')
+
   end subroutine param_read_dos
 
-  subroutine param_pw90_read_34(geninterp, boltz, smr_index, eigval, &
-                                adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, &
-                                adpt_smr)
+  subroutine param_read_geninterp(geninterp)
     ! [gp-begin, Jun 1, 2012]
     !%%%%%%%%%%%%%%%%%%%%
     ! General band interpolator (geninterp)
@@ -938,18 +956,30 @@ contains
     use w90_io, only: io_error
     implicit none
     type(geninterp_type), intent(out) :: geninterp
-    type(boltzwann_type), intent(inout) :: boltz
-    integer, intent(in) :: smr_index
-    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
-    logical, intent(in) :: adpt_smr
-    logical :: found, found2
+    logical :: found
 
     geninterp%alsofirstder = .false.
     call param_get_keyword('geninterp_alsofirstder', found, l_value=geninterp%alsofirstder)
     geninterp%single_file = .true.
     call param_get_keyword('geninterp_single_file', found, l_value=geninterp%single_file)
     ! [gp-end, Jun 1, 2012]
+
+  end subroutine param_read_geninterp
+
+  subroutine param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, adpt_smr_max, &
+                                  smr_fixed_en_width, adpt_smr)
+    ! [gp-begin, Jun 1, 2012]
+    !%%%%%%%%%%%%%%%%%%%%
+    ! General band interpolator (geninterp)
+    !%%%%%%%%%%%%%%%%%%%%
+    use w90_io, only: io_error
+    implicit none
+    type(boltzwann_type), intent(inout) :: boltz
+    integer, intent(in) :: smr_index
+    real(kind=dp), allocatable, intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
+    logical, intent(in) :: adpt_smr
+    logical :: found, found2
 
     ! [gp-begin, Apr 12, 2012]
     !%%%%%%%%%%%%%%%%%%%%
@@ -1083,21 +1113,6 @@ contains
     call param_get_keyword('boltz_dos_smr_type', found, c_value=ctmp)
     if (found) boltz%dos_smr_index = get_smearing_index(ctmp, 'boltz_dos_smr_type')
 
-    ! By default: use the "global" smearing index
-    dos_data%smr_index = smr_index
-    call param_get_keyword('dos_smr_type', found, c_value=ctmp)
-    if (found) dos_data%smr_index = get_smearing_index(ctmp, 'dos_smr_type')
-
-    ! By default: use the "global" smearing index
-    berry%kubo_smr_index = smr_index
-    call param_get_keyword('kubo_smr_type', found, c_value=ctmp)
-    if (found) berry%kubo_smr_index = get_smearing_index(ctmp, 'kubo_smr_type')
-
-    ! By default: use the "global" smearing index
-    gyrotropic%smr_index = smr_index
-    call param_get_keyword('gyrotropic_smr_type', found, c_value=ctmp)
-    if (found) gyrotropic%smr_index = get_smearing_index(ctmp, 'gyrotropic_smr_type')
-
     ! By default: 10 fs relaxation time
     boltz%relax_time = 10._dp
     call param_get_keyword('boltz_relax_time', found, r_value=boltz%relax_time)
@@ -1115,10 +1130,9 @@ contains
     if (boltz%bandshift .and. (.not. found)) &
       call io_error('Error: boltz_bandshift required but no boltz_bandshift_energyshift provided')
     ! [gp-end, Apr 12, 2012]
-  end subroutine param_pw90_read_34
+  end subroutine param_read_boltzwann
 
-  subroutine param_pw90_read_36(berry, dos_data, gyrotropic, dis_data, fermi, &
-                                eigval)
+  subroutine param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
     use w90_constants, only: cmplx_i
     use w90_io, only: io_error
     implicit none
@@ -1213,22 +1227,10 @@ contains
 
     call param_get_keyword('kubo_eigval_max', found, r_value=berry%kubo_eigval_max)
     call param_get_keyword('gyrotropic_eigval_max', found, r_value=gyrotropic%eigval_max)
-  end subroutine param_pw90_read_36
+  end subroutine param_read_energy_range
 
-  subroutine param_pw90_read_38(berry)
-    implicit none
-    type(berry_type), intent(inout) :: berry
-    logical :: found
-
-    berry%sc_eta = 0.04
-    call param_get_keyword('sc_eta', found, r_value=berry%sc_eta)
-
-    berry%sc_w_thr = 5.0d0
-    call param_get_keyword('sc_w_thr', found, r_value=berry%sc_w_thr)
-  end subroutine param_pw90_read_38
-
-  subroutine param_pw90_read_40(pw90_calcs, pw90_common, berry, dos_data, &
-                                pw90_spin, gyrotropic, boltz, recip_lattice)
+  subroutine param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
+                                    pw90_spin, gyrotropic, boltz, recip_lattice)
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calcs
     type(postw90_common_type), intent(in) :: pw90_common
@@ -1264,7 +1266,7 @@ contains
                           should_be_defined=pw90_calcs%dos, &
                           module_kmesh=dos_data%kmesh, &
                           module_kmesh_spacing=dos_data%kmesh_spacing)
-  end subroutine param_pw90_read_40
+  end subroutine param_read_local_kmesh
 
   subroutine get_module_kmesh(recip_lattice, moduleprefix, should_be_defined, &
                               module_kmesh, module_kmesh_spacing)
