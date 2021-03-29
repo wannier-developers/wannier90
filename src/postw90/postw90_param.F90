@@ -356,12 +356,14 @@ contains
                              smr_fixed_en_width, adpt_smr)
     call param_read_scissors_shift(pw90_common)
     call param_read_pw90spin(pw90_common, param_input)
-    call param_read_gyrotropic(gyrotropic, num_wann)
-    call param_pw90_read_26(pw90_calcs, pw90_common, berry, spin_hall, &
-                            gyrotropic, dos_data, kpath, pw90_ham, &
-                            spec_points, found_fermi_energy, num_wann, &
-                            adpt_smr_fac, adpt_smr_max, &
-                            smr_fixed_en_width, adpt_smr)
+    call param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width)
+    call param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
+                          smr_fixed_en_width, adpt_smr)
+    call param_read_spin_hall(pw90_calcs, pw90_common, spin_hall)
+    call param_read_pw90ham(pw90_ham)
+    call param_read_pw90_kpath(pw90_calcs, kpath, spec_points)
+    call param_read_dos(pw90_calcs, dos_data, found_fermi_energy, num_wann, &
+                        adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, adpt_smr)
     call param_read_ws_data(param_input)
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, &
@@ -582,11 +584,12 @@ contains
 
   end subroutine param_read_pw90spin
 
-  subroutine param_read_gyrotropic(gyrotropic, num_wann)
+  subroutine param_read_gyrotropic(gyrotropic, num_wann, smr_fixed_en_width)
     use w90_io, only: io_error
     implicit none
     type(gyrotropic_type), intent(inout) :: gyrotropic
     integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: smr_fixed_en_width
     real(kind=dp) :: smr_max_arg
     integer :: i, ierr, loop
     logical :: found
@@ -640,30 +643,22 @@ contains
     if (found .and. (gyrotropic%smr_max_arg <= 0._dp)) call io_error &
       ('Error: gyrotropic_smr_max_arg must be greater than zero')
 
+    gyrotropic%smr_fixed_en_width = smr_fixed_en_width
+    call param_get_keyword('gyrotropic_smr_fixed_en_width', found, &
+                           r_value=gyrotropic%smr_fixed_en_width)
+    if (found .and. (gyrotropic%smr_fixed_en_width < 0._dp)) call io_error &
+      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
+
   end subroutine param_read_gyrotropic
 
-  subroutine param_pw90_read_26(pw90_calcs, pw90_common, berry, spin_hall, &
-                                gyrotropic, dos_data, kpath, pw90_ham, &
-                                spec_points, found_fermi_energy, &
-                                num_wann, adpt_smr_fac, adpt_smr_max, &
-                                smr_fixed_en_width, adpt_smr)
+  subroutine param_read_berry(pw90_calcs, berry, adpt_smr_fac, adpt_smr_max, &
+                              smr_fixed_en_width, adpt_smr)
     use w90_io, only: io_error
     implicit none
     type(pw90_calculation_type), intent(in) :: pw90_calcs
-    type(postw90_common_type), intent(inout) :: pw90_common
     type(berry_type), intent(inout) :: berry
-    type(spin_hall_type), intent(inout) :: spin_hall
-    type(gyrotropic_type), intent(inout) :: gyrotropic
-    type(dos_plot_type), intent(inout) :: dos_data
-    type(kpath_type), intent(inout) :: kpath
-    type(postw90_ham_type), intent(inout) :: pw90_ham
-    !type(parameter_input_type), intent(inout) :: param_input
-    type(special_kpoints_type), intent(in) :: spec_points
-    logical, intent(in) :: found_fermi_energy
-    integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
     logical, intent(in) :: adpt_smr
-    integer :: i, ierr
     logical :: found
 
 !-------------------------------------------------------
@@ -734,16 +729,20 @@ contains
     if (found .and. (berry%kubo_smr_fixed_en_width < 0._dp)) call io_error &
       ('Error: kubo_smr_fixed_en_width must be greater than or equal to zero')
 
-    gyrotropic%smr_fixed_en_width = smr_fixed_en_width
-    call param_get_keyword('gyrotropic_smr_fixed_en_width', found, &
-                           r_value=gyrotropic%smr_fixed_en_width)
-    if (found .and. (gyrotropic%smr_fixed_en_width < 0._dp)) call io_error &
-      ('Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero')
-
     berry%sc_phase_conv = 1
     call param_get_keyword('sc_phase_conv', found, i_value=berry%sc_phase_conv)
     if ((berry%sc_phase_conv .ne. 1) .and. ((berry%sc_phase_conv .ne. 2))) &
       call io_error('Error: sc_phase_conv must be either 1 or 2')
+
+  end subroutine param_read_berry
+
+  subroutine param_read_spin_hall(pw90_calcs, pw90_common, spin_hall)
+    use w90_io, only: io_error
+    implicit none
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(postw90_common_type), intent(in) :: pw90_common
+    type(spin_hall_type), intent(inout) :: spin_hall
+    logical :: found
 
     spin_hall%freq_scan = .false.
     call param_get_keyword('shc_freq_scan', found, l_value=spin_hall%freq_scan)
@@ -781,12 +780,29 @@ contains
     if (spin_hall%bandshift .and. (.not. found)) &
       call io_error('Error: shc_bandshift required but no shc_bandshift_energyshift provided')
 
+  end subroutine param_read_spin_hall
+
+  subroutine param_read_pw90ham(pw90_ham)
+    use w90_io, only: io_error
+    implicit none
+    type(postw90_ham_type), intent(inout) :: pw90_ham
+    logical :: found
+
     pw90_ham%use_degen_pert = .false.
-    call param_get_keyword('use_degen_pert', found, &
-                           l_value=pw90_ham%use_degen_pert)
+    call param_get_keyword('use_degen_pert', found, l_value=pw90_ham%use_degen_pert)
 
     pw90_ham%degen_thr = 1.0d-4
     call param_get_keyword('degen_thr', found, r_value=pw90_ham%degen_thr)
+
+  end subroutine param_read_pw90ham
+
+  subroutine param_read_pw90_kpath(pw90_calcs, kpath, spec_points)
+    use w90_io, only: io_error
+    implicit none
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(kpath_type), intent(inout) :: kpath
+    type(special_kpoints_type), intent(in) :: spec_points
+    logical :: found
 
     kpath%task = 'bands'
     call param_get_keyword('kpath_task', found, c_value=kpath%task)
@@ -814,6 +830,22 @@ contains
     if (pw90_calcs%kpath .and. index(kpath%task, 'shc') > 0 .and. &
         index(kpath%task, 'spin') > 0) call io_error &
       ("Error: kpath_task cannot include both 'shc' and 'spin'")
+
+  end subroutine param_read_pw90_kpath
+
+  subroutine param_read_dos(pw90_calcs, dos_data, found_fermi_energy, &
+                            num_wann, adpt_smr_fac, adpt_smr_max, &
+                            smr_fixed_en_width, adpt_smr)
+    use w90_io, only: io_error
+    implicit none
+    type(pw90_calculation_type), intent(in) :: pw90_calcs
+    type(dos_plot_type), intent(inout) :: dos_data
+    logical, intent(in) :: found_fermi_energy
+    integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: adpt_smr_fac, adpt_smr_max, smr_fixed_en_width
+    logical, intent(in) :: adpt_smr
+    integer :: i, ierr
+    logical :: found
 
     dos_data%task = 'dos_plot'
     if (pw90_calcs%dos) then
@@ -894,7 +926,7 @@ contains
         dos_data%project(i) = i
       end do
     endif
-  end subroutine param_pw90_read_26
+  end subroutine param_read_dos
 
   subroutine param_pw90_read_34(geninterp, boltz, smr_index, eigval, &
                                 adpt_smr_fac, adpt_smr_max, smr_fixed_en_width, &
