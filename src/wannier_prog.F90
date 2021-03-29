@@ -357,6 +357,9 @@ program wannier
   param_input%have_disentangled = .false.
 
   if (w90_calcs%disentanglement) then
+    if (.not. allocated(dis_data%spheres)) then ! this is *sometimes* true for non-root mpi tasks (depending on input options)
+      allocate (dis_data%spheres(1, 1)) !JJ temporary workaround to avoid runtime check failure
+    endif
 
     call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
@@ -377,6 +380,10 @@ program wannier
 !~  call param_write_um
 
 1001 time2 = io_time()
+
+  ! JJ hack to workaround mpi_scatterv requirement that all arrays are valid *for all mpi procs*
+  ! m_matrix* usually alloc'd in overlaps.F90, but not always
+  if (.not. allocated(m_matrix)) allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
 
   if (.not. param_input%gamma_only) then
     call wann_main(num_wann, param_wannierise, kmesh_info, param_input, &

@@ -525,9 +525,8 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
                        a_matrix, m_matrix_orig, m_matrix, u_matrix)
   call kmesh_dealloc(kmesh_info)
-  call param_w90_dealloc(param_input, param_plot, param_wannierise, &
-                         wann_data, kmesh_data, k_points, dis_data, &
-                         atoms, eigval, spec_points)
+  call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
+                         k_points, dis_data, atoms, eigval, spec_points)
 
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
