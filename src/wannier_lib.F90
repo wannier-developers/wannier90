@@ -513,7 +513,6 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   call kmesh_dealloc(kmesh_info)
   call param_dealloc(driver, param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
                      k_points, dis_data, fermi, atoms, eigval, spec_points, dos_data, berry)
-
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
   if (param_input%timing_level > 0) call io_print_timings()
