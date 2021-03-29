@@ -1189,7 +1189,7 @@ contains
       complex(kind=dp), intent(inout) :: cdodq_precond_loc(:, :, :)
       !complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
       ! k_to_r depends on optimisation flag
-      complex(kind=dp), intent(in) :: k_to_r(:, :)
+      complex(kind=dp), allocatable, intent(in) :: k_to_r(:, :)
       type(localisation_vars), intent(in) :: wann_spread
       !integer, intent(in) :: iter
       !logical, intent(in) :: lprint
@@ -1307,7 +1307,7 @@ contains
       type(param_wannierise_type), intent(in) :: param_wannierise
       type(parameter_input_type), intent(in) :: param_input
 
-      complex(kind=dp), intent(inout) :: cdodq_precond_loc(:, :, :)
+      complex(kind=dp), allocatable, intent(inout) :: cdodq_precond_loc(:, :, :)
       complex(kind=dp), intent(inout) :: cdqkeep_loc(:, :, :)
       integer, intent(in) :: iter
       logical, intent(in) :: lprint
@@ -1874,7 +1874,7 @@ contains
     ! end of vars from parameter module
     integer, intent(in) :: counts(0:)
     integer, intent(in) :: displs(0:)
-    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
+    complex(kind=dp), allocatable, intent(in) :: m_matrix_loc(:, :, :, :)
     real(kind=dp), intent(out) :: rnkb(:, :, :)
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
