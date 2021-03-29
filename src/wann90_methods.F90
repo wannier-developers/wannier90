@@ -1915,6 +1915,7 @@ contains
     !call comms_bcast(pw90_common%effective_model, 1)
     call comms_bcast(eig_found, 1)
     call comms_bcast(driver%postproc_setup, 1)
+    call comms_bcast(w90_calcs%cp_pp, 1)
     !if (.not. pw90_common%effective_model) then
     call comms_bcast(mp_grid(1), 3)
     call comms_bcast(num_kpts, 1)
