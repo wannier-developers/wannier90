@@ -17,7 +17,7 @@ jobs:
       - uses: pre-commit/action@v2.0.0
 
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         w90-binary-parallel: [ 'false', 'true' ]
