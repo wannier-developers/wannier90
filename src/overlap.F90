@@ -19,6 +19,9 @@ module w90_overlap
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: stdout
   use w90_comms, only: on_root, comms_bcast
+#ifdef MPI
+  use mpi_f08
+#endif
 
   implicit none
 
@@ -131,14 +134,13 @@ contains
                           param_input, w90_calcs, u_matrix_opt, m_matrix_orig, &
                           a_matrix, m_matrix, u_matrix, select_proj, &
                           num_proj, kmesh_info, num_kpts, num_wann, num_bands, &
-                          sym)
+                          sym, comm)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
 
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
-    use w90_comms, only: my_node_id, num_nodes, &
-      comms_array_split, comms_scatterv
+    use w90_comms, only: my_node_id, num_nodes, comms_array_split, comms_scatterv
     use w90_sitesym, only: sitesym_data
     use w90_param_types, only: parameter_input_type, kmesh_info_type
     use wannier_param_types, only: w90_calculation_type, select_projection_type
@@ -177,6 +179,11 @@ contains
 !   logical, intent(in) :: disentanglement
 !   logical, public, save :: lhasproj !not used here
 !   end w90_parameters
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     integer :: nkp, nkp2, inn, nn, n, m
     integer :: mmn_in, amn_in, num_mmn, num_amn
@@ -274,12 +281,15 @@ contains
 
     if (w90_calcs%disentanglement) then
 !       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
+!JJ fixme these function calls are a bit crazy?
       call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, num_bands*num_bands*kmesh_info%nntot*displs)
+                          m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, &
+                          num_bands*num_bands*kmesh_info%nntot*displs, comm)
     else
 !       call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
       call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs)
+                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
+                          num_wann*num_wann*kmesh_info%nntot*displs, comm)
     endif
 
     if (.not. w90_calcs%use_bloch_phases) then
@@ -328,9 +338,9 @@ contains
       endif
 
       if (w90_calcs%disentanglement) then
-        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts)
+        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts, comm)
       else
-        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, comm)
       endif
 
     else
@@ -371,7 +381,7 @@ contains
     if ((.not. w90_calcs%disentanglement) .and. (.not. w90_calcs%cp_pp) .and. (.not. w90_calcs%use_bloch_phases)) then
       if (.not. param_input%gamma_only) then
         call overlap_project(m_matrix_local, kmesh_info%nnlist, kmesh_info%nntot, m_matrix, u_matrix, &
-                             param_input%timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, sym)
+                             param_input%timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, sym, comm)
       else
         call overlap_project_gamma(kmesh_info%nntot, m_matrix, u_matrix, param_input%timing_level, num_wann)
       endif
@@ -701,7 +711,7 @@ contains
   !==================================================================!
   subroutine overlap_project(m_matrix_local, nnlist, nntot, m_matrix, u_matrix, &
                              timing_level, num_kpts, num_wann, num_bands, lsitesymmetry, &
-                             sym)
+                             sym, comm)
     !==================================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -714,8 +724,7 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data !RS:
-    use w90_comms, only: my_node_id, num_nodes, &
-      comms_array_split, comms_scatterv, comms_gatherv
+    use w90_comms, only: my_node_id, num_nodes, comms_array_split, comms_scatterv, comms_gatherv
 
     implicit none
 
@@ -732,6 +741,11 @@ contains
     logical, intent(in) :: lsitesymmetry
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! internal variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2
@@ -828,7 +842,8 @@ contains
       end do
     end do
     call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
-                       m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
+                       m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs, &
+                       comm)
 
     deallocate (cwork, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating cwork in overlap_project')

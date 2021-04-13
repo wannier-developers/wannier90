@@ -1616,7 +1616,7 @@ contains
 !===========================================================!
   subroutine param_chkpt_dist(checkpoint, param_input, wann_data, num_kpts, &
                               dis_data, num_bands, num_wann, u_matrix, &
-                              u_matrix_opt)
+                              u_matrix_opt, comm)
     !===========================================================!
     !                                                           !
     !! Distribute the chk files
@@ -1627,6 +1627,9 @@ contains
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
     use w90_comms, only: on_root, comms_bcast
+#ifdef MPI
+    use mpi_f08
+#endif
 
     implicit none
 
@@ -1642,16 +1645,24 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
 
+!JJ this is really ugly here, kind of defeats the point of the comms module?
+! but for the time being it is not incorrect
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
+
     integer :: ierr
 
-    call comms_bcast(checkpoint, len(checkpoint))
+    call comms_bcast(checkpoint, len(checkpoint), comm)
 
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) &
         call io_error('Error allocating u_matrix in param_chkpt_dist')
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, comm)
 
 !    if (.not.on_root .and. .not.allocated(m_matrix)) then
 !       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
@@ -1660,7 +1671,7 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(param_input%have_disentangled, 1)
+    call comms_bcast(param_input%have_disentangled, 1, comm)
 
     if (param_input%have_disentangled) then
       if (.not. on_root) then
@@ -1685,13 +1696,13 @@ contains
 
       end if
 
-      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
-      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts)
-      call comms_bcast(dis_data%ndimwin(1), num_kpts)
-      call comms_bcast(param_input%omega_invariant, 1)
+      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, comm)
+      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts, comm)
+      call comms_bcast(dis_data%ndimwin(1), num_kpts, comm)
+      call comms_bcast(param_input%omega_invariant, 1, comm)
     end if
-    call comms_bcast(wann_data%centres(1, 1), 3*num_wann)
-    call comms_bcast(wann_data%spreads(1), num_wann)
+    call comms_bcast(wann_data%centres(1, 1), 3*num_wann, comm)
+    call comms_bcast(wann_data%spreads(1), num_wann, comm)
 
   end subroutine param_chkpt_dist
 

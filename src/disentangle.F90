@@ -23,6 +23,9 @@ module w90_disentangle
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
     sitesym_dis_extract_symmetry, sitesym_data
+#ifdef MPI
+  use mpi_f08
+#endif
 
   implicit none
   public :: dis_main
@@ -34,7 +37,7 @@ contains
   subroutine dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                       m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                       dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                      lsitesymmetry, sym)
+                      lsitesymmetry, sym, comm)
 
     !==================================================================!
     !! Main disentanglement routine
@@ -43,7 +46,6 @@ contains
     !                                                                  !
     !==================================================================!
     use w90_io, only: io_file_unit
-
     ! passed variables
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: num_nodes, my_node_id
@@ -66,6 +68,14 @@ contains
     type(k_point_type), intent(in)    :: k_points
     type(parameter_input_type), intent(inout) :: param_input ! omega_invariant alone is modified
     type(sitesym_data), intent(inout) :: sym
+
+!JJ this is really ugly here, kind of defeats the point of the comms module?
+! but for the time being it is not incorrect
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! internal variables
     integer :: nkp, nkp2, nn, j, ierr, page_unit, nkp_global
@@ -148,7 +158,7 @@ contains
     if (.not. param_input%gamma_only) then
       call dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
                        num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                       kmesh_info, dis_data, lsitesymmetry, sym)
+                       kmesh_info, dis_data, lsitesymmetry, sym, comm)
 
     else
       call dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
@@ -183,7 +193,8 @@ contains
 ![ysl-b]
     if (.not. param_input%gamma_only) then
       call internal_find_u(on_root, lsitesymmetry, param_input%timing_level, num_kpts, num_wann, &
-                           num_bands, dis_data%ndimwin, u_matrix, u_matrix_opt, a_matrix, sym)
+                           num_bands, dis_data%ndimwin, u_matrix, u_matrix_opt, a_matrix, sym, &
+                           comm)
     else
       call internal_find_u_gamma(param_input%timing_level, num_wann, dis_data%ndimwin, u_matrix, &
                                  u_matrix_opt, a_matrix)
@@ -224,7 +235,7 @@ contains
       end do
       call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                         num_wann*num_wann*kmesh_info%nntot*displs)
+                         num_wann*num_wann*kmesh_info%nntot*displs, comm)
       close (page_unit)
 
     else
@@ -252,7 +263,7 @@ contains
       enddo
       call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                         num_wann*num_wann*kmesh_info%nntot*displs)
+                         num_wann*num_wann*kmesh_info%nntot*displs, comm)
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main')
 
@@ -441,7 +452,7 @@ contains
   end subroutine internal_slim_m
 
   subroutine internal_find_u(on_root, lsitesymmetry, timing_level, num_kpts, num_wann, num_bands, &
-                             ndimwin, u_matrix, u_matrix_opt, a_matrix, sym)
+                             ndimwin, u_matrix, u_matrix_opt, a_matrix, sym, comm)
     !================================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
@@ -477,6 +488,11 @@ contains
     logical, intent(in) :: on_root, lsitesymmetry
 
     type(sitesym_data), intent(inout) :: sym
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! local variables
     integer :: nkp, info, ierr
@@ -530,7 +546,7 @@ contains
                    cmplx_0, u_matrix(:, :, nkp), num_wann)
       enddo
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, comm)
 !      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS:
 
     if (on_root) then
@@ -1602,7 +1618,7 @@ contains
 
   subroutine dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
                          num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                         kmesh_info, dis_data, lsitesymmetry, sym)
+                         kmesh_info, dis_data, lsitesymmetry, sym, comm)
 
     !==================================================================!
     !                                                                  !
@@ -1633,6 +1649,14 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(parameter_input_type), intent(inout) :: param_input !only omega_inv is modified
     type(sitesym_data), intent(in) :: sym
+
+!JJ this is really ugly here, kind of defeats the point of the comms module?
+! but for the time being it is not incorrect
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima
@@ -1842,8 +1866,8 @@ contains
 
         if (lsitesymmetry) then
           call comms_gatherv(czmat_in_loc, num_bands*num_bands*counts(my_node_id), czmat_in, &
-                             num_bands*num_bands*counts, num_bands*num_bands*displs)
-          call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts)
+                             num_bands*num_bands*counts, num_bands*num_bands*displs, comm)
+          call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, comm)
           call sitesym_symmetrize_zmatrix(czmat_in, dis_data%lwindow, num_bands, num_kpts, sym) !RS:
           do nkp_loc = 1, counts(my_node_id)
             nkp = nkp_loc + displs(my_node_id)
@@ -2028,20 +2052,20 @@ contains
       !! ! send back the whole wkomegai1 array to other nodes
       !! call comms_bcast(wkomegai1(1), num_kpts)
 
-      call comms_allreduce(womegai1, 1, 'SUM')
+      call comms_allreduce(womegai1, 1, 'SUM', comm)
 
       call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*counts(my_node_id), u_matrix_opt, &
-                         num_bands*num_wann*counts, num_bands*num_wann*displs)
-      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
+                         num_bands*num_wann*counts, num_bands*num_wann*displs, comm)
+      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, comm)
       if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_bands, &
                                                           u_matrix_opt, sym, dis_data%lwindow) !RS:
 
       if (index(param_input%devel_flag, 'compspace') > 0) then
         if (iter .eq. dis_data%num_iter) then
           call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
-                             num_bands*num_bands*counts, num_bands*num_bands*displs)
+                             num_bands*num_bands*counts, num_bands*num_bands*displs, comm)
 
-          call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts)
+          call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts, comm)
         endif
       endif
 
@@ -2110,7 +2134,7 @@ contains
         womegai = womegai + wkomegai
       enddo
 
-      call comms_allreduce(womegai, 1, 'SUM')
+      call comms_allreduce(womegai, 1, 'SUM', comm)
 
       womegai = womegai/real(num_kpts, dp)
       ! [Loop over k (nkp)]
@@ -2138,8 +2162,8 @@ contains
 
       if (lsitesymmetry) then
         call comms_gatherv(czmat_out_loc, num_bands*num_bands*counts(my_node_id), czmat_out, &
-                           num_bands*num_bands*counts, num_bands*num_bands*displs)
-        call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts)
+                           num_bands*num_bands*counts, num_bands*num_bands*displs, comm)
+        call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts, comm)
         call sitesym_symmetrize_zmatrix(czmat_out, dis_data%lwindow, num_bands, num_kpts, sym) !RS:
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
@@ -2296,8 +2320,8 @@ contains
         !  'Note(symmetry-adapted mode): u_matrix_opt are no longer the eigenstates of the subspace Hamiltonian.' !RS:
       endif                                                                                                        !YN:
     endif
-    call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts)
-    call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
+    call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts, comm)
+    call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, comm)
 
     if (index(param_input%devel_flag, 'compspace') > 0) then
 

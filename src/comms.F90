@@ -128,12 +128,12 @@ contains
 
 #ifdef MPI
     integer :: ierr
-    type(mpi_comm), intent(inout) :: comm
+    type(mpi_comm), intent(in) :: comm
 
     call mpi_init(ierr)
     if (ierr .ne. 0) call io_error('MPI initialisation error')
 #else
-    integer, intent(inout) :: comm
+    integer, intent(in) :: comm
 #endif
 
     call comms_setup_vars(comm)
@@ -146,12 +146,12 @@ contains
     implicit none
 
 #ifdef MPI
-    type(mpi_comm), intent(inout) :: comm
+    type(mpi_comm), intent(in) :: comm
     integer :: ierr
     call mpi_comm_rank(comm, my_node_id, ierr)
     call mpi_comm_size(comm, num_nodes, ierr)
 #else
-    integer, intent(inout) :: comm
+    integer, intent(in) :: comm
     num_nodes = 1
     my_node_id = 0
 #endif

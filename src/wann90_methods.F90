@@ -1854,7 +1854,7 @@ contains
                         k_points, num_kpts, dis_data, fermi_surface_data, &
                         fermi, tran, atoms, num_bands, num_wann, eigval, &
                         mp_grid, num_proj, real_lattice, recip_lattice, &
-                        eig_found)
+                        eig_found, comm)
     !===========================================================!
     !                                                           !
     !! distribute the parameters across processors              !
@@ -1865,6 +1865,9 @@ contains
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
     use w90_comms, only: comms_bcast, on_root
+#ifdef MPI
+    use mpi_f08
+#endif
 
     implicit none
     !data from parameters module
@@ -1909,34 +1912,41 @@ contains
     !type(geninterp_type), intent(inout) :: geninterp
     !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+!JJ this is really ugly here, kind of defeats the point of the comms module?
+! but for the time being it is not incorrect
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     integer :: ierr
 
     !call comms_bcast(pw90_common%effective_model, 1)
-    call comms_bcast(eig_found, 1)
-    call comms_bcast(driver%postproc_setup, 1)
-    call comms_bcast(w90_calcs%cp_pp, 1)
+    call comms_bcast(eig_found, 1, comm)
+    call comms_bcast(driver%postproc_setup, 1, comm)
+    call comms_bcast(w90_calcs%cp_pp, 1, comm)
     !if (.not. pw90_common%effective_model) then
-    call comms_bcast(mp_grid(1), 3)
-    call comms_bcast(num_kpts, 1)
-    call comms_bcast(num_bands, 1)
+    call comms_bcast(mp_grid(1), 3, comm)
+    call comms_bcast(num_kpts, 1, comm)
+    call comms_bcast(num_bands, 1, comm)
     !endif
-    call comms_bcast(num_wann, 1)
-    call comms_bcast(param_input%timing_level, 1)
-    call comms_bcast(param_input%iprint, 1)
-    call comms_bcast(energy_unit, 1)
-    call comms_bcast(param_input%length_unit, 1)
-    call comms_bcast(param_plot%wvfn_formatted, 1)
+    call comms_bcast(num_wann, 1, comm)
+    call comms_bcast(param_input%timing_level, 1, comm)
+    call comms_bcast(param_input%iprint, 1, comm)
+    call comms_bcast(energy_unit, 1, comm)
+    call comms_bcast(param_input%length_unit, 1, comm)
+    call comms_bcast(param_plot%wvfn_formatted, 1, comm)
     !call comms_bcast(postw90_oper%spn_formatted, 1)
     !call comms_bcast(postw90_oper%uHu_formatted, 1)
     !call comms_bcast(berry_uHu_formatted, 1)
-    call comms_bcast(param_plot%spin, 1)
-    call comms_bcast(param_wannierise%num_dump_cycles, 1)
-    call comms_bcast(param_wannierise%num_print_cycles, 1)
-    call comms_bcast(atoms%num_atoms, 1)   ! Ivo: not used in postw90, right?
-    call comms_bcast(atoms%num_species, 1) ! Ivo: not used in postw90, right?
-    call comms_bcast(real_lattice(1, 1), 9)
-    call comms_bcast(recip_lattice(1, 1), 9)
+    call comms_bcast(param_plot%spin, 1, comm)
+    call comms_bcast(param_wannierise%num_dump_cycles, 1, comm)
+    call comms_bcast(param_wannierise%num_print_cycles, 1, comm)
+    call comms_bcast(atoms%num_atoms, 1, comm)   ! Ivo: not used in postw90, right?
+    call comms_bcast(atoms%num_species, 1, comm) ! Ivo: not used in postw90, right?
+    call comms_bcast(real_lattice(1, 1), 9, comm)
+    call comms_bcast(recip_lattice(1, 1), 9, comm)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
     !call comms_bcast(cell_volume, 1)
@@ -1949,61 +1959,62 @@ contains
     !call comms_bcast(dos_data%smr_fixed_en_width, 1)
     !call comms_bcast(dos_data%adpt_smr_fac, 1)
     !call comms_bcast(dos_data%num_project, 1)
-    call comms_bcast(param_input%num_exclude_bands, 1)
+    call comms_bcast(param_input%num_exclude_bands, 1, comm)
     if (param_input%num_exclude_bands > 0) then
       if (.not. on_root) then
         allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating exclude_bands in param_dist')
       endif
-      call comms_bcast(param_input%exclude_bands(1), param_input%num_exclude_bands)
+      call comms_bcast(param_input%exclude_bands(1), param_input%num_exclude_bands, comm)
     end if
 
-    call comms_bcast(param_input%gamma_only, 1)
-    call comms_bcast(dis_data%win_min, 1)
-    call comms_bcast(dis_data%win_max, 1)
-    call comms_bcast(dis_data%froz_min, 1)
-    call comms_bcast(dis_data%froz_max, 1)
-    call comms_bcast(dis_data%num_iter, 1)
-    call comms_bcast(dis_data%mix_ratio, 1)
-    call comms_bcast(dis_data%conv_tol, 1)
-    call comms_bcast(dis_data%conv_window, 1)
-    call comms_bcast(dis_data%spheres_first_wann, 1)
-    call comms_bcast(dis_data%spheres_num, 1)
+    call comms_bcast(param_input%gamma_only, 1, comm)
+    call comms_bcast(dis_data%win_min, 1, comm)
+    call comms_bcast(dis_data%win_max, 1, comm)
+    call comms_bcast(dis_data%froz_min, 1, comm)
+    call comms_bcast(dis_data%froz_max, 1, comm)
+    call comms_bcast(dis_data%num_iter, 1, comm)
+    call comms_bcast(dis_data%mix_ratio, 1, comm)
+    call comms_bcast(dis_data%conv_tol, 1, comm)
+    call comms_bcast(dis_data%conv_window, 1, comm)
+    call comms_bcast(dis_data%spheres_first_wann, 1, comm)
+    call comms_bcast(dis_data%spheres_num, 1, comm)
     if (dis_data%spheres_num > 0) then
       if (.not. on_root) then
         allocate (dis_data%spheres(4, dis_data%spheres_num), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating dis_spheres in param_dist')
       endif
-      call comms_bcast(dis_data%spheres(1, 1), 4*dis_data%spheres_num)
+      call comms_bcast(dis_data%spheres(1, 1), 4*dis_data%spheres_num, comm)
     end if
-    call comms_bcast(param_wannierise%num_iter, 1)
-    call comms_bcast(param_wannierise%num_cg_steps, 1)
-    call comms_bcast(param_wannierise%conv_tol, 1)
-    call comms_bcast(param_wannierise%conv_window, 1)
-    call comms_bcast(param_wannierise%guiding_centres, 1)
-    call comms_bcast(w90_calcs%wannier_plot, 1) !!BGS!!
-    call comms_bcast(param_plot%num_wannier_plot, 1)
+    call comms_bcast(param_wannierise%num_iter, 1, comm)
+    call comms_bcast(param_wannierise%num_cg_steps, 1, comm)
+    call comms_bcast(param_wannierise%conv_tol, 1, comm)
+    call comms_bcast(param_wannierise%conv_window, 1, comm)
+    call comms_bcast(param_wannierise%guiding_centres, 1, comm)
+    call comms_bcast(w90_calcs%wannier_plot, 1, comm) !!BGS!!
+    call comms_bcast(param_plot%num_wannier_plot, 1, comm)
     if (param_plot%num_wannier_plot > 0) then
       if (.not. on_root) then
         allocate (param_plot%wannier_plot_list(param_plot%num_wannier_plot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating wannier_plot_list in param_dist')
       endif
-      call comms_bcast(param_plot%wannier_plot_list(1), param_plot%num_wannier_plot)
+      call comms_bcast(param_plot%wannier_plot_list(1), param_plot%num_wannier_plot, comm)
     end if
-    call comms_bcast(param_plot%wannier_plot_supercell(1), 3)
-    call comms_bcast(param_plot%wannier_plot_format, len(param_plot%wannier_plot_format))
-    call comms_bcast(param_plot%wannier_plot_mode, len(param_plot%wannier_plot_mode))
-    call comms_bcast(param_plot%wannier_plot_spinor_mode, len(param_plot%wannier_plot_spinor_mode))
-    call comms_bcast(param_plot%write_u_matrices, 1)
-    call comms_bcast(w90_calcs%bands_plot, 1)
-    call comms_bcast(param_plot%write_bvec, 1)
-    call comms_bcast(param_plot%bands_num_points, 1)
-    call comms_bcast(param_plot%bands_plot_format, len(param_plot%bands_plot_format))
-    call comms_bcast(param_input%bands_plot_mode, len(param_input%bands_plot_mode))
-    call comms_bcast(param_plot%num_bands_project, 1)
+    call comms_bcast(param_plot%wannier_plot_supercell(1), 3, comm)
+    call comms_bcast(param_plot%wannier_plot_format, len(param_plot%wannier_plot_format), comm)
+    call comms_bcast(param_plot%wannier_plot_mode, len(param_plot%wannier_plot_mode), comm)
+    call comms_bcast(param_plot%wannier_plot_spinor_mode, len(param_plot%wannier_plot_spinor_mode), &
+                     comm)
+    call comms_bcast(param_plot%write_u_matrices, 1, comm)
+    call comms_bcast(w90_calcs%bands_plot, 1, comm)
+    call comms_bcast(param_plot%write_bvec, 1, comm)
+    call comms_bcast(param_plot%bands_num_points, 1, comm)
+    call comms_bcast(param_plot%bands_plot_format, len(param_plot%bands_plot_format), comm)
+    call comms_bcast(param_input%bands_plot_mode, len(param_input%bands_plot_mode), comm)
+    call comms_bcast(param_plot%num_bands_project, 1, comm)
 
     if (param_plot%num_bands_project > 0) then
       if (.not. on_root) then
@@ -2011,23 +2022,23 @@ contains
         if (ierr /= 0) &
           call io_error('Error in allocating bands_plot_project in param_dist')
       endif
-      call comms_bcast(param_plot%bands_plot_project(1), param_plot%num_bands_project)
+      call comms_bcast(param_plot%bands_plot_project(1), param_plot%num_bands_project, comm)
     end if
-    call comms_bcast(param_plot%bands_plot_dim, 1)
-    call comms_bcast(w90_calcs%write_hr, 1)
-    call comms_bcast(param_plot%write_rmn, 1)
-    call comms_bcast(param_plot%write_tb, 1)
-    call comms_bcast(param_input%hr_cutoff, 1)
-    call comms_bcast(param_input%dist_cutoff, 1)
-    call comms_bcast(param_input%dist_cutoff_mode, len(param_input%dist_cutoff_mode))
-    call comms_bcast(param_input%dist_cutoff_hc, 1)
-    call comms_bcast(one_dim_axis, len(one_dim_axis))
-    call comms_bcast(param_input%use_ws_distance, 1)
-    call comms_bcast(param_input%ws_distance_tol, 1)
-    call comms_bcast(param_input%ws_search_size(1), 3)
-    call comms_bcast(w90_calcs%fermi_surface_plot, 1)
-    call comms_bcast(fermi_surface_data%num_points, 1)
-    call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format))
+    call comms_bcast(param_plot%bands_plot_dim, 1, comm)
+    call comms_bcast(w90_calcs%write_hr, 1, comm)
+    call comms_bcast(param_plot%write_rmn, 1, comm)
+    call comms_bcast(param_plot%write_tb, 1, comm)
+    call comms_bcast(param_input%hr_cutoff, 1, comm)
+    call comms_bcast(param_input%dist_cutoff, 1, comm)
+    call comms_bcast(param_input%dist_cutoff_mode, len(param_input%dist_cutoff_mode), comm)
+    call comms_bcast(param_input%dist_cutoff_hc, 1, comm)
+    call comms_bcast(one_dim_axis, len(one_dim_axis), comm)
+    call comms_bcast(param_input%use_ws_distance, 1, comm)
+    call comms_bcast(param_input%ws_distance_tol, 1, comm)
+    call comms_bcast(param_input%ws_search_size(1), 3, comm)
+    call comms_bcast(w90_calcs%fermi_surface_plot, 1, comm)
+    call comms_bcast(fermi_surface_data%num_points, 1, comm)
+    call comms_bcast(fermi_surface_data%plot_format, len(fermi_surface_data%plot_format), comm)
     !call comms_bcast(fermi_energy, 1) !! used?
 
     !call comms_bcast(pw90_calcs%berry, 1)
@@ -2061,7 +2072,7 @@ contains
     !call comms_bcast(berry%kubo_smr_index, 1)
     !call comms_bcast(berry%kubo_eigval_max, 1)
     !call comms_bcast(berry%kubo_nfreq, 1)
-    call comms_bcast(fermi%n, 1)
+    call comms_bcast(fermi%n, 1, comm)
     !call comms_bcast(dos_data%energy_min, 1)
     !call comms_bcast(dos_data%energy_max, 1)
     !call comms_bcast(pw90_spin%spin_kmesh_spacing, 1)
@@ -2076,14 +2087,14 @@ contains
     !call comms_bcast(spin_hall%bandshift_firstband, 1)
     !call comms_bcast(spin_hall%bandshift_energyshift, 1)
 
-    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag))
+    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag), comm)
     !call comms_bcast(pw90_common%spin_moment, 1)
     !call comms_bcast(pw90_spin%spin_axis_polar, 1)
     !call comms_bcast(pw90_spin%spin_axis_azimuth, 1)
     !call comms_bcast(pw90_common%spin_decomp, 1)
     !call comms_bcast(pw90_ham%use_degen_pert, 1)
     !call comms_bcast(pw90_ham%degen_thr, 1)
-    call comms_bcast(param_input%num_valence_bands, 1)
+    call comms_bcast(param_input%num_valence_bands, 1, comm)
     !call comms_bcast(pw90_calcs%dos, 1)
     !call comms_bcast(dos_data%task, len(dos_data%task))
     !call comms_bcast(pw90_calcs%kpath, 1)
@@ -2092,7 +2103,7 @@ contains
     !call comms_bcast(pw90_calcs%kslice, 1)
     !call comms_bcast(kslice%task, len(kslice%task))
     !call comms_bcast(berry%transl_inv, 1)
-    call comms_bcast(param_input%num_elec_per_state, 1)
+    call comms_bcast(param_input%num_elec_per_state, 1, comm)
     !call comms_bcast(pw90_common%scissors_shift, 1)
     !
 
@@ -2129,67 +2140,67 @@ contains
     !call comms_bcast(boltz%bandshift_firstband, 1)
     !call comms_bcast(boltz%bandshift_energyshift, 1)
     ! [gp-end]
-    call comms_bcast(param_input%use_ws_distance, 1)
-    call comms_bcast(w90_calcs%disentanglement, 1)
+    call comms_bcast(param_input%use_ws_distance, 1, comm)
+    call comms_bcast(w90_calcs%disentanglement, 1, comm)
 
-    call comms_bcast(w90_calcs%transport, 1)
-    call comms_bcast(tran%easy_fix, 1)
-    call comms_bcast(tran%mode, len(tran%mode))
-    call comms_bcast(tran%win_min, 1)
-    call comms_bcast(tran%win_max, 1)
-    call comms_bcast(tran%energy_step, 1)
-    call comms_bcast(tran%num_bb, 1)
-    call comms_bcast(tran%num_ll, 1)
-    call comms_bcast(tran%num_rr, 1)
-    call comms_bcast(tran%num_cc, 1)
-    call comms_bcast(tran%num_lc, 1)
-    call comms_bcast(tran%num_cr, 1)
-    call comms_bcast(tran%num_bandc, 1)
-    call comms_bcast(tran%write_ht, 1)
-    call comms_bcast(tran%read_ht, 1)
-    call comms_bcast(tran%use_same_lead, 1)
-    call comms_bcast(tran%num_cell_ll, 1)
-    call comms_bcast(tran%num_cell_rr, 1)
-    call comms_bcast(tran%group_threshold, 1)
-    call comms_bcast(param_hamil%translation_centre_frac(1), 3)
-    call comms_bcast(kmesh_data%num_shells, 1)
-    call comms_bcast(kmesh_data%skip_B1_tests, 1)
-    call comms_bcast(driver%explicit_nnkpts, 1)
+    call comms_bcast(w90_calcs%transport, 1, comm)
+    call comms_bcast(tran%easy_fix, 1, comm)
+    call comms_bcast(tran%mode, len(tran%mode), comm)
+    call comms_bcast(tran%win_min, 1, comm)
+    call comms_bcast(tran%win_max, 1, comm)
+    call comms_bcast(tran%energy_step, 1, comm)
+    call comms_bcast(tran%num_bb, 1, comm)
+    call comms_bcast(tran%num_ll, 1, comm)
+    call comms_bcast(tran%num_rr, 1, comm)
+    call comms_bcast(tran%num_cc, 1, comm)
+    call comms_bcast(tran%num_lc, 1, comm)
+    call comms_bcast(tran%num_cr, 1, comm)
+    call comms_bcast(tran%num_bandc, 1, comm)
+    call comms_bcast(tran%write_ht, 1, comm)
+    call comms_bcast(tran%read_ht, 1, comm)
+    call comms_bcast(tran%use_same_lead, 1, comm)
+    call comms_bcast(tran%num_cell_ll, 1, comm)
+    call comms_bcast(tran%num_cell_rr, 1, comm)
+    call comms_bcast(tran%group_threshold, 1, comm)
+    call comms_bcast(param_hamil%translation_centre_frac(1), 3, comm)
+    call comms_bcast(kmesh_data%num_shells, 1, comm)
+    call comms_bcast(kmesh_data%skip_B1_tests, 1, comm)
+    call comms_bcast(driver%explicit_nnkpts, 1, comm)
 
-    call comms_bcast(pp_calc%only_A, 1)
-    call comms_bcast(w90_calcs%use_bloch_phases, 1)
-    call comms_bcast(driver%restart, len(driver%restart))
-    call comms_bcast(param_wannierise%write_r2mn, 1)
-    call comms_bcast(param_wannierise%num_guide_cycles, 1)
-    call comms_bcast(param_wannierise%num_no_guide_iter, 1)
-    call comms_bcast(param_wannierise%fixed_step, 1)
-    call comms_bcast(param_wannierise%trial_step, 1)
-    call comms_bcast(param_wannierise%precond, 1)
-    call comms_bcast(param_wannierise%write_proj, 1)
-    call comms_bcast(param_input%timing_level, 1)
-    call comms_bcast(param_input%spinors, 1)
-    call comms_bcast(param_input%num_elec_per_state, 1)
-    call comms_bcast(param_wannierise%translate_home_cell, 1)
-    call comms_bcast(param_input%write_xyz, 1)
-    call comms_bcast(param_wannierise%write_hr_diag, 1)
-    call comms_bcast(param_wannierise%conv_noise_amp, 1)
-    call comms_bcast(param_wannierise%conv_noise_num, 1)
-    call comms_bcast(param_plot%wannier_plot_radius, 1)
-    call comms_bcast(param_plot%wannier_plot_scale, 1)
-    call comms_bcast(kmesh_data%tol, 1)
-    call comms_bcast(param_input%optimisation, 1)
-    call comms_bcast(param_wannierise%write_vdw_data, 1)
-    call comms_bcast(param_input%lenconfac, 1)
-    call comms_bcast(param_wannierise%lfixstep, 1)
-    call comms_bcast(lsitesymmetry, 1)
-    call comms_bcast(dis_data%frozen_states, 1)
-    call comms_bcast(symmetrize_eps, 1)
+    call comms_bcast(pp_calc%only_A, 1, comm)
+    call comms_bcast(w90_calcs%use_bloch_phases, 1, comm)
+    call comms_bcast(driver%restart, len(driver%restart), comm)
+    call comms_bcast(param_wannierise%write_r2mn, 1, comm)
+    call comms_bcast(param_wannierise%num_guide_cycles, 1, comm)
+    call comms_bcast(param_wannierise%num_no_guide_iter, 1, comm)
+    call comms_bcast(param_wannierise%fixed_step, 1, comm)
+    call comms_bcast(param_wannierise%trial_step, 1, comm)
+    call comms_bcast(param_wannierise%precond, 1, comm)
+    call comms_bcast(param_wannierise%write_proj, 1, comm)
+    call comms_bcast(param_input%timing_level, 1, comm)
+    call comms_bcast(param_input%spinors, 1, comm)
+    call comms_bcast(param_input%num_elec_per_state, 1, comm)
+    call comms_bcast(param_wannierise%translate_home_cell, 1, comm)
+    call comms_bcast(param_input%write_xyz, 1, comm)
+    call comms_bcast(param_wannierise%write_hr_diag, 1, comm)
+    call comms_bcast(param_wannierise%conv_noise_amp, 1, comm)
+    call comms_bcast(param_wannierise%conv_noise_num, 1, comm)
+    call comms_bcast(param_plot%wannier_plot_radius, 1, comm)
+    call comms_bcast(param_plot%wannier_plot_scale, 1, comm)
+    call comms_bcast(kmesh_data%tol, 1, comm)
+    call comms_bcast(param_input%optimisation, 1, comm)
+    call comms_bcast(param_wannierise%write_vdw_data, 1, comm)
+    call comms_bcast(param_input%lenconfac, 1, comm)
+    call comms_bcast(param_wannierise%lfixstep, 1, comm)
+    call comms_bcast(lsitesymmetry, 1, comm)
+    call comms_bcast(dis_data%frozen_states, 1, comm)
+    call comms_bcast(symmetrize_eps, 1, comm)
 
     !vv: Constrained centres
-    call comms_bcast(param_wannierise%slwf_num, 1)
-    call comms_bcast(param_wannierise%slwf_constrain, 1)
-    call comms_bcast(param_wannierise%slwf_lambda, 1)
-    call comms_bcast(param_wannierise%selective_loc, 1)
+    call comms_bcast(param_wannierise%slwf_num, 1, comm)
+    call comms_bcast(param_wannierise%slwf_constrain, 1, comm)
+    call comms_bcast(param_wannierise%slwf_lambda, 1, comm)
+    call comms_bcast(param_wannierise%selective_loc, 1, comm)
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
       if (.not. on_root) then
         allocate (ccentres_frac(num_wann, 3), stat=ierr)
@@ -2197,15 +2208,15 @@ contains
         allocate (param_wannierise%ccentres_cart(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_cart in param_get_centre_constraints')
       endif
-      call comms_bcast(ccentres_frac(1, 1), 3*num_wann)
-      call comms_bcast(param_wannierise%ccentres_cart(1, 1), 3*num_wann)
+      call comms_bcast(ccentres_frac(1, 1), 3*num_wann, comm)
+      call comms_bcast(param_wannierise%ccentres_cart(1, 1), 3*num_wann, comm)
     end if
 
     ! vv: automatic projections
-    call comms_bcast(kmesh_data%auto_projections, 1)
+    call comms_bcast(kmesh_data%auto_projections, 1, comm)
 
-    call comms_bcast(num_proj, 1)
-    call comms_bcast(lhasproj, 1)
+    call comms_bcast(num_proj, 1, comm)
+    call comms_bcast(lhasproj, 1, comm)
     if (lhasproj) then
       if (.not. on_root) then
         allocate (kmesh_data%input_proj_site(3, num_proj), stat=ierr)
@@ -2213,8 +2224,8 @@ contains
         allocate (param_wannierise%proj_site(3, num_wann), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating proj_site in param_dist')
       endif
-      call comms_bcast(kmesh_data%input_proj_site(1, 1), 3*num_proj)
-      call comms_bcast(param_wannierise%proj_site(1, 1), 3*num_wann)
+      call comms_bcast(kmesh_data%input_proj_site(1, 1), 3*num_proj, comm)
+      call comms_bcast(param_wannierise%proj_site(1, 1), 3*num_wann, comm)
     endif
 
     ! These variables are different from the ones above in that they are
@@ -2248,7 +2259,7 @@ contains
       !  'Error allocating gyrotropic_freq_list in postw90_param_dist')
     end if
 
-    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n)
+    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n, comm)
     !if (berry%kubo_nfreq > 0) call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq)
     !call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq)
     !call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands)
@@ -2256,17 +2267,17 @@ contains
     !  call comms_bcast(dos_data%project(1), dos_data%num_project)
     !if (.not. pw90_common%effective_model) then
     if (eig_found) then
-      call comms_bcast(eigval(1, 1), num_bands*num_kpts)
+      call comms_bcast(eigval(1, 1), num_bands*num_kpts, comm)
     end if
-    call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts)
+    call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts, comm)
     !endif
 
     !if (.not. pw90_common%effective_model .and. .not. driver%explicit_nnkpts) then
     if (.not. driver%explicit_nnkpts) then
 
-      call comms_bcast(kmesh_info%nnh, 1)
-      call comms_bcast(kmesh_info%nntot, 1)
-      call comms_bcast(kmesh_info%wbtot, 1)
+      call comms_bcast(kmesh_info%nnh, 1, comm)
+      call comms_bcast(kmesh_info%nntot, 1, comm)
+      call comms_bcast(kmesh_info%wbtot, 1, comm)
 
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
@@ -2289,19 +2300,19 @@ contains
           call io_error('Error in allocating bk in param_dist')
       end if
 
-      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot)
-      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2)
-      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot)
-      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot)
-      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2)
-      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts)
+      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, comm)
+      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, comm)
+      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, comm)
+      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, comm)
+      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, comm)
+      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, comm)
 
     endif
 
-    call comms_bcast(param_wannierise%omega_total, 1)
-    call comms_bcast(param_wannierise%omega_tilde, 1)
-    call comms_bcast(param_input%omega_invariant, 1)
-    call comms_bcast(param_input%have_disentangled, 1)
+    call comms_bcast(param_wannierise%omega_total, 1, comm)
+    call comms_bcast(param_wannierise%omega_tilde, 1, comm)
+    call comms_bcast(param_input%omega_invariant, 1, comm)
+    call comms_bcast(param_input%have_disentangled, 1, comm)
 
     if (.not. on_root) then
       allocate (wann_data%centres(3, num_wann), stat=ierr)

@@ -16,6 +16,9 @@ module w90_wannierise
   !! Main routines for the minimisation of the spread
 
   use w90_constants, only: dp
+#ifdef MPI
+  use mpi_f08
+#endif
 
   implicit none
 
@@ -53,7 +56,7 @@ contains
                        u_matrix_opt, eigval, dis_data, recip_lattice, atoms, lsitesymmetry, &
                        stdout, mp_grid, w90_calcs, transport_mode, param_hamil, sym, ham_r, irvec, &
                        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                       ham_k)
+                       ham_k, comm)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -174,6 +177,11 @@ contains
 !   end w90_hamiltonian
 
     type(sitesym_data), intent(in) :: sym
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! local variables
     type(localisation_vars) :: old_spread
@@ -366,7 +374,7 @@ contains
     end do
     call comms_scatterv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                        num_wann*num_wann*kmesh_info%nntot*displs)
+                        num_wann*num_wann*kmesh_info%nntot*displs, comm)
 
     allocate (cdq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating cdq_loc in wann_main')
@@ -428,7 +436,7 @@ contains
     if (param_wannierise%guiding_centres .and. (param_wannierise%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                       stdout)
+                       stdout, comm)
       irguide = 1
     endif
 
@@ -441,7 +449,7 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                     num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                    m_matrix_loc, lambda_loc, first_pass, stdout)
+                    m_matrix_loc, lambda_loc, first_pass, stdout, comm)
 
     ! public variables
     if (.not. param_wannierise%selective_loc) then
@@ -532,7 +540,7 @@ contains
           .and. (mod(iter, param_wannierise%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                         stdout)
+                         stdout, comm)
         irguide = 1
       endif
 
@@ -541,11 +549,11 @@ contains
       if (lsitesymmetry .or. param_wannierise%precond) then
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, sym, cdodq)
+                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, sym, comm, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, sym)
+                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, sym, comm)
       endif
 
       if (lprint .and. param_input%iprint > 2 .and. on_root) &
@@ -556,7 +564,7 @@ contains
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                       k_to_r, wann_spread, param_input, num_wann, num_kpts, &
                                       k_points%kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                      counts, displs, stdout)
+                                      counts, displs, stdout, comm)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
@@ -593,12 +601,12 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, param_input%timing_level, stdout, sym)
+                                  m_matrix_loc, param_input%timing_level, stdout, sym, comm)
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
                         num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, stdout)
+                        m_matrix_loc, lambda_loc, first_pass, stdout, comm)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
@@ -651,14 +659,14 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, param_input%timing_level, stdout, sym)
+                                  m_matrix_loc, param_input%timing_level, stdout, sym, comm)
 
         call wann_spread_copy(wann_spread, old_spread)
 
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, stdout)
+                        m_matrix_loc, lambda_loc, first_pass, stdout, comm)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -741,11 +749,11 @@ contains
         ! the u_matrix from the u_matrix_loc. No need to broadcast it since
         ! it's printed by the root node only
         call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
-                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs)
+                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, comm)
         ! I also transfer the M matrix
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                           num_wann*num_wann*kmesh_info%nntot*displs)
+                           num_wann*num_wann*kmesh_info%nntot*displs, comm)
         if (on_root) call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
                                             k_points, num_kpts, dis_data, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
@@ -780,12 +788,12 @@ contains
 !    end do!nn
     call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                        m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                       num_wann*num_wann*kmesh_info%nntot*displs)
+                       num_wann*num_wann*kmesh_info%nntot*displs, comm)
 
     ! send u matrix
     call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
-                       u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs)
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+                       u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, comm)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, comm)
 
     ! Evaluate the penalty functional
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
@@ -870,7 +878,7 @@ contains
     if (param_wannierise%guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                       stdout)
+                       stdout, comm)
     endif
 
     ! unitarity is checked
@@ -1164,7 +1172,7 @@ contains
     subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
                                         k_to_r, wann_spread, param_input, num_wann, num_kpts, &
                                         kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                        counts, displs, stdout)
+                                        counts, displs, stdout, comm)
       !===============================================!
       !                                               !
       !! Calculate the conjugate gradients search
@@ -1203,6 +1211,12 @@ contains
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
       integer, intent(in) :: stdout
+#ifdef MPI
+      type(mpi_comm), intent(in) :: comm
+#else
+      integer, intent(in) :: comm
+#endif
+
       ! local
       complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
@@ -1342,7 +1356,7 @@ contains
       else
         gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdodq_loc, 1), dp)
       end if
-      call comms_allreduce(gcnorm1, 1, 'SUM')
+      call comms_allreduce(gcnorm1, 1, 'SUM', comm)
 
       ! calculate cg_coefficient
       if ((iter .eq. 1) .or. (ncg .ge. param_wannierise%num_cg_steps)) then
@@ -1389,7 +1403,7 @@ contains
       ! NB gradient is anti-hermitian
       doda0 = -real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdq_loc, 1), dp)
 
-      call comms_allreduce(doda0, 1, 'SUM')
+      call comms_allreduce(doda0, 1, 'SUM', comm)
 
       doda0 = doda0/(4.0_dp*wbtot)
 
@@ -1407,7 +1421,7 @@ contains
           ! re-calculate gradient along search direction
           doda0 = -real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdq_loc, 1), dp)
 
-          call comms_allreduce(doda0, 1, 'SUM')
+          call comms_allreduce(doda0, 1, 'SUM', comm)
 
           doda0 = doda0/(4.0_dp*wbtot)
           ! if search direction still uphill then reverse search direction
@@ -1512,7 +1526,7 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                    m_matrix_loc, timing_level, stdout, sym)
+                                    m_matrix_loc, timing_level, stdout, sym, comm)
       !===============================================!
       !                                               !
       !! Update U and M matrices after a trial step
@@ -1549,6 +1563,13 @@ contains
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       integer, intent(in) :: timing_level
       integer, intent(in) :: stdout
+
+#ifdef MPI
+      type(mpi_comm), intent(in) :: comm
+#else
+      integer, intent(in) :: comm
+#endif
+
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
@@ -1595,8 +1616,8 @@ contains
       ! each process communicates its result to other processes
       ! it would be enough to copy only next neighbors
       call comms_gatherv(cdq_loc, num_wann*num_wann*counts(my_node_id), cdq, &
-                         num_wann*num_wann*counts, num_wann*num_wann*displs)
-      call comms_bcast(cdq(1, 1, 1), num_wann*num_wann*num_kpts)
+                         num_wann*num_wann*counts, num_wann*num_wann*displs, comm)
+      call comms_bcast(cdq(1, 1, 1), num_wann*num_wann*num_kpts, comm)
 
 !!$      do nkp = 1, num_kpts
 !!$         tmp_cdq(:,:) = cdq(:,:,nkp)
@@ -1836,7 +1857,8 @@ contains
 
   !==================================================================!
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                         gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, m_w)
+                         gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, &
+                         comm, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1881,6 +1903,12 @@ contains
 
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     !! Used in the Gamma point routines as an optimisation
+
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     !local
     complex(kind=dp) :: csum(kmesh_info%nnh)
@@ -1936,7 +1964,7 @@ contains
 
       end if
 
-      call comms_allreduce(csum(1), kmesh_info%nnh, 'SUM')
+      call comms_allreduce(csum(1), kmesh_info%nnh, 'SUM', comm)
 
       ! now analyze that information to get good guess at
       ! wannier center
@@ -2075,7 +2103,7 @@ contains
   !==================================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, stdout)
+                        m_matrix_loc, lambda_loc, first_pass, stdout, comm)
     !==================================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
@@ -2122,6 +2150,13 @@ contains
     real(kind=dp), intent(in) :: lambda_loc
     logical, intent(inout) :: first_pass
     integer, intent(in) :: stdout
+
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
+
     !local variables
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
@@ -2153,7 +2188,7 @@ contains
       enddo
     enddo
 
-    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM')
+    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', comm)
 
     rave = -rave/real(num_kpts, dp)
 
@@ -2182,7 +2217,7 @@ contains
       enddo
     enddo
 
-    call comms_allreduce(r2ave(1), num_wann, 'SUM')
+    call comms_allreduce(r2ave(1), num_wann, 'SUM', comm)
 
     r2ave = r2ave/real(num_kpts, dp)
 
@@ -2257,7 +2292,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_iod, 1, 'SUM')
+      call comms_allreduce(wann_spread%om_iod, 1, 'SUM', comm)
 
       wann_spread%om_iod = wann_spread%om_iod/real(num_kpts, dp)
 
@@ -2273,7 +2308,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_d, 1, 'SUM')
+      call comms_allreduce(wann_spread%om_d, 1, 'SUM', comm)
 
       wann_spread%om_d = wann_spread%om_d/real(num_kpts, dp)
 
@@ -2291,7 +2326,7 @@ contains
           enddo
         enddo
 
-        call comms_allreduce(wann_spread%om_nu, 1, 'SUM')
+        call comms_allreduce(wann_spread%om_nu, 1, 'SUM', comm)
 
         wann_spread%om_nu = wann_spread%om_nu/real(num_kpts, dp)
 
@@ -2323,7 +2358,7 @@ contains
           enddo
         enddo
 
-        call comms_allreduce(wann_spread%om_i, 1, 'SUM')
+        call comms_allreduce(wann_spread%om_i, 1, 'SUM', comm)
 
         wann_spread%om_i = wann_spread%om_i/real(num_kpts, dp)
         first_pass = .false.
@@ -2345,7 +2380,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_od, 1, 'SUM')
+      call comms_allreduce(wann_spread%om_od, 1, 'SUM', comm)
 
       wann_spread%om_od = wann_spread%om_od/real(num_kpts, dp)
 
@@ -2361,7 +2396,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_d, 1, 'SUM')
+      call comms_allreduce(wann_spread%om_d, 1, 'SUM', comm)
 
       wann_spread%om_d = wann_spread%om_d/real(num_kpts, dp)
 
@@ -2377,7 +2412,7 @@ contains
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, stdout, sym, cdodq)
+                         cdodq_loc, lambda_loc, timing_level, stdout, sym, comm, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2426,6 +2461,13 @@ contains
     complex(kind=dp), intent(out) :: cdodq_loc(:, :, :)
     real(kind=dp), intent(in) :: lambda_loc
     integer, intent(in) :: stdout
+
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
+
     ! local
     complex(kind=dp), allocatable  :: cr(:, :)
     complex(kind=dp), allocatable  :: crt(:, :)
@@ -2470,7 +2512,7 @@ contains
     enddo
     rave = -rave/real(num_kpts, dp)
 
-    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM')
+    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', comm)
 
     ! b.r_0n are calculated
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
@@ -2613,8 +2655,8 @@ contains
     if (present(cdodq)) then
       ! each process communicates its result to other processes
       call comms_gatherv(cdodq_loc, num_wann*num_wann*counts(my_node_id), &
-                         cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs)
-      call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts)
+                         cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs, comm)
+      call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, comm)
       if (lsitesymmetry) then
         call sitesym_symmetrize_gradient(1, cdodq, num_wann, num_kpts, sym) !RS:
         cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) &
@@ -3201,7 +3243,7 @@ contains
                              param_input, u_matrix, m_matrix, num_kpts, &
                              real_lattice, wann_data, num_bands, u_matrix_opt, &
                              eigval, lwindow, recip_lattice, atoms, k_points, &
-                             dis_data, mp_grid, stdout)
+                             dis_data, mp_grid, stdout, comm)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3271,6 +3313,12 @@ contains
     type(disentangle_type), intent(in) :: dis_data ! needed for write_chkpt
     integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
     integer, intent(in) :: stdout
+
+#ifdef MPI
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! local
     type(localisation_vars) :: old_spread
@@ -3413,7 +3461,7 @@ contains
     if (param_wannierise%guiding_centres .and. (param_wannierise%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
                        num_kpts, m_matrix, .true., counts, displs, &
-                       m_matrix_loc, rnkb, param_input%timing_level, stdout)
+                       m_matrix_loc, rnkb, param_input%timing_level, stdout, comm)
       irguide = 1
     endif
 
@@ -3426,9 +3474,8 @@ contains
     end do
 
     ! calculate initial centers and spread
-    call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, &
-                          num_wann, kmesh_info%nntot, kmesh_info%wbtot, &
-                          kmesh_info%wb, kmesh_info%bk, &
+    call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
+                          kmesh_info%nntot, kmesh_info%wbtot, kmesh_info%wb, kmesh_info%bk, &
                           param_input%omega_invariant, ln_tmp, first_pass, &
                           param_input%timing_level, stdout)
 
@@ -3497,7 +3544,7 @@ contains
           .and. (mod(iter, param_wannierise%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
                          num_kpts, m_matrix, .true., counts, displs, &
-                         m_matrix_loc, rnkb, param_input%timing_level, stdout, m_w)
+                         m_matrix_loc, rnkb, param_input%timing_level, stdout, comm, m_w)
         irguide = 1
       endif
 
@@ -3606,7 +3653,7 @@ contains
     if (param_wannierise%guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
                        num_kpts, m_matrix, .true., counts, displs, &
-                       m_matrix_loc, rnkb, param_input%timing_level, stdout)
+                       m_matrix_loc, rnkb, param_input%timing_level, stdout, comm)
     endif
 
     ! unitarity is checked
