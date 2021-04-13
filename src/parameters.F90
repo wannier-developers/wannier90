@@ -331,12 +331,13 @@ contains
 
   end subroutine param_read_verbosity
 
-  subroutine param_read_units(param_input, energy_unit)
-    use w90_constants, only: bohr
+  subroutine param_read_units(param_input, energy_unit, bohr)
+    !use w90_constants, only: bohr
     use w90_io, only: io_error
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
     character(len=*), intent(out) :: energy_unit
+    real(kind=dp), intent(in) :: bohr
     logical :: found
 
     energy_unit = 'ev'          !
@@ -762,7 +763,8 @@ contains
 
   end subroutine param_read_kmesh_data
 
-  subroutine param_read_kpoints(pw90_effective_model, library, k_points, num_kpts, recip_lattice)
+  subroutine param_read_kpoints(pw90_effective_model, library, k_points, num_kpts, &
+                                recip_lattice, bohr)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -770,6 +772,7 @@ contains
     type(k_point_type), intent(out) :: k_points
     integer, intent(in) :: num_kpts
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: bohr
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
     integer :: nkp, ierr
     logical :: found
@@ -781,7 +784,7 @@ contains
       if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
     end if
 
-    call param_get_keyword_block('kpoints', found, num_kpts, 3, r_value=k_points%kpt_cart)
+    call param_get_keyword_block('kpoints', found, num_kpts, 3, bohr, r_value=k_points%kpt_cart)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       k_points%kpt_latt = k_points%kpt_cart
@@ -797,16 +800,17 @@ contains
 
   end subroutine param_read_kpoints
 
-  subroutine param_read_lattice(library, real_lattice, recip_lattice)
+  subroutine param_read_lattice(library, real_lattice, recip_lattice, bohr)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: library
     real(kind=dp), intent(out) :: real_lattice(3, 3), recip_lattice(3, 3)
     real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
+    real(kind=dp), intent(in) :: bohr
     logical :: found
 
-    call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
+    call param_get_keyword_block('unit_cell_cart', found, 3, 3, bohr, r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
       real_lattice = transpose(real_lattice_tmp)
@@ -868,12 +872,13 @@ contains
     ! [GP-end]
   end subroutine param_read_global_kmesh
 
-  subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice)
+  subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr)
     use w90_io, only: io_error, stdout
     implicit none
     logical, intent(in) :: library
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: bohr
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
 
@@ -893,7 +898,7 @@ contains
         if (lunits) atoms%num_atoms = atoms%num_atoms - 1
       end if
       if (atoms%num_atoms > 0) then
-        call param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice)
+        call param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr)
       end if
     endif
   end subroutine param_read_atoms
@@ -1133,12 +1138,13 @@ contains
 
   end subroutine param_uppercase
 
-  subroutine param_write_header
+  subroutine param_write_header(bohr_version_str, constants_version_str1, constants_version_str2)
     !! Write a suitable header for the calculation - version authors etc
     use w90_io, only: io_date, w90_version
-    use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
+    !use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
     implicit none
 
+    character(len=*), intent(in) :: bohr_version_str, constants_version_str1, constants_version_str2
     character(len=9) :: cdate, ctime
 
     call io_date(cdate, ctime)
@@ -1976,7 +1982,7 @@ contains
   end subroutine param_get_vector_length
 
 !==============================================================================================!
-  subroutine param_get_keyword_block(keyword, found, rows, columns, c_value, &
+  subroutine param_get_keyword_block(keyword, found, rows, columns, bohr, c_value, &
                                      l_value, i_value, r_value)
     !==============================================================================================!
     !                                                                                              !
@@ -1984,7 +1990,7 @@ contains
     !                                                                                              !
     !==============================================================================================!
 
-    use w90_constants, only: bohr
+    !use w90_constants, only: bohr
     use w90_io, only: io_error
 
     implicit none
@@ -2005,6 +2011,7 @@ contains
     !! keyword block data
     real(kind=dp), optional, intent(inout) :: r_value(columns, rows)
     !! keyword block data
+    real(kind=dp), intent(in) :: bohr
 
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter, blen
     logical           :: found_e, found_s, lconvert
@@ -2225,14 +2232,14 @@ contains
   end subroutine param_get_block_length
 
 !===================================!
-  subroutine param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice)
+  subroutine param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr)
     !===================================!
     !                                   !
     !!   Fills the atom data block
     !                                   !
     !===================================!
 
-    use w90_constants, only: bohr
+    !use w90_constants, only: bohr
     use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac
     use w90_io, only: io_error
     implicit none
@@ -2242,6 +2249,7 @@ contains
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
+    real(kind=dp), intent(in) :: bohr
 
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atoms%num_atoms)
     real(kind=dp)     :: atoms_pos_cart_tmp(3, atoms%num_atoms)
@@ -2705,14 +2713,14 @@ contains
 !===================================!
   subroutine param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                    num_wann, proj_site, proj, &
-                                   recip_lattice, lcount)
+                                   recip_lattice, lcount, bohr)
     !===================================!
     !                                   !
     !!  Fills the projection data block
     !                                   !
     !===================================!
 
-    use w90_constants, only: bohr, eps6, eps2
+    use w90_constants, only: eps6, eps2
     use w90_utility, only: utility_cart_to_frac, &
       utility_string_to_coord, utility_strip
     use w90_io, only: io_error
@@ -2732,6 +2740,7 @@ contains
     type(projection_type), intent(inout) :: proj ! intent(out)?
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     logical, intent(in)    :: lcount
+    real(kind=dp), intent(in) :: bohr
 
     real(kind=dp)     :: pos_frac(3)
     real(kind=dp)     :: pos_cart(3)

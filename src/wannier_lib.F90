@@ -64,7 +64,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
 
-  use w90_constants
+  use w90_constants, only: w90_physical_constants, dp
   use w90_parameters
   use wannier_param_data
   use wannier_methods, only: param_read, param_write, proj
@@ -77,6 +77,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
   implicit none
 
+  type(w90_physical_constants) :: physics
   character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
   integer, intent(in) :: num_kpts_loc
@@ -128,7 +129,8 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   stdout = io_file_unit()
   open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
 
-  call param_write_header()
+  call param_write_header(physics%bohr_version_str, physics%constants_version_str1, &
+                          physics%constants_version_str2)
 
   write (stdout, '(/a/)') ' Wannier90 is running in LIBRARY MODE'
   write (stdout, '(a/)') ' Setting up k-point neighbours...'
@@ -155,7 +157,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
                   k_points, num_kpts, dis_data, fermi_surface_data, &
                   fermi, tran, atoms, num_bands, num_wann, eigval, &
                   mp_grid, num_proj, select_proj, real_lattice, &
-                  recip_lattice, spec_points, eig_found, .true., .true.)
+                  recip_lattice, spec_points, eig_found, .true., .true., physics%bohr)
   ! Following calls will all NOT be first_pass, and I need to pass
   ! directly num_bands, that is already set internally now to num_bands = num_bands_tot - num_exclude_bands
   !library_param_read_first_pass = .false.
@@ -259,7 +261,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   !! For more information, check a (minimal) example of how it can be used
   !! in the folder test-suite/library-mode-test/test_library.F90
 
-  use w90_constants
+  use w90_constants, only: w90_physical_constants, dp
   use w90_parameters
   use wannier_param_data
   use wannier_methods, only: param_read, param_write, param_write_chkpt, &
@@ -279,6 +281,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
 
   implicit none
 
+  type(w90_physical_constants) :: physics
   character(len=*), intent(in) :: seed__name
   integer, dimension(3), intent(in) :: mp_grid_loc
   integer, intent(in) :: num_kpts_loc
@@ -372,7 +375,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                   k_points, num_kpts, dis_data, fermi_surface_data, &
                   fermi, tran, atoms, num_bands, num_wann, eigval, &
                   mp_grid, num_proj, select_proj, real_lattice, &
-                  recip_lattice, spec_points, eig_found, .true., .false.)
+                  recip_lattice, spec_points, eig_found, .true., .false., physics%bohr)
 
   call param_write(driver, w90_calcs, param_input, param_plot, &
                    param_wannierise, lsitesymmetry, symmetrize_eps, &
@@ -477,7 +480,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
                    u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, &
                    mp_grid, tran%mode, fermi, fermi_surface_data, spec_points, &
                    ham_r, irvec, shift_vec, ndegen, nrpts, rpt_origin, &
-                   wannier_centres_translated, hmlg, ham_k)
+                   wannier_centres_translated, hmlg, ham_k, physics%bohr)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'

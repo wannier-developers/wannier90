@@ -47,8 +47,8 @@ module w90_gyrotropic
   ! 5 <--> xz
   ! 6 <--> yz
   !
-  integer, dimension(6), parameter :: alpha_S = (/1, 2, 3, 1, 1, 2/)
-  integer, dimension(6), parameter ::  beta_S = (/1, 2, 3, 2, 3, 3/)
+  !integer, dimension(6), parameter :: alpha_S = (/1, 2, 3, 1, 1, 2/)
+  !integer, dimension(6), parameter ::  beta_S = (/1, 2, 3, 2, 3, 3/)
 
 contains
 
@@ -56,7 +56,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine gyrotropic_main
+  subroutine gyrotropic_main(physics)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -68,8 +68,7 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, cmplx_0, elem_charge_SI, hbar_SI, &
-      eV_au, bohr, elec_mass_SI, twopi, eps0_SI
+    use w90_constants, only: dp, twopi, pw90_physical_constants
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_utility, only: utility_det3
     use w90_io, only: io_error, stdout, io_file_unit, &
@@ -82,6 +81,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R
 
+    type(pw90_physical_constants), intent(in) :: physics
     real(kind=dp), allocatable    :: gyro_K_spn(:, :, :)
     real(kind=dp), allocatable    :: gyro_DOS(:)
     real(kind=dp), allocatable    :: gyro_K_orb(:, :, :)
@@ -310,7 +310,8 @@ contains
           ! ==============================
           ! fac = 10^20*e*hbar/(2.m_e.V_c)
           ! ==============================
-          fac = -1.0e20_dp*elem_charge_SI*hbar_SI/(2.*elec_mass_SI*cell_volume)
+          fac = -1.0e20_dp*physics%elem_charge_SI*physics%hbar_SI/(2.*physics%elec_mass_SI &
+                                                                   *cell_volume)
           gyro_K_spn(:, :, :) = gyro_K_spn(:, :, :)*fac
           f_out_name_tmp = 'K_spin'
           units_tmp = "Ampere"
@@ -332,7 +333,7 @@ contains
         ! ====================================
         ! fac = e^2/(2.hbar.V_c)
         ! ====================================
-        fac = elem_charge_SI**2/(2.*hbar_SI*cell_volume)
+        fac = physics%elem_charge_SI**2/(2.*physics%hbar_SI*cell_volume)
         gyro_K_orb(:, :, :) = gyro_K_orb(:, :, :)*fac
 
         f_out_name_tmp = 'K_orb'
@@ -376,7 +377,7 @@ contains
         ! multiply by 10^8*e in SI to get J/cm
         ! multiply by e/h in SI
         !
-        fac = 1.0e+8_dp*elem_charge_SI**2/(twopi*hbar_SI*cell_volume)
+        fac = 1.0e+8_dp*physics%elem_charge_SI**2/(twopi*physics%hbar_SI*cell_volume)
         gyro_C(:, :, :) = gyro_C(:, :, :)*fac
 
         f_out_name_tmp = 'C'
@@ -393,7 +394,7 @@ contains
         !   * Divide by e in SI to get J^{-1}
         !   * multiply by e^2/eps_0 to get meters
         !   *multiply dy 1e10 to get Ang
-        fac = 1e+10_dp*elem_charge_SI/(cell_volume*eps0_SI)
+        fac = 1e+10_dp*physics%elem_charge_SI/(cell_volume*physics%eps0_SI)
         gyro_NOA_orb = gyro_NOA_orb*fac
         f_out_name_tmp = 'NOA_orb'
         units_tmp = "Ang"
@@ -409,7 +410,7 @@ contains
           !   * multiply by e^2/eps_0 to get (J.m)^{-1}
           !   *multiply dy hbar^2/m_e to get m
           !   *multiply by 1e10 to get Ang
-          fac = 1e+30_dp*hbar_SI**2/(cell_volume*eps0_SI*elec_mass_SI)
+          fac = 1e+30_dp*physics%hbar_SI**2/(cell_volume*physics%eps0_SI*physics%elec_mass_SI)
           gyro_NOA_spn = gyro_NOA_spn*fac
           f_out_name_tmp = 'NOA_spin'
           units_tmp = "Ang"
@@ -470,7 +471,7 @@ contains
     !                                                                      !
     !======================================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_rotate, utility_rotate_diag, utility_w0gauss
     use w90_parameters, only: num_wann, fermi
     use pw90_parameters, only: gyrotropic
@@ -689,7 +690,7 @@ contains
     !   here a,b  defined as epsilon_{abd}=1  (and NOA_dc tensor is saved)  !
     !====================================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, pi, cmplx_1
+    use w90_constants, only: dp, cmplx_1
     use w90_utility, only: utility_rotate
     use w90_parameters, only: num_wann, fermi, param_input
     use pw90_parameters, only: gyrotropic

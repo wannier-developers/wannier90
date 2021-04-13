@@ -269,7 +269,7 @@ contains
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
-                                gyrotropic, geninterp, boltz, eig_found)
+                                gyrotropic, geninterp, boltz, eig_found, bohr)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -279,7 +279,6 @@ contains
     !!
     !                                                                  !
     !===================================================================
-    !use w90_constants, only: bohr, eps6, cmplx_i
     !use w90_utility, only: utility_recip_lattice
     !use w90_io, only: io_error, io_file_unit, seedname, post_proc_flag
     implicit none
@@ -328,6 +327,7 @@ contains
     type(geninterp_type), intent(inout) :: geninterp
     type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
+    real(kind=dp), intent(in) :: bohr
 
     !local variables
     logical                                  :: found_fermi_energy
@@ -339,7 +339,7 @@ contains
     call param_read_verbosity(param_input)
     call param_read_pw90_calcs(pw90_calcs)
     call param_read_effective_model(pw90_common%effective_model)
-    call param_read_units(param_input, energy_unit)
+    call param_read_units(param_input, energy_unit, bohr)
     call param_read_oper(postw90_oper)
     call param_read_num_wann(num_wann)
     call param_read_exclude_bands(param_input) !for read_chkpt
@@ -377,13 +377,14 @@ contains
     call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, &
                               adpt_smr_max, smr_fixed_en_width, adpt_smr)
     call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
-    call param_read_lattice(library, real_lattice, recip_lattice)
+    call param_read_lattice(library, real_lattice, recip_lattice, bohr)
     call param_read_kmesh_data(kmesh_data)
-    call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, recip_lattice)
+    call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, &
+                            recip_lattice, bohr)
     call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
                                 pw90_spin, gyrotropic, boltz, recip_lattice)
-    call param_read_atoms(library, atoms, real_lattice, recip_lattice) !pw90_write
+    call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr) !pw90_write
     call param_clean_infile()
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase(param_input, atoms, spec_points)

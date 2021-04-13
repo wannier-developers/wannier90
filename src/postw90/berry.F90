@@ -71,7 +71,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine berry_main
+  subroutine berry_main(physics)
     !============================================================!
     !                                                            !
     !! Computes the following quantities:
@@ -83,8 +83,7 @@ contains
     !                                                            !
     !============================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i, elem_charge_SI, hbar_SI, &
-      eV_au, bohr, pi, eV_seconds
+    use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_stopwatch
@@ -95,6 +94,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
+    type(pw90_physical_constants), intent(in) :: physics
     real(kind=dp), allocatable    :: adkpt(:, :)
 
     ! AHC and orbital magnetization, calculated for a list of Fermi levels
@@ -368,7 +368,7 @@ contains
             vdum(1) = sum(imf_k_list(:, 1, if))
             vdum(2) = sum(imf_k_list(:, 2, if))
             vdum(3) = sum(imf_k_list(:, 3, if))
-            if (berry%curv_unit == 'bohr2') vdum = vdum/bohr**2
+            if (berry%curv_unit == 'bohr2') vdum = vdum/physics%bohr**2
             rdum = sqrt(dot_product(vdum, vdum))
             if (rdum > berry%curv_adpt_kmesh_thresh) then
               adpt_counter_list(if) = adpt_counter_list(if) + 1
@@ -447,7 +447,7 @@ contains
             if (berry%curv_adpt_kmesh > 1) then
               do if = 1, fermi%n
                 rdum = abs(shc_k_fermi(if))
-                if (berry%curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (berry%curv_unit == 'bohr2') rdum = rdum/physics%bohr**2
                 if (rdum > berry%curv_adpt_kmesh_thresh) then
                   adpt_counter_list(1) = adpt_counter_list(1) + 1
                   ladpt_kmesh = .true.
@@ -500,7 +500,7 @@ contains
             vdum(1) = sum(imf_k_list(:, 1, if))
             vdum(2) = sum(imf_k_list(:, 2, if))
             vdum(3) = sum(imf_k_list(:, 3, if))
-            if (berry%curv_unit == 'bohr2') vdum = vdum/bohr**2
+            if (berry%curv_unit == 'bohr2') vdum = vdum/physics%bohr**2
             rdum = sqrt(dot_product(vdum, vdum))
             if (rdum > berry%curv_adpt_kmesh_thresh) then
               adpt_counter_list(if) = adpt_counter_list(if) + 1
@@ -579,7 +579,7 @@ contains
             if (berry%curv_adpt_kmesh > 1) then
               do if = 1, fermi%n
                 rdum = abs(shc_k_fermi(if))
-                if (berry%curv_unit == 'bohr2') rdum = rdum/bohr**2
+                if (berry%curv_unit == 'bohr2') rdum = rdum/physics%bohr**2
                 if (rdum > berry%curv_adpt_kmesh_thresh) then
                   adpt_counter_list(1) = adpt_counter_list(1) + 1
                   ladpt_kmesh = .true.
@@ -765,7 +765,7 @@ contains
         ! with 'V_c' in Angstroms^3, and 'e', 'hbar' in SI units
         ! --------------------------------------------------------------------
         !
-        fac = -1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+        fac = -1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)
         ahc_list(:, :, :) = imf_list(:, :, :)*fac
         if (fermi%n > 1) then
           write (stdout, '(/,1x,a)') &
@@ -853,7 +853,7 @@ contains
         !       by 2 to convert it to Bohr magnetons
         ! --------------------------------------------------------------------
         !
-        fac = -eV_au/bohr**2
+        fac = -physics%eV_au/physics%bohr**2
         if (fermi%n > 1) then
           write (stdout, '(/,1x,a)') &
             '---------------------------------'
@@ -911,7 +911,7 @@ contains
       if (eval_kubo) then
         !
         ! Convert to S/cm
-        fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)
+        fac = 1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)
         kubo_H = kubo_H*fac
         kubo_AH = kubo_AH*fac
         if (pw90_common%spin_decomp) then
@@ -1054,7 +1054,7 @@ contains
         ! with 'V_c' in Angstroms^3, and 'e', 'hbar' in SI units
         ! --------------------------------------------------------------------
 
-        fac = eV_seconds*pi*elem_charge_SI**3/(4*hbar_SI**(2)*cell_volume)
+        fac = physics%eV_seconds*pi*physics%elem_charge_SI**3/(4*physics%hbar_SI**(2)*cell_volume)
         write (stdout, '(/,1x,a)') &
           '----------------------------------------------------------'
         write (stdout, '(1x,a)') &
@@ -1101,7 +1101,7 @@ contains
         !   fac = 1.0e8 * e^2 / hbar / V / 2.0
         ! and the final unit of spin Hall conductivity is (hbar/e)S/cm
         !
-        fac = 1.0e8_dp*elem_charge_SI**2/(hbar_SI*cell_volume)/2.0_dp
+        fac = 1.0e8_dp*physics%elem_charge_SI**2/(physics%hbar_SI*cell_volume)/2.0_dp
         if (spin_hall%freq_scan) then
           shc_freq = shc_freq*fac
         else
@@ -1193,7 +1193,7 @@ contains
     !
     !=========================================================!
 
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_re_tr_prod, utility_im_tr_prod
     use w90_parameters, only: num_wann, fermi
     use w90_postw90_common, only: pw90common_fourier_R_to_k_vec, pw90common_fourier_R_to_k

@@ -65,7 +65,7 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main()
+  subroutine boltzwann_main(physics)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -80,6 +80,7 @@ contains
     !!
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
+    type(pw90_physical_constants), intent(in) :: physics
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
     real(kind=dp), dimension(:), allocatable :: TempArray, MuArray, KTArray
@@ -154,7 +155,7 @@ contains
     allocate (KTArray(TempNumPoints), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating KTArray in boltzwann_main')
     ! (k_B in eV/kelvin is equal to k_B_SI / elem_charge_SI)
-    KTArray = TempArray*k_B_SI/elem_charge_SI
+    KTArray = TempArray*physics%k_B_SI/physics%elem_charge_SI
 
     MuNumPoints = int(floor((boltz%mu_max - boltz%mu_min)/boltz%mu_step)) + 1
     allocate (MuArray(MuNumPoints), stat=ierr)
@@ -407,14 +408,14 @@ contains
     ! Now: e/C = elem_charge_SI; CV=Joule, CV/s=Watt, hbar/Watt = hbar_SI;
     ! moreover meter / angstrom = 1e10, fs / s = 1e-15 so that we finally get the
     ! CONVERSION FACTOR: elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
-    LocalElCond = LocalElCond*elem_charge_SI**3/(hbar_SI**2)*1.e-5_dp
+    LocalElCond = LocalElCond*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp
     ! THIS IS NOW THE ELECTRICAL CONDUCTIVITY IN SI UNITS, i.e. in 1/Ohm/meter
 
     ! *** Sigma * S ****
     ! Again, as above or below for Kappa, the conversion factor is
     ! * elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp
     ! and brings the result to Ampere/m/K
-    LocalSigmaS = LocalSigmaS*elem_charge_SI**3/(hbar_SI**2)*1.e-5_dp
+    LocalSigmaS = LocalSigmaS*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp
 
     ! **** Seebeck coefficient ****
     ! THE SEEECK COEFFICIENTS IS ALREADY IN volt/kelvin, so nothing has to be done
@@ -427,7 +428,7 @@ contains
     ! 1/hbar^2 * C^3 * V^3 * s / W * [e/C]^3 * (m/angstrom) * (fs / s) =
     ! 1/hbar^2 * J^2 * [e/C]^3 * (m/angstrom) * (fs / s) =
     ! elem_charge_SI**3 / (hbar_SI**2) * 1.e-5_dp, i.e. the same conversion factor as above
-    LocalKappa = LocalKappa*elem_charge_SI**3/(hbar_SI**2)*1.e-5_dp
+    LocalKappa = LocalKappa*physics%elem_charge_SI**3/(physics%hbar_SI**2)*1.e-5_dp
     ! THIS IS NOW THE THERMAL CONDUCTIVITY IN SI UNITS, i.e. in W/meter/K
 
     ! Now I send the different pieces to the local node

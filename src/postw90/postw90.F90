@@ -14,7 +14,7 @@
 
 program postw90
   !! The postw90 program
-  use w90_constants, only: dp, eps6
+  use w90_constants, only: dp, eps6, pw90_physical_constants
   use w90_parameters
   use pw90_parameters
   use w90_param_methods, only: param_read_chkpt, param_write_header
@@ -40,6 +40,7 @@ program postw90
 
   implicit none
 
+  type(pw90_physical_constants) :: physics
   integer       :: nkp, len_seedname
   logical       :: have_gamma
   real(kind=dp) :: time0, time1, time2
@@ -89,7 +90,8 @@ program postw90
     stdout = io_file_unit()
     open (unit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
 
-    call param_write_header
+    call param_write_header(physics%bohr_version_str, physics%constants_version_str1, &
+                            physics%constants_version_str2)
     if (num_nodes == 1) then
 #ifdef MPI
       write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
@@ -111,7 +113,7 @@ program postw90
                             mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
-                            spin_hall, gyrotropic, geninterp, boltz, eig_found)
+                            spin_hall, gyrotropic, geninterp, boltz, eig_found, physics%bohr)
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
@@ -224,13 +226,13 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   !
-  if (pw90_calcs%kpath) call k_path
+  if (pw90_calcs%kpath) call k_path(physics%bohr)
 
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
   ! ---------------------------------------------------------------------------
   !
-  if (pw90_calcs%kslice) call k_slice
+  if (pw90_calcs%kslice) call k_slice(physics%bohr)
 
   ! --------------------
   ! Spin magnetic moment
@@ -256,7 +258,7 @@ program postw90
   ! Orbital magnetization
   ! -----------------------------------------------------------------
   !
-  if (pw90_calcs%berry) call berry_main
+  if (pw90_calcs%berry) call berry_main(physics)
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
@@ -267,9 +269,9 @@ program postw90
 
   if (pw90_calcs%geninterp) call geninterp_main
 
-  if (pw90_calcs%boltzwann) call boltzwann_main
+  if (pw90_calcs%boltzwann) call boltzwann_main(physics)
 
-  if (pw90_calcs%gyrotropic) call gyrotropic_main
+  if (pw90_calcs%gyrotropic) call gyrotropic_main(physics)
 
   if (on_root .and. pw90_calcs%boltzwann) then
     time2 = io_time()

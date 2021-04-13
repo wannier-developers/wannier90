@@ -27,7 +27,7 @@ contains
                        atoms, param_hamil, dis_data, u_matrix_opt, eigval, u_matrix, &
                        lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
                        fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                       rpt_origin, wannier_centres_translated, hmlg, ham_k)
+                       rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr)
     !! Main plotting routine
     !============================================!
 
@@ -83,6 +83,7 @@ contains
 
     character(len=20), intent(in) :: transport_mode
     logical, intent(in) :: lsitesymmetry
+    real(kind=dp), intent(in) :: bohr
 
     integer :: nkp
     logical :: have_gamma
@@ -152,7 +153,7 @@ contains
     if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, param_plot, wann_data, &
                                                   param_input, u_matrix_opt, dis_data, &
                                                   real_lattice, atoms, k_points, u_matrix, &
-                                                  num_kpts, num_bands, num_wann)
+                                                  num_kpts, num_bands, num_wann, bohr)
 
     if (param_plot%write_bvec) call plot_bvec(kmesh_info, num_kpts)
 
@@ -1060,7 +1061,7 @@ contains
   !============================================!
   subroutine plot_wannier(recip_lattice, param_plot, wann_data, param_input, u_matrix_opt, &
                           dis_data, real_lattice, atoms, k_points, u_matrix, num_kpts, &
-                          num_bands, num_wann)
+                          num_bands, num_wann, bohr)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1083,6 +1084,7 @@ contains
     type(wannier_data_type), intent(in) :: wann_data
     type(atom_data_type), intent(in) :: atoms
     type(disentangle_type), intent(in) :: dis_data
+    real(kind=dp), intent(in) :: bohr
 
 !   from w90_parameters
 !   integer, intent(in) :: iprint
@@ -1423,9 +1425,8 @@ contains
       if (param_plot%wannier_plot_format .eq. 'xcrysden') then
         call internal_xsf_format()
       elseif (param_plot%wannier_plot_format .eq. 'cube') then
-        call internal_cube_format(atoms, &
-                                  wann_data, param_plot, &
-                                  param_input, recip_lattice)
+        call internal_cube_format(atoms, wann_data, param_plot, &
+                                  param_input, recip_lattice, bohr)
       else
         call io_error('wannier_plot_format not recognised in wannier_plot')
       endif
@@ -1439,15 +1440,14 @@ contains
   contains
 
     !============================================!
-    subroutine internal_cube_format(atoms, &
-                                    wann_data, param_plot, param_input, recip_lattice)
+    subroutine internal_cube_format(atoms, wann_data, param_plot, param_input, recip_lattice, bohr)
       !============================================!
       !                                            !
       !! Write WFs in Gaussian cube format.
       !                                            !
       !============================================!
 
-      use w90_constants, only: bohr
+      !use w90_constants, only: bohr
       use w90_utility, only: utility_translate_home, &
         utility_cart_to_frac, utility_frac_to_cart
       use w90_param_types, only: parameter_input_type, wannier_data_type, &
@@ -1460,6 +1460,7 @@ contains
       type(param_plot_type), intent(in) :: param_plot
       type(wannier_data_type), intent(in) :: wann_data
       type(atom_data_type), intent(in) :: atoms
+      real(kind=dp), intent(in) :: bohr
 
 !     from w90_parameters
 !     integer, intent(in) :: num_atoms

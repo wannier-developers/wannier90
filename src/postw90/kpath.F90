@@ -40,7 +40,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path
+  subroutine k_path(bohr)
     !! Main routine
 
     use w90_comms
@@ -56,8 +56,9 @@ contains
     use w90_spin, only: spin_get_nk
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, &
       berry_get_shc_klist
-    use w90_constants, only: bohr
+    !use w90_constants, only: bohr
 
+    real(kind=dp), intent(in) :: bohr
     integer, dimension(0:num_nodes - 1) :: counts, displs
 
     integer           :: i, j, n, num_paths, num_spts, loop_kpt, &

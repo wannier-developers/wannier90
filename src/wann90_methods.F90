@@ -59,7 +59,7 @@ contains
                         fermi, tran, atoms, num_bands, num_wann, eigval, &
                         mp_grid, num_proj, select_proj, real_lattice, &
                         recip_lattice, spec_points, eig_found, library, &
-                        library_param_read_first_pass)
+                        library_param_read_first_pass, bohr)
     !subroutine param_read(library)
     !==================================================================!
     !                                                                  !
@@ -70,7 +70,7 @@ contains
     !!
     !                                                                  !
     !===================================================================
-    !use w90_constants, only: bohr, eps6, cmplx_i
+    use w90_constants, only: w90_physical_constants
     !use w90_utility, only: utility_recip_lattice
     use w90_io, only: io_error !, io_file_unit, seedname, post_proc_flag
     implicit none
@@ -108,6 +108,7 @@ contains
     logical, intent(inout) :: eig_found
     logical, intent(in) :: library
     logical, intent(in) :: library_param_read_first_pass
+    real(kind=dp), intent(in) :: bohr
 
     !local variables
     !integer                   :: smr_index
@@ -133,13 +134,13 @@ contains
     call param_read_transport(w90_calcs%transport, tran, driver%restart)
     call param_read_dist_cutoff(param_input)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
-      call param_read_units(param_input, energy_unit)
+      call param_read_units(param_input, energy_unit, bohr)
       call param_read_num_wann(num_wann)
       call param_read_exclude_bands(param_input)
       call param_read_num_bands(.false., library, param_input, num_bands, num_wann, &
                                 library_param_read_first_pass)
       w90_calcs%disentanglement = (num_bands > num_wann)
-      call param_read_lattice(library, real_lattice, recip_lattice)
+      call param_read_lattice(library, real_lattice, recip_lattice, bohr)
       call param_read_wannierise(param_wannierise, num_wann)
       call param_read_devel(param_input%devel_flag)
       call param_read_mp_grid(.false., library, mp_grid, num_kpts)
@@ -166,18 +167,18 @@ contains
       if (eig_found) dis_data%win_min = minval(eigval)
       if (eig_found) dis_data%win_max = maxval(eigval)
       call param_read_disentangle_all(eig_found, dis_data)
-      call param_read_disentangle_w90(dis_data, num_bands, num_wann)
+      call param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr)
       call param_read_hamil(param_hamil)
       call param_read_bloch_phase(w90_calcs%use_bloch_phases, w90_calcs%disentanglement)
       call param_read_kmesh_data(kmesh_data)
-      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice)
-      call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts)
+      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr)
+      call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
-      call param_read_atoms(library, atoms, real_lattice, recip_lattice)
+      call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr)
       call param_read_projections(w90_calcs%use_bloch_phases, lhasproj, &
                                   param_wannierise%guiding_centres, param_wannierise%proj_site, &
                                   kmesh_data, select_proj, num_proj, param_input, atoms, &
-                                  recip_lattice, num_wann, library)
+                                  recip_lattice, num_wann, library, bohr)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%slwf_constrain) then
         call param_read_constrained_centres(ccentres_frac, param_wannierise, real_lattice, &
@@ -454,13 +455,14 @@ contains
     call param_get_keyword('translate_home_cell', found, l_value=param_wannierise%translate_home_cell)
   end subroutine param_read_wannierise
 
-  subroutine param_read_disentangle_w90(dis_data, num_bands, num_wann)
+  subroutine param_read_disentangle_w90(dis_data, num_bands, num_wann, bohr)
     use w90_io, only: io_error
     implicit none
     !logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
     type(disentangle_type), intent(inout) :: dis_data
     integer, intent(in) :: num_bands, num_wann
+    real(kind=dp), intent(in) :: bohr
     integer :: nkp, ierr
     logical :: found
 
@@ -493,7 +495,8 @@ contains
     if (dis_data%spheres_num > 0) then
       allocate (dis_data%spheres(4, dis_data%spheres_num), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating dis_spheres in param_read')
-      call param_get_keyword_block('dis_spheres', found, dis_data%spheres_num, 4, r_value=dis_data%spheres)
+      call param_get_keyword_block('dis_spheres', found, dis_data%spheres_num, 4, bohr, &
+                                   r_value=dis_data%spheres)
       if (.not. found) call io_error('Error: Did not find dis_spheres in the input file')
       do nkp = 1, dis_data%spheres_num
         if (dis_data%spheres(4, nkp) < 1.0e-15_dp) &
@@ -834,7 +837,7 @@ contains
       call io_error('Error: Cannot use bloch phases for disentanglement')
   end subroutine param_read_bloch_phase
 
-  subroutine param_read_explicit_kpts(library, driver, kmesh_info, num_kpts)
+  subroutine param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
@@ -842,6 +845,7 @@ contains
     type(param_driver_type), intent(inout) :: driver
     type(kmesh_info_type), intent(inout) :: kmesh_info
     integer, intent(in) :: num_kpts
+    real(kind=dp), intent(in) :: bohr
     integer :: i, k, ierr, rows
     logical :: found
     integer, allocatable, dimension(:, :) :: nnkpts_block
@@ -857,7 +861,7 @@ contains
       if (allocated(nnkpts_block)) deallocate (nnkpts_block)
       allocate (nnkpts_block(5, rows), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating nnkpts_block in param_read')
-      call param_get_keyword_block('nnkpts', found, rows, 5, i_value=nnkpts_block)
+      call param_get_keyword_block('nnkpts', found, rows, 5, bohr, i_value=nnkpts_block)
       ! check that postproc_setup is true
       if (.not. driver%postproc_setup) &
         call io_error('Input parameter nnkpts_block is allowed only if postproc_setup = .true.')
@@ -895,7 +899,7 @@ contains
 
   subroutine param_read_projections(use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_site, kmesh_data, select_proj, num_proj, &
-                                    param_input, atoms, recip_lattice, num_wann, library)
+                                    param_input, atoms, recip_lattice, num_wann, library, bohr)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
@@ -908,6 +912,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_wann
+    real(kind=dp), intent(in) :: bohr
     integer :: i, j, i_temp, loop, ierr
     logical :: found
 
@@ -922,7 +927,7 @@ contains
       lhasproj = .true.
       call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                  num_wann, proj_site, proj, recip_lattice, &
-                                 .true.)
+                                 .true., bohr)
     else
       if (guiding_centres .and. .not. (param_input%gamma_only .and. use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found')
@@ -972,7 +977,7 @@ contains
     if (lhasproj) then
       call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                  num_wann, proj_site, proj, &
-                                 recip_lattice, .false.)
+                                 recip_lattice, .false., bohr)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
         proj_site(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj_site(:, loop)

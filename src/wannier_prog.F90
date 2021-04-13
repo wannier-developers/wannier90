@@ -52,7 +52,7 @@
 program wannier
   !! The main Wannier90 program
 
-  use w90_constants
+  use w90_constants, only: w90_physical_constants, dp
   use w90_param_types
   use w90_io
   use w90_hamiltonian
@@ -73,6 +73,7 @@ program wannier
 
   implicit none
 
+  type(w90_physical_constants) :: physics
   ! data from parameters module
   type(w90_calculation_type) :: w90_calcs
   ! Are we running postw90?
@@ -211,7 +212,7 @@ program wannier
                     k_points, num_kpts, dis_data, fermi_surface_data, &
                     fermi, tran, atoms, num_bands, num_wann, eigval, &
                     mp_grid, num_proj, select_proj, real_lattice, &
-                    recip_lattice, spec_points, eig_found, .false., .false.)
+                    recip_lattice, spec_points, eig_found, .false., .false., physics%bohr)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -229,7 +230,8 @@ program wannier
 
     stdout = io_file_unit()
     open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
-    call param_write_header()
+    call param_write_header(physics%bohr_version_str, physics%constants_version_str1, &
+                            physics%constants_version_str2)
     if (num_nodes == 1) then
 #ifdef MPI
       write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
@@ -417,7 +419,7 @@ program wannier
                    num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, atoms, param_hamil, &
                    dis_data, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, mp_grid, &
                    tran%mode, fermi, fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, &
-                   nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k)
+                   nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k, physics%bohr)
     time1 = io_time()
 
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
