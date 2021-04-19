@@ -178,7 +178,6 @@ program wannier
   integer :: len_seedname
   character(len=50) :: prog
 
-  logical :: library !JJ
   type(sitesym_data) :: sym !JJ
 
 ! logical :: ham_have_setup = .false.
@@ -193,8 +192,6 @@ program wannier
 #endif
 
   call comms_setup(comm)
-
-  library = .false.
 
   time0 = io_time()
 

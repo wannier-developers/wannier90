@@ -340,6 +340,7 @@ contains
       close (stdout)
     end if
 
+    !JJ not necessarily comm_world!
     call MPI_abort(MPI_comm_world, 1, ierr)
 
 #else
