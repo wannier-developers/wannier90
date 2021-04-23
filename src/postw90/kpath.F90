@@ -40,24 +40,26 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine k_path(bohr)
+  subroutine k_path(bohr, stdout)
     !! Main routine
 
     use w90_comms
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, eps8
-    use w90_io, only: io_error, io_file_unit, seedname, &
-      io_time, io_stopwatch, stdout
+!   use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch, stdout
+    use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch
     use w90_utility, only: utility_diagonalize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, spec_points, fermi
     use pw90_parameters, only: berry, spin_hall, kpath
     use w90_get_oper, only: get_HH_R, HH_R, get_AA_R, get_BB_R, get_CC_R, &
-      get_FF_R, get_SS_R, get_SHC_R
+      !     get_FF_R, get_SS_R, get_SHC_R
+      get_SS_R, get_SHC_R
     use w90_spin, only: spin_get_nk
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, &
       berry_get_shc_klist
     !use w90_constants, only: bohr
 
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     integer, dimension(0:num_nodes - 1) :: counts, displs
 
@@ -109,23 +111,23 @@ contains
       end if
     end if
 
-    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
+    call k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout)
 
     ! Set up the needed Wannier matrix elements
-    call get_HH_R
-    if (plot_curv .or. plot_morb) call get_AA_R
+    call get_HH_R(stdout)
+    if (plot_curv .or. plot_morb) call get_AA_R(stdout)
     if (plot_morb) then
-      call get_BB_R
-      call get_CC_R
+      call get_BB_R(stdout)
+      call get_CC_R(stdout)
     endif
 
     if (plot_shc .or. (plot_bands .and. kpath%bands_colour == 'shc')) then
-      call get_AA_R
-      call get_SS_R
-      call get_SHC_R
+      call get_AA_R(stdout)
+      call get_SS_R(stdout)
+      call get_SHC_R(stdout)
     endif
 
-    if (plot_bands .and. kpath%bands_colour == 'spin') call get_SS_R
+    if (plot_bands .and. kpath%bands_colour == 'spin') call get_SS_R(stdout)
 
     if (on_root) then
       ! Determine the number of k-points (total_pts) as well as
@@ -175,13 +177,13 @@ contains
 
       if (plot_bands) then
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU)
+        call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout)
         !
         ! Color-code energy bands with the spin projection along the
         ! chosen spin quantization axis
         !
         if (kpath%bands_colour == 'spin') then
-          call spin_get_nk(kpt, spn_k)
+          call spin_get_nk(kpt, spn_k, stdout)
           my_color(:, loop_kpt) = spn_k(:)
           !
           ! The following is needed to prevent bands from disappearing
@@ -196,13 +198,13 @@ contains
             end if
           end do
         else if (kpath%bands_colour == 'shc') then
-          call berry_get_shc_klist(kpt, shc_k_band=shc_k_band)
+          call berry_get_shc_klist(kpt, stdout, shc_k_band=shc_k_band)
           my_color(:, loop_kpt) = shc_k_band
         end if
       end if
 
       if (plot_morb) then
-        call berry_get_imfgh_klist(kpt, imf_k_list, img_k_list, imh_k_list)
+        call berry_get_imfgh_klist(kpt, stdout, imf_k_list, img_k_list, imh_k_list)
         Morb_k = img_k_list(:, :, 1) + imh_k_list(:, :, 1) &
                  - 2.0_dp*fermi%energy_list(1)*imf_k_list(:, :, 1)
         Morb_k = -Morb_k/2.0_dp ! differs by -1/2 from Eq.97 LVTS12
@@ -213,7 +215,7 @@ contains
 
       if (plot_curv) then
         if (.not. plot_morb) then
-          call berry_get_imf_klist(kpt, imf_k_list)
+          call berry_get_imf_klist(kpt, stdout, imf_k_list)
         end if
         my_curv(loop_kpt, 1) = sum(imf_k_list(:, 1, 1))
         my_curv(loop_kpt, 2) = sum(imf_k_list(:, 2, 1))
@@ -221,7 +223,7 @@ contains
       end if
 
       if (plot_shc) then
-        call berry_get_shc_klist(kpt, shc_k_fermi=shc_k_fermi)
+        call berry_get_shc_klist(kpt, stdout, shc_k_fermi=shc_k_fermi)
         my_shc(loop_kpt) = shc_k_fermi(1)
       end if
     end do !loop_kpt
@@ -967,13 +969,15 @@ contains
   !===========================================================!
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
-  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
+  subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc, stdout)
 
     use w90_comms, only: on_root
     use w90_parameters, only: fermi ! berry_curv_unit
     use pw90_parameters, only: kpath, berry
-    use w90_io, only: stdout, io_error
+!   use w90_io, only: stdout, io_error
+    use w90_io, only: io_error
 
+    integer, intent(in) :: stdout
     logical, intent(in)      :: plot_bands, plot_curv, plot_morb, plot_shc
 
     if (on_root) then

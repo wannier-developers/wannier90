@@ -62,7 +62,7 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R
+  subroutine get_HH_R(stdout)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -71,13 +71,15 @@ contains
     !======================================================
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, stdout, io_stopwatch, &
-      io_file_unit, seedname
+!   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
     use w90_parameters, only: num_wann, dis_data, num_kpts, &
       eigval, u_matrix, param_input, real_lattice
     use pw90_parameters, only: pw90_common
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
     use w90_comms, only: on_root, comms_bcast
+
+    integer, intent(in) :: stdout
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, io, idum, ivdum(3), ivdum_old(3)
@@ -243,7 +245,7 @@ contains
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R
+  subroutine get_AA_R(stdout)
     !==================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -257,10 +259,11 @@ contains
       num_bands, dis_data
     use pw90_parameters, only: pw90_common, berry
     use w90_postw90_common, only: nrpts
-    use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
-      seedname
+!   use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, seedname
+    use w90_io, only: io_file_unit, io_error, io_stopwatch, seedname
     use w90_comms, only: on_root, comms_bcast
 
+    integer, intent(in) :: stdout
     complex(kind=dp), allocatable :: AA_q(:, :, :, :)
     complex(kind=dp), allocatable :: AA_q_diag(:, :)
     complex(kind=dp), allocatable :: S_o(:, :)
@@ -494,7 +497,7 @@ contains
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R
+  subroutine get_BB_R(stdout)
     !=====================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -507,9 +510,11 @@ contains
       dis_data, param_input
     use pw90_parameters, only: pw90_common
     use w90_postw90_common, only: nrpts
-    use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
-      seedname
+!   use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, seedname
+    use w90_io, only: io_file_unit, io_error, io_stopwatch, seedname
     use w90_comms, only: on_root, comms_bcast
+
+    integer, intent(in) :: stdout
 
     integer          :: idir, n, m, nn, &
                         ik, ik2, inn, nnl, nnm, nnn, &
@@ -639,7 +644,7 @@ contains
   end subroutine get_BB_R
 
   !=============================================================
-  subroutine get_CC_R
+  subroutine get_CC_R(stdout)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -652,9 +657,11 @@ contains
       num_bands, dis_data, param_input
     use pw90_parameters, only: pw90_common, postw90_oper
     use w90_postw90_common, only: nrpts
-    use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
-      seedname
+!   use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, seedname
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
     use w90_comms, only: on_root, comms_bcast
+
+    integer, intent(in) :: stdout
 
     integer          :: m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, uHu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -797,7 +804,7 @@ contains
   end subroutine get_CC_R
 
   !===========================================================
-  subroutine get_FF_R
+  subroutine get_FF_R(stdout)
     !===========================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -809,9 +816,11 @@ contains
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
       num_bands, dis_data, param_input
     use w90_postw90_common, only: nrpts, v_matrix
-    use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
-      seedname
+!   use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, seedname
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
     use w90_comms, only: on_root, comms_bcast
+
+    integer, intent(in) :: stdout
 
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
                         uIu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -944,7 +953,7 @@ contains
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R
+  subroutine get_SS_R(stdout)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -957,11 +966,13 @@ contains
       param_input
     use pw90_parameters, only: postw90_oper
     use w90_postw90_common, only: nrpts
-    use w90_io, only: io_error, io_stopwatch, stdout, seedname, &
-      io_file_unit
+!   use w90_io, only: io_error, io_stopwatch, stdout, seedname, io_file_unit
+    use w90_io, only: io_error, io_stopwatch, seedname, io_file_unit
     use w90_comms, only: on_root, comms_bcast
 
     implicit none
+
+    integer, intent(in) :: stdout
 
     complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), spn_temp(:, :)
     real(kind=dp)                 :: s_real, s_img
@@ -1089,7 +1100,7 @@ contains
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R
+  subroutine get_SHC_R(stdout)
     !==================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1104,9 +1115,11 @@ contains
       dis_data, eigval, param_input
     use pw90_parameters, only: postw90_oper, pw90_common, spin_hall
     use w90_postw90_common, only: nrpts
-    use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
-      seedname
+!   use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, seedname
+    use w90_io, only: io_file_unit, io_error, io_stopwatch, seedname
     use w90_comms, only: on_root, comms_bcast
+
+    integer, intent(in) :: stdout
 
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)

@@ -630,7 +630,7 @@ contains
   end subroutine utility_translate_home
 
   !============================================================!
-  subroutine utility_diagonalize(mat, dim, eig, rot)
+  subroutine utility_diagonalize(mat, dim, eig, rot, stdout)
     !============================================================!
     !                                                            !
     !! Diagonalize the dim x dim  hermitian matrix 'mat' and
@@ -639,9 +639,11 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, stdout
+!   use w90_io, only: io_error, stdout
+    use w90_io, only: io_error
 
     integer, intent(in)           :: dim
+    integer, intent(in)           :: stdout
     complex(kind=dp), intent(in)  :: mat(dim, dim)
     real(kind=dp), intent(out)    :: eig(dim)
     complex(kind=dp), intent(out) :: rot(dim, dim)

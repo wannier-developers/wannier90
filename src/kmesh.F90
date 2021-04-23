@@ -58,13 +58,14 @@ contains
   !=======================================================
   subroutine kmesh_get(recip_lattice, kpt_cart, param_input, kmesh_info, &
                        kmesh_data, &
-                       num_kpts)
+                       num_kpts, stdout)
     !=====================================================
     !
     !! Main routine to calculate the b-vectors
     !
     !=====================================================
-    use w90_io, only: stdout, io_error, io_stopwatch
+!   use w90_io, only: stdout, io_error, io_stopwatch
+    use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_compar
     use w90_param_types, only: parameter_input_type, kmesh_info_type, param_kmesh_type
 
@@ -104,6 +105,7 @@ contains
 
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnsh, nn, nnx, loop, i, j
+    integer :: stdout
     integer :: ifound, counter, na, nap, loop_s, loop_b, shell, nbvec, bnum
     integer :: ifpos, ifneg, ierr, multi(kmesh_data%search_shells)
     integer :: nnshell(num_kpts, kmesh_data%search_shells)
@@ -209,14 +211,14 @@ contains
     ! Get the shell weights to satisfy the B1 condition
     if (index(param_input%devel_flag, 'kmesh_degen') > 0) then
       call kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, param_input, &
-                                 kmesh_data, num_kpts)
+                                 kmesh_data, num_kpts, stdout)
     else
       if (kmesh_data%num_shells == 0) then
         call kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, param_input, &
-                                   kmesh_data, num_kpts)
+                                   kmesh_data, num_kpts, stdout)
       elseif (kmesh_data%num_shells > 0) then
         call kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, param_input, &
-                               kmesh_data, num_kpts)
+                               kmesh_data, num_kpts, stdout)
       end if
 
       if (on_root) then
@@ -1011,7 +1013,7 @@ contains
 
   !==========================================================================
   subroutine kmesh_shell_automatic(multi, dnn, bweight, recip_lattice, kpt_cart, &
-                                   param_input, kmesh_data, num_kpts)
+                                   param_input, kmesh_data, num_kpts, stdout)
     !==========================================================================
     !
     !! Find the correct set of shells to satisfy B1
@@ -1023,7 +1025,8 @@ contains
     !==========================================================================
 
     use w90_constants, only: eps5, eps6
-    use w90_io, only: io_error, stdout, io_stopwatch
+!   use w90_io, only: io_error, stdout, io_stopwatch
+    use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: parameter_input_type, param_kmesh_type
 
     implicit none
@@ -1035,6 +1038,7 @@ contains
 !   integer, intent(in) :: timing_level
 !   integer, intent(in) :: iprint
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   integer, intent(in) :: search_shells
 !   integer, intent(inout) :: shell_list(:)
 !   integer, intent(inout) :: num_shells
@@ -1259,7 +1263,7 @@ contains
 
   !================================================================
   subroutine kmesh_shell_fixed(multi, dnn, bweight, recip_lattice, kpt_cart, &
-                               param_input, kmesh_data, num_kpts)
+                               param_input, kmesh_data, num_kpts, stdout)
     !================================================================
     !
     !!  Find the B1 weights for a set of shells specified by the user
@@ -1267,7 +1271,8 @@ contains
     !================================================================
 
     use w90_constants, only: eps7
-    use w90_io, only: io_error, stdout, io_stopwatch
+!   use w90_io, only: io_error, stdout, io_stopwatch
+    use w90_io, only: io_error, io_stopwatch
     use w90_param_types, only: parameter_input_type, param_kmesh_type
 
     implicit none
@@ -1279,6 +1284,7 @@ contains
 !   integer, intent(in) :: timing_level
 !   integer, intent(in) :: iprint
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   integer, intent(in) :: search_shells
 !   integer, intent(inout) :: shell_list(:)
 !   integer, intent(inout) :: num_shells
@@ -1405,7 +1411,7 @@ contains
 
   !=================================================================
   subroutine kmesh_shell_from_file(multi, dnn, bweight, recip_lattice, kpt_cart, &
-                                   param_input, kmesh_data, num_kpts)
+                                   param_input, kmesh_data, num_kpts, stdout)
     !=================================================================
     !
     !!  Find the B1 weights for a set of b-vectors given in a file.
@@ -1415,7 +1421,8 @@ contains
     !=================================================================
 
     use w90_constants, only: eps7
-    use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, maxlen
+!   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, maxlen
+    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, maxlen
     use w90_param_types, only: parameter_input_type, param_kmesh_type
 
     implicit none
@@ -1427,6 +1434,7 @@ contains
 !   integer, intent(in) :: timing_level
 !   integer, intent(in) :: iprint
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   integer, intent(in) :: search_shells
 !   integer, intent(inout) :: num_shells
 !   real(kind=dp), intent(in) :: kmesh_tol

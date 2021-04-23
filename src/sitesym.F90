@@ -23,7 +23,8 @@ module w90_sitesym
   !! Routines to impose the site symmetry during minimisation of spread
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
-  use w90_io, only: io_error, stdout
+! use w90_io, only: io_error, stdout
+  use w90_io, only: io_error
 
   implicit none
 
@@ -114,7 +115,7 @@ contains
 
   !==========================================================================!
   subroutine sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, &
-                                         ndim, umat, sym, lwindow_in)
+                                         ndim, umat, sym, stdout, lwindow_in)
     !==========================================================================!
     !                                                                          !
     ! calculate U(Rk)=d(R,k)*U(k)*D^{\dagger}(R,k) in the following two cases: !
@@ -131,6 +132,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
 !   end w90_parameters
@@ -160,9 +162,9 @@ contains
         n = ndim
       endif
       if (present(lwindow_in)) then
-        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym, n)
+        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym, stdout, n)
       else
-        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym)
+        call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sym, stdout)
       endif
       do isym = 2, sym%nsymmetry
         irk = sym%kptsym(isym, ir)
@@ -358,7 +360,7 @@ contains
 
   !==================================================================!
   subroutine symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat, &
-                              sym, n)
+                              sym, stdout, n)
     !==================================================================!
     !                                                                  !
     !  calculate u~(k)=1/N_{R'} \sum_{R'} d^{+}(R',k) u(k) D(R',k)     !
@@ -371,6 +373,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
@@ -495,7 +498,7 @@ contains
 
   !==================================================================!
   subroutine sitesym_dis_extract_symmetry(ik, n, zmat, lambda, &
-                                          umat, num_bands, num_wann, sym)
+                                          umat, num_bands, num_wann, sym, stdout)
     !==================================================================!
     !                                                                  !
     !   minimize Omega_I by steepest descendent                        !
@@ -510,6 +513,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: num_bands
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
@@ -575,7 +579,7 @@ contains
         ! choose the larger eigenstate
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
       enddo ! i
-      call symmetrize_ukirr(num_wann, num_bands, sym%ik2ir(ik), num_bands, umatnew, sym, n)
+      call symmetrize_ukirr(num_wann, num_bands, sym%ik2ir(ik), num_bands, umatnew, sym, stdout, n)
       umat(:, :) = umatnew(:, :)
     enddo ! iter
 

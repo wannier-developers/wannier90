@@ -16,14 +16,19 @@ module w90_conv
   !! Module to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: stdout, io_error, seedname
+! use w90_io, only: stdout, io_error, seedname
+  use w90_io, only: io_error, seedname
   implicit none
 
   logical, save :: export_flag
   character(len=33), save :: header
 contains
 
-  subroutine print_usage()
+  subroutine print_usage(stdout)
+
+    implicit none
+
+    integer, intent(in) :: stdout
     !! Writes the usage of the program to stdout
     write (stdout, '(A)') "Usage:"
     write (stdout, '(A)') "  w90chk2chk.x ACTION [SEEDNAME]"
@@ -40,10 +45,11 @@ contains
     write (stdout, '(A)') "      The seedname.chk.fmt file is read and the seedname.chk file is generated."
   end subroutine print_usage
 
-  subroutine conv_get_seedname
+  subroutine conv_get_seedname(stdout)
     !! Set the seedname from the command line
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: num_arg
     character(len=50) :: ctemp
 
@@ -53,7 +59,7 @@ contains
     elseif (num_arg == 2) then
       call get_command_argument(2, seedname)
     else
-      call print_usage
+      call print_usage(stdout)
       call io_error('Wrong command line arguments, see logfile for usage')
     end if
 
@@ -75,24 +81,26 @@ contains
       export_flag = .true.
     else
       write (stdout, '(A)') 'Wrong command line action: '//trim(ctemp)
-      call print_usage
+      call print_usage(stdout)
       call io_error('Wrong command line arguments, see logfile for usage')
     end if
 
   end subroutine conv_get_seedname
 
   !=======================================!
-  subroutine conv_read_chkpt(checkpoint)
+  subroutine conv_read_chkpt(checkpoint, stdout)
     !=======================================!
     !! Read formatted checkpoint file
     !=======================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit, stdout, seedname
+!   use w90_io, only: io_error, io_file_unit, stdout, seedname
+    use w90_io, only: io_error, io_file_unit, seedname
     use w90_parameters
     use wannier_param_data
 
     implicit none
+    integer, intent(in) :: stdout
     character(len=*), intent(out) :: checkpoint
     integer :: chk_unit, i, j, k, l, nkp, ierr
 
@@ -232,18 +240,20 @@ contains
 
   end subroutine conv_read_chkpt
 
-  subroutine conv_read_chkpt_fmt(checkpoint)
+  subroutine conv_read_chkpt_fmt(checkpoint, stdout)
     !=======================================!
     !! Read formatted checkpoint file
     !=======================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit, stdout, seedname
+!   use w90_io, only: io_error, io_file_unit, stdout, seedname
+    use w90_io, only: io_error, io_file_unit, seedname
     use w90_parameters
     use wannier_param_data
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(len=*), intent(out) :: checkpoint
     integer :: chk_unit, i, j, k, l, nkp, ierr, idum
     character(len=30) :: cdum
@@ -439,7 +449,7 @@ contains
 
   end subroutine conv_read_chkpt_fmt
 
-  subroutine conv_write_chkpt(checkpoint)
+  subroutine conv_write_chkpt(checkpoint, stdout)
     !=======================================!
     !! Write formatted checkpoint file
     !=======================================!
@@ -450,6 +460,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(len=*), intent(in) :: checkpoint
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
@@ -490,7 +501,7 @@ contains
 
   end subroutine conv_write_chkpt
 
-  subroutine conv_write_chkpt_fmt(checkpoint)
+  subroutine conv_write_chkpt_fmt(checkpoint, stdout)
     !=======================================!
     !! Write formatted checkpoint file
     !=======================================!
@@ -501,6 +512,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(len=*), intent(in) :: checkpoint
     integer :: chk_unit, nkp, i, j, k, l
     character(len=9) :: cdate, ctime
@@ -588,7 +600,8 @@ program w90chk2chk
   !! Program to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit, stdout, io_error, seedname
+! use w90_io, only: io_file_unit, stdout, io_error, seedname
+  use w90_io, only: io_file_unit, io_error, seedname
   use w90_conv
   use w90_comms, only: num_nodes, comms_setup, comms_end
   implicit none
@@ -596,6 +609,7 @@ program w90chk2chk
   ! Export mode:
   !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
   !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')
+  integer :: stdout
   logical :: file_found
   integer :: file_unit
   character(len=20) :: checkpoint
@@ -609,14 +623,14 @@ program w90chk2chk
     call io_error('w90chk2chk can only be used in serial...')
   endif
 
-  call conv_get_seedname
+  call conv_get_seedname(stdout)
 
   if (export_flag .eqv. .true.) then
-    call conv_read_chkpt(checkpoint)
-    call conv_write_chkpt_fmt(checkpoint)
+    call conv_read_chkpt(checkpoint, stdout)
+    call conv_write_chkpt_fmt(checkpoint, stdout)
   else
-    call conv_read_chkpt_fmt(checkpoint)
-    call conv_write_chkpt(checkpoint)
+    call conv_read_chkpt_fmt(checkpoint, stdout)
+    call conv_write_chkpt(checkpoint, stdout)
   end if
 
 !  close(unit=stdout,status='delete')

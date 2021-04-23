@@ -16,7 +16,8 @@ module wannier_methods
   ! very few of these use save, so may actually be local to subroutines
 
   use w90_constants, only: dp
-  use w90_io, only: stdout, maxlen
+! use w90_io, only: stdout, maxlen
+  use w90_io, only: stdout
   use w90_param_types
   use w90_param_methods
   use wannier_param_types
@@ -59,7 +60,7 @@ contains
                         fermi, tran, atoms, num_bands, num_wann, eigval, &
                         mp_grid, num_proj, select_proj, real_lattice, &
                         recip_lattice, spec_points, eig_found, library, &
-                        library_param_read_first_pass, bohr)
+                        library_param_read_first_pass, bohr, stdout)
     !subroutine param_read(library)
     !==================================================================!
     !                                                                  !
@@ -98,6 +99,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_proj
@@ -138,16 +140,16 @@ contains
       call param_read_num_wann(num_wann)
       call param_read_exclude_bands(param_input)
       call param_read_num_bands(.false., library, param_input, num_bands, num_wann, &
-                                library_param_read_first_pass)
+                                library_param_read_first_pass, stdout)
       w90_calcs%disentanglement = (num_bands > num_wann)
-      call param_read_lattice(library, real_lattice, recip_lattice, bohr)
-      call param_read_wannierise(param_wannierise, num_wann)
+      call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout)
+      call param_read_wannierise(param_wannierise, num_wann, stdout)
       call param_read_devel(param_input%devel_flag)
-      call param_read_mp_grid(.false., library, mp_grid, num_kpts)
-      call param_read_gamma_only(param_input%gamma_only, num_kpts, library)
+      call param_read_mp_grid(.false., library, mp_grid, num_kpts, stdout)
+      call param_read_gamma_only(param_input%gamma_only, num_kpts, library, stdout)
       call param_read_post_proc(w90_calcs%cp_pp, pp_calc%only_A, driver%postproc_setup)
       call param_read_restart(driver)
-      call param_read_system(library, param_input)
+      call param_read_system(library, param_input, stdout)
       call param_read_kpath(library, spec_points, has_kpath)
       call param_read_plot(w90_calcs, param_plot, param_input%bands_plot_mode, num_wann, has_kpath)
       call param_read_fermi_surface(fermi_surface_data, w90_calcs%fermi_surface_plot)
@@ -161,7 +163,7 @@ contains
       call param_read_eigvals(.false., .false., .false., &
                               w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. &
                               w90_calcs%write_hr, w90_calcs%disentanglement, eig_found, &
-                              eigval, library, driver%postproc_setup, num_bands, num_kpts)
+                              eigval, library, driver%postproc_setup, num_bands, num_kpts, stdout)
       dis_data%win_min = -1.0_dp
       dis_data%win_max = 0.0_dp
       if (eig_found) dis_data%win_min = minval(eigval)
@@ -171,21 +173,21 @@ contains
       call param_read_hamil(param_hamil)
       call param_read_bloch_phase(w90_calcs%use_bloch_phases, w90_calcs%disentanglement)
       call param_read_kmesh_data(kmesh_data)
-      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr)
+      call param_read_kpoints(.false., library, k_points, num_kpts, recip_lattice, bohr, stdout)
       call param_read_explicit_kpts(library, driver, kmesh_info, num_kpts, bohr)
       call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
-      call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr)
+      call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout)
       call param_read_projections(w90_calcs%use_bloch_phases, lhasproj, &
                                   param_wannierise%guiding_centres, param_wannierise%proj_site, &
                                   kmesh_data, select_proj, num_proj, param_input, atoms, &
-                                  recip_lattice, num_wann, library, bohr)
+                                  recip_lattice, num_wann, library, bohr, stdout)
       ! projections needs to be allocated before reading constrained centres
       if (param_wannierise%slwf_constrain) then
         call param_read_constrained_centres(ccentres_frac, param_wannierise, real_lattice, &
-                                            num_wann, library)
+                                            num_wann, library, stdout)
       endif
     endif
-    call param_clean_infile()
+    call param_clean_infile(stdout)
     if (.not. (w90_calcs%transport .and. tran%read_ht)) then
       ! For aesthetic purposes, convert some things to uppercase
       call param_uppercase(param_input, atoms, spec_points)
@@ -354,7 +356,7 @@ contains
 
   end subroutine param_read_dist_cutoff
 
-  subroutine param_read_wannierise(param_wannierise, num_wann)
+  subroutine param_read_wannierise(param_wannierise, num_wann, stdout)
     !%%%%%%%%%%%
     ! Wannierise
     !%%%%%%%%%%%
@@ -362,6 +364,7 @@ contains
     implicit none
     type(param_wannierise_type), intent(out) :: param_wannierise
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     integer :: ierr
     logical :: found
 
@@ -506,9 +509,10 @@ contains
     ! GS-end
   end subroutine param_read_disentangle_w90
 
-  subroutine param_read_gamma_only(gamma_only, num_kpts, library)
+  subroutine param_read_gamma_only(gamma_only, num_kpts, library, stdout)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
     logical, intent(in) :: library
@@ -899,7 +903,7 @@ contains
 
   subroutine param_read_projections(use_bloch_phases, lhasproj, guiding_centres, &
                                     proj_site, kmesh_data, select_proj, num_proj, &
-                                    param_input, atoms, recip_lattice, num_wann, library, bohr)
+                                    param_input, atoms, recip_lattice, num_wann, library, bohr, stdout)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: use_bloch_phases, guiding_centres, library
@@ -913,6 +917,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     integer, intent(in) :: num_wann
     real(kind=dp), intent(in) :: bohr
+    integer, intent(in) :: stdout
     integer :: i, j, i_temp, loop, ierr
     logical :: found
 
@@ -927,7 +932,7 @@ contains
       lhasproj = .true.
       call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                  num_wann, proj_site, proj, recip_lattice, &
-                                 .true., bohr)
+                                 .true., bohr, stdout)
     else
       if (guiding_centres .and. .not. (param_input%gamma_only .and. use_bloch_phases)) &
         call io_error('param_read: Guiding centres requested, but no projection block found')
@@ -977,7 +982,7 @@ contains
     if (lhasproj) then
       call param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                  num_wann, proj_site, proj, &
-                                 recip_lattice, .false., bohr)
+                                 recip_lattice, .false., bohr, stdout)
       do loop = 1, num_proj
         if (select_proj%proj2wann_map(loop) < 0) cycle
         proj_site(:, select_proj%proj2wann_map(loop)) = kmesh_data%input_proj_site(:, loop)
@@ -1001,13 +1006,15 @@ contains
   end subroutine param_read_projections
 
   subroutine param_read_constrained_centres(ccentres_frac, param_wannierise, real_lattice, &
-                                            num_wann, library)
-    use w90_io, only: io_error, stdout
+                                            num_wann, library, stdout)
+!   use w90_io, only: io_error, stdout
+    use w90_io, only: io_error
     implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
     type(param_wannierise_type), intent(inout) :: param_wannierise
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     logical, intent(in) :: library
     integer :: i_temp
     logical :: found
@@ -1053,7 +1060,7 @@ contains
                          num_kpts, dis_data, fermi_surface_data, fermi, tran, &
                          atoms, num_bands, num_wann, mp_grid, num_proj, &
                          select_proj, real_lattice, recip_lattice, &
-                         spec_points)
+                         spec_points, stdout)
     !==================================================================!
     !                                                                  !
     !! write wannier90 parameters to stdout
@@ -1083,6 +1090,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_proj
     type(select_projection_type), intent(in) :: select_proj
@@ -1546,7 +1554,7 @@ contains
   subroutine param_write_chkpt(chkpt, param_input, wann_data, kmesh_info, &
                                k_points, num_kpts, dis_data, num_bands, &
                                num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                               mp_grid, real_lattice, recip_lattice)
+                               mp_grid, real_lattice, recip_lattice, stdout)
     !=================================================!
     !! Write checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1570,6 +1578,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
@@ -1626,7 +1635,7 @@ contains
 !===========================================!
   subroutine param_memory_estimate(w90_calcs, param_input, param_wannierise, &
                                    kmesh_data, kmesh_info, num_kpts, &
-                                   atoms, num_bands, num_wann, num_proj)
+                                   atoms, num_bands, num_wann, num_proj, stdout)
     !===========================================!
     !                                           !
     !! Estimate how much memory we will allocate
@@ -1648,6 +1657,7 @@ contains
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_proj
     !type(pw90_calculation_type), intent(in) :: pw90_calcs
     !type(postw90_common_type), intent(in) :: pw90_common

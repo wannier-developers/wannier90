@@ -285,7 +285,7 @@ contains
 
   end subroutine wham_get_occ_mat_list
 
-  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU)
+  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, stdout)
     !==========================!
     !                          !
     !! Band derivatives dE/dk_a
@@ -304,6 +304,7 @@ contains
     real(kind=dp), intent(in)  :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(in)  :: delHH_a
     complex(kind=dp), dimension(:, :), intent(in)  :: UU
+    integer, intent(in) :: stdout
 
     ! Misc/Dummy
     !
@@ -360,7 +361,7 @@ contains
           dim = degen_max - degen_min + 1
           call utility_diagonalize(delHH_bar_a(degen_min:degen_max, &
                                                degen_min:degen_max), dim, &
-                                   deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim))
+                                   deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim), stdout)
           !
           ! Scanned bands up to degen_max
           !
@@ -383,7 +384,7 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
@@ -405,24 +406,25 @@ contains
     !! the delHH matrix (derivative of H) at kpt
     complex(kind=dp), dimension(:, :), intent(out)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
+    integer, intent(in) :: stdout
 
     ! I call it to be sure that it has been called already once,
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
-    call get_HH_R
+    call get_HH_R(stdout)
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
     call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1)
     call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2)
     call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3)
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout)
 
   end subroutine wham_get_eig_deleig
 
-  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU)
+  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU, stdout)
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
 
@@ -430,10 +432,11 @@ contains
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
     use w90_parameters, only: num_wann
-    use w90_get_oper, only: get_HH_R
+!   use w90_get_oper, only: get_HH_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_utility, only: utility_diagonalize
+!   use w90_utility, only: utility_diagonalize
 
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)         :: kpt
     !! the three coordinates of the k point vector (in relative coordinates)
     real(kind=dp), intent(out)                      :: del_eig(num_wann, 3)
@@ -443,13 +446,13 @@ contains
     complex(kind=dp), dimension(:, :), intent(in)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
 
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout)
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -461,6 +464,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_utility, only: utility_diagonalize
 
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)           :: kpt
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
@@ -472,14 +476,14 @@ contains
     integer                       :: i
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
-    call get_HH_R
+    call get_HH_R(stdout)
 
     allocate (delHH(num_wann, num_wann, 3))
     call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
                                        OO_dx=delHH(:, :, 1), &
                                        OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
     do i = 1, 3
       if (present(occ)) then
         call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), JJm_list(:, :, :, i), occ=occ)
@@ -490,7 +494,7 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb)
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout)
     !========================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -504,6 +508,7 @@ contains
       pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_utility, only: utility_diagonalize
 
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)           :: kpt
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
@@ -513,17 +518,17 @@ contains
 
     !integer                       :: i
 
-    call get_HH_R
-    call get_AA_R
+    call get_HH_R(stdout)
+    call get_AA_R(stdout)
 
     call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb)
+  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -535,6 +540,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d
     use w90_utility, only: utility_diagonalize
 
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)           :: kpt
     real(kind=dp), intent(out)                        :: eig(num_wann)
     complex(kind=dp), dimension(:, :), intent(out)     :: UU
@@ -544,12 +550,12 @@ contains
 
     !integer                       :: i
 
-    call get_HH_R
+    call get_HH_R(stdout)
 
     call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, OO=HH, &
                                                 OO_da=HH_da(:, :, :), &
                                                 OO_dadb=HH_dadb(:, :, :, :))
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
 
   end subroutine wham_get_eig_UU_HH_AA_sc
 

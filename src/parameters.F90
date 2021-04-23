@@ -235,7 +235,8 @@ module w90_param_methods
   ! very few of these use save, so may actually be local to subroutines
 
   use w90_constants, only: dp
-  use w90_io, only: stdout, maxlen
+! use w90_io, only: stdout, maxlen
+  use w90_io, only: maxlen
   use w90_param_types
   use wannier_param_types
 
@@ -384,13 +385,14 @@ contains
   end subroutine param_read_exclude_bands
 
   subroutine param_read_num_bands(pw90_effective_model, library, param_input, &
-                                  num_bands, num_wann, library_param_read_first_pass)
+                                  num_bands, num_wann, library_param_read_first_pass, stdout)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: pw90_effective_model, library
     type(parameter_input_type), intent(in) :: param_input
     integer, intent(inout) :: num_bands
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     logical, intent(in) :: library_param_read_first_pass
     integer :: i_temp
     logical :: found
@@ -425,9 +427,10 @@ contains
     call param_get_keyword('devel_flag', found, c_value=devel_flag)
   end subroutine param_read_devel
 
-  subroutine param_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts)
+  subroutine param_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(in) :: pw90_effective_model, library
     integer, intent(inout) :: mp_grid(3), num_kpts
     integer :: iv_temp(3)
@@ -447,9 +450,10 @@ contains
     end if
   end subroutine param_read_mp_grid
 
-  subroutine param_read_system(library, param_input)
+  subroutine param_read_system(library, param_input, stdout)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(in) :: library
     type(parameter_input_type), intent(inout) :: param_input
     logical :: found, ltmp
@@ -614,7 +618,7 @@ contains
 
   subroutine param_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
                                 disentanglement, eig_found, eigval, library, postproc_setup, &
-                                num_bands, num_kpts)
+                                num_bands, num_kpts, stdout)
     use w90_io, only: seedname, io_file_unit, io_error
     implicit none
     logical, intent(in) :: pw90_effective_model, pw90_boltzwann, &
@@ -623,6 +627,7 @@ contains
     logical, intent(out) :: eig_found
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(in) :: num_bands, num_kpts
+    integer, intent(in) :: stdout
     !w90_plot = bands_plot or dos_plot or fermi_surface_plot or write_hr
     integer :: i, j, k, n, eig_unit, ierr
     !integer, allocatable, dimension(:, :) :: nnkpts_block
@@ -764,13 +769,14 @@ contains
   end subroutine param_read_kmesh_data
 
   subroutine param_read_kpoints(pw90_effective_model, library, k_points, num_kpts, &
-                                recip_lattice, bohr)
+                                recip_lattice, bohr, stdout)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: pw90_effective_model, library
     type(k_point_type), intent(out) :: k_points
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
@@ -800,11 +806,12 @@ contains
 
   end subroutine param_read_kpoints
 
-  subroutine param_read_lattice(library, real_lattice, recip_lattice, bohr)
+  subroutine param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     logical, intent(in) :: library
+    integer, intent(in) :: stdout
     real(kind=dp), intent(out) :: real_lattice(3, 3), recip_lattice(3, 3)
     real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
     real(kind=dp), intent(in) :: bohr
@@ -872,10 +879,11 @@ contains
     ! [GP-end]
   end subroutine param_read_global_kmesh
 
-  subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr)
-    use w90_io, only: io_error, stdout
+  subroutine param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout)
+    use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
+    integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atoms
     real(kind=dp), intent(in) :: real_lattice(3, 3), recip_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
@@ -903,9 +911,11 @@ contains
     endif
   end subroutine param_read_atoms
 
-  subroutine param_clean_infile
-    use w90_io, only: seedname, stdout, io_error
+  subroutine param_clean_infile(stdout)
+!   use w90_io, only: seedname, stdout, io_error
+    use w90_io, only: seedname, io_error
     implicit none
+    integer, intent(in) :: stdout
     integer :: loop, ierr
 
     if (any(len_trim(in_data(:)) > 0)) then
@@ -1138,12 +1148,13 @@ contains
 
   end subroutine param_uppercase
 
-  subroutine param_write_header(bohr_version_str, constants_version_str1, constants_version_str2)
+  subroutine param_write_header(bohr_version_str, constants_version_str1, constants_version_str2, stdout)
     !! Write a suitable header for the calculation - version authors etc
     use w90_io, only: io_date, w90_version
     !use w90_constants, only: bohr_version_str, constants_version_str1, constants_version_str2
     implicit none
 
+    integer, intent(in) :: stdout
     character(len=*), intent(in) :: bohr_version_str, constants_version_str1, constants_version_str2
     character(len=9) :: cdate, ctime
 
@@ -1448,7 +1459,7 @@ contains
   subroutine param_read_chkpt(checkpoint, param_input, wann_data, kmesh_info, &
                               k_points, num_kpts, dis_data, num_bands, &
                               num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                              mp_grid, real_lattice, recip_lattice, ispostw90)
+                              mp_grid, real_lattice, recip_lattice, ispostw90, stdout)
     !=================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1461,7 +1472,8 @@ contains
     !=================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit, stdout, seedname
+!   use w90_io, only: io_error, io_file_unit, stdout, seedname
+    use w90_io, only: io_error, io_file_unit, seedname
 
     implicit none
 
@@ -1476,6 +1488,7 @@ contains
     type(disentangle_type), intent(inout) :: dis_data
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
@@ -2713,7 +2726,7 @@ contains
 !===================================!
   subroutine param_get_projections(num_proj, atoms, kmesh_data, param_input, &
                                    num_wann, proj_site, proj, &
-                                   recip_lattice, lcount, bohr)
+                                   recip_lattice, lcount, bohr, stdout)
     !===================================!
     !                                   !
     !!  Fills the projection data block
@@ -2728,6 +2741,7 @@ contains
     implicit none
 
     integer, intent(inout) :: num_proj
+    integer, intent(in) :: stdout
     type(atom_data_type), intent(in) :: atoms
     type(param_kmesh_type), intent(inout) :: kmesh_data
     type(parameter_input_type), intent(in) :: param_input

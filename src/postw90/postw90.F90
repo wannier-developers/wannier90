@@ -91,7 +91,7 @@ program postw90
     open (unit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
 
     call param_write_header(physics%bohr_version_str, physics%constants_version_str1, &
-                            physics%constants_version_str2)
+                            physics%constants_version_str2, stdout)
     if (num_nodes == 1) then
 #ifdef MPI
       write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
@@ -113,7 +113,7 @@ program postw90
                             mp_grid, real_lattice, recip_lattice, spec_points, &
                             pw90_calcs, postw90_oper, pw90_common, pw90_spin, &
                             pw90_ham, kpath, kslice, dos_data, berry, &
-                            spin_hall, gyrotropic, geninterp, boltz, eig_found, physics%bohr)
+                            spin_hall, gyrotropic, geninterp, boltz, eig_found, physics%bohr, stdout)
     cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
                   real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
                   real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
@@ -121,7 +121,7 @@ program postw90
                              real_lattice, recip_lattice, spec_points, &
                              pw90_calcs, postw90_oper, pw90_common, &
                              pw90_spin, kpath, kslice, dos_data, berry, &
-                             gyrotropic, geninterp, boltz)
+                             gyrotropic, geninterp, boltz, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
       'Time to read parameters  ', time1 - time0, ' (sec)'
@@ -143,7 +143,7 @@ program postw90
       !
       call kmesh_get(recip_lattice, k_points%kpt_cart, param_input, kmesh_info, &
                      kmesh_data, &
-                     num_kpts)
+                     num_kpts, stdout)
 
       time2 = io_time()
       write (stdout, '(1x,a25,f11.3,a)') &
@@ -182,7 +182,7 @@ program postw90
       call param_read_chkpt(checkpoint, param_input, wann_data, kmesh_info, &
                             k_points, num_kpts, dis_data, num_bands, &
                             num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                            mp_grid, real_lattice, recip_lattice, .true.)
+                            mp_grid, real_lattice, recip_lattice, .true., stdout)
     endif
     !
     ! Distribute the information in the um and chk files to the other nodes
@@ -203,7 +203,7 @@ program postw90
 
   ! Setup a number of common variables for all interpolation tasks
   !
-  call pw90common_wanint_setup
+  call pw90common_wanint_setup(stdout)
 
   if (on_root) then
     time1 = io_time()
@@ -217,7 +217,7 @@ program postw90
   ! Density of states calculated using a uniform interpolation mesh
   ! ---------------------------------------------------------------
   !
-  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main
+  if (pw90_calcs%dos .and. index(dos_data%task, 'dos_plot') > 0) call dos_main(stdout)
 
 ! find_fermi_level commented for the moment in dos.F90
 !  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
@@ -226,19 +226,19 @@ program postw90
   ! Bands, Berry curvature, or orbital magnetization plot along a k-path
   ! --------------------------------------------------------------------
   !
-  if (pw90_calcs%kpath) call k_path(physics%bohr)
+  if (pw90_calcs%kpath) call k_path(physics%bohr, stdout)
 
   ! ---------------------------------------------------------------------------
   ! Bands, Berry curvature, or orbital magnetization plot on a slice in k-space
   ! ---------------------------------------------------------------------------
   !
-  if (pw90_calcs%kslice) call k_slice(physics%bohr)
+  if (pw90_calcs%kslice) call k_slice(physics%bohr, stdout)
 
   ! --------------------
   ! Spin magnetic moment
   ! --------------------
   !
-  if (pw90_common%spin_moment) call spin_get_moment
+  if (pw90_common%spin_moment) call spin_get_moment(stdout)
 
   ! -------------------------------------------------------------------
   ! dc Anomalous Hall conductivity and eventually (if 'mcd' string also
@@ -258,7 +258,7 @@ program postw90
   ! Orbital magnetization
   ! -----------------------------------------------------------------
   !
-  if (pw90_calcs%berry) call berry_main(physics)
+  if (pw90_calcs%berry) call berry_main(physics, stdout)
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
   ! -----------------------------------------------------------------
@@ -267,11 +267,11 @@ program postw90
     time1 = io_time()
   endif
 
-  if (pw90_calcs%geninterp) call geninterp_main
+  if (pw90_calcs%geninterp) call geninterp_main(stdout)
 
-  if (pw90_calcs%boltzwann) call boltzwann_main(physics)
+  if (pw90_calcs%boltzwann) call boltzwann_main(physics, stdout)
 
-  if (pw90_calcs%gyrotropic) call gyrotropic_main(physics)
+  if (pw90_calcs%gyrotropic) call gyrotropic_main(physics, stdout)
 
   if (on_root .and. pw90_calcs%boltzwann) then
     time2 = io_time()

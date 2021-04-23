@@ -18,7 +18,8 @@ module w90_disentangle
 
   use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce
   use w90_constants, only: dp, cmplx_0, cmplx_1
-  use w90_io, only: io_error, stdout, io_stopwatch
+! use w90_io, only: io_error, stdout, io_stopwatch
+  use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
@@ -34,7 +35,7 @@ contains
   subroutine dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                       m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                       dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                      lsitesymmetry, sym)
+                      lsitesymmetry, sym, stdout)
 
     !==================================================================!
     !! Main disentanglement routine
@@ -47,6 +48,7 @@ contains
     ! passed variables
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: num_nodes, my_node_id
+    integer, intent(in) :: stdout
 
     logical, intent(in) :: lsitesymmetry, on_root
 
@@ -101,11 +103,11 @@ contains
     ! Set up energy windows
     call dis_windows(param_input%iprint, param_input%timing_level, on_root, indxfroz, indxnfroz, &
                      lfrozen, linner, ndimfroz, nfirstwin, num_bands, num_kpts, num_wann, &
-                     eigval_opt, k_points%kpt_latt, recip_lattice, dis_data)
+                     eigval_opt, k_points%kpt_latt, recip_lattice, dis_data, stdout)
 
     ! Construct the unitarized projection
     call dis_project(param_input%timing_level, num_kpts, num_wann, num_bands, on_root, &
-                     dis_data%ndimwin, nfirstwin, a_matrix, u_matrix_opt)
+                     dis_data%ndimwin, nfirstwin, a_matrix, u_matrix_opt, stdout)
 
     ! If there is an inner window, need to modify projection procedure
     ! (Sec. III.G SMV)
@@ -116,14 +118,14 @@ contains
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
       call dis_proj_froz(param_input%timing_level, on_root, num_kpts, dis_data%ndimwin, &
                          u_matrix_opt, param_input%iprint, param_input%devel_flag, num_bands, &
-                         num_wann, lfrozen, ndimfroz, indxfroz)
+                         num_wann, lfrozen, ndimfroz, indxfroz, stdout)
     else
       if (on_root) write (stdout, '(3x,a)') 'No inner window (linner = F)'
     endif
 
     ! Debug
     call internal_check_orthonorm(param_input%timing_level, num_wann, num_kpts, dis_data%ndimwin, &
-                                  on_root, u_matrix_opt)
+                                  on_root, u_matrix_opt, stdout)
 
     ! Slim down the original Mmn(k,b)
     call internal_slim_m(param_input%timing_level, num_kpts, num_bands, dis_data%ndimwin, on_root, &
@@ -139,7 +141,7 @@ contains
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_bands, u_matrix_opt, &
-                                       sym, dis_data%lwindow)
+                                       sym, stdout, dis_data%lwindow)
     endif
 
     !RS: calculate initial U_{opt}(Rk) from U_{opt}(k)
@@ -148,12 +150,12 @@ contains
     if (.not. param_input%gamma_only) then
       call dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
                        num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                       kmesh_info, dis_data, lsitesymmetry, sym)
+                       kmesh_info, dis_data, lsitesymmetry, sym, stdout)
 
     else
       call dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                              num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                             param_input, kmesh_info, dis_data, lsitesymmetry, sym)
+                             param_input, kmesh_info, dis_data, lsitesymmetry, sym, stdout)
 
     end if
 
@@ -183,10 +185,11 @@ contains
 ![ysl-b]
     if (.not. param_input%gamma_only) then
       call internal_find_u(on_root, lsitesymmetry, param_input%timing_level, num_kpts, num_wann, &
-                           num_bands, dis_data%ndimwin, u_matrix, u_matrix_opt, a_matrix, sym)
+                           num_bands, dis_data%ndimwin, u_matrix, u_matrix_opt, a_matrix, sym, &
+                           stdout)
     else
       call internal_find_u_gamma(param_input%timing_level, num_wann, dis_data%ndimwin, u_matrix, &
-                                 u_matrix_opt, a_matrix)
+                                 u_matrix_opt, a_matrix, stdout)
     end if
 ![ysl-e]
 
@@ -296,7 +299,7 @@ contains
   end subroutine dis_main
 
   subroutine internal_check_orthonorm(timing_level, num_wann, num_kpts, ndimwin, on_root, &
-                                      u_matrix_opt)
+                                      u_matrix_opt, stdout)
     !================================================================!
     !                                                                !
     !! This subroutine checks that the states in the columns of the
@@ -316,6 +319,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
@@ -441,7 +445,7 @@ contains
   end subroutine internal_slim_m
 
   subroutine internal_find_u(on_root, lsitesymmetry, timing_level, num_kpts, num_wann, num_bands, &
-                             ndimwin, u_matrix, u_matrix_opt, a_matrix, sym)
+                             ndimwin, u_matrix, u_matrix_opt, a_matrix, sym, stdout)
     !================================================================!
     !                                                                !
     !! This subroutine finds the initial guess for the square unitary
@@ -467,6 +471,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
@@ -550,7 +555,7 @@ contains
     endif
 
     if (lsitesymmetry) then
-      call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_wann, u_matrix, sym)
+      call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_wann, u_matrix, sym, stdout)
     endif
 
     if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2)
@@ -561,7 +566,7 @@ contains
 
 ![ysl-b]
   subroutine internal_find_u_gamma(timing_level, num_wann, ndimwin, u_matrix, u_matrix_opt, &
-                                   a_matrix)
+                                   a_matrix, stdout)
     !================================================================!
     !                                                                !
     !! Make initial u_matrix real
@@ -572,6 +577,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level, num_wann
+    integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
 
     complex(kind=dp), intent(in) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
@@ -661,7 +667,7 @@ contains
 
   subroutine dis_windows(iprint, timing_level, on_root, indxfroz, indxnfroz, lfrozen, linner, &
                          ndimfroz, nfirstwin, num_bands, num_kpts, num_wann, eigval_opt, kpt_latt, &
-                         recip_lattice, dis_data)
+                         recip_lattice, dis_data, stdout)
     !==================================================================!
     !                                                                  !
     !! This subroutine selects the states that are inside the outer
@@ -684,6 +690,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: iprint, timing_level
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
 
     logical, intent(in) :: on_root
@@ -980,7 +987,7 @@ contains
   end subroutine dis_windows
 
   subroutine dis_project(timing_level, num_kpts, num_wann, num_bands, on_root, ndimwin, nfirstwin, &
-                         a_matrix, u_matrix_opt)
+                         a_matrix, u_matrix_opt, stdout)
     !==================================================================!
     !                                                                  !
     !! Construct projections for the start of the disentanglement routine
@@ -1033,6 +1040,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts)
@@ -1206,7 +1214,7 @@ contains
   end subroutine dis_project
 
   subroutine dis_proj_froz(timing_level, on_root, num_kpts, ndimwin, u_matrix_opt, iprint, &
-                           devel_flag, num_bands, num_wann, lfrozen, ndimfroz, indxfroz)
+                           devel_flag, num_bands, num_wann, lfrozen, ndimfroz, indxfroz, stdout)
     !==================================================================!
     !                                                                  !
     !! COMPUTES THE LEADING EIGENVECTORS OF Q_froz . P_s . Q_froz,
@@ -1224,6 +1232,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: timing_level, iprint
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
@@ -1602,7 +1611,7 @@ contains
 
   subroutine dis_extract(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, num_kpts, &
                          num_wann, eigval_opt, m_matrix_orig_local, u_matrix_opt, param_input, &
-                         kmesh_info, dis_data, lsitesymmetry, sym)
+                         kmesh_info, dis_data, lsitesymmetry, sym, stdout)
 
     !==================================================================!
     !                                                                  !
@@ -1618,6 +1627,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: num_nodes, my_node_id
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:, :) ! (num_bands,num_kpts)
@@ -1937,7 +1947,7 @@ contains
           call sitesym_dis_extract_symmetry(nkp, dis_data%ndimwin(nkp), &
                                             czmat_in_loc(:, :, nkp_loc), lambda, &
                                             u_matrix_opt_loc(:, :, nkp_loc), num_bands, num_wann, &
-                                            sym) !RS:
+                                            sym, stdout) !RS:
 
           do j = 1, num_wann                                                          !RS:
             wkomegai1_loc(nkp_loc) = wkomegai1_loc(nkp_loc) - real(lambda(j, j), kind=dp)               !RS:
@@ -2034,7 +2044,7 @@ contains
                          num_bands*num_wann*counts, num_bands*num_wann*displs)
       call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
       if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_bands, &
-                                                          u_matrix_opt, sym, dis_data%lwindow) !RS:
+                                                          u_matrix_opt, sym, stdout, dis_data%lwindow) !RS:
 
       if (index(param_input%devel_flag, 'compspace') > 0) then
         if (iter .eq. dis_data%num_iter) then
@@ -2526,7 +2536,7 @@ contains
 
   subroutine dis_extract_gamma(my_node_id, num_nodes, on_root, indxnfroz, ndimfroz, num_bands, &
                                num_kpts, num_wann, eigval_opt, m_matrix_orig, u_matrix_opt, &
-                               param_input, kmesh_info, dis_data, lsitesymmetry, sym)
+                               param_input, kmesh_info, dis_data, lsitesymmetry, sym, stdout)
 
     !==================================================================!
     !                                                                  !
@@ -2541,6 +2551,7 @@ contains
 
     ! passed variables
     integer, intent(in) :: num_nodes, my_node_id
+    integer, intent(in) :: stdout
     integer, intent(in) :: num_bands, num_kpts, num_wann
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
     integer, intent(in) :: indxnfroz(:, :) !(num_bands,num_kpts)

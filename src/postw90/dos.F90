@@ -33,7 +33,7 @@ contains
   !                   PUBLIC PROCEDURES                     !
   !=========================================================!
 
-  subroutine dos_main
+  subroutine dos_main(stdout)
     !=======================================================!
     !                                                       !
     !! Computes the electronic density of states. Can
@@ -43,8 +43,8 @@ contains
     !                                                       !
     !=======================================================!
 
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, &
-      seedname, stdout
+!   use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, seedname, stdout
+    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, seedname
     use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
@@ -58,6 +58,8 @@ contains
     ! 'dos_all' from all nodes/k-points (first summed on one node and
     ! then reduced (i.e. summed) over all nodes)
     !
+    integer, intent(in) :: stdout
+
     real(kind=dp), allocatable :: dos_k(:, :)
     real(kind=dp), allocatable :: dos_all(:, :)
 
@@ -90,10 +92,10 @@ contains
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating UU in dos')
 
-    call get_HH_R
+    call get_HH_R(stdout)
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R
+      call get_SS_R(stdout)
     else
       ndim = 1
     end if
@@ -151,9 +153,9 @@ contains
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
         if (dos_data%adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
@@ -161,8 +163,8 @@ contains
                          UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-          call utility_diagonalize(HH, num_wann, eig, UU)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call utility_diagonalize(HH, num_wann, eig, UU, stdout)
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -185,9 +187,9 @@ contains
         kpt(2) = real(loop_y, dp)/real(dos_data%kmesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(dos_data%kmesh(3), dp)
         if (dos_data%adpt_smr) then
-          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+          call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
           call dos_get_levelspacing(del_eig, dos_data%kmesh, levelspacing_k)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, &
                          smr_index=dos_data%smr_index, &
                          adpt_smr_fac=dos_data%adpt_smr_fac, &
                          adpt_smr_max=dos_data%adpt_smr_max, &
@@ -195,8 +197,8 @@ contains
                          UU=UU)
         else
           call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-          call utility_diagonalize(HH, num_wann, eig, UU)
-          call dos_get_k(kpt, dos_energyarray, eig, dos_k, &
+          call utility_diagonalize(HH, num_wann, eig, UU, stdout)
+          call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, &
                          smr_index=dos_data%smr_index, &
                          smr_fixed_en_width=dos_data%smr_fixed_en_width, &
                          UU=UU)
@@ -461,7 +463,7 @@ contains
   !>                    dos_get_levelspacing() routine
   !>                    If present: adaptive smearing
   !>                    If not present: fixed-energy-width smearing
-  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, smr_index, &
+  subroutine dos_get_k(kpt, EnergyArray, eig_k, dos_k, stdout, smr_index, &
                        smr_fixed_en_width, adpt_smr_fac, adpt_smr_max, levelspacing_k, UU)
     use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
@@ -472,6 +474,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)               :: kpt
     real(kind=dp), dimension(:), intent(in)               :: EnergyArray
     real(kind=dp), dimension(:), intent(in)               :: eig_k
@@ -520,7 +523,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk)
+    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 

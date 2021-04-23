@@ -79,7 +79,7 @@ contains
 
   ! Public procedures have names starting with wanint_
 
-  subroutine pw90common_wanint_setup
+  subroutine pw90common_wanint_setup(stdout)
     !! Setup data ready for interpolation
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_error, io_file_unit, seedname
@@ -87,6 +87,7 @@ contains
     use w90_parameters, only: real_lattice, num_wann
     use pw90_parameters, only: pw90_common
 
+    integer, intent(in) :: stdout
     integer        :: ierr, ir, file_unit, num_wann_loc
 
     ! Find nrpts, the number of points in the Wigner-Seitz cell
@@ -107,7 +108,7 @@ contains
       endif
       call comms_bcast(nrpts, 1)
     else
-      call wigner_seitz(count_pts=.true.)
+      call wigner_seitz(stdout, count_pts=.true.)
     endif
 
     ! Now can allocate several arrays
@@ -132,7 +133,7 @@ contains
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
       !
-      call wigner_seitz(count_pts=.false.)
+      call wigner_seitz(stdout, count_pts=.false.)
       !
       ! Convert from reduced to Cartesian coordinates
       !
@@ -1413,7 +1414,7 @@ contains
   !===========================================================!
 
   !================================!
-  subroutine wigner_seitz(count_pts)
+  subroutine wigner_seitz(stdout, count_pts)
     !================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
@@ -1422,7 +1423,8 @@ contains
     !==========================================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: stdout, io_error, io_stopwatch
+!   use w90_io, only: stdout, io_error, io_stopwatch
+    use w90_io, only: io_error, io_stopwatch
     use w90_parameters, only: mp_grid, real_lattice, param_input
     use w90_utility, only: utility_metric
 
@@ -1431,6 +1433,7 @@ contains
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
     ! nrpts             number of Wigner-Seitz grid points
 
+    integer, intent(in) :: stdout
     logical, intent(in) :: count_pts
 
     integer       :: ndiff(3)

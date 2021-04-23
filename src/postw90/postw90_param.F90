@@ -213,7 +213,8 @@ end module pw90_parameters
 module pw90_param_methods
 
   use w90_constants, only: dp
-  use w90_io, only: stdout, maxlen
+! use w90_io, only: stdout, maxlen
+  use w90_io, only: maxlen
   use w90_param_types, only: parameter_input_type, wannier_data_type, &
     param_kmesh_type, kmesh_info_type, k_point_type, disentangle_type, &
     fermi_data_type, atom_data_type, special_kpoints_type
@@ -269,7 +270,7 @@ contains
                                 recip_lattice, spec_points, pw90_calcs, &
                                 postw90_oper, pw90_common, pw90_spin, pw90_ham, &
                                 kpath, kslice, dos_data, berry, spin_hall, &
-                                gyrotropic, geninterp, boltz, eig_found, bohr)
+                                gyrotropic, geninterp, boltz, eig_found, bohr, stdout)
     !==================================================================!
     !                                                                  !
     !! Read parameters and calculate derived values
@@ -306,6 +307,7 @@ contains
     type(atom_data_type), intent(inout) :: atoms
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     integer, intent(inout) :: mp_grid(3)
     !integer, intent(inout) :: num_proj
@@ -344,11 +346,11 @@ contains
     call param_read_num_wann(num_wann)
     call param_read_exclude_bands(param_input) !for read_chkpt
     call param_read_num_bands(pw90_common%effective_model, library, &
-                              param_input, num_bands, num_wann, .false.)
+                              param_input, num_bands, num_wann, .false., stdout)
     disentanglement = (num_bands > num_wann)
     call param_read_devel(param_input%devel_flag)
-    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts)
-    call param_read_system(library, param_input)
+    call param_read_mp_grid(pw90_common%effective_model, library, mp_grid, num_kpts, stdout)
+    call param_read_system(library, param_input, stdout)
     call param_read_kpath(library, spec_points, ok)
     call param_read_fermi_energy(found_fermi_energy, fermi)
     call param_read_kslice(pw90_calcs%kslice, kslice)
@@ -367,7 +369,7 @@ contains
     call param_read_ws_data(param_input)
     call param_read_eigvals(pw90_common%effective_model, pw90_calcs%boltzwann, &
                             pw90_calcs%geninterp, dos_plot, disentanglement, &
-                            eig_found, eigval, library, .false., num_bands, num_kpts)
+                            eig_found, eigval, library, .false., num_bands, num_kpts, stdout)
     dis_data%win_min = -1.0_dp
     dis_data%win_max = 0.0_dp
     if (eig_found) dis_data%win_min = minval(eigval)
@@ -377,15 +379,15 @@ contains
     call param_read_boltzwann(boltz, smr_index, eigval, adpt_smr_fac, &
                               adpt_smr_max, smr_fixed_en_width, adpt_smr)
     call param_read_energy_range(berry, dos_data, gyrotropic, dis_data, fermi, eigval)
-    call param_read_lattice(library, real_lattice, recip_lattice, bohr)
+    call param_read_lattice(library, real_lattice, recip_lattice, bohr, stdout)
     call param_read_kmesh_data(kmesh_data)
     call param_read_kpoints(pw90_common%effective_model, library, k_points, num_kpts, &
-                            recip_lattice, bohr)
+                            recip_lattice, bohr, stdout)
     call param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
     call param_read_local_kmesh(pw90_calcs, pw90_common, berry, dos_data, &
                                 pw90_spin, gyrotropic, boltz, recip_lattice)
-    call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr) !pw90_write
-    call param_clean_infile()
+    call param_read_atoms(library, atoms, real_lattice, recip_lattice, bohr, stdout) !pw90_write
+    call param_clean_infile(stdout)
     ! For aesthetic purposes, convert some things to uppercase
     call param_uppercase(param_input, atoms, spec_points)
     call param_read_final_alloc(disentanglement, dis_data, wann_data, num_wann, num_bands, num_kpts)
@@ -1345,7 +1347,7 @@ contains
                                  real_lattice, recip_lattice, spec_points, &
                                  pw90_calcs, postw90_oper, pw90_common, &
                                  pw90_spin, kpath, kslice, dos_data, berry, &
-                                 gyrotropic, geninterp, boltz)
+                                 gyrotropic, geninterp, boltz, stdout)
     !==================================================================!
     !                                                                  !
     !! write postw90 parameters to stdout
@@ -1359,6 +1361,7 @@ contains
     type(fermi_data_type), intent(in) :: fermi
     type(atom_data_type), intent(in) :: atoms
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(special_kpoints_type), intent(in) :: spec_points
@@ -1713,12 +1716,12 @@ contains
       write (stdout, '(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '| Compute Gyrotropic properties              :', pw90_calcs%gyrotropic, '|'
       write (stdout, '(1x,a46,10x,a20,1x,a1)') '| gyrotropic_task                            :', gyrotropic%task, '|'
-      call parameters_gyro_write_task(gyrotropic%task, '-d0', 'calculate the D tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-dw', 'calculate the tildeD tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-c', 'calculate the C tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-k', 'calculate the K tensor')
-      call parameters_gyro_write_task(gyrotropic%task, '-noa', 'calculate the interbad natural optical activity')
-      call parameters_gyro_write_task(gyrotropic%task, '-dos', 'calculate the density of states')
+      call parameters_gyro_write_task(gyrotropic%task, '-d0', 'calculate the D tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-dw', 'calculate the tildeD tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-c', 'calculate the C tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-k', 'calculate the K tensor', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-noa', 'calculate the interbad natural optical activity', stdout)
+      call parameters_gyro_write_task(gyrotropic%task, '-dos', 'calculate the density of states', stdout)
 
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for tildeD,NOA            :', gyrotropic_freq_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency                           :', gyrotropic_freq_max, '|'
@@ -1862,11 +1865,12 @@ contains
   end subroutine param_pw90_dealloc
 
   ! extra postw90 memory
-  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann)
+  subroutine param_pw90_mem_estimate(mem_param, mem_bw, dis_data, num_wann, stdout)
     use w90_comms, only: on_root
     implicit none
     type(disentangle_type), intent(in) :: dis_data
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), parameter :: size_log = 1.0_dp
     real(kind=dp), parameter :: size_int = 4.0_dp
     real(kind=dp), parameter :: size_real = 8.0_dp
@@ -1931,9 +1935,10 @@ contains
 
   end subroutine param_pw90_mem_estimate
 
-  subroutine parameters_gyro_write_task(task, key, comment)
-    use w90_io, only: stdout
+  subroutine parameters_gyro_write_task(task, key, comment, stdout)
+!   use w90_io, only: stdout
 
+    integer, intent(in) :: stdout
     character(len=*), intent(in) :: task, key, comment
     character(len=42) :: comment1
 

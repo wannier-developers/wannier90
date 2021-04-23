@@ -36,7 +36,8 @@ module w90_boltzwann
   use w90_constants
   use w90_parameters, only: dis_data, param_input
   use pw90_parameters, only: boltz, pw90_common
-  use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
+! use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
+  use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
   use w90_utility, only: utility_inv3, utility_inv2
   use w90_postw90_common
   use w90_comms
@@ -65,7 +66,7 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(physics)
+  subroutine boltzwann_main(physics, stdout)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -81,6 +82,8 @@ contains
     !! Files from 2 to 4 are output on a grid of (mu,T) points, where mu is the chemical potential in eV and
     !! T is the temperature in Kelvin. The grid is defined in the input.
     type(pw90_physical_constants), intent(in) :: physics
+    integer, intent(in) :: stdout
+
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
     real(kind=dp), dimension(:), allocatable :: TempArray, MuArray, KTArray
@@ -190,7 +193,7 @@ contains
     if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main')
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(TDF, TDFEnergyArray)
+    call calcTDFandDOS(TDF, TDFEnergyArray, stdout)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -577,7 +580,7 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(TDF, TDFEnergyArray)
+  subroutine calcTDFandDOS(TDF, TDFEnergyArray, stdout)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -603,9 +606,10 @@ contains
     use w90_parameters, only: num_wann
     use pw90_parameters, only: boltz
     use w90_param_methods, only: param_get_smearing_type
-    use w90_utility, only: utility_diagonalize
+!   use w90_utility, only: utility_diagonalize
     use w90_wan_ham, only: wham_get_eig_deleig
 
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(:, :, :), intent(out)   :: TDF ! (coordinate,Energy,spin)
     !! The TDF(i,EnIdx,spin) output array, where:
     !!        - i is an index from 1 to 6 giving the component of the symmetric tensor
@@ -655,10 +659,10 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R
+    call get_HH_R(stdout)
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R
+      call get_SS_R(stdout)
     else
       ndim = 1
     end if
@@ -768,7 +772,7 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -776,7 +780,7 @@ contains
         eig(boltz%bandshift_firstband:) = eig(boltz%bandshift_firstband:) + boltz%bandshift_energyshift
       end if
 
-      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k)
+      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, stdout)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -803,9 +807,9 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU)
+                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
-                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, &
+                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, &
                                  smr_index=boltz%dos_smr_index, &
                                  adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                                  adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -816,7 +820,7 @@ contains
               end do
             end do
           else
-            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, &
+            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, &
                            smr_index=boltz%dos_smr_index, &
                            adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                            adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -824,7 +828,7 @@ contains
             dos_all = dos_all + dos_k*kweight
           end if
         else
-          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, &
+          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, &
                          smr_index=boltz%dos_smr_index, &
                          smr_fixed_en_width=boltz%dos_smr_fixed_en_width)
           ! This sum multiplied by kweight amounts to calculate
@@ -945,7 +949,7 @@ contains
 
   end function MinusFermiDerivative
 
-  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k)
+  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, stdout)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -976,6 +980,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), dimension(3), intent(in)      :: kpt
     !! the three coordinates of the k point vector whose DOS contribution we
     !! want to calculate (in relative coordinates)
@@ -1014,7 +1019,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk)
+    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 

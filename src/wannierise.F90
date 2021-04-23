@@ -749,7 +749,7 @@ contains
         if (on_root) call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
                                             k_points, num_kpts, dis_data, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
-                                            real_lattice, recip_lattice)
+                                            real_lattice, recip_lattice, stdout)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then
@@ -3550,7 +3550,7 @@ contains
         call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
                                k_points, num_kpts, dis_data, num_bands, &
                                num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                               mp_grid, real_lattice, recip_lattice)
+                               mp_grid, real_lattice, recip_lattice, stdout)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then

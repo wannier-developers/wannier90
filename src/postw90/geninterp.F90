@@ -25,7 +25,8 @@ module w90_geninterp
   use w90_constants
   use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
   use pw90_parameters, only: geninterp
-  use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, io_stopwatch
+! use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, io_stopwatch
+  use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, io_stopwatch
   use w90_get_oper, only: get_HH_R, HH_R
   use w90_comms
   use w90_utility, only: utility_diagonalize
@@ -62,7 +63,7 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main()
+  subroutine geninterp_main(stdout)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -70,6 +71,7 @@ contains
     !! But at least if works independently of the number of processors.
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
+    integer, intent(in) :: stdout
     integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
@@ -133,7 +135,7 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R
+    call get_HH_R(stdout)
 
     if (on_root) then
       allocate (kpointidx(num_kpts), stat=ierr)
@@ -231,10 +233,10 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU)
+        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, stdout)
       else
         call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-        call utility_diagonalize(HH, num_wann, localeig(:, i), UU)
+        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout)
       end if
     end do
 

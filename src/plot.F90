@@ -27,12 +27,13 @@ contains
                        atoms, param_hamil, dis_data, u_matrix_opt, eigval, u_matrix, &
                        lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
                        fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                       rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr)
+                       rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout)
     !! Main plotting routine
     !============================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: stdout, io_stopwatch
+!   use w90_io, only: stdout, io_stopwatch
+    use w90_io, only: io_stopwatch
 
     use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
       hamiltonian_write_rmn, hamiltonian_write_tb, ham_logical
@@ -66,6 +67,7 @@ contains
     integer, intent(in)                 :: num_kpts
     integer, intent(in)                 :: num_wann
     integer, intent(in)                 :: num_bands
+    integer, intent(in)                 :: stdout
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -124,11 +126,11 @@ contains
                                                             spec_points, param_input, &
                                                             recip_lattice, num_wann, wann_data, &
                                                             ham_r, irvec, ndegen, nrpts, &
-                                                            wannier_centres_translated)
+                                                            wannier_centres_translated, stdout)
       !
       if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, param_input, &
                                                                 fermi_surface_data, num_wann, &
-                                                                ham_r, irvec, ndegen, nrpts)
+                                                                ham_r, irvec, ndegen, nrpts, stdout)
       !
       if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, &
                                                         irvec, ndegen, nrpts, hmlg)
@@ -153,7 +155,7 @@ contains
     if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, param_plot, wann_data, &
                                                   param_input, u_matrix_opt, dis_data, &
                                                   real_lattice, atoms, k_points, u_matrix, &
-                                                  num_kpts, num_bands, num_wann, bohr)
+                                                  num_kpts, num_bands, num_wann, bohr, stdout)
 
     if (param_plot%write_bvec) call plot_bvec(kmesh_info, num_kpts)
 
@@ -171,7 +173,7 @@ contains
   !============================================!
   subroutine plot_interpolate_bands(mp_grid, real_lattice, param_plot, spec_points, param_input, &
                                     recip_lattice, num_wann, wann_data, ham_r, irvec, ndegen, &
-                                    nrpts, wannier_centres_translated)
+                                    nrpts, wannier_centres_translated, stdout)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -179,7 +181,8 @@ contains
     !============================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, io_time, io_stopwatch
+!   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_time, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type, wannier_data_type, &
@@ -198,6 +201,7 @@ contains
     integer, intent(in) :: irvec(:, :)
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
@@ -401,7 +405,7 @@ contains
     !
     if (index(param_input%bands_plot_mode, 'cut') .ne. 0) call plot_cut_hr( &
       param_plot, param_input, &
-      real_lattice, mp_grid, num_wann, wannier_centres_translated)
+      real_lattice, mp_grid, num_wann, wannier_centres_translated, stdout)
     !
     ! Interpolate the Hamiltonian at each kpoint
     !
@@ -532,7 +536,7 @@ contains
 
     !============================================!
     subroutine plot_cut_hr(param_plot, param_input, real_lattice, mp_grid, num_wann, &
-                           wannier_centres_translated)
+                           wannier_centres_translated, stdout)
       !============================================!
       !
       !!  In real-space picture, ham_r(j,i,k) is an interaction between
@@ -552,7 +556,8 @@ contains
       !============================================!
 
       use w90_constants, only: dp, cmplx_0, eps8
-      use w90_io, only: io_error, stdout
+!     use w90_io, only: io_error, stdout
+      use w90_io, only: io_error
       use w90_param_types, only: parameter_input_type
       use wannier_param_types, only: param_plot_type
 
@@ -567,6 +572,7 @@ contains
 
       integer, intent(in) :: mp_grid(3)
       integer, intent(in) :: num_wann
+      integer, intent(in) :: stdout
       real(kind=dp), intent(in) :: real_lattice(3, 3)
 
       integer :: nrpts_tmp
@@ -911,7 +917,7 @@ contains
 
   !===========================================================!
   subroutine plot_fermi_surface(fermi, recip_lattice, param_input, fermi_surface_data, num_wann, &
-                                ham_r, irvec, ndegen, nrpts)
+                                ham_r, irvec, ndegen, nrpts, stdout)
     !===========================================================!
     !                                                           !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -919,7 +925,8 @@ contains
     !===========================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
+!   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, seedname, io_date, io_time, io_stopwatch
     use w90_param_types, only: parameter_input_type, fermi_data_type
     use wannier_param_types, only: fermi_surface_type
 
@@ -935,6 +942,7 @@ contains
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
 
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
 
     complex(kind=dp), allocatable :: ham_pack(:)
@@ -1061,7 +1069,7 @@ contains
   !============================================!
   subroutine plot_wannier(recip_lattice, param_plot, wann_data, param_input, u_matrix_opt, &
                           dis_data, real_lattice, atoms, k_points, u_matrix, num_kpts, &
-                          num_bands, num_wann, bohr)
+                          num_bands, num_wann, bohr, stdout)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1070,7 +1078,8 @@ contains
     !============================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
-    use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
+!   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, seedname, io_date, io_stopwatch
     use w90_param_types, only: k_point_type, parameter_input_type, wannier_data_type, &
       atom_data_type, disentangle_type
     use wannier_param_types, only: param_plot_type
@@ -1099,6 +1108,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
 !   integer, intent(in) :: ngs(3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
 !   real(kind=dp), intent(in) :: wannier_plot_radius

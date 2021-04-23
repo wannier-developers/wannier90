@@ -212,7 +212,7 @@ program wannier
                     k_points, num_kpts, dis_data, fermi_surface_data, &
                     fermi, tran, atoms, num_bands, num_wann, eigval, &
                     mp_grid, num_proj, select_proj, real_lattice, &
-                    recip_lattice, spec_points, eig_found, .false., .false., physics%bohr)
+                    recip_lattice, spec_points, eig_found, .false., .false., physics%bohr, stdout)
     close (stdout, status='delete')
 
     if (driver%restart .eq. ' ') then
@@ -231,7 +231,7 @@ program wannier
     stdout = io_file_unit()
     open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
     call param_write_header(physics%bohr_version_str, physics%constants_version_str1, &
-                            physics%constants_version_str2)
+                            physics%constants_version_str2, stdout)
     if (num_nodes == 1) then
 #ifdef MPI
       write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
@@ -246,19 +246,20 @@ program wannier
                      wann_data, param_hamil, kmesh_data, k_points, num_kpts, &
                      dis_data, fermi_surface_data, fermi, tran, atoms, &
                      num_bands, num_wann, mp_grid, num_proj, select_proj, &
-                     real_lattice, recip_lattice, spec_points)
+                     real_lattice, recip_lattice, spec_points, stdout)
 
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
 
     if (.not. driver%explicit_nnkpts) call kmesh_get(recip_lattice, k_points%kpt_cart, &
-                                                     param_input, kmesh_info, kmesh_data, num_kpts)
+                                                     param_input, kmesh_info, kmesh_data, &
+                                                     num_kpts, stdout)
     time2 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') 'Time to get kmesh        ', time2 - time1, ' (sec)'
 
     call param_memory_estimate(w90_calcs, param_input, param_wannierise, &
                                kmesh_data, kmesh_info, num_kpts, &
-                               atoms, num_bands, num_wann, num_proj)
+                               atoms, num_bands, num_wann, num_proj, stdout)
   end if
 
   if (dryrun) then
@@ -292,7 +293,7 @@ program wannier
       call param_read_chkpt(driver%checkpoint, param_input, wann_data, kmesh_info, &
                             k_points, num_kpts, dis_data, num_bands, num_wann, &
                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
-                            real_lattice, recip_lattice, .false.)
+                            real_lattice, recip_lattice, .false., stdout)
     endif
     call param_chkpt_dist(driver%checkpoint, param_input, wann_data, num_kpts, dis_data, &
                           num_bands, num_wann, u_matrix, u_matrix_opt)
@@ -346,11 +347,12 @@ program wannier
 
   call overlap_allocate(u_matrix, m_matrix_local, m_matrix, u_matrix_opt, a_matrix, &
                         m_matrix_orig_local, m_matrix_orig, param_input%timing_level, &
-                        kmesh_info%nntot, num_kpts, num_wann, num_bands, w90_calcs%disentanglement)
+                        kmesh_info%nntot, num_kpts, num_wann, num_bands, &
+                        w90_calcs%disentanglement, stdout)
 
   call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input, w90_calcs, &
                     u_matrix_opt, m_matrix_orig, a_matrix, m_matrix, u_matrix, select_proj, &
-                    num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym)
+                    num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym, stdout)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
@@ -363,7 +365,7 @@ program wannier
     call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                   dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                  lsitesymmetry, sym)
+                  lsitesymmetry, sym, stdout)
 
     param_input%have_disentangled = .true.
     time2 = io_time()
@@ -374,7 +376,7 @@ program wannier
   if (on_root) then
     call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                            dis_data, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                           mp_grid, real_lattice, recip_lattice)
+                           mp_grid, real_lattice, recip_lattice, stdout)
   endif
 !~  call param_write_um
 
@@ -407,7 +409,7 @@ program wannier
   if (on_root) then
     call param_write_chkpt('postwann', param_input, wann_data, kmesh_info, k_points, num_kpts, &
                            dis_data, num_bands, num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                           mp_grid, real_lattice, recip_lattice)
+                           mp_grid, real_lattice, recip_lattice, stdout)
   endif
 
 2002 continue
@@ -419,7 +421,7 @@ program wannier
                    num_wann, kmesh_info, m_matrix, recip_lattice, wann_data, atoms, param_hamil, &
                    dis_data, u_matrix_opt, eigval, u_matrix, lsitesymmetry, num_bands, mp_grid, &
                    tran%mode, fermi, fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, &
-                   nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k, physics%bohr)
+                   nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k, physics%bohr, stdout)
     time1 = io_time()
 
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
@@ -433,7 +435,8 @@ program wannier
       call tran_main(tran, param_input, w90_calcs, num_wann, real_lattice, recip_lattice, &
                      wann_data, atoms, param_hamil, dis_data, u_matrix_opt, k_points, eigval, &
                      u_matrix, lsitesymmetry, num_bands, num_kpts, mp_grid, fermi, ham_r, irvec, &
-                     shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, ham_k)
+                     shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
+                     ham_k, stdout)
       time1 = io_time()
 
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'

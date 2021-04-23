@@ -16,7 +16,8 @@ module w90_conv_spn
   !! Module to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: stdout, io_error, seedname
+! use w90_io, only: stdout, io_error, seedname
+  use w90_io, only: io_error, seedname
 
   implicit none
 
@@ -27,8 +28,13 @@ module w90_conv_spn
 
 contains
 
-  subroutine print_usage()
+  subroutine print_usage(stdout)
     !! Writes the usage of the program to stdout
+
+    implicit none
+
+    integer, intent(in) :: stdout
+
     write (stdout, '(A)') "Usage:"
     write (stdout, '(A)') "  w90spn2spn.x ACTION [SEEDNAME]"
     write (stdout, '(A)') "where ACTION can be one of the following:"
@@ -44,10 +50,11 @@ contains
     write (stdout, '(A)') "      The seedname.spn.fmt file is read and the seedname.spn file is generated."
   end subroutine print_usage
 
-  subroutine conv_get_seedname
+  subroutine conv_get_seedname(stdout)
     !! Set the seedname from the command line
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: num_arg
     character(len=50) :: ctemp
 
@@ -57,7 +64,7 @@ contains
     elseif (num_arg == 2) then
       call get_command_argument(2, seedname)
     else
-      call print_usage
+      call print_usage(stdout)
       call io_error('Wrong command line arguments, see logfile for usage')
     end if
 
@@ -79,24 +86,26 @@ contains
       export_flag = .true.
     else
       write (stdout, '(A)') 'Wrong command line action: '//trim(ctemp)
-      call print_usage
+      call print_usage(stdout)
       call io_error('Wrong command line arguments, see logfile for usage')
     end if
 
   end subroutine conv_get_seedname
 
   !=======================================!
-  subroutine conv_read_spn()
+  subroutine conv_read_spn(stdout)
     !=======================================!
     !! Read unformatted spn file
     !=======================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: io_error, io_file_unit, stdout, seedname
+!   use w90_io, only: io_error, io_file_unit, stdout, seedname
+    use w90_io, only: io_error, io_file_unit, seedname
     use w90_parameters, only: num_bands, num_kpts
 
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: spn_unit, m, n, ik, ierr, s, counter
     complex(kind=dp), allocatable :: spn_temp(:, :)
 
@@ -158,17 +167,19 @@ contains
 
   end subroutine conv_read_spn
 
-  subroutine conv_read_spn_fmt()
+  subroutine conv_read_spn_fmt(stdout)
     !=======================================!
     !! Read formatted spn file
     !=======================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: io_error, io_file_unit, stdout, seedname
+!   use w90_io, only: io_error, io_file_unit, stdout, seedname
+    use w90_io, only: io_error, io_file_unit, seedname
     use w90_parameters, only: num_bands, num_kpts
 
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: spn_unit, m, n, ik, ierr
     real(kind=dp) :: s_real, s_img
 
@@ -225,7 +236,7 @@ contains
 
   end subroutine conv_read_spn_fmt
 
-  subroutine conv_write_spn()
+  subroutine conv_write_spn(stdout)
     !=======================================!
     !! Write unformatted spn file
     !=======================================!
@@ -235,6 +246,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: spn_unit, m, n, ik, counter, s, ierr
     complex(kind=dp), allocatable :: spn_temp(:, :)
 
@@ -268,7 +280,7 @@ contains
 
   end subroutine conv_write_spn
 
-  subroutine conv_write_spn_fmt()
+  subroutine conv_write_spn_fmt(stdout)
     !=======================================!
     !! Write formatted spn file
     !=======================================!
@@ -278,6 +290,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: spn_unit, m, n, ik, s
 
     write (stdout, '(3a)') 'Writing information to formatted file ', trim(seedname), '.spn.fmt :'
@@ -310,7 +323,8 @@ program w90spn2spn
   !! Program to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit, stdout, io_error, seedname
+! use w90_io, only: io_file_unit, stdout, io_error, seedname
+  use w90_io, only: io_file_unit, io_error, seedname
   use w90_conv_spn
   use w90_comms, only: num_nodes, comms_setup, comms_end
 
@@ -319,8 +333,10 @@ program w90spn2spn
   ! Export mode:
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')
+
   logical :: file_found
   integer :: file_unit
+  integer :: stdout
 
   call comms_setup
 
@@ -331,16 +347,16 @@ program w90spn2spn
     call io_error('w90spn2spn can only be used in serial...')
   endif
 
-  call conv_get_seedname
+  call conv_get_seedname(stdout)
 
   if (export_flag .eqv. .true.) then
-    call conv_read_spn()
+    call conv_read_spn(stdout)
     write (stdout, '(a)') ''
-    call conv_write_spn_fmt()
+    call conv_write_spn_fmt(stdout)
   else
-    call conv_read_spn_fmt()
+    call conv_read_spn_fmt(stdout)
     write (stdout, '(a)') ''
-    call conv_write_spn()
+    call conv_write_spn(stdout)
   end if
 
 !  close(unit=stdout,status='delete')

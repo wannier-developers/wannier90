@@ -29,7 +29,7 @@ contains
   !                   PUBLIC PROCEDURES                       !
   !===========================================================!
 
-  subroutine spin_get_moment
+  subroutine spin_get_moment(stdout)
     !============================================================!
     !                                                            !
     !! Computes the spin magnetic moment by Wannier interpolation
@@ -38,20 +38,22 @@ contains
 
     use w90_constants, only: dp, pi, cmplx_i
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce
-    use w90_io, only: io_error, stdout
+!   use w90_io, only: io_error, stdout
+    use w90_io, only: io_error
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
     use pw90_parameters, only: pw90_spin, berry !wanint_kpoint_file
     use w90_parameters, only: fermi
     use w90_get_oper, only: get_HH_R, get_SS_R
 
+    integer, intent(in) :: stdout
     integer       :: loop_x, loop_y, loop_z, loop_tot
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
                      spn_mom(3), magnitude, theta, phi, conv
 
     if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1')
 
-    call get_HH_R
-    call get_SS_R
+    call get_HH_R(stdout)
+    call get_SS_R(stdout)
 
     if (on_root) then
       write (stdout, '(/,/,1x,a)') '------------'
@@ -77,7 +79,7 @@ contains
       do loop_tot = 1, num_int_kpts_on_node(my_node_id)
         kpt(:) = int_kpts(:, loop_tot)
         kweight = weight(loop_tot)
-        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k)
+        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, stdout)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -94,7 +96,7 @@ contains
         kpt(1) = (real(loop_x, dp)/real(pw90_spin%spin_kmesh(1), dp))
         kpt(2) = (real(loop_y, dp)/real(pw90_spin%spin_kmesh(2), dp))
         kpt(3) = (real(loop_z, dp)/real(pw90_spin%spin_kmesh(3), dp))
-        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k)
+        call spin_get_moment_k(kpt, fermi%energy_list(1), spn_k, stdout)
         spn_all = spn_all + spn_k*kweight
       end do
 
@@ -130,7 +132,7 @@ contains
 
 ! =========================================================================
 
-  subroutine spin_get_nk(kpt, spn_nk)
+  subroutine spin_get_nk(kpt, spn_nk, stdout)
     !=============================================================!
     !                                                             !
     !! Computes <psi_{mk}^(H)|S.n|psi_{mk}^(H)> (m=1,...,num_wann)
@@ -151,6 +153,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(out) :: spn_nk(num_wann)
 
@@ -171,7 +174,7 @@ contains
     allocate (SS_n(num_wann, num_wann))
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
 
     do is = 1, 3
       call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0)
@@ -196,7 +199,7 @@ contains
   !                   PRIVATE PROCEDURES                      !
   !===========================================================!
 
-  subroutine spin_get_moment_k(kpt, ef, spn_k)
+  subroutine spin_get_moment_k(kpt, ef, spn_k, stdout)
     !! Computes the spin magnetic moment by Wannier interpolation
     !! at the specified k-point
     use w90_constants, only: dp, cmplx_0, cmplx_i
@@ -207,6 +210,7 @@ contains
     use w90_get_oper, only: HH_R, SS_R
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(in)  :: ef
     real(kind=dp), intent(out) :: spn_k(3)
@@ -228,7 +232,7 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
     call pw90common_get_occ(eig, occ, ef)
 
     spn_k(1:3) = 0.0_dp
@@ -242,7 +246,7 @@ contains
 
   end subroutine spin_get_moment_k
 
-  subroutine spin_get_S(kpt, S)
+  subroutine spin_get_S(kpt, S, stdout)
     !===========================================================!
     !                                                           !
     ! Computes <psi_{nk}^(H)|S|psi_{nk}^(H)> (n=1,...,num_wann) !
@@ -259,6 +263,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: kpt(3)
     real(kind=dp), intent(out) :: S(num_wann, 3)
 
@@ -278,7 +283,7 @@ contains
     allocate (SS(num_wann, num_wann, 3))
 
     call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
-    call utility_diagonalize(HH, num_wann, eig, UU)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
 
     do i = 1, 3
       call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, i), SS(:, :, i), 0)
