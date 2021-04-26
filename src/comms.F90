@@ -18,6 +18,8 @@
 !                                                            !
 !------------------------------------------------------------!
 
+! JJ 04.21 use MPI_IN_PLACE to avoid unnecessary array alloc/copy/deallocs
+
 module w90_comms
   !! This module handles all of the communications
 
@@ -254,9 +256,6 @@ contains
       call io_error('Error in comms_bcast_int')
     end if
 #endif
-
-    return
-
   end subroutine comms_bcast_int
 
   subroutine comms_bcast_real(array, size, w90comm)
@@ -276,9 +275,6 @@ contains
       call io_error('Error in comms_bcast_real')
     end if
 #endif
-
-    return
-
   end subroutine comms_bcast_real
 
   subroutine comms_bcast_logical(array, size, w90comm)
@@ -298,9 +294,6 @@ contains
       call io_error('Error in comms_bcast_logical')
     end if
 #endif
-
-    return
-
   end subroutine comms_bcast_logical
 
   subroutine comms_bcast_char(array, size, w90comm)
@@ -320,9 +313,6 @@ contains
       call io_error('Error in comms_bcast_char')
     end if
 #endif
-
-    return
-
   end subroutine comms_bcast_char
 
   subroutine comms_bcast_cmplx(array, size, w90comm)
@@ -343,9 +333,6 @@ contains
       call io_error('Error in comms_bcast_cmplx')
     end if
 #endif
-
-    return
-
   end subroutine comms_bcast_cmplx
 
   !--------- SEND ----------------
@@ -363,16 +350,12 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_send(array, size, MPI_LOGICAL, to, &
-                  mpi_send_tag, w90comm%comm, error)
+    call mpi_send(array, size, MPI_LOGICAL, to, mpi_send_tag, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_logical')
     end if
 #endif
-
-    return
-
   end subroutine comms_send_logical
 
   subroutine comms_send_int(array, size, to, w90comm)
@@ -393,9 +376,6 @@ contains
       call io_error('Error in comms_send_int')
     end if
 #endif
-
-    return
-
   end subroutine comms_send_int
 
   subroutine comms_send_char(array, size, to, w90comm)
@@ -410,16 +390,12 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_send(array, size, MPI_CHARACTER, to, &
-                  mpi_send_tag, w90comm%comm, error)
+    call mpi_send(array, size, MPI_CHARACTER, to, mpi_send_tag, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_char')
     end if
 #endif
-
-    return
-
   end subroutine comms_send_char
 
   subroutine comms_send_real(array, size, to, w90comm)
@@ -434,16 +410,12 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_send(array, size, MPI_DOUBLE_PRECISION, to, &
-                  mpi_send_tag, w90comm%comm, error)
+    call mpi_send(array, size, MPI_DOUBLE_PRECISION, to, mpi_send_tag, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_real')
     end if
 #endif
-
-    return
-
   end subroutine comms_send_real
 
   subroutine comms_send_cmplx(array, size, to, w90comm)
@@ -458,16 +430,12 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_send(array, size, MPI_DOUBLE_COMPLEX, to, &
-                  mpi_send_tag, w90comm%comm, error)
+    call mpi_send(array, size, MPI_DOUBLE_COMPLEX, to, mpi_send_tag, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_cmplx')
     end if
 #endif
-
-    return
-
   end subroutine comms_send_cmplx
 
   !--------- RECV ----------------
@@ -495,9 +463,6 @@ contains
       call io_error('Error in comms_recv_logical')
     end if
 #endif
-
-    return
-
   end subroutine comms_recv_logical
 
   subroutine comms_recv_int(array, size, from, w90comm)
@@ -523,9 +488,6 @@ contains
       call io_error('Error in comms_recv_int')
     end if
 #endif
-
-    return
-
   end subroutine comms_recv_int
 
   subroutine comms_recv_char(array, size, from, w90comm)
@@ -551,9 +513,6 @@ contains
       call io_error('Error in comms_recv_char')
     end if
 #endif
-
-    return
-
   end subroutine comms_recv_char
 
   subroutine comms_recv_real(array, size, from, w90comm)
@@ -573,15 +532,13 @@ contains
 #endif
     integer :: error
 
-    call mpi_recv(array, size, MPI_DOUBLE_PRECISION, from, mpi_send_tag, w90comm%comm, status, error)
+    call mpi_recv(array, size, MPI_DOUBLE_PRECISION, from, mpi_send_tag, w90comm%comm, status, &
+                  error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_real')
     end if
 #endif
-
-    return
-
   end subroutine comms_recv_real
 
   subroutine comms_recv_cmplx(array, size, from, w90comm)
@@ -607,9 +564,6 @@ contains
       call io_error('Error in comms_recv_cmplx')
     end if
 #endif
-
-    return
-
   end subroutine comms_recv_cmplx
 
   subroutine comms_reduce_int(array, size, op, w90comm)
@@ -656,9 +610,6 @@ contains
       call io_error('Error in comms_reduce_int')
     end if
 #endif
-
-    return
-
   end subroutine comms_reduce_int
 
   subroutine comms_reduce_real(array, size, op, w90comm)
@@ -674,39 +625,49 @@ contains
 #ifdef MPI
     integer :: error, ierr
 
-    real(kind=dp), allocatable :: array_red(:)
-
-    allocate (array_red(size), stat=ierr)
-    if (ierr /= 0) then
-      call io_error('failure to allocate array_red in comms_reduce_real')
-    end if
-
     select case (op)
 
     case ('SUM')
-      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_SUM, root_id, w90comm%comm, error)
+      if (on_root) then
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_SUM, root_id, &
+                        w90comm%comm, error)
+      else
+        call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_SUM, root_id, w90comm%comm, &
+                        error)
+      endif
     case ('PRD')
-      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, w90comm%comm, error)
+      if (on_root) then
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, &
+                        w90comm%comm, error)
+      else
+        call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, w90comm%comm, &
+                        error)
+      endif
     case ('MIN')
-      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, w90comm%comm, error)
+      if (on_root) then
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, &
+                        w90comm%comm, error)
+      else
+        call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, w90comm%comm, &
+                        error)
+      endif
     case ('MAX')
-      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, w90comm%comm, error)
+      if (on_root) then
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, &
+                        w90comm%comm, error)
+      else
+        call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, w90comm%comm, &
+                        error)
+      endif
     case default
       call io_error('Unknown operation in comms_reduce_real')
 
     end select
 
-    call dcopy(size, array_red, 1, array, 1)
-
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_reduce_real')
     end if
-
-    if (allocated(array_red)) deallocate (array_red)
 #endif
-
-    return
-
   end subroutine comms_reduce_real
 
   subroutine comms_reduce_cmplx(array, size, op, w90comm)
@@ -722,35 +683,34 @@ contains
 #ifdef MPI
     integer :: error, ierr
 
-    complex(kind=dp), allocatable :: array_red(:)
-
-    allocate (array_red(size), stat=ierr)
-    if (ierr /= 0) then
-      call io_error('failure to allocate array_red in comms_reduce_cmplx')
-    end if
-
     select case (op)
 
     case ('SUM')
-      call mpi_reduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_SUM, root_id, w90comm%comm, error)
+      if (on_root) then
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_SUM, root_id, &
+                        w90comm%comm, error)
+      else
+        call mpi_reduce(array, array, size, MPI_DOUBLE_COMPLEX, MPI_SUM, root_id, w90comm%comm, &
+                        error)
+      end if
     case ('PRD')
-      call mpi_reduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_PROD, root_id, w90comm%comm, error)
+      if (on_root) then
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_PROD, root_id, &
+                        w90comm%comm, error)
+      else
+        call mpi_reduce(array, array, size, MPI_DOUBLE_COMPLEX, MPI_PROD, root_id, w90comm%comm, &
+                        error)
+      end if
     case default
       call io_error('Unknown operation in comms_reduce_cmplx')
 
     end select
 
-    call zcopy(size, array_red, 1, array, 1)
-
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_reduce_cmplx')
     end if
 
-    if (allocated(array_red)) deallocate (array_red)
 #endif
-
-    return
-
   end subroutine comms_reduce_cmplx
 
   subroutine comms_allreduce_real(array, size, op, w90comm)
@@ -766,39 +726,29 @@ contains
 #ifdef MPI
     integer :: error, ierr
 
-    real(kind=dp), allocatable :: array_red(:)
-
-    allocate (array_red(size), stat=ierr)
-    if (ierr /= 0) then
-      call io_error('failure to allocate array_red in comms_allreduce_real')
-    end if
-
     select case (op)
 
     case ('SUM')
-      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_SUM, w90comm%comm, error)
+      call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_SUM, w90comm%comm, &
+                         error)
     case ('PRD')
-      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_PROD, w90comm%comm, error)
+      call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_PROD, w90comm%comm, &
+                         error)
     case ('MIN')
-      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MIN, w90comm%comm, error)
+      call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MIN, w90comm%comm, &
+                         error)
     case ('MAX')
-      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MAX, w90comm%comm, error)
+      call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, w90comm%comm, &
+                         error)
     case default
       call io_error('Unknown operation in comms_allreduce_real')
 
     end select
 
-    call dcopy(size, array_red, 1, array, 1)
-
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_allreduce_real')
     end if
-
-    if (allocated(array_red)) deallocate (array_red)
 #endif
-
-    return
-
   end subroutine comms_allreduce_real
 
   subroutine comms_allreduce_cmplx(array, size, op, w90comm)
@@ -813,35 +763,23 @@ contains
 #ifdef MPI
     integer :: error, ierr
 
-    complex(kind=dp), allocatable :: array_red(:)
-
-    allocate (array_red(size), stat=ierr)
-    if (ierr /= 0) then
-      call io_error('failure to allocate array_red in comms_allreduce_cmplx')
-    end if
-
     select case (op)
 
     case ('SUM')
-      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_SUM, w90comm%comm, error)
+      call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_SUM, w90comm%comm, &
+                         error)
     case ('PRD')
-      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_PROD, w90comm%comm, error)
+      call mpi_allreduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_PROD, w90comm%comm, &
+                         error)
     case default
       call io_error('Unknown operation in comms_allreduce_cmplx')
 
     end select
 
-    call zcopy(size, array_red, 1, array, 1)
-
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_allreduce_cmplx')
     end if
-
-    if (allocated(array_red)) deallocate (array_red)
 #endif
-
-    return
-
   end subroutine comms_allreduce_cmplx
 
   subroutine comms_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -870,11 +808,9 @@ contains
       call io_error('Error in comms_gatherv_real_1')
     end if
 #else
-    call dcopy(localcount, array, 1, rootglobalarray, 1)
+    !call dcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_real_1
 
   subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -903,11 +839,9 @@ contains
       call io_error('Error in comms_gatherv_real_2')
     end if
 #else
-    call dcopy(localcount, array, 1, rootglobalarray, 1)
+    !call dcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_real_2
 
   subroutine comms_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -937,11 +871,9 @@ contains
     end if
 
 #else
-    call dcopy(localcount, array, 1, rootglobalarray, 1)
+    !call dcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_real_3
 
   subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -963,8 +895,8 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
-                     displs, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_real_2_3')
@@ -972,10 +904,9 @@ contains
 
 #else
     call dcopy(localcount, array, 1, rootglobalarray, 1)
+    !rootglobalarray = array
+    !JJ when/why should the shapes not match?
 #endif
-
-    return
-
   end subroutine comms_gatherv_real_2_3
 
   ! Array: local array for sending data; localcount elements will be sent
@@ -998,19 +929,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
-                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_1')
     end if
 
 #else
-    call zcopy(localcount, array, 1, rootglobalarray, 1)
+    !call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_cmplx_1
 
   subroutine comms_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1027,8 +956,8 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
-                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_2')
@@ -1036,15 +965,9 @@ contains
 
 #else
     call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_cmplx_2
-
-!!JRY  subroutine comms_gatherv_logical(array,localcount,rootglobalarray,counts,displs)
-!!    !! Gather real data to root node
-!!    implicit none
 
   subroutine comms_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather complex data to root node (for arrays of rank 3)
@@ -1060,19 +983,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
-                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_3')
     end if
 
 #else
-    call zcopy(localcount, array, 1, rootglobalarray, 1)
+    !call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_cmplx_3
 
   subroutine comms_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1089,8 +1010,8 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
-                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_3_4')
@@ -1098,10 +1019,9 @@ contains
 
 #else
     call zcopy(localcount, array, 1, rootglobalarray, 1)
+    !rootglobalarray = array
+    !JJ when/why should the shapes not match?
 #endif
-
-    return
-
   end subroutine comms_gatherv_cmplx_3_4
 
   subroutine comms_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1118,19 +1038,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
-                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
+                     MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_4')
     end if
 
 #else
-    call zcopy(localcount, array, 1, rootglobalarray, 1)
+    !call zcopy(localcount, array, 1, rootglobalarray, 1)
+    rootglobalarray = array
 #endif
-
-    return
-
   end subroutine comms_gatherv_cmplx_4
 
   subroutine comms_gatherv_logical(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1152,8 +1070,8 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, &
-                     displs, MPI_LOGICAL, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, displs, &
+                     MPI_LOGICAL, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_logical')
@@ -1182,19 +1100,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, &
-                      array, localcount, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
+                      MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real_1')
     end if
 
 #else
-    call dcopy(localcount, rootglobalarray, 1, array, 1)
+    !call dcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_real_1
 
   subroutine comms_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1215,19 +1131,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, &
-                      array, localcount, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
+                      MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real_2')
     end if
 
 #else
-    call dcopy(localcount, rootglobalarray, 1, array, 1)
+    !call dcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_real_2
 
   subroutine comms_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1248,19 +1162,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, &
-                      array, localcount, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
+                      MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real_3')
     end if
 
 #else
-    call dcopy(localcount, rootglobalarray, 1, array, 1)
+    !call dcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_real_3
 
   subroutine comms_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1281,19 +1193,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, &
-                      array, localcount, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, array, localcount, &
+                      MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_cmplx_4')
     end if
 
 #else
-    call zcopy(localcount, rootglobalarray, 1, array, 1)
+    !call zcopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_cmplx_4
 
   subroutine comms_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1314,19 +1224,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
-                      array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
+                      MPI_INTEGER, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real')
     end if
 
 #else
-    call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_int_1
 
   subroutine comms_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1348,19 +1256,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
-                      array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
+                      MPI_INTEGER, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_int_2')
     end if
 
 #else
-    call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_int_2
 
   subroutine comms_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1382,63 +1288,17 @@ contains
 #ifdef MPI
     integer :: error
 
-    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
-                      array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
+                      MPI_INTEGER, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_int_3')
     end if
 
 #else
-    call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    !call my_icopy(localcount, rootglobalarray, 1, array, 1)
+    array = rootglobalarray
 #endif
-
-    return
-
   end subroutine comms_scatterv_int_3
 
 end module w90_comms
-
-subroutine my_ICOPY(N, ZX, INCX, ZY, INCY)
-  !     .. Scalar Arguments ..
-  integer INCX, INCY, N
-  !     ..
-  !     .. Array Arguments ..
-  integer ZX(*), ZY(*)
-  !     ..
-  !
-  !  Purpose
-  !  =======
-  !
-  !     copies a vector, x, to a vector, y.
-  !     jack dongarra, linpack, 4/11/78.
-  !     modified 12/3/93, array(1) declarations changed to array(*)
-  !
-  !
-  !     .. Local Scalars ..
-  integer I, IX, IY
-  !     ..
-  if (N .le. 0) return
-  if (INCX .eq. 1 .and. INCY .eq. 1) GO TO 20
-  !
-  !        code for unequal increments or equal increments
-  !          not equal to 1
-  !
-  IX = 1
-  IY = 1
-  if (INCX .lt. 0) IX = (-N + 1)*INCX + 1
-  if (INCY .lt. 0) IY = (-N + 1)*INCY + 1
-  do I = 1, N
-    ZY(IY) = ZX(IX)
-    IX = IX + INCX
-    IY = IY + INCY
-  end do
-  return
-  !
-  !        code for both increments equal to 1
-  !
-20 do I = 1, N
-    ZY(I) = ZX(I)
-  end do
-  return
-end subroutine my_ICOPY
