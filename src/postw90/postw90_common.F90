@@ -24,6 +24,7 @@ module w90_postw90_common
   !
   use w90_comms
   use w90_constants, only: dp
+  use pw90_parameters, only: world
 
   implicit none
 

@@ -27,12 +27,15 @@ module w90_comms
 #ifdef MPI08
   use mpi_f08 ! use f08 interface if possible
 #endif
-! fixme -- MPI is def'd generally for MPI build
 #ifdef MPI90
   use mpi ! fall back to fortran90 interface
 #endif
 
   implicit none
+
+#ifdef MPIH
+  include 'mpif.h'
+#endif
 
   private
 
@@ -70,7 +73,7 @@ module w90_comms
 #endif
   end type
 
-  type(w90commtype), public :: world
+  !type(w90commtype), public :: world
 
   interface comms_bcast
     module procedure comms_bcast_int
@@ -135,31 +138,33 @@ module w90_comms
 
 contains
 
-  subroutine comms_setup()
+  subroutine comms_setup(w90comm)
     !! Set up communications
     implicit none
+    type(w90commtype), intent(inout) :: w90comm
 
 #ifdef MPI
     integer :: ierr
 
+    w90comm%comm = MPI_COMM_WORLD ! JJ, these are only invoked in standalone mode, use world
     call mpi_init(ierr)
     if (ierr .ne. 0) call io_error('MPI initialisation error')
 #endif
 
-    call comms_setup_vars()
+    call comms_setup_vars(w90comm)
 
   end subroutine comms_setup
 
-  subroutine comms_setup_vars()
+  subroutine comms_setup_vars(w90comm)
     !! Set up variables related to communicators
     !! This should be called also in library mode
     implicit none
+    type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: ierr
-    world%comm = MPI_COMM_WORLD ! JJ, these are only invoked in standalone mode, use world
-    call mpi_comm_rank(world%comm, my_node_id, ierr)
-    call mpi_comm_size(world%comm, num_nodes, ierr)
+    call mpi_comm_rank(w90comm%comm, my_node_id, ierr)
+    call mpi_comm_size(w90comm%comm, num_nodes, ierr)
 #else
     num_nodes = 1
     my_node_id = 0
@@ -480,7 +485,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
+#ifdef MPIH
+    integer :: status
+#else
     type(mpi_status) :: status
+#endif
     integer :: error
 
     call MPI_recv(array, size, MPI_logical, from, mpi_send_tag, w90comm%comm, status, error)
@@ -504,7 +513,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
+#ifdef MPIH
+    integer :: status
+#else
     type(mpi_status) :: status
+#endif
     integer :: error
 
     call MPI_recv(array, size, MPI_integer, from, mpi_send_tag, w90comm%comm, status, error)
@@ -528,7 +541,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
+#ifdef MPIH
+    integer :: status
+#else
     type(mpi_status) :: status
+#endif
     integer :: error
 
     call MPI_recv(array, size, MPI_character, from, mpi_send_tag, w90comm%comm, status, error)
@@ -552,7 +569,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
+#ifdef MPIH
+    integer :: status
+#else
     type(mpi_status) :: status
+#endif
     integer :: error
 
     call MPI_recv(array, size, MPI_double_precision, from, mpi_send_tag, w90comm%comm, status, error)
@@ -576,7 +597,11 @@ contains
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
+#ifdef MPIH
+    integer :: status
+#else
     type(mpi_status) :: status
+#endif
     integer :: error
 
     call MPI_recv(array, size, MPI_double_complex, from, mpi_send_tag, w90comm%comm, status, error)

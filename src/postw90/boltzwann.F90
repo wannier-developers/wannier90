@@ -35,7 +35,7 @@ module w90_boltzwann
   !============================================================!
   use w90_constants
   use w90_parameters, only: dis_data, param_input
-  use pw90_parameters, only: boltz, pw90_common
+  use pw90_parameters, only: boltz, pw90_common, world
   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
   use w90_utility, only: utility_inv3, utility_inv2
   use w90_postw90_common

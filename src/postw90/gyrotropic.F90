@@ -70,7 +70,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, elem_charge_SI, hbar_SI, &
       eV_au, bohr, elec_mass_SI, twopi, eps0_SI
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype, world
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
     use w90_utility, only: utility_det3
     use w90_io, only: io_error, stdout, io_file_unit, &
       io_stopwatch
@@ -78,7 +78,7 @@ contains
     !  weight
     use w90_postw90_common, only: cell_volume
     use w90_parameters, only: param_input, fermi
-    use pw90_parameters, only: gyrotropic, berry
+    use pw90_parameters, only: gyrotropic, berry, world
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R
 
@@ -695,7 +695,6 @@ contains
     use w90_parameters, only: num_wann, fermi, param_input
     use pw90_parameters, only: gyrotropic
 
-    !use w90_comms, only: on_root
     use w90_io, only: stdout, io_time, io_error
 
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new

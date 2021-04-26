@@ -63,7 +63,7 @@ program wannier
   use w90_plot
   use w90_transport
   use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id, &
-    w90commtype, world
+    w90commtype
   use w90_sitesym !YN:
 
   use w90_param_methods, only: param_write_header, param_read_chkpt, param_chkpt_dist
@@ -176,14 +176,15 @@ program wannier
   integer :: len_seedname
   character(len=50) :: prog
 
-  type(sitesym_data) :: sym !JJ
+  type(sitesym_data) :: sym
+  type(ham_logical) :: hmlg
+  type(w90commtype) :: w90comm
 
 ! logical :: ham_have_setup = .false.
 ! logical :: have_translated = .false.
 ! logical :: use_translation = .false.
-  type(ham_logical) :: hmlg
 
-  call comms_setup() ! initialises communicator world%comm with value MPI_COMM_WORLD
+  call comms_setup(w90comm) ! initialises communicator with value MPI_COMM_WORLD
 
   time0 = io_time()
 
@@ -192,9 +193,9 @@ program wannier
     call io_commandline(prog, dryrun)
     len_seedname = len(seedname)
   end if
-  call comms_bcast(len_seedname, 1, world)
-  call comms_bcast(seedname, len_seedname, world)
-  call comms_bcast(dryrun, 1, world)
+  call comms_bcast(len_seedname, 1, w90comm)
+  call comms_bcast(seedname, len_seedname, w90comm)
+  call comms_bcast(dryrun, 1, w90comm)
 
   if (on_root) then
     stdout = io_file_unit()
@@ -272,7 +273,7 @@ program wannier
                   lsitesymmetry, symmetrize_eps, wann_data, param_hamil, kmesh_data, kmesh_info, &
                   k_points, num_kpts, dis_data, fermi_surface_data, fermi, tran, atoms, num_bands, &
                   num_wann, eigval, mp_grid, num_proj, real_lattice, recip_lattice, eig_found, &
-                  world)
+                  w90comm)
   if (param_input%gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment')
 
@@ -289,7 +290,7 @@ program wannier
                             real_lattice, recip_lattice, .false.)
     endif
     call param_chkpt_dist(driver%checkpoint, param_input, wann_data, num_kpts, dis_data, &
-                          num_bands, num_wann, u_matrix, u_matrix_opt, world)
+                          num_bands, num_wann, u_matrix, u_matrix_opt, w90comm)
 
     if (lsitesymmetry) call sitesym_read(num_bands, num_wann, num_kpts, sym)   ! update this to read on root and bcast - JRY
     if (lsitesymmetry) sym%symmetrize_eps = symmetrize_eps ! for the time being, copy value from w90_parameters  (JJ)
@@ -344,7 +345,7 @@ program wannier
 
   call overlap_read(lsitesymmetry, m_matrix_orig_local, m_matrix_local, param_input, w90_calcs, &
                     u_matrix_opt, m_matrix_orig, a_matrix, m_matrix, u_matrix, select_proj, &
-                    num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym, world)
+                    num_proj, kmesh_info, num_kpts, num_wann, num_bands, sym, w90comm)
 
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, &
@@ -357,7 +358,7 @@ program wannier
     call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
                   dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                  lsitesymmetry, sym, world)
+                  lsitesymmetry, sym, w90comm)
 
     param_input%have_disentangled = .true.
     time2 = io_time()
@@ -383,12 +384,12 @@ program wannier
                    num_kpts, real_lattice, num_proj, wann_data, k_points, num_bands, u_matrix_opt, &
                    eigval, dis_data, recip_lattice, atoms, lsitesymmetry, stdout, mp_grid, &
                    w90_calcs, tran%mode, param_hamil, sym, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                   rpt_origin, wannier_centres_translated, hmlg, ham_k, world)
+                   rpt_origin, wannier_centres_translated, hmlg, ham_k, w90comm)
   else
     call wann_main_gamma(num_wann, param_wannierise, kmesh_info, param_input, u_matrix, m_matrix, &
                          num_kpts, real_lattice, wann_data, num_bands, u_matrix_opt, eigval, &
                          dis_data%lwindow, recip_lattice, atoms, k_points, dis_data, mp_grid, &
-                         stdout, world)
+                         stdout, w90comm)
   end if
 
   time1 = io_time()

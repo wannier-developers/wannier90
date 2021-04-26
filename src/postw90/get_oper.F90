@@ -75,9 +75,9 @@ contains
       io_file_unit, seedname
     use w90_parameters, only: num_wann, dis_data, num_kpts, &
       eigval, u_matrix, param_input, real_lattice
-    use pw90_parameters, only: pw90_common
+    use pw90_parameters, only: pw90_common, world
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, io, idum, ivdum(3), ivdum_old(3)
@@ -255,11 +255,11 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, param_input, &
       num_bands, dis_data
-    use pw90_parameters, only: pw90_common, berry
+    use pw90_parameters, only: pw90_common, berry, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     complex(kind=dp), allocatable :: AA_q(:, :, :, :)
     complex(kind=dp), allocatable :: AA_q_diag(:, :)
@@ -505,11 +505,11 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, num_bands, &
       dis_data, param_input
-    use pw90_parameters, only: pw90_common
+    use pw90_parameters, only: pw90_common, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     integer          :: idir, n, m, nn, &
                         ik, ik2, inn, nnl, nnm, nnn, &
@@ -650,11 +650,11 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
       num_bands, dis_data, param_input
-    use pw90_parameters, only: pw90_common, postw90_oper
+    use pw90_parameters, only: pw90_common, postw90_oper, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     integer          :: m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, uHu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -809,9 +809,10 @@ contains
     use w90_parameters, only: num_kpts, kmesh_info, num_wann, &
       num_bands, dis_data, param_input
     use w90_postw90_common, only: nrpts, v_matrix
+    use pw90_parameters, only: world
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
                         uIu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -955,11 +956,11 @@ contains
     use w90_constants, only: dp, pi, cmplx_0
     use w90_parameters, only: num_wann, dis_data, num_kpts, num_bands, &
       param_input
-    use pw90_parameters, only: postw90_oper
+    use pw90_parameters, only: postw90_oper, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_error, io_stopwatch, stdout, seedname, &
       io_file_unit
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     implicit none
 
@@ -1102,11 +1103,11 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_parameters, only: num_kpts, num_wann, kmesh_info, num_bands, &
       dis_data, eigval, param_input
-    use pw90_parameters, only: postw90_oper, pw90_common, spin_hall
+    use pw90_parameters, only: postw90_oper, pw90_common, spin_hall, world
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
-    use w90_comms, only: on_root, comms_bcast, w90commtype, world
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)

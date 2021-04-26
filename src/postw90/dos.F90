@@ -45,11 +45,11 @@ contains
 
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, &
       seedname, stdout
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype, world
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, param_input
-    use pw90_parameters, only: dos_data, pw90_common, berry !wanint_kpoint_file
+    use pw90_parameters, only: dos_data, pw90_common, berry, world !wanint_kpoint_file
     use w90_get_oper, only: get_HH_R, get_SS_R, HH_R
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_utility, only: utility_diagonalize

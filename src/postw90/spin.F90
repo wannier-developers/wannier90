@@ -37,10 +37,10 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, pi, cmplx_i
-    use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce, w90commtype, world
+    use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce, w90commtype
     use w90_io, only: io_error, stdout
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
-    use pw90_parameters, only: pw90_spin, berry !wanint_kpoint_file
+    use pw90_parameters, only: pw90_spin, berry, world !wanint_kpoint_file
     use w90_parameters, only: fermi
     use w90_get_oper, only: get_HH_R, get_SS_R
 

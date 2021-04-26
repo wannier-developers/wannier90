@@ -15,6 +15,7 @@
 module pw90_parameters
 
   use w90_constants, only: dp
+  use w90_comms, only: w90commtype
 
   implicit none
 
@@ -207,6 +208,9 @@ module pw90_parameters
   type(gyrotropic_type), save :: gyrotropic
   type(geninterp_type), save :: geninterp
   type(boltzwann_type), save :: boltz
+
+  ! JJ putting communicator here until arguments are passed correctly between postw90 subroutines
+  type(w90commtype) :: world ! communicator because we don't have arg lists yet
 
 end module pw90_parameters
 

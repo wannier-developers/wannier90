@@ -23,7 +23,7 @@ program postw90
 
   use w90_kmesh
   use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, comms_barrier, &
-    w90commtype, world
+    w90commtype
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
     pw90common_wanint_param_dist, pw90common_wanint_data_dist, cell_volume
 
@@ -51,11 +51,8 @@ program postw90
   ! this is a dummy that is not used in postw90, DO NOT use
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
 
-  ! Put some descriptive comments here
-  !
-  call comms_setup
+  call comms_setup(world)
 
-  !driver%library = .false.
   !ispostw90 = .true.
 
   if (on_root) then

@@ -24,7 +24,7 @@ module w90_geninterp
 
   use w90_constants
   use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
-  use pw90_parameters, only: geninterp
+  use pw90_parameters, only: geninterp, world
   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, io_stopwatch
   use w90_get_oper, only: get_HH_R, HH_R
   use w90_comms

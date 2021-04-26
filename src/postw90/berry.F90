@@ -85,13 +85,13 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, elem_charge_SI, hbar_SI, &
       eV_au, bohr, pi, eV_seconds
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype, world
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_stopwatch
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
       weight, cell_volume
     use w90_parameters, only: param_input, fermi
-    use pw90_parameters, only: berry, pw90_common, spin_hall
+    use pw90_parameters, only: berry, pw90_common, spin_hall, world
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, &
       get_SS_R, get_SHC_R
 
@@ -1779,8 +1779,6 @@ contains
       pw90common_fourier_R_to_k_vec, pw90common_kmesh_spacing
     use w90_wan_ham, only: wham_get_D_h, wham_get_eig_deleig
     use w90_get_oper, only: AA_R
-    !use w90_comms, only: my_node_id
-    !!!
 
     ! args
     real(kind=dp), intent(in)  :: kpt(3)
@@ -2025,7 +2023,8 @@ contains
     ! start_k, end_k are inclusive
     ! loop_k should in the array start_k to end_k with step step_k
     !============================================================!
-    use w90_comms, only: on_root, w90commtype, world
+    use w90_comms, only: on_root, w90commtype
+    use pw90_parameters, only: world
     use w90_io, only: stdout, io_wallclocktime
 
     integer, intent(in) :: loop_k, start_k, end_k, step_k
