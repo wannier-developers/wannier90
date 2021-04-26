@@ -73,8 +73,6 @@ module w90_comms
 #endif
   end type
 
-  !type(w90commtype), public :: world
-
   interface comms_bcast
     module procedure comms_bcast_int
     module procedure comms_bcast_logical
@@ -251,9 +249,9 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_bcast(array, size, MPI_integer, root_id, w90comm%comm, error)
+    call mpi_bcast(array, size, MPI_INTEGER, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_bcast_int')
     end if
 #endif
@@ -273,9 +271,9 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_bcast(array, size, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_bcast(array, size, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_bcast_real')
     end if
 #endif
@@ -295,9 +293,9 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_bcast(array, size, MPI_logical, root_id, w90comm%comm, error)
+    call mpi_bcast(array, size, MPI_LOGICAL, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_bcast_logical')
     end if
 #endif
@@ -317,9 +315,9 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_bcast(array, size, MPI_character, root_id, w90comm%comm, error)
+    call mpi_bcast(array, size, MPI_CHARACTER, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_bcast_char')
     end if
 #endif
@@ -340,9 +338,9 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_bcast(array, size, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_bcast(array, size, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_bcast_cmplx')
     end if
 #endif
@@ -366,10 +364,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_send(array, size, MPI_logical, to, &
+    call mpi_send(array, size, MPI_LOGICAL, to, &
                   mpi_send_tag, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_logical')
     end if
 #endif
@@ -390,9 +388,9 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_send(array, size, MPI_integer, to, mpi_send_tag, w90comm%comm, error)
+    call mpi_send(array, size, MPI_INTEGER, to, mpi_send_tag, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_int')
     end if
 #endif
@@ -413,10 +411,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_send(array, size, MPI_character, to, &
+    call mpi_send(array, size, MPI_CHARACTER, to, &
                   mpi_send_tag, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_char')
     end if
 #endif
@@ -437,10 +435,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_send(array, size, MPI_double_precision, to, &
+    call mpi_send(array, size, MPI_DOUBLE_PRECISION, to, &
                   mpi_send_tag, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_real')
     end if
 #endif
@@ -461,10 +459,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_send(array, size, MPI_double_complex, to, &
+    call mpi_send(array, size, MPI_DOUBLE_COMPLEX, to, &
                   mpi_send_tag, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_send_cmplx')
     end if
 #endif
@@ -492,9 +490,9 @@ contains
 #endif
     integer :: error
 
-    call MPI_recv(array, size, MPI_logical, from, mpi_send_tag, w90comm%comm, status, error)
+    call mpi_recv(array, size, MPI_LOGICAL, from, mpi_send_tag, w90comm%comm, status, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_logical')
     end if
 #endif
@@ -520,9 +518,9 @@ contains
 #endif
     integer :: error
 
-    call MPI_recv(array, size, MPI_integer, from, mpi_send_tag, w90comm%comm, status, error)
+    call mpi_recv(array, size, MPI_INTEGER, from, mpi_send_tag, w90comm%comm, status, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_int')
     end if
 #endif
@@ -548,9 +546,9 @@ contains
 #endif
     integer :: error
 
-    call MPI_recv(array, size, MPI_character, from, mpi_send_tag, w90comm%comm, status, error)
+    call mpi_recv(array, size, MPI_CHARACTER, from, mpi_send_tag, w90comm%comm, status, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_char')
     end if
 #endif
@@ -576,9 +574,9 @@ contains
 #endif
     integer :: error
 
-    call MPI_recv(array, size, MPI_double_precision, from, mpi_send_tag, w90comm%comm, status, error)
+    call mpi_recv(array, size, MPI_DOUBLE_PRECISION, from, mpi_send_tag, w90comm%comm, status, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_real')
     end if
 #endif
@@ -604,9 +602,9 @@ contains
 #endif
     integer :: error
 
-    call MPI_recv(array, size, MPI_double_complex, from, mpi_send_tag, w90comm%comm, status, error)
+    call mpi_recv(array, size, MPI_DOUBLE_COMPLEX, from, mpi_send_tag, w90comm%comm, status, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_recv_cmplx')
     end if
 #endif
@@ -639,21 +637,21 @@ contains
     select case (op)
     case ('SUM')
       if (on_root) then
-        call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_sum, root_id, w90comm%comm, error)
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, error)
       else
-        call MPI_reduce(array, array, size, MPI_integer, MPI_sum, root_id, w90comm%comm, error)
+        call mpi_reduce(array, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, error)
       endif
     case ('PRD')
       if (on_root) then
-        call MPI_reduce(MPI_IN_PLACE, array, size, MPI_integer, MPI_prod, root_id, w90comm%comm, error)
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_PROD, root_id, w90comm%comm, error)
       else
-        call MPI_reduce(array, array, size, MPI_integer, MPI_prod, root_id, w90comm%comm, error)
+        call mpi_reduce(array, array, size, MPI_INTEGER, MPI_PROD, root_id, w90comm%comm, error)
       endif
     case default
       call io_error('Unknown operation in comms_reduce_int')
     end select
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_reduce_int')
     end if
 #endif
@@ -685,13 +683,13 @@ contains
     select case (op)
 
     case ('SUM')
-      call MPI_reduce(array, array_red, size, MPI_double_precision, MPI_sum, root_id, w90comm%comm, error)
+      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_SUM, root_id, w90comm%comm, error)
     case ('PRD')
-      call MPI_reduce(array, array_red, size, MPI_double_precision, MPI_prod, root_id, w90comm%comm, error)
+      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, w90comm%comm, error)
     case ('MIN')
-      call MPI_reduce(array, array_red, size, MPI_double_precision, MPI_MIN, root_id, w90comm%comm, error)
+      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, w90comm%comm, error)
     case ('MAX')
-      call MPI_reduce(array, array_red, size, MPI_double_precision, MPI_max, root_id, w90comm%comm, error)
+      call mpi_reduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, w90comm%comm, error)
     case default
       call io_error('Unknown operation in comms_reduce_real')
 
@@ -699,7 +697,7 @@ contains
 
     call dcopy(size, array_red, 1, array, 1)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_reduce_real')
     end if
 
@@ -733,9 +731,9 @@ contains
     select case (op)
 
     case ('SUM')
-      call MPI_reduce(array, array_red, size, MPI_double_complex, MPI_sum, root_id, w90comm%comm, error)
+      call mpi_reduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_SUM, root_id, w90comm%comm, error)
     case ('PRD')
-      call MPI_reduce(array, array_red, size, MPI_double_complex, MPI_prod, root_id, w90comm%comm, error)
+      call mpi_reduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_PROD, root_id, w90comm%comm, error)
     case default
       call io_error('Unknown operation in comms_reduce_cmplx')
 
@@ -743,7 +741,7 @@ contains
 
     call zcopy(size, array_red, 1, array, 1)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_reduce_cmplx')
     end if
 
@@ -777,13 +775,13 @@ contains
     select case (op)
 
     case ('SUM')
-      call MPI_allreduce(array, array_red, size, MPI_double_precision, MPI_sum, w90comm%comm, error)
+      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_SUM, w90comm%comm, error)
     case ('PRD')
-      call MPI_allreduce(array, array_red, size, MPI_double_precision, MPI_prod, w90comm%comm, error)
+      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_PROD, w90comm%comm, error)
     case ('MIN')
-      call MPI_allreduce(array, array_red, size, MPI_double_precision, MPI_MIN, w90comm%comm, error)
+      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MIN, w90comm%comm, error)
     case ('MAX')
-      call MPI_allreduce(array, array_red, size, MPI_double_precision, MPI_max, w90comm%comm, error)
+      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_PRECISION, MPI_MAX, w90comm%comm, error)
     case default
       call io_error('Unknown operation in comms_allreduce_real')
 
@@ -791,7 +789,7 @@ contains
 
     call dcopy(size, array_red, 1, array, 1)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_allreduce_real')
     end if
 
@@ -824,9 +822,9 @@ contains
     select case (op)
 
     case ('SUM')
-      call MPI_allreduce(array, array_red, size, MPI_double_complex, MPI_sum, w90comm%comm, error)
+      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_SUM, w90comm%comm, error)
     case ('PRD')
-      call MPI_allreduce(array, array_red, size, MPI_double_complex, MPI_prod, w90comm%comm, error)
+      call mpi_allreduce(array, array_red, size, MPI_DOUBLE_COMPLEX, MPI_PROD, w90comm%comm, error)
     case default
       call io_error('Unknown operation in comms_allreduce_cmplx')
 
@@ -834,7 +832,7 @@ contains
 
     call zcopy(size, array_red, 1, array, 1)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_allreduce_cmplx')
     end if
 
@@ -864,10 +862,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_precision, rootglobalarray, counts, &
-                     displs, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_real_1')
     end if
 #else
@@ -897,10 +895,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_precision, rootglobalarray, counts, &
-                     displs, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_real_2')
     end if
 #else
@@ -930,10 +928,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_precision, rootglobalarray, counts, &
-                     displs, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_real_3')
     end if
 
@@ -964,10 +962,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_precision, rootglobalarray, counts, &
-                     displs, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_real_2_3')
     end if
 
@@ -999,10 +997,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_complex, rootglobalarray, counts, &
-                     displs, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_1')
     end if
 
@@ -1028,10 +1026,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_complex, rootglobalarray, counts, &
-                     displs, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_2')
     end if
 
@@ -1061,10 +1059,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_complex, rootglobalarray, counts, &
-                     displs, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_3')
     end if
 
@@ -1090,10 +1088,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_complex, rootglobalarray, counts, &
-                     displs, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_3_4')
     end if
 
@@ -1119,10 +1117,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_complex, rootglobalarray, counts, &
-                     displs, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, &
+                     displs, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_cmplx_4')
     end if
 
@@ -1153,10 +1151,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_logical, rootglobalarray, counts, &
-                     displs, MPI_logical, root_id, w90comm%comm, error)
+    call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, &
+                     displs, MPI_LOGICAL, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_gatherv_logical')
     end if
 #else
@@ -1183,10 +1181,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_double_precision, &
-                      array, localcount, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, &
+                      array, localcount, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real_1')
     end if
 
@@ -1216,10 +1214,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_double_precision, &
-                      array, localcount, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, &
+                      array, localcount, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real_2')
     end if
 
@@ -1249,10 +1247,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_double_precision, &
-                      array, localcount, MPI_double_precision, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, &
+                      array, localcount, MPI_DOUBLE_PRECISION, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real_3')
     end if
 
@@ -1282,10 +1280,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_double_complex, &
-                      array, localcount, MPI_double_complex, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, &
+                      array, localcount, MPI_DOUBLE_COMPLEX, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_cmplx_4')
     end if
 
@@ -1315,10 +1313,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_Integer, &
-                      Array, localcount, MPI_Integer, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
+                      Array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real')
     end if
 
@@ -1349,10 +1347,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_Integer, &
-                      Array, localcount, MPI_Integer, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
+                      Array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_int_2')
     end if
 
@@ -1383,10 +1381,10 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_Integer, &
-                      Array, localcount, MPI_Integer, root_id, w90comm%comm, error)
+    call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
+                      Array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
 
-    if (error .ne. MPI_success) then
+    if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_int_3')
     end if
 
