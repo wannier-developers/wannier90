@@ -28,13 +28,13 @@ module w90_comms
   use mpi_f08 ! use f08 interface if possible
 #endif
 #ifdef MPI90
-  use mpi ! fall back to fortran90 interface
+  use mpi ! next best, use fortran90 interface
 #endif
 
   implicit none
 
 #ifdef MPIH
-  include 'mpif.h'
+  include 'mpif.h' ! worst case, use legacy interface
 #endif
 
   private
@@ -50,20 +50,18 @@ module w90_comms
 
   integer, parameter :: mpi_send_tag = 77 !abitrary
 
+  public :: comms_allreduce  ! reduce data onto all nodes
+  public :: comms_array_split
+  public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
+  public :: comms_bcast      ! send data from the root node
+  public :: comms_end
+  public :: comms_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
+  public :: comms_recv       ! accept data from one node to another
+  public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce); data is lost on all other nodes
+  public :: comms_scatterv   ! sends chunks of an array to all nodes scattering them from the root node
+  public :: comms_send       ! send data from one node to another
   public :: comms_setup
   public :: comms_setup_vars
-  public :: comms_end
-  public :: comms_bcast      ! send data from the root node
-  public :: comms_send       ! send data from one node to another
-  public :: comms_recv       ! accept data from one node to another
-  public :: comms_reduce     ! reduce data onto root node (n.b. not allreduce);
-  ! note that on all other nodes, the data is lost
-  public :: comms_allreduce  ! reduce data onto all nodes
-  public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
-  public :: comms_gatherv    ! gets chunks of an array from all nodes and gathers them on the root node
-  public :: comms_scatterv    ! sends chunks of an array to all nodes scattering them from the root node
-
-  public :: comms_array_split
 
   type, public :: w90commtype
 #ifdef MPI08
@@ -138,13 +136,14 @@ contains
 
   subroutine comms_setup(w90comm)
     !! Set up communications
+    !! comms_setup only invoked by main routine in executables wannier90.x and postw90.x
     implicit none
     type(w90commtype), intent(inout) :: w90comm
 
 #ifdef MPI
     integer :: ierr
 
-    w90comm%comm = MPI_COMM_WORLD ! JJ, these are only invoked in standalone mode, use world
+    w90comm%comm = MPI_COMM_WORLD
     call mpi_init(ierr)
     if (ierr .ne. 0) call io_error('MPI initialisation error')
 #endif
@@ -637,13 +636,15 @@ contains
     select case (op)
     case ('SUM')
       if (on_root) then
-        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, error)
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, &
+                        error)
       else
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, error)
       endif
     case ('PRD')
       if (on_root) then
-        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_PROD, root_id, w90comm%comm, error)
+        call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_PROD, root_id, w90comm%comm, &
+                        error)
       else
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_PROD, root_id, w90comm%comm, error)
       endif
@@ -1314,7 +1315,7 @@ contains
     integer :: error
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
-                      Array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
+                      array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_real')
@@ -1348,7 +1349,7 @@ contains
     integer :: error
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
-                      Array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
+                      array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_int_2')
@@ -1382,7 +1383,7 @@ contains
     integer :: error
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, &
-                      Array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
+                      array, localcount, MPI_INTEGER, root_id, w90comm%comm, error)
 
     if (error .ne. MPI_SUCCESS) then
       call io_error('Error in comms_scatterv_int_3')
