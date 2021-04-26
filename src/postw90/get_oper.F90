@@ -77,7 +77,7 @@ contains
       eigval, u_matrix, param_input, real_lattice
     use pw90_parameters, only: pw90_common
     use w90_postw90_common, only: nrpts, rpt_origin, v_matrix, ndegen, irvec, crvec
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, io, idum, ivdum(3), ivdum_old(3)
@@ -170,10 +170,10 @@ contains
           'Error in get_HH_R: scissors shift not implemented for ' &
           //'effective_model=T')
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts)
-      call comms_bcast(ndegen(1), nrpts)
-      call comms_bcast(irvec(1, 1), 3*nrpts)
-      call comms_bcast(crvec(1, 1), 3*nrpts)
+      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts, world)
+      call comms_bcast(ndegen(1), nrpts, world)
+      call comms_bcast(irvec(1, 1), 3*nrpts, world)
+      call comms_bcast(crvec(1, 1), 3*nrpts, world)
       if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2)
       return
     endif
@@ -259,7 +259,7 @@ contains
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     complex(kind=dp), allocatable :: AA_q(:, :, :, :)
     complex(kind=dp), allocatable :: AA_q_diag(:, :)
@@ -329,7 +329,7 @@ contains
           call io_error('Error in get_AA_R: inconsistent nrpts values')
         endif
       endif
-      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, world)
       if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
       return
     endif
@@ -479,7 +479,7 @@ contains
 
     endif !on_root
 
-    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, world)
 
     if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2)
     return
@@ -509,7 +509,7 @@ contains
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     integer          :: idir, n, m, nn, &
                         ik, ik2, inn, nnl, nnm, nnn, &
@@ -626,7 +626,7 @@ contains
 
     endif !on_root
 
-    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, world)
 
     if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2)
     return
@@ -654,7 +654,7 @@ contains
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     integer          :: m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, uHu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -784,7 +784,7 @@ contains
 
     endif !on_root
 
-    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, world)
 
     if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2)
     return
@@ -811,7 +811,7 @@ contains
     use w90_postw90_common, only: nrpts, v_matrix
     use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, &
       seedname
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
                         uIu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -931,7 +931,7 @@ contains
 
     endif !on_root
 
-    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, world)
 
     if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2)
     return
@@ -959,7 +959,7 @@ contains
     use w90_postw90_common, only: nrpts
     use w90_io, only: io_error, io_stopwatch, stdout, seedname, &
       io_file_unit
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     implicit none
 
@@ -1076,7 +1076,7 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
+    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, world)
 
     if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2)
     return
@@ -1106,7 +1106,7 @@ contains
     use w90_postw90_common, only: nrpts
     use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, &
       seedname
-    use w90_comms, only: on_root, comms_bcast
+    use w90_comms, only: on_root, comms_bcast, w90commtype, world
 
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)
@@ -1419,9 +1419,9 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3)
-    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
-    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3)
+    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, world)
+    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, world)
+    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, world)
 
     ! end copying from get_AA_R, Junfeng Qiao
 

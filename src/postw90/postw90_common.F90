@@ -105,7 +105,7 @@ contains
         read (file_unit, *) nrpts
         close (file_unit)
       endif
-      call comms_bcast(nrpts, 1)
+      call comms_bcast(nrpts, 1, world)
     else
       call wigner_seitz(count_pts=.true.)
     endif
@@ -170,7 +170,7 @@ contains
       open (unit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
       read (k_unit, *) num_int_kpts
     end if
-    call comms_bcast(num_int_kpts, 1)
+    call comms_bcast(num_int_kpts, 1, world)
 
     allocate (num_int_kpts_on_node(0:num_nodes - 1))
     num_int_kpts_on_node(:) = num_int_kpts/num_nodes
@@ -193,8 +193,8 @@ contains
           sum = sum + weight(loop_kpt)
         end do
 
-        call comms_send(int_kpts(1, 1), 3*num_int_kpts_on_node(loop_nodes), loop_nodes)
-        call comms_send(weight(1), num_int_kpts_on_node(loop_nodes), loop_nodes)
+        call comms_send(int_kpts(1, 1), 3*num_int_kpts_on_node(loop_nodes), loop_nodes, world)
+        call comms_send(weight(1), num_int_kpts_on_node(loop_nodes), loop_nodes, world)
 
       end do
       do loop_kpt = 1, num_int_kpts_on_node(0)
@@ -205,8 +205,8 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_recv(int_kpts(1, 1), 3*num_int_kpts_on_node(my_node_id), root_id)
-      call comms_recv(weight(1), num_int_kpts_on_node(my_node_id), root_id)
+      call comms_recv(int_kpts(1, 1), 3*num_int_kpts_on_node(my_node_id), root_id, world)
+      call comms_recv(weight(1), num_int_kpts_on_node(my_node_id), root_id, world)
 
     end if
 
@@ -233,116 +233,116 @@ contains
 
     integer :: ierr
 
-    call comms_bcast(pw90_common%effective_model, 1)
-    call comms_bcast(eig_found, 1)
+    call comms_bcast(pw90_common%effective_model, 1, world)
+    call comms_bcast(eig_found, 1, world)
 
     if (.not. pw90_common%effective_model) then
-      call comms_bcast(mp_grid(1), 3)
-      call comms_bcast(num_kpts, 1)
-      call comms_bcast(num_bands, 1)
+      call comms_bcast(mp_grid(1), 3, world)
+      call comms_bcast(num_kpts, 1, world)
+      call comms_bcast(num_bands, 1, world)
     endif
-    call comms_bcast(num_wann, 1)
-    call comms_bcast(param_input%timing_level, 1)
-    call comms_bcast(param_input%iprint, 1)
-    call comms_bcast(param_input%ws_distance_tol, 1)
-    call comms_bcast(param_input%ws_search_size(1), 3)
+    call comms_bcast(num_wann, 1, world)
+    call comms_bcast(param_input%timing_level, 1, world)
+    call comms_bcast(param_input%iprint, 1, world)
+    call comms_bcast(param_input%ws_distance_tol, 1, world)
+    call comms_bcast(param_input%ws_search_size(1), 3, world)
 !    call comms_bcast(num_atoms,1)   ! Ivo: not used in postw90, right?
 !    call comms_bcast(num_species,1) ! Ivo: not used in postw90, right?
-    call comms_bcast(real_lattice(1, 1), 9)
-    call comms_bcast(recip_lattice(1, 1), 9)
+    call comms_bcast(real_lattice(1, 1), 9, world)
+    call comms_bcast(recip_lattice(1, 1), 9, world)
     !call comms_bcast(real_metric(1, 1), 9)
     !call comms_bcast(recip_metric(1, 1), 9)
-    call comms_bcast(cell_volume, 1)
-    call comms_bcast(dos_data%energy_step, 1)
-    call comms_bcast(dos_data%adpt_smr, 1)
-    call comms_bcast(dos_data%smr_index, 1)
-    call comms_bcast(dos_data%kmesh_spacing, 1)
-    call comms_bcast(dos_data%kmesh(1), 3)
-    call comms_bcast(dos_data%adpt_smr_max, 1)
-    call comms_bcast(dos_data%smr_fixed_en_width, 1)
-    call comms_bcast(dos_data%adpt_smr_fac, 1)
-    call comms_bcast(dos_data%num_project, 1)
+    call comms_bcast(cell_volume, 1, world)
+    call comms_bcast(dos_data%energy_step, 1, world)
+    call comms_bcast(dos_data%adpt_smr, 1, world)
+    call comms_bcast(dos_data%smr_index, 1, world)
+    call comms_bcast(dos_data%kmesh_spacing, 1, world)
+    call comms_bcast(dos_data%kmesh(1), 3, world)
+    call comms_bcast(dos_data%adpt_smr_max, 1, world)
+    call comms_bcast(dos_data%smr_fixed_en_width, 1, world)
+    call comms_bcast(dos_data%adpt_smr_fac, 1, world)
+    call comms_bcast(dos_data%num_project, 1, world)
 
-    call comms_bcast(pw90_calcs%berry, 1)
-    call comms_bcast(berry%task, len(berry%task))
-    call comms_bcast(berry%kmesh_spacing, 1)
-    call comms_bcast(berry%kmesh(1), 3)
-    call comms_bcast(berry%curv_adpt_kmesh, 1)
-    call comms_bcast(berry%curv_adpt_kmesh_thresh, 1)
-    call comms_bcast(berry%curv_unit, len(berry%curv_unit))
+    call comms_bcast(pw90_calcs%berry, 1, world)
+    call comms_bcast(berry%task, len(berry%task), world)
+    call comms_bcast(berry%kmesh_spacing, 1, world)
+    call comms_bcast(berry%kmesh(1), 3, world)
+    call comms_bcast(berry%curv_adpt_kmesh, 1, world)
+    call comms_bcast(berry%curv_adpt_kmesh_thresh, 1, world)
+    call comms_bcast(berry%curv_unit, len(berry%curv_unit), world)
 
 ! Tsirkin
-    call comms_bcast(pw90_calcs%gyrotropic, 1)
-    call comms_bcast(gyrotropic%task, len(gyrotropic%task))
-    call comms_bcast(gyrotropic%kmesh_spacing, 1)
-    call comms_bcast(gyrotropic%kmesh(1), 3)
-    call comms_bcast(gyrotropic%smr_fixed_en_width, 1)
-    call comms_bcast(gyrotropic%smr_index, 1)
-    call comms_bcast(gyrotropic%eigval_max, 1)
-    call comms_bcast(gyrotropic%nfreq, 1)
-    call comms_bcast(gyrotropic%degen_thresh, 1)
-    call comms_bcast(gyrotropic%num_bands, 1)
-    call comms_bcast(gyrotropic%box(1, 1), 9)
-    call comms_bcast(gyrotropic%box_corner(1), 3)
-    call comms_bcast(gyrotropic%smr_max_arg, 1)
-    call comms_bcast(gyrotropic%smr_fixed_en_width, 1)
-    call comms_bcast(gyrotropic%smr_index, 1)
+    call comms_bcast(pw90_calcs%gyrotropic, 1, world)
+    call comms_bcast(gyrotropic%task, len(gyrotropic%task), world)
+    call comms_bcast(gyrotropic%kmesh_spacing, 1, world)
+    call comms_bcast(gyrotropic%kmesh(1), 3, world)
+    call comms_bcast(gyrotropic%smr_fixed_en_width, 1, world)
+    call comms_bcast(gyrotropic%smr_index, 1, world)
+    call comms_bcast(gyrotropic%eigval_max, 1, world)
+    call comms_bcast(gyrotropic%nfreq, 1, world)
+    call comms_bcast(gyrotropic%degen_thresh, 1, world)
+    call comms_bcast(gyrotropic%num_bands, 1, world)
+    call comms_bcast(gyrotropic%box(1, 1), 9, world)
+    call comms_bcast(gyrotropic%box_corner(1), 3, world)
+    call comms_bcast(gyrotropic%smr_max_arg, 1, world)
+    call comms_bcast(gyrotropic%smr_fixed_en_width, 1, world)
+    call comms_bcast(gyrotropic%smr_index, 1, world)
 
-    call comms_bcast(param_input%spinors, 1)
+    call comms_bcast(param_input%spinors, 1, world)
 
-    call comms_bcast(spin_hall%freq_scan, 1)
-    call comms_bcast(spin_hall%alpha, 1)
-    call comms_bcast(spin_hall%beta, 1)
-    call comms_bcast(spin_hall%gamma, 1)
-    call comms_bcast(spin_hall%bandshift, 1)
-    call comms_bcast(spin_hall%bandshift_firstband, 1)
-    call comms_bcast(spin_hall%bandshift_energyshift, 1)
+    call comms_bcast(spin_hall%freq_scan, 1, world)
+    call comms_bcast(spin_hall%alpha, 1, world)
+    call comms_bcast(spin_hall%beta, 1, world)
+    call comms_bcast(spin_hall%gamma, 1, world)
+    call comms_bcast(spin_hall%bandshift, 1, world)
+    call comms_bcast(spin_hall%bandshift_firstband, 1, world)
+    call comms_bcast(spin_hall%bandshift_energyshift, 1, world)
 
-    call comms_bcast(berry%kubo_adpt_smr, 1)
-    call comms_bcast(berry%kubo_adpt_smr_fac, 1)
-    call comms_bcast(berry%kubo_adpt_smr_max, 1)
-    call comms_bcast(berry%kubo_smr_fixed_en_width, 1)
-    call comms_bcast(berry%kubo_smr_index, 1)
-    call comms_bcast(berry%kubo_eigval_max, 1)
-    call comms_bcast(berry%kubo_nfreq, 1)
-    call comms_bcast(fermi%n, 1)
-    call comms_bcast(dos_data%energy_min, 1)
-    call comms_bcast(dos_data%energy_max, 1)
-    call comms_bcast(pw90_spin%spin_kmesh_spacing, 1)
-    call comms_bcast(pw90_spin%spin_kmesh(1), 3)
-    call comms_bcast(berry%wanint_kpoint_file, 1)
-    call comms_bcast(dis_data%win_min, 1)
-    call comms_bcast(dis_data%win_max, 1)
-    call comms_bcast(berry%sc_eta, 1)
-    call comms_bcast(berry%sc_w_thr, 1)
-    call comms_bcast(berry%sc_phase_conv, 1)
+    call comms_bcast(berry%kubo_adpt_smr, 1, world)
+    call comms_bcast(berry%kubo_adpt_smr_fac, 1, world)
+    call comms_bcast(berry%kubo_adpt_smr_max, 1, world)
+    call comms_bcast(berry%kubo_smr_fixed_en_width, 1, world)
+    call comms_bcast(berry%kubo_smr_index, 1, world)
+    call comms_bcast(berry%kubo_eigval_max, 1, world)
+    call comms_bcast(berry%kubo_nfreq, 1, world)
+    call comms_bcast(fermi%n, 1, world)
+    call comms_bcast(dos_data%energy_min, 1, world)
+    call comms_bcast(dos_data%energy_max, 1, world)
+    call comms_bcast(pw90_spin%spin_kmesh_spacing, 1, world)
+    call comms_bcast(pw90_spin%spin_kmesh(1), 3, world)
+    call comms_bcast(berry%wanint_kpoint_file, 1, world)
+    call comms_bcast(dis_data%win_min, 1, world)
+    call comms_bcast(dis_data%win_max, 1, world)
+    call comms_bcast(berry%sc_eta, 1, world)
+    call comms_bcast(berry%sc_w_thr, 1, world)
+    call comms_bcast(berry%sc_phase_conv, 1, world)
 ! ----------------------------------------------
 !
 ! New input variables in development
 !
-    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag))
-    call comms_bcast(pw90_common%spin_moment, 1)
-    call comms_bcast(pw90_spin%spin_axis_polar, 1)
-    call comms_bcast(pw90_spin%spin_axis_azimuth, 1)
-    call comms_bcast(pw90_common%spin_decomp, 1)
-    call comms_bcast(pw90_ham%use_degen_pert, 1)
-    call comms_bcast(pw90_ham%degen_thr, 1)
-    call comms_bcast(param_input%num_valence_bands, 1)
-    call comms_bcast(pw90_calcs%dos, 1)
-    call comms_bcast(dos_data%task, len(dos_data%task))
-    call comms_bcast(pw90_calcs%kpath, 1)
-    call comms_bcast(kpath%task, len(kpath%task))
-    call comms_bcast(kpath%bands_colour, len(kpath%bands_colour))
-    call comms_bcast(pw90_calcs%kslice, 1)
-    call comms_bcast(kslice%task, len(kslice%task))
-    call comms_bcast(kslice%corner(1), 3)
-    call comms_bcast(kslice%b1(1), 3)
-    call comms_bcast(kslice%b2(1), 3)
-    call comms_bcast(kslice%kmesh2d(1), 2)
-    call comms_bcast(kslice%fermi_lines_colour, len(kslice%fermi_lines_colour))
-    call comms_bcast(berry%transl_inv, 1)
-    call comms_bcast(param_input%num_elec_per_state, 1)
-    call comms_bcast(pw90_common%scissors_shift, 1)
+    call comms_bcast(param_input%devel_flag, len(param_input%devel_flag), world)
+    call comms_bcast(pw90_common%spin_moment, 1, world)
+    call comms_bcast(pw90_spin%spin_axis_polar, 1, world)
+    call comms_bcast(pw90_spin%spin_axis_azimuth, 1, world)
+    call comms_bcast(pw90_common%spin_decomp, 1, world)
+    call comms_bcast(pw90_ham%use_degen_pert, 1, world)
+    call comms_bcast(pw90_ham%degen_thr, 1, world)
+    call comms_bcast(param_input%num_valence_bands, 1, world)
+    call comms_bcast(pw90_calcs%dos, 1, world)
+    call comms_bcast(dos_data%task, len(dos_data%task), world)
+    call comms_bcast(pw90_calcs%kpath, 1, world)
+    call comms_bcast(kpath%task, len(kpath%task), world)
+    call comms_bcast(kpath%bands_colour, len(kpath%bands_colour), world)
+    call comms_bcast(pw90_calcs%kslice, 1, world)
+    call comms_bcast(kslice%task, len(kslice%task), world)
+    call comms_bcast(kslice%corner(1), 3, world)
+    call comms_bcast(kslice%b1(1), 3, world)
+    call comms_bcast(kslice%b2(1), 3, world)
+    call comms_bcast(kslice%kmesh2d(1), 2, world)
+    call comms_bcast(kslice%fermi_lines_colour, len(kslice%fermi_lines_colour), world)
+    call comms_bcast(berry%transl_inv, 1, world)
+    call comms_bcast(param_input%num_elec_per_state, 1, world)
+    call comms_bcast(pw90_common%scissors_shift, 1, world)
     !
     ! Do these have to be broadcasted? (Plots done on root node only)
     !
@@ -353,39 +353,39 @@ contains
 !    if(allocated(bands_label)) &
 !         call comms_bcast(bands_label(:),len(bands_label(1))*bands_num_spec_points)
 ! ----------------------------------------------
-    call comms_bcast(pw90_calcs%geninterp, 1)
-    call comms_bcast(geninterp%alsofirstder, 1)
-    call comms_bcast(geninterp%single_file, 1)
+    call comms_bcast(pw90_calcs%geninterp, 1, world)
+    call comms_bcast(geninterp%alsofirstder, 1, world)
+    call comms_bcast(geninterp%single_file, 1, world)
     ! [gp-begin, Apr 12, 2012]
     ! BoltzWann variables
-    call comms_bcast(pw90_calcs%boltzwann, 1)
-    call comms_bcast(boltz%calc_also_dos, 1)
-    call comms_bcast(boltz%dir_num_2d, 1)
-    call comms_bcast(boltz%dos_energy_step, 1)
-    call comms_bcast(boltz%dos_energy_min, 1)
-    call comms_bcast(boltz%dos_energy_max, 1)
-    call comms_bcast(boltz%dos_adpt_smr, 1)
-    call comms_bcast(boltz%dos_smr_fixed_en_width, 1)
-    call comms_bcast(boltz%dos_adpt_smr_fac, 1)
-    call comms_bcast(boltz%dos_adpt_smr_max, 1)
-    call comms_bcast(boltz%mu_min, 1)
-    call comms_bcast(boltz%mu_max, 1)
-    call comms_bcast(boltz%mu_step, 1)
-    call comms_bcast(boltz%temp_min, 1)
-    call comms_bcast(boltz%temp_max, 1)
-    call comms_bcast(boltz%temp_step, 1)
-    call comms_bcast(boltz%kmesh_spacing, 1)
-    call comms_bcast(boltz%kmesh(1), 3)
-    call comms_bcast(boltz%tdf_energy_step, 1)
-    call comms_bcast(boltz%relax_time, 1)
-    call comms_bcast(boltz%TDF_smr_fixed_en_width, 1)
-    call comms_bcast(boltz%TDF_smr_index, 1)
-    call comms_bcast(boltz%dos_smr_index, 1)
-    call comms_bcast(boltz%bandshift, 1)
-    call comms_bcast(boltz%bandshift_firstband, 1)
-    call comms_bcast(boltz%bandshift_energyshift, 1)
+    call comms_bcast(pw90_calcs%boltzwann, 1, world)
+    call comms_bcast(boltz%calc_also_dos, 1, world)
+    call comms_bcast(boltz%dir_num_2d, 1, world)
+    call comms_bcast(boltz%dos_energy_step, 1, world)
+    call comms_bcast(boltz%dos_energy_min, 1, world)
+    call comms_bcast(boltz%dos_energy_max, 1, world)
+    call comms_bcast(boltz%dos_adpt_smr, 1, world)
+    call comms_bcast(boltz%dos_smr_fixed_en_width, 1, world)
+    call comms_bcast(boltz%dos_adpt_smr_fac, 1, world)
+    call comms_bcast(boltz%dos_adpt_smr_max, 1, world)
+    call comms_bcast(boltz%mu_min, 1, world)
+    call comms_bcast(boltz%mu_max, 1, world)
+    call comms_bcast(boltz%mu_step, 1, world)
+    call comms_bcast(boltz%temp_min, 1, world)
+    call comms_bcast(boltz%temp_max, 1, world)
+    call comms_bcast(boltz%temp_step, 1, world)
+    call comms_bcast(boltz%kmesh_spacing, 1, world)
+    call comms_bcast(boltz%kmesh(1), 3, world)
+    call comms_bcast(boltz%tdf_energy_step, 1, world)
+    call comms_bcast(boltz%relax_time, 1, world)
+    call comms_bcast(boltz%TDF_smr_fixed_en_width, 1, world)
+    call comms_bcast(boltz%TDF_smr_index, 1, world)
+    call comms_bcast(boltz%dos_smr_index, 1, world)
+    call comms_bcast(boltz%bandshift, 1, world)
+    call comms_bcast(boltz%bandshift_firstband, 1, world)
+    call comms_bcast(boltz%bandshift_energyshift, 1, world)
     ! [gp-end]
-    call comms_bcast(param_input%use_ws_distance, 1)
+    call comms_bcast(param_input%use_ws_distance, 1, world)
 
     ! These variables are different from the ones above in that they are
     ! allocatable, and in param_read they were allocated on the root node only
@@ -420,16 +420,16 @@ contains
           call io_error('Error allocating kpt_latt in postw90_param_dist')
       endif
     end if
-    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n)
-    call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq)
-    call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands)
-    call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq)
-    call comms_bcast(dos_data%project(1), dos_data%num_project)
+    if (fermi%n > 0) call comms_bcast(fermi%energy_list(1), fermi%n, world)
+    call comms_bcast(gyrotropic%freq_list(1), gyrotropic%nfreq, world)
+    call comms_bcast(gyrotropic%band_list(1), gyrotropic%num_bands, world)
+    call comms_bcast(berry%kubo_freq_list(1), berry%kubo_nfreq, world)
+    call comms_bcast(dos_data%project(1), dos_data%num_project, world)
     if (.not. pw90_common%effective_model) then
       if (eig_found) then
-        call comms_bcast(eigval(1, 1), num_bands*num_kpts)
+        call comms_bcast(eigval(1, 1), num_bands*num_kpts, world)
       end if
-      call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts)
+      call comms_bcast(k_points%kpt_latt(1, 1), 3*num_kpts, world)
     endif
 
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix
@@ -439,8 +439,8 @@ contains
 
     if (.not. pw90_common%effective_model) then
 
-      call comms_bcast(kmesh_info%nnh, 1)
-      call comms_bcast(kmesh_info%nntot, 1)
+      call comms_bcast(kmesh_info%nnh, 1, world)
+      call comms_bcast(kmesh_info%nntot, 1, world)
 
       if (.not. on_root) then
         allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
@@ -463,12 +463,12 @@ contains
           call io_error('Error in allocating bk in pw90common_wanint_param_dist')
       end if
 
-      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot)
-      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2)
-      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot)
-      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot)
-      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2)
-      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts)
+      call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, world)
+      call comms_bcast(kmesh_info%neigh(1, 1), num_kpts*kmesh_info%nntot/2, world)
+      call comms_bcast(kmesh_info%nncell(1, 1, 1), 3*num_kpts*kmesh_info%nntot, world)
+      call comms_bcast(kmesh_info%wb(1), kmesh_info%nntot, world)
+      call comms_bcast(kmesh_info%bka(1, 1), 3*kmesh_info%nntot/2, world)
+      call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, world)
 
     endif
 
@@ -500,7 +500,7 @@ contains
       allocate (wann_data%centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in pw90common_wanint_data_dist')
     end if
-    call comms_bcast(wann_data%centres(1, 1), 3*num_wann)
+    call comms_bcast(wann_data%centres(1, 1), 3*num_wann, world)
 
     ! -------------------
     ! Ivo: added 8april11
@@ -536,7 +536,7 @@ contains
         if (allocated(u_matrix)) deallocate (u_matrix)
       endif
     endif
-    call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts)
+    call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, world)
 
     if (param_input%num_valence_bands > 0 .and. abs(pw90_common%scissors_shift) > 1.0e-7_dp) then
     if (.not. on_root .and. .not. allocated(u_matrix)) then
@@ -544,7 +544,7 @@ contains
       if (ierr /= 0) &
         call io_error('Error allocating u_matrix in pw90common_wanint_data_dist')
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, world)
     endif
 
 !    if (.not.on_root .and. .not.allocated(m_matrix)) then
@@ -554,7 +554,7 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(param_input%have_disentangled, 1)
+    call comms_bcast(param_input%have_disentangled, 1, world)
 
     if (param_input%have_disentangled) then
       if (.not. on_root) then
@@ -583,8 +583,8 @@ contains
       end if
 
 !       call comms_bcast(u_matrix_opt(1,1,1),num_bands*num_wann*num_kpts)
-      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts)
-      call comms_bcast(dis_data%ndimwin(1), num_kpts)
+      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts, world)
+      call comms_bcast(dis_data%ndimwin(1), num_kpts, world)
     end if
 
   end subroutine pw90common_wanint_data_dist

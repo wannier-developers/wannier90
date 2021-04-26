@@ -45,7 +45,7 @@ contains
 
     use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch, &
       seedname, stdout
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype, world
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight, &
       pw90common_fourier_R_to_k
     use w90_parameters, only: num_wann, param_input
@@ -208,7 +208,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM')
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', world)
 
     if (on_root) then
       write (stdout, '(1x,a)') 'Output data files:'

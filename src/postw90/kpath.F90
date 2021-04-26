@@ -139,7 +139,7 @@ contains
     end if
 
     ! Broadcast number of k-points on the path
-    call comms_bcast(total_pts, 1)
+    call comms_bcast(total_pts, 1, world)
 
     ! Partition set of k-points into junks
     call comms_array_split(total_pts, counts, displs); 
@@ -150,7 +150,7 @@ contains
     ! Distribute coordinates
     allocate (my_plot_kpoint(3, my_num_pts))
     call comms_scatterv(my_plot_kpoint, 3*my_num_pts, &
-                        plot_kpoint, 3*counts, 3*displs)
+                        plot_kpoint, 3*counts, 3*displs, world)
 
     ! Value of the vertical coordinate in the actual plots: energy bands
     !
@@ -229,11 +229,11 @@ contains
     if (plot_bands) then
       allocate (eig(num_wann, total_pts))
       call comms_gatherv(my_eig, num_wann*my_num_pts, &
-                         eig, num_wann*counts, num_wann*displs)
+                         eig, num_wann*counts, num_wann*displs, world)
       if (kpath%bands_colour /= 'none') then
         allocate (color(num_wann, total_pts))
         call comms_gatherv(my_color, num_wann*my_num_pts, &
-                           color, num_wann*counts, num_wann*displs)
+                           color, num_wann*counts, num_wann*displs, world)
       end if
     end if
 
@@ -241,7 +241,7 @@ contains
       allocate (curv(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_curv(:, i), my_num_pts, &
-                           curv(:, i), counts, displs)
+                           curv(:, i), counts, displs, world)
       end do
     end if
 
@@ -249,13 +249,13 @@ contains
       allocate (morb(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_morb(:, i), my_num_pts, &
-                           morb(:, i), counts, displs)
+                           morb(:, i), counts, displs, world)
       end do
     end if
 
     if (plot_shc) then
       allocate (shc(total_pts))
-      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs)
+      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, world)
     end if
 
     if (on_root) then
@@ -968,7 +968,7 @@ contains
   !===========================================================!
   subroutine k_path_print_info(plot_bands, plot_curv, plot_morb, plot_shc)
 
-    use w90_comms, only: on_root
+    use w90_comms, only: on_root, w90commtype, world
     use w90_parameters, only: fermi ! berry_curv_unit
     use pw90_parameters, only: kpath, berry
     use w90_io, only: stdout, io_error

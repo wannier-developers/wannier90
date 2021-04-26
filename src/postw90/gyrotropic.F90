@@ -70,7 +70,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, elem_charge_SI, hbar_SI, &
       eV_au, bohr, elec_mass_SI, twopi, eps0_SI
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype, world
     use w90_utility, only: utility_det3
     use w90_io, only: io_error, stdout, io_file_unit, &
       io_stopwatch
@@ -268,25 +268,26 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM')
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM', world)
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', world)
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', world)
 
     if (eval_Dw) &
-      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
+      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', world)
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM')
+      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', world)
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
-      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', world)
+      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, &
+                                      'SUM', world)
     endif
 
     if (on_root) then

@@ -85,7 +85,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, elem_charge_SI, hbar_SI, &
       eV_au, bohr, pi, eV_seconds
-    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce
+    use w90_comms, only: on_root, num_nodes, my_node_id, comms_reduce, w90commtype, world
     use w90_io, only: io_error, stdout, io_file_unit, seedname, &
       io_stopwatch
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, &
@@ -613,37 +613,37 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_ahc) then
-      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi%n, 'SUM')
-      call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM')
+      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', world)
     endif
 
     if (eval_morb) then
-      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi%n, 'SUM')
-      call comms_reduce(img_list(1, 1, 1), 3*3*fermi%n, 'SUM')
-      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(img_list(1, 1, 1), 3*3*fermi%n, 'SUM', world)
+      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi%n, 'SUM', world)
     end if
 
     if (eval_kubo) then
-      call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM')
-      call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM')
-      call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM')
+      call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', world)
+      call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', world)
+      call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM', world)
       if (pw90_common%spin_decomp) then
-        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM')
-        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM')
-        call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM')
+        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', world)
+        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', world)
+        call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM', world)
       endif
     endif
 
     if (eval_sc) then
-      call comms_reduce(sc_list(1, 1, 1), 3*6*berry%kubo_nfreq, 'SUM')
+      call comms_reduce(sc_list(1, 1, 1), 3*6*berry%kubo_nfreq, 'SUM', world)
     end if
 
     if (eval_shc) then
       if (spin_hall%freq_scan) then
-        call comms_reduce(shc_freq(1), berry%kubo_nfreq, 'SUM')
+        call comms_reduce(shc_freq(1), berry%kubo_nfreq, 'SUM', world)
       else
-        call comms_reduce(shc_fermi(1), fermi%n, 'SUM')
-        call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM')
+        call comms_reduce(shc_fermi(1), fermi%n, 'SUM', world)
+        call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', world)
       end if
     end if
 
@@ -2025,7 +2025,7 @@ contains
     ! start_k, end_k are inclusive
     ! loop_k should in the array start_k to end_k with step step_k
     !============================================================!
-    use w90_comms, only: on_root
+    use w90_comms, only: on_root, w90commtype, world
     use w90_io, only: stdout, io_wallclocktime
 
     integer, intent(in) :: loop_k, start_k, end_k, step_k

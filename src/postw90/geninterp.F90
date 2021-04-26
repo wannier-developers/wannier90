@@ -121,7 +121,7 @@ contains
       read (kpt_unit, *, err=106, end=106) num_kpts
     end if
 
-    call comms_bcast(num_kpts, 1)
+    call comms_bcast(num_kpts, 1, world)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating HH in calcTDF')
@@ -195,12 +195,12 @@ contains
     end if
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
-    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs)
+    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, world)
     if (.not. geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.')
-      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs)
+      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, world)
     end if
 
     ! I open the output file(s)
@@ -221,7 +221,7 @@ contains
       outdat_unit = io_file_unit()
       open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-      call comms_bcast(commentline, len(commentline))
+      call comms_bcast(commentline, len(commentline), world)
 
       call internal_write_header(outdat_unit, commentline)
     end if
@@ -241,11 +241,11 @@ contains
     if (geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
-                         num_wann*counts, num_wann*displs)
+                         num_wann*counts, num_wann*displs, world)
 
       if (geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
-                           3*num_wann*counts, 3*num_wann*displs)
+                           3*num_wann*counts, 3*num_wann*displs, world)
       end if
 
       ! Now the printing, only on root node

@@ -37,7 +37,7 @@ contains
     !============================================================!
 
     use w90_constants, only: dp, pi, cmplx_i
-    use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce
+    use w90_comms, only: on_root, my_node_id, num_nodes, comms_reduce, w90commtype, world
     use w90_io, only: io_error, stdout
     use w90_postw90_common, only: num_int_kpts_on_node, int_kpts, weight
     use pw90_parameters, only: pw90_spin, berry !wanint_kpoint_file
@@ -102,7 +102,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(spn_all(1), 3, 'SUM')
+    call comms_reduce(spn_all(1), 3, 'SUM', world)
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)
