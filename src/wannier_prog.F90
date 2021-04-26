@@ -62,15 +62,21 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id
+  use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id, &
+    w90commtype
   use w90_sitesym !YN:
 
   use w90_param_methods, only: param_write_header, param_read_chkpt, param_chkpt_dist
   use wannier_param_types
   use wannier_methods, only: param_read, param_w90_dealloc, param_write, &
     param_dist, param_memory_estimate, param_write_chkpt
-#ifdef MPI
-  use mpi_f08
+
+  ! require inclusion here for defn of MPI_COMM_WORLD token
+#ifdef MPI08
+  use mpi_f08 ! use f08 interface if possible
+#endif
+#ifdef MPI90 ! fixme -- MPI is def'd generally for MPI build
+  use mpi ! fall back to fortran90 interface
 #endif
 
   implicit none
@@ -185,10 +191,10 @@ program wannier
 ! logical :: use_translation = .false.
   type(ham_logical) :: hmlg
 
+  type(w90commtype) :: comm
+
 #ifdef MPI
-  type(mpi_comm) :: comm = MPI_COMM_WORLD ! standalone executable case
-#else
-  integer :: comm
+  comm.comm = MPI_COMM_WORLD ! standalone executable case
 #endif
 
   call comms_setup(comm)

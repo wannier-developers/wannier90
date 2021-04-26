@@ -18,10 +18,7 @@ module w90_overlap
 
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: stdout
-  use w90_comms, only: on_root, comms_bcast
-#ifdef MPI
-  use mpi_f08
-#endif
+  use w90_comms, only: on_root, comms_bcast, w90commtype
 
   implicit none
 
@@ -179,11 +176,7 @@ contains
 !   logical, intent(in) :: disentanglement
 !   logical, public, save :: lhasproj !not used here
 !   end w90_parameters
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     integer :: nkp, nkp2, inn, nn, n, m
     integer :: mmn_in, amn_in, num_mmn, num_amn
@@ -741,11 +734,7 @@ contains
     logical, intent(in) :: lsitesymmetry
 !   end w90_parameters
     type(sitesym_data), intent(in) :: sym
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! internal variables
     integer :: i, j, m, nkp, info, ierr, nn, nkp2

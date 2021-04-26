@@ -16,16 +16,13 @@ module w90_disentangle
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 
-  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce
+  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce, w90commtype
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, stdout, io_stopwatch
   use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
     sitesym_symmetrize_u_matrix, sitesym_symmetrize_zmatrix, &
     sitesym_dis_extract_symmetry, sitesym_data
-#ifdef MPI
-  use mpi_f08
-#endif
 
   implicit none
   public :: dis_main
@@ -68,14 +65,7 @@ contains
     type(k_point_type), intent(in)    :: k_points
     type(parameter_input_type), intent(inout) :: param_input ! omega_invariant alone is modified
     type(sitesym_data), intent(inout) :: sym
-
-!JJ this is really ugly here, kind of defeats the point of the comms module?
-! but for the time being it is not incorrect
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! internal variables
     integer :: nkp, nkp2, nn, j, ierr, page_unit, nkp_global
@@ -488,11 +478,7 @@ contains
     logical, intent(in) :: on_root, lsitesymmetry
 
     type(sitesym_data), intent(inout) :: sym
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! local variables
     integer :: nkp, info, ierr
@@ -1649,14 +1635,7 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(parameter_input_type), intent(inout) :: param_input !only omega_inv is modified
     type(sitesym_data), intent(in) :: sym
-
-!JJ this is really ugly here, kind of defeats the point of the comms module?
-! but for the time being it is not incorrect
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! MODIFIED:
     !           u_matrix_opt (At input it contains the initial guess for the optima

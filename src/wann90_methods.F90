@@ -1864,10 +1864,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time, &
       io_stopwatch
-    use w90_comms, only: comms_bcast, on_root
-#ifdef MPI
-    use mpi_f08
-#endif
+    use w90_comms, only: comms_bcast, on_root, w90commtype
 
     implicit none
     !data from parameters module
@@ -1912,13 +1909,7 @@ contains
     !type(geninterp_type), intent(inout) :: geninterp
     !type(boltzwann_type), intent(inout) :: boltz
     logical, intent(inout) :: eig_found
-!JJ this is really ugly here, kind of defeats the point of the comms module?
-! but for the time being it is not incorrect
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     integer :: ierr
 

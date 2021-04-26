@@ -1626,10 +1626,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, &
       io_date, io_time, io_stopwatch
-    use w90_comms, only: on_root, comms_bcast
-#ifdef MPI
-    use mpi_f08
-#endif
+    use w90_comms, only: on_root, comms_bcast, w90commtype
 
     implicit none
 
@@ -1644,14 +1641,7 @@ contains
     integer, intent(inout) :: num_wann
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
-
-!JJ this is really ugly here, kind of defeats the point of the comms module?
-! but for the time being it is not incorrect
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     integer :: ierr
 

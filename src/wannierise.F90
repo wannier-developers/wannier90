@@ -16,9 +16,6 @@ module w90_wannierise
   !! Main routines for the minimisation of the spread
 
   use w90_constants, only: dp
-#ifdef MPI
-  use mpi_f08
-#endif
 
   implicit none
 
@@ -72,7 +69,7 @@ contains
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
     use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, comms_bcast, &
-      comms_scatterv, comms_array_split
+      comms_scatterv, comms_array_split, w90commtype
 
     !ivo
     use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr, ham_logical
@@ -177,11 +174,7 @@ contains
 !   end w90_hamiltonian
 
     type(sitesym_data), intent(in) :: sym
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! local variables
     type(localisation_vars) :: old_spread
@@ -1108,7 +1101,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0
       use w90_io, only: io_error
-      use w90_comms, only: my_node_id
+      use w90_comms, only: my_node_id, w90commtype
 
       implicit none
       real(kind=dp), intent(in) :: conv_noise_amp
@@ -1183,7 +1176,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      use w90_comms, only: on_root, my_node_id, comms_allreduce
+      use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
       use w90_param_types, only: parameter_input_type
 
       implicit none
@@ -1211,11 +1204,7 @@ contains
       integer, intent(in) :: counts(0:)
       integer, intent(in) :: displs(0:)
       integer, intent(in) :: stdout
-#ifdef MPI
-      type(mpi_comm), intent(in) :: comm
-#else
-      integer, intent(in) :: comm
-#endif
+      type(w90commtype), intent(in) :: comm
 
       ! local
       complex(kind=dp), external :: zdotc
@@ -1312,7 +1301,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      use w90_comms, only: on_root, my_node_id, comms_allreduce
+      use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
       use w90_param_types, only: parameter_input_type
       use wannier_param_types, only: param_wannierise_type
 
@@ -1462,7 +1451,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_stopwatch
-      use w90_comms, only: on_root
+      use w90_comms, only: on_root, w90commtype
       use w90_param_types, only: parameter_input_type
 
       implicit none
@@ -1535,7 +1524,7 @@ contains
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data
       use w90_io, only: io_stopwatch, io_error
-      use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv
+      use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv, w90commtype
       use w90_utility, only: utility_zgemm
       use w90_param_types, only: kmesh_info_type
 
@@ -1563,12 +1552,7 @@ contains
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       integer, intent(in) :: timing_level
       integer, intent(in) :: stdout
-
-#ifdef MPI
-      type(mpi_comm), intent(in) :: comm
-#else
-      integer, intent(in) :: comm
-#endif
+      type(w90commtype), intent(in) :: comm
 
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
@@ -1867,7 +1851,7 @@ contains
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
-    use w90_comms, only: on_root, my_node_id, comms_allreduce
+    use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
     use w90_param_types, only: kmesh_info_type
 
     implicit none
@@ -1904,11 +1888,7 @@ contains
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
     !! Used in the Gamma point routines as an optimisation
 
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     !local
     complex(kind=dp) :: csum(kmesh_info%nnh)
@@ -2113,7 +2093,7 @@ contains
     ! Radu Miron at Implerial College London
     !===================================================================
     use w90_io, only: io_stopwatch
-    use w90_comms, only: on_root, my_node_id, comms_allreduce
+    use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
     use w90_param_types, only: kmesh_info_type, parameter_input_type
     use wannier_param_types, only: param_wannierise_type
 
@@ -2150,12 +2130,7 @@ contains
     real(kind=dp), intent(in) :: lambda_loc
     logical, intent(inout) :: first_pass
     integer, intent(in) :: stdout
-
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     !local variables
     real(kind=dp) :: summ, mnn2
@@ -2424,7 +2399,8 @@ contains
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
-    use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, comms_allreduce
+    use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, comms_allreduce, &
+      w90commtype
     use w90_param_types, only: kmesh_info_type
     use wannier_param_types, only: param_wannierise_type
 
@@ -2461,12 +2437,7 @@ contains
     complex(kind=dp), intent(out) :: cdodq_loc(:, :, :)
     real(kind=dp), intent(in) :: lambda_loc
     integer, intent(in) :: stdout
-
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! local
     complex(kind=dp), allocatable  :: cr(:, :)
@@ -2712,7 +2683,7 @@ contains
     !==================================================================!
 
     use w90_io, only: io_stopwatch
-    use w90_comms, only: on_root
+    use w90_comms, only: on_root, w90commtype
 
     implicit none
 
@@ -3019,7 +2990,7 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: on_root
+    use w90_comms, only: on_root, w90commtype
 
     implicit none
 
@@ -3137,7 +3108,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: on_root
+    use w90_comms, only: on_root, w90commtype
     use w90_param_types, only: parameter_input_type, kmesh_info_type
 
     implicit none
@@ -3257,7 +3228,7 @@ contains
       wannier_data_type, atom_data_type, k_point_type, disentangle_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_comms, only: on_root
+    use w90_comms, only: on_root, w90commtype
 
     implicit none
 
@@ -3313,12 +3284,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data ! needed for write_chkpt
     integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
     integer, intent(in) :: stdout
-
-#ifdef MPI
-    type(mpi_comm), intent(in) :: comm
-#else
-    integer, intent(in) :: comm
-#endif
+    type(w90commtype), intent(in) :: comm
 
     ! local
     type(localisation_vars) :: old_spread
