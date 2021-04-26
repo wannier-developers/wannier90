@@ -300,7 +300,7 @@ contains
   end subroutine utility_inv2
 
   !===================================================================
-  subroutine utility_recip_lattice(real_lat, recip_lat, volume)  !
+  subroutine utility_recip_lattice(real_lat, recip_lat, volume, stdout)  !
     !==================================================================!
     !                                                                  !
     !!  Calculates the reciprical lattice vectors and the cell volume
@@ -311,6 +311,7 @@ contains
     use w90_io, only: io_error
 
     implicit none
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in)  :: real_lat(3, 3)
     real(kind=dp), intent(out) :: recip_lat(3, 3)
     real(kind=dp), intent(out) :: volume
@@ -330,7 +331,7 @@ contains
              real_lat(1, 3)*recip_lat(1, 3)
 
     if (abs(volume) < eps5) then
-      call io_error(' Found almost zero Volume in utility_recip_lattice')
+      call io_error(' Found almost zero Volume in utility_recip_lattice', stdout)
     end if
 
     recip_lat = twopi*recip_lat/volume
@@ -519,7 +520,7 @@ contains
   end function utility_lowercase
 
   !====================================================!
-  subroutine utility_string_to_coord(string_tmp, outvec)!
+  subroutine utility_string_to_coord(string_tmp, outvec, stdout)!
     !====================================================!
     !                                                    !
     !! Takes a string in the form 0.0,1.0,0.5
@@ -530,6 +531,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(len=maxlen), intent(in)  :: string_tmp
     real(kind=dp), intent(out) :: outvec(3)
 
@@ -539,7 +541,7 @@ contains
 
     ctemp = string_tmp
     pos = index(ctemp, ',')
-    if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
+    if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), stdout)
     ctemp2 = ctemp(1:pos - 1)
     read (ctemp2, *, err=100, end=100) outvec(1)
     ctemp = ctemp(pos + 1:)
@@ -551,7 +553,7 @@ contains
 
     return
 
-100 call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
+100 call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), stdout)
 
   end subroutine utility_string_to_coord
 
@@ -663,11 +665,11 @@ contains
     if (info < 0) then
       write (stdout, '(a,i3,a)') 'THE ', -info, &
         ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-      call io_error('Error in utility_diagonalize')
+      call io_error('Error in utility_diagonalize', stdout)
     endif
     if (info > 0) then
       write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-      call io_error('Error in utility_diagonalize')
+      call io_error('Error in utility_diagonalize', stdout)
     endif
 
   end subroutine utility_diagonalize
@@ -982,7 +984,7 @@ contains
     return
   end function utility_wgauss
 
-  function utility_w0gauss(x, n)
+  function utility_w0gauss(x, n, stdout)
     !-----------------------------------------------------------------------
     !
     !! the derivative of utility_wgauss:  an approximation to the delta function
@@ -997,6 +999,7 @@ contains
     use w90_constants, only: dp, pi
     use w90_io, only: io_error
     implicit none
+    integer :: stdout
     real(kind=dp) :: utility_w0gauss, x
     !! output: the value of the function
     !! input: the point where to compute the function
@@ -1039,7 +1042,7 @@ contains
     endif
 
     if (n .gt. 10 .or. n .lt. 0) &
-      call io_error('utility_w0gauss higher order smearing is untested and unstable')
+      call io_error('utility_w0gauss higher order smearing is untested and unstable', stdout)
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
@@ -1060,7 +1063,7 @@ contains
     return
   end function utility_w0gauss
 
-  function utility_w0gauss_vec(x, n) result(res)
+  function utility_w0gauss_vec(x, n, stdout) result(res)
     !-----------------------------------------------------------------------
     !  Stepan Tsirkin: a vectorized version of the outine, gets x as an array.
     !
@@ -1076,6 +1079,7 @@ contains
     use w90_constants, only: dp, pi
     use w90_io, only: io_error
     implicit none
+    integer :: stdout
     real(kind=dp), intent(in)   ::  x(:)
     real(kind=dp), allocatable  :: res(:), arg(:)
 
@@ -1094,22 +1098,22 @@ contains
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
-      call io_error('utility_w0gauss_vec not implemented for n == 99')
+      call io_error('utility_w0gauss_vec not implemented for n == 99', stdout)
     endif
 
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
-      call io_error('utility_w0gauss_vec not implemented for n == -1')
+      call io_error('utility_w0gauss_vec not implemented for n == -1', stdout)
     endif
 
     if (n .gt. 10 .or. n .lt. 0) &
-      call io_error('utility_w0gauss higher order smearing is untested and unstable')
+      call io_error('utility_w0gauss higher order smearing is untested and unstable', stdout)
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
     res = exp(-arg)*sqrtpm1
     if (n .eq. 0) return
-    call io_error('utility_w0gauss_vec not implemented for n >0 ')
+    call io_error('utility_w0gauss_vec not implemented for n >0 ', stdout)
     return
   end function utility_w0gauss_vec
 

@@ -80,17 +80,17 @@ contains
 
     allocate (dos_energyarray(num_freq), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating dos_energyarray in ' &
-                                 //'dos subroutine')
+                                 //'dos subroutine', stdout)
     do ifreq = 1, num_freq
       dos_energyarray(ifreq) = dos_data%energy_min + real(ifreq - 1, dp)*d_omega
     end do
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in dos')
+    if (ierr /= 0) call io_error('Error in allocating HH in dos', stdout)
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating delHH in dos')
+    if (ierr /= 0) call io_error('Error in allocating delHH in dos', stdout)
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in dos')
+    if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout)
 
     call get_HH_R(stdout)
     if (pw90_common%spin_decomp) then
@@ -105,7 +105,7 @@ contains
 
     if (on_root) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('dos', 1)
+      if (param_input%timing_level > 1) call io_stopwatch('dos', 1, stdout)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -162,7 +162,7 @@ contains
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, &
                          smr_index=dos_data%smr_index, &
@@ -196,7 +196,7 @@ contains
                          levelspacing_k=levelspacing_k, &
                          UU=UU)
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout)
           call dos_get_k(kpt, dos_energyarray, eig, dos_k, stdout, &
                          smr_index=dos_data%smr_index, &
@@ -210,7 +210,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM')
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout)
 
     if (on_root) then
       write (stdout, '(1x,a)') 'Output data files:'
@@ -223,15 +223,15 @@ contains
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (param_input%timing_level > 1) call io_stopwatch('dos', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('dos', 2, stdout)
     end if
 
     deallocate (HH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main', stdout)
     deallocate (delHH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main', stdout)
     deallocate (UU, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main')
+    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main', stdout)
 
   end subroutine dos_main
 
@@ -500,23 +500,23 @@ contains
     if (present(levelspacing_k)) then
       if (present(smr_fixed_en_width)) &
         call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'with smr_fixed_en_width parameters together')
+                      //'with smr_fixed_en_width parameters together', stdout)
       if (.not. (present(adpt_smr_fac))) &
         call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_fac parameter')
+                      //'without adpt_smr_fac parameter', stdout)
       if (.not. (present(adpt_smr_max))) &
         call io_error('Cannot call doskpt with levelspacing_k and ' &
-                      //'without adpt_smr_max parameter')
+                      //'without adpt_smr_max parameter', stdout)
     else
       if (present(adpt_smr_fac)) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_fac parameter')
+                      //'with adpt_smr_fac parameter', stdout)
       if (present(adpt_smr_max)) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adpt_smr_max parameter')
+                      //'with adpt_smr_max parameter', stdout)
       if (.not. (present(smr_fixed_en_width))) &
         call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'without smr_fixed_en_width parameter')
+                      //'without smr_fixed_en_width parameter', stdout)
     end if
 
     r_num_elec_per_state = real(param_input%num_elec_per_state, kind=dp)
@@ -568,7 +568,7 @@ contains
         ! kind of smearing read from input (internal smearing_index variable)
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(i))/eta_smr
-          rdum = utility_w0gauss(arg, smr_index)/eta_smr
+          rdum = utility_w0gauss(arg, smr_index, stdout)/eta_smr
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if

@@ -50,7 +50,7 @@ contains
     real(kind=dp) :: kweight, kpt(3), spn_k(3), spn_all(3), &
                      spn_mom(3), magnitude, theta, phi, conv
 
-    if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1')
+    if (fermi%n > 1) call io_error('Routine spin_get_moment requires nfermi=1', stdout)
 
     call get_HH_R(stdout)
     call get_SS_R(stdout)
@@ -104,7 +104,7 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(spn_all(1), 3, 'SUM')
+    call comms_reduce(spn_all(1), 3, 'SUM', stdout)
 
     ! No factor of g=2 because the spin variable spans [-1,1], not
     ! [-1/2,1/2] (i.e., it is really the Pauli matrix sigma, not S)
@@ -173,11 +173,11 @@ contains
     allocate (SS(num_wann, num_wann, 3))
     allocate (SS_n(num_wann, num_wann))
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout)
 
     do is = 1, 3
-      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0)
+      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0, stdout)
     enddo
 
     ! Unit vector along the magnetization direction
@@ -231,13 +231,13 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout)
     call pw90common_get_occ(eig, occ, ef)
 
     spn_k(1:3) = 0.0_dp
     do is = 1, 3
-      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0)
+      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, is), SS(:, :, is), 0, stdout)
       spn_nk(:, is) = aimag(cmplx_i*utility_rotate_diag(SS(:, :, is), UU, num_wann))
       do i = 1, num_wann
         spn_k(is) = spn_k(is) + occ(i)*spn_nk(i, is)
@@ -282,11 +282,11 @@ contains
     allocate (UU(num_wann, num_wann))
     allocate (SS(num_wann, num_wann, 3))
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout)
 
     do i = 1, 3
-      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, i), SS(:, :, i), 0)
+      call pw90common_fourier_R_to_k(kpt, SS_R(:, :, :, i), SS(:, :, i), 0, stdout)
       S(:, i) = real(utility_rotate_diag(SS(:, :, i), UU, num_wann), dp)
     enddo
 

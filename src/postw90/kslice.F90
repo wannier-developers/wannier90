@@ -95,18 +95,18 @@ contains
     heatmap = plot_curv .or. plot_morb .or. plot_shc
     if (plot_fermi_lines .and. fermi_lines_color .and. heatmap) then
       call io_error('Error: spin-colored Fermi lines not allowed in ' &
-                    //'curv/morb/shc heatmap plots')
+                    //'curv/morb/shc heatmap plots', stdout)
     end if
     if (plot_shc) then
       if (berry%kubo_adpt_smr) then
         call io_error('Error: Must use fixed smearing when plotting ' &
-                      //'spin Hall conductivity')
+                      //'spin Hall conductivity', stdout)
       end if
       if (fermi%n == 0) then
-        call io_error('Error: must specify Fermi energy')
+        call io_error('Error: must specify Fermi energy', stdout)
       else if (fermi%n /= 1) then
         call io_error('Error: kpath plot only accept one Fermi energy, ' &
-                      //'use fermi_energy instead of fermi_energy_min')
+                      //'use fermi_energy instead of fermi_energy_min', stdout)
       end if
     end if
 
@@ -146,13 +146,13 @@ contains
     areab1b2 = sqrt(zvec(1)**2 + zvec(2)**2 + zvec(3)**2)
     if (areab1b2 < eps8) call io_error( &
       'Error in kslice: Vectors kslice_b1 and kslice_b2 ' &
-      //'not linearly independent')
+      //'not linearly independent', stdout)
     ! This is the unit vector zvec/|zvec| which completes the triad
     ! in the 2D case
     bvec(3, :) = zvec(:)/areab1b2
     ! Now that we have bvec(3,:), we can compute the dual vectors
     ! avec_2d as in the 3D case
-    call utility_recip_lattice(bvec, avec_2d, rdum)
+    call utility_recip_lattice(bvec, avec_2d, rdum, stdout)
     ! Moduli b1,b2,y_vec
     b1mod = sqrt(bvec(1, 1)**2 + bvec(1, 2)**2 + bvec(1, 3)**2)
     b2mod = sqrt(bvec(2, 1)**2 + bvec(2, 2)**2 + bvec(2, 3)**2)
@@ -230,7 +230,7 @@ contains
           call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
           Delta_k = max(b1mod/kslice%kmesh2d(1), b2mod/kslice%kmesh2d(2))
         else
-          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+          call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
           call utility_diagonalize(HH, num_wann, eig, UU, stdout)
         endif
 
@@ -280,7 +280,7 @@ contains
       allocate (coords(1, 1))
     end if
     call comms_gatherv(my_coords, 2*my_nkpts, &
-                       coords, 2*counts, 2*displs)
+                       coords, 2*counts, 2*displs, stdout)
 
     if (allocated(my_spndata)) then
       if (on_root) then
@@ -289,7 +289,7 @@ contains
         allocate (spndata(1, 1))
       end if
       call comms_gatherv(my_spndata, num_wann*my_nkpts, &
-                         spndata, num_wann*counts, num_wann*displs)
+                         spndata, num_wann*counts, num_wann*displs, stdout)
     end if
 
     if (allocated(my_spnmask)) then
@@ -299,7 +299,7 @@ contains
         allocate (spnmask(1, 1))
       end if
       call comms_gatherv(my_spnmask(1, 1), num_wann*my_nkpts, &
-                         spnmask(1, 1), num_wann*counts, num_wann*displs)
+                         spnmask(1, 1), num_wann*counts, num_wann*displs, stdout)
     end if
 
     if (allocated(my_bandsdata)) then
@@ -309,7 +309,7 @@ contains
         allocate (bandsdata(1, 1))
       end if
       call comms_gatherv(my_bandsdata, num_wann*my_nkpts, &
-                         bandsdata, num_wann*counts, num_wann*displs)
+                         bandsdata, num_wann*counts, num_wann*displs, stdout)
     end if
 
     ! This holds either -curv or morb
@@ -320,7 +320,7 @@ contains
         allocate (zdata(1, 1))
       end if
       call comms_gatherv(my_zdata, 3*my_nkpts, &
-                         zdata, 3*counts, 3*displs)
+                         zdata, 3*counts, 3*displs, stdout)
     end if
 
     ! Write output files
@@ -351,7 +351,7 @@ contains
             filename = trim(seedname)//'-bnd_' &
                        //achar(48 + n1)//achar(48 + n2)//achar(48 + n3)//'.dat'
 
-            call write_coords_file(filename, '(3E16.8)', coords, &
+            call write_coords_file(stdout, filename, '(3E16.8)', coords, &
                                    reshape(bandsdata(n, :), [1, 1, nkpts]), &
                                    blocklen=kslice%kmesh2d(1) + 1)
           enddo
@@ -360,7 +360,7 @@ contains
 
       if (allocated(spndata)) then
         filename = trim(seedname)//'-kslice-fermi-spn.dat'
-        call write_coords_file(filename, '(3E16.8)', coords, &
+        call write_coords_file(stdout, filename, '(3E16.8)', coords, &
                                reshape(spndata, [1, num_wann, nkpts]), &
                                spnmask)
       end if
@@ -812,7 +812,7 @@ contains
 
     if (plot_fermi_lines) then
       if (fermi%n /= 1) call io_error( &
-        'Must specify one Fermi level when kslice_task=fermi_lines')
+        'Must specify one Fermi level when kslice_task=fermi_lines', stdout)
       select case (fermi_lines_color)
       case (.false.)
         write (stdout, '(/,3x,a)') '* Fermi lines'
@@ -830,12 +830,12 @@ contains
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
       endif
       if (fermi%n /= 1) call io_error( &
-        'Must specify one Fermi level when kslice_task=curv')
+        'Must specify one Fermi level when kslice_task=curv', stdout)
     elseif (plot_morb) then
       write (stdout, '(/,3x,a)') &
         '* Orbital magnetization k-space integrand in eV.Ang^2'
       if (fermi%n /= 1) call io_error( &
-        'Must specify one Fermi level when kslice_task=morb')
+        'Must specify one Fermi level when kslice_task=morb', stdout)
     elseif (plot_shc) then
       if (berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
@@ -845,7 +845,7 @@ contains
           //'of spin Hall conductivity in Bohr^2'
       endif
       if (fermi%n /= 1) call io_error( &
-        'Must specify one Fermi level when kslice_task=shc')
+        'Must specify one Fermi level when kslice_task=shc', stdout)
     endif
 
   end subroutine kslice_print_info
@@ -874,10 +874,12 @@ contains
     close (fileunit)
   end subroutine
 
-  subroutine write_coords_file(filename, fmt, coords, vals, mask, blocklen)
-    use w90_io, only: io_error, stdout, io_file_unit
+  subroutine write_coords_file(stdout, filename, fmt, coords, vals, mask, blocklen)
+!   use w90_io, only: io_error, stdout, io_file_unit
+    use w90_io, only: io_error, io_file_unit
     use w90_constants, only: dp
 
+    integer, intent(in) :: stdout
     character(len=*), intent(in)  :: filename, fmt
     real(kind=dp), intent(in)     :: coords(:, :), vals(:, :, :)
     logical, intent(in), optional :: mask(:, :)

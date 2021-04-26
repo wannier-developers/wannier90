@@ -103,9 +103,9 @@ contains
     logical           :: eval_K, eval_C, eval_D, eval_Dw, eval_NOA, eval_spn, eval_DOS
 
     if (fermi%n == 0) call io_error( &
-      'Must specify one or more Fermi levels when gyrotropic=true')
+      'Must specify one or more Fermi levels when gyrotropic=true', stdout)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('gyrotropic: prelims', 1, stdout)
 
     ! Mesh spacing in reduced coordinates
     !
@@ -141,7 +141,7 @@ contains
     if (.not. (eval_K .or. eval_noa)) eval_spn = .false.
 
     if ((.not. param_input%spinors) .and. eval_spn) call io_error( &
-      "spin contribution requested for gyrotropic, but the wavefunctions are not spinors")
+      "spin contribution requested for gyrotropic, but the wavefunctions are not spinors", stdout)
 
     ! Wannier matrix elements, allocations and initializations
 
@@ -227,7 +227,7 @@ contains
 
       if (berry%transl_inv) then
         if (eval_K) &
-          call io_error('transl_inv=T disabled for K-tensor')
+          call io_error('transl_inv=T disabled for K-tensor', stdout)
         write (stdout, '(/,1x,a)') &
           'Using a translationally-invariant discretization for the'
         write (stdout, '(1x,a)') &
@@ -235,8 +235,8 @@ contains
       endif
 
       if (param_input%timing_level > 1) then
-        call io_stopwatch('gyrotropic: prelims', 2)
-        call io_stopwatch('gyrotropic: k-interpolation', 1)
+        call io_stopwatch('gyrotropic: prelims', 2, stdout)
+        call io_stopwatch('gyrotropic: k-interpolation', 1, stdout)
       endif
 
       write (stdout, '(1x,a20,3(i0,1x))') 'Interpolation grid: ', gyrotropic%kmesh(1:3)
@@ -270,30 +270,30 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_K) then
-      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM')
-      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(gyro_K_orb(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
+      if (eval_spn) call comms_reduce(gyro_K_spn(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
     endif
 
     if (eval_D) &
-      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(gyro_D(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
 
     if (eval_C) &
-      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(gyro_C(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
 
     if (eval_Dw) &
-      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
+      call comms_reduce(gyro_Dw(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout)
 
     if (eval_dos) &
-      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM')
+      call comms_reduce(gyro_DOS(1), fermi%n, 'SUM', stdout)
 
     if (eval_NOA) then
-      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
-      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM')
+      call comms_reduce(gyro_NOA_orb(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout)
+      if (eval_spn) call comms_reduce(gyro_NOA_spn(1, 1, 1, 1), 3*3*fermi%n*gyrotropic%nfreq, 'SUM', stdout)
     endif
 
     if (on_root) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('gyrotropic: k-interpolation', 2, stdout)
       write (stdout, '(1x,a)') ' '
       write (stdout, *) 'Calculation finished, writing results'
       flush(stdout)
@@ -528,7 +528,7 @@ contains
     if (eval_Dw .or. eval_NOA) then
       allocate (AA(num_wann, num_wann, 3))
       call wham_get_D_h(delHH, UU, eig, D_h)
-      call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+      call pw90common_fourier_R_to_k_vec(stdout, kpt, AA_R, OO_true=AA)
       do i = 1, 3
         AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
       enddo
@@ -596,7 +596,7 @@ contains
           got_orb_n = .true. ! Do it for only one value of ifermi
         endif
         !
-        delta = utility_w0gauss(arg, gyrotropic%smr_index)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
+        delta = utility_w0gauss(arg, gyrotropic%smr_index, stdout)/eta_smr*kweight ! Broadened delta(E_nk-E_f)
         !
         ! Loop over Cartesian tensor components
         !
@@ -736,7 +736,7 @@ contains
       allocate (SS(num_wann, num_wann, 3))
       allocate (S_h(num_wann, num_wann, 3))
       do j = 1, 3 ! spin direction
-        call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, j), OO=SS(:, :, j))
+        call pw90common_fourier_R_to_k_new(stdout, kpt, SS_R(:, :, :, j), OO=SS(:, :, j))
         S_h(:, :, j) = utility_rotate(SS(:, :, j), UU, num_wann)
       enddo
     endif

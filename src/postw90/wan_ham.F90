@@ -220,7 +220,7 @@ contains
 
   end subroutine wham_get_JJp_JJm_list
 
-  subroutine wham_get_occ_mat_list(UU, f_list, g_list, eig, occ)
+  subroutine wham_get_occ_mat_list(stdout, UU, f_list, g_list, eig, occ)
 !  subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
     !================================!
     !                                !
@@ -237,6 +237,7 @@ contains
 
     ! Arguments
     !
+    integer, intent(in) :: stdout
     complex(kind=dp), dimension(:, :), intent(in)  :: UU
     complex(kind=dp), dimension(:, :, :), intent(out) :: f_list
     complex(kind=dp), dimension(:, :, :), intent(out) :: g_list
@@ -255,10 +256,10 @@ contains
 
     if (present(occ) .and. present(eig)) then
       call io_error( &
-        'occ_list and eig cannot be both arguments in get_occ_mat_list')
+        'occ_list and eig cannot be both arguments in get_occ_mat_list', stdout)
     elseif (.not. present(occ) .and. .not. present(eig)) then
       call io_error( &
-        'either occ_list or eig must be passed as arguments to get_occ_mat_list')
+        'either occ_list or eig must be passed as arguments to get_occ_mat_list', stdout)
     endif
 
     if (present(occ)) then
@@ -413,11 +414,11 @@ contains
     ! Further calls should return very fast.
     call get_HH_R(stdout)
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
     call utility_diagonalize(HH, num_wann, eig, UU, stdout)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1, stdout)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2, stdout)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3, stdout)
     call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout)
     call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout)
     call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout)
@@ -479,7 +480,7 @@ contains
     call get_HH_R(stdout)
 
     allocate (delHH(num_wann, num_wann, 3))
-    call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new(stdout, kpt, HH_R, OO=HH, &
                                        OO_dx=delHH(:, :, 1), &
                                        OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
@@ -521,7 +522,7 @@ contains
     call get_HH_R(stdout)
     call get_AA_R(stdout)
 
-    call pw90common_fourier_R_to_k_new_second_d_TB_conv(kpt, HH_R, AA_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(stdout, kpt, HH_R, AA_R, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, stdout)
@@ -552,7 +553,7 @@ contains
 
     call get_HH_R(stdout)
 
-    call pw90common_fourier_R_to_k_new_second_d(kpt, HH_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d(stdout, kpt, HH_R, OO=HH, &
                                                 OO_da=HH_da(:, :, :), &
                                                 OO_dadb=HH_dadb(:, :, :, :))
     call utility_diagonalize(HH, num_wann, eig, UU, stdout)

@@ -91,7 +91,7 @@ contains
     integer, dimension(0:num_nodes - 1)               :: counts
     integer, dimension(0:num_nodes - 1)               :: displs
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout)
 
     if (on_root) then
       write (stdout, *)
@@ -116,22 +116,22 @@ contains
         absoluteCoords = .true.
       else
         call io_error('Error on second line of file '//trim(seedname)//'_geninterp.kpt: '// &
-                      'unable to recognize keyword')
+                      'unable to recognize keyword', stdout)
       end if
 
       ! Third line: number of following kpoints
       read (kpt_unit, *, err=106, end=106) num_kpts
     end if
 
-    call comms_bcast(num_kpts, 1)
+    call comms_bcast(num_kpts, 1, stdout)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF')
+    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout)
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF')
+    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout)
     if (geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF')
+      if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout)
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
@@ -139,27 +139,27 @@ contains
 
     if (on_root) then
       allocate (kpointidx(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.')
+      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout)
       allocate (kpoints(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.')
+      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout)
       if (geninterp%single_file) then
         allocate (globaleig(num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.')
+        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout)
         allocate (globaldeleig(num_wann, 3, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.')
+        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout)
       end if
     else
       ! On the other nodes, I still allocate them with size 1 to avoid
       ! that some compilers still try to access the memory
       allocate (kpointidx(1), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.')
+      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout)
       allocate (kpoints(1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.')
+      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout)
       if (geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.')
+        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout)
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.')
+        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout)
       end if
     end if
 
@@ -167,12 +167,12 @@ contains
     call comms_array_split(num_kpts, counts, displs)
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.')
+    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout)
 
     allocate (localeig(num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localeig in geinterp_main.')
+    if (ierr /= 0) call io_error('Error allocating localeig in geinterp_main.', stdout)
     allocate (localdeleig(num_wann, 3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localdeleig in geinterp_main.')
+    if (ierr /= 0) call io_error('Error allocating localdeleig in geinterp_main.', stdout)
 
     ! On root, I read numpoints_thischunk points
     if (on_root) then
@@ -197,12 +197,12 @@ contains
     end if
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
-    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs)
+    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, stdout)
     if (.not. geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.')
-      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs)
+      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout)
+      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout)
     end if
 
     ! I open the output file(s)
@@ -223,7 +223,7 @@ contains
       outdat_unit = io_file_unit()
       open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-      call comms_bcast(commentline, len(commentline))
+      call comms_bcast(commentline, len(commentline), stdout)
 
       call internal_write_header(outdat_unit, commentline)
     end if
@@ -235,7 +235,7 @@ contains
       if (geninterp%alsofirstder) then
         call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, stdout)
       else
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
         call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout)
       end if
     end do
@@ -243,11 +243,11 @@ contains
     if (geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
-                         num_wann*counts, num_wann*displs)
+                         num_wann*counts, num_wann*displs, stdout)
 
       if (geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
-                           3*num_wann*counts, 3*num_wann*displs)
+                           3*num_wann*counts, 3*num_wann*displs, stdout)
       end if
 
       ! Now the printing, only on root node
@@ -318,13 +318,13 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2, stdout)
 
     return
 
-105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt')
-106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt')
-107 call io_error('Error: Problem opening output file '//trim(outdat_filename))
+105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', stdout)
+106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', stdout)
+107 call io_error('Error: Problem opening output file '//trim(outdat_filename), stdout)
   end subroutine geninterp_main
 
 end module w90_geninterp

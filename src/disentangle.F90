@@ -18,7 +18,6 @@ module w90_disentangle
 
   use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce
   use w90_constants, only: dp, cmplx_0, cmplx_1
-! use w90_io, only: io_error, stdout, io_stopwatch
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
   use w90_sitesym, only: sitesym_slim_d_matrix_band, sitesym_replace_d_matrix_band, &
@@ -26,6 +25,7 @@ module w90_disentangle
     sitesym_dis_extract_symmetry, sitesym_data
 
   implicit none
+
   public :: dis_main
 
 contains
@@ -88,7 +88,7 @@ contains
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
 
-    if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1)
+    if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1, stdout)
 
     call comms_array_split(num_kpts, counts, displs)
 
@@ -97,7 +97,7 @@ contains
 
     ! Allocate arrays
     allocate (eigval_opt(num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating eigval_opt in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating eigval_opt in dis_main', stdout)
     eigval_opt = eigval
 
     ! Set up energy windows
@@ -113,7 +113,7 @@ contains
     ! (Sec. III.G SMV)
     if (linner) then
       if (lsitesymmetry) then
-        call io_error('in symmetry-adapted mode, frozen window not implemented yet') !YN: RS:
+        call io_error('in symmetry-adapted mode, frozen window not implemented yet', stdout) !YN: RS:
       endif
       if (on_root) write (stdout, '(3x,a)') 'Using an inner window (linner = T)'
       call dis_proj_froz(param_input%timing_level, on_root, num_kpts, dis_data%ndimwin, &
@@ -130,7 +130,7 @@ contains
     ! Slim down the original Mmn(k,b)
     call internal_slim_m(param_input%timing_level, num_kpts, num_bands, dis_data%ndimwin, on_root, &
                          my_node_id, kmesh_info%nntot, kmesh_info%nnlist, nfirstwin, &
-                         m_matrix_orig_local, num_nodes)
+                         m_matrix_orig_local, num_nodes, stdout)
 
     dis_data%lwindow = .false.
     do nkp = 1, num_kpts
@@ -161,9 +161,9 @@ contains
 
     ! Allocate workspace
     allocate (cwb(num_wann, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwb in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating cwb in dis_main', stdout)
     allocate (cww(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cww in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating cww in dis_main', stdout)
 
     ! Find the num_wann x num_wann overlap matrices between
     ! the basis states of the optimal subspaces
@@ -211,15 +211,15 @@ contains
       enddo
       rewind (page_unit)
       deallocate (m_matrix_orig_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout)
       if (on_root) then
         deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
         allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main')
+        if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main', stdout)
       endif
       deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout)
       do nkp = 1, counts(my_node_id)
         do nn = 1, kmesh_info%nntot
           read (page_unit) m_matrix_local(:, :, nn, nkp)
@@ -227,7 +227,7 @@ contains
       end do
       call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                         num_wann*num_wann*kmesh_info%nntot*displs)
+                         num_wann*num_wann*kmesh_info%nntot*displs, stdout)
       close (page_unit)
 
     else
@@ -235,11 +235,11 @@ contains
       if (on_root) then
         deallocate (m_matrix) !JJ temporary workaround to avoid runtime check failure
         allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main')
+        if (ierr /= 0) call io_error('Error in allocating m_matrix in dis_main', stdout)
       endif
       deallocate (m_matrix_local) !JJ temporary workaround to avoid runtime check failure
       allocate (m_matrix_local(num_wann, num_wann, kmesh_info%nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in dis_main', stdout)
       ! Update the m_matrix accordingly
       do nkp = 1, counts(my_node_id)
         nkp_global = nkp + displs(my_node_id)
@@ -255,17 +255,17 @@ contains
       enddo
       call comms_gatherv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                         num_wann*num_wann*kmesh_info%nntot*displs)
+                         num_wann*num_wann*kmesh_info%nntot*displs, stdout)
       deallocate (m_matrix_orig_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in dis_main', stdout)
 
     endif
 
     ! Deallocate workspace
     deallocate (cww, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cww in dis_main')
+    if (ierr /= 0) call io_error('Error in deallocating cww in dis_main', stdout)
     deallocate (cwb, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwb in dis_main')
+    if (ierr /= 0) call io_error('Error in deallocating cwb in dis_main', stdout)
 
     !zero the unused elements of u_matrix_opt (just in case...)
     do nkp = 1, num_kpts
@@ -292,7 +292,7 @@ contains
 !~    endif
 !~![ysl-e]
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2)
+    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('dis: main', 2, stdout)
 
     return
     !================================================================!
@@ -332,7 +332,7 @@ contains
 
     complex(kind=dp) :: ctmp
 
-    if (timing_level > 1) call io_stopwatch('dis: main: check_orthonorm', 1)
+    if (timing_level > 1) call io_stopwatch('dis: main: check_orthonorm', 1, stdout)
 
     do nkp = 1, num_kpts
       do l = 1, num_wann
@@ -351,7 +351,7 @@ contains
 !                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
 !                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
 !                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
-              call io_error('Error in dis_main: orthonormal error 1')
+              call io_error('Error in dis_main: orthonormal error 1', stdout)
             endif
           else
             if (abs(ctmp) .gt. eps8) then
@@ -363,21 +363,21 @@ contains
 !                     write(stdout,'(1x,a)') 'Try re-running the calculation with the input keyword'
 !                     write(stdout,'(1x,a)') '  devel_flag=orth-fix'
 !                     write(stdout,'(1x,a)') 'Please report the sucess or failure of this to the Wannier90 developers'
-              call io_error('Error in dis_main: orthonormal error 2')
+              call io_error('Error in dis_main: orthonormal error 2', stdout)
             endif
           endif
         enddo
       enddo
     enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: check_orthonorm', 2)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: check_orthonorm', 2, stdout)
 
     return
     !================================================================!
   end subroutine internal_check_orthonorm
 
   subroutine internal_slim_m(timing_level, num_kpts, num_bands, ndimwin, on_root, my_node_id, &
-                             nntot, nnlist, nfirstwin, m_matrix_orig_local, num_nodes)
+                             nntot, nnlist, nfirstwin, m_matrix_orig_local, num_nodes, stdout)
     !================================================================!
     !                                                                !
     !! This subroutine slims down the original Mmn(k,b), removing
@@ -391,6 +391,7 @@ contains
     ! passed variables
     integer, intent(in) :: timing_level, num_nodes, my_node_id
     integer, intent(in) :: num_bands, num_kpts
+    integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: nfirstwin(:) ! (num_kpts) index of lowest band inside outer window at nkp-th
@@ -408,12 +409,12 @@ contains
 
     complex(kind=dp), allocatable :: cmtmp(:, :)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 1)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 1, stdout)
 
     call comms_array_split(num_kpts, counts, displs)
 
     allocate (cmtmp(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cmtmp in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating cmtmp in dis_main', stdout)
 
     do nkp = 1, counts(my_node_id)
       nkp_global = nkp + displs(my_node_id)
@@ -436,9 +437,9 @@ contains
     enddo
 
     deallocate (cmtmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cmtmp in dis_main')
+    if (ierr /= 0) call io_error('Error deallocating cmtmp in dis_main', stdout)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 2)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: slim_m', 2, stdout)
 
     return
     !================================================================!
@@ -494,23 +495,23 @@ contains
     complex(kind=dp), allocatable :: cz(:, :)
     complex(kind=dp), allocatable :: cwork(:)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: find_u', 1)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: main: find_u', 1, stdout)
 
     ! Currently, this part is not parallelized; thus, we perform the task only on root and then broadcast the result.
     if (on_root) then
       ! Allocate arrays needed for ZGESVD
       allocate (svals(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating svals in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating svals in dis_main', stdout)
       allocate (rwork(5*num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating rwork in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating rwork in dis_main', stdout)
       allocate (cv(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating cv in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating cv in dis_main', stdout)
       allocate (cz(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating cz in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating cz in dis_main', stdout)
       allocate (cwork(4*num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating cwork in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating cwork in dis_main', stdout)
       allocate (caa(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating caa in dis_main')
+      if (ierr /= 0) call io_error('Error in allocating caa in dis_main', stdout)
 
       do nkp = 1, num_kpts
         if (lsitesymmetry) then                 !YN: RS:
@@ -527,7 +528,7 @@ contains
           if (info .lt. 0) then
             if (on_root) write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
           endif
-          call io_error('dis_main: problem in ZGESVD 1')
+          call io_error('dis_main: problem in ZGESVD 1', stdout)
         endif
         ! u_matrix is the initial guess for the unitary rotation of the
         ! basis states given by the subroutine extract
@@ -535,30 +536,30 @@ contains
                    cmplx_0, u_matrix(:, :, nkp), num_wann)
       enddo
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout)
 !      if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann,u_matrix) !RS:
 
     if (on_root) then
       ! Deallocate arrays for ZGESVD
       deallocate (caa, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating caa in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating caa in dis_main', stdout)
       deallocate (cwork, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating cwork in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating cwork in dis_main', stdout)
       deallocate (cz, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating cz in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating cz in dis_main', stdout)
       deallocate (cv, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating cv in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating cv in dis_main', stdout)
       deallocate (rwork, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating rwork in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating rwork in dis_main', stdout)
       deallocate (svals, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating svals in dis_main')
+      if (ierr /= 0) call io_error('Error deallocating svals in dis_main', stdout)
     endif
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_wann, u_matrix, sym, stdout)
     endif
 
-    if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2)
+    if (timing_level > 1) call io_stopwatch('dis: main: find_u', 2, stdout)
 
     return
     !================================================================!
@@ -596,25 +597,25 @@ contains
     real(kind=dp), allocatable :: rv(:, :)
     real(kind=dp), allocatable :: rz(:, :)
 
-    if (timing_level > 1) call io_stopwatch('dis: main: find_u_gamma', 1)
+    if (timing_level > 1) call io_stopwatch('dis: main: find_u_gamma', 1, stdout)
 
     ! Allocate arrays needed for getting a_matrix_r
     allocate (u_opt_r(ndimwin(1), num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u_opt_r in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating u_opt_r in dis_main', stdout)
     allocate (a_matrix_r(ndimwin(1), num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating a_matrix_r in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating a_matrix_r in dis_main', stdout)
 
     ! Allocate arrays needed for DGESVD
     allocate (svals(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating svals in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating svals in dis_main', stdout)
     allocate (work(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating rwork in dis_main', stdout)
     allocate (rv(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cv in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating cv in dis_main', stdout)
     allocate (rz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating cz in dis_main', stdout)
     allocate (raa(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating raa in dis_main')
+    if (ierr /= 0) call io_error('Error in allocating raa in dis_main', stdout)
 
     u_opt_r(:, :) = real(u_matrix_opt(1:ndimwin(1), 1:num_wann, 1), dp)
 
@@ -631,7 +632,7 @@ contains
       if (info .lt. 0) then
         write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
       endif
-      call io_error('dis_main: problem in DGESVD 1')
+      call io_error('dis_main: problem in DGESVD 1', stdout)
     endif
     ! u_matrix is the initial guess for the unitary rotation of the
     ! basis states given by the subroutine extract
@@ -642,23 +643,23 @@ contains
 
     ! Deallocate arrays for DGESVD
     deallocate (raa, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating raa in dis_main')
+    if (ierr /= 0) call io_error('Error deallocating raa in dis_main', stdout)
     deallocate (rz, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rz in dis_main')
+    if (ierr /= 0) call io_error('Error deallocating rz in dis_main', stdout)
     deallocate (rv, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rv in dis_main')
+    if (ierr /= 0) call io_error('Error deallocating rv in dis_main', stdout)
     deallocate (work, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating work in dis_main')
+    if (ierr /= 0) call io_error('Error deallocating work in dis_main', stdout)
     deallocate (svals, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating svals in dis_main')
+    if (ierr /= 0) call io_error('Error deallocating svals in dis_main', stdout)
 
     ! Deallocate arrays for a_matrix_r
     deallocate (a_matrix_r, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating a_matrix_r in dis_main')
+    if (ierr /= 0) call io_error('Error in deallocating a_matrix_r in dis_main', stdout)
     deallocate (u_opt_r, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating u_opt_r in dis_main')
+    if (ierr /= 0) call io_error('Error in deallocating u_opt_r in dis_main', stdout)
 
-    if (timing_level > 1) call io_stopwatch('dis: main: find_u_gamma', 2)
+    if (timing_level > 1) call io_stopwatch('dis: main: find_u_gamma', 2, stdout)
 
     return
     !================================================================!
@@ -730,7 +731,7 @@ contains
     !                    it is slimmed down to contain only those inside the
     !                    energy window, stored in nb=1,...,ndimwin(nkp)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: windows', 1)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: windows', 1, stdout)
 
     ! Allocate module arrays
     !allocate (nfirstwin(num_kpts), stat=ierr)
@@ -774,7 +775,7 @@ contains
             dis_data%win_max, ']'
           write (stdout, *) ' EIGENVALUE RANGE (eV): [', &
             eigval_opt(1, nkp), ',', eigval_opt(num_bands, nkp), ']'
-          call io_error('dis_data%windows: The outer energy window contains no eigenvalues')
+          call io_error('dis_data%windows: The outer energy window contains no eigenvalues', stdout)
         endif
       endif
 
@@ -820,7 +821,7 @@ contains
       if (dis_data%ndimwin(nkp) .lt. num_wann) then
         if (on_root) write (stdout, '(1x, a17, i4, a8, i3, a9, i3)') 'Error at k-point ', nkp, &
           ' ndimwin=', dis_data%ndimwin(nkp), ' num_wann=', num_wann
-        call io_error('dis_data%windows: Energy window contains fewer states than number of target WFs')
+        call io_error('dis_data%windows: Energy window contains fewer states than number of target WFs', stdout)
       endif
 
       do i = 1, dis_data%ndimwin(nkp)
@@ -859,7 +860,7 @@ contains
                ' TARGET BANDS')
         if (on_root) write (stdout, 402) (eigval_opt(i, nkp), i=imin, imax)
 402     format('BANDS: (eV)', 10(F10.5, 1X))
-        call io_error('dis_data%windows: More states in the frozen window than target WFs')
+        call io_error('dis_data%windows: More states in the frozen window than target WFs', stdout)
       endif
 
       if (ndimfroz(nkp) .gt. 0) linner = .true.
@@ -882,7 +883,7 @@ contains
             write (stdout, *) ' kifroz_max=', kifroz_max
             write (stdout, *) ' indxfroz(i,nkp)=', indxfroz(i, nkp)
           endif
-          call io_error('dis_data%windows: Something fishy...')
+          call io_error('dis_data%windows: Something fishy...', stdout)
         endif
       endif
 
@@ -900,7 +901,7 @@ contains
         if (on_root) write (stdout, *) ' Error at k-point: ', nkp
         if (on_root) write (stdout, '(3(a,i5))') ' i: ', i, ' ndimwin: ', dis_data%ndimwin(nkp), &
           ' ndimfroz: ', ndimfroz(nkp)
-        call io_error('dis_data%windows: i .ne. (ndimwin-ndimfroz) at k-point')
+        call io_error('dis_data%windows: i .ne. (ndimwin-ndimfroz) at k-point', stdout)
       endif
 
       ! Slim down eigval vector at present k
@@ -980,7 +981,7 @@ contains
         '+----------------------------------------------------------------------------+'
     endif
 
-    if (timing_level > 1) call io_stopwatch('dis: windows', 2)
+    if (timing_level > 1) call io_stopwatch('dis: windows', 2, stdout)
 
     return
     !================================================================!
@@ -1062,7 +1063,7 @@ contains
     complex(kind=dp), allocatable :: cvdag(:, :)
 !    complex(kind=dp), allocatable :: catmpmat(:,:,:)
 
-    if (timing_level > 1) call io_stopwatch('dis: project', 1)
+    if (timing_level > 1) call io_stopwatch('dis: project', 1, stdout)
 
     if (on_root) write (stdout, '(/1x,a)') &
       '                  Unitarised projection of Wannier functions                  '
@@ -1074,15 +1075,15 @@ contains
 !    allocate(catmpmat(num_bands,num_bands,num_kpts),stat=ierr)
 !    if (ierr/=0) call io_error('Error in allocating catmpmat in dis_project')
     allocate (svals(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating svals in dis_project')
+    if (ierr /= 0) call io_error('Error in allocating svals in dis_project', stdout)
     allocate (rwork(5*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in dis_project')
+    if (ierr /= 0) call io_error('Error in allocating rwork in dis_project', stdout)
     allocate (cvdag(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cvdag in dis_project')
+    if (ierr /= 0) call io_error('Error in allocating cvdag in dis_project', stdout)
     allocate (cz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in dis_project')
+    if (ierr /= 0) call io_error('Error in allocating cz in dis_project', stdout)
     allocate (cwork(4*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in dis_project')
+    if (ierr /= 0) call io_error('Error in allocating cwork in dis_project', stdout)
 
     ! here we slim down the ca matrix
     ! up to here num_bands(=num_bands) X num_wann(=num_wann)
@@ -1123,7 +1124,7 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
         endif
-        call io_error('dis_project: problem in ZGESVD 1')
+        call io_error('dis_project: problem in ZGESVD 1', stdout)
       endif
 
       ! NOTE THAT - AT LEAST FOR LINUX MKL LAPACK - THE OUTPUT OF ZGESVD
@@ -1176,7 +1177,7 @@ contains
             if (on_root) write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix_opt.transpose(u_matrix_opt)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call io_error('dis_project: Error in unitarity of initial U in dis_project')
+            call io_error('dis_project: Error in unitarity of initial U in dis_project', stdout)
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             if (on_root) write (stdout, *) ' ERROR: unitarity of initial U'
@@ -1185,7 +1186,7 @@ contains
             if (on_root) write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix_opt.transpose(u_matrix_opt)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call io_error('dis_project: Error in unitarity of initial U in dis_project')
+            call io_error('dis_project: Error in unitarity of initial U in dis_project', stdout)
           endif
         enddo
       enddo
@@ -1193,21 +1194,21 @@ contains
     ! NKP
 
     deallocate (cwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwork in dis_project')
+    if (ierr /= 0) call io_error('Error in deallocating cwork in dis_project', stdout)
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in dis_project')
+    if (ierr /= 0) call io_error('Error in deallocating cz in dis_project', stdout)
     deallocate (cvdag, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cvdag in dis_project')
+    if (ierr /= 0) call io_error('Error in deallocating cvdag in dis_project', stdout)
     deallocate (rwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rwork in dis_project')
+    if (ierr /= 0) call io_error('Error in deallocating rwork in dis_project', stdout)
     deallocate (svals, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating svals in dis_project')
+    if (ierr /= 0) call io_error('Error in deallocating svals in dis_project', stdout)
 !    deallocate(catmpmat,stat=ierr)
 !    if (ierr/=0) call io_error('Error in deallocating catmpmat in dis_project')
 
     if (on_root) write (stdout, '(a)') ' done'
 
-    if (timing_level > 1) call io_stopwatch('dis: project', 2)
+    if (timing_level > 1) call io_stopwatch('dis: project', 2, stdout)
 
     return
     !==================================================================!
@@ -1295,33 +1296,33 @@ contains
 
     character(len=4) :: rep
 
-    if (timing_level > 1) call io_stopwatch('dis: proj_froz', 1)
+    if (timing_level > 1) call io_stopwatch('dis: proj_froz', 1, stdout)
 
     if (on_root) write (stdout, '(3x,a)', advance='no') 'In dis_proj_froz...'
 
     allocate (iwork(5*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating iwork in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating iwork in dis_proj_froz', stdout)
     allocate (ifail(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating ifail in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating ifail in dis_proj_froz', stdout)
     allocate (w(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating w in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating w in dis_proj_froz', stdout)
     allocate (rwork(7*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating rwork in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating rwork in dis_proj_froz', stdout)
     allocate (cap((num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cap in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cap in dis_proj_froz', stdout)
     allocate (cwork(2*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cwork in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cwork in dis_proj_froz', stdout)
     allocate (cz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cz in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cz in dis_proj_froz', stdout)
 
     allocate (cp_s(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cp_s in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cp_s in dis_proj_froz', stdout)
     allocate (cq_froz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cq_froz in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cq_froz in dis_proj_froz', stdout)
     allocate (cpq(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cpq in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cpq in dis_proj_froz', stdout)
     allocate (cqpq(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cqpq in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error allocating cqpq in dis_proj_froz', stdout)
 
     do nkp = 1, num_kpts
 
@@ -1374,7 +1375,7 @@ contains
             if (abs(cqpq(m, n) - conjg(cqpq(n, m))) .gt. eps8) then
               if (on_root) write (stdout, *) ' matrix CQPQ is not hermitian'
               if (on_root) write (stdout, *) ' k-point ', nkp
-              call io_error('dis_proj_froz: error')
+              call io_error('dis_proj_froz: error', stdout)
             endif
           enddo
         enddo
@@ -1404,11 +1405,11 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
           if (on_root) write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-          call io_error('dis_proj_frozen: error')
+          call io_error('dis_proj_frozen: error', stdout)
         elseif (info .gt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
           if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-          call io_error('dis_proj_frozen: error')
+          call io_error('dis_proj_frozen: error', stdout)
         endif
         ! ENDDEBUG
 
@@ -1417,7 +1418,7 @@ contains
           if (on_root) write (stdout, *) ' *** ERROR *** in dis_proj_froz'
           if (on_root) write (stdout, *) ' Number of eigenvalues/vectors obtained is', &
             m, ' not equal to the number asked,', ndimwin(nkp)
-          call io_error('dis_proj_frozen: error')
+          call io_error('dis_proj_frozen: error', stdout)
         endif
         ! ENDDEBUG
 
@@ -1432,7 +1433,7 @@ contains
           if (iprint > 2 .and. on_root) write (stdout, '(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)
 !~[aam]        if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
           if ((w(j) .lt. -eps8) .or. (w(j) .gt. 1.0_dp + eps8)) then
-            call io_error('dis_proj_frozen: error - Eigenvalues not between 0 and 1')
+            call io_error('dis_proj_frozen: error - Eigenvalues not between 0 and 1', stdout)
           endif
         enddo
         ! ENDDEBUG
@@ -1517,7 +1518,7 @@ contains
             end if
             do l = 1, num_wann - ndimfroz(nkp)
               if (vmap(l) == 0) then
-                call io_error('dis_proj_froz: Ortho-fix failed to find enough vectors')
+                call io_error('dis_proj_froz: Ortho-fix failed to find enough vectors', stdout)
               endif
             end do
 
@@ -1536,7 +1537,7 @@ contains
             enddo
 
             if (il - 1 .ne. iu) then
-              call io_error('dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)')
+              call io_error('dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)', stdout)
             endif
 
           end if
@@ -1553,7 +1554,7 @@ contains
 
           ! DEBUG
           if (il - 1 .ne. iu) then
-            call io_error('dis_proj_frozen: error -  il-1.ne.iu')
+            call io_error('dis_proj_frozen: error -  il-1.ne.iu', stdout)
           endif
           ! ENDDEBUG
 
@@ -1578,32 +1579,32 @@ contains
     enddo   ! NKP
 
     deallocate (cqpq, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cqpq in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cqpq in dis_proj_froz', stdout)
     deallocate (cpq, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cpq in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cpq in dis_proj_froz', stdout)
     deallocate (cq_froz, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cq_froz in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cq_froz in dis_proj_froz', stdout)
     deallocate (cp_s, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cp_s in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cp_s in dis_proj_froz', stdout)
 
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cz in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cz in dis_proj_froz', stdout)
     deallocate (cwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cwork in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cwork in dis_proj_froz', stdout)
     deallocate (cap, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cap in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating cap in dis_proj_froz', stdout)
     deallocate (rwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rwork in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating rwork in dis_proj_froz', stdout)
     deallocate (w, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating w in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating w in dis_proj_froz', stdout)
     deallocate (ifail, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating ifail in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating ifail in dis_proj_froz', stdout)
     deallocate (iwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating iwork in dis_proj_froz')
+    if (ierr /= 0) call io_error('Error deallocating iwork in dis_proj_froz', stdout)
 
     if (on_root) write (stdout, '(a)') ' done'
 
-    if (timing_level > 1) call io_stopwatch('dis: proj_froz', 2)
+    if (timing_level > 1) call io_stopwatch('dis: proj_froz', 2, stdout)
 
     return
     !==================================================================!
@@ -1717,7 +1718,7 @@ contains
     integer, dimension(0:num_nodes - 1) :: displs
     integer :: nkp_loc
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 1, stdout)
 
     if (on_root) write (stdout, '(/1x,a)') &
       '                  Extraction of optimally-connected subspace                  '
@@ -1725,53 +1726,53 @@ contains
       '                  ------------------------------------------                  '
 
     allocate (cwb(num_wann, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cwb in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating cwb in dis_extract', stdout)
     allocate (cww(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cww in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating cww in dis_extract', stdout)
     allocate (cbw(num_bands, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cbw in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating cbw in dis_extract', stdout)
     cwb = cmplx_0; cww = cmplx_0; cbw = cmplx_0
 
     allocate (iwork(5*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating iwork in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating iwork in dis_extract', stdout)
     allocate (ifail(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating ifail in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating ifail in dis_extract', stdout)
     allocate (w(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating w in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating w in dis_extract', stdout)
     allocate (rwork(7*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating rwork in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating rwork in dis_extract', stdout)
     allocate (cap((num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cap in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating cap in dis_extract', stdout)
     allocate (cwork(2*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cwork in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating cwork in dis_extract', stdout)
     allocate (cz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cz in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating cz in dis_extract', stdout)
 
     ! for MPI
     call comms_array_split(num_kpts, counts, displs)
     allocate (u_matrix_opt_loc(num_bands, num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating u_matrix_opt_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating u_matrix_opt_loc in dis_extract', stdout)
     ! Copy matrix elements from global U matrix to local U matrix
     do nkp_loc = 1, counts(my_node_id)
       nkp = nkp_loc + displs(my_node_id)
       u_matrix_opt_loc(:, :, nkp_loc) = u_matrix_opt(:, :, nkp)
     enddo
     allocate (wkomegai1_loc(max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wkomegai1_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating wkomegai1_loc in dis_extract', stdout)
     allocate (czmat_in_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating czmat_in_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating czmat_in_loc in dis_extract', stdout)
     allocate (czmat_out_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating czmat_out_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating czmat_out_loc in dis_extract', stdout)
 
     allocate (wkomegai1(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wkomegai1 in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating wkomegai1 in dis_extract', stdout)
     allocate (czmat_in(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating czmat_in in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating czmat_in in dis_extract', stdout)
     allocate (czmat_out(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating czmat_out in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating czmat_out in dis_extract', stdout)
 
     allocate (history(dis_data%conv_window), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating history in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating history in dis_extract', stdout)
 
     ! ********************************************
     ! ENERGY WINDOWS AND SUBSPACES AT EACH K-POINT
@@ -1836,7 +1837,7 @@ contains
     ! ------------------
     do iter = 1, dis_data%num_iter
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 1)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 1, stdout)
 
       if (iter .eq. 1) then
         ! Initialize Z matrix at k points w/ non-frozen states
@@ -1846,14 +1847,14 @@ contains
             call internal_zmatrix(on_root, num_bands, param_input%timing_level, kmesh_info%nntot, &
                                   num_wann, dis_data%ndimwin, kmesh_info%nnlist, indxnfroz, &
                                   ndimfroz, nkp, nkp_loc, kmesh_info%wb, u_matrix_opt, &
-                                  m_matrix_orig_local, cbw, czmat_in_loc(:, :, nkp_loc))
+                                  m_matrix_orig_local, cbw, czmat_in_loc(:, :, nkp_loc), stdout)
           endif
         enddo
 
         if (lsitesymmetry) then
           call comms_gatherv(czmat_in_loc, num_bands*num_bands*counts(my_node_id), czmat_in, &
-                             num_bands*num_bands*counts, num_bands*num_bands*displs)
-          call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts)
+                             num_bands*num_bands*counts, num_bands*num_bands*displs, stdout)
+          call comms_bcast(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, stdout)
           call sitesym_symmetrize_zmatrix(czmat_in, dis_data%lwindow, num_bands, num_kpts, sym) !RS:
           do nkp_loc = 1, counts(my_node_id)
             nkp = nkp_loc + displs(my_node_id)
@@ -1884,9 +1885,9 @@ contains
         enddo
       endif
       ! [if iter=1]
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_1', 2, stdout)
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 1)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 1, stdout)
 
       womegai1 = 0.0_dp
       ! wkomegai1 is defined by Eq. (18) of SMV.
@@ -1909,7 +1910,7 @@ contains
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
         if (ndimfroz(nkp) .gt. 0) then
-          if (lsitesymmetry) call io_error('not implemented in symmetry-adapted mode') !YN: RS:
+          if (lsitesymmetry) call io_error('not implemented in symmetry-adapted mode', stdout) !YN: RS:
           do nn = 1, kmesh_info%nntot
             nkp2 = kmesh_info%nnlist(nkp, nn)
             call zgemm('C', 'N', ndimfroz(nkp), dis_data%ndimwin(nkp2), dis_data%ndimwin(nkp), &
@@ -1927,9 +1928,9 @@ contains
           enddo
         endif
       enddo
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_2', 2, stdout)
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 1)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 1, stdout)
 
       !! ! send chunks of wkomegai1 to root node
       !! call comms_gatherv(wkomegai1_loc, counts(my_node_id), wkomegai1, counts, displs)
@@ -1968,12 +1969,12 @@ contains
                 write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
                 write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
               endif
-              call io_error(' dis_extract: error')
+              call io_error(' dis_extract: error', stdout)
             endif
             if (info .gt. 0) then
               if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING Z MATRIX'
               if (on_root) write (stdout, *) info, ' EIGENVECTORS FAILED TO CONVERGE'
-              call io_error(' dis_extract: error')
+              call io_error(' dis_extract: error', stdout)
             endif
 
             ! Update the optimal subspace by incorporating the num_wann-ndimfroz(nkp) l
@@ -2005,9 +2006,9 @@ contains
 
           if (iter .eq. dis_data%num_iter) then
             allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
-            if (ierr /= 0) call io_error('Error allocating camp in dis_extract')
+            if (ierr /= 0) call io_error('Error allocating camp in dis_extract', stdout)
             allocate (camp_loc(num_bands, num_bands, max(1, counts(my_node_id))), stat=ierr)
-            if (ierr /= 0) call io_error('Error allocating ucamp_loc in dis_extract')
+            if (ierr /= 0) call io_error('Error allocating ucamp_loc in dis_extract', stdout)
 
             if (dis_data%ndimwin(nkp) .gt. num_wann) then
               do j = 1, dis_data%ndimwin(nkp) - num_wann
@@ -2038,24 +2039,24 @@ contains
       !! ! send back the whole wkomegai1 array to other nodes
       !! call comms_bcast(wkomegai1(1), num_kpts)
 
-      call comms_allreduce(womegai1, 1, 'SUM')
+      call comms_allreduce(womegai1, 1, 'SUM', stdout)
 
       call comms_gatherv(u_matrix_opt_loc, num_bands*num_wann*counts(my_node_id), u_matrix_opt, &
-                         num_bands*num_wann*counts, num_bands*num_wann*displs)
-      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
+                         num_bands*num_wann*counts, num_bands*num_wann*displs, stdout)
+      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout)
       if (lsitesymmetry) call sitesym_symmetrize_u_matrix(num_wann, num_bands, num_kpts, num_bands, &
                                                           u_matrix_opt, sym, stdout, dis_data%lwindow) !RS:
 
       if (index(param_input%devel_flag, 'compspace') > 0) then
         if (iter .eq. dis_data%num_iter) then
           call comms_gatherv(camp_loc, num_bands*num_bands*counts(my_node_id), camp, &
-                             num_bands*num_bands*counts, num_bands*num_bands*displs)
+                             num_bands*num_bands*counts, num_bands*num_bands*displs, stdout)
 
-          call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts)
+          call comms_bcast(camp(1, 1, 1), num_bands*num_bands*num_kpts, stdout)
         endif
       endif
 
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_3', 2, stdout)
 
       womegai1 = womegai1/real(num_kpts, dp)
 
@@ -2095,7 +2096,7 @@ contains
 
       ! Compute womegai  using the updated subspaces at all k, i.e.,
       ! replacing (i-1) by (i) in Eq. (12) SMV
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 1)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 1, stdout)
 
       womegai = 0.0_dp
       do nkp_loc = 1, counts(my_node_id)
@@ -2120,11 +2121,11 @@ contains
         womegai = womegai + wkomegai
       enddo
 
-      call comms_allreduce(womegai, 1, 'SUM')
+      call comms_allreduce(womegai, 1, 'SUM', stdout)
 
       womegai = womegai/real(num_kpts, dp)
       ! [Loop over k (nkp)]
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 2)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract_4', 2, stdout)
 
       delta_womegai = womegai1/womegai - 1.0_dp
 
@@ -2142,14 +2143,14 @@ contains
           call internal_zmatrix(on_root, num_bands, param_input%timing_level, kmesh_info%nntot, &
                                 num_wann, dis_data%ndimwin, kmesh_info%nnlist, indxnfroz, ndimfroz, &
                                 nkp, nkp_loc, kmesh_info%wb, u_matrix_opt, m_matrix_orig_local, &
-                                cbw, czmat_out_loc(:, :, nkp_loc))
+                                cbw, czmat_out_loc(:, :, nkp_loc), stdout)
         endif
       enddo
 
       if (lsitesymmetry) then
         call comms_gatherv(czmat_out_loc, num_bands*num_bands*counts(my_node_id), czmat_out, &
-                           num_bands*num_bands*counts, num_bands*num_bands*displs)
-        call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts)
+                           num_bands*num_bands*counts, num_bands*num_bands*displs, stdout)
+        call comms_bcast(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts, stdout)
         call sitesym_symmetrize_zmatrix(czmat_out, dis_data%lwindow, num_bands, num_kpts, sym) !RS:
         do nkp_loc = 1, counts(my_node_id)
           nkp = nkp_loc + displs(my_node_id)
@@ -2158,7 +2159,7 @@ contains
       end if
 
       call internal_test_convergence(iter, dis_data%conv_window, history, delta_womegai, &
-                                     dis_data%conv_tol, dis_converged)
+                                     dis_data%conv_tol, dis_converged, stdout)
 
       if (dis_converged) then
         if (on_root) then
@@ -2173,19 +2174,19 @@ contains
     ! [BIG ITERATION LOOP (iter)]
 
     deallocate (czmat_out, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating czmat_out in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating czmat_out in dis_extract', stdout)
     deallocate (czmat_in, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating czmat_in in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating czmat_in in dis_extract', stdout)
     deallocate (czmat_out_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating czmat_out_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating czmat_out_loc in dis_extract', stdout)
     deallocate (czmat_in_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating czmat_in_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating czmat_in_loc in dis_extract', stdout)
 
     if (on_root) then
       allocate (ceamp(num_bands, num_bands, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ceamp in dis_extract')
+      if (ierr /= 0) call io_error('Error allocating ceamp in dis_extract', stdout)
       allocate (cham(num_bands, num_bands, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating cham in dis_extract')
+      if (ierr /= 0) call io_error('Error allocating cham in dis_extract', stdout)
     endif
 
     if (.not. dis_converged) then
@@ -2257,12 +2258,12 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
           if (on_root) write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-          call io_error(' dis_extract: error')
+          call io_error(' dis_extract: error', stdout)
         endif
         if (info .gt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
           if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-          call io_error(' dis_extract: error')
+          call io_error(' dis_extract: error', stdout)
         endif
 
         ! Store the energy eigenvalues of the optimal subspace (used in wann_ban
@@ -2306,8 +2307,8 @@ contains
         !  'Note(symmetry-adapted mode): u_matrix_opt are no longer the eigenstates of the subspace Hamiltonian.' !RS:
       endif                                                                                                        !YN:
     endif
-    call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts)
-    call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
+    call comms_bcast(eigval_opt(1, 1), num_bands*num_kpts, stdout)
+    call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout)
 
     if (index(param_input%devel_flag, 'compspace') > 0) then
 
@@ -2342,12 +2343,12 @@ contains
           if (info .lt. 0) then
             if (on_root) write (stdout, *) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
             if (on_root) write (stdout, *) 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-            call io_error(' dis_extract: error')
+            call io_error(' dis_extract: error', stdout)
           endif
           if (info .gt. 0) then
             if (on_root) write (stdout, *) '*** ERROR *** ZHPEVX WHILE DIAGONALIZING HAMILTONIAN'
             if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-            call io_error(' dis_extract: error')
+            call io_error(' dis_extract: error', stdout)
           endif
           ! CALCULATE AMPLITUDES OF THE ENERGY EIGENVECTORS IN THE COMPLEMENT SUBS
           ! TERMS OF THE ORIGINAL ENERGY EIGENVECTORS
@@ -2373,70 +2374,71 @@ contains
     endif     ![if(index(devel_flag,'compspace')>0)]
 
     deallocate (history, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating history in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating history in dis_extract', stdout)
 
     if (on_root) then
       deallocate (cham, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating cham in dis_extract')
+      if (ierr /= 0) call io_error('Error deallocating cham in dis_extract', stdout)
     endif
     if (allocated(camp)) then
       deallocate (camp, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating camp in dis_extract')
+      if (ierr /= 0) call io_error('Error deallocating camp in dis_extract', stdout)
     end if
     if (allocated(camp_loc)) then
       deallocate (camp_loc, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating camp_loc in dis_extract')
+      if (ierr /= 0) call io_error('Error deallocating camp_loc in dis_extract', stdout)
     endif
     if (on_root) then
       deallocate (ceamp, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating ceamp in dis_extract')
+      if (ierr /= 0) call io_error('Error deallocating ceamp in dis_extract', stdout)
     endif
     deallocate (u_matrix_opt_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating u_matrix_opt_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating u_matrix_opt_loc in dis_extract', stdout)
     deallocate (wkomegai1_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating wkomegai1_loc in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating wkomegai1_loc in dis_extract', stdout)
     deallocate (wkomegai1, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating wkomegai1 in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating wkomegai1 in dis_extract', stdout)
 
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cz in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating cz in dis_extract', stdout)
     deallocate (cwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cwork in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating cwork in dis_extract', stdout)
     deallocate (cap, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cap in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating cap in dis_extract', stdout)
     deallocate (rwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rwork in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating rwork in dis_extract', stdout)
     deallocate (w, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating w in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating w in dis_extract', stdout)
     deallocate (ifail, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating ifail in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating ifail in dis_extract', stdout)
     deallocate (iwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating iwork in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating iwork in dis_extract', stdout)
 
     deallocate (cbw, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cbw in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating cbw in dis_extract', stdout)
     deallocate (cww, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cww in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating cww in dis_extract', stdout)
     deallocate (cwb, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cwb in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating cwb in dis_extract', stdout)
 
     if (on_root) write (stdout, '(1x,a/)') &
       '+----------------------------------------------------------------------------+'
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 2)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('dis: extract', 2, stdout)
 
     return
     !==================================================================!
   end subroutine dis_extract
 
   subroutine internal_test_convergence(iter, dis_conv_window, history, delta_womegai, dis_conv_tol, &
-                                       dis_converged)
+                                       dis_converged, stdout)
     !! Check if we have converged
 
     implicit none
 
     ! passed variables
     integer, intent(in) :: iter, dis_conv_window
+    integer, intent(in) :: stdout
     real(kind=dp), intent(inout) :: history(:) ! (dis_conv_window)
     real(kind=dp), intent(in) :: delta_womegai, dis_conv_tol
     logical, intent(inout) :: dis_converged
@@ -2446,7 +2448,7 @@ contains
     real(kind=dp), allocatable :: temp_hist(:)
 
     allocate (temp_hist(dis_conv_window), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating temp_hist in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating temp_hist in dis_extract', stdout)
 
     if (iter .le. dis_conv_window) then
       history(iter) = delta_womegai
@@ -2461,7 +2463,7 @@ contains
     endif
 
     deallocate (temp_hist, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating temp_hist in dis_extract')
+    if (ierr /= 0) call io_error('Error deallocating temp_hist in dis_extract', stdout)
 
     return
     !==================================================================!
@@ -2469,7 +2471,7 @@ contains
 
   subroutine internal_zmatrix(on_root, num_bands, timing_level, nntot, num_wann, ndimwin, nnlist, &
                               indxnfroz, ndimfroz, nkp, nkp_loc, wb, u_matrix_opt, &
-                              m_matrix_orig_local, cbw, cmtrx)
+                              m_matrix_orig_local, cbw, cmtrx, stdout)
     !==================================================================!
     !! Compute the Z-matrix
     !                                                                  !
@@ -2483,6 +2485,7 @@ contains
     logical, intent(in) :: on_root
     integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: indxnfroz(:, :) ! (num_bands,num_kpts)
@@ -2504,7 +2507,7 @@ contains
     integer          :: l, m, n, p, q, nn, nkp2, ndimk
     complex(kind=dp) :: csum
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: extract: zmatrix', 1)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: extract: zmatrix', 1, stdout)
 
     cmtrx = cmplx_0
     ndimk = ndimwin(nkp) - ndimfroz(nkp)
@@ -2527,7 +2530,7 @@ contains
       enddo
     enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: extract: zmatrix', 2)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('dis: extract: zmatrix', 2, stdout)
 
     return
     !==================================================================!
@@ -2629,7 +2632,7 @@ contains
     real(kind=dp), allocatable :: history(:)
     logical                       :: dis_converged
 
-    if (param_input%timing_level > 1) call io_stopwatch('dis: extract', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('dis: extract', 1, stdout)
 
     write (stdout, '(/1x,a)') &
       '                  Extraction of optimally-connected subspace                  '
@@ -2637,40 +2640,40 @@ contains
       '                  ------------------------------------------                  '
 
     allocate (cwb(num_wann, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cwb in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating cwb in dis_extract_gamma', stdout)
     allocate (cww(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cww in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating cww in dis_extract_gamma', stdout)
     allocate (cbw(num_bands, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cbw in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating cbw in dis_extract_gamma', stdout)
     cwb = cmplx_0; cww = cmplx_0; cbw = cmplx_0
 
     allocate (iwork(5*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating iwork in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating iwork in dis_extract_gamma', stdout)
     allocate (ifail(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating ifail in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating ifail in dis_extract_gamma', stdout)
     allocate (w(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating w in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating w in dis_extract_gamma', stdout)
     allocate (cz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cz in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating cz in dis_extract_gamma', stdout)
 !@@@
     allocate (work(8*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating work in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating work in dis_extract_gamma', stdout)
     allocate (cap_r((num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cap_r in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating cap_r in dis_extract_gamma', stdout)
     allocate (rz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating rz in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating rz in dis_extract_gamma', stdout)
 !@@@
 
     allocate (wkomegai1(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wkomegai1 in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating wkomegai1 in dis_extract_gamma', stdout)
 !@@@
     allocate (rzmat_in(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating rzmat_in in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating rzmat_in in dis_extract', stdout)
     allocate (rzmat_out(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating rzmat_out in dis_extract')
+    if (ierr /= 0) call io_error('Error allocating rzmat_out in dis_extract', stdout)
 !@@@
     allocate (history(dis_data%conv_window), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating history in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating history in dis_extract_gamma', stdout)
 
     ! ********************************************
     ! ENERGY WINDOWS AND SUBSPACES AT EACH K-POINT
@@ -2740,7 +2743,7 @@ contains
             call internal_zmatrix_gamma(param_input%timing_level, kmesh_info%nntot, num_wann, &
                                         num_bands, dis_data%ndimwin, kmesh_info%nnlist, nkp, &
                                         rzmat_in(:, :, nkp), m_matrix_orig, u_matrix_opt, ndimfroz, &
-                                        indxnfroz, kmesh_info%wb, cbw)
+                                        indxnfroz, kmesh_info%wb, cbw, stdout)
           endif
         enddo
       else
@@ -2805,12 +2808,12 @@ contains
           if (info .lt. 0) then
             write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING Z MATRIX'
             write (stdout, *) ' THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-            call io_error(' dis_extract_gamma: error')
+            call io_error(' dis_extract_gamma: error', stdout)
           endif
           if (info .gt. 0) then
             write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING Z MATRIX'
             write (stdout, *) info, ' EIGENVECTORS FAILED TO CONVERGE'
-            call io_error(' dis_extract_gamma: error')
+            call io_error(' dis_extract_gamma: error', stdout)
           endif
           cz(:, :) = cmplx(rz(:, :), 0.0_dp, dp)
           !
@@ -2842,7 +2845,7 @@ contains
           if (iter .eq. dis_data%num_iter) then
             allocate (camp(num_bands, num_bands, num_kpts), stat=ierr)
             camp = cmplx_0
-            if (ierr /= 0) call io_error('Error allocating camp in dis_extract_gamma')
+            if (ierr /= 0) call io_error('Error allocating camp in dis_extract_gamma', stdout)
             if (dis_data%ndimwin(nkp) .gt. num_wann) then
               do j = 1, dis_data%ndimwin(nkp) - num_wann
                 if (num_wann .gt. ndimfroz(nkp)) then
@@ -2942,12 +2945,12 @@ contains
           call internal_zmatrix_gamma(param_input%timing_level, kmesh_info%nntot, num_wann, &
                                       num_bands, dis_data%ndimwin, kmesh_info%nnlist, nkp, &
                                       rzmat_out(:, :, nkp), m_matrix_orig, u_matrix_opt, ndimfroz, &
-                                      indxnfroz, kmesh_info%wb, cbw)
+                                      indxnfroz, kmesh_info%wb, cbw, stdout)
         endif
       enddo
 
       call internal_test_convergence(iter, dis_data%conv_window, history, delta_womegai, &
-                                     dis_data%conv_tol, dis_converged)
+                                     dis_data%conv_tol, dis_converged, stdout)
 
       if (dis_converged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
@@ -2961,14 +2964,14 @@ contains
     ! [BIG ITERATION LOOP (iter)]
 
     deallocate (rzmat_out, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rzmat_out in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating rzmat_out in dis_extract_gamma', stdout)
     deallocate (rzmat_in, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rzmat_in in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating rzmat_in in dis_extract_gamma', stdout)
 
     allocate (ceamp(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating ceamp in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating ceamp in dis_extract_gamma', stdout)
     allocate (cham(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating cham in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error allocating cham in dis_extract_gamma', stdout)
 
     if (.not. dis_converged) then
       write (stdout, '(/5x,a)') &
@@ -3031,12 +3034,12 @@ contains
       if (info .lt. 0) then
         write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
         write (stdout, *) ' THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-        call io_error(' dis_extract_gamma: error')
+        call io_error(' dis_extract_gamma: error', stdout)
       endif
       if (info .gt. 0) then
         write (stdout, *) ' *** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
         write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-        call io_error(' dis_extract_gamma: error')
+        call io_error(' dis_extract_gamma: error', stdout)
       endif
 
       cz = cmplx_0
@@ -3114,12 +3117,12 @@ contains
           if (info .lt. 0) then
             write (stdout, *) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
             write (stdout, *) 'THE ', -info, ' ARGUMENT OF DSPEVX HAD AN ILLEGAL VALUE'
-            call io_error(' dis_extract_gamma: error')
+            call io_error(' dis_extract_gamma: error', stdout)
           endif
           if (info .gt. 0) then
             write (stdout, *) '*** ERROR *** DSPEVX WHILE DIAGONALIZING HAMILTONIAN'
             write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-            call io_error(' dis_extract_gamma: error')
+            call io_error(' dis_extract_gamma: error', stdout)
           endif
 
           cz = cmplx_0
@@ -3153,47 +3156,47 @@ contains
     ! [if index(devel_flag,'compspace')>0]
 
     deallocate (history, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating history in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating history in dis_extract_gamma', stdout)
 
     deallocate (cham, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cham in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating cham in dis_extract_gamma', stdout)
     if (allocated(camp)) then
       deallocate (camp, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating camp in dis_extract_gamma')
+      if (ierr /= 0) call io_error('Error deallocating camp in dis_extract_gamma', stdout)
     end if
     deallocate (ceamp, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating ceamp in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating ceamp in dis_extract_gamma', stdout)
     deallocate (wkomegai1, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating wkomegai1 in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating wkomegai1 in dis_extract_gamma', stdout)
 
 !@@@
     deallocate (rz, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating rz in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating rz in dis_extract_gamma', stdout)
     deallocate (cap_r, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cap_r in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating cap_r in dis_extract_gamma', stdout)
     deallocate (work, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating work in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating work in dis_extract_gamma', stdout)
 !@@@
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cz in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating cz in dis_extract_gamma', stdout)
     deallocate (w, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating w in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating w in dis_extract_gamma', stdout)
     deallocate (ifail, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating ifail in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating ifail in dis_extract_gamma', stdout)
     deallocate (iwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating iwork in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating iwork in dis_extract_gamma', stdout)
 
     deallocate (cbw, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cbw in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating cbw in dis_extract_gamma', stdout)
     deallocate (cww, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cww in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating cww in dis_extract_gamma', stdout)
     deallocate (cwb, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating cwb in dis_extract_gamma')
+    if (ierr /= 0) call io_error('Error deallocating cwb in dis_extract_gamma', stdout)
 
     write (stdout, '(1x,a/)') &
       '+----------------------------------------------------------------------------+'
 
-    if (param_input%timing_level > 1) call io_stopwatch('dis: extract_gamma', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('dis: extract_gamma', 2, stdout)
 
     return
     !==================================================================!
@@ -3201,7 +3204,7 @@ contains
 
   subroutine internal_zmatrix_gamma(timing_level, nntot, num_wann, num_bands, ndimwin, nnlist, nkp, &
                                     rmtrx, m_matrix_orig, u_matrix_opt, ndimfroz, indxnfroz, wb, &
-                                    cbw)
+                                    cbw, stdout)
     !==================================================================!
     !! Compute Z-matrix (Gamma point routine)
     !                                                                  !
@@ -3215,6 +3218,7 @@ contains
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_bands, num_wann
     integer, intent(in) :: nkp
+    integer, intent(in) :: stdout
     integer, intent(in) :: ndimwin(:) ! (num_kpts)
     integer, intent(in) :: nntot, nnlist(:, :) ! (num_kpts, nntot)
     integer, intent(in) :: ndimfroz(:) ! (num_kpts)
@@ -3231,7 +3235,7 @@ contains
     integer          :: l, m, n, p, q, nn, nkp2, ndimk
     complex(kind=dp) :: csum
 
-    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 1)
+    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 1, stdout)
 
     rmtrx = 0.0_dp
     ndimk = ndimwin(nkp) - ndimfroz(nkp)
@@ -3254,7 +3258,7 @@ contains
       enddo
     enddo
 
-    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 2)
+    if (timing_level > 1) call io_stopwatch('dis: extract_gamma: zmatrix_gamma', 2, stdout)
 
     return
     !==================================================================!

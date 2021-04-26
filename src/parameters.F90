@@ -313,74 +313,79 @@ module w90_param_methods
 
 contains
 
-  subroutine param_read_verbosity(param_input)
+  subroutine param_read_verbosity(param_input, stdout)
     !%%%%%%%%%%%%%%%%
     !System variables
     !%%%%%%%%%%%%%%%%
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
     logical :: found
+    integer, intent(in) :: stdout
 
     param_input%timing_level = 1             ! Verbosity of timing output info
-    call param_get_keyword('timing_level', found, i_value=param_input%timing_level)
+    call param_get_keyword(stdout, 'timing_level', found, i_value=param_input%timing_level)
 
     param_input%iprint = 1             ! Verbosity
-    call param_get_keyword('iprint', found, i_value=param_input%iprint)
+    call param_get_keyword(stdout, 'iprint', found, i_value=param_input%iprint)
 
     param_input%optimisation = 3             ! Verbosity
-    call param_get_keyword('optimisation', found, i_value=param_input%optimisation)
+    call param_get_keyword(stdout, 'optimisation', found, i_value=param_input%optimisation)
 
   end subroutine param_read_verbosity
 
-  subroutine param_read_units(param_input, energy_unit, bohr)
+  subroutine param_read_units(param_input, energy_unit, bohr, stdout)
     !use w90_constants, only: bohr
     use w90_io, only: io_error
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
+    integer, intent(in) :: stdout
     character(len=*), intent(out) :: energy_unit
     real(kind=dp), intent(in) :: bohr
     logical :: found
 
     energy_unit = 'ev'          !
-    call param_get_keyword('energy_unit', found, c_value=energy_unit)
+    call param_get_keyword(stdout, 'energy_unit', found, c_value=energy_unit)
 
     param_input%length_unit = 'ang'         !
     param_input%lenconfac = 1.0_dp
-    call param_get_keyword('length_unit', found, c_value=param_input%length_unit)
+    call param_get_keyword(stdout, 'length_unit', found, c_value=param_input%length_unit)
     if (param_input%length_unit .ne. 'ang' .and. param_input%length_unit .ne. 'bohr') &
-      call io_error('Error: value of length_unit not recognised in param_read')
+      call io_error('Error: value of length_unit not recognised in param_read', stdout)
     if (param_input%length_unit .eq. 'bohr') param_input%lenconfac = 1.0_dp/bohr
   end subroutine param_read_units
 
-  subroutine param_read_num_wann(num_wann)
+  subroutine param_read_num_wann(num_wann, stdout)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     integer, intent(out) :: num_wann
     logical :: found
 
     num_wann = -99
-    call param_get_keyword('num_wann', found, i_value=num_wann)
-    if (.not. found) call io_error('Error: You must specify num_wann')
-    if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero')
+    call param_get_keyword(stdout, 'num_wann', found, i_value=num_wann)
+    if (.not. found) call io_error('Error: You must specify num_wann', stdout)
+    if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero', stdout)
   end subroutine param_read_num_wann
 
-  subroutine param_read_exclude_bands(param_input)
+  subroutine param_read_exclude_bands(param_input, stdout)
     use w90_io, only: io_error
     implicit none
+
     type(parameter_input_type), intent(inout) :: param_input
+    integer, intent(in) :: stdout
     integer :: ierr
     logical :: found
 
     param_input%num_exclude_bands = 0
-    call param_get_range_vector('exclude_bands', found, param_input%num_exclude_bands, lcount=.true.)
+    call param_get_range_vector(stdout, 'exclude_bands', found, param_input%num_exclude_bands, lcount=.true.)
     if (found) then
-      if (param_input%num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands')
+      if (param_input%num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout)
       if (allocated(param_input%exclude_bands)) deallocate (param_input%exclude_bands)
       allocate (param_input%exclude_bands(param_input%num_exclude_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating exclude_bands in param_read')
-      call param_get_range_vector('exclude_bands', found, param_input%num_exclude_bands, .false., param_input%exclude_bands)
+      if (ierr /= 0) call io_error('Error allocating exclude_bands in param_read', stdout)
+      call param_get_range_vector(stdout, 'exclude_bands', found, param_input%num_exclude_bands, .false., param_input%exclude_bands)
       if (any(param_input%exclude_bands < 1)) &
-        call io_error('Error: exclude_bands must contain positive numbers')
+        call io_error('Error: exclude_bands must contain positive numbers', stdout)
     end if
   end subroutine param_read_exclude_bands
 
@@ -399,7 +404,7 @@ contains
 
     ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
 !    num_bands       =   -1
-    call param_get_keyword('num_bands', found, i_value=i_temp)
+    call param_get_keyword(stdout, 'num_bands', found, i_value=i_temp)
     if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       if (found) num_bands = i_temp
@@ -412,19 +417,20 @@ contains
       if (found .and. num_bands < num_wann) then
         write (stdout, *) 'num_bands', num_bands
         write (stdout, *) 'num_wann', num_wann
-        call io_error('Error: num_bands must be greater than or equal to num_wann')
+        call io_error('Error: num_bands must be greater than or equal to num_wann', stdout)
       endif
     endif
   end subroutine param_read_num_bands
 
-  subroutine param_read_devel(devel_flag)
+  subroutine param_read_devel(devel_flag, stdout)
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     character(len=*), intent(out) :: devel_flag
     logical :: found
 
     devel_flag = ' '          !
-    call param_get_keyword('devel_flag', found, c_value=devel_flag)
+    call param_get_keyword(stdout, 'devel_flag', found, c_value=devel_flag)
   end subroutine param_read_devel
 
   subroutine param_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout)
@@ -437,14 +443,14 @@ contains
     logical :: found
 
 !    mp_grid=-99
-    call param_get_keyword_vector('mp_grid', found, 3, i_value=iv_temp)
+    call param_get_keyword_vector(stdout, 'mp_grid', found, 3, i_value=iv_temp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <mp_grid> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
       if (.not. found) then
-        call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
+        call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid', stdout)
       elseif (any(mp_grid < 1)) then
-        call io_error('Error: mp_grid must be greater than zero')
+        call io_error('Error: mp_grid must be greater than zero', stdout)
       end if
       num_kpts = mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
@@ -459,7 +465,7 @@ contains
     logical :: found, ltmp
 
     ltmp = .false.  ! by default our WF are not spinors
-    call param_get_keyword('spinors', found, l_value=ltmp)
+    call param_get_keyword(stdout, 'spinors', found, l_value=ltmp)
     if (.not. library) then
       param_input%spinors = ltmp
     else
@@ -475,79 +481,81 @@ contains
     else
       param_input%num_elec_per_state = 2
     endif
-    call param_get_keyword('num_elec_per_state', found, i_value=param_input%num_elec_per_state)
+    call param_get_keyword(stdout, 'num_elec_per_state', found, i_value=param_input%num_elec_per_state)
     if ((param_input%num_elec_per_state /= 1) .and. (param_input%num_elec_per_state /= 2)) &
-      call io_error('Error: num_elec_per_state can be only 1 or 2')
+      call io_error('Error: num_elec_per_state can be only 1 or 2', stdout)
     if (param_input%spinors .and. param_input%num_elec_per_state /= 1) &
-      call io_error('Error: when spinors = T num_elec_per_state must be 1')
+      call io_error('Error: when spinors = T num_elec_per_state must be 1', stdout)
 
     ! set to a negative default value
     param_input%num_valence_bands = -99
-    call param_get_keyword('num_valence_bands', found, i_value=param_input%num_valence_bands)
+    call param_get_keyword(stdout, 'num_valence_bands', found, i_value=param_input%num_valence_bands)
     if (found .and. (param_input%num_valence_bands .le. 0)) &
-      call io_error('Error: num_valence_bands should be greater than zero')
+      call io_error('Error: num_valence_bands should be greater than zero', stdout)
     ! there is a check on this parameter later
 
   end subroutine param_read_system
 
-  subroutine param_read_kpath(library, spec_points, ok)
+  subroutine param_read_kpath(library, spec_points, ok, stdout)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: library
     type(special_kpoints_type), intent(out) :: spec_points
+    integer, intent(in) :: stdout
     logical, intent(out) :: ok
     integer :: i_temp, ierr
     logical :: found
 
     spec_points%bands_num_spec_points = 0
-    call param_get_block_length('kpoint_path', found, i_temp, library)
+    call param_get_block_length(stdout, 'kpoint_path', found, i_temp, library)
     if (found) then
       ok = .true.
       spec_points%bands_num_spec_points = i_temp*2
       if (allocated(spec_points%bands_label)) deallocate (spec_points%bands_label)
       allocate (spec_points%bands_label(spec_points%bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bands_label in param_read')
+      if (ierr /= 0) call io_error('Error allocating bands_label in param_read', stdout)
       if (allocated(spec_points%bands_spec_points)) deallocate (spec_points%bands_spec_points)
       allocate (spec_points%bands_spec_points(3, spec_points%bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bands_spec_points in param_read')
-      call param_get_keyword_kpath(spec_points)
+      if (ierr /= 0) call io_error('Error allocating bands_spec_points in param_read', stdout)
+      call param_get_keyword_kpath(spec_points, stdout)
     else
       ok = .false.
     end if
   end subroutine param_read_kpath
 
-  subroutine param_read_fermi_energy(found_fermi_energy, fermi)
+  subroutine param_read_fermi_energy(found_fermi_energy, fermi, stdout)
     use w90_io, only: io_error
     implicit none
     logical, intent(out) :: found_fermi_energy
     type(fermi_data_type), intent(out) :: fermi
+    integer, intent(in) :: stdout
     integer :: i, ierr
     logical :: found
 
     fermi%n = 0
     found_fermi_energy = .false.
-    call param_get_keyword('fermi_energy', found, r_value=fermi_energy)
+    call param_get_keyword(stdout, 'fermi_energy', found, r_value=fermi_energy)
     if (found) then
       found_fermi_energy = .true.
       fermi%n = 1
     endif
     !
     fermi_energy_scan = .false.
-    call param_get_keyword('fermi_energy_min', found, r_value=fermi_energy_min)
+    call param_get_keyword(stdout, 'fermi_energy_min', found, r_value=fermi_energy_min)
     if (found) then
       if (found_fermi_energy) call io_error( &
-        'Error: Cannot specify both fermi_energy and fermi_energy_min')
+        'Error: Cannot specify both fermi_energy and fermi_energy_min', stdout)
       fermi_energy_scan = .true.
       fermi_energy_max = fermi_energy_min + 1.0_dp
-      call param_get_keyword('fermi_energy_max', found, &
+      call param_get_keyword(stdout, 'fermi_energy_max', found, &
                              r_value=fermi_energy_max)
       if (found .and. fermi_energy_max <= fermi_energy_min) call io_error( &
-        'Error: fermi_energy_max must be larger than fermi_energy_min')
+        'Error: fermi_energy_max must be larger than fermi_energy_min', stdout)
       fermi_energy_step = 0.01_dp
-      call param_get_keyword('fermi_energy_step', found, &
+      call param_get_keyword(stdout, 'fermi_energy_step', found, &
                              r_value=fermi_energy_step)
       if (found .and. fermi_energy_step <= 0.0_dp) call io_error( &
-        'Error: fermi_energy_step must be positive')
+        'Error: fermi_energy_step must be positive', stdout)
       fermi%n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
     endif
     !
@@ -580,39 +588,40 @@ contains
       fermi%energy_list(1) = 0.0_dp
     endif
     if (ierr /= 0) call io_error( &
-      'Error allocating fermi_energy_list in param_read')
+      'Error allocating fermi_energy_list in param_read', stdout)
   end subroutine param_read_fermi_energy
 
-  subroutine param_read_ws_data(param_input)
+  subroutine param_read_ws_data(param_input, stdout)
     use w90_io, only: io_error
     implicit none
     type(parameter_input_type), intent(inout) :: param_input
+    integer, intent(in) :: stdout
     integer :: i
     logical :: found
 
     param_input%use_ws_distance = .true.
-    call param_get_keyword('use_ws_distance', found, l_value=param_input%use_ws_distance)
+    call param_get_keyword(stdout, 'use_ws_distance', found, l_value=param_input%use_ws_distance)
 
     param_input%ws_distance_tol = 1.e-5_dp
-    call param_get_keyword('ws_distance_tol', found, r_value=param_input%ws_distance_tol)
+    call param_get_keyword(stdout, 'ws_distance_tol', found, r_value=param_input%ws_distance_tol)
 
     param_input%ws_search_size = 2
 
-    call param_get_vector_length('ws_search_size', found, length=i)
+    call param_get_vector_length(stdout, 'ws_search_size', found, length=i)
     if (found) then
       if (i .eq. 1) then
-        call param_get_keyword_vector('ws_search_size', found, 1, &
+        call param_get_keyword_vector(stdout, 'ws_search_size', found, 1, &
                                       i_value=param_input%ws_search_size)
         param_input%ws_search_size(2) = param_input%ws_search_size(1)
         param_input%ws_search_size(3) = param_input%ws_search_size(1)
       elseif (i .eq. 3) then
-        call param_get_keyword_vector('ws_search_size', found, 3, &
+        call param_get_keyword_vector(stdout, 'ws_search_size', found, 3, &
                                       i_value=param_input%ws_search_size)
       else
-        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers')
+        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', stdout)
       end if
       if (any(param_input%ws_search_size <= 0)) &
-        call io_error('Error: ws_search_size elements must be greater than zero')
+        call io_error('Error: ws_search_size elements must be greater than zero', stdout)
     end if
   end subroutine param_read_ws_data
 
@@ -641,14 +650,14 @@ contains
         inquire (file=trim(seedname)//'.eig', exist=eig_found)
         if (.not. eig_found) then
           if (disentanglement) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+            call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement', stdout)
           else if ((w90_plot .or. pw90_boltzwann .or. pw90_geninterp)) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+            call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation', stdout)
           end if
         else
           ! Allocate only here
           allocate (eigval(num_bands, num_kpts), stat=ierr)
-          if (ierr /= 0) call io_error('Error allocating eigval in param_read')
+          if (ierr /= 0) call io_error('Error allocating eigval in param_read', stdout)
 
           eig_unit = io_file_unit()
           open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
@@ -665,7 +674,7 @@ contains
                 write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
                 write (stdout, '(a)') 'to account for these electrons.'
                 write (stdout, '(a)') ' '
-                call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
+                call io_error('param_read: mismatch in '//trim(seedname)//'.eig', stdout)
               end if
             enddo
           end do
@@ -678,85 +687,87 @@ contains
 
     return
 
-105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
-106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
+105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig', stdout)
+106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig', stdout)
 
   end subroutine param_read_eigvals
 
-  subroutine param_read_disentangle_all(eig_found, dis_data)
+  subroutine param_read_disentangle_all(eig_found, dis_data, stdout)
     use w90_io, only: io_error
     implicit none
     logical, intent(in) :: eig_found
     !real(kind=dp), intent(in) :: eigval(:, :)
     type(disentangle_type), intent(inout) :: dis_data
+    integer, intent(in) :: stdout
     !integer, intent(in) :: num_bands, num_wann
     !integer :: nkp, ierr
     logical :: found, found2
 
     !dis_data%win_min = -1.0_dp; dis_data%win_max = 0.0_dp
     !if (eig_found) dis_data%win_min = minval(eigval)
-    call param_get_keyword('dis_win_min', found, r_value=dis_data%win_min)
+    call param_get_keyword(stdout, 'dis_win_min', found, r_value=dis_data%win_min)
 
     !if (eig_found) dis_data%win_max = maxval(eigval)
-    call param_get_keyword('dis_win_max', found, r_value=dis_data%win_max)
+    call param_get_keyword(stdout, 'dis_win_max', found, r_value=dis_data%win_max)
     if (eig_found .and. (dis_data%win_max .lt. dis_data%win_min)) &
-      call io_error('Error: param_read: check disentanglement windows')
+      call io_error('Error: param_read: check disentanglement windows', stdout)
 
     dis_data%froz_min = -1.0_dp; dis_data%froz_max = 0.0_dp
     ! no default for dis_froz_max
     dis_data%frozen_states = .false.
-    call param_get_keyword('dis_froz_max', found, r_value=dis_data%froz_max)
+    call param_get_keyword(stdout, 'dis_froz_max', found, r_value=dis_data%froz_max)
     if (found) then
       dis_data%frozen_states = .true.
       dis_data%froz_min = dis_data%win_min ! default value for the bottom of frozen window
     end if
-    call param_get_keyword('dis_froz_min', found2, r_value=dis_data%froz_min)
+    call param_get_keyword(stdout, 'dis_froz_min', found2, r_value=dis_data%froz_min)
     if (eig_found) then
       if (dis_data%froz_max .lt. dis_data%froz_min) &
-        call io_error('Error: param_read: check disentanglement frozen windows')
+        call io_error('Error: param_read: check disentanglement frozen windows', stdout)
       if (found2 .and. .not. found) &
-        call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
+        call io_error('Error: param_read: found dis_froz_min but not dis_froz_max', stdout)
     endif
     ! ndimwin/lwindow are not read
   end subroutine param_read_disentangle_all
 
-  subroutine param_read_kmesh_data(kmesh_data)
+  subroutine param_read_kmesh_data(kmesh_data, stdout)
     use w90_io, only: io_error
     use w90_utility, only: utility_recip_lattice
     implicit none
     type(param_kmesh_type), intent(out) :: kmesh_data
+    integer, intent(in) :: stdout
     !real(kind=dp) :: real_lattice_tmp(3, 3), cell_volume
     integer :: itmp, ierr
     logical :: found
 
     kmesh_data%search_shells = 36
-    call param_get_keyword('search_shells', found, i_value=kmesh_data%search_shells)
-    if (kmesh_data%search_shells < 0) call io_error('Error: search_shells must be positive')
+    call param_get_keyword(stdout, 'search_shells', found, i_value=kmesh_data%search_shells)
+    if (kmesh_data%search_shells < 0) call io_error('Error: search_shells must be positive', stdout)
 
     kmesh_data%tol = 0.000001_dp
-    call param_get_keyword('kmesh_tol', found, r_value=kmesh_data%tol)
-    if (kmesh_data%tol < 0.0_dp) call io_error('Error: kmesh_tol must be positive')
+    call param_get_keyword(stdout, 'kmesh_tol', found, r_value=kmesh_data%tol)
+    if (kmesh_data%tol < 0.0_dp) call io_error('Error: kmesh_tol must be positive', stdout)
 
     kmesh_data%num_shells = 0
-    call param_get_range_vector('shell_list', found, kmesh_data%num_shells, lcount=.true.)
+    call param_get_range_vector(stdout, 'shell_list', found, kmesh_data%num_shells, lcount=.true.)
     if (found) then
       if (kmesh_data%num_shells < 0 .or. kmesh_data%num_shells > max_shells) &
-        call io_error('Error: number of shell in shell_list must be between zero and six')
+        call io_error('Error: number of shell in shell_list must be between zero and six', stdout)
       if (allocated(kmesh_data%shell_list)) deallocate (kmesh_data%shell_list)
       allocate (kmesh_data%shell_list(kmesh_data%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating shell_list in param_read')
-      call param_get_range_vector('shell_list', found, kmesh_data%num_shells, .false., kmesh_data%shell_list)
+      if (ierr /= 0) call io_error('Error allocating shell_list in param_read', stdout)
+      call param_get_range_vector(stdout, 'shell_list', found, kmesh_data%num_shells, .false., kmesh_data%shell_list)
       if (any(kmesh_data%shell_list < 1)) &
-        call io_error('Error: shell_list must contain positive numbers')
+        call io_error('Error: shell_list must contain positive numbers', stdout)
     else
       if (allocated(kmesh_data%shell_list)) deallocate (kmesh_data%shell_list)
       allocate (kmesh_data%shell_list(max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating shell_list in param_read')
+      if (ierr /= 0) call io_error('Error allocating shell_list in param_read', stdout)
     end if
 
-    call param_get_keyword('num_shells', found, i_value=itmp)
+    call param_get_keyword(stdout, 'num_shells', found, i_value=itmp)
     if (found .and. (itmp /= kmesh_data%num_shells)) &
-      call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list')
+      call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', stdout)
 
     ! If .true., does not perform the check of B1 of
     ! Marzari, Vanderbild, PRB 56, 12847 (1997)
@@ -764,7 +775,7 @@ contains
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
     kmesh_data%skip_B1_tests = .false.
-    call param_get_keyword('skip_b1_tests', found, l_value=kmesh_data%skip_B1_tests)
+    call param_get_keyword(stdout, 'skip_b1_tests', found, l_value=kmesh_data%skip_B1_tests)
 
   end subroutine param_read_kmesh_data
 
@@ -784,17 +795,17 @@ contains
     logical :: found
 
     if (.not. pw90_effective_model) allocate (k_points%kpt_cart(3, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
+    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read', stdout)
     if (.not. library) then
       allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
+      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read', stdout)
     end if
 
-    call param_get_keyword_block('kpoints', found, num_kpts, 3, bohr, r_value=k_points%kpt_cart)
+    call param_get_keyword_block(stdout, 'kpoints', found, num_kpts, 3, bohr, r_value=k_points%kpt_cart)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
     if (.not. library .and. .not. pw90_effective_model) then
       k_points%kpt_latt = k_points%kpt_cart
-      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file')
+      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file', stdout)
     end if
 
     ! Calculate the kpoints in cartesian coordinates
@@ -817,22 +828,23 @@ contains
     real(kind=dp), intent(in) :: bohr
     logical :: found
 
-    call param_get_keyword_block('unit_cell_cart', found, 3, 3, bohr, r_value=real_lattice_tmp)
+    call param_get_keyword_block(stdout, 'unit_cell_cart', found, 3, 3, bohr, r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
     if (.not. library) then
       real_lattice = transpose(real_lattice_tmp)
-      if (.not. found) call io_error('Error: Did not find the cell information in the input file')
+      if (.not. found) call io_error('Error: Did not find the cell information in the input file', stdout)
     end if
 
     if (.not. library) &
-      call utility_recip_lattice(real_lattice, recip_lattice, cell_volume)
+      call utility_recip_lattice(real_lattice, recip_lattice, cell_volume, stdout)
     !call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
   end subroutine param_read_lattice
 
-  subroutine param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice)
+  subroutine param_read_global_kmesh(global_kmesh_set, kmesh_spacing, kmesh, recip_lattice, stdout)
     use w90_io, only: io_error
     !use w90_utility, only: utility_recip_lattice
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(out) :: global_kmesh_set
     real(kind=dp), intent(out) :: kmesh_spacing
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
@@ -850,31 +862,31 @@ contains
     global_kmesh_set = .false.
     kmesh_spacing = -1._dp
     kmesh = 0
-    call param_get_keyword('kmesh_spacing', found, r_value=kmesh_spacing)
+    call param_get_keyword(stdout, 'kmesh_spacing', found, r_value=kmesh_spacing)
     if (found) then
       if (kmesh_spacing .le. 0._dp) &
-        call io_error('Error: kmesh_spacing must be greater than zero')
+        call io_error('Error: kmesh_spacing must be greater than zero', stdout)
       global_kmesh_set = .true.
 
       call internal_set_kmesh(kmesh_spacing, recip_lattice, kmesh)
     end if
-    call param_get_vector_length('kmesh', found, length=i)
+    call param_get_vector_length(stdout, 'kmesh', found, length=i)
     if (found) then
       if (global_kmesh_set) &
-        call io_error('Error: cannot set both kmesh and kmesh_spacing')
+        call io_error('Error: cannot set both kmesh and kmesh_spacing', stdout)
       if (i .eq. 1) then
         global_kmesh_set = .true.
-        call param_get_keyword_vector('kmesh', found, 1, i_value=kmesh)
+        call param_get_keyword_vector(stdout, 'kmesh', found, 1, i_value=kmesh)
         kmesh(2) = kmesh(1)
         kmesh(3) = kmesh(1)
       elseif (i .eq. 3) then
         global_kmesh_set = .true.
-        call param_get_keyword_vector('kmesh', found, 3, i_value=kmesh)
+        call param_get_keyword_vector(stdout, 'kmesh', found, 3, i_value=kmesh)
       else
-        call io_error('Error: kmesh must be provided as either one integer or a vector of three integers')
+        call io_error('Error: kmesh must be provided as either one integer or a vector of three integers', stdout)
       end if
       if (any(kmesh <= 0)) &
-        call io_error('Error: kmesh elements must be greater than zero')
+        call io_error('Error: kmesh elements must be greater than zero', stdout)
     end if
     ! [GP-end]
   end subroutine param_read_global_kmesh
@@ -892,12 +904,12 @@ contains
 
     ! Atoms
     if (.not. library) atoms%num_atoms = 0
-    call param_get_block_length('atoms_frac', found, i_temp, library)
+    call param_get_block_length(stdout, 'atoms_frac', found, i_temp, library)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call param_get_block_length('atoms_cart', found2, i_temp2, library, lunits)
+    call param_get_block_length(stdout, 'atoms_cart', found2, i_temp2, library, lunits)
     if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
     if (.not. library) then
-      if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
+      if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart', stdout)
       if (found .and. i_temp > 0) then
         lunits = .false.
         atoms%num_atoms = i_temp
@@ -906,7 +918,7 @@ contains
         if (lunits) atoms%num_atoms = atoms%num_atoms - 1
       end if
       if (atoms%num_atoms > 0) then
-        call param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr)
+        call param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr, stdout)
       end if
     endif
   end subroutine param_read_atoms
@@ -927,21 +939,22 @@ contains
         end if
       end do
       write (stdout, *)
-      call io_error('Unrecognised keyword(s) in input file, see also output file')
+      call io_error('Unrecognised keyword(s) in input file, see also output file', stdout)
     end if
 
     deallocate (in_data, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating in_data in param_read')
+    if (ierr /= 0) call io_error('Error deallocating in_data in param_read', stdout)
 
   end subroutine param_clean_infile
 
   subroutine param_read_final_alloc(disentanglement, dis_data, wann_data, &
-                                    num_wann, num_bands, num_kpts)
+                                    num_wann, num_bands, num_kpts, stdout)
     ! =============================== !
     ! Some checks and initialisations !
     ! =============================== !
     use w90_io, only: io_error
     implicit none
+    integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
     !type(parameter_input_type), intent(inout) :: param_input
     type(disentangle_type), intent(inout) :: dis_data
@@ -955,10 +968,10 @@ contains
     if (disentanglement) then
       if (allocated(dis_data%ndimwin)) deallocate (dis_data%ndimwin)
       allocate (dis_data%ndimwin(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ndimwin in param_read')
+      if (ierr /= 0) call io_error('Error allocating ndimwin in param_read', stdout)
       if (allocated(dis_data%lwindow)) deallocate (dis_data%lwindow)
       allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating lwindow in param_read')
+      if (ierr /= 0) call io_error('Error allocating lwindow in param_read', stdout)
     endif
 
 !    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
@@ -972,11 +985,11 @@ contains
 
     if (allocated(wann_data%centres)) deallocate (wann_data%centres)
     allocate (wann_data%centres(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wannier_centres in param_read')
+    if (ierr /= 0) call io_error('Error allocating wannier_centres in param_read', stdout)
     wann_data%centres = 0.0_dp
     if (allocated(wann_data%spreads)) deallocate (wann_data%spreads)
     allocate (wann_data%spreads(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read')
+    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_read', stdout)
     wann_data%spreads = 0.0_dp
   end subroutine param_read_final_alloc
 
@@ -1056,12 +1069,13 @@ contains
 
   end function param_get_convention_type
 
-  function get_smearing_index(string, keyword)
+  function get_smearing_index(string, keyword, stdout)
     !! This function parses a string containing the type of
     !! smearing and returns the correct index for the smearing_index variable
     !
     !! If the string is not valid, an io_error is issued
     use w90_io, only: io_error
+    integer, intent(in) :: stdout
     character(len=*), intent(in) :: string
     !! The string read from input
     character(len=*), intent(in) :: keyword
@@ -1082,7 +1096,7 @@ contains
       else
         read (string(pos + 3:), *, err=337) get_smearing_index
         if (get_smearing_index < 0) &
-          call io_error('Wrong m-p smearing order in keyword '//trim(keyword))
+          call io_error('Wrong m-p smearing order in keyword '//trim(keyword), stdout)
       end if
     elseif (index(string, 'f-d') > 0) then
       get_smearing_index = -99
@@ -1093,12 +1107,12 @@ contains
       get_smearing_index = 0
       ! Unrecognised keyword
     else
-      call io_error('Unrecognised value for keyword '//trim(keyword))
+      call io_error('Unrecognised value for keyword '//trim(keyword), stdout)
     end if
 
     return
 
-337 call io_error('Wrong m-p smearing order in keyword '//trim(keyword))
+337 call io_error('Wrong m-p smearing order in keyword '//trim(keyword), stdout)
 
   end function get_smearing_index
 
@@ -1246,7 +1260,7 @@ contains
 
 !==================================================================!
   subroutine param_dealloc(param_input, wann_data, kmesh_data, &
-                           k_points, dis_data, atoms, eigval, spec_points)
+                           k_points, dis_data, atoms, eigval, spec_points, stdout)
     !==================================================================!
     !                                                                  !
     !! release memory from allocated parameters
@@ -1266,111 +1280,112 @@ contains
     real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
     type(special_kpoints_type), intent(inout) :: spec_points
 
+    integer, intent(in) :: stdout
     integer :: ierr
 
     if (allocated(dis_data%ndimwin)) then
       deallocate (dis_data%ndimwin, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating ndimwin in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating ndimwin in param_dealloc', stdout)
     end if
     if (allocated(dis_data%lwindow)) then
       deallocate (dis_data%lwindow, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating lwindow in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating lwindow in param_dealloc', stdout)
     end if
     if (allocated(eigval)) then
       deallocate (eigval, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating eigval in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating eigval in param_dealloc', stdout)
     endif
     if (allocated(kmesh_data%shell_list)) then
       deallocate (kmesh_data%shell_list, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating shell_list in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating shell_list in param_dealloc', stdout)
     endif
     if (allocated(k_points%kpt_latt)) then
       deallocate (k_points%kpt_latt, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating kpt_latt in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating kpt_latt in param_dealloc', stdout)
     endif
     if (allocated(k_points%kpt_cart)) then
       deallocate (k_points%kpt_cart, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating kpt_cart in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating kpt_cart in param_dealloc', stdout)
     endif
     if (allocated(spec_points%bands_label)) then
       deallocate (spec_points%bands_label, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bands_label in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating bands_label in param_dealloc', stdout)
     end if
     if (allocated(spec_points%bands_spec_points)) then
       deallocate (spec_points%bands_spec_points, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bands_spec_points in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating bands_spec_points in param_dealloc', stdout)
     end if
     if (allocated(atoms%label)) then
       deallocate (atoms%label, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_label in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating atoms_label in param_dealloc', stdout)
     end if
     if (allocated(atoms%symbol)) then
       deallocate (atoms%symbol, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in param_dealloc', stdout)
     end if
     if (allocated(atoms%pos_frac)) then
       deallocate (atoms%pos_frac, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atom_pos_frac in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating atom_pos_frac in param_dealloc', stdout)
     end if
     if (allocated(atoms%pos_cart)) then
       deallocate (atoms%pos_cart, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in param_dealloc', stdout)
     end if
     if (allocated(atoms%species_num)) then
       deallocate (atoms%species_num, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj_site)) then
       deallocate (kmesh_data%input_proj_site, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_site in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_site in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%l)) then
       deallocate (kmesh_data%input_proj%l, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_l in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_l in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%m)) then
       deallocate (kmesh_data%input_proj%m, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_m in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_m in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%s)) then
       deallocate (kmesh_data%input_proj%s, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_s in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_s in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%s_qaxis)) then
       deallocate (kmesh_data%input_proj%s_qaxis, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_s_qaxis in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_s_qaxis in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%z)) then
       deallocate (kmesh_data%input_proj%z, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_z in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_z in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%x)) then
       deallocate (kmesh_data%input_proj%x, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_x in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_x in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%radial)) then
       deallocate (kmesh_data%input_proj%radial, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_radial in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_radial in param_dealloc', stdout)
     end if
     if (allocated(kmesh_data%input_proj%zona)) then
       deallocate (kmesh_data%input_proj%zona, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in param_dealloc', stdout)
     end if
     if (allocated(param_input%exclude_bands)) then
       deallocate (param_input%exclude_bands, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating exclude_bands in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating exclude_bands in param_dealloc', stdout)
     end if
     if (allocated(wann_data%centres)) then
       deallocate (wann_data%centres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_centres in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating wannier_centres in param_dealloc', stdout)
     end if
     if (allocated(wann_data%spreads)) then
       deallocate (wann_data%spreads, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_spreads in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating wannier_spreads in param_dealloc', stdout)
     endif
     if (allocated(dis_data%spheres)) then
       deallocate (dis_data%spheres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating dis_spheres in param_dealloc', stdout)
     endif
     return
 
@@ -1513,50 +1528,50 @@ contains
 
     ! Consistency checks
     read (chk_unit) ntmp                           ! Number of bands
-    if (ntmp .ne. num_bands) call io_error('param_read_chk: Mismatch in num_bands')
+    if (ntmp .ne. num_bands) call io_error('param_read_chk: Mismatch in num_bands', stdout)
     read (chk_unit) ntmp                           ! Number of excluded bands
     if (ntmp .ne. param_input%num_exclude_bands) &
-      call io_error('param_read_chk: Mismatch in num_exclude_bands')
+      call io_error('param_read_chk: Mismatch in num_exclude_bands', stdout)
     read (chk_unit) (tmp_excl_bands(i), i=1, param_input%num_exclude_bands) ! Excluded bands
     do i = 1, param_input%num_exclude_bands
       if (tmp_excl_bands(i) .ne. param_input%exclude_bands(i)) &
-        call io_error('param_read_chk: Mismatch in exclude_bands')
+        call io_error('param_read_chk: Mismatch in exclude_bands', stdout)
     enddo
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Real lattice
     do j = 1, 3
       do i = 1, 3
         if (abs(tmp_latt(i, j) - real_lattice(i, j)) .gt. eps6) &
-          call io_error('param_read_chk: Mismatch in real_lattice')
+          call io_error('param_read_chk: Mismatch in real_lattice', stdout)
       enddo
     enddo
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Reciprocal lattice
     do j = 1, 3
       do i = 1, 3
         if (abs(tmp_latt(i, j) - recip_lattice(i, j)) .gt. eps6) &
-          call io_error('param_read_chk: Mismatch in recip_lattice')
+          call io_error('param_read_chk: Mismatch in recip_lattice', stdout)
       enddo
     enddo
     read (chk_unit) ntmp                ! K-points
     if (ntmp .ne. num_kpts) &
-      call io_error('param_read_chk: Mismatch in num_kpts')
+      call io_error('param_read_chk: Mismatch in num_kpts', stdout)
     read (chk_unit) (tmp_mp_grid(i), i=1, 3)         ! M-P grid
     do i = 1, 3
       if (tmp_mp_grid(i) .ne. mp_grid(i)) &
-        call io_error('param_read_chk: Mismatch in mp_grid')
+        call io_error('param_read_chk: Mismatch in mp_grid', stdout)
     enddo
     read (chk_unit) ((tmp_kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     do nkp = 1, num_kpts
       do i = 1, 3
         if (abs(tmp_kpt_latt(i, nkp) - k_points%kpt_latt(i, nkp)) .gt. eps6) &
-          call io_error('param_read_chk: Mismatch in kpt_latt')
+          call io_error('param_read_chk: Mismatch in kpt_latt', stdout)
       enddo
     enddo
     read (chk_unit) ntmp                ! nntot
     if (ntmp .ne. kmesh_info%nntot) &
-      call io_error('param_read_chk: Mismatch in nntot')
+      call io_error('param_read_chk: Mismatch in nntot', stdout)
     read (chk_unit) ntmp                ! num_wann
     if (ntmp .ne. num_wann) &
-      call io_error('param_read_chk: Mismatch in num_wann')
+      call io_error('param_read_chk: Mismatch in num_wann', stdout)
     ! End of consistency checks
 
     read (chk_unit) checkpoint             ! checkpoint
@@ -1571,21 +1586,21 @@ contains
       ! lwindow
       if (.not. allocated(dis_data%lwindow)) then
         allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating lwindow in param_read_chkpt')
+        if (ierr /= 0) call io_error('Error allocating lwindow in param_read_chkpt', stdout)
       endif
       read (chk_unit, err=122) ((dis_data%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
 
       ! ndimwin
       if (.not. allocated(dis_data%ndimwin)) then
         allocate (dis_data%ndimwin(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ndimwin in param_read_chkpt')
+        if (ierr /= 0) call io_error('Error allocating ndimwin in param_read_chkpt', stdout)
       endif
       read (chk_unit, err=123) (dis_data%ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
       if (.not. allocated(u_matrix_opt)) then
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in param_read_chkpt')
+        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in param_read_chkpt', stdout)
       endif
       read (chk_unit, err=124) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
 
@@ -1594,14 +1609,14 @@ contains
     ! U_matrix
     if (.not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating u_matrix in param_read_chkpt')
+      if (ierr /= 0) call io_error('Error allocating u_matrix in param_read_chkpt', stdout)
     endif
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
     if (.not. allocated(m_matrix)) then
       allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating m_matrix in param_read_chkpt')
+      if (ierr /= 0) call io_error('Error allocating m_matrix in param_read_chkpt', stdout)
     endif
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
@@ -1618,24 +1633,24 @@ contains
     return
 
 121 if (ispostw90) then
-      call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt: did you run wannier90.x first?')
+      call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt: did you run wannier90.x first?', stdout)
     else
-      call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt')
+      call io_error('Error opening '//trim(seedname)//'.chk in param_read_chkpt', stdout)
     end if
-122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in param_read_chkpt')
-123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in param_read_chkpt')
-124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt')
-125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
-126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in param_read_chkpt')
-127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in param_read_chkpt')
-128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in param_read_chkpt')
+122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
+123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
+124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
+125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
+126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
+127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
+128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in param_read_chkpt', stdout)
 
   end subroutine param_read_chkpt
 
 !===========================================================!
   subroutine param_chkpt_dist(checkpoint, param_input, wann_data, num_kpts, &
                               dis_data, num_bands, num_wann, u_matrix, &
-                              u_matrix_opt)
+                              u_matrix_opt, stdout)
     !===========================================================!
     !                                                           !
     !! Distribute the chk files
@@ -1656,6 +1671,7 @@ contains
     type(wannier_data_type), intent(inout) :: wann_data
     integer, intent(inout) :: num_kpts
     type(disentangle_type), intent(inout) :: dis_data
+    integer, intent(in) :: stdout
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_wann
     complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
@@ -1663,14 +1679,14 @@ contains
 
     integer :: ierr
 
-    call comms_bcast(checkpoint, len(checkpoint))
+    call comms_bcast(checkpoint, len(checkpoint), stdout)
 
     if (.not. on_root .and. .not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) &
-        call io_error('Error allocating u_matrix in param_chkpt_dist')
+        call io_error('Error allocating u_matrix in param_chkpt_dist', stdout)
     endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout)
 
 !    if (.not.on_root .and. .not.allocated(m_matrix)) then
 !       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
@@ -1679,7 +1695,7 @@ contains
 !    endif
 !    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
 
-    call comms_bcast(param_input%have_disentangled, 1)
+    call comms_bcast(param_input%have_disentangled, 1, stdout)
 
     if (param_input%have_disentangled) then
       if (.not. on_root) then
@@ -1687,35 +1703,35 @@ contains
         if (.not. allocated(u_matrix_opt)) then
           allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
           if (ierr /= 0) &
-            call io_error('Error allocating u_matrix_opt in param_chkpt_dist')
+            call io_error('Error allocating u_matrix_opt in param_chkpt_dist', stdout)
         endif
 
         if (.not. allocated(dis_data%lwindow)) then
           allocate (dis_data%lwindow(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
-            call io_error('Error allocating lwindow in param_chkpt_dist')
+            call io_error('Error allocating lwindow in param_chkpt_dist', stdout)
         endif
 
         if (.not. allocated(dis_data%ndimwin)) then
           allocate (dis_data%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) &
-            call io_error('Error allocating ndimwin in param_chkpt_dist')
+            call io_error('Error allocating ndimwin in param_chkpt_dist', stdout)
         endif
 
       end if
 
-      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts)
-      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts)
-      call comms_bcast(dis_data%ndimwin(1), num_kpts)
-      call comms_bcast(param_input%omega_invariant, 1)
+      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout)
+      call comms_bcast(dis_data%lwindow(1, 1), num_bands*num_kpts, stdout)
+      call comms_bcast(dis_data%ndimwin(1), num_kpts, stdout)
+      call comms_bcast(param_input%omega_invariant, 1, stdout)
     end if
-    call comms_bcast(wann_data%centres(1, 1), 3*num_wann)
-    call comms_bcast(wann_data%spreads(1), num_wann)
+    call comms_bcast(wann_data%centres(1, 1), 3*num_wann, stdout)
+    call comms_bcast(wann_data%spreads(1), num_wann, stdout)
 
   end subroutine param_chkpt_dist
 
 !=======================================!
-  subroutine param_in_file
+  subroutine param_in_file(stdout)
     !=======================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
@@ -1728,6 +1744,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     integer           :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
     character(len=maxlen) :: dummy
     integer           :: pos
@@ -1754,13 +1771,13 @@ contains
 
     end do
 
-101 call io_error('Error: Problem opening input file '//trim(seedname)//'.win')
-200 call io_error('Error: Problem reading input file '//trim(seedname)//'.win')
+101 call io_error('Error: Problem opening input file '//trim(seedname)//'.win', stdout)
+200 call io_error('Error: Problem reading input file '//trim(seedname)//'.win', stdout)
 210 continue
     rewind (in_unit)
 
     allocate (in_data(num_lines), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating in_data in param_in_file')
+    if (ierr /= 0) call io_error('Error allocating in_data in param_in_file', stdout)
 
     line_counter = 0
     do loop = 1, tot_num_lines
@@ -1790,7 +1807,7 @@ contains
   end subroutine param_in_file
 
 !===========================================================================!
-  subroutine param_get_keyword(keyword, found, c_value, l_value, i_value, r_value)
+  subroutine param_get_keyword(stdout, keyword, found, c_value, l_value, i_value, r_value)
     !===========================================================================!
     !                                                                           !
     !! Finds the value of the required keyword.
@@ -1801,6 +1818,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -1829,7 +1847,7 @@ contains
           .and. in_data(loop) (itmp:itmp) /= ':' &
           .and. in_data(loop) (itmp:itmp) /= ' ') cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout)
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -1849,7 +1867,7 @@ contains
         elseif (index(dummy, 'f') > 0) then
           l_value = .false.
         else
-          call io_error('Error: Problem reading logical keyword '//trim(keyword))
+          call io_error('Error: Problem reading logical keyword '//trim(keyword), stdout)
         endif
       endif
       if (present(i_value)) read (dummy, *, err=220, end=220) i_value
@@ -1858,12 +1876,12 @@ contains
 
     return
 
-220 call io_error('Error: Problem reading keyword '//trim(keyword))
+220 call io_error('Error: Problem reading keyword '//trim(keyword), stdout)
 
   end subroutine param_get_keyword
 
 !=========================================================================================!
-  subroutine param_get_keyword_vector(keyword, found, length, c_value, l_value, &
+  subroutine param_get_keyword_vector(stdout, keyword, found, length, c_value, l_value, &
                                       i_value, r_value)
     !=========================================================================================!
     !                                                                                         !
@@ -1890,6 +1908,7 @@ contains
     real(kind=dp), optional, intent(inout) :: r_value(length)
     !! Keyword data
 
+    integer, intent(in) :: stdout
     integer           :: kl, in, loop, i
     character(len=maxlen) :: dummy
 
@@ -1901,7 +1920,7 @@ contains
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout)
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -1918,7 +1937,7 @@ contains
       if (present(l_value)) then
         ! I don't think we need this. Maybe read into a dummy charater
         ! array and convert each element to logical
-        call io_error('param_get_keyword_vector unimplemented for logicals')
+        call io_error('param_get_keyword_vector unimplemented for logicals', stdout)
       endif
       if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
       if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
@@ -1926,12 +1945,12 @@ contains
 
     return
 
-230 call io_error('Error: Problem reading keyword '//trim(keyword)//' in param_get_keyword_vector')
+230 call io_error('Error: Problem reading keyword '//trim(keyword)//' in param_get_keyword_vector', stdout)
 
   end subroutine param_get_keyword_vector
 
 !========================================================!
-  subroutine param_get_vector_length(keyword, found, length)
+  subroutine param_get_vector_length(stdout, keyword, found, length)
     !======================================================!
     !                                                      !
     !! Returns the length of a keyword vector
@@ -1942,6 +1961,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -1960,7 +1980,7 @@ contains
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout)
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -1973,7 +1993,7 @@ contains
 
     length = 0
     if (found) then
-      if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank')
+      if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank', stdout)
       length = 1
       dummy = adjustl(dummy)
       do
@@ -1995,7 +2015,7 @@ contains
   end subroutine param_get_vector_length
 
 !==============================================================================================!
-  subroutine param_get_keyword_block(keyword, found, rows, columns, bohr, c_value, &
+  subroutine param_get_keyword_block(stdout, keyword, found, rows, columns, bohr, c_value, &
                                      l_value, i_value, r_value)
     !==============================================================================================!
     !                                                                                              !
@@ -2008,6 +2028,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2043,7 +2064,7 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout)
       endif
       found_s = .true.
     end do
@@ -2060,17 +2081,17 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout)
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout)
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout)
     end if
 
     ! number of lines of data in block
@@ -2085,10 +2106,10 @@ contains
     !    endif
 
     if ((blen .ne. rows) .and. (blen .ne. rows + 1)) &
-      call io_error('Error: Wrong number of lines in block '//trim(keyword))
+      call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout)
 
     if ((blen .eq. rows + 1) .and. (index(trim(keyword), 'unit_cell_cart') .eq. 0)) &
-      call io_error('Error: Wrong number of lines in block '//trim(keyword))
+      call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout)
 
     found = .true.
 
@@ -2100,7 +2121,7 @@ contains
       elseif (index(dummy, 'bohr') .ne. 0) then
         lconvert = .true.
       else
-        call io_error('Error: Units in block '//trim(keyword)//' not recognised')
+        call io_error('Error: Units in block '//trim(keyword)//' not recognised', stdout)
       endif
       in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
@@ -2115,7 +2136,7 @@ contains
       if (present(l_value)) then
         ! I don't think we need this. Maybe read into a dummy charater
         ! array and convert each element to logical
-        call io_error('param_get_keyword_block unimplemented for logicals')
+        call io_error('param_get_keyword_block unimplemented for logicals', stdout)
       endif
       if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
       if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
@@ -2131,12 +2152,12 @@ contains
 
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword))
+240 call io_error('Error: Problem reading block keyword '//trim(keyword), stdout)
 
   end subroutine param_get_keyword_block
 
 !=====================================================!
-  subroutine param_get_block_length(keyword, found, rows, library, lunits)
+  subroutine param_get_block_length(stdout, keyword, found, rows, library, lunits)
     !=====================================================!
     !                                                     !
     !! Finds the length of the data block
@@ -2147,6 +2168,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2177,7 +2199,7 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout)
       endif
       found_s = .true.
     end do
@@ -2194,17 +2216,17 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout)
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout)
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout)
     end if
 
     rows = line_e - line_s - 1
@@ -2245,7 +2267,7 @@ contains
   end subroutine param_get_block_length
 
 !===================================!
-  subroutine param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr)
+  subroutine param_get_atoms(atoms, library, lunits, real_lattice, recip_lattice, bohr, stdout)
     !===================================!
     !                                   !
     !!   Fills the atom data block
@@ -2258,6 +2280,7 @@ contains
     implicit none
 
     type(atom_data_type), intent(inout) :: atoms
+    integer, intent(in) :: stdout
     logical, intent(in) :: library
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
@@ -2277,7 +2300,7 @@ contains
 
     keyword = "atoms_cart"
     frac = .false.
-    call param_get_block_length("atoms_frac", found, i_temp, library)
+    call param_get_block_length(stdout, "atoms_frac", found, i_temp, library)
     if (found) then
       keyword = "atoms_frac"
       frac = .true.
@@ -2296,7 +2319,7 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout)
       endif
       found_s = .true.
     end do
@@ -2308,17 +2331,17 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout)
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout)
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout)
     end if
 
     lconvert = .false.
@@ -2329,7 +2352,7 @@ contains
       elseif (index(dummy, 'bohr') .ne. 0) then
         lconvert = .true.
       else
-        call io_error('Error: Units in block atoms_cart not recognised in param_get_atoms')
+        call io_error('Error: Units in block atoms_cart not recognised in param_get_atoms', stdout)
       endif
       in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
@@ -2374,11 +2397,11 @@ contains
     end do
 
     allocate (atoms%species_num(atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_get_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_get_atoms', stdout)
     allocate (atoms%label(atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in param_get_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_label in param_get_atoms', stdout)
     allocate (atoms%symbol(atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_get_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_get_atoms', stdout)
     atoms%species_num(:) = 0
 
     do loop = 1, atoms%num_species
@@ -2392,9 +2415,9 @@ contains
 
     max_sites = maxval(atoms%species_num)
     allocate (atoms%pos_frac(3, max_sites, atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_get_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_get_atoms', stdout)
     allocate (atoms%pos_cart(3, max_sites, atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_get_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_get_atoms', stdout)
 
     do loop = 1, atoms%num_species
       counter = 0
@@ -2417,13 +2440,13 @@ contains
 
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword))
+240 call io_error('Error: Problem reading block keyword '//trim(keyword), stdout)
 
   end subroutine param_get_atoms
 
 !=====================================================!
   subroutine param_lib_set_atoms(atoms, atoms_label_tmp, atoms_pos_cart_tmp, &
-                                 recip_lattice)
+                                 recip_lattice, stdout)
     !=====================================================!
     !                                                     !
     !!   Fills the atom data block during a library call
@@ -2435,6 +2458,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atoms
     character(len=*), intent(in) :: atoms_label_tmp(atoms%num_atoms)
     !! Atom labels
@@ -2466,11 +2490,11 @@ contains
     end do
 
     allocate (atoms%species_num(atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_lib_set_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_lib_set_atoms', stdout)
     allocate (atoms%label(atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in param_lib_set_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_label in param_lib_set_atoms', stdout)
     allocate (atoms%symbol(atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_lib_set_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_lib_set_atoms', stdout)
     atoms%species_num(:) = 0
 
     do loop = 1, atoms%num_species
@@ -2484,9 +2508,9 @@ contains
 
     max_sites = maxval(atoms%species_num)
     allocate (atoms%pos_frac(3, max_sites, atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms', stdout)
     allocate (atoms%pos_cart(3, max_sites, atoms%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms')
+    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms', stdout)
 
     do loop = 1, atoms%num_species
       counter = 0
@@ -2516,7 +2540,7 @@ contains
   end subroutine param_lib_set_atoms
 
 !====================================================================!
-  subroutine param_get_range_vector(keyword, found, length, lcount, i_value)
+  subroutine param_get_range_vector(stdout, keyword, found, length, lcount, i_value)
     !====================================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
@@ -2525,6 +2549,7 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     character(*), intent(in)    :: keyword
     !! Keyword to examine
     logical, intent(out)   :: found
@@ -2545,7 +2570,7 @@ contains
     character(len=5), parameter :: c_punc = " ,;-:"
     character(len=5)  :: c_num1, c_num2
 
-    if (lcount .and. present(i_value)) call io_error('param_get_range_vector: incorrect call')
+    if (lcount .and. present(i_value)) call io_error('param_get_range_vector: incorrect call', stdout)
 
     kl = len_trim(keyword)
 
@@ -2555,7 +2580,7 @@ contains
       in = index(in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file')
+        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout)
       endif
       found = .true.
       dummy = in_data(loop) (kl + 1:)
@@ -2570,11 +2595,11 @@ contains
     if (.not. found) return
 
     counter = 0
-    if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank')
+    if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank', stdout)
     dummy = adjustl(dummy)
     do
       i_punc = scan(dummy, c_punc)
-      if (i_punc == 0) call io_error('Error parsing keyword '//trim(keyword))
+      if (i_punc == 0) call io_error('Error parsing keyword '//trim(keyword), stdout)
       c_num1 = dummy(1:i_punc - 1)
       read (c_num1, *, err=101, end=101) num1
       dummy = adjustl(dummy(i_punc:))
@@ -2597,7 +2622,7 @@ contains
       end if
 
       if (scan(dummy, c_sep) == 1) dummy = adjustl(dummy(2:))
-      if (scan(dummy, c_range) == 1) call io_error('Error parsing keyword '//trim(keyword)//' incorrect range')
+      if (scan(dummy, c_range) == 1) call io_error('Error parsing keyword '//trim(keyword)//' incorrect range', stdout)
       if (index(dummy, ' ') == 1) exit
     end do
 
@@ -2606,19 +2631,19 @@ contains
       do loop = 1, counter - 1
         do loop_r = loop + 1, counter
           if (i_value(loop) == i_value(loop_r)) &
-            call io_error('Error parsing keyword '//trim(keyword)//' duplicate values')
+            call io_error('Error parsing keyword '//trim(keyword)//' duplicate values', stdout)
         end do
       end do
     end if
 
     return
 
-101 call io_error('Error parsing keyword '//trim(keyword))
+101 call io_error('Error parsing keyword '//trim(keyword), stdout)
 
   end subroutine param_get_range_vector
 
   subroutine param_get_centre_constraints(ccentres_frac, ccentres_cart, &
-                                          proj_site, num_wann, real_lattice)
+                                          proj_site, num_wann, real_lattice, stdout)
     !=============================================================================!
     !                                                                             !
     !!  assigns projection centres as default centre constraints and global
@@ -2628,6 +2653,7 @@ contains
     !=============================================================================!
     use w90_io, only: io_error
     use w90_utility, only: utility_frac_to_cart
+    integer, intent(in) :: stdout
     real(kind=dp), intent(inout) :: ccentres_frac(:, :), ccentres_cart(:, :)
     real(kind=dp), intent(in) :: proj_site(:, :)
     integer, intent(in) :: num_wann
@@ -2650,11 +2676,11 @@ contains
       if (constraint_num > 0) then
         if (trim(dummy) == '') cycle
         index1 = index(dummy, 'begin')
-        if (index1 > 0) call io_error("slwf_centres block hasn't ended yet")
+        if (index1 > 0) call io_error("slwf_centres block hasn't ended yet", stdout)
         index1 = index(dummy, 'end')
         if (index1 > 0) then
           index1 = index(dummy, 'slwf_centres')
-          if (index1 == 0) call io_error('Wrong ending of block (need to end slwf_centres)')
+          if (index1 == 0) call io_error('Wrong ending of block (need to end slwf_centres)', stdout)
           in_data(loop1) (1:maxlen) = ' '
           exit
         end if
@@ -2669,7 +2695,7 @@ contains
             if (dummy(loop2:loop2) == ' ') then
               finish = loop2 - 1
               call param_get_centre_constraint_from_column(column, start, finish, &
-                                                           wann, dummy, ccentres_frac)
+                                                           wann, dummy, ccentres_frac, stdout)
               start = loop2 + 1
               finish = start
             end if
@@ -2677,7 +2703,7 @@ contains
           if (loop2 == len_trim(dummy) .and. dummy(loop2:loop2) /= ' ') then
             finish = loop2
             call param_get_centre_constraint_from_column(column, start, finish, &
-                                                         wann, dummy, ccentres_frac)
+                                                         wann, dummy, ccentres_frac, stdout)
             start = loop2 + 1
             finish = start
           end if
@@ -2701,7 +2727,7 @@ contains
   end subroutine param_get_centre_constraints
 
   subroutine param_get_centre_constraint_from_column(column, start, finish, &
-                                                     wann, dummy, ccentres_frac)
+                                                     wann, dummy, ccentres_frac, stdout)
     !===================================!
     !                                   !
     !!  assigns value read to constraint
@@ -2709,6 +2735,7 @@ contains
     !                                   !
     !===================================!
     use w90_io, only: io_error
+    integer, intent(in) :: stdout
     integer, intent(inout):: column, start, finish, wann
     character(len=maxlen), intent(inout):: dummy
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
@@ -2717,7 +2744,7 @@ contains
       read (dummy(start:finish), '(i3)') wann
     end if
     if (column > 0) then
-      if (column > 4) call io_error("Didn't expect anything else after Lagrange multiplier")
+      if (column > 4) call io_error("Didn't expect anything else after Lagrange multiplier", stdout)
       if (column < 4) read (dummy(start:finish), '(f10.10)') ccentres_frac(wann, column)
     end if
     column = column + 1
@@ -2800,45 +2827,45 @@ contains
 
     if (.not. lcount) then
       allocate (kmesh_data%input_proj_site(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_site in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_site in param_get_projections', stdout)
       allocate (kmesh_data%input_proj%l(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_l in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_l in param_get_projections', stdout)
       allocate (kmesh_data%input_proj%m(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_m in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_m in param_get_projections', stdout)
       allocate (kmesh_data%input_proj%z(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_z in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_z in param_get_projections', stdout)
       allocate (kmesh_data%input_proj%x(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_x in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_x in param_get_projections', stdout)
       allocate (kmesh_data%input_proj%radial(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_radial in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_radial in param_get_projections', stdout)
       allocate (kmesh_data%input_proj%zona(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_zona in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating input_proj_zona in param_get_projections', stdout)
       if (param_input%spinors) then
         allocate (kmesh_data%input_proj%s(num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_s in param_get_projections')
+        if (ierr /= 0) call io_error('Error allocating input_proj_s in param_get_projections', stdout)
         allocate (kmesh_data%input_proj%s_qaxis(3, num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_s_qaxis in param_get_projections')
+        if (ierr /= 0) call io_error('Error allocating input_proj_s_qaxis in param_get_projections', stdout)
       endif
 
       allocate (proj_site(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_site in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_site in param_get_projections', stdout)
       allocate (proj%l(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_l in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_l in param_get_projections', stdout)
       allocate (proj%m(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_m in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_m in param_get_projections', stdout)
       allocate (proj%z(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_z in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_z in param_get_projections', stdout)
       allocate (proj%x(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_x in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_x in param_get_projections', stdout)
       allocate (proj%radial(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_radial in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_radial in param_get_projections', stdout)
       allocate (proj%zona(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_zona in param_get_projections')
+      if (ierr /= 0) call io_error('Error allocating proj_zona in param_get_projections', stdout)
       if (param_input%spinors) then
         allocate (proj%s(num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_s in param_get_projections')
+        if (ierr /= 0) call io_error('Error allocating proj_s in param_get_projections', stdout)
         allocate (proj%s_qaxis(3, num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_s_qaxis in param_get_projections')
+        if (ierr /= 0) call io_error('Error allocating proj_s_qaxis in param_get_projections', stdout)
       endif
     endif
 
@@ -2849,7 +2876,7 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout)
       endif
       found_s = .true.
     end do
@@ -2861,17 +2888,17 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('param_get_projections: Found '//trim(end_st)//' more than once in input file')
+        call io_error('param_get_projections: Found '//trim(end_st)//' more than once in input file', stdout)
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('param_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      call io_error('param_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout)
     end if
 
     if (line_e <= line_s) then
-      call io_error('param_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      call io_error('param_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout)
     end if
 
     dummy = in_data(line_s + 1)
@@ -2925,30 +2952,30 @@ contains
         dummy = adjustl(dummy)
         pos1 = index(dummy, ':')
         if (pos1 == 0) &
-          call io_error('param_read_projection: malformed projection definition: '//trim(dummy))
+          call io_error('param_read_projection: malformed projection definition: '//trim(dummy), stdout)
         sites = 0
         ctemp = dummy(:pos1 - 1)
         ! Read the atomic site
         if (index(ctemp, 'c=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
-          call utility_string_to_coord(ctemp, pos_cart)
+          call utility_string_to_coord(ctemp, pos_cart, stdout)
           if (lconvert) pos_cart = pos_cart*bohr
           call utility_cart_to_frac(pos_cart(:), pos_frac(:), recip_lattice)
         elseif (index(ctemp, 'f=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
-          call utility_string_to_coord(ctemp, pos_frac)
+          call utility_string_to_coord(ctemp, pos_frac, stdout)
         else
           if (atoms%num_species == 0) &
-            call io_error('param_get_projection: Atom centred projection requested but no atoms defined')
+            call io_error('param_get_projection: Atom centred projection requested but no atoms defined', stdout)
           do loop = 1, atoms%num_species
             if (trim(ctemp) == atoms%label(loop)) then
               species = loop
               sites = atoms%species_num(loop)
               exit
             end if
-            if (loop == atoms%num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp))
+            if (loop == atoms%num_species) call io_error('param_get_projection: Atom site not recognised '//trim(ctemp), stdout)
           end do
         end if
 
@@ -2961,13 +2988,13 @@ contains
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ']')
             if (pos2 == 0) call io_error &
-              ('param_get_projections: no closing square bracket for spin quantisation dir')
+              ('param_get_projections: no closing square bracket for spin quantisation dir', stdout)
             ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_s_qaxis_tmp)
+            call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, stdout)
             dummy = dummy(:pos1 - 1) ! remove [ ] section
           endif
         else
-          if (pos1 > 0) call io_error('param_get_projections: spin qdir is defined but spinors=.false.')
+          if (pos1 > 0) call io_error('param_get_projections: spin qdir is defined but spinors=.false.', stdout)
         endif
 
         ! scan for up or down
@@ -2977,21 +3004,21 @@ contains
             proj_u_tmp = .false.; proj_d_tmp = .false.
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ')')
-            if (pos2 == 0) call io_error('param_get_projections: no closing bracket for spin')
+            if (pos2 == 0) call io_error('param_get_projections: no closing bracket for spin', stdout)
             ctemp = ctemp(:pos2 - 1)
             if (index(ctemp, 'u') > 0) proj_u_tmp = .true.
             if (index(ctemp, 'd') > 0) proj_d_tmp = .true.
             if (proj_u_tmp .and. proj_d_tmp) then
               spn_counter = 2
             elseif (.not. proj_u_tmp .and. .not. proj_d_tmp) then
-              call io_error('param_get_projections: found brackets but neither u or d')
+              call io_error('param_get_projections: found brackets but neither u or d', stdout)
             else
               spn_counter = 1
             endif
             dummy = dummy(:pos1 - 1) ! remove ( ) section
           endif
         else
-          if (pos1 > 0) call io_error('param_get_projections: spin is defined but spinors=.false.')
+          if (pos1 > 0) call io_error('param_get_projections: spin is defined but spinors=.false.', stdout)
         endif
 
         !Now we know the sites for this line. Get the angular momentum states
@@ -3016,7 +3043,7 @@ contains
             else
               read (ctemp3(3:), *, err=101, end=101) l_tmp
             end if
-            if (l_tmp < -5 .or. l_tmp > 3) call io_error('param_get_projection: Incorrect l state requested')
+            if (l_tmp < -5 .or. l_tmp > 3) call io_error('param_get_projection: Incorrect l state requested', stdout)
             if (mstate == 0) then
               if (l_tmp >= 0) then
                 do loop_m = 1, 2*l_tmp + 1
@@ -3035,7 +3062,7 @@ contains
               endif
             else
               if (index(ctemp3, 'mr=') /= mstate + 1) &
-                call io_error('param_get_projection: Problem reading m state')
+                call io_error('param_get_projection: Problem reading m state', stdout)
               ctemp4 = ctemp3(mstate + 4:)
               do
                 pos3 = index(ctemp4, ',')
@@ -3046,17 +3073,17 @@ contains
                 endif
                 read (ctemp5(1:), *, err=102, end=102) m_tmp
                 if (l_tmp >= 0) then
-                  if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) call io_error('param_get_projection: m is > l !')
+                  if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) call io_error('param_get_projection: m is > l !', stdout)
                 elseif (l_tmp == -1 .and. (m_tmp > 2 .or. m_tmp <= 0)) then
-                  call io_error('param_get_projection: m has incorrect value (1)')
+                  call io_error('param_get_projection: m has incorrect value (1)', stdout)
                 elseif (l_tmp == -2 .and. (m_tmp > 3 .or. m_tmp <= 0)) then
-                  call io_error('param_get_projection: m has incorrect value (2)')
+                  call io_error('param_get_projection: m has incorrect value (2)', stdout)
                 elseif (l_tmp == -3 .and. (m_tmp > 4 .or. m_tmp <= 0)) then
-                  call io_error('param_get_projection: m has incorrect value (3)')
+                  call io_error('param_get_projection: m has incorrect value (3)', stdout)
                 elseif (l_tmp == -4 .and. (m_tmp > 5 .or. m_tmp <= 0)) then
-                  call io_error('param_get_projection: m has incorrect value (4)')
+                  call io_error('param_get_projection: m has incorrect value (4)', stdout)
                 elseif (l_tmp == -5 .and. (m_tmp > 6 .or. m_tmp <= 0)) then
-                  call io_error('param_get_projection: m has incorrect value (5)')
+                  call io_error('param_get_projection: m has incorrect value (5)', stdout)
                 endif
                 ang_states(m_tmp, l_tmp) = 1
                 if (pos3 == 0) exit
@@ -3162,7 +3189,7 @@ contains
               case ('sp3d2-6')
                 ang_states(6, -5) = 1
               case default
-                call io_error('param_get_projection: Problem reading l state '//trim(ctemp3))
+                call io_error('param_get_projection: Problem reading l state '//trim(ctemp3), stdout)
               end select
               if (pos3 == 0) exit
               ctemp3 = ctemp3(pos3 + 1:)
@@ -3180,7 +3207,7 @@ contains
             ctemp = (dummy(pos1 + 2:))
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_z_tmp)
+            call utility_string_to_coord(ctemp, proj_z_tmp, stdout)
           endif
           ! x axis
           pos1 = index(dummy, 'x=')
@@ -3188,7 +3215,7 @@ contains
             ctemp = (dummy(pos1 + 2:))
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_x_tmp)
+            call utility_string_to_coord(ctemp, proj_x_tmp, stdout)
           endif
           ! diffusivity of orbital
           pos1 = index(dummy, 'zona=')
@@ -3280,7 +3307,7 @@ contains
       ! check there are enough projections and add random projections if required
       if (.not. lpartrandom) then
         if (counter .lt. num_wann) call io_error( &
-          'param_get_projections: too few projection functions defined')
+          'param_get_projections: too few projection functions defined', stdout)
       end if
     end if ! .not. lrandom
 
@@ -3361,7 +3388,7 @@ contains
         ! user may have made a mistake and should check
         if (abs(cosphi) .gt. eps2) then
           write (stdout, *) ' Projection:', loop
-          call io_error(' Error in projections: z and x axes are not orthogonal')
+          call io_error(' Error in projections: z and x axes are not orthogonal', stdout)
         endif
 
         ! If projection axes are "reasonably orthogonal", project x-axis
@@ -3376,7 +3403,7 @@ contains
 555     cosphi_new = sum(kmesh_data%input_proj%z(:, loop)*kmesh_data%input_proj%x(:, loop))
         if (abs(cosphi_new) .gt. eps6) then
           write (stdout, *) ' Projection:', loop
-          call io_error(' Error: z and x axes are still not orthogonal after projection')
+          call io_error(' Error: z and x axes are still not orthogonal after projection', stdout)
         endif
 
       endif
@@ -3385,16 +3412,16 @@ contains
 
     return
 
-101 call io_error('param_get_projection: Problem reading l state into integer '//trim(ctemp3))
-102 call io_error('param_get_projection: Problem reading m state into integer '//trim(ctemp3))
-104 call io_error('param_get_projection: Problem reading zona into real '//trim(ctemp))
-105 call io_error('param_get_projection: Problem reading radial state into integer '//trim(ctemp))
-106 call io_error('param_get_projection: Problem reading m state into string '//trim(ctemp3))
+101 call io_error('param_get_projection: Problem reading l state into integer '//trim(ctemp3), stdout)
+102 call io_error('param_get_projection: Problem reading m state into integer '//trim(ctemp3), stdout)
+104 call io_error('param_get_projection: Problem reading zona into real '//trim(ctemp), stdout)
+105 call io_error('param_get_projection: Problem reading radial state into integer '//trim(ctemp), stdout)
+106 call io_error('param_get_projection: Problem reading m state into string '//trim(ctemp3), stdout)
 
   end subroutine param_get_projections
 
 !===================================!
-  subroutine param_get_keyword_kpath(spec_points)
+  subroutine param_get_keyword_kpath(spec_points, stdout)
     !===================================!
     !                                   !
     !!  Fills the kpath data block
@@ -3405,6 +3432,7 @@ contains
     implicit none
 
     type(special_kpoints_type), intent(inout) :: spec_points
+    integer, intent(in) :: stdout
     character(len=20) :: keyword
     integer           :: in, ins, ine, loop, i, line_e, line_s, counter
     logical           :: found_e, found_s
@@ -3425,7 +3453,7 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout)
       endif
       found_s = .true.
     end do
@@ -3437,17 +3465,17 @@ contains
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file')
+        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout)
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
+      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout)
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
+      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout)
     end if
 
     counter = 0
@@ -3464,7 +3492,7 @@ contains
 
     return
 
-240 call io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy))
+240 call io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy), stdout)
 
   end subroutine param_get_keyword_kpath
 

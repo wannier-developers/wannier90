@@ -24,7 +24,7 @@ module w90_io
   include 'mpif.h'
 #endif
 
-  integer, public, save           :: stdout
+! integer, public, save           :: stdout
   !! Unit on which stdout is written
   character(len=50), public, save :: seedname
   !! The seedname for this run
@@ -67,7 +67,7 @@ module w90_io
 contains
 
   !=====================================
-  subroutine io_stopwatch(tag, mode)
+  subroutine io_stopwatch(tag, mode, stdout)
     !=====================================
     !! Stopwatch to time parts of the code
     !=====================================
@@ -80,6 +80,7 @@ contains
     !! Action  1=start 2=stop
 
     integer :: i
+    integer :: stdout
     real(kind=dp) :: t
 
     call cpu_time(t)
@@ -97,7 +98,7 @@ contains
       enddo
 
       nnames = nnames + 1
-      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded')
+      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded', stdout)
 
       clocks(nnames)%label = tag
       clocks(nnames)%ctime = 0.0_dp
@@ -118,7 +119,7 @@ contains
     case default
 
       write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
-      call io_error('Value of mode not recognised in io_stopwatch')
+      call io_error('Value of mode not recognised in io_stopwatch', stdout)
 
     end select
 
@@ -127,7 +128,7 @@ contains
   end subroutine io_stopwatch
 
   !=====================================
-  subroutine io_print_timings()
+  subroutine io_print_timings(stdout)
     !=====================================
     !! Output timing information to stdout
     !=====================================
@@ -135,6 +136,7 @@ contains
     implicit none
 
     integer :: i
+    integer :: stdout
 
     write (stdout, '(/1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|                             TIMING INFORMATION                            |'
@@ -304,7 +306,7 @@ contains
   end subroutine io_commandline
 
   !========================================
-  subroutine io_error(error_msg)
+  subroutine io_error(error_msg, stdout)
     !========================================
     !! Abort the code giving an error message
     !========================================
@@ -315,6 +317,7 @@ contains
 #ifdef MPI
     character(len=50) :: filename
     integer           :: stderr, ierr, whoami, num_nodes
+    integer           :: stdout
 
     call mpi_comm_rank(mpi_comm_world, whoami, ierr)
     call mpi_comm_size(mpi_comm_world, num_nodes, ierr)

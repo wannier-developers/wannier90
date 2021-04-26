@@ -149,9 +149,9 @@ contains
     logical           :: ladpt(fermi%n)
 
     if (fermi%n == 0) call io_error( &
-      'Must specify one or more Fermi levels when berry=true')
+      'Must specify one or more Fermi levels when berry=true', stdout)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('berry: prelims', 1)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('berry: prelims', 1, stdout)
 
     ! Mesh spacing in reduced coordinates
     !
@@ -194,7 +194,7 @@ contains
     not_scannable = eval_kubo .or. (eval_shc .and. spin_hall%freq_scan)
     if (not_scannable .and. fermi%n .ne. 1) call io_error( &
       'The berry_task(s) you chose require that you specify a single ' &
-      //'Fermi energy: scanning the Fermi energy is not implemented')
+      //'Fermi energy: scanning the Fermi energy is not implemented', stdout)
 
     if (eval_kubo) then
       call get_HH_R(stdout)
@@ -292,7 +292,7 @@ contains
 
       if (berry%transl_inv) then
         if (eval_morb) &
-          call io_error('transl_inv=T disabled for morb')
+          call io_error('transl_inv=T disabled for morb', stdout)
         write (stdout, '(/,1x,a)') &
           'Using a translationally-invariant discretization for the'
         write (stdout, '(1x,a)') &
@@ -300,8 +300,8 @@ contains
       endif
 
       if (param_input%timing_level > 1) then
-        call io_stopwatch('berry: prelims', 2)
-        call io_stopwatch('berry: k-interpolation', 1)
+        call io_stopwatch('berry: prelims', 2, stdout)
+        call io_stopwatch('berry: k-interpolation', 1, stdout)
       endif
 
     end if !on_root
@@ -309,7 +309,7 @@ contains
     ! Set up adaptive refinement mesh
     !
     allocate (adkpt(3, berry%curv_adpt_kmesh**3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating adkpt in berry')
+    if (ierr /= 0) call io_error('Error in allocating adkpt in berry', stdout)
     ikpt = 0
     !
     ! OLD VERSION (only works correctly for odd grids including original point)
@@ -613,43 +613,43 @@ contains
     ! Collect contributions from all nodes
     !
     if (eval_ahc) then
-      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi%n, 'SUM')
-      call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM')
+      call comms_reduce(imf_list(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
+      call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', stdout)
     endif
 
     if (eval_morb) then
-      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi%n, 'SUM')
-      call comms_reduce(img_list(1, 1, 1), 3*3*fermi%n, 'SUM')
-      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi%n, 'SUM')
+      call comms_reduce(imf_list2(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
+      call comms_reduce(img_list(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
+      call comms_reduce(imh_list(1, 1, 1), 3*3*fermi%n, 'SUM', stdout)
     end if
 
     if (eval_kubo) then
-      call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM')
-      call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM')
-      call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM')
+      call comms_reduce(kubo_H(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', stdout)
+      call comms_reduce(kubo_AH(1, 1, 1), 3*3*berry%kubo_nfreq, 'SUM', stdout)
+      call comms_reduce(jdos(1), berry%kubo_nfreq, 'SUM', stdout)
       if (pw90_common%spin_decomp) then
-        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM')
-        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM')
-        call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM')
+        call comms_reduce(kubo_H_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', stdout)
+        call comms_reduce(kubo_AH_spn(1, 1, 1, 1), 3*3*3*berry%kubo_nfreq, 'SUM', stdout)
+        call comms_reduce(jdos_spn(1, 1), 3*berry%kubo_nfreq, 'SUM', stdout)
       endif
     endif
 
     if (eval_sc) then
-      call comms_reduce(sc_list(1, 1, 1), 3*6*berry%kubo_nfreq, 'SUM')
+      call comms_reduce(sc_list(1, 1, 1), 3*6*berry%kubo_nfreq, 'SUM', stdout)
     end if
 
     if (eval_shc) then
       if (spin_hall%freq_scan) then
-        call comms_reduce(shc_freq(1), berry%kubo_nfreq, 'SUM')
+        call comms_reduce(shc_freq(1), berry%kubo_nfreq, 'SUM', stdout)
       else
-        call comms_reduce(shc_fermi(1), fermi%n, 'SUM')
-        call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM')
+        call comms_reduce(shc_fermi(1), fermi%n, 'SUM', stdout)
+        call comms_reduce(adpt_counter_list(1), fermi%n, 'SUM', stdout)
       end if
     end if
 
     if (on_root) then
 
-      if (param_input%timing_level > 1) call io_stopwatch('berry: k-interpolation', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('berry: k-interpolation', 2, stdout)
       write (stdout, '(1x,a)') ' '
       if (eval_ahc .and. berry%curv_adpt_kmesh .ne. 1) then
         if (.not. berry%wanint_kpoint_file) write (stdout, '(1x,a28,3(i0,1x))') &
@@ -1255,13 +1255,13 @@ contains
 
     if (present(occ)) then
       call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, occ=occ)
-      call wham_get_occ_mat_list(UU, f_list, g_list, occ=occ)
+      call wham_get_occ_mat_list(stdout, UU, f_list, g_list, occ=occ)
     else
       call wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout)
-      call wham_get_occ_mat_list(UU, f_list, g_list, eig=eig)
+      call wham_get_occ_mat_list(stdout, UU, f_list, g_list, eig=eig)
     endif
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
+    call pw90common_fourier_R_to_k_vec(stdout, kpt, AA_R, OO_true=AA, OO_pseudo=OOmega)
 
     if (present(imf_k_list)) then
       ! Trace formula for -2Im[f], Eq.(51) LVTS12
@@ -1303,10 +1303,10 @@ contains
       ! tmp(:,:,3) ..... HH . OOmega(:,:,i)
       ! tmp(:,:,4:5) ... working matrices for matrix products of inner loop
 
-      call pw90common_fourier_R_to_k_vec(kpt, BB_R, OO_true=BB)
+      call pw90common_fourier_R_to_k_vec(stdout, kpt, BB_R, OO_true=BB)
       do j = 1, 3
         do i = 1, j
-          call pw90common_fourier_R_to_k(kpt, CC_R(:, :, :, i, j), CC(:, :, i, j), 0)
+          call pw90common_fourier_R_to_k(kpt, CC_R(:, :, :, i, j), CC(:, :, i, j), 0, stdout)
           CC(:, :, j, i) = conjg(transpose(CC(:, :, i, j)))
         end do
       end do
@@ -1435,7 +1435,7 @@ contains
       call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
       Delta_k = pw90common_kmesh_spacing(berry%kmesh)
     else
-      call pw90common_fourier_R_to_k_new(kpt, HH_R, OO=HH, &
+      call pw90common_fourier_R_to_k_new(stdout, kpt, HH_R, OO=HH, &
                                          OO_dx=delHH(:, :, 1), &
                                          OO_dy=delHH(:, :, 2), &
                                          OO_dz=delHH(:, :, 3))
@@ -1444,7 +1444,7 @@ contains
     call pw90common_get_occ(eig, occ, fermi%energy_list(1))
     call wham_get_D_h(delHH, UU, eig, D_h)
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(stdout, kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1503,7 +1503,7 @@ contains
           arg = (eig(m) - eig(n) - real(omega, dp))/eta_smr
           ! If only Hermitean part were computed, could speed up
           ! by inserting here 'if(abs(arg)>10.0_dp) cycle'
-          delta = utility_w0gauss(arg, berry%kubo_smr_index)/eta_smr
+          delta = utility_w0gauss(arg, berry%kubo_smr_index, stdout)/eta_smr
           !
           ! Lorentzian shape (for testing purposes)
 !             delta=1.0_dp/(1.0_dp+arg*arg)/pi
@@ -1617,13 +1617,13 @@ contains
       call wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout)
       ! get position operator and its derivative
       ! note that AA_da(:,:,a,b) \propto \sum_R exp(iRk)*iR_{b}*<0|r_{a}|R>
-      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
+      call pw90common_fourier_R_to_k_vec_dadb_TB_conv(stdout, kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
       ! get eigenvalues and their k-derivatives
       call wham_get_eig_deleig_TB_conv(kpt, eig, eig_da, HH_da, UU, stdout)
     elseif (berry%sc_phase_conv .eq. 2) then ! do not use Wannier centres in the FT exponentials (usual W90 convention)
       ! same as above
       call wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout)
-      call pw90common_fourier_R_to_k_vec_dadb(kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
+      call pw90common_fourier_R_to_k_vec_dadb(stdout, kpt, AA_R, OO_da=AA, OO_dadb=AA_da)
       call wham_get_eig_deleig(kpt, eig, eig_da, HH, HH_da, UU, stdout)
     end if
 
@@ -1734,7 +1734,7 @@ contains
         if (istart <= iend) then
           delta = 0.0
           delta(istart:iend) = &
-            utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, berry%kubo_smr_index)/eta_smr
+            utility_w0gauss_vec((eig(m) - eig(n) + omega(istart:iend))/eta_smr, berry%kubo_smr_index, stdout)/eta_smr
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
         ! same for delta(E_mn-w)
@@ -1743,7 +1743,7 @@ contains
         if (istart <= iend) then
           delta = 0.0
           delta(istart:iend) = &
-            utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, berry%kubo_smr_index)/eta_smr
+            utility_w0gauss_vec((eig(n) - eig(m) + omega(istart:iend))/eta_smr, berry%kubo_smr_index, stdout)/eta_smr
           call DGER(18, iend - istart + 1, occ_fac, I_nm, 1, delta(istart:iend), 1, sc_k_list(:, :, istart:iend), 18)
         endif
 
@@ -1845,7 +1845,7 @@ contains
       eig(spin_hall%bandshift_firstband:) = eig(spin_hall%bandshift_firstband:) + spin_hall%bandshift_energyshift
     end if
 
-    call pw90common_fourier_R_to_k_vec(kpt, AA_R, OO_true=AA)
+    call pw90common_fourier_R_to_k_vec(stdout, kpt, AA_R, OO_true=AA)
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
     enddo
@@ -1977,14 +1977,14 @@ contains
       !=========== S_k ===========
       ! < u_k | sigma_gamma | u_k >, QZYZ18 Eq.(25)
       ! QZYZ18 Eq.(36)
-      call pw90common_fourier_R_to_k_new(kpt, SS_R(:, :, :, spin_hall%gamma), OO=S_w)
+      call pw90common_fourier_R_to_k_new(stdout, kpt, SS_R(:, :, :, spin_hall%gamma), OO=S_w)
       ! QZYZ18 Eq.(30)
       S_k = utility_rotate(S_w, UU, num_wann)
 
       !=========== K_k ===========
       ! < u_k | sigma_gamma | \partial_alpha u_k >, QZYZ18 Eq.(26)
       ! QZYZ18 Eq.(37)
-      call pw90common_fourier_R_to_k_vec(kpt, SR_R(:, :, :, spin_hall%gamma, :), OO_true=SR_w)
+      call pw90common_fourier_R_to_k_vec(stdout, kpt, SR_R(:, :, :, spin_hall%gamma, :), OO_true=SR_w)
       ! QZYZ18 Eq.(31)
       SR_alpha_k = -cmplx_i*utility_rotate(SR_w(:, :, spin_hall%alpha), UU, num_wann)
       K_k = SR_alpha_k + matmul(S_k, D_alpha_h)
@@ -1992,11 +1992,11 @@ contains
       !=========== L_k ===========
       ! < u_k | sigma_gamma.H | \partial_alpha u_k >, QZYZ18 Eq.(27)
       ! QZYZ18 Eq.(38)
-      call pw90common_fourier_R_to_k_vec(kpt, SHR_R(:, :, :, spin_hall%gamma, :), OO_true=SHR_w)
+      call pw90common_fourier_R_to_k_vec(stdout, kpt, SHR_R(:, :, :, spin_hall%gamma, :), OO_true=SHR_w)
       ! QZYZ18 Eq.(32)
       SHR_alpha_k = -cmplx_i*utility_rotate(SHR_w(:, :, spin_hall%alpha), UU, num_wann)
       ! QZYZ18 Eq.(39)
-      call pw90common_fourier_R_to_k_vec(kpt, SH_R, OO_true=SH_w)
+      call pw90common_fourier_R_to_k_vec(stdout, kpt, SH_R, OO_true=SH_w)
       ! QZYZ18 Eq.(32)
       SH_k = utility_rotate(SH_w(:, :, spin_hall%gamma), UU, num_wann)
       L_k = SHR_alpha_k + matmul(SH_k, D_alpha_h)

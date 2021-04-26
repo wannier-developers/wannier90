@@ -62,7 +62,7 @@ contains
 !    degeneracies or similar things on different MPI processors, we should
 !    probably think to do the math on node 0, and then broadcast results.
 
-  subroutine ws_translate_dist(param_input, num_wann, &
+  subroutine ws_translate_dist(stdout, param_input, num_wann, &
                                wannier_centres, real_lattice, recip_lattice, mp_grid, nrpts, &
                                irvec, force_recompute)
     !! Find the supercell translation (i.e. the translation by a integer number of
@@ -84,6 +84,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
     !integer, intent(in) :: iprint
     integer, intent(in) :: num_wann
 !   integer, intent(in) :: ws_search_size(3)
@@ -113,15 +114,15 @@ contains
     done_ws_distance = .true.
 
     if (ndegenx*num_wann*nrpts <= 0) then
-      call io_error("unexpected dimensions in ws_translate_dist")
+      call io_error("unexpected dimensions in ws_translate_dist", stdout)
     end if
 
     allocate (irdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating irdist_ws in ws_translate_dist')
+    if (ierr /= 0) call io_error('Error in allocating irdist_ws in ws_translate_dist', stdout)
     allocate (crdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating crdist_ws in ws_translate_dist')
+    if (ierr /= 0) call io_error('Error in allocating crdist_ws in ws_translate_dist', stdout)
     allocate (wdist_ndeg(num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist')
+    if (ierr /= 0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist', stdout)
 
     !translation_centre_frac = 0._dp
     wdist_ndeg = 0
@@ -144,7 +145,7 @@ contains
           CALL R_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
                        wdist_ndeg(iw, jw, ir), R_out, shifts, mp_grid, recip_lattice, &
-                       real_lattice, param_input%ws_search_size, param_input%ws_distance_tol)
+                       real_lattice, param_input%ws_search_size, param_input%ws_distance_tol, stdout)
           do ideg = 1, wdist_ndeg(iw, jw, ir)
             irdist_ws(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
             tmp_frac = REAL(irdist_ws(:, ideg, iw, jw, ir), kind=dp)
@@ -157,7 +158,7 @@ contains
   end subroutine ws_translate_dist
 
   subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, recip_lattice, &
-                     real_lattice, ws_search_size, ws_distance_tol)
+                     real_lattice, ws_search_size, ws_distance_tol, stdout)
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
     !! Return their coordinates and the degeneracy, as well as the integer
@@ -170,6 +171,7 @@ contains
 
 !   from w90_parameters
     integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
     integer, intent(in) :: ws_search_size(3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -259,7 +261,7 @@ contains
           if (ABS(SQRT(SUM((R - R0)**2)) - SQRT(mod2_R_bz)) < ws_distance_tol) then
             ndeg = ndeg + 1
             IF (ndeg > ndegenx) then
-              call io_error("surprising ndeg, I wouldn't expect a degeneracy larger than 8...")
+              call io_error("surprising ndeg, I wouldn't expect a degeneracy larger than 8...", stdout)
             END IF
             R_out(:, ndeg) = R
             ! I return/update also the shifts. Note that I have to sum these
@@ -279,7 +281,7 @@ contains
   !====================================================!
 
   !====================================================!
-  subroutine ws_write_vec(nrpts, irvec, num_wann, use_ws_distance)
+  subroutine ws_write_vec(nrpts, irvec, num_wann, use_ws_distance, stdout)
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
     !! in order to have the second Wannier function inside the WS cell
@@ -290,10 +292,9 @@ contains
 
     implicit none
 
-!   from w90_parameters
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     logical, intent(in) :: use_ws_distance
-!   end w90_parameters
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
@@ -342,7 +343,7 @@ contains
     close (file_unit)
     return
 
-101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat')
+101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', stdout)
     !====================================================!
   end subroutine ws_write_vec
   !====================================================!

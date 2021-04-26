@@ -164,7 +164,7 @@ contains
 
     logical :: pl_warning
 
-    if (param_input%timing_level > 0) call io_stopwatch('tran: main', 1)
+    if (param_input%timing_level > 0) call io_stopwatch('tran: main', 1, stdout)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'
     write (stdout, '(1x,a)') '|                              TRANSPORT                                    |'
@@ -176,19 +176,19 @@ contains
       if (.not. tran%read_ht) then
         call hamiltonian_setup(param_input, real_lattice, mp_grid, tran%mode, w90_calcs, num_kpts, &
                                num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                               wannier_centres_translated, hmlg, ham_k)
+                               wannier_centres_translated, hmlg, ham_k, stdout)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, &
                                 param_hamil, param_input, dis_data, u_matrix_opt, &
                                 k_points%kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
                                 num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
-                                wannier_centres_translated, hmlg, ham_k)
+                                wannier_centres_translated, hmlg, ham_k, stdout)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, &
-                                                          ham_r, irvec, ndegen, nrpts, hmlg)
+                                                          ham_r, irvec, ndegen, nrpts, hmlg, stdout)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, nrpts_one_dim, stdout)
         call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
                                  wannier_centres_translated, one_dim_vec, nrpts_one_dim, num_pl, stdout)
-        call tran_get_ht(fermi, param_input, num_wann, tran, num_pl)
+        call tran_get_ht(fermi, param_input, num_wann, tran, num_pl, stdout)
         if (param_input%write_xyz) call tran_write_xyz(tran, atoms, num_wann, &
                                                        wannier_centres_translated, tran_sorted_idx, stdout)
       end if
@@ -200,14 +200,14 @@ contains
       if (.not. tran%read_ht) then
         call hamiltonian_setup(param_input, real_lattice, mp_grid, tran%mode, w90_calcs, num_kpts, &
                                num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                               wannier_centres_translated, hmlg, ham_k)
+                               wannier_centres_translated, hmlg, ham_k, stdout)
         call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, &
                                 param_hamil, param_input, dis_data, u_matrix_opt, &
                                 k_points%kpt_latt, eigval, u_matrix, lsitesymmetry, num_bands, &
                                 num_kpts, num_wann, ham_r, irvec, shift_vec, nrpts, &
-                                wannier_centres_translated, hmlg, ham_k)
+                                wannier_centres_translated, hmlg, ham_k, stdout)
         if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, &
-                                                          ham_r, irvec, ndegen, nrpts, hmlg)
+                                                          ham_r, irvec, ndegen, nrpts, hmlg, stdout)
         call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                             one_dim_vec, nrpts_one_dim, stdout)
         call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
@@ -232,7 +232,7 @@ contains
       call tran_lcr(tran, param_input, stdout)
     end if
 
-    if (param_input%timing_level > 0) call io_stopwatch('tran: main', 2)
+    if (param_input%timing_level > 0) call io_stopwatch('tran: main', 2, stdout)
 
   end subroutine tran_main
 
@@ -269,7 +269,7 @@ contains
     integer :: i, j
     integer :: i1, i2, i3, n1, nrpts_tmp, loop_rpt
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: reduce_hr', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: reduce_hr', 1, stdout)
 
     ! Find one_dim_vec which is parallel to param_input%one_dim_dir
     ! two_dim_vec - the other two lattice vectors
@@ -283,7 +283,7 @@ contains
     end do
     if (j .ne. 1) then
       write (stdout, '(i3,a)') j, ' : 1-D LATTICE VECTOR NOT DEFINED'
-      call io_error('Error: 1-d lattice vector not defined in tran_reduce_hr')
+      call io_error('Error: 1-d lattice vector not defined in tran_reduce_hr', stdout)
     end if
 
     j = 0
@@ -304,7 +304,7 @@ contains
     nrpts_one_dim = 2*irvec_max + 1
 
     allocate (hr_one_dim(num_wann, num_wann, -irvec_max:irvec_max), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hr_one_dim in tran_reduce_hr')
+    if (ierr /= 0) call io_error('Error in allocating hr_one_dim in tran_reduce_hr', stdout)
     hr_one_dim = 0.0_dp
 
     ! check imaginary part
@@ -329,10 +329,10 @@ contains
 
     if (nrpts_tmp .ne. nrpts_one_dim) then
       write (stdout, '(a)') 'FAILED TO EXTRACT 1-D HAMILTONIAN'
-      call io_error('Error: cannot extract 1d hamiltonian in tran_reduce_hr')
+      call io_error('Error: cannot extract 1d hamiltonian in tran_reduce_hr', stdout)
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: reduce_hr', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: reduce_hr', 2, stdout)
 
     return
 
@@ -374,7 +374,7 @@ contains
     real(kind=dp) :: hr_tmp(num_wann, num_wann)
 
     !
-    if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 1, stdout)
     !
     irvec_max = nrpts_one_dim/2
     ! maximum possible param_input%dist_cutoff
@@ -497,14 +497,14 @@ contains
       end do
     end do
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: cut_hr_one_dim', 2, stdout)
 
     return
 
   end subroutine tran_cut_hr_one_dim
 
   !==================================================================!
-  subroutine tran_get_ht(fermi, param_input, num_wann, tran, num_pl)
+  subroutine tran_get_ht(fermi, param_input, num_wann, tran, num_pl, stdout)
     !==================================================================!
     !  construct h00 and h01
     !==================================================================!
@@ -523,23 +523,24 @@ contains
     integer, intent(in) :: num_pl
 
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
 
     integer :: ierr, file_unit
     integer :: i, j, n1, im, jm
     character(len=9)   :: cdate, ctime
     !
-    if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 1, stdout)
     !
     if (fermi%n > 1) call io_error("Error in tran_get_ht: nfermi>1. " &
-                                   //"Set the fermi level using the input parameter 'fermi_evel'")
+                                   //"Set the fermi level using the input parameter 'fermi_evel'", stdout)
     !
     !
     tran%num_bb = num_pl*num_wann
     !
     allocate (hB0(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hB0 in tran_get_ht')
+    if (ierr /= 0) call io_error('Error in allocating hB0 in tran_get_ht', stdout)
     allocate (hB1(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hB1 in tran_get_ht')
+    if (ierr /= 0) call io_error('Error in allocating hB1 in tran_get_ht', stdout)
     !
     hB0 = 0.0_dp
     hB1 = 0.0_dp
@@ -586,7 +587,7 @@ contains
 
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: get_ht', 2, stdout)
 
     return
 
@@ -621,28 +622,28 @@ contains
     character(len=50) :: filename
     character(len=9)  :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: bulk', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: bulk', 1, stdout)
 
     allocate (tot(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tot in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating tot in tran_bulk', stdout)
     allocate (tott(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tott in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating tott in tran_bulk', stdout)
     allocate (g_B(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_B in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating g_B in tran_bulk', stdout)
     allocate (gL(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gL in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating gL in tran_bulk', stdout)
     allocate (gR(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gR in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating gR in tran_bulk', stdout)
     allocate (sLr(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sLr in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating sLr in tran_bulk', stdout)
     allocate (sRr(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sRr in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating sRr in tran_bulk', stdout)
     allocate (s1(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating s1 in tran_bulk', stdout)
     allocate (s2(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating s2 in tran_bulk', stdout)
     allocate (c1(tran%num_bb, tran%num_bb), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating c1 in tran_bulk')
+    if (ierr /= 0) call io_error('Error in allocating c1 in tran_bulk', stdout)
 
     call io_date(cdate, ctime)
 
@@ -660,9 +661,9 @@ contains
 
     if (tran%read_ht) then
       allocate (hB0(tran%num_bb, tran%num_bb), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hB0 in tran_bulk')
+      if (ierr /= 0) call io_error('Error in allocating hB0 in tran_bulk', stdout)
       allocate (hB1(tran%num_bb, tran%num_bb), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hB1 in tran_bulk')
+      if (ierr /= 0) call io_error('Error in allocating hB1 in tran_bulk', stdout)
       filename = trim(seedname)//'_htB.dat'
       call tran_read_htX(tran%num_bb, hB0, hB1, filename, stdout)
     end if
@@ -739,27 +740,27 @@ contains
     close (dos_unit)
 
     deallocate (c1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_bulk', stdout)
     deallocate (s2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_bulk', stdout)
     deallocate (s1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_bulk', stdout)
     deallocate (sRr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sRr in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating sRr in tran_bulk', stdout)
     deallocate (sLr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sLr in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating sLr in tran_bulk', stdout)
     deallocate (gR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gR in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating gR in tran_bulk', stdout)
     deallocate (gL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gL in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating gL in tran_bulk', stdout)
     deallocate (g_B, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_B in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating g_B in tran_bulk', stdout)
     deallocate (tott, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tott in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating tott in tran_bulk', stdout)
     deallocate (tot, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tot in tran_bulk')
+    if (ierr /= 0) call io_error('Error in deallocating tot in tran_bulk', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: bulk', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: bulk', 2, stdout)
 
     return
 
@@ -797,7 +798,7 @@ contains
     character(len=50) :: filename
     character(len=9)  :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 1, stdout)
 
     call io_date(cdate, ctime)
 
@@ -816,33 +817,33 @@ contains
     KC = max(tran%num_lc, tran%num_cr)
 
     allocate (hCband(2*KL + KU + 1, tran%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hCband in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating hCband in tran_lcr', stdout)
     allocate (hLC_cmp(tran%num_ll, tran%num_lc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hLC_cmp in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating hLC_cmp in tran_lcr', stdout)
     allocate (hCR_cmp(tran%num_cr, tran%num_rr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hCR_cmp in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating hCR_cmp in tran_lcr', stdout)
 
     !If construct used only when reading matrices from file
     if (tran%read_ht) then
       allocate (hL0(tran%num_ll, tran%num_ll), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr', stdout)
       allocate (hL1(tran%num_ll, tran%num_ll), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr', stdout)
       allocate (hC(tran%num_cc, tran%num_cc), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr', stdout)
       allocate (hLC(tran%num_ll, tran%num_lc), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr', stdout)
       allocate (hCR(tran%num_cr, tran%num_rr), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr', stdout)
 
       filename = trim(seedname)//'_htL.dat'
       call tran_read_htX(tran%num_ll, hL0, hL1, filename, stdout)
 
       if (.not. tran%use_same_lead) then
         allocate (hR0(tran%num_rr, tran%num_rr), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr')
+        if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr', stdout)
         allocate (hR1(tran%num_rr, tran%num_rr), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr')
+        if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr', stdout)
         filename = trim(seedname)//'_htR.dat'
         call tran_read_htX(tran%num_rr, hR0, hR1, filename, stdout)
       end if
@@ -862,54 +863,54 @@ contains
       end do
     end do
     deallocate (hC, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hC in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating hC in tran_lcr', stdout)
 
     !  H_LC : to a complex matrix
     hLC_cmp(:, :) = cmplx(hLC(:, :), kind=dp)
     deallocate (hLC, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hLC in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating hLC in tran_lcr', stdout)
 
     !  H_CR : to a complex matrix
     hCR_cmp(:, :) = cmplx(hCR(:, :), kind=dp)
     deallocate (hCR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hCR in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating hCR in tran_lcr', stdout)
 
     allocate (totL(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating totL in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating totL in tran_lcr', stdout)
     allocate (tottL(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tottL in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating tottL in tran_lcr', stdout)
     if (.not. tran%use_same_lead) then
       allocate (totR(tran%num_rr, tran%num_rr), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating totR in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating totR in tran_lcr', stdout)
       allocate (tottR(tran%num_rr, tran%num_rr), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating tottR in tran_lcr')
+      if (ierr /= 0) call io_error('Error in allocating tottR in tran_lcr', stdout)
     end if
     allocate (g_surf_L(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_surf_L in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating g_surf_L in tran_lcr', stdout)
     allocate (g_surf_R(tran%num_rr, tran%num_rr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_surf_R in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating g_surf_R in tran_lcr', stdout)
     allocate (g_C_inv(2*KL + KU + 1, tran%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_C_inv in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating g_C_inv in tran_lcr', stdout)
     allocate (g_C(tran%num_cc, tran%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_C in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating g_C in tran_lcr', stdout)
     allocate (sLr(tran%num_lc, tran%num_lc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sLr in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating sLr in tran_lcr', stdout)
     allocate (sRr(tran%num_cr, tran%num_cr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sRr in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating sRr in tran_lcr', stdout)
     allocate (gL(tran%num_lc, tran%num_lc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gL in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating gL in tran_lcr', stdout)
     allocate (gR(tran%num_cr, tran%num_cr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating gR in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating gR in tran_lcr', stdout)
     allocate (c1(tran%num_lc, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating c1 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating c1 in tran_lcr', stdout)
     allocate (c2(tran%num_cr, tran%num_rr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating c2 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating c2 in tran_lcr', stdout)
     allocate (s1(KC, KC), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating s1 in tran_lcr', stdout)
     allocate (s2(KC, KC), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating s2 in tran_lcr', stdout)
     allocate (ipiv(tran%num_cc), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_lcr')
+    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_lcr', stdout)
 
     !  Loop over the energies
     n_e = floor((tran%win_max - tran%win_min)/tran%energy_step) + 1
@@ -989,7 +990,7 @@ contains
                  info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR: IN ZGBSV IN tran_lcr, INFO=', info
-        call io_error('tran_lcr: problem in ZGBSV')
+        call io_error('tran_lcr: problem in ZGBSV', stdout)
       end if
 
       ! Gamma_L = i(Sigma_L^r-Sigma_L^a)
@@ -1045,47 +1046,47 @@ contains
     close (dos_unit)
 
     deallocate (ipiv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_lcr', stdout)
     deallocate (s2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_lcr', stdout)
     deallocate (s1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_lcr', stdout)
     deallocate (c2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating c2 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating c2 in tran_lcr', stdout)
     deallocate (c1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_lcr', stdout)
     deallocate (gR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gR in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating gR in tran_lcr', stdout)
     deallocate (gL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating gL in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating gL in tran_lcr', stdout)
     deallocate (sRr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sRr in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating sRr in tran_lcr', stdout)
     deallocate (sLr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sLr in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating sLr in tran_lcr', stdout)
     deallocate (g_C, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_C in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating g_C in tran_lcr', stdout)
     deallocate (g_C_inv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_C_inv in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating g_C_inv in tran_lcr', stdout)
     deallocate (g_surf_R, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_surf_R in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating g_surf_R in tran_lcr', stdout)
     deallocate (g_surf_L, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating g_surf_L in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating g_surf_L in tran_lcr', stdout)
     if (allocated(tottR)) deallocate (tottR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tottR in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating tottR in tran_lcr', stdout)
     if (allocated(totR)) deallocate (totR, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating totR in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating totR in tran_lcr', stdout)
     deallocate (tottL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tottL in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating tottL in tran_lcr', stdout)
     deallocate (totL, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating totL in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating totL in tran_lcr', stdout)
     deallocate (hCR_cmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hCR_cmp in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating hCR_cmp in tran_lcr', stdout)
     deallocate (hLC_cmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hLC_cmp in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating hLC_cmp in tran_lcr', stdout)
     deallocate (hCband, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating hCband in tran_lcr')
+    if (ierr /= 0) call io_error('Error in deallocating hCband in tran_lcr', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr', 2, stdout)
 
     return
 
@@ -1125,23 +1126,23 @@ contains
     complex(kind=dp), allocatable, dimension(:, :, :) :: tau, taut
 
     allocate (ipiv(nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_transfer', stdout)
     allocate (tsum(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tsum in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating tsum in tran_transfer', stdout)
     allocate (tsumt(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tsumt in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating tsumt in tran_transfer', stdout)
     allocate (t11(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating t11 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating t11 in tran_transfer', stdout)
     allocate (t12(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating t12 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating t12 in tran_transfer', stdout)
     allocate (s1(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating s1 in tran_transfer', stdout)
     allocate (s2(nxx, nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating s2 in tran_transfer', stdout)
     allocate (tau(nxx, nxx, 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tau in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating tau in tran_transfer', stdout)
     allocate (taut(nxx, nxx, 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating taut in tran_transfer')
+    if (ierr /= 0) call io_error('Error in allocating taut in tran_transfer', stdout)
 
     nxx2 = nxx*nxx
 
@@ -1165,7 +1166,7 @@ contains
     call ZGESV(nxx, nxx, t12, nxx, ipiv, t11, nxx, info)
     if (info .ne. 0) then
       write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-      call io_error('tran_transfer: problem in ZGESV 1')
+      call io_error('tran_transfer: problem in ZGESV 1', stdout)
     end if
 
     ! compute intermediate t-matrices (defined as tau(nxx,nxx,niter)
@@ -1213,7 +1214,7 @@ contains
       call ZGESV(nxx, nxx, s1, nxx, ipiv, s2, nxx, info)
       if (info .ne. 0) then
         write (stdout, *) 'ERROR:  IN ZGESV IN tran_transfer, INFO=', info
-        call io_error('tran_transfer: problem in ZGESV 2')
+        call io_error('tran_transfer: problem in ZGESV 2', stdout)
       end if
 
       t11 = cmplx_0
@@ -1270,26 +1271,26 @@ contains
     end do
 
     if (conver .gt. eps7 .or. conver2 .gt. eps7) &
-      call io_error('Error in converging transfer matrix in tran_transfer')
+      call io_error('Error in converging transfer matrix in tran_transfer', stdout)
 
     deallocate (taut, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating taut in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating taut in tran_transfer', stdout)
     deallocate (tau, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tau in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating tau in tran_transfer', stdout)
     deallocate (s2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_transfer', stdout)
     deallocate (s1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_transfer', stdout)
     deallocate (t12, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating t12 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating t12 in tran_transfer', stdout)
     deallocate (t11, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating t11 in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating t11 in tran_transfer', stdout)
     deallocate (tsumt, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tsumt in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating tsumt in tran_transfer', stdout)
     deallocate (tsum, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tsum in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating tsum in tran_transfer', stdout)
     deallocate (ipiv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_transfer')
+    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_transfer', stdout)
 
     return
 
@@ -1330,17 +1331,17 @@ contains
     complex(kind=dp), allocatable, dimension(:, :) :: s1, s2, c1
 
     allocate (ipiv(nxx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_green')
+    if (ierr /= 0) call io_error('Error in allocating ipiv in tran_green', stdout)
     allocate (g_inv(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating g_inv in tran_green')
+    if (ierr /= 0) call io_error('Error in allocating g_inv in tran_green', stdout)
     allocate (eh_00(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating eh_00 in tran_green')
+    if (ierr /= 0) call io_error('Error in allocating eh_00 in tran_green', stdout)
     allocate (c1(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating c1 in tran_green')
+    if (ierr /= 0) call io_error('Error in allocating c1 in tran_green', stdout)
     allocate (s1(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating s1 in tran_green')
+    if (ierr /= 0) call io_error('Error in allocating s1 in tran_green', stdout)
     allocate (s2(nxx, nxx))
-    if (ierr /= 0) call io_error('Error in allocating s2 in tran_green')
+    if (ierr /= 0) call io_error('Error in allocating s2 in tran_green', stdout)
 
     c1(:, :) = cmplx(h_01(:, :), kind=dp)
 
@@ -1373,7 +1374,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call io_error('tran_green: problem in ZGESV 1')
+          call io_error('tran_green: problem in ZGESV 1', stdout)
         end if
       end if
 
@@ -1404,7 +1405,7 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call io_error('tran_green: problem in ZGESV 2')
+          call io_error('tran_green: problem in ZGESV 2', stdout)
         end if
       end if
 
@@ -1437,24 +1438,24 @@ contains
         call ZGESV(nxx, nxx, eh_00, nxx, ipiv, g, nxx, info)
         if (info .ne. 0) then
           write (stdout, *) 'ERROR:  IN ZGESV IN tran_green, INFO=', info
-          call io_error('tran_green: problem in ZGESV 3')
+          call io_error('tran_green: problem in ZGESV 3', stdout)
         end if
       end if
 
     end select
 
     deallocate (s2)
-    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_green')
+    if (ierr /= 0) call io_error('Error in deallocating s2 in tran_green', stdout)
     deallocate (s1)
-    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_green')
+    if (ierr /= 0) call io_error('Error in deallocating s1 in tran_green', stdout)
     deallocate (c1)
-    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_green')
+    if (ierr /= 0) call io_error('Error in deallocating c1 in tran_green', stdout)
     deallocate (eh_00)
-    if (ierr /= 0) call io_error('Error in deallocating eh_00 in tran_green')
+    if (ierr /= 0) call io_error('Error in deallocating eh_00 in tran_green', stdout)
     deallocate (g_inv)
-    if (ierr /= 0) call io_error('Error in deallocating g_inv in tran_green')
+    if (ierr /= 0) call io_error('Error in deallocating g_inv in tran_green', stdout)
     deallocate (ipiv)
-    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_green')
+    if (ierr /= 0) call io_error('Error in deallocating ipiv in tran_green', stdout)
 
     return
 
@@ -1489,18 +1490,18 @@ contains
     write (stdout, '(a)') trim(dummy)
 
     read (file_unit, *, err=102, end=102) nw
-    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htX')
+    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htX', stdout)
     read (file_unit, *) ((h_00(i, j), i=1, nxx), j=1, nxx)
     read (file_unit, *, err=102, end=102) nw
-    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htX')
+    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htX', stdout)
     read (file_unit, *, err=102, end=102) ((h_01(i, j), i=1, nxx), j=1, nxx)
 
     close (unit=file_unit)
 
     return
 
-101 call io_error('Error: Problem opening input file '//h_file)
-102 call io_error('Error: Problem reading input file '//h_file)
+101 call io_error('Error: Problem opening input file '//h_file, stdout)
+102 call io_error('Error: Problem reading input file '//h_file, stdout)
 
   end subroutine tran_read_htX
 
@@ -1533,15 +1534,15 @@ contains
     write (stdout, '(a)') trim(dummy)
 
     read (file_unit, *, err=102, end=102) nw
-    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htC')
+    if (nw .ne. nxx) call io_error('wrong matrix size in transport: read_htC', stdout)
     read (file_unit, *, err=102, end=102) ((h_00(i, j), i=1, nxx), j=1, nxx)
 
     close (unit=file_unit)
 
     return
 
-101 call io_error('Error: Problem opening input file '//h_file)
-102 call io_error('Error: Problem reading input file '//h_file)
+101 call io_error('Error: Problem opening input file '//h_file, stdout)
+102 call io_error('Error: Problem reading input file '//h_file, stdout)
 
   end subroutine tran_read_htC
 
@@ -1575,7 +1576,7 @@ contains
 
     read (file_unit, *, err=102, end=102) nw1, nw2
 
-    if (nw1 .ne. nxx1 .or. nw2 .ne. nxx2) call io_error('wrong matrix size in transport: read_htXY')
+    if (nw1 .ne. nxx1 .or. nw2 .ne. nxx2) call io_error('wrong matrix size in transport: read_htXY', stdout)
 
     read (file_unit, *, err=102, end=102) ((h_01(i, j), i=1, nxx1), j=1, nxx2)
 
@@ -1583,8 +1584,8 @@ contains
 
     return
 
-101 call io_error('Error: Problem opening input file '//h_file)
-102 call io_error('Error: Problem reading input file '//h_file)
+101 call io_error('Error: Problem opening input file '//h_file, stdout)
+102 call io_error('Error: Problem reading input file '//h_file, stdout)
 
   end subroutine tran_read_htXY
 
@@ -1634,12 +1635,12 @@ contains
     integer                                                :: i, ibnd, file_unit, ierr, p, p_max, &
                                                               n, m, ig, a, b, c, ig_idx(32)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 1, stdout)
     !
     file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
     if (.not. have_file) call io_error('tran_hr_parity_unkg: file '//trim(seedname)// &
-                                       '.unkg not found')
+                                       '.unkg not found', stdout)
     open (file_unit, file=trim(seedname)//'.unkg', form='formatted', action='read')
     !
     !Read unkg file
@@ -1648,17 +1649,17 @@ contains
     read (file_unit, *) num_G
 
     allocate (signatures(20, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating signatures in tran_find_sigs_unkg_int')
+    if (ierr /= 0) call io_error('Error in allocating signatures in tran_find_sigs_unkg_int', stdout)
     allocate (unkg(num_G, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating unkg in tran_find_sigs_unkg_int')
+    if (ierr /= 0) call io_error('Error in allocating unkg in tran_find_sigs_unkg_int', stdout)
     allocate (g_abc(num_G, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating g_abc in tran_find_sigs_unkg_int')
+    if (ierr /= 0) call io_error('Error in allocating g_abc in tran_find_sigs_unkg_int', stdout)
     if (param_input%have_disentangled) then
       allocate (tran_u_matrix(num_bands, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+      if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', stdout)
     else
       allocate (tran_u_matrix(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int')
+      if (ierr /= 0) call io_error('Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', stdout)
     endif
     !
     unkg = cmplx_0
@@ -1666,7 +1667,7 @@ contains
       do i = 1, num_G
         read (file_unit, *) ibnd, ig, a, b, c, r_unkg, i_unkg
         if ((ig .ne. i) .OR. (ibnd .ne. m)) then
-          call io_error('tran_find_sigs_unkg_int: Incorrect bands or g vectors')
+          call io_error('tran_find_sigs_unkg_int: Incorrect bands or g vectors', stdout)
         endif
         unkg(i, m) = cmplx(r_unkg, i_unkg, kind=dp)
         g_abc(i, :) = (/a, b, c/)
@@ -1844,13 +1845,13 @@ contains
     num_G = 20
 
     deallocate (tran_u_matrix, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating tran_u_matrix in tran_find_signatures')
+    if (ierr /= 0) call io_error('Error deallocating tran_u_matrix in tran_find_signatures', stdout)
     deallocate (g_abc, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating g_abc in tran_find_signatures')
+    if (ierr /= 0) call io_error('Error deallocating g_abc in tran_find_signatures', stdout)
     deallocate (unkg, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating unkg in tran_find_signatures')
+    if (ierr /= 0) call io_error('Error deallocating unkg in tran_find_signatures', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: find_sigs_unkg_int', 2, stdout)
 
     return
 
@@ -1927,11 +1928,11 @@ contains
     character(30)                                     :: fmt_1
 
     allocate (tran_sorted_idx(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tran_sorted_idx in tran_lcr_2c2_sort')
+    if (ierr /= 0) call io_error('Error in allocating tran_sorted_idx in tran_lcr_2c2_sort', stdout)
 
     num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 1, stdout)
 
     sort_iterator = 0
     !
@@ -1939,7 +1940,7 @@ contains
     !
     if (size(wannier_centres_translated) .eq. 0) then
       call io_error('Translated centres not known : required perform lcr transport, &
-                    &try restart=plot')
+                    &try restart=plot', stdout)
     endif
 
     !read param_input%one_dim_dir and creates an array (coord) that correspond to the
@@ -1966,13 +1967,13 @@ contains
         ((real_lattice(coord(2), coord(1)) .ne. 0) .or. (real_lattice(coord(3), coord(1)) .ne. 0))) then
       call io_error( &
       'Lattice vector in conduction direction must point along x,y or z &
-      & direction and be orthogonal to the remaining lattice vectors.')
+      & direction and be orthogonal to the remaining lattice vectors.', stdout)
     endif
     !
     !Check
     !
     if (num_wann .le. 4*tran%num_ll) then
-      call io_error('Principle layers are too big.')
+      call io_error('Principle layers are too big.', stdout)
     endif
 
 100 continue
@@ -2028,7 +2029,7 @@ contains
       !
       !Grouping wannier functions with similar coord(1)
       !
-      call group(PL, PL_groups, tran%group_threshold)
+      call group(PL, PL_groups, tran%group_threshold, stdout)
 
       if (param_input%iprint .ge. 4) then
         !
@@ -2044,7 +2045,7 @@ contains
       !Returns the sorted PL and informations on this PL
       !
       allocate (PL_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error in allocating PL_subgroup_info in tran_lcr_2c2_sort', stdout)
       call master_sort_and_group(PL, PL_groups, tran%num_ll, PL_subgroup_info, &
                                  tran%group_threshold, param_input, wannier_centres_translated, &
                                  coord, stdout)
@@ -2052,56 +2053,56 @@ contains
       select case (PL_selector)
       case (1)
         allocate (PL1_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL1_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL1_groups in tran_lcr_2c2_sort', stdout)
         allocate (PL1_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout)
         !
         PL1 = PL
         PL1_groups = PL_groups
         PL1_subgroup_info = PL_subgroup_info
         !
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout)
       case (2)
         allocate (PL2_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL2_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL2_groups in tran_lcr_2c2_sort', stdout)
         allocate (PL2_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout)
         !
         PL2 = PL
         PL2_groups = PL_groups
         PL2_subgroup_info = PL_subgroup_info
         !
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout)
       case (3)
         allocate (PL3_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL3_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL3_groups in tran_lcr_2c2_sort', stdout)
         allocate (PL3_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout)
         !
         PL3 = PL
         PL3_groups = PL_groups
         PL3_subgroup_info = PL_subgroup_info
         !
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout)
       case (4)
         allocate (PL4_groups(size(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL4_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL4_groups in tran_lcr_2c2_sort', stdout)
         allocate (PL4_subgroup_info(size(PL_groups), maxval(PL_groups)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error in allocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout)
         !
         PL4 = PL
         PL4_groups = PL_groups
         PL4_subgroup_info = PL_subgroup_info
         !
         deallocate (PL_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout)
       endselect
 
       deallocate (PL_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL_groups in tran_lcr_2c2_sort', stdout)
     enddo ! Principal layer loop
 
     !
@@ -2113,7 +2114,7 @@ contains
     !
     !Group central region
     !
-    call group(central_region, central_region_groups, tran%group_threshold)
+    call group(central_region, central_region_groups, tran%group_threshold, stdout)
     !
     !Print central region group breakdown
     !
@@ -2129,12 +2130,12 @@ contains
     !Returns sorted central group region
     !
     allocate (central_subgroup_info(size(central_region_groups), maxval(central_region_groups)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort')
+    if (ierr /= 0) call io_error('Error in allocating central_group_info in tran_lcr_2c2_sort', stdout)
     call master_sort_and_group(central_region, central_region_groups, num_wann - (4*tran%num_ll), &
                                central_subgroup_info, tran%group_threshold, param_input, &
                                wannier_centres_translated, coord, stdout)
     deallocate (central_subgroup_info, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort')
+    if (ierr /= 0) call io_error('Error deallocating central_group_info in tran_lcr_2c2_sort', stdout)
     write (stdout, *) ' '
     !
     !Build the sorted index array
@@ -2158,25 +2159,25 @@ contains
                                                        num_wann, &
                                                        wannier_centres_translated, tran_sorted_idx, stdout)
         call io_error('Sorting techniques exhausted:&
-          & Inconsistent number of groups among principal layers')
+          & Inconsistent number of groups among principal layers', stdout)
       endif
       write (stdout, *) 'Inconsistent number of groups among principal layers: restarting sorting...'
       deallocate (PL1_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL2_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL3_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL4_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL1_subgroup_info)
-      if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout)
       deallocate (PL2_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout)
       deallocate (PL3_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout)
       deallocate (PL4_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout)
       goto 100
     endif
     !
@@ -2190,27 +2191,27 @@ contains
                                                          wannier_centres_translated, tran_sorted_idx, stdout)
           call io_error &
            ('Sorting techniques exhausted: Inconsitent number of wannier function among &
-             & similar groups within principal layers')
+             & similar groups within principal layers', stdout)
         endif
         write (stdout, *) 'Inconsitent number of wannier function among &
           &similar groups within& principal layers: restarting sorting...'
 
         deallocate (PL1_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout)
         deallocate (PL2_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout)
         deallocate (PL3_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout)
         deallocate (PL4_groups, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout)
         deallocate (PL1_subgroup_info)
-        if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout)
         deallocate (PL2_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout)
         deallocate (PL3_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout)
         deallocate (PL4_subgroup_info, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+        if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout)
         goto 100
       endif
     enddo
@@ -2238,7 +2239,7 @@ contains
       write (stdout, *) ' Rebuilding Hamiltonian...'
       write (stdout, *) ' '
       deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout)
       call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, irvec, nrpts, &
                           one_dim_vec, nrpts_one_dim, stdout)
       call tran_cut_hr_one_dim(tran, real_lattice, param_input, mp_grid, num_wann, &
@@ -2248,21 +2249,21 @@ contains
       write (stdout, *) ' '
       sort_iterator = sort_iterator - 1
       deallocate (PL1_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL2_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL3_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL4_groups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout)
       deallocate (PL1_subgroup_info)
-      if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout)
       deallocate (PL2_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout)
       deallocate (PL3_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout)
       deallocate (PL4_subgroup_info, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout)
       goto 100
     endif
     !
@@ -2270,7 +2271,7 @@ contains
     ! check for inconsistencies in subgroups
     !
     allocate (temp_subgroup(size(PL1_subgroup_info, 1), size(PL1_subgroup_info, 2)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tmp_subgroup in tran_lcr_2c2_sort')
+    if (ierr /= 0) call io_error('Error in allocating tmp_subgroup in tran_lcr_2c2_sort', stdout)
     do i = 2, 4
       select case (i)
       case (2)
@@ -2288,27 +2289,27 @@ contains
                                                              wannier_centres_translated, &
                                                              tran_sorted_idx, stdout)
               call io_error &
-                ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers')
+                ('Sorting techniques exhausted: Inconsitent subgroup structures among principal layers', stdout)
             endif
             write (stdout, *) 'Inconsitent subgroup structure among principal layers: restarting sorting...'
             deallocate (temp_subgroup, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating tmp_subgroup in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating tmp_subgroup in tran_lcr_2c2_sort', stdout)
             deallocate (PL1_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL1_groups in tran_lcr_2c2_sort', stdout)
             deallocate (PL2_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL2_groups in tran_lcr_2c2_sort', stdout)
             deallocate (PL3_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL3_groups in tran_lcr_2c2_sort', stdout)
             deallocate (PL4_groups, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL4_groups in tran_lcr_2c2_sort', stdout)
             deallocate (PL1_subgroup_info)
-            if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', stdout)
             deallocate (PL2_subgroup_info, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL2_subgroup_info in tran_lcr_2c2_sort', stdout)
             deallocate (PL3_subgroup_info, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL3_subgroup_info in tran_lcr_2c2_sort', stdout)
             deallocate (PL4_subgroup_info, stat=ierr)
-            if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort')
+            if (ierr /= 0) call io_error('Error deallocating PL4_subgroup_info in tran_lcr_2c2_sort', stdout)
             goto 100
           endif
         enddo
@@ -2387,7 +2388,7 @@ contains
     !
     ! End MS.
     !
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_sort', 2, stdout)
 
     return
 
@@ -2435,10 +2436,10 @@ contains
                                                           subgroup_array, sorted_subgroup_array
     character(30)                                   :: fmt_2
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1)
+    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 1, stdout)
 
     allocate (subgroup_info(size(Array_groups), maxval(Array_groups)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating subgroup_info in master_sort_and_group')
+    if (ierr /= 0) call io_error('Error in allocating subgroup_info in master_sort_and_group', stdout)
     subgroup_info = 0
     !
     !Number of groups inside the principal layer
@@ -2454,9 +2455,9 @@ contains
     !
     do j = 1, Array_num_groups
       allocate (group_array(2, Array_groups(j)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating group_array in master_sort_and_group')
+      if (ierr /= 0) call io_error('Error in allocating group_array in master_sort_and_group', stdout)
       allocate (sorted_group_array(2, Array_groups(j)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating sorted_group_array in master_sort_and_group')
+      if (ierr /= 0) call io_error('Error in allocating sorted_group_array in master_sort_and_group', stdout)
       !
       !Extract the group from the Array
       !
@@ -2469,7 +2470,7 @@ contains
       enddo
 
       call sort(group_array, sorted_group_array)
-      call group(sorted_group_array, group_subgroups, tran_group_threshold)
+      call group(sorted_group_array, group_subgroups, tran_group_threshold, stdout)
 
       group_num_subgroups = size(group_subgroups)
 
@@ -2497,9 +2498,9 @@ contains
       !
       do k = 1, group_num_subgroups
         allocate (subgroup_array(2, group_subgroups(k)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating subgroup_array in master_sort_and_group')
+        if (ierr /= 0) call io_error('Error in allocating subgroup_array in master_sort_and_group', stdout)
         allocate (sorted_subgroup_array(2, group_subgroups(k)), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating sorted_subgroup_array in master_sort_and_group')
+        if (ierr /= 0) call io_error('Error in allocating sorted_subgroup_array in master_sort_and_group', stdout)
         !
         !Extract the subgroup from the group
         !
@@ -2521,9 +2522,9 @@ contains
         !
         subgroup_increment = subgroup_increment + group_subgroups(k)
         deallocate (sorted_subgroup_array, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating sorted_subgroup_array in master_sort_and_group')
+        if (ierr /= 0) call io_error('Error deallocating sorted_subgroup_array in master_sort_and_group', stdout)
         deallocate (subgroup_array, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating subgroup_array in master_sort_and_group')
+        if (ierr /= 0) call io_error('Error deallocating subgroup_array in master_sort_and_group', stdout)
       enddo
       !
       !Update Array with the sorted group array
@@ -2534,14 +2535,14 @@ contains
       !
       increment = increment + Array_groups(j)
       deallocate (group_array, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating group_array in master_sort_and_group')
+      if (ierr /= 0) call io_error('Error deallocating group_array in master_sort_and_group', stdout)
       deallocate (sorted_group_array, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating sorted_group_array in master_sort_and_group')
+      if (ierr /= 0) call io_error('Error deallocating sorted_group_array in master_sort_and_group', stdout)
       deallocate (group_subgroups, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating group_subgroups in master_sort_and_group')
+      if (ierr /= 0) call io_error('Error deallocating group_subgroups in master_sort_and_group', stdout)
     enddo
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2)
+    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: master_sort', 2, stdout)
 
     return
 
@@ -2588,7 +2589,7 @@ contains
   endsubroutine sort
 
   !========================================!
-  subroutine group(array, array_groups, tran_group_threshold)
+  subroutine group(array, array_groups, tran_group_threshold, stdout)
     !========================================!
 
     use w90_constants, only: dp
@@ -2596,9 +2597,8 @@ contains
 
     implicit none
 
-!   from w90_parameters
     real(kind=dp), intent(in) :: tran_group_threshold
-!   end w90_parameters
+    integer, intent(in) :: stdout
 
     real(dp), intent(in), dimension(:, :)           :: array
     integer, intent(out), allocatable, dimension(:) :: array_groups
@@ -2610,9 +2610,9 @@ contains
     array_size = size(array, 2)
 
     allocate (dummy_array(array_size), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating dummy_array in group')
+    if (ierr /= 0) call io_error('Error in allocating dummy_array in group', stdout)
     allocate (logic(array_size), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating logic in group')
+    if (ierr /= 0) call io_error('Error in allocating logic in group', stdout)
     !
     !Initialise dummy array
     !
@@ -2688,13 +2688,13 @@ contains
     !Copy elements of dummy_array to array_groups
     !
     allocate (array_groups(array_idx), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating array_groups in group')
+    if (ierr /= 0) call io_error('Error in allocating array_groups in group', stdout)
     array_groups = dummy_array(:array_idx)
 
     deallocate (dummy_array, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating dummy_array in group')
+    if (ierr /= 0) call io_error('Error deallocating dummy_array in group', stdout)
     deallocate (logic, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating logic in group')
+    if (ierr /= 0) call io_error('Error deallocating logic in group', stdout)
 
     return
 
@@ -2748,24 +2748,24 @@ contains
 
     logical, allocatable, dimension(:)                  :: has_similar_centres
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1)
+    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 1, stdout)
 
     num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
 
     allocate (wf_similar_centres(tran%num_cell_ll*4, num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wf_similar_centre in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating wf_similar_centre in check_and_sort_similar_centres', stdout)
     allocate (idx_similar_wf(num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating idx_similar_wf in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating idx_similar_wf in check_and_sort_similar_centres', stdout)
     allocate (has_similar_centres(num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating has_similar_centres in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating has_similar_centres in check_and_sort_similar_centres', stdout)
     allocate (tmp_wf_verifier(4*tran%num_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tmp_wf_verifier in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating tmp_wf_verifier in check_and_sort_similar_centres', stdout)
     allocate (group_verifier(4*tran%num_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating group_verifier in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating group_verifier in check_and_sort_similar_centres', stdout)
     allocate (first_group_element(4*tran%num_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating first_group_element in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating first_group_element in check_and_sort_similar_centres', stdout)
     allocate (centre_id(num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating centre_id in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error in allocating centre_id in check_and_sort_similar_centres', stdout)
 
     !
     ! First find WFs with similar centres: store in wf_similar_centres(cell#,group#,WF#)
@@ -2872,7 +2872,7 @@ contains
           if (param_input%write_xyz) call tran_write_xyz(tran, atoms, &
                                                          num_wann, &
                                                          wannier_centres_translated, tran_sorted_idx, stdout)
-          call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells')
+          call io_error('Inconsitent number of groups of similar centred wannier functions between unit cells', stdout)
         elseif (i .eq. 4*tran%num_cell_ll) then
           write (stdout, *) ' Consistent groups of similar centred wannier functions between '
           write (stdout, *) ' unit cells found'
@@ -2887,7 +2887,7 @@ contains
       !
       !
       allocate (wf_verifier(4*tran%num_cell_ll, group_verifier(1)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating wf_verifier in check_and_sort_similar_centres')
+      if (ierr /= 0) call io_error('Error in allocating wf_verifier in check_and_sort_similar_centres', stdout)
       !
       !
       if (param_input%iprint .ge. 4) write (stdout, *) 'Unit cell   Group number   Num WFs'
@@ -2901,7 +2901,7 @@ contains
             if (wf_verifier(i, j) .ne. wf_verifier(i - 1, j)) &
                 call io_error('Inconsitent number of wannier &
                   &functions between equivalent groups of similar &
-                &centred wannier functions')
+                &centred wannier functions', stdout)
           endif
         enddo
       enddo
@@ -2918,13 +2918,13 @@ contains
           ! and an array which need sorting
           !
           allocate (ref_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating ref_similar_centres in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in allocating ref_similar_centres in check_and_sort_similar_centres', stdout)
           allocate (unsorted_similar_centres(group_verifier(1), wf_verifier(1, j)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating unsorted_similar_centres in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in allocating unsorted_similar_centres in check_and_sort_similar_centres', stdout)
           allocate (sorted_idx(wf_verifier(1, j)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating sorted_idx in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in allocating sorted_idx in check_and_sort_similar_centres', stdout)
           allocate (dot_p(wf_verifier(1, j)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating dot_p in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in allocating dot_p in check_and_sort_similar_centres', stdout)
           !
           do k = 1, wf_verifier(1, j)
             ref_similar_centres(j, k) = wf_similar_centres(1, j, k)
@@ -2957,13 +2957,13 @@ contains
                &wf_verifier(i, j) - 1) = sorted_idx(:)
           !
           deallocate (dot_p, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating dot_p in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in deallocating dot_p in check_and_sort_similar_centres', stdout)
           deallocate (sorted_idx, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating sorted_idx in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in deallocating sorted_idx in check_and_sort_similar_centres', stdout)
           deallocate (unsorted_similar_centres, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in deallocating unsorted_similar_centres in check_and_sort_similar_centres', stdout)
           deallocate (ref_similar_centres, stat=ierr)
-          if (ierr /= 0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres')
+          if (ierr /= 0) call io_error('Error in deallocating ref_similar_centres in check_and_sort_similar_centres', stdout)
         enddo
       enddo
       !
@@ -2981,29 +2981,29 @@ contains
         !
         if ((iterator .ge. 2) .or. (iterator .eq. 0)) call io_error( &
         'A Wannier Function appears either zero times or twice after sorting, this may be due to a &
-        &poor wannierisation and/or disentanglement')
+        &poor wannierisation and/or disentanglement', stdout)
         !write(stdout,*) ' WF : ',k,' appears ',iterator,' time(s)'
       enddo
       deallocate (wf_verifier, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating wf_verifier in check_and_sort_similar_centres')
+      if (ierr /= 0) call io_error('Error deallocating wf_verifier in check_and_sort_similar_centres', stdout)
     endif
 
     deallocate (centre_id, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating centre_id in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating centre_id in check_and_sort_similar_centres', stdout)
     deallocate (first_group_element, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating first_group_element in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating first_group_element in check_and_sort_similar_centres', stdout)
     deallocate (group_verifier, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating group_verifier in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating group_verifier in check_and_sort_similar_centres', stdout)
     deallocate (tmp_wf_verifier, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating tmp_wf_verifier in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating tmp_wf_verifier in check_and_sort_similar_centres', stdout)
     deallocate (has_similar_centres, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating has_similar_centres in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating has_similar_centres in check_and_sort_similar_centres', stdout)
     deallocate (idx_similar_wf, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating idx_similar_wf in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating idx_similar_wf in check_and_sort_similar_centres', stdout)
     deallocate (wf_similar_centres, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating wf_similar_centre in check_and_sort_similar_centres')
+    if (ierr /= 0) call io_error('Error deallocating wf_similar_centre in check_and_sort_similar_centres', stdout)
 
-    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2)
+    if (param_input%timing_level > 2) call io_stopwatch('tran: lcr_2c2_sort: similar_centres', 2, stdout)
 
     return
 
@@ -3097,7 +3097,7 @@ contains
     integer                                             :: i, j, k, wf_idx, num_wann_cell_ll
     real(dp)                                            :: signature_dot_p
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: parity_enforce', 1, stdout)
 
     !
     ! NP: special "easy" fix of the parities by switching the sign
@@ -3152,7 +3152,7 @@ contains
       enddo
     enddo
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: parity_enforce', 2, stdout)
 
     return
 
@@ -3210,25 +3210,25 @@ contains
 
     character(len=9)                       :: cdate, ctime
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 1, stdout)
 
     if (fermi%n > 1) call io_error("Error in tran_lcr_2c2_build_ham: nfermi>1. " &
-                                   //"Set the fermi level using the input parameter 'fermi_evel'")
+                                   //"Set the fermi level using the input parameter 'fermi_evel'", stdout)
 
     allocate (hL0(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hL0 in tran_lcr_2c2_build_ham', stdout)
     allocate (hL1(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hL1 in tran_lcr_2c2_build_ham', stdout)
     allocate (hR0(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hR0 in tran_lcr_2c2_build_ham', stdout)
     allocate (hR1(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hR1 in tran_lcr_2c2_build_ham', stdout)
     allocate (hLC(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hLC in tran_lcr_2c2_build_ham', stdout)
     allocate (hCR(tran%num_ll, tran%num_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hCR in tran_lcr_2c2_build_ham', stdout)
     allocate (hC(num_wann - (2*tran%num_ll), num_wann - (2*tran%num_ll)), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating hC in tran_lcr_2c2_build_ham', stdout)
     !
     !This checks that only the gamma point is used in wannierisation
     !This is necessary since this calculation only makes sense if we
@@ -3237,13 +3237,13 @@ contains
     if ((size(k_points%kpt_cart, 2) .ne. 1) .and. (k_points%kpt_cart(1, 1) .eq. 0.0_dp) &
         .and. (k_points%kpt_cart(2, 1) .eq. 0.0_dp) &
         .and. (k_points%kpt_cart(3, 1) .eq. 0.0_dp)) then
-      call io_error('Calculation must be performed at gamma only')
+      call io_error('Calculation must be performed at gamma only', stdout)
     endif
 
     num_wann_cell_ll = tran%num_ll/tran%num_cell_ll
 
     allocate (sub_block(num_wann_cell_ll, num_wann_cell_ll), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sub_block in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error in allocating sub_block in tran_lcr_2c2_build_ham', stdout)
     !
     !Build hL0 & hL1
     !
@@ -3440,7 +3440,7 @@ contains
       param_input%dist_cutoff = param_input%dist_cutoff_hc
       write (stdout, *) 'Applying param_input%dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort')
+      if (ierr /= 0) call io_error('Error deallocating hr_one_dim in tran_lcr_2c2_sort', stdout)
       call tran_reduce_hr(param_input, mp_grid, real_lattice, num_wann, ham_r, &
                           irvec, nrpts, one_dim_vec, nrpts_one_dim, stdout)
       call tran_cut_hr_one_dim( &
@@ -3623,16 +3623,16 @@ contains
     end if
 
     deallocate (sub_block, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham')
+    if (ierr /= 0) call io_error('Error deallocating sub_block in tran_lcr_2c2_build_ham', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('tran: lcr_2c2_build_ham', 2, stdout)
 
     return
 
   end subroutine tran_lcr_2c2_build_ham
 
   !======================================!
-  subroutine tran_dealloc()
+  subroutine tran_dealloc(stdout)
     !! Dellocate module data
     !====================================!
 
@@ -3640,31 +3640,32 @@ contains
 
     implicit none
 
+    integer, intent(in) :: stdout
     integer :: ierr
 
     if (allocated(hR1)) then
       deallocate (hR1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hR1 in tran_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating hR1 in tran_dealloc', stdout)
     end if
     if (allocated(hR0)) then
       deallocate (hR0, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hR0 in tran_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating hR0 in tran_dealloc', stdout)
     end if
     if (allocated(hL1)) then
       deallocate (hL1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hL1 in tran_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating hL1 in tran_dealloc', stdout)
     end if
     if (allocated(hB1)) then
       deallocate (hB1, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hB1 in tran_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating hB1 in tran_dealloc', stdout)
     end if
     if (allocated(hB0)) then
       deallocate (hB0, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hB0 in tran_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating hB0 in tran_dealloc', stdout)
     end if
     if (allocated(hr_one_dim)) then
       deallocate (hr_one_dim, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating hr_one_dim in tran_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating hr_one_dim in tran_dealloc', stdout)
     end if
 
     return

@@ -147,9 +147,9 @@ contains
     logical :: ldone(num_kpts)
     complex(kind=dp) :: cmat(ndim, num_wann)
 
-    if (present(lwindow_in) .and. (ndim .ne. num_bands)) call io_error('ndim!=num_bands')
+    if (present(lwindow_in) .and. (ndim .ne. num_bands)) call io_error('ndim!=num_bands', stdout)
     if (.not. present(lwindow_in)) then
-      if (ndim .ne. num_wann) call io_error('ndim!=num_wann')
+      if (ndim .ne. num_wann) call io_error('ndim!=num_wann', stdout)
     endif
 
     ldone = .false.
@@ -180,7 +180,7 @@ contains
                    sym%d_matrix_wann(:, :, isym, ir), num_wann, cmplx_0, umat(:, :, irk), ndim)
       enddo
     enddo
-    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_u_matrix')
+    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_u_matrix', stdout)
 
     return
   end subroutine sitesym_symmetrize_u_matrix
@@ -258,7 +258,7 @@ contains
   end subroutine sitesym_symmetrize_gradient
 
   !==================================================================!
-  subroutine sitesym_symmetrize_rotation(urot, num_wann, num_kpts, sym)
+  subroutine sitesym_symmetrize_rotation(urot, num_wann, num_kpts, sym, stdout)
     !==================================================================!
     use w90_utility, only: utility_zgemm
 
@@ -266,6 +266,7 @@ contains
 
     type(sitesym_data), intent(in) :: sym
     integer, intent(in) :: num_wann, num_kpts
+    integer, intent(in) :: stdout
     complex(kind=dp), intent(inout) :: urot(num_wann, num_wann, num_kpts)
     !complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     ! local
@@ -293,7 +294,7 @@ contains
         urot(:, :, irk) = cmat1(:, :)
       enddo
     enddo
-    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_rotation')
+    if (any(.not. ldone)) call io_error('error in sitesym_symmetrize_rotation', stdout)
 
     return
   end subroutine sitesym_symmetrize_rotation
@@ -393,16 +394,16 @@ contains
 
     !write(stdout,"(a)") '-- symmetrize_ukirr --'
     if (present(n)) then
-      if (ndim .ne. num_bands) call io_error('ndim!=num_bands')
+      if (ndim .ne. num_bands) call io_error('ndim!=num_bands', stdout)
       ntmp = n
     else
-      if (ndim .ne. num_wann) call io_error('ndim!=num_wann')
+      if (ndim .ne. num_wann) call io_error('ndim!=num_wann', stdout)
       ntmp = ndim
     endif
 
     ngk = count(sym%kptsym(:, ir) .eq. sym%ir2ik(ir))
     if (ngk .eq. 1) then
-      call orthogonalize_u(ndim, num_wann, umat, ntmp)
+      call orthogonalize_u(ndim, num_wann, umat, ntmp, stdout)
       return
     endif
 
@@ -438,10 +439,10 @@ contains
         write (stdout, "(a)") 'Either eps is too small or specified irreps is not'
         write (stdout, "(a)") '  compatible with the bands'
         write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sym%symmetrize_eps
-        call io_error('symmetrize_ukirr: not converged')
+        call io_error('symmetrize_ukirr: not converged', stdout)
       endif
       usum = usum/ngk
-      call orthogonalize_u(ndim, num_wann, usum, ntmp)
+      call orthogonalize_u(ndim, num_wann, usum, ntmp, stdout)
       umat(:, :) = usum
     enddo ! iter
 
@@ -449,7 +450,7 @@ contains
   end subroutine symmetrize_ukirr
 
   !==================================================================!
-  subroutine orthogonalize_u(ndim, m, u, n)
+  subroutine orthogonalize_u(ndim, m, u, n, stdout)
     !==================================================================!
 
     implicit none
@@ -457,6 +458,7 @@ contains
     integer, intent(in) :: ndim, m
     complex(kind=dp), intent(inout) :: u(ndim, m)
     integer, intent(in) :: n
+    integer, intent(in) :: stdout
     !type(sitesym_data), intent(in) :: sym
 
     complex(kind=dp), allocatable :: smat(:, :), evecl(:, :), evecr(:, :)
@@ -465,7 +467,7 @@ contains
     integer :: INFO, i, j, l
     integer :: LWORK
 
-    if (n .lt. m) call io_error('n<m')
+    if (n .lt. m) call io_error('n<m', stdout)
     allocate (smat(n, m)); smat(1:n, 1:m) = u(1:n, 1:m)
     allocate (evecl(n, n), evecr(m, m))
     allocate (eig(min(m, n)))
@@ -478,7 +480,7 @@ contains
     call ZGESVD('A', 'A', n, m, smat, n, &
                 eig, evecl, n, evecr, m, WORK, LWORK, RWORK, INFO)
     if (info .ne. 0) then
-      call io_error(' ERROR: IN ZGESVD IN orthogonalize_u')
+      call io_error(' ERROR: IN ZGESVD IN orthogonalize_u', stdout)
     endif
     deallocate (smat, eig, WORK, RWORK)
     ! u_matrix is the initial guess for the unitary rotation of the
@@ -573,7 +575,7 @@ contains
               write (stdout, *) ' S is not positive definite'
               write (stdout, *) 'sp3=', sp3
             endif
-            call io_error('error at sitesym_dis_extract_symmetry')
+            call io_error('error at sitesym_dis_extract_symmetry', stdout)
           endif
         endif
         ! choose the larger eigenstate
@@ -587,7 +589,7 @@ contains
   end subroutine sitesym_dis_extract_symmetry
 
   !==================================================================!
-  subroutine sitesym_read(num_bands, num_wann, num_kpts, sym)
+  subroutine sitesym_read(num_bands, num_wann, num_kpts, sym, stdout)
     !==================================================================!
     use w90_io, only: io_file_unit, io_error, seedname
 
@@ -597,6 +599,7 @@ contains
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   end w90_parameters
     type(sitesym_data), intent(inout) :: sym
 
@@ -606,19 +609,19 @@ contains
     open (unit=iu, file=trim(seedname)//".dmn", form='formatted', status='old', action='read')
     read (iu, *)
     read (iu, *) ibnum, sym%nsymmetry, sym%nkptirr, iknum
-    if (ibnum .ne. num_bands) call io_error("Error: Number of bands is not correct (sitesym_read)")
-    if (iknum .ne. num_kpts) call io_error("Error: Number of k-points is not correct (sitesym_read)")
+    if (ibnum .ne. num_bands) call io_error("Error: Number of bands is not correct (sitesym_read)", stdout)
+    if (iknum .ne. num_kpts) call io_error("Error: Number of k-points is not correct (sitesym_read)", stdout)
 
     allocate (sym%ik2ir(num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%ik2ir in sitesym_read')
+    if (ierr /= 0) call io_error('Error in allocating sym%ik2ir in sitesym_read', stdout)
     allocate (sym%ir2ik(sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%ir2ik in sitesym_read')
+    if (ierr /= 0) call io_error('Error in allocating sym%ir2ik in sitesym_read', stdout)
     allocate (sym%kptsym(sym%nsymmetry, sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%kptsym in sitesym_read')
+    if (ierr /= 0) call io_error('Error in allocating sym%kptsym in sitesym_read', stdout)
     allocate (sym%d_matrix_band(num_bands, num_bands, sym%nsymmetry, sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%d_matrix_band in sitesym_read')
+    if (ierr /= 0) call io_error('Error in allocating sym%d_matrix_band in sitesym_read', stdout)
     allocate (sym%d_matrix_wann(num_wann, num_wann, sym%nsymmetry, sym%nkptirr), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sym%d_matrix_wann in sitesym_read')
+    if (ierr /= 0) call io_error('Error in allocating sym%d_matrix_wann in sitesym_read', stdout)
 
     read (iu, *) sym%ik2ir
     read (iu, *) sym%ir2ik
@@ -631,7 +634,7 @@ contains
   end subroutine sitesym_read
 
   !==================================================================!
-  subroutine sitesym_dealloc(sym)
+  subroutine sitesym_dealloc(sym, stdout)
     !==================================================================!
     use w90_io, only: io_error
 
@@ -639,17 +642,18 @@ contains
 
     type(sitesym_data), intent(inout) :: sym
     integer :: ierr
+    integer, intent(in) :: stdout
 
     deallocate (sym%ik2ir, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%ik2ir in sitesym_dealloc')
+    if (ierr /= 0) call io_error('Error in deallocating sym%ik2ir in sitesym_dealloc', stdout)
     deallocate (sym%ir2ik, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%ir2ik in sitesym_dealloc')
+    if (ierr /= 0) call io_error('Error in deallocating sym%ir2ik in sitesym_dealloc', stdout)
     deallocate (sym%kptsym, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%kptsym in sitesym_dealloc')
+    if (ierr /= 0) call io_error('Error in deallocating sym%kptsym in sitesym_dealloc', stdout)
     deallocate (sym%d_matrix_band, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%d_matrix_band in sitesym_dealloc')
+    if (ierr /= 0) call io_error('Error in deallocating sym%d_matrix_band in sitesym_dealloc', stdout)
     deallocate (sym%d_matrix_wann, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sym%d_matrix_wann in sitesym_dealloc')
+    if (ierr /= 0) call io_error('Error in deallocating sym%d_matrix_wann in sitesym_dealloc', stdout)
 
     return
   end subroutine sitesym_dealloc

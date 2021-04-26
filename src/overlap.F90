@@ -65,12 +65,12 @@ contains
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1)
+    if (timing_level > 0) call io_stopwatch('overlap: allocate', 1, stdout)
 
     call comms_array_split(num_kpts, counts, displs)
 
     allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u_matrix in overlap_read')
+    if (ierr /= 0) call io_error('Error in allocating u_matrix in overlap_read', stdout)
     u_matrix = cmplx_0
 
 ! m_matrix
@@ -84,7 +84,7 @@ contains
     if (disentanglement) then
       if (on_root) then
         allocate (m_matrix_orig(num_bands, num_bands, nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating m_matrix_orig in overlap_read')
+        if (ierr /= 0) call io_error('Error in allocating m_matrix_orig in overlap_read', stdout)
         allocate (m_matrix(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
       else
         allocate (m_matrix_orig(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
@@ -92,18 +92,18 @@ contains
       endif
 
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_orig_local in overlap_read')
+      if (ierr /= 0) call io_error('Error in allocating m_matrix_orig_local in overlap_read', stdout)
       allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating a_matrix in overlap_read')
+      if (ierr /= 0) call io_error('Error in allocating a_matrix in overlap_read', stdout)
       allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating u_matrix_opt in overlap_read')
+      if (ierr /= 0) call io_error('Error in allocating u_matrix_opt in overlap_read', stdout)
 
       allocate (m_matrix_local(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
 
     else
       if (on_root) then
         allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating m_matrix in overlap_read')
+        if (ierr /= 0) call io_error('Error in allocating m_matrix in overlap_read', stdout)
         m_matrix = cmplx_0
         allocate (m_matrix_orig(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
       else
@@ -112,7 +112,7 @@ contains
       endif
 
       allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in overlap_read')
+      if (ierr /= 0) call io_error('Error in allocating m_matrix_local in overlap_read', stdout)
       m_matrix_local = cmplx_0
 
       allocate (m_matrix_orig_local(1, 1, 1, 1)) !JJ temporary workaround to avoid runtime check failure
@@ -121,7 +121,7 @@ contains
 
     endif
 
-    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2)
+    if (timing_level > 0) call io_stopwatch('overlap: allocate', 2, stdout)
 
   end subroutine overlap_allocate
 
@@ -174,7 +174,7 @@ contains
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
 
-    if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 1)
+    if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 1, stdout)
 
     call comms_array_split(num_kpts, counts, displs)
 
@@ -205,16 +205,16 @@ contains
 
       ! Checks
       if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.mmn has not the right number of bands')
+        call io_error(trim(seedname)//'.mmn has not the right number of bands', stdout)
       if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.mmn has not the right number of k-points')
+        call io_error(trim(seedname)//'.mmn has not the right number of k-points', stdout)
       if (nntot_tmp .ne. kmesh_info%nntot) &
-        call io_error(trim(seedname)//'.mmn has not the right number of nearest neighbours')
+        call io_error(trim(seedname)//'.mmn has not the right number of nearest neighbours', stdout)
 
       ! Read the overlaps
       num_mmn = num_kpts*kmesh_info%nntot
       allocate (mmn_tmp(num_bands, num_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating mmn_tmp in overlap_read')
+      if (ierr /= 0) call io_error('Error in allocating mmn_tmp in overlap_read', stdout)
       do ncount = 1, num_mmn
         read (mmn_in, *, err=103, end=103) nkp, nkp2, nnl, nnm, nnn
         do n = 1, num_bands
@@ -235,14 +235,14 @@ contains
               nn = inn
             else
               call io_error('Error reading '//trim(seedname)// &
-                            '.mmn. More than one matching nearest neighbour found')
+                            '.mmn. More than one matching nearest neighbour found', stdout)
             endif
           endif
         end do
         if (nn .eq. 0) then
           if (on_root) write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
             ' Error reading '//trim(seedname)//'.mmn:', ncount, nkp, nkp2, nn, nnl, nnm, nnn
-          call io_error('Neighbour not found')
+          call io_error('Neighbour not found', stdout)
         end if
         if (w90_calcs%disentanglement) then
           m_matrix_orig(:, :, nn, nkp) = mmn_tmp(:, :)
@@ -252,18 +252,18 @@ contains
         end if
       end do
       deallocate (mmn_tmp, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating mmn_tmp in overlap_read')
+      if (ierr /= 0) call io_error('Error in deallocating mmn_tmp in overlap_read', stdout)
       close (mmn_in)
     endif
 
     if (w90_calcs%disentanglement) then
 !       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
       call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, num_bands*num_bands*kmesh_info%nntot*displs)
+                    m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, num_bands*num_bands*kmesh_info%nntot*displs, stdout)
     else
 !       call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
       call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs)
+                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann*kmesh_info%nntot*displs, stdout)
     endif
 
     if (.not. w90_calcs%use_bloch_phases) then
@@ -284,14 +284,14 @@ contains
 
         ! Checks
         if (nb_tmp .ne. num_bands) &
-          call io_error(trim(seedname)//'.amn has not the right number of bands')
+          call io_error(trim(seedname)//'.amn has not the right number of bands', stdout)
         if (nkp_tmp .ne. num_kpts) &
-          call io_error(trim(seedname)//'.amn has not the right number of k-points')
+          call io_error(trim(seedname)//'.amn has not the right number of k-points', stdout)
         if (np_tmp .ne. num_proj) &
-          call io_error(trim(seedname)//'.amn has not the right number of projections')
+          call io_error(trim(seedname)//'.amn has not the right number of projections', stdout)
 
         if (num_proj > num_wann .and. .not. select_proj%lselproj) &
-          call io_error(trim(seedname)//'.amn has too many projections to be used without selecting a subset')
+          call io_error(trim(seedname)//'.amn has too many projections to be used without selecting a subset', stdout)
 
         ! Read the projections
         num_amn = num_bands*num_proj*num_kpts
@@ -312,9 +312,9 @@ contains
       endif
 
       if (w90_calcs%disentanglement) then
-        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts)
+        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts, stdout)
       else
-        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
+        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout)
       endif
 
     else
@@ -371,13 +371,13 @@ contains
     !~      end if
 ![ysl-e]
 
-    if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 2)
+    if (param_input%timing_level > 0) call io_stopwatch('overlap: read', 2, stdout)
 
     return
-101 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn')
-102 call io_error('Error: Problem opening input file '//trim(seedname)//'.amn')
-103 call io_error('Error: Problem reading input file '//trim(seedname)//'.mmn')
-104 call io_error('Error: Problem reading input file '//trim(seedname)//'.amn')
+101 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout)
+102 call io_error('Error: Problem opening input file '//trim(seedname)//'.amn', stdout)
+103 call io_error('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout)
+104 call io_error('Error: Problem reading input file '//trim(seedname)//'.amn', stdout)
 
   end subroutine overlap_read
 
@@ -552,7 +552,7 @@ contains
     real(kind=DP) :: AP(num_bands*(num_bands + 1)/2)
     real(kind=DP) :: eig(num_bands), work(3*num_bands)
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1)
+    if (timing_level > 1) call io_stopwatch('overlap: rotate', 1, stdout)
 
     lam_unit = io_file_unit()
     open (unit=lam_unit, file='lambda.dat', &
@@ -570,7 +570,7 @@ contains
 
     CALL DSPEV('V', 'U', num_bands, AP, eig, lambda, num_bands, work, info)
     if (info .ne. 0) &
-      call io_error('Diagonalization of lambda in overlap_rotate failed')
+      call io_error('Diagonalization of lambda in overlap_rotate failed', stdout)
 
     ! For debugging
 !~    write(stdout,*) 'EIGENVALUES - CHECK WITH CP OUTPUT'
@@ -604,7 +604,7 @@ contains
 !~    enddo
 !~    stop
 
-    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2)
+    if (timing_level > 1) call io_stopwatch('overlap: rotate', 2, stdout)
 
     return
 
@@ -612,7 +612,7 @@ contains
 
   !%%%%%%%%%%%%%%%%%%%%%
   subroutine overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                             a_matrix, m_matrix_orig, m_matrix, u_matrix)
+                             a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout)
     !%%%%%%%%%%%%%%%%%%%%%
     !! Dellocate memory
 
@@ -631,24 +631,25 @@ contains
 !   end w90_parameters
 
     integer :: ierr
+    integer, intent(in) :: stdout
 
     if (allocated(u_matrix_opt)) then
       deallocate (u_matrix_opt, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating u_matrix_opt in overlap_dealloc')
+      if (ierr /= 0) call io_error('Error deallocating u_matrix_opt in overlap_dealloc', stdout)
     end if
     if (allocated(a_matrix)) then
       deallocate (a_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating a_matrix in overlap_dealloc')
+      if (ierr /= 0) call io_error('Error deallocating a_matrix in overlap_dealloc', stdout)
     end if
     if (on_root) then
     if (allocated(m_matrix_orig)) then
       deallocate (m_matrix_orig, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc')
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig in overlap_dealloc', stdout)
     endif
     endif
     if (allocated(m_matrix_orig_local)) then
       deallocate (m_matrix_orig_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in overlap_dealloc')
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_orig_local in overlap_dealloc', stdout)
     endif
 !~![ysl-b]
 !~    if (allocated( ph_g)) then
@@ -668,16 +669,16 @@ contains
     if (on_root) then
       if (allocated(m_matrix)) then
         deallocate (m_matrix, stat=ierr)
-        if (ierr /= 0) call io_error('Error deallocating m_matrix in overlap_dealloc')
+        if (ierr /= 0) call io_error('Error deallocating m_matrix in overlap_dealloc', stdout)
       endif
     endif
     if (allocated(m_matrix_local)) then
       deallocate (m_matrix_local, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating m_matrix_local in overlap_dealloc')
+      if (ierr /= 0) call io_error('Error deallocating m_matrix_local in overlap_dealloc', stdout)
     endif
     if (allocated(u_matrix)) then
       deallocate (u_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating u_matrix in overlap_dealloc')
+      if (ierr /= 0) call io_error('Error deallocating u_matrix in overlap_dealloc', stdout)
     endif
 
     return
@@ -732,18 +733,18 @@ contains
     integer, dimension(0:num_nodes - 1) :: counts
     integer, dimension(0:num_nodes - 1) :: displs
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 1)
+    if (timing_level > 1) call io_stopwatch('overlap: project', 1, stdout)
 
     call comms_array_split(num_kpts, counts, displs)
 
     allocate (svals(num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating svals in overlap_project')
+    if (ierr /= 0) call io_error('Error in allocating svals in overlap_project', stdout)
     allocate (cz(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in overlap_project')
+    if (ierr /= 0) call io_error('Error in allocating cz in overlap_project', stdout)
     allocate (cvdag(num_bands, num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cvdag in overlap_project')
+    if (ierr /= 0) call io_error('Error in allocating cvdag in overlap_project', stdout)
     allocate (cwork(4*num_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in overlap_project')
+    if (ierr /= 0) call io_error('Error in allocating cwork in overlap_project', stdout)
 
     ! Calculate the transformation matrix CU = CS^(-1/2).CA,
     ! where CS = CA.CA^\dagger.
@@ -761,7 +762,7 @@ contains
         if (info .lt. 0) then
           write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
         endif
-        call io_error('Error in ZGESVD in overlap_project')
+        call io_error('Error in ZGESVD in overlap_project', stdout)
       endif
 
 !       u_matrix(:,:,nkp)=matmul(cz,cvdag)
@@ -783,7 +784,7 @@ contains
             write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix.transpose(u_matrix)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call io_error('Error in unitarity of initial U in overlap_project')
+            call io_error('Error in unitarity of initial U in overlap_project', stdout)
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             write (stdout, *) ' ERROR: unitarity of initial U'
@@ -792,7 +793,7 @@ contains
             write (stdout, '(1x,a,f12.6,1x,f12.6)') &
               '[u_matrix.transpose(u_matrix)]_ij= ', &
               real(ctmp2, dp), aimag(ctmp2)
-            call io_error('Error in unitarity of initial U in overlap_project')
+            call io_error('Error in unitarity of initial U in overlap_project', stdout)
           endif
         enddo
       enddo
@@ -815,18 +816,18 @@ contains
       end do
     end do
     call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
-                       m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
+                       m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs, stdout)
 
     deallocate (cwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwork in overlap_project')
+    if (ierr /= 0) call io_error('Error in deallocating cwork in overlap_project', stdout)
     deallocate (cvdag, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cvdag in overlap_project')
+    if (ierr /= 0) call io_error('Error in deallocating cvdag in overlap_project', stdout)
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in overlap_project')
+    if (ierr /= 0) call io_error('Error in deallocating cz in overlap_project', stdout)
     deallocate (svals, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating svals in overlap_project')
+    if (ierr /= 0) call io_error('Error in deallocating svals in overlap_project', stdout)
 
-    if (timing_level > 1) call io_stopwatch('overlap: project', 2)
+    if (timing_level > 1) call io_stopwatch('overlap: project', 2, stdout)
 
     return
 
@@ -875,27 +876,27 @@ contains
 !~ integer :: n,mdev, ndev, nndev,p(1)
 !~ real(kind=dp)                 :: dev, dev_tmp
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1)
+    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 1, stdout)
 
 !~    allocate(ph_g(num_wann),stat=ierr)
 !~    if (ierr/=0) call io_error('Error in allocating ph_g in overlap_project_gamma')
     ! internal variables
     allocate (u_matrix_r(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u_matrix_r in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating u_matrix_r in overlap_project_gamma', stdout)
 !~    allocate(u_cmp(num_wann),stat=ierr)
 !~    if (ierr/=0) call io_error('Error in allocating u_cmp in overlap_project_gamma')
     allocate (svals(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating svals in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating svals in overlap_project_gamma', stdout)
     allocate (work(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating work in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating work in overlap_project_gamma', stdout)
     allocate (rz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rz in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating rz in overlap_project_gamma', stdout)
     allocate (rv(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rv in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating rv in overlap_project_gamma', stdout)
     allocate (cz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating cz in overlap_project_gamma', stdout)
     allocate (cvdag(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cvdag in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in allocating cvdag in overlap_project_gamma', stdout)
 
     !
 !~    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
@@ -960,7 +961,7 @@ contains
       if (info .lt. 0) then
         write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
       endif
-      call io_error('overlap_project_gamma: problem in DGESVD 1')
+      call io_error('overlap_project_gamma: problem in DGESVD 1', stdout)
     endif
 
     call dgemm('N', 'N', num_wann, num_wann, num_wann, 1.0_dp, &
@@ -980,7 +981,7 @@ contains
           write (stdout, '(1x,a,f12.6)') &
             '[u_matrix.transpose(u_matrix)]_ij= ', &
             rtmp2
-          call io_error('Error in unitarity of initial U in overlap_project_gamma')
+          call io_error('Error in unitarity of initial U in overlap_project_gamma', stdout)
         endif
         if ((i .ne. j) .and. (abs(rtmp2) .gt. eps5)) then
           write (stdout, *) ' ERROR: unitarity of initial U'
@@ -988,7 +989,7 @@ contains
           write (stdout, '(1x,a,f12.6,1x,f12.6)') &
             '[u_matrix.transpose(u_matrix)]_ij= ', &
             rtmp2
-          call io_error('Error in unitarity of initial U in overlap_project_gamma')
+          call io_error('Error in unitarity of initial U in overlap_project_gamma', stdout)
         endif
       enddo
     enddo
@@ -1007,23 +1008,23 @@ contains
     end do
 
     deallocate (cvdag, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cvdag in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating cvdag in overlap_project_gamma', stdout)
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating cz in overlap_project_gamma', stdout)
     deallocate (rv, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rv in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating rv in overlap_project_gamma', stdout)
     deallocate (rz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rz in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating rz in overlap_project_gamma', stdout)
     deallocate (work, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating work in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating work in overlap_project_gamma', stdout)
     deallocate (svals, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating svals in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating svals in overlap_project_gamma', stdout)
 !~    deallocate(u_cmp,stat=ierr)
 !~    if (ierr/=0) call io_error('Error in deallocating u_cmp in overlap_project_gamma')
     deallocate (u_matrix_r, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating u_matrix_r in overlap_project_gamma')
+    if (ierr /= 0) call io_error('Error in deallocating u_matrix_r in overlap_project_gamma', stdout)
 
-    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2)
+    if (timing_level > 1) call io_stopwatch('overlap: project_gamma', 2, stdout)
 
     return
 

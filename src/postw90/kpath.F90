@@ -99,14 +99,14 @@ contains
         ! not allowed to use adpt smr, since adpt smr needs berry_kmesh,
         ! see line 1837 of berry.F90
         if (berry%kubo_adpt_smr) call io_error( &
-          'Error: Must use fixed smearing when plotting spin Hall conductivity')
+          'Error: Must use fixed smearing when plotting spin Hall conductivity', stdout)
       end if
       if (plot_shc) then
         if (fermi%n == 0) then
-          call io_error('Error: must specify Fermi energy')
+          call io_error('Error: must specify Fermi energy', stdout)
         else if (fermi%n /= 1) then
           call io_error('Error: kpath plot only accept one Fermi energy, ' &
-                        //'use fermi_energy instead of fermi_energy_min')
+                        //'use fermi_energy instead of fermi_energy_min', stdout)
         end if
       end if
     end if
@@ -142,10 +142,11 @@ contains
     end if
 
     ! Broadcast number of k-points on the path
-    call comms_bcast(total_pts, 1)
+    call comms_bcast(total_pts, 1, stdout)
 
     ! Partition set of k-points into junks
-    call comms_array_split(total_pts, counts, displs); 
+!   call comms_array_split(total_pts, counts, displs);
+    call comms_array_split(total_pts, counts, displs)
     !kpt_lo = displs(my_node_id)+1
     !kpt_hi = displs(my_node_id)+counts(my_node_id)
     my_num_pts = counts(my_node_id)
@@ -153,7 +154,7 @@ contains
     ! Distribute coordinates
     allocate (my_plot_kpoint(3, my_num_pts))
     call comms_scatterv(my_plot_kpoint, 3*my_num_pts, &
-                        plot_kpoint, 3*counts, 3*displs)
+                        plot_kpoint, 3*counts, 3*displs, stdout)
 
     ! Value of the vertical coordinate in the actual plots: energy bands
     !
@@ -176,7 +177,7 @@ contains
       kpt(:) = my_plot_kpoint(:, loop_kpt)
 
       if (plot_bands) then
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0)
+        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
         call utility_diagonalize(HH, num_wann, my_eig(:, loop_kpt), UU, stdout)
         !
         ! Color-code energy bands with the spin projection along the
@@ -232,11 +233,11 @@ contains
     if (plot_bands) then
       allocate (eig(num_wann, total_pts))
       call comms_gatherv(my_eig, num_wann*my_num_pts, &
-                         eig, num_wann*counts, num_wann*displs)
+                         eig, num_wann*counts, num_wann*displs, stdout)
       if (kpath%bands_colour /= 'none') then
         allocate (color(num_wann, total_pts))
         call comms_gatherv(my_color, num_wann*my_num_pts, &
-                           color, num_wann*counts, num_wann*displs)
+                           color, num_wann*counts, num_wann*displs, stdout)
       end if
     end if
 
@@ -244,7 +245,7 @@ contains
       allocate (curv(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_curv(:, i), my_num_pts, &
-                           curv(:, i), counts, displs)
+                           curv(:, i), counts, displs, stdout)
       end do
     end if
 
@@ -252,13 +253,13 @@ contains
       allocate (morb(total_pts, 3))
       do i = 1, 3
         call comms_gatherv(my_morb(:, i), my_num_pts, &
-                           morb(:, i), counts, displs)
+                           morb(:, i), counts, displs, stdout)
       end do
     end if
 
     if (plot_shc) then
       allocate (shc(total_pts))
-      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs)
+      call comms_gatherv(my_shc, my_num_pts, shc, counts, displs, stdout)
     end if
 
     if (on_root) then
@@ -1003,13 +1004,13 @@ contains
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
         endif
         if (fermi%n /= 1) call io_error( &
-          'Must specify one Fermi level when kpath_task=curv')
+          'Must specify one Fermi level when kpath_task=curv', stdout)
       end if
       if (plot_morb) then
         write (stdout, '(/,3x,a)') &
           '* Orbital magnetization k-space integrand in eV.Ang^2'
         if (fermi%n /= 1) call io_error( &
-          'Must specify one Fermi level when kpath_task=morb')
+          'Must specify one Fermi level when kpath_task=morb', stdout)
       end if
       if (plot_shc) then
         if (berry%curv_unit == 'ang2') then
@@ -1020,7 +1021,7 @@ contains
             //' spin Hall conductivity in Bohr^2'
         end if
         if (fermi%n /= 1) call io_error( &
-          'Must specify one Fermi level when kpath_task=shc')
+          'Must specify one Fermi level when kpath_task=shc', stdout)
       end if
     end if ! on_root
 

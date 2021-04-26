@@ -122,13 +122,13 @@ contains
 
     ! Integer arrays that are public
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: get', 1)
+    if (param_input%timing_level > 0) call io_stopwatch('kmesh: get', 1, stdout)
 
     if (on_root) write (stdout, '(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(recip_lattice, param_input)
+    call kmesh_supercell_sort(recip_lattice, param_input, stdout)
 
     ! find the distance between k-point 1 and its nearest-neighbour shells
     ! if we have only one k-point, the n-neighbours are its periodic images
@@ -190,12 +190,12 @@ contains
       endif
 
       allocate (bvec_tmp(3, maxval(multi)), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating bvec_tmp in kmesh_get')
+      if (ierr /= 0) call io_error('Error allocating bvec_tmp in kmesh_get', stdout)
       bvec_tmp = 0.0_dp
       counter = 0
       do shell = 1, kmesh_data%search_shells
         call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvec_tmp(:, 1:multi(shell)), recip_lattice, &
-                                kpt_cart, param_input, kmesh_data, num_kpts)
+                                kpt_cart, param_input, kmesh_data, num_kpts, stdout)
         do loop = 1, multi(shell)
           counter = counter + 1
           if (on_root) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
@@ -203,7 +203,7 @@ contains
         end do
       end do
       deallocate (bvec_tmp)
-      if (ierr /= 0) call io_error('Error deallocating bvec_tmp in kmesh_get')
+      if (ierr /= 0) call io_error('Error deallocating bvec_tmp in kmesh_get', stdout)
       if (on_root) write (stdout, '(1x,"|",76(" "),"|")')
       if (on_root) write (stdout, '(1x,"+",76("-"),"+")')
     end if
@@ -267,12 +267,12 @@ contains
     endif
 
     allocate (bvec_tmp(3, maxval(multi)), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating bvec_tmp in kmesh_get')
+    if (ierr /= 0) call io_error('Error allocating bvec_tmp in kmesh_get', stdout)
     bvec_tmp = 0.0_dp
     counter = 0
     do shell = 1, kmesh_data%search_shells
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvec_tmp(:, 1:multi(shell)), recip_lattice, &
-                              kpt_cart, param_input, kmesh_data, num_kpts)
+                              kpt_cart, param_input, kmesh_data, num_kpts, stdout)
       do loop = 1, multi(shell)
         counter = counter + 1
         if (on_root) write (stdout, '(a,I4,1x,a,2x,3f12.6,2x,a,2x,f12.6,a)') ' | b-vector  ', counter, ': (', &
@@ -281,24 +281,24 @@ contains
     end do
     if (on_root) write (stdout, '(a)') ' '
     deallocate (bvec_tmp)
-    if (ierr /= 0) call io_error('Error deallocating bvec_tmp in kmesh_get')
+    if (ierr /= 0) call io_error('Error deallocating bvec_tmp in kmesh_get', stdout)
 
-    Call io_error('kmesh_get: something wrong, found too many nearest neighbours')
+    Call io_error('kmesh_get: something wrong, found too many nearest neighbours', stdout)
     end if
 
     allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating nnlist in kmesh_get')
+    if (ierr /= 0) call io_error('Error in allocating nnlist in kmesh_get', stdout)
     allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating neigh in kmesh_get')
+    if (ierr /= 0) call io_error('Error in allocating neigh in kmesh_get', stdout)
     allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating nncell in kmesh_get')
+    if (ierr /= 0) call io_error('Error in allocating nncell in kmesh_get', stdout)
 
     allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wb in kmesh_get')
+    if (ierr /= 0) call io_error('Error in allocating wb in kmesh_get', stdout)
     allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating bka in kmesh_get')
+    if (ierr /= 0) call io_error('Error in allocating bka in kmesh_get', stdout)
     allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating bk in kmesh_get')
+    if (ierr /= 0) call io_error('Error in allocating bk in kmesh_get', stdout)
 
     nnx = 0
     do loop_s = 1, kmesh_data%num_shells
@@ -412,7 +412,7 @@ contains
           enddo
           if (abs(sqrt(bb1) - sqrt(bbn)) .gt. kmesh_data%tol) then
             if (on_root) write (stdout, '(1x,2f10.6)') bb1, bbn
-            call io_error('Non-symmetric k-point neighbours!')
+            call io_error('Non-symmetric k-point neighbours!', stdout)
           endif
         enddo
       enddo
@@ -437,11 +437,11 @@ contains
             enddo
             if ((i .eq. j) .and. (abs(ddelta - 1.0_dp) .gt. kmesh_data%tol)) then
               if (on_root) write (stdout, '(1x,2i3,f12.8)') i, j, ddelta
-              call io_error('Eq. (B1) not satisfied in kmesh_get (1)')
+              call io_error('Eq. (B1) not satisfied in kmesh_get (1)', stdout)
             endif
             if ((i .ne. j) .and. (abs(ddelta) .gt. kmesh_data%tol)) then
               if (on_root) write (stdout, '(1x,2i3,f12.8)') i, j, ddelta
-              call io_error('Eq. (B1) not satisfied in kmesh_get (2)')
+              call io_error('Eq. (B1) not satisfied in kmesh_get (2)', stdout)
             endif
           enddo
         enddo
@@ -482,7 +482,7 @@ contains
         kmesh_info%bka(3, na) = bk_local(3, nn, 1)
       endif
     enddo
-    if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of bk directions')
+    if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of bk directions', stdout)
 
     if (on_root) then
       if (param_input%lenconfac .eq. 1.0_dp) then
@@ -528,7 +528,7 @@ contains
         ! check found
         if (kmesh_info%neigh(nkp, na) .eq. 0) then
           if (on_root) write (stdout, *) ' nkp,na=', nkp, na
-          call io_error('kmesh_get: failed to find neighbours for this kpoint')
+          call io_error('kmesh_get: failed to find neighbours for this kpoint', stdout)
         endif
       enddo
     enddo
@@ -549,36 +549,36 @@ contains
 
     if (param_input%gamma_only) then
       ! use half of the b-vectors
-      if (num_kpts .ne. 1) call io_error('Error in kmesh_get: wrong choice of gamma_only option')
+      if (num_kpts .ne. 1) call io_error('Error in kmesh_get: wrong choice of gamma_only option', stdout)
 
       ! reassign nnlist, nncell, wb, bk
       allocate (nnlist_tmp(num_kpts, kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating nnlist_tmp in kmesh_get')
+      if (ierr /= 0) call io_error('Error in allocating nnlist_tmp in kmesh_get', stdout)
       allocate (nncell_tmp(3, num_kpts, kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating nncell_tmp in kmesh_get')
+      if (ierr /= 0) call io_error('Error in allocating nncell_tmp in kmesh_get', stdout)
 
       nnlist_tmp(:, :) = kmesh_info%nnlist(:, :)
       nncell_tmp(:, :, :) = kmesh_info%nncell(:, :, :)
 
       deallocate (kmesh_info%nnlist, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating nnlist in kmesh_get')
+      if (ierr /= 0) call io_error('Error in deallocating nnlist in kmesh_get', stdout)
       deallocate (kmesh_info%nncell, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating nncell in kmesh_get')
+      if (ierr /= 0) call io_error('Error in deallocating nncell in kmesh_get', stdout)
       deallocate (kmesh_info%wb, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wb in kmesh_get')
+      if (ierr /= 0) call io_error('Error in deallocating wb in kmesh_get', stdout)
       deallocate (kmesh_info%bk, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bk in kmesh_get')
+      if (ierr /= 0) call io_error('Error in deallocating bk in kmesh_get', stdout)
 
       kmesh_info%nntot = kmesh_info%nntot/2
 
       allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating nnlist in kmesh_get')
+      if (ierr /= 0) call io_error('Error in allocating nnlist in kmesh_get', stdout)
       allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating nncell in kmesh_get')
+      if (ierr /= 0) call io_error('Error in allocating nncell in kmesh_get', stdout)
       allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating wb in kmesh_get')
+      if (ierr /= 0) call io_error('Error in allocating wb in kmesh_get', stdout)
       allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating bk in kmesh_get')
+      if (ierr /= 0) call io_error('Error in allocating bk in kmesh_get', stdout)
 
       na = 0
       do nn = 1, 2*kmesh_info%nntot
@@ -603,11 +603,11 @@ contains
           kmesh_info%neigh(1, na) = na
           ! check bk.eq.bka
           call utility_compar(kmesh_info%bk(1, na, 1), kmesh_info%bka(1, na), ifpos, ifneg)
-          if (ifpos .ne. 1) call io_error('Error in kmesh_get: bk is not identical to bka in gamma_only option')
+          if (ifpos .ne. 1) call io_error('Error in kmesh_get: bk is not identical to bka in gamma_only option', stdout)
         endif
       enddo
 
-      if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of b-vectors in gamma_only option')
+      if (na .ne. kmesh_info%nnh) call io_error('Did not find right number of b-vectors in gamma_only option', stdout)
 
       if (on_root) then
         write (stdout, '(1x,"+",76("-"),"+")')
@@ -631,14 +631,14 @@ contains
       endif
 
       deallocate (nnlist_tmp, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating nnlist_tmp in kmesh_get')
+      if (ierr /= 0) call io_error('Error in deallocating nnlist_tmp in kmesh_get', stdout)
       deallocate (nncell_tmp, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating nncell_tmp in kmesh_get')
+      if (ierr /= 0) call io_error('Error in deallocating nncell_tmp in kmesh_get', stdout)
 
     endif
 ![ysl-e]
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: get', 2)
+    if (param_input%timing_level > 0) call io_stopwatch('kmesh: get', 2, stdout)
 
     return
 
@@ -647,7 +647,7 @@ contains
   !==================================================================!
   subroutine kmesh_write(recip_lattice, param_input, kmesh_info, &
                          num_kpts, kmesh_data, num_proj, kpt_latt, &
-                         real_lattice, calc_only_A)
+                         real_lattice, calc_only_A, stdout)
     !==================================================================!
     !                                                                  !
     !! Writes nnkp file (list of overlaps needed)
@@ -688,6 +688,7 @@ contains
 !   from parameters.F90
 !   integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   integer, intent(inout) :: nntot
     integer, intent(inout) :: num_proj
 !   integer, intent(inout) :: nncell(:, :, :)
@@ -714,7 +715,7 @@ contains
     integer           :: i, nkp, nn, nnkpout
     character(len=9) :: cdate, ctime
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: write', 1)
+    if (param_input%timing_level > 0) call io_stopwatch('kmesh: write', 1, stdout)
 
     nnkpout = io_file_unit()
     open (unit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
@@ -824,14 +825,14 @@ contains
 
     close (nnkpout)
 
-    if (param_input%timing_level > 0) call io_stopwatch('kmesh: write', 2)
+    if (param_input%timing_level > 0) call io_stopwatch('kmesh: write', 2, stdout)
 
     return
 
   end subroutine kmesh_write
 
   !========================================
-  subroutine kmesh_dealloc(kmesh_info)
+  subroutine kmesh_dealloc(kmesh_info, stdout)
     !========================================
     !
     !!  Release memory from the kmesh module
@@ -845,6 +846,7 @@ contains
     implicit none
 
     type(kmesh_info_type), intent(inout) :: kmesh_info
+    integer, intent(in) :: stdout
 
 !   from parameters.F90
 !   integer, allocatable :: nncell(:, :, :)
@@ -861,29 +863,29 @@ contains
     ! Deallocate real arrays that are public
     if (allocated(kmesh_info%bk)) then
       deallocate (kmesh_info%bk, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bk in kmesh_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating bk in kmesh_dealloc', stdout)
     endif
     if (allocated(kmesh_info%bka)) then
       deallocate (kmesh_info%bka, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating bka in kmesh_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating bka in kmesh_dealloc', stdout)
     endif
     if (allocated(kmesh_info%wb)) then
       deallocate (kmesh_info%wb, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wb in kmesh_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating wb in kmesh_dealloc', stdout)
     end if
 
     ! Deallocate integer arrays that are public
     if (allocated(kmesh_info%neigh)) then
       deallocate (kmesh_info%neigh, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating neigh in kmesh_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating neigh in kmesh_dealloc', stdout)
     end if
     if (allocated(kmesh_info%nncell)) then
       deallocate (kmesh_info%nncell, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating nncell in kmesh_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating nncell in kmesh_dealloc', stdout)
     endif
     if (allocated(kmesh_info%nnlist)) then
       deallocate (kmesh_info%nnlist, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating nnlist in kmesh_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating nnlist in kmesh_dealloc', stdout)
     endif
 
     return
@@ -891,7 +893,7 @@ contains
   end subroutine kmesh_dealloc
 
   !==================================================================
-  subroutine kmesh_supercell_sort(recip_lattice, param_input)
+  subroutine kmesh_supercell_sort(recip_lattice, param_input, stdout)
     !==================================================================
     !
     !! We look for kpoint neighbours in a large supercell of reciprocal
@@ -907,10 +909,8 @@ contains
 
     type(parameter_input_type), intent(in) :: param_input
 
-!   from parameters.F90
-!   integer, intent(in) :: timing_level
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
-!   end parameters.F90
 
     integer :: counter, l, m, n, loop
 
@@ -919,7 +919,7 @@ contains
     real(kind=dp) :: dist((2*nsupcell + 1)**3)
     real(kind=dp) :: dist_cp((2*nsupcell + 1)**3)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 1, stdout)
 
     counter = 1
     lmn(:, counter) = 0
@@ -946,13 +946,13 @@ contains
     lmn = lmn_cp
     dist = dist_cp
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: supercell_sort', 2, stdout)
 
   end subroutine kmesh_supercell_sort
 
   !=============================================================
   subroutine kmesh_get_bvectors(multi, kpt, shell_dist, bvector, recip_lattice, &
-                                kpt_cart, param_input, kmesh_data, num_kpts)
+                                kpt_cart, param_input, kmesh_data, num_kpts, stdout)
     !=============================================================
     !
     !! Returns the b-vectors for a given shell and kpoint.
@@ -969,6 +969,7 @@ contains
 !   from parameters.F90
 !   integer, intent(in) :: timing_level
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   real(kind=dp), intent(in) :: kmesh_tol
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) ::kpt_cart(:, :)
@@ -983,7 +984,7 @@ contains
 
     real(kind=dp) :: dist, vkpp2(3), vkpp(3)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 1, stdout)
 
     bvector = 0.0_dp
 
@@ -1003,9 +1004,9 @@ contains
       enddo
     enddo ok
 
-    if (num_bvec < multi) call io_error('kmesh_get_bvector: Not enough bvectors found')
+    if (num_bvec < multi) call io_error('kmesh_get_bvector: Not enough bvectors found', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: get_bvectors', 2, stdout)
 
     return
 
@@ -1065,10 +1066,10 @@ contains
 
     integer :: loop, shell
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 1, stdout)
 
     allocate (bvector(3, maxval(multi), max_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_automatic')
+    if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_automatic', stdout)
     bvector = 0.0_dp; bweight = 0.0_dp
 
     if (on_root) write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
@@ -1079,7 +1080,7 @@ contains
 
       ! get the b vectors for the new shell
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), bvector(:, 1:multi(shell), cur_shell), &
-                              recip_lattice, kpt_cart, param_input, kmesh_data, num_kpts)
+                              recip_lattice, kpt_cart, param_input, kmesh_data, num_kpts, stdout)
 
       if (param_input%iprint >= 3 .and. on_root) then
         write (stdout, '(1x,a8,1x,I2,a14,1x,I2,49x,a)') '| Shell:', shell, ' Multiplicity:', multi(shell), '|'
@@ -1115,23 +1116,23 @@ contains
       kmesh_data%shell_list(kmesh_data%num_shells) = shell
 
       allocate (tmp0(max_shells, max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic', stdout)
       allocate (tmp1(max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic', stdout)
       allocate (tmp2(kmesh_data%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic', stdout)
       allocate (tmp3(kmesh_data%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic', stdout)
       allocate (amat(max_shells, kmesh_data%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_automatic', stdout)
       allocate (umat(max_shells, max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating umat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating umat in kmesh_shell_automatic', stdout)
       allocate (vmat(kmesh_data%num_shells, kmesh_data%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating vmat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating vmat in kmesh_shell_automatic', stdout)
       allocate (smat(kmesh_data%num_shells, max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating smat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating smat in kmesh_shell_automatic', stdout)
       allocate (singv(kmesh_data%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating singv in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error allocating singv in kmesh_shell_automatic', stdout)
       amat(:, :) = 0.0_dp; umat(:, :) = 0.0_dp; vmat(:, :) = 0.0_dp; smat(:, :) = 0.0_dp; singv(:) = 0.0_dp
 
       amat = 0.0_dp
@@ -1151,14 +1152,14 @@ contains
                   max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
       if (info < 0) then
         if (on_root) write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_automatic: Argument', abs(info), 'of dgesvd is incorrect'
-        call io_error('kmesh_shell_automatic: Problem with Singular Value Decomposition')
+        call io_error('kmesh_shell_automatic: Problem with Singular Value Decomposition', stdout)
       else if (info > 0) then
-        call io_error('kmesh_shell_automatic: Singular Value Decomposition did not converge')
+        call io_error('kmesh_shell_automatic: Singular Value Decomposition did not converge', stdout)
       end if
 
       if (any(abs(singv) < eps5)) then
         if (kmesh_data%num_shells == 1) then
-          call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value')
+          call io_error('kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value', stdout)
         else
           if (on_root) write (stdout, '(1x,a)') '| SVD found small singular value, Rejecting this shell and trying the next   |'
           b1sat = .false.
@@ -1218,29 +1219,29 @@ contains
           if (on_root) write (stdout, '(1x,a)') 'If your cell is very long, or you have an irregular MP grid'
           if (on_root) write (stdout, '(1x,a)') 'Try increasing the parameter search_shells in the win file (default=30)'
           if (on_root) write (stdout, *) ' '
-          call io_error('kmesh_get_automatic')
+          call io_error('kmesh_get_automatic', stdout)
         end if
       end if
 
 200   continue
       deallocate (tmp0, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic', stdout)
       deallocate (tmp1, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic', stdout)
       deallocate (tmp2, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic', stdout)
       deallocate (tmp3, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic', stdout)
       deallocate (amat, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating amat in kmesh_shell_automatic', stdout)
       deallocate (umat, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating umat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating umat in kmesh_shell_automatic', stdout)
       deallocate (vmat, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating vmat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating vmat in kmesh_shell_automatic', stdout)
       deallocate (smat, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating smat in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating smat in kmesh_shell_automatic', stdout)
       deallocate (singv, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating singv in kmesh_shell_automatic')
+      if (ierr /= 0) call io_error('Error deallocating singv in kmesh_shell_automatic', stdout)
 
       if (b1sat) exit
 
@@ -1252,10 +1253,10 @@ contains
       if (on_root) write (stdout, '(1x,a)') 'Your cell might be very long, or you may have an irregular MP grid'
       if (on_root) write (stdout, '(1x,a)') 'Try increasing the parameter search_shells in the win file (default=12)'
       if (on_root) write (stdout, *) ' '
-      call io_error('kmesh_get_automatic')
+      call io_error('kmesh_get_automatic', stdout)
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_automatic', 2, stdout)
 
     return
 
@@ -1315,10 +1316,10 @@ contains
 
     integer :: loop, shell
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout)
 
     allocate (bvector(3, maxval(multi), kmesh_data%num_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed')
+    if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed', stdout)
     bvector = 0.0_dp; bweight = 0.0_dp
     amat = 0.0_dp; umat = 0.0_dp; vmat = 0.0_dp; smat = 0.0_dp; singv = 0.0_dp
 
@@ -1328,7 +1329,7 @@ contains
       ! get the b vectors for this shell
       call kmesh_get_bvectors(multi(kmesh_data%shell_list(shell)), 1, dnn(kmesh_data%shell_list(shell)), &
                               bvector(:, 1:multi(kmesh_data%shell_list(shell)), shell), recip_lattice, &
-                              kpt_cart, param_input, kmesh_data, num_kpts)
+                              kpt_cart, param_input, kmesh_data, num_kpts, stdout)
     end do
 
     if (param_input%iprint >= 3 .and. on_root) then
@@ -1357,13 +1358,13 @@ contains
                 max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
     if (info < 0) then
       if (on_root) write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), 'of dgesvd is incorrect'
-      call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition')
+      call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition', stdout)
     else if (info > 0) then
-      call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge')
+      call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge', stdout)
     end if
 
     if (any(abs(singv) < eps7)) &
-      call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value')
+      call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value', stdout)
 
     smat = 0.0_dp
     do loop_s = 1, kmesh_data%num_shells
@@ -1401,9 +1402,9 @@ contains
       end do
     end if
 
-    if (.not. b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied')
+    if (.not. b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout)
 
     return
 
@@ -1465,10 +1466,10 @@ contains
     integer :: loop, shell, pos, kshell_in, counter, length, i, loop2, num_lines, tot_num_lines
     character(len=maxlen) :: dummy, dummy2
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 1, stdout)
 
     allocate (bvector(3, sum(multi)), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed')
+    if (ierr /= 0) call io_error('Error allocating bvector in kmesh_shell_fixed', stdout)
     bvector = 0.0_dp; bweight = 0.0_dp
 
     if (on_root) write (stdout, '(1x,a)') '| The b-vectors are defined in the kshell file                               |'
@@ -1478,7 +1479,7 @@ contains
       ! get the b vectors
       call kmesh_get_bvectors(multi(shell), 1, dnn(shell), &
                               bvector(:, counter:counter + multi(shell) - 1), recip_lattice, &
-                              kpt_cart, param_input, kmesh_data, num_kpts)
+                              kpt_cart, param_input, kmesh_data, num_kpts, stdout)
       counter = counter + multi(shell)
     end do
 
@@ -1497,7 +1498,7 @@ contains
 
     end do
 
-200 call io_error('Error: Problem (1) reading input file '//trim(seedname)//'.kshell')
+200 call io_error('Error: Problem (1) reading input file '//trim(seedname)//'.kshell', stdout)
 210 continue
     rewind (kshell_in)
     kmesh_data%num_shells = num_lines
@@ -1547,15 +1548,15 @@ contains
     end if
 
     allocate (amat(max_shells, kmesh_data%num_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_from_file')
+    if (ierr /= 0) call io_error('Error allocating amat in kmesh_shell_from_file', stdout)
     allocate (umat(max_shells, max_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating umat in kmesh_shell_from_file')
+    if (ierr /= 0) call io_error('Error allocating umat in kmesh_shell_from_file', stdout)
     allocate (vmat(kmesh_data%num_shells, kmesh_data%num_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating vmat in kmesh_shell_from_file')
+    if (ierr /= 0) call io_error('Error allocating vmat in kmesh_shell_from_file', stdout)
     allocate (smat(kmesh_data%num_shells, max_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating smat in kmesh_shell_from_file')
+    if (ierr /= 0) call io_error('Error allocating smat in kmesh_shell_from_file', stdout)
     allocate (singv(kmesh_data%num_shells), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating singv in kmesh_shell_from_file')
+    if (ierr /= 0) call io_error('Error allocating singv in kmesh_shell_from_file', stdout)
     amat = 0.0_dp; umat = 0.0_dp; vmat = 0.0_dp; smat = 0.0_dp; singv = 0.0_dp
 
     do loop_s = 1, kmesh_data%num_shells
@@ -1574,13 +1575,13 @@ contains
                 max_shells, vmat, kmesh_data%num_shells, work, lwork, info)
     if (info < 0) then
       if (on_root) write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), 'of dgesvd is incorrect'
-      call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition')
+      call io_error('kmesh_shell_fixed: Problem with Singular Value Decomposition', stdout)
     else if (info > 0) then
-      call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge')
+      call io_error('kmesh_shell_fixed: Singular Value Decomposition did not converge', stdout)
     end if
 
     if (any(abs(singv) < eps7)) &
-      call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value')
+      call io_error('kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value', stdout)
 
     smat = 0.0_dp
     do loop_s = 1, kmesh_data%num_shells
@@ -1616,15 +1617,15 @@ contains
       end do
     end if
 
-    if (.not. b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied')
+    if (.not. b1sat) call io_error('kmesh_shell_fixed: B1 condition not satisfied', stdout)
 
-    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('kmesh: shell_fixed', 2, stdout)
 
     return
 
-101 call io_error('Error: Problem (2) reading input file '//trim(seedname)//'.kshell')
-103 call io_error('Error: Problem (3) reading input file '//trim(seedname)//'.kshell')
-230 call io_error('Error: Problem reading in param_get_keyword_vector')
+101 call io_error('Error: Problem (2) reading input file '//trim(seedname)//'.kshell', stdout)
+103 call io_error('Error: Problem (3) reading input file '//trim(seedname)//'.kshell', stdout)
+230 call io_error('Error: Problem reading in param_get_keyword_vector', stdout)
 
   end subroutine kmesh_shell_from_file
 

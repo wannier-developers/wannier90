@@ -13,7 +13,7 @@
 !------------------------------------------------------------!
 
 module w90_hamiltonian
-  !! Module to obtain the Hamiltonian in a wannier basis
+  !! Module to obtain the Hamiltonian in a Wannier basis
   !! This is a simplified routine, more sophisticated properties
   !! are found in postw90 (e.g. w90_get_oper)
   use w90_constants, only: dp
@@ -44,7 +44,7 @@ contains
   !============================================!
   subroutine hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
                                num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                               wannier_centres_translated, hmlg, ham_k)
+                               wannier_centres_translated, hmlg, ham_k, stdout)
     !! Allocate arrays and setup data
     !============================================!
 
@@ -55,69 +55,67 @@ contains
 
     implicit none
 
+    ! passed variables
     type(parameter_input_type), intent(in) :: param_input
     type(w90_calculation_type), intent(in) :: w90_calcs
+    type(ham_logical), intent(inout)       :: hmlg
 
-    ! passed variables
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: rpt_origin
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
-
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
-
-!   character(len=20), intent(in) :: bands_plot_mode
     character(len=20), intent(in) :: transport_mode
-
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-
-    type(ham_logical), intent(inout) :: hmlg
 
     ! local variables
     integer :: ierr
 
     if (hmlg%ham_have_setup) return
-
     !
     ! Determine whether to use translation
     !
-    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) hmlg%use_translation = .true.
-    if (w90_calcs%transport .and. (index(transport_mode, 'bulk') .ne. 0)) hmlg%use_translation = .true.
-    if (w90_calcs%transport .and. (index(transport_mode, 'lcr') .ne. 0)) hmlg%use_translation = .true.
+    if (w90_calcs%bands_plot .and. (index(param_input%bands_plot_mode, 'cut') .ne. 0)) &
+      hmlg%use_translation = .true.
+    if (w90_calcs%transport .and. (index(transport_mode, 'bulk') .ne. 0)) &
+      hmlg%use_translation = .true.
+    if (w90_calcs%transport .and. (index(transport_mode, 'lcr') .ne. 0)) &
+      hmlg%use_translation = .true.
     !
     ! Set up Wigner-Seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
+    call hamiltonian_wigner_seitz(stdout, rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
                                   param_input, count_pts=.true.)
     !
     allocate (irvec(3, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup')
+    if (ierr /= 0) call io_error('Error in allocating irvec in hamiltonian_setup', stdout)
     irvec = 0
     !
     allocate (ndegen(nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ndegen in hamiltonian_setup')
+    if (ierr /= 0) call io_error('Error in allocating ndegen in hamiltonian_setup', stdout)
     ndegen = 0
     !
     allocate (ham_r(num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_r in hamiltonian_setup')
+    if (ierr /= 0) call io_error('Error in allocating ham_r in hamiltonian_setup', stdout)
     ham_r = cmplx_0
     !
     allocate (ham_k(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_k in hamiltonian_setup')
+    if (ierr /= 0) call io_error('Error in allocating ham_k in hamiltonian_setup', stdout)
     ham_k = cmplx_0
     !
     ! Set up the wigner_seitz vectors
     !
-    call hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
+    call hamiltonian_wigner_seitz(stdout, rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
                                   param_input, count_pts=.false.)
     !
     allocate (wannier_centres_translated(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup')
+    if (ierr /= 0) call io_error('Error allocating wannier_centres_translated in hamiltonian_setup', stdout)
     wannier_centres_translated = 0.0_dp
 
     hmlg%ham_have_setup = .true.
@@ -126,7 +124,7 @@ contains
   end subroutine hamiltonian_setup
 
   !============================================!
-  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, hmlg, ham_k)
+  subroutine hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, hmlg, ham_k, stdout)
     !! Deallocate module data
     !============================================!
 
@@ -144,29 +142,31 @@ contains
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
 
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
+    integer, intent(in) :: stdout
 
     ! local variables
     integer :: ierr
 
     if (allocated(ham_r)) then
       deallocate (ham_r, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating ham_r in hamiltonian_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating ham_r in hamiltonian_dealloc', stdout)
     end if
     if (allocated(ham_k)) then
       deallocate (ham_k, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating ham_k in hamiltonian_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating ham_k in hamiltonian_dealloc', stdout)
     end if
     if (allocated(irvec)) then
       deallocate (irvec, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating irvec in hamiltonian_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating irvec in hamiltonian_dealloc', stdout)
     end if
     if (allocated(ndegen)) then
       deallocate (ndegen, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating ndegen in hamiltonian_dealloc')
+      if (ierr /= 0) call io_error('Error in deallocating ndegen in hamiltonian_dealloc', stdout)
     end if
     if (allocated(wannier_centres_translated)) then
       deallocate (wannier_centres_translated, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_centres_translated in param_dealloc')
+      if (ierr /= 0) &
+        call io_error('Error in deallocating wannier_centres_translated in param_dealloc', stdout)
     end if
 
     hmlg%ham_have_setup = .false.
@@ -184,7 +184,7 @@ contains
   subroutine hamiltonian_get_hr(real_lattice, recip_lattice, wannier_centres, atoms, param_hamil, &
                                 param_input, dis_data, u_matrix_opt, kpt_latt, eigval, u_matrix, &
                                 lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, irvec, &
-                                shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k)
+                                shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout)
     !============================================!
     !                                            !
     !!  Calculate the Hamiltonian in the WF basis
@@ -198,47 +198,41 @@ contains
 
     implicit none
 
+    ! passed variables
     type(ham_logical), intent(inout) :: hmlg
     type(atom_data_type), intent(in) :: atoms
     type(param_hamiltonian_type), intent(inout) :: param_hamil
     type(parameter_input_type), intent(in) :: param_input
     type(disentangle_type), intent(in) :: dis_data
-
-    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
-
-    ! passed variables
     integer, intent(inout), allocatable :: shift_vec(:, :)
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: irvec(:, :)
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
-
+    integer, intent(in) :: stdout
     real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres(:, :)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: eigval(:, :)
-
     complex(kind=dp), intent(inout) :: ham_r(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-
+    complex(kind=dp), allocatable, intent(inout) :: ham_k(:, :, :)
     logical, intent(in) :: lsitesymmetry  !YN:
 
     ! local variables
     integer              :: loop_kpt, i, j, m, irpt, ierr, counter
-
     real(kind=dp)        :: rdotk
     real(kind=dp)        :: eigval_opt(num_bands, num_kpts)
     real(kind=dp)        :: eigval2(num_wann, num_kpts)
     real(kind=dp)        :: irvec_tmp(3)
-
     complex(kind=dp)     :: utmp(num_bands, num_wann) !RS:
     complex(kind=dp)     :: fac
 
-    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 1, stdout)
 
     if (hmlg%have_ham_r) then
       if (hmlg%have_translated .eqv. hmlg%use_translation) then
@@ -359,10 +353,10 @@ contains
     else
 
       allocate (shift_vec(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr')
+      if (ierr /= 0) call io_error('Error in allocating shift_vec in hamiltonian_get_hr', stdout)
       call internal_translate_centres(num_wann, param_input, atoms, param_hamil, wannier_centres, &
                                       recip_lattice, real_lattice, shift_vec, &
-                                      wannier_centres_translated)
+                                      wannier_centres_translated, stdout)
 
       do irpt = 1, nrpts
         do loop_kpt = 1, num_kpts
@@ -399,10 +393,10 @@ contains
 
     if (allocated(shift_vec)) then
       deallocate (shift_vec, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating shift_vec in hamiltonian_get_hr')
+      if (ierr /= 0) call io_error('Error in deallocating shift_vec in hamiltonian_get_hr', stdout)
     end if
 
-    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: get_hr', 2, stdout)
 
     return
 
@@ -413,11 +407,12 @@ contains
     !====================================================!
     subroutine internal_translate_centres(num_wann, param_input, atoms, param_hamil, &
                                           wannier_centres, recip_lattice, real_lattice, &
-                                          shift_vec, wannier_centres_translated)
+                                          shift_vec, wannier_centres_translated, stdout)
       !! Translate the centres of the WF into the home cell
       !====================================================!
 
-      use w90_io, only: stdout, io_error
+!     use w90_io, only: stdout, io_error
+      use w90_io, only: io_error
       use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
       use w90_param_types, only: parameter_input_type, atom_data_type
       use wannier_param_types, only: param_hamiltonian_type
@@ -431,6 +426,7 @@ contains
       ! passed variables
       integer, intent(inout) :: shift_vec(:, :)
       integer, intent(in) :: num_wann
+      integer, intent(in) :: stdout
 
       real(kind=dp), intent(inout) :: wannier_centres_translated(:, :)
       real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -451,9 +447,9 @@ contains
 !~      end if
 
       allocate (r_home(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating r_home in internal_translate_centres')
+      if (ierr /= 0) call io_error('Error in allocating r_home in internal_translate_centres', stdout)
       allocate (r_frac(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating r_frac in internal_translate_centres')
+      if (ierr /= 0) call io_error('Error in allocating r_frac in internal_translate_centres', stdout)
       r_home = 0.0_dp; r_frac = 0.0_dp
 
       if (param_hamil%automatic_translation) then
@@ -498,9 +494,9 @@ contains
       wannier_centres_translated = r_home
 
       deallocate (r_frac, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating r_frac in internal_translate_centres')
+      if (ierr /= 0) call io_error('Error in deallocating r_frac in internal_translate_centres', stdout)
       deallocate (r_home, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating r_home in internal_translate_centres')
+      if (ierr /= 0) call io_error('Error in deallocating r_home in internal_translate_centres', stdout)
 
       return
 
@@ -511,7 +507,7 @@ contains
   end subroutine hamiltonian_get_hr
 
   !============================================!
-  subroutine hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
+  subroutine hamiltonian_write_hr(num_wann, timing_level, ham_r, irvec, ndegen, nrpts, hmlg, stdout)
     !============================================!
     !!  Write the Hamiltonian in the WF basis
     !============================================!
@@ -529,11 +525,12 @@ contains
     type(ham_logical), intent(inout) :: hmlg
 
     integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
     integer, intent(in) :: timing_level
 
     if (hmlg%hr_written) return
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 1, stdout)
 
     ! write the  whole matrix with all the indices
 
@@ -561,16 +558,16 @@ contains
 
     hmlg%hr_written = .true.
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_hr', 2, stdout)
 
     return
 
-101 call io_error('Error: hamiltonian_write_hr: problem opening file '//trim(seedname)//'_hr.dat')
+101 call io_error('Error: hamiltonian_write_hr: problem opening file '//trim(seedname)//'_hr.dat', stdout)
 
   end subroutine hamiltonian_write_hr
 
   !================================================================================!
-  subroutine hamiltonian_wigner_seitz(rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
+  subroutine hamiltonian_wigner_seitz(stdout, rpt_origin, nrpts, ndegen, irvec, mp_grid, real_lattice, &
                                       param_input, count_pts)
     !================================================================================!
     !! Calculates a grid of points that fall inside of (and eventually on the
@@ -579,7 +576,8 @@ contains
     !================================================================================!
 
     use w90_constants, only: eps7, eps8
-    use w90_io, only: io_error, io_stopwatch, stdout
+!   use w90_io, only: io_error, io_stopwatch, stdout
+    use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type
 
@@ -598,6 +596,7 @@ contains
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout) :: rpt_origin
     integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
@@ -611,7 +610,7 @@ contains
     real(kind=dp), allocatable :: dist(:)
     real(kind=dp) :: real_metric(3, 3)
 
-    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 1, stdout)
 
     call utility_metric(real_lattice, real_metric)
     dist_dim = 1
@@ -619,7 +618,7 @@ contains
       dist_dim = dist_dim*((param_input%ws_search_size(i) + 1)*2 + 1)
     end do
     allocate (dist(dist_dim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating dist in hamiltonian_wigner_seitz')
+    if (ierr /= 0) call io_error('Error in allocating dist in hamiltonian_wigner_seitz', stdout)
 
     ! The Wannier functions live in a supercell of the real space unit cell
     ! this supercell is mp_grid unit cells long in each direction
@@ -691,9 +690,9 @@ contains
     enddo
     !
     deallocate (dist, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating dist hamiltonian_wigner_seitz')
+    if (ierr /= 0) call io_error('Error in deallocating dist hamiltonian_wigner_seitz', stdout)
     if (count_pts) then
-      if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
+      if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2, stdout)
       return
     end if
 
@@ -713,10 +712,10 @@ contains
       write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     endif
     if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > eps8) then
-      call io_error('ERROR in hamiltonian_wigner_seitz: error in finding Wigner-Seitz points')
+      call io_error('ERROR in hamiltonian_wigner_seitz: error in finding Wigner-Seitz points', stdout)
     endif
 
-    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2)
+    if (param_input%timing_level > 1) call io_stopwatch('hamiltonian: wigner_seitz', 2, stdout)
 
     return
 
@@ -724,7 +723,7 @@ contains
 
   !============================================!
   subroutine hamiltonian_write_rmn(m_matrix, kmesh_info, num_wann, num_kpts, kpt_latt, irvec, &
-                                   nrpts)
+                                   nrpts, stdout)
     !! Write out the matrix elements of r
     !============================================!
 
@@ -741,6 +740,7 @@ contains
     integer, intent(inout) :: irvec(:, :)
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
 !   integer, intent(in) :: nntot
 
 !   real(kind=dp), intent(in) :: wb(:)
@@ -804,13 +804,13 @@ contains
 
     return
 
-101 call io_error('Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r')
+101 call io_error('Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r', stdout)
 
   end subroutine hamiltonian_write_rmn
 
   !============================================!
   subroutine hamiltonian_write_tb(real_lattice, num_wann, kmesh_info, m_matrix, num_kpts, kpt_latt, &
-                                  timing_level, ham_r, irvec, ndegen, nrpts, hmlg)
+                                  timing_level, ham_r, irvec, ndegen, nrpts, hmlg, stdout)
     !============================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -828,6 +828,7 @@ contains
 
     integer                :: i, j, irpt, ik, nn, idir, file_unit
     integer, intent(in)    :: num_wann
+    integer, intent(in)    :: stdout
     integer, intent(in)    :: num_kpts
 !   integer, intent(in)    :: nntot
     integer, intent(in)    :: timing_level
@@ -852,7 +853,7 @@ contains
 
     if (hmlg%tb_written) return
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 1, stdout)
 
     file_unit = io_file_unit()
     open (file_unit, file=trim(seedname)//'_tb.dat', form='formatted', &
@@ -921,12 +922,12 @@ contains
 
     hmlg%tb_written = .true.
 
-    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2)
+    if (timing_level > 1) call io_stopwatch('hamiltonian: write_tb', 2, stdout)
 
     return
 
 101 call io_error('Error: hamiltonian_write_tb: problem opening file ' &
-                  //trim(seedname)//'_tb.dat')
+                  //trim(seedname)//'_tb.dat', stdout)
 
   end subroutine hamiltonian_write_tb
 

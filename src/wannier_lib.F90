@@ -109,6 +109,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   real(kind=dp) time0, time1
   character(len=9) :: stat, pos, cdate, ctime
   integer :: ierr
+  integer :: stdout
   logical :: wout_found
 
   time0 = io_time()
@@ -141,10 +142,10 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   real_lattice = real_lattice_loc
   recip_lattice = recip_lattice_loc
   allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
-  if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup')
+  if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup', stdout)
   k_points%kpt_latt = kpt_latt_loc
   atoms%num_atoms = num_atoms_loc
-  call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, recip_lattice)
+  call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, recip_lattice, stdout)
   param_input%gamma_only = gamma_only_loc
   param_input%spinors = spinors_loc
 
@@ -215,15 +216,15 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
 
   if (driver%postproc_setup) then
     call kmesh_write(recip_lattice, param_input, kmesh_info, num_kpts, kmesh_data, num_proj, &
-                     k_points%kpt_latt, real_lattice, pp_calc%only_A)
+                     k_points%kpt_latt, real_lattice, pp_calc%only_A, stdout)
     write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     write (stdout, '(/a)') ' '//trim(seedname)//'.nnkp written.'
   endif
 
-  call kmesh_dealloc(kmesh_info)
+  call kmesh_dealloc(kmesh_info, stdout)
   call param_w90_dealloc(param_input, param_plot, param_wannierise, &
                          wann_data, kmesh_data, k_points, dis_data, fermi, &
-                         atoms, eigval, spec_points)
+                         atoms, eigval, spec_points, stdout)
   write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
 
   write (stdout, '(/a/)') ' Finished setting up k-point neighbours.'
@@ -310,6 +311,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
   integer :: ierr, loop_k, loop_w
+  integer :: stdout
   logical :: wout_found
 
   !integer :: nkp, nn, n, m
@@ -359,15 +361,15 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   real_lattice = real_lattice_loc
   recip_lattice = recip_lattice_loc
   allocate (k_points%kpt_latt(3, num_kpts), stat=ierr)
-  if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup')
+  if (ierr /= 0) call io_error('Error allocating kpt_latt in wannier_setup', stdout)
   k_points%kpt_latt = kpt_latt_loc
   allocate (eigval(num_bands, num_kpts), stat=ierr)
-  if (ierr /= 0) call io_error('Error allocating eigval in wannier_setup')
+  if (ierr /= 0) call io_error('Error allocating eigval in wannier_setup', stdout)
   eigval = eigenvalues_loc
   atoms%num_atoms = num_atoms_loc
   param_input%gamma_only = gamma_only_loc
 
-  call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, recip_lattice)
+  call param_lib_set_atoms(atoms, atom_symbols_loc, atoms_cart_loc, recip_lattice, stdout)
 
   call param_read(driver, w90_calcs, pp_calc, param_input, param_plot, &
                   param_wannierise, lsitesymmetry, symmetrize_eps, &
@@ -414,11 +416,11 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     call comms_scatterv(m_matrix_orig_local, &
                         num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), m_matrix_orig, &
                         num_bands*num_bands*kmesh_info%nntot*counts, &
-                        num_bands*num_bands*kmesh_info%nntot*displs)
+                        num_bands*num_bands*kmesh_info%nntot*displs, stdout)
   else
     call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, num_wann*num_wann* &
-                        kmesh_info%nntot*displs)
+                        kmesh_info%nntot*displs, stdout)
   endif
 
 !~  ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
@@ -525,16 +527,16 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
     spread_loc(3) = param_wannierise%omega_tilde
   endif
   call hamiltonian_dealloc(ham_r, irvec, ndegen, wannier_centres_translated, &
-                           hmlg, ham_k)
+                           hmlg, ham_k, stdout)
   call overlap_dealloc(m_matrix_orig_local, m_matrix_local, u_matrix_opt, &
-                       a_matrix, m_matrix_orig, m_matrix, u_matrix)
-  call kmesh_dealloc(kmesh_info)
+                       a_matrix, m_matrix_orig, m_matrix, u_matrix, stdout)
+  call kmesh_dealloc(kmesh_info, stdout)
   call param_w90_dealloc(param_input, param_plot, param_wannierise, wann_data, kmesh_data, &
-                         k_points, dis_data, atoms, eigval, spec_points)
+                         k_points, dis_data, atoms, eigval, spec_points, stdout)
 
   write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time() - time0, ' (sec)'
 
-  if (param_input%timing_level > 0) call io_print_timings()
+  if (param_input%timing_level > 0) call io_print_timings(stdout)
 
   write (stdout, *)
   write (stdout, '(1x,a)') 'All done: wannier90 exiting'
