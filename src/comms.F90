@@ -26,6 +26,12 @@ module w90_comms
   use w90_constants, only: dp
   use w90_io, only: io_error
 
+#ifdef MPI
+#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#    error "You need to define which MPI interface you are using"
+#  endif
+#endif
+
 #ifdef MPI08
   use mpi_f08 ! use f08 interface if possible
 #endif
@@ -41,16 +47,8 @@ module w90_comms
 
   private
 
-  logical, public, save :: on_root
-  !! Are we the root node
-  integer, public, save :: num_nodes
-  !! Number of nodes
-  integer, public, save :: my_node_id
-  !! ID of this node
-  integer, public, parameter :: root_id = 0
-  !! ID of the root node
-
-  integer, parameter :: mpi_send_tag = 77 !abitrary
+  integer, parameter :: mpi_send_tag = 77 !arbitrary
+  integer, parameter :: root_id = 0 !not arbitrary
 
   public :: comms_allreduce  ! reduce data onto all nodes
   public :: comms_array_split
@@ -63,7 +61,6 @@ module w90_comms
   public :: comms_scatterv   ! sends chunks of an array to all nodes scattering them from the root node
   public :: comms_send       ! send data from one node to another
   public :: comms_setup
-  public :: comms_setup_vars
 
   type, public :: w90commtype
 #ifdef MPI08
@@ -136,45 +133,44 @@ module w90_comms
 
 contains
 
+  ! mpi rank function for convenience
+  integer function mpirank(w90comm)
+    type(w90commtype), intent(in) :: w90comm
+    integer :: ierr
+#ifdef MPI
+    call mpi_comm_rank(w90comm%comm, mpirank, ierr)
+#else
+    mpirank = 0
+#endif
+  end function
+
+  ! mpi size function for convenience
+  integer function mpisize(w90comm)
+    type(w90commtype), intent(in) :: w90comm
+    integer :: ierr
+#ifdef MPI
+    call mpi_comm_size(w90comm%comm, mpisize, ierr)
+#else
+    mpisize = 1
+#endif
+  end function
+
   subroutine comms_setup(w90comm)
-    !! Set up communications
-    !! comms_setup only invoked by main routine in executables wannier90.x and postw90.x
+    ! set communicator to MPI_COMM_WORLD and call mpi_init
+    ! this code could/should be at start of the main program
+    ! having it here is only useful in that it limits MPI defs to this file only
     implicit none
     type(w90commtype), intent(inout) :: w90comm
-
 #ifdef MPI
     integer :: ierr
-
     w90comm%comm = MPI_COMM_WORLD
     call mpi_init(ierr)
     if (ierr .ne. 0) call io_error('MPI initialisation error')
 #endif
 
-    call comms_setup_vars(w90comm)
-
   end subroutine comms_setup
 
-  subroutine comms_setup_vars(w90comm)
-    !! Set up variables related to communicators
-    !! This should be called also in library mode
-    implicit none
-    type(w90commtype), intent(in) :: w90comm
-
-#ifdef MPI
-    integer :: ierr
-    call mpi_comm_rank(w90comm%comm, my_node_id, ierr)
-    call mpi_comm_size(w90comm%comm, num_nodes, ierr)
-#else
-    num_nodes = 1
-    my_node_id = 0
-#endif
-
-    on_root = .false.
-    if (my_node_id == root_id) on_root = .true.
-
-  end subroutine comms_setup_vars
-
-  subroutine comms_array_split(numpoints, counts, displs)
+  subroutine comms_array_split(numpoints, counts, displs, comm)
     !! Given an array of size numpoints, we want to split on num_nodes nodes. This function returns
     !! two arrays: count and displs.
     !!
@@ -190,14 +186,15 @@ contains
     !! do i=displs(my_node_id)+1,displs(my_node_id)+counts(my_node_id)
     !!
     use w90_io
-    integer, intent(in) :: numpoints
-    !! Number of elements of the array to be scattered
-    integer, dimension(0:num_nodes - 1), intent(out) :: counts
-    !! Array (of size num_nodes) with the number of elements of the array on each node
-    integer, dimension(0:num_nodes - 1), intent(out) :: displs
-    !! Array (of size num_nodes) with the displacement relative to the global array
+    integer, intent(in) :: numpoints  !! Number of elements of the array to be scattered
+    integer, intent(out) :: counts(:) !! Array (of size num_nodes) with the number of elements of the array on each node
+    integer, intent(out) :: displs(:) !! Array (of size num_nodes) with the displacement relative to the global array
+    type(w90commtype), intent(in) :: comm
 
     integer :: ratio, remainder, i
+    integer :: num_nodes
+
+    num_nodes = mpisize(comm)
 
     ratio = numpoints/num_nodes
     remainder = MOD(numpoints, num_nodes)
@@ -244,7 +241,7 @@ contains
     implicit none
 
     integer, intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -263,7 +260,7 @@ contains
     implicit none
 
     real(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -275,6 +272,7 @@ contains
       call io_error('Error in comms_bcast_real')
     end if
 #endif
+
   end subroutine comms_bcast_real
 
   subroutine comms_bcast_logical(array, size, w90comm)
@@ -282,7 +280,7 @@ contains
     implicit none
 
     logical, intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -294,6 +292,7 @@ contains
       call io_error('Error in comms_bcast_logical')
     end if
 #endif
+
   end subroutine comms_bcast_logical
 
   subroutine comms_bcast_char(array, size, w90comm)
@@ -301,7 +300,7 @@ contains
     implicit none
 
     character(len=*), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -313,6 +312,7 @@ contains
       call io_error('Error in comms_bcast_char')
     end if
 #endif
+
   end subroutine comms_bcast_char
 
   subroutine comms_bcast_cmplx(array, size, w90comm)
@@ -321,7 +321,7 @@ contains
     implicit none
 
     complex(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -333,6 +333,7 @@ contains
       call io_error('Error in comms_bcast_cmplx')
     end if
 #endif
+
   end subroutine comms_bcast_cmplx
 
   !--------- SEND ----------------
@@ -343,8 +344,8 @@ contains
     implicit none
 
     logical, intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: to
+    integer, intent(in) :: size
+    integer, intent(in) :: to
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -356,6 +357,7 @@ contains
       call io_error('Error in comms_send_logical')
     end if
 #endif
+
   end subroutine comms_send_logical
 
   subroutine comms_send_int(array, size, to, w90comm)
@@ -363,8 +365,8 @@ contains
     implicit none
 
     integer, intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: to
+    integer, intent(in) :: size
+    integer, intent(in) :: to
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -376,6 +378,7 @@ contains
       call io_error('Error in comms_send_int')
     end if
 #endif
+
   end subroutine comms_send_int
 
   subroutine comms_send_char(array, size, to, w90comm)
@@ -383,8 +386,8 @@ contains
     implicit none
 
     character(len=*), intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: to
+    integer, intent(in) :: size
+    integer, intent(in) :: to
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -396,6 +399,7 @@ contains
       call io_error('Error in comms_send_char')
     end if
 #endif
+
   end subroutine comms_send_char
 
   subroutine comms_send_real(array, size, to, w90comm)
@@ -403,8 +407,8 @@ contains
     implicit none
 
     real(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: to
+    integer, intent(in) :: size
+    integer, intent(in) :: to
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -416,6 +420,7 @@ contains
       call io_error('Error in comms_send_real')
     end if
 #endif
+
   end subroutine comms_send_real
 
   subroutine comms_send_cmplx(array, size, to, w90comm)
@@ -423,8 +428,8 @@ contains
     implicit none
 
     complex(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: to
+    integer, intent(in) :: size
+    integer, intent(in) :: to
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -436,6 +441,7 @@ contains
       call io_error('Error in comms_send_cmplx')
     end if
 #endif
+
   end subroutine comms_send_cmplx
 
   !--------- RECV ----------------
@@ -445,8 +451,8 @@ contains
     implicit none
 
     logical, intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: from
+    integer, intent(in) :: size
+    integer, intent(in) :: from
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -463,6 +469,7 @@ contains
       call io_error('Error in comms_recv_logical')
     end if
 #endif
+
   end subroutine comms_recv_logical
 
   subroutine comms_recv_int(array, size, from, w90comm)
@@ -470,8 +477,8 @@ contains
     implicit none
 
     integer, intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: from
+    integer, intent(in) :: size
+    integer, intent(in) :: from
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -488,6 +495,7 @@ contains
       call io_error('Error in comms_recv_int')
     end if
 #endif
+
   end subroutine comms_recv_int
 
   subroutine comms_recv_char(array, size, from, w90comm)
@@ -495,8 +503,8 @@ contains
     implicit none
 
     character(len=*), intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: from
+    integer, intent(in) :: size
+    integer, intent(in) :: from
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -513,6 +521,7 @@ contains
       call io_error('Error in comms_recv_char')
     end if
 #endif
+
   end subroutine comms_recv_char
 
   subroutine comms_recv_real(array, size, from, w90comm)
@@ -520,8 +529,8 @@ contains
     implicit none
 
     real(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: from
+    integer, intent(in) :: size
+    integer, intent(in) :: from
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -539,6 +548,7 @@ contains
       call io_error('Error in comms_recv_real')
     end if
 #endif
+
   end subroutine comms_recv_real
 
   subroutine comms_recv_cmplx(array, size, from, w90comm)
@@ -546,8 +556,8 @@ contains
     implicit none
 
     complex(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
-    integer, intent(in)    :: from
+    integer, intent(in) :: size
+    integer, intent(in) :: from
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -564,6 +574,7 @@ contains
       call io_error('Error in comms_recv_cmplx')
     end if
 #endif
+
   end subroutine comms_recv_cmplx
 
   subroutine comms_reduce_int(array, size, op, w90comm)
@@ -571,12 +582,14 @@ contains
     implicit none
 
     integer, intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: error, ierr
+    integer :: rank
+    rank = mpirank(w90comm)
 
     ! note, JJ 23/2/2021
     ! previously this routine alloc'd/used/dealloc'd a temp array
@@ -589,14 +602,14 @@ contains
 
     select case (op)
     case ('SUM')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, &
                         error)
       else
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_SUM, root_id, w90comm%comm, error)
       endif
     case ('PRD')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_PROD, root_id, w90comm%comm, &
                         error)
       else
@@ -610,6 +623,7 @@ contains
       call io_error('Error in comms_reduce_int')
     end if
 #endif
+
   end subroutine comms_reduce_int
 
   subroutine comms_reduce_real(array, size, op, w90comm)
@@ -618,17 +632,19 @@ contains
     implicit none
 
     real(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: error, ierr
+    integer :: rank
+    rank = mpirank(w90comm)
 
     select case (op)
 
     case ('SUM')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_SUM, root_id, &
                         w90comm%comm, error)
       else
@@ -636,7 +652,7 @@ contains
                         error)
       endif
     case ('PRD')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, &
                         w90comm%comm, error)
       else
@@ -644,7 +660,7 @@ contains
                         error)
       endif
     case ('MIN')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, &
                         w90comm%comm, error)
       else
@@ -652,7 +668,7 @@ contains
                         error)
       endif
     case ('MAX')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, &
                         w90comm%comm, error)
       else
@@ -668,6 +684,7 @@ contains
       call io_error('Error in comms_reduce_real')
     end if
 #endif
+
   end subroutine comms_reduce_real
 
   subroutine comms_reduce_cmplx(array, size, op, w90comm)
@@ -676,17 +693,19 @@ contains
     implicit none
 
     complex(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
     integer :: error, ierr
+    integer :: rank
+    rank = mpirank(w90comm)
 
     select case (op)
 
     case ('SUM')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_SUM, root_id, &
                         w90comm%comm, error)
       else
@@ -694,7 +713,7 @@ contains
                         error)
       end if
     case ('PRD')
-      if (on_root) then
+      if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_COMPLEX, MPI_PROD, root_id, &
                         w90comm%comm, error)
       else
@@ -711,6 +730,7 @@ contains
     end if
 
 #endif
+
   end subroutine comms_reduce_cmplx
 
   subroutine comms_allreduce_real(array, size, op, w90comm)
@@ -719,7 +739,7 @@ contains
     implicit none
 
     real(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
 
@@ -749,6 +769,7 @@ contains
       call io_error('Error in comms_allreduce_real')
     end if
 #endif
+
   end subroutine comms_allreduce_real
 
   subroutine comms_allreduce_cmplx(array, size, op, w90comm)
@@ -756,7 +777,7 @@ contains
     implicit none
 
     complex(kind=dp), intent(inout) :: array
-    integer, intent(in)    :: size
+    integer, intent(in) :: size
     character(len=*), intent(in) :: op
     type(w90commtype), intent(in) :: w90comm
 
@@ -780,22 +801,18 @@ contains
       call io_error('Error in comms_allreduce_cmplx')
     end if
 #endif
+
   end subroutine comms_allreduce_cmplx
 
   subroutine comms_gatherv_real_1(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather real data to root node (for arrays of rank 1)
     implicit none
 
-    real(kind=dp), dimension(:), intent(inout)   :: array
-    !! local array for sending data
-    integer, intent(in)                          :: localcount
-    !! localcount elements will be sent to the root node
-    real(kind=dp), dimension(:), intent(inout)   :: rootglobalarray
-    !! array on the root node to which data will be sent
-    integer, dimension(num_nodes), intent(in)    :: counts
-    !! how data should be partitioned, see MPI documentation or
-    !! function comms_array_split
-    integer, dimension(num_nodes), intent(in)    :: displs
+    real(kind=dp), intent(inout) :: array(:)           !! local array for sending data
+    integer, intent(in) :: localcount                  !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(:)                   !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -811,22 +828,18 @@ contains
     !call dcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_real_1
 
   subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather real data to root node (for arrays of rank 2)
     implicit none
 
-    real(kind=dp), dimension(:, :), intent(inout) :: array
-    !! local array for sending data
-    integer, intent(in)                          :: localcount
-    !! localcount elements will be sent to the root node
-    real(kind=dp), dimension(:, :), intent(inout) :: rootglobalarray
-    !! array on the root node to which data will be sent
-    integer, dimension(num_nodes), intent(in)    :: counts
-    !! how data should be partitioned, see MPI documentation or
-    !! function comms_array_split
-    integer, dimension(num_nodes), intent(in)    :: displs
+    real(kind=dp), intent(inout) :: array(:, :)           !! local array for sending data
+    integer, intent(in) :: localcount                     !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(:)                      !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -842,22 +855,18 @@ contains
     !call dcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_real_2
 
   subroutine comms_gatherv_real_3(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather real data to root node (for arrays of rank 3)
     implicit none
 
-    real(kind=dp), dimension(:, :, :), intent(inout) :: array
-    !! local array for sending data
-    integer, intent(in)                            :: localcount
-    !! localcount elements will be sent to the root node
-    real(kind=dp), dimension(:, :, :), intent(inout) :: rootglobalarray
-    !! array on the root node to which data will be sent
-    integer, dimension(num_nodes), intent(in)      :: counts
-    !! how data should be partitioned, see MPI documentation or
-    !! function comms_array_split
-    integer, dimension(num_nodes), intent(in)      :: displs
+    real(kind=dp), intent(inout) :: array(:, :, :)           !! local array for sending data
+    integer, intent(in) :: localcount                        !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -874,22 +883,18 @@ contains
     !call dcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_real_3
 
   subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather real data to root node (for arrays of rank 2 and 3, respectively)
     implicit none
 
-    real(kind=dp), dimension(:, :), intent(inout) :: array
-    !! local array for sending data
-    integer, intent(in)                            :: localcount
-    !! localcount elements will be sent to the root node
-    real(kind=dp), dimension(:, :, :), intent(inout) :: rootglobalarray
-    !! array on the root node to which data will be sent
-    integer, dimension(num_nodes), intent(in)      :: counts
-    !! how data should be partitioned, see MPI documentation or
-    !! function comms_array_split
-    integer, dimension(num_nodes), intent(in)      :: displs
+    real(kind=dp), intent(inout) :: array(:, :)              !! local array for sending data
+    integer, intent(in) :: localcount                        !! localcount elements will be sent to the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :) !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(:)                         !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -904,9 +909,9 @@ contains
 
 #else
     call dcopy(localcount, array, 1, rootglobalarray, 1)
-    !rootglobalarray = array
-    !JJ when/why should the shapes not match?
+    !rootglobalarray = array ! shapes don't match
 #endif
+
   end subroutine comms_gatherv_real_2_3
 
   ! Array: local array for sending data; localcount elements will be sent
@@ -919,11 +924,11 @@ contains
     !! Gather complex data to root node (for arrays of rank 1)
     implicit none
 
-    complex(kind=dp), dimension(:), intent(inout)     :: array
-    integer, intent(in)                               :: localcount
-    complex(kind=dp), dimension(:), intent(inout)     :: rootglobalarray
-    integer, dimension(num_nodes), intent(in)         :: counts
-    integer, dimension(num_nodes), intent(in)         :: displs
+    complex(kind=dp), intent(inout) :: array(:)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:)
+    integer, intent(in) :: counts(:)
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -940,17 +945,18 @@ contains
     !call zcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_cmplx_1
 
   subroutine comms_gatherv_cmplx_2(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather complex data to root node (for arrays of rank 2)
     implicit none
 
-    complex(kind=dp), dimension(:, :), intent(inout)   :: array
-    integer, intent(in)                               :: localcount
-    complex(kind=dp), dimension(:, :), intent(inout)   :: rootglobalarray
-    integer, dimension(num_nodes), intent(in)         :: counts
-    integer, dimension(num_nodes), intent(in)         :: displs
+    complex(kind=dp), intent(inout) :: array(:, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :)
+    integer, intent(in) :: counts(:)
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -967,17 +973,18 @@ contains
     call zcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_cmplx_2
 
   subroutine comms_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather complex data to root node (for arrays of rank 3)
     implicit none
 
-    complex(kind=dp), dimension(:, :, :), intent(inout) :: array
-    integer, intent(in)                               :: localcount
-    complex(kind=dp), dimension(:, :, :), intent(inout) :: rootglobalarray
-    integer, dimension(num_nodes), intent(in)         :: counts
-    integer, dimension(num_nodes), intent(in)         :: displs
+    complex(kind=dp), intent(inout) :: array(:, :, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :)
+    integer, intent(in) :: counts(:)
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -994,17 +1001,18 @@ contains
     !call zcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_cmplx_3
 
   subroutine comms_gatherv_cmplx_3_4(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather complex data to root node (for arrays of rank 3 and 4, respectively)
     implicit none
 
-    complex(kind=dp), dimension(:, :, :), intent(inout)   :: array
-    integer, intent(in)                                 :: localcount
-    complex(kind=dp), dimension(:, :, :, :), intent(inout) :: rootglobalarray
-    integer, dimension(num_nodes), intent(in)           :: counts
-    integer, dimension(num_nodes), intent(in)           :: displs
+    complex(kind=dp), intent(inout) :: array(:, :, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
+    integer, intent(in) :: counts(:)
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1019,20 +1027,20 @@ contains
 
 #else
     call zcopy(localcount, array, 1, rootglobalarray, 1)
-    !rootglobalarray = array
-    !JJ when/why should the shapes not match?
+    !rootglobalarray = array ! shapes don't match
 #endif
+
   end subroutine comms_gatherv_cmplx_3_4
 
   subroutine comms_gatherv_cmplx_4(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather complex data to root node (for arrays of rank 4)
     implicit none
 
-    complex(kind=dp), dimension(:, :, :, :), intent(inout) :: array
-    integer, intent(in)                               :: localcount
-    complex(kind=dp), dimension(:, :, :, :), intent(inout) :: rootglobalarray
-    integer, dimension(num_nodes), intent(in)         :: counts
-    integer, dimension(num_nodes), intent(in)         :: displs
+    complex(kind=dp), intent(inout) :: array(:, :, :, :)
+    integer, intent(in) :: localcount
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
+    integer, intent(in) :: counts(:)
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1049,22 +1057,18 @@ contains
     !call zcopy(localcount, array, 1, rootglobalarray, 1)
     rootglobalarray = array
 #endif
+
   end subroutine comms_gatherv_cmplx_4
 
   subroutine comms_gatherv_logical(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Gather real data to root node
     implicit none
 
-    logical, intent(inout)           :: array
-    !! local array for sending data
-    integer, intent(in)                       :: localcount
-    !! localcount elements will be sent to the root node
-    logical, intent(inout)           :: rootglobalarray
-    !! array on the root node to which data will be sent
-    integer, dimension(num_nodes), intent(in) :: counts
-    !! how data should be partitioned, see MPI documentation or
-    !! function comms_array_split
-    integer, dimension(num_nodes), intent(in) :: displs
+    logical, intent(inout) :: array           !! local array for sending data
+    integer, intent(in) :: localcount         !! localcount elements will be sent to the root node
+    logical, intent(inout) :: rootglobalarray !! array on the root node to which data will be sent
+    integer, intent(in) :: counts(:)          !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1086,15 +1090,11 @@ contains
     !! Scatter real data from root node (array of rank 1)
     implicit none
 
-    real(kind=dp), dimension(:), intent(inout) :: array
-    !! local array for getting data
-    integer, intent(in)                        :: localcount
-    !! localcount elements will be fetched from the root node
-    real(kind=dp), dimension(:), intent(inout) :: rootglobalarray
-    !! array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in)  :: counts
-    !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in)  :: displs
+    real(kind=dp), intent(inout) :: array(:)           !! local array for getting data
+    integer, intent(in) :: localcount                  !! localcount elements will be fetched from the root node
+    real(kind=dp), intent(inout) :: rootglobalarray(:) !! array on the root node from which data will be sent
+    integer, intent(in) :: counts(:)                   !! how data should be partitioned, see MPI documentation or function comms_array_split
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1111,21 +1111,22 @@ contains
     !call dcopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_real_1
 
   subroutine comms_scatterv_real_2(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Scatter real data from root node (array of rank 2)
     implicit none
 
-    real(kind=dp), dimension(:, :), intent(inout) :: array
+    real(kind=dp), intent(inout) :: array(:, :)
     !! local array for getting data
-    integer, intent(in)                          :: localcount
+    integer, intent(in) :: localcount
     !! localcount elements will be fetched from the root node
-    real(kind=dp), dimension(:, :), intent(inout) :: rootglobalarray
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :)
     !! array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in)    :: counts
+    integer, intent(in) :: counts(:)
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in)    :: displs
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1142,21 +1143,22 @@ contains
     !call dcopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_real_2
 
   subroutine comms_scatterv_real_3(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Scatter real data from root node (array of rank 3)
     implicit none
 
-    real(kind=dp), dimension(:, :, :), intent(inout) :: array
+    real(kind=dp), intent(inout) :: array(:, :, :)
     !! local array for getting data
-    integer, intent(in)                            :: localcount
+    integer, intent(in) :: localcount
     !! localcount elements will be fetched from the root node
-    real(kind=dp), dimension(:, :, :), intent(inout) :: rootglobalarray
+    real(kind=dp), intent(inout) :: rootglobalarray(:, :, :)
     !! array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in)      :: counts
+    integer, intent(in) :: counts(:)
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in)      :: displs
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1173,21 +1175,22 @@ contains
     !call dcopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_real_3
 
   subroutine comms_scatterv_cmplx_4(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Scatter complex data from root node (array of rank 4)
     implicit none
 
-    complex(kind=dp), dimension(:, :, :, :), intent(inout) :: array
+    complex(kind=dp), intent(inout) :: array(:, :, :, :)
     !! local array for getting data
-    integer, intent(in)                            :: localcount
+    integer, intent(in) :: localcount
     !! localcount elements will be fetched from the root node
-    complex(kind=dp), dimension(:, :, :, :), intent(inout) :: rootglobalarray
+    complex(kind=dp), intent(inout) :: rootglobalarray(:, :, :, :)
     !! array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in)      :: counts
+    integer, intent(in) :: counts(:)
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in)      :: displs
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1204,21 +1207,22 @@ contains
     !call zcopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_cmplx_4
 
   subroutine comms_scatterv_int_1(array, localcount, rootglobalarray, counts, displs, w90comm)
     !! Scatter integer data from root node (array of rank 1)
     implicit none
 
-    integer, dimension(:), intent(inout)      :: array
+    integer, intent(inout) :: array(:)
     !! local array for getting data
-    integer, intent(in)                       :: localcount
+    integer, intent(in) :: localcount
     !! localcount elements will be fetched from the root node
-    integer, dimension(:), intent(inout)      :: rootglobalarray
+    integer, intent(inout) :: rootglobalarray(:)
     !!  array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in) :: counts
+    integer, intent(in) :: counts(:)
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in) :: displs
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1235,6 +1239,7 @@ contains
     !call my_icopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_int_1
 
   subroutine comms_scatterv_int_2(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1242,15 +1247,15 @@ contains
 
     implicit none
 
-    integer, dimension(:, :), intent(inout)    :: array
+    integer, intent(inout) :: array(:, :)
     !! local array for getting data
-    integer, intent(in)                       :: localcount
+    integer, intent(in) :: localcount
     !! localcount elements will be fetched from the root node
-    integer, dimension(:, :), intent(inout)    :: rootglobalarray
+    integer, intent(inout) :: rootglobalarray(:, :)
     !!  array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in) :: counts
+    integer, intent(in) :: counts(:)
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in) :: displs
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1267,6 +1272,7 @@ contains
     !call my_icopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_int_2
 
   subroutine comms_scatterv_int_3(array, localcount, rootglobalarray, counts, displs, w90comm)
@@ -1274,15 +1280,15 @@ contains
 
     implicit none
 
-    integer, dimension(:, :, :), intent(inout)  :: array
+    integer, intent(inout) :: array(:, :, :)
     !! local array for getting data
-    integer, intent(in)                       :: localcount
+    integer, intent(in) :: localcount
     !! localcount elements will be fetched from the root node
-    integer, dimension(:, :, :), intent(inout)  :: rootglobalarray
+    integer, intent(inout) :: rootglobalarray(:, :, :)
     !!  array on the root node from which data will be sent
-    integer, dimension(num_nodes), intent(in) :: counts
+    integer, intent(in) :: counts(:)
     !! how data should be partitioned, see MPI documentation or function comms_array_split
-    integer, dimension(num_nodes), intent(in) :: displs
+    integer, intent(in) :: displs(:)
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1299,6 +1305,7 @@ contains
     !call my_icopy(localcount, rootglobalarray, 1, array, 1)
     array = rootglobalarray
 #endif
+
   end subroutine comms_scatterv_int_3
 
 end module w90_comms
