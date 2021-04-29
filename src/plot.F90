@@ -27,7 +27,7 @@ contains
                        atoms, param_hamil, dis_data, u_matrix_opt, eigval, u_matrix, &
                        lsitesymmetry, num_bands, mp_grid, transport_mode, fermi, &
                        fermi_surface_data, spec_points, ham_r, irvec, shift_vec, ndegen, nrpts, &
-                       rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout)
+                       rpt_origin, wannier_centres_translated, hmlg, ham_k, bohr, stdout, seedname)
     !! Main plotting routine
     !============================================!
 
@@ -84,13 +84,14 @@ contains
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
 
     character(len=20), intent(in) :: transport_mode
+    character(len=50), intent(in)  :: seedname
     logical, intent(in) :: lsitesymmetry
     real(kind=dp), intent(in) :: bohr
 
     integer :: nkp
     logical :: have_gamma
 
-    if (param_input%timing_level > 0) call io_stopwatch('plot: main', 1, stdout)
+    if (param_input%timing_level > 0) call io_stopwatch('plot: main', 1, stdout, seedname)
 
     ! Print the header only if there is something to plot
     if (w90_calcs%bands_plot .or. w90_calcs%fermi_surface_plot .or. w90_calcs%write_hr .or. &
@@ -115,54 +116,54 @@ contains
       !
       call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
                              num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                             wannier_centres_translated, hmlg, ham_k, stdout)
+                             wannier_centres_translated, hmlg, ham_k, stdout, seedname)
       !
       call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, param_hamil, &
                               param_input, dis_data, u_matrix_opt, k_points%kpt_latt, eigval, &
                               u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, &
-                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout)
+                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout, seedname)
       !
       if (w90_calcs%bands_plot) call plot_interpolate_bands(mp_grid, real_lattice, param_plot, &
                                                             spec_points, param_input, &
                                                             recip_lattice, num_wann, wann_data, &
                                                             ham_r, irvec, ndegen, nrpts, &
-                                                            wannier_centres_translated, stdout)
+                                                            wannier_centres_translated, stdout, seedname)
       !
       if (w90_calcs%fermi_surface_plot) call plot_fermi_surface(fermi, recip_lattice, param_input, &
                                                                 fermi_surface_data, num_wann, &
-                                                                ham_r, irvec, ndegen, nrpts, stdout)
+                                                                ham_r, irvec, ndegen, nrpts, stdout, seedname)
       !
       if (w90_calcs%write_hr) call hamiltonian_write_hr(num_wann, param_input%timing_level, ham_r, &
-                                                        irvec, ndegen, nrpts, hmlg, stdout)
+                                                        irvec, ndegen, nrpts, hmlg, stdout, seedname)
       !
       if (param_plot%write_rmn) call hamiltonian_write_rmn(m_matrix, kmesh_info, num_wann, &
                                                            num_kpts, k_points%kpt_latt, irvec, &
-                                                           nrpts, stdout)
+                                                           nrpts, stdout, seedname)
       !
       if (param_plot%write_tb) call hamiltonian_write_tb(real_lattice, num_wann, kmesh_info, &
                                                          m_matrix, num_kpts, k_points%kpt_latt, &
                                                          param_input%timing_level, ham_r, irvec, &
-                                                         ndegen, nrpts, hmlg, stdout)
+                                                         ndegen, nrpts, hmlg, stdout, seedname)
       !
       if (w90_calcs%write_hr .or. param_plot%write_rmn .or. param_plot%write_tb) then
-        if (.not. done_ws_distance) call ws_translate_dist(stdout, param_input, num_wann, &
+        if (.not. done_ws_distance) call ws_translate_dist(stdout, seedname, param_input, num_wann, &
                                                            wann_data%centres, real_lattice, &
                                                            recip_lattice, mp_grid, nrpts, irvec)
-        call ws_write_vec(nrpts, irvec, num_wann, param_input%use_ws_distance, stdout)
+        call ws_write_vec(nrpts, irvec, num_wann, param_input%use_ws_distance, stdout, seedname)
       end if
     end if
 
     if (w90_calcs%wannier_plot) call plot_wannier(recip_lattice, param_plot, wann_data, &
                                                   param_input, u_matrix_opt, dis_data, &
                                                   real_lattice, atoms, k_points, u_matrix, &
-                                                  num_kpts, num_bands, num_wann, bohr, stdout)
+                                                  num_kpts, num_bands, num_wann, bohr, stdout, seedname)
 
-    if (param_plot%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout)
+    if (param_plot%write_bvec) call plot_bvec(kmesh_info, num_kpts, stdout, seedname)
 
     if (param_plot%write_u_matrices) call plot_u_matrices(u_matrix_opt, u_matrix, k_points, &
-                                                          param_input, num_wann, num_kpts, num_bands)
+                                                          param_input, num_wann, num_kpts, num_bands, seedname)
 
-    if (param_input%timing_level > 0) call io_stopwatch('plot: main', 2, stdout)
+    if (param_input%timing_level > 0) call io_stopwatch('plot: main', 2, stdout, seedname)
 
   end subroutine plot_main
 
@@ -173,7 +174,7 @@ contains
   !============================================!
   subroutine plot_interpolate_bands(mp_grid, real_lattice, param_plot, spec_points, param_input, &
                                     recip_lattice, num_wann, wann_data, ham_r, irvec, ndegen, &
-                                    nrpts, wannier_centres_translated, stdout)
+                                    nrpts, wannier_centres_translated, stdout, seedname)
     !============================================!
     !                                            !
     !! Plots the interpolated band structure
@@ -182,7 +183,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_time, io_stopwatch
-    use w90_io, only: io_error, io_file_unit, seedname, io_time, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_time, io_stopwatch
     use w90_ws_distance, only: irdist_ws, wdist_ndeg, ws_translate_dist
     use w90_utility, only: utility_metric
     use w90_param_types, only: parameter_input_type, wannier_data_type, &
@@ -206,6 +207,7 @@ contains
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres_translated(:, :)
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
+    character(len=50), intent(in)  :: seedname
 
     integer, allocatable :: irvec_cut(:, :)
     integer              :: irvec_max(3)
@@ -242,7 +244,7 @@ contains
     character(len=10), allocatable  :: ctemp(:)
 
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout)
+    if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 1, stdout, seedname)
     !
     time0 = io_time()
     call utility_metric(recip_lattice, recip_metric)
@@ -251,24 +253,24 @@ contains
     write (stdout, *)
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_pack in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ham_pack in plot_interpolate_bands', stdout, seedname)
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_kprm in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ham_kprm in plot_interpolate_bands', stdout, seedname)
     allocate (U_int(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating U_int in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating U_int in plot_interpolate_bands', stdout, seedname)
     allocate (cwork(2*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cwork in plot_interpolate_bands', stdout, seedname)
     allocate (rwork(7*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rwork in plot_interpolate_bands', stdout, seedname)
     allocate (iwork(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating iwork in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating iwork in plot_interpolate_bands', stdout, seedname)
     allocate (ifail(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ifail in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ifail in plot_interpolate_bands', stdout, seedname)
 
     allocate (idx_special_points(spec_points%bands_num_spec_points), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating idx_special_points in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating idx_special_points in plot_interpolate_bands', stdout, seedname)
     allocate (xval_special_points(spec_points%bands_num_spec_points), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating xval_special_points in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating xval_special_points in plot_interpolate_bands', stdout, seedname)
     idx_special_points = -1
     xval_special_points = -1._dp
     !
@@ -318,19 +320,19 @@ contains
     end do
 
     allocate (plot_kpoint(3, total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating plot_kpoint in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating plot_kpoint in plot_interpolate_bands', stdout, seedname)
     allocate (xval(total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating xval in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating xval in plot_interpolate_bands', stdout, seedname)
     allocate (eig_int(num_wann, total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating eig_int in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating eig_int in plot_interpolate_bands', stdout, seedname)
     allocate (bands_proj(num_wann, total_pts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating bands_proj in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating bands_proj in plot_interpolate_bands', stdout, seedname)
     allocate (glabel(num_spts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating num_spts in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating num_spts in plot_interpolate_bands', stdout, seedname)
     allocate (xlabel(num_spts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating xlabel in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating xlabel in plot_interpolate_bands', stdout, seedname)
     allocate (ctemp(spec_points%bands_num_spec_points), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ctemp in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ctemp in plot_interpolate_bands', stdout, seedname)
     eig_int = 0.0_dp; bands_proj = 0.0_dp
     !
     ! Find the position of each kpoint in the path
@@ -411,13 +413,13 @@ contains
     !
     if (param_input%use_ws_distance) then
       if (index(param_input%bands_plot_mode, 's-k') .ne. 0) then
-        call ws_translate_dist(stdout, param_input, num_wann, wann_data%centres, real_lattice, &
+        call ws_translate_dist(stdout, seedname, param_input, num_wann, wann_data%centres, real_lattice, &
                                recip_lattice, mp_grid, nrpts, irvec, force_recompute=.true.)
       elseif (index(param_input%bands_plot_mode, 'cut') .ne. 0) then
-        call ws_translate_dist(stdout, param_input, num_wann, wann_data%centres, real_lattice, &
+        call ws_translate_dist(stdout, seedname, param_input, num_wann, wann_data%centres, real_lattice, &
                                recip_lattice, mp_grid, nrpts_cut, irvec_cut, force_recompute=.true.)
       else
-        call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised', stdout)
+        call io_error('Error in plot_interpolate bands: value of bands_plot_mode not recognised', stdout, seedname)
       endif
     endif
 
@@ -482,11 +484,11 @@ contains
                   nfound, eig_int(1, loop_kpt), U_int, num_wann, cwork, rwork, iwork, ifail, info)
       if (info < 0) then
         write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-        call io_error('Error in plot_interpolate_bands', stdout)
+        call io_error('Error in plot_interpolate_bands', stdout, seedname)
       endif
       if (info > 0) then
         write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-        call io_error('Error in plot_interpolate_bands', stdout)
+        call io_error('Error in plot_interpolate_bands', stdout, seedname)
       endif
       ! Compute projection onto WF if requested
       if (param_plot%num_bands_project > 0) then
@@ -519,18 +521,18 @@ contains
     write (stdout, *)
 
     if (allocated(ham_r_cut)) deallocate (ham_r_cut, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ham_r_cut in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating ham_r_cut in plot_interpolate_bands', stdout, seedname)
     if (allocated(irvec_cut)) deallocate (irvec_cut, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating irvec_cut in plot_interpolate_bands', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating irvec_cut in plot_interpolate_bands', stdout, seedname)
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout)
+    if (param_input%timing_level > 1) call io_stopwatch('plot: interpolate_bands', 2, stdout, seedname)
     !
     if (allocated(idx_special_points)) deallocate (idx_special_points, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating idx_special_points in &
-                                 &plot_interpolate_bands', stdout)
+                                 &plot_interpolate_bands', stdout, seedname)
     if (allocated(xval_special_points)) deallocate (xval_special_points, stat=ierr)
     if (ierr /= 0) call io_error('Error in deallocating xval_special_points in &
-                                 &plot_interpolate_bands', stdout)
+                                 &plot_interpolate_bands', stdout, seedname)
 
   contains
 
@@ -585,7 +587,7 @@ contains
       real(kind=dp) :: dist
 
       allocate (ham_r_tmp(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ham_r_tmp in plot_cut_hr', stdout)
+      if (ierr /= 0) call io_error('Error in allocating ham_r_tmp in plot_cut_hr', stdout, seedname)
 
       irvec_max = maxval(irvec, DIM=2) + 1
 
@@ -601,7 +603,7 @@ contains
             j = j + 1
           end if
         end do
-        if (j .ne. 1) call io_error('Error: 1-d lattice vector not defined in plot_cut_hr', stdout)
+        if (j .ne. 1) call io_error('Error: 1-d lattice vector not defined in plot_cut_hr', stdout, seedname)
         j = 0
         do i = 1, 3
           if (i .ne. one_dim_vec) then
@@ -618,11 +620,11 @@ contains
 
       nrpts_cut = (2*irvec_max(1) + 1)*(2*irvec_max(2) + 1)*(2*irvec_max(3) + 1)
       allocate (ham_r_cut(num_wann, num_wann, nrpts_cut), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ham_r_cut in plot_cut_hr', stdout)
+      if (ierr /= 0) call io_error('Error in allocating ham_r_cut in plot_cut_hr', stdout, seedname)
       allocate (irvec_cut(3, nrpts_cut), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating irvec_cut in plot_cut_hr', stdout)
+      if (ierr /= 0) call io_error('Error in allocating irvec_cut in plot_cut_hr', stdout, seedname)
       allocate (shift_vec(3, nrpts_cut), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating shift_vec in plot_cut_hr', stdout)
+      if (ierr /= 0) call io_error('Error in allocating shift_vec in plot_cut_hr', stdout, seedname)
 
       nrpts_tmp = 0
       do n1 = -irvec_max(1), irvec_max(1)
@@ -647,7 +649,7 @@ contains
 
       if (nrpts_tmp .ne. nrpts_cut) then
         write (stdout, '(a)') 'FAILED TO EXPAND ham_r'
-        call io_error('Error in plot_cut_hr', stdout)
+        call io_error('Error in plot_cut_hr', stdout, seedname)
       end if
 
       ! AAM: 29/10/2009 Bug fix thanks to Dr Shujun Hu, NIMS, Japan.
@@ -735,7 +737,8 @@ contains
       !============================================!
 
       use w90_constants, only: dp
-      use w90_io, only: io_file_unit, seedname
+!     use w90_io, only: io_file_unit, seedname
+      use w90_io, only: io_file_unit
       use w90_param_types, only: special_kpoints_type
       use wannier_param_types, only: param_plot_type
 
@@ -825,7 +828,8 @@ contains
       !! Plots the interpolated band structure in Xmgrace format
       !============================================!
 
-      use w90_io, only: io_file_unit, seedname, io_date
+!     use w90_io, only: io_file_unit, seedname, io_date
+      use w90_io, only: io_file_unit, io_date
       use w90_param_types, only: special_kpoints_type
 
       implicit none
@@ -917,7 +921,7 @@ contains
 
   !===========================================================!
   subroutine plot_fermi_surface(fermi, recip_lattice, param_input, fermi_surface_data, num_wann, &
-                                ham_r, irvec, ndegen, nrpts, stdout)
+                                ham_r, irvec, ndegen, nrpts, stdout, seedname)
     !===========================================================!
     !                                                           !
     !!  Prepares a Xcrysden bxsf file to view the fermi surface
@@ -926,7 +930,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_time, io_stopwatch
-    use w90_io, only: io_error, io_file_unit, seedname, io_date, io_time, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
     use w90_param_types, only: parameter_input_type, fermi_data_type
     use wannier_param_types, only: fermi_surface_type
 
@@ -944,6 +948,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: ham_pack(:)
     complex(kind=dp)   :: fac
@@ -958,33 +963,33 @@ contains
     integer              :: irpt, nfound, npts_plot, loop_kpt, bxsf_unit
     character(len=9)     :: cdate, ctime
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout)
+    if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 1, stdout, seedname)
     time0 = io_time()
     write (stdout, *)
     write (stdout, '(1x,a)') 'Calculating Fermi surface'
     write (stdout, *)
     !
     if (fermi%n > 1) call io_error("Error in plot: nfermi>1. Set the fermi level " &
-                                   //"using the input parameter 'fermi_level'", stdout)
+                                   //"using the input parameter 'fermi_level'", stdout, seedname)
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_pack plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ham_pack plot_fermi_surface', stdout, seedname)
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ham_kprm plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ham_kprm plot_fermi_surface', stdout, seedname)
     allocate (U_int(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating U_int in plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating U_int in plot_fermi_surface', stdout, seedname)
     allocate (cwork(2*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cwork in plot_fermi_surface', stdout, seedname)
     allocate (rwork(7*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rwork in plot_fermi_surface', stdout, seedname)
     allocate (iwork(5*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating iwork in plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating iwork in plot_fermi_surface', stdout, seedname)
     allocate (ifail(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ifail in plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ifail in plot_fermi_surface', stdout, seedname)
     !
     npts_plot = (fermi_surface_data%num_points + 1)**3
     allocate (eig_int(num_wann, npts_plot), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating eig_int in plot_fermi_surface', stdout)
+    if (ierr /= 0) call io_error('Error in allocating eig_int in plot_fermi_surface', stdout, seedname)
     eig_int = 0.0_dp
     U_int = (0.0_dp, 0.0_dp)
     !
@@ -1012,11 +1017,11 @@ contains
                       nfound, eig_int(1, ikp), U_int, num_wann, cwork, rwork, iwork, ifail, info)
           if (info < 0) then
             write (stdout, '(a,i3,a)') 'THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-            call io_error('Error in plot_fermi_surface', stdout)
+            call io_error('Error in plot_fermi_surface', stdout, seedname)
           endif
           if (info > 0) then
             write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-            call io_error('Error in plot_fermi_surface', stdout)
+            call io_error('Error in plot_fermi_surface', stdout, seedname)
           endif
         end do
       end do
@@ -1060,7 +1065,7 @@ contains
       io_time() - time0, ' (sec)'
     write (stdout, *)
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout)
+    if (param_input%timing_level > 1) call io_stopwatch('plot: fermi_surface', 2, stdout, seedname)
     !
     return
 
@@ -1069,7 +1074,7 @@ contains
   !============================================!
   subroutine plot_wannier(recip_lattice, param_plot, wann_data, param_input, u_matrix_opt, &
                           dis_data, real_lattice, atoms, k_points, u_matrix, num_kpts, &
-                          num_bands, num_wann, bohr, stdout)
+                          num_bands, num_wann, bohr, stdout, seedname)
     !============================================!
     !                                            !
     !! Plot the WF in Xcrysden format
@@ -1079,7 +1084,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi, cmplx_1
 !   use w90_io, only: io_error, stdout, io_file_unit, seedname, io_date, io_stopwatch
-    use w90_io, only: io_error, io_file_unit, seedname, io_date, io_stopwatch
+    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
     use w90_param_types, only: k_point_type, parameter_input_type, wannier_data_type, &
       atom_data_type, disentangle_type
     use wannier_param_types, only: param_plot_type
@@ -1130,6 +1135,7 @@ contains
 !   character(len=20), intent(in) :: wannier_plot_mode
 !   character(len=2), intent(in) :: atoms_symbol(:)
 !   end w90_parameters
+    character(len=50), intent(in)  :: seedname
 
     real(kind=dp) :: scalfac, tmax, tmaxx, x_0ang, y_0ang, z_0ang
     real(kind=dp) :: fxcry(3), dirl(3, 3), w_real, w_imag, ratmax, ratio
@@ -1152,7 +1158,7 @@ contains
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)
     !
-    if (param_input%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout)
+    if (param_input%timing_level > 1) call io_stopwatch('plot: wannier', 1, stdout, seedname)
     !
     associate (ngs=>param_plot%wannier_plot_supercell)
       !
@@ -1162,7 +1168,7 @@ contains
         write (wfnname, 199) 1
       endif
       inquire (file=wfnname, exist=have_file)
-      if (.not. have_file) call io_error('plot_wannier: file '//wfnname//' not found', stdout)
+      if (.not. have_file) call io_error('plot_wannier: file '//wfnname//' not found', stdout, seedname)
 
       file_unit = io_file_unit()
       if (param_plot%wvfn_formatted) then
@@ -1180,29 +1186,29 @@ contains
       allocate (wann_func(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                           -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
                           -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, param_plot%num_wannier_plot), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating wann_func in plot_wannier', stdout)
+      if (ierr /= 0) call io_error('Error in allocating wann_func in plot_wannier', stdout, seedname)
       wann_func = cmplx_0
       if (param_input%spinors) then
         allocate (wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
                                -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
                                -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, param_plot%num_wannier_plot), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating wann_func_nc in plot_wannier', stdout)
+        if (ierr /= 0) call io_error('Error in allocating wann_func_nc in plot_wannier', stdout, seedname)
         wann_func_nc = cmplx_0
       endif
       if (.not. param_input%spinors) then
         if (param_input%have_disentangled) then
           allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_data%ndimwin)), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier', stdout)
+          if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp in plot_wannier', stdout, seedname)
         end if
         allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating r_wvfn in plot_wannier', stdout)
+        if (ierr /= 0) call io_error('Error in allocating r_wvfn in plot_wannier', stdout, seedname)
       else
         if (param_input%have_disentangled) then
           allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_data%ndimwin), 2), stat=ierr)
-          if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp_nc in plot_wannier', stdout)
+          if (ierr /= 0) call io_error('Error in allocating r_wvfn_tmp_nc in plot_wannier', stdout, seedname)
         end if
         allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating r_wvfn_nc in plot_wannier', stdout)
+        if (ierr /= 0) call io_error('Error in allocating r_wvfn_nc in plot_wannier', stdout, seedname)
       endif
 
       call io_date(cdate, ctime)
@@ -1233,7 +1239,7 @@ contains
           write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
           write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
           write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          call io_error('plot_wannier', stdout)
+          call io_error('plot_wannier', stdout, seedname)
         end if
 
         if (param_input%have_disentangled) then
@@ -1374,7 +1380,7 @@ contains
                       case ('down')
                         wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
                       case default
-                 call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(param_plot%wannier_plot_spinor_mode), stdout)
+       call io_error('plot_wannier: Invalid wannier_plot_spinor_mode '//trim(param_plot%wannier_plot_spinor_mode), stdout, seedname)
                       end select
                       wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                     endif
@@ -1438,10 +1444,10 @@ contains
         call internal_cube_format(atoms, wann_data, param_plot, &
                                   param_input, recip_lattice, bohr)
       else
-        call io_error('wannier_plot_format not recognised in wannier_plot', stdout)
+        call io_error('wannier_plot_format not recognised in wannier_plot', stdout, seedname)
       endif
 
-      if (param_input%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout)
+      if (param_input%timing_level > 1) call io_stopwatch('plot: wannier', 2, stdout, seedname)
 
     end associate
 
@@ -1511,7 +1517,7 @@ contains
       associate (ngs=>param_plot%wannier_plot_supercell)
 
         allocate (atomic_Z(atoms%num_species), stat=ierr)
-        if (ierr .ne. 0) call io_error('Error: allocating atomic_Z in wannier_plot', stdout)
+        if (ierr .ne. 0) call io_error('Error: allocating atomic_Z in wannier_plot', stdout, seedname)
 
         lmol = .false.
         lcrys = .false.
@@ -1605,7 +1611,7 @@ contains
           endif
 
           allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
-          if (ierr .ne. 0) call io_error('Error: allocating wann_cube in wannier_plot', stdout)
+          if (ierr .ne. 0) call io_error('Error: allocating wann_cube in wannier_plot', stdout, seedname)
 
           ! initialise
           wann_cube = 0.0_dp
@@ -1621,7 +1627,7 @@ contains
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
               write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-              call io_error('Error plotting WF cube.', stdout)
+              call io_error('Error plotting WF cube.', stdout, seedname)
             endif
             do nyy = 1, ilength(2)
               qyy = nyy + istart(2) - 1
@@ -1634,7 +1640,7 @@ contains
                 write (stdout, *) '   (1) increase wannier_plot_supercell;'
                 write (stdout, *) '   (2) decrease wannier_plot_radius;'
                 write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                call io_error('Error plotting WF cube.', stdout)
+                call io_error('Error plotting WF cube.', stdout, seedname)
               endif
               do nxx = 1, ilength(1)
                 qxx = nxx + istart(1) - 1
@@ -1647,7 +1653,7 @@ contains
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
                   write (stdout, *) '   (3) set wannier_plot_format=xcrysden'
-                  call io_error('Error plotting WF cube.', stdout)
+                  call io_error('Error plotting WF cube.', stdout, seedname)
                 endif
                 wann_cube(nxx, nyy, nzz) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
               enddo
@@ -1759,12 +1765,12 @@ contains
           enddo
 
           deallocate (wann_cube, stat=ierr)
-          if (ierr .ne. 0) call io_error('Error: deallocating wann_cube in wannier_plot', stdout)
+          if (ierr .ne. 0) call io_error('Error: deallocating wann_cube in wannier_plot', stdout, seedname)
 
         end do
 
         deallocate (atomic_Z, stat=ierr)
-        if (ierr .ne. 0) call io_error('Error: deallocating atomic_Z in wannier_plot', stdout)
+        if (ierr .ne. 0) call io_error('Error: deallocating atomic_Z in wannier_plot', stdout, seedname)
 
       end associate
 
@@ -1855,14 +1861,15 @@ contains
 
   !============================================!
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, k_points, param_input, &
-                             num_wann, num_kpts, num_bands)
+                             num_wann, num_kpts, num_bands, seedname)
     !============================================!
     !                                            !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
     !                                            !
     !============================================!
 
-    use w90_io, only: io_error, io_file_unit, seedname, &
+!   use w90_io, only: io_error, io_file_unit, seedname, &
+    use w90_io, only: io_error, io_file_unit, &
       io_time, io_stopwatch, io_date
     use w90_constants, only: dp  !lp
     use w90_param_types, only: k_point_type, parameter_input_type
@@ -1886,6 +1893,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
 !   logical, intent(in) :: have_disentangled
 !   end w90_parameters
+    character(len=50), intent(in)  :: seedname
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -1919,7 +1927,7 @@ contains
   end subroutine plot_u_matrices
 
   !============================================!
-  subroutine plot_bvec(kmesh_info, num_kpts, stdout)
+  subroutine plot_bvec(kmesh_info, num_kpts, stdout, seedname)
     !!
     !! June 2018: RM and SP
     !! Write to file the matrix elements of bvector and their weights
@@ -1928,7 +1936,8 @@ contains
     !!
     !============================================!
 
-    use w90_io, only: io_error, io_file_unit, seedname, io_date
+!   use w90_io, only: io_error, io_file_unit, seedname, io_date
+    use w90_io, only: io_error, io_file_unit, io_date
     use w90_constants, only: dp  !lp
     use w90_param_types, only: kmesh_info_type
 
@@ -1946,6 +1955,7 @@ contains
 !   real(kind=dp), intent(in) :: wb(:)
 !   real(kind=dp), intent(in) :: bk(:, :, :)
 !   end w90_parameters
+    character(len=50), intent(in)  :: seedname
     !
     file_unit = io_file_unit()
     call io_date(cdate, ctime)
@@ -1963,7 +1973,7 @@ contains
     !
     return
     !
-101 call io_error('Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec', stdout)
+101 call io_error('Error: plot_bvec: problem opening file '//trim(seedname)//'.bvec', stdout, seedname)
 
   end subroutine plot_bvec
 

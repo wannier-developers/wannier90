@@ -220,7 +220,7 @@ contains
 
   end subroutine wham_get_JJp_JJm_list
 
-  subroutine wham_get_occ_mat_list(stdout, UU, f_list, g_list, eig, occ)
+  subroutine wham_get_occ_mat_list(stdout, seedname, UU, f_list, g_list, eig, occ)
 !  subroutine wham_get_occ_mat_list(eig,UU,f_list,g_list)
     !================================!
     !                                !
@@ -243,6 +243,7 @@ contains
     complex(kind=dp), dimension(:, :, :), intent(out) :: g_list
     real(kind=dp), intent(in), optional, dimension(:) :: eig
     real(kind=dp), intent(in), optional, dimension(:) :: occ
+    character(len=50), intent(in)  :: seedname
 
     integer       :: n, m, i, if, nfermi_loc
     real(kind=dp), allocatable :: occ_list(:, :)
@@ -256,10 +257,10 @@ contains
 
     if (present(occ) .and. present(eig)) then
       call io_error( &
-        'occ_list and eig cannot be both arguments in get_occ_mat_list', stdout)
+        'occ_list and eig cannot be both arguments in get_occ_mat_list', stdout, seedname)
     elseif (.not. present(occ) .and. .not. present(eig)) then
       call io_error( &
-        'either occ_list or eig must be passed as arguments to get_occ_mat_list', stdout)
+        'either occ_list or eig must be passed as arguments to get_occ_mat_list', stdout, seedname)
     endif
 
     if (present(occ)) then
@@ -286,7 +287,7 @@ contains
 
   end subroutine wham_get_occ_mat_list
 
-  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, stdout)
+  subroutine wham_get_deleig_a(deleig_a, eig, delHH_a, UU, stdout, seedname)
     !==========================!
     !                          !
     !! Band derivatives dE/dk_a
@@ -306,6 +307,7 @@ contains
     complex(kind=dp), dimension(:, :), intent(in)  :: delHH_a
     complex(kind=dp), dimension(:, :), intent(in)  :: UU
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     ! Misc/Dummy
     !
@@ -362,7 +364,7 @@ contains
           dim = degen_max - degen_min + 1
           call utility_diagonalize(delHH_bar_a(degen_min:degen_max, &
                                                degen_min:degen_max), dim, &
-                                   deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim), stdout)
+                                   deleig_a(degen_min:degen_max), U_deg(1:dim, 1:dim), stdout, seedname)
           !
           ! Scanned bands up to degen_max
           !
@@ -385,7 +387,7 @@ contains
 
   end subroutine wham_get_deleig_a
 
-  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
+  subroutine wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
     !! Given a k point, this function returns eigenvalues E and
     !! derivatives of the eigenvalues dE/dk_a, using wham_get_deleig_a
     !
@@ -408,24 +410,25 @@ contains
     complex(kind=dp), dimension(:, :), intent(out)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     ! I call it to be sure that it has been called already once,
     ! and that HH_R contains the actual matrix.
     ! Further calls should return very fast.
-    call get_HH_R(stdout)
+    call get_HH_R(stdout, seedname)
 
-    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1, stdout)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2, stdout)
-    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3, stdout)
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout)
+    call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 1), 1, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 2), 2, stdout, seedname)
+    call pw90common_fourier_R_to_k(kpt, HH_R, delHH(:, :, 3), 3, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout, seedname)
 
   end subroutine wham_get_eig_deleig
 
-  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU, stdout)
+  subroutine wham_get_eig_deleig_TB_conv(kpt, eig, del_eig, delHH, UU, stdout, seedname)
     ! modified version of wham_get_eig_deleig for the TB convention
     ! avoids recalculating delHH and UU, works with input values
 
@@ -446,14 +449,15 @@ contains
     !! the delHH matrix (derivative of H) at kpt
     complex(kind=dp), dimension(:, :), intent(in)   :: UU
     !! the rotation matrix that gives the eigenvectors of HH
+    character(len=50), intent(in)  :: seedname
 
-    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout)
-    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout)
-    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout)
+    call wham_get_deleig_a(del_eig(:, 1), eig, delHH(:, :, 1), UU, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 2), eig, delHH(:, :, 2), UU, stdout, seedname)
+    call wham_get_deleig_a(del_eig(:, 3), eig, delHH(:, :, 3), UU, stdout, seedname)
 
   end subroutine wham_get_eig_deleig_TB_conv
 
-  subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, occ)
+  subroutine wham_get_eig_UU_HH_JJlist(kpt, eig, UU, HH, JJp_list, JJm_list, stdout, seedname, occ)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -473,18 +477,19 @@ contains
     complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJp_list
     complex(kind=dp), dimension(:, :, :, :), intent(out) :: JJm_list
     real(kind=dp), intent(in), optional, dimension(:) :: occ
+    character(len=50), intent(in)  :: seedname
 
     integer                       :: i
     complex(kind=dp), allocatable :: delHH(:, :, :)
 
-    call get_HH_R(stdout)
+    call get_HH_R(stdout, seedname)
 
     allocate (delHH(num_wann, num_wann, 3))
-    call pw90common_fourier_R_to_k_new(stdout, kpt, HH_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new(stdout, seedname, kpt, HH_R, OO=HH, &
                                        OO_dx=delHH(:, :, 1), &
                                        OO_dy=delHH(:, :, 2), &
                                        OO_dz=delHH(:, :, 3))
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
     do i = 1, 3
       if (present(occ)) then
         call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), JJm_list(:, :, :, i), occ=occ)
@@ -495,7 +500,7 @@ contains
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
-  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout)
+  subroutine wham_get_eig_UU_HH_AA_sc_TB_conv(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
     !========================================================!
     !                                                        !
     ! modified version of wham_get_eig_UU_HH_AA_sc, calls routines
@@ -516,20 +521,21 @@ contains
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    character(len=50), intent(in)  :: seedname
 
     !integer                       :: i
 
-    call get_HH_R(stdout)
-    call get_AA_R(stdout)
+    call get_HH_R(stdout, seedname)
+    call get_AA_R(stdout, seedname)
 
-    call pw90common_fourier_R_to_k_new_second_d_TB_conv(stdout, kpt, HH_R, AA_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d_TB_conv(stdout, seedname, kpt, HH_R, AA_R, OO=HH, &
                                                         OO_da=HH_da(:, :, :), &
                                                         OO_dadb=HH_dadb(:, :, :, :))
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
 
   end subroutine wham_get_eig_UU_HH_AA_sc_TB_conv
 
-  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout)
+  subroutine wham_get_eig_UU_HH_AA_sc(kpt, eig, UU, HH, HH_da, HH_dadb, stdout, seedname)
     !========================================================!
     !                                                        !
     !! Wrapper routine used to reduce number of Fourier calls
@@ -548,15 +554,16 @@ contains
     complex(kind=dp), dimension(:, :), intent(out)     :: HH
     complex(kind=dp), dimension(:, :, :), intent(out)       :: HH_da
     complex(kind=dp), dimension(:, :, :, :), intent(out)     :: HH_dadb
+    character(len=50), intent(in)  :: seedname
 
     !integer                       :: i
 
-    call get_HH_R(stdout)
+    call get_HH_R(stdout, seedname)
 
-    call pw90common_fourier_R_to_k_new_second_d(stdout, kpt, HH_R, OO=HH, &
+    call pw90common_fourier_R_to_k_new_second_d(stdout, seedname, kpt, HH_R, OO=HH, &
                                                 OO_da=HH_da(:, :, :), &
                                                 OO_dadb=HH_dadb(:, :, :, :))
-    call utility_diagonalize(HH, num_wann, eig, UU, stdout)
+    call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
 
   end subroutine wham_get_eig_UU_HH_AA_sc
 

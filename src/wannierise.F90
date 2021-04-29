@@ -53,7 +53,7 @@ contains
                        u_matrix_opt, eigval, dis_data, recip_lattice, atoms, lsitesymmetry, &
                        stdout, mp_grid, w90_calcs, transport_mode, param_hamil, sym, ham_r, irvec, &
                        shift_vec, ndegen, nrpts, rpt_origin, wannier_centres_translated, hmlg, &
-                       ham_k)
+                       ham_k, seedname)
     !==================================================================!
     !                                                                  !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
@@ -174,6 +174,7 @@ contains
 !   end w90_hamiltonian
 
     type(sitesym_data), intent(in) :: sym
+    character(len=50), intent(in)  :: seedname
 
     ! local variables
     type(localisation_vars) :: old_spread
@@ -250,14 +251,14 @@ contains
     !real(kind=dp) :: glpar, cvalue_new
     real(kind=dp), allocatable :: rnr0n2(:)
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 1, stdout)
+    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 1, stdout, seedname)
 
     first_pass = .true.
 
     ! Allocate stuff
 
     allocate (history(param_wannierise%conv_window), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating history in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error allocating history in wann_main', stdout, seedname)
 
     ! module data
 !    if(optimisation>0) then
@@ -267,45 +268,45 @@ contains
 !    allocate(  u0 (num_wann, num_wann, num_kpts),stat=ierr)
 !    if (ierr/=0) call io_error('Error in allocating u0 in wann_main')
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rnkb in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rnkb in wann_main', stdout, seedname)
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ln_tmp in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ln_tmp in wann_main', stdout, seedname)
     if (param_wannierise%selective_loc) then
       allocate (rnr0n2(param_wannierise%slwf_num), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating rnr0n2 in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating rnr0n2 in wann_main', stdout, seedname)
     end if
 
     rnkb = 0.0_dp
 
     ! sub vars passed into other subs
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating csheet in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating csheet in wann_main', stdout, seedname)
     allocate (cdodq(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cdodq in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cdodq in wann_main', stdout, seedname)
     allocate (sheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sheet in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating sheet in wann_main', stdout, seedname)
     allocate (rave(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rave in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rave in wann_main', stdout, seedname)
     allocate (r2ave(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating r2ave in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating r2ave in wann_main', stdout, seedname)
     allocate (rave2(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rave2 in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rave2 in wann_main', stdout, seedname)
     allocate (rguide(3, num_wann))
-    if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rguide in wann_main', stdout, seedname)
 
     if (param_wannierise%precond) then
       call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
                              num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                             wannier_centres_translated, hmlg, ham_k, stdout)
+                             wannier_centres_translated, hmlg, ham_k, stdout, seedname)
       allocate (cdodq_r(num_wann, num_wann, nrpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating cdodq_r in wann_main', stdout, seedname)
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating cdodq_precond in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating cdodq_precond in wann_main', stdout, seedname)
 
       ! this method of computing the preconditioning is much more efficient, but requires more RAM
       if (param_input%optimisation >= 3) then
         allocate (k_to_r(num_kpts, nrpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating k_to_r in wann_main', stdout)
+        if (ierr /= 0) call io_error('Error in allocating k_to_r in wann_main', stdout, seedname)
 
         do irpt = 1, nrpts
           do loop_kpt = 1, num_kpts
@@ -321,40 +322,40 @@ contains
 
     ! sub vars not passed into other subs
     allocate (cwschur1(num_wann), cwschur2(10*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwshur1 in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cwshur1 in wann_main', stdout, seedname)
     allocate (cwschur3(num_wann), cwschur4(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwshur3 in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cwshur3 in wann_main', stdout, seedname)
     allocate (cdq(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cdq in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cdq in wann_main', stdout, seedname)
 
     ! for MPI
     if (allocated(counts)) deallocate (counts)
     allocate (counts(0:num_nodes - 1), stat=ierr)
     if (ierr /= 0) then
-      call io_error('Error in allocating counts in wann_main', stdout)
+      call io_error('Error in allocating counts in wann_main', stdout, seedname)
     end if
 
     if (allocated(displs)) deallocate (displs)
     allocate (displs(0:num_nodes - 1), stat=ierr)
     if (ierr /= 0) then
-      call io_error('Error in allocating displs in wann_main', stdout)
+      call io_error('Error in allocating displs in wann_main', stdout, seedname)
     end if
     call comms_array_split(num_kpts, counts, displs)
     allocate (rnkb_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rnkb_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rnkb_loc in wann_main', stdout, seedname)
     allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ln_tmp_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ln_tmp_loc in wann_main', stdout, seedname)
     allocate (u_matrix_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u_matrix_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating u_matrix_loc in wann_main', stdout, seedname)
     allocate (m_matrix_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating m_matrix_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating m_matrix_loc in wann_main', stdout, seedname)
 !    allocate( m_matrix_1b  (num_wann, num_wann, num_kpts),stat=ierr )
 !    if (ierr/=0) call io_error('Error in allocating m_matrix_1b in wann_main')
 !    allocate( m_matrix_1b_loc  (num_wann, num_wann, max(1,counts(my_node_id))),stat=ierr )
 !    if (ierr/=0) call io_error('Error in allocating m_matrix_1b_loc in wann_main')
     if (param_wannierise%precond) then
       allocate (cdodq_precond_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating cdodq_precond_loc in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating cdodq_precond_loc in wann_main', stdout, seedname)
     end if
     ! initialize local u and m matrices with global ones
     do nkp_loc = 1, counts(my_node_id)
@@ -366,33 +367,33 @@ contains
     end do
     call comms_scatterv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                         m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                        num_wann*num_wann*kmesh_info%nntot*displs, stdout)
+                        num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname)
 
     allocate (cdq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cdq_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cdq_loc in wann_main', stdout, seedname)
     allocate (cdodq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cdodq_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cdodq_loc in wann_main', stdout, seedname)
     allocate (cdqkeep_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cdqkeep_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cdqkeep_loc in wann_main', stdout, seedname)
     if (param_input%optimisation > 0) then
       allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
     end if
-    if (ierr /= 0) call io_error('Error in allocating m0_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating m0_loc in wann_main', stdout, seedname)
     allocate (u0_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u0_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating u0_loc in wann_main', stdout, seedname)
 
     allocate (cz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cz in wann_main', stdout, seedname)
     allocate (cmtmp(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cmtmp in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cmtmp in wann_main', stdout, seedname)
     allocate (tmp_cdq(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating tmp_cdq in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating tmp_cdq in wann_main', stdout, seedname)
     allocate (evals(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating evals in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating evals in wann_main', stdout, seedname)
     allocate (cwork(4*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cwork in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cwork in wann_main', stdout, seedname)
     allocate (rwork(3*num_wann - 2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rwork in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rwork in wann_main', stdout, seedname)
 
     cwschur1 = cmplx_0; cwschur2 = cmplx_0; cwschur3 = cmplx_0; cwschur4 = cmplx_0
     cdq = cmplx_0; cz = cmplx_0; cmtmp = cmplx_0; cdqkeep_loc = cmplx_0; cdq_loc = cmplx_0; ! buff=cmplx_0;
@@ -428,7 +429,7 @@ contains
     if (param_wannierise%guiding_centres .and. (param_wannierise%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                       stdout)
+                       stdout, seedname)
       irguide = 1
     endif
 
@@ -441,7 +442,7 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                     num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                    m_matrix_loc, lambda_loc, first_pass, stdout)
+                    m_matrix_loc, lambda_loc, first_pass, stdout, seedname)
 
     ! public variables
     if (.not. param_wannierise%selective_loc) then
@@ -532,7 +533,7 @@ contains
           .and. (mod(iter, param_wannierise%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                          .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                         stdout)
+                         stdout, seedname)
         irguide = 1
       endif
 
@@ -541,11 +542,11 @@ contains
       if (lsitesymmetry .or. param_wannierise%precond) then
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, sym, cdodq)
+                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, seedname, sym, cdodq)
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, sym)
+                         cdodq_loc, lambda_loc, param_input%timing_level, stdout, seedname, sym)
       endif
 
       if (lprint .and. param_input%iprint > 2 .and. on_root) &
@@ -598,7 +599,7 @@ contains
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
                         num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, stdout)
+                        m_matrix_loc, lambda_loc, first_pass, stdout, seedname)
 
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
@@ -658,7 +659,7 @@ contains
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, stdout)
+                        m_matrix_loc, lambda_loc, first_pass, stdout, seedname)
 
         ! parabolic line search was unsuccessful, use trial step already taken
       else
@@ -741,15 +742,15 @@ contains
         ! the u_matrix from the u_matrix_loc. No need to broadcast it since
         ! it's printed by the root node only
         call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
-                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout)
+                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout, seedname)
         ! I also transfer the M matrix
         call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                            m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                           num_wann*num_wann*kmesh_info%nntot*displs, stdout)
+                           num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname)
         if (on_root) call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
                                             k_points, num_kpts, dis_data, num_bands, num_wann, &
                                             u_matrix, u_matrix_opt, m_matrix, mp_grid, &
-                                            real_lattice, recip_lattice, stdout)
+                                            real_lattice, recip_lattice, stdout, seedname)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then
@@ -780,12 +781,12 @@ contains
 !    end do!nn
     call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
                        m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                       num_wann*num_wann*kmesh_info%nntot*displs, stdout)
+                       num_wann*num_wann*kmesh_info%nntot*displs, stdout, seedname)
 
     ! send u matrix
     call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
-                       u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout)
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout)
+                       u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout, seedname)
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname)
 
     ! Evaluate the penalty functional
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
@@ -843,17 +844,17 @@ contains
 
     if (param_input%write_xyz .and. on_root) then
       call wann_write_xyz(param_wannierise%translate_home_cell, num_wann, wann_data%centres, &
-                          real_lattice, recip_lattice, atoms, param_input, stdout)
+                          real_lattice, recip_lattice, atoms, param_input, stdout, seedname)
     endif
 
     if (param_wannierise%write_hr_diag) then
       call hamiltonian_setup(param_input, real_lattice, mp_grid, transport_mode, w90_calcs, &
                              num_kpts, num_wann, ham_r, irvec, ndegen, nrpts, rpt_origin, &
-                             wannier_centres_translated, hmlg, ham_k, stdout)
+                             wannier_centres_translated, hmlg, ham_k, stdout, seedname)
       call hamiltonian_get_hr(real_lattice, recip_lattice, wann_data%centres, atoms, param_hamil, &
                               param_input, dis_data, u_matrix_opt, k_points%kpt_latt, eigval, &
                               u_matrix, lsitesymmetry, num_bands, num_kpts, num_wann, ham_r, &
-                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout)
+                              irvec, shift_vec, nrpts, wannier_centres_translated, hmlg, ham_k, stdout, seedname)
 
       if (on_root) then
         write (stdout, *)
@@ -870,127 +871,127 @@ contains
     if (param_wannierise%guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
                        .false., counts, displs, m_matrix_loc, rnkb, param_input%timing_level, &
-                       stdout)
+                       stdout, seedname)
     endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, stdout)
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, stdout, seedname)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
 !    if (iprint>2) call wann_svd_omega_i()
     if (param_input%iprint > 2 .and. on_root) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, stdout)
+      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, stdout, seedname)
     endif
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
 !    if (write_r2mn) call wann_write_r2mn()
     if (param_wannierise%write_r2mn .and. on_root) call wann_write_r2mn(num_kpts, num_wann, &
-                                                                        kmesh_info, m_matrix, stdout)
+                                                                        kmesh_info, m_matrix, stdout, seedname)
 
     ! calculate and write projection of WFs on original bands in outer window
     if (param_input%have_disentangled .and. param_wannierise%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_data%lwindow, param_input%timing_level, stdout)
+                                dis_data%lwindow, param_input%timing_level, stdout, seedname)
 
     ! aam: write data required for vdW utility
     if (param_wannierise%write_vdw_data .and. on_root) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                               u_matrix_opt, param_input, stdout)
+                               u_matrix_opt, param_input, stdout, seedname)
     endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rwork in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rwork in wann_main', stdout, seedname)
     deallocate (cwork, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwork in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cwork in wann_main', stdout, seedname)
     deallocate (evals, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating evals in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating evals in wann_main', stdout, seedname)
     deallocate (tmp_cdq, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating tmp_cdq in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating tmp_cdq in wann_main', stdout, seedname)
     deallocate (cmtmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cmtmp in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cmtmp in wann_main', stdout, seedname)
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cz in wann_main', stdout, seedname)
     deallocate (cdq, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cdq in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cdq in wann_main', stdout, seedname)
 
     ! for MPI
     deallocate (ln_tmp_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ln_tmp_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating ln_tmp_loc in wann_main', stdout, seedname)
     deallocate (rnkb_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rnkb_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rnkb_loc in wann_main', stdout, seedname)
     deallocate (u_matrix_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating u_matrix_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating u_matrix_loc in wann_main', stdout, seedname)
     deallocate (m_matrix_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating m_matrix_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating m_matrix_loc in wann_main', stdout, seedname)
 !    deallocate(m_matrix_1b,stat=ierr)
 !    if (ierr/=0) call io_error('Error in deallocating m_matrix_1b in wann_main')
 !    deallocate(m_matrix_1b_loc,stat=ierr)
 !    if (ierr/=0) call io_error('Error in deallocating m_matrix_1b_loc in wann_main')
     deallocate (cdq_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cdq_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cdq_loc in wann_main', stdout, seedname)
     deallocate (cdodq_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cdodq_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cdodq_loc in wann_main', stdout, seedname)
     deallocate (cdqkeep_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cdqkeep_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cdqkeep_loc in wann_main', stdout, seedname)
 
     deallocate (cwschur3, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwschur3 in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cwschur3 in wann_main', stdout, seedname)
     deallocate (cwschur1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cwschur1 in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cwschur1 in wann_main', stdout, seedname)
     if (param_wannierise%precond) then
       if (param_input%optimisation >= 3) then
         deallocate (k_to_r, stat=ierr)
-        if (ierr /= 0) call io_error('Error in deallocating k_to_r in wann_main', stdout)
+        if (ierr /= 0) call io_error('Error in deallocating k_to_r in wann_main', stdout, seedname)
       end if
       deallocate (cdodq_r, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating cdodq_r in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in deallocating cdodq_r in wann_main', stdout, seedname)
       deallocate (cdodq_precond, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating cdodq_precond in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in deallocating cdodq_precond in wann_main', stdout, seedname)
       deallocate (cdodq_precond_loc, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating cdodq_precond_loc in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in deallocating cdodq_precond_loc in wann_main', stdout, seedname)
     end if
 
     ! deallocate sub vars passed into other subs
     deallocate (rguide, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rguide in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rguide in wann_main', stdout, seedname)
     deallocate (rave2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rave2 in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rave2 in wann_main', stdout, seedname)
     deallocate (rave, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rave in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rave in wann_main', stdout, seedname)
     deallocate (sheet, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sheet in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating sheet in wann_main', stdout, seedname)
     deallocate (cdodq, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cdodq in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cdodq in wann_main', stdout, seedname)
     deallocate (csheet, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating csheet in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating csheet in wann_main', stdout, seedname)
     if (param_wannierise%selective_loc) then
       deallocate (rnr0n2, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating rnr0n2 in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in deallocating rnr0n2 in wann_main', stdout, seedname)
     end if
     ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ln_tmp in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating ln_tmp in wann_main', stdout, seedname)
     deallocate (rnkb, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rnkb in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rnkb in wann_main', stdout, seedname)
 
     deallocate (u0_loc, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating u0_loc in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating u0_loc in wann_main', stdout, seedname)
     if (param_input%optimisation > 0) then
       deallocate (m0_loc, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating m0_loc in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error in deallocating m0_loc in wann_main', stdout, seedname)
     end if
 
     if (allocated(counts)) deallocate (counts)
     if (allocated(displs)) deallocate (displs)
 
     deallocate (history, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating history in wann_main', stdout)
+    if (ierr /= 0) call io_error('Error deallocating history in wann_main', stdout, seedname)
 
-    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 2, stdout)
+    if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 2, stdout, seedname)
 
     return
 
@@ -1038,7 +1039,7 @@ contains
       real(kind=dp), allocatable :: temp_hist(:)
 
       allocate (temp_hist(param_wannierise%conv_window), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating temp_hist in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error allocating temp_hist in wann_main', stdout, seedname)
 
       delta_omega = wann_spread%om_tot - old_spread%om_tot
 
@@ -1084,7 +1085,7 @@ contains
       if (lrandom) noise_count = noise_count + 1
 
       deallocate (temp_hist, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating temp_hist in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error deallocating temp_hist in wann_main', stdout, seedname)
 
       return
 
@@ -1115,11 +1116,11 @@ contains
 
       ! Allocate
       allocate (noise_real(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating noise_real in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error allocating noise_real in wann_main', stdout, seedname)
       allocate (noise_imag(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating noise_imag in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error allocating noise_imag in wann_main', stdout, seedname)
       allocate (cnoise(num_wann, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating cnoise in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error allocating cnoise in wann_main', stdout, seedname)
 
       ! Initialise
       cnoise = cmplx_0; noise_real = 0.0_dp; noise_imag = 0.0_dp
@@ -1150,11 +1151,11 @@ contains
 
       ! Deallocate
       deallocate (cnoise, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating cnoise in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error deallocating cnoise in wann_main', stdout, seedname)
       deallocate (noise_imag, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating noise_imag in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error deallocating noise_imag in wann_main', stdout, seedname)
       deallocate (noise_real, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating noise_real in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error deallocating noise_real in wann_main', stdout, seedname)
 
       return
 
@@ -1211,7 +1212,7 @@ contains
       integer :: irpt, loop_kpt
 
       if (param_input%timing_level > 1 .and. on_root) &
-        call io_stopwatch('wann: main: search_direction', 1, stdout)
+        call io_stopwatch('wann: main: search_direction', 1, stdout, seedname)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       ! gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
@@ -1332,7 +1333,7 @@ contains
       complex(kind=dp), external :: zdotc
 
       if ((.not. param_wannierise%precond) .and. param_input%timing_level > 1 .and. on_root) &
-        call io_stopwatch('wann: main: search_direction', 1, stdout)
+        call io_stopwatch('wann: main: search_direction', 1, stdout, seedname)
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       if (param_wannierise%precond) then
@@ -1342,7 +1343,7 @@ contains
       else
         gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdodq_loc, 1), dp)
       end if
-      call comms_allreduce(gcnorm1, 1, 'SUM', stdout)
+      call comms_allreduce(gcnorm1, 1, 'SUM', stdout, seedname)
 
       ! calculate cg_coefficient
       if ((iter .eq. 1) .or. (ncg .ge. param_wannierise%num_cg_steps)) then
@@ -1389,7 +1390,7 @@ contains
       ! NB gradient is anti-hermitian
       doda0 = -real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdq_loc, 1), dp)
 
-      call comms_allreduce(doda0, 1, 'SUM', stdout)
+      call comms_allreduce(doda0, 1, 'SUM', stdout, seedname)
 
       doda0 = doda0/(4.0_dp*wbtot)
 
@@ -1407,7 +1408,7 @@ contains
           ! re-calculate gradient along search direction
           doda0 = -real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdq_loc, 1), dp)
 
-          call comms_allreduce(doda0, 1, 'SUM', stdout)
+          call comms_allreduce(doda0, 1, 'SUM', stdout, seedname)
 
           doda0 = doda0/(4.0_dp*wbtot)
           ! if search direction still uphill then reverse search direction
@@ -1430,7 +1431,7 @@ contains
       !~     cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
 
       if (param_input%timing_level > 1 .and. on_root) &
-        call io_stopwatch('wann: main: search_direction', 2, stdout)
+        call io_stopwatch('wann: main: search_direction', 2, stdout, seedname)
 
       lrandom = .false.
 
@@ -1468,7 +1469,7 @@ contains
       real(kind=dp) :: fac, shift, eqa, eqb
 
       if (param_input%timing_level > 1 .and. on_root) &
-        call io_stopwatch('wann: main: optimal_step', 1, stdout)
+        call io_stopwatch('wann: main: optimal_step', 1, stdout, seedname)
 
       fac = trial_spread%om_tot - wann_spread%om_tot
       if (abs(fac) .gt. tiny(1.0_dp)) then
@@ -1502,7 +1503,7 @@ contains
       endif
 
       if (param_input%timing_level > 1 .and. on_root) &
-        call io_stopwatch('wann: main: optimal_step', 2, stdout)
+        call io_stopwatch('wann: main: optimal_step', 2, stdout, seedname)
 
       return
 
@@ -1553,7 +1554,7 @@ contains
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
       logical :: ltmp
 
-      if (timing_level > 1 .and. on_root) call io_stopwatch('wann: main: u_and_m', 1, stdout)
+      if (timing_level > 1 .and. on_root) call io_stopwatch('wann: main: u_and_m', 1, stdout, seedname)
 
       do nkp_loc = 1, counts(my_node_id)
         nkp = nkp_loc + displs(my_node_id)
@@ -1575,7 +1576,7 @@ contains
                      cwschur4, info)
           if (info .ne. 0) then
             if (on_root) write (stdout, *) 'wann_main: SCHUR failed, info= ', info
-            call io_error('wann_main: problem computing schur form 1', stdout)
+            call io_error('wann_main: problem computing schur form 1', stdout, seedname)
           endif
           do i = 1, num_wann
             tmp_cdq(:, i) = cz(:, i)*exp(cwschur1(i))
@@ -1595,8 +1596,8 @@ contains
       ! each process communicates its result to other processes
       ! it would be enough to copy only next neighbors
       call comms_gatherv(cdq_loc, num_wann*num_wann*counts(my_node_id), cdq, &
-                         num_wann*num_wann*counts, num_wann*num_wann*displs, stdout)
-      call comms_bcast(cdq(1, 1, 1), num_wann*num_wann*num_kpts, stdout)
+                         num_wann*num_wann*counts, num_wann*num_wann*displs, stdout, seedname)
+      call comms_bcast(cdq(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname)
 
 !!$      do nkp = 1, num_kpts
 !!$         tmp_cdq(:,:) = cdq(:,:,nkp)
@@ -1616,7 +1617,7 @@ contains
 !!$      enddo
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_rotation(cdq, num_wann, num_kpts, sym, stdout) !RS: calculate cdq(Rk) from k
+        call sitesym_symmetrize_rotation(cdq, num_wann, num_kpts, sym, stdout, seedname) !RS: calculate cdq(Rk) from k
 
         cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
                                                   + counts(my_node_id))
@@ -1645,7 +1646,7 @@ contains
         enddo
       enddo
 
-      if (timing_level > 1) call io_stopwatch('wann: main: u_and_m', 2, stdout)
+      if (timing_level > 1) call io_stopwatch('wann: main: u_and_m', 2, stdout, seedname)
 
       return
 
@@ -1837,7 +1838,7 @@ contains
 
   !==================================================================!
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                         gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, m_w)
+                         gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, stdout, seedname, m_w)
     !==================================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1881,6 +1882,7 @@ contains
     integer, intent(in) :: stdout
 
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
+    character(len=50), intent(in)  :: seedname
     !! Used in the Gamma point routines as an optimisation
 
     !local
@@ -1891,7 +1893,7 @@ contains
     complex(kind=dp) :: csumt
     integer :: loop_wann, na, nkp, i, j, nn, ind, m, nkp_loc
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: phases', 1, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: phases', 1, stdout, seedname)
 
     csum = cmplx_0; xx = 0.0_dp
 
@@ -1937,7 +1939,7 @@ contains
 
       end if
 
-      call comms_allreduce(csum(1), kmesh_info%nnh, 'SUM', stdout)
+      call comms_allreduce(csum(1), kmesh_info%nnh, 'SUM', stdout, seedname)
 
       ! now analyze that information to get good guess at
       ! wannier center
@@ -2067,7 +2069,7 @@ contains
 !       enddo
 !    enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: phases', 2, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: phases', 2, stdout, seedname)
 
     return
 
@@ -2076,7 +2078,7 @@ contains
   !==================================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, param_input, param_wannierise, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, stdout)
+                        m_matrix_loc, lambda_loc, first_pass, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !!   Calculate the Wannier Function spread                         !
@@ -2123,12 +2125,14 @@ contains
     real(kind=dp), intent(in) :: lambda_loc
     logical, intent(inout) :: first_pass
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
     !local variables
     real(kind=dp) :: summ, mnn2
     real(kind=dp) :: brn
     integer :: ind, nkp, nn, m, n, iw, nkp_loc
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: omega', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: omega', 1, stdout, seedname)
 
     do nkp_loc = 1, counts(my_node_id)
       nkp = nkp_loc + displs(my_node_id)
@@ -2154,7 +2158,7 @@ contains
       enddo
     enddo
 
-    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', stdout)
+    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', stdout, seedname)
 
     rave = -rave/real(num_kpts, dp)
 
@@ -2183,7 +2187,7 @@ contains
       enddo
     enddo
 
-    call comms_allreduce(r2ave(1), num_wann, 'SUM', stdout)
+    call comms_allreduce(r2ave(1), num_wann, 'SUM', stdout, seedname)
 
     r2ave = r2ave/real(num_kpts, dp)
 
@@ -2258,7 +2262,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_iod, 1, 'SUM', stdout)
+      call comms_allreduce(wann_spread%om_iod, 1, 'SUM', stdout, seedname)
 
       wann_spread%om_iod = wann_spread%om_iod/real(num_kpts, dp)
 
@@ -2274,7 +2278,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_d, 1, 'SUM', stdout)
+      call comms_allreduce(wann_spread%om_d, 1, 'SUM', stdout, seedname)
 
       wann_spread%om_d = wann_spread%om_d/real(num_kpts, dp)
 
@@ -2292,7 +2296,7 @@ contains
           enddo
         enddo
 
-        call comms_allreduce(wann_spread%om_nu, 1, 'SUM', stdout)
+        call comms_allreduce(wann_spread%om_nu, 1, 'SUM', stdout, seedname)
 
         wann_spread%om_nu = wann_spread%om_nu/real(num_kpts, dp)
 
@@ -2324,7 +2328,7 @@ contains
           enddo
         enddo
 
-        call comms_allreduce(wann_spread%om_i, 1, 'SUM', stdout)
+        call comms_allreduce(wann_spread%om_i, 1, 'SUM', stdout, seedname)
 
         wann_spread%om_i = wann_spread%om_i/real(num_kpts, dp)
         first_pass = .false.
@@ -2346,7 +2350,7 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_od, 1, 'SUM', stdout)
+      call comms_allreduce(wann_spread%om_od, 1, 'SUM', stdout, seedname)
 
       wann_spread%om_od = wann_spread%om_od/real(num_kpts, dp)
 
@@ -2362,14 +2366,14 @@ contains
         enddo
       enddo
 
-      call comms_allreduce(wann_spread%om_d, 1, 'SUM', stdout)
+      call comms_allreduce(wann_spread%om_d, 1, 'SUM', stdout, seedname)
 
       wann_spread%om_d = wann_spread%om_d/real(num_kpts, dp)
 
       wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
     end if
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: omega', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: omega', 2, stdout, seedname)
 
     return
 
@@ -2378,7 +2382,7 @@ contains
   !==================================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, param_wannierise, &
                          lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, stdout, sym, cdodq)
+                         cdodq_loc, lambda_loc, timing_level, stdout, seedname, sym, cdodq)
     !==================================================================!
     !                                                                  !
     !   Calculate the Gradient of the Wannier Function spread          !
@@ -2419,6 +2423,8 @@ contains
 !   real(kind=dp), intent(in) :: ccentres_cart(:, :)
     logical, intent(in) :: lsitesymmetry
     integer, intent(in) :: timing_level
+    character(len=50), intent(in)  :: seedname
+
     ! end parameters
     integer, intent(in) :: counts(0:), displs(0:)
     real(kind=dp), intent(inout) :: ln_tmp_loc(:, :, :)
@@ -2434,15 +2440,15 @@ contains
     integer :: iw, ind, nkp, nn, m, n, ierr, nkp_loc
     complex(kind=dp) :: mnn
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: domega', 1, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: domega', 1, stdout, seedname)
 
     allocate (cr(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cr in wann_domega', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cr in wann_domega', stdout, seedname)
     allocate (crt(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating crt in wann_domega', stdout)
+    if (ierr /= 0) call io_error('Error in allocating crt in wann_domega', stdout, seedname)
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
       allocate (r0kb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating r0kb in wann_domega', stdout)
+      if (ierr /= 0) call io_error('Error in allocating r0kb in wann_domega', stdout, seedname)
     end if
 
     do nkp_loc = 1, counts(my_node_id)
@@ -2471,7 +2477,7 @@ contains
     enddo
     rave = -rave/real(num_kpts, dp)
 
-    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', stdout)
+    call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', stdout, seedname)
 
     ! b.r_0n are calculated
     if (param_wannierise%selective_loc .and. param_wannierise%slwf_constrain) then
@@ -2614,8 +2620,8 @@ contains
     if (present(cdodq)) then
       ! each process communicates its result to other processes
       call comms_gatherv(cdodq_loc, num_wann*num_wann*counts(my_node_id), &
-                         cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout)
-      call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, stdout)
+                         cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs, stdout, seedname)
+      call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname)
       if (lsitesymmetry) then
         call sitesym_symmetrize_gradient(1, cdodq, num_wann, num_kpts, sym) !RS:
         cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) &
@@ -2624,11 +2630,11 @@ contains
     end if
 
     deallocate (cr, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cr in wann_domega', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cr in wann_domega', stdout, seedname)
     deallocate (crt, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating crt in wann_domega', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating crt in wann_domega', stdout, seedname)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: domega', 2, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: domega', 2, stdout, seedname)
 
     return
 
@@ -2662,7 +2668,7 @@ contains
 
   !==================================================================!
   subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
-                                  timing_level, stdout)
+                                  timing_level, stdout, seedname)
     !==================================================================!
     !                                                                  !
     ! Calculates and writes the projection of each Wannier function    !
@@ -2684,12 +2690,13 @@ contains
     logical, intent(in) :: lwindow(:, :)
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     ! end of vars from parameter module
 
     integer :: nw, nb, nkp, counter
     real(kind=dp) :: summ
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: calc_projection', 1, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: calc_projection', 1, stdout, seedname)
 
     if (on_root) then
       write (stdout, '(/1x,a78)') repeat('-', 78)
@@ -2716,7 +2723,7 @@ contains
     enddo
     if (on_root) write (stdout, '(1x,a78/)') repeat('-', 78)
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: calc_projection', 2, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: calc_projection', 2, stdout, seedname)
 
     return
 
@@ -2724,14 +2731,15 @@ contains
 
   !=====================================!
   subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
-                            recip_lattice, atoms, param_input, stdout)
+                            recip_lattice, atoms, param_input, stdout, seedname)
     !=====================================!
     !                                     !
     ! Write xyz file with Wannier centres !
     !                                     !
     !=====================================!
 
-    use w90_io, only: seedname, io_file_unit, io_date
+!   use w90_io, only: seedname, io_file_unit, io_date
+    use w90_io, only: io_file_unit, io_date
     use w90_utility, only: utility_translate_home
     use w90_param_types, only: atom_data_type, parameter_input_type
 
@@ -2754,6 +2762,7 @@ contains
 !   real(kind=dp), intent(in) :: lenconfac
 !   integer, intent(in) :: iprint
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
     ! end parameters
 
     integer          :: iw, ind, xyz_unit, nsp, nat
@@ -2802,7 +2811,7 @@ contains
 
   !=================================================================!
   subroutine wann_write_vdw_data(num_wann, wann_data, real_lattice, recip_lattice, u_matrix, &
-                                 u_matrix_opt, param_input, stdout)
+                                 u_matrix_opt, param_input, stdout, seedname)
     !=================================================================!
     !                                                                 !
     ! Write a file with Wannier centres, spreads and occupations for  !
@@ -2811,7 +2820,8 @@ contains
     ! Based on code written by Lampros Andrinopoulos.                 !
     !=================================================================!
 
-    use w90_io, only: seedname, io_file_unit, io_date, io_error
+!   use w90_io, only: seedname, io_file_unit, io_date, io_error
+    use w90_io, only: io_file_unit, io_date, io_error
     use w90_utility, only: utility_translate_home
     use w90_constants, only: cmplx_0, eps6
     use w90_param_types, only: wannier_data_type, parameter_input_type
@@ -2841,6 +2851,7 @@ contains
 !   integer, intent(in) :: num_elec_per_state
     ! end parameters
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer          :: iw, vdw_unit, r, s, k, m, ierr, ndim
     real(kind=dp)    :: wc(3, num_wann)
@@ -2856,7 +2867,7 @@ contains
     enddo
 
     allocate (f_w(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating f_w in wann_write_vdw_data', stdout)
+    if (ierr /= 0) call io_error('Error in allocating f_w in wann_write_vdw_data', stdout, seedname)
 
 !~    ! aam: remove f_w2 at end
 !~    allocate(f_w2(num_wann, num_wann),stat=ierr)
@@ -2866,11 +2877,11 @@ contains
 
       ! dimension of occupied subspace
       if (param_input%num_valence_bands .le. 0) &
-        call io_error('Please set num_valence_bands in seedname.win', stdout)
+        call io_error('Please set num_valence_bands in seedname.win', stdout, seedname)
       ndim = param_input%num_valence_bands
 
       allocate (v_matrix(ndim, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating V_matrix in wann_write_vdw_data', stdout)
+      if (ierr /= 0) call io_error('Error in allocating V_matrix in wann_write_vdw_data', stdout, seedname)
 
       ! aam: initialise
       f_w(:, :) = cmplx_0
@@ -2960,20 +2971,20 @@ contains
 
     if (param_input%have_disentangled) then
       deallocate (v_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating v_matrix in wann_write_vdw_data', stdout)
+      if (ierr /= 0) call io_error('Error in deallocating v_matrix in wann_write_vdw_data', stdout, seedname)
     endif
 
 !~    deallocate(f_w2,stat=ierr)
 !~    if (ierr/=0) call io_error('Error in deallocating f_w2 in wann_write_vdw_data')
     deallocate (f_w, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating f_w in wann_write_vdw_data', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating f_w in wann_write_vdw_data', stdout, seedname)
 
     return
 
   end subroutine wann_write_vdw_data
 
   !========================================!
-  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, stdout)
+  subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, stdout, seedname)
     !========================================!
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
@@ -2987,11 +2998,12 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer :: nkp, i, j, m
     complex(kind=dp) :: ctmp1, ctmp2
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: check_unitarity', 1, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: check_unitarity', 1, stdout, seedname)
 
     do nkp = 1, num_kpts
       do i = 1, num_wann
@@ -3006,36 +3018,36 @@ contains
             then
             if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
-            call io_error('wann_check_unitarity: error 1', stdout)
+            call io_error('wann_check_unitarity: error 1', stdout, seedname)
           endif
           if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) &
             then
             if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
-            call io_error('wann_check_unitarity: error 2', stdout)
+            call io_error('wann_check_unitarity: error 2', stdout, seedname)
           endif
           if ((i .ne. j) .and. (abs(ctmp1) .gt. eps5)) then
             if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
-            call io_error('wann_check_unitarity: error 3', stdout)
+            call io_error('wann_check_unitarity: error 3', stdout, seedname)
           endif
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             if (on_root) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
-            call io_error('wann_check_unitarity: error 4', stdout)
+            call io_error('wann_check_unitarity: error 4', stdout, seedname)
           endif
         enddo
       enddo
     enddo
 
-    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: check_unitarity', 2, stdout)
+    if (timing_level > 1 .and. on_root) call io_stopwatch('wann: check_unitarity', 2, stdout, seedname)
 
     return
 
   end subroutine wann_check_unitarity
 
   !========================================!
-  subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, stdout)
+  subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, stdout, seedname)
     !========================================!
     !                                        !
     ! Write seedname.r2mn file               !
@@ -3043,7 +3055,8 @@ contains
     !========================================!
 
     use w90_constants, only: dp
-    use w90_io, only: seedname, io_file_unit, io_error
+!   use w90_io, only: seedname, io_file_unit, io_error
+    use w90_io, only: io_file_unit, io_error
     use w90_param_types, only: kmesh_info_type
 
     implicit none
@@ -3056,6 +3069,7 @@ contains
 !   real(kind=dp), intent(in) :: wb(:)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer :: r2mnunit, nw1, nw2, nkp, nn
     real(kind=dp) :: r2ave_mn, delta
@@ -3086,12 +3100,12 @@ contains
 
     return
 
-158 call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn', stdout)
+158 call io_error('Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn', stdout, seedname)
 
   end subroutine wann_write_r2mn
 
   !========================================!
-  subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, stdout)
+  subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, stdout, seedname)
     !========================================!
 
     use w90_constants, only: dp, cmplx_0
@@ -3113,6 +3127,7 @@ contains
 !   character(len=*), intent(in) :: length_unit
 !   integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable  :: cv1(:, :), cv2(:, :)
     complex(kind=dp), allocatable  :: cw1(:), cw2(:)
@@ -3123,20 +3138,20 @@ contains
     integer :: nkp, nn, nb, na, ind
     real(kind=dp) :: omt1, omt2, omt3
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: svd_omega_i', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: svd_omega_i', 1, stdout, seedname)
 
     allocate (cw1(10*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cw1 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cw1 in wann_svd_omega_i', stdout, seedname)
     allocate (cw2(10*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cw2 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cw2 in wann_svd_omega_i', stdout, seedname)
     allocate (cv1(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cv1 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cv1 in wann_svd_omega_i', stdout, seedname)
     allocate (cv2(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cv2 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cv2 in wann_svd_omega_i', stdout, seedname)
     allocate (singvd(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating singvd in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in allocating singvd in wann_svd_omega_i', stdout, seedname)
     allocate (cpad1(num_wann*num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cpad1 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cpad1 in wann_svd_omega_i', stdout, seedname)
 
     cw1 = cmplx_0; cw2 = cmplx_0; cv1 = cmplx_0; cv2 = cmplx_0; cpad1 = cmplx_0
     singvd = 0.0_dp
@@ -3155,7 +3170,7 @@ contains
         call zgesvd('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
                     num_wann, cv2, num_wann, cw1, 10*num_wann, cw2, info)
         if (info .ne. 0) then
-          call io_error('ERROR: Singular value decomp. zgesvd failed', stdout)
+          call io_error('ERROR: Singular value decomp. zgesvd failed', stdout, seedname)
         endif
 
         do nb = 1, num_wann
@@ -3179,19 +3194,19 @@ contains
     endif
 
     deallocate (cpad1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cpad1 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cpad1 in wann_svd_omega_i', stdout, seedname)
     deallocate (singvd, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating singvd in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating singvd in wann_svd_omega_i', stdout, seedname)
     deallocate (cv2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cv2 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cv2 in wann_svd_omega_i', stdout, seedname)
     deallocate (cv1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cv1 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cv1 in wann_svd_omega_i', stdout, seedname)
     deallocate (cw2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cw2 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cw2 in wann_svd_omega_i', stdout, seedname)
     deallocate (cw1, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cw1 in wann_svd_omega_i', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cw1 in wann_svd_omega_i', stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: svd_omega_i', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('wann: svd_omega_i', 2, stdout, seedname)
 
     return
 
@@ -3202,7 +3217,7 @@ contains
                              param_input, u_matrix, m_matrix, num_kpts, &
                              real_lattice, wann_data, num_bands, u_matrix_opt, &
                              eigval, lwindow, recip_lattice, atoms, k_points, &
-                             dis_data, mp_grid, stdout)
+                             dis_data, mp_grid, stdout, seedname)
     !==================================================================!
     !                                                                  !
     ! Calculate the Unitary Rotations to give                          !
@@ -3272,6 +3287,7 @@ contains
     type(disentangle_type), intent(in) :: dis_data ! needed for write_chkpt
     integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     ! local
     type(localisation_vars) :: old_spread
@@ -3308,14 +3324,14 @@ contains
     real(kind=dp), allocatable :: history(:)
     logical                    :: lconverged
 
-    if (param_input%timing_level > 0) call io_stopwatch('wann: main_gamma', 1, stdout)
+    if (param_input%timing_level > 0) call io_stopwatch('wann: main_gamma', 1, stdout, seedname)
 
     first_pass = .true.
 
     ! Allocate stuff
 
     allocate (history(param_wannierise%conv_window), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating history in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error allocating history in wann_main_gamma', stdout, seedname)
 
 !~    if (.not.allocated(ph_g)) then
 !~       allocate(  ph_g(num_wann),stat=ierr )
@@ -3325,41 +3341,41 @@ contains
 
     ! module data
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rnkb in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rnkb in wann_main_gamma', stdout, seedname)
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ln_tmp in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ln_tmp in wann_main_gamma', stdout, seedname)
 
     rnkb = 0.0_dp
     tnntot = 2*kmesh_info%nntot
 
     ! sub vars passed into other subs
     allocate (m_w(num_wann, num_wann, tnntot), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating m_w in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating m_w in wann_main_gamma', stdout, seedname)
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating csheet in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating csheet in wann_main_gamma', stdout, seedname)
     allocate (sheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating sheet in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating sheet in wann_main_gamma', stdout, seedname)
     allocate (rave(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rave in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rave in wann_main_gamma', stdout, seedname)
     allocate (r2ave(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating r2ave in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating r2ave in wann_main_gamma', stdout, seedname)
     allocate (rave2(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating rave2 in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rave2 in wann_main_gamma', stdout, seedname)
     allocate (rguide(3, num_wann))
-    if (ierr /= 0) call io_error('Error in allocating rguide in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating rguide in wann_main_gamma', stdout, seedname)
 
     csheet = cmplx_1
     sheet = 0.0_dp; rave = 0.0_dp; r2ave = 0.0_dp; rave2 = 0.0_dp; rguide = 0.0_dp
 
     ! sub vars not passed into other subs
     allocate (u0(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating u0 in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating u0 in wann_main_gamma', stdout, seedname)
     allocate (uc_rot(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating uc_rot in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating uc_rot in wann_main_gamma', stdout, seedname)
     allocate (ur_rot(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating ur_rot in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating ur_rot in wann_main_gamma', stdout, seedname)
     allocate (cz(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating cz in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating cz in wann_main_gamma', stdout, seedname)
 
     cz = cmplx_0
 
@@ -3414,7 +3430,7 @@ contains
     if (param_wannierise%guiding_centres .and. (param_wannierise%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
                        num_kpts, m_matrix, .true., counts, displs, &
-                       m_matrix_loc, rnkb, param_input%timing_level, stdout)
+                       m_matrix_loc, rnkb, param_input%timing_level, stdout, seedname)
       irguide = 1
     endif
 
@@ -3431,7 +3447,7 @@ contains
                           num_wann, kmesh_info%nntot, kmesh_info%wbtot, &
                           kmesh_info%wb, kmesh_info%bk, &
                           param_input%omega_invariant, ln_tmp, first_pass, &
-                          param_input%timing_level, stdout)
+                          param_input%timing_level, stdout, seedname)
 
     ! public variables
     param_wannierise%omega_total = wann_spread%om_tot
@@ -3498,7 +3514,7 @@ contains
           .and. (mod(iter, param_wannierise%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
                          num_kpts, m_matrix, .true., counts, displs, &
-                         m_matrix_loc, rnkb, param_input%timing_level, stdout, m_w)
+                         m_matrix_loc, rnkb, param_input%timing_level, stdout, seedname, m_w)
         irguide = 1
       endif
 
@@ -3512,7 +3528,7 @@ contains
                             num_wann, kmesh_info%nntot, kmesh_info%wbtot, &
                             kmesh_info%wb, kmesh_info%bk, &
                             param_input%omega_invariant, ln_tmp, first_pass, &
-                            param_input%timing_level, stdout)
+                            param_input%timing_level, stdout, seedname)
 
       ! print the new centers and spreads
       if (lprint) then
@@ -3551,7 +3567,7 @@ contains
         call param_write_chkpt('postdis', param_input, wann_data, kmesh_info, &
                                k_points, num_kpts, dis_data, num_bands, &
                                num_wann, u_matrix, u_matrix_opt, m_matrix, &
-                               mp_grid, real_lattice, recip_lattice, stdout)
+                               mp_grid, real_lattice, recip_lattice, stdout, seedname)
       endif
 
       if (param_wannierise%conv_window .gt. 1) then
@@ -3601,77 +3617,77 @@ contains
       call wann_write_xyz(param_wannierise%translate_home_cell, num_wann, wann_data%centres, &
                           real_lattice, recip_lattice, atoms, &
                           param_input, &
-                          stdout)
+                          stdout, seedname)
     endif
 
     if (param_wannierise%guiding_centres) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, &
                        num_kpts, m_matrix, .true., counts, displs, &
-                       m_matrix_loc, rnkb, param_input%timing_level, stdout)
+                       m_matrix_loc, rnkb, param_input%timing_level, stdout, seedname)
     endif
 
     ! unitarity is checked
 !~    call internal_check_unitarity()
-    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, stdout)
+    call wann_check_unitarity(num_kpts, num_wann, u_matrix, param_input%timing_level, stdout, seedname)
 
     ! write extra info regarding omega_invariant
 !~    if (iprint>2) call internal_svd_omega_i()
     if (param_input%iprint > 2) then
       call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, param_input, &
-                            stdout)
+                            stdout, seedname)
     endif
 
     ! write matrix elements <m|r^2|n> to file
 !~    if (write_r2mn) call internal_write_r2mn()
     if (param_wannierise%write_r2mn) call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, &
-                                                          stdout)
+                                                          stdout, seedname)
 
     ! calculate and write projection of WFs on original bands in outer window
     if (param_input%have_disentangled .and. param_wannierise%write_proj) &
       call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, &
-                                eigval, lwindow, param_input%timing_level, stdout)
+                                eigval, lwindow, param_input%timing_level, stdout, seedname)
 
     ! aam: write data required for vdW utility
     if (param_wannierise%write_vdw_data) then
       call wann_write_vdw_data(num_wann, wann_data, real_lattice, &
                                recip_lattice, u_matrix, u_matrix_opt, &
-                               param_input, stdout)
+                               param_input, stdout, seedname)
     endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (cz, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating cz in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating cz in wann_main_gamma', stdout, seedname)
     deallocate (ur_rot, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ur_rot in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating ur_rot in wann_main_gamma', stdout, seedname)
     deallocate (uc_rot, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating uc_rot in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating uc_rot in wann_main_gamma', stdout, seedname)
     deallocate (u0, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating u0 in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating u0 in wann_main_gamma', stdout, seedname)
 
     ! deallocate sub vars passed into other subs
     deallocate (rguide, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rguide in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rguide in wann_main_gamma', stdout, seedname)
     deallocate (rave2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rave2 in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rave2 in wann_main_gamma', stdout, seedname)
     deallocate (rave, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rave in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rave in wann_main_gamma', stdout, seedname)
     deallocate (sheet, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating sheet in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating sheet in wann_main_gamma', stdout, seedname)
     deallocate (csheet, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating csheet in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating csheet in wann_main_gamma', stdout, seedname)
     deallocate (m_w, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating m_w in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating m_w in wann_main_gamma', stdout, seedname)
 
     ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ln_tmp in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating ln_tmp in wann_main_gamma', stdout, seedname)
     deallocate (rnkb, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating rnkb in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating rnkb in wann_main_gamma', stdout, seedname)
 
     deallocate (history, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating history in wann_main_gamma', stdout)
+    if (ierr /= 0) call io_error('Error deallocating history in wann_main_gamma', stdout, seedname)
 
-    if (param_input%timing_level > 0) call io_stopwatch('wann: main_gamma', 2, stdout)
+    if (param_input%timing_level > 0) call io_stopwatch('wann: main_gamma', 2, stdout, seedname)
 
     return
 
@@ -3705,7 +3721,7 @@ contains
       real(kind=dp), parameter :: pifour = 0.25_dp*pi
       integer       :: nn, nw1, nw2, nw3
 
-      if (timing_level > 1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma', 1, stdout)
+      if (timing_level > 1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma', 1, stdout, seedname)
 
       loop_nw1: do nw1 = 1, num_wann
       loop_nw2: do nw2 = nw1 + 1, num_wann
@@ -3757,7 +3773,7 @@ contains
       end do loop_nw2
       end do loop_nw1
 
-      if (timing_level > 1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma', 2, stdout)
+      if (timing_level > 1) call io_stopwatch('wann: main_gamma: new_u_and_m_gamma', 2, stdout, seedname)
 
       return
 
@@ -3789,7 +3805,7 @@ contains
       real(kind=dp), allocatable :: temp_hist(:)
 
       allocate (temp_hist(conv_window), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating temp_hist in wann_main', stdout)
+      if (ierr /= 0) call io_error('Error allocating temp_hist in wann_main', stdout, seedname)
 
       delta_omega = wann_spread%om_tot - old_spread%om_tot
 
@@ -3811,7 +3827,7 @@ contains
       endif
 
       deallocate (temp_hist, stat=ierr)
-      if (ierr /= 0) call io_error('Error deallocating temp_hist in wann_main_gamma', stdout)
+      if (ierr /= 0) call io_error('Error deallocating temp_hist in wann_main_gamma', stdout, seedname)
 
       return
 
@@ -4003,7 +4019,7 @@ contains
   !==================================================================!
   subroutine wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
                               nntot, wbtot, wb, bk, omega_invariant, ln_tmp, first_pass, &
-                              timing_level, stdout)
+                              timing_level, stdout, seedname)
     !==================================================================!
     !                                                                  !
     !   Calculate the Wannier Function spread                          !
@@ -4033,16 +4049,17 @@ contains
     real(kind=dp), intent(out) :: ln_tmp(:, :, :)
     logical, intent(inout) :: first_pass
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     !local variables
     real(kind=dp) :: summ, brn
     real(kind=dp), allocatable :: m_w_nn2(:)
     integer :: ind, nn, m, n, iw, rn, cn, ierr
 
-    if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 1, stdout)
+    if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 1, stdout, seedname)
 
     allocate (m_w_nn2(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating m_w_nn2 in wann_omega_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in allocating m_w_nn2 in wann_omega_gamma', stdout, seedname)
 
     if (nntot .eq. 3) then
       do nn = 1, nntot
@@ -4125,9 +4142,9 @@ contains
     wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
 
     deallocate (m_w_nn2, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating m_w_nn2 in wann_omega_gamma', stdout, seedname)
 
-    if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 2, stdout)
+    if (timing_level > 1) call io_stopwatch('wann: omega_gamma', 2, stdout, seedname)
 
     return
 

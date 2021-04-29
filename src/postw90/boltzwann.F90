@@ -37,7 +37,7 @@ module w90_boltzwann
   use w90_parameters, only: dis_data, param_input
   use pw90_parameters, only: boltz, pw90_common
 ! use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
-  use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
+  use w90_io, only: io_error, io_stopwatch, io_file_unit
   use w90_utility, only: utility_inv3, utility_inv2
   use w90_postw90_common
   use w90_comms
@@ -66,7 +66,7 @@ module w90_boltzwann
 
 contains
 
-  subroutine boltzwann_main(physics, stdout)
+  subroutine boltzwann_main(physics, stdout, seedname)
     !! This is the main routine of the BoltzWann module.
     !! It calculates the transport coefficients using the Boltzmann transport equation.
     !!
@@ -83,6 +83,7 @@ contains
     !! T is the temperature in Kelvin. The grid is defined in the input.
     type(pw90_physical_constants), intent(in) :: physics
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer :: TempNumPoints, MuNumPoints, TDFEnergyNumPoints
     integer :: i, j, ierr, EnIdx, TempIdx, MuIdx
@@ -113,7 +114,7 @@ contains
     real(kind=dp) :: TDF_exceeding_energy
     integer :: NumberZeroDet
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main', 1, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main', 1, stdout, seedname)
 
     if (on_root) then
       write (stdout, *)
@@ -139,7 +140,7 @@ contains
         elseif (boltz%dir_num_2d == 3) then
           write (stdout, '(1x,a)') '>       coefficient, where the non-periodic direction is z.                 <'
         else
-          call io_error('Unrecognized value of boltz_2d_dir_num', stdout)
+          call io_error('Unrecognized value of boltz_2d_dir_num', stdout, seedname)
         end if
         write (stdout, '(1x,a)') '>                                                                           <'
         write (stdout, '(1x,a)') ''
@@ -149,20 +150,20 @@ contains
     ! I precalculate the TempArray and the MuArray
     TempNumPoints = int(floor((boltz%temp_max - boltz%temp_min)/boltz%temp_step)) + 1
     allocate (TempArray(TempNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TempArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating TempArray in boltzwann_main', stdout, seedname)
     do i = 1, TempNumPoints
       TempArray(i) = boltz%temp_min + real(i - 1, dp)*boltz%temp_step
     end do
 
     ! This array contains the same temperatures of the TempArray, but multiplied by k_boltzmann, in units of eV
     allocate (KTArray(TempNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating KTArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating KTArray in boltzwann_main', stdout, seedname)
     ! (k_B in eV/kelvin is equal to k_B_SI / elem_charge_SI)
     KTArray = TempArray*physics%k_B_SI/physics%elem_charge_SI
 
     MuNumPoints = int(floor((boltz%mu_max - boltz%mu_min)/boltz%mu_step)) + 1
     allocate (MuArray(MuNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating MuArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating MuArray in boltzwann_main', stdout, seedname)
     do i = 1, MuNumPoints
       MuArray(i) = boltz%mu_min + real(i - 1, dp)*boltz%mu_step
     end do
@@ -177,7 +178,7 @@ contains
     TDFEnergyNumPoints = int(floor((dis_data%win_max - dis_data%win_min + 2._dp*TDF_exceeding_energy)/boltz%tdf_energy_step)) + 1
     if (TDFEnergyNumPoints .eq. 1) TDFEnergyNumPoints = 2
     allocate (TDFEnergyArray(TDFEnergyNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating TDFEnergyArray in boltzwann_main', stdout, seedname)
     do i = 1, TDFEnergyNumPoints
       TDFEnergyArray(i) = dis_data%win_min - TDF_exceeding_energy + real(i - 1, dp)*boltz%tdf_energy_step
     end do
@@ -190,10 +191,10 @@ contains
 
     ! I allocate the array for the TDF
     allocate (TDF(6, TDFEnergyNumPoints, ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating TDF in boltzwann_main', stdout, seedname)
 
     ! I call the subroutine that calculates the Transport Distribution Function
-    call calcTDFandDOS(TDF, TDFEnergyArray, stdout)
+    call calcTDFandDOS(TDF, TDFEnergyArray, stdout, seedname)
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 
@@ -223,7 +224,7 @@ contains
     ! *********************************************************************************
     ! I got the TDF and I printed it. Now I use it to calculate the transport properties.
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 1, stdout, seedname)
 
     ! I obtain the counts and displs arrays, which tell how I should partition a big array
     ! on the different nodes.
@@ -232,20 +233,20 @@ contains
     ! I allocate the arrays for the spectra
     ! Allocate at least 1 entry
     allocate (LocalElCond(6, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalElCond in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating LocalElCond in boltzwann_main', stdout, seedname)
     allocate (LocalSigmaS(6, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSigmaS in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating LocalSigmaS in boltzwann_main', stdout, seedname)
     allocate (LocalSeebeck(9, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating LocalSeebeck in boltzwann_main', stdout, seedname)
     allocate (LocalKappa(6, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating LocalKappa in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating LocalKappa in boltzwann_main', stdout, seedname)
     LocalElCond = 0._dp
     LocalSeebeck = 0._dp
     LocalKappa = 0._dp
 
     ! I allocate the array that I will use to store the functions to be integrated
     allocate (IntegrandArray(6, TDFEnergyNumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating FermiDerivArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in allocating FermiDerivArray in boltzwann_main', stdout, seedname)
 
     NumberZeroDet = 0
     ! Now, I calculate the various spectra for all mu and T values
@@ -388,7 +389,7 @@ contains
       ! 1/hbar^2 * eV^3*fs/angstrom/kelvin
     end do
     ! I check if there were (mu,T) pairs for which we got sigma = 0
-    call comms_reduce(NumberZeroDet, 1, 'SUM', stdout)
+    call comms_reduce(NumberZeroDet, 1, 'SUM', stdout, seedname)
     if (on_root) then
       if ((NumberZeroDet .gt. 0)) then
         write (stdout, '(1X,A,I0,A)') "> WARNING! There are ", NumberZeroDet, " (mu,T) pairs for which the electrical"
@@ -437,36 +438,36 @@ contains
     ! Now I send the different pieces to the local node
     if (on_root) then
       allocate (ElCond(6, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ElCond in boltzwann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating ElCond in boltzwann_main', stdout, seedname)
       allocate (SigmaS(6, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating SigmaS in boltzwann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating SigmaS in boltzwann_main', stdout, seedname)
       allocate (Seebeck(9, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Seebeck in boltzwann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating Seebeck in boltzwann_main', stdout, seedname)
       allocate (Kappa(6, TempNumPoints, MuNumPoints), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Kappa in boltzwann_main', stdout)
+      if (ierr /= 0) call io_error('Error in allocating Kappa in boltzwann_main', stdout, seedname)
     else
       ! In principle, this should not be needed, because we use ElCond,
       ! Seebeck and Kappa only on the root node. However, since all
       ! processors call comms_gatherv a few lines below, and one argument
       ! is ElCond(1,1,1), some compilers complain.
       allocate (ElCond(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating ElCond in boltzwann_main (2)', stdout)
+      if (ierr /= 0) call io_error('Error in allocating ElCond in boltzwann_main (2)', stdout, seedname)
       allocate (SigmaS(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating SigmaS in boltzwann_main (2)', stdout)
+      if (ierr /= 0) call io_error('Error in allocating SigmaS in boltzwann_main (2)', stdout, seedname)
       allocate (Seebeck(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Seebeck in boltzwann_main (2)', stdout)
+      if (ierr /= 0) call io_error('Error in allocating Seebeck in boltzwann_main (2)', stdout, seedname)
       allocate (Kappa(1, 1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating Kappa in boltzwann_main (2)', stdout)
+      if (ierr /= 0) call io_error('Error in allocating Kappa in boltzwann_main (2)', stdout, seedname)
     end if
 
     ! The 6* factors are due to the fact that for each (T,mu) pair we have 6 components (xx,xy,yy,xz,yz,zz)
     ! NOTE THAT INSTEAD SEEBECK IS A FULL MATRIX AND HAS 9 COMPONENTS!
-    call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, stdout)
-    call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, stdout)
-    call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, stdout)
-    call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, stdout)
+    call comms_gatherv(LocalElCond, 6*counts(my_node_id), ElCond, 6*counts, 6*displs, stdout, seedname)
+    call comms_gatherv(LocalSigmaS, 6*counts(my_node_id), SigmaS, 6*counts, 6*displs, stdout, seedname)
+    call comms_gatherv(LocalSeebeck, 9*counts(my_node_id), Seebeck, 9*counts, 9*displs, stdout, seedname)
+    call comms_gatherv(LocalKappa, 6*counts(my_node_id), Kappa, 6*counts, 6*displs, stdout, seedname)
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main: calc_props', 2, stdout, seedname)
 
     ! Open files and print
     if (on_root) then
@@ -541,37 +542,37 @@ contains
 
     ! Before ending, I deallocate memory
     deallocate (TempArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TempArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating TempArray in boltzwann_main', stdout, seedname)
     deallocate (KTArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating KTArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating KTArray in boltzwann_main', stdout, seedname)
     deallocate (MuArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating MuArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating MuArray in boltzwann_main', stdout, seedname)
     deallocate (TDFEnergyArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDFEnergyArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating TDFEnergyArray in boltzwann_main', stdout, seedname)
     deallocate (TDF, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDF in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating TDF in boltzwann_main', stdout, seedname)
     deallocate (LocalElCond, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalElCond in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating LocalElCond in boltzwann_main', stdout, seedname)
     deallocate (LocalSigmaS, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalSigmaS in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating LocalSigmaS in boltzwann_main', stdout, seedname)
     deallocate (LocalSeebeck, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalSeebeck in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating LocalSeebeck in boltzwann_main', stdout, seedname)
     deallocate (LocalKappa, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating LocalKappa in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating LocalKappa in boltzwann_main', stdout, seedname)
 
     deallocate (ElCond, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating ElCond in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating ElCond in boltzwann_main', stdout, seedname)
     deallocate (SigmaS, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating SigmaS in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating SigmaS in boltzwann_main', stdout, seedname)
     deallocate (Seebeck, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Seebeck in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating Seebeck in boltzwann_main', stdout, seedname)
     deallocate (Kappa, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating Kappa in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating Kappa in boltzwann_main', stdout, seedname)
 
     deallocate (IntegrandArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating IntegrandArray in boltzwann_main', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating IntegrandArray in boltzwann_main', stdout, seedname)
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('boltzwann_main', 2, stdout, seedname)
 
 101 FORMAT(7G18.10)
 102 FORMAT(19G18.10)
@@ -580,7 +581,7 @@ contains
 
   end subroutine boltzwann_main
 
-  subroutine calcTDFandDOS(TDF, TDFEnergyArray, stdout)
+  subroutine calcTDFandDOS(TDF, TDFEnergyArray, stdout, seedname)
     !! This routine calculates the Transport Distribution Function $$\sigma_{ij}(\epsilon)$$ (TDF)
     !! in units of 1/hbar^2 * eV*fs/angstrom, and possibly the DOS.
     !!
@@ -627,6 +628,7 @@ contains
     ! Comments:
     ! issue warnings if going outside of the energy window
     ! check that we actually get hbar*velocity in eV*angstrom
+    character(len=50), intent(in)  :: seedname
 
     real(kind=dp), dimension(3) :: kpt, orig_kpt
     integer :: loop_tot, loop_x, loop_y, loop_z, ierr
@@ -649,7 +651,7 @@ contains
     real(kind=dp), parameter :: SPACING_THRESHOLD = 1.e-3
     real(kind=dp) :: min_spacing, max_spacing
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 1, stdout, seedname)
     if (on_root) then
       if (boltz%calc_also_dos) then
         write (stdout, '(3X,A)') "Calculating Transport Distribution function (TDF) and DOS..."
@@ -659,44 +661,44 @@ contains
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(stdout)
+    call get_HH_R(stdout, seedname)
     if (pw90_common%spin_decomp) then
       ndim = 3
-      call get_SS_R(stdout)
+      call get_SS_R(stdout, seedname)
     else
       ndim = 1
     end if
 
     ! Some initial checks
     if (size(TDF, 1) /= 6 .or. size(TDF, 2) /= size(TDFEnergyArray) .or. size(TDF, 3) /= ndim) then
-      call io_error('Wrong size for the TDF array in calcTDF', stdout)
+      call io_error('Wrong size for the TDF array in calcTDF', stdout, seedname)
     end if
 
     ! I zero the TDF array before starting
     TDF = 0._dp
 
     allocate (TDF_k(6, size(TDFEnergyArray), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating TDF_k in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating TDF_k in calcTDF', stdout, seedname)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout, seedname)
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout, seedname)
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout, seedname)
 
     DOS_NumPoints = int(floor((boltz%dos_energy_max - boltz%dos_energy_min)/boltz%dos_energy_step)) + 1
     if (DOS_NumPoints .eq. 1) DOS_NumPoints = 2
     allocate (DOS_EnergyArray(DOS_NumPoints), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating DOS_EnergyArray in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating DOS_EnergyArray in calcTDF', stdout, seedname)
     do i = 1, DOS_NumPoints
       DOS_EnergyArray(i) = boltz%dos_energy_min + real(i - 1, dp)*boltz%dos_energy_step
     end do
 
     allocate (DOS_k(size(DOS_EnergyArray), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating DOS_k in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating DOS_k in calcTDF', stdout, seedname)
     allocate (DOS_all(size(DOS_EnergyArray), ndim), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating DOS_all in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating DOS_all in calcTDF', stdout, seedname)
     dos_all = 0.0_dp
 
     ! I open the output files
@@ -772,7 +774,7 @@ contains
       kpt(3) = (real(loop_z, dp)/real(boltz%kmesh(3), dp))
 
       ! Here I get the band energies and the velocities
-      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
+      call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
       call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
 
       ! Here I apply a scissor operator to the conduction bands, if required in the input
@@ -780,7 +782,7 @@ contains
         eig(boltz%bandshift_firstband:) = eig(boltz%bandshift_firstband:) + boltz%bandshift_energyshift
       end if
 
-      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, stdout)
+      call TDF_kpt(kpt, TDFEnergyArray, eig, del_eig, TDF_k, stdout, seedname)
       ! As above, the sum of TDF_k * kweight amounts to calculate
       ! spin_degeneracy * V_cell/(2*pi)^3 * \int_BZ d^3k
       ! so that we divide by the cell_volume (in Angstrom^3) to have
@@ -807,9 +809,9 @@ contains
                         (/real(i, kind=dp)/real(boltz%kmesh(1), dp)/4._dp, &
                           real(j, kind=dp)/real(boltz%kmesh(2), dp)/4._dp, &
                           real(k, kind=dp)/real(boltz%kmesh(3), dp)/4._dp/)
-                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout)
+                  call wham_get_eig_deleig(kpt, eig, del_eig, HH, delHH, UU, stdout, seedname)
                   call dos_get_levelspacing(del_eig, boltz%kmesh, levelspacing_k)
-                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, &
+                  call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
                                  smr_index=boltz%dos_smr_index, &
                                  adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                                  adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -820,7 +822,7 @@ contains
               end do
             end do
           else
-            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, &
+            call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
                            smr_index=boltz%dos_smr_index, &
                            adpt_smr_fac=boltz%dos_adpt_smr_fac, &
                            adpt_smr_max=boltz%dos_adpt_smr_max, &
@@ -828,7 +830,7 @@ contains
             dos_all = dos_all + dos_k*kweight
           end if
         else
-          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, &
+          call dos_get_k(kpt, DOS_EnergyArray, eig, dos_k, stdout, seedname, &
                          smr_index=boltz%dos_smr_index, &
                          smr_fixed_en_width=boltz%dos_smr_fixed_en_width)
           ! This sum multiplied by kweight amounts to calculate
@@ -844,15 +846,15 @@ contains
     ! I sum the results of the calculation for the DOS on the root node only
     ! (I have to print the results only)
     if (boltz%calc_also_dos) then
-      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', stdout)
-      call comms_reduce(NumPtsRefined, 1, 'SUM', stdout)
-      call comms_reduce(min_spacing, 1, 'MIN', stdout)
-      call comms_reduce(max_spacing, 1, 'MAX', stdout)
+      call comms_reduce(DOS_all(1, 1), size(DOS_all), 'SUM', stdout, seedname)
+      call comms_reduce(NumPtsRefined, 1, 'SUM', stdout, seedname)
+      call comms_reduce(min_spacing, 1, 'MIN', stdout, seedname)
+      call comms_reduce(max_spacing, 1, 'MAX', stdout, seedname)
     end if
     ! I sum the results of the calculation on all nodes, and I store them on all
     ! nodes (because for the following, each node will do a different calculation,
     ! each of which will require the whole knowledge of the TDF array)
-    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', stdout)
+    call comms_allreduce(TDF(1, 1, 1), size(TDF), 'SUM', stdout, seedname)
 
     if (boltz%calc_also_dos .and. on_root) then
       write (boltzdos_unit, '(A)') "# Written by the BoltzWann module of the Wannier90 code."
@@ -889,7 +891,7 @@ contains
       end do
     end if
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 2, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('calcTDF', 2, stdout, seedname)
     if (on_root) then
       if (boltz%calc_also_dos) then
         write (stdout, '(3X,A)') "TDF and DOS calculated."
@@ -905,19 +907,19 @@ contains
     end if
 
     deallocate (HH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating HH in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating HH in calcTDF', stdout, seedname)
     deallocate (delHH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating delHH in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating delHH in calcTDF', stdout, seedname)
     deallocate (UU, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating UU in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating UU in calcTDF', stdout, seedname)
     deallocate (DOS_EnergyArray, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating DOS_EnergyArray in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating DOS_EnergyArray in calcTDF', stdout, seedname)
     deallocate (DOS_k, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating DOS_k in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating DOS_k in calcTDF', stdout, seedname)
     deallocate (DOS_all, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating DOS_all in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating DOS_all in calcTDF', stdout, seedname)
     deallocate (TDF_k, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating TDF_k in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in deallocating TDF_k in calcTDF', stdout, seedname)
 
   end subroutine calcTDFandDOS
 
@@ -949,7 +951,7 @@ contains
 
   end function MinusFermiDerivative
 
-  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, stdout)
+  subroutine TDF_kpt(kpt, EnergyArray, eig_k, deleig_k, TDF_k, stdout, seedname)
     !! This subroutine calculates the contribution to the TDF of a single k point
     !!
     !!  This routine does not use the adaptive smearing; in fact, for non-zero temperatures
@@ -1003,6 +1005,7 @@ contains
     !!   of the EnergyArray array;
     !!  - spinidx=1 contains the total dos; if if spin_decomp==.true., then
     !!  spinidx=2 and spinidx=3 contain the spin-up and spin-down contributions to the DOS
+    character(len=50), intent(in)  :: seedname
 
     ! Adaptive smearing
     !
@@ -1019,7 +1022,7 @@ contains
 
     ! Get spin projections for every band
     !
-    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout)
+    if (pw90_common%spin_decomp) call spin_get_nk(kpt, spn_nk, stdout, seedname)
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
@@ -1060,7 +1063,7 @@ contains
       do loop_f = min_f, max_f
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(BandIdx))/smear
-          rdum = utility_w0gauss(arg, boltz%TDF_smr_index, stdout)/smear
+          rdum = utility_w0gauss(arg, boltz%TDF_smr_index, stdout, seedname)/smear
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if

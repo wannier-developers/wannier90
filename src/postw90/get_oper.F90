@@ -62,7 +62,7 @@ contains
   !======================================================!
 
   !======================================================
-  subroutine get_HH_R(stdout)
+  subroutine get_HH_R(stdout, seedname)
     !======================================================
     !
     !! computes <0n|H|Rm>, in eV
@@ -72,7 +72,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0
 !   use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_parameters, only: num_wann, dis_data, num_kpts, &
       eigval, u_matrix, param_input, real_lattice
     use pw90_parameters, only: pw90_common
@@ -80,6 +80,7 @@ contains
     use w90_comms, only: on_root, comms_bcast
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer                       :: i, j, n, m, ii, ik, winmin_q, file_unit, &
                                      ir, io, idum, ivdum(3), ivdum_old(3)
@@ -93,12 +94,12 @@ contains
     complex(kind=dp), allocatable :: sciss_R(:, :, :)
     !real(kind=dp)                 :: sciss_shift
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 1, stdout, seedname)
 
     if (.not. allocated(HH_R)) then
       allocate (HH_R(num_wann, num_wann, nrpts))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     end if
 
@@ -126,7 +127,7 @@ contains
           if (i < 1 .or. i > num_wann .or. j < 1 .or. j > num_wann) then
             write (stdout, *) 'num_wann=', num_wann, '  i=', i, '  j=', j
             call io_error &
-              ('Error in get_HH_R: orbital indices out of bounds', stdout)
+              ('Error in get_HH_R: orbital indices out of bounds', stdout, seedname)
           endif
           if (n > 1) then
             if (ivdum(1) /= ivdum_old(1) .or. ivdum(2) /= ivdum_old(2) .or. &
@@ -153,7 +154,7 @@ contains
         close (file_unit)
         if (ir /= nrpts) then
           write (stdout, *) 'ir=', ir, '  nrpts=', nrpts
-          call io_error('Error in get_HH_R: inconsistent nrpts values', stdout)
+          call io_error('Error in get_HH_R: inconsistent nrpts values', stdout, seedname)
         endif
         do ir = 1, nrpts
           crvec(:, ir) = matmul(transpose(real_lattice), irvec(:, ir))
@@ -170,13 +171,13 @@ contains
         if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
           call io_error( &
           'Error in get_HH_R: scissors shift not implemented for ' &
-          //'effective_model=T', stdout)
+          //'effective_model=T', stdout, seedname)
       endif
-      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts, stdout)
-      call comms_bcast(ndegen(1), nrpts, stdout)
-      call comms_bcast(irvec(1, 1), 3*nrpts, stdout)
-      call comms_bcast(crvec(1, 1), 3*nrpts, stdout)
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout)
+      call comms_bcast(HH_R(1, 1, 1), num_wann*num_wann*nrpts, stdout, seedname)
+      call comms_bcast(ndegen(1), nrpts, stdout, seedname)
+      call comms_bcast(irvec(1, 1), 3*nrpts, stdout, seedname)
+      call comms_bcast(crvec(1, 1), 3*nrpts, stdout, seedname)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
       return
     endif
 
@@ -236,16 +237,16 @@ contains
       HH_R = HH_R + sciss_R
     endif
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_HH_R', 2, stdout, seedname)
     return
 
 101 call io_error('Error in get_HH_R: problem opening file '// &
-                  trim(seedname)//'_HH_R.dat', stdout)
+                  trim(seedname)//'_HH_R.dat', stdout, seedname)
 
   end subroutine get_HH_R
 
   !==================================================
-  subroutine get_AA_R(stdout)
+  subroutine get_AA_R(stdout, seedname)
     !==================================================
     !
     !! AA_a(R) = <0|r_a|R> is the Fourier transform
@@ -260,10 +261,12 @@ contains
     use pw90_parameters, only: pw90_common, berry
     use w90_postw90_common, only: nrpts
 !   use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, seedname
-    use w90_io, only: io_file_unit, io_error, io_stopwatch, seedname
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: on_root, comms_bcast
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
     complex(kind=dp), allocatable :: AA_q(:, :, :, :)
     complex(kind=dp), allocatable :: AA_q_diag(:, :)
     complex(kind=dp), allocatable :: S_o(:, :)
@@ -279,12 +282,12 @@ contains
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 1, stdout, seedname)
 
     if (.not. allocated(AA_R)) then
       allocate (AA_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     end if
 
@@ -292,7 +295,7 @@ contains
     !
     if (pw90_common%effective_model) then
       if (.not. allocated(HH_R)) call io_error( &
-        'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first', stdout)
+        'Error in get_AA_R: Must read file'//trim(seedname)//'_HH_R.dat first', stdout, seedname)
       AA_R = cmplx_0
       if (on_root) then
         write (stdout, '(/a)') ' Reading position matrix elements from file ' &
@@ -311,7 +314,7 @@ contains
           if (io < 0) exit
           if (i < 1 .or. i > num_wann .or. j < 1 .or. j > num_wann) then
             write (stdout, *) 'num_wann=', num_wann, '  i=', i, '  j=', j
-            call io_error('Error in get_AA_R: orbital indices out of bounds', stdout)
+            call io_error('Error in get_AA_R: orbital indices out of bounds', stdout, seedname)
           endif
           if (n > 1) then
             if (ivdum(1) /= ivdum_old(1) .or. ivdum(2) /= ivdum_old(2) .or. &
@@ -329,11 +332,11 @@ contains
         ! elements is used, but it cannot be larger
         if (ir > nrpts) then
           write (stdout, *) 'ir=', ir, '  nrpts=', nrpts
-          call io_error('Error in get_AA_R: inconsistent nrpts values', stdout)
+          call io_error('Error in get_AA_R: inconsistent nrpts values', stdout, seedname)
         endif
       endif
-      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout)
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout)
+      call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
       return
     endif
 
@@ -371,12 +374,12 @@ contains
       read (mmn_in, *, err=102, end=102) nb_tmp, nkp_tmp, nntot_tmp
       ! Checks
       if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.mmn has wrong number of bands', stdout)
+        call io_error(trim(seedname)//'.mmn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.mmn has wrong number of k-points', stdout)
+        call io_error(trim(seedname)//'.mmn has wrong number of k-points', stdout, seedname)
       if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.mmn has wrong number of nearest neighbours', stdout)
+        (trim(seedname)//'.mmn has wrong number of nearest neighbours', stdout, seedname)
 
       AA_q = cmplx_0
       ik_prev = 0
@@ -414,7 +417,7 @@ contains
               nn = inn
             else
               call io_error('Error reading '//trim(seedname)//'.mmn.&
-                   & More than one matching nearest neighbour found', stdout)
+                   & More than one matching nearest neighbour found', stdout, seedname)
             endif
           endif
         end do
@@ -422,7 +425,7 @@ contains
           write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
             ' Error reading '//trim(seedname)//'.mmn:', &
             ncount, ik, ik2, nn, nnl, nnm, nnn
-          call io_error('Neighbour not found', stdout)
+          call io_error('Neighbour not found', stdout, seedname)
         end if
         nn_count = nn_count + 1 !Check: can also be place after nn=inn (?)
 
@@ -482,22 +485,22 @@ contains
 
     endif !on_root
 
-    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout)
+    call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_AA_R', 2, stdout, seedname)
     return
 
 101 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
 102 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
 103 call io_error('Error in get_AA_R: problem opening file '// &
-                  trim(seedname)//'_AA_R.dat', stdout)
+                  trim(seedname)//'_AA_R.dat', stdout, seedname)
 
   end subroutine get_AA_R
 
   !=====================================================
-  subroutine get_BB_R(stdout)
+  subroutine get_BB_R(stdout, seedname)
     !=====================================================
     !
     !! BB_a(R)=<0n|H(r-R)|Rm> is the Fourier transform of
@@ -511,10 +514,11 @@ contains
     use pw90_parameters, only: pw90_common
     use w90_postw90_common, only: nrpts
 !   use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, seedname
-    use w90_io, only: io_file_unit, io_error, io_stopwatch, seedname
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: on_root, comms_bcast
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer          :: idir, n, m, nn, &
                         ik, ik2, inn, nnl, nnm, nnn, &
@@ -529,18 +533,18 @@ contains
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 1, stdout, seedname)
     if (.not. allocated(BB_R)) then
       allocate (BB_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
       return
     end if
 
     if (on_root) then
 
       if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
-        call io_error('Error: scissors correction not yet implemented for BB_R', stdout)
+        call io_error('Error: scissors correction not yet implemented for BB_R', stdout, seedname)
 
       allocate (BB_q(num_wann, num_wann, num_kpts, 3))
       allocate (S_o(num_bands, num_bands))
@@ -567,12 +571,12 @@ contains
       read (mmn_in, *, err=104, end=104) nb_tmp, nkp_tmp, nntot_tmp
       ! Checks
       if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.mmn has wrong number of bands', stdout)
+        call io_error(trim(seedname)//'.mmn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.mmn has wrong number of k-points', stdout)
+        call io_error(trim(seedname)//'.mmn has wrong number of k-points', stdout, seedname)
       if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.mmn has wrong number of nearest neighbours', stdout)
+        (trim(seedname)//'.mmn has wrong number of nearest neighbours', stdout, seedname)
 
       BB_q = cmplx_0
 
@@ -600,7 +604,7 @@ contains
               nn = inn
             else
               call io_error('Error reading '//trim(seedname)//'.mmn.&
-                   & More than one matching nearest neighbour found', stdout)
+                   & More than one matching nearest neighbour found', stdout, seedname)
             endif
           endif
         end do
@@ -608,7 +612,7 @@ contains
           write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
             ' Error reading '//trim(seedname)//'.mmn:', &
             ncount, ik, ik2, nn, nnl, nnm, nnn
-          call io_error('Neighbour not found', stdout)
+          call io_error('Neighbour not found', stdout, seedname)
         end if
 
         call get_win_min(ik, winmin_q)
@@ -631,20 +635,20 @@ contains
 
     endif !on_root
 
-    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout)
+    call comms_bcast(BB_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_BB_R', 2, stdout, seedname)
     return
 
 103 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
 104 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
 
   end subroutine get_BB_R
 
   !=============================================================
-  subroutine get_CC_R(stdout)
+  subroutine get_CC_R(stdout, seedname)
     !=============================================================
     !
     !! CC_ab(R) = <0|r_a.H.(r-R)_b|R> is the Fourier transform of
@@ -658,10 +662,11 @@ contains
     use pw90_parameters, only: pw90_common, postw90_oper
     use w90_postw90_common, only: nrpts
 !   use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, seedname
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_comms, only: on_root, comms_bcast
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer          :: m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, &
                         nntot_tmp, uHu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -673,19 +678,19 @@ contains
     real(kind=dp)                 :: c_real, c_img
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 1, stdout, seedname)
 
     if (.not. allocated(CC_R)) then
       allocate (CC_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
       return
     end if
 
     if (on_root) then
 
       if (abs(pw90_common%scissors_shift) > 1.0e-7_dp) &
-        call io_error('Error: scissors correction not yet implemented for CC_R', stdout)
+        call io_error('Error: scissors correction not yet implemented for CC_R', stdout, seedname)
 
       allocate (Ho_qb1_q_qb2(num_bands, num_bands))
       allocate (H_qb1_q_qb2(num_wann, num_wann))
@@ -720,13 +725,13 @@ contains
       endif
       if (nb_tmp .ne. num_bands) &
         call io_error &
-        (trim(seedname)//'.uHu has not the right number of bands', stdout)
+        (trim(seedname)//'.uHu has not the right number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
         call io_error &
-        (trim(seedname)//'.uHu has not the right number of k-points', stdout)
+        (trim(seedname)//'.uHu has not the right number of k-points', stdout, seedname)
       if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.uHu has not the right number of nearest neighbours', stdout)
+        (trim(seedname)//'.uHu has not the right number of nearest neighbours', stdout, seedname)
 
       CC_q = cmplx_0
       do ik = 1, num_kpts
@@ -791,20 +796,20 @@ contains
 
     endif !on_root
 
-    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout)
+    call comms_bcast(CC_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_CC_R', 2, stdout, seedname)
     return
 
 105 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.uHu', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.uHu', stdout, seedname)
 106 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.uHu', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.uHu', stdout, seedname)
 
   end subroutine get_CC_R
 
   !===========================================================
-  subroutine get_FF_R(stdout)
+  subroutine get_FF_R(stdout, seedname)
     !===========================================================
     !
     !! FF_ab(R) = <0|r_a.(r-R)_b|R> is the Fourier transform of
@@ -817,10 +822,11 @@ contains
       num_bands, dis_data, param_input
     use w90_postw90_common, only: nrpts, v_matrix
 !   use w90_io, only: stdout, io_error, io_stopwatch, io_file_unit, seedname
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_comms, only: on_root, comms_bcast
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     integer          :: i, j, ii, jj, m, n, a, b, nn1, nn2, ik, nb_tmp, nkp_tmp, nntot_tmp, &
                         uIu_in, qb1, qb2, winmin_qb1, winmin_qb2
@@ -831,12 +837,12 @@ contains
     complex(kind=dp), allocatable :: L_qb1_q_qb2(:, :)
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 1, stdout, seedname)
 
     if (.not. allocated(FF_R)) then
       allocate (FF_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
       return
     end if
 
@@ -865,13 +871,13 @@ contains
       read (uIu_in, err=108, end=108) nb_tmp, nkp_tmp, nntot_tmp
       if (nb_tmp .ne. num_bands) &
         call io_error &
-        (trim(seedname)//'.uIu has not the right number of bands', stdout)
+        (trim(seedname)//'.uIu has not the right number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
         call io_error &
-        (trim(seedname)//'.uIu has not the right number of k-points', stdout)
+        (trim(seedname)//'.uIu has not the right number of k-points', stdout, seedname)
       if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.uIu has not the right number of nearest neighbours', stdout)
+        (trim(seedname)//'.uIu has not the right number of nearest neighbours', stdout, seedname)
 
       FF_q = cmplx_0
       do ik = 1, num_kpts
@@ -940,20 +946,20 @@ contains
 
     endif !on_root
 
-    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout)
+    call comms_bcast(FF_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_FF_R', 2, stdout, seedname)
     return
 
 107 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.uIu', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.uIu', stdout, seedname)
 108 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.uIu', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.uIu', stdout, seedname)
 
   end subroutine get_FF_R
 
   !================================================================
-  subroutine get_SS_R(stdout)
+  subroutine get_SS_R(stdout, seedname)
     !================================================================
     !
     !! Wannier representation of the Pauli matrices: <0n|sigma_a|Rm>
@@ -967,12 +973,13 @@ contains
     use pw90_parameters, only: postw90_oper
     use w90_postw90_common, only: nrpts
 !   use w90_io, only: io_error, io_stopwatch, stdout, seedname, io_file_unit
-    use w90_io, only: io_error, io_stopwatch, seedname, io_file_unit
+    use w90_io, only: io_error, io_stopwatch, io_file_unit
     use w90_comms, only: on_root, comms_bcast
 
     implicit none
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: spn_o(:, :, :, :), SS_q(:, :, :, :), spn_temp(:, :)
     real(kind=dp)                 :: s_real, s_img
@@ -981,7 +988,7 @@ contains
                                      nb_tmp, nkp_tmp, ierr, s, counter
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 1, stdout, seedname)
 
     if (.not. allocated(SS_R)) then
       allocate (SS_R(num_wann, num_wann, nrpts, 3))
@@ -1025,9 +1032,9 @@ contains
         read (spn_in, err=110, end=110) nb_tmp, nkp_tmp
       endif
       if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.spn has wrong number of bands', stdout)
+        call io_error(trim(seedname)//'.spn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.spn has wrong number of k-points', stdout)
+        call io_error(trim(seedname)//'.spn has wrong number of k-points', stdout, seedname)
       if (postw90_oper%spn_formatted) then
         do ik = 1, num_kpts
           do m = 1, num_bands
@@ -1047,7 +1054,7 @@ contains
         enddo
       else
         allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating spm_temp in get_SS_R', stdout)
+        if (ierr /= 0) call io_error('Error in allocating spm_temp in get_SS_R', stdout, seedname)
         do ik = 1, num_kpts
           read (spn_in) ((spn_temp(s, m), s=1, 3), m=1, (num_bands*(num_bands + 1))/2)
           counter = 0
@@ -1064,7 +1071,7 @@ contains
           end do
         end do
         deallocate (spn_temp, stat=ierr)
-        if (ierr /= 0) call io_error('Error in deallocating spm_temp in get_SS_R', stdout)
+        if (ierr /= 0) call io_error('Error in deallocating spm_temp in get_SS_R', stdout, seedname)
       endif
 
       close (spn_in)
@@ -1087,20 +1094,20 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout)
+    call comms_bcast(SS_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname)
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SS_R', 2, stdout, seedname)
     return
 
 109 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.spn', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.spn', stdout, seedname)
 110 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.spn', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.spn', stdout, seedname)
 
   end subroutine get_SS_R
 
   !==================================================
-  subroutine get_SHC_R(stdout)
+  subroutine get_SHC_R(stdout, seedname)
     !==================================================
     !
     !! Compute several matrices for spin Hall conductivity
@@ -1116,10 +1123,11 @@ contains
     use pw90_parameters, only: postw90_oper, pw90_common, spin_hall
     use w90_postw90_common, only: nrpts
 !   use w90_io, only: stdout, io_file_unit, io_error, io_stopwatch, seedname
-    use w90_io, only: io_file_unit, io_error, io_stopwatch, seedname
+    use w90_io, only: io_file_unit, io_error, io_stopwatch
     use w90_comms, only: on_root, comms_bcast
 
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
 
     complex(kind=dp), allocatable :: SR_q(:, :, :, :, :)
     complex(kind=dp), allocatable :: SHR_q(:, :, :, :, :)
@@ -1148,24 +1156,24 @@ contains
     logical                       :: nn_found
     character(len=60)             :: header
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 1, stdout, seedname)
 
     if (.not. allocated(SR_R)) then
       allocate (SR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SHR_R)) then
       allocate (SHR_R(num_wann, num_wann, nrpts, 3, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
     if (.not. allocated(SH_R)) then
       allocate (SH_R(num_wann, num_wann, nrpts, 3))
     else
-      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout)
+      if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
       return
     end if
 
@@ -1206,9 +1214,9 @@ contains
         read (spn_in, err=110, end=110) nb_tmp, nkp_tmp
       endif
       if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.spn has wrong number of bands', stdout)
+        call io_error(trim(seedname)//'.spn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.spn has wrong number of k-points', stdout)
+        call io_error(trim(seedname)//'.spn has wrong number of k-points', stdout, seedname)
       if (postw90_oper%spn_formatted) then
         do ik = 1, num_kpts
           do m = 1, num_bands
@@ -1228,7 +1236,7 @@ contains
         enddo
       else
         allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
-        if (ierr /= 0) call io_error('Error in allocating spm_temp in get_SHC_R', stdout)
+        if (ierr /= 0) call io_error('Error in allocating spm_temp in get_SHC_R', stdout, seedname)
         do ik = 1, num_kpts
           read (spn_in) ((spn_temp(s, m), s=1, 3), m=1, (num_bands*(num_bands + 1))/2)
           counter = 0
@@ -1245,7 +1253,7 @@ contains
           end do
         end do
         deallocate (spn_temp, stat=ierr)
-        if (ierr /= 0) call io_error('Error in deallocating spm_temp in get_SHC_R', stdout)
+        if (ierr /= 0) call io_error('Error in deallocating spm_temp in get_SHC_R', stdout, seedname)
       endif
 
       close (spn_in)
@@ -1299,12 +1307,12 @@ contains
       read (mmn_in, *, err=102, end=102) nb_tmp, nkp_tmp, nntot_tmp
       ! Checks
       if (nb_tmp .ne. num_bands) &
-        call io_error(trim(seedname)//'.mmn has wrong number of bands', stdout)
+        call io_error(trim(seedname)//'.mmn has wrong number of bands', stdout, seedname)
       if (nkp_tmp .ne. num_kpts) &
-        call io_error(trim(seedname)//'.mmn has wrong number of k-points', stdout)
+        call io_error(trim(seedname)//'.mmn has wrong number of k-points', stdout, seedname)
       if (nntot_tmp .ne. kmesh_info%nntot) &
         call io_error &
-        (trim(seedname)//'.mmn has wrong number of nearest neighbours', stdout)
+        (trim(seedname)//'.mmn has wrong number of nearest neighbours', stdout, seedname)
 
       SR_q = cmplx_0
       SHR_q = cmplx_0
@@ -1357,7 +1365,7 @@ contains
               nn = inn
             else
               call io_error('Error reading '//trim(seedname)//'.mmn.&
-                   & More than one matching nearest neighbour found', stdout)
+                   & More than one matching nearest neighbour found', stdout, seedname)
             endif
           endif
         end do
@@ -1365,7 +1373,7 @@ contains
           write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
             ' Error reading '//trim(seedname)//'.mmn:', &
             ncount, ik, ik2, nn, nnl, nnm, nnn
-          call io_error('Neighbour not found', stdout)
+          call io_error('Neighbour not found', stdout, seedname)
         end if
         nn_count = nn_count + 1 !Check: can also be place after nn=inn (?)
 
@@ -1432,23 +1440,23 @@ contains
 
     endif !on_root
 
-    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout)
-    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout)
-    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout)
+    call comms_bcast(SH_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, stdout, seedname)
+    call comms_bcast(SR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname)
+    call comms_bcast(SHR_R(1, 1, 1, 1, 1), num_wann*num_wann*nrpts*3*3, stdout, seedname)
 
     ! end copying from get_AA_R, Junfeng Qiao
 
-    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout)
+    if (param_input%timing_level > 1 .and. on_root) call io_stopwatch('get_oper: get_SHC_R', 2, stdout, seedname)
     return
 
 101 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.mmn', stdout, seedname)
 102 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.mmn', stdout, seedname)
 109 call io_error &
-      ('Error: Problem opening input file '//trim(seedname)//'.spn', stdout)
+      ('Error: Problem opening input file '//trim(seedname)//'.spn', stdout, seedname)
 110 call io_error &
-      ('Error: Problem reading input file '//trim(seedname)//'.spn', stdout)
+      ('Error: Problem reading input file '//trim(seedname)//'.spn', stdout, seedname)
 
   end subroutine get_SHC_R
 

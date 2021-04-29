@@ -26,7 +26,7 @@ module w90_geninterp
   use w90_parameters, only: num_wann, recip_lattice, real_lattice, param_input
   use pw90_parameters, only: geninterp
 ! use w90_io, only: io_error, stdout, io_stopwatch, io_file_unit, seedname, io_stopwatch
-  use w90_io, only: io_error, io_stopwatch, io_file_unit, seedname, io_stopwatch
+  use w90_io, only: io_error, io_stopwatch, io_file_unit, io_stopwatch
   use w90_get_oper, only: get_HH_R, HH_R
   use w90_comms
   use w90_utility, only: utility_diagonalize
@@ -63,7 +63,7 @@ contains
     end if
   end subroutine internal_write_header
 
-  subroutine geninterp_main(stdout)
+  subroutine geninterp_main(stdout, seedname)
     !! This routine prints the band energies (and possibly the band derivatives)
     !!
     !! This routine is parallel, even if ***the scaling is very bad*** since at the moment
@@ -72,6 +72,8 @@ contains
     !! I think that a way to write in parallel to the output would help a lot,
     !! so that we don't have to send all eigenvalues to the root node.
     integer, intent(in) :: stdout
+    character(len=50), intent(in)  :: seedname
+
     integer            :: kpt_unit, outdat_unit, num_kpts, ierr, i, j, enidx
     character(len=500) :: commentline
     character(len=50)  :: cdum
@@ -91,7 +93,7 @@ contains
     integer, dimension(0:num_nodes - 1)               :: counts
     integer, dimension(0:num_nodes - 1)               :: displs
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 1, stdout, seedname)
 
     if (on_root) then
       write (stdout, *)
@@ -116,50 +118,50 @@ contains
         absoluteCoords = .true.
       else
         call io_error('Error on second line of file '//trim(seedname)//'_geninterp.kpt: '// &
-                      'unable to recognize keyword', stdout)
+                      'unable to recognize keyword', stdout, seedname)
       end if
 
       ! Third line: number of following kpoints
       read (kpt_unit, *, err=106, end=106) num_kpts
     end if
 
-    call comms_bcast(num_kpts, 1, stdout)
+    call comms_bcast(num_kpts, 1, stdout, seedname)
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating HH in calcTDF', stdout, seedname)
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout)
+    if (ierr /= 0) call io_error('Error in allocating UU in calcTDF', stdout, seedname)
     if (geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-      if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout)
+      if (ierr /= 0) call io_error('Error in allocating delHH in calcTDF', stdout, seedname)
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
-    call get_HH_R(stdout)
+    call get_HH_R(stdout, seedname)
 
     if (on_root) then
       allocate (kpointidx(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout)
+      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
       allocate (kpoints(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout)
+      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
       if (geninterp%single_file) then
         allocate (globaleig(num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout)
+        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, seedname)
         allocate (globaldeleig(num_wann, 3, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout)
+        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, seedname)
       end if
     else
       ! On the other nodes, I still allocate them with size 1 to avoid
       ! that some compilers still try to access the memory
       allocate (kpointidx(1), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout)
+      if (ierr /= 0) call io_error('Error allocating kpointidx in geinterp_main.', stdout, seedname)
       allocate (kpoints(1, 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout)
+      if (ierr /= 0) call io_error('Error allocating kpoints in geinterp_main.', stdout, seedname)
       if (geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout)
+        if (ierr /= 0) call io_error('Error allocating globaleig in geinterp_main.', stdout, seedname)
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout)
+        if (ierr /= 0) call io_error('Error allocating globaldeleig in geinterp_main.', stdout, seedname)
       end if
     end if
 
@@ -167,12 +169,12 @@ contains
     call comms_array_split(num_kpts, counts, displs)
 
     allocate (localkpoints(3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout)
+    if (ierr /= 0) call io_error('Error allocating localkpoints in geinterp_main.', stdout, seedname)
 
     allocate (localeig(num_wann, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localeig in geinterp_main.', stdout)
+    if (ierr /= 0) call io_error('Error allocating localeig in geinterp_main.', stdout, seedname)
     allocate (localdeleig(num_wann, 3, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating localdeleig in geinterp_main.', stdout)
+    if (ierr /= 0) call io_error('Error allocating localdeleig in geinterp_main.', stdout, seedname)
 
     ! On root, I read numpoints_thischunk points
     if (on_root) then
@@ -197,12 +199,12 @@ contains
     end if
 
     ! Now, I distribute the kpoints; 3* because I send kx, ky, kz
-    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, stdout)
+    call comms_scatterv(localkpoints, 3*counts(my_node_id), kpoints, 3*counts, 3*displs, stdout, seedname)
     if (.not. geninterp%single_file) then
       ! Allocate at least one entry, even if we don't use it
       allocate (localkpointidx(max(1, counts(my_node_id))), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout)
-      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout)
+      if (ierr /= 0) call io_error('Error allocating localkpointidx in geinterp_main.', stdout, seedname)
+      call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, stdout, seedname)
     end if
 
     ! I open the output file(s)
@@ -223,7 +225,7 @@ contains
       outdat_unit = io_file_unit()
       open (unit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
-      call comms_bcast(commentline, len(commentline), stdout)
+      call comms_bcast(commentline, len(commentline), stdout, seedname)
 
       call internal_write_header(outdat_unit, commentline)
     end if
@@ -233,21 +235,21 @@ contains
       kpt = localkpoints(:, i)
       ! Here I get the band energies and the velocities (if required)
       if (geninterp%alsofirstder) then
-        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, stdout)
+        call wham_get_eig_deleig(kpt, localeig(:, i), localdeleig(:, :, i), HH, delHH, UU, stdout, seedname)
       else
-        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout)
-        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout)
+        call pw90common_fourier_R_to_k(kpt, HH_R, HH, 0, stdout, seedname)
+        call utility_diagonalize(HH, num_wann, localeig(:, i), UU, stdout, seedname)
       end if
     end do
 
     if (geninterp%single_file) then
       ! Now, I get the results from the different nodes
       call comms_gatherv(localeig, num_wann*counts(my_node_id), globaleig, &
-                         num_wann*counts, num_wann*displs, stdout)
+                         num_wann*counts, num_wann*displs, stdout, seedname)
 
       if (geninterp%alsofirstder) then
         call comms_gatherv(localdeleig, 3*num_wann*counts(my_node_id), globaldeleig, &
-                           3*num_wann*counts, 3*num_wann*displs, stdout)
+                           3*num_wann*counts, 3*num_wann*displs, stdout, seedname)
       end if
 
       ! Now the printing, only on root node
@@ -318,13 +320,13 @@ contains
     if (allocated(globaleig)) deallocate (globaleig)
     if (allocated(globaldeleig)) deallocate (globaldeleig)
 
-    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2, stdout)
+    if (on_root .and. (param_input%timing_level > 0)) call io_stopwatch('geninterp_main', 2, stdout, seedname)
 
     return
 
-105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', stdout)
-106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', stdout)
-107 call io_error('Error: Problem opening output file '//trim(outdat_filename), stdout)
+105 call io_error('Error: Problem opening k-point file '//trim(seedname)//'_geninterp.kpt', stdout, seedname)
+106 call io_error('Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', stdout, seedname)
+107 call io_error('Error: Problem opening output file '//trim(outdat_filename), stdout, seedname)
   end subroutine geninterp_main
 
 end module w90_geninterp
