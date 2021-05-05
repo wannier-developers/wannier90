@@ -62,8 +62,7 @@ program wannier
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id, &
-    w90commtype
+  use w90_comms, only: comms_setup, comms_end, comms_bcast, w90commtype
   use w90_sitesym !YN:
 
   use w90_param_methods, only: param_write_header, param_read_chkpt, param_chkpt_dist
@@ -360,8 +359,8 @@ program wannier
 
     call dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                   m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
-                  dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                  lsitesymmetry, sym, stdout, seedname, w90comm)
+                  dis_data, kmesh_info, k_points, param_input, on_root, lsitesymmetry, sym, &
+                  stdout, seedname, w90comm)
 
     param_input%have_disentangled = .true.
     time2 = io_time()

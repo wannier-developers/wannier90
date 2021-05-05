@@ -1699,7 +1699,7 @@ contains
     !                                           !
     !===========================================!
 
-    use w90_comms, only: on_root
+    !use w90_comms, only:
 
     implicit none
 
@@ -1935,7 +1935,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
     use w90_io, only: io_error, io_file_unit, io_date, io_time
-    use w90_comms, only: comms_bcast, on_root, w90commtype
+    use w90_comms, only: comms_bcast, w90commtype
 
     implicit none
     !data from parameters module

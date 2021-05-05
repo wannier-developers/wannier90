@@ -16,7 +16,8 @@ module w90_disentangle
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 
-  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce, w90commtype
+  use w90_comms, only: comms_bcast, comms_array_split, comms_gatherv, comms_allreduce, &
+    w90commtype, mpisize, mpirank
   use w90_constants, only: dp, cmplx_0, cmplx_1
   use w90_io, only: io_error, io_stopwatch
   use w90_param_types, only: disentangle_type, kmesh_info_type, k_point_type, parameter_input_type
@@ -34,8 +35,8 @@ contains
 
   subroutine dis_main(num_bands, num_kpts, num_wann, recip_lattice, eigval, a_matrix, m_matrix, &
                       m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, u_matrix_opt, &
-                      dis_data, kmesh_info, k_points, param_input, num_nodes, my_node_id, on_root, &
-                      lsitesymmetry, sym, stdout, seedname, comm)
+                      dis_data, kmesh_info, k_points, param_input, on_root, lsitesymmetry, sym, &
+                      stdout, seedname, comm)
 
     !==================================================================!
     !! Main disentanglement routine
@@ -46,7 +47,6 @@ contains
     use w90_io, only: io_file_unit
     ! passed variables
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    integer, intent(in) :: num_nodes, my_node_id
     integer, intent(in) :: stdout
 
     logical, intent(in) :: lsitesymmetry, on_root
@@ -85,9 +85,15 @@ contains
 
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
 
-    ! Needed to split an array on different nodes
-    integer, dimension(0:num_nodes - 1) :: counts
-    integer, dimension(0:num_nodes - 1) :: displs
+    ! pllel setup
+    integer, allocatable :: counts(:)
+    integer, allocatable :: displs(:)
+    integer :: num_nodes, my_node_id
+
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
+    allocate (counts(0:num_nodes - 1))
+    allocate (displs(0:num_nodes - 1))
 
     if (param_input%timing_level > 0) call io_stopwatch('dis: main', 1, stdout, seedname)
 

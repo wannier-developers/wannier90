@@ -68,7 +68,7 @@ contains
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data
-    use w90_comms, only: on_root, my_node_id, num_nodes, comms_gatherv, comms_bcast, &
+    use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
       comms_scatterv, comms_array_split, w90commtype
 
     !ivo
@@ -251,6 +251,12 @@ contains
     !logical :: cconverged
     !real(kind=dp) :: glpar, cvalue_new
     real(kind=dp), allocatable :: rnr0n2(:)
+
+    ! pllel setup
+    integer :: num_nodes, my_node_id
+
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
 
     if (param_input%timing_level > 0 .and. on_root) call io_stopwatch('wann: main', 1, stdout, seedname)
 
@@ -1105,7 +1111,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0
       use w90_io, only: io_error
-      use w90_comms, only: my_node_id, w90commtype
+      use w90_comms, only: w90commtype
 
       implicit none
       real(kind=dp), intent(in) :: conv_noise_amp
@@ -1180,7 +1186,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
+      use w90_comms, only: comms_allreduce, w90commtype
       use w90_param_types, only: parameter_input_type
 
       implicit none
@@ -1305,7 +1311,7 @@ contains
       !===============================================!
       use w90_constants, only: cmplx_0, cmplx_1, cmplx_i, twopi
       use w90_io, only: io_stopwatch
-      use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
+      use w90_comms, only: comms_allreduce, w90commtype
       use w90_param_types, only: parameter_input_type
       use wannier_param_types, only: param_wannierise_type
 
@@ -1455,7 +1461,7 @@ contains
       !                                               !
       !===============================================!
       use w90_io, only: io_stopwatch
-      use w90_comms, only: on_root, w90commtype
+      use w90_comms, only: w90commtype
       use w90_param_types, only: parameter_input_type
 
       implicit none
@@ -1528,7 +1534,7 @@ contains
       use w90_constants, only: cmplx_i
       use w90_sitesym, only: sitesym_symmetrize_rotation, sitesym_data
       use w90_io, only: io_stopwatch, io_error
-      use w90_comms, only: on_root, my_node_id, comms_bcast, comms_gatherv, w90commtype
+      use w90_comms, only: comms_bcast, comms_gatherv, w90commtype
       use w90_utility, only: utility_zgemm
       use w90_param_types, only: kmesh_info_type
 
@@ -1856,7 +1862,7 @@ contains
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch
     use w90_utility, only: utility_inv3
-    use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
+    use w90_comms, only: comms_allreduce, w90commtype
     use w90_param_types, only: kmesh_info_type
 
     implicit none
@@ -2099,7 +2105,7 @@ contains
     ! Radu Miron at Implerial College London
     !===================================================================
     use w90_io, only: io_stopwatch
-    use w90_comms, only: on_root, my_node_id, comms_allreduce, w90commtype
+    use w90_comms, only: comms_allreduce, w90commtype
     use w90_param_types, only: kmesh_info_type, parameter_input_type
     use wannier_param_types, only: param_wannierise_type
 
@@ -2406,7 +2412,7 @@ contains
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch, io_error
     use w90_sitesym, only: sitesym_symmetrize_gradient, sitesym_data !RS:
-    use w90_comms, only: on_root, my_node_id, comms_gatherv, comms_bcast, comms_allreduce, &
+    use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
       w90commtype
     use w90_param_types, only: kmesh_info_type
     use wannier_param_types, only: param_wannierise_type
@@ -2693,7 +2699,7 @@ contains
     !==================================================================!
 
     use w90_io, only: io_stopwatch
-    use w90_comms, only: on_root, w90commtype
+    use w90_comms, only: w90commtype
 
     implicit none
 
@@ -3005,7 +3011,7 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: on_root, w90commtype
+    use w90_comms, only: w90commtype
 
     implicit none
 
@@ -3126,7 +3132,7 @@ contains
 
     use w90_constants, only: dp, cmplx_0
     use w90_io, only: io_stopwatch, io_error
-    use w90_comms, only: on_root, w90commtype
+    use w90_comms, only: w90commtype
     use w90_param_types, only: parameter_input_type, kmesh_info_type
 
     implicit none
@@ -3247,7 +3253,7 @@ contains
       wannier_data_type, atom_data_type, k_point_type, disentangle_type
     use wannier_methods, only: param_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_comms, only: on_root, w90commtype
+    use w90_comms, only: w90commtype
 
     implicit none
 

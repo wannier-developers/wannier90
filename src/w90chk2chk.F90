@@ -612,7 +612,7 @@ program w90chk2chk
 ! use w90_io, only: io_file_unit, stdout, io_error, seedname
   use w90_io, only: io_file_unit, io_error
   use w90_conv
-  use w90_comms, only: num_nodes, comms_setup, comms_end, w90commtype
+  use w90_comms, only: comms_setup, comms_end, w90commtype
   implicit none
 
   ! Export mode:

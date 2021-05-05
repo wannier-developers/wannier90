@@ -336,7 +336,7 @@ program w90spn2spn
 ! use w90_io, only: io_file_unit, stdout, io_error, seedname
   use w90_io, only: io_file_unit, io_error
   use w90_conv_spn
-  use w90_comms, only: num_nodes, comms_setup, comms_end
+  use w90_comms, only: comms_setup, comms_end
 
   implicit none
 

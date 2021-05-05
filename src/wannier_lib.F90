@@ -71,7 +71,7 @@ subroutine wannier_setup(seed__name, mp_grid_loc, num_kpts_loc, &
   use w90_sitesym
   use w90_io
   use w90_kmesh
-  use w90_comms, only: comms_setup_vars
+  !use w90_comms, only:
 
   use w90_param_methods, only: param_write_header, param_lib_set_atoms
 
@@ -276,8 +276,7 @@ subroutine wannier_run(seed__name, mp_grid_loc, num_kpts_loc, real_lattice_loc, 
   use w90_wannierise
   use w90_plot
   use w90_transport
-  use w90_comms, only: my_node_id, num_nodes, &
-    comms_array_split, comms_scatterv, on_root
+  use w90_comms, only: comms_array_split, comms_scatterv
 
   use w90_param_methods, only: param_lib_set_atoms
 

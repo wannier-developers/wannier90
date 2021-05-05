@@ -17,7 +17,7 @@ module w90_overlap
   !! and performs simple operations on them.
 
   use w90_constants, only: dp, cmplx_0, cmplx_1
-  use w90_comms, only: on_root, comms_bcast, w90commtype
+  use w90_comms, only: comms_bcast, w90commtype
 
   implicit none
 
@@ -42,7 +42,7 @@ contains
     !! This must be called before calling overlap_read
 
     use w90_io, only: io_error, io_stopwatch
-    use w90_comms, only: my_node_id, num_nodes, comms_array_split
+    use w90_comms, only: comms_array_split
 
     integer, intent(in) :: nntot
     integer, intent(in) :: stdout
@@ -135,7 +135,7 @@ contains
     !! Note: one needs to call overlap_allocate first!
 
     use w90_io, only: io_file_unit, io_error, io_stopwatch
-    use w90_comms, only: my_node_id, num_nodes, comms_array_split, comms_scatterv
+    use w90_comms, only: num_nodes, comms_array_split, comms_scatterv
     use w90_sitesym, only: sitesym_data
     use w90_param_types, only: parameter_input_type, kmesh_info_type
     use wannier_param_types, only: w90_calculation_type, select_projection_type
@@ -707,7 +707,7 @@ contains
     use w90_io, only: io_error, io_stopwatch
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix, sitesym_data !RS:
-    use w90_comms, only: my_node_id, num_nodes, comms_array_split, comms_scatterv, comms_gatherv
+    use w90_comms, only: comms_array_split, comms_scatterv, comms_gatherv
 
     implicit none
 

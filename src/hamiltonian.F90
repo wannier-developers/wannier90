@@ -17,7 +17,7 @@ module w90_hamiltonian
   !! This is a simplified routine, more sophisticated properties
   !! are found in postw90 (e.g. w90_get_oper)
   use w90_constants, only: dp
-  use w90_comms, only: on_root
+  !use w90_comms, only:
   use w90_param_types
 
   implicit none
