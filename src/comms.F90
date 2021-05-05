@@ -155,17 +155,19 @@ contains
 #endif
   end function
 
-  subroutine comms_setup(w90comm)
+  subroutine comms_setup(stdout, seedname, w90comm)
     ! set communicator to MPI_COMM_WORLD and call mpi_init
     ! this code could/should be at start of the main program
     ! having it here is only useful in that it limits MPI defs to this file only
     implicit none
+    integer, intent(in)    :: stdout
+    character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(inout) :: w90comm
 #ifdef MPI
     integer :: ierr
     w90comm%comm = MPI_COMM_WORLD
     call mpi_init(ierr)
-    if (ierr .ne. 0) call io_error('MPI initialisation error')
+    if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
 #endif
 
   end subroutine comms_setup
@@ -236,7 +238,7 @@ contains
 
   end subroutine comms_barrier
 
-  subroutine comms_bcast_int(array, size, stdout, seedname w90comm)
+  subroutine comms_bcast_int(array, size, stdout, seedname, w90comm)
     !! Send integar array from root node to all nodes
     implicit none
 
@@ -874,7 +876,6 @@ contains
 
   end subroutine comms_gatherv_real_1
 
-<<<<<<< HEAD
   subroutine comms_gatherv_real_2(array, localcount, rootglobalarray, counts, displs, &
                                   stdout, seedname, w90comm)
     !! Gather real data to root node (for arrays of rank 2)
@@ -936,7 +937,6 @@ contains
 
   end subroutine comms_gatherv_real_3
 
-<<<<<<< HEAD
   subroutine comms_gatherv_real_2_3(array, localcount, rootglobalarray, counts, displs, stdout, &
                                     seedname, w90comm)
     !! Gather real data to root node (for arrays of rank 2 and 3, respectively)
@@ -984,6 +984,8 @@ contains
     complex(kind=dp), intent(inout) :: rootglobalarray(:)
     integer, intent(in) :: counts(:)
     integer, intent(in) :: displs(:)
+    integer, intent(in)    :: stdout
+    character(len=50), intent(in)  :: seedname
     type(w90commtype), intent(in) :: w90comm
 
 #ifdef MPI
@@ -1034,7 +1036,6 @@ contains
 
   end subroutine comms_gatherv_cmplx_2
 
-<<<<<<< HEAD
   subroutine comms_gatherv_cmplx_3(array, localcount, rootglobalarray, counts, displs, stdout, &
                                    seedname, w90comm)
     !! Gather complex data to root node (for arrays of rank 3)
@@ -1128,7 +1129,6 @@ contains
 
   end subroutine comms_gatherv_cmplx_4
 
-<<<<<<< HEAD
   subroutine comms_gatherv_logical(array, localcount, rootglobalarray, counts, displs, stdout, &
                                    seedname, w90comm)
     !! Gather real data to root node
@@ -1158,7 +1158,6 @@ contains
 
   end subroutine comms_gatherv_logical
 
-<<<<<<< HEAD
   subroutine comms_scatterv_real_1(array, localcount, rootglobalarray, counts, displs, stdout, &
                                    seedname, w90comm)
     !! Scatter real data from root node (array of rank 1)

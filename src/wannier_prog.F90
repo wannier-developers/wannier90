@@ -183,11 +183,7 @@ program wannier
   type(ham_logical) :: hmlg
   type(w90commtype) :: w90comm
 
-! logical :: ham_have_setup = .false.
-! logical :: have_translated = .false.
-! logical :: use_translation = .false.
-
-  call comms_setup(w90comm) ! initialises communicator with value MPI_COMM_WORLD
+  call comms_setup(stdout, seedname, w90comm) ! initialises communicator with value MPI_COMM_WORLD
 
   time0 = io_time()
 

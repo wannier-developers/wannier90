@@ -626,7 +626,7 @@ program w90chk2chk
 
   type(w90commtype) :: comm
 
-  call comms_setup(comm)
+  call comms_setup(stdout, seedname, comm)
 
   stdout = io_file_unit()
   open (unit=stdout, file='w90chk2chk.log')
